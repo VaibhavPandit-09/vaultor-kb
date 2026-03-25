@@ -26,6 +26,7 @@ import {
 import api from '../lib/api';
 import type { Resource, Tag } from '../types';
 import { useTheme } from '../lib/ThemeContext';
+import { useRestoreFocusOnClose } from '../lib/useRestoreFocusOnClose';
 import BlockEditor from '../components/editor/BlockEditor';
 import FilePreview from '../components/FilePreview';
 import { markdownToHtml } from '../components/editor/markdownUtils';
@@ -110,6 +111,8 @@ export default function Dashboard() {
   const latestNoteContentRef = useRef<string | null>(null);
 
   const { theme, toggleTheme } = useTheme();
+  const commandPaletteFocus = useRestoreFocusOnClose();
+  const shortcutsModalFocus = useRestoreFocusOnClose();
 
   useEscapeLayer({
     id: 'dashboard-type-filter',
@@ -165,6 +168,26 @@ export default function Dashboard() {
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed((prev) => !prev);
   }, []);
+
+  const openCommandPalette = useCallback(() => {
+    commandPaletteFocus.captureFocus();
+    setCommandPaletteOpen(true);
+  }, [commandPaletteFocus]);
+
+  const closeCommandPalette = useCallback(() => {
+    setCommandPaletteOpen(false);
+    commandPaletteFocus.restoreFocus();
+  }, [commandPaletteFocus]);
+
+  const openShortcutsModal = useCallback(() => {
+    shortcutsModalFocus.captureFocus();
+    setShortcutsOpen(true);
+  }, [shortcutsModalFocus]);
+
+  const closeShortcutsModal = useCallback(() => {
+    setShortcutsOpen(false);
+    shortcutsModalFocus.restoreFocus();
+  }, [shortcutsModalFocus]);
 
   const handleBackNavigation = useCallback(() => {
     if (navigation.currentIndex <= 0) return;
@@ -272,7 +295,7 @@ export default function Dashboard() {
 
       if (modKey && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        setCommandPaletteOpen(true);
+        openCommandPalette();
         return;
       }
 
@@ -284,7 +307,7 @@ export default function Dashboard() {
 
       if ((modKey && event.key === '/') || (!isEditable && event.key === '?')) {
         event.preventDefault();
-        setShortcutsOpen(true);
+        openShortcutsModal();
         return;
       }
 
@@ -314,7 +337,7 @@ export default function Dashboard() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleBackNavigation, handleForwardNavigation, toggleSidebar]);
+  }, [handleBackNavigation, handleForwardNavigation, openCommandPalette, openShortcutsModal, toggleSidebar]);
 
   useEffect(() => {
     if (!replaceLinkModal || !replaceSearch.trim()) {
@@ -665,7 +688,7 @@ export default function Dashboard() {
         subtitle: 'Show all available keyboard shortcuts',
         keywords: ['keyboard', 'shortcuts', 'help'],
         icon: 'help',
-        action: async () => setShortcutsOpen(true),
+        action: async () => openShortcutsModal(),
       },
     ];
 
@@ -682,7 +705,7 @@ export default function Dashboard() {
     }
 
     return [...navigationItems, ...createItems, ...actionItems];
-  }, [activeResource, handleCreateNote, openResourceById, requestFileUpload, resources, sidebarCollapsed, toggleSidebar]);
+  }, [activeResource, handleCreateNote, openResourceById, openShortcutsModal, requestFileUpload, resources, sidebarCollapsed, toggleSidebar]);
 
   const contextTagPills = activeResource?.tags || [];
   const canGoBack = navigation.currentIndex > 0;
@@ -698,10 +721,10 @@ export default function Dashboard() {
 
       <CommandPaletteModal
         open={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
+        onClose={closeCommandPalette}
         commands={commandPaletteItems}
       />
-      <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <ShortcutsModal open={shortcutsOpen} onClose={closeShortcutsModal} />
 
       <AppModal
         open={tagInputOpen}
@@ -1035,7 +1058,7 @@ export default function Dashboard() {
             </>
           )}
           <button
-            onClick={() => setShortcutsOpen(true)}
+            onClick={openShortcutsModal}
             className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-primary hover:text-primary"
           >
             <Command size={14} /> {isMac ? '⌘' : 'Ctrl'} Help

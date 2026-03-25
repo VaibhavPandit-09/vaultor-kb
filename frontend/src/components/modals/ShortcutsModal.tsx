@@ -6,9 +6,10 @@ import AppModal from './AppModal';
 interface ShortcutsModalProps {
   open: boolean;
   onClose: () => void;
+  restoreFocusOnClose?: boolean;
 }
 
-export default function ShortcutsModal({ open, onClose }: ShortcutsModalProps) {
+export default function ShortcutsModal({ open, onClose, restoreFocusOnClose = true }: ShortcutsModalProps) {
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
@@ -23,7 +24,14 @@ export default function ShortcutsModal({ open, onClose }: ShortcutsModalProps) {
   }, [query]);
 
   return (
-    <AppModal open={open} onClose={onClose} title="Keyboard Shortcuts" description="Vaultor stays fast when the common moves are always one key away." widthClassName="max-w-3xl">
+    <AppModal
+      open={open}
+      onClose={onClose}
+      title="Keyboard Shortcuts"
+      description="Vaultor stays fast when the common moves are always one key away."
+      widthClassName="max-w-3xl"
+      restoreFocusOnEscape={!restoreFocusOnClose}
+    >
       <div className="space-y-4">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />

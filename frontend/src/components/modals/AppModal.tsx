@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
 
@@ -13,6 +13,7 @@ interface AppModalProps {
   footer?: ReactNode;
   widthClassName?: string;
   escapeLayer?: EscapeLayerKind;
+  restoreFocusOnEscape?: boolean;
 }
 
 export default function AppModal({
@@ -24,31 +25,17 @@ export default function AppModal({
   footer,
   widthClassName = 'max-w-md',
   escapeLayer = 'modal',
+  restoreFocusOnEscape = true,
 }: AppModalProps) {
   const modalId = useId();
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
 
   useEscapeLayer({
     id: `app-modal-${modalId}`,
     active: open,
     priority: escapeLayer === 'commandPalette' ? ESCAPE_PRIORITIES.commandPalette : ESCAPE_PRIORITIES.modal,
     close: onClose,
+    restoreFocusOnEscape,
   });
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-
-    return () => {
-      if (restoreFocusRef.current?.isConnected) {
-        restoreFocusRef.current.focus();
-      }
-      restoreFocusRef.current = null;
-    };
-  }, [open]);
 
   if (!open) return null;
 

@@ -21,7 +21,7 @@ import ResourceLinkMenu from './ResourceLinkMenu';
 import CodeBlockView from './CodeBlockView';
 import TableToolbar from './TableToolbar';
 import { markdownToHtml } from './markdownUtils';
-import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
+import { ESCAPE_PRIORITIES, registerFocusRestore, useEscapeLayer } from '../../lib/escape/escape';
 
 const lowlight = createLowlight(all);
 
@@ -113,8 +113,19 @@ export default function BlockEditor({ content, onUpdate, onRequestMdUpload, onRe
   useEffect(() => {
     if (editor) {
       (window as any).__vaultor_editor = editor;
+      const unregisterRestore = registerFocusRestore(editor.view.dom, () => {
+        editor.commands.focus(undefined, { scrollIntoView: false });
+      });
+
+      return () => {
+        unregisterRestore();
+        (window as any).__vaultor_editor = null;
+      };
     }
-    return () => { (window as any).__vaultor_editor = null; };
+
+    return () => {
+      (window as any).__vaultor_editor = null;
+    };
   }, [editor]);
 
   // Handle explicit resource link navigation
@@ -178,6 +189,7 @@ export default function BlockEditor({ content, onUpdate, onRequestMdUpload, onRe
     id: `${editorEscapeId}-focus`,
     active: editorFocused,
     priority: ESCAPE_PRIORITIES.editorFocus,
+    restoreFocusOnEscape: false,
     close: () => {
       editor?.commands.blur();
     },

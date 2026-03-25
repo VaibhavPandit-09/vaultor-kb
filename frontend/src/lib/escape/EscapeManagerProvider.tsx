@@ -18,6 +18,7 @@ function sortLayers(layers: EscapeLayerRecord[]) {
 export function EscapeManagerProvider({ children }: { children: ReactNode }) {
   const layersRef = useRef<EscapeLayerRecord[]>([]);
   const orderRef = useRef(0);
+  const lastMeaningfulFocusRef = useRef<HTMLElement | null>(null);
 
   const registerLayer = useCallback((layer: EscapeLayerRegistration) => {
     const nextRecord: EscapeLayerRecord = {
@@ -36,6 +37,18 @@ export function EscapeManagerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      if (target.isContentEditable || target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+        lastMeaningfulFocusRef.current = target;
+      }
+    };
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.repeat || event.isComposing) {
         return;
@@ -49,14 +62,24 @@ export function EscapeManagerProvider({ children }: { children: ReactNode }) {
       event.preventDefault();
       event.stopPropagation();
       topLayer.close();
+      if (topLayer.restoreFocus) {
+        requestAnimationFrame(() => {
+          topLayer.restoreFocus?.();
+        });
+      }
     };
 
+    window.addEventListener('focusin', handleFocusIn, true);
     window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
+    return () => {
+      window.removeEventListener('focusin', handleFocusIn, true);
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
   }, []);
 
   const value = useMemo<EscapeManagerValue>(() => ({
     registerLayer,
+    getLastMeaningfulFocus: () => lastMeaningfulFocusRef.current,
   }), [registerLayer]);
 
   return <EscapeManagerContext.Provider value={value}>{children}</EscapeManagerContext.Provider>;

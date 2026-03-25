@@ -104,6 +104,7 @@ export default function CommandPaletteModal({ open, onClose, commands }: Command
       description="Jump, create, and act from one keyboard-first surface."
       widthClassName="max-w-3xl"
       escapeLayer="commandPalette"
+      restoreFocusOnEscape={false}
     >
       <div className="space-y-4">
         <div className="relative">
