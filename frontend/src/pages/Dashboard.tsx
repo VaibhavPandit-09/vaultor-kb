@@ -432,7 +432,7 @@ export default function Dashboard() {
         return;
       }
 
-      if (modKey && event.shiftKey && event.key.toLowerCase() === 'w') {
+      if (modKey && event.key === 'Backspace') {
         event.preventDefault();
         closeActiveNote();
         return;
@@ -841,6 +841,15 @@ export default function Dashboard() {
 
     const actionItems: CommandPaletteItem[] = [
       {
+        id: 'close-active-note',
+        type: 'action',
+        label: 'Close active note',
+        subtitle: 'Close the focused note in the workspace',
+        keywords: ['close', 'note', 'workspace'],
+        icon: 'delete',
+        action: async () => closeActiveNote(),
+      },
+      {
         id: 'toggle-sidebar',
         type: 'action',
         label: sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar',
@@ -860,6 +869,10 @@ export default function Dashboard() {
       },
     ];
 
+    if (!activeNoteId) {
+      actionItems.shift();
+    }
+
     if (activeResource) {
       actionItems.unshift({
         id: `delete-${activeResource.id}`,
@@ -873,7 +886,7 @@ export default function Dashboard() {
     }
 
     return [...navigationItems, ...createItems, ...actionItems];
-  }, [activeResource, handleCreateNote, openResourceById, openShortcutsModal, requestFileUpload, resources, sidebarCollapsed, toggleSidebar]);
+  }, [activeNoteId, activeResource, closeActiveNote, handleCreateNote, openResourceById, openShortcutsModal, requestFileUpload, resources, sidebarCollapsed, toggleSidebar]);
 
   const contextTagPills = activeResource?.tags || [];
   const canGoBack = navigation.currentIndex > 0;
@@ -1412,23 +1425,31 @@ export default function Dashboard() {
             </div>
           ) : activeResource ? (
             activeResource.type === 'note' ? (
-              <div className="flex h-full min-w-0 gap-4 overflow-hidden p-6">
-                {openWorkspaceNotes.map((note) => (
+              <div className="flex h-full min-w-0 gap-4 overflow-hidden px-4 py-3">
+                {openWorkspaceNotes.map((note, index) => (
                   <div
                     key={note.id}
-                    className={`flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border ${
-                      note.id === activeNoteId ? 'border-primary/40 shadow-[0_0_0_1px_rgba(59,130,246,0.15)]' : 'border-border'
-                    } bg-card`}
+                    className={`flex min-w-0 flex-col overflow-hidden transition-all duration-200 ease-out ${
+                      openWorkspaceNotes.length === 2
+                        ? note.id === activeNoteId ? 'basis-3/5' : 'basis-2/5'
+                        : 'flex-1'
+                    } ${
+                      note.id === activeNoteId
+                        ? 'bg-background opacity-100'
+                        : 'bg-background/40 opacity-85 scale-[0.985]'
+                    } ${index > 0 ? 'border-l border-border/60 pl-4' : ''}`}
                   >
                     <button
                       onClick={() => activateOpenNote(note.id)}
-                      className={`border-b px-4 py-3 text-left text-sm font-semibold transition-colors ${
-                        note.id === activeNoteId ? 'border-primary/20 bg-primary/5 text-primary' : 'border-border text-foreground hover:bg-background'
+                      className={`px-1 pb-3 pt-2 text-left text-sm font-semibold transition-colors ${
+                        note.id === activeNoteId
+                          ? 'border-t border-primary/40 text-foreground'
+                          : 'border-t border-transparent text-slate-500 hover:text-foreground'
                       }`}
                     >
                       {note.title}
                     </button>
-                    <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                    <div className="min-h-0 flex-1 overflow-y-auto">
                       {note.resource?.type === 'note' ? (
                         <BlockEditor
                           noteId={note.id}
@@ -1453,14 +1474,14 @@ export default function Dashboard() {
                 ))}
 
                 {backlinks.length > 0 && activeNoteId && (
-                  <div className="hidden w-72 flex-shrink-0 overflow-y-auto rounded-2xl border border-border bg-card p-4 xl:block">
+                  <div className="hidden w-72 flex-shrink-0 overflow-y-auto border-l border-border/60 pl-4 xl:block">
                     <h4 className="mb-3 flex items-center text-sm font-semibold text-slate-400"><Search size={14} className="mr-2" /> Linked from</h4>
                     <div className="space-y-2">
                       {backlinks.map((resource) => (
                         <div
                           key={resource.id}
                           onClick={() => openResourceById(resource.id)}
-                          className="flex cursor-pointer items-center rounded-xl border border-border bg-background p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                          className="flex cursor-pointer items-center rounded-xl bg-background/70 p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
                         >
                           {resource.type === 'note' ? <FileText size={16} className="mr-3 opacity-80 text-blue-500" /> : <Paperclip size={16} className="mr-3 opacity-80 text-green-500" />}
                           <span className="truncate text-sm font-medium">{resource.title}</span>
@@ -1474,7 +1495,7 @@ export default function Dashboard() {
               <FilePreview resource={activeResource} />
             )
           ) : openWorkspaceNotes.length > 0 ? (
-            <div className="flex h-full min-w-0 gap-4 overflow-hidden p-6">
+            <div className="flex h-full min-w-0 gap-4 overflow-hidden px-4 py-3">
               {openWorkspaceNotes.map((note) => (
                 <div key={note.id} className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
                   <div className="border-b border-border px-4 py-3 text-left text-sm font-semibold text-foreground">
