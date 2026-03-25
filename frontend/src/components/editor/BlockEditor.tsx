@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, useId } from 'react';
 import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -21,6 +21,7 @@ import ResourceLinkMenu from './ResourceLinkMenu';
 import CodeBlockView from './CodeBlockView';
 import TableToolbar from './TableToolbar';
 import { markdownToHtml } from './markdownUtils';
+import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
 
 const lowlight = createLowlight(all);
 
@@ -32,6 +33,7 @@ interface BlockEditorProps {
 }
 
 export default function BlockEditor({ content, onUpdate, onRequestMdUpload, onRequestCsvUpload }: BlockEditorProps) {
+  const editorEscapeId = useId();
   const [slashState, setSlashState] = useState<SlashCommandState | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -42,6 +44,7 @@ export default function BlockEditor({ content, onUpdate, onRequestMdUpload, onRe
   const [resourceFilteredCount, setResourceFilteredCount] = useState(0);
 
   const [isInTable, setIsInTable] = useState(false);
+  const [editorFocused, setEditorFocused] = useState(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -98,6 +101,12 @@ export default function BlockEditor({ content, onUpdate, onRequestMdUpload, onRe
     onSelectionUpdate: ({ editor: ed }) => {
       setIsInTable(ed.isActive('table'));
     },
+    onFocus: () => {
+      setEditorFocused(true);
+    },
+    onBlur: () => {
+      setEditorFocused(false);
+    },
   });
 
   // Expose editor for parent to call insertContent
@@ -150,6 +159,29 @@ export default function BlockEditor({ content, onUpdate, onRequestMdUpload, onRe
     setMenuPos(null);
     setSelectedIndex(0);
   }, [editor]);
+
+  useEscapeLayer({
+    id: `${editorEscapeId}-slash`,
+    active: Boolean(slashState?.active),
+    priority: ESCAPE_PRIORITIES.popover,
+    close: closeSlash,
+  });
+
+  useEscapeLayer({
+    id: `${editorEscapeId}-resource-link`,
+    active: Boolean(resourceState?.active),
+    priority: ESCAPE_PRIORITIES.popover,
+    close: closeResourceMenu,
+  });
+
+  useEscapeLayer({
+    id: `${editorEscapeId}-focus`,
+    active: editorFocused,
+    priority: ESCAPE_PRIORITIES.editorFocus,
+    close: () => {
+      editor?.commands.blur();
+    },
+  });
 
   // Handle Enter key synchronously to preserve the browser user gesture
   useEffect(() => {

@@ -46,6 +46,7 @@ import {
   toggleSelectedTag,
 } from '../state/store';
 import { useAppDispatch, useAppSelector } from '../state/hooks';
+import { ESCAPE_PRIORITIES, useEscapeLayer } from '../lib/escape/escape';
 
 type TypeFilter = 'all' | 'note' | 'file';
 
@@ -106,8 +107,16 @@ export default function Dashboard() {
   const fileUploadRef = useRef<HTMLInputElement>(null);
   const mdUploadRef = useRef<HTMLInputElement>(null);
   const csvUploadRef = useRef<HTMLInputElement>(null);
+  const latestNoteContentRef = useRef<string | null>(null);
 
   const { theme, toggleTheme } = useTheme();
+
+  useEscapeLayer({
+    id: 'dashboard-type-filter',
+    active: showTypeDropdown,
+    priority: ESCAPE_PRIORITIES.popover,
+    close: () => setShowTypeDropdown(false),
+  });
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarCollapsed));
@@ -227,6 +236,18 @@ export default function Dashboard() {
     setActiveResource(null);
     setBacklinks([]);
   }, [currentResourceId, fetchActiveResource]);
+
+  useEffect(() => {
+    if (activeResource?.type === 'note') {
+      latestNoteContentRef.current =
+        typeof activeResource.content === 'string'
+          ? activeResource.content
+          : JSON.stringify(activeResource.content ?? { type: 'doc', content: [] });
+      return;
+    }
+
+    latestNoteContentRef.current = null;
+  }, [activeResource]);
 
   useEffect(() => {
     (window as any).__openResource = (resourceId: string) => {
@@ -379,7 +400,10 @@ export default function Dashboard() {
     if (!activeResource || activeResource.type !== 'note') return;
     setActiveResource({ ...activeResource, title });
     try {
-      await api.put(`/resources/${activeResource.id}/note`, { title, content: activeResource.content });
+      await api.put(`/resources/${activeResource.id}/note`, {
+        title,
+        content: latestNoteContentRef.current ?? activeResource.content,
+      });
       fetchData();
     } catch (error) {
       console.error(error);
@@ -389,10 +413,9 @@ export default function Dashboard() {
   const handleContentUpdate = async (json: unknown) => {
     if (!activeResource || activeResource.type !== 'note') return;
     const contentStr = JSON.stringify(json);
-    setActiveResource((prev) => (prev ? { ...prev, content: contentStr } : null));
+    latestNoteContentRef.current = contentStr;
     try {
       await api.put(`/resources/${activeResource.id}/note`, { title: activeResource.title, content: contentStr });
-      fetchData();
     } catch (error) {
       console.error(error);
     }
@@ -581,15 +604,17 @@ export default function Dashboard() {
   }, [filters.selectedTags, filters.typeFilter, resources]);
 
   const filteredTags = tags.filter((tag) => tag.name.toLowerCase().includes(tagSearch.toLowerCase()));
-  const editorContent = activeResource?.type === 'note' && activeResource?.content
-    ? (() => {
-        try {
-          return JSON.parse(activeResource.content as string);
-        } catch {
-          return activeResource.content;
-        }
-      })()
-    : null;
+  const editorContent = useMemo(() => {
+    if (activeResource?.type !== 'note' || !activeResource.content) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(activeResource.content as string);
+    } catch {
+      return activeResource.content;
+    }
+  }, [activeResource?.content, activeResource?.type]);
 
   const commandPaletteItems = useMemo<CommandPaletteItem[]>(() => {
     const navigationItems: CommandPaletteItem[] = resources.map((resource) => ({

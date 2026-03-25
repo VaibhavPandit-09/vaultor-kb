@@ -141,14 +141,6 @@ export const ResourceLinkExtension = Node.create({
               return true;
             }
 
-            if (event.key === 'Escape') {
-              event.preventDefault();
-              const tr = view.state.tr;
-              tr.setMeta(resourceLinkPluginKey, { ...INITIAL_STATE });
-              view.dispatch(tr);
-              return true;
-            }
-
             return false;
           },
         },

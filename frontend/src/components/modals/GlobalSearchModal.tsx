@@ -63,10 +63,6 @@ export default function GlobalSearchModal({ open, onClose, onSelect }: GlobalSea
         event.preventDefault();
         onSelect(results[selectedIndex].id);
       }
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-      }
     };
 
     window.addEventListener('keydown', handleKeyDown);

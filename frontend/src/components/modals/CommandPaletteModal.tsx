@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Command, FileText, FolderOpen, Paperclip, Plus, Sidebar, Trash2, Upload } from 'lucide-react';
 import AppModal from './AppModal';
 
@@ -59,6 +59,16 @@ export default function CommandPaletteModal({ open, onClose, commands }: Command
 
   const flatItems = useMemo(() => grouped.flatMap((group) => group.items), [grouped]);
 
+  const runCommand = useCallback(async (command: CommandPaletteItem) => {
+    setRunningId(command.id);
+    try {
+      await command.action();
+      onClose();
+    } finally {
+      setRunningId(null);
+    }
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
 
@@ -78,25 +88,11 @@ export default function CommandPaletteModal({ open, onClose, commands }: Command
         void runCommand(flatItems[selectedIndex]);
       }
 
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [flatItems, onClose, open, selectedIndex]);
-
-  const runCommand = async (command: CommandPaletteItem) => {
-    setRunningId(command.id);
-    try {
-      await command.action();
-      onClose();
-    } finally {
-      setRunningId(null);
-    }
-  };
+  }, [flatItems, open, runCommand, selectedIndex]);
 
   let globalIndex = 0;
 
@@ -107,6 +103,7 @@ export default function CommandPaletteModal({ open, onClose, commands }: Command
       title="Command Palette"
       description="Jump, create, and act from one keyboard-first surface."
       widthClassName="max-w-3xl"
+      escapeLayer="commandPalette"
     >
       <div className="space-y-4">
         <div className="relative">

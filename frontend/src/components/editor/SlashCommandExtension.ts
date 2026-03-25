@@ -120,14 +120,6 @@ export const SlashCommandExtension = Extension.create({
               return true; // CRITICAL: Prevents ProseMirror from creating a new line
             }
 
-            if (event.key === 'Escape') {
-              event.preventDefault();
-              const tr = view.state.tr;
-              tr.setMeta(slashCommandPluginKey, { ...INITIAL_STATE });
-              view.dispatch(tr);
-              return true;
-            }
-
             return false;
           },
         },
