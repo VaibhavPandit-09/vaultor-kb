@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #f8fafc;
+    --foreground: #020617;
+    --card: #ffffff;
+    --card-foreground: #020617;
+    --border: #cbd5e1;
+    --primary: #4f46e5;
+    --primary-foreground: #ffffff;
+  }
+
+  .dark {
+    --background: #020617;
+    --foreground: #f8fafc;
+    --card: #0f172a;
+    --card-foreground: #f8fafc;
+    --border: #1e293b;
+    --primary: #6366f1;
+    --primary-foreground: #ffffff;
+  }
+}
+
+body {
+  @apply bg-background text-foreground antialiased transition-colors duration-200;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full hover:bg-slate-500;
+}
+
+/* ===== Tiptap Editor ===== */
+
+.tiptap { outline: none; }
+
+/* Placeholder */
+.tiptap p.is-editor-empty:first-child::before,
+.tiptap h1.is-empty::before,
+.tiptap h2.is-empty::before,
+.tiptap h3.is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  @apply text-slate-400 dark:text-slate-600;
+}
+
+/* Paragraphs */
+.tiptap p { @apply my-1 leading-relaxed; }
+
+/* Headings */
+.tiptap h1 { @apply text-3xl font-bold mt-8 mb-3 tracking-tight; }
+.tiptap h2 { @apply text-2xl font-bold mt-6 mb-2 tracking-tight; }
+.tiptap h3 { @apply text-xl font-semibold mt-4 mb-2; }
+
+/* Lists */
+.tiptap ul[data-type="taskList"] {
+  @apply list-none pl-0 my-2;
+}
+.tiptap ul[data-type="taskList"] li {
+  @apply flex items-start gap-2 my-1;
+}
+.tiptap ul[data-type="taskList"] li label {
+  @apply flex-shrink-0 mt-1;
+}
+.tiptap ul[data-type="taskList"] li label input[type="checkbox"] {
+  @apply w-4 h-4 rounded accent-primary cursor-pointer;
+}
+.tiptap ul[data-type="taskList"] li div {
+  @apply flex-1;
+}
+.tiptap ul:not([data-type="taskList"]) { @apply list-disc pl-6 my-2; }
+.tiptap ol { @apply list-decimal pl-6 my-2; }
+.tiptap li { @apply my-0.5; }
+.tiptap li p { @apply my-0; }
+
+/* Code block (handled by NodeView, but base styles) */
+.tiptap pre {
+  @apply bg-slate-900 dark:bg-slate-950 text-slate-100 rounded-xl p-4 my-4 overflow-x-auto text-sm font-mono;
+}
+.tiptap pre code {
+  @apply bg-transparent p-0 text-inherit rounded-none;
+}
+
+/* Inline code */
+.tiptap code {
+  @apply bg-slate-100 dark:bg-slate-800 text-pink-600 dark:text-pink-400 px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+/* Blockquote */
+.tiptap blockquote {
+  @apply border-l-4 border-primary pl-4 my-4 italic text-slate-600 dark:text-slate-400;
+}
+
+/* Highlight */
+.tiptap mark {
+  @apply bg-yellow-200 rounded px-0.5;
+}
+.dark .tiptap mark {
+  background-color: rgba(234,179,8,0.3);
+}
+
+/* Horizontal Rule */
+.tiptap hr {
+  @apply border-border my-6;
+}
+
+/* Bold, Italic, Strike, Underline */
+.tiptap strong { @apply font-bold; }
+.tiptap em { @apply italic; }
+.tiptap s { @apply line-through; }
+.tiptap u { @apply underline; }
+
+/* First child spacing */
+.tiptap > *:first-child { @apply mt-0; }
+
+/* ===== Tables ===== */
+.tiptap table {
+  @apply border-collapse w-full my-4 text-sm;
+}
+.tiptap table th,
+.tiptap table td {
+  @apply border border-border px-3 py-2 text-left align-top;
+  position: relative;
+  min-width: 80px;
+}
+.tiptap table th {
+  @apply bg-slate-100 dark:bg-slate-800 font-semibold text-foreground;
+}
+.tiptap table td {
+  @apply bg-card;
+}
+.tiptap table tr:hover td {
+  @apply bg-slate-50;
+}
+.dark .tiptap table tr:hover td {
+  background-color: rgba(30,41,59,0.5);
+}
+
+.tiptap .column-resize-handle {
+  background-color: var(--primary);
+  width: 3px;
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  cursor: col-resize;
+  z-index: 20;
+}
+.tiptap table .selectedCell {
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+.tiptap table .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--primary);
+  pointer-events: none;
+}
+
+/* Table wrapper */
+.tiptap .tableWrapper {
+  @apply overflow-x-auto my-4;
+}
+.tiptap .tableWrapper table {
+  @apply my-0;
+}
+
+/* Resize cursor */
+.tiptap.resize-cursor {
+  cursor: col-resize;
+}

@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  vaultor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - vaultor_data:/data
+    restart: unless-stopped
+
+volumes:
+  vaultor_data:
