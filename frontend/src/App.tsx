@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 import { EscapeManagerProvider } from './lib/escape/EscapeManagerProvider';
-import { ThemeProvider } from './lib/ThemeContext';
+import { SettingsProvider } from './lib/settings';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('vaultor_auth_token');
@@ -13,7 +13,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <ThemeProvider>
+    <SettingsProvider>
       <EscapeManagerProvider>
         <BrowserRouter>
           <Routes>
@@ -29,7 +29,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </EscapeManagerProvider>
-    </ThemeProvider>
+    </SettingsProvider>
   );
 }
 

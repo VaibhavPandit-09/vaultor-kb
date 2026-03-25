@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { shortcuts } from '../../lib/shortcuts';
+import { getShortcutCategories } from '../../lib/shortcuts';
+import { useSettings } from '../../lib/settings';
 import AppModal from './AppModal';
 
 interface ShortcutsModalProps {
@@ -11,6 +12,8 @@ interface ShortcutsModalProps {
 
 export default function ShortcutsModal({ open, onClose, restoreFocusOnClose = true }: ShortcutsModalProps) {
   const [query, setQuery] = useState('');
+  const { resolvedShortcuts } = useSettings();
+  const shortcuts = useMemo(() => getShortcutCategories(resolvedShortcuts), [resolvedShortcuts]);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();

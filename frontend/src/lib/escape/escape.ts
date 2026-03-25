@@ -5,6 +5,7 @@ const focusRestoreRegistry = new WeakMap<HTMLElement, () => void>();
 export const ESCAPE_PRIORITIES = {
   modal: 500,
   commandPalette: 400,
+  preview: 350,
   popover: 300,
   inlineEditor: 200,
   editorFocus: 100,

@@ -28,6 +28,7 @@ const lowlight = createLowlight(all);
 interface BlockEditorProps {
   noteId: string;
   content: any;
+  autosaveDelay: number;
   isActive: boolean;
   shouldRestoreFocus: boolean;
   onUpdate: (json: any) => void;
@@ -47,6 +48,7 @@ export interface NoteSelection {
 function BlockEditor({
   noteId,
   content,
+  autosaveDelay,
   isActive,
   shouldRestoreFocus,
   onUpdate,
@@ -60,6 +62,8 @@ function BlockEditor({
   const editorEscapeId = useId();
   const wasActiveRef = useRef(false);
   const savedSelectionRef = useRef(savedSelection);
+  const onUpdateRef = useRef(onUpdate);
+  const autosaveDelayRef = useRef(autosaveDelay);
   const [slashState, setSlashState] = useState<SlashCommandState | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -120,9 +124,14 @@ function BlockEditor({
     },
     onUpdate: ({ editor: ed }) => {
       if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
+      if (autosaveDelayRef.current === 0) {
+        onUpdateRef.current(ed.getJSON());
+        return;
+      }
+
       updateTimeoutRef.current = setTimeout(() => {
-        onUpdate(ed.getJSON());
-      }, 300);
+        onUpdateRef.current(ed.getJSON());
+      }, autosaveDelayRef.current);
     },
     onSelectionUpdate: ({ editor: ed }) => {
       setIsInTable(ed.isActive('table'));
@@ -315,6 +324,22 @@ function BlockEditor({
   }, [savedSelection]);
 
   useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
+
+  useEffect(() => {
+    autosaveDelayRef.current = autosaveDelay;
+  }, [autosaveDelay]);
+
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (slashState?.query !== undefined) {
       setSelectedIndex(0);
     }
@@ -408,6 +433,7 @@ function BlockEditor({
 
 const MemoizedBlockEditor = memo(BlockEditor, (prev, next) => (
   prev.noteId === next.noteId
+  && prev.autosaveDelay === next.autosaveDelay
   && prev.isActive === next.isActive
   && prev.shouldRestoreFocus === next.shouldRestoreFocus
   && prev.savedSelection?.from === next.savedSelection?.from

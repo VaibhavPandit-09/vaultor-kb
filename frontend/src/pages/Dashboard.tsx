@@ -22,19 +22,21 @@ import {
   ExternalLink,
   Menu,
   Tag as TagIcon,
+  Settings2,
 } from 'lucide-react';
 import api from '../lib/api';
-import type { Resource, Tag } from '../types';
-import { useTheme } from '../lib/ThemeContext';
+import type { Resource, Tag, ResourceType } from '../types';
+import { isPreviewResource } from '../types';
 import { useRestoreFocusOnClose } from '../lib/useRestoreFocusOnClose';
 import BlockEditor, { type NoteSelection } from '../components/editor/BlockEditor';
-import FilePreview from '../components/FilePreview';
+import PreviewLayer from '../components/PreviewLayer';
 import { markdownToHtml } from '../components/editor/markdownUtils';
 import { csvToTableHtml } from '../components/editor/csvUtils';
 import AppModal from '../components/modals/AppModal';
 import CommandPaletteModal, { type CommandPaletteItem } from '../components/modals/CommandPaletteModal';
 import ShortcutsModal from '../components/modals/ShortcutsModal';
-import { isMac } from '../lib/shortcuts';
+import SettingsModal from '../components/modals/SettingsModal';
+import { isMac, shortcutMatchesEvent } from '../lib/shortcuts';
 import {
   clearSelectedTags,
   navigateBack,
@@ -48,6 +50,7 @@ import {
 } from '../state/store';
 import { useAppDispatch, useAppSelector } from '../state/hooks';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../lib/escape/escape';
+import { useSettings } from '../lib/settings';
 
 type TypeFilter = 'all' | 'note' | 'file';
 
@@ -63,7 +66,6 @@ interface OpenNote {
 }
 
 const SIDEBAR_STORAGE_KEY = 'vaultor_sidebar_collapsed';
-const MAX_OPEN_NOTES = 3;
 
 export default function Dashboard() {
   const dispatch = useAppDispatch();
@@ -89,6 +91,10 @@ export default function Dashboard() {
   const [tagSearch, setTagSearch] = useState('');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [previewResourceId, setPreviewResourceId] = useState<string | null>(null);
+  const [previewResourceType, setPreviewResourceType] = useState<ResourceType | null>(null);
+  const [previewOverrideMode, setPreviewOverrideMode] = useState<'side' | 'modal' | null>(null);
   const [tagInputOpen, setTagInputOpen] = useState(false);
   const [tagInputValue, setTagInputValue] = useState('');
 
@@ -119,17 +125,39 @@ export default function Dashboard() {
   const csvUploadRef = useRef<HTMLInputElement>(null);
   const latestNoteContentRef = useRef<string | null>(null);
 
-  const { theme, toggleTheme } = useTheme();
+  const { settings, resolvedShortcuts, toggleTheme } = useSettings();
   const commandPaletteFocus = useRestoreFocusOnClose();
   const shortcutsModalFocus = useRestoreFocusOnClose();
-  const activeResource = useMemo(() => {
+  const settingsModalFocus = useRestoreFocusOnClose();
+  const previewFocus = useRestoreFocusOnClose();
+  const workspaceSettings = settings.workspace;
+  const localSettings = settings.local;
+  const effectivePreviewMode = previewOverrideMode ?? localSettings.previewMode;
+  const sidebarHidden = workspaceSettings.focusMode || sidebarCollapsed;
+  const selectedResource = useMemo(() => {
     if (!currentResourceId) {
       return null;
     }
 
     return resourceDetails[currentResourceId] ?? resources.find((resource) => resource.id === currentResourceId) ?? null;
   }, [currentResourceId, resourceDetails, resources]);
-  const activeResourceLoading = Boolean(currentResourceId && !activeResource && loadingResourceIds.includes(currentResourceId));
+  const previewResource = useMemo(() => {
+    if (!previewResourceId) {
+      return null;
+    }
+
+    return resourceDetails[previewResourceId] ?? resources.find((resource) => resource.id === previewResourceId) ?? null;
+  }, [previewResourceId, resourceDetails, resources]);
+  const workspaceResource = useMemo(() => {
+    if (!activeNoteId) {
+      return null;
+    }
+
+    return resourceDetails[activeNoteId] ?? resources.find((resource) => resource.id === activeNoteId) ?? null;
+  }, [activeNoteId, resourceDetails, resources]);
+  const activeResource = previewResource ?? workspaceResource ?? selectedResource;
+  const activeResourceLoading = Boolean(currentResourceId && !selectedResource && loadingResourceIds.includes(currentResourceId));
+  const previewResourceLoading = Boolean(previewResourceId && !previewResource && loadingResourceIds.includes(previewResourceId));
 
   useEscapeLayer({
     id: 'dashboard-type-filter',
@@ -183,36 +211,54 @@ export default function Dashboard() {
     api.post(`/resources/${id}/open`).catch(() => {});
   }, []);
 
+  const dismissPreview = useCallback((options?: { restoreFocus?: boolean }) => {
+    setPreviewResourceId(null);
+    setPreviewResourceType(null);
+    setPreviewOverrideMode(null);
+    if (options?.restoreFocus !== false) {
+      previewFocus.restoreFocus();
+    }
+  }, [previewFocus]);
+
+  const openPreview = useCallback((resource: Resource) => {
+    previewFocus.captureFocus();
+    setPreviewResourceId(resource.id);
+    setPreviewResourceType(resource.type);
+    setPreviewOverrideMode(null);
+    void fetchResourceDetails(resource.id);
+  }, [fetchResourceDetails, previewFocus]);
+
+  const togglePreviewMode = useCallback(() => {
+    setPreviewOverrideMode((current) => {
+      const currentMode = current ?? localSettings.previewMode;
+      return currentMode === 'modal' ? 'side' : 'modal';
+    });
+  }, [localSettings.previewMode]);
+
   const openResourceById = useCallback((id: string, options?: { focus?: boolean }) => {
     const resourceMeta = resources.find((resource) => resource.id === id);
+    if (resourceMeta && isPreviewResource(resourceMeta.type)) {
+      openPreview(resourceMeta);
+      dispatch(openResourceAction(id));
+      markOpened(id);
+      return;
+    }
+
     if (resourceMeta?.type === 'note') {
       setOpenNotes((prev) => {
-        const existing = prev.find((note) => note.id === id);
-        if (existing) {
-          return prev;
-        }
-
-        const next = [...prev, { id }];
-        if (next.length > MAX_OPEN_NOTES) {
-          return next.slice(next.length - MAX_OPEN_NOTES);
-        }
-
-        return next;
+        return upsertOpenNote(prev, id, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior);
       });
       setActiveNoteId(id);
       if (options?.focus !== false) {
         setFocusRestoreNoteId(id);
       }
-      void fetchResourceDetails(id);
-    } else {
-      setActiveNoteId(null);
-      setFocusRestoreNoteId(null);
+      dismissPreview({ restoreFocus: false });
       void fetchResourceDetails(id);
     }
 
     dispatch(openResourceAction(id));
     markOpened(id);
-  }, [dispatch, fetchResourceDetails, markOpened, resources]);
+  }, [dismissPreview, dispatch, fetchResourceDetails, markOpened, openPreview, resources, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
 
   const activateOpenNote = useCallback((id: string, options?: { focus?: boolean }) => {
     setActiveNoteId(id);
@@ -246,6 +292,16 @@ export default function Dashboard() {
     setShortcutsOpen(false);
     shortcutsModalFocus.restoreFocus();
   }, [shortcutsModalFocus]);
+
+  const openSettingsModal = useCallback(() => {
+    settingsModalFocus.captureFocus();
+    setSettingsOpen(true);
+  }, [settingsModalFocus]);
+
+  const closeSettingsModal = useCallback(() => {
+    setSettingsOpen(false);
+    settingsModalFocus.restoreFocus();
+  }, [settingsModalFocus]);
 
   const saveNoteSelection = useCallback((noteId: string, selection: NoteSelection) => {
     setOpenNotes((prev) => prev.map((note) => (
@@ -354,33 +410,44 @@ export default function Dashboard() {
   }, [fetchData]);
 
   useEffect(() => {
+    setOpenNotes((prev) => limitOpenNotes(prev, workspaceSettings.maxOpenNotes));
+  }, [workspaceSettings.maxOpenNotes]);
+
+  useEffect(() => {
+    if (activeNoteId && openNotes.some((note) => note.id === activeNoteId)) {
+      return;
+    }
+
+    const nextActiveId = openNotes[openNotes.length - 1]?.id ?? null;
+    if (nextActiveId === activeNoteId) {
+      return;
+    }
+
+    setActiveNoteId(nextActiveId);
+    setFocusRestoreNoteId(nextActiveId);
+    dispatch(setCurrentResourceId(nextActiveId));
+  }, [activeNoteId, dispatch, openNotes]);
+
+  useEffect(() => {
     if (!currentResourceId) {
       setBacklinks([]);
-      setActiveNoteId(null);
       return;
     }
 
     void fetchResourceDetails(currentResourceId);
-    const resourceMeta = resourceDetails[currentResourceId] ?? resources.find((resource) => resource.id === currentResourceId) ?? null;
+    const resourceMeta = selectedResource;
 
     if (resourceMeta?.type === 'note') {
       setActiveNoteId(currentResourceId);
       void fetchBacklinks(currentResourceId);
       setOpenNotes((prev) => {
-        const existing = prev.find((note) => note.id === currentResourceId);
-        if (existing) {
-          return prev;
-        }
-
-        const next = [...prev, { id: currentResourceId }];
-        return next.length > MAX_OPEN_NOTES ? next.slice(next.length - MAX_OPEN_NOTES) : next;
+        return upsertOpenNote(prev, currentResourceId, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior);
       });
       return;
     }
 
-    setActiveNoteId(null);
     setBacklinks([]);
-  }, [currentResourceId, fetchBacklinks, fetchResourceDetails, resourceDetails, resources]);
+  }, [currentResourceId, fetchBacklinks, fetchResourceDetails, selectedResource, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
 
   useEffect(() => {
     if (activeResource?.type === 'note') {
@@ -413,39 +480,38 @@ export default function Dashboard() {
         target?.tagName === 'TEXTAREA' ||
         target?.tagName === 'SELECT'
       );
-      const modKey = isMac ? event.metaKey : event.ctrlKey;
 
-      if (modKey && event.key.toLowerCase() === 'k') {
+      if (shortcutMatchesEvent(resolvedShortcuts.commandPalette, event)) {
         event.preventDefault();
         openCommandPalette();
         return;
       }
 
-      if (modKey && event.key === 'ArrowRight') {
+      if (shortcutMatchesEvent(resolvedShortcuts.switchNoteNext, event)) {
         event.preventDefault();
         switchNote('next');
         return;
       }
 
-      if (modKey && event.key === 'ArrowLeft') {
+      if (shortcutMatchesEvent(resolvedShortcuts.switchNotePrevious, event)) {
         event.preventDefault();
         switchNote('prev');
         return;
       }
 
-      if (modKey && event.key === 'Backspace') {
+      if (shortcutMatchesEvent(resolvedShortcuts.closeActiveNote, event)) {
         event.preventDefault();
         closeActiveNote();
         return;
       }
 
-      if (modKey && event.key.toLowerCase() === 'b') {
+      if (shortcutMatchesEvent(resolvedShortcuts.toggleSidebar, event)) {
         event.preventDefault();
         toggleSidebar();
         return;
       }
 
-      if ((modKey && event.key === '/') || (!isEditable && event.key === '?')) {
+      if (shortcutMatchesEvent(resolvedShortcuts.openShortcuts, event) || (!isEditable && event.key === '?')) {
         event.preventDefault();
         openShortcutsModal();
         return;
@@ -477,7 +543,7 @@ export default function Dashboard() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [closeActiveNote, handleBackNavigation, handleForwardNavigation, openCommandPalette, openShortcutsModal, switchNote, toggleSidebar]);
+  }, [closeActiveNote, handleBackNavigation, handleForwardNavigation, openCommandPalette, openShortcutsModal, resolvedShortcuts, switchNote, toggleSidebar]);
 
   useEffect(() => {
     if (!replaceLinkModal || !replaceSearch.trim()) {
@@ -526,6 +592,9 @@ export default function Dashboard() {
     setDeletePending(true);
     try {
       await api.delete(`/resources/${id}`);
+      if (previewResourceId === id) {
+        dismissPreview({ restoreFocus: false });
+      }
       setResources((prev) => prev.filter((resource) => resource.id !== id));
       setResourceDetails((prev) => {
         const next = { ...prev };
@@ -868,6 +937,15 @@ export default function Dashboard() {
         icon: 'help',
         action: async () => openShortcutsModal(),
       },
+      {
+        id: 'open-settings',
+        type: 'action',
+        label: 'Open settings',
+        subtitle: 'Adjust workspace and local preferences',
+        keywords: ['settings', 'preferences', 'theme', 'shortcuts'],
+        icon: 'help',
+        action: async () => openSettingsModal(),
+      },
     ];
 
     if (!activeNoteId) {
@@ -887,7 +965,7 @@ export default function Dashboard() {
     }
 
     return [...navigationItems, ...createItems, ...actionItems];
-  }, [activeNoteId, activeResource, closeActiveNote, handleCreateNote, openResourceById, openShortcutsModal, requestFileUpload, resources, sidebarCollapsed, toggleSidebar]);
+  }, [activeNoteId, activeResource, closeActiveNote, handleCreateNote, openResourceById, openSettingsModal, openShortcutsModal, requestFileUpload, resources, sidebarCollapsed, toggleSidebar]);
 
   const contextTagPills = activeResource?.tags || [];
   const canGoBack = navigation.currentIndex > 0;
@@ -907,6 +985,7 @@ export default function Dashboard() {
         commands={commandPaletteItems}
       />
       <ShortcutsModal open={shortcutsOpen} onClose={closeShortcutsModal} />
+      <SettingsModal open={settingsOpen} onClose={closeSettingsModal} />
 
       <AppModal
         open={tagInputOpen}
@@ -1164,36 +1243,40 @@ export default function Dashboard() {
         </p>
       </AppModal>
 
-      <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-2">
-        <button
-          onClick={toggleSidebar}
-          className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800"
-          title={isMac ? 'Toggle sidebar (Cmd+B)' : 'Toggle sidebar (Ctrl+B)'}
-        >
-          <Menu size={18} />
-        </button>
-        <h1 className="flex items-center text-sm font-semibold tracking-wide text-primary">
-          <Database className="mr-2" size={18} /> Vaultor
-        </h1>
-        <div className="mx-1 h-6 w-px bg-border" />
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleBackNavigation}
-            disabled={!canGoBack}
-            className={`rounded-lg p-1.5 transition-colors ${canGoBack ? 'text-slate-500 hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800' : 'cursor-not-allowed text-slate-300 dark:text-slate-700'}`}
-            title={isMac ? 'Back (Cmd+[)' : 'Back (Alt+Left)'}
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <button
-            onClick={handleForwardNavigation}
-            disabled={!canGoForward}
-            className={`rounded-lg p-1.5 transition-colors ${canGoForward ? 'text-slate-500 hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800' : 'cursor-not-allowed text-slate-300 dark:text-slate-700'}`}
-            title={isMac ? 'Forward (Cmd+])' : 'Forward (Alt+Right)'}
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
+      <div className={`flex items-center gap-3 border-b border-border bg-card ${workspaceSettings.focusMode ? 'px-3 py-1.5' : 'px-4 py-2'}`}>
+        {!workspaceSettings.focusMode && (
+          <>
+            <button
+              onClick={toggleSidebar}
+              className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800"
+              title={isMac ? 'Toggle sidebar (Cmd+B)' : 'Toggle sidebar (Ctrl+B)'}
+            >
+              <Menu size={18} />
+            </button>
+            <h1 className="flex items-center text-sm font-semibold tracking-wide text-primary">
+              <Database className="mr-2" size={18} /> Vaultor
+            </h1>
+            <div className="mx-1 h-6 w-px bg-border" />
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleBackNavigation}
+                disabled={!canGoBack}
+                className={`rounded-lg p-1.5 transition-colors ${canGoBack ? 'text-slate-500 hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800' : 'cursor-not-allowed text-slate-300 dark:text-slate-700'}`}
+                title={isMac ? 'Back (Cmd+[)' : 'Back (Alt+Left)'}
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                onClick={handleForwardNavigation}
+                disabled={!canGoForward}
+                className={`rounded-lg p-1.5 transition-colors ${canGoForward ? 'text-slate-500 hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800' : 'cursor-not-allowed text-slate-300 dark:text-slate-700'}`}
+                title={isMac ? 'Forward (Cmd+])' : 'Forward (Alt+Right)'}
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </>
+        )}
         <div className="min-w-0 flex-1">
           {activeResource?.type === 'note' ? (
             <input
@@ -1245,14 +1328,20 @@ export default function Dashboard() {
           >
             <Command size={14} /> {isMac ? '⌘' : 'Ctrl'} Help
           </button>
+          <button
+            onClick={openSettingsModal}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-primary hover:text-primary"
+          >
+            <Settings2 size={14} /> Settings
+          </button>
         </div>
       </div>
 
       <div className="flex min-h-0 flex-1">
         <aside
-          className={`border-r border-border bg-card transition-all duration-200 ${sidebarCollapsed ? 'w-0 border-r-0 opacity-0' : 'w-72 opacity-100'}`}
+          className={`border-r border-border bg-card transition-all duration-200 ${sidebarHidden ? 'w-0 border-r-0 opacity-0' : 'w-72 opacity-100'}`}
         >
-          <div className={`flex h-full flex-col overflow-hidden ${sidebarCollapsed ? 'pointer-events-none' : ''}`}>
+          <div className={`flex h-full flex-col overflow-hidden ${sidebarHidden ? 'pointer-events-none' : ''}`}>
             <div className="px-3 py-3">
               <div className="relative">
                 <button
@@ -1407,7 +1496,10 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center gap-0.5">
                 <button onClick={toggleTheme} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary">
-                  {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                  {localSettings.theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                </button>
+                <button onClick={openSettingsModal} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary" title="Settings">
+                  <Settings2 size={16} />
                 </button>
                 <button onClick={logout} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-red-500" title="Lock Vault"><LogOut size={16} /></button>
               </div>
@@ -1416,97 +1508,77 @@ export default function Dashboard() {
         </aside>
 
         <main className="min-w-0 flex-1">
-          {activeResourceLoading ? (
+          {openWorkspaceNotes.length > 0 ? (
+            <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
+              {openWorkspaceNotes.map((note, index) => (
+                <div
+                  key={note.id}
+                  className={getWorkspacePaneClass({
+                    noteCount: openWorkspaceNotes.length,
+                    isActive: note.id === activeNoteId,
+                    index,
+                  })}
+                >
+                  <button
+                    onClick={() => activateOpenNote(note.id)}
+                    className={`px-1 pb-3 pt-2 text-left text-sm font-semibold transition-colors ${
+                      note.id === activeNoteId
+                        ? 'border-t border-primary/40 text-foreground'
+                        : 'border-t border-transparent text-slate-500 hover:text-foreground'
+                    }`}
+                  >
+                    {note.title}
+                  </button>
+                  <div className={openWorkspaceNotes.length === 1 ? 'min-h-0 flex-1 overflow-y-auto px-1' : 'min-h-0 flex-1 overflow-y-auto'}>
+                    {note.resource?.type === 'note' ? (
+                      <BlockEditor
+                        noteId={note.id}
+                        content={parseNoteContent(note.resource.content)}
+                        autosaveDelay={workspaceSettings.autosaveDelay}
+                        isActive={note.id === activeNoteId}
+                        shouldRestoreFocus={focusRestoreNoteId === note.id}
+                        savedSelection={note.selection ?? null}
+                        onActivate={(noteId) => activateOpenNote(noteId)}
+                        onFocusRestored={handleNoteFocusRestored}
+                        onSelectionChange={(selection) => saveNoteSelection(note.id, selection)}
+                        onUpdate={(json) => handleContentUpdate(note.id, json)}
+                        onRequestMdUpload={handleRequestMdUpload}
+                        onRequestCsvUpload={handleRequestCsvUpload}
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                        Loading note...
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {backlinks.length > 0 && activeNoteId && openWorkspaceNotes.length > 1 && !workspaceSettings.focusMode && (
+                <div className="hidden w-72 flex-shrink-0 overflow-y-auto border-l border-border/60 pl-4 xl:block">
+                  <h4 className="mb-3 flex items-center text-sm font-semibold text-slate-400"><Search size={14} className="mr-2" /> Linked from</h4>
+                  <div className="space-y-2">
+                    {backlinks.map((resource) => (
+                      <div
+                        key={resource.id}
+                        onClick={() => openResourceById(resource.id)}
+                        className="flex cursor-pointer items-center rounded-xl bg-background/70 p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      >
+                        {resource.type === 'note' ? <FileText size={16} className="mr-3 opacity-80 text-blue-500" /> : <Paperclip size={16} className="mr-3 opacity-80 text-green-500" />}
+                        <span className="truncate text-sm font-medium">{resource.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : activeResourceLoading ? (
             <div className="flex-1 p-8">
               <div className="mx-auto max-w-4xl space-y-4">
                 <div className="h-24 animate-pulse rounded-2xl bg-card" />
                 <div className="h-24 animate-pulse rounded-2xl bg-card" />
                 <div className="h-24 animate-pulse rounded-2xl bg-card" />
               </div>
-            </div>
-          ) : activeResource ? (
-            activeResource.type === 'note' ? (
-              <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
-                {openWorkspaceNotes.map((note, index) => (
-                  <div
-                    key={note.id}
-                    className={getWorkspacePaneClass({
-                      noteCount: openWorkspaceNotes.length,
-                      isActive: note.id === activeNoteId,
-                      index,
-                    })}
-                  >
-                    <button
-                      onClick={() => activateOpenNote(note.id)}
-                      className={`px-1 pb-3 pt-2 text-left text-sm font-semibold transition-colors ${
-                        note.id === activeNoteId
-                          ? 'border-t border-primary/40 text-foreground'
-                          : 'border-t border-transparent text-slate-500 hover:text-foreground'
-                      }`}
-                    >
-                      {note.title}
-                    </button>
-                    <div className={openWorkspaceNotes.length === 1 ? 'min-h-0 flex-1 overflow-y-auto px-1' : 'min-h-0 flex-1 overflow-y-auto'}>
-                      {note.resource?.type === 'note' ? (
-                        <BlockEditor
-                          noteId={note.id}
-                          content={parseNoteContent(note.resource.content)}
-                          isActive={note.id === activeNoteId}
-                          shouldRestoreFocus={focusRestoreNoteId === note.id}
-                          savedSelection={note.selection ?? null}
-                          onActivate={(noteId) => activateOpenNote(noteId)}
-                          onFocusRestored={handleNoteFocusRestored}
-                          onSelectionChange={(selection) => saveNoteSelection(note.id, selection)}
-                          onUpdate={(json) => handleContentUpdate(note.id, json)}
-                          onRequestMdUpload={handleRequestMdUpload}
-                          onRequestCsvUpload={handleRequestCsvUpload}
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-sm text-slate-400">
-                          Loading note...
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {backlinks.length > 0 && activeNoteId && openWorkspaceNotes.length > 1 && (
-                  <div className="hidden w-72 flex-shrink-0 overflow-y-auto border-l border-border/60 pl-4 xl:block">
-                    <h4 className="mb-3 flex items-center text-sm font-semibold text-slate-400"><Search size={14} className="mr-2" /> Linked from</h4>
-                    <div className="space-y-2">
-                      {backlinks.map((resource) => (
-                        <div
-                          key={resource.id}
-                          onClick={() => openResourceById(resource.id)}
-                          className="flex cursor-pointer items-center rounded-xl bg-background/70 p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                        >
-                          {resource.type === 'note' ? <FileText size={16} className="mr-3 opacity-80 text-blue-500" /> : <Paperclip size={16} className="mr-3 opacity-80 text-green-500" />}
-                          <span className="truncate text-sm font-medium">{resource.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <FilePreview resource={activeResource} />
-            )
-          ) : openWorkspaceNotes.length > 0 ? (
-            <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
-              {openWorkspaceNotes.map((note) => (
-                <div key={note.id} className={getWorkspacePaneClass({
-                  noteCount: openWorkspaceNotes.length,
-                  isActive: note.id === activeNoteId,
-                  index: openWorkspaceNotes.findIndex((entry) => entry.id === note.id),
-                })}>
-                  <div className="px-1 pb-3 pt-2 text-left text-sm font-semibold text-foreground">
-                    {note.title}
-                  </div>
-                  <div className="flex min-h-0 flex-1 items-center justify-center p-4 text-sm text-slate-400">
-                    Loading note...
-                  </div>
-                </div>
-              ))}
             </div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center text-slate-400">
@@ -1521,6 +1593,34 @@ export default function Dashboard() {
           )}
         </main>
       </div>
+
+      {previewResource && previewResourceType && (
+        <PreviewLayer
+          resource={previewResource}
+          mode={effectivePreviewMode}
+          overrideActive={previewOverrideMode !== null}
+          open={Boolean(previewResourceId)}
+          onClose={() => dismissPreview()}
+          onToggleMode={togglePreviewMode}
+          onOpenExternal={handleFileOpen}
+          onDownload={handleFileDownload}
+        />
+      )}
+      {previewResourceLoading && (
+        effectivePreviewMode === 'modal' ? (
+          <div className="fixed inset-0 z-[74] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+            <div className="flex h-[80vh] w-full max-w-6xl items-center justify-center rounded-[1.75rem] border border-border bg-card shadow-2xl">
+              <div className="text-sm text-slate-400">Loading preview...</div>
+            </div>
+          </div>
+        ) : (
+          <div className="pointer-events-none fixed inset-y-0 right-0 z-[74] flex w-full justify-end">
+            <div className="pointer-events-auto flex h-full w-full max-w-[min(40%,44rem)] items-center justify-center border-l border-border bg-card shadow-2xl">
+              <div className="text-sm text-slate-400">Loading preview...</div>
+            </div>
+          </div>
+        )
+      )}
     </div>
   );
 }
@@ -1539,6 +1639,32 @@ function parseNoteContent(content: Resource['content']) {
   } catch {
     return content;
   }
+}
+
+function upsertOpenNote(
+  notes: OpenNote[],
+  noteId: string,
+  maxOpenNotes: number,
+  openBehavior: 'replace' | 'split',
+) {
+  const existing = notes.find((note) => note.id === noteId);
+  if (openBehavior === 'replace') {
+    return existing ? [existing] : [{ id: noteId }];
+  }
+
+  if (existing) {
+    return notes;
+  }
+
+  return limitOpenNotes([...notes, { id: noteId }], maxOpenNotes);
+}
+
+function limitOpenNotes(notes: OpenNote[], maxOpenNotes: number) {
+  if (notes.length <= maxOpenNotes) {
+    return notes;
+  }
+
+  return notes.slice(notes.length - maxOpenNotes);
 }
 
 function getWorkspaceLayoutClass(noteCount: number) {

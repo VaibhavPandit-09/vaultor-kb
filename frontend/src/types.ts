@@ -3,9 +3,11 @@ export interface Tag {
   name: string;
 }
 
+export type ResourceType = 'note' | 'file';
+
 export interface Resource {
   id: string;
-  type: 'note' | 'file';
+  type: ResourceType;
   title: string;
   content?: string | null;
   filePath?: string | null;
@@ -19,4 +21,8 @@ export interface Resource {
 
 export interface AuthStatus {
   isSetup: boolean;
+}
+
+export function isPreviewResource(type: ResourceType) {
+  return type === 'file';
 }

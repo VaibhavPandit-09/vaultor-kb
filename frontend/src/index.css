@@ -9,7 +9,8 @@
     --card: #ffffff;
     --card-foreground: #020617;
     --border: #cbd5e1;
-    --primary: #4f46e5;
+    --accent: #3b82f6;
+    --primary: var(--accent);
     --primary-foreground: #ffffff;
   }
 
@@ -19,13 +20,28 @@
     --card: #0f172a;
     --card-foreground: #f8fafc;
     --border: #1e293b;
-    --primary: #6366f1;
+    --primary: var(--accent);
     --primary-foreground: #ffffff;
+  }
+
+  :root[data-density='compact'] {
+    font-size: 15px;
   }
 }
 
 body {
   @apply bg-background text-foreground antialiased transition-colors duration-200;
+}
+
+:root[data-density='compact'] body {
+  letter-spacing: -0.01em;
+}
+
+:root[data-density='compact'] button,
+:root[data-density='compact'] input,
+:root[data-density='compact'] select,
+:root[data-density='compact'] textarea {
+  @apply text-sm;
 }
 
 /* Scrollbar */
