@@ -63,6 +63,7 @@ interface OpenNote {
 }
 
 const SIDEBAR_STORAGE_KEY = 'vaultor_sidebar_collapsed';
+const MAX_OPEN_NOTES = 3;
 
 export default function Dashboard() {
   const dispatch = useAppDispatch();
@@ -192,8 +193,8 @@ export default function Dashboard() {
         }
 
         const next = [...prev, { id }];
-        if (next.length > 2) {
-          return next.slice(next.length - 2);
+        if (next.length > MAX_OPEN_NOTES) {
+          return next.slice(next.length - MAX_OPEN_NOTES);
         }
 
         return next;
@@ -372,7 +373,7 @@ export default function Dashboard() {
         }
 
         const next = [...prev, { id: currentResourceId }];
-        return next.length > 2 ? next.slice(next.length - 2) : next;
+        return next.length > MAX_OPEN_NOTES ? next.slice(next.length - MAX_OPEN_NOTES) : next;
       });
       return;
     }
@@ -1425,19 +1426,15 @@ export default function Dashboard() {
             </div>
           ) : activeResource ? (
             activeResource.type === 'note' ? (
-              <div className="flex h-full min-w-0 gap-4 overflow-hidden px-4 py-3">
+              <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
                 {openWorkspaceNotes.map((note, index) => (
                   <div
                     key={note.id}
-                    className={`flex min-w-0 flex-col overflow-hidden transition-all duration-200 ease-out ${
-                      openWorkspaceNotes.length === 2
-                        ? note.id === activeNoteId ? 'basis-3/5' : 'basis-2/5'
-                        : 'flex-1'
-                    } ${
-                      note.id === activeNoteId
-                        ? 'bg-background opacity-100'
-                        : 'bg-background/40 opacity-85 scale-[0.985]'
-                    } ${index > 0 ? 'border-l border-border/60 pl-4' : ''}`}
+                    className={getWorkspacePaneClass({
+                      noteCount: openWorkspaceNotes.length,
+                      isActive: note.id === activeNoteId,
+                      index,
+                    })}
                   >
                     <button
                       onClick={() => activateOpenNote(note.id)}
@@ -1449,7 +1446,7 @@ export default function Dashboard() {
                     >
                       {note.title}
                     </button>
-                    <div className="min-h-0 flex-1 overflow-y-auto">
+                    <div className={openWorkspaceNotes.length === 1 ? 'min-h-0 flex-1 overflow-y-auto px-1' : 'min-h-0 flex-1 overflow-y-auto'}>
                       {note.resource?.type === 'note' ? (
                         <BlockEditor
                           noteId={note.id}
@@ -1473,7 +1470,7 @@ export default function Dashboard() {
                   </div>
                 ))}
 
-                {backlinks.length > 0 && activeNoteId && (
+                {backlinks.length > 0 && activeNoteId && openWorkspaceNotes.length > 1 && (
                   <div className="hidden w-72 flex-shrink-0 overflow-y-auto border-l border-border/60 pl-4 xl:block">
                     <h4 className="mb-3 flex items-center text-sm font-semibold text-slate-400"><Search size={14} className="mr-2" /> Linked from</h4>
                     <div className="space-y-2">
@@ -1495,10 +1492,14 @@ export default function Dashboard() {
               <FilePreview resource={activeResource} />
             )
           ) : openWorkspaceNotes.length > 0 ? (
-            <div className="flex h-full min-w-0 gap-4 overflow-hidden px-4 py-3">
+            <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
               {openWorkspaceNotes.map((note) => (
-                <div key={note.id} className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
-                  <div className="border-b border-border px-4 py-3 text-left text-sm font-semibold text-foreground">
+                <div key={note.id} className={getWorkspacePaneClass({
+                  noteCount: openWorkspaceNotes.length,
+                  isActive: note.id === activeNoteId,
+                  index: openWorkspaceNotes.findIndex((entry) => entry.id === note.id),
+                })}>
+                  <div className="px-1 pb-3 pt-2 text-left text-sm font-semibold text-foreground">
                     {note.title}
                   </div>
                   <div className="flex min-h-0 flex-1 items-center justify-center p-4 text-sm text-slate-400">
@@ -1538,6 +1539,42 @@ function parseNoteContent(content: Resource['content']) {
   } catch {
     return content;
   }
+}
+
+function getWorkspaceLayoutClass(noteCount: number) {
+  if (noteCount <= 1) {
+    return 'flex h-full w-full justify-center overflow-hidden px-6 py-3';
+  }
+
+  return noteCount === 2
+    ? 'flex h-full min-w-0 gap-6 overflow-hidden px-4 py-3'
+    : 'flex h-full min-w-0 gap-4 overflow-hidden px-4 py-3';
+}
+
+function getWorkspacePaneClass({
+  noteCount,
+  isActive,
+  index,
+}: {
+  noteCount: number;
+  isActive: boolean;
+  index: number;
+}) {
+  const spacingClass = noteCount > 1 && index > 0 ? 'border-l border-border/60 pl-4' : '';
+  const visualClass = isActive
+    ? 'bg-background opacity-100'
+    : 'bg-background/40 opacity-80 scale-[0.985]';
+
+  if (noteCount <= 1) {
+    return `flex min-w-0 w-full max-w-4xl flex-col overflow-hidden ${visualClass}`;
+  }
+
+  if (noteCount === 2) {
+    return `flex min-w-0 flex-1 flex-col overflow-hidden transition-all duration-200 ease-out ${visualClass} ${spacingClass}`;
+  }
+
+  const widthClass = isActive ? 'flex-[1.2]' : 'flex-[0.9]';
+  return `flex min-w-0 ${widthClass} flex-col overflow-hidden transition-all duration-200 ease-out ${visualClass} ${spacingClass}`;
 }
 
 function SidebarItem({ resource, isActive, onClick, onDelete }: { resource: Resource; isActive: boolean; onClick: () => void; onDelete: (event: React.MouseEvent) => void }) {
