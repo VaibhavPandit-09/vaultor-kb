@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback, useId } from 'react';
+import { memo, useRef, useState, useEffect, useCallback, useId } from 'react';
 import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -26,14 +26,40 @@ import { ESCAPE_PRIORITIES, registerFocusRestore, useEscapeLayer } from '../../l
 const lowlight = createLowlight(all);
 
 interface BlockEditorProps {
+  noteId: string;
   content: any;
+  isActive: boolean;
+  shouldRestoreFocus: boolean;
   onUpdate: (json: any) => void;
+  onSelectionChange: (selection: NoteSelection) => void;
+  onActivate: (noteId: string) => void;
+  onFocusRestored: (noteId: string) => void;
+  savedSelection?: NoteSelection | null;
   onRequestMdUpload: () => void;
   onRequestCsvUpload: () => void;
 }
 
-export default function BlockEditor({ content, onUpdate, onRequestMdUpload, onRequestCsvUpload }: BlockEditorProps) {
+export interface NoteSelection {
+  from: number;
+  to: number;
+}
+
+function BlockEditor({
+  noteId,
+  content,
+  isActive,
+  shouldRestoreFocus,
+  onUpdate,
+  onSelectionChange,
+  onActivate,
+  onFocusRestored,
+  savedSelection,
+  onRequestMdUpload,
+  onRequestCsvUpload,
+}: BlockEditorProps) {
   const editorEscapeId = useId();
+  const wasActiveRef = useRef(false);
+  const savedSelectionRef = useRef(savedSelection);
   const [slashState, setSlashState] = useState<SlashCommandState | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -103,9 +129,14 @@ export default function BlockEditor({ content, onUpdate, onRequestMdUpload, onRe
     },
     onFocus: () => {
       setEditorFocused(true);
+      onActivate(noteId);
     },
-    onBlur: () => {
+    onBlur: ({ editor: ed }) => {
       setEditorFocused(false);
+      onSelectionChange({
+        from: ed.state.selection.from,
+        to: ed.state.selection.to,
+      });
     },
   });
 
@@ -280,21 +311,56 @@ export default function BlockEditor({ content, onUpdate, onRequestMdUpload, onRe
   }, [editor, slashState, selectedIndex, resourceState]);
 
   useEffect(() => {
+    savedSelectionRef.current = savedSelection;
+  }, [savedSelection]);
+
+  useEffect(() => {
     if (slashState?.query !== undefined) {
       setSelectedIndex(0);
     }
   }, [slashState?.query]);
 
   useEffect(() => {
-    if (editor && content) {
-      const parsed = parseInitialContent(content);
-      const current = JSON.stringify(editor.getJSON());
-      const incoming = JSON.stringify(parsed);
-      if (current !== incoming) {
-        editor.commands.setContent(parsed);
-      }
+    if (!editor || !content || editor.isFocused) {
+      return;
+    }
+
+    const parsed = parseInitialContent(content);
+    const current = JSON.stringify(editor.getJSON());
+    const incoming = JSON.stringify(parsed);
+    if (current !== incoming) {
+      editor.commands.setContent(parsed);
     }
   }, [content, editor]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    if (isActive && !wasActiveRef.current && shouldRestoreFocus) {
+      console.log('Restoring selection');
+      if (savedSelectionRef.current) {
+        editor.commands.setTextSelection(savedSelectionRef.current);
+      }
+
+      editor.commands.focus(undefined, { scrollIntoView: false });
+      onFocusRestored(noteId);
+    }
+
+    wasActiveRef.current = isActive;
+  }, [editor, isActive, noteId, onFocusRestored, shouldRestoreFocus]);
+
+  useEffect(() => {
+    if (!editor || !isActive || !editorFocused) {
+      return;
+    }
+
+    onSelectionChange({
+      from: editor.state.selection.from,
+      to: editor.state.selection.to,
+    });
+  }, [editor, editorFocused, isActive, onSelectionChange]);
 
 
 
@@ -339,6 +405,23 @@ export default function BlockEditor({ content, onUpdate, onRequestMdUpload, onRe
     </div>
   );
 }
+
+const MemoizedBlockEditor = memo(BlockEditor, (prev, next) => (
+  prev.noteId === next.noteId
+  && prev.isActive === next.isActive
+  && prev.shouldRestoreFocus === next.shouldRestoreFocus
+  && prev.savedSelection?.from === next.savedSelection?.from
+  && prev.savedSelection?.to === next.savedSelection?.to
+  && prev.content === next.content
+  && prev.onUpdate === next.onUpdate
+  && prev.onSelectionChange === next.onSelectionChange
+  && prev.onActivate === next.onActivate
+  && prev.onFocusRestored === next.onFocusRestored
+  && prev.onRequestMdUpload === next.onRequestMdUpload
+  && prev.onRequestCsvUpload === next.onRequestCsvUpload
+));
+
+export default MemoizedBlockEditor;
 
 function parseInitialContent(content: any): any {
   if (!content) return { type: 'doc', content: [{ type: 'paragraph' }] };

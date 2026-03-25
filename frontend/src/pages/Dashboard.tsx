@@ -27,7 +27,7 @@ import api from '../lib/api';
 import type { Resource, Tag } from '../types';
 import { useTheme } from '../lib/ThemeContext';
 import { useRestoreFocusOnClose } from '../lib/useRestoreFocusOnClose';
-import BlockEditor from '../components/editor/BlockEditor';
+import BlockEditor, { type NoteSelection } from '../components/editor/BlockEditor';
 import FilePreview from '../components/FilePreview';
 import { markdownToHtml } from '../components/editor/markdownUtils';
 import { csvToTableHtml } from '../components/editor/csvUtils';
@@ -57,6 +57,11 @@ interface DeleteModalState {
   backlinks: Resource[];
 }
 
+interface OpenNote {
+  id: string;
+  selection?: NoteSelection;
+}
+
 const SIDEBAR_STORAGE_KEY = 'vaultor_sidebar_collapsed';
 
 export default function Dashboard() {
@@ -67,9 +72,12 @@ export default function Dashboard() {
 
   const [resources, setResources] = useState<Resource[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [activeResource, setActiveResource] = useState<Resource | null>(null);
+  const [resourceDetails, setResourceDetails] = useState<Record<string, Resource>>({});
+  const [openNotes, setOpenNotes] = useState<OpenNote[]>([]);
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
+  const [focusRestoreNoteId, setFocusRestoreNoteId] = useState<string | null>(null);
   const [backlinks, setBacklinks] = useState<Resource[]>([]);
-  const [activeResourceLoading, setActiveResourceLoading] = useState(false);
+  const [loadingResourceIds, setLoadingResourceIds] = useState<string[]>([]);
   const [sidebarLoading, setSidebarLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -113,6 +121,14 @@ export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const commandPaletteFocus = useRestoreFocusOnClose();
   const shortcutsModalFocus = useRestoreFocusOnClose();
+  const activeResource = useMemo(() => {
+    if (!currentResourceId) {
+      return null;
+    }
+
+    return resourceDetails[currentResourceId] ?? resources.find((resource) => resource.id === currentResourceId) ?? null;
+  }, [currentResourceId, resourceDetails, resources]);
+  const activeResourceLoading = Boolean(currentResourceId && !activeResource && loadingResourceIds.includes(currentResourceId));
 
   useEscapeLayer({
     id: 'dashboard-type-filter',
@@ -138,21 +154,27 @@ export default function Dashboard() {
     }
   }, []);
 
-  const fetchActiveResource = useCallback(async (id: string) => {
-    setActiveResourceLoading(true);
+  const fetchResourceDetails = useCallback(async (id: string) => {
+    setLoadingResourceIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     try {
-      const [resData, backlinksData] = await Promise.all([
-        api.get(`/resources/${id}`),
-        api.get(`/resources/${id}/backlinks`),
-      ]);
-      setActiveResource(resData.data);
-      setBacklinks(backlinksData.data || []);
+      const { data } = await api.get(`/resources/${id}`);
+      setResourceDetails((prev) => ({ ...prev, [id]: data }));
+      return data as Resource;
     } catch (error) {
       console.error(error);
-      setActiveResource(null);
-      setBacklinks([]);
+      return null;
     } finally {
-      setActiveResourceLoading(false);
+      setLoadingResourceIds((prev) => prev.filter((entry) => entry !== id));
+    }
+  }, []);
+
+  const fetchBacklinks = useCallback(async (id: string) => {
+    try {
+      const { data } = await api.get(`/resources/${id}/backlinks`);
+      setBacklinks(data || []);
+    } catch (error) {
+      console.error(error);
+      setBacklinks([]);
     }
   }, []);
 
@@ -160,8 +182,43 @@ export default function Dashboard() {
     api.post(`/resources/${id}/open`).catch(() => {});
   }, []);
 
-  const openResourceById = useCallback((id: string) => {
+  const openResourceById = useCallback((id: string, options?: { focus?: boolean }) => {
+    const resourceMeta = resources.find((resource) => resource.id === id);
+    if (resourceMeta?.type === 'note') {
+      setOpenNotes((prev) => {
+        const existing = prev.find((note) => note.id === id);
+        if (existing) {
+          return prev;
+        }
+
+        const next = [...prev, { id }];
+        if (next.length > 2) {
+          return next.slice(next.length - 2);
+        }
+
+        return next;
+      });
+      setActiveNoteId(id);
+      if (options?.focus !== false) {
+        setFocusRestoreNoteId(id);
+      }
+      void fetchResourceDetails(id);
+    } else {
+      setActiveNoteId(null);
+      setFocusRestoreNoteId(null);
+      void fetchResourceDetails(id);
+    }
+
     dispatch(openResourceAction(id));
+    markOpened(id);
+  }, [dispatch, fetchResourceDetails, markOpened, resources]);
+
+  const activateOpenNote = useCallback((id: string, options?: { focus?: boolean }) => {
+    setActiveNoteId(id);
+    if (options?.focus) {
+      setFocusRestoreNoteId(id);
+    }
+    dispatch(setCurrentResourceId(id));
     markOpened(id);
   }, [dispatch, markOpened]);
 
@@ -188,6 +245,50 @@ export default function Dashboard() {
     setShortcutsOpen(false);
     shortcutsModalFocus.restoreFocus();
   }, [shortcutsModalFocus]);
+
+  const saveNoteSelection = useCallback((noteId: string, selection: NoteSelection) => {
+    setOpenNotes((prev) => prev.map((note) => (
+      note.id === noteId ? { ...note, selection } : note
+    )));
+  }, []);
+
+  const handleNoteFocusRestored = useCallback((noteId: string) => {
+    setFocusRestoreNoteId((current) => (current === noteId ? null : current));
+  }, []);
+
+  const switchNote = useCallback((direction: 'next' | 'prev') => {
+    if (openNotes.length < 2 || !activeNoteId) {
+      return;
+    }
+
+    const index = openNotes.findIndex((note) => note.id === activeNoteId);
+    if (index === -1) {
+      return;
+    }
+
+    const nextIndex = direction === 'next'
+      ? (index + 1) % openNotes.length
+      : (index - 1 + openNotes.length) % openNotes.length;
+
+    activateOpenNote(openNotes[nextIndex].id, { focus: true });
+  }, [activateOpenNote, activeNoteId, openNotes]);
+
+  const closeActiveNote = useCallback(() => {
+    if (!activeNoteId) {
+      return;
+    }
+
+    setOpenNotes((prev) => {
+      const filtered = prev.filter((note) => note.id !== activeNoteId);
+      const nextActiveId = filtered.length > 0 ? filtered[filtered.length - 1].id : null;
+
+      setActiveNoteId(nextActiveId);
+      setFocusRestoreNoteId(nextActiveId);
+      dispatch(setCurrentResourceId(nextActiveId));
+
+      return filtered;
+    });
+  }, [activeNoteId, dispatch]);
 
   const handleBackNavigation = useCallback(() => {
     if (navigation.currentIndex <= 0) return;
@@ -252,13 +353,33 @@ export default function Dashboard() {
   }, [fetchData]);
 
   useEffect(() => {
-    if (currentResourceId) {
-      fetchActiveResource(currentResourceId);
+    if (!currentResourceId) {
+      setBacklinks([]);
+      setActiveNoteId(null);
       return;
     }
-    setActiveResource(null);
+
+    void fetchResourceDetails(currentResourceId);
+    const resourceMeta = resourceDetails[currentResourceId] ?? resources.find((resource) => resource.id === currentResourceId) ?? null;
+
+    if (resourceMeta?.type === 'note') {
+      setActiveNoteId(currentResourceId);
+      void fetchBacklinks(currentResourceId);
+      setOpenNotes((prev) => {
+        const existing = prev.find((note) => note.id === currentResourceId);
+        if (existing) {
+          return prev;
+        }
+
+        const next = [...prev, { id: currentResourceId }];
+        return next.length > 2 ? next.slice(next.length - 2) : next;
+      });
+      return;
+    }
+
+    setActiveNoteId(null);
     setBacklinks([]);
-  }, [currentResourceId, fetchActiveResource]);
+  }, [currentResourceId, fetchBacklinks, fetchResourceDetails, resourceDetails, resources]);
 
   useEffect(() => {
     if (activeResource?.type === 'note') {
@@ -296,6 +417,24 @@ export default function Dashboard() {
       if (modKey && event.key.toLowerCase() === 'k') {
         event.preventDefault();
         openCommandPalette();
+        return;
+      }
+
+      if (modKey && event.key === 'ArrowRight') {
+        event.preventDefault();
+        switchNote('next');
+        return;
+      }
+
+      if (modKey && event.key === 'ArrowLeft') {
+        event.preventDefault();
+        switchNote('prev');
+        return;
+      }
+
+      if (modKey && event.shiftKey && event.key.toLowerCase() === 'w') {
+        event.preventDefault();
+        closeActiveNote();
         return;
       }
 
@@ -337,7 +476,7 @@ export default function Dashboard() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleBackNavigation, handleForwardNavigation, openCommandPalette, openShortcutsModal, toggleSidebar]);
+  }, [closeActiveNote, handleBackNavigation, handleForwardNavigation, openCommandPalette, openShortcutsModal, switchNote, toggleSidebar]);
 
   useEffect(() => {
     if (!replaceLinkModal || !replaceSearch.trim()) {
@@ -387,9 +526,19 @@ export default function Dashboard() {
     try {
       await api.delete(`/resources/${id}`);
       setResources((prev) => prev.filter((resource) => resource.id !== id));
+      setResourceDetails((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setOpenNotes((prev) => prev.filter((note) => note.id !== id));
       dispatch(removeResourceFromState(id));
       if (currentResourceId === id) {
-        dispatch(setCurrentResourceId(null));
+        const remainingNotes = openNotes.filter((note) => note.id !== id);
+        const nextActiveId = remainingNotes.length > 0 ? remainingNotes[remainingNotes.length - 1].id : null;
+        setActiveNoteId(nextActiveId);
+        setFocusRestoreNoteId(nextActiveId);
+        dispatch(setCurrentResourceId(nextActiveId));
       }
       setDeleteModal(null);
     } catch (error) {
@@ -421,7 +570,10 @@ export default function Dashboard() {
 
   const handleTitleChange = async (title: string) => {
     if (!activeResource || activeResource.type !== 'note') return;
-    setActiveResource({ ...activeResource, title });
+    setResourceDetails((prev) => ({
+      ...prev,
+      [activeResource.id]: { ...activeResource, title },
+    }));
     try {
       await api.put(`/resources/${activeResource.id}/note`, {
         title,
@@ -433,12 +585,22 @@ export default function Dashboard() {
     }
   };
 
-  const handleContentUpdate = async (json: unknown) => {
-    if (!activeResource || activeResource.type !== 'note') return;
+  const handleContentUpdate = async (noteId: string, json: unknown) => {
+    const noteResource = resourceDetails[noteId] ?? (activeResource?.id === noteId ? activeResource : null);
+    if (!noteResource || noteResource.type !== 'note') return;
     const contentStr = JSON.stringify(json);
-    latestNoteContentRef.current = contentStr;
+    if (activeResource?.id === noteId) {
+      latestNoteContentRef.current = contentStr;
+    }
+    setResourceDetails((prev) => ({
+      ...prev,
+      [noteId]: {
+        ...noteResource,
+        content: contentStr,
+      },
+    }));
     try {
-      await api.put(`/resources/${activeResource.id}/note`, { title: activeResource.title, content: contentStr });
+      await api.put(`/resources/${noteId}/note`, { title: noteResource.title, content: contentStr });
     } catch (error) {
       console.error(error);
     }
@@ -449,7 +611,8 @@ export default function Dashboard() {
     setTagAddPending(true);
     try {
       await api.post(`/resources/${activeResource.id}/tags/${encodeURIComponent(tagName.trim())}`);
-      await fetchActiveResource(activeResource.id);
+      await fetchResourceDetails(activeResource.id);
+      await fetchBacklinks(activeResource.id);
       await fetchData();
       setTagInputOpen(false);
       setTagInputValue('');
@@ -464,8 +627,9 @@ export default function Dashboard() {
     if (!activeResource) return;
     try {
       await api.delete(`/resources/${activeResource.id}/tags/${encodeURIComponent(tagName.trim())}`);
-      fetchActiveResource(activeResource.id);
-      fetchData();
+      void fetchResourceDetails(activeResource.id);
+      void fetchBacklinks(activeResource.id);
+      void fetchData();
     } catch (error) {
       console.error(error);
     }
@@ -478,7 +642,12 @@ export default function Dashboard() {
       await api.delete(`/tags/${tagDeleteModal.id}`);
       dispatch(removeSelectedTag(tagDeleteModal.name));
       await fetchData();
-      if (activeResource) await fetchActiveResource(activeResource.id);
+      if (activeResource) {
+        await fetchResourceDetails(activeResource.id);
+        if (activeResource.type === 'note') {
+          await fetchBacklinks(activeResource.id);
+        }
+      }
       setTagDeleteModal(null);
     } catch (error) {
       console.error(error);
@@ -627,17 +796,16 @@ export default function Dashboard() {
   }, [filters.selectedTags, filters.typeFilter, resources]);
 
   const filteredTags = tags.filter((tag) => tag.name.toLowerCase().includes(tagSearch.toLowerCase()));
-  const editorContent = useMemo(() => {
-    if (activeResource?.type !== 'note' || !activeResource.content) {
-      return null;
-    }
+  const openWorkspaceNotes = useMemo(() => openNotes.map((note) => {
+    const resource = resourceDetails[note.id] ?? null;
+    const metadata = resources.find((entry) => entry.id === note.id) ?? null;
 
-    try {
-      return JSON.parse(activeResource.content as string);
-    } catch {
-      return activeResource.content;
-    }
-  }, [activeResource?.content, activeResource?.type]);
+    return {
+      ...note,
+      resource,
+      title: resource?.title ?? metadata?.title ?? 'Loading note...',
+    };
+  }), [openNotes, resourceDetails, resources]);
 
   const commandPaletteItems = useMemo<CommandPaletteItem[]>(() => {
     const navigationItems: CommandPaletteItem[] = resources.map((resource) => ({
@@ -1244,37 +1412,80 @@ export default function Dashboard() {
             </div>
           ) : activeResource ? (
             activeResource.type === 'note' ? (
-              <div className="relative h-full overflow-y-auto p-8">
-                <div className="mx-auto w-full max-w-4xl">
-                  <BlockEditor
-                    key={activeResource.id}
-                    content={editorContent}
-                    onUpdate={handleContentUpdate}
-                    onRequestMdUpload={handleRequestMdUpload}
-                    onRequestCsvUpload={handleRequestCsvUpload}
-                  />
-                  {backlinks.length > 0 && (
-                    <div className="mt-12 border-t border-border pt-6">
-                      <h4 className="ml-1 mb-3 flex items-center text-sm font-semibold text-slate-400"><Search size={14} className="mr-2" /> Linked from</h4>
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        {backlinks.map((resource) => (
-                          <div
-                            key={resource.id}
-                            onClick={() => openResourceById(resource.id)}
-                            className="flex cursor-pointer items-center rounded-xl border border-border bg-card p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                          >
-                            {resource.type === 'note' ? <FileText size={16} className="mr-3 opacity-80 text-blue-500" /> : <Paperclip size={16} className="mr-3 opacity-80 text-green-500" />}
-                            <span className="truncate text-sm font-medium">{resource.title}</span>
-                          </div>
-                        ))}
-                      </div>
+              <div className="flex h-full min-w-0 gap-4 overflow-hidden p-6">
+                {openWorkspaceNotes.map((note) => (
+                  <div
+                    key={note.id}
+                    className={`flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border ${
+                      note.id === activeNoteId ? 'border-primary/40 shadow-[0_0_0_1px_rgba(59,130,246,0.15)]' : 'border-border'
+                    } bg-card`}
+                  >
+                    <button
+                      onClick={() => activateOpenNote(note.id)}
+                      className={`border-b px-4 py-3 text-left text-sm font-semibold transition-colors ${
+                        note.id === activeNoteId ? 'border-primary/20 bg-primary/5 text-primary' : 'border-border text-foreground hover:bg-background'
+                      }`}
+                    >
+                      {note.title}
+                    </button>
+                    <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                      {note.resource?.type === 'note' ? (
+                        <BlockEditor
+                          noteId={note.id}
+                          content={parseNoteContent(note.resource.content)}
+                          isActive={note.id === activeNoteId}
+                          shouldRestoreFocus={focusRestoreNoteId === note.id}
+                          savedSelection={note.selection ?? null}
+                          onActivate={(noteId) => activateOpenNote(noteId)}
+                          onFocusRestored={handleNoteFocusRestored}
+                          onSelectionChange={(selection) => saveNoteSelection(note.id, selection)}
+                          onUpdate={(json) => handleContentUpdate(note.id, json)}
+                          onRequestMdUpload={handleRequestMdUpload}
+                          onRequestCsvUpload={handleRequestCsvUpload}
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                          Loading note...
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                ))}
+
+                {backlinks.length > 0 && activeNoteId && (
+                  <div className="hidden w-72 flex-shrink-0 overflow-y-auto rounded-2xl border border-border bg-card p-4 xl:block">
+                    <h4 className="mb-3 flex items-center text-sm font-semibold text-slate-400"><Search size={14} className="mr-2" /> Linked from</h4>
+                    <div className="space-y-2">
+                      {backlinks.map((resource) => (
+                        <div
+                          key={resource.id}
+                          onClick={() => openResourceById(resource.id)}
+                          className="flex cursor-pointer items-center rounded-xl border border-border bg-background p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                        >
+                          {resource.type === 'note' ? <FileText size={16} className="mr-3 opacity-80 text-blue-500" /> : <Paperclip size={16} className="mr-3 opacity-80 text-green-500" />}
+                          <span className="truncate text-sm font-medium">{resource.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <FilePreview resource={activeResource} />
             )
+          ) : openWorkspaceNotes.length > 0 ? (
+            <div className="flex h-full min-w-0 gap-4 overflow-hidden p-6">
+              {openWorkspaceNotes.map((note) => (
+                <div key={note.id} className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
+                  <div className="border-b border-border px-4 py-3 text-left text-sm font-semibold text-foreground">
+                    {note.title}
+                  </div>
+                  <div className="flex min-h-0 flex-1 items-center justify-center p-4 text-sm text-slate-400">
+                    Loading note...
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center text-slate-400">
               <Database size={64} className="mb-6 opacity-20" />
@@ -1290,6 +1501,22 @@ export default function Dashboard() {
       </div>
     </div>
   );
+}
+
+function parseNoteContent(content: Resource['content']) {
+  if (!content) {
+    return null;
+  }
+
+  if (typeof content !== 'string') {
+    return content;
+  }
+
+  try {
+    return JSON.parse(content);
+  } catch {
+    return content;
+  }
 }
 
 function SidebarItem({ resource, isActive, onClick, onDelete }: { resource: Resource; isActive: boolean; onClick: () => void; onDelete: (event: React.MouseEvent) => void }) {

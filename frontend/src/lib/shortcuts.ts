@@ -17,6 +17,9 @@ export const shortcuts: ShortcutCategory[] = [
     category: 'Navigation',
     items: [
       { description: 'Search resources', keys: [modKey, 'K'] },
+      { description: 'Switch note (next)', keys: [modKey, 'Right'] },
+      { description: 'Switch note (previous)', keys: [modKey, 'Left'] },
+      { description: 'Close active note', keys: [modKey, 'Shift', 'W'] },
       { description: 'Go back', keys: isMac ? ['Cmd', '['] : ['Alt', 'Left'] },
       { description: 'Go forward', keys: isMac ? ['Cmd', ']'] : ['Alt', 'Right'] },
       { description: 'Toggle sidebar', keys: [modKey, 'B'] },
