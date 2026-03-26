@@ -14,13 +14,9 @@ import {
   Paperclip,
   ChevronDown,
   Upload,
-  ChevronLeft,
-  ChevronRight,
   AlertTriangle,
   Loader2,
   Command,
-  ExternalLink,
-  Menu,
   Tag as TagIcon,
   Settings2,
 } from 'lucide-react';
@@ -133,8 +129,11 @@ export default function Dashboard() {
   const latestNoteContentRef = useRef<string | null>(null);
   const commandPalettePreviewRef = useRef<PreviewSnapshot | null>(null);
   const floatingSidebarHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleEditDismissRef = useRef<'save' | 'cancel' | null>(null);
   const [floatingSidebarHovered, setFloatingSidebarHovered] = useState(false);
   const [floatingSidebarPinned, setFloatingSidebarPinned] = useState(false);
+  const [titleEditState, setTitleEditState] = useState<{ noteId: string; value: string; original: string } | null>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const { settings, resolvedShortcuts, toggleTheme } = useSettings();
   const commandPaletteFocus = useRestoreFocusOnClose();
@@ -218,6 +217,19 @@ export default function Dashboard() {
       clearFloatingSidebarHideTimeout();
     };
   }, [clearFloatingSidebarHideTimeout]);
+
+  useEffect(() => {
+    if (!titleEditState) {
+      return;
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
+  }, [titleEditState]);
 
   const fetchData = useCallback(async () => {
     setSidebarLoading(true);
@@ -756,23 +768,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleTitleChange = async (title: string) => {
-    if (!activeResource || activeResource.type !== 'note') return;
-    setResourceDetails((prev) => ({
-      ...prev,
-      [activeResource.id]: { ...activeResource, title },
-    }));
-    try {
-      await api.put(`/resources/${activeResource.id}/note`, {
-        title,
-        content: latestNoteContentRef.current ?? activeResource.content,
-      });
-      fetchData();
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   const renameResource = useCallback(async (resourceId: string, title: string) => {
     const resource = resourceDetails[resourceId] ?? resources.find((entry) => entry.id === resourceId) ?? null;
     if (!resource || resource.type !== 'note') {
@@ -796,6 +791,33 @@ export default function Dashboard() {
       console.error(error);
     }
   }, [fetchData, resourceDetails, resources]);
+
+  const startTitleEditing = useCallback((noteId: string, title: string) => {
+    activateOpenNote(noteId);
+    titleEditDismissRef.current = null;
+    setTitleEditState({
+      noteId,
+      value: title,
+      original: title,
+    });
+  }, [activateOpenNote]);
+
+  const cancelTitleEditing = useCallback(() => {
+    titleEditDismissRef.current = 'cancel';
+    setTitleEditState(null);
+  }, []);
+
+  const commitTitleEditing = useCallback(async () => {
+    if (!titleEditState) {
+      return;
+    }
+
+    titleEditDismissRef.current = 'save';
+    const nextTitle = titleEditState.value.trim() || titleEditState.original || 'Untitled Note';
+    await renameResource(titleEditState.noteId, nextTitle);
+    titleEditDismissRef.current = null;
+    setTitleEditState(null);
+  }, [renameResource, titleEditState]);
 
   const handleContentUpdate = async (noteId: string, json: unknown) => {
     const noteResource = resourceDetails[noteId] ?? (activeResource?.id === noteId ? activeResource : null);
@@ -1056,9 +1078,6 @@ export default function Dashboard() {
     workspaceResource,
   ]);
 
-  const contextTagPills = activeResource?.tags || [];
-  const canGoBack = navigation.currentIndex > 0;
-  const canGoForward = navigation.currentIndex < navigation.history.length - 1;
   const typeLabels: Record<TypeFilter, string> = { all: 'All', note: 'Notes', file: 'Files' };
   const sidebarContent = (
     <div className="flex h-full flex-col overflow-hidden">
@@ -1215,11 +1234,14 @@ export default function Dashboard() {
           <button onClick={() => importInputRef.current?.click()} title="Import Vault" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><UploadCloud size={16} /></button>
         </div>
         <div className="flex items-center gap-0.5">
-          <button onClick={toggleTheme} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary">
-            {localSettings.theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+          <button onClick={openShortcutsModal} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary" title="Shortcuts">
+            <Command size={16} />
           </button>
           <button onClick={openSettingsModal} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary" title="Settings">
             <Settings2 size={16} />
+          </button>
+          <button onClick={toggleTheme} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary">
+            {localSettings.theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
           </button>
           <button onClick={logout} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-red-500" title="Lock Vault"><LogOut size={16} /></button>
         </div>
@@ -1500,100 +1522,6 @@ export default function Dashboard() {
         </p>
       </AppModal>
 
-      <div className={`flex items-center gap-3 border-b border-border bg-card ${workspaceSettings.focusMode ? 'px-3 py-1.5' : 'px-4 py-2'}`}>
-        {!workspaceSettings.focusMode && (
-          <>
-            <button
-              onClick={toggleSidebar}
-              className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800"
-              title={isMac ? 'Toggle sidebar (Cmd+B)' : 'Toggle sidebar (Ctrl+B)'}
-            >
-              <Menu size={18} />
-            </button>
-            <h1 className="flex items-center text-sm font-semibold tracking-wide text-primary">
-              <Database className="mr-2" size={18} /> Vaultor
-            </h1>
-            <div className="mx-1 h-6 w-px bg-border" />
-            <div className="flex items-center gap-1">
-              <button
-                onClick={handleBackNavigation}
-                disabled={!canGoBack}
-                className={`rounded-lg p-1.5 transition-colors ${canGoBack ? 'text-slate-500 hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800' : 'cursor-not-allowed text-slate-300 dark:text-slate-700'}`}
-                title={isMac ? 'Back (Cmd+[)' : 'Back (Alt+Left)'}
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                onClick={handleForwardNavigation}
-                disabled={!canGoForward}
-                className={`rounded-lg p-1.5 transition-colors ${canGoForward ? 'text-slate-500 hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800' : 'cursor-not-allowed text-slate-300 dark:text-slate-700'}`}
-                title={isMac ? 'Forward (Cmd+])' : 'Forward (Alt+Right)'}
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </>
-        )}
-        <div className="min-w-0 flex-1">
-          {activeResource?.type === 'note' ? (
-            <input
-              value={activeResource.title}
-              onChange={(event) => handleTitleChange(event.target.value)}
-              className="w-full rounded-lg border border-transparent bg-transparent px-2 py-1 text-base font-semibold outline-none transition-colors focus:border-border focus:bg-background"
-              placeholder="Untitled Note"
-            />
-          ) : (
-            <div className="truncate px-2 text-base font-semibold text-foreground">{activeResource?.title || 'No resource selected'}</div>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {activeResource && (
-            <div className="hidden items-center gap-2 xl:flex">
-              {contextTagPills.slice(0, 3).map((tag) => (
-                <span key={tag.id} className="flex items-center rounded-md bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
-                  {tag.name}
-                  <button onClick={() => handleRemoveTag(tag.name)} className="ml-1.5 opacity-60 hover:opacity-100"><X size={10} /></button>
-                </span>
-              ))}
-              <button
-                onClick={() => setTagInputOpen(true)}
-                className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-primary hover:text-primary"
-              >
-                <TagIcon size={13} /> Add Tag
-              </button>
-            </div>
-          )}
-          {activeResource?.type === 'file' && (
-            <>
-              <button
-                onClick={handleFileDownload}
-                className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-primary hover:text-primary"
-              >
-                <DownloadCloud size={14} /> Download
-              </button>
-              <button
-                onClick={handleFileOpen}
-                className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-primary hover:text-primary"
-              >
-                <ExternalLink size={14} /> Open
-              </button>
-            </>
-          )}
-          <button
-            onClick={openShortcutsModal}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-primary hover:text-primary"
-          >
-            <Command size={14} /> {isMac ? '⌘' : 'Ctrl'} Help
-          </button>
-          <button
-            onClick={openSettingsModal}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-primary hover:text-primary"
-          >
-            <Settings2 size={14} /> Settings
-          </button>
-        </div>
-      </div>
-
       <div className="relative flex min-h-0 flex-1">
         {!isFloatingSidebarMode && (
           <aside
@@ -1637,16 +1565,67 @@ export default function Dashboard() {
                     index,
                   })}
                 >
-                  <button
-                    onClick={() => activateOpenNote(note.id)}
-                    className={`px-1 pb-3 pt-2 text-left text-sm font-semibold transition-colors ${
-                      note.id === activeNoteId
-                        ? 'border-t border-primary/40 text-foreground'
-                        : 'border-t border-transparent text-slate-500 hover:text-foreground'
-                    }`}
-                  >
-                    {note.title}
-                  </button>
+                  <div className="border-b border-border/60 px-1 pb-3 pt-4">
+                    {titleEditState?.noteId === note.id ? (
+                      <input
+                        ref={titleInputRef}
+                        value={titleEditState.value}
+                        onChange={(event) => setTitleEditState((current) => (
+                          current && current.noteId === note.id
+                            ? { ...current, value: event.target.value }
+                            : current
+                        ))}
+                        onKeyDown={async (event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            await commitTitleEditing();
+                          }
+
+                          if (event.key === 'Escape') {
+                            event.preventDefault();
+                            cancelTitleEditing();
+                          }
+                        }}
+                        onBlur={() => {
+                          if (titleEditDismissRef.current) {
+                            titleEditDismissRef.current = null;
+                            return;
+                          }
+                          void commitTitleEditing();
+                        }}
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-lg font-semibold text-foreground outline-none transition-colors focus:border-primary"
+                        placeholder="Untitled Note"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => startTitleEditing(note.id, note.title)}
+                        className={`w-full rounded-lg px-2 py-1 text-left text-lg font-semibold transition-colors ${
+                          note.id === activeNoteId
+                            ? 'text-foreground hover:bg-background/80'
+                            : 'text-slate-500 hover:bg-background/60 hover:text-foreground'
+                        }`}
+                      >
+                        {note.title}
+                      </button>
+                    )}
+
+                    {note.id === activeNoteId && note.resource?.type === 'note' && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {(note.resource.tags ?? []).slice(0, 4).map((tag) => (
+                          <span key={tag.id} className="flex items-center rounded-md bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
+                            {tag.name}
+                            <button onClick={() => handleRemoveTag(tag.name)} className="ml-1.5 opacity-60 hover:opacity-100"><X size={10} /></button>
+                          </span>
+                        ))}
+                        <button
+                          onClick={() => setTagInputOpen(true)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-primary hover:text-primary"
+                        >
+                          <TagIcon size={13} /> Add Tag
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <div className={openWorkspaceNotes.length === 1 ? 'min-h-0 flex-1 overflow-y-auto px-1' : 'min-h-0 flex-1 overflow-y-auto'}>
                     {note.resource?.type === 'note' ? (
                       <BlockEditor
@@ -1700,7 +1679,7 @@ export default function Dashboard() {
               </div>
             </div>
           ) : (
-            <div className="flex h-full flex-col items-center justify-center text-slate-400">
+            <div className="flex h-full flex-col items-center justify-center px-6 pt-6 text-slate-400">
               <Database size={64} className="mb-6 opacity-20" />
               <h2 className="mb-2 text-2xl font-semibold text-slate-500">Welcome to Vaultor</h2>
               <p className="mb-6 text-sm opacity-80">Open the command palette with {isMac ? 'Cmd+K' : 'Ctrl+K'} to jump anywhere fast.</p>
@@ -1805,21 +1784,22 @@ function getWorkspacePaneClass({
   isActive: boolean;
   index: number;
 }) {
-  const spacingClass = noteCount > 1 && index > 0 ? 'border-l border-border/60 pl-4' : '';
+  const spacingClass = noteCount > 1 && index > 0 ? 'border-l border-border/60' : '';
   const visualClass = isActive
     ? 'bg-background opacity-100'
-    : 'bg-background/40 opacity-80 scale-[0.985]';
+    : 'bg-background/40 opacity-[0.88] scale-[0.992]';
+  const motionClass = 'transform-gpu transition-[opacity,transform,background-color,border-color] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)]';
 
   if (noteCount <= 1) {
     return `flex min-w-0 w-full max-w-4xl flex-col overflow-hidden ${visualClass}`;
   }
 
   if (noteCount === 2) {
-    return `flex min-w-0 flex-1 flex-col overflow-hidden transition-all duration-200 ease-out ${visualClass} ${spacingClass}`;
+    return `flex min-w-0 flex-1 flex-col overflow-hidden ${motionClass} ${visualClass} ${spacingClass}`;
   }
 
   const widthClass = isActive ? 'flex-[1.2]' : 'flex-[0.9]';
-  return `flex min-w-0 ${widthClass} flex-col overflow-hidden transition-all duration-200 ease-out ${visualClass} ${spacingClass}`;
+  return `flex min-w-0 ${widthClass} flex-col overflow-hidden ${motionClass} ${visualClass} ${spacingClass}`;
 }
 
 function SidebarItem({ resource, isActive, onClick, onDelete }: { resource: Resource; isActive: boolean; onClick: () => void; onDelete: (event: React.MouseEvent) => void }) {
