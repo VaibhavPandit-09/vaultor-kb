@@ -144,6 +144,7 @@ export default function Dashboard() {
   const [floatingSidebarPinned, setFloatingSidebarPinned] = useState(false);
   const [titleEditState, setTitleEditState] = useState<{ noteId: string; value: string; original: string } | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const titleEditNoteId = titleEditState?.noteId ?? null;
 
   const { settings, resolvedShortcuts, toggleTheme } = useSettings();
   const commandPaletteFocus = useRestoreFocusOnClose();
@@ -268,7 +269,7 @@ export default function Dashboard() {
   }, [clearFloatingSidebarHideTimeout]);
 
   useEffect(() => {
-    if (!titleEditState) {
+    if (!titleEditNoteId) {
       return;
     }
 
@@ -278,7 +279,7 @@ export default function Dashboard() {
     });
 
     return () => window.cancelAnimationFrame(rafId);
-  }, [titleEditState]);
+  }, [titleEditNoteId]);
 
   useEffect(() => {
     if (!tagPickerOpenNoteId) {
@@ -625,10 +626,7 @@ export default function Dashboard() {
   }, [fetchData, openResourceById, uploadPending]);
 
   const requestFileUpload = useCallback(() => {
-    if (fileUploadRef.current) {
-      fileUploadRef.current.value = '';
-      fileUploadRef.current.click();
-    }
+    openFilePicker(fileUploadRef.current);
   }, []);
 
   useEffect(() => {
@@ -1019,17 +1017,11 @@ export default function Dashboard() {
   };
 
   const handleRequestMdUpload = useCallback(() => {
-    if (mdUploadRef.current) {
-      mdUploadRef.current.value = '';
-      mdUploadRef.current.click();
-    }
+    openFilePicker(mdUploadRef.current);
   }, []);
 
   const handleRequestCsvUpload = useCallback(() => {
-    if (csvUploadRef.current) {
-      csvUploadRef.current.value = '';
-      csvUploadRef.current.click();
-    }
+    openFilePicker(csvUploadRef.current);
   }, []);
 
   const handleMdFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1379,10 +1371,10 @@ export default function Dashboard() {
 
   return (
     <div className={`app-root flex h-screen flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen ? 'command-open pointer-events-none' : ''}`}>
-      <input type="file" ref={mdUploadRef} className="hidden" accept=".md,.markdown,.txt" onChange={handleMdFileChange} />
-      <input type="file" ref={csvUploadRef} className="hidden" accept=".csv,.tsv,.txt" onChange={handleCsvFileChange} />
-      <input type="file" ref={fileUploadRef} className="hidden" onChange={handleUploadFile} />
-      <input type="file" ref={importInputRef} onChange={handleImportFileSelect} className="hidden" accept=".bin,.zip" />
+      <input type="file" ref={mdUploadRef} className="pointer-events-none absolute h-px w-px -translate-x-[200vw] opacity-0" accept=".md,.markdown,.txt,text/markdown,text/plain" onChange={handleMdFileChange} />
+      <input type="file" ref={csvUploadRef} className="pointer-events-none absolute h-px w-px -translate-x-[200vw] opacity-0" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain,application/vnd.ms-excel" onChange={handleCsvFileChange} />
+      <input type="file" ref={fileUploadRef} className="pointer-events-none absolute h-px w-px -translate-x-[200vw] opacity-0" onChange={handleUploadFile} />
+      <input type="file" ref={importInputRef} onChange={handleImportFileSelect} className="pointer-events-none absolute h-px w-px -translate-x-[200vw] opacity-0" accept=".bin,.zip" />
 
       <CommandPaletteModal
         open={commandPaletteOpen}
@@ -2068,6 +2060,25 @@ function attachTagToResourceMap(resources: Record<string, Resource>, resourceId:
       tags: mergeTagIntoList(resource.tags ?? [], nextTag),
     },
   };
+}
+
+function openFilePicker(input: HTMLInputElement | null) {
+  if (!input) {
+    return;
+  }
+
+  input.value = '';
+
+  try {
+    if ('showPicker' in input && typeof input.showPicker === 'function') {
+      input.showPicker();
+      return;
+    }
+  } catch {
+    // Fall through to click for browsers that expose but restrict showPicker.
+  }
+
+  input.click();
 }
 
 function getWorkspaceLayoutClass(noteCount: number) {
