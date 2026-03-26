@@ -1,5 +1,5 @@
 import { memo, useRef, useState, useEffect, useCallback, useId } from 'react';
-import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react';
+import { useEditor, EditorContent, ReactNodeViewRenderer, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
@@ -19,10 +19,10 @@ import type { ResourceLinkState } from './ResourceLinkExtension';
 import SlashMenu, { getFilteredSlashItems } from './SlashMenu';
 import ResourceLinkMenu from './ResourceLinkMenu';
 import CodeBlockView from './CodeBlockView';
-import TableToolbar from './TableToolbar';
 import { markdownToHtml } from './markdownUtils';
 import { ESCAPE_PRIORITIES, registerFocusRestore, useEscapeLayer } from '../../lib/escape/escape';
 import { SymbolSystemExtension } from './SymbolSystemExtension';
+import { Plus, Trash2 } from 'lucide-react';
 
 const lowlight = createLowlight(all);
 
@@ -46,6 +46,17 @@ export interface NoteSelection {
   from: number;
   to: number;
 }
+
+type TableOverlayState = {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  rowMarkerTop: number;
+  columnMarkerLeft: number;
+  rowCount: number;
+  columnCount: number;
+};
 
 function BlockEditor({
   noteId,
@@ -77,9 +88,27 @@ function BlockEditor({
   const [resourceFilteredCount, setResourceFilteredCount] = useState(0);
 
   const [isInTable, setIsInTable] = useState(false);
+  const [tableOverlay, setTableOverlay] = useState<TableOverlayState | null>(null);
+  const [tableControlsVisible, setTableControlsVisible] = useState(false);
   const [editorFocused, setEditorFocused] = useState(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tableOverlayFrameRef = useRef<number | null>(null);
+
+  const updateTableOverlay = useCallback((currentEditor: Editor | null | undefined) => {
+    setTableOverlay(resolveTableOverlay(currentEditor, editorContainerRef.current));
+  }, []);
+
+  const queueTableOverlayRefresh = useCallback((currentEditor: Editor | null | undefined) => {
+    if (tableOverlayFrameRef.current !== null) {
+      window.cancelAnimationFrame(tableOverlayFrameRef.current);
+    }
+
+    tableOverlayFrameRef.current = window.requestAnimationFrame(() => {
+      updateTableOverlay(currentEditor);
+      tableOverlayFrameRef.current = null;
+    });
+  }, [updateTableOverlay]);
 
   const editor = useEditor({
     extensions: [
@@ -98,7 +127,22 @@ function BlockEditor({
           return "Type '/' for commands...";
         },
       }),
-      Table.configure({ resizable: true }),
+      Table.extend({
+        addKeyboardShortcuts() {
+          const parentShortcuts = this.parent?.() ?? {};
+
+          return {
+            ...parentShortcuts,
+            Enter: () => {
+              if (!isSelectionInLastTableRow(this.editor)) {
+                return false;
+              }
+
+              return this.editor.chain().focus().addRowAfter().goToNextCell().run();
+            },
+          };
+        },
+      }).configure({ resizable: true }),
       TableRow,
       TableCell,
       TableHeader,
@@ -139,6 +183,11 @@ function BlockEditor({
     },
     onSelectionUpdate: ({ editor: ed }) => {
       setIsInTable(ed.isActive('table'));
+      if (ed.isActive('table')) {
+        queueTableOverlayRefresh(ed);
+      } else {
+        setTableOverlay(null);
+      }
     },
     onFocus: () => {
       setEditorFocused(true);
@@ -146,6 +195,7 @@ function BlockEditor({
     },
     onBlur: ({ editor: ed }) => {
       setEditorFocused(false);
+      setTableControlsVisible(false);
       onSelectionChange({
         from: ed.state.selection.from,
         to: ed.state.selection.to,
@@ -334,6 +384,9 @@ function BlockEditor({
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current);
       }
+      if (tableOverlayFrameRef.current !== null) {
+        window.cancelAnimationFrame(tableOverlayFrameRef.current);
+      }
     };
   }, []);
 
@@ -393,19 +446,157 @@ function BlockEditor({
     });
   }, [editor, editorFocused, isActive, onSelectionChange]);
 
+  useEffect(() => {
+    if (!editor || !editorFocused || !isInTable) {
+      if (!editorFocused || !isInTable) {
+        setTableOverlay(null);
+        setTableControlsVisible(false);
+      }
+      return;
+    }
+
+    queueTableOverlayRefresh(editor);
+
+    const handleWindowChange = () => queueTableOverlayRefresh(editor);
+    window.addEventListener('resize', handleWindowChange);
+    window.addEventListener('scroll', handleWindowChange, true);
+
+    return () => {
+      window.removeEventListener('resize', handleWindowChange);
+      window.removeEventListener('scroll', handleWindowChange, true);
+    };
+  }, [editor, editorFocused, isInTable, queueTableOverlayRefresh]);
+
+  useEffect(() => {
+    const container = editorContainerRef.current;
+    if (!editor || !editorFocused || !isInTable || !container) {
+      setTableControlsVisible(false);
+      return;
+    }
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('[data-table-control]')) {
+        setTableControlsVisible(true);
+        return;
+      }
+
+      const cell = target?.closest('td, th');
+      const table = target?.closest('table');
+
+      if (!cell || !table || !container.contains(table)) {
+        setTableControlsVisible(false);
+        queueTableOverlayRefresh(editor);
+        return;
+      }
+
+      setTableControlsVisible(true);
+      setTableOverlay(resolveTableOverlayFromCell(cell, table, container));
+    };
+
+    const handleMouseLeave = () => {
+      setTableControlsVisible(false);
+      queueTableOverlayRefresh(editor);
+    };
+
+    container.addEventListener('mousemove', handleMouseMove);
+    container.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      container.removeEventListener('mousemove', handleMouseMove);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [editor, editorFocused, isInTable, queueTableOverlayRefresh]);
+
 
 
   if (!editor) return null;
 
   return (
     <div ref={editorContainerRef} className="relative w-full">
-      {isInTable && (
-        <div className="mb-3 sticky top-0 z-40">
-          <TableToolbar editor={editor} />
+      <EditorContent editor={editor} />
+
+      {tableOverlay && editorFocused && (
+        <div
+          className="pointer-events-none absolute z-30"
+          style={{
+            top: tableOverlay.top,
+            left: tableOverlay.left,
+            width: tableOverlay.width,
+            height: tableOverlay.height,
+          }}
+        >
+          <button
+            type="button"
+            data-table-control="add-column"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              editor.chain().focus().addColumnAfter().run();
+              queueTableOverlayRefresh(editor);
+            }}
+            className={`pointer-events-auto absolute right-2 top-1/2 inline-flex h-7 -translate-y-1/2 items-center gap-1 rounded-full bg-card/92 px-3 text-[11px] font-medium text-slate-500 shadow-sm backdrop-blur-sm transition-[opacity,transform,color] duration-100 hover:text-primary ${
+              tableControlsVisible ? 'translate-x-0 opacity-100' : 'translate-x-1 opacity-0'
+            }`}
+          >
+            <Plus size={12} /> Add column
+          </button>
+
+          <button
+            type="button"
+            data-table-control="add-row"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              editor.chain().focus().addRowAfter().run();
+              queueTableOverlayRefresh(editor);
+            }}
+            className={`pointer-events-auto absolute bottom-2 left-1/2 inline-flex h-7 -translate-x-1/2 items-center gap-1 rounded-full bg-card/92 px-3 text-[11px] font-medium text-slate-500 shadow-sm backdrop-blur-sm transition-[opacity,transform,color] duration-100 hover:text-primary ${
+              tableControlsVisible ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0'
+            }`}
+          >
+            <Plus size={12} /> Add row
+          </button>
+
+          {tableOverlay.columnCount > 1 && (
+            <button
+              type="button"
+              data-table-control="delete-column"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                editor.chain().focus().deleteColumn().run();
+                queueTableOverlayRefresh(editor);
+              }}
+              className={`pointer-events-auto absolute top-2 inline-flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-lg bg-card/92 text-slate-400 shadow-sm backdrop-blur-sm transition-[opacity,color,background-color] duration-100 hover:bg-card hover:text-red-500 ${
+                tableControlsVisible ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{ left: tableOverlay.columnMarkerLeft }}
+              aria-label="Delete column"
+              title="Delete column"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+
+          {tableOverlay.rowCount > 1 && (
+            <button
+              type="button"
+              data-table-control="delete-row"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                editor.chain().focus().deleteRow().run();
+                queueTableOverlayRefresh(editor);
+              }}
+              className={`pointer-events-auto absolute left-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-card/92 text-slate-400 shadow-sm backdrop-blur-sm transition-[opacity,color,background-color] duration-100 hover:bg-card hover:text-red-500 ${
+                tableControlsVisible ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{ top: tableOverlay.rowMarkerTop }}
+              aria-label="Delete row"
+              title="Delete row"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
         </div>
       )}
-
-      <EditorContent editor={editor} />
 
       {slashState?.active && menuPos && slashState.range && (
         <div className="absolute z-50" style={{ top: menuPos.top, left: menuPos.left }}>
@@ -467,6 +658,86 @@ function parseInitialContent(content: any): any {
     return markdownToHtml(content);
   }
   return { type: 'doc', content: [{ type: 'paragraph' }] };
+}
+
+function isSelectionInLastTableRow(editor: Editor) {
+  const { $from } = editor.state.selection;
+
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    const node = $from.node(depth);
+    if (node.type.name !== 'tableRow') {
+      continue;
+    }
+
+    const tableDepth = depth - 1;
+    if (tableDepth < 0) {
+      return false;
+    }
+
+    const table = $from.node(tableDepth);
+    if (table.type.name !== 'table') {
+      return false;
+    }
+
+    return $from.index(tableDepth) === table.childCount - 1;
+  }
+
+  return false;
+}
+
+function resolveTableOverlay(editor: Editor | null | undefined, container: HTMLDivElement | null): TableOverlayState | null {
+  if (!editor || !container) {
+    return null;
+  }
+
+  const domAtPos = editor.view.domAtPos(editor.state.selection.from);
+  const domNode = domAtPos.node instanceof Element ? domAtPos.node : domAtPos.node.parentElement;
+  const cell = domNode?.closest('td, th');
+  const table = domNode?.closest('table');
+  const row = cell?.closest('tr');
+
+  if (!cell || !table || !row) {
+    return null;
+  }
+
+  const tableRect = table.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  const rowRect = row.getBoundingClientRect();
+  const cellRect = cell.getBoundingClientRect();
+
+  return {
+    top: tableRect.top - containerRect.top,
+    left: tableRect.left - containerRect.left,
+    width: tableRect.width,
+    height: tableRect.height,
+    rowMarkerTop: rowRect.top - tableRect.top + (rowRect.height / 2),
+    columnMarkerLeft: cellRect.left - tableRect.left + (cellRect.width / 2),
+    rowCount: table.querySelectorAll('tr').length,
+    columnCount: row.children.length,
+  };
+}
+
+function resolveTableOverlayFromCell(cell: Element, table: Element, container: HTMLDivElement): TableOverlayState | null {
+  const row = cell.closest('tr');
+  if (!row) {
+    return null;
+  }
+
+  const tableRect = table.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  const rowRect = row.getBoundingClientRect();
+  const cellRect = cell.getBoundingClientRect();
+
+  return {
+    top: tableRect.top - containerRect.top,
+    left: tableRect.left - containerRect.left,
+    width: tableRect.width,
+    height: tableRect.height,
+    rowMarkerTop: rowRect.top - tableRect.top + (rowRect.height / 2),
+    columnMarkerLeft: cellRect.left - tableRect.left + (cellRect.width / 2),
+    rowCount: table.querySelectorAll('tr').length,
+    columnCount: row.children.length,
+  };
 }
 
 function looksLikeMarkdown(text: string): boolean {

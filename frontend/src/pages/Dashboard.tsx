@@ -142,6 +142,7 @@ export default function Dashboard() {
   const previewFocus = useRestoreFocusOnClose();
   const workspaceSettings = settings.workspace;
   const localSettings = settings.local;
+  const smoothAnimations = localSettings.animationMode === 'smooth';
   const effectivePreviewMode = previewOverrideMode ?? localSettings.previewMode;
   const isFloatingSidebarMode = localSettings.sidebarMode === 'floating';
   const fixedSidebarHidden = workspaceSettings.focusMode || (isFloatingSidebarMode ? true : sidebarCollapsed);
@@ -1525,7 +1526,11 @@ export default function Dashboard() {
       <div className="relative flex min-h-0 flex-1">
         {!isFloatingSidebarMode && (
           <aside
-            className={`border-r border-border bg-card transition-all duration-200 ${fixedSidebarHidden ? 'w-0 border-r-0 opacity-0' : 'w-72 opacity-100'}`}
+            className={`border-r border-border bg-card ${
+              smoothAnimations
+                ? 'transition-[width,opacity,border-color] duration-[170ms] ease-out'
+                : 'transition-none'
+            } ${fixedSidebarHidden ? 'w-0 border-r-0 opacity-0' : 'w-72 opacity-100'}`}
           >
             <div className={`h-full ${fixedSidebarHidden ? 'pointer-events-none' : ''}`}>
               {sidebarContent}
@@ -1541,8 +1546,14 @@ export default function Dashboard() {
             />
             <div className="pointer-events-none absolute inset-y-0 left-0 z-30 flex items-start pl-2 pt-2 pb-2">
               <div
-                className={`pointer-events-auto h-full w-72 overflow-hidden rounded-2xl border border-white/8 bg-card/90 shadow-xl backdrop-blur-md transition-transform duration-200 ease-out ${
-                  floatingSidebarVisible ? 'translate-x-0' : '-translate-x-[calc(100%+0.75rem)]'
+                className={`pointer-events-auto h-full w-72 overflow-hidden rounded-2xl border border-white/8 bg-card/90 backdrop-blur-md ${
+                  smoothAnimations
+                    ? 'shadow-xl transition-[transform,opacity] duration-[170ms] ease-out'
+                    : 'shadow-lg transition-none'
+                } ${
+                  floatingSidebarVisible
+                    ? 'translate-x-0 opacity-100'
+                    : '-translate-x-[calc(100%+0.75rem)] opacity-0'
                 }`}
                 onMouseEnter={showFloatingSidebar}
                 onMouseLeave={scheduleFloatingSidebarHide}
@@ -1562,10 +1573,14 @@ export default function Dashboard() {
                   className={getWorkspacePaneClass({
                     noteCount: openWorkspaceNotes.length,
                     isActive: note.id === activeNoteId,
-                    index,
+                    animationMode: localSettings.animationMode,
                   })}
                 >
-                  <div className="border-b border-border/60 px-1 pb-3 pt-4">
+                  {index > 0 && (
+                    <div className="pointer-events-none absolute bottom-3 left-0 top-3 w-px bg-border/60" />
+                  )}
+
+                  <div className="border-b border-border/60 px-4 pb-3 pt-4">
                     {titleEditState?.noteId === note.id ? (
                       <input
                         ref={titleInputRef}
@@ -1626,7 +1641,7 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
-                  <div className={openWorkspaceNotes.length === 1 ? 'min-h-0 flex-1 overflow-y-auto px-1' : 'min-h-0 flex-1 overflow-y-auto'}>
+                  <div className="min-h-0 flex-1 overflow-y-auto px-4">
                     {note.resource?.type === 'note' ? (
                       <BlockEditor
                         noteId={note.id}
@@ -1696,6 +1711,7 @@ export default function Dashboard() {
         <PreviewLayer
           resource={previewResource}
           mode={effectivePreviewMode}
+          animationMode={localSettings.animationMode}
           overrideActive={previewOverrideMode !== null}
           open={Boolean(previewResourceId)}
           onClose={() => dismissPreview()}
@@ -1706,14 +1722,20 @@ export default function Dashboard() {
       )}
       {previewResourceLoading && (
         effectivePreviewMode === 'modal' ? (
-          <div className="fixed inset-0 z-[74] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
-            <div className="flex h-[80vh] w-full max-w-6xl items-center justify-center rounded-[1.75rem] border border-border bg-card shadow-2xl">
+          <div className={`fixed inset-0 z-[74] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm ${
+            smoothAnimations ? 'transition-opacity duration-[170ms] ease-out' : 'transition-none'
+          }`}>
+            <div className={`flex h-[80vh] w-full max-w-6xl items-center justify-center rounded-[1.75rem] border border-border bg-card ${
+              smoothAnimations ? 'shadow-2xl transition-[transform,opacity] duration-[170ms] ease-out' : 'shadow-xl transition-none'
+            }`}>
               <div className="text-sm text-slate-400">Loading preview...</div>
             </div>
           </div>
         ) : (
           <div className="pointer-events-none fixed inset-y-0 right-0 z-[74] flex w-full justify-end">
-            <div className="pointer-events-auto flex h-full w-full max-w-[min(40%,44rem)] items-center justify-center border-l border-border bg-card shadow-2xl">
+            <div className={`pointer-events-auto flex h-full w-full max-w-[min(40%,44rem)] items-center justify-center border-l border-border bg-card ${
+              smoothAnimations ? 'shadow-2xl transition-[transform,opacity] duration-[170ms] ease-out' : 'shadow-xl transition-none'
+            }`}>
               <div className="text-sm text-slate-400">Loading preview...</div>
             </div>
           </div>
@@ -1778,28 +1800,30 @@ function getWorkspaceLayoutClass(noteCount: number) {
 function getWorkspacePaneClass({
   noteCount,
   isActive,
-  index,
+  animationMode,
 }: {
   noteCount: number;
   isActive: boolean;
-  index: number;
+  animationMode: 'snappy' | 'smooth';
 }) {
-  const spacingClass = noteCount > 1 && index > 0 ? 'border-l border-border/60' : '';
-  const visualClass = isActive
-    ? 'bg-background opacity-100'
-    : 'bg-background/40 opacity-[0.88] scale-[0.992]';
-  const motionClass = 'transform-gpu transition-[opacity,transform,background-color,border-color] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)]';
+  const smoothMode = animationMode === 'smooth';
+  const visualClass = smoothMode
+    ? (isActive ? 'bg-background opacity-100 scale-100' : 'bg-background/35 opacity-[0.86] scale-[0.98]')
+    : 'bg-background opacity-100 scale-100';
+  const motionClass = smoothMode
+    ? 'transform-gpu transition-[opacity,transform,background-color,border-color,flex] duration-[170ms] ease-[cubic-bezier(0.22,1,0.36,1)]'
+    : 'transition-none';
 
   if (noteCount <= 1) {
-    return `flex min-w-0 w-full max-w-4xl flex-col overflow-hidden ${visualClass}`;
+    return `relative flex min-w-0 w-full max-w-4xl flex-col overflow-hidden ${visualClass}`;
   }
 
   if (noteCount === 2) {
-    return `flex min-w-0 flex-1 flex-col overflow-hidden ${motionClass} ${visualClass} ${spacingClass}`;
+    return `relative flex min-w-0 flex-1 flex-col overflow-hidden ${motionClass} ${visualClass}`;
   }
 
   const widthClass = isActive ? 'flex-[1.2]' : 'flex-[0.9]';
-  return `flex min-w-0 ${widthClass} flex-col overflow-hidden ${motionClass} ${visualClass} ${spacingClass}`;
+  return `relative flex min-w-0 ${widthClass} flex-col overflow-hidden ${motionClass} ${visualClass}`;
 }
 
 function SidebarItem({ resource, isActive, onClick, onDelete }: { resource: Resource; isActive: boolean; onClick: () => void; onDelete: (event: React.MouseEvent) => void }) {

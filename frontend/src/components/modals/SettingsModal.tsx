@@ -244,6 +244,17 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                   />
                 </SettingRow>
 
+                <SettingRow label="Animation feel" description="Choose whether Vaultor prioritizes instant transitions or a little more continuity.">
+                  <SettingSelect
+                    value={settings.local.animationMode}
+                    onChange={(value) => updateLocalSetting('animationMode', value as 'snappy' | 'smooth')}
+                    options={[
+                      { label: 'Snappy', value: 'snappy' },
+                      { label: 'Smooth', value: 'smooth' },
+                    ]}
+                  />
+                </SettingRow>
+
                 <SettingRow label="Preview style" description="Choose how previewable resources open on this device.">
                   <SettingSelect
                     value={settings.local.previewMode}

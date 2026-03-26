@@ -12,6 +12,7 @@
     --accent: #3b82f6;
     --primary: var(--accent);
     --primary-foreground: #ffffff;
+    --vaultor-ui-transition: 40ms;
   }
 
   .dark {
@@ -27,10 +28,16 @@
   :root[data-density='compact'] {
     font-size: 15px;
   }
+
+  :root[data-animation='smooth'] {
+    --vaultor-ui-transition: 170ms;
+  }
 }
 
 body {
-  @apply bg-background text-foreground antialiased transition-colors duration-200;
+  @apply bg-background text-foreground antialiased transition-colors;
+  transition-duration: var(--vaultor-ui-transition);
+  transition-timing-function: ease-out;
 }
 
 :root[data-density='compact'] body {
@@ -138,25 +145,33 @@ body {
 
 /* ===== Tables ===== */
 .tiptap table {
-  @apply border-collapse w-full my-4 text-sm;
+  @apply w-full my-4 text-sm border-separate border-spacing-0;
 }
 .tiptap table th,
 .tiptap table td {
-  @apply border border-border px-3 py-2 text-left align-top;
+  @apply px-4 py-2.5 text-left align-top;
+  border-right: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
   position: relative;
   min-width: 80px;
 }
 .tiptap table th {
-  @apply bg-slate-100 dark:bg-slate-800 font-semibold text-foreground;
+  @apply font-semibold text-foreground;
+  background-color: color-mix(in srgb, var(--foreground) 4%, transparent);
 }
 .tiptap table td {
-  @apply bg-card;
+  background-color: transparent;
+}
+.tiptap table tr:first-child th,
+.tiptap table tr:first-child td {
+  border-top: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+}
+.tiptap table tr th:first-child,
+.tiptap table tr td:first-child {
+  border-left: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
 }
 .tiptap table tr:hover td {
-  @apply bg-slate-50;
-}
-.dark .tiptap table tr:hover td {
-  background-color: rgba(30,41,59,0.5);
+  background-color: color-mix(in srgb, var(--foreground) 3%, transparent);
 }
 
 .tiptap .column-resize-handle {
@@ -170,13 +185,13 @@ body {
   z-index: 20;
 }
 .tiptap table .selectedCell {
-  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  background-color: color-mix(in srgb, var(--primary) 8%, transparent);
 }
 .tiptap table .selectedCell::after {
   content: '';
   position: absolute;
   inset: 0;
-  border: 2px solid var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 75%, white 25%);
   pointer-events: none;
 }
 

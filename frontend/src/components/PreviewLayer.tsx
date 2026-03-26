@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { ExternalLink, FileText, PanelRight, Paperclip, ScanText, X } from 'lucide-react';
 import FilePreview from './FilePreview';
 import type { Resource } from '../types';
@@ -6,6 +7,7 @@ import { ESCAPE_PRIORITIES, useEscapeLayer } from '../lib/escape/escape';
 interface PreviewLayerProps {
   resource: Resource;
   mode: 'side' | 'modal';
+  animationMode: 'snappy' | 'smooth';
   overrideActive: boolean;
   open: boolean;
   onClose: () => void;
@@ -17,6 +19,7 @@ interface PreviewLayerProps {
 export default function PreviewLayer({
   resource,
   mode,
+  animationMode,
   overrideActive,
   open,
   onClose,
@@ -24,12 +27,27 @@ export default function PreviewLayer({
   onOpenExternal,
   onDownload,
 }: PreviewLayerProps) {
+  const smoothAnimations = animationMode === 'smooth';
+  const [animateIn, setAnimateIn] = useState(false);
+
   useEscapeLayer({
     id: `preview-layer-${resource.id}`,
     active: open,
     priority: ESCAPE_PRIORITIES.preview,
     close: onClose,
   });
+
+  useEffect(() => {
+    if (!open || !smoothAnimations) {
+      return;
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      setAnimateIn(true);
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
+  }, [open, smoothAnimations]);
 
   const chrome = (
     <>
@@ -89,9 +107,20 @@ export default function PreviewLayer({
 
   if (mode === 'modal') {
     return (
-      <div className="fixed inset-0 z-[75] flex items-center justify-center bg-slate-950/40 p-3 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className={`fixed inset-0 z-[75] flex items-center justify-center bg-slate-950/40 p-3 backdrop-blur-sm ${
+          smoothAnimations
+            ? `transition-opacity duration-[170ms] ease-out ${animateIn ? 'opacity-100' : 'opacity-0'}`
+            : 'transition-none opacity-100'
+        }`}
+        onClick={onClose}
+      >
         <div
-          className="flex h-[84vh] w-full max-w-6xl flex-col overflow-hidden rounded-[1.4rem] border border-white/5 bg-card shadow-xl"
+          className={`flex h-[84vh] w-full max-w-6xl flex-col overflow-hidden rounded-[1.4rem] border border-white/5 bg-card ${
+            smoothAnimations
+              ? `shadow-xl transform-gpu transition-[transform,opacity] duration-[170ms] ease-out ${animateIn ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-[0.98] opacity-0'}`
+              : 'shadow-lg transition-none opacity-100'
+          }`}
           onClick={(event) => event.stopPropagation()}
         >
           {chrome}
@@ -102,7 +131,13 @@ export default function PreviewLayer({
 
   return (
     <div className="pointer-events-none fixed inset-y-0 right-0 z-[75] flex w-full justify-end">
-      <div className="pointer-events-auto flex h-full w-full max-w-[min(40%,44rem)] flex-col border-l border-white/5 bg-card shadow-lg">
+      <div
+        className={`pointer-events-auto flex h-full w-full max-w-[min(40%,44rem)] flex-col border-l border-white/5 bg-card ${
+          smoothAnimations
+            ? `shadow-lg transform-gpu transition-[transform,opacity] duration-[170ms] ease-out ${animateIn ? 'translate-x-0 opacity-100' : 'translate-x-2 opacity-0'}`
+            : 'transition-none opacity-100'
+        }`}
+      >
         {chrome}
       </div>
     </div>

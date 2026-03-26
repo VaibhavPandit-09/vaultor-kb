@@ -50,7 +50,9 @@ export default function CommandPaletteModal({
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [animateIn, setAnimateIn] = useState(false);
   const { settings } = useSettings();
+  const smoothAnimations = settings.local.animationMode === 'smooth';
 
   useEscapeLayer({
     id: 'vaultor-command-palette',
@@ -65,6 +67,7 @@ export default function CommandPaletteModal({
   useEffect(() => {
     if (!open) {
       wasOpenRef.current = false;
+      setAnimateIn(false);
       setStepStack([]);
       setSelectedIndex(0);
       setRunningId(null);
@@ -85,8 +88,22 @@ export default function CommandPaletteModal({
     setRunningId(null);
     setDebouncedQuery('');
     setPreviewId(null);
+    setAnimateIn(false);
     onHighlightPreviewResource(null);
   }, [context, lastAction, onHighlightPreviewResource, open, usage]);
+
+  useEffect(() => {
+    if (!open || !smoothAnimations) {
+      setAnimateIn(false);
+      return;
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      setAnimateIn(true);
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
+  }, [open, smoothAnimations]);
 
   useEffect(() => {
     if (!open) {
@@ -292,17 +309,27 @@ export default function CommandPaletteModal({
   return createPortal(
     <div className="fixed inset-0 z-[80] pointer-events-none">
       <div
-        className="absolute inset-y-0 left-0 pointer-events-auto bg-slate-950/18 backdrop-blur-[2px]"
+        className={`absolute inset-y-0 left-0 pointer-events-auto bg-slate-950/18 backdrop-blur-[2px] ${
+          smoothAnimations
+            ? `transition-opacity duration-[170ms] ease-out ${animateIn ? 'opacity-100' : 'opacity-0'}`
+            : 'transition-none opacity-100'
+        }`}
         style={previewVisible ? { right: previewPanelWidth } : { right: 0 }}
         onClick={() => handleCloseRequest()}
       />
       <div
-        className="absolute inset-y-0 left-0 pointer-events-none flex items-start justify-center px-4 pt-[18vh] transition-[right] duration-150 ease-out"
+        className={`absolute inset-y-0 left-0 pointer-events-none flex items-start justify-center px-4 pt-[18vh] ${
+          smoothAnimations ? 'transition-[right] duration-[170ms] ease-out' : 'transition-none'
+        }`}
         style={previewVisible ? { right: palettePreviewInset } : { right: 0 }}
       >
         <div
           ref={paletteRef}
-          className="command-palette pointer-events-auto w-full max-w-[40rem]"
+          className={`command-palette pointer-events-auto w-full max-w-[40rem] ${
+            smoothAnimations
+              ? `transform-gpu transition-[transform,opacity] duration-[170ms] ease-out ${animateIn ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-[0.98] opacity-0'}`
+              : 'transition-none'
+          }`}
           onClick={(event) => event.stopPropagation()}
         >
           <div

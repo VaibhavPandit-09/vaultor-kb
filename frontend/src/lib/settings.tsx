@@ -29,6 +29,7 @@ export type LocalSettings = {
   theme: 'dark' | 'light';
   accentColor: 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'teal' | 'pink' | 'cyan';
   density: 'comfortable' | 'compact';
+  animationMode: 'snappy' | 'smooth';
   previewMode: 'side' | 'modal';
   sidebarMode: 'fixed' | 'floating';
   commandPaletteTransparency: number;
@@ -68,6 +69,7 @@ export const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
   theme: 'dark',
   accentColor: 'blue',
   density: 'comfortable',
+  animationMode: 'snappy',
   previewMode: 'side',
   sidebarMode: 'fixed',
   commandPaletteTransparency: 0.85,
@@ -107,11 +109,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const root = window.document.documentElement;
     root.dataset.theme = local.theme;
     root.dataset.density = local.density;
+    root.dataset.animation = local.animationMode;
     root.classList.toggle('dark', local.theme === 'dark');
     root.classList.toggle('light', local.theme === 'light');
     root.style.setProperty('--accent', accentMap[local.accentColor]);
     root.style.setProperty('--primary', accentMap[local.accentColor]);
-  }, [local.accentColor, local.density, local.theme]);
+  }, [local.accentColor, local.animationMode, local.density, local.theme]);
 
   useEffect(() => {
     window.localStorage.setItem(LOCAL_SETTINGS_STORAGE_KEY, JSON.stringify(local));
@@ -314,6 +317,7 @@ function normalizeLocalSettings(input: Partial<LocalSettings> | null | undefined
     theme: input?.theme === 'light' ? 'light' : 'dark',
     accentColor: isAccentColor(input?.accentColor) ? input.accentColor : DEFAULT_LOCAL_SETTINGS.accentColor,
     density: input?.density === 'compact' ? 'compact' : 'comfortable',
+    animationMode: input?.animationMode === 'smooth' ? 'smooth' : 'snappy',
     previewMode: input?.previewMode === 'modal' ? 'modal' : 'side',
     sidebarMode: input?.sidebarMode === 'floating' ? 'floating' : 'fixed',
     commandPaletteTransparency: normalizeTransparency(input?.commandPaletteTransparency),
