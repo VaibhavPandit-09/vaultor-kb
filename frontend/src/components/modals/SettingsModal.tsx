@@ -255,6 +255,17 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                   />
                 </SettingRow>
 
+                <SettingRow label="Sidebar mode" description="Choose whether the sidebar is part of the layout or a floating overlay.">
+                  <SettingSelect
+                    value={settings.local.sidebarMode}
+                    onChange={(value) => updateLocalSetting('sidebarMode', value as 'fixed' | 'floating')}
+                    options={[
+                      { label: 'Fixed', value: 'fixed' },
+                      { label: 'Floating', value: 'floating' },
+                    ]}
+                  />
+                </SettingRow>
+
                 <SettingRow label="Command palette transparency" description="Adjust the glass depth of the command palette without changing its layout.">
                   <div className="w-full">
                     <input

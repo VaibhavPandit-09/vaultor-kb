@@ -30,6 +30,7 @@ export type LocalSettings = {
   accentColor: 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'teal' | 'pink' | 'cyan';
   density: 'comfortable' | 'compact';
   previewMode: 'side' | 'modal';
+  sidebarMode: 'fixed' | 'floating';
   commandPaletteTransparency: number;
   customShortcuts: Record<string, string>;
 };
@@ -68,6 +69,7 @@ export const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
   accentColor: 'blue',
   density: 'comfortable',
   previewMode: 'side',
+  sidebarMode: 'fixed',
   commandPaletteTransparency: 0.85,
   customShortcuts: {},
 };
@@ -313,6 +315,7 @@ function normalizeLocalSettings(input: Partial<LocalSettings> | null | undefined
     accentColor: isAccentColor(input?.accentColor) ? input.accentColor : DEFAULT_LOCAL_SETTINGS.accentColor,
     density: input?.density === 'compact' ? 'compact' : 'comfortable',
     previewMode: input?.previewMode === 'modal' ? 'modal' : 'side',
+    sidebarMode: input?.sidebarMode === 'floating' ? 'floating' : 'fixed',
     commandPaletteTransparency: normalizeTransparency(input?.commandPaletteTransparency),
     customShortcuts: normalizeCustomShortcuts(input?.customShortcuts),
   };

@@ -132,6 +132,9 @@ export default function Dashboard() {
   const csvUploadRef = useRef<HTMLInputElement>(null);
   const latestNoteContentRef = useRef<string | null>(null);
   const commandPalettePreviewRef = useRef<PreviewSnapshot | null>(null);
+  const floatingSidebarHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [floatingSidebarHovered, setFloatingSidebarHovered] = useState(false);
+  const [floatingSidebarPinned, setFloatingSidebarPinned] = useState(false);
 
   const { settings, resolvedShortcuts, toggleTheme } = useSettings();
   const commandPaletteFocus = useRestoreFocusOnClose();
@@ -141,7 +144,10 @@ export default function Dashboard() {
   const workspaceSettings = settings.workspace;
   const localSettings = settings.local;
   const effectivePreviewMode = previewOverrideMode ?? localSettings.previewMode;
-  const sidebarHidden = workspaceSettings.focusMode || sidebarCollapsed;
+  const isFloatingSidebarMode = localSettings.sidebarMode === 'floating';
+  const fixedSidebarHidden = workspaceSettings.focusMode || (isFloatingSidebarMode ? true : sidebarCollapsed);
+  const floatingSidebarVisible = !workspaceSettings.focusMode && isFloatingSidebarMode && (floatingSidebarPinned || floatingSidebarHovered);
+  const sidebarCollapsedForContext = isFloatingSidebarMode ? !floatingSidebarVisible : sidebarCollapsed;
   const selectedResource = useMemo(() => {
     if (!currentResourceId) {
       return null;
@@ -177,6 +183,41 @@ export default function Dashboard() {
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarCollapsed));
   }, [sidebarCollapsed]);
+
+  const clearFloatingSidebarHideTimeout = useCallback(() => {
+    if (floatingSidebarHideTimeoutRef.current) {
+      clearTimeout(floatingSidebarHideTimeoutRef.current);
+      floatingSidebarHideTimeoutRef.current = null;
+    }
+  }, []);
+
+  const showFloatingSidebar = useCallback(() => {
+    clearFloatingSidebarHideTimeout();
+    setFloatingSidebarHovered(true);
+  }, [clearFloatingSidebarHideTimeout]);
+
+  const scheduleFloatingSidebarHide = useCallback(() => {
+    clearFloatingSidebarHideTimeout();
+    if (floatingSidebarPinned) {
+      return;
+    }
+
+    floatingSidebarHideTimeoutRef.current = setTimeout(() => {
+      setFloatingSidebarHovered(false);
+    }, 180);
+  }, [clearFloatingSidebarHideTimeout, floatingSidebarPinned]);
+
+  useEffect(() => {
+    clearFloatingSidebarHideTimeout();
+    setFloatingSidebarHovered(false);
+    setFloatingSidebarPinned(false);
+  }, [clearFloatingSidebarHideTimeout, localSettings.sidebarMode]);
+
+  useEffect(() => {
+    return () => {
+      clearFloatingSidebarHideTimeout();
+    };
+  }, [clearFloatingSidebarHideTimeout]);
 
   const fetchData = useCallback(async () => {
     setSidebarLoading(true);
@@ -281,8 +322,18 @@ export default function Dashboard() {
   }, [dispatch, markOpened]);
 
   const toggleSidebar = useCallback(() => {
+    if (localSettings.sidebarMode === 'floating') {
+      clearFloatingSidebarHideTimeout();
+      setFloatingSidebarPinned((current) => {
+        const next = !current;
+        setFloatingSidebarHovered(next);
+        return next;
+      });
+      return;
+    }
+
     setSidebarCollapsed((prev) => !prev);
-  }, []);
+  }, [clearFloatingSidebarHideTimeout, localSettings.sidebarMode]);
 
   const restoreCommandPalettePreview = useCallback((snapshot: PreviewSnapshot | null) => {
     if (!snapshot?.resourceId || !snapshot.resourceType) {
@@ -975,7 +1026,7 @@ export default function Dashboard() {
     openNotes: openWorkspaceNotes
       .map((note) => note.resource)
       .filter((note): note is Resource => Boolean(note)),
-    sidebarCollapsed,
+    sidebarCollapsed: sidebarCollapsedForContext,
     openResource: (resourceId: string) => openResourceById(resourceId),
     createNote: handleCreateNote,
     uploadFile: requestFileUpload,
@@ -1000,7 +1051,7 @@ export default function Dashboard() {
     renameResource,
     requestFileUpload,
     resources,
-    sidebarCollapsed,
+    sidebarCollapsedForContext,
     toggleSidebar,
     workspaceResource,
   ]);
@@ -1009,6 +1060,172 @@ export default function Dashboard() {
   const canGoBack = navigation.currentIndex > 0;
   const canGoForward = navigation.currentIndex < navigation.history.length - 1;
   const typeLabels: Record<TypeFilter, string> = { all: 'All', note: 'Notes', file: 'Files' };
+  const sidebarContent = (
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="px-3 py-3">
+        <div className="relative">
+          <button
+            onClick={() => setShowTypeDropdown((prev) => !prev)}
+            className="flex w-full items-center justify-between gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <span>Type: {typeLabels[filters.typeFilter]}</span>
+            <ChevronDown size={12} />
+          </button>
+          {showTypeDropdown && (
+            <div className="absolute right-0 z-20 mt-1 w-full rounded-lg border border-border bg-card py-1 shadow-xl">
+              {(['all', 'note', 'file'] as TypeFilter[]).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => {
+                    dispatch(setTypeFilter(type));
+                    setShowTypeDropdown(false);
+                  }}
+                  className={`w-full px-3 py-1.5 text-left text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 ${filters.typeFilter === type ? 'font-semibold text-primary' : ''}`}
+                >
+                  {typeLabels[type]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex gap-1.5 px-3 pb-2">
+        <button
+          onClick={handleCreateNote}
+          disabled={createNotePending}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-1.5 text-xs font-medium text-white transition-all hover:bg-primary/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {createNotePending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+          New Note
+        </button>
+        <button
+          onClick={requestFileUpload}
+          disabled={uploadPending}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-1.5 text-xs font-medium transition-all hover:bg-slate-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-slate-800"
+        >
+          {uploadPending ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+          Upload
+        </button>
+      </div>
+
+      {filters.selectedTags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1 px-3 pb-2">
+          {filters.selectedTags.map((tagName) => (
+            <span key={tagName} className="flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+              {tagName}
+              <button onClick={() => dispatch(removeSelectedTag(tagName))} className="ml-1 opacity-60 hover:opacity-100"><X size={10} /></button>
+            </span>
+          ))}
+          <button onClick={() => dispatch(clearSelectedTags())} className="ml-1 text-[10px] text-slate-400 hover:text-red-500">Clear</button>
+        </div>
+      )}
+
+      <div className="border-t border-border" />
+
+      <div className="px-4 py-1.5 text-[10px] font-medium text-slate-400">
+        {filteredResources.length} resource{filteredResources.length === 1 ? '' : 's'}
+      </div>
+
+      <div className="flex-1 overflow-y-auto py-0.5">
+        {sidebarLoading ? (
+          <div className="space-y-2 px-3 py-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="h-9 animate-pulse rounded-xl bg-background" />
+            ))}
+          </div>
+        ) : filteredResources.length === 0 ? (
+          <div className="p-8 text-center text-xs text-slate-400">No resources found</div>
+        ) : (
+          <>
+            {filteredResources.filter((resource) => resource.type === 'note').length > 0 && filters.typeFilter !== 'file' && (
+              <>
+                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400/70">Notes</div>
+                {filteredResources.filter((resource) => resource.type === 'note').map((resource) => (
+                  <SidebarItem
+                    key={resource.id}
+                    resource={resource}
+                    isActive={currentResourceId === resource.id}
+                    onClick={() => openResourceById(resource.id)}
+                    onDelete={(event) => handleDeleteResource(resource.id, event)}
+                  />
+                ))}
+              </>
+            )}
+            {filteredResources.filter((resource) => resource.type === 'file').length > 0 && filters.typeFilter !== 'note' && (
+              <>
+                <div className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400/70">Files</div>
+                {filteredResources.filter((resource) => resource.type === 'file').map((resource) => (
+                  <SidebarItem
+                    key={resource.id}
+                    resource={resource}
+                    isActive={currentResourceId === resource.id}
+                    onClick={() => openResourceById(resource.id)}
+                    onDelete={(event) => handleDeleteResource(resource.id, event)}
+                  />
+                ))}
+              </>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="border-t border-border" />
+
+      <div className="flex max-h-40 flex-col px-3 py-2">
+        <div className="mb-1.5 flex items-center justify-between">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tags</span>
+        </div>
+        {tags.length > 3 && (
+          <input
+            type="text"
+            placeholder="Search tags..."
+            className="mb-1.5 w-full rounded border border-border bg-background px-2.5 py-1 text-[11px] focus:border-primary focus:outline-none"
+            value={tagSearch}
+            onChange={(event) => setTagSearch(event.target.value)}
+          />
+        )}
+        <div className="flex flex-wrap gap-1 overflow-y-auto">
+          {filteredTags.map((tag) => (
+            <span
+              key={tag.id}
+              className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                filters.selectedTags.includes(tag.name)
+                  ? 'border-primary/30 bg-primary/15 text-primary'
+                  : 'border-transparent bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+              }`}
+            >
+              <button onClick={() => dispatch(toggleSelectedTag(tag.name))} className="cursor-pointer">{tag.name}</button>
+              <button
+                onClick={() => setTagDeleteModal({ id: tag.id, name: tag.name })}
+                className="opacity-40 transition-opacity hover:text-red-500 hover:opacity-100"
+                title="Delete tag"
+              >
+                <X size={10} />
+              </button>
+            </span>
+          ))}
+          {filteredTags.length === 0 && <span className="text-[10px] text-slate-400">No tags</span>}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between border-t border-border bg-background p-2">
+        <div className="flex items-center gap-0.5">
+          <button onClick={triggerExport} title="Export Vault" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><DownloadCloud size={16} /></button>
+          <button onClick={() => importInputRef.current?.click()} title="Import Vault" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><UploadCloud size={16} /></button>
+        </div>
+        <div className="flex items-center gap-0.5">
+          <button onClick={toggleTheme} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary">
+            {localSettings.theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+          </button>
+          <button onClick={openSettingsModal} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary" title="Settings">
+            <Settings2 size={16} />
+          </button>
+          <button onClick={logout} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-red-500" title="Lock Vault"><LogOut size={16} /></button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className={`app-root flex h-screen flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen ? 'command-open pointer-events-none' : ''}`}>
@@ -1377,175 +1594,36 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1">
-        <aside
-          className={`border-r border-border bg-card transition-all duration-200 ${sidebarHidden ? 'w-0 border-r-0 opacity-0' : 'w-72 opacity-100'}`}
-        >
-          <div className={`flex h-full flex-col overflow-hidden ${sidebarHidden ? 'pointer-events-none' : ''}`}>
-            <div className="px-3 py-3">
-              <div className="relative">
-                <button
-                  onClick={() => setShowTypeDropdown((prev) => !prev)}
-                  className="flex w-full items-center justify-between gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  <span>Type: {typeLabels[filters.typeFilter]}</span>
-                  <ChevronDown size={12} />
-                </button>
-                {showTypeDropdown && (
-                  <div className="absolute right-0 z-20 mt-1 w-full rounded-lg border border-border bg-card py-1 shadow-xl">
-                    {(['all', 'note', 'file'] as TypeFilter[]).map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          dispatch(setTypeFilter(type));
-                          setShowTypeDropdown(false);
-                        }}
-                        className={`w-full px-3 py-1.5 text-left text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 ${filters.typeFilter === type ? 'font-semibold text-primary' : ''}`}
-                      >
-                        {typeLabels[type]}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+      <div className="relative flex min-h-0 flex-1">
+        {!isFloatingSidebarMode && (
+          <aside
+            className={`border-r border-border bg-card transition-all duration-200 ${fixedSidebarHidden ? 'w-0 border-r-0 opacity-0' : 'w-72 opacity-100'}`}
+          >
+            <div className={`h-full ${fixedSidebarHidden ? 'pointer-events-none' : ''}`}>
+              {sidebarContent}
             </div>
+          </aside>
+        )}
 
-            <div className="flex gap-1.5 px-3 pb-2">
-              <button
-                onClick={handleCreateNote}
-                disabled={createNotePending}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-1.5 text-xs font-medium text-white transition-all hover:bg-primary/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+        {isFloatingSidebarMode && !workspaceSettings.focusMode && (
+          <>
+            <div
+              className="absolute inset-y-0 left-0 z-20 w-1.5"
+              onMouseEnter={showFloatingSidebar}
+            />
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-30 flex items-start pl-2 pt-2 pb-2">
+              <div
+                className={`pointer-events-auto h-full w-72 overflow-hidden rounded-2xl border border-white/8 bg-card/90 shadow-xl backdrop-blur-md transition-transform duration-200 ease-out ${
+                  floatingSidebarVisible ? 'translate-x-0' : '-translate-x-[calc(100%+0.75rem)]'
+                }`}
+                onMouseEnter={showFloatingSidebar}
+                onMouseLeave={scheduleFloatingSidebarHide}
               >
-                {createNotePending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                New Note
-              </button>
-              <button
-                onClick={requestFileUpload}
-                disabled={uploadPending}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-1.5 text-xs font-medium transition-all hover:bg-slate-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-slate-800"
-              >
-                {uploadPending ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                Upload
-              </button>
-            </div>
-
-            {filters.selectedTags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1 px-3 pb-2">
-                {filters.selectedTags.map((tagName) => (
-                  <span key={tagName} className="flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                    {tagName}
-                    <button onClick={() => dispatch(removeSelectedTag(tagName))} className="ml-1 opacity-60 hover:opacity-100"><X size={10} /></button>
-                  </span>
-                ))}
-                <button onClick={() => dispatch(clearSelectedTags())} className="ml-1 text-[10px] text-slate-400 hover:text-red-500">Clear</button>
-              </div>
-            )}
-
-            <div className="border-t border-border" />
-
-            <div className="px-4 py-1.5 text-[10px] font-medium text-slate-400">
-              {filteredResources.length} resource{filteredResources.length === 1 ? '' : 's'}
-            </div>
-
-            <div className="flex-1 overflow-y-auto py-0.5">
-              {sidebarLoading ? (
-                <div className="space-y-2 px-3 py-3">
-                  {Array.from({ length: 6 }).map((_, index) => (
-                    <div key={index} className="h-9 animate-pulse rounded-xl bg-background" />
-                  ))}
-                </div>
-              ) : filteredResources.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400">No resources found</div>
-              ) : (
-                <>
-                  {filteredResources.filter((resource) => resource.type === 'note').length > 0 && filters.typeFilter !== 'file' && (
-                    <>
-                      <div className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400/70">Notes</div>
-                      {filteredResources.filter((resource) => resource.type === 'note').map((resource) => (
-                        <SidebarItem
-                          key={resource.id}
-                          resource={resource}
-                          isActive={currentResourceId === resource.id}
-                          onClick={() => openResourceById(resource.id)}
-                          onDelete={(event) => handleDeleteResource(resource.id, event)}
-                        />
-                      ))}
-                    </>
-                  )}
-                  {filteredResources.filter((resource) => resource.type === 'file').length > 0 && filters.typeFilter !== 'note' && (
-                    <>
-                      <div className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400/70">Files</div>
-                      {filteredResources.filter((resource) => resource.type === 'file').map((resource) => (
-                        <SidebarItem
-                          key={resource.id}
-                          resource={resource}
-                          isActive={currentResourceId === resource.id}
-                          onClick={() => openResourceById(resource.id)}
-                          onDelete={(event) => handleDeleteResource(resource.id, event)}
-                        />
-                      ))}
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-
-            <div className="border-t border-border" />
-
-            <div className="flex max-h-40 flex-col px-3 py-2">
-              <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tags</span>
-              </div>
-              {tags.length > 3 && (
-                <input
-                  type="text"
-                  placeholder="Search tags..."
-                  className="mb-1.5 w-full rounded border border-border bg-background px-2.5 py-1 text-[11px] focus:border-primary focus:outline-none"
-                  value={tagSearch}
-                  onChange={(event) => setTagSearch(event.target.value)}
-                />
-              )}
-              <div className="flex flex-wrap gap-1 overflow-y-auto">
-                {filteredTags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors ${
-                      filters.selectedTags.includes(tag.name)
-                        ? 'border-primary/30 bg-primary/15 text-primary'
-                        : 'border-transparent bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <button onClick={() => dispatch(toggleSelectedTag(tag.name))} className="cursor-pointer">{tag.name}</button>
-                    <button
-                      onClick={() => setTagDeleteModal({ id: tag.id, name: tag.name })}
-                      className="opacity-40 transition-opacity hover:text-red-500 hover:opacity-100"
-                      title="Delete tag"
-                    >
-                      <X size={10} />
-                    </button>
-                  </span>
-                ))}
-                {filteredTags.length === 0 && <span className="text-[10px] text-slate-400">No tags</span>}
+                {sidebarContent}
               </div>
             </div>
-
-            <div className="flex items-center justify-between border-t border-border bg-background p-2">
-              <div className="flex items-center gap-0.5">
-                <button onClick={triggerExport} title="Export Vault" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><DownloadCloud size={16} /></button>
-                <button onClick={() => importInputRef.current?.click()} title="Import Vault" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><UploadCloud size={16} /></button>
-              </div>
-              <div className="flex items-center gap-0.5">
-                <button onClick={toggleTheme} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary">
-                  {localSettings.theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-                </button>
-                <button onClick={openSettingsModal} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary" title="Settings">
-                  <Settings2 size={16} />
-                </button>
-                <button onClick={logout} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-red-500" title="Lock Vault"><LogOut size={16} /></button>
-              </div>
-            </div>
-          </div>
-        </aside>
+          </>
+        )}
 
         <main className="min-w-0 flex-1">
           {openWorkspaceNotes.length > 0 ? (
