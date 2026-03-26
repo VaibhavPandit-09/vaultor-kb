@@ -1,26 +1,42 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import type { Range } from '@tiptap/react';
 import {
-  Type, Heading1, Heading2, Heading3,
-  List, ListOrdered, Code, Quote, FileUp,
-  Minus, Table, FileSpreadsheet, CheckSquare,
-  Highlighter, Link2
+  AtSign,
+  CheckSquare,
+  Code,
+  FileSpreadsheet,
+  FileUp,
+  Heading1,
+  Heading2,
+  Heading3,
+  Highlighter,
+  Link2,
+  List,
+  ListOrdered,
+  Minus,
+  Quote,
+  Table,
+  Type,
 } from 'lucide-react';
 import { activateResourceLinkSuggestion } from './ResourceLinkExtension';
+import { extractSymbolSearchTerm, formatSymbolName, isSymbolSearchQuery, searchSymbols } from '../../lib/symbols';
 
 interface SlashMenuItem {
+  id: string;
   title: string;
   command: string;
   description: string;
   icon: React.ReactNode;
-  category: string;
+  category?: string;
+  keepOpen?: boolean;
   action: (editor: Editor, range: Range) => void;
+  flat?: boolean;
 }
 
 const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuItem[] => [
-  // --- Text ---
   {
+    id: 'text',
     title: 'Text',
     command: 'text',
     description: 'Plain text block',
@@ -30,8 +46,8 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
       editor.chain().focus().deleteRange(range).setParagraph().run();
     },
   },
-  // --- Headings ---
   {
+    id: 'heading-1',
     title: 'Heading 1',
     command: 'h1',
     description: 'Large section heading',
@@ -42,6 +58,7 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
     },
   },
   {
+    id: 'heading-2',
     title: 'Heading 2',
     command: 'h2',
     description: 'Medium section heading',
@@ -52,6 +69,7 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
     },
   },
   {
+    id: 'heading-3',
     title: 'Heading 3',
     command: 'h3',
     description: 'Small section heading',
@@ -61,8 +79,8 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
       editor.chain().focus().deleteRange(range).setHeading({ level: 3 }).run();
     },
   },
-  // --- Lists ---
   {
+    id: 'bullet-list',
     title: 'Bullet List',
     command: 'bullet',
     description: 'Unordered list',
@@ -73,6 +91,7 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
     },
   },
   {
+    id: 'numbered-list',
     title: 'Numbered List',
     command: 'numbered',
     description: 'Ordered list',
@@ -83,6 +102,7 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
     },
   },
   {
+    id: 'task-list',
     title: 'Task List',
     command: 'task todo checklist',
     description: 'Checklist with checkboxes',
@@ -92,8 +112,8 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
       editor.chain().focus().deleteRange(range).toggleTaskList().run();
     },
   },
-  // --- Rich blocks ---
   {
+    id: 'code-block',
     title: 'Code Block',
     command: 'code',
     description: 'Syntax-highlighted code',
@@ -104,6 +124,7 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
     },
   },
   {
+    id: 'quote',
     title: 'Quote',
     command: 'quote blockquote',
     description: 'Blockquote / callout',
@@ -114,6 +135,7 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
     },
   },
   {
+    id: 'divider',
     title: 'Divider',
     command: 'divider hr line separator',
     description: 'Horizontal separator',
@@ -124,6 +146,7 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
     },
   },
   {
+    id: 'highlight',
     title: 'Highlight',
     command: 'highlight mark',
     description: 'Highlight text',
@@ -133,19 +156,31 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
       editor.chain().focus().deleteRange(range).toggleHighlight().run();
     },
   },
-  // --- Table ---
   {
+    id: 'insert-symbol',
+    title: 'Insert Symbol',
+    command: 'symbol emoji icon',
+    description: 'Type /symbol to search the symbol catalogue',
+    icon: <AtSign size={18} />,
+    category: 'Inline',
+    keepOpen: true,
+    action: (editor, range) => {
+      editor.chain().focus().deleteRange(range).insertContent('/symbol ').run();
+    },
+  },
+  {
+    id: 'table',
     title: 'Table',
     command: 'table grid',
-    description: 'Insert a 3×3 table',
+    description: 'Insert a 3x3 table',
     icon: <Table size={18} />,
     category: 'Advanced',
     action: (editor, range) => {
       editor.chain().focus().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
     },
   },
-  // --- Link ---
   {
+    id: 'link-resource',
     title: 'Link Resource',
     command: 'link resource file note',
     description: 'Insert an inline link',
@@ -159,8 +194,8 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
       }, 0);
     },
   },
-  // --- Upload ---
   {
+    id: 'upload-markdown',
     title: 'Upload Markdown',
     command: 'upload md markdown',
     description: 'Import a .md file',
@@ -172,6 +207,7 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
     },
   },
   {
+    id: 'upload-csv',
     title: 'Upload CSV as Table',
     command: 'csv spreadsheet excel',
     description: 'Import CSV as a table',
@@ -184,6 +220,29 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
   },
 ];
 
+export function getFilteredSlashItems(query: string, onUploadMd: () => void, onUploadCsv: () => void): SlashMenuItem[] {
+  if (isSymbolSearchQuery(query)) {
+    return searchSymbols(extractSymbolSearchTerm(query), 32).map((item) => ({
+      id: `symbol-${item.name}`,
+      title: formatSymbolName(item.name),
+      command: item.name,
+      description: `:${item.name}:`,
+      icon: <span className="text-base leading-none">{item.symbol}</span>,
+      flat: true,
+      action: (editor, range) => {
+        editor.chain().focus().deleteRange(range).insertContent(`${item.symbol} `).run();
+      },
+    }));
+  }
+
+  const items = getItems(onUploadMd, onUploadCsv);
+  const normalizedQuery = query.toLowerCase();
+  return items.filter((item) => (
+    item.title.toLowerCase().includes(normalizedQuery)
+    || item.command.toLowerCase().includes(normalizedQuery)
+  ));
+}
+
 interface SlashMenuProps {
   editor: Editor;
   range: Range;
@@ -194,24 +253,32 @@ interface SlashMenuProps {
   onUploadCsv: () => void;
 }
 
-export default function SlashMenu({ editor, range, query, selectedIndex, onClose, onUploadMd, onUploadCsv }: SlashMenuProps) {
+export default function SlashMenu({
+  editor,
+  range,
+  query,
+  selectedIndex,
+  onClose,
+  onUploadMd,
+  onUploadCsv,
+}: SlashMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
-  const items = getItems(onUploadMd, onUploadCsv);
-
-  const filtered = items.filter(item =>
-    item.title.toLowerCase().includes(query.toLowerCase()) ||
-    item.command.toLowerCase().includes(query.toLowerCase())
+  const filtered = useMemo(
+    () => getFilteredSlashItems(query, onUploadMd, onUploadCsv),
+    [onUploadCsv, onUploadMd, query],
   );
+  const symbolMode = isSymbolSearchQuery(query);
 
   const selectItem = useCallback((index: number) => {
     const item = filtered[index];
     if (item) {
       item.action(editor, range);
-      onClose();
+      if (!item.keepOpen) {
+        onClose();
+      }
     }
   }, [filtered, editor, range, onClose]);
 
-  // Scroll selected into view
   const selectedEl = menuRef.current?.querySelector('[data-selected="true"]');
   if (selectedEl) {
     selectedEl.scrollIntoView({ block: 'nearest' });
@@ -219,51 +286,83 @@ export default function SlashMenu({ editor, range, query, selectedIndex, onClose
 
   if (filtered.length === 0) {
     return (
-      <div className="bg-card border border-border rounded-xl shadow-2xl p-3 text-sm text-slate-500">
+      <div className="rounded-xl border border-border bg-card p-3 text-sm text-slate-500 shadow-2xl">
         No results
       </div>
     );
   }
 
-  // Group items by category
-  const categories: Record<string, typeof filtered> = {};
-  filtered.forEach(item => {
-    if (!categories[item.category]) categories[item.category] = [];
-    categories[item.category].push(item);
+  if (symbolMode) {
+    return (
+      <div ref={menuRef} className="max-h-80 w-72 overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-2xl">
+        {filtered.map((item, index) => {
+          const selected = index === selectedIndex;
+          return (
+            <button
+              key={item.id}
+              data-selected={selected}
+              onClick={() => selectItem(index)}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                selected ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
+                selected ? 'bg-primary/20' : 'bg-slate-100 dark:bg-slate-800'
+              }`}>
+                {item.icon}
+              </span>
+              <div className="min-w-0">
+                <div className="truncate font-medium">{item.title}</div>
+                <div className="truncate text-[11px] text-slate-400">{item.description}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  const categories: Record<string, SlashMenuItem[]> = {};
+  filtered.forEach((item) => {
+    const category = item.category ?? 'Commands';
+    if (!categories[category]) {
+      categories[category] = [];
+    }
+    categories[category].push(item);
   });
 
   let globalIndex = 0;
 
   return (
-    <div
-      ref={menuRef}
-      className="bg-card border border-border rounded-xl shadow-2xl overflow-hidden w-72 max-h-80 overflow-y-auto"
-    >
-      {Object.entries(categories).map(([category, catItems]) => (
+    <div ref={menuRef} className="max-h-80 w-72 overflow-y-auto rounded-xl border border-border bg-card shadow-2xl">
+      {Object.entries(categories).map(([category, categoryItems]) => (
         <div key={category}>
-          <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 bg-slate-50 dark:bg-slate-900/50 sticky top-0">
+          <div className="sticky top-0 bg-slate-50 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:bg-slate-900/50">
             {category}
           </div>
           <div className="p-1">
-            {catItems.map((item) => {
-              const idx = globalIndex++;
+            {categoryItems.map((item) => {
+              const itemIndex = globalIndex;
+              globalIndex += 1;
+              const selected = itemIndex === selectedIndex;
+
               return (
                 <button
-                  key={item.command}
-                  data-selected={idx === selectedIndex}
-                  onClick={() => selectItem(filtered.indexOf(item))}
-                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-colors ${
-                    idx === selectedIndex
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-foreground hover:bg-slate-100 dark:hover:bg-slate-800'
+                  key={item.id}
+                  data-selected={selected}
+                  onClick={() => selectItem(itemIndex)}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                    selected ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span className={`p-1.5 rounded-lg flex-shrink-0 ${idx === selectedIndex ? 'bg-primary/20' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                  <span className={`flex flex-shrink-0 rounded-lg p-1.5 ${
+                    selected ? 'bg-primary/20' : 'bg-slate-100 dark:bg-slate-800'
+                  }`}>
                     {item.icon}
                   </span>
-                  <div className="text-left min-w-0">
-                    <div className="font-medium truncate">{item.title}</div>
-                    <div className="text-[11px] text-slate-400 truncate">{item.description}</div>
+                  <div className="min-w-0 text-left">
+                    <div className="truncate font-medium">{item.title}</div>
+                    <div className="truncate text-[11px] text-slate-400">{item.description}</div>
                   </div>
                 </button>
               );

@@ -16,12 +16,13 @@ import { SlashCommandExtension, slashCommandPluginKey } from './SlashCommandExte
 import type { SlashCommandState } from './SlashCommandExtension';
 import { ResourceLinkExtension, resourceLinkPluginKey } from './ResourceLinkExtension';
 import type { ResourceLinkState } from './ResourceLinkExtension';
-import SlashMenu, { getItems } from './SlashMenu';
+import SlashMenu, { getFilteredSlashItems } from './SlashMenu';
 import ResourceLinkMenu from './ResourceLinkMenu';
 import CodeBlockView from './CodeBlockView';
 import TableToolbar from './TableToolbar';
 import { markdownToHtml } from './markdownUtils';
 import { ESCAPE_PRIORITIES, registerFocusRestore, useEscapeLayer } from '../../lib/escape/escape';
+import { SymbolSystemExtension } from './SymbolSystemExtension';
 
 const lowlight = createLowlight(all);
 
@@ -107,6 +108,7 @@ function BlockEditor({
       Underline,
       SlashCommandExtension,
       ResourceLinkExtension,
+      SymbolSystemExtension,
     ],
     content: parseInitialContent(content),
     editorProps: {
@@ -241,16 +243,14 @@ function BlockEditor({
   useEffect(() => {
     (window as any).__executeSlashCommand = () => {
       if (!slashState?.active) return;
-      const items = getItems(onRequestMdUpload, onRequestCsvUpload);
-      const filtered = items.filter(item =>
-        item.title.toLowerCase().includes(slashState.query.toLowerCase()) ||
-        item.command.toLowerCase().includes(slashState.query.toLowerCase())
-      );
+      const filtered = getFilteredSlashItems(slashState.query, onRequestMdUpload, onRequestCsvUpload);
       const idx = selectedIndex >= filtered.length ? 0 : selectedIndex;
       const item = filtered[idx];
       if (item && slashState.range && editor) {
         item.action(editor, slashState.range);
-        closeSlash();
+        if (!item.keepOpen) {
+          closeSlash();
+        }
       }
     };
   }, [slashState, selectedIndex, editor, onRequestMdUpload, onRequestCsvUpload, closeSlash]);
@@ -263,11 +263,7 @@ function BlockEditor({
       if (!state) return;
 
       if (state.active) {
-        const items = getItems(() => {}, () => {});
-        const filtered = items.filter(item =>
-          item.title.toLowerCase().includes(state.query.toLowerCase()) ||
-          item.command.toLowerCase().includes(state.query.toLowerCase())
-        );
+        const filtered = getFilteredSlashItems(state.query, () => {}, () => {});
 
         if (state.navigateDirection === 'down') {
           setSelectedIndex(prev => (prev + 1) % Math.max(filtered.length, 1));
