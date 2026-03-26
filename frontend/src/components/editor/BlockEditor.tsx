@@ -189,8 +189,9 @@ function BlockEditor({
         setTableOverlay(null);
       }
     },
-    onFocus: () => {
+    onFocus: ({ editor: ed }) => {
       setEditorFocused(true);
+      (window as typeof window & { __vaultor_editor?: Editor | null }).__vaultor_editor = ed;
       onActivate(noteId);
     },
     onBlur: ({ editor: ed }) => {
@@ -206,20 +207,20 @@ function BlockEditor({
   // Expose editor for parent to call insertContent
   useEffect(() => {
     if (editor) {
-      (window as any).__vaultor_editor = editor;
       const unregisterRestore = registerFocusRestore(editor.view.dom, () => {
         editor.commands.focus(undefined, { scrollIntoView: false });
       });
 
       return () => {
         unregisterRestore();
-        (window as any).__vaultor_editor = null;
+        const globalWindow = window as typeof window & { __vaultor_editor?: Editor | null };
+        if (globalWindow.__vaultor_editor === editor) {
+          globalWindow.__vaultor_editor = null;
+        }
       };
     }
 
-    return () => {
-      (window as any).__vaultor_editor = null;
-    };
+    return undefined;
   }, [editor]);
 
   // Handle explicit resource link navigation

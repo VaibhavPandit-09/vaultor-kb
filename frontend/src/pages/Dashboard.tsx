@@ -1028,7 +1028,7 @@ export default function Dashboard() {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      const text = await file.text();
+      const text = await readTextFile(file);
       const html = markdownToHtml(text);
       const editor = (window as any).__vaultor_editor;
       if (editor) editor.chain().focus().insertContent(html).run();
@@ -1042,7 +1042,7 @@ export default function Dashboard() {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      const text = await file.text();
+      const text = await readTextFile(file);
       const html = csvToTableHtml(text);
       const editor = (window as any).__vaultor_editor;
       if (editor) editor.chain().focus().insertContent(html).run();
@@ -2079,6 +2079,19 @@ function openFilePicker(input: HTMLInputElement | null) {
   }
 
   input.click();
+}
+
+function readTextFile(file: File) {
+  if (typeof file.text === 'function') {
+    return file.text();
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+    reader.onerror = () => reject(reader.error ?? new Error('Unable to read file.'));
+    reader.readAsText(file);
+  });
 }
 
 function getWorkspaceLayoutClass(noteCount: number) {
