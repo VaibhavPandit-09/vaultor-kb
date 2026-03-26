@@ -33,10 +33,11 @@ import PreviewLayer from '../components/PreviewLayer';
 import { markdownToHtml } from '../components/editor/markdownUtils';
 import { csvToTableHtml } from '../components/editor/csvUtils';
 import AppModal from '../components/modals/AppModal';
-import CommandPaletteModal, { type CommandPaletteItem } from '../components/modals/CommandPaletteModal';
+import CommandPaletteModal from '../components/modals/CommandPaletteModal';
 import ShortcutsModal from '../components/modals/ShortcutsModal';
 import SettingsModal from '../components/modals/SettingsModal';
 import { isMac, shortcutMatchesEvent } from '../lib/shortcuts';
+import type { CommandContext } from '../lib/commandPalette';
 import {
   clearSelectedTags,
   navigateBack,
@@ -64,6 +65,12 @@ interface OpenNote {
   id: string;
   selection?: NoteSelection;
 }
+
+type PreviewSnapshot = {
+  resourceId: string | null;
+  resourceType: ResourceType | null;
+  overrideMode: 'side' | 'modal' | null;
+};
 
 const SIDEBAR_STORAGE_KEY = 'vaultor_sidebar_collapsed';
 
@@ -124,6 +131,7 @@ export default function Dashboard() {
   const mdUploadRef = useRef<HTMLInputElement>(null);
   const csvUploadRef = useRef<HTMLInputElement>(null);
   const latestNoteContentRef = useRef<string | null>(null);
+  const commandPalettePreviewRef = useRef<PreviewSnapshot | null>(null);
 
   const { settings, resolvedShortcuts, toggleTheme } = useSettings();
   const commandPaletteFocus = useRestoreFocusOnClose();
@@ -211,14 +219,17 @@ export default function Dashboard() {
     api.post(`/resources/${id}/open`).catch(() => {});
   }, []);
 
-  const dismissPreview = useCallback((options?: { restoreFocus?: boolean }) => {
+  const dismissPreview = useCallback((options?: { restoreFocus?: boolean; clearSelection?: boolean }) => {
     setPreviewResourceId(null);
     setPreviewResourceType(null);
     setPreviewOverrideMode(null);
+    if (options?.clearSelection !== false) {
+      dispatch(setCurrentResourceId(activeNoteId ?? null));
+    }
     if (options?.restoreFocus !== false) {
       previewFocus.restoreFocus();
     }
-  }, [previewFocus]);
+  }, [activeNoteId, dispatch, previewFocus]);
 
   const openPreview = useCallback((resource: Resource) => {
     previewFocus.captureFocus();
@@ -273,15 +284,71 @@ export default function Dashboard() {
     setSidebarCollapsed((prev) => !prev);
   }, []);
 
+  const restoreCommandPalettePreview = useCallback((snapshot: PreviewSnapshot | null) => {
+    if (!snapshot?.resourceId || !snapshot.resourceType) {
+      setPreviewResourceId(null);
+      setPreviewResourceType(null);
+      setPreviewOverrideMode(null);
+      return;
+    }
+
+    setPreviewResourceId(snapshot.resourceId);
+    setPreviewResourceType(snapshot.resourceType);
+    setPreviewOverrideMode(snapshot.overrideMode);
+
+    if (!resourceDetails[snapshot.resourceId]) {
+      void fetchResourceDetails(snapshot.resourceId);
+    }
+  }, [fetchResourceDetails, resourceDetails]);
+
   const openCommandPalette = useCallback(() => {
     commandPaletteFocus.captureFocus();
+    commandPalettePreviewRef.current = {
+      resourceId: previewResourceId,
+      resourceType: previewResourceType,
+      overrideMode: previewOverrideMode,
+    };
+    if (previewResourceId && previewResourceType) {
+      setPreviewOverrideMode('side');
+    }
     setCommandPaletteOpen(true);
-  }, [commandPaletteFocus]);
+  }, [commandPaletteFocus, previewOverrideMode, previewResourceId, previewResourceType]);
 
-  const closeCommandPalette = useCallback(() => {
+  const closeCommandPalette = useCallback((options?: { restorePreview?: boolean; restoreFocus?: boolean }) => {
     setCommandPaletteOpen(false);
-    commandPaletteFocus.restoreFocus();
-  }, [commandPaletteFocus]);
+    if (options?.restorePreview !== false) {
+      restoreCommandPalettePreview(commandPalettePreviewRef.current);
+    }
+    commandPalettePreviewRef.current = null;
+    if (options?.restoreFocus !== false) {
+      commandPaletteFocus.restoreFocus();
+    }
+  }, [commandPaletteFocus, restoreCommandPalettePreview]);
+
+  const highlightCommandPalettePreviewResource = useCallback((resourceId: string | null) => {
+    if (!commandPaletteOpen) {
+      return;
+    }
+
+    if (!resourceId) {
+      restoreCommandPalettePreview(commandPalettePreviewRef.current);
+      return;
+    }
+
+    const previewTarget = resources.find((resource) => resource.id === resourceId);
+    if (!previewTarget || !isPreviewResource(previewTarget.type)) {
+      restoreCommandPalettePreview(commandPalettePreviewRef.current);
+      return;
+    }
+
+    setPreviewResourceId(previewTarget.id);
+    setPreviewResourceType(previewTarget.type);
+    setPreviewOverrideMode('side');
+
+    if (!resourceDetails[previewTarget.id]) {
+      void fetchResourceDetails(previewTarget.id);
+    }
+  }, [commandPaletteOpen, fetchResourceDetails, resourceDetails, resources, restoreCommandPalettePreview]);
 
   const openShortcutsModal = useCallback(() => {
     shortcutsModalFocus.captureFocus();
@@ -655,6 +722,30 @@ export default function Dashboard() {
     }
   };
 
+  const renameResource = useCallback(async (resourceId: string, title: string) => {
+    const resource = resourceDetails[resourceId] ?? resources.find((entry) => entry.id === resourceId) ?? null;
+    if (!resource || resource.type !== 'note') {
+      return;
+    }
+
+    setResourceDetails((prev) => ({
+      ...prev,
+      [resourceId]: { ...resource, title },
+    }));
+
+    try {
+      await api.put(`/resources/${resourceId}/note`, {
+        title,
+        content: typeof resource.content === 'string'
+          ? resource.content
+          : JSON.stringify(resource.content ?? { type: 'doc', content: [] }),
+      });
+      void fetchData();
+    } catch (error) {
+      console.error(error);
+    }
+  }, [fetchData, resourceDetails, resources]);
+
   const handleContentUpdate = async (noteId: string, json: unknown) => {
     const noteResource = resourceDetails[noteId] ?? (activeResource?.id === noteId ? activeResource : null);
     if (!noteResource || noteResource.type !== 'note') return;
@@ -877,95 +968,42 @@ export default function Dashboard() {
     };
   }), [openNotes, resourceDetails, resources]);
 
-  const commandPaletteItems = useMemo<CommandPaletteItem[]>(() => {
-    const navigationItems: CommandPaletteItem[] = resources.map((resource) => ({
-      id: `nav-${resource.id}`,
-      type: 'navigation',
-      label: resource.title,
-      subtitle: resource.type === 'note' ? 'Note' : 'File',
-      keywords: [resource.type, ...(resource.tags || []).map((tag) => tag.name)],
-      icon: resource.type === 'note' ? 'note' : 'file',
-      action: () => openResourceById(resource.id),
-    }));
-
-    const createItems: CommandPaletteItem[] = [
-      {
-        id: 'create-note',
-        type: 'create',
-        label: 'Create note',
-        subtitle: 'Start a fresh note',
-        keywords: ['new', 'note', 'create'],
-        icon: 'create',
-        action: handleCreateNote,
-      },
-      {
-        id: 'upload-file',
-        type: 'create',
-        label: 'Upload file',
-        subtitle: 'Import a file into Vaultor',
-        keywords: ['upload', 'file', 'import'],
-        icon: 'upload',
-        action: async () => requestFileUpload(),
-      },
-    ];
-
-    const actionItems: CommandPaletteItem[] = [
-      {
-        id: 'close-active-note',
-        type: 'action',
-        label: 'Close active note',
-        subtitle: 'Close the focused note in the workspace',
-        keywords: ['close', 'note', 'workspace'],
-        icon: 'delete',
-        action: async () => closeActiveNote(),
-      },
-      {
-        id: 'toggle-sidebar',
-        type: 'action',
-        label: sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar',
-        subtitle: 'Toggle the navigation sidebar',
-        keywords: ['sidebar', 'toggle', 'navigation'],
-        icon: 'sidebar',
-        action: async () => toggleSidebar(),
-      },
-      {
-        id: 'open-shortcuts',
-        type: 'action',
-        label: 'Open shortcuts',
-        subtitle: 'Show all available keyboard shortcuts',
-        keywords: ['keyboard', 'shortcuts', 'help'],
-        icon: 'help',
-        action: async () => openShortcutsModal(),
-      },
-      {
-        id: 'open-settings',
-        type: 'action',
-        label: 'Open settings',
-        subtitle: 'Adjust workspace and local preferences',
-        keywords: ['settings', 'preferences', 'theme', 'shortcuts'],
-        icon: 'help',
-        action: async () => openSettingsModal(),
-      },
-    ];
-
-    if (!activeNoteId) {
-      actionItems.shift();
-    }
-
-    if (activeResource) {
-      actionItems.unshift({
-        id: `delete-${activeResource.id}`,
-        type: 'action',
-        label: `Delete "${activeResource.title}"`,
-        subtitle: 'Open the delete flow for the current resource',
-        keywords: ['delete', 'remove', activeResource.title],
-        icon: 'delete',
-        action: async () => handleDeleteResource(activeResource.id),
-      });
-    }
-
-    return [...navigationItems, ...createItems, ...actionItems];
-  }, [activeNoteId, activeResource, closeActiveNote, handleCreateNote, openResourceById, openSettingsModal, openShortcutsModal, requestFileUpload, resources, sidebarCollapsed, toggleSidebar]);
+  const commandPaletteContext = useMemo<CommandContext>(() => ({
+    resources,
+    activeNote: workspaceResource?.type === 'note' ? workspaceResource : null,
+    previewResource,
+    openNotes: openWorkspaceNotes
+      .map((note) => note.resource)
+      .filter((note): note is Resource => Boolean(note)),
+    sidebarCollapsed,
+    openResource: (resourceId: string) => openResourceById(resourceId),
+    createNote: handleCreateNote,
+    uploadFile: requestFileUpload,
+    toggleSidebar,
+    openShortcuts: openShortcutsModal,
+    openSettings: openSettingsModal,
+    closeActiveNote,
+    closePreview: () => dismissPreview(),
+    openDeleteFlow: (resourceId: string) => {
+      void handleDeleteResource(resourceId);
+    },
+    renameResource,
+  }), [
+    closeActiveNote,
+    dismissPreview,
+    handleCreateNote,
+    openResourceById,
+    openSettingsModal,
+    openShortcutsModal,
+    openWorkspaceNotes,
+    previewResource,
+    renameResource,
+    requestFileUpload,
+    resources,
+    sidebarCollapsed,
+    toggleSidebar,
+    workspaceResource,
+  ]);
 
   const contextTagPills = activeResource?.tags || [];
   const canGoBack = navigation.currentIndex > 0;
@@ -973,7 +1011,7 @@ export default function Dashboard() {
   const typeLabels: Record<TypeFilter, string> = { all: 'All', note: 'Notes', file: 'Files' };
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
+    <div className={`app-root flex h-screen flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen ? 'command-open pointer-events-none' : ''}`}>
       <input type="file" ref={mdUploadRef} className="hidden" accept=".md,.markdown,.txt" onChange={handleMdFileChange} />
       <input type="file" ref={csvUploadRef} className="hidden" accept=".csv,.tsv,.txt" onChange={handleCsvFileChange} />
       <input type="file" ref={fileUploadRef} className="hidden" onChange={handleUploadFile} />
@@ -982,7 +1020,9 @@ export default function Dashboard() {
       <CommandPaletteModal
         open={commandPaletteOpen}
         onClose={closeCommandPalette}
-        commands={commandPaletteItems}
+        context={commandPaletteContext}
+        onHighlightPreviewResource={highlightCommandPalettePreviewResource}
+        previewVisible={Boolean(previewResourceId)}
       />
       <ShortcutsModal open={shortcutsOpen} onClose={closeShortcutsModal} />
       <SettingsModal open={settingsOpen} onClose={closeSettingsModal} />
@@ -1536,6 +1576,7 @@ export default function Dashboard() {
                         content={parseNoteContent(note.resource.content)}
                         autosaveDelay={workspaceSettings.autosaveDelay}
                         isActive={note.id === activeNoteId}
+                        interactionLocked={commandPaletteOpen}
                         shouldRestoreFocus={focusRestoreNoteId === note.id}
                         savedSelection={note.selection ?? null}
                         onActivate={(noteId) => activateOpenNote(noteId)}

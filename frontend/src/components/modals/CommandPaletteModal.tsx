@@ -1,190 +1,367 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Command, FileText, FolderOpen, Paperclip, Plus, Sidebar, Trash2, Upload } from 'lucide-react';
-import AppModal from './AppModal';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from 'react';
+import { createPortal } from 'react-dom';
+import {
+  createRootStep,
+  type CommandContext,
+  type CommandItem,
+  type CommandMemory,
+  type CommandStep,
+  type CommandUsage,
+} from '../../lib/commandPalette';
+import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
+import { useSettings } from '../../lib/settings';
+import { isMac } from '../../lib/shortcuts';
 
-export type CommandPaletteItemType = 'navigation' | 'create' | 'action';
-
-export interface CommandPaletteItem {
-  id: string;
-  type: CommandPaletteItemType;
-  label: string;
-  subtitle?: string;
-  keywords?: string[];
-  icon?: 'note' | 'file' | 'create' | 'upload' | 'delete' | 'sidebar' | 'help' | 'open';
-  action: () => void | Promise<void>;
-}
+type StepState = {
+  step: CommandStep;
+  query: string;
+};
 
 interface CommandPaletteModalProps {
   open: boolean;
-  onClose: () => void;
-  commands: CommandPaletteItem[];
+  onClose: (options?: { restorePreview?: boolean; restoreFocus?: boolean }) => void;
+  context: CommandContext;
+  onHighlightPreviewResource: (resourceId: string | null) => void;
+  previewVisible: boolean;
 }
 
-const sectionLabels: Record<CommandPaletteItemType, string> = {
-  navigation: 'Navigation',
-  create: 'Create',
-  action: 'Actions',
-};
-
-export default function CommandPaletteModal({ open, onClose, commands }: CommandPaletteModalProps) {
-  const [query, setQuery] = useState('');
+export default function CommandPaletteModal({
+  open,
+  onClose,
+  context,
+  onHighlightPreviewResource,
+  previewVisible,
+}: CommandPaletteModalProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const paletteRef = useRef<HTMLDivElement>(null);
+  const wasOpenRef = useRef(false);
+  const [stepStack, setStepStack] = useState<StepState[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [runningId, setRunningId] = useState<string | null>(null);
+  const [lastAction, setLastAction] = useState<CommandMemory | null>(null);
+  const [usage, setUsage] = useState<CommandUsage>({});
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const { settings } = useSettings();
+
+  useEscapeLayer({
+    id: 'vaultor-command-palette',
+    active: open,
+    priority: ESCAPE_PRIORITIES.commandPalette,
+    restoreFocusOnEscape: false,
+    close: () => {
+      handleCloseRequest();
+    },
+  });
 
   useEffect(() => {
     if (!open) {
-      setQuery('');
+      wasOpenRef.current = false;
+      setStepStack([]);
       setSelectedIndex(0);
       setRunningId(null);
+      setDebouncedQuery('');
+      setPreviewId(null);
+      onHighlightPreviewResource(null);
       return;
     }
+
+    if (wasOpenRef.current) {
+      return;
+    }
+
+    wasOpenRef.current = true;
+    const rootStep = createRootStep(context, lastAction, usage);
+    setStepStack([{ step: rootStep, query: '' }]);
     setSelectedIndex(0);
+    setRunningId(null);
+    setDebouncedQuery('');
+    setPreviewId(null);
+    onHighlightPreviewResource(null);
+  }, [context, lastAction, onHighlightPreviewResource, open, usage]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const focusInput = () => inputRef.current?.focus();
+    const rafId = window.requestAnimationFrame(focusInput);
+    return () => window.cancelAnimationFrame(rafId);
   }, [open]);
 
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return commands;
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
 
-    return commands.filter((command) => {
-      const haystack = [command.label, command.subtitle || '', ...(command.keywords || [])].join(' ').toLowerCase();
-      return haystack.includes(normalized);
+    const placeholderTimer = window.setInterval(() => {
+      setPlaceholderIndex((current) => (current + 1) % PLACEHOLDERS.length);
+    }, 1800);
+
+    return () => window.clearInterval(placeholderTimer);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const stopBackgroundShortcuts = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (target instanceof Node && paletteRef.current?.contains(target)) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    window.addEventListener('keydown', stopBackgroundShortcuts, true);
+    window.addEventListener('keypress', stopBackgroundShortcuts, true);
+    window.addEventListener('keyup', stopBackgroundShortcuts, true);
+    return () => {
+      window.removeEventListener('keydown', stopBackgroundShortcuts, true);
+      window.removeEventListener('keypress', stopBackgroundShortcuts, true);
+      window.removeEventListener('keyup', stopBackgroundShortcuts, true);
+    };
+  }, [open]);
+
+  const currentState = stepStack[stepStack.length - 1] ?? null;
+  const currentQuery = currentState?.query ?? '';
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedQuery(currentQuery);
+    }, 70);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [currentQuery, open]);
+
+  const items = useMemo(() => {
+    if (!currentState) {
+      return [];
+    }
+
+    return currentState.step.getItems(debouncedQuery, context);
+  }, [context, currentState, debouncedQuery]);
+
+  useEffect(() => {
+    setSelectedIndex((current) => {
+      if (items.length === 0) {
+        return 0;
+      }
+
+      return Math.min(current, items.length - 1);
     });
-  }, [commands, query]);
+  }, [items.length]);
 
-  const grouped = useMemo(() => {
-    return (['navigation', 'create', 'action'] as CommandPaletteItemType[])
-      .map((type) => ({ type, items: filtered.filter((command) => command.type === type) }))
-      .filter((group) => group.items.length > 0);
-  }, [filtered]);
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
 
-  const flatItems = useMemo(() => grouped.flatMap((group) => group.items), [grouped]);
+    const selectedItem = items[selectedIndex];
+    const nextPreviewId = selectedItem?.preview?.type === 'file'
+      ? selectedItem.preview.resource.id
+      : null;
 
-  const runCommand = useCallback(async (command: CommandPaletteItem) => {
-    setRunningId(command.id);
+    if (nextPreviewId === previewId) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      onHighlightPreviewResource(nextPreviewId);
+      setPreviewId(nextPreviewId);
+    }, 80);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [items, onHighlightPreviewResource, open, previewId, selectedIndex]);
+
+  const updateCurrentQuery = useCallback((query: string) => {
+    setStepStack((previous) => previous.map((entry, index) => (
+      index === previous.length - 1 ? { ...entry, query } : entry
+    )));
+  }, []);
+
+  const stepBack = useCallback(() => {
+    setStepStack((previous) => (previous.length > 1 ? previous.slice(0, -1) : previous));
+    setSelectedIndex(0);
+  }, []);
+
+  const handleCloseRequest = useCallback((options?: { restorePreview?: boolean; restoreFocus?: boolean }) => {
+    if (stepStack.length > 1) {
+      stepBack();
+      return;
+    }
+
+    onClose(options);
+  }, [onClose, stepBack, stepStack.length]);
+
+  const executeItem = useCallback(async (item: CommandItem) => {
+    const result = await item.onSelect();
+    if (result.type === 'noop') {
+      return;
+    }
+
+    if (result.type === 'push') {
+      setStepStack((previous) => [
+        ...previous,
+        {
+          step: result.step,
+          query: result.query ?? result.step.initialQuery ?? '',
+        },
+      ]);
+      setSelectedIndex(0);
+      return;
+    }
+
+    setRunningId(item.id);
     try {
-      await command.action();
-      onClose();
+      await result.action();
+      setUsage((previous) => ({
+        ...previous,
+        [item.id]: (previous[item.id] ?? 0) + 1,
+      }));
+      if (result.remember) {
+        setLastAction(result.remember);
+      }
+      onHighlightPreviewResource(null);
+      onClose({ restorePreview: false, restoreFocus: false });
     } finally {
       setRunningId(null);
     }
-  }, [onClose]);
+  }, [onClose, onHighlightPreviewResource]);
 
-  useEffect(() => {
-    if (!open) return;
+  const handleInputKeyDown = useCallback((event: ReactKeyboardEvent<HTMLInputElement>) => {
+    const modKey = isMac ? event.metaKey : event.ctrlKey;
+    event.stopPropagation();
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        setSelectedIndex((prev) => (flatItems.length === 0 ? 0 : (prev + 1) % flatItems.length));
-      }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setSelectedIndex((current) => (
+        items.length === 0 ? 0 : Math.min(current + 1, items.length - 1)
+      ));
+      return;
+    }
 
-      if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        setSelectedIndex((prev) => (flatItems.length === 0 ? 0 : (prev - 1 + flatItems.length) % flatItems.length));
-      }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setSelectedIndex((current) => Math.max(current - 1, 0));
+      return;
+    }
 
-      if (event.key === 'Enter' && flatItems[selectedIndex]) {
-        event.preventDefault();
-        void runCommand(flatItems[selectedIndex]);
-      }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      handleCloseRequest();
+      return;
+    }
 
-    };
+    if ((event.key === 'Enter' || (modKey && event.key === 'Enter')) && items[selectedIndex]) {
+      event.preventDefault();
+      void executeItem(items[selectedIndex]);
+      return;
+    }
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [flatItems, open, runCommand, selectedIndex]);
+    if (event.key === 'Tab' && items[selectedIndex]) {
+      event.preventDefault();
+      updateCurrentQuery(items[selectedIndex].title);
+    }
+  }, [executeItem, handleCloseRequest, items, selectedIndex, updateCurrentQuery]);
 
-  let globalIndex = 0;
+  if (!open) {
+    return null;
+  }
 
-  return (
-    <AppModal
-      open={open}
-      onClose={onClose}
-      title="Command Palette"
-      description="Jump, create, and act from one keyboard-first surface."
-      widthClassName="max-w-3xl"
-      escapeLayer="commandPalette"
-      restoreFocusOnEscape={false}
-    >
-      <div className="space-y-4">
-        <div className="relative">
-          <Command className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-          <input
-            autoFocus
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search commands, notes, and files..."
-            className="w-full rounded-xl border border-border bg-background py-3 pl-10 pr-4 text-sm outline-none transition-colors focus:border-primary"
-          />
-        </div>
-        <div className="flex items-center justify-between text-xs font-medium text-slate-400">
-          <span>{flatItems.length} result{flatItems.length === 1 ? '' : 's'}</span>
-          <span>Use ↑ ↓ Enter Esc</span>
-        </div>
-        <div className="max-h-[28rem] space-y-3 overflow-y-auto">
-          {grouped.map((group) => (
-            <div key={group.type}>
-              <div className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                {sectionLabels[group.type]}
-              </div>
-              <div className="space-y-1">
-                {group.items.map((command) => {
-                  const currentIndex = globalIndex++;
-                  const selected = currentIndex === selectedIndex;
-                  const running = runningId === command.id;
+  const transparency = settings.local.commandPaletteTransparency;
+  const previewPanelWidth = 'min(40vw, 44rem)';
+  const palettePreviewInset = `calc(${previewPanelWidth} + 2rem)`;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[80] pointer-events-none">
+      <div
+        className="absolute inset-y-0 left-0 pointer-events-auto bg-slate-950/18 backdrop-blur-[2px]"
+        style={previewVisible ? { right: previewPanelWidth } : { right: 0 }}
+        onClick={() => handleCloseRequest()}
+      />
+      <div
+        className="absolute inset-y-0 left-0 pointer-events-none flex items-start justify-center px-4 pt-[18vh] transition-[right] duration-150 ease-out"
+        style={previewVisible ? { right: palettePreviewInset } : { right: 0 }}
+      >
+        <div
+          ref={paletteRef}
+          className="command-palette pointer-events-auto w-full max-w-[40rem]"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div
+            className="rounded-[1.3rem] border border-white/8 shadow-xl"
+            style={{
+              background: `rgba(10, 15, 25, ${transparency})`,
+              backdropFilter: `blur(${Math.round(transparency * 20)}px)`,
+              WebkitBackdropFilter: `blur(${Math.round(transparency * 20)}px)`,
+            }}
+          >
+            <div className="px-4 py-4">
+              <input
+                ref={inputRef}
+                value={currentQuery}
+                onChange={(event) => {
+                  event.stopPropagation();
+                  updateCurrentQuery(event.target.value);
+                }}
+                onKeyDown={handleInputKeyDown}
+                placeholder={currentQuery ? currentState?.step.placeholder : PLACEHOLDERS[placeholderIndex]}
+                className="w-full bg-transparent text-[15px] font-medium text-foreground outline-none placeholder:text-slate-400"
+              />
+            </div>
+
+            {items.length > 0 && (
+              <div className="max-h-[60vh] overflow-y-auto px-2 pb-2">
+                {items.map((item, index) => {
+                  const selected = index === selectedIndex;
+                  const running = runningId === item.id;
 
                   return (
                     <button
-                      key={command.id}
-                      onClick={() => void runCommand(command)}
-                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors ${
-                        selected ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                      key={item.id}
+                      onClick={() => void executeItem(item)}
+                      className={`flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                        selected ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-background/80'
                       } ${running ? 'opacity-70' : ''}`}
                     >
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-slate-500">
-                        <CommandIcon icon={command.icon} />
-                      </span>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium">{command.label}</div>
-                        {command.subtitle && <div className="truncate text-xs text-slate-400">{command.subtitle}</div>}
+                        <div className="truncate text-sm font-medium">{item.title}</div>
+                        {item.subtitle && (
+                          <div className="truncate text-xs text-slate-400">{item.subtitle}</div>
+                        )}
                       </div>
-                      <span className="text-[10px] uppercase tracking-[0.18em] text-slate-400">{group.type}</span>
                     </button>
                   );
                 })}
               </div>
-            </div>
-          ))}
-          {flatItems.length === 0 && (
-            <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-sm text-slate-500">
-              No commands matched your search.
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </AppModal>
+    </div>,
+    document.body,
   );
 }
 
-function CommandIcon({ icon }: { icon?: CommandPaletteItem['icon'] }) {
-  switch (icon) {
-    case 'note':
-      return <FileText size={16} />;
-    case 'file':
-      return <Paperclip size={16} />;
-    case 'create':
-      return <Plus size={16} />;
-    case 'upload':
-      return <Upload size={16} />;
-    case 'delete':
-      return <Trash2 size={16} />;
-    case 'sidebar':
-      return <Sidebar size={16} />;
-    case 'help':
-      return <Command size={16} />;
-    case 'open':
-      return <FolderOpen size={16} />;
-    default:
-      return <Command size={16} />;
-  }
-}
+const PLACEHOLDERS = [
+  'Search or run a command…',
+  'Open note…',
+  'Delete…',
+];

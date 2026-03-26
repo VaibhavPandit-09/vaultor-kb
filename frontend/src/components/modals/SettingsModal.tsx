@@ -75,6 +75,9 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
 
     return `${settings.workspace.autosaveDelay} ms`;
   }, [settings.workspace.autosaveDelay]);
+  const commandPaletteTransparencyLabel = useMemo(() => (
+    `${Math.round(settings.local.commandPaletteTransparency * 100)}%`
+  ), [settings.local.commandPaletteTransparency]);
 
   const activeViewMeta = views.find((view) => view.id === activeView) ?? views[0];
 
@@ -250,6 +253,21 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       { label: 'Floating modal', value: 'modal' },
                     ]}
                   />
+                </SettingRow>
+
+                <SettingRow label="Command palette transparency" description="Adjust the glass depth of the command palette without changing its layout.">
+                  <div className="w-full">
+                    <input
+                      type="range"
+                      min={0.6}
+                      max={1}
+                      step={0.05}
+                      value={settings.local.commandPaletteTransparency}
+                      onChange={(event) => updateLocalSetting('commandPaletteTransparency', Number(event.target.value))}
+                      className="w-full accent-[var(--accent)]"
+                    />
+                    <div className="mt-2 text-xs font-medium text-slate-500">{commandPaletteTransparencyLabel}</div>
+                  </div>
                 </SettingRow>
 
                 <ResetStrip

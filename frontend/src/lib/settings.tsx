@@ -30,6 +30,7 @@ export type LocalSettings = {
   accentColor: 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'teal' | 'pink' | 'cyan';
   density: 'comfortable' | 'compact';
   previewMode: 'side' | 'modal';
+  commandPaletteTransparency: number;
   customShortcuts: Record<string, string>;
 };
 
@@ -67,6 +68,7 @@ export const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
   accentColor: 'blue',
   density: 'comfortable',
   previewMode: 'side',
+  commandPaletteTransparency: 0.85,
   customShortcuts: {},
 };
 
@@ -311,8 +313,18 @@ function normalizeLocalSettings(input: Partial<LocalSettings> | null | undefined
     accentColor: isAccentColor(input?.accentColor) ? input.accentColor : DEFAULT_LOCAL_SETTINGS.accentColor,
     density: input?.density === 'compact' ? 'compact' : 'comfortable',
     previewMode: input?.previewMode === 'modal' ? 'modal' : 'side',
+    commandPaletteTransparency: normalizeTransparency(input?.commandPaletteTransparency),
     customShortcuts: normalizeCustomShortcuts(input?.customShortcuts),
   };
+}
+
+function normalizeTransparency(value: number | undefined) {
+  const fallback = DEFAULT_LOCAL_SETTINGS.commandPaletteTransparency;
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return fallback;
+  }
+
+  return Math.min(1, Math.max(0.6, value));
 }
 
 function normalizeCustomShortcuts(input: Record<string, string> | null | undefined) {

@@ -30,6 +30,7 @@ interface BlockEditorProps {
   content: any;
   autosaveDelay: number;
   isActive: boolean;
+  interactionLocked: boolean;
   shouldRestoreFocus: boolean;
   onUpdate: (json: any) => void;
   onSelectionChange: (selection: NoteSelection) => void;
@@ -50,6 +51,7 @@ function BlockEditor({
   content,
   autosaveDelay,
   isActive,
+  interactionLocked,
   shouldRestoreFocus,
   onUpdate,
   onSelectionChange,
@@ -346,6 +348,14 @@ function BlockEditor({
   }, [slashState?.query]);
 
   useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    editor.setEditable(!interactionLocked);
+  }, [editor, interactionLocked]);
+
+  useEffect(() => {
     if (!editor || !content || editor.isFocused) {
       return;
     }
@@ -363,7 +373,7 @@ function BlockEditor({
       return;
     }
 
-    if (isActive && !wasActiveRef.current && shouldRestoreFocus) {
+    if (isActive && !wasActiveRef.current && shouldRestoreFocus && !interactionLocked) {
       console.log('Restoring selection');
       if (savedSelectionRef.current) {
         editor.commands.setTextSelection(savedSelectionRef.current);
@@ -374,7 +384,7 @@ function BlockEditor({
     }
 
     wasActiveRef.current = isActive;
-  }, [editor, isActive, noteId, onFocusRestored, shouldRestoreFocus]);
+  }, [editor, interactionLocked, isActive, noteId, onFocusRestored, shouldRestoreFocus]);
 
   useEffect(() => {
     if (!editor || !isActive || !editorFocused) {
@@ -435,6 +445,7 @@ const MemoizedBlockEditor = memo(BlockEditor, (prev, next) => (
   prev.noteId === next.noteId
   && prev.autosaveDelay === next.autosaveDelay
   && prev.isActive === next.isActive
+  && prev.interactionLocked === next.interactionLocked
   && prev.shouldRestoreFocus === next.shouldRestoreFocus
   && prev.savedSelection?.from === next.savedSelection?.from
   && prev.savedSelection?.to === next.savedSelection?.to
