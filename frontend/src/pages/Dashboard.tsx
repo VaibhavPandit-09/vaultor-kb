@@ -48,6 +48,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../state/hooks';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../lib/escape/escape';
 import { useSettings } from '../lib/settings';
+import { getGlassPanelStyle, getOverlayStyle } from '../lib/transparency';
 
 type TypeFilter = 'all' | 'note' | 'file';
 
@@ -66,6 +67,12 @@ type PreviewSnapshot = {
   resourceId: string | null;
   resourceType: ResourceType | null;
   overrideMode: 'side' | 'modal' | null;
+};
+
+type TagPickerItem = {
+  name: string;
+  type: 'existing' | 'create';
+  score: number;
 };
 
 const SIDEBAR_STORAGE_KEY = 'vaultor_sidebar_collapsed';
@@ -98,8 +105,9 @@ export default function Dashboard() {
   const [previewResourceId, setPreviewResourceId] = useState<string | null>(null);
   const [previewResourceType, setPreviewResourceType] = useState<ResourceType | null>(null);
   const [previewOverrideMode, setPreviewOverrideMode] = useState<'side' | 'modal' | null>(null);
-  const [tagInputOpen, setTagInputOpen] = useState(false);
+  const [tagPickerOpenNoteId, setTagPickerOpenNoteId] = useState<string | null>(null);
   const [tagInputValue, setTagInputValue] = useState('');
+  const [tagPickerSelectedIndex, setTagPickerSelectedIndex] = useState(0);
 
   const [authModal, setAuthModal] = useState<'export' | 'import' | null>(null);
   const [authPassword, setAuthPassword] = useState('');
@@ -130,6 +138,8 @@ export default function Dashboard() {
   const commandPalettePreviewRef = useRef<PreviewSnapshot | null>(null);
   const floatingSidebarHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleEditDismissRef = useRef<'save' | 'cancel' | null>(null);
+  const tagPickerRef = useRef<HTMLDivElement>(null);
+  const tagInputRef = useRef<HTMLInputElement>(null);
   const [floatingSidebarHovered, setFloatingSidebarHovered] = useState(false);
   const [floatingSidebarPinned, setFloatingSidebarPinned] = useState(false);
   const [titleEditState, setTitleEditState] = useState<{ noteId: string; value: string; original: string } | null>(null);
@@ -143,6 +153,7 @@ export default function Dashboard() {
   const workspaceSettings = settings.workspace;
   const localSettings = settings.local;
   const smoothAnimations = localSettings.animationMode === 'smooth';
+  const uiTransparency = localSettings.uiTransparency;
   const effectivePreviewMode = previewOverrideMode ?? localSettings.previewMode;
   const isFloatingSidebarMode = localSettings.sidebarMode === 'floating';
   const fixedSidebarHidden = workspaceSettings.focusMode || (isFloatingSidebarMode ? true : sidebarCollapsed);
@@ -170,6 +181,30 @@ export default function Dashboard() {
     return resourceDetails[activeNoteId] ?? resources.find((resource) => resource.id === activeNoteId) ?? null;
   }, [activeNoteId, resourceDetails, resources]);
   const activeResource = previewResource ?? workspaceResource ?? selectedResource;
+  const tagPickerResource = useMemo(() => {
+    if (!tagPickerOpenNoteId) {
+      return null;
+    }
+
+    return resourceDetails[tagPickerOpenNoteId] ?? resources.find((resource) => resource.id === tagPickerOpenNoteId) ?? null;
+  }, [resourceDetails, resources, tagPickerOpenNoteId]);
+  const tagPickerItems = useMemo(() => {
+    const attachedNames = new Set((tagPickerResource?.tags ?? []).map((tag) => tag.name.toLowerCase()));
+    return getTagPickerItems(tags, tagInputValue, attachedNames);
+  }, [tagInputValue, tagPickerResource?.tags, tags]);
+  const tagPickerEmptyMessage = useMemo(() => {
+    const normalizedQuery = normalizeTagSearch(tagInputValue);
+    if (!normalizedQuery) {
+      return 'All existing tags are already on this note.';
+    }
+
+    const attachedNames = new Set((tagPickerResource?.tags ?? []).map((tag) => tag.name.toLowerCase()));
+    if (attachedNames.has(normalizedQuery)) {
+      return 'This tag is already on the current note.';
+    }
+
+    return `Create "${tagInputValue.trim()}"`;
+  }, [tagInputValue, tagPickerResource?.tags]);
   const activeResourceLoading = Boolean(currentResourceId && !selectedResource && loadingResourceIds.includes(currentResourceId));
   const previewResourceLoading = Boolean(previewResourceId && !previewResource && loadingResourceIds.includes(previewResourceId));
 
@@ -178,6 +213,19 @@ export default function Dashboard() {
     active: showTypeDropdown,
     priority: ESCAPE_PRIORITIES.popover,
     close: () => setShowTypeDropdown(false),
+  });
+
+  const closeTagPicker = useCallback(() => {
+    setTagPickerOpenNoteId(null);
+    setTagInputValue('');
+    setTagPickerSelectedIndex(0);
+  }, []);
+
+  useEscapeLayer({
+    id: 'dashboard-tag-picker',
+    active: Boolean(tagPickerOpenNoteId),
+    priority: ESCAPE_PRIORITIES.popover,
+    close: closeTagPicker,
   });
 
   useEffect(() => {
@@ -231,6 +279,53 @@ export default function Dashboard() {
 
     return () => window.cancelAnimationFrame(rafId);
   }, [titleEditState]);
+
+  useEffect(() => {
+    if (!tagPickerOpenNoteId) {
+      return;
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      tagInputRef.current?.focus();
+      tagInputRef.current?.select();
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
+  }, [tagPickerOpenNoteId]);
+
+  useEffect(() => {
+    if (!tagPickerOpenNoteId) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (target instanceof Node && tagPickerRef.current?.contains(target)) {
+        return;
+      }
+
+      closeTagPicker();
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [closeTagPicker, tagPickerOpenNoteId]);
+
+  useEffect(() => {
+    setTagPickerSelectedIndex((current) => {
+      if (tagPickerItems.length === 0) {
+        return 0;
+      }
+
+      return Math.min(current, tagPickerItems.length - 1);
+    });
+  }, [tagPickerItems]);
+
+  useEffect(() => {
+    setTagPickerSelectedIndex(0);
+  }, [tagInputValue, tagPickerOpenNoteId]);
 
   const fetchData = useCallback(async () => {
     setSidebarLoading(true);
@@ -841,22 +936,54 @@ export default function Dashboard() {
     }
   };
 
-  const handleAddTag = async (tagName: string) => {
-    if (!activeResource || !tagName.trim()) return;
+  const handleAddTag = useCallback(async (resourceId: string, tagName: string) => {
+    const normalizedTagName = tagName.trim();
+    if (!resourceId || !normalizedTagName) {
+      return false;
+    }
+
+    const optimisticTag = findExistingTag(tags, normalizedTagName) ?? {
+      id: `local-${normalizedTagName.toLowerCase()}`,
+      name: normalizedTagName,
+    };
+
+    setTags((current) => mergeTagIntoList(current, optimisticTag));
+    setResources((current) => attachTagToResourceList(current, resourceId, optimisticTag));
+    setResourceDetails((current) => attachTagToResourceMap(current, resourceId, optimisticTag));
+
     setTagAddPending(true);
     try {
-      await api.post(`/resources/${activeResource.id}/tags/${encodeURIComponent(tagName.trim())}`);
-      await fetchResourceDetails(activeResource.id);
-      await fetchBacklinks(activeResource.id);
+      await api.post(`/resources/${resourceId}/tags/${encodeURIComponent(normalizedTagName)}`);
+      await fetchResourceDetails(resourceId);
+      await fetchBacklinks(resourceId);
       await fetchData();
-      setTagInputOpen(false);
-      setTagInputValue('');
+      return true;
     } catch (error) {
       console.error(error);
+      await fetchResourceDetails(resourceId);
+      await fetchData();
+      return false;
     } finally {
       setTagAddPending(false);
     }
-  };
+  }, [fetchBacklinks, fetchData, fetchResourceDetails, tags]);
+
+  const handleTagPickerSelect = useCallback(async (tagName: string) => {
+    if (!tagPickerOpenNoteId || tagAddPending) {
+      return;
+    }
+
+    const didAddTag = await handleAddTag(tagPickerOpenNoteId, tagName);
+    if (!didAddTag) {
+      return;
+    }
+
+    setTagInputValue('');
+    setTagPickerSelectedIndex(0);
+    window.requestAnimationFrame(() => {
+      tagInputRef.current?.focus();
+    });
+  }, [handleAddTag, tagAddPending, tagPickerOpenNoteId]);
 
   const handleRemoveTag = async (tagName: string) => {
     if (!activeResource) return;
@@ -1086,7 +1213,7 @@ export default function Dashboard() {
         <div className="relative">
           <button
             onClick={() => setShowTypeDropdown((prev) => !prev)}
-            className="flex w-full items-center justify-between gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="flex w-full items-center justify-between gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800"
           >
             <span>Type: {typeLabels[filters.typeFilter]}</span>
             <ChevronDown size={12} />
@@ -1100,7 +1227,7 @@ export default function Dashboard() {
                     dispatch(setTypeFilter(type));
                     setShowTypeDropdown(false);
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 ${filters.typeFilter === type ? 'font-semibold text-primary' : ''}`}
+                  className={`w-full px-3 py-1.5 text-left text-xs transition-colors hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800 ${filters.typeFilter === type ? 'font-semibold text-primary' : ''}`}
                 >
                   {typeLabels[type]}
                 </button>
@@ -1122,7 +1249,7 @@ export default function Dashboard() {
         <button
           onClick={requestFileUpload}
           disabled={uploadPending}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-1.5 text-xs font-medium transition-all hover:bg-slate-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-slate-800"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-1.5 text-xs font-medium transition-all hover:bg-[var(--surface-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-slate-800"
         >
           {uploadPending ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
           Upload
@@ -1212,7 +1339,7 @@ export default function Dashboard() {
               className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors ${
                 filters.selectedTags.includes(tag.name)
                   ? 'border-primary/30 bg-primary/15 text-primary'
-                  : 'border-transparent bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                  : 'border-transparent bg-[var(--surface-hover)] text-slate-600 hover:bg-[#e9edf2] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
               }`}
             >
               <button onClick={() => dispatch(toggleSelectedTag(tag.name))} className="cursor-pointer">{tag.name}</button>
@@ -1229,7 +1356,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-border bg-background p-2">
+      <div className="flex items-center justify-between border-t border-border bg-background/80 p-2">
         <div className="flex items-center gap-0.5">
           <button onClick={triggerExport} title="Export Vault" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><DownloadCloud size={16} /></button>
           <button onClick={() => importInputRef.current?.click()} title="Import Vault" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><UploadCloud size={16} /></button>
@@ -1266,52 +1393,6 @@ export default function Dashboard() {
       />
       <ShortcutsModal open={shortcutsOpen} onClose={closeShortcutsModal} />
       <SettingsModal open={settingsOpen} onClose={closeSettingsModal} />
-
-      <AppModal
-        open={tagInputOpen}
-        onClose={() => {
-          if (!tagAddPending) {
-            setTagInputOpen(false);
-            setTagInputValue('');
-          }
-        }}
-        title="Add Tag"
-        description="Add a tag to the current resource."
-        footer={
-          <>
-            <button
-              onClick={() => {
-                setTagInputOpen(false);
-                setTagInputValue('');
-              }}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-background"
-              disabled={tagAddPending}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => handleAddTag(tagInputValue)}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={tagAddPending || !tagInputValue.trim()}
-            >
-              {tagAddPending ? 'Adding...' : 'Add Tag'}
-            </button>
-          </>
-        }
-      >
-        <input
-          autoFocus
-          value={tagInputValue}
-          onChange={(event) => setTagInputValue(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              void handleAddTag(tagInputValue);
-            }
-          }}
-          placeholder="Tag name"
-          className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary"
-        />
-      </AppModal>
 
       <AppModal
         open={Boolean(authModal)}
@@ -1526,7 +1607,7 @@ export default function Dashboard() {
       <div className="relative flex min-h-0 flex-1">
         {!isFloatingSidebarMode && (
           <aside
-            className={`border-r border-border bg-card ${
+            className={`border-r border-border bg-[var(--sidebar)] ${
               smoothAnimations
                 ? 'transition-[width,opacity,border-color] duration-[170ms] ease-out'
                 : 'transition-none'
@@ -1546,7 +1627,7 @@ export default function Dashboard() {
             />
             <div className="pointer-events-none absolute inset-y-0 left-0 z-30 flex items-start pl-2 pt-2 pb-2">
               <div
-                className={`pointer-events-auto h-full w-72 overflow-hidden rounded-2xl border border-white/8 bg-card/90 backdrop-blur-md ${
+                className={`pointer-events-auto h-full w-72 overflow-hidden rounded-2xl ${
                   smoothAnimations
                     ? 'shadow-xl transition-[transform,opacity] duration-[170ms] ease-out'
                     : 'shadow-lg transition-none'
@@ -1555,6 +1636,7 @@ export default function Dashboard() {
                     ? 'translate-x-0 opacity-100'
                     : '-translate-x-[calc(100%+0.75rem)] opacity-0'
                 }`}
+                style={getGlassPanelStyle(uiTransparency, 16)}
                 onMouseEnter={showFloatingSidebar}
                 onMouseLeave={scheduleFloatingSidebarHide}
               >
@@ -1632,12 +1714,100 @@ export default function Dashboard() {
                             <button onClick={() => handleRemoveTag(tag.name)} className="ml-1.5 opacity-60 hover:opacity-100"><X size={10} /></button>
                           </span>
                         ))}
-                        <button
-                          onClick={() => setTagInputOpen(true)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-primary hover:text-primary"
-                        >
-                          <TagIcon size={13} /> Add Tag
-                        </button>
+                        <div ref={tagPickerOpenNoteId === note.id ? tagPickerRef : undefined} className="relative">
+                          <button
+                            onClick={() => {
+                              if (tagPickerOpenNoteId === note.id) {
+                                closeTagPicker();
+                                return;
+                              }
+
+                              setTagPickerOpenNoteId(note.id);
+                              setTagInputValue('');
+                              setTagPickerSelectedIndex(0);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-primary hover:text-primary"
+                          >
+                            <TagIcon size={13} /> Add Tag
+                          </button>
+
+                          {tagPickerOpenNoteId === note.id && (
+                            <div className="absolute left-0 top-full z-40 mt-2 w-72 rounded-2xl p-2 shadow-xl" style={getGlassPanelStyle(uiTransparency, 16)}>
+                              <div className="flex items-center gap-2 rounded-xl bg-background px-3 py-2">
+                                <TagIcon size={13} className="text-slate-400" />
+                                <input
+                                  ref={tagInputRef}
+                                  value={tagInputValue}
+                                  onChange={(event) => setTagInputValue(event.target.value)}
+                                  onKeyDown={(event) => {
+                                    if (event.key === 'ArrowDown') {
+                                      event.preventDefault();
+                                      setTagPickerSelectedIndex((current) => (
+                                        tagPickerItems.length === 0 ? 0 : Math.min(current + 1, tagPickerItems.length - 1)
+                                      ));
+                                      return;
+                                    }
+
+                                    if (event.key === 'ArrowUp') {
+                                      event.preventDefault();
+                                      setTagPickerSelectedIndex((current) => Math.max(current - 1, 0));
+                                      return;
+                                    }
+
+                                    if (event.key === 'Enter') {
+                                      event.preventDefault();
+                                      const selectedItem = tagPickerItems[tagPickerSelectedIndex];
+                                      if (selectedItem) {
+                                        void handleTagPickerSelect(selectedItem.name);
+                                      }
+                                      return;
+                                    }
+
+                                    if (event.key === 'Escape') {
+                                      event.preventDefault();
+                                      closeTagPicker();
+                                    }
+                                  }}
+                                  placeholder="Search or create tag..."
+                                  className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-slate-400"
+                                />
+                                {tagAddPending && <Loader2 size={14} className="animate-spin text-slate-400" />}
+                              </div>
+
+                              <div className="mt-2 max-h-56 space-y-1 overflow-y-auto">
+                                {tagPickerItems.map((item, itemIndex) => {
+                                  const selected = itemIndex === tagPickerSelectedIndex;
+
+                                  return (
+                                    <button
+                                      key={`${item.type}-${item.name}`}
+                                      type="button"
+                                      onMouseDown={(event) => event.preventDefault()}
+                                      onMouseEnter={() => setTagPickerSelectedIndex(itemIndex)}
+                                      onClick={() => void handleTagPickerSelect(item.name)}
+                                      className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
+                                        selected ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-background'
+                                      }`}
+                                    >
+                                      <span className="truncate">
+                                        {item.type === 'create' ? `Create "${item.name}"` : item.name}
+                                      </span>
+                                      <span className="text-[11px] uppercase tracking-wide text-slate-400">
+                                        {item.type === 'create' ? 'New' : 'Tag'}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+
+                                {tagPickerItems.length === 0 && (
+                                  <div className="px-3 py-2 text-sm text-slate-400">
+                                    {tagPickerEmptyMessage}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1722,20 +1892,20 @@ export default function Dashboard() {
       )}
       {previewResourceLoading && (
         effectivePreviewMode === 'modal' ? (
-          <div className={`fixed inset-0 z-[74] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm ${
+          <div className={`fixed inset-0 z-[74] flex items-center justify-center p-4 ${
             smoothAnimations ? 'transition-opacity duration-[170ms] ease-out' : 'transition-none'
-          }`}>
-            <div className={`flex h-[80vh] w-full max-w-6xl items-center justify-center rounded-[1.75rem] border border-border bg-card ${
+          }`} style={getOverlayStyle(uiTransparency, 0.28)}>
+            <div className={`flex h-[80vh] w-full max-w-6xl items-center justify-center rounded-[1.75rem] ${
               smoothAnimations ? 'shadow-2xl transition-[transform,opacity] duration-[170ms] ease-out' : 'shadow-xl transition-none'
-            }`}>
+            }`} style={getGlassPanelStyle(uiTransparency, 18)}>
               <div className="text-sm text-slate-400">Loading preview...</div>
             </div>
           </div>
         ) : (
           <div className="pointer-events-none fixed inset-y-0 right-0 z-[74] flex w-full justify-end">
-            <div className={`pointer-events-auto flex h-full w-full max-w-[min(40%,44rem)] items-center justify-center border-l border-border bg-card ${
+            <div className={`pointer-events-auto flex h-full w-full max-w-[min(40%,44rem)] items-center justify-center ${
               smoothAnimations ? 'shadow-2xl transition-[transform,opacity] duration-[170ms] ease-out' : 'shadow-xl transition-none'
-            }`}>
+            }`} style={getGlassPanelStyle(uiTransparency, 16)}>
               <div className="text-sm text-slate-400">Loading preview...</div>
             </div>
           </div>
@@ -1787,6 +1957,119 @@ function limitOpenNotes(notes: OpenNote[], maxOpenNotes: number) {
   return notes.slice(notes.length - maxOpenNotes);
 }
 
+function getTagPickerItems(tags: Tag[], query: string, attachedNames: Set<string>): TagPickerItem[] {
+  const normalizedQuery = normalizeTagSearch(query);
+
+  const items: TagPickerItem[] = tags
+    .filter((tag) => !attachedNames.has(tag.name.toLowerCase()))
+    .map((tag) => ({
+      name: tag.name,
+      type: 'existing' as const,
+      score: getTagSearchScore(tag.name, normalizedQuery),
+    }))
+    .filter((item) => normalizedQuery.length === 0 || item.score > 0)
+    .sort((left, right) => right.score - left.score || left.name.localeCompare(right.name));
+
+  if (!normalizedQuery) {
+    return items;
+  }
+
+  const hasExactExisting = tags.some((tag) => tag.name.toLowerCase() === normalizedQuery);
+  const alreadyAttached = attachedNames.has(normalizedQuery);
+
+  if (!hasExactExisting && !alreadyAttached) {
+    items.unshift({
+      name: query.trim(),
+      type: 'create',
+      score: Number.POSITIVE_INFINITY,
+    });
+  }
+
+  return items;
+}
+
+function getTagSearchScore(name: string, normalizedQuery: string) {
+  if (!normalizedQuery) {
+    return 1;
+  }
+
+  const normalizedName = name.toLowerCase();
+  if (normalizedName === normalizedQuery) {
+    return 500;
+  }
+
+  const startsWith = normalizedName.startsWith(normalizedQuery) ? 300 : 0;
+  const includes = normalizedName.includes(normalizedQuery) ? 180 : 0;
+  const fuzzy = getFuzzyScore(normalizedName, normalizedQuery);
+
+  return startsWith + includes + fuzzy;
+}
+
+function getFuzzyScore(haystack: string, needle: string) {
+  if (!needle) {
+    return 0;
+  }
+
+  let score = 0;
+  let needleIndex = 0;
+
+  for (let haystackIndex = 0; haystackIndex < haystack.length; haystackIndex += 1) {
+    if (haystack[haystackIndex] !== needle[needleIndex]) {
+      continue;
+    }
+
+    score += haystackIndex === needleIndex ? 14 : 8;
+    needleIndex += 1;
+
+    if (needleIndex === needle.length) {
+      return score;
+    }
+  }
+
+  return 0;
+}
+
+function normalizeTagSearch(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function findExistingTag(tags: Tag[], tagName: string) {
+  const normalizedTagName = tagName.trim().toLowerCase();
+  return tags.find((tag) => tag.name.toLowerCase() === normalizedTagName) ?? null;
+}
+
+function mergeTagIntoList(tags: Tag[], nextTag: Tag) {
+  const normalizedTagName = nextTag.name.toLowerCase();
+  if (tags.some((tag) => tag.name.toLowerCase() === normalizedTagName)) {
+    return tags;
+  }
+
+  return [...tags, nextTag].sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function attachTagToResourceList(resources: Resource[], resourceId: string, nextTag: Tag) {
+  return resources.map((resource) => (
+    resource.id === resourceId
+      ? { ...resource, tags: mergeTagIntoList(resource.tags ?? [], nextTag) }
+      : resource
+  ));
+}
+
+function attachTagToResourceMap(resources: Record<string, Resource>, resourceId: string, nextTag: Tag) {
+  const resource = resources[resourceId];
+  if (!resource) {
+    return resources;
+  }
+
+  return {
+    ...resources,
+    [resourceId]: {
+      ...resource,
+      tags: mergeTagIntoList(resource.tags ?? [], nextTag),
+    },
+  };
+}
+
 function getWorkspaceLayoutClass(noteCount: number) {
   if (noteCount <= 1) {
     return 'flex h-full w-full justify-center overflow-hidden px-6 py-3';
@@ -1808,22 +2091,23 @@ function getWorkspacePaneClass({
 }) {
   const smoothMode = animationMode === 'smooth';
   const visualClass = smoothMode
-    ? (isActive ? 'bg-background opacity-100 scale-100' : 'bg-background/35 opacity-[0.86] scale-[0.98]')
-    : 'bg-background opacity-100 scale-100';
+    ? (isActive ? 'bg-card opacity-100 scale-100' : 'bg-card/70 opacity-[0.86] scale-[0.98]')
+    : 'bg-card opacity-100 scale-100';
   const motionClass = smoothMode
     ? 'transform-gpu transition-[opacity,transform,background-color,border-color,flex] duration-[170ms] ease-[cubic-bezier(0.22,1,0.36,1)]'
     : 'transition-none';
+  const shellClass = 'rounded-[1.35rem] shadow-[0_1px_2px_rgba(15,23,42,0.04)]';
 
   if (noteCount <= 1) {
-    return `relative flex min-w-0 w-full max-w-4xl flex-col overflow-hidden ${visualClass}`;
+    return `relative flex min-w-0 w-full max-w-4xl flex-col overflow-hidden ${shellClass} ${visualClass}`;
   }
 
   if (noteCount === 2) {
-    return `relative flex min-w-0 flex-1 flex-col overflow-hidden ${motionClass} ${visualClass}`;
+    return `relative flex min-w-0 flex-1 flex-col overflow-hidden ${shellClass} ${motionClass} ${visualClass}`;
   }
 
   const widthClass = isActive ? 'flex-[1.2]' : 'flex-[0.9]';
-  return `relative flex min-w-0 ${widthClass} flex-col overflow-hidden ${motionClass} ${visualClass}`;
+  return `relative flex min-w-0 ${widthClass} flex-col overflow-hidden ${shellClass} ${motionClass} ${visualClass}`;
 }
 
 function SidebarItem({ resource, isActive, onClick, onDelete }: { resource: Resource; isActive: boolean; onClick: () => void; onDelete: (event: React.MouseEvent) => void }) {

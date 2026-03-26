@@ -75,9 +75,9 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
 
     return `${settings.workspace.autosaveDelay} ms`;
   }, [settings.workspace.autosaveDelay]);
-  const commandPaletteTransparencyLabel = useMemo(() => (
-    `${Math.round(settings.local.commandPaletteTransparency * 100)}%`
-  ), [settings.local.commandPaletteTransparency]);
+  const uiTransparencyLabel = useMemo(() => (
+    `${Math.round(settings.local.uiTransparency * 100)}%`
+  ), [settings.local.uiTransparency]);
 
   const activeViewMeta = views.find((view) => view.id === activeView) ?? views[0];
 
@@ -277,18 +277,18 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                   />
                 </SettingRow>
 
-                <SettingRow label="Command palette transparency" description="Adjust the glass depth of the command palette without changing its layout.">
+                <SettingRow label="UI transparency" description="Control the transparency of glassy surfaces like the command palette, floating sidebar, previews, and popovers.">
                   <div className="w-full">
                     <input
                       type="range"
                       min={0.6}
                       max={1}
                       step={0.05}
-                      value={settings.local.commandPaletteTransparency}
-                      onChange={(event) => updateLocalSetting('commandPaletteTransparency', Number(event.target.value))}
+                      value={settings.local.uiTransparency}
+                      onChange={(event) => updateLocalSetting('uiTransparency', Number(event.target.value))}
                       className="w-full accent-[var(--accent)]"
                     />
-                    <div className="mt-2 text-xs font-medium text-slate-500">{commandPaletteTransparencyLabel}</div>
+                    <div className="mt-2 text-xs font-medium text-slate-500">{uiTransparencyLabel}</div>
                   </div>
                 </SettingRow>
 

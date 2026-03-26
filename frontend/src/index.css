@@ -4,11 +4,17 @@
 
 @layer base {
   :root {
-    --background: #f8fafc;
-    --foreground: #020617;
+    --background: #f6f7f9;
+    --foreground: #111827;
+    --muted-foreground: #374151;
+    --subtle-foreground: #6b7280;
     --card: #ffffff;
-    --card-foreground: #020617;
-    --border: #cbd5e1;
+    --card-rgb: 255, 255, 255;
+    --card-foreground: #111827;
+    --sidebar: #ffffff;
+    --surface-hover: #f1f3f5;
+    --border: rgba(17, 24, 39, 0.08);
+    --overlay-rgb: 15, 23, 42;
     --accent: #3b82f6;
     --primary: var(--accent);
     --primary-foreground: #ffffff;
@@ -18,9 +24,15 @@
   .dark {
     --background: #020617;
     --foreground: #f8fafc;
+    --muted-foreground: #cbd5e1;
+    --subtle-foreground: #94a3b8;
     --card: #0f172a;
+    --card-rgb: 15, 23, 42;
     --card-foreground: #f8fafc;
+    --sidebar: #0f172a;
+    --surface-hover: rgba(30, 41, 59, 0.65);
     --border: #1e293b;
+    --overlay-rgb: 2, 6, 23;
     --primary: var(--accent);
     --primary-foreground: #ffffff;
   }
@@ -38,6 +50,14 @@ body {
   @apply bg-background text-foreground antialiased transition-colors;
   transition-duration: var(--vaultor-ui-transition);
   transition-timing-function: ease-out;
+}
+
+.light .text-slate-500 {
+  color: var(--muted-foreground);
+}
+
+.light .text-slate-400 {
+  color: var(--subtle-foreground);
 }
 
 :root[data-density='compact'] body {

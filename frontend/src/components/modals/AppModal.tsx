@@ -1,6 +1,8 @@
 import { useId, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
+import { useSettings } from '../../lib/settings';
+import { getGlassPanelStyle, getOverlayStyle } from '../../lib/transparency';
 
 type EscapeLayerKind = 'modal' | 'commandPalette';
 
@@ -28,6 +30,8 @@ export default function AppModal({
   restoreFocusOnEscape = true,
 }: AppModalProps) {
   const modalId = useId();
+  const { settings } = useSettings();
+  const transparency = settings.local.uiTransparency;
 
   useEscapeLayer({
     id: `app-modal-${modalId}`,
@@ -40,9 +44,10 @@ export default function AppModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={getOverlayStyle(transparency, 0.38)} onClick={onClose}>
       <div
-        className={`w-full ${widthClassName} rounded-2xl border border-border bg-card shadow-2xl`}
+        className={`w-full ${widthClassName} rounded-2xl border border-border shadow-2xl`}
+        style={getGlassPanelStyle(transparency, 16)}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">

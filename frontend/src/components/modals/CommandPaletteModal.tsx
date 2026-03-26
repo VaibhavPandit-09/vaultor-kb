@@ -18,6 +18,7 @@ import {
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
 import { useSettings } from '../../lib/settings';
 import { isMac } from '../../lib/shortcuts';
+import { getGlassPanelStyle, getOverlayStyle } from '../../lib/transparency';
 
 type StepState = {
   step: CommandStep;
@@ -302,19 +303,22 @@ export default function CommandPaletteModal({
     return null;
   }
 
-  const transparency = settings.local.commandPaletteTransparency;
+  const transparency = settings.local.uiTransparency;
   const previewPanelWidth = 'min(40vw, 44rem)';
   const palettePreviewInset = `calc(${previewPanelWidth} + 2rem)`;
 
   return createPortal(
     <div className="fixed inset-0 z-[80] pointer-events-none">
       <div
-        className={`absolute inset-y-0 left-0 pointer-events-auto bg-slate-950/18 backdrop-blur-[2px] ${
+        className={`absolute inset-y-0 left-0 pointer-events-auto ${
           smoothAnimations
             ? `transition-opacity duration-[170ms] ease-out ${animateIn ? 'opacity-100' : 'opacity-0'}`
             : 'transition-none opacity-100'
         }`}
-        style={previewVisible ? { right: previewPanelWidth } : { right: 0 }}
+        style={{
+          ...(previewVisible ? { right: previewPanelWidth } : { right: 0 }),
+          ...getOverlayStyle(transparency, 0.18),
+        }}
         onClick={() => handleCloseRequest()}
       />
       <div
@@ -334,11 +338,7 @@ export default function CommandPaletteModal({
         >
           <div
             className="rounded-[1.3rem] border border-white/8 shadow-xl"
-            style={{
-              background: `rgba(10, 15, 25, ${transparency})`,
-              backdropFilter: `blur(${Math.round(transparency * 20)}px)`,
-              WebkitBackdropFilter: `blur(${Math.round(transparency * 20)}px)`,
-            }}
+            style={getGlassPanelStyle(transparency, 20)}
           >
             <div className="px-4 py-4">
               <input

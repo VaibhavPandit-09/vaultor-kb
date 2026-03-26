@@ -3,6 +3,8 @@ import { ExternalLink, FileText, PanelRight, Paperclip, ScanText, X } from 'luci
 import FilePreview from './FilePreview';
 import type { Resource } from '../types';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../lib/escape/escape';
+import { useSettings } from '../lib/settings';
+import { getGlassPanelStyle, getOverlayStyle } from '../lib/transparency';
 
 interface PreviewLayerProps {
   resource: Resource;
@@ -29,6 +31,8 @@ export default function PreviewLayer({
 }: PreviewLayerProps) {
   const smoothAnimations = animationMode === 'smooth';
   const [animateIn, setAnimateIn] = useState(false);
+  const { settings } = useSettings();
+  const transparency = settings.local.uiTransparency;
 
   useEscapeLayer({
     id: `preview-layer-${resource.id}`,
@@ -113,6 +117,7 @@ export default function PreviewLayer({
             ? `transition-opacity duration-[170ms] ease-out ${animateIn ? 'opacity-100' : 'opacity-0'}`
             : 'transition-none opacity-100'
         }`}
+        style={getOverlayStyle(transparency, 0.28)}
         onClick={onClose}
       >
         <div
@@ -121,6 +126,7 @@ export default function PreviewLayer({
               ? `shadow-xl transform-gpu transition-[transform,opacity] duration-[170ms] ease-out ${animateIn ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-[0.98] opacity-0'}`
               : 'shadow-lg transition-none opacity-100'
           }`}
+          style={getGlassPanelStyle(transparency, 18)}
           onClick={(event) => event.stopPropagation()}
         >
           {chrome}
@@ -137,6 +143,7 @@ export default function PreviewLayer({
             ? `shadow-lg transform-gpu transition-[transform,opacity] duration-[170ms] ease-out ${animateIn ? 'translate-x-0 opacity-100' : 'translate-x-2 opacity-0'}`
             : 'transition-none opacity-100'
         }`}
+        style={getGlassPanelStyle(transparency, 16)}
       >
         {chrome}
       </div>

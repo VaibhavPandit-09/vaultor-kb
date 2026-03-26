@@ -63,14 +63,14 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
 
   return (
     <NodeViewWrapper className="relative group my-4">
-      <div className="rounded-xl overflow-hidden border border-slate-700 bg-slate-900 dark:bg-slate-950">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-700 dark:bg-slate-950">
         {/* Header bar */}
-        <div className="flex items-center justify-between px-4 py-2 bg-slate-800 dark:bg-slate-900 border-b border-slate-700 text-xs">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-100 px-4 py-2 text-xs dark:border-slate-700 dark:bg-slate-900">
           {/* Language selector */}
           <div className="relative">
             <button
               onClick={() => setShowLangPicker(!showLangPicker)}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
               contentEditable={false}
             >
               <span className="font-medium">{displayLang}</span>
@@ -79,14 +79,14 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
 
             {showLangPicker && (
               <div
-                className="absolute top-full left-0 mt-1 z-50 w-48 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl overflow-hidden"
+                className="absolute left-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl dark:border-slate-600 dark:bg-slate-800"
                 contentEditable={false}
               >
-                <div className="p-1.5 border-b border-slate-700">
+                <div className="border-b border-slate-200 p-1.5 dark:border-slate-700">
                   <input
                     type="text"
                     placeholder="Search..."
-                    className="w-full px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs text-white placeholder:text-slate-500 outline-none focus:border-indigo-500"
+                    className="w-full rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 outline-none placeholder:text-slate-400 focus:border-[var(--accent)] dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500"
                     value={langSearch}
                     onChange={e => setLangSearch(e.target.value)}
                     autoFocus
@@ -100,7 +100,7 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
                       className={`block w-full text-left px-3 py-1.5 rounded text-xs transition-colors ${
                         lang.value === currentLang
                           ? 'bg-indigo-600 text-white'
-                          : 'text-slate-300 hover:bg-slate-700'
+                          : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'
                       }`}
                     >
                       {lang.label}
@@ -114,7 +114,7 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
           {/* Copy button */}
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-white"
             contentEditable={false}
           >
             {copied ? (
@@ -132,7 +132,7 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
         </div>
 
         {/* Code content */}
-        <pre ref={codeRef} className="!m-0 !rounded-none !border-0 p-4 text-sm leading-relaxed overflow-x-auto text-slate-100">
+        <pre ref={codeRef} className="overflow-x-auto p-4 text-sm leading-relaxed !m-0 !rounded-none !border-0 text-slate-800 dark:text-slate-100">
           <NodeViewContent />
         </pre>
       </div>

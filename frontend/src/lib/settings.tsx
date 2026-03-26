@@ -32,7 +32,7 @@ export type LocalSettings = {
   animationMode: 'snappy' | 'smooth';
   previewMode: 'side' | 'modal';
   sidebarMode: 'fixed' | 'floating';
-  commandPaletteTransparency: number;
+  uiTransparency: number;
   customShortcuts: Record<string, string>;
 };
 
@@ -72,7 +72,7 @@ export const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
   animationMode: 'snappy',
   previewMode: 'side',
   sidebarMode: 'fixed',
-  commandPaletteTransparency: 0.85,
+  uiTransparency: 0.85,
   customShortcuts: {},
 };
 
@@ -320,13 +320,15 @@ function normalizeLocalSettings(input: Partial<LocalSettings> | null | undefined
     animationMode: input?.animationMode === 'smooth' ? 'smooth' : 'snappy',
     previewMode: input?.previewMode === 'modal' ? 'modal' : 'side',
     sidebarMode: input?.sidebarMode === 'floating' ? 'floating' : 'fixed',
-    commandPaletteTransparency: normalizeTransparency(input?.commandPaletteTransparency),
+    uiTransparency: normalizeTransparency(
+      typeof input?.uiTransparency === 'number' ? input.uiTransparency : (input as { commandPaletteTransparency?: number } | null | undefined)?.commandPaletteTransparency,
+    ),
     customShortcuts: normalizeCustomShortcuts(input?.customShortcuts),
   };
 }
 
 function normalizeTransparency(value: number | undefined) {
-  const fallback = DEFAULT_LOCAL_SETTINGS.commandPaletteTransparency;
+  const fallback = DEFAULT_LOCAL_SETTINGS.uiTransparency;
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return fallback;
   }
