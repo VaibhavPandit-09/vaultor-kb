@@ -10,11 +10,16 @@ import {
 } from 'react';
 import api from './api';
 import {
-  DEFAULT_SHORTCUTS,
-  type ShortcutAction,
-  type ShortcutBindingMap,
+  DEFAULT_KEYBINDINGS,
+  getCurrentShortcutPlatform,
+  getDefaultShortcut,
+  getShortcutPlatformLabel,
   normalizeShortcut,
   resolveShortcutBindings,
+  type PlatformShortcutBindingMap,
+  type ShortcutAction,
+  type ShortcutBindingMap,
+  type ShortcutPlatform,
   validateShortcutBinding,
 } from './shortcuts';
 
@@ -33,7 +38,13 @@ export type LocalSettings = {
   previewMode: 'side' | 'modal';
   sidebarMode: 'fixed' | 'floating';
   uiTransparency: number;
-  customShortcuts: Record<string, string>;
+  sidebarCollapsed: boolean;
+};
+
+export type SettingsDocument = {
+  workspace: WorkspaceSettings;
+  local: Record<string, Partial<LocalSettings>>;
+  keybindings: Partial<Record<ShortcutAction, Partial<Record<ShortcutPlatform, string>>>>;
 };
 
 type SettingsState = {
@@ -44,6 +55,9 @@ type SettingsState = {
 type SettingsContextValue = {
   settings: SettingsState;
   workspaceLoaded: boolean;
+  deviceId: string;
+  shortcutPlatform: ShortcutPlatform;
+  shortcutPlatformLabel: string;
   resolvedShortcuts: ShortcutBindingMap;
   updateWorkspaceSetting: <K extends keyof WorkspaceSettings>(key: K, value: WorkspaceSettings[K]) => void;
   updateLocalSetting: <K extends keyof LocalSettings>(key: K, value: LocalSettings[K]) => void;
@@ -56,16 +70,18 @@ type SettingsContextValue = {
   toggleTheme: () => void;
 };
 
-const LOCAL_SETTINGS_STORAGE_KEY = 'vaultor_local_settings';
+const DEVICE_ID_STORAGE_KEY = 'vaultor_device_id';
+const LEGACY_LOCAL_SETTINGS_STORAGE_KEY = 'vaultor_local_settings';
+const LEGACY_SIDEBAR_STORAGE_KEY = 'vaultor_sidebar_collapsed';
 
-export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
+const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
   maxOpenNotes: 2,
   openBehavior: 'split',
   autosaveDelay: 0,
   focusMode: false,
 };
 
-export const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
+const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
   theme: 'dark',
   accentColor: 'blue',
   density: 'comfortable',
@@ -73,7 +89,7 @@ export const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
   previewMode: 'side',
   sidebarMode: 'fixed',
   uiTransparency: 0.85,
-  customShortcuts: {},
+  sidebarCollapsed: false,
 };
 
 const accentMap: Record<LocalSettings['accentColor'], string> = {
@@ -90,50 +106,97 @@ const accentMap: Record<LocalSettings['accentColor'], string> = {
 const SettingsContext = createContext<SettingsContextValue | undefined>(undefined);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [workspace, setWorkspace] = useState<WorkspaceSettings>(DEFAULT_WORKSPACE_SETTINGS);
-  const [local, setLocal] = useState<LocalSettings>(() => loadLocalSettings());
+  const shortcutPlatform = getCurrentShortcutPlatform();
+  const shortcutPlatformLabel = getShortcutPlatformLabel(shortcutPlatform);
+  const [deviceId] = useState(() => getOrCreateDeviceId());
+  const [settingsDocument, setSettingsDocument] = useState<SettingsDocument>(createDefaultSettingsDocument());
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
-  const workspaceRef = useRef(workspace);
   const requestVersionRef = useRef(0);
+  const documentRef = useRef(settingsDocument);
+
+  const currentLocalSettings = useMemo(
+    () => normalizeLocalSettings(settingsDocument.local[deviceId]),
+    [deviceId, settingsDocument.local],
+  );
 
   const resolvedShortcuts = useMemo(
-    () => resolveShortcutBindings(local.customShortcuts),
-    [local.customShortcuts],
+    () => resolveShortcutBindings(settingsDocument.keybindings, shortcutPlatform),
+    [settingsDocument.keybindings, shortcutPlatform],
   );
 
   useEffect(() => {
-    workspaceRef.current = workspace;
-  }, [workspace]);
+    documentRef.current = settingsDocument;
+  }, [settingsDocument]);
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.dataset.theme = local.theme;
-    root.dataset.density = local.density;
-    root.dataset.animation = local.animationMode;
-    root.classList.toggle('dark', local.theme === 'dark');
-    root.classList.toggle('light', local.theme === 'light');
-    root.style.setProperty('--accent', accentMap[local.accentColor]);
-    root.style.setProperty('--primary', accentMap[local.accentColor]);
-  }, [local.accentColor, local.animationMode, local.density, local.theme]);
+    root.dataset.theme = currentLocalSettings.theme;
+    root.dataset.density = currentLocalSettings.density;
+    root.dataset.animation = currentLocalSettings.animationMode;
+    root.classList.toggle('dark', currentLocalSettings.theme === 'dark');
+    root.classList.toggle('light', currentLocalSettings.theme === 'light');
+    root.style.setProperty('--accent', accentMap[currentLocalSettings.accentColor]);
+    root.style.setProperty('--primary', accentMap[currentLocalSettings.accentColor]);
+  }, [
+    currentLocalSettings.accentColor,
+    currentLocalSettings.animationMode,
+    currentLocalSettings.density,
+    currentLocalSettings.theme,
+  ]);
 
-  useEffect(() => {
-    window.localStorage.setItem(LOCAL_SETTINGS_STORAGE_KEY, JSON.stringify(local));
-  }, [local]);
+  const persistSettingsDocument = useCallback(async (nextDocument: SettingsDocument, fallbackDocument: SettingsDocument) => {
+    const requestVersion = ++requestVersionRef.current;
+
+    try {
+      const { data } = await api.put('/settings', nextDocument);
+      if (requestVersion !== requestVersionRef.current) {
+        return;
+      }
+
+      const normalized = normalizeSettingsDocument(data);
+      documentRef.current = normalized;
+      setSettingsDocument(normalized);
+    } catch (error) {
+      console.error('Failed to persist settings', error);
+      if (requestVersion !== requestVersionRef.current) {
+        return;
+      }
+
+      documentRef.current = fallbackDocument;
+      setSettingsDocument(fallbackDocument);
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
 
-    const loadWorkspaceSettings = async () => {
+    const loadSettings = async () => {
       try {
-        const { data } = await api.get('/settings/workspace');
+        const legacyLocalSettings = loadLegacyLocalSettings();
+        const legacySidebarCollapsed = loadLegacySidebarCollapsed();
+        const { data } = await api.get('/settings');
+
         if (!active) {
           return;
         }
-        const normalized = normalizeWorkspaceSettings(data);
-        workspaceRef.current = normalized;
-        setWorkspace(normalized);
+
+        const remoteDocument = normalizeSettingsDocument(data);
+        const migratedDocument = applyLegacySettingsMigration(remoteDocument, {
+          deviceId,
+          platform: shortcutPlatform,
+          legacyLocalSettings,
+          legacySidebarCollapsed,
+        });
+
+        documentRef.current = migratedDocument.document;
+        setSettingsDocument(migratedDocument.document);
+
+        if (migratedDocument.changed) {
+          void persistSettingsDocument(migratedDocument.document, remoteDocument);
+          clearLegacySettingsStorage();
+        }
       } catch (error) {
-        console.error('Failed to load workspace settings', error);
+        console.error('Failed to load settings', error);
       } finally {
         if (active) {
           setWorkspaceLoaded(true);
@@ -141,47 +204,50 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    void loadWorkspaceSettings();
+    void loadSettings();
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [deviceId, persistSettingsDocument, shortcutPlatform]);
 
-  const persistWorkspaceSettings = useCallback(async (nextSettings: WorkspaceSettings, fallbackSettings: WorkspaceSettings) => {
-    const requestVersion = ++requestVersionRef.current;
-    try {
-      const { data } = await api.put('/settings/workspace', nextSettings);
-      if (requestVersion !== requestVersionRef.current) {
-        return;
-      }
-      const normalized = normalizeWorkspaceSettings(data);
-      workspaceRef.current = normalized;
-      setWorkspace(normalized);
-    } catch (error) {
-      console.error('Failed to persist workspace settings', error);
-      if (requestVersion !== requestVersionRef.current) {
-        return;
-      }
-      workspaceRef.current = fallbackSettings;
-      setWorkspace(fallbackSettings);
-    }
-  }, []);
+  const updateDocument = useCallback((updater: (current: SettingsDocument) => SettingsDocument) => {
+    const previous = documentRef.current;
+    const next = normalizeSettingsDocument(updater(previous));
+    documentRef.current = next;
+    setSettingsDocument(next);
+    void persistSettingsDocument(next, previous);
+  }, [persistSettingsDocument]);
 
   const updateWorkspaceSetting = useCallback(<K extends keyof WorkspaceSettings>(key: K, value: WorkspaceSettings[K]) => {
-    const previous = workspaceRef.current;
-    const next = normalizeWorkspaceSettings({ ...previous, [key]: value });
-    workspaceRef.current = next;
-    setWorkspace(next);
-    void persistWorkspaceSettings(next, previous);
-  }, [persistWorkspaceSettings]);
+    updateDocument((current) => ({
+      ...current,
+      workspace: normalizeWorkspaceSettings({
+        ...current.workspace,
+        [key]: value,
+      }),
+    }));
+  }, [updateDocument]);
 
   const updateLocalSetting = useCallback(<K extends keyof LocalSettings>(key: K, value: LocalSettings[K]) => {
-    setLocal((current) => normalizeLocalSettings({ ...current, [key]: value }));
-  }, []);
+    updateDocument((current) => ({
+      ...current,
+      local: {
+        ...current.local,
+        [deviceId]: normalizeLocalSettings({
+          ...current.local[deviceId],
+          [key]: value,
+        }),
+      },
+    }));
+  }, [deviceId, updateDocument]);
 
   const validateShortcut = useCallback((action: ShortcutAction, shortcut: string) => {
-    return validateShortcutBinding(action, shortcut, resolvedShortcuts);
+    const nextBindings = {
+      ...resolvedShortcuts,
+      [action]: normalizeShortcut(shortcut),
+    };
+    return validateShortcutBinding(action, shortcut, nextBindings);
   }, [resolvedShortcuts]);
 
   const setCustomShortcut = useCallback((action: ShortcutAction, shortcut: string) => {
@@ -195,73 +261,75 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       return validationError;
     }
 
-    setLocal((current) => normalizeLocalSettings({
+    updateDocument((current) => ({
       ...current,
-      customShortcuts: {
-        ...current.customShortcuts,
-        [action]: normalized,
+      keybindings: {
+        ...current.keybindings,
+        [action]: {
+          ...DEFAULT_KEYBINDINGS[action],
+          ...current.keybindings[action],
+          [shortcutPlatform]: normalized,
+        },
       },
     }));
     return null;
-  }, [resolvedShortcuts]);
+  }, [resolvedShortcuts, shortcutPlatform, updateDocument]);
 
   const resetShortcut = useCallback((action: ShortcutAction) => {
-    setLocal((current) => {
-      const nextShortcuts = { ...current.customShortcuts };
-      delete nextShortcuts[action];
-      return normalizeLocalSettings({
-        ...current,
-        customShortcuts: nextShortcuts,
-      });
-    });
-  }, []);
+    updateDocument((current) => ({
+      ...current,
+      keybindings: {
+        ...current.keybindings,
+        [action]: {
+          ...DEFAULT_KEYBINDINGS[action],
+          ...current.keybindings[action],
+          [shortcutPlatform]: getDefaultShortcut(action, shortcutPlatform),
+        },
+      },
+    }));
+  }, [shortcutPlatform, updateDocument]);
 
   const resetWorkspaceSettings = useCallback(() => {
-    const previous = workspaceRef.current;
-    workspaceRef.current = DEFAULT_WORKSPACE_SETTINGS;
-    setWorkspace(DEFAULT_WORKSPACE_SETTINGS);
-    const requestVersion = ++requestVersionRef.current;
-    void api.delete('/settings/workspace')
-      .then(({ data }) => {
-        if (requestVersion !== requestVersionRef.current) {
-          return;
-        }
-        const normalized = normalizeWorkspaceSettings(data);
-        workspaceRef.current = normalized;
-        setWorkspace(normalized);
-      })
-      .catch((error) => {
-        console.error('Failed to reset workspace settings', error);
-        if (requestVersion !== requestVersionRef.current) {
-          return;
-        }
-        workspaceRef.current = previous;
-        setWorkspace(previous);
-      });
-  }, []);
+    updateDocument((current) => ({
+      ...current,
+      workspace: DEFAULT_WORKSPACE_SETTINGS,
+    }));
+  }, [updateDocument]);
 
   const resetLocalSettings = useCallback(() => {
-    setLocal(DEFAULT_LOCAL_SETTINGS);
-  }, []);
+    updateDocument((current) => ({
+      ...current,
+      local: {
+        ...current.local,
+        [deviceId]: DEFAULT_LOCAL_SETTINGS,
+      },
+    }));
+  }, [deviceId, updateDocument]);
 
   const resetAllSettings = useCallback(() => {
-    resetLocalSettings();
-    resetWorkspaceSettings();
-  }, [resetLocalSettings, resetWorkspaceSettings]);
+    updateDocument((current) => ({
+      workspace: DEFAULT_WORKSPACE_SETTINGS,
+      local: {
+        ...current.local,
+        [deviceId]: DEFAULT_LOCAL_SETTINGS,
+      },
+      keybindings: DEFAULT_KEYBINDINGS,
+    }));
+  }, [deviceId, updateDocument]);
 
   const toggleTheme = useCallback(() => {
-    setLocal((current) => normalizeLocalSettings({
-      ...current,
-      theme: current.theme === 'dark' ? 'light' : 'dark',
-    }));
-  }, []);
+    updateLocalSetting('theme', currentLocalSettings.theme === 'dark' ? 'light' : 'dark');
+  }, [currentLocalSettings.theme, updateLocalSetting]);
 
   const value = useMemo<SettingsContextValue>(() => ({
     settings: {
-      workspace,
-      local,
+      workspace: settingsDocument.workspace,
+      local: currentLocalSettings,
     },
     workspaceLoaded,
+    deviceId,
+    shortcutPlatform,
+    shortcutPlatformLabel,
     resolvedShortcuts,
     updateWorkspaceSetting,
     updateLocalSetting,
@@ -273,18 +341,21 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     resetAllSettings,
     toggleTheme,
   }), [
-    local,
-    resolvedShortcuts,
+    currentLocalSettings,
+    deviceId,
     resetAllSettings,
     resetLocalSettings,
     resetShortcut,
     resetWorkspaceSettings,
+    resolvedShortcuts,
     setCustomShortcut,
+    settingsDocument.workspace,
+    shortcutPlatform,
+    shortcutPlatformLabel,
     toggleTheme,
     updateLocalSetting,
     updateWorkspaceSetting,
     validateShortcut,
-    workspace,
     workspaceLoaded,
   ]);
 
@@ -295,12 +366,34 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSettings() {
   const context = useContext(SettingsContext);
   if (!context) {
     throw new Error('useSettings must be used within SettingsProvider');
   }
   return context;
+}
+
+function createDefaultSettingsDocument(): SettingsDocument {
+  return {
+    workspace: DEFAULT_WORKSPACE_SETTINGS,
+    local: {},
+    keybindings: {},
+  };
+}
+
+function normalizeSettingsDocument(input: Partial<SettingsDocument> | null | undefined): SettingsDocument {
+  return {
+    workspace: normalizeWorkspaceSettings(input?.workspace),
+    local: Object.entries(input?.local ?? {}).reduce<Record<string, Partial<LocalSettings>>>((accumulator, [deviceId, settings]) => {
+      if (deviceId.trim()) {
+        accumulator[deviceId] = normalizeLocalSettings(settings);
+      }
+      return accumulator;
+    }, {}),
+    keybindings: normalizeKeybindings(input?.keybindings),
+  };
 }
 
 function normalizeWorkspaceSettings(input: Partial<WorkspaceSettings> | null | undefined): WorkspaceSettings {
@@ -321,10 +414,35 @@ function normalizeLocalSettings(input: Partial<LocalSettings> | null | undefined
     previewMode: input?.previewMode === 'modal' ? 'modal' : 'side',
     sidebarMode: input?.sidebarMode === 'floating' ? 'floating' : 'fixed',
     uiTransparency: normalizeTransparency(
-      typeof input?.uiTransparency === 'number' ? input.uiTransparency : (input as { commandPaletteTransparency?: number } | null | undefined)?.commandPaletteTransparency,
+      typeof input?.uiTransparency === 'number'
+        ? input.uiTransparency
+        : (input as { commandPaletteTransparency?: number } | null | undefined)?.commandPaletteTransparency,
     ),
-    customShortcuts: normalizeCustomShortcuts(input?.customShortcuts),
+    sidebarCollapsed: Boolean(input?.sidebarCollapsed),
   };
+}
+
+function normalizeKeybindings(
+  input: Partial<Record<string, Partial<Record<ShortcutPlatform, string>>>> | null | undefined,
+): SettingsDocument['keybindings'] {
+  if (!input || typeof input !== 'object') {
+    return {};
+  }
+
+  return Object.entries(input).reduce<SettingsDocument['keybindings']>((accumulator, [action, binding]) => {
+    if (!isShortcutAction(action) || !binding || typeof binding !== 'object') {
+      return accumulator;
+    }
+
+    const mac = binding.mac ? normalizeShortcut(binding.mac) : '';
+    const windows = binding.windows ? normalizeShortcut(binding.windows) : '';
+
+    accumulator[action] = {
+      ...(mac ? { mac } : {}),
+      ...(windows ? { windows } : {}),
+    };
+    return accumulator;
+  }, {});
 }
 
 function normalizeTransparency(value: number | undefined) {
@@ -336,35 +454,115 @@ function normalizeTransparency(value: number | undefined) {
   return Math.min(1, Math.max(0.6, value));
 }
 
-function normalizeCustomShortcuts(input: Record<string, string> | null | undefined) {
-  if (!input || typeof input !== 'object') {
-    return {};
-  }
-
-  return Object.entries(input).reduce<Record<string, string>>((accumulator, [key, value]) => {
-    const normalized = normalizeShortcut(value);
-    if (normalized) {
-      accumulator[key] = normalized;
-    }
-    return accumulator;
-  }, {});
-}
-
-function loadLocalSettings(): LocalSettings {
+function loadLegacyLocalSettings(): (Partial<LocalSettings> & { customShortcuts?: Record<string, string>; commandPaletteTransparency?: number }) | null {
   if (typeof window === 'undefined') {
-    return DEFAULT_LOCAL_SETTINGS;
+    return null;
   }
 
-  const rawSettings = window.localStorage.getItem(LOCAL_SETTINGS_STORAGE_KEY);
+  const rawSettings = window.localStorage.getItem(LEGACY_LOCAL_SETTINGS_STORAGE_KEY);
   if (!rawSettings) {
-    return DEFAULT_LOCAL_SETTINGS;
+    return null;
   }
 
   try {
-    return normalizeLocalSettings(JSON.parse(rawSettings));
+    return JSON.parse(rawSettings) as Partial<LocalSettings> & { customShortcuts?: Record<string, string>; commandPaletteTransparency?: number };
   } catch {
-    return DEFAULT_LOCAL_SETTINGS;
+    return null;
   }
+}
+
+function loadLegacySidebarCollapsed() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const rawValue = window.localStorage.getItem(LEGACY_SIDEBAR_STORAGE_KEY);
+  if (rawValue == null) {
+    return null;
+  }
+
+  return rawValue === 'true';
+}
+
+function clearLegacySettingsStorage() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.removeItem(LEGACY_LOCAL_SETTINGS_STORAGE_KEY);
+  window.localStorage.removeItem(LEGACY_SIDEBAR_STORAGE_KEY);
+}
+
+function getOrCreateDeviceId() {
+  if (typeof window === 'undefined') {
+    return 'server';
+  }
+
+  const existingId = window.localStorage.getItem(DEVICE_ID_STORAGE_KEY);
+  if (existingId) {
+    return existingId;
+  }
+
+  const nextId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `device-${Math.random().toString(36).slice(2, 10)}`;
+  window.localStorage.setItem(DEVICE_ID_STORAGE_KEY, nextId);
+  return nextId;
+}
+
+function applyLegacySettingsMigration(
+  document: SettingsDocument,
+  options: {
+    deviceId: string;
+    platform: ShortcutPlatform;
+    legacyLocalSettings: (Partial<LocalSettings> & { customShortcuts?: Record<string, string>; commandPaletteTransparency?: number }) | null;
+    legacySidebarCollapsed: boolean | null;
+  },
+) {
+  let changed = false;
+  const nextDocument: SettingsDocument = {
+    workspace: document.workspace,
+    local: { ...document.local },
+    keybindings: { ...document.keybindings },
+  };
+
+  if (!nextDocument.local[options.deviceId] && (options.legacyLocalSettings || options.legacySidebarCollapsed !== null)) {
+    nextDocument.local[options.deviceId] = normalizeLocalSettings({
+      ...options.legacyLocalSettings,
+      ...(options.legacySidebarCollapsed !== null ? { sidebarCollapsed: options.legacySidebarCollapsed } : {}),
+    });
+    changed = true;
+  }
+
+  const legacyShortcuts = options.legacyLocalSettings?.customShortcuts;
+  if (legacyShortcuts && typeof legacyShortcuts === 'object') {
+    Object.entries(legacyShortcuts).forEach(([action, shortcut]) => {
+      if (!isShortcutAction(action) || typeof shortcut !== 'string') {
+        return;
+      }
+
+      const currentPlatformShortcut = nextDocument.keybindings[action]?.[options.platform];
+      if (currentPlatformShortcut) {
+        return;
+      }
+
+      const normalizedShortcut = normalizeShortcut(shortcut);
+      if (!normalizedShortcut) {
+        return;
+      }
+
+      nextDocument.keybindings[action] = {
+        ...nextDocument.keybindings[action],
+        [options.platform]: normalizedShortcut,
+      };
+      changed = true;
+    });
+  }
+
+  return {
+    changed,
+    document: normalizeSettingsDocument(nextDocument),
+  };
 }
 
 function isAccentColor(value: string | undefined): value is LocalSettings['accentColor'] {
@@ -378,5 +576,13 @@ function isAccentColor(value: string | undefined): value is LocalSettings['accen
     || value === 'cyan';
 }
 
-export { accentMap };
-export { DEFAULT_SHORTCUTS };
+function isShortcutAction(value: string): value is ShortcutAction {
+  return value === 'commandPalette'
+    || value === 'switchNoteNext'
+    || value === 'switchNotePrevious'
+    || value === 'closeActiveNote'
+    || value === 'toggleSidebar'
+    || value === 'openShortcuts';
+}
+
+export type { PlatformShortcutBindingMap };

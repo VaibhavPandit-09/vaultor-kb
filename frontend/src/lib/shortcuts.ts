@@ -1,6 +1,16 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 
+export type ShortcutPlatform = 'mac' | 'windows';
+
 export const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
+
+export function getCurrentShortcutPlatform(): ShortcutPlatform {
+  return isMac ? 'mac' : 'windows';
+}
+
+export function getShortcutPlatformLabel(platform: ShortcutPlatform) {
+  return platform === 'mac' ? 'Mac' : 'Windows';
+}
 
 export type ShortcutAction =
   | 'commandPalette'
@@ -11,6 +21,9 @@ export type ShortcutAction =
   | 'openShortcuts';
 
 export type ShortcutBindingMap = Record<ShortcutAction, string>;
+
+export type PlatformShortcutBinding = Record<ShortcutPlatform, string>;
+export type PlatformShortcutBindingMap = Record<ShortcutAction, PlatformShortcutBinding>;
 
 export interface ShortcutItem {
   description: string;
@@ -26,7 +39,7 @@ interface ShortcutActionMeta {
   action: ShortcutAction;
   category: string;
   description: string;
-  defaultShortcut: string;
+  defaultShortcut: PlatformShortcutBinding;
 }
 
 const SHORTCUT_ORDER = ['Mod', 'Alt', 'Shift'] as const;
@@ -37,37 +50,37 @@ const shortcutActionMeta: ShortcutActionMeta[] = [
     action: 'commandPalette',
     category: 'Navigation',
     description: 'Search resources',
-    defaultShortcut: 'Mod+K',
+    defaultShortcut: { mac: 'Mod+K', windows: 'Mod+K' },
   },
   {
     action: 'switchNoteNext',
     category: 'Navigation',
     description: 'Switch note (next)',
-    defaultShortcut: 'Mod+ArrowRight',
+    defaultShortcut: { mac: 'Mod+ArrowRight', windows: 'Mod+ArrowRight' },
   },
   {
     action: 'switchNotePrevious',
     category: 'Navigation',
     description: 'Switch note (previous)',
-    defaultShortcut: 'Mod+ArrowLeft',
+    defaultShortcut: { mac: 'Mod+ArrowLeft', windows: 'Mod+ArrowLeft' },
   },
   {
     action: 'closeActiveNote',
     category: 'Navigation',
     description: 'Close active note',
-    defaultShortcut: 'Mod+Shift+Backspace',
+    defaultShortcut: { mac: 'Mod+Shift+Backspace', windows: 'Mod+Shift+Backspace' },
   },
   {
     action: 'toggleSidebar',
     category: 'Navigation',
     description: 'Toggle sidebar',
-    defaultShortcut: 'Mod+B',
+    defaultShortcut: { mac: 'Mod+B', windows: 'Mod+B' },
   },
   {
     action: 'openShortcuts',
     category: 'Navigation',
     description: 'Open shortcuts',
-    defaultShortcut: 'Mod+Slash',
+    defaultShortcut: { mac: 'Mod+Slash', windows: 'Mod+Slash' },
   },
 ];
 
@@ -91,20 +104,28 @@ const staticShortcutCategories: ShortcutCategory[] = [
   },
 ];
 
-export const DEFAULT_SHORTCUTS: ShortcutBindingMap = shortcutActionMeta.reduce((bindings, item) => {
+export const DEFAULT_KEYBINDINGS: PlatformShortcutBindingMap = shortcutActionMeta.reduce((bindings, item) => {
   bindings[item.action] = item.defaultShortcut;
   return bindings;
-}, {} as ShortcutBindingMap);
+}, {} as PlatformShortcutBindingMap);
 
 export const RESERVED_SHORTCUTS = ['Mod+W', 'Mod+Shift+W', 'Mod+T'];
 
 export const SHORTCUT_ACTIONS = shortcutActionMeta;
 
-export function resolveShortcutBindings(customShortcuts: Record<string, string>): ShortcutBindingMap {
+export function resolveShortcutBindings(
+  keybindings: Partial<Record<string, Partial<Record<ShortcutPlatform, string>>>> | null | undefined,
+  platform: ShortcutPlatform = getCurrentShortcutPlatform(),
+): ShortcutBindingMap {
   return shortcutActionMeta.reduce((bindings, item) => {
-    bindings[item.action] = normalizeShortcut(customShortcuts[item.action] || item.defaultShortcut);
+    const configured = keybindings?.[item.action]?.[platform];
+    bindings[item.action] = normalizeShortcut(configured || item.defaultShortcut[platform]);
     return bindings;
   }, {} as ShortcutBindingMap);
+}
+
+export function getDefaultShortcut(action: ShortcutAction, platform: ShortcutPlatform = getCurrentShortcutPlatform()) {
+  return DEFAULT_KEYBINDINGS[action][platform];
 }
 
 export function normalizeShortcut(shortcut: string): string {

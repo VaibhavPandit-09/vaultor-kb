@@ -19,6 +19,7 @@ import {
   Command,
   Tag as TagIcon,
   Settings2,
+  Palette,
 } from 'lucide-react';
 import api from '../lib/api';
 import type { Resource, Tag, ResourceType } from '../types';
@@ -49,6 +50,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../state/hooks';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../lib/escape/escape';
 import { useSettings } from '../lib/settings';
+import { generateTagColor, getTagColorInputValue, getTagPillStyle } from '../lib/tagColors';
 import { getGlassPanelStyle, getOverlayStyle } from '../lib/transparency';
 
 type TypeFilter = 'all' | 'note' | 'file';
@@ -74,9 +76,8 @@ type TagPickerItem = {
   name: string;
   type: 'existing' | 'create';
   score: number;
+  color: string;
 };
-
-const SIDEBAR_STORAGE_KEY = 'vaultor_sidebar_collapsed';
 
 export default function Dashboard() {
   const dispatch = useAppDispatch();
@@ -93,10 +94,6 @@ export default function Dashboard() {
   const [backlinks, setBacklinks] = useState<Resource[]>([]);
   const [loadingResourceIds, setLoadingResourceIds] = useState<string[]>([]);
   const [sidebarLoading, setSidebarLoading] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true';
-  });
 
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [tagSearch, setTagSearch] = useState('');
@@ -147,7 +144,7 @@ export default function Dashboard() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleEditNoteId = titleEditState?.noteId ?? null;
 
-  const { settings, resolvedShortcuts, toggleTheme } = useSettings();
+  const { settings, resolvedShortcuts, toggleTheme, updateLocalSetting } = useSettings();
   const commandPaletteFocus = useRestoreFocusOnClose();
   const shortcutsModalFocus = useRestoreFocusOnClose();
   const settingsModalFocus = useRestoreFocusOnClose();
@@ -158,6 +155,7 @@ export default function Dashboard() {
   const uiTransparency = localSettings.uiTransparency;
   const effectivePreviewMode = previewOverrideMode ?? localSettings.previewMode;
   const isFloatingSidebarMode = localSettings.sidebarMode === 'floating';
+  const sidebarCollapsed = localSettings.sidebarCollapsed;
   const fixedSidebarHidden = workspaceSettings.focusMode || (isFloatingSidebarMode ? true : sidebarCollapsed);
   const floatingSidebarVisible = !workspaceSettings.focusMode && isFloatingSidebarMode && (floatingSidebarPinned || floatingSidebarHovered);
   const sidebarCollapsedForContext = isFloatingSidebarMode ? !floatingSidebarVisible : sidebarCollapsed;
@@ -229,10 +227,6 @@ export default function Dashboard() {
     priority: ESCAPE_PRIORITIES.popover,
     close: closeTagPicker,
   });
-
-  useEffect(() => {
-    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarCollapsed));
-  }, [sidebarCollapsed]);
 
   const clearFloatingSidebarHideTimeout = useCallback(() => {
     if (floatingSidebarHideTimeoutRef.current) {
@@ -442,8 +436,8 @@ export default function Dashboard() {
       return;
     }
 
-    setSidebarCollapsed((prev) => !prev);
-  }, [clearFloatingSidebarHideTimeout, localSettings.sidebarMode]);
+    updateLocalSetting('sidebarCollapsed', !sidebarCollapsed);
+  }, [clearFloatingSidebarHideTimeout, localSettings.sidebarMode, sidebarCollapsed, updateLocalSetting]);
 
   const restoreCommandPalettePreview = useCallback((snapshot: PreviewSnapshot | null) => {
     if (!snapshot?.resourceId || !snapshot.resourceType) {
@@ -957,6 +951,7 @@ export default function Dashboard() {
     const optimisticTag = findExistingTag(tags, normalizedTagName) ?? {
       id: `local-${normalizedTagName.toLowerCase()}`,
       name: normalizedTagName,
+      color: generateTagColor(normalizedTagName),
     };
 
     setTags((current) => mergeTagIntoList(current, optimisticTag));
@@ -979,6 +974,32 @@ export default function Dashboard() {
       setTagAddPending(false);
     }
   }, [fetchBacklinks, fetchData, fetchResourceDetails, tags]);
+
+  const handleTagColorChange = useCallback(async (tagId: string, color: string) => {
+    const normalizedColor = color.trim().toLowerCase();
+    const targetTag = tags.find((tag) => tag.id === tagId);
+    if (!targetTag || !normalizedColor) {
+      return;
+    }
+
+    setTags((current) => updateTagColorInList(current, tagId, normalizedColor));
+    setResources((current) => updateTagColorInResources(current, tagId, normalizedColor));
+    setResourceDetails((current) => updateTagColorInResourceMap(current, tagId, normalizedColor));
+
+    try {
+      const { data } = await api.put(`/tags/${tagId}/color`, { color: normalizedColor });
+      const nextTag = data as Tag;
+      setTags((current) => replaceTagInList(current, nextTag));
+      setResources((current) => replaceTagInResources(current, nextTag));
+      setResourceDetails((current) => replaceTagInResourceMap(current, nextTag));
+    } catch (error) {
+      console.error(error);
+      await fetchData();
+      if (activeResource) {
+        await fetchResourceDetails(activeResource.id);
+      }
+    }
+  }, [activeResource, fetchData, fetchResourceDetails, tags]);
 
   const handleTagPickerSelect = useCallback(async (tagName: string) => {
     if (!tagPickerOpenNoteId || tagAddPending) {
@@ -1275,7 +1296,11 @@ export default function Dashboard() {
       {filters.selectedTags.length > 0 && (
         <div className="flex flex-wrap items-center gap-1 px-3 pb-2">
           {filters.selectedTags.map((tagName) => (
-            <span key={tagName} className="flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+            <span
+              key={tagName}
+              className="flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
+              style={getTagPillStyle(findTagColor(tags, tagName), localSettings.theme)}
+            >
               {tagName}
               <button onClick={() => dispatch(removeSelectedTag(tagName))} className="ml-1 opacity-60 hover:opacity-100"><X size={10} /></button>
             </span>
@@ -1343,7 +1368,7 @@ export default function Dashboard() {
           <input
             type="text"
             placeholder="Search tags..."
-            className="mb-1.5 w-full rounded border border-border bg-background px-2.5 py-1 text-[11px] focus:border-primary focus:outline-none"
+            className="mb-1.5 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2.5 py-1.5 text-[11px] text-[var(--text-primary)] outline-none transition-all duration-150 placeholder:text-[var(--text-tertiary)] hover:border-[var(--border-strong)] focus:border-primary focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]"
             value={tagSearch}
             onChange={(event) => setTagSearch(event.target.value)}
           />
@@ -1352,13 +1377,23 @@ export default function Dashboard() {
           {filteredTags.map((tag) => (
             <span
               key={tag.id}
-              className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors ${
-                filters.selectedTags.includes(tag.name)
-                  ? 'border-primary/30 bg-primary/15 text-primary'
-                  : 'border-transparent bg-[var(--surface-hover)] text-slate-600 hover:bg-[#e9edf2] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-              }`}
+              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
+              style={getTagPillStyle(tag.color, localSettings.theme)}
             >
               <button onClick={() => dispatch(toggleSelectedTag(tag.name))} className="cursor-pointer">{tag.name}</button>
+              <label
+                className="relative inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-full opacity-55 transition-opacity hover:opacity-100"
+                title="Change color"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <Palette size={9} />
+                <input
+                  type="color"
+                  value={getTagColorInputValue(tag.color)}
+                  onChange={(event) => void handleTagColorChange(tag.id, event.target.value)}
+                  className="absolute inset-0 cursor-pointer opacity-0"
+                />
+              </label>
               <button
                 onClick={() => setTagDeleteModal({ id: tag.id, name: tag.name })}
                 className="opacity-40 transition-opacity hover:text-red-500 hover:opacity-100"
@@ -1725,7 +1760,11 @@ export default function Dashboard() {
                     {note.id === activeNoteId && note.resource?.type === 'note' && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {(note.resource.tags ?? []).slice(0, 4).map((tag) => (
-                          <span key={tag.id} className="flex items-center rounded-md bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
+                          <span
+                            key={tag.id}
+                            className="flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
+                            style={getTagPillStyle(tag.color, localSettings.theme)}
+                          >
                             {tag.name}
                             <button onClick={() => handleRemoveTag(tag.name)} className="ml-1.5 opacity-60 hover:opacity-100"><X size={10} /></button>
                           </span>
@@ -1742,15 +1781,15 @@ export default function Dashboard() {
                               setTagInputValue('');
                               setTagPickerSelectedIndex(0);
                             }}
-                            className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-primary hover:text-primary"
+                            className="inline-flex items-center gap-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-all duration-150 hover:border-primary/40 hover:bg-[var(--surface-3)] hover:text-primary"
                           >
                             <TagIcon size={13} /> Add Tag
                           </button>
 
                           {tagPickerOpenNoteId === note.id && (
-                            <div className="absolute left-0 top-full z-40 mt-2 w-72 rounded-2xl p-2 shadow-xl" style={getGlassPanelStyle(uiTransparency, 16)}>
-                              <div className="flex items-center gap-2 rounded-xl bg-background px-3 py-2">
-                                <TagIcon size={13} className="text-slate-400" />
+                            <div className="absolute left-0 top-full z-40 mt-2 w-72 rounded-2xl border border-[var(--border-subtle)] p-2 shadow-[0_18px_36px_rgba(15,23,42,0.14)]" style={getGlassPanelStyle(uiTransparency, 16)}>
+                              <div className="flex items-center gap-2 rounded-xl bg-[var(--surface-2)] px-3 py-2 shadow-[inset_0_0_0_1px_var(--border-subtle)]">
+                                <TagIcon size={13} className="text-[var(--text-tertiary)]" />
                                 <input
                                   ref={tagInputRef}
                                   value={tagInputValue}
@@ -1785,14 +1824,15 @@ export default function Dashboard() {
                                     }
                                   }}
                                   placeholder="Search or create tag..."
-                                  className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-slate-400"
+                                  className="w-full bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
                                 />
-                                {tagAddPending && <Loader2 size={14} className="animate-spin text-slate-400" />}
+                                {tagAddPending && <Loader2 size={14} className="animate-spin text-[var(--text-tertiary)]" />}
                               </div>
 
                               <div className="mt-2 max-h-56 space-y-1 overflow-y-auto">
                                 {tagPickerItems.map((item, itemIndex) => {
                                   const selected = itemIndex === tagPickerSelectedIndex;
+                                  const itemStyle = getTagPillStyle(item.color, localSettings.theme);
 
                                   return (
                                     <button
@@ -1802,13 +1842,21 @@ export default function Dashboard() {
                                       onMouseEnter={() => setTagPickerSelectedIndex(itemIndex)}
                                       onClick={() => void handleTagPickerSelect(item.name)}
                                       className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                                        selected ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-background'
+                                        selected ? 'bg-primary/10 text-primary' : 'text-[var(--text-primary)] hover:bg-[var(--surface-3)]'
                                       }`}
                                     >
-                                      <span className="truncate">
+                                      <span className="flex min-w-0 items-center gap-2 truncate">
+                                        <span
+                                          className="h-2.5 w-2.5 flex-shrink-0 rounded-full border"
+                                          style={{
+                                            backgroundColor: itemStyle.backgroundColor,
+                                            borderColor: itemStyle.borderColor,
+                                            boxShadow: itemStyle.boxShadow,
+                                          }}
+                                        />
                                         {item.type === 'create' ? `Create "${item.name}"` : item.name}
                                       </span>
-                                      <span className="text-[11px] uppercase tracking-wide text-slate-400">
+                                      <span className="text-[11px] uppercase tracking-wide text-[var(--text-tertiary)]">
                                         {item.type === 'create' ? 'New' : 'Tag'}
                                       </span>
                                     </button>
@@ -1816,7 +1864,7 @@ export default function Dashboard() {
                                 })}
 
                                 {tagPickerItems.length === 0 && (
-                                  <div className="px-3 py-2 text-sm text-slate-400">
+                                  <div className="px-3 py-2 text-sm text-[var(--text-tertiary)]">
                                     {tagPickerEmptyMessage}
                                   </div>
                                 )}
@@ -1982,6 +2030,7 @@ function getTagPickerItems(tags: Tag[], query: string, attachedNames: Set<string
       name: tag.name,
       type: 'existing' as const,
       score: getTagSearchScore(tag.name, normalizedQuery),
+      color: tag.color,
     }))
     .filter((item) => normalizedQuery.length === 0 || item.score > 0)
     .sort((left, right) => right.score - left.score || left.name.localeCompare(right.name));
@@ -1998,6 +2047,7 @@ function getTagPickerItems(tags: Tag[], query: string, attachedNames: Set<string
       name: query.trim(),
       type: 'create',
       score: Number.POSITIVE_INFINITY,
+      color: generateTagColor(query.trim()),
     });
   }
 
@@ -2054,6 +2104,10 @@ function findExistingTag(tags: Tag[], tagName: string) {
   return tags.find((tag) => tag.name.toLowerCase() === normalizedTagName) ?? null;
 }
 
+function findTagColor(tags: Tag[], tagName: string) {
+  return findExistingTag(tags, tagName)?.color ?? generateTagColor(tagName);
+}
+
 function mergeTagIntoList(tags: Tag[], nextTag: Tag) {
   const normalizedTagName = nextTag.name.toLowerCase();
   if (tags.some((tag) => tag.name.toLowerCase() === normalizedTagName)) {
@@ -2061,6 +2115,20 @@ function mergeTagIntoList(tags: Tag[], nextTag: Tag) {
   }
 
   return [...tags, nextTag].sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function replaceTagInList(tags: Tag[], nextTag: Tag) {
+  return tags
+    .map((tag) => (tag.id === nextTag.id ? nextTag : tag))
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function updateTagColorInList(tags: Tag[], tagId: string, color: string) {
+  return tags.map((tag) => (
+    tag.id === tagId
+      ? { ...tag, color }
+      : tag
+  ));
 }
 
 function attachTagToResourceList(resources: Resource[], resourceId: string, nextTag: Tag) {
@@ -2084,6 +2152,48 @@ function attachTagToResourceMap(resources: Record<string, Resource>, resourceId:
       tags: mergeTagIntoList(resource.tags ?? [], nextTag),
     },
   };
+}
+
+function replaceTagInResources(resources: Resource[], nextTag: Tag) {
+  return resources.map((resource) => ({
+    ...resource,
+    tags: resource.tags?.map((tag) => (tag.id === nextTag.id ? nextTag : tag)) ?? [],
+  }));
+}
+
+function replaceTagInResourceMap(resources: Record<string, Resource>, nextTag: Tag) {
+  return Object.fromEntries(Object.entries(resources).map(([resourceId, resource]) => [
+    resourceId,
+    {
+      ...resource,
+      tags: resource.tags?.map((tag) => (tag.id === nextTag.id ? nextTag : tag)) ?? [],
+    },
+  ]));
+}
+
+function updateTagColorInResources(resources: Resource[], tagId: string, color: string) {
+  return resources.map((resource) => ({
+    ...resource,
+    tags: resource.tags?.map((tag) => (
+      tag.id === tagId
+        ? { ...tag, color }
+        : tag
+    )) ?? [],
+  }));
+}
+
+function updateTagColorInResourceMap(resources: Record<string, Resource>, tagId: string, color: string) {
+  return Object.fromEntries(Object.entries(resources).map(([resourceId, resource]) => [
+    resourceId,
+    {
+      ...resource,
+      tags: resource.tags?.map((tag) => (
+        tag.id === tagId
+          ? { ...tag, color }
+          : tag
+      )) ?? [],
+    },
+  ]));
 }
 
 function upsertResourceInList(resources: Resource[], nextResource: Resource) {

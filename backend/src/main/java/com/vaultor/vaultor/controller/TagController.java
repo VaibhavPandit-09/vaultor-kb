@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.List;
 
 @RestController
@@ -20,10 +21,14 @@ public class TagController {
         return tagService.getAllTags();
     }
 
+    @PutMapping("/{id}/color")
+    public Tag updateTagColor(@PathVariable String id, @RequestBody Map<String, String> payload) {
+        return tagService.updateTagColor(id, payload.get("color"));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTag(@PathVariable String id) {
         tagService.deleteTag(id);
         return ResponseEntity.noContent().build();
     }
 }
-

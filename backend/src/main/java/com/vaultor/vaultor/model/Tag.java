@@ -19,7 +19,15 @@ public class Tag {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @Column
+    private String color;
+
     public Tag(String name) {
         this.name = name;
+    }
+
+    public Tag(String name, String color) {
+        this.name = name;
+        this.color = color;
     }
 }

@@ -4,16 +4,25 @@
 
 @layer base {
   :root {
-    --background: #f6f7f9;
-    --foreground: #111827;
-    --muted-foreground: #374151;
-    --subtle-foreground: #6b7280;
-    --card: #ffffff;
+    --surface-1: #f6f7f9;
+    --surface-2: #ffffff;
+    --surface-3: #eef2f6;
+    --surface-4: #e8edf3;
+    --text-primary: #111827;
+    --text-secondary: #374151;
+    --text-tertiary: #6b7280;
+    --border-subtle: rgba(17, 24, 39, 0.08);
+    --border-strong: rgba(17, 24, 39, 0.14);
+    --background: var(--surface-1);
+    --foreground: var(--text-primary);
+    --muted-foreground: var(--text-secondary);
+    --subtle-foreground: var(--text-tertiary);
+    --card: var(--surface-2);
     --card-rgb: 255, 255, 255;
-    --card-foreground: #111827;
-    --sidebar: #ffffff;
-    --surface-hover: #f1f3f5;
-    --border: rgba(17, 24, 39, 0.08);
+    --card-foreground: var(--text-primary);
+    --sidebar: var(--surface-2);
+    --surface-hover: var(--surface-3);
+    --border: var(--border-subtle);
     --overlay-rgb: 15, 23, 42;
     --accent: #3b82f6;
     --primary: var(--accent);
@@ -22,16 +31,25 @@
   }
 
   .dark {
-    --background: #020617;
-    --foreground: #f8fafc;
-    --muted-foreground: #cbd5e1;
-    --subtle-foreground: #94a3b8;
-    --card: #0f172a;
+    --surface-1: #020617;
+    --surface-2: #0b1220;
+    --surface-3: #111a2e;
+    --surface-4: #182235;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-tertiary: #94a3b8;
+    --border-subtle: rgba(148, 163, 184, 0.14);
+    --border-strong: rgba(148, 163, 184, 0.22);
+    --background: var(--surface-1);
+    --foreground: var(--text-primary);
+    --muted-foreground: var(--text-secondary);
+    --subtle-foreground: var(--text-tertiary);
+    --card: var(--surface-2);
     --card-rgb: 15, 23, 42;
-    --card-foreground: #f8fafc;
-    --sidebar: #0f172a;
+    --card-foreground: var(--text-primary);
+    --sidebar: var(--surface-2);
     --surface-hover: rgba(30, 41, 59, 0.65);
-    --border: #1e293b;
+    --border: var(--border-subtle);
     --overlay-rgb: 2, 6, 23;
     --primary: var(--accent);
     --primary-foreground: #ffffff;
@@ -48,6 +66,14 @@
 
 body {
   @apply bg-background text-foreground antialiased transition-colors;
+  transition-duration: var(--vaultor-ui-transition);
+  transition-timing-function: ease-out;
+}
+
+input,
+textarea,
+select,
+button {
   transition-duration: var(--vaultor-ui-transition);
   transition-timing-function: ease-out;
 }

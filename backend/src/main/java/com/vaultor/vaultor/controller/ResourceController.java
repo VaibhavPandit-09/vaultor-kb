@@ -38,6 +38,7 @@ public class ResourceController {
 
     @GetMapping
     public List<Resource> getAllResources(@RequestParam(value = "tag", required = false) String tagFilter) {
+        tagService.ensureTagColorsPersisted();
         List<Resource> all = resourceRepository.findAllByOrderByLastOpenedAtDescUpdatedAtDesc();
         if (tagFilter != null && !tagFilter.isBlank()) {
             return all.stream()
@@ -49,6 +50,7 @@ public class ResourceController {
 
     @GetMapping("/search")
     public List<Resource> searchResources(@RequestParam("q") String query) {
+        tagService.ensureTagColorsPersisted();
         if (query == null || query.trim().isEmpty()) {
             return resourceRepository.findAllByOrderByLastOpenedAtDescUpdatedAtDesc();
         }
@@ -65,6 +67,7 @@ public class ResourceController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Resource> getResource(@PathVariable String id) {
+        tagService.ensureTagColorsPersisted();
         return resourceRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -175,6 +178,7 @@ public class ResourceController {
 
     @GetMapping("/{id}/backlinks")
     public List<Resource> getBacklinks(@PathVariable String id) {
+        tagService.ensureTagColorsPersisted();
         List<Relationship> relationships = relationshipRepository.findByToIdAndType(id, "link");
         List<String> callerIds = relationships.stream().map(Relationship::getFromId).collect(Collectors.toList());
         return resourceRepository.findAllById(callerIds);

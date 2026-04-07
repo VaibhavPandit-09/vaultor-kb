@@ -46,21 +46,21 @@ export default function AppModal({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={getOverlayStyle(transparency, 0.38)} onClick={onClose}>
       <div
-        className={`w-full ${widthClassName} rounded-2xl border border-border shadow-2xl`}
+        className={`w-full ${widthClassName} rounded-[28px] border border-[color:var(--border-strong)] bg-[var(--surface-1)]/80 shadow-[0_24px_60px_rgba(15,23,42,0.18)]`}
         style={getGlassPanelStyle(transparency, 16)}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border-subtle)] px-6 py-5">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-            {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+            <h3 className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">{title}</h3>
+            {description && <p className="mt-1 text-sm text-[var(--text-secondary)]">{description}</p>}
           </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-foreground dark:hover:bg-slate-800" aria-label="Close modal">
+          <button onClick={onClose} className="rounded-xl p-1.5 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--text-primary)]" aria-label="Close modal">
             <X size={18} />
           </button>
         </div>
-        <div className="px-5 py-4">{children}</div>
-        {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-border px-5 py-4">{footer}</div>}
+        <div className="px-6 py-5">{children}</div>
+        {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-[color:var(--border-subtle)] px-6 py-5">{footer}</div>}
       </div>
     </div>
   );
