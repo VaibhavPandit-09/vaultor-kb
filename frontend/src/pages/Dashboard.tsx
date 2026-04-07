@@ -27,13 +27,14 @@ import { useRestoreFocusOnClose } from '../lib/useRestoreFocusOnClose';
 import BlockEditor, { type NoteSelection } from '../components/editor/BlockEditor';
 import PreviewLayer from '../components/PreviewLayer';
 import { markdownToHtml } from '../components/editor/markdownUtils';
-import { csvToTableHtml } from '../components/editor/csvUtils';
+import { chooseSafeCsvContent } from '../components/editor/csvUtils';
 import AppModal from '../components/modals/AppModal';
 import CommandPaletteModal from '../components/modals/CommandPaletteModal';
 import ShortcutsModal from '../components/modals/ShortcutsModal';
 import SettingsModal from '../components/modals/SettingsModal';
 import { isMac, shortcutMatchesEvent } from '../lib/shortcuts';
 import type { CommandContext } from '../lib/commandPalette';
+import type { Editor } from '@tiptap/react';
 import {
   clearSelectedTags,
   navigateBack,
@@ -606,15 +607,28 @@ export default function Dashboard() {
     }
   }, [createNotePending, fetchData, openResourceById]);
 
+  const syncUploadedResource = useCallback((resource: Resource) => {
+    setResources((current) => upsertResourceInList(current, resource));
+    setResourceDetails((current) => ({
+      ...current,
+      [resource.id]: resource,
+    }));
+  }, []);
+
+  const uploadFileResource = useCallback(async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await api.post('/resources/file', formData);
+    return data as Resource;
+  }, []);
+
   const handleUploadFile = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || uploadPending) return;
 
     setUploadPending(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const { data } = await api.post('/resources/file', formData);
+      const data = await uploadFileResource(file);
       await fetchData();
       openResourceById(data.id);
     } catch (error) {
@@ -623,7 +637,7 @@ export default function Dashboard() {
       setUploadPending(false);
       if (fileUploadRef.current) fileUploadRef.current.value = '';
     }
-  }, [fetchData, openResourceById, uploadPending]);
+  }, [fetchData, openResourceById, uploadFileResource, uploadPending]);
 
   const requestFileUpload = useCallback(() => {
     openFilePicker(fileUploadRef.current);
@@ -1042,15 +1056,25 @@ export default function Dashboard() {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      const text = await readTextFile(file);
-      const html = csvToTableHtml(text);
-      const editor = (window as any).__vaultor_editor;
-      if (editor) editor.chain().focus().insertContent(html).run();
+      const [text, resource] = await Promise.all([
+        readTextFile(file),
+        uploadFileResource(file),
+      ]);
+
+      syncUploadedResource(resource);
+
+      const editor = (window as typeof window & { __vaultor_editor?: Editor | null }).__vaultor_editor;
+      if (editor) {
+        const content = chooseSafeCsvContent(editor, resource, text);
+        editor.chain().focus().insertContent(content).run();
+      }
+
+      void fetchData();
     } catch (error) {
       console.error('CSV upload failed:', error);
     }
     if (csvUploadRef.current) csvUploadRef.current.value = '';
-  }, []);
+  }, [fetchData, syncUploadedResource, uploadFileResource]);
 
   const handleFileDownload = useCallback(async () => {
     if (!activeResource || activeResource.type !== 'file') return;
@@ -2060,6 +2084,17 @@ function attachTagToResourceMap(resources: Record<string, Resource>, resourceId:
       tags: mergeTagIntoList(resource.tags ?? [], nextTag),
     },
   };
+}
+
+function upsertResourceInList(resources: Resource[], nextResource: Resource) {
+  const existingIndex = resources.findIndex((resource) => resource.id === nextResource.id);
+  if (existingIndex === -1) {
+    return [nextResource, ...resources];
+  }
+
+  const nextResources = [...resources];
+  nextResources[existingIndex] = nextResource;
+  return nextResources;
 }
 
 function openFilePicker(input: HTMLInputElement | null) {

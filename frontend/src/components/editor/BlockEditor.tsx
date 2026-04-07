@@ -26,6 +26,12 @@ import { Plus, Trash2 } from 'lucide-react';
 
 const lowlight = createLowlight(all);
 
+type SlashCommandRegistryWindow = typeof window & {
+  __executeSlashCommand?: (view?: unknown) => void;
+  __slashCommandExecutors?: Map<object, () => void>;
+  __vaultor_editor?: Editor | null;
+};
+
 interface BlockEditorProps {
   noteId: string;
   content: any;
@@ -128,6 +134,38 @@ function BlockEditor({
         },
       }),
       Table.extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            sourceResourceId: {
+              default: null,
+              parseHTML: (element) => element.getAttribute('data-source-resource-id'),
+              renderHTML: (attributes) => (
+                attributes.sourceResourceId
+                  ? { 'data-source-resource-id': attributes.sourceResourceId }
+                  : {}
+              ),
+            },
+            sourceResourceTitle: {
+              default: null,
+              parseHTML: (element) => element.getAttribute('data-source-resource-title'),
+              renderHTML: (attributes) => (
+                attributes.sourceResourceTitle
+                  ? { 'data-source-resource-title': attributes.sourceResourceTitle }
+                  : {}
+              ),
+            },
+            sourceResourceType: {
+              default: null,
+              parseHTML: (element) => element.getAttribute('data-source-resource-type'),
+              renderHTML: (attributes) => (
+                attributes.sourceResourceType
+                  ? { 'data-source-resource-type': attributes.sourceResourceType }
+                  : {}
+              ),
+            },
+          };
+        },
         addKeyboardShortcuts() {
           const parentShortcuts = this.parent?.() ?? {};
 
@@ -292,16 +330,43 @@ function BlockEditor({
 
   // Handle Enter key synchronously to preserve the browser user gesture
   useEffect(() => {
-    (window as any).__executeSlashCommand = () => {
+    if (!editor) {
+      return undefined;
+    }
+
+    const globalWindow = window as SlashCommandRegistryWindow;
+    const executors = globalWindow.__slashCommandExecutors ?? new Map<object, () => void>();
+    globalWindow.__slashCommandExecutors = executors;
+
+    const executeSlashCommand = () => {
       if (!slashState?.active) return;
       const filtered = getFilteredSlashItems(slashState.query, onRequestMdUpload, onRequestCsvUpload);
       const idx = selectedIndex >= filtered.length ? 0 : selectedIndex;
       const item = filtered[idx];
-      if (item && slashState.range && editor) {
+      if (item && slashState.range) {
         item.action(editor, slashState.range);
         if (!item.keepOpen) {
           closeSlash();
         }
+      }
+    };
+
+    executors.set(editor.view, executeSlashCommand);
+
+    globalWindow.__executeSlashCommand = (view?: unknown) => {
+      if (view && executors.has(view as object)) {
+        executors.get(view as object)?.();
+        return;
+      }
+
+      executeSlashCommand();
+    };
+
+    return () => {
+      executors.delete(editor.view);
+      if (executors.size === 0) {
+        delete globalWindow.__executeSlashCommand;
+        delete globalWindow.__slashCommandExecutors;
       }
     };
   }, [slashState, selectedIndex, editor, onRequestMdUpload, onRequestCsvUpload, closeSlash]);

@@ -55,7 +55,7 @@ const shortcutActionMeta: ShortcutActionMeta[] = [
     action: 'closeActiveNote',
     category: 'Navigation',
     description: 'Close active note',
-    defaultShortcut: 'Mod+Backspace',
+    defaultShortcut: 'Mod+Shift+Backspace',
   },
   {
     action: 'toggleSidebar',
