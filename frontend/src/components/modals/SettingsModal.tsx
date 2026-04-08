@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Command, Laptop2, Layers3, RotateCcw, Search, Sparkles } from 'lucide-react';
 import AppModal from './AppModal';
 import {
@@ -8,6 +9,7 @@ import {
   type ShortcutAction,
 } from '../../lib/shortcuts';
 import { useSettings, type LocalSettings } from '../../lib/settings';
+import { useAnchoredPortalPosition } from '../../lib/useAnchoredPortalPosition';
 
 interface SettingsModalProps {
   open: boolean;
@@ -706,7 +708,7 @@ function SettingsCard({
   footer?: ReactNode;
 }) {
   return (
-    <section className="rounded-[24px] bg-[var(--surface-2)] p-5 shadow-[inset_0_0_0_1px_var(--border-subtle),0_14px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+    <section className="rounded-[24px] bg-[var(--surface-2)] p-5 shadow-[inset_0_0_0_1px_var(--border-strong),0_18px_34px_rgba(15,23,42,0.1)] backdrop-blur-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h4 className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">{title}</h4>
@@ -732,7 +734,7 @@ function SettingRow({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl bg-[var(--surface-3)] px-4 py-3 shadow-[inset_0_0_0_1px_var(--border-subtle)]">
+    <div className="rounded-2xl bg-[var(--surface-3)] px-4 py-3 shadow-[inset_0_0_0_1px_var(--border-subtle)] transition-colors duration-150 hover:bg-[var(--surface-4)]">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
         <div className="min-w-0">
           <div className="text-[15px] font-medium text-[var(--text-primary)]">{label}</div>
@@ -755,7 +757,9 @@ function SettingSelect({
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const selectedOption = options.find((option) => option.value === value) ?? options[0];
+  const { position } = useAnchoredPortalPosition(open, containerRef, { width: 'anchor', offset: 8 });
 
   useEffect(() => {
     if (!open) {
@@ -764,7 +768,10 @@ function SettingSelect({
 
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target;
-      if (target instanceof Node && containerRef.current?.contains(target)) {
+      if (
+        target instanceof Node &&
+        (containerRef.current?.contains(target) || menuRef.current?.contains(target))
+      ) {
         return;
       }
       setOpen(false);
@@ -786,16 +793,29 @@ function SettingSelect({
         }}
         className={`flex w-full items-center justify-between rounded-2xl border px-3 py-2.5 text-left text-sm font-medium outline-none transition-all duration-150 ${
           open
-            ? 'border-primary bg-[var(--surface-2)] text-[var(--text-primary)] shadow-[0_0_0_3px_rgba(59,130,246,0.12)]'
-            : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-primary)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-3)]'
+            ? 'border-primary bg-[var(--surface-2)] text-[var(--text-primary)] shadow-[0_0_0_3px_rgba(59,130,246,0.12),0_10px_24px_rgba(15,23,42,0.08)]'
+            : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-primary)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-3)] hover:shadow-[0_8px_20px_rgba(15,23,42,0.06)]'
         }`}
       >
         <span className="truncate">{selectedOption?.label ?? value}</span>
         <ChevronDown size={15} className={`ml-3 flex-shrink-0 text-[var(--text-tertiary)] transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && (
-        <div className="absolute left-0 top-full z-30 mt-2 w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-1.5 shadow-[0_18px_36px_rgba(15,23,42,0.12)]">
+      {open && position && createPortal(
+        <div
+          ref={menuRef}
+          className="overflow-hidden rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-2)] p-1.5 shadow-[0_22px_44px_rgba(15,23,42,0.14)]"
+          style={{
+            position: 'fixed',
+            top: position.top,
+            left: position.left,
+            width: position.width,
+            maxHeight: position.maxHeight,
+            transform: position.placement === 'top' ? 'translateY(-100%)' : undefined,
+            zIndex: 1100,
+          }}
+        >
+          <div className="overflow-y-auto" style={{ maxHeight: position.maxHeight - 12 }}>
           {options.map((option) => {
             const selected = option.value === value;
             return (
@@ -817,7 +837,9 @@ function SettingSelect({
               </button>
             );
           })}
-        </div>
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -839,7 +861,7 @@ function RangeControl({
   valueLabel: string;
 }) {
   return (
-    <div className="w-full">
+    <div className="w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-3 transition-all duration-150 hover:border-[var(--border-strong)] focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]">
       <input
         type="range"
         min={min}

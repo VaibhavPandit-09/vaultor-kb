@@ -19,29 +19,29 @@ export function generateTagColor(tagName: string) {
 
 export function getTagPillStyle(color: string, theme: 'dark' | 'light') {
   const baseRgb = parseColorToRgb(color) ?? parseColorToRgb(generateTagColor(color)) ?? { r: 59, g: 130, b: 246 };
-  const vividRgb = applyVibrance(baseRgb, theme === 'dark' ? 1.18 : 1.12);
+  const vividRgb = applyVibrance(baseRgb, theme === 'dark' ? 1.28 : 1.22);
   const vividHsl = rgbToHsl(vividRgb);
-  const shiftedHue = (vividHsl.h + (theme === 'dark' ? 22 : 18)) % 360;
+  const shiftedHue = (vividHsl.h + (theme === 'dark' ? 24 : 18)) % 360;
   const gradientStart = hslToRgb(
     vividHsl.h,
-    clamp(Math.max(vividHsl.s, 0.7) * 1.02, 0.7, 0.8),
-    clamp(vividHsl.l + (theme === 'dark' ? 0.14 : 0.04), 0, 1),
+    clamp(Math.max(vividHsl.s, 0.8) * 1.03, 0.8, 0.9),
+    clamp(vividHsl.l + (theme === 'dark' ? 0.12 : 0.02), theme === 'dark' ? 0.5 : 0.42, theme === 'dark' ? 0.68 : 0.58),
   );
   const gradientEnd = hslToRgb(
     shiftedHue,
-    clamp(Math.max(vividHsl.s, 0.72), 0.72, 0.82),
-    clamp(vividHsl.l - (theme === 'dark' ? 0.01 : 0.08), 0, 1),
+    clamp(Math.max(vividHsl.s, 0.82), 0.82, 0.9),
+    clamp(vividHsl.l - (theme === 'dark' ? 0.02 : 0.06), theme === 'dark' ? 0.42 : 0.36, theme === 'dark' ? 0.62 : 0.5),
   );
-  const text = getReadableTextColor(theme === 'dark' ? gradientStart : gradientEnd);
-  const borderAlpha = theme === 'dark' ? 0.26 : 0.18;
-  const shadowAlpha = theme === 'dark' ? 0.12 : 0.08;
+  const gradientMidpoint = mixRgb(gradientStart, gradientEnd, 0.5);
+  const text = theme === 'dark' ? { r: 255, g: 255, b: 255 } : getReadableTextColor(gradientMidpoint);
+  const shadowAlpha = theme === 'dark' ? 0.16 : 0.1;
 
   return {
-    backgroundImage: `linear-gradient(135deg, rgba(${gradientStart.r}, ${gradientStart.g}, ${gradientStart.b}, ${theme === 'dark' ? 0.34 : 0.28}) 0%, rgba(${gradientEnd.r}, ${gradientEnd.g}, ${gradientEnd.b}, ${theme === 'dark' ? 0.22 : 0.24}) 100%)`,
-    backgroundColor: `rgba(${vividRgb.r}, ${vividRgb.g}, ${vividRgb.b}, ${theme === 'dark' ? 0.18 : 0.18})`,
-    borderColor: `rgba(${vividRgb.r}, ${vividRgb.g}, ${vividRgb.b}, ${borderAlpha})`,
+    backgroundImage: `linear-gradient(180deg, rgba(255,255,255,${theme === 'dark' ? 0.16 : 0.26}) 0%, rgba(255,255,255,0) 42%), linear-gradient(135deg, rgb(${gradientStart.r}, ${gradientStart.g}, ${gradientStart.b}) 0%, rgb(${gradientEnd.r}, ${gradientEnd.g}, ${gradientEnd.b}) 100%)`,
+    backgroundColor: `rgb(${gradientEnd.r}, ${gradientEnd.g}, ${gradientEnd.b})`,
+    borderColor: `rgba(255,255,255,${theme === 'dark' ? 0.24 : 0.52})`,
     color: `rgb(${text.r}, ${text.g}, ${text.b})`,
-    boxShadow: `inset 0 1px 0 rgba(255,255,255,${theme === 'dark' ? 0.08 : 0.35}), 0 0 0 1px rgba(${vividRgb.r}, ${vividRgb.g}, ${vividRgb.b}, ${borderAlpha * 0.7}), 0 6px 14px rgba(15,23,42,${shadowAlpha})`,
+    boxShadow: `inset 0 1px 0 rgba(255,255,255,${theme === 'dark' ? 0.18 : 0.34}), 0 1px 2px rgba(15,23,42,${shadowAlpha}), 0 6px 12px rgba(15,23,42,${shadowAlpha * 0.7})`,
   };
 }
 
@@ -173,6 +173,14 @@ function getReadableTextColor(rgb: Rgb) {
   return luminance > 0.53
     ? { r: 15, g: 23, b: 42 }
     : { r: 248, g: 250, b: 252 };
+}
+
+function mixRgb(start: Rgb, end: Rgb, weight: number): Rgb {
+  return {
+    r: Math.round(start.r + ((end.r - start.r) * weight)),
+    g: Math.round(start.g + ((end.g - start.g) * weight)),
+    b: Math.round(start.b + ((end.b - start.b) * weight)),
+  };
 }
 
 function getRelativeLuminance(rgb: Rgb) {

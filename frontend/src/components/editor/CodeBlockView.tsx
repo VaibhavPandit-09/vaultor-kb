@@ -1,7 +1,9 @@
 import { NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
-import { useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Copy, Check, ChevronDown } from 'lucide-react';
+import { useAnchoredPortalPosition } from '../../lib/useAnchoredPortalPosition';
 
 const LANGUAGES = [
   { value: '', label: 'Plain Text' },
@@ -38,6 +40,13 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [langSearch, setLangSearch] = useState('');
   const codeRef = useRef<HTMLPreElement>(null);
+  const languageTriggerRef = useRef<HTMLDivElement>(null);
+  const languageMenuRef = useRef<HTMLDivElement>(null);
+  const { position: langMenuPosition } = useAnchoredPortalPosition(showLangPicker, languageTriggerRef, {
+    width: 220,
+    minWidth: 220,
+    offset: 8,
+  });
 
   const currentLang = node.attrs.language || '';
   const displayLang = LANGUAGES.find(l => l.value === currentLang)?.label || currentLang || 'Plain Text';
@@ -61,32 +70,65 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
     l.value.toLowerCase().includes(langSearch.toLowerCase())
   );
 
+  useEffect(() => {
+    if (!showLangPicker) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (
+        target instanceof Node &&
+        (languageTriggerRef.current?.contains(target) || languageMenuRef.current?.contains(target))
+      ) {
+        return;
+      }
+
+      setShowLangPicker(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [showLangPicker]);
+
   return (
     <NodeViewWrapper className="relative group my-4">
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+      <div className="overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] shadow-[0_6px_16px_rgba(15,23,42,0.06)]">
         {/* Header bar */}
-        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-100 px-4 py-2 text-xs dark:border-slate-700 dark:bg-slate-900">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-3)] px-4 py-2 text-xs">
           {/* Language selector */}
-          <div className="relative">
+          <div ref={languageTriggerRef} className="relative">
             <button
               onClick={() => setShowLangPicker(!showLangPicker)}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-4)] hover:text-[var(--text-primary)]"
               contentEditable={false}
             >
               <span className="font-medium">{displayLang}</span>
               <ChevronDown size={12} />
             </button>
 
-            {showLangPicker && (
+            {showLangPicker && langMenuPosition && createPortal(
               <div
-                className="absolute left-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl dark:border-slate-600 dark:bg-slate-800"
+                ref={languageMenuRef}
+                className="overflow-hidden rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] shadow-[0_20px_38px_rgba(15,23,42,0.14)]"
+                style={{
+                  position: 'fixed',
+                  top: langMenuPosition.top,
+                  left: langMenuPosition.left,
+                  width: langMenuPosition.width,
+                  maxHeight: langMenuPosition.maxHeight,
+                  transform: langMenuPosition.placement === 'top' ? 'translateY(-100%)' : undefined,
+                  zIndex: 1100,
+                }}
                 contentEditable={false}
               >
-                <div className="border-b border-slate-200 p-1.5 dark:border-slate-700">
+                <div className="border-b border-[var(--border-subtle)] p-1.5">
                   <input
                     type="text"
                     placeholder="Search..."
-                    className="w-full rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 outline-none placeholder:text-slate-400 focus:border-[var(--accent)] dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500"
+                    className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-3)] px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none transition-all duration-150 placeholder:text-[var(--text-tertiary)] hover:border-[var(--border-strong)] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]"
                     value={langSearch}
                     onChange={e => setLangSearch(e.target.value)}
                     autoFocus
@@ -97,24 +139,25 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
                     <button
                       key={lang.value}
                       onClick={() => handleLangSelect(lang.value)}
-                      className={`block w-full text-left px-3 py-1.5 rounded text-xs transition-colors ${
+                      className={`block w-full rounded-lg px-3 py-1.5 text-left text-xs transition-colors ${
                         lang.value === currentLang
-                          ? 'bg-indigo-600 text-white'
-                          : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-[var(--text-primary)] hover:bg-[var(--surface-3)]'
                       }`}
                     >
                       {lang.label}
                     </button>
                   ))}
                 </div>
-              </div>
+              </div>,
+              document.body,
             )}
           </div>
 
           {/* Copy button */}
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-white"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-4)] hover:text-[var(--text-primary)]"
             contentEditable={false}
           >
             {copied ? (
@@ -132,7 +175,7 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
         </div>
 
         {/* Code content */}
-        <pre ref={codeRef} className="overflow-x-auto p-4 text-sm leading-relaxed !m-0 !rounded-none !border-0 text-slate-800 dark:text-slate-100">
+        <pre ref={codeRef} className="overflow-x-auto bg-[var(--surface-2)] p-4 text-sm leading-relaxed !m-0 !rounded-none !border-0 text-[var(--text-primary)]">
           <NodeViewContent />
         </pre>
       </div>

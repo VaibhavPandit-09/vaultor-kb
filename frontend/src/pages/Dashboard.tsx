@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Plus,
@@ -25,6 +26,7 @@ import api from '../lib/api';
 import type { Resource, Tag, ResourceType } from '../types';
 import { isPreviewResource } from '../types';
 import { useRestoreFocusOnClose } from '../lib/useRestoreFocusOnClose';
+import { useAnchoredPortalPosition } from '../lib/useAnchoredPortalPosition';
 import BlockEditor, { type NoteSelection } from '../components/editor/BlockEditor';
 import PreviewLayer from '../components/PreviewLayer';
 import { markdownToHtml } from '../components/editor/markdownUtils';
@@ -136,7 +138,10 @@ export default function Dashboard() {
   const commandPalettePreviewRef = useRef<PreviewSnapshot | null>(null);
   const floatingSidebarHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleEditDismissRef = useRef<'save' | 'cancel' | null>(null);
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
+  const typeDropdownMenuRef = useRef<HTMLDivElement>(null);
   const tagPickerRef = useRef<HTMLDivElement>(null);
+  const tagPickerMenuRef = useRef<HTMLDivElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
   const [floatingSidebarHovered, setFloatingSidebarHovered] = useState(false);
   const [floatingSidebarPinned, setFloatingSidebarPinned] = useState(false);
@@ -153,6 +158,8 @@ export default function Dashboard() {
   const localSettings = settings.local;
   const smoothAnimations = localSettings.animationMode === 'smooth';
   const uiTransparency = localSettings.uiTransparency;
+  const { position: typeDropdownPosition } = useAnchoredPortalPosition(showTypeDropdown, typeDropdownRef, { width: 'anchor', offset: 6 });
+  const { position: tagPickerPosition } = useAnchoredPortalPosition(Boolean(tagPickerOpenNoteId), tagPickerRef, { width: 288, minWidth: 288, offset: 8 });
   const effectivePreviewMode = previewOverrideMode ?? localSettings.previewMode;
   const isFloatingSidebarMode = localSettings.sidebarMode === 'floating';
   const sidebarCollapsed = localSettings.sidebarCollapsed;
@@ -290,13 +297,39 @@ export default function Dashboard() {
   }, [tagPickerOpenNoteId]);
 
   useEffect(() => {
+    if (!showTypeDropdown) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (
+        target instanceof Node &&
+        (typeDropdownRef.current?.contains(target) || typeDropdownMenuRef.current?.contains(target))
+      ) {
+        return;
+      }
+
+      setShowTypeDropdown(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [showTypeDropdown]);
+
+  useEffect(() => {
     if (!tagPickerOpenNoteId) {
       return;
     }
 
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target;
-      if (target instanceof Node && tagPickerRef.current?.contains(target)) {
+      if (
+        target instanceof Node &&
+        (tagPickerRef.current?.contains(target) || tagPickerMenuRef.current?.contains(target))
+      ) {
         return;
       }
 
@@ -1247,7 +1280,7 @@ export default function Dashboard() {
   const sidebarContent = (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="px-3 py-3">
-        <div className="relative">
+        <div ref={typeDropdownRef} className="relative">
           <button
             onClick={() => setShowTypeDropdown((prev) => !prev)}
             className="flex w-full items-center justify-between gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800"
@@ -1255,8 +1288,20 @@ export default function Dashboard() {
             <span>Type: {typeLabels[filters.typeFilter]}</span>
             <ChevronDown size={12} />
           </button>
-          {showTypeDropdown && (
-            <div className="absolute right-0 z-20 mt-1 w-full rounded-lg border border-border bg-card py-1 shadow-xl">
+          {showTypeDropdown && typeDropdownPosition && createPortal(
+            <div
+              ref={typeDropdownMenuRef}
+              className="overflow-hidden rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] py-1 shadow-[0_18px_36px_rgba(15,23,42,0.14)]"
+              style={{
+                position: 'fixed',
+                top: typeDropdownPosition.top,
+                left: typeDropdownPosition.left,
+                width: typeDropdownPosition.width,
+                maxHeight: typeDropdownPosition.maxHeight,
+                transform: typeDropdownPosition.placement === 'top' ? 'translateY(-100%)' : undefined,
+                zIndex: 1100,
+              }}
+            >
               {(['all', 'note', 'file'] as TypeFilter[]).map((type) => (
                 <button
                   key={type}
@@ -1264,12 +1309,17 @@ export default function Dashboard() {
                     dispatch(setTypeFilter(type));
                     setShowTypeDropdown(false);
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs transition-colors hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800 ${filters.typeFilter === type ? 'font-semibold text-primary' : ''}`}
+                  className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
+                    filters.typeFilter === type
+                      ? 'bg-primary/10 font-semibold text-primary'
+                      : 'text-[var(--text-primary)] hover:bg-[var(--surface-3)]'
+                  }`}
                 >
                   {typeLabels[type]}
                 </button>
               ))}
-            </div>
+            </div>,
+            document.body,
           )}
         </div>
       </div>
@@ -1298,7 +1348,7 @@ export default function Dashboard() {
           {filters.selectedTags.map((tagName) => (
             <span
               key={tagName}
-              className="flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
+              className="flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.01em] transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
               style={getTagPillStyle(findTagColor(tags, tagName), localSettings.theme)}
             >
               {tagName}
@@ -1373,11 +1423,11 @@ export default function Dashboard() {
             onChange={(event) => setTagSearch(event.target.value)}
           />
         )}
-        <div className="flex flex-wrap gap-1 overflow-y-auto">
+        <div className="flex flex-wrap gap-1.5 overflow-y-auto">
           {filteredTags.map((tag) => (
             <span
               key={tag.id}
-              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
+              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-[0.01em] transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
               style={getTagPillStyle(tag.color, localSettings.theme)}
             >
               <button onClick={() => dispatch(toggleSelectedTag(tag.name))} className="cursor-pointer">{tag.name}</button>
@@ -1762,7 +1812,7 @@ export default function Dashboard() {
                         {(note.resource.tags ?? []).slice(0, 4).map((tag) => (
                           <span
                             key={tag.id}
-                            className="flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
+                            className="flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold tracking-[0.01em] transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
                             style={getTagPillStyle(tag.color, localSettings.theme)}
                           >
                             {tag.name}
@@ -1786,8 +1836,21 @@ export default function Dashboard() {
                             <TagIcon size={13} /> Add Tag
                           </button>
 
-                          {tagPickerOpenNoteId === note.id && (
-                            <div className="absolute left-0 top-full z-40 mt-2 w-72 rounded-2xl border border-[var(--border-subtle)] p-2 shadow-[0_18px_36px_rgba(15,23,42,0.14)]" style={getGlassPanelStyle(uiTransparency, 16)}>
+                          {tagPickerOpenNoteId === note.id && tagPickerPosition && createPortal(
+                            <div
+                              ref={tagPickerMenuRef}
+                              className="rounded-2xl border border-[var(--border-subtle)] p-2 shadow-[0_18px_36px_rgba(15,23,42,0.14)]"
+                              style={{
+                                ...getGlassPanelStyle(uiTransparency, 16),
+                                position: 'fixed',
+                                top: tagPickerPosition.top,
+                                left: tagPickerPosition.left,
+                                width: tagPickerPosition.width,
+                                maxHeight: tagPickerPosition.maxHeight,
+                                transform: tagPickerPosition.placement === 'top' ? 'translateY(-100%)' : undefined,
+                                zIndex: 1100,
+                              }}
+                            >
                               <div className="flex items-center gap-2 rounded-xl bg-[var(--surface-2)] px-3 py-2 shadow-[inset_0_0_0_1px_var(--border-subtle)]">
                                 <TagIcon size={13} className="text-[var(--text-tertiary)]" />
                                 <input
@@ -1869,7 +1932,8 @@ export default function Dashboard() {
                                   </div>
                                 )}
                               </div>
-                            </div>
+                            </div>,
+                            document.body,
                           )}
                         </div>
                       </div>
