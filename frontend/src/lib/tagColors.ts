@@ -18,22 +18,10 @@ export function generateTagColor(tagName: string) {
 }
 
 export function getTagPillStyle(color: string, theme: 'dark' | 'light') {
-  const baseRgb = parseColorToRgb(color) ?? parseColorToRgb(generateTagColor(color)) ?? { r: 59, g: 130, b: 246 };
-  const vividRgb = applyVibrance(baseRgb, theme === 'dark' ? 1.28 : 1.22);
-  const vividHsl = rgbToHsl(vividRgb);
-  const shiftedHue = (vividHsl.h + (theme === 'dark' ? 24 : 18)) % 360;
-  const gradientStart = hslToRgb(
-    vividHsl.h,
-    clamp(Math.max(vividHsl.s, 0.8) * 1.03, 0.8, 0.9),
-    clamp(vividHsl.l + (theme === 'dark' ? 0.12 : 0.02), theme === 'dark' ? 0.5 : 0.42, theme === 'dark' ? 0.68 : 0.58),
-  );
-  const gradientEnd = hslToRgb(
-    shiftedHue,
-    clamp(Math.max(vividHsl.s, 0.82), 0.82, 0.9),
-    clamp(vividHsl.l - (theme === 'dark' ? 0.02 : 0.06), theme === 'dark' ? 0.42 : 0.36, theme === 'dark' ? 0.62 : 0.5),
-  );
-  const gradientMidpoint = mixRgb(gradientStart, gradientEnd, 0.5);
-  const text = theme === 'dark' ? { r: 255, g: 255, b: 255 } : getReadableTextColor(gradientMidpoint);
+  const { start, end } = generateTagGradient(color);
+  const gradientStart = start;
+  const gradientEnd = end;
+  const text = getReadableTextColor(getAverageColor(gradientStart, gradientEnd));
   const shadowAlpha = theme === 'dark' ? 0.16 : 0.1;
 
   return {
@@ -42,6 +30,26 @@ export function getTagPillStyle(color: string, theme: 'dark' | 'light') {
     borderColor: `rgba(255,255,255,${theme === 'dark' ? 0.24 : 0.52})`,
     color: `rgb(${text.r}, ${text.g}, ${text.b})`,
     boxShadow: `inset 0 1px 0 rgba(255,255,255,${theme === 'dark' ? 0.18 : 0.34}), 0 1px 2px rgba(15,23,42,${shadowAlpha}), 0 6px 12px rgba(15,23,42,${shadowAlpha * 0.7})`,
+  };
+}
+
+export function generateTagGradient(color: string) {
+  const baseRgb = parseColorToRgb(color) ?? parseColorToRgb(generateTagColor(color)) ?? { r: 59, g: 130, b: 246 };
+  const vividRgb = applyVibrance(baseRgb, 1.24);
+  const vividHsl = rgbToHsl(vividRgb);
+  const shiftedHue = (vividHsl.h + 20) % 360;
+
+  return {
+    start: hslToRgb(
+      vividHsl.h,
+      clamp(Math.max(vividHsl.s, 0.8) * 1.03, 0.8, 0.9),
+      clamp(vividHsl.l + 0.08, 0.46, 0.66),
+    ),
+    end: hslToRgb(
+      shiftedHue,
+      clamp(Math.max(vividHsl.s, 0.82), 0.82, 0.9),
+      clamp(vividHsl.l - 0.04, 0.36, 0.56),
+    ),
   };
 }
 
@@ -170,16 +178,16 @@ function applyVibrance(rgb: Rgb, amount: number) {
 
 function getReadableTextColor(rgb: Rgb) {
   const luminance = getRelativeLuminance(rgb);
-  return luminance > 0.53
-    ? { r: 15, g: 23, b: 42 }
-    : { r: 248, g: 250, b: 252 };
+  return luminance > 0.5
+    ? { r: 0, g: 0, b: 0 }
+    : { r: 255, g: 255, b: 255 };
 }
 
-function mixRgb(start: Rgb, end: Rgb, weight: number): Rgb {
+function getAverageColor(start: Rgb, end: Rgb): Rgb {
   return {
-    r: Math.round(start.r + ((end.r - start.r) * weight)),
-    g: Math.round(start.g + ((end.g - start.g) * weight)),
-    b: Math.round(start.b + ((end.b - start.b) * weight)),
+    r: Math.round((start.r + end.r) / 2),
+    g: Math.round((start.g + end.g) / 2),
+    b: Math.round((start.b + end.b) / 2),
   };
 }
 

@@ -1352,7 +1352,7 @@ export default function Dashboard() {
               style={getTagPillStyle(findTagColor(tags, tagName), localSettings.theme)}
             >
               {tagName}
-              <button onClick={() => dispatch(removeSelectedTag(tagName))} className="ml-1 opacity-60 hover:opacity-100"><X size={10} /></button>
+              <button onClick={() => dispatch(removeSelectedTag(tagName))} className="ml-1 text-inherit opacity-60 hover:opacity-100"><X size={10} /></button>
             </span>
           ))}
           <button onClick={() => dispatch(clearSelectedTags())} className="ml-1 text-[10px] text-slate-400 hover:text-red-500">Clear</button>
@@ -1430,9 +1430,9 @@ export default function Dashboard() {
               className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-[0.01em] transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
               style={getTagPillStyle(tag.color, localSettings.theme)}
             >
-              <button onClick={() => dispatch(toggleSelectedTag(tag.name))} className="cursor-pointer">{tag.name}</button>
+              <button onClick={() => dispatch(toggleSelectedTag(tag.name))} className="cursor-pointer text-inherit">{tag.name}</button>
               <label
-                className="relative inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-full opacity-55 transition-opacity hover:opacity-100"
+                className="relative inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-inherit opacity-55 transition-opacity hover:opacity-100"
                 title="Change color"
                 onClick={(event) => event.stopPropagation()}
               >
@@ -1446,7 +1446,7 @@ export default function Dashboard() {
               </label>
               <button
                 onClick={() => setTagDeleteModal({ id: tag.id, name: tag.name })}
-                className="opacity-40 transition-opacity hover:text-red-500 hover:opacity-100"
+                className="text-inherit opacity-40 transition-opacity hover:text-red-500 hover:opacity-100"
                 title="Delete tag"
               >
                 <X size={10} />
@@ -1816,7 +1816,7 @@ export default function Dashboard() {
                             style={getTagPillStyle(tag.color, localSettings.theme)}
                           >
                             {tag.name}
-                            <button onClick={() => handleRemoveTag(tag.name)} className="ml-1.5 opacity-60 hover:opacity-100"><X size={10} /></button>
+                            <button onClick={() => handleRemoveTag(tag.name)} className="ml-1.5 text-inherit opacity-60 hover:opacity-100"><X size={10} /></button>
                           </span>
                         ))}
                         <div ref={tagPickerOpenNoteId === note.id ? tagPickerRef : undefined} className="relative">
