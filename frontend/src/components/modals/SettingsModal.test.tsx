@@ -1,0 +1,31 @@
+// @vitest-environment jsdom
+import { StrictMode } from 'react';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import SettingsModal from './SettingsModal';
+import { SettingsProvider } from '../../lib/settings';
+import { EscapeManagerProvider } from '../../lib/escape/EscapeManagerProvider';
+import api from '../../lib/api';
+vi.mock('../../lib/api', () => ({ default: { get: vi.fn(), put: vi.fn() } }));
+afterEach(() => { cleanup(); vi.clearAllMocks(); });
+it('opens settings menus repeatedly, selects with keyboard, and Escape preserves the parent modal', async () => {
+  vi.mocked(api.get).mockResolvedValue({ data: { workspace: { maxOpenNotes: 2 }, local: {}, keybindings: {} } });
+  vi.mocked(api.put).mockImplementation(async (_url, data) => ({ data }));
+  const close = vi.fn();
+  render(<StrictMode><SettingsProvider><EscapeManagerProvider><SettingsModal open onClose={close} /></EscapeManagerProvider></SettingsProvider></StrictMode>);
+  await waitFor(() => expect(api.get).toHaveBeenCalled());
+  const select = screen.getByText('2 notes').closest('button')!;
+  fireEvent.click(select);
+  expect(screen.getByRole('listbox')).toBeTruthy();
+  fireEvent.keyDown(window, { key: 'Escape' });
+  expect(screen.queryByRole('listbox')).toBeNull(); expect(close).not.toHaveBeenCalled();
+  fireEvent.keyDown(select, { key: 'ArrowDown' });
+  fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Home' });
+  expect(document.activeElement?.textContent).toContain('1 note');
+  fireEvent.click(document.activeElement!);
+  await waitFor(() => expect(api.put).toHaveBeenCalled());
+  expect(screen.queryByRole('listbox')).toBeNull();
+  fireEvent.click(screen.getByText('1 note').closest('button')!);
+  fireEvent(window, new Event('resize')); fireEvent(window, new Event('scroll'));
+  expect(screen.getByRole('listbox')).toBeTruthy();
+});

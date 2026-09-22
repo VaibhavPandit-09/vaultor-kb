@@ -1,3 +1,4 @@
+import type { JSONContent } from '@tiptap/core';
 import { memo, useRef, useState, useEffect, useCallback, useId } from 'react';
 import { useEditor, EditorContent, ReactNodeViewRenderer, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -34,12 +35,12 @@ type SlashCommandRegistryWindow = typeof window & {
 
 interface BlockEditorProps {
   noteId: string;
-  content: any;
+  content: JSONContent | string | null;
   autosaveDelay: number;
   isActive: boolean;
   interactionLocked: boolean;
   shouldRestoreFocus: boolean;
-  onUpdate: (json: any) => void;
+  onUpdate: (json: JSONContent) => void;
   onSelectionChange: (selection: NoteSelection) => void;
   onActivate: (noteId: string) => void;
   onFocusRestored: (noteId: string) => void;
@@ -263,7 +264,7 @@ function BlockEditor({
 
   // Handle explicit resource link navigation
   useEffect(() => {
-    (window as any).__navigateResourceLink = (dir: 'up' | 'down') => {
+    window.__navigateResourceLink = (dir: 'up' | 'down') => {
       setResourceSelectedIndex(prev => {
         if (resourceFilteredCount === 0) return 0;
         if (dir === 'down') return (prev + 1) % resourceFilteredCount;
@@ -713,7 +714,7 @@ const MemoizedBlockEditor = memo(BlockEditor, (prev, next) => (
 
 export default MemoizedBlockEditor;
 
-function parseInitialContent(content: any): any {
+function parseInitialContent(content: JSONContent | string | null): JSONContent | string {
   if (!content) return { type: 'doc', content: [{ type: 'paragraph' }] };
   if (typeof content === 'object' && content.type === 'doc') return content;
   if (typeof content === 'string') {

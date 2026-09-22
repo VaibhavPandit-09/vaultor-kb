@@ -25,6 +25,8 @@ export function useAnchoredPortalPosition<T extends HTMLElement>(
   options: AnchoredPortalOptions = {},
 ) {
   const [position, setPosition] = useState<AnchoredPortalPosition | null>(null);
+  const { width = 'anchor', minWidth = 0, align = 'start', offset = 8,
+    viewportPadding = 12, preferredPlacement = 'bottom' } = options;
 
   const updatePosition = useCallback(() => {
     const anchor = anchorRef.current;
@@ -32,15 +34,6 @@ export function useAnchoredPortalPosition<T extends HTMLElement>(
       setPosition(null);
       return;
     }
-
-    const {
-      width = 'anchor',
-      minWidth = 0,
-      align = 'start',
-      offset = 8,
-      viewportPadding = 12,
-      preferredPlacement = 'bottom',
-    } = options;
 
     const rect = anchor.getBoundingClientRect();
     const resolvedWidth = Math.max(minWidth, width === 'anchor' ? rect.width : width);
@@ -55,25 +48,17 @@ export function useAnchoredPortalPosition<T extends HTMLElement>(
     let left = align === 'end' ? rect.right - resolvedWidth : rect.left;
     left = Math.min(viewportWidth - viewportPadding - resolvedWidth, Math.max(viewportPadding, left));
 
-    if (placeAbove) {
-      setPosition({
-        top: rect.top - offset,
-        left,
-        width: resolvedWidth,
-        maxHeight: Math.max(120, spaceAbove - offset),
-        placement: 'top',
-      });
-      return;
-    }
-
-    setPosition({
-      top: rect.bottom + offset,
+    const next: AnchoredPortalPosition = {
+      top: placeAbove ? rect.top - offset : rect.bottom + offset,
       left,
       width: resolvedWidth,
-      maxHeight: Math.max(120, spaceBelow - offset),
-      placement: 'bottom',
-    });
-  }, [anchorRef, options]);
+      maxHeight: Math.max(120, (placeAbove ? spaceAbove : spaceBelow) - offset),
+      placement: placeAbove ? 'top' : 'bottom',
+    };
+    setPosition(previous => previous && Object.keys(next).every(
+      key => previous[key as keyof AnchoredPortalPosition] === next[key as keyof AnchoredPortalPosition],
+    ) ? previous : next);
+  }, [anchorRef, width, minWidth, align, offset, viewportPadding, preferredPlacement]);
 
   useLayoutEffect(() => {
     if (!open) {

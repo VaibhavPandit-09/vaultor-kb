@@ -138,7 +138,7 @@ export default function PreviewLayer({
   return (
     <div className="pointer-events-none fixed inset-y-0 right-0 z-[75] flex w-full justify-end">
       <div
-        className={`pointer-events-auto flex h-full w-full max-w-[min(40%,44rem)] flex-col border-l border-white/5 bg-card ${
+        className={`pointer-events-auto flex h-full w-full max-w-full md:max-w-[min(60%,44rem)] xl:max-w-[min(40%,44rem)] flex-col border-l border-white/5 bg-card ${
           smoothAnimations
             ? `shadow-lg transform-gpu transition-[transform,opacity] duration-[170ms] ease-out ${animateIn ? 'translate-x-0 opacity-100' : 'translate-x-2 opacity-0'}`
             : 'transition-none opacity-100'

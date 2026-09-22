@@ -44,15 +44,16 @@ export default function AppModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={getOverlayStyle(transparency, 0.38)} onClick={onClose}>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={getOverlayStyle(transparency, 0.38)} onClick={onClose}>
       <div
-        className={`w-full ${widthClassName} rounded-[28px] border border-[color:var(--border-strong)] bg-[var(--surface-1)]/80 shadow-[0_24px_60px_rgba(15,23,42,0.18)]`}
+        role="dialog" aria-modal="true" aria-labelledby={modalId}
+        className={`max-h-[90vh] overflow-y-auto w-full ${widthClassName} rounded-[28px] border border-[color:var(--border-strong)] bg-[var(--surface-1)]/80 shadow-[0_24px_60px_rgba(15,23,42,0.18)]`}
         style={getGlassPanelStyle(transparency, 16)}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border-subtle)] px-6 py-5">
           <div>
-            <h3 className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">{title}</h3>
+            <h3 id={modalId} className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">{title}</h3>
             {description && <p className="mt-1 text-sm text-[var(--text-secondary)]">{description}</p>}
           </div>
           <button onClick={onClose} className="rounded-xl p-1.5 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--text-primary)]" aria-label="Close modal">

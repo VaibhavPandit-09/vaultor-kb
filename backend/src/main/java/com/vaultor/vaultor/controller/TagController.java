@@ -17,13 +17,13 @@ public class TagController {
     private final TagService tagService;
 
     @GetMapping
-    public List<Tag> getAllTags() {
-        return tagService.getAllTags();
+    public List<ApiDtos.TagDto> getAllTags() {
+        return tagService.getAllTags().stream().map(ApiDtos.TagDto::of).toList();
     }
 
     @PutMapping("/{id}/color")
-    public Tag updateTagColor(@PathVariable String id, @RequestBody Map<String, String> payload) {
-        return tagService.updateTagColor(id, payload.get("color"));
+    public ApiDtos.TagDto updateTagColor(@PathVariable String id, @RequestBody Map<String, String> payload) {
+        return ApiDtos.TagDto.of(tagService.updateTagColor(id, payload.get("color")));
     }
 
     @DeleteMapping("/{id}")

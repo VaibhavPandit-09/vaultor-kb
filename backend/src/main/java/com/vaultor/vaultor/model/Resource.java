@@ -54,7 +54,7 @@ public class Resource {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
         if (lastOpenedAt == null) lastOpenedAt = LocalDateTime.now();
         validateIntegrity();
     }

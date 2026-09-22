@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useEffect } from 'react';
 import { Editor } from '@tiptap/react';
 import type { Range } from '@tiptap/react';
 import {
@@ -220,6 +220,7 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
   },
 ];
 
+// eslint-disable-next-line react-refresh/only-export-components -- shared command query used by editor plugin.
 export function getFilteredSlashItems(query: string, onUploadMd: () => void, onUploadCsv: () => void): SlashMenuItem[] {
   if (isSymbolSearchQuery(query)) {
     return searchSymbols(extractSymbolSearchTerm(query), 32).map((item) => ({
@@ -279,10 +280,7 @@ export default function SlashMenu({
     }
   }, [filtered, editor, range, onClose]);
 
-  const selectedEl = menuRef.current?.querySelector('[data-selected="true"]');
-  if (selectedEl) {
-    selectedEl.scrollIntoView({ block: 'nearest' });
-  }
+  useEffect(() => { menuRef.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'nearest' }); }, [selectedIndex, query]);
 
   if (filtered.length === 0) {
     return (
@@ -374,5 +372,6 @@ export default function SlashMenu({
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- shared command registry for editor integration.
 export { getItems };
 export type { SlashMenuItem };

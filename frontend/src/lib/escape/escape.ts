@@ -80,12 +80,13 @@ export function useEscapeLayer({
   const capturedFocusRef = useRef<HTMLElement | null>(null);
   const wasActiveRef = useRef(active);
 
-  if (active && !wasActiveRef.current && context) {
-    const activeElement = document.activeElement;
-    capturedFocusRef.current =
-      context.getLastMeaningfulFocus()
-      ?? (isMeaningfullyFocusable(activeElement) ? activeElement : null);
-  }
+  useLayoutEffect(() => {
+    if (active && !wasActiveRef.current && context) {
+      const element = document.activeElement;
+      capturedFocusRef.current = context.getLastMeaningfulFocus() ?? (isMeaningfullyFocusable(element) ? element : null);
+    }
+    wasActiveRef.current = active;
+  }, [active, context]);
 
   useEffect(() => {
     closeRef.current = close;

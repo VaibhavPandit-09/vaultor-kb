@@ -10,6 +10,7 @@ import {
 } from '../../lib/shortcuts';
 import { useSettings, type LocalSettings } from '../../lib/settings';
 import { useAnchoredPortalPosition } from '../../lib/useAnchoredPortalPosition';
+import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
 
 interface SettingsModalProps {
   open: boolean;
@@ -81,7 +82,7 @@ const shortcutGroups: Array<{ title: string; description: string; actions: Short
 
 export default function SettingsModal({ open, onClose }: SettingsModalProps) {
   const {
-    settings,
+    settings, saveStatus, retrySave,
     resolvedShortcuts,
     shortcutPlatformLabel,
     updateWorkspaceSetting,
@@ -384,6 +385,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       description="Workspace behavior syncs across the vault. Local preferences stay scoped to this device, and key bindings update only for the current platform."
       widthClassName="max-w-6xl"
     >
+      <p className="mb-3 text-sm" aria-live="polite">{saveStatus === 'saving' ? 'Saving settings…' : saveStatus === 'failed' ? <button className="text-red-500" onClick={retrySave}>Settings could not be saved · Retry</button> : 'Settings saved'}</p>
       <div className="max-h-[78vh] overflow-y-auto pr-1">
         <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside className="space-y-1.5">
@@ -760,6 +762,12 @@ function SettingSelect({
   const menuRef = useRef<HTMLDivElement>(null);
   const selectedOption = options.find((option) => option.value === value) ?? options[0];
   const { position } = useAnchoredPortalPosition(open, containerRef, { width: 'anchor', offset: 8 });
+  useEscapeLayer({ active: open, priority: ESCAPE_PRIORITIES.modal + 1,
+    close: () => setOpen(false), restoreFocus: () => containerRef.current?.querySelector('button')?.focus() });
+
+  useEffect(() => {
+    if (open && position) menuRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus();
+  }, [open, position]);
 
   useEffect(() => {
     if (!open) {
@@ -785,10 +793,15 @@ function SettingSelect({
     <div ref={containerRef} className="relative">
       <button
         type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             setOpen(false);
+          }
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault(); setOpen(true);
           }
         }}
         className={`flex w-full items-center justify-between rounded-2xl border px-3 py-2.5 text-left text-sm font-medium outline-none transition-all duration-150 ${
@@ -804,6 +817,18 @@ function SettingSelect({
       {open && position && createPortal(
         <div
           ref={menuRef}
+          role="listbox"
+          aria-label="Setting options"
+          onKeyDown={event => {
+            const items = Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]') ?? []);
+            const index = items.indexOf(document.activeElement as HTMLButtonElement);
+            if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+              event.preventDefault();
+              const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+              items[next]?.focus();
+            }
+            if (event.key === 'Tab') setOpen(false);
+          }}
           className="overflow-hidden rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-2)] p-1.5 shadow-[0_22px_44px_rgba(15,23,42,0.14)]"
           style={{
             position: 'fixed',
@@ -821,10 +846,13 @@ function SettingSelect({
             return (
               <button
                 key={option.value}
+                role="option"
+                aria-selected={selected}
                 type="button"
                 onClick={() => {
                   onChange(option.value);
                   setOpen(false);
+                  containerRef.current?.querySelector('button')?.focus();
                 }}
                 className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors ${
                   selected

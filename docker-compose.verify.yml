@@ -1,0 +1,7 @@
+# Run with: docker compose -p vaultor-verification -f docker-compose.yml -f docker-compose.verify.yml up -d
+# The separate project creates a separate named volume. Never use this to reset your normal workspace.
+services:
+  vaultor:
+    image: vaultor-kb-vaultor:latest
+    ports: !override
+      - "127.0.0.1:18080:8080"

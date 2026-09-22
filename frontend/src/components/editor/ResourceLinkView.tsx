@@ -1,15 +1,15 @@
-import { NodeViewWrapper } from '@tiptap/react';
+import { type NodeViewProps, NodeViewWrapper } from '@tiptap/react';
 import { FileText, File } from 'lucide-react';
 
-export default function ResourceLinkView(props: any) {
+export default function ResourceLinkView(props: NodeViewProps) {
   const { node } = props;
   const { resourceId, label, type } = node.attrs;
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if ((window as any).__openResource) {
-      (window as any).__openResource(resourceId, type, label);
+    if (window.__openResource) {
+      window.__openResource(resourceId, type, label);
     }
   };
 

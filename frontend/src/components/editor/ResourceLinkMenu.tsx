@@ -1,3 +1,4 @@
+type LinkItem = { id: string; title: string; type: 'note' | 'file'; virtual: boolean };
 import React, { useState, useEffect, useCallback } from 'react';
 import { Editor } from '@tiptap/react';
 import { FileText, File, Search } from 'lucide-react';
@@ -13,7 +14,7 @@ interface ResourceLinkMenuProps {
 }
 
 export default function ResourceLinkMenu({ editor, range, query, selectedIndex, onClose, onUpdateFiltered }: ResourceLinkMenuProps) {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<LinkItem[]>([]);
   const [loading, setLoading] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -24,8 +25,8 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
       try {
         const { data } = await api.get(`/resources/search?q=${encodeURIComponent(query)}`);
         if (active) {
-          const fetchedItems = (data || []).map((r: any) => ({ ...r, virtual: false }));
-          const hasExact = fetchedItems.some((r: any) => r.title.toLowerCase() === query.trim().toLowerCase());
+          const fetchedItems = (data || []).map((r: LinkItem) => ({ ...r, virtual: false }));
+          const hasExact = fetchedItems.some((r: LinkItem) => r.title.toLowerCase() === query.trim().toLowerCase());
           
           if (!hasExact && query.trim().length > 0) {
             fetchedItems.push({ id: 'create-note', type: 'note', title: `Create Note "${query}"`, virtual: true });
@@ -117,7 +118,7 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
   }, [items, editor, range, query, onClose]);
 
   useEffect(() => {
-    (window as any).__executeResourceLink = () => {
+    window.__executeResourceLink = () => {
       selectItem(selectedIndex);
     };
   }, [selectedIndex, selectItem]);

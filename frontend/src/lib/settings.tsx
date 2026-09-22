@@ -55,6 +55,9 @@ type SettingsState = {
 type SettingsContextValue = {
   settings: SettingsState;
   workspaceLoaded: boolean;
+  saveStatus: 'saved' | 'saving' | 'failed';
+  retrySave: () => void;
+  flushSettings: () => Promise<void>;
   deviceId: string;
   shortcutPlatform: ShortcutPlatform;
   shortcutPlatformLabel: string;
@@ -111,7 +114,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [deviceId] = useState(() => getOrCreateDeviceId());
   const [settingsDocument, setSettingsDocument] = useState<SettingsDocument>(createDefaultSettingsDocument());
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'failed'>('saved');
   const requestVersionRef = useRef(0);
+  const writeQueue = useRef<Promise<unknown>>(Promise.resolve());
   const documentRef = useRef(settingsDocument);
 
   const currentLocalSettings = useMemo(
@@ -144,11 +149,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     currentLocalSettings.theme,
   ]);
 
-  const persistSettingsDocument = useCallback(async (nextDocument: SettingsDocument, fallbackDocument: SettingsDocument) => {
+  const persistSettingsDocument = useCallback(async (nextDocument: SettingsDocument) => {
     const requestVersion = ++requestVersionRef.current;
+    setSaveStatus('saving');
 
     try {
-      const { data } = await api.put('/settings', nextDocument);
+      const request = writeQueue.current.catch(() => {}).then(() => api.put('/settings', nextDocument));
+      writeQueue.current = request;
+      const { data } = await request;
       if (requestVersion !== requestVersionRef.current) {
         return;
       }
@@ -156,14 +164,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       const normalized = normalizeSettingsDocument(data);
       documentRef.current = normalized;
       setSettingsDocument(normalized);
+      setSaveStatus('saved');
     } catch (error) {
       console.error('Failed to persist settings', error);
       if (requestVersion !== requestVersionRef.current) {
         return;
       }
 
-      documentRef.current = fallbackDocument;
-      setSettingsDocument(fallbackDocument);
+      setSaveStatus('failed');
     }
   }, []);
 
@@ -192,7 +200,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setSettingsDocument(migratedDocument.document);
 
         if (migratedDocument.changed) {
-          void persistSettingsDocument(migratedDocument.document, remoteDocument);
+          void persistSettingsDocument(migratedDocument.document);
           clearLegacySettingsStorage();
         }
       } catch (error) {
@@ -205,9 +213,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     };
 
     void loadSettings();
+    window.addEventListener('vaultor:settings-refresh', loadSettings);
 
     return () => {
       active = false;
+      window.removeEventListener('vaultor:settings-refresh', loadSettings);
     };
   }, [deviceId, persistSettingsDocument, shortcutPlatform]);
 
@@ -216,7 +226,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const next = normalizeSettingsDocument(updater(previous));
     documentRef.current = next;
     setSettingsDocument(next);
-    void persistSettingsDocument(next, previous);
+    void persistSettingsDocument(next);
   }, [persistSettingsDocument]);
 
   const updateWorkspaceSetting = useCallback(<K extends keyof WorkspaceSettings>(key: K, value: WorkspaceSettings[K]) => {
@@ -321,12 +331,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     updateLocalSetting('theme', currentLocalSettings.theme === 'dark' ? 'light' : 'dark');
   }, [currentLocalSettings.theme, updateLocalSetting]);
 
+  const retrySave = useCallback(() => { void persistSettingsDocument(documentRef.current); }, [persistSettingsDocument]);
+  const flushSettings = useCallback(async () => { await persistSettingsDocument(documentRef.current); await writeQueue.current; }, [persistSettingsDocument]);
   const value = useMemo<SettingsContextValue>(() => ({
     settings: {
       workspace: settingsDocument.workspace,
       local: currentLocalSettings,
     },
     workspaceLoaded,
+    saveStatus, retrySave, flushSettings,
     deviceId,
     shortcutPlatform,
     shortcutPlatformLabel,
@@ -356,7 +369,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     updateLocalSetting,
     updateWorkspaceSetting,
     validateShortcut,
-    workspaceLoaded,
+    workspaceLoaded, saveStatus, retrySave, flushSettings,
   ]);
 
   return (

@@ -1,213 +1,56 @@
 package com.vaultor.vaultor.controller;
-
-import com.vaultor.vaultor.model.Resource;
-import com.vaultor.vaultor.model.Relationship;
-import com.vaultor.vaultor.repository.ResourceRepository;
-import com.vaultor.vaultor.repository.RelationshipRepository;
-import com.vaultor.vaultor.service.FileStorageService;
-import com.vaultor.vaultor.service.ResourceService;
-import com.vaultor.vaultor.service.TagService;
+import com.vaultor.vaultor.model.*;
+import com.vaultor.vaultor.repository.*;
+import com.vaultor.vaultor.service.*;
+import com.vaultor.vaultor.controller.ApiDtos.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import tools.jackson.databind.ObjectMapper;
-
-import java.io.IOException;
-import java.nio.file.Path;
+import org.springframework.http.*;
+import org.springframework.core.io.UrlResource;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
-@RestController
-@RequestMapping("/api/resources")
-@RequiredArgsConstructor
+@RestController @RequestMapping("/api/resources") @RequiredArgsConstructor
 public class ResourceController {
-
-    private final ResourceService resourceService;
-    private final ResourceRepository resourceRepository;
-    private final RelationshipRepository relationshipRepository;
-    private final TagService tagService;
-    private final FileStorageService fileStorageService;
-    private final ObjectMapper objectMapper;
-
-    // ─── List & Search ───────────────────────────────────────
-
+    private final ResourceRepository resources;
+    private final RelationshipRepository relationships;
+    private final ResourceService service;
+    private final TagService tags;
+    private final FileStorageService files;
+    private final DocumentService documents;
+    private ResourceDto dto(Resource r) { return ResourceDto.of(r, documents); }
+    private Resource get(String id) { return resources.findById(id).orElseThrow(); }
+    private void validate(NoteInput input) {
+        if (input.title() == null || input.title().isBlank() || input.title().length() > 500) throw new ApiErrors.FieldError("title", "Title must contain 1-500 characters");
+        try { documents.validate(input.content()); } catch(IllegalArgumentException e) { throw new ApiErrors.FieldError("content", e.getMessage()); }
+    }
     @GetMapping
-    public List<Resource> getAllResources(@RequestParam(value = "tag", required = false) String tagFilter) {
-        tagService.ensureTagColorsPersisted();
-        List<Resource> all = resourceRepository.findAllByOrderByLastOpenedAtDescUpdatedAtDesc();
-        if (tagFilter != null && !tagFilter.isBlank()) {
-            return all.stream()
-               .filter(r -> r.getTags().stream().anyMatch(t -> t.getName().equalsIgnoreCase(tagFilter)))
-               .collect(Collectors.toList());
-        }
-        return all;
+    public PageDto<ResourceDto> list(@RequestParam(defaultValue="0") int page, @RequestParam(defaultValue="100") int size, @RequestParam(required=false) String tag) {
+        if (page < 0 || size < 1 || size > 200) throw new IllegalArgumentException("page must be nonnegative; size must be 1-200");
+        var paging=org.springframework.data.domain.PageRequest.of(page,size,org.springframework.data.domain.Sort.by("lastOpenedAt","updatedAt","id").descending());
+        var result=tag==null ? resources.findAll(paging) : resources.findDistinctByTags_NameIgnoreCase(tag,paging);
+        return new PageDto<>(result.getContent().stream().map(this::dto).toList(), page, size, result.getTotalElements(), result.getTotalPages());
     }
-
-    @GetMapping("/search")
-    public List<Resource> searchResources(@RequestParam("q") String query) {
-        tagService.ensureTagColorsPersisted();
-        if (query == null || query.trim().isEmpty()) {
-            return resourceRepository.findAllByOrderByLastOpenedAtDescUpdatedAtDesc();
-        }
-        List<Resource> results = resourceRepository.findByTitleContainingIgnoreCase(query);
-        results.sort((a, b) -> {
-            boolean aExact = a.getTitle().equalsIgnoreCase(query);
-            boolean bExact = b.getTitle().equalsIgnoreCase(query);
-            if (aExact && !bExact) return -1;
-            if (!aExact && bExact) return 1;
-            return b.getUpdatedAt().compareTo(a.getUpdatedAt());
-        });
-        return results;
+    @GetMapping("/search") public List<ResourceDto> search(@RequestParam(defaultValue="") String q) {
+        return resources.findByTitleContainingIgnoreCase(q.trim()).stream().sorted(Comparator.comparing((Resource r) -> !r.getTitle().equalsIgnoreCase(q)).thenComparing(Resource::getUpdatedAt, Comparator.reverseOrder())).limit(200).map(this::dto).toList();
     }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Resource> getResource(@PathVariable String id) {
-        tagService.ensureTagColorsPersisted();
-        return resourceRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // ─── Open Tracking ──────────────────────────────────────
-
-    @PostMapping("/{id}/open")
-    public ResponseEntity<Void> markOpened(@PathVariable String id) {
-        resourceRepository.findById(id).ifPresent(r -> {
-            r.setLastOpenedAt(LocalDateTime.now());
-            resourceRepository.save(r);
-        });
-        return ResponseEntity.ok().build();
-    }
-
-    // ─── CRUD ────────────────────────────────────────────────
-
-    @PostMapping("/note")
-    public Resource createNote(@RequestBody Map<String, String> payload) {
-        return resourceService.createNote(payload.get("title"), payload.get("content"));
-    }
-
-    @PostMapping
-    public Resource createResource(@RequestBody Map<String, Object> payload) {
-        String type = String.valueOf(payload.getOrDefault("type", "note"));
-        String title = String.valueOf(payload.getOrDefault("title", "Untitled"));
-        String content = null;
-        if (payload.get("content") != null) {
-            try {
-                content = payload.get("content") instanceof String
-                        ? (String) payload.get("content")
-                        : objectMapper.writeValueAsString(payload.get("content"));
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Invalid content payload", e);
-            }
-        }
-        return resourceService.createResource(type, title, content);
-    }
-
-    @PutMapping("/{id}/note")
-    public Resource updateNote(@PathVariable String id, @RequestBody Map<String, String> payload) {
-        return resourceService.updateNote(id, payload.get("title"), payload.get("content"));
-    }
-
-    @PostMapping("/empty")
-    public Resource createEmptyResource(@RequestBody Map<String, String> payload) {
-        String type = payload.getOrDefault("type", "note");
-        String title = payload.getOrDefault("title", "Untitled");
-        if (!"note".equals(type)) {
-            throw new IllegalArgumentException("Cannot create empty resource of type " + type);
-        }
-        return resourceService.createNote(title, "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}");
-    }
-
-    @PostMapping("/file")
-    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
-        try {
-            return ResponseEntity.ok(resourceService.uploadFile(file));
-        } catch (IOException e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteResource(@PathVariable String id) {
-        resourceService.deleteResource(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // ─── File Serving ────────────────────────────────────────
-
-    @GetMapping("/{id}/download")
-    public ResponseEntity<org.springframework.core.io.Resource> downloadFile(@PathVariable String id) {
-        return resourceRepository.findById(id).map(f -> {
-            if (!"file".equals(f.getType())) return ResponseEntity.badRequest().<org.springframework.core.io.Resource>build();
-            try {
-                Path path = fileStorageService.getFile(f.getFilePath());
-                org.springframework.core.io.Resource resource = new UrlResource(path.toUri());
-                return ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType(f.getMimeType() != null ? f.getMimeType() : "application/octet-stream"))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + f.getTitle() + "\"")
-                        .body(resource);
-            } catch (Exception e) {
-                return ResponseEntity.internalServerError().<org.springframework.core.io.Resource>build();
-            }
-        }).orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/{id}/raw")
-    public ResponseEntity<org.springframework.core.io.Resource> rawFile(@PathVariable String id) {
-        return resourceRepository.findById(id).map(f -> {
-            if (!"file".equals(f.getType())) return ResponseEntity.badRequest().<org.springframework.core.io.Resource>build();
-            try {
-                Path path = fileStorageService.getFile(f.getFilePath());
-                org.springframework.core.io.Resource resource = new UrlResource(path.toUri());
-                return ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType(f.getMimeType() != null ? f.getMimeType() : "application/octet-stream"))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + f.getTitle() + "\"")
-                        .body(resource);
-            } catch (Exception e) {
-                return ResponseEntity.internalServerError().<org.springframework.core.io.Resource>build();
-            }
-        }).orElse(ResponseEntity.notFound().build());
-    }
-
-    // ─── Backlinks & Replace ─────────────────────────────────
-
-    @GetMapping("/{id}/backlinks")
-    public List<Resource> getBacklinks(@PathVariable String id) {
-        tagService.ensureTagColorsPersisted();
-        List<Relationship> relationships = relationshipRepository.findByToIdAndType(id, "link");
-        List<String> callerIds = relationships.stream().map(Relationship::getFromId).collect(Collectors.toList());
-        return resourceRepository.findAllById(callerIds);
-    }
-
-    @PostMapping("/{id}/replace-links")
-    public ResponseEntity<Void> replaceLinks(@PathVariable String id, @RequestBody Map<String, String> payload) {
-        String newId = payload.get("newResourceId");
-        if (newId == null || newId.isBlank()) {
-            return ResponseEntity.badRequest().build();
-        }
-        if (!resourceRepository.existsById(newId)) {
-            return ResponseEntity.badRequest().build();
-        }
-        resourceService.replaceLinksAndDelete(id, newId);
-        return ResponseEntity.ok().build();
-    }
-
-    // ─── Tags ────────────────────────────────────────────────
-
-    @PostMapping("/{id}/tags/{tagName}")
-    public ResponseEntity<Void> addTag(@PathVariable String id, @PathVariable String tagName) {
-        tagService.addTagToResource(id, tagName);
-        return ResponseEntity.ok().build();
-    }
-
-    @DeleteMapping("/{id}/tags/{tagName}")
-    public ResponseEntity<Void> removeTag(@PathVariable String id, @PathVariable String tagName) {
-        tagService.removeTagFromResource(id, tagName);
-        return ResponseEntity.noContent().build();
+    @GetMapping("/{id}") public ResourceDto one(@PathVariable String id) { return dto(get(id)); }
+    @PostMapping("/{id}/open") public void open(@PathVariable String id) { var r=get(id); r.setLastOpenedAt(LocalDateTime.now()); resources.save(r); }
+    @PostMapping public ResourceDto create(@RequestBody NoteInput input) { validate(input); if (input.type()!=null && !input.type().equals("note")) throw new IllegalArgumentException("Use file upload for file resources"); return dto(service.createNote(input.title().trim(), input.content().toString())); }
+    @PutMapping("/{id}/note") public ResourceDto update(@PathVariable String id, @RequestBody NoteInput input) { validate(input); if (!get(id).getType().equals("note")) throw new IllegalArgumentException("Resource is not a note"); return dto(service.updateNote(id, input.title().trim(), input.content().toString())); }
+    @PostMapping("/file") public ResourceDto upload(@RequestParam MultipartFile file) throws Exception { if(file.isEmpty()) throw new IllegalArgumentException("Choose a nonempty file"); return dto(service.uploadFile(file)); }
+    @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable String id) { get(id); service.deleteResource(id); }
+    @GetMapping("/{id}/backlinks") public List<ResourceDto> backlinks(@PathVariable String id) { get(id); return resources.findAllById(relationships.findByToIdAndType(id,"link").stream().map(Relationship::getFromId).toList()).stream().map(this::dto).toList(); }
+    @PostMapping("/{id}/replace-links") public void replace(@PathVariable String id, @RequestBody Map<String,String> input) { get(id); service.replaceLinksAndDelete(id,input.get("newResourceId")); }
+    @PostMapping("/{id}/tags/{name}") public void tag(@PathVariable String id,@PathVariable String name) { if(name.isBlank() || name.length()>100) throw new IllegalArgumentException("Tag must contain 1-100 characters"); tags.addTagToResource(id,name); }
+    @DeleteMapping("/{id}/tags/{name}") public void untag(@PathVariable String id,@PathVariable String name) { tags.removeTagFromResource(id,name); }
+    @GetMapping("/{id}/raw") public ResponseEntity<org.springframework.core.io.Resource> raw(@PathVariable String id) throws Exception { return binary(id,false); }
+    @GetMapping("/{id}/download") public ResponseEntity<org.springframework.core.io.Resource> download(@PathVariable String id) throws Exception { return binary(id,true); }
+    private ResponseEntity<org.springframework.core.io.Resource> binary(String id,boolean download) throws Exception {
+        var r=get(id); if(!"file".equals(r.getType())) throw new IllegalArgumentException("Resource is not a file");
+        var path=files.getFile(r.getFilePath()); if(!java.nio.file.Files.exists(path)) throw new NoSuchElementException("File bytes missing");
+        MediaType mime; try { mime=MediaType.parseMediaType(r.getMimeType()); } catch(Exception e) { mime=MediaType.APPLICATION_OCTET_STREAM; }
+        return ResponseEntity.ok().contentType(mime).header(HttpHeaders.CONTENT_DISPOSITION,(download ? ContentDisposition.attachment() : ContentDisposition.inline()).filename(r.getTitle(),java.nio.charset.StandardCharsets.UTF_8).build().toString()).body(new UrlResource(path.toUri()));
     }
 }

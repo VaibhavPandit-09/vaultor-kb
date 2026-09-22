@@ -23,12 +23,16 @@ public class FileStorageService {
         if (!targetPath.getParent().equals(Paths.get(storagePath).normalize().toAbsolutePath())) {
             throw new SecurityException("Cannot store file outside current directory.");
         }
-        Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+        try (var input = file.getInputStream()) { Files.copy(input, targetPath, StandardCopyOption.REPLACE_EXISTING); }
         return storedName;
     }
 
     public Path getFile(String storedName) {
-        return Paths.get(storagePath).resolve(storedName).normalize().toAbsolutePath();
+        if (storedName == null) throw new IllegalArgumentException("Missing stored filename");
+        Path root = Paths.get(storagePath).toAbsolutePath().normalize();
+        Path target = root.resolve(storedName).normalize();
+        if (!target.getParent().equals(root)) throw new IllegalArgumentException("Invalid stored filename");
+        return target;
     }
 
     public void deleteFile(String storedName) throws IOException {

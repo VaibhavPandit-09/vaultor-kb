@@ -1,3 +1,4 @@
+import type { JSONContent } from '@tiptap/core';
 /**
  * Markdown ↔ HTML conversion using the `marked` library.
  * Tiptap natively parses HTML, so the flow is:
@@ -21,12 +22,12 @@ export function markdownToHtml(md: string): string {
  * Convert Tiptap JSON doc back to markdown string (for export).
  * This is a best-effort converter for the block types we support.
  */
-export function tiptapToMarkdown(doc: any): string {
+export function tiptapToMarkdown(doc: JSONContent): string {
   if (!doc?.content) return '';
-  return doc.content.map((node: any) => nodeToMarkdown(node)).join('\n\n');
+  return doc.content.map((node: JSONContent) => nodeToMarkdown(node)).join('\n\n');
 }
 
-function nodeToMarkdown(node: any): string {
+function nodeToMarkdown(node: JSONContent): string {
   switch (node.type) {
     case 'heading': {
       const level = node.attrs?.level || 1;
@@ -37,15 +38,15 @@ function nodeToMarkdown(node: any): string {
       return inlineToMarkdown(node.content);
     case 'bulletList':
       return (node.content || [])
-        .map((item: any) => {
-          const text = item.content?.map((c: any) => inlineToMarkdown(c.content)).join('\n  ') || '';
+        .map((item: JSONContent) => {
+          const text = item.content?.map((c: JSONContent) => inlineToMarkdown(c.content)).join('\n  ') || '';
           return `- ${text}`;
         })
         .join('\n');
     case 'orderedList':
       return (node.content || [])
-        .map((item: any, i: number) => {
-          const text = item.content?.map((c: any) => inlineToMarkdown(c.content)).join('\n  ') || '';
+        .map((item: JSONContent, i: number) => {
+          const text = item.content?.map((c: JSONContent) => inlineToMarkdown(c.content)).join('\n  ') || '';
           return `${i + 1}. ${text}`;
         })
         .join('\n');
@@ -55,7 +56,7 @@ function nodeToMarkdown(node: any): string {
     }
     case 'blockquote':
       return (node.content || [])
-        .map((p: any) => `> ${inlineToMarkdown(p.content)}`)
+        .map((p: JSONContent) => `> ${inlineToMarkdown(p.content)}`)
         .join('\n');
     case 'horizontalRule':
       return '---';
@@ -64,9 +65,9 @@ function nodeToMarkdown(node: any): string {
   }
 }
 
-function inlineToMarkdown(content?: any[]): string {
+function inlineToMarkdown(content?: JSONContent[]): string {
   if (!content) return '';
-  return content.map((node: any) => {
+  return content.map((node: JSONContent) => {
     if (node.type === 'hardBreak') return '\n';
     let text = node.text || '';
     if (node.marks) {

@@ -42,37 +42,46 @@ function getPreviewType(mime: string | null | undefined, title: string): string 
   return 'fallback';
 }
 
-/** Fetch raw file bytes as a blob URL through the authenticated API client */
-function useAuthBlobUrl(resourceId: string, mimeType?: string | null) {
+/** Fetch raw file bytes as a blob URL through the shared API client */
+function useBlobUrl(resourceId: string, mimeType?: string | null) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     let revoke: string | null = null;
-    api.get(`/resources/${resourceId}/raw`, { responseType: 'blob' })
+    let active = true;
+    const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset stale network result on resource change.
+    setError(false); setBlobUrl(null);
+    api.get(`/resources/${resourceId}/raw`, { responseType: 'blob', signal: controller.signal })
       .then(res => {
+        if (!active) return;
         const blob = new Blob([res.data], { type: mimeType || 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
         revoke = url;
         setBlobUrl(url);
       })
-      .catch(() => setError(true));
+      .catch(() => { if(active) setError(true); });
 
-    return () => { if (revoke) URL.revokeObjectURL(revoke); };
+    return () => { active = false; controller.abort(); if (revoke) URL.revokeObjectURL(revoke); };
   }, [resourceId, mimeType]);
 
   return { blobUrl, error };
 }
 
-/** Fetch raw text content through the authenticated API client */
-function useAuthTextContent(resourceId: string) {
+/** Fetch raw text content through the shared API client */
+function useTextContent(resourceId: string) {
   const [content, setContent] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    api.get(`/resources/${resourceId}/raw`, { responseType: 'text' })
-      .then(r => setContent(r.data))
-      .catch(() => setError(true));
+    let active = true; const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset stale network result on resource change.
+    setContent(null); setError(false);
+    api.get(`/resources/${resourceId}/raw`, { responseType: 'text', signal: controller.signal })
+      .then(r => { if(active) setContent(typeof r.data === 'string' ? r.data : JSON.stringify(r.data)); })
+      .catch(() => { if(active) setError(true); });
+    return () => { active = false; controller.abort(); };
   }, [resourceId]);
 
   return { content, error };
@@ -83,6 +92,7 @@ interface FilePreviewProps {
 }
 
 export default function FilePreview({ resource }: FilePreviewProps) {
+  const [attempt, setAttempt] = useState(0);
   const tooLarge = (resource.size ?? 0) > MAX_PREVIEW_SIZE;
   const previewType = tooLarge ? 'fallback' : getPreviewType(resource.mimeType, resource.title);
 
@@ -91,9 +101,10 @@ export default function FilePreview({ resource }: FilePreviewProps) {
       <div className="flex h-9 items-center gap-3 border-b border-white/5 px-4 text-[11px] text-slate-400">
         {resource.mimeType && <span>{resource.mimeType}</span>}
         {resource.size != null && <span>{formatSize(resource.size)}</span>}
+        <button className="ml-auto text-primary" onClick={() => setAttempt(value => value + 1)}>Retry preview</button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
-        <PreviewResolver type={previewType} resource={resource} tooLarge={tooLarge} />
+        <PreviewResolver key={`${resource.id}-${attempt}`} type={previewType} resource={resource} tooLarge={tooLarge} />
       </div>
     </div>
   );
@@ -116,14 +127,14 @@ function PreviewResolver({ type, resource, tooLarge }: { type: string; resource:
 }
 
 function PDFViewer({ resource }: { resource: Resource }) {
-  const { blobUrl, error } = useAuthBlobUrl(resource.id, 'application/pdf');
+  const { blobUrl, error } = useBlobUrl(resource.id, 'application/pdf');
   if (error) return <FallbackViewer message="Failed to load PDF" />;
   if (!blobUrl) return <LoadingSpinner />;
   return <iframe src={`${blobUrl}#toolbar=0`} className="h-full min-h-[calc(100vh-9rem)] w-full bg-white" title="PDF Preview" />;
 }
 
 function ImageViewer({ resource }: { resource: Resource }) {
-  const { blobUrl, error } = useAuthBlobUrl(resource.id, resource.mimeType);
+  const { blobUrl, error } = useBlobUrl(resource.id, resource.mimeType);
   if (error) return <FallbackViewer message="Failed to load image" />;
   if (!blobUrl) return <LoadingSpinner />;
   return (
@@ -134,7 +145,7 @@ function ImageViewer({ resource }: { resource: Resource }) {
 }
 
 function TextViewer({ resourceId }: { resourceId: string }) {
-  const { content, error } = useAuthTextContent(resourceId);
+  const { content, error } = useTextContent(resourceId);
   if (error) return <FallbackViewer message="Failed to load file content" />;
   if (content === null) return <LoadingSpinner />;
   return (
@@ -145,7 +156,7 @@ function TextViewer({ resourceId }: { resourceId: string }) {
 }
 
 function MarkdownViewer({ resourceId }: { resourceId: string }) {
-  const { content, error } = useAuthTextContent(resourceId);
+  const { content, error } = useTextContent(resourceId);
   if (error) return <FallbackViewer message="Failed to load markdown" />;
   if (content === null) return <LoadingSpinner />;
   return (
@@ -156,7 +167,7 @@ function MarkdownViewer({ resourceId }: { resourceId: string }) {
 }
 
 function CSVViewer({ resourceId }: { resourceId: string }) {
-  const { content, error } = useAuthTextContent(resourceId);
+  const { content, error } = useTextContent(resourceId);
 
   const parsed = useMemo(() => {
     if (!content) return null;
@@ -196,7 +207,7 @@ function CSVViewer({ resourceId }: { resourceId: string }) {
 }
 
 function CodeViewer({ resourceId, title }: { resourceId: string; title: string }) {
-  const { content, error } = useAuthTextContent(resourceId);
+  const { content, error } = useTextContent(resourceId);
   const lang = CODE_EXTENSIONS[getExtension(title)] || 'text';
 
   if (error) return <FallbackViewer message="Failed to load code" />;

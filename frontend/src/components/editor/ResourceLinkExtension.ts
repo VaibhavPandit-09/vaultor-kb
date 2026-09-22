@@ -119,24 +119,24 @@ export const ResourceLinkExtension = Node.create({
 
             if (event.key === 'ArrowDown') {
               event.preventDefault();
-              if ((window as any).__navigateResourceLink) {
-                (window as any).__navigateResourceLink('down');
+              if (window.__navigateResourceLink) {
+                window.__navigateResourceLink('down');
               }
               return true;
             }
 
             if (event.key === 'ArrowUp') {
               event.preventDefault();
-              if ((window as any).__navigateResourceLink) {
-                (window as any).__navigateResourceLink('up');
+              if (window.__navigateResourceLink) {
+                window.__navigateResourceLink('up');
               }
               return true;
             }
 
             if (event.key === 'Enter') {
               event.preventDefault();
-              if ((window as any).__executeResourceLink) {
-                (window as any).__executeResourceLink(view);
+              if (window.__executeResourceLink) {
+                window.__executeResourceLink(view);
               }
               return true;
             }

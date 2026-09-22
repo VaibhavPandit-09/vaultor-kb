@@ -5,7 +5,6 @@ import {
   Search,
   Sun,
   Moon,
-  LogOut,
   Trash2,
   Database,
   UploadCloud,
@@ -22,7 +21,12 @@ import {
   Settings2,
   Palette,
 } from 'lucide-react';
-import api from '../lib/api';
+import api, { listResources } from '../lib/api';
+import ErrorBoundary from '../components/ErrorBoundary';
+import TransferModal from '../components/modals/TransferModal';
+import DiagnosticsPanel from '../components/modals/DiagnosticsPanel';
+import { SaveCoordinator } from '../lib/saveCoordinator';
+import type { DiagnosticEvent } from '../lib/diagnostics';
 import type { Resource, Tag, ResourceType } from '../types';
 import { isPreviewResource } from '../types';
 import { useRestoreFocusOnClose } from '../lib/useRestoreFocusOnClose';
@@ -109,12 +113,18 @@ export default function Dashboard() {
   const [tagInputValue, setTagInputValue] = useState('');
   const [tagPickerSelectedIndex, setTagPickerSelectedIndex] = useState(0);
 
-  const [authModal, setAuthModal] = useState<'export' | 'import' | null>(null);
-  const [authPassword, setAuthPassword] = useState('');
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [authError, setAuthError] = useState('');
-  const [authSubmitting, setAuthSubmitting] = useState(false);
-  const [importSuccessOpen, setImportSuccessOpen] = useState(false);
+  const [transferMode, setTransferMode] = useState<'export' | 'import' | null>(null);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  const [notice, setNotice] = useState<DiagnosticEvent | null>(null);
+  const [, saveChanged] = useState(0);
+  const [saves] = useState(() => new SaveCoordinator<{title: string; content: unknown}>(
+    (id, value) => api.put('/resources/' + id + '/note', value), () => saveChanged(v => v + 1)));
+  useEffect(() => {
+    const error = (event: Event) => setNotice((event as CustomEvent<DiagnosticEvent>).detail);
+    const unload = (event: BeforeUnloadEvent) => { if (saves.dirty()) { event.preventDefault(); event.returnValue = ''; } };
+    window.addEventListener('vaultor:error', error); window.addEventListener('beforeunload', unload);
+    return () => { window.removeEventListener('vaultor:error', error); window.removeEventListener('beforeunload', unload); };
+  }, [saves]);
 
   const [createNotePending, setCreateNotePending] = useState(false);
   const [uploadPending, setUploadPending] = useState(false);
@@ -130,7 +140,6 @@ export default function Dashboard() {
   const [replaceLoading, setReplaceLoading] = useState(false);
   const [tagDeleteModal, setTagDeleteModal] = useState<{ id: string; name: string } | null>(null);
 
-  const importInputRef = useRef<HTMLInputElement>(null);
   const fileUploadRef = useRef<HTMLInputElement>(null);
   const mdUploadRef = useRef<HTMLInputElement>(null);
   const csvUploadRef = useRef<HTMLInputElement>(null);
@@ -149,7 +158,7 @@ export default function Dashboard() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleEditNoteId = titleEditState?.noteId ?? null;
 
-  const { settings, resolvedShortcuts, toggleTheme, updateLocalSetting } = useSettings();
+  const { settings, resolvedShortcuts, toggleTheme, updateLocalSetting, flushSettings } = useSettings();
   const commandPaletteFocus = useRestoreFocusOnClose();
   const shortcutsModalFocus = useRestoreFocusOnClose();
   const settingsModalFocus = useRestoreFocusOnClose();
@@ -359,8 +368,8 @@ export default function Dashboard() {
   const fetchData = useCallback(async () => {
     setSidebarLoading(true);
     try {
-      const [resData, tagsData] = await Promise.all([api.get('/resources'), api.get('/tags')]);
-      setResources(resData.data || []);
+      const [resData, tagsData] = await Promise.all([listResources(), api.get('/tags')]);
+      setResources(resData);
       setTags(tagsData.data || []);
     } catch (error) {
       console.error(error);
@@ -373,7 +382,7 @@ export default function Dashboard() {
     setLoadingResourceIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     try {
       const { data } = await api.get(`/resources/${id}`);
-      setResourceDetails((prev) => ({ ...prev, [id]: data }));
+      setResourceDetails((prev) => ({ ...prev, [id]: saves.latest(id) ? { ...data, title: saves.latest(id)!.title, content: JSON.stringify(saves.latest(id)!.content) } : data }));
       return data as Resource;
     } catch (error) {
       console.error(error);
@@ -381,7 +390,7 @@ export default function Dashboard() {
     } finally {
       setLoadingResourceIds((prev) => prev.filter((entry) => entry !== id));
     }
-  }, []);
+  }, [saves]);
 
   const fetchBacklinks = useCallback(async (id: string) => {
     try {
@@ -424,7 +433,8 @@ export default function Dashboard() {
     });
   }, [localSettings.previewMode]);
 
-  const openResourceById = useCallback((id: string, options?: { focus?: boolean }) => {
+  const openResourceById = useCallback(async (id: string, options?: { focus?: boolean }) => {
+    try { await saves.flushAll(); } catch { return; }
     const resourceMeta = resources.find((resource) => resource.id === id);
     if (resourceMeta && isPreviewResource(resourceMeta.type)) {
       openPreview(resourceMeta);
@@ -447,7 +457,7 @@ export default function Dashboard() {
 
     dispatch(openResourceAction(id));
     markOpened(id);
-  }, [dismissPreview, dispatch, fetchResourceDetails, markOpened, openPreview, resources, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
+  }, [dismissPreview, dispatch, fetchResourceDetails, markOpened, openPreview, resources, saves, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
 
   const activateOpenNote = useCallback((id: string, options?: { focus?: boolean }) => {
     setActiveNoteId(id);
@@ -585,7 +595,8 @@ export default function Dashboard() {
     activateOpenNote(openNotes[nextIndex].id, { focus: true });
   }, [activateOpenNote, activeNoteId, openNotes]);
 
-  const closeActiveNote = useCallback(() => {
+  const closeActiveNote = useCallback(async () => {
+    try { await saves.flushAll(); } catch { return; }
     if (!activeNoteId) {
       return;
     }
@@ -600,21 +611,23 @@ export default function Dashboard() {
 
       return filtered;
     });
-  }, [activeNoteId, dispatch]);
+  }, [activeNoteId, dispatch, saves]);
 
-  const handleBackNavigation = useCallback(() => {
+  const handleBackNavigation = useCallback(async () => {
+    try { await saves.flushAll(); } catch { return; }
     if (navigation.currentIndex <= 0) return;
     const previousId = navigation.history[navigation.currentIndex - 1];
     dispatch(navigateBack());
     if (previousId) markOpened(previousId);
-  }, [dispatch, markOpened, navigation.currentIndex, navigation.history]);
+  }, [dispatch, markOpened, navigation.currentIndex, navigation.history, saves]);
 
-  const handleForwardNavigation = useCallback(() => {
+  const handleForwardNavigation = useCallback(async () => {
+    try { await saves.flushAll(); } catch { return; }
     if (navigation.currentIndex >= navigation.history.length - 1) return;
     const nextId = navigation.history[navigation.currentIndex + 1];
     dispatch(navigateForward());
     if (nextId) markOpened(nextId);
-  }, [dispatch, markOpened, navigation.currentIndex, navigation.history]);
+  }, [dispatch, markOpened, navigation.currentIndex, navigation.history, saves]);
 
   const handleCreateNote = useCallback(async () => {
     if (createNotePending) return;
@@ -675,8 +688,8 @@ export default function Dashboard() {
   }, [fetchData]);
 
   useEffect(() => {
-    setOpenNotes((prev) => limitOpenNotes(prev, workspaceSettings.maxOpenNotes));
-  }, [workspaceSettings.maxOpenNotes]);
+    void saves.flushAll().then(() => setOpenNotes((prev) => limitOpenNotes(prev, workspaceSettings.maxOpenNotes))).catch(() => {});
+  }, [workspaceSettings.maxOpenNotes, saves]);
 
   useEffect(() => {
     if (activeNoteId && openNotes.some((note) => note.id === activeNoteId)) {
@@ -700,7 +713,7 @@ export default function Dashboard() {
     }
 
     void fetchResourceDetails(currentResourceId);
-    const resourceMeta = selectedResource;
+    const resourceMeta = resources.find(resource => resource.id === currentResourceId);
 
     if (resourceMeta?.type === 'note') {
       setActiveNoteId(currentResourceId);
@@ -712,7 +725,7 @@ export default function Dashboard() {
     }
 
     setBacklinks([]);
-  }, [currentResourceId, fetchBacklinks, fetchResourceDetails, selectedResource, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
+  }, [currentResourceId, fetchBacklinks, fetchResourceDetails, resources, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
 
   useEffect(() => {
     if (activeResource?.type === 'note') {
@@ -727,12 +740,12 @@ export default function Dashboard() {
   }, [activeResource]);
 
   useEffect(() => {
-    (window as any).__openResource = (resourceId: string) => {
+    window.__openResource = (resourceId: string) => {
       openResourceById(resourceId);
     };
 
     return () => {
-      (window as any).__openResource = undefined;
+      window.__openResource = undefined;
     };
   }, [openResourceById]);
 
@@ -838,7 +851,7 @@ export default function Dashboard() {
     };
   }, [replaceLinkModal, replaceSearch]);
 
-  const handleDeleteResource = async (id: string, event?: React.MouseEvent) => {
+  const handleDeleteResource = useCallback(async (id: string, event?: React.MouseEvent) => {
     event?.stopPropagation();
     try {
       const { data: linkedFrom } = await api.get(`/resources/${id}/backlinks`);
@@ -851,12 +864,14 @@ export default function Dashboard() {
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [resources]);
 
   const executeDelete = async (id: string) => {
     setDeletePending(true);
     try {
+      await saves.flush(id);
       await api.delete(`/resources/${id}`);
+      saves.forget(id);
       if (previewResourceId === id) {
         dismissPreview({ restoreFocus: false });
       }
@@ -887,7 +902,13 @@ export default function Dashboard() {
     if (!replaceLinkModal) return;
     setReplacePending(true);
     try {
+      await saves.flushAll();
       await api.post(`/resources/${replaceLinkModal.oldId}/replace-links`, { newResourceId: newId });
+      saves.clear();
+      const fresh = await listResources();
+      setResourceDetails(Object.fromEntries(fresh.map(resource => [resource.id, resource])));
+      setOpenNotes(notes => notes.filter(note => note.id !== replaceLinkModal.oldId));
+      dispatch(removeResourceFromState(replaceLinkModal.oldId));
       setReplaceLinkModal(null);
       setDeleteModal(null);
       setReplaceSearch('');
@@ -914,18 +935,11 @@ export default function Dashboard() {
       [resourceId]: { ...resource, title },
     }));
 
-    try {
-      await api.put(`/resources/${resourceId}/note`, {
-        title,
-        content: typeof resource.content === 'string'
-          ? resource.content
-          : JSON.stringify(resource.content ?? { type: 'doc', content: [] }),
-      });
-      void fetchData();
-    } catch (error) {
-      console.error(error);
-    }
-  }, [fetchData, resourceDetails, resources]);
+    const draft = saves.latest(resourceId);
+    saves.enqueue(resourceId, { title, content: draft?.content ?? parseNoteContent(resource.content) }, 0);
+    await saves.flush(resourceId);
+    void fetchData();
+  }, [fetchData, resourceDetails, resources, saves]);
 
   const startTitleEditing = useCallback((noteId: string, title: string) => {
     activateOpenNote(noteId);
@@ -954,25 +968,11 @@ export default function Dashboard() {
     setTitleEditState(null);
   }, [renameResource, titleEditState]);
 
-  const handleContentUpdate = async (noteId: string, json: unknown) => {
-    const noteResource = resourceDetails[noteId] ?? (activeResource?.id === noteId ? activeResource : null);
-    if (!noteResource || noteResource.type !== 'note') return;
-    const contentStr = JSON.stringify(json);
-    if (activeResource?.id === noteId) {
-      latestNoteContentRef.current = contentStr;
-    }
-    setResourceDetails((prev) => ({
-      ...prev,
-      [noteId]: {
-        ...noteResource,
-        content: contentStr,
-      },
-    }));
-    try {
-      await api.put(`/resources/${noteId}/note`, { title: noteResource.title, content: contentStr });
-    } catch (error) {
-      console.error(error);
-    }
+  const handleContentUpdate = (noteId: string, json: unknown) => {
+    const resource = resourceDetails[noteId]; if (!resource) return;
+    const title = saves.latest(noteId)?.title ?? resource.title;
+    setResourceDetails(prev => ({ ...prev, [noteId]: { ...resource, title, content: JSON.stringify(json) } }));
+    saves.enqueue(noteId, { title, content: json }, workspaceSettings.autosaveDelay);
   };
 
   const handleAddTag = useCallback(async (resourceId: string, tagName: string) => {
@@ -1098,7 +1098,7 @@ export default function Dashboard() {
     try {
       const text = await readTextFile(file);
       const html = markdownToHtml(text);
-      const editor = (window as any).__vaultor_editor;
+      const editor = window.__vaultor_editor;
       if (editor) editor.chain().focus().insertContent(html).run();
     } catch (error) {
       console.error('MD upload failed:', error);
@@ -1154,69 +1154,18 @@ export default function Dashboard() {
       const blob = new Blob([res.data], { type: activeResource.mimeType || 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (error) {
       console.error('Open failed', error);
     }
   }, [activeResource]);
 
-  const triggerExport = () => {
-    setAuthModal('export');
-    setAuthPassword('');
-    setAuthError('');
-  };
-
-  const handleImportFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
-      setImportFile(event.target.files[0]);
-      setAuthModal('import');
-      setAuthPassword('');
-      setAuthError('');
-    }
-    if (importInputRef.current) importInputRef.current.value = '';
-  };
-
-  const executeExport = async () => {
-    setAuthSubmitting(true);
-    setAuthError('');
-    try {
-      const response = await api.get('/export', { params: { password: authPassword }, responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'encrypted-export.bin');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setAuthModal(null);
-    } catch (error: any) {
-      setAuthError(error.response?.status === 401 ? 'Invalid master password' : 'Export failed');
-    } finally {
-      setAuthSubmitting(false);
-    }
-  };
-
-  const executeImport = async () => {
-    if (!importFile) return;
-    setAuthSubmitting(true);
-    setAuthError('');
-    const formData = new FormData();
-    formData.append('file', importFile);
-    formData.append('password', authPassword);
-    try {
-      await api.post('/import', formData);
-      setAuthModal(null);
-      setImportSuccessOpen(true);
-      window.setTimeout(() => window.location.reload(), 1200);
-    } catch (error: any) {
-      setAuthError(error.response?.data?.message || 'Decryption failed');
-    } finally {
-      setAuthSubmitting(false);
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('vaultor_auth_token');
-    window.location.href = '/auth';
+  const triggerExport = () => setTransferMode('export');
+  const afterImport = async () => {
+    saves.clear();
+    setOpenNotes([]); setActiveNoteId(null); setResourceDetails({}); dismissPreview({ restoreFocus: false });
+    dispatch(setCurrentResourceId(null));
+    await fetchData(); window.dispatchEvent(new Event('vaultor:settings-refresh'));
   };
 
   const filteredResources = useMemo(() => {
@@ -1263,6 +1212,7 @@ export default function Dashboard() {
     closeActiveNote,
     dismissPreview,
     handleCreateNote,
+    handleDeleteResource,
     openResourceById,
     openSettingsModal,
     openShortcutsModal,
@@ -1459,8 +1409,8 @@ export default function Dashboard() {
 
       <div className="flex items-center justify-between border-t border-border bg-background/80 p-2">
         <div className="flex items-center gap-0.5">
-          <button onClick={triggerExport} title="Export Vault" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><DownloadCloud size={16} /></button>
-          <button onClick={() => importInputRef.current?.click()} title="Import Vault" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><UploadCloud size={16} /></button>
+          <button onClick={triggerExport} title="Export workspace" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><DownloadCloud size={16} /></button>
+          <button onClick={() => setTransferMode('import')} title="Import workspace" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><UploadCloud size={16} /></button>
         </div>
         <div className="flex items-center gap-0.5">
           <button onClick={openShortcutsModal} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary" title="Shortcuts">
@@ -1469,10 +1419,10 @@ export default function Dashboard() {
           <button onClick={openSettingsModal} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary" title="Settings">
             <Settings2 size={16} />
           </button>
+          <button onClick={() => setDiagnosticsOpen(true)} className="rounded p-1.5 text-xs" title="Diagnostics">Logs</button>
           <button onClick={toggleTheme} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary">
             {localSettings.theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
           </button>
-          <button onClick={logout} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-red-500" title="Lock Vault"><LogOut size={16} /></button>
         </div>
       </div>
     </div>
@@ -1483,7 +1433,6 @@ export default function Dashboard() {
       <input type="file" ref={mdUploadRef} className="pointer-events-none absolute h-px w-px -translate-x-[200vw] opacity-0" accept=".md,.markdown,.txt,text/markdown,text/plain" onChange={handleMdFileChange} />
       <input type="file" ref={csvUploadRef} className="pointer-events-none absolute h-px w-px -translate-x-[200vw] opacity-0" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain,application/vnd.ms-excel" onChange={handleCsvFileChange} />
       <input type="file" ref={fileUploadRef} className="pointer-events-none absolute h-px w-px -translate-x-[200vw] opacity-0" onChange={handleUploadFile} />
-      <input type="file" ref={importInputRef} onChange={handleImportFileSelect} className="pointer-events-none absolute h-px w-px -translate-x-[200vw] opacity-0" accept=".bin,.zip" />
 
       <CommandPaletteModal
         open={commandPaletteOpen}
@@ -1493,81 +1442,16 @@ export default function Dashboard() {
         previewVisible={Boolean(previewResourceId)}
       />
       <ShortcutsModal open={shortcutsOpen} onClose={closeShortcutsModal} />
-      <SettingsModal open={settingsOpen} onClose={closeSettingsModal} />
+      <ErrorBoundary region="settings"><SettingsModal open={settingsOpen} onClose={closeSettingsModal} /></ErrorBoundary>
 
-      <AppModal
-        open={Boolean(authModal)}
-        onClose={() => {
-          if (!authSubmitting) setAuthModal(null);
-        }}
-        title={authModal === 'export' ? 'Secure Export' : 'Secure Import'}
-        description={authModal === 'export'
-          ? 'Enter your master password to encrypt and download your vault.'
-          : 'Import will overwrite all existing local data with the selected backup.'}
-        footer={
-          <>
-            <button
-              onClick={() => setAuthModal(null)}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-background"
-              disabled={authSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={authModal === 'export' ? executeExport : executeImport}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={authSubmitting || !authPassword || (authModal === 'import' && !importFile)}
-            >
-              {authSubmitting ? 'Working...' : authModal === 'export' ? 'Encrypt & Download' : 'Decrypt & Restore'}
-            </button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          {authModal === 'import' && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-              {importFile ? `Selected backup: ${importFile.name}` : 'Choose a backup file from the footer import button first.'}
-            </div>
-          )}
-          {authError && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-300">
-              {authError}
-            </div>
-          )}
-          <input
-            type="password"
-            autoFocus
-            value={authPassword}
-            onChange={(event) => setAuthPassword(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                if (authModal === 'export') executeExport();
-                if (authModal === 'import') executeImport();
-              }
-            }}
-            placeholder="Master Password"
-            className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary"
-          />
-        </div>
-      </AppModal>
-
-      <AppModal
-        open={importSuccessOpen}
-        onClose={() => setImportSuccessOpen(false)}
-        title="Vault Restored"
-        description="Your backup was imported successfully. Vaultor is refreshing now."
-        footer={
-          <button
-            onClick={() => window.location.reload()}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Refresh Now
-          </button>
-        }
-      >
-        <p className="text-sm text-slate-500">A short restart keeps the restored vault consistent before you continue working.</p>
-      </AppModal>
-
+      <ErrorBoundary region="workspace transfer"><TransferModal mode={transferMode} onClose={() => setTransferMode(null)} flush={async () => { await saves.flushAll(); await flushSettings(); }} onImported={afterImport} /></ErrorBoundary>
+      <ErrorBoundary region="diagnostics"><DiagnosticsPanel open={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} /></ErrorBoundary>
+      {notice && <div role="alert" className="z-[1200] flex items-center gap-3 bg-red-950 p-3 text-sm text-white">
+        <span>{notice.message} · {notice.requestId ?? notice.id}</span>
+        <button onClick={() => setDiagnosticsOpen(true)}>Details</button>
+        <button onClick={() => { void saves.flushAll().catch(() => {}); }}>Retry saves</button>
+        <button onClick={() => setNotice(null)}>Dismiss</button>
+      </div>}
       <AppModal
         open={Boolean(deleteModal)}
         onClose={() => {
@@ -1939,12 +1823,15 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
+                  <div className="px-4 text-xs" aria-live="polite">
+                    {saves.status(note.id) === 'saving' ? 'Saving…' : saves.status(note.id) === 'failed' ? <button className="text-red-500" onClick={() => void saves.flush(note.id).catch(() => {})}>Save failed · Retry</button> : 'Saved'}
+                  </div>
                   <div className="min-h-0 flex-1 overflow-y-auto px-4">
                     {note.resource?.type === 'note' ? (
-                      <BlockEditor
+                      <ErrorBoundary region="note editor"><BlockEditor
                         noteId={note.id}
                         content={parseNoteContent(note.resource.content)}
-                        autosaveDelay={workspaceSettings.autosaveDelay}
+                        autosaveDelay={0}
                         isActive={note.id === activeNoteId}
                         interactionLocked={commandPaletteOpen}
                         shouldRestoreFocus={focusRestoreNoteId === note.id}
@@ -1955,7 +1842,7 @@ export default function Dashboard() {
                         onUpdate={(json) => handleContentUpdate(note.id, json)}
                         onRequestMdUpload={handleRequestMdUpload}
                         onRequestCsvUpload={handleRequestCsvUpload}
-                      />
+                      /></ErrorBoundary>
                     ) : (
                       <div className="flex h-full items-center justify-center text-sm text-slate-400">
                         Loading note...
@@ -2006,7 +1893,7 @@ export default function Dashboard() {
       </div>
 
       {previewResource && previewResourceType && (
-        <PreviewLayer
+        <ErrorBoundary region="file preview"><PreviewLayer
           resource={previewResource}
           mode={effectivePreviewMode}
           animationMode={localSettings.animationMode}
@@ -2016,7 +1903,7 @@ export default function Dashboard() {
           onToggleMode={togglePreviewMode}
           onOpenExternal={handleFileOpen}
           onDownload={handleFileDownload}
-        />
+        /></ErrorBoundary>
       )}
       {previewResourceLoading && (
         effectivePreviewMode === 'modal' ? (

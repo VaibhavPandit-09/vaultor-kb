@@ -15,7 +15,9 @@ public class ResourceService {
     private final ResourceRepository resourceRepository;
     private final FileStorageService fileStorageService;
     private final RelationshipService relationshipService;
+    private final DocumentService documents;
 
+    @Transactional
     public Resource createNote(String title, String content) {
         Resource r = new Resource();
         r.setType("note");
@@ -26,6 +28,7 @@ public class ResourceService {
         return saved;
     }
 
+    @Transactional
     public Resource updateNote(String id, String title, String content) {
         return resourceRepository.findById(id).map(r -> {
             if (title != null) r.setTitle(title);
@@ -33,7 +36,7 @@ public class ResourceService {
             Resource saved = resourceRepository.save(r);
             relationshipService.updateLinksForNote(saved.getId(), saved.getContent());
             return saved;
-        }).orElseThrow(() -> new RuntimeException("Note not found"));
+        }).orElseThrow(() -> new java.util.NoSuchElementException("Note not found"));
     }
 
     public Resource uploadFile(MultipartFile file) throws IOException {
@@ -68,14 +71,21 @@ public class ResourceService {
 
     @Transactional
     public void replaceLinksAndDelete(String oldId, String newId) {
-        if (!resourceRepository.existsById(newId)) {
+        if (newId == null || oldId.equals(newId) || !resourceRepository.existsById(newId)) {
             throw new IllegalArgumentException("Replacement resource not found");
         }
-        relationshipService.replaceLinks(oldId, newId);
+        for (Resource note : resourceRepository.findByTypeOrderByUpdatedAtDesc("note")) {
+            var content = documents.parse(note.getContent());
+            if (documents.references(content).contains(oldId)) {
+                note.setContent(documents.remap(content, java.util.Map.of(oldId, newId)).toString());
+                resourceRepository.save(note);
+                relationshipService.updateLinksForNote(note.getId(), note.getContent());
+            }
+        }
         deleteResource(oldId);
     }
 
     public Resource getResourceOrThrow(String id) {
-        return resourceRepository.findById(id).orElseThrow(() -> new RuntimeException("Resource not found"));
+        return resourceRepository.findById(id).orElseThrow(() -> new java.util.NoSuchElementException("Resource not found"));
     }
 }

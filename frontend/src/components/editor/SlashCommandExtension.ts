@@ -114,8 +114,8 @@ export const SlashCommandExtension = Extension.create({
 
             if (event.key === 'Enter') {
               event.preventDefault();
-              if ((window as any).__executeSlashCommand) {
-                (window as any).__executeSlashCommand(view);
+              if (window.__executeSlashCommand) {
+                window.__executeSlashCommand(view);
               }
               return true; // CRITICAL: Prevents ProseMirror from creating a new line
             }

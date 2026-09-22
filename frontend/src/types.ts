@@ -1,3 +1,4 @@
+import type { JSONContent } from '@tiptap/core';
 export interface Tag {
   id: string;
   name: string;
@@ -10,7 +11,7 @@ export interface Resource {
   id: string;
   type: ResourceType;
   title: string;
-  content?: string | null;
+  content?: JSONContent | string | null;
   filePath?: string | null;
   mimeType?: string | null;
   size?: number | null;

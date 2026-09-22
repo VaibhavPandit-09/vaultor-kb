@@ -24,7 +24,7 @@ export default function ShortcutsModal({ open, onClose, restoreFocusOnClose = tr
         items: group.items.filter((item) => item.description.toLowerCase().includes(normalized)),
       }))
       .filter((group) => group.items.length > 0);
-  }, [query]);
+  }, [query, shortcuts]);
 
   return (
     <AppModal
