@@ -19,16 +19,9 @@ public class DocumentService {
     public void validate(JsonNode document) {
         if (document == null || !document.isObject() || !"doc".equals(document.path("type").asText()) || !document.path("content").isArray())
             throw new IllegalArgumentException("Note content must be a doc object with a content array");
+        // Bound every JSON value, but interpret only actual document nodes as nodes.
+        walk(document, ignored -> {});
         validateNode(document);
-        walk(document, node -> {
-            if (node.has("type") && !node.path("type").isTextual()) throw new IllegalArgumentException("Document node type must be text");
-            if (node.has("content")) {
-                if (!node.path("content").isArray()) throw new IllegalArgumentException("Node content must be an array");
-                for (JsonNode child : node.get("content")) validateNode(child);
-            }
-            if ("resourceLink".equals(node.path("type").asText()) && node.path("attrs").path("resourceId").asText().isBlank())
-                throw new IllegalArgumentException("Resource links require resourceId");
-        });
     }
     private void validateNode(JsonNode node) {
         if (!node.isObject() || !node.path("type").isTextual() || node.path("type").asText().isBlank()) throw new IllegalArgumentException("Document children require a node type");
@@ -36,9 +29,16 @@ public class DocumentService {
         if (node.has("attrs") && !node.get("attrs").isObject()) throw new IllegalArgumentException("Node attrs must be an object");
         if (node.has("marks")) {
             if (!node.get("marks").isArray()) throw new IllegalArgumentException("Node marks must be an array");
-            for (JsonNode mark : node.get("marks")) if (!mark.isObject() || !mark.path("type").isTextual()) throw new IllegalArgumentException("Marks require a type");
+            for (JsonNode mark : node.get("marks")) {
+                if (!mark.isObject() || !mark.path("type").isTextual()) throw new IllegalArgumentException("Marks require a type");
+                if (mark.has("attrs") && !mark.get("attrs").isObject()) throw new IllegalArgumentException("Mark attrs must be an object");
+            }
         }
-        // Depth is bounded by walk before recursive validation below.
+        if ("resourceLink".equals(node.path("type").asText()) && node.path("attrs").path("resourceId").asText().isBlank()) throw new IllegalArgumentException("Resource links require resourceId");
+        if (node.has("content")) {
+            if (!node.get("content").isArray()) throw new IllegalArgumentException("Node content must be an array");
+            for (JsonNode child : node.get("content")) validateNode(child);
+        }
     }
     public void walk(JsonNode node, java.util.function.Consumer<JsonNode> visitor) {
         walk(node, visitor, 0);

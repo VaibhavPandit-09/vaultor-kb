@@ -1,6 +1,6 @@
 # Documentation
 
-- [Modernization tracker](modernization-plan.md): approved sprint scope, progress, and validation.
+- [Modernization tracker](history/modernization-plan.md): archived implementation checklist, validation evidence and remaining manual coverage.
 
 - [API guide](API.md): shared UI/agent contracts, examples and transfer flow.
 - [Operations guide](OPERATIONS.md): development, Docker, limits, logging and isolated verification.

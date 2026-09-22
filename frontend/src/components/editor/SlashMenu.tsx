@@ -202,7 +202,7 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
     icon: <FileUp size={18} />,
     category: 'Import',
     action: (editor, range) => {
-      editor.chain().focus().deleteRange(range).run();
+      editor.chain().deleteRange(range).run();
       onUploadMd();
     },
   },
@@ -214,7 +214,7 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
     icon: <FileSpreadsheet size={18} />,
     category: 'Import',
     action: (editor, range) => {
-      editor.chain().focus().deleteRange(range).run();
+      editor.chain().deleteRange(range).run();
       onUploadCsv();
     },
   },

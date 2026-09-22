@@ -32,11 +32,13 @@ const b = await request('POST', '/resources', { title: 'Smoke B', content: docum
 const data = new FormData(); data.append('file', new Blob(['name,value\nhello,42\n'], { type: 'text/csv' }), 'sample.csv');
 const file = await request('POST', '/resources/file', data);
 const linked = { type: 'doc', content: [
+  { type: 'orderedList', attrs: { start: 1, type: null }, content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Worker-Sharing Formula', marks: [{ type: 'bold' }] }] }] }] },
+  { type: 'codeBlock', attrs: { language: null }, content: [{ type: 'text', text: 'R × category remaining demand / total remaining demand' }] },
   { type: 'paragraph', content: [{ type: 'text', text: 'Updated ' }, { type: 'resourceLink', attrs: { resourceId: b.id, label: b.title, type: 'note' } }] },
   { type: 'table', attrs: { sourceResourceId: file.id, sourceResourceTitle: file.title, sourceResourceType: 'file' }, content: [{ type: 'tableRow', content: [{ type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: '42' }] }] }] }] },
 ] };
 await request('PUT', '/resources/' + a.id + '/note', { title: 'Smoke A edited', content: linked });
-assert.equal((await request('GET', '/resources/' + a.id)).content.type, 'doc');
+assert.deepEqual((await request('GET', '/resources/' + a.id)).content, linked);
 assert.equal((await request('GET', '/resources/' + b.id + '/backlinks'))[0].id, a.id);
 await request('POST', '/resources/' + a.id + '/tags/smoke');
 const tag = (await request('GET', '/tags'))[0]; await request('PUT', '/tags/' + tag.id + '/color', { color: '#123456' });
@@ -57,10 +59,11 @@ assert.equal((await request('GET', '/diagnostics/integrity')).healthy, true);
 const replaced = await preview(); await request('POST', '/imports/' + replaced.operation.id + '/commit', { mode: 'replace', confirmation: 'replace' }); await finish(replaced.operation.id);
 assert.equal((await request('GET', '/resources')).totalItems, 3);
 assert.equal((await request('GET', '/settings')).local['smoke-device'].theme, 'light');
+assert.deepEqual((await request('GET', '/resources/' + a.id)).content, linked);
 assert.equal((await request('GET', '/diagnostics/integrity')).healthy, true);
 const cancelled = await preview(); assert.equal((await request('POST', '/operations/' + cancelled.operation.id + '/cancel')).status, 'CANCELLED');
 const bad = await fetch(base + '/api/resources', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '', content: document('') }) });
 assert.equal(bad.status, 400); assert.equal((await bad.json()).code, 'INVALID_REQUEST');
 await request('POST', '/diagnostics/events', [{ id: requestId, action: 'smoke.completed', message: 'Agent API smoke passed', build: 'smoke' }]);
 assert.ok((await request('GET', '/diagnostics/events')).some(e => e.id === requestId));
-console.log(JSON.stringify({ result: 'PASS', base, requestId, resources: 3, checks: ['OpenAPI', 'request IDs', 'CRUD', 'structured notes', 'backlinks', 'tags', 'settings', 'files', 'pagination', 'ZIP export', 'merge', 'idempotency', 'replace', 'cancel', 'integrity', 'problem details', 'diagnostics'] }, null, 2));
+console.log(JSON.stringify({ result: 'PASS', base, requestId, resources: 3, checks: ['OpenAPI', 'request IDs', 'CRUD', 'structured notes', 'Notion list/code/table save round trip', 'backlinks', 'tags', 'settings', 'files', 'pagination', 'ZIP export', 'merge', 'idempotency', 'replace', 'cancel', 'integrity', 'problem details', 'diagnostics'] }, null, 2));

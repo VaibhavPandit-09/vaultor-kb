@@ -22,6 +22,7 @@ import {
   Palette,
 } from 'lucide-react';
 import api, { listResources } from '../lib/api';
+import SaveIndicator from '../components/SaveIndicator';
 import ErrorBoundary from '../components/ErrorBoundary';
 import TransferModal from '../components/modals/TransferModal';
 import DiagnosticsPanel from '../components/modals/DiagnosticsPanel';
@@ -41,7 +42,7 @@ import ShortcutsModal from '../components/modals/ShortcutsModal';
 import SettingsModal from '../components/modals/SettingsModal';
 import { isMac, shortcutMatchesEvent } from '../lib/shortcuts';
 import type { CommandContext } from '../lib/commandPalette';
-import type { Editor } from '@tiptap/react';
+
 import {
   clearSelectedTags,
   navigateBack,
@@ -1096,10 +1097,10 @@ export default function Dashboard() {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
+      const editor = window.__vaultor_editor;
       const text = await readTextFile(file);
       const html = markdownToHtml(text);
-      const editor = window.__vaultor_editor;
-      if (editor) editor.chain().focus().insertContent(html).run();
+      if (editor && !editor.isDestroyed) editor.chain().focus().insertContent(html).run();
     } catch (error) {
       console.error('MD upload failed:', error);
     }
@@ -1110,6 +1111,7 @@ export default function Dashboard() {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
+      const editor = window.__vaultor_editor;
       const [text, resource] = await Promise.all([
         readTextFile(file),
         uploadFileResource(file),
@@ -1117,8 +1119,7 @@ export default function Dashboard() {
 
       syncUploadedResource(resource);
 
-      const editor = (window as typeof window & { __vaultor_editor?: Editor | null }).__vaultor_editor;
-      if (editor) {
+      if (editor && !editor.isDestroyed) {
         const content = chooseSafeCsvContent(editor, resource, text);
         editor.chain().focus().insertContent(content).run();
       }
@@ -1648,6 +1649,8 @@ export default function Dashboard() {
                   )}
 
                   <div className="border-b border-border/60 px-4 pb-3 pt-4">
+                    <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
                     {titleEditState?.noteId === note.id ? (
                       <input
                         ref={titleInputRef}
@@ -1690,6 +1693,10 @@ export default function Dashboard() {
                         {note.title}
                       </button>
                     )}
+
+                    </div>
+                    <SaveIndicator status={saves.status(note.id)} onRetry={() => void saves.flush(note.id).catch(() => {})} />
+                    </div>
 
                     {note.id === activeNoteId && note.resource?.type === 'note' && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -1822,9 +1829,6 @@ export default function Dashboard() {
                         </div>
                       </div>
                     )}
-                  </div>
-                  <div className="px-4 text-xs" aria-live="polite">
-                    {saves.status(note.id) === 'saving' ? 'Saving…' : saves.status(note.id) === 'failed' ? <button className="text-red-500" onClick={() => void saves.flush(note.id).catch(() => {})}>Save failed · Retry</button> : 'Saved'}
                   </div>
                   <div className="min-h-0 flex-1 overflow-y-auto px-4">
                     {note.resource?.type === 'note' ? (
@@ -2164,6 +2168,8 @@ function openFilePicker(input: HTMLInputElement | null) {
   }
 
   input.value = '';
+  // Release the editable element synchronously before the native dialog takes focus.
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
 
   try {
     if ('showPicker' in input && typeof input.showPicker === 'function') {

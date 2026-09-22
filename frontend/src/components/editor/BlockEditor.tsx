@@ -245,21 +245,23 @@ function BlockEditor({
 
   // Expose editor for parent to call insertContent
   useEffect(() => {
-    if (editor) {
-      const unregisterRestore = registerFocusRestore(editor.view.dom, () => {
-        editor.commands.focus(undefined, { scrollIntoView: false });
+    if (!editor) return;
+    let unregister: (() => void) | undefined;
+    const mounted = () => {
+      unregister?.();
+      unregister = registerFocusRestore(editor.view.dom, () => {
+        if (!editor.isDestroyed && editor.isInitialized) editor.commands.focus(undefined, { scrollIntoView: false });
       });
-
-      return () => {
-        unregisterRestore();
-        const globalWindow = window as typeof window & { __vaultor_editor?: Editor | null };
-        if (globalWindow.__vaultor_editor === editor) {
-          globalWindow.__vaultor_editor = null;
-        }
-      };
-    }
-
-    return undefined;
+    };
+    const unmounted = () => { unregister?.(); unregister = undefined; };
+    editor.on('mount', mounted);
+    editor.on('create', mounted);
+    editor.on('unmount', unmounted);
+    if (editor.isInitialized) mounted();
+    return () => {
+      editor.off('mount', mounted); editor.off('create', mounted); editor.off('unmount', unmounted); unmounted();
+      if (window.__vaultor_editor === editor) window.__vaultor_editor = null;
+    };
   }, [editor]);
 
   // Handle explicit resource link navigation

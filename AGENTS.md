@@ -14,3 +14,5 @@ Read [docs/CODEBASE.md](docs/CODEBASE.md) before making changes. It is the livin
 Root `README.md` and this discovery file are intentionally small entry points; substantive documentation belongs in `docs/`. No documentation generator or background updater exists: maintaining the guide is part of completing every change.
 
 Preserve the resource-based model, structured Tiptap JSON, shared API client, shared settings/design tokens, and centralized Escape/focus behavior. Consult the guide's known limitations before changing saving, links, workspace operations, or import/export. Use disposable data for tests that mutate a workspace.
+
+Prefer API diagnostics, service tests and focused component tests for debugging and verification. Use browser/native UI debugging only when necessary to establish a visual/interaction fact or explicitly requested by the user; avoid repetitive browser inspection.

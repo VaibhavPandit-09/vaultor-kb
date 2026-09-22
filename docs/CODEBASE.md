@@ -103,7 +103,7 @@ Root composition is StrictMode, Redux, application ErrorBoundary, SettingsProvid
 
 Opening a note appends or replaces panes according to settings. Pane count is bounded 1–3; closing a pane is distinct from deleting a resource. File previews do not consume a pane. Sidebar filtering combines type and all selected tags. Palette commands support create/upload/rename/delete/close/settings/help with ranked resource search and multi-step interactions. Preview highlighting temporarily overrides the preview and restores it on dismissal.
 
-SaveCoordinator holds latest title/content per note, debounces and serializes writes, coalesces newer edits, and exposes Saving / Saved / Save failed with Retry. Editor changes reach the coordinator immediately so unmount cannot silently discard a debounce. Pane closing/replacement, history navigation, deletion and transfers flush pending saves. Import clears all stale draft caches after refresh. beforeunload warns while notes are dirty; unload-time network requests are not treated as durable storage. Failed drafts remain in memory and must be retried before leaving.
+SaveCoordinator holds latest title/content per note, debounces and serializes writes, coalesces newer edits, and exposes Saving / Saved / Save failed with Retry. The title bar has a compact status icon at the top right (spinner/check/cloud alert), hover/focus tooltip, accessible status announcement and clickable retry on failure. Editor changes reach the coordinator immediately so unmount cannot silently discard a debounce. Pane closing/replacement, history navigation, deletion and transfers flush pending saves. Import clears all stale draft caches after refresh. beforeunload warns while notes are dirty; unload-time network requests are not treated as durable storage. Failed drafts remain in memory and must be retried before leaving.
 
 Application and independent editor/settings/preview/transfer/diagnostics boundaries show recovery UI and copyable diagnostic details. Regional recovery preserves sibling editor state. Global network failures show a banner. Settings writes are serialized with visible failure/retry. Preview requests abort/ignore stale results and clean up object URLs. Diagnostic delivery failures never trigger further diagnostic requests or break UI: queue 100, batch 20, three delivery attempts, local history 100; backend history 200 events/24 hours/process lifetime.
 
@@ -120,6 +120,8 @@ Inline links are atomic Tiptap nodes:
 ```
 
 The `[[` picker searches resources and offers note creation/file upload. Preserve the `resourceLink` node name and `resourceId` attribute when evolving editor schemas: backend backlink extraction depends on them. The displayed label is stored in the node, not dynamically joined to a resource title.
+
+Native file picker commands delete the slash query without scheduling editor focus, then blur the active element synchronously before opening the dialog. CSV/Markdown imports capture the originating editor before awaiting file reads/uploads. Focus restoration registers on Tiptap mount and unregisters on unmount; do not access view.dom before mounting. The reported Windows/Vivaldi hidden-pointer symptom requires native confirmation; component tests verify the focus race is removed.
 
 Current cross-component bridges include `window.__vaultor_editor`, `__openResource`, `__executeResourceLink`, `__executeSlashCommand`, and a per-editor `__slashCommandExecutors` map. Multi-pane changes must preserve correct editor ownership and cleanup; replacing these bridges requires coordinated edits, not a single call-site change. `BlockEditor` is memoized with a custom comparison; new props may require comparator updates.
 
@@ -217,7 +219,7 @@ Mod means Cmd on Mac and Ctrl otherwise. The first six actions are customizable;
 
 ## Workspace transfer and export foundation
 
-TransferService orchestrates one persisted-operation worker. WorkspaceExporter separates archive rendering; ExporterRegistry enables only workspace/zip. Scope definitions also reserve notes and table. DocumentService traverses blocks, marks, links, tables and asset reference attributes; future renderers must consume structured documents, not editor HTML.
+TransferService orchestrates one persisted-operation worker. WorkspaceExporter separates archive rendering; ExporterRegistry enables only workspace/zip. Scope definitions also reserve notes and table. DocumentService validates node/mark shapes separately from attribute objects (ordered lists legitimately have attrs.type=null) and traverses blocks, marks, links, tables and asset reference attributes; future renderers must consume structured documents, not editor HTML.
 
 ZIP version 1 contains manifest.json (version, creation time, counts, SHA-256 checksums), workspace.json (logical resources/tags/workspace settings), and files/{resource-id}. No live SQLite file, credentials, diagnostics or device appearance/keybindings are exported. JSON entries cap at 20 MiB, archive defaults to 512 MiB, expanded data 2 GiB and 20,000 entries. Configure limits through environment variables; malformed paths, duplicate entries, checksums, counts and document/reference shapes are validated before mutation. Missing document targets appear as preview warnings.
 
@@ -231,7 +233,7 @@ Future work: note PDF/DOCX, table XLSX/PDF, and separately connected Google Docs
 
 See [OPERATIONS.md](OPERATIONS.md) for commands, environment, Docker logs and disposable API smoke testing. Run npm ci in frontend, then npm run build, npm run lint and npm test. Backend uses Java 25 and the Maven wrapper: ./mvnw test (Windows: .\mvnw.cmd test). Both service tests use temporary SQLite/storage. Docker builds the entire app; do not mount real data into the smoke runner.
 
-Validated 2026-09-22: frontend production build/lint and five component/unit tests; four backend tests including full API/transfer flows, rollback and restart journal recovery. Docker build and disposable API smoke cover JSON CRUD, file bytes, links/backlinks, tags/settings, pagination, export/merge/replace, idempotency, cancellation, problem errors and diagnostics. See the modernization tracker for final run evidence and manual UI coverage.
+Validated 2026-09-22: frontend production build/lint and nine component/unit tests; seven backend tests including full API/transfer flows, rollback and restart journal recovery. Docker build and disposable API smoke cover JSON CRUD, file bytes, links/backlinks, tags/settings, pagination, export/merge/replace, idempotency, cancellation, problem errors and diagnostics. See the [archived modernization tracker](history/modernization-plan.md) for final run evidence and manual UI coverage.
 
 ## Known limitations
 
@@ -249,3 +251,5 @@ For each change: inspect current code and git diff; preserve unrelated work; upd
 
 - 2026-09-21: created living guide and agent rules; archived historical specifications without rewriting them.
 - 2026-09-22: implemented password-free workspace, dropdown fix, serialized saves/settings, DTO/error/diagnostic APIs, logical transfer pipeline/recovery and exporter foundation; added component/backend/disposable API tests. Updated structural/design/operating guidance in the same change. Final verification recorded in the modernization tracker.
+
+- 2026-09-22 follow-up: fixed numbered-list paste validation, moved save feedback into title-bar icons, removed pre-picker asynchronous focus, and made editor focus registration mount-safe. Nine frontend tests and seven backend tests pass; Docker smoke includes list/code/table save and ZIP round trips. API-first debugging is now required by AGENTS.md; no further browser sessions were used for this follow-up.

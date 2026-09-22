@@ -50,6 +50,16 @@ class WorkspaceApiTests {
         for(int i=0;i<150;i++) {var op=transfers.get(id);if(List.of("SUCCEEDED","FAILED").contains(op.status())) {assertEquals("SUCCEEDED",op.status(),op.detail());return op;}Thread.sleep(50);}
         throw new AssertionError("Transfer timed out");
     }
+    @Test void pastedNumberedListCanBeSavedAndReadBack() throws Exception {
+        var content=json.readTree("""
+            {"type":"doc","content":[{"type":"orderedList","attrs":{"start":1,"type":null},"content":[{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Proportional allocation"}]}]}]}]}
+            """);
+        String id=ok("POST","/resources",note("Paste regression",empty())).path("id").asText();
+        try {
+            ok("PUT","/resources/"+id+"/note",note("Paste regression",content));
+            assertEquals(content,ok("GET","/resources/"+id,null).get("content"));
+        } finally { ok("DELETE","/resources/"+id,null); }
+    }
     @Test void fullWorkspaceFlowAndInvalidArchives() throws Exception {
         String target=ok("POST","/resources",note("Target",empty())).path("id").asText();
         Object linked=Map.of("type","doc","content",List.of(Map.of("type","paragraph","content",List.of(Map.of("type","resourceLink","attrs",Map.of("resourceId",target,"label","Target","type","note"))))));
