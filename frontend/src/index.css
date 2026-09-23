@@ -353,3 +353,7 @@ button {
 .organization-confirm button { margin:8px 8px 0 0; }
 .organization-row input[type=color] { width:30px; height:30px; background:transparent; border:0; }
 @media(max-width:550px) { .organization-row { gap:4px; flex-wrap:wrap; } .organization-name { min-width:100px; } }
+/* Resource organization uses the same quiet borders and raised controls as Library. */
+.resource-collections { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; padding: .5rem .25rem; }
+.collection-chip { display: inline-flex; align-items: center; gap: .3rem; max-width: 13rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: .25rem .5rem; border: 1px solid var(--border-subtle); border-radius: .5rem; font-size: .75rem; color: var(--text-secondary); }
+.collection-chip:hover { background: var(--surface-hover); color: var(--text-primary); }

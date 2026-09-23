@@ -90,7 +90,7 @@ POST `/api/exports` with `{ "scope": "notes", "noteId": "<id>", "format": "md" }
 
 ## Library browsing examples
 
-`GET /api/resources?page=0&size=100&q=meeting&type=note&tag=backend&tag=project&sort=updated` returns summaries matching both tag names. `GET /api/resources?favorites=true&sort=title&size=12` supplies bounded quick access. `PUT /api/resources/{id}/favorite` with `{ "favorite": true }` returns 204; repeating it is safe. Version 2 workspace archives include resource and collection favorites plus memberships; merge remaps organization to new resources.
+`GET /api/resources?page=0&size=100&q=meeting&type=note&tag=backend&tag=project&sort=updated` returns summaries matching both tag names. `GET /api/resources?favorites=true&sort=title&size=12` filters pinned resources only; mixed sidebar shortcuts use `GET /api/organization/pins?size=12`. Details and resource summaries include `collections:[{id,name}]`, batched for lists without hydrating note bodies. `PUT /api/resources/{id}/favorite` with `{ "favorite": true }` returns 204; repeating it is safe. Version 2 workspace archives include resource and collection favorites plus memberships; merge remaps organization to new resources.
 
 ## Collections and tags
 
@@ -98,7 +98,12 @@ All routes participate in the workspace mutation gate, return X-Request-ID and u
 
 | Method and path | Operation ID | Contract |
 | --- | --- | --- |
-| GET /api/collections | listCollections | q, page, size (1–100), favorites; metadata page with id/name/favorite/count |
+| GET /api/collections | listCollections | q, page, size (1–100), favorites; metadata page with id/name/favorite/count and exactMatch (query name exists regardless of page) |
+| GET /api/collections/{id} | getCollection | name, pin state and membership count |
+| PUT /api/collections/creations/{id} | createCollectionOnce | canonical client UUID; {name,resourceIds:[]}; atomic retry-safe creation and initial membership |
+| PUT /api/collections/{id}/favorite | setCollectionPin | {favorite:boolean}; 204; preserves collection name |
+| GET /api/organization/pins | listPinnedItems | q/page/size (1–100); mixed {id,kind,name,count} page, alphabetical name/kind/id |
+| POST /api/organization/selection | getSelectedResourceMemberships | read-only {resourceIds:[1–100 IDs]}; [{id,name,selectedCount}], selected collections only |
 | POST /api/collections | createCollection | {name,favorite?}; 201; unique normalized name |
 | PUT /api/collections/{id} | updateCollection | {name,favorite?}; omitted favorite preserves current value |
 | DELETE /api/collections/{id} | deleteCollection | 204; removes only collection/memberships, never resources |
@@ -118,3 +123,7 @@ Membership example:
 kind is collection or tag; action is add or remove. Select 1–100 IDs; every resource and the target must exist before any changes apply. Other memberships are untouched. Use GET /api/resources?collection=collection-id&tag=meeting to verify the combined resulting membership. Collection deletion keeps notes/files. There is no bulk resource deletion API.
 
 Archive version 2 includes workspace.organization.collections and workspace.organization.favorites, covered by the workspace JSON checksum. Preview reports organization counts and rejects invalid membership references. See [Library transfer rules](LIBRARY.md) for merge/replace semantics.
+
+U2 creation semantics: use a stable UUID for PUT /collections/creations/{id}. The name and sorted initial IDs define the request fingerprint. Identical retries return the current collection without reapplying initial memberships; a changed request or normalized-name collision returns 409. Initial resource IDs may be empty, at most 100. The older POST /collections remains a non-idempotent convenience API.
+
+POST /resources accepts optional collectionId on creation. PUT /resources/imports/{id} accepts optional multipart collectionId; the destination participates in its immutable retry fingerprint. Missing collections fail before import file staging; membership and resource metadata commit in one transaction. Retry-safe file imports return an already-created resource even if its memberships were subsequently edited. Favorite fields and workspace ZIP v2 remain unchanged; the UI calls them pins.

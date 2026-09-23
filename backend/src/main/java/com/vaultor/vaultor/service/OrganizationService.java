@@ -15,6 +15,7 @@ public class OrganizationService {
     private final CollectionRepository collections;
     private final JdbcTemplate jdbc;
     public record CollectionDto(String id,String name,boolean favorite,long count) {}
+    public record CollectionPage(List<CollectionDto> items,int page,int size,long totalItems,int totalPages,boolean exactMatch) {}
     public record TagSummary(String id,String name,String color,long count) {}
     public record CollectionData(String id,String name,boolean favorite,List<String> resources) {}
     public record OrganizationData(List<CollectionData> collections,List<String> favorites) {}
@@ -41,6 +42,58 @@ public class OrganizationService {
         }
         for(String id:data.favorites()) jdbc.update("update resources set favorite=1 where id=?",ids.get(id));
     }
+
+    public record CreationInput(String name,List<String> resourceIds) {}
+    public record SelectionInput(List<String> resourceIds) {}
+    public record MembershipDto(String id,String name,long selectedCount) {}
+    public record PinnedItem(String id,String kind,String name,long count) {}
+    private List<String> selection(List<String> ids,boolean emptyAllowed) {
+        if(ids==null || (!emptyAllowed && ids.isEmpty()) || ids.size()>100 || ids.stream().anyMatch(Objects::isNull)) throw new IllegalArgumentException("Select up to 100 resource IDs");
+        var result=ids.stream().distinct().sorted().toList();
+        for(String id:result) if(jdbc.queryForObject("select count(*) from resources where id=?",Long.class,id)!=1) throw new NoSuchElementException("Resource not found");
+        return result;
+    }
+    @Transactional(readOnly=true) public CollectionDto get(String id) {
+        var c=collections.findById(id).orElseThrow();
+        return new CollectionDto(c.getId(),c.getName(),c.isFavorite(),jdbc.queryForObject("select count(*) from resource_collections where collection_id=?",Long.class,id));
+    }
+    @Transactional public CollectionDto createOnce(String id,CreationInput input) {
+        if(!UUID.fromString(id).toString().equals(id)) throw new IllegalArgumentException("Creation ID must be a canonical UUID");
+        String display=name(input.name());
+        if(input.resourceIds()==null || input.resourceIds().size()>100 || input.resourceIds().stream().anyMatch(Objects::isNull)) throw new IllegalArgumentException("Provide up to 100 resource IDs");
+        var ids=input.resourceIds().stream().sorted().distinct().toList();
+        String fingerprint;
+        try { fingerprint=HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest((display+"\0"+String.join("\0",ids)).getBytes(java.nio.charset.StandardCharsets.UTF_8))); }
+        catch(java.security.NoSuchAlgorithmException e) {throw new IllegalStateException(e);}
+        var existing=collections.findById(id);
+        if(existing.isPresent()) {
+            if(!fingerprint.equals(existing.get().getCreationFingerprint())) throw new ResponseStatusException(HttpStatus.CONFLICT,"Creation ID already used with a different request");
+            return get(id); // Never reapply membership after an uncertain response.
+        }
+        selection(input.resourceIds(),true);
+        if(collections.findByNormalizedName(display.toLowerCase(Locale.ROOT)).isPresent()) throw new ResponseStatusException(HttpStatus.CONFLICT,"A collection with this name already exists");
+        var c=new ResourceCollection();c.setId(id);c.setName(display);c.setNormalizedName(display.toLowerCase(Locale.ROOT));c.setCreationFingerprint(fingerprint);
+        collections.saveAndFlush(c);
+        if(!ids.isEmpty()) bulk(new BulkInput(ids,"collection",id,"add"));
+        return get(id);
+    }
+    @Transactional(readOnly=true) public List<MembershipDto> memberships(SelectionInput input) {
+        var ids=selection(input.resourceIds(),false);
+        String slots=String.join(",",Collections.nCopies(ids.size(),"?"));
+        return jdbc.query("select c.id,c.name,count(*) from collections c join resource_collections rc on rc.collection_id=c.id where rc.resource_id in ("+slots+") group by c.id,c.name order by c.normalized_name,c.id",(rs,n)->new MembershipDto(rs.getString(1),rs.getString(2),rs.getLong(3)),ids.toArray());
+    }
+    @Transactional public void pin(String id,Boolean value) {
+        if(value==null) throw new IllegalArgumentException("favorite is required");
+        if(jdbc.update("update collections set favorite=? where id=?",value,id)!=1) throw new NoSuchElementException("Collection not found");
+    }
+    @Transactional(readOnly=true) public PageDto<PinnedItem> pins(String q,int page,int size) {
+        paging(page,size);
+        String from=" from (select id,type as kind,title as name,0 as members from resources where favorite=1 union all select c.id,'collection' as kind,c.name,(select count(*) from resource_collections rc where rc.collection_id=c.id) as members from collections c where c.favorite=1) p where lower(name) like ? escape '!'";
+        String pattern=query(q);long total=jdbc.queryForObject("select count(*)"+from,Long.class,pattern);
+        var items=jdbc.query("select id,kind,name,members"+from+" order by lower(name),kind,id limit ? offset ?",(rs,n)->new PinnedItem(rs.getString(1),rs.getString(2),rs.getString(3),rs.getLong(4)),pattern,size,(long)page*size);
+        return new PageDto<>(items,page,size,total,(int)((total+size-1)/size));
+    }
+
     public record CollectionInput(String name,Boolean favorite) {}
     public record BulkInput(List<String> resourceIds,String kind,String targetId,String action) {}
     public static String name(String value) {
@@ -53,11 +106,12 @@ public class OrganizationService {
     }
     private static void paging(int page,int size) { if(page<0 || size<1 || size>100) throw new IllegalArgumentException("page must be nonnegative; size must be 1–100"); }
     @Transactional(readOnly=true)
-    public PageDto<CollectionDto> list(String q,boolean favorites,int page,int size) {
+    public CollectionPage list(String q,boolean favorites,int page,int size) {
         paging(page,size);String where=" where lower(c.name) like ? escape '!'"+(favorites?" and c.favorite=1":"");String pattern=query(q);
         long total=jdbc.queryForObject("select count(*) from collections c"+where,Long.class,pattern);
         var items=jdbc.query("select c.id,c.name,c.favorite,(select count(*) from resource_collections rc where rc.collection_id=c.id) as members from collections c"+where+" order by c.normalized_name,c.id limit ? offset ?",(rs,n)->new CollectionDto(rs.getString(1),rs.getString(2),rs.getBoolean(3),rs.getLong(4)),pattern,size,(long)page*size);
-        return new PageDto<>(items,page,size,total,(int)((total+size-1)/size));
+        boolean exactMatch=jdbc.queryForObject("select count(*) from collections where normalized_name=?",Long.class,q.trim().toLowerCase(Locale.ROOT))>0;
+        return new CollectionPage(items,page,size,total,(int)((total+size-1)/size),exactMatch);
     }
     @Transactional(readOnly=true)
     public PageDto<TagSummary> tags(String q,int page,int size) {

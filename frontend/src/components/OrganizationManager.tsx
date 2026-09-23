@@ -1,6 +1,6 @@
-import { notifyResourceChange } from '../lib/resourceEvents';
+import PinButton from './PinButton';
 import { useEffect, useState } from 'react';
-import { Star, Folder, Tag, Pencil, Trash2 } from 'lucide-react';
+import { Folder, Tag, Pencil, Trash2 } from 'lucide-react';
 import AppModal from './modals/AppModal';
 import api from '../lib/api';
 import { organizationChanged, useOrganizationPage, type OrganizationItem, type OrganizationKind } from '../lib/organization';
@@ -13,9 +13,9 @@ export default function OrganizationManager({onClose,onCollection,onTag,tags,res
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
   const results=useOrganizationPage(kind,search,page);
   useEffect(()=>{const timer=setTimeout(()=>{setSearch(query);setPage(0);},200);return()=>clearTimeout(timer);},[query]);
-  async function action(work:()=>Promise<void>, pinId?: string) {
+  async function action(work:()=>Promise<void>) {
     setBusy(true);setError('');setMessage('');
-    try {await work();if(pinId)notifyResourceChange({kind:'pins',entity:'collection',id:pinId});else organizationChanged(kind,resourceIds.length ? resourceIds : undefined);} catch(e) { const detail=(e as {response?:{data?:{detail?:string}}}).response?.data?.detail;setError(detail??'Change failed. Your selection is retained; try again.'); } finally {setBusy(false);}
+    try {await work();organizationChanged(kind,resourceIds.length ? resourceIds : undefined);} catch(e) { const detail=(e as {response?:{data?:{detail?:string}}}).response?.data?.detail;setError(detail??'Change failed. Your selection is retained; try again.'); } finally {setBusy(false);}
   }
   function switchKind(next:OrganizationKind) {setKind(next);setQuery('');setSearch('');setPage(0);setEditing(null);setDeleting(null);setName('');setError('');setMessage('');}
   const noun=kind==='collection'?'collection':'tag';
@@ -40,7 +40,7 @@ export default function OrganizationManager({onClose,onCollection,onTag,tags,res
         {results.loading?<p>Loading…</p>:results.error && !results.data?<p role="alert">{results.error}<button onClick={results.retry}>Retry</button></p>:!results.data?.items.length?<p>No {noun}s match.</p>:results.data.items.map(item=><div key={item.id} className="organization-row">
           <button disabled={busy || resourceIds.length > 0} className="organization-name" title={`Browse ${item.name}`} onClick={()=>{if(kind==='collection'){onCollection(item);onClose();}else onTag(item.name);}}>{kind==='tag'&&<span className="organization-dot" style={{background:item.color}}/>}<span>{item.name}</span><small>{item.count}</small>{kind==='tag'&&tags.includes(item.name)&&<small>Selected</small>}</button>
           {resourceIds.length>0?<><button disabled={busy} className="library-button" onClick={()=>bulk(item,'add')}>Add</button><button disabled={busy} className="library-button" onClick={()=>bulk(item,'remove')}>Remove</button></>:<>
-            {kind==='collection'?<button disabled={busy} className="library-button" aria-label={`${item.favorite?'Unfavorite':'Favorite'} ${item.name}`} aria-pressed={Boolean(item.favorite)} onClick={()=>void action(async()=>{await api.put(`/collections/${item.id}`,{name:item.name,favorite:!item.favorite});},item.id)}><Star size={15} fill={item.favorite?'currentColor':'none'}/></button>:<input type="color" title={`Color for ${item.name}`} aria-label={`Color for ${item.name}`} disabled={busy} value={item.color?.startsWith('#')?item.color:'#64748b'} onChange={e=>{const color=e.target.value;void action(async()=>{await api.put(`/tags/${item.id}/color`,{color});});}}/>}
+            {kind==='collection'?<PinButton id={item.id} name={item.name} favorite={item.favorite} entity="collection"/>:<input type="color" title={`Color for ${item.name}`} aria-label={`Color for ${item.name}`} disabled={busy} value={item.color?.startsWith('#')?item.color:'#64748b'} onChange={e=>{const color=e.target.value;void action(async()=>{await api.put(`/tags/${item.id}/color`,{color});});}}/>}
             <button disabled={busy} className="library-button" aria-label={`Rename ${item.name}`} onClick={()=>{setEditing(item);setName(item.name);}}><Pencil size={14}/></button><button disabled={busy} className="library-button" aria-label={`Delete ${item.name}`} onClick={()=>setDeleting(item)}><Trash2 size={14}/></button>
           </>}
         </div>)}

@@ -28,6 +28,7 @@ it('defaults Markdown/text to notes, binaries to files, and allows applying choi
 
 it('retries only failed rows with the same identity and leaves successful imports alone', async () => {
   const session = await prepareImport([file('one.md','# One'),file('two.pdf','bytes')]);
+  session.collection={id:'atlas',name:'Project Atlas'};
   vi.mocked(api.put).mockResolvedValueOnce({ data: { id: 'one', type: 'note', title: 'one' } }).mockRejectedValueOnce(new Error('Connection lost')).mockResolvedValueOnce({ data: { id: 'two', type: 'file', title: 'two.pdf' } });
   const created = vi.fn();
   render(<FileImportModal session={session} onClose={vi.fn()} onResource={created} />);
@@ -36,6 +37,8 @@ it('retries only failed rows with the same identity and leaves successful import
   fireEvent.click(screen.getByRole('button', { name: 'Retry failed files' }));
   await waitFor(() => expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy());
   expect(api.put).toHaveBeenCalledTimes(3);
+  for(const call of vi.mocked(api.put).mock.calls) expect((call[1] as FormData).get('collectionId')).toBe('atlas');
+  expect(screen.getByText('Project Atlas')).toBeTruthy();
   expect(vi.mocked(api.put).mock.calls[1][0]).toBe(vi.mocked(api.put).mock.calls[2][0]);
   expect(created).toHaveBeenCalledTimes(2);
   const body = vi.mocked(api.put).mock.calls[0][1] as FormData;

@@ -21,8 +21,8 @@ public class ResourceController {
     private final DocumentService documents;
     private final FileImportService imports;
     @PutMapping(value="/imports/{id}", consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResourceDto importFile(@PathVariable String id, @RequestParam String title, @RequestParam(required=false) String content, @RequestParam(required=false) MultipartFile file) throws Exception {
-        return dto(imports.create(id,title,content,file));
+    public ResourceDto importFile(@PathVariable String id, @RequestParam String title, @RequestParam(required=false) String content, @RequestParam(required=false) MultipartFile file, @RequestParam(required=false) String collectionId) throws Exception {
+        return dto(imports.create(id,title,content,file,collectionId));
     }
     private ResourceDto dto(Resource r) { return ResourceDto.of(r, documents); }
     private Resource get(String id) { return resources.findById(id).orElseThrow(); }
@@ -43,7 +43,7 @@ public class ResourceController {
     public void favorite(@PathVariable String id, @RequestBody FavoriteInput input) { browse.favorite(id,input.favorite()); }
     @GetMapping("/{id}") public ResourceDto one(@PathVariable String id) { return dto(get(id)); }
     @PostMapping("/{id}/open") public void open(@PathVariable String id) { browse.markOpened(id); }
-    @PostMapping public ResourceDto create(@RequestBody NoteInput input) { validate(input); if (input.type()!=null && !input.type().equals("note")) throw new IllegalArgumentException("Use file upload for file resources"); return dto(service.createNote(input.title().trim(), input.content().toString())); }
+    @PostMapping public ResourceDto create(@RequestBody NoteInput input) { validate(input); if (input.type()!=null && !input.type().equals("note")) throw new IllegalArgumentException("Use file upload for file resources"); return dto(service.createNote(input.title().trim(), input.content().toString(),input.collectionId())); }
     @PutMapping("/{id}/note") public ResourceDto update(@PathVariable String id, @RequestBody NoteInput input) { validate(input); if (!get(id).getType().equals("note")) throw new IllegalArgumentException("Resource is not a note"); return dto(service.updateNote(id, input.title().trim(), input.content().toString())); }
     @PostMapping("/file") public ResourceDto upload(@RequestParam MultipartFile file) throws Exception { if(file.isEmpty()) throw new IllegalArgumentException("Choose a nonempty file"); return dto(service.uploadFile(file)); }
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable String id) { get(id); service.deleteResource(id); }

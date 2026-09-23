@@ -1,7 +1,9 @@
 import { affectsScope, notifyResourceChange, subscribeResourceChanges } from '../lib/resourceEvents';
 import { RecencyRecorder } from '../lib/recencyRecorder';
 import { organizationChanged } from '../lib/organization';
-import CollectionShortcuts from '../components/CollectionShortcuts';
+import ResourceCollections, { CollectionPicker } from '../components/ResourceCollections';
+import PinButton from '../components/PinButton';
+import { PinnedList, CollectionsView } from '../components/OrganizationViews';
 import type { OrganizationItem } from '../lib/organization';
 import { createPortal, flushSync } from 'react-dom';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -14,7 +16,8 @@ import {
   Database,
   Library,
   Clock,
-  Star,
+  Pin,
+  Folder,
   UploadCloud,
   DownloadCloud,
   X,
@@ -31,7 +34,6 @@ import {
 import api from '../lib/api';
 import LibraryView, { type LibrarySection } from '../components/LibraryView';
 import { browseResources, resourcesChanged } from '../lib/resourceBrowse';
-import { useResourcePage } from '../lib/useResourcePage';
 import { resourceKind } from '../lib/resourceKinds';
 import SaveIndicator from '../components/SaveIndicator';
 import { registerCloseNoteShortcut } from '../lib/closeNoteShortcut';
@@ -109,10 +111,10 @@ export default function Dashboard() {
   const navigation = useAppSelector((state) => state.vault.navigation);
   const filters = useAppSelector((state) => state.vault.filters);
 
+  const [newCollectionOpen,setNewCollectionOpen]=useState(false);
   const [collection, setCollection] = useState<OrganizationItem | null>(null);
   const [libraryVisible, setLibraryVisible] = useState(true);
   const [librarySection, setLibrarySection] = useState<LibrarySection>('library');
-  const favoritePage = useResourcePage({ favorites: true, size: 12, sort: 'title' });
   const [sidebarError, setSidebarError] = useState('');
   const [tagsError, setTagsError] = useState('');
   const [recencyError, setRecencyError] = useState('');
@@ -184,6 +186,7 @@ export default function Dashboard() {
   const titleEditNoteId = titleEditState?.noteId ?? null;
 
   const { settings, resolvedShortcuts, toggleTheme, updateLocalSetting, flushSettings } = useSettings();
+  const collectionCreationFocus=useRestoreFocusOnClose();
   const commandPaletteFocus = useRestoreFocusOnClose();
   const shortcutsModalFocus = useRestoreFocusOnClose();
   const settingsModalFocus = useRestoreFocusOnClose();
@@ -647,6 +650,7 @@ export default function Dashboard() {
     try {
       const { data } = await api.post('/resources', {
         type: 'note',
+        collectionId: libraryVisible ? collection?.id : undefined,
         title: 'Untitled Note',
         content: { type: 'doc', content: [] },
       });
@@ -657,7 +661,7 @@ export default function Dashboard() {
     } finally {
       setCreateNotePending(false);
     }
-  }, [createNotePending, openResourceById]);
+  }, [createNotePending, openResourceById, libraryVisible, collection?.id]);
 
   const syncUploadedResource = useCallback((resource: Resource) => {
     setResources((current) => upsertResourceInList(current, resource).slice(0, 12));
@@ -676,10 +680,10 @@ export default function Dashboard() {
       const accept = mode === 'markdown' ? '.md,.markdown,.txt' : mode === 'csv' ? '.csv,.tsv,.txt' : '';
       const files = await pickFiles(accept, !target);
       if (!files.length) { target?.dispose(); importBusy.current = false; if (target && !target.editor.isDestroyed) target.editor.commands.focus(undefined, { scrollIntoView: false }); return; }
-      setFileImport(await prepareImport(files, target, mode));
+      setFileImport({...await prepareImport(files, target, mode),collection:!target&&libraryVisible&&collection?{id:collection.id,name:collection.name}:undefined});
     } catch (error) { target?.dispose(); importBusy.current = false; reportError('file.import.prepare', error); }
     finally { setUploadPending(false); }
-  }, []);
+  }, [libraryVisible,collection]);
   const requestFileUpload = useCallback(() => { flushSync(() => setCommandPaletteOpen(false)); void beginImport(); }, [beginImport]);
   const handleRequestMdUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'markdown'); }, [beginImport]);
   const handleRequestCsvUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'csv'); }, [beginImport]);
@@ -1203,13 +1207,15 @@ export default function Dashboard() {
   }, [openNotes,fetchResourceDetails]);
 
   const showLibrary = (section: LibrarySection) => { setCollection(null); setLibrarySection(section); setLibraryVisible(true); dismissPreview({ restoreFocus: false }); };
+  const openCollection = (item:OrganizationItem) => {showLibrary('library');dispatch(clearSelectedTags());setCollection(item);};
   const sidebarContent = (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="px-3 py-3 space-y-1">
         <button className="sidebar-nav" onClick={openCommandPalette}><Search size={16} />Search workspace<span className="ml-auto text-xs opacity-60">{resolvedShortcuts.commandPalette.replace('Mod', isMac ? '⌘' : 'Ctrl').replaceAll('+', ' ')}</span></button>
-        {([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'favorites', label: 'Favorites', Icon: Star }] as const).map(({ id, label, Icon }) => <button key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</button>)}
+        {([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }] as const).map(({ id, label, Icon }) => <button key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</button>)}
         {openNotes.length > 0 && <button className="sidebar-nav" onClick={() => { setLibraryVisible(false); setFocusRestoreNoteId(activeNoteId); }}><FileText size={16} />Open notes<span className="ml-auto text-xs opacity-60">{openNotes.length}</span></button>}
       </div>
+      <button className="sidebar-nav" onClick={()=>{collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>
       <div className="flex gap-1.5 px-3 pb-2">
         <button
           onClick={handleCreateNote}
@@ -1249,10 +1255,7 @@ export default function Dashboard() {
       <div className="border-t border-border" />
 
       <div className="flex-1 overflow-y-auto py-2" style={{overflowAnchor:'none'}}>
-        <CollectionShortcuts onOpen={item => {showLibrary('library');setCollection(item);}} />
-        <p className="sidebar-section-label">Favorites <button onClick={() => showLibrary('favorites')}>View all</button></p>
-        {favoritePage.loading ? <p className="px-4 text-xs opacity-60">Loading…</p> : !favoritePage.data?.items.length ? <p className="px-4 py-2 text-xs text-[var(--text-tertiary)]">Star resources in the Library for quick access.</p> : favoritePage.data.items.map(resource => <SidebarItem key={resource.id} resource={resource} isActive={!libraryVisible && currentResourceId === resource.id} onClick={() => void openResourceById(resource.id)} onDelete={event => void handleDeleteResource(resource.id, event)} />)}
-        {favoritePage.error && <button className="sidebar-nav text-xs" onClick={favoritePage.retry}>Could not refresh favorites · Retry</button>}
+        <PinnedList compact onViewAll={()=>showLibrary('favorites')} onResource={id=>void openResourceById(id)} onCollection={openCollection}/>
         <p className="sidebar-section-label">Recent <button onClick={() => showLibrary('recent')}>View all</button></p>
         {sidebarLoading && !sidebarReady ? <p className="px-4 text-xs opacity-60">Loading…</p> : resources.map(resource => <SidebarItem key={resource.id} resource={resource} isActive={!libraryVisible && currentResourceId === resource.id} onClick={() => void openResourceById(resource.id)} onDelete={event => void handleDeleteResource(resource.id, event)} />)}
         {sidebarError && <button className="sidebar-nav text-xs" onClick={() => void fetchRecent()}>{sidebarError} Retry</button>}
@@ -1530,7 +1533,7 @@ export default function Dashboard() {
         )}
 
         <main className="min-w-0 flex-1 relative">
-          <div className="h-full" hidden={!libraryVisible}><LibraryView collection={collection} onCollection={setCollection} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); setFocusRestoreNoteId(activeNoteId); }} onOpen={id => void openResourceById(id)} /></div>
+          <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></section>:<LibraryView onNewNote={()=>void handleCreateNote()} onImport={requestFileUpload} collection={collection} onCollection={setCollection} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); setFocusRestoreNoteId(activeNoteId); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="h-full" hidden={libraryVisible}>
           {openWorkspaceNotes.length > 0 ? (
             <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
@@ -1595,9 +1598,11 @@ export default function Dashboard() {
 
                     </div>
                     <button type="button" title="Export note" aria-label={`Export ${note.title}`} className="rounded-lg p-2 text-slate-400 hover:bg-background hover:text-primary" onClick={() => setNoteExport({ id: note.id, title: note.title })}><DownloadCloud size={16} /></button>
+                    <PinButton id={note.id} name={note.title} favorite={note.resource?.favorite}/>
                     <SaveIndicator status={saves.status(note.id)} onRetry={() => void saves.flush(note.id).catch(() => {})} />
                     </div>
 
+                    <ResourceCollections id={note.id} onOpen={openCollection}/>
                     {note.id === activeNoteId && note.resource?.type === 'note' && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {(note.resource.tags ?? []).slice(0, 4).map((tag) => (
@@ -1801,9 +1806,11 @@ export default function Dashboard() {
         </main>
       </div>
 
+      {newCollectionOpen&&<CollectionPicker resourceIds={[]} onClose={()=>{setNewCollectionOpen(false);collectionCreationFocus.restoreFocus();}} onCreated={item=>{setNewCollectionOpen(false);openCollection(item);}}/>}
       {previewResource && previewResourceType && (
         <ErrorBoundary region="file preview"><PreviewLayer
           resource={previewResource}
+          onCollection={openCollection}
           mode={effectivePreviewMode}
           animationMode={localSettings.animationMode}
           overrideActive={previewOverrideMode !== null}

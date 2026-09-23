@@ -29,7 +29,7 @@ export default function FileImportModal({ session, onClose, onResource }: { sess
             }
             session.target.insert(content.length ? content : [{ type: 'paragraph' }]);
           } else {
-            const resource = await importResource(row.id, row.file, row.asNote ? row.doc : undefined);
+            const resource = await importResource(row.id, row.file, row.asNote ? row.doc : undefined,session.collection?.id);
             onResource(resource);
           }
           update(row.id, { status: 'done' });
@@ -40,6 +40,7 @@ export default function FileImportModal({ session, onClose, onResource }: { sess
   const complete = rows.every(row => row.status === 'done');
   return <AppModal open title={session.target ? 'Insert file into note' : 'Import files'} description={session.target ? 'Your command is replaced only after a successful import. Cancel keeps the note unchanged.' : 'Choose how to import each file. Existing notes are never overwritten.'} widthClassName="max-w-2xl" onClose={() => { if (!running.current) onClose(); }}>
     <div className="space-y-4">
+      {session.collection&&<p className="rounded-lg border border-border p-3 text-sm">Import destination: <strong>{session.collection.name}</strong>. Every successful import will join this collection.</p>}
       {rows.map(row => <div key={row.id} className="rounded-xl border border-border p-3 space-y-2">
         <p className="break-all font-medium">{row.file.name}</p>
         {!session.target && <div className="flex flex-wrap items-center gap-2">

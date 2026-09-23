@@ -2923,6 +2923,10 @@
                   "file": {
                     "type": "string",
                     "format": "binary"
+                  },
+                  "collectionId": {
+                    "type": "string",
+                    "description": "Optional existing collection. Part of the immutable retry fingerprint; membership and creation commit atomically."
                   }
                 }
               }
@@ -3311,6 +3315,69 @@
             }
           }
         }
+      },
+      "get": {
+        "operationId": "getCollection",
+        "summary": "Get collection name, pin state and membership count",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Collection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/tags/browse": {
@@ -3545,6 +3612,323 @@
           }
         }
       }
+    },
+    "/collections/creations/{id}": {
+      "put": {
+        "operationId": "createCollectionOnce",
+        "summary": "Atomically create a collection with initial memberships using a retry-safe UUID",
+        "description": "Repeat the same UUID and request to return the original collection without reapplying memberships. Reusing the UUID with different input or another collection name returns 409. Creation fingerprints are internal and excluded from archives.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionCreationInput"
+              },
+              "example": {
+                "name": "Project Atlas",
+                "resourceIds": [
+                  "note-id",
+                  "file-id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Collection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/collections/{id}/favorite": {
+      "put": {
+        "operationId": "setCollectionPin",
+        "summary": "Pin or unpin a collection without changing its name",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "favorite"
+                ],
+                "properties": {
+                  "favorite": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "example": {
+                "favorite": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Pin updated"
+          },
+          "400": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organization/selection": {
+      "post": {
+        "operationId": "getSelectedResourceMemberships",
+        "summary": "Get collection memberships and selected member counts for up to 100 resources",
+        "description": "Read-only metadata query; only collections with at least one selected member are returned. No note bodies are hydrated.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationSelectionInput"
+              },
+              "example": {
+                "resourceIds": [
+                  "note-id",
+                  "file-id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CollectionMembership"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organization/pins": {
+      "get": {
+        "operationId": "listPinnedItems",
+        "summary": "Search a paginated mixed list of pinned resources and collections",
+        "description": "Stable alphabetical order by lowercase name, kind, then ID. Existing favorite flags are used unchanged. No note bodies are loaded.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "default": ""
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PinnedPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Invalid request, missing resource or conflict/workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3614,6 +3998,10 @@
           },
           "content": {
             "$ref": "#/components/schemas/Document"
+          },
+          "collectionId": {
+            "type": "string",
+            "description": "Optional existing collection; initial membership commits with resource creation. Used only on create."
           }
         },
         "required": [
@@ -3678,13 +4066,20 @@
           },
           "favorite": {
             "type": "boolean"
+          },
+          "collections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollectionRef"
+            }
           }
         },
         "required": [
           "id",
           "type",
           "title",
-          "tags"
+          "tags",
+          "collections"
         ]
       },
       "ResourcePage": {
@@ -4009,13 +4404,20 @@
           },
           "favorite": {
             "type": "boolean"
+          },
+          "collections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollectionRef"
+            }
           }
         },
         "required": [
           "id",
           "type",
           "title",
-          "tags"
+          "tags",
+          "collections"
         ]
       },
       "Collection": {
@@ -4082,6 +4484,10 @@
           },
           "totalPages": {
             "type": "integer"
+          },
+          "exactMatch": {
+            "type": "boolean",
+            "description": "Whether any collection name exactly matches the trimmed query, ignoring case, independent of pagination."
           }
         },
         "required": [
@@ -4184,6 +4590,136 @@
             ]
           }
         }
+      },
+      "CollectionRef": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CollectionCreationInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "resourceIds"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "resourceIds": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "OrganizationSelectionInput": {
+        "type": "object",
+        "required": [
+          "resourceIds"
+        ],
+        "properties": {
+          "resourceIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CollectionMembership": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "selectedCount"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "selectedCount": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "PinnedItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "count"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "note",
+              "file",
+              "collection"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Resource count for a collection; zero for resources."
+          }
+        }
+      },
+      "PinnedPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PinnedItem"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "size",
+          "totalItems",
+          "totalPages"
+        ]
       }
     }
   }

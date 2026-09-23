@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import api from '../lib/api';
+vi.mock('../lib/api',()=>({default:{get:vi.fn()}}));
 import LibraryView from './LibraryView';
 import { useResourcePage } from '../lib/useResourcePage';
 import { browseResources, setResourceFavorite, type ResourcePage } from '../lib/resourceBrowse';
@@ -9,6 +11,7 @@ const page = (prefix = 'Note'): ResourcePage => ({ items: Array.from({length:100
 beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
   vi.mocked(browseResources).mockResolvedValue(page());
+  vi.mocked(api.get).mockResolvedValue({data:{id:'atlas',name:'Atlas',count:100}});
 });
 afterEach(() => { cleanup(); vi.resetAllMocks(); vi.unstubAllGlobals(); });
 it('virtualizes a bounded page and asks the server for the next page', async () => {
@@ -23,13 +26,13 @@ it('virtualizes a bounded page and asks the server for the next page', async () 
   fireEvent.change(screen.getByLabelText('Resource type'),{target:{value:'file'}});
   await waitFor(() => expect(browseResources).toHaveBeenLastCalledWith(expect.objectContaining({page:0,type:'file'}),expect.any(AbortSignal)));
 });
-it('offers retry on a failed page and keeps favorite failures visible', async () => {
+it('offers retry on a failed page and keeps pin failures visible', async () => {
   vi.mocked(browseResources).mockRejectedValueOnce(new Error('Unavailable'));
   vi.mocked(setResourceFavorite).mockRejectedValue(new Error('Unavailable'));
   render(<LibraryView section="library" visible tags={[]} hasNotes={false} onReturn={() => {}} onOpen={() => {}} />);
   await screen.findByText('Unavailable'); fireEvent.click(screen.getByText('Retry'));
-  await screen.findByText('Note 0'); fireEvent.click(screen.getByLabelText('Favorite Note 0'));
-  await screen.findByText('Could not update favorite. Try the star again.');
+  await screen.findByText('Note 0'); fireEvent.click(screen.getByLabelText('Pin Note 0'));
+  await screen.findByText('Retry pin');
 });
 it('aborts old queries and ignores responses arriving after a newer search', async () => {
   let finish!: (value:ResourcePage) => void;

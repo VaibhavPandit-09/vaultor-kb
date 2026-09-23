@@ -1,6 +1,6 @@
 # Workspace evolution plan
 
-Status: Sprints 1–4 and U1 complete. U2 and U3 require their own implementation calls; original Sprint 5 is absorbed into U3. Implement exactly one sprint per authorized request; hand off and discuss before starting the next. Preserve unrelated work and existing workspace data.
+Status: Sprints 1–4, U1 and U2 complete. U3 requires its own implementation call; original Sprint 5 is absorbed into U3. Implement exactly one sprint per authorized request; hand off and discuss before starting the next. Preserve unrelated work and existing workspace data.
 
 ## Sprint 1 — Close empty notes reliably
 - [x] Reproduce editor consumption of the close-note shortcut.
@@ -88,11 +88,11 @@ Implement exactly one U sprint per call, then hand off. Preserve the visual styl
 - [x] Focused validation and living-doc update.
 
 ### Sprint U2 — Organization where resources are used
-- [ ] Membership chips on notes/previews (two plus overflow), shared searchable picker with immediate toggles and create-and-add.
-- [ ] Atomic, retry-safe collection creation with initial membership; create/import resources into the current collection.
-- [ ] Collections destination/header actions; reuse picker for Library rows and bulk operations; retain non-destructive deletion.
-- [ ] Unified Pinned shortcuts, direct pin/unpin throughout, stable alphabetical order, 12 shortcuts plus searchable View all.
-- [ ] Preserve current favorites; add batched membership summaries and paginated mixed pin API; preserve archive behavior.
+- [x] Membership chips on notes/previews (two plus overflow), shared searchable picker with immediate toggles and create-and-add.
+- [x] Atomic, retry-safe collection creation with initial membership; create/import resources into the current collection.
+- [x] Collections destination/header actions; reuse picker for Library rows and bulk operations; retain non-destructive deletion.
+- [x] Unified Pinned shortcuts, direct pin/unpin throughout, stable alphabetical order, 12 shortcuts plus searchable View all.
+- [x] Preserve current favorites; add batched membership summaries and paginated mixed pin API; preserve archive behavior.
 
 ### Sprint U3 — Search-first Ctrl+K and saved-note full-text search
 - [ ] Deduplicated Open/Pinned/Recent empty state, grouped resource/collection results and explicit previews/actions.
@@ -111,3 +111,12 @@ Implemented scoped notifications, a coalescing/serialized recency recorder and r
 Checks: production frontend build and targeted ESLint pass; 12 relevant frontend cases pass (5 new navigation/diagnostics plus 7 Library/organization cases). One disposable backend integration test passes with timestamp/content preservation and browsing checks. No browser, live API smoke or Docker work. Existing bundle-size/Browserslist build warnings remain. No implementation blockers; manual/native visual verification remains outstanding, and the running container is unchanged.
 
 Stop here. U2 is next: resource-local membership controls, easier collection creation and unified pins. U3 includes Ctrl+K and the former Sprint 5 full-text scope; file-content search remains later work.
+
+### U2 implementation session — 2026-09-23
+Complete: resource membership chips and shared immediate-toggle picker; atomic retry-safe collection creation; visible Collections destination and collection header actions; initial destination on new notes/imports; unified mixed Pinned shortcuts and local Pin controls. Existing favorites and ZIP v2 organization remain intact.
+
+Decisions: reuse the shared modal/Escape surface for a compact searchable picker; selected memberships appear first, mixed bulk memberships are explicit, and each failure rolls back only its own toggle. Creation fingerprints are stored internally and excluded from archives. Collection-list exactMatch prevents offering duplicate creation when the matching name is on another page. Initial import destinations are captured before opening the file picker.
+
+Validation: frontend production build and targeted lint pass; 18 distinct focused frontend cases pass across membership/pins, Library, navigation refresh, file-import review/retry and organization management. Two disposable SQLite integration cases pass for creation/import atomicity and retry identity, mixed pin ordering, membership metadata, and archive merge/replace/rollback. An isolated browser fixture checked the new membership header and pinned list in both themes, including a narrow note pane and picker/Escape dismissal. The fixture and server were removed; no user workspace was mutated. No broad API smoke tests or Docker rebuild. Existing bundle-size/Browserslist warnings remain.
+
+No implementation blockers. Integrated Dashboard/file-preview layout has not received a full manual pass; the isolated check is not end-to-end UI proof. Deployment is unchanged. Stop here: U3 (Ctrl+K and saved-note full-text search) requires a separate authorization.

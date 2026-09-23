@@ -16,10 +16,17 @@ public class ResourceService {
     private final FileStorageService fileStorageService;
     private final RelationshipService relationshipService;
     private final DocumentService documents;
+    private final com.vaultor.vaultor.repository.CollectionRepository collections;
 
     @Transactional
     public Resource createNote(String title, String content) {
+        return createNote(title,content,null);
+    }
+
+    @Transactional
+    public Resource createNote(String title,String content,String collectionId) {
         Resource r = new Resource();
+        if(collectionId != null) r.getCollections().add(collections.findById(collectionId).orElseThrow());
         r.setType("note");
         r.setTitle(title != null ? title : "Untitled");
         r.setContent(content);

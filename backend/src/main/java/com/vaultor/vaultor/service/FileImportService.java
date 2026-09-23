@@ -21,8 +21,12 @@ public class FileImportService {
     private final DocumentService documents;
     private final RelationshipService links;
     private final TransactionTemplate transaction;
+    private final com.vaultor.vaultor.repository.CollectionRepository collections;
 
     public synchronized Resource create(String id, String title, String content, MultipartFile file) throws Exception {
+        return create(id,title,content,file,null);
+    }
+    public synchronized Resource create(String id,String title,String content,MultipartFile file,String collectionId) throws Exception {
         if (!UUID.fromString(id).toString().equals(id)) throw new IllegalArgumentException("Import ID must be a canonical UUID");
         if (title == null || title.isBlank() || title.length() > 500) throw new IllegalArgumentException("Title must contain 1-500 characters");
         if ((content == null) == (file == null)) throw new IllegalArgumentException("Provide either content or file");
@@ -34,18 +38,21 @@ public class FileImportService {
         if (file != null) {
             try (var in = file.getInputStream()) { byte[] buffer = new byte[8192]; int read; while ((read = in.read(buffer)) != -1) digest.update(buffer, 0, read); }
         } else digest.update(normalized.getBytes(StandardCharsets.UTF_8));
+        if(collectionId != null) digest.update(("\0collection:"+collectionId).getBytes(StandardCharsets.UTF_8));
         String fingerprint = HexFormat.of().formatHex(digest.digest());
         var existing = resources.findById(id);
         if (existing.isPresent()) {
             if (!fingerprint.equals(existing.get().getImportFingerprint())) throw new ResponseStatusException(HttpStatus.CONFLICT, "Import ID already used with different content");
             return existing.get();
         }
+        if(collectionId != null && !collections.existsById(collectionId)) throw new java.util.NoSuchElementException("Collection not found");
         String stored = file == null ? null : files.storeFile(file);
         try {
             return transaction.execute(status -> {
                 var resource = new Resource(); resource.setId(id); resource.setType(kind); resource.setTitle(title.trim());
                 resource.setContent(normalized); resource.setImportFingerprint(fingerprint); resource.setFilePath(stored);
                 if (file != null) { resource.setSize(file.getSize()); resource.setMimeType(file.getContentType()); }
+                if(collectionId != null) resource.getCollections().add(collections.findById(collectionId).orElseThrow());
                 var saved = resources.saveAndFlush(resource);
                 if (normalized != null) links.updateLinksForNote(id, normalized);
                 return saved;

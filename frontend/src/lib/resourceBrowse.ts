@@ -13,5 +13,5 @@ export function browseResources(query: BrowseQuery = {}, signal?: AbortSignal): 
 }
 export function resourcesChanged(ids?: string[], membershipChanged = false) { notifyResourceChange({kind:'metadata',ids,membershipChanged}); }
 export async function setResourceFavorite(id: string, favorite: boolean) {
-  await api.put(`/resources/${id}/favorite`, { favorite }); notifyResourceChange({kind:'pins',entity:'resource',id});
+  await api.put(`/resources/${id}/favorite`, { favorite }, {backgroundDiagnostic:true}); notifyResourceChange({kind:'pins',entity:'resource',id,favorite});
 }

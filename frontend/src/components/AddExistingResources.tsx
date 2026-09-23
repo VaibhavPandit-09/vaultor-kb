@@ -1,0 +1,14 @@
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import AppModal from './modals/AppModal';
+import { useResourcePage } from '../lib/useResourcePage';
+import api from '../lib/api';
+import { organizationChanged, type OrganizationItem } from '../lib/organization';
+import { organizationError } from '../lib/organizationControls';
+export default function AddExistingResources({collection,onClose}:{collection:OrganizationItem;onClose:()=>void}) {
+ const [query,setQuery]=useState(''),[search,setSearch]=useState(''),[page,setPage]=useState(0),[selected,setSelected]=useState<string[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState('');const running=useRef(false);
+ useEffect(()=>{const timer=setTimeout(()=>{setSearch(query);setPage(0);},180);return()=>clearTimeout(timer);},[query]);
+ const result=useResourcePage({q:search,page,size:30,sort:'title'});
+ async function apply(){if(running.current)return;running.current=true;setBusy(true);setError('');try{await api.post('/organization/memberships',{resourceIds:selected,kind:'collection',targetId:collection.id,action:'add'},{backgroundDiagnostic:true});organizationChanged('collection',selected);onClose();}catch(e){setError(organizationError(e));}finally{running.current=false;setBusy(false);}}
+ return createPortal(<AppModal open title={'Add resources to '+collection.name} onClose={()=>{if(!running.current)onClose();}}><div className="space-y-3"><input className="organization-input w-full" aria-label="Search existing resource titles" placeholder="Search titles…" value={query} onChange={e=>setQuery(e.target.value)}/><div className="max-h-72 overflow-auto">{result.data?.items.map(item=>{const member=item.collections?.some(c=>c.id===collection.id);return <label key={item.id} className="flex items-center gap-2 py-2"><input type="checkbox" checked={member||selected.includes(item.id)} disabled={busy||member||(!selected.includes(item.id)&&selected.length>=100)} onChange={e=>setSelected(v=>e.target.checked?[...v,item.id]:v.filter(id=>id!==item.id))}/><span className="truncate">{item.title}</span><small>{member?'Already added':item.type}</small></label>;})}</div>{result.loading&&<p>Loading…</p>}{result.error&&<p role="alert">{result.error}<button onClick={result.retry}>Retry</button></p>}{error&&<p role="alert">{error}</p>}<div className="flex gap-2"><button className="library-button" disabled={page===0} onClick={()=>setPage(page-1)}>Previous</button><button className="library-button" disabled={!result.data||page+1>=result.data.totalPages} onClick={()=>setPage(page+1)}>Next</button><button className="library-button ml-auto" disabled={busy||!selected.length} onClick={()=>void apply()}>{busy?'Adding…':`Add ${selected.length} selected`}</button></div></div></AppModal>,document.body);
+}

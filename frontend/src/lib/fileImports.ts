@@ -70,8 +70,9 @@ export function convertText(kind: ImportKind, text: string): { doc: JSONContent;
 }
 
 /** Retrying the same ID returns the original creation, even after a lost response. */
-export async function importResource(id: string, file: File, doc?: JSONContent): Promise<Resource> {
+export async function importResource(id: string, file: File, doc?: JSONContent, collectionId?: string): Promise<Resource> {
   const body = new FormData();
+  if(collectionId) body.append('collectionId',collectionId);
   body.append('title', doc ? noteTitle(file.name) : file.name);
   if (doc) body.append('content', JSON.stringify(doc)); else body.append('file', file);
   const { data } = await api.put<Resource>('/resources/imports/' + id, body);
@@ -79,7 +80,7 @@ export async function importResource(id: string, file: File, doc?: JSONContent):
 }
 
 export type ImportRow = { id: string; file: File; kind: ImportKind; asNote: boolean; doc?: JSONContent; warnings: string[]; parseError?: string; status: 'ready' | 'pending' | 'done' | 'failed'; error?: string; started?: boolean };
-export type ImportSession = { rows: ImportRow[]; target?: ImportTarget; mode?: 'markdown' | 'csv' | 'link' };
+export type ImportSession = { collection?: {id:string;name:string}; rows: ImportRow[]; target?: ImportTarget; mode?: 'markdown' | 'csv' | 'link' };
 export async function prepareImport(files: File[], target?: ImportTarget, mode?: ImportSession['mode']): Promise<ImportSession> {
   const rows = await Promise.all(files.map(async file => {
     const kind = mode === 'link' ? 'binary' : mode ?? classifyFile(file.name, file.type);

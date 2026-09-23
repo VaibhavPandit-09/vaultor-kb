@@ -3,7 +3,7 @@ import { notifyResourceChange } from './resourceEvents';
 import { useRetainedQuery } from './useRetainedQuery';
 export type OrganizationKind = 'collection' | 'tag';
 export type OrganizationItem = { id: string; name: string; count: number; favorite?: boolean; color?: string };
-export type OrganizationPage = { items: OrganizationItem[]; page: number; totalPages: number; totalItems: number };
+export type OrganizationPage = { exactMatch?: boolean; items: OrganizationItem[]; page: number; totalPages: number; totalItems: number };
 export function organizationChanged(entity: OrganizationKind | 'all' = 'all', resourceIds?: string[]) {
   notifyResourceChange({ kind: 'organization', entity, resourceIds });
 }

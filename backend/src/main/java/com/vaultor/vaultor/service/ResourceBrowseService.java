@@ -43,13 +43,14 @@ public class ResourceBrowseService {
         long total = Objects.requireNonNull(jdbc.queryForObject("select count(*) from resources r" + where, Long.class, args.toArray()));
         args.add(size); args.add((long)page * size);
         var items = jdbc.query("select r.id,r.type,r.title,r.mime_type,r.size,r.created_at,r.updated_at,r.last_opened_at,r.favorite from resources r" + where + " order by " + order + " limit ? offset ?",
-            (rs, n) -> new ResourceSummary(rs.getString("id"),rs.getString("type"),rs.getString("title"),rs.getString("mime_type"),rs.getObject("size") == null ? null : rs.getLong("size"),date(rs,"created_at"),date(rs,"updated_at"),date(rs,"last_opened_at"),new ArrayList<>(),rs.getBoolean("favorite")), args.toArray());
+            (rs, n) -> new ResourceSummary(rs.getString("id"),rs.getString("type"),rs.getString("title"),rs.getString("mime_type"),rs.getObject("size") == null ? null : rs.getLong("size"),date(rs,"created_at"),date(rs,"updated_at"),date(rs,"last_opened_at"),new ArrayList<>(),rs.getBoolean("favorite"),new ArrayList<>()), args.toArray());
         if (!items.isEmpty()) {
             var byId = new HashMap<String,ResourceSummary>(); items.forEach(item -> byId.put(item.id(),item));
             String placeholders = String.join(",", Collections.nCopies(items.size(), "?"));
             jdbc.query("select rt.resource_id,t.id,t.name,t.color from resource_tags rt join tags t on t.id=rt.tag_id where rt.resource_id in (" + placeholders + ") order by t.name,t.id", rs -> {
                 byId.get(rs.getString("resource_id")).tags().add(new TagDto(rs.getString("id"),rs.getString("name"),rs.getString("color")));
             }, items.stream().map(ResourceSummary::id).toArray());
+            jdbc.query("select rc.resource_id,c.id,c.name from resource_collections rc join collections c on c.id=rc.collection_id where rc.resource_id in (" + placeholders + ") order by c.normalized_name,c.id", rs -> { byId.get(rs.getString(1)).collections().add(new CollectionRef(rs.getString(2),rs.getString(3))); }, items.stream().map(ResourceSummary::id).toArray());
         }
         return new PageDto<>(items,page,size,total,(int)((total+size-1)/size));
     }

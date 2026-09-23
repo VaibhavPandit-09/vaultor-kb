@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, FileText, PanelRight, Paperclip, ScanText, X } from 'lucide-react';
+import ResourceCollections from './ResourceCollections';
+import PinButton from './PinButton';
+import type { OrganizationItem } from '../lib/organization';
 import FilePreview from './FilePreview';
 import type { Resource } from '../types';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../lib/escape/escape';
@@ -8,6 +11,7 @@ import { getGlassPanelStyle, getOverlayStyle } from '../lib/transparency';
 
 interface PreviewLayerProps {
   resource: Resource;
+  onCollection: (item:OrganizationItem)=>void;
   mode: 'side' | 'modal';
   animationMode: 'snappy' | 'smooth';
   overrideActive: boolean;
@@ -20,6 +24,7 @@ interface PreviewLayerProps {
 
 export default function PreviewLayer({
   resource,
+  onCollection,
   mode,
   animationMode,
   overrideActive,
@@ -55,7 +60,7 @@ export default function PreviewLayer({
 
   const chrome = (
     <>
-      <div className="flex h-12 items-center justify-between gap-3 border-b border-white/5 px-3">
+      <div className="flex min-h-12 flex-wrap items-center justify-between gap-3 py-2 border-b border-white/5 px-3">
         <div className="flex min-w-0 items-center gap-2">
           <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-background text-slate-500">
             {resource.type === 'note' ? <FileText size={13} /> : <Paperclip size={13} />}
@@ -67,6 +72,7 @@ export default function PreviewLayer({
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-1.5">
+          <PinButton id={resource.id} name={resource.title} favorite={resource.favorite}/>
           <button
             onClick={onToggleMode}
             className="inline-flex h-8 items-center gap-1 rounded-lg border border-white/5 bg-background px-2.5 text-[11px] font-medium text-slate-500 transition-colors hover:text-primary"
@@ -97,6 +103,7 @@ export default function PreviewLayer({
         </div>
       </div>
 
+      <div className="px-3 border-b border-border"><ResourceCollections id={resource.id} onOpen={onCollection}/></div>
       {overrideActive && (
         <div className="px-3 py-1 text-[11px] text-slate-500">
           {mode === 'modal' ? 'Floating override' : 'Side override'}

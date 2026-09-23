@@ -12,6 +12,7 @@ export interface Resource {
   type: ResourceType;
   title: string;
   favorite?: boolean;
+  collections?: {id: string; name: string}[];
   content?: JSONContent | string | null;
   filePath?: string | null;
   mimeType?: string | null;
