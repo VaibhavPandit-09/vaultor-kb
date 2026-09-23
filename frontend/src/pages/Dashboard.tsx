@@ -1,3 +1,8 @@
+import { affectsScope, notifyResourceChange, subscribeResourceChanges } from '../lib/resourceEvents';
+import { RecencyRecorder } from '../lib/recencyRecorder';
+import { organizationChanged } from '../lib/organization';
+import CollectionShortcuts from '../components/CollectionShortcuts';
+import type { OrganizationItem } from '../lib/organization';
 import { createPortal, flushSync } from 'react-dom';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
@@ -7,12 +12,14 @@ import {
   Moon,
   Trash2,
   Database,
+  Library,
+  Clock,
+  Star,
   UploadCloud,
   DownloadCloud,
   X,
   FileText,
   Paperclip,
-  ChevronDown,
   Upload,
   AlertTriangle,
   Loader2,
@@ -21,7 +28,11 @@ import {
   Settings2,
   Palette,
 } from 'lucide-react';
-import api, { listResources } from '../lib/api';
+import api from '../lib/api';
+import LibraryView, { type LibrarySection } from '../components/LibraryView';
+import { browseResources, resourcesChanged } from '../lib/resourceBrowse';
+import { useResourcePage } from '../lib/useResourcePage';
+import { resourceKind } from '../lib/resourceKinds';
 import SaveIndicator from '../components/SaveIndicator';
 import { registerCloseNoteShortcut } from '../lib/closeNoteShortcut';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -58,7 +69,6 @@ import {
   removeResourceFromState,
   removeSelectedTag,
   setCurrentResourceId,
-  setTypeFilter,
   toggleSelectedTag,
 } from '../state/store';
 import { useAppDispatch, useAppSelector } from '../state/hooks';
@@ -67,7 +77,7 @@ import { useSettings } from '../lib/settings';
 import { generateTagColor, getTagColorInputValue, getTagPillStyle } from '../lib/tagColors';
 import { getGlassPanelStyle, getOverlayStyle } from '../lib/transparency';
 
-type TypeFilter = 'all' | 'note' | 'file';
+
 
 interface DeleteModalState {
   id: string;
@@ -99,6 +109,16 @@ export default function Dashboard() {
   const navigation = useAppSelector((state) => state.vault.navigation);
   const filters = useAppSelector((state) => state.vault.filters);
 
+  const [collection, setCollection] = useState<OrganizationItem | null>(null);
+  const [libraryVisible, setLibraryVisible] = useState(true);
+  const [librarySection, setLibrarySection] = useState<LibrarySection>('library');
+  const favoritePage = useResourcePage({ favorites: true, size: 12, sort: 'title' });
+  const [sidebarError, setSidebarError] = useState('');
+  const [tagsError, setTagsError] = useState('');
+  const [recencyError, setRecencyError] = useState('');
+  const [sidebarReady, setSidebarReady] = useState(false);
+  const [recency] = useState(() => new RecencyRecorder((id, signal) => api.post('/resources/' + id + '/open', null, {signal, timeout: 8000, backgroundDiagnostic: true}), setRecencyError));
+  useEffect(() => () => recency.reset(), [recency]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [resourceDetails, setResourceDetails] = useState<Record<string, Resource>>({});
@@ -109,7 +129,6 @@ export default function Dashboard() {
   const [loadingResourceIds, setLoadingResourceIds] = useState<string[]>([]);
   const [sidebarLoading, setSidebarLoading] = useState(false);
 
-  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [tagSearch, setTagSearch] = useState('');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -155,8 +174,6 @@ export default function Dashboard() {
   const commandPalettePreviewRef = useRef<PreviewSnapshot | null>(null);
   const floatingSidebarHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleEditDismissRef = useRef<'save' | 'cancel' | null>(null);
-  const typeDropdownRef = useRef<HTMLDivElement>(null);
-  const typeDropdownMenuRef = useRef<HTMLDivElement>(null);
   const tagPickerRef = useRef<HTMLDivElement>(null);
   const tagPickerMenuRef = useRef<HTMLDivElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
@@ -175,7 +192,6 @@ export default function Dashboard() {
   const localSettings = settings.local;
   const smoothAnimations = localSettings.animationMode === 'smooth';
   const uiTransparency = localSettings.uiTransparency;
-  const { position: typeDropdownPosition } = useAnchoredPortalPosition(showTypeDropdown, typeDropdownRef, { width: 'anchor', offset: 6 });
   const { position: tagPickerPosition } = useAnchoredPortalPosition(Boolean(tagPickerOpenNoteId), tagPickerRef, { width: 288, minWidth: 288, offset: 8 });
   const effectivePreviewMode = previewOverrideMode ?? localSettings.previewMode;
   const isFloatingSidebarMode = localSettings.sidebarMode === 'floating';
@@ -231,13 +247,6 @@ export default function Dashboard() {
   }, [tagInputValue, tagPickerResource?.tags]);
   const activeResourceLoading = Boolean(currentResourceId && !selectedResource && loadingResourceIds.includes(currentResourceId));
   const previewResourceLoading = Boolean(previewResourceId && !previewResource && loadingResourceIds.includes(previewResourceId));
-
-  useEscapeLayer({
-    id: 'dashboard-type-filter',
-    active: showTypeDropdown,
-    priority: ESCAPE_PRIORITIES.popover,
-    close: () => setShowTypeDropdown(false),
-  });
 
   const closeTagPicker = useCallback(() => {
     setTagPickerOpenNoteId(null);
@@ -314,29 +323,6 @@ export default function Dashboard() {
   }, [tagPickerOpenNoteId]);
 
   useEffect(() => {
-    if (!showTypeDropdown) {
-      return;
-    }
-
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target;
-      if (
-        target instanceof Node &&
-        (typeDropdownRef.current?.contains(target) || typeDropdownMenuRef.current?.contains(target))
-      ) {
-        return;
-      }
-
-      setShowTypeDropdown(false);
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-    };
-  }, [showTypeDropdown]);
-
-  useEffect(() => {
     if (!tagPickerOpenNoteId) {
       return;
     }
@@ -373,18 +359,32 @@ export default function Dashboard() {
     setTagPickerSelectedIndex(0);
   }, [tagInputValue, tagPickerOpenNoteId]);
 
-  const fetchData = useCallback(async () => {
-    setSidebarLoading(true);
+  const browseGeneration = useRef(0), tagGeneration = useRef(0);
+  const recentRequest = useRef<AbortController | null>(null);
+  const fetchRecent = useCallback(async () => {
+    const generation = ++browseGeneration.current;
+    recentRequest.current?.abort();
+    const controller = new AbortController(); recentRequest.current = controller;
+    setSidebarLoading(true); setSidebarError('');
     try {
-      const [resData, tagsData] = await Promise.all([listResources(), api.get('/tags')]);
-      setResources(resData);
-      setTags(tagsData.data || []);
+      const data = await browseResources({size:12,sort:'recent'},controller.signal);
+      if (generation !== browseGeneration.current || controller.signal.aborted) return;
+      setResources(data.items); setSidebarReady(true);
     } catch (error) {
-      console.error(error);
+      if (generation === browseGeneration.current && !controller.signal.aborted) {setSidebarError('Could not refresh Recent.'); console.error(error);}
     } finally {
-      setSidebarLoading(false);
+      if (generation === browseGeneration.current) setSidebarLoading(false);
     }
   }, []);
+  const fetchTags = useCallback(async () => {
+    const generation = ++tagGeneration.current;
+    try {
+      const {data} = await api.get('/tags', {backgroundDiagnostic:true});
+      if (generation === tagGeneration.current) {setTags(data || []);setTagsError('');}
+    } catch { if (generation === tagGeneration.current) setTagsError('Could not refresh tags.'); }
+  }, []);
+  const fetchData = useCallback(async () => { await Promise.all([fetchRecent(),fetchTags()]); }, [fetchRecent,fetchTags]);
+  const cancelSidebarRequests = useCallback(() => { recentRequest.current?.abort();browseGeneration.current++;tagGeneration.current++; }, []);
 
   const fetchResourceDetails = useCallback(async (id: string) => {
     setLoadingResourceIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -411,8 +411,8 @@ export default function Dashboard() {
   }, []);
 
   const markOpened = useCallback((id: string) => {
-    api.post(`/resources/${id}/open`).catch(() => {});
-  }, []);
+    recency.open(id);
+  }, [recency]);
 
   const dismissPreview = useCallback((options?: { restoreFocus?: boolean; clearSelection?: boolean }) => {
     setPreviewResourceId(null);
@@ -443,7 +443,8 @@ export default function Dashboard() {
 
   const openResourceById = useCallback(async (id: string, options?: { focus?: boolean }) => {
     try { await saves.flushAll(); } catch { return; }
-    const resourceMeta = resources.find((resource) => resource.id === id);
+    const resourceMeta = resourceDetails[id] ?? resources.find((resource) => resource.id === id) ?? await fetchResourceDetails(id);
+    if (!resourceMeta) return;
     if (resourceMeta && isPreviewResource(resourceMeta.type)) {
       openPreview(resourceMeta);
       dispatch(openResourceAction(id));
@@ -451,7 +452,8 @@ export default function Dashboard() {
       return;
     }
 
-    if (resourceMeta?.type === 'note') {
+    if (resourceKind(resourceMeta.type).mode === 'editor') {
+      setLibraryVisible(false);
       setOpenNotes((prev) => {
         return upsertOpenNote(prev, id, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior);
       });
@@ -465,9 +467,10 @@ export default function Dashboard() {
 
     dispatch(openResourceAction(id));
     markOpened(id);
-  }, [dismissPreview, dispatch, fetchResourceDetails, markOpened, openPreview, resources, saves, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
+  }, [dismissPreview, dispatch, fetchResourceDetails, markOpened, openPreview, resources, resourceDetails, saves, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
 
   const activateOpenNote = useCallback((id: string, options?: { focus?: boolean }) => {
+    setLibraryVisible(false);
     setActiveNoteId(id);
     if (options?.focus) {
       setFocusRestoreNoteId(id);
@@ -531,17 +534,16 @@ export default function Dashboard() {
     }
   }, [commandPaletteFocus, restoreCommandPalettePreview]);
 
-  const highlightCommandPalettePreviewResource = useCallback((resourceId: string | null) => {
+  const highlightCommandPalettePreviewResource = useCallback((previewTarget: Resource | null) => {
     if (!commandPaletteOpen) {
       return;
     }
 
-    if (!resourceId) {
+    if (!previewTarget) {
       restoreCommandPalettePreview(commandPalettePreviewRef.current);
       return;
     }
 
-    const previewTarget = resources.find((resource) => resource.id === resourceId);
     if (!previewTarget || !isPreviewResource(previewTarget.type)) {
       restoreCommandPalettePreview(commandPalettePreviewRef.current);
       return;
@@ -554,7 +556,7 @@ export default function Dashboard() {
     if (!resourceDetails[previewTarget.id]) {
       void fetchResourceDetails(previewTarget.id);
     }
-  }, [commandPaletteOpen, fetchResourceDetails, resourceDetails, resources, restoreCommandPalettePreview]);
+  }, [commandPaletteOpen, fetchResourceDetails, resourceDetails, restoreCommandPalettePreview]);
 
   const openShortcutsModal = useCallback(() => {
     shortcutsModalFocus.captureFocus();
@@ -625,6 +627,7 @@ export default function Dashboard() {
     try { await saves.flushAll(); } catch { return; }
     if (navigation.currentIndex <= 0) return;
     const previousId = navigation.history[navigation.currentIndex - 1];
+    setLibraryVisible(false);
     dispatch(navigateBack());
     if (previousId) markOpened(previousId);
   }, [dispatch, markOpened, navigation.currentIndex, navigation.history, saves]);
@@ -633,6 +636,7 @@ export default function Dashboard() {
     try { await saves.flushAll(); } catch { return; }
     if (navigation.currentIndex >= navigation.history.length - 1) return;
     const nextId = navigation.history[navigation.currentIndex + 1];
+    setLibraryVisible(false);
     dispatch(navigateForward());
     if (nextId) markOpened(nextId);
   }, [dispatch, markOpened, navigation.currentIndex, navigation.history, saves]);
@@ -646,17 +650,18 @@ export default function Dashboard() {
         title: 'Untitled Note',
         content: { type: 'doc', content: [] },
       });
-      await fetchData();
+      resourcesChanged([data.id], true);
       openResourceById(data.id);
     } catch (error) {
       console.error(error);
     } finally {
       setCreateNotePending(false);
     }
-  }, [createNotePending, fetchData, openResourceById]);
+  }, [createNotePending, openResourceById]);
 
   const syncUploadedResource = useCallback((resource: Resource) => {
-    setResources((current) => upsertResourceInList(current, resource));
+    setResources((current) => upsertResourceInList(current, resource).slice(0, 12));
+    resourcesChanged([resource.id], true);
     setResourceDetails((current) => ({
       ...current,
       [resource.id]: resource,
@@ -686,8 +691,22 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    void fetchData();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribe = subscribeResourceChanges(change => {
+      if (affectsScope(change,'recent')) {
+        clearTimeout(timer); recentRequest.current?.abort(); browseGeneration.current++;
+        if (change.kind === 'opened') {
+          if(change.phase === 'settled') timer=setTimeout(() => void fetchRecent(),150);
+        } else {
+          if(change.kind === 'workspace') {setResources([]);setSidebarReady(false);}
+          void fetchRecent();
+        }
+      }
+      if(affectsScope(change,'tags')) void fetchTags();
+    });
+    return () => {unsubscribe();clearTimeout(timer);cancelSidebarRequests();};
+  }, [fetchData,fetchRecent,fetchTags,cancelSidebarRequests]);
 
   useEffect(() => {
     void saves.flushAll().then(() => setOpenNotes((prev) => limitOpenNotes(prev, workspaceSettings.maxOpenNotes))).catch(() => {});
@@ -714,20 +733,17 @@ export default function Dashboard() {
       return;
     }
 
-    void fetchResourceDetails(currentResourceId);
-    const resourceMeta = resources.find(resource => resource.id === currentResourceId);
-
-    if (resourceMeta?.type === 'note') {
-      setActiveNoteId(currentResourceId);
-      void fetchBacklinks(currentResourceId);
-      setOpenNotes((prev) => {
-        return upsertOpenNote(prev, currentResourceId, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior);
-      });
-      return;
-    }
-
-    setBacklinks([]);
-  }, [currentResourceId, fetchBacklinks, fetchResourceDetails, resources, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
+    let active = true;
+    void fetchResourceDetails(currentResourceId).then(resource => {
+      if (!active || !resource) return;
+      if (resource.type === 'note') {
+        setActiveNoteId(currentResourceId);
+        void fetchBacklinks(currentResourceId);
+        setOpenNotes(previous => upsertOpenNote(previous, currentResourceId, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior));
+      } else setBacklinks([]);
+    });
+    return () => { active = false; };
+  }, [currentResourceId, fetchBacklinks, fetchResourceDetails, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
 
   useEffect(() => {
     if (activeResource?.type === 'note') {
@@ -821,9 +837,9 @@ export default function Dashboard() {
   }, [closeActiveNote, handleBackNavigation, handleForwardNavigation, openCommandPalette, openShortcutsModal, resolvedShortcuts, switchNote, toggleSidebar]);
 
   useEffect(() => {
-    if (!activeNoteId) return;
+    if (!activeNoteId || libraryVisible) return;
     return registerCloseNoteShortcut(resolvedShortcuts.closeActiveNote, closeActiveNote);
-  }, [activeNoteId, resolvedShortcuts.closeActiveNote, closeActiveNote]);
+  }, [activeNoteId, resolvedShortcuts.closeActiveNote, closeActiveNote, libraryVisible]);
 
   useEffect(() => {
     if (!replaceLinkModal || !replaceSearch.trim()) {
@@ -857,7 +873,7 @@ export default function Dashboard() {
     event?.stopPropagation();
     try {
       const { data: linkedFrom } = await api.get(`/resources/${id}/backlinks`);
-      const resource = resources.find((item) => item.id === id);
+      const resource = resourceDetails[id] ?? resources.find((item) => item.id === id) ?? await fetchResourceDetails(id);
       setDeleteModal({
         id,
         title: resource?.title || 'Resource',
@@ -866,7 +882,7 @@ export default function Dashboard() {
     } catch (error) {
       console.error(error);
     }
-  }, [resources]);
+  }, [resources, resourceDetails, fetchResourceDetails]);
 
   const executeDelete = async (id: string) => {
     setDeletePending(true);
@@ -893,6 +909,7 @@ export default function Dashboard() {
         dispatch(setCurrentResourceId(nextActiveId));
       }
       setDeleteModal(null);
+      resourcesChanged(undefined, true);
     } catch (error) {
       console.error(error);
     } finally {
@@ -907,7 +924,8 @@ export default function Dashboard() {
       await saves.flushAll();
       await api.post(`/resources/${replaceLinkModal.oldId}/replace-links`, { newResourceId: newId });
       saves.clear();
-      const fresh = await listResources();
+      const ids = [...new Set([...openNotes.map(note => note.id), newId])].filter(id => id !== replaceLinkModal.oldId);
+      const fresh = await Promise.all(ids.map(id => api.get<Resource>(`/resources/${id}`).then(response => response.data)));
       setResourceDetails(Object.fromEntries(fresh.map(resource => [resource.id, resource])));
       setOpenNotes(notes => notes.filter(note => note.id !== replaceLinkModal.oldId));
       dispatch(removeResourceFromState(replaceLinkModal.oldId));
@@ -915,7 +933,7 @@ export default function Dashboard() {
       setDeleteModal(null);
       setReplaceSearch('');
       setReplaceResults([]);
-      await fetchData();
+      resourcesChanged(undefined, true);
       if (currentResourceId === replaceLinkModal.oldId) {
         openResourceById(newId);
       }
@@ -927,7 +945,7 @@ export default function Dashboard() {
   };
 
   const renameResource = useCallback(async (resourceId: string, title: string) => {
-    const resource = resourceDetails[resourceId] ?? resources.find((entry) => entry.id === resourceId) ?? null;
+    const resource = resourceDetails[resourceId] ?? await fetchResourceDetails(resourceId);
     if (!resource || resource.type !== 'note') {
       return;
     }
@@ -940,8 +958,8 @@ export default function Dashboard() {
     const draft = saves.latest(resourceId);
     saves.enqueue(resourceId, { title, content: draft?.content ?? parseNoteContent(resource.content) }, 0);
     await saves.flush(resourceId);
-    void fetchData();
-  }, [fetchData, resourceDetails, resources, saves]);
+    resourcesChanged([resourceId]);
+  }, [fetchResourceDetails, resourceDetails, saves]);
 
   const startTitleEditing = useCallback((noteId: string, title: string) => {
     activateOpenNote(noteId);
@@ -998,7 +1016,7 @@ export default function Dashboard() {
       await api.post(`/resources/${resourceId}/tags/${encodeURIComponent(normalizedTagName)}`);
       await fetchResourceDetails(resourceId);
       await fetchBacklinks(resourceId);
-      await fetchData();
+      organizationChanged('tag',[resourceId]);
       return true;
     } catch (error) {
       console.error(error);
@@ -1027,6 +1045,7 @@ export default function Dashboard() {
       setTags((current) => replaceTagInList(current, nextTag));
       setResources((current) => replaceTagInResources(current, nextTag));
       setResourceDetails((current) => replaceTagInResourceMap(current, nextTag));
+      organizationChanged('tag');
     } catch (error) {
       console.error(error);
       await fetchData();
@@ -1059,7 +1078,7 @@ export default function Dashboard() {
       await api.delete(`/resources/${activeResource.id}/tags/${encodeURIComponent(tagName.trim())}`);
       void fetchResourceDetails(activeResource.id);
       void fetchBacklinks(activeResource.id);
-      void fetchData();
+      organizationChanged('tag',[activeResource.id]);
     } catch (error) {
       console.error(error);
     }
@@ -1071,7 +1090,7 @@ export default function Dashboard() {
     try {
       await api.delete(`/tags/${tagDeleteModal.id}`);
       dispatch(removeSelectedTag(tagDeleteModal.name));
-      await fetchData();
+      organizationChanged('tag');
       if (activeResource) {
         await fetchResourceDetails(activeResource.id);
         if (activeResource.type === 'note') {
@@ -1121,16 +1140,10 @@ export default function Dashboard() {
     saves.clear();
     setOpenNotes([]); setActiveNoteId(null); setResourceDetails({}); dismissPreview({ restoreFocus: false });
     dispatch(setCurrentResourceId(null));
-    await fetchData(); window.dispatchEvent(new Event('vaultor:settings-refresh'));
+    recency.reset();setRecencyError('');
+    setCollection(null); setLibraryVisible(true); notifyResourceChange({kind:'workspace'});
+    window.dispatchEvent(new Event('vaultor:settings-refresh'));
   };
-
-  const filteredResources = useMemo(() => {
-    return resources.filter((resource) => {
-      const matchesType = filters.typeFilter === 'all' || resource.type === filters.typeFilter;
-      const matchesTags = filters.selectedTags.length === 0 || filters.selectedTags.every((tagName) => resource.tags?.some((tag) => tag.name.toLowerCase() === tagName.toLowerCase()));
-      return matchesType && matchesTags;
-    });
-  }, [filters.selectedTags, filters.typeFilter, resources]);
 
   const filteredTags = tags.filter((tag) => tag.name.toLowerCase().includes(tagSearch.toLowerCase()));
   const openWorkspaceNotes = useMemo(() => openNotes.map((note) => {
@@ -1182,54 +1195,21 @@ export default function Dashboard() {
     workspaceResource,
   ]);
 
-  const typeLabels: Record<TypeFilter, string> = { all: 'All', note: 'Notes', file: 'Files' };
+  useEffect(() => {
+    return subscribeResourceChanges(change => {
+      if(change.kind !== 'organization' || change.entity === 'collection') return;
+      for(const note of openNotes) if(!change.resourceIds || change.resourceIds.includes(note.id)) void fetchResourceDetails(note.id);
+    });
+  }, [openNotes,fetchResourceDetails]);
+
+  const showLibrary = (section: LibrarySection) => { setCollection(null); setLibrarySection(section); setLibraryVisible(true); dismissPreview({ restoreFocus: false }); };
   const sidebarContent = (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="px-3 py-3">
-        <div ref={typeDropdownRef} className="relative">
-          <button
-            onClick={() => setShowTypeDropdown((prev) => !prev)}
-            className="flex w-full items-center justify-between gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800"
-          >
-            <span>Type: {typeLabels[filters.typeFilter]}</span>
-            <ChevronDown size={12} />
-          </button>
-          {showTypeDropdown && typeDropdownPosition && createPortal(
-            <div
-              ref={typeDropdownMenuRef}
-              className="overflow-hidden rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] py-1 shadow-[0_18px_36px_rgba(15,23,42,0.14)]"
-              style={{
-                position: 'fixed',
-                top: typeDropdownPosition.top,
-                left: typeDropdownPosition.left,
-                width: typeDropdownPosition.width,
-                maxHeight: typeDropdownPosition.maxHeight,
-                transform: typeDropdownPosition.placement === 'top' ? 'translateY(-100%)' : undefined,
-                zIndex: 1100,
-              }}
-            >
-              {(['all', 'note', 'file'] as TypeFilter[]).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => {
-                    dispatch(setTypeFilter(type));
-                    setShowTypeDropdown(false);
-                  }}
-                  className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
-                    filters.typeFilter === type
-                      ? 'bg-primary/10 font-semibold text-primary'
-                      : 'text-[var(--text-primary)] hover:bg-[var(--surface-3)]'
-                  }`}
-                >
-                  {typeLabels[type]}
-                </button>
-              ))}
-            </div>,
-            document.body,
-          )}
-        </div>
+      <div className="px-3 py-3 space-y-1">
+        <button className="sidebar-nav" onClick={openCommandPalette}><Search size={16} />Search workspace<span className="ml-auto text-xs opacity-60">{resolvedShortcuts.commandPalette.replace('Mod', isMac ? '⌘' : 'Ctrl').replaceAll('+', ' ')}</span></button>
+        {([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'favorites', label: 'Favorites', Icon: Star }] as const).map(({ id, label, Icon }) => <button key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</button>)}
+        {openNotes.length > 0 && <button className="sidebar-nav" onClick={() => { setLibraryVisible(false); setFocusRestoreNoteId(activeNoteId); }}><FileText size={16} />Open notes<span className="ml-auto text-xs opacity-60">{openNotes.length}</span></button>}
       </div>
-
       <div className="flex gap-1.5 px-3 pb-2">
         <button
           onClick={handleCreateNote}
@@ -1249,6 +1229,7 @@ export default function Dashboard() {
         </button>
       </div>
 
+      {tagsError && <button className="sidebar-nav text-xs" onClick={() => void fetchTags()}>{tagsError} Retry</button>}
       {filters.selectedTags.length > 0 && (
         <div className="flex flex-wrap items-center gap-1 px-3 pb-2">
           {filters.selectedTags.map((tagName) => (
@@ -1267,55 +1248,17 @@ export default function Dashboard() {
 
       <div className="border-t border-border" />
 
-      <div className="px-4 py-1.5 text-[10px] font-medium text-slate-400">
-        {filteredResources.length} resource{filteredResources.length === 1 ? '' : 's'}
+      <div className="flex-1 overflow-y-auto py-2" style={{overflowAnchor:'none'}}>
+        <CollectionShortcuts onOpen={item => {showLibrary('library');setCollection(item);}} />
+        <p className="sidebar-section-label">Favorites <button onClick={() => showLibrary('favorites')}>View all</button></p>
+        {favoritePage.loading ? <p className="px-4 text-xs opacity-60">Loading…</p> : !favoritePage.data?.items.length ? <p className="px-4 py-2 text-xs text-[var(--text-tertiary)]">Star resources in the Library for quick access.</p> : favoritePage.data.items.map(resource => <SidebarItem key={resource.id} resource={resource} isActive={!libraryVisible && currentResourceId === resource.id} onClick={() => void openResourceById(resource.id)} onDelete={event => void handleDeleteResource(resource.id, event)} />)}
+        {favoritePage.error && <button className="sidebar-nav text-xs" onClick={favoritePage.retry}>Could not refresh favorites · Retry</button>}
+        <p className="sidebar-section-label">Recent <button onClick={() => showLibrary('recent')}>View all</button></p>
+        {sidebarLoading && !sidebarReady ? <p className="px-4 text-xs opacity-60">Loading…</p> : resources.map(resource => <SidebarItem key={resource.id} resource={resource} isActive={!libraryVisible && currentResourceId === resource.id} onClick={() => void openResourceById(resource.id)} onDelete={event => void handleDeleteResource(resource.id, event)} />)}
+        {sidebarError && <button className="sidebar-nav text-xs" onClick={() => void fetchRecent()}>{sidebarError} Retry</button>}
+        {recencyError && <button className="sidebar-nav text-xs" onClick={() => recency.retry()}>{recencyError} Retry</button>}
       </div>
-
-      <div className="flex-1 overflow-y-auto py-0.5">
-        {sidebarLoading ? (
-          <div className="space-y-2 px-3 py-3">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-9 animate-pulse rounded-xl bg-background" />
-            ))}
-          </div>
-        ) : filteredResources.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-400">No resources found</div>
-        ) : (
-          <>
-            {filteredResources.filter((resource) => resource.type === 'note').length > 0 && filters.typeFilter !== 'file' && (
-              <>
-                <div className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400/70">Notes</div>
-                {filteredResources.filter((resource) => resource.type === 'note').map((resource) => (
-                  <SidebarItem
-                    key={resource.id}
-                    resource={resource}
-                    isActive={currentResourceId === resource.id}
-                    onClick={() => openResourceById(resource.id)}
-                    onDelete={(event) => handleDeleteResource(resource.id, event)}
-                  />
-                ))}
-              </>
-            )}
-            {filteredResources.filter((resource) => resource.type === 'file').length > 0 && filters.typeFilter !== 'note' && (
-              <>
-                <div className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400/70">Files</div>
-                {filteredResources.filter((resource) => resource.type === 'file').map((resource) => (
-                  <SidebarItem
-                    key={resource.id}
-                    resource={resource}
-                    isActive={currentResourceId === resource.id}
-                    onClick={() => openResourceById(resource.id)}
-                    onDelete={(event) => handleDeleteResource(resource.id, event)}
-                  />
-                ))}
-              </>
-            )}
-          </>
-        )}
-      </div>
-
       <div className="border-t border-border" />
-
       <div className="flex max-h-40 flex-col px-3 py-2">
         <div className="mb-1.5 flex items-center justify-between">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tags</span>
@@ -1336,7 +1279,7 @@ export default function Dashboard() {
               className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-[0.01em] transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
               style={getTagPillStyle(tag.color, localSettings.theme)}
             >
-              <button onClick={() => dispatch(toggleSelectedTag(tag.name))} className="cursor-pointer text-inherit">{tag.name}</button>
+              <button onClick={() => { dispatch(toggleSelectedTag(tag.name)); setLibraryVisible(true); }} className="cursor-pointer text-inherit">{tag.name}</button>
               <label
                 className="relative inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-inherit opacity-55 transition-opacity hover:opacity-100"
                 title="Change color"
@@ -1456,7 +1399,7 @@ export default function Dashboard() {
             <div className="max-h-44 space-y-2 overflow-y-auto">
               {deleteModal?.backlinks.map((resource) => (
                 <div key={resource.id} className="flex items-center gap-3 rounded-xl bg-background px-3 py-2 text-sm">
-                  {resource.type === 'note' ? <FileText size={14} className="text-blue-500" /> : <Paperclip size={14} className="text-green-500" />}
+                  <FileText size={14} className="text-slate-400" />
                   <span className="truncate">{resource.title}</span>
                 </div>
               ))}
@@ -1586,7 +1529,9 @@ export default function Dashboard() {
           </>
         )}
 
-        <main className="min-w-0 flex-1">
+        <main className="min-w-0 flex-1 relative">
+          <div className="h-full" hidden={!libraryVisible}><LibraryView collection={collection} onCollection={setCollection} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); setFocusRestoreNoteId(activeNoteId); }} onOpen={id => void openResourceById(id)} /></div>
+          <div className="h-full" hidden={libraryVisible}>
           {openWorkspaceNotes.length > 0 ? (
             <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
               {openWorkspaceNotes.map((note, index) => (
@@ -1794,9 +1739,9 @@ export default function Dashboard() {
                         onRetrySave={() => void saves.flush(note.id).catch(() => {})}
                         content={parseNoteContent(note.resource.content)}
                         autosaveDelay={0}
-                        isActive={note.id === activeNoteId}
-                        interactionLocked={commandPaletteOpen}
-                        shouldRestoreFocus={focusRestoreNoteId === note.id}
+                        isActive={!libraryVisible && note.id === activeNoteId}
+                        interactionLocked={commandPaletteOpen || libraryVisible}
+                        shouldRestoreFocus={!libraryVisible && focusRestoreNoteId === note.id}
                         savedSelection={note.selection ?? null}
                         onActivate={(noteId) => activateOpenNote(noteId)}
                         onFocusRestored={handleNoteFocusRestored}
@@ -1852,6 +1797,7 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+          </div>
         </main>
       </div>
 
@@ -2162,20 +2108,18 @@ function getWorkspacePaneClass({
 }
 
 function SidebarItem({ resource, isActive, onClick, onDelete }: { resource: Resource; isActive: boolean; onClick: () => void; onDelete: (event: React.MouseEvent) => void }) {
+  const Icon = resourceKind(resource.type).icon;
   return (
     <div
-      onClick={onClick}
       className={`group mx-2 mb-0.5 flex cursor-pointer items-center justify-between rounded-lg border-l-2 px-3 py-1.5 transition-all ${
         isActive ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'
       }`}
     >
-      <div className="flex min-w-0 items-center overflow-hidden pr-2">
-        {resource.type === 'note'
-          ? <FileText size={14} className={`mr-2 flex-shrink-0 ${isActive ? 'text-primary' : 'text-slate-400'}`} />
-          : <Paperclip size={14} className={`mr-2 flex-shrink-0 ${isActive ? 'text-primary' : 'text-slate-400'}`} />}
+      <button onClick={onClick} title={resource.title} className="flex min-w-0 flex-1 items-center overflow-hidden pr-2 text-left">
+        <Icon size={14} className={`mr-2 flex-shrink-0 ${isActive ? 'text-primary' : 'text-slate-400'}`} />
         <span className={`truncate text-[13px] ${isActive ? 'font-medium text-primary' : ''}`}>{resource.title}</span>
-      </div>
-      <button onClick={onDelete} className="flex-shrink-0 p-0.5 text-slate-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"><Trash2 size={12} /></button>
+      </button>
+      <button aria-label={`Delete ${resource.title}`} onClick={onDelete} className="flex-shrink-0 p-0.5 text-slate-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 focus:opacity-100"><Trash2 size={12} /></button>
     </div>
   );
 }

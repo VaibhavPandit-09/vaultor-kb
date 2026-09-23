@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, expect, it, vi } from 'vitest';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
+import { closeHistory } from '@tiptap/pm/history';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
@@ -34,7 +35,7 @@ async function mountControls(fullscreen = false, status: 'saved' | 'saving' | 'f
   const ref = createRef<HTMLDivElement>();
   const container = document.createElement('div');
   document.body.appendChild(container); ref.current = container;
-  const editor = new Editor({ element: container, extensions: [StarterKit, WorkspaceTable, TableWorkspace, TableRow, TableCell, TableHeader], content: '<table><tr><th>Name</th><th>Value</th></tr><tr><td>A</td><td>1</td></tr></table><p>After</p>' });
+  const editor = new Editor({ element: container, editorProps: { handleScrollToSelection: () => true }, extensions: [StarterKit, WorkspaceTable, TableWorkspace, TableRow, TableCell, TableHeader], content: '<table><tr><th>Name</th><th>Value</th></tr><tr><td>A</td><td>1</td></tr></table><p>After</p>' });
   editors.push(editor); editor.commands.setTextSelection(4);
   if (fullscreen) Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => container });
   const retry = vi.fn();
@@ -106,10 +107,11 @@ it('keeps the same document and history through expanded editing and return', as
   Object.defineProperty(container, 'requestFullscreen', { configurable: true, value: request });
   const exit = vi.fn(async () => { Reflect.deleteProperty(document, 'fullscreenElement'); document.dispatchEvent(new Event('fullscreenchange')); });
   Object.defineProperty(document, 'exitFullscreen', { configurable: true, value: exit });
-  act(() => { ensureTableIdentity(editor); });
+  act(() => { ensureTableIdentity(editor); editor.view.dispatch(closeHistory(editor.state.tr)); });
   const before = editor.getJSON();
   fireEvent.click(screen.getByRole('button', { name: 'Expand table' }));
   await screen.findByRole('button', { name: 'Return to note' });
+  await waitFor(() => expect(container.contains(screen.getByRole('toolbar'))).toBe(true));
   expect(editor.getJSON()).toEqual(before); // Entry does not resize or duplicate content.
   fireEvent.click(screen.getByRole('button', { name: 'Row' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Insert below' }));
@@ -119,4 +121,19 @@ it('keeps the same document and history through expanded editing and return', as
   expect(editor.getJSON()).toEqual(changed); expect(exit).toHaveBeenCalledOnce();
   act(() => editor.commands.undo()); expect(editor.getJSON()).toEqual(before);
   Reflect.deleteProperty(document, 'exitFullscreen');
+});
+it.each([false, true])('targets the clicked cell through menus without edge buttons (fullscreen=%s)', async (fullscreen) => {
+  const {editor}=await mountControls(fullscreen);
+  expect(document.querySelector('.table-axis-handle')).toBeNull();
+  const {tableContext}=await import('./tableCommands');
+  let context=tableContext(editor)!;
+  act(()=>editor.commands.setTextSelection(context.tableStart+context.map.map[3]+2));
+  const before=editor.state.selection.toJSON();
+  fireEvent.mouseDown(screen.getByRole('button',{name:'Row'}));fireEvent.click(screen.getByRole('button',{name:'Row'}));
+  await screen.findByRole('dialog',{name:'Row actions'});expect(editor.state.selection.toJSON()).toEqual(before);
+  fireEvent.click(screen.getByRole('button',{name:'Select row'}));
+  context=tableContext(editor)!;expect([context.top,context.bottom,context.left,context.right]).toEqual([1,2,0,2]);
+  act(()=>editor.commands.setTextSelection(context.tableStart+context.map.map[3]+2));
+  fireEvent.click(screen.getByRole('button',{name:'Column'}));fireEvent.click(await screen.findByRole('button',{name:'Select column'}));
+  context=tableContext(editor)!;expect([context.top,context.bottom,context.left,context.right]).toEqual([0,2,1,2]);
 });

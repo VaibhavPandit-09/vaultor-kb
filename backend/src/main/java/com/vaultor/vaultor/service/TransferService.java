@@ -26,6 +26,7 @@ import java.time.*;
 @Service @RequiredArgsConstructor @Slf4j
 public class TransferService {
     private final TransferOperationRepository operations;
+    private final OrganizationService organization;
     private final ResourceRepository resources;
     private final TagRepository tags;
     private final RelationshipRepository relationships;
@@ -48,7 +49,9 @@ public class TransferService {
     public record TagData(String id,String name,String color) {}
     public record ResourceData(String id,String type,String title,JsonNode content,String mimeType,Long size,
         LocalDateTime createdAt,LocalDateTime updatedAt,LocalDateTime lastOpenedAt,List<String> tags,String binary) {}
-    public record Workspace(List<ResourceData> resources,List<TagData> tags,SettingsService.WorkspaceSettings settings) {}
+    public record Workspace(List<ResourceData> resources,List<TagData> tags,SettingsService.WorkspaceSettings settings,OrganizationService.OrganizationData organization) {
+        public Workspace(List<ResourceData> resources,List<TagData> tags,SettingsService.WorkspaceSettings settings) {this(resources,tags,settings,new OrganizationService.OrganizationData(List.of(),List.of()));}
+    }
     public record Manifest(int version,String createdAt,int resources,int tags,Map<String,String> checksums) {}
     public record Operation(String id,String kind,String status,String phase,int progress,String mode,String detail,String requestId,Map<String,Integer> counts,String filename,String mediaType,List<String> warnings) {}
     public record Preview(Operation operation,int resources,int files,int notes,int tags,List<String> warnings) {}
@@ -161,7 +164,7 @@ public class TransferService {
             Path dir=directory(op.getId());Files.createDirectories(dir);
             Workspace snapshot=transaction.execute(status -> new Workspace(resources.findAll().stream().map(r->new ResourceData(
                 r.getId(),r.getType(),r.getTitle(),documents.parse(r.getContent()),r.getMimeType(),r.getSize(),r.getCreatedAt(),r.getUpdatedAt(),r.getLastOpenedAt(),r.getTags().stream().map(Tag::getId).toList(),"file".equals(r.getType())?"files/"+r.getId():null)).toList(),
-                tags.findAll().stream().map(t->new TagData(t.getId(),t.getName(),t.getColor())).toList(),settings.getSettings().workspace()));
+                tags.findAll().stream().map(t->new TagData(t.getId(),t.getName(),t.getColor())).toList(),settings.getSettings().workspace(),organization.snapshot()));
             op.setResourceCount(snapshot.resources().size());op.setTagCount(snapshot.tags().size());op.setFileCount((int)snapshot.resources().stream().filter(r->"file".equals(r.type())).count());
             Map<String,Path> binaries=new LinkedHashMap<>();
             for(var r:snapshot.resources()) if(r.binary()!=null) binaries.put(r.binary(),files.getFile(resources.findById(r.id()).orElseThrow().getFilePath()));
@@ -184,15 +187,17 @@ public class TransferService {
                 }
             }
             var manifest=mapper.readValue(Files.readString(dir.resolve("manifest.json")),Manifest.class);
-            if(manifest.version()!=1 || manifest.checksums()==null) throw new IllegalArgumentException("Unsupported archive format");
+            if((manifest.version()!=1 && manifest.version()!=2) || manifest.checksums()==null) throw new IllegalArgumentException("Unsupported archive format");
             Set<String> expected=new HashSet<>(manifest.checksums().keySet());expected.add("manifest.json");if(!expected.equals(names)) throw new IllegalArgumentException("Archive entries do not match manifest");
             for(var item:manifest.checksums().entrySet()) {
                 if(!names.contains(item.getKey())) throw new IllegalArgumentException("Missing archive entry");
                 try(var in=Files.newInputStream(dir.resolve(item.getKey()))) { if(!hash(in).equals(item.getValue())) throw new IllegalArgumentException("Checksum mismatch: "+item.getKey()); }
             }
-            Workspace workspace=readWorkspace(op); validateWorkspace(workspace,dir);
+            Workspace workspace=readWorkspace(op); if(manifest.version()==2 && workspace.organization()==null) throw new IllegalArgumentException("Organization section missing"); validateWorkspace(workspace,dir);
             if(workspace.resources().size()!=manifest.resources() || workspace.tags().size()!=manifest.tags()) throw new IllegalArgumentException("Manifest counts do not match");
-            List<String> warnings=new ArrayList<>();Set<String> ids=new HashSet<>();workspace.resources().forEach(r->ids.add(r.id()));
+            List<String> warnings=new ArrayList<>();
+            if(workspace.organization()!=null) warnings.add("Organization: "+workspace.organization().collections().size()+" collections; "+workspace.organization().favorites().size()+" favorite resources. Merge matches collections by name and preserves existing collection favorites.");
+            Set<String> ids=new HashSet<>();workspace.resources().forEach(r->ids.add(r.id()));
             for(var r:workspace.resources()) if(r.content()!=null) for(String target:documents.references(r.content())) if(!ids.contains(target)) warnings.add("Missing reference "+target+" in "+r.id());
             op.setDetail(warnings.isEmpty()?"Archive validated":String.join("; ",warnings).substring(0,Math.min(1000,String.join("; ",warnings).length())));
             op.setResourceCount(workspace.resources().size());op.setTagCount(workspace.tags().size());op.setFileCount((int)workspace.resources().stream().filter(r->"file".equals(r.type())).count());
@@ -213,6 +218,7 @@ public class TransferService {
                 if(!("files/"+r.id()).equals(r.binary()) || !Files.isRegularFile(dir.resolve(r.binary())) || r.size()==null || Files.size(dir.resolve(r.binary()))!=r.size()) throw new IllegalArgumentException("File missing or size mismatch");
             } else throw new IllegalArgumentException("Unknown resource type");
         }
+        if(w.organization()!=null) OrganizationService.validate(w.organization(),ids);
     }
     public synchronized Operation commit(String id,String mode) {
         var op=operations.findById(id).orElseThrow();
@@ -250,6 +256,7 @@ public class TransferService {
                 List<String> oldFiles=new ArrayList<>();
                 if("replace".equals(op.getMode())) {
                     resources.findAll().forEach(r->{if(r.getFilePath()!=null) oldFiles.add(r.getFilePath());});
+                    organization.clear();
                     relationships.deleteAll();resources.deleteAll();resources.flush();tags.deleteAll();tags.flush();
                     var existing=settings.getSettings();settings.updateSettings(new SettingsService.SettingsDocument(w.settings(),existing.local(),existing.keybindings()));
                 }
@@ -263,6 +270,8 @@ public class TransferService {
                     entity.setTags(new HashSet<>(r.tags().stream().map(mappedTags::get).toList()));resources.save(entity);
                     if("note".equals(r.type())) linkService.updateLinksForNote(entity.getId(),entity.getContent());
                 }
+                resources.flush();
+                if(w.organization()!=null) organization.restore(w.organization(),ids,"merge".equals(op.getMode()));
                 op.setJournal(mapper.writeValueAsString(oldFiles));op.setStatus("CLEANUP");op.setPhase("cleanup");operations.save(op);
             });
             cleanup(op);

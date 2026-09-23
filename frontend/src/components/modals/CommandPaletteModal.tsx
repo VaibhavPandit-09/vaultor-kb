@@ -1,3 +1,5 @@
+import type { Resource } from '../../types';
+import { useResourcePage } from '../../lib/useResourcePage';
 import {
   useCallback,
   useEffect,
@@ -29,7 +31,7 @@ interface CommandPaletteModalProps {
   open: boolean;
   onClose: (options?: { restorePreview?: boolean; restoreFocus?: boolean }) => void;
   context: CommandContext;
-  onHighlightPreviewResource: (resourceId: string | null) => void;
+  onHighlightPreviewResource: (resource: Resource | null) => void;
   previewVisible: boolean;
 }
 
@@ -168,13 +170,14 @@ export default function CommandPaletteModal({
     return () => window.clearTimeout(timeoutId);
   }, [currentQuery, open]);
 
+  const results = useResourcePage({ q: debouncedQuery, size: 50, sort: 'recent' }, open);
   const items = useMemo(() => {
     if (!currentState) {
       return [];
     }
 
-    return currentState.step.getItems(debouncedQuery, context);
-  }, [context, currentState, debouncedQuery]);
+    return currentState.step.getItems(debouncedQuery, { ...context, resources: results.data?.items ?? [] });
+  }, [context, currentState, debouncedQuery, results.data]);
 
   useEffect(() => {
     setSelectedIndex((current) => {
@@ -201,7 +204,7 @@ export default function CommandPaletteModal({
     }
 
     const timeoutId = window.setTimeout(() => {
-      onHighlightPreviewResource(nextPreviewId);
+      onHighlightPreviewResource(selectedItem?.preview?.type === 'file' ? selectedItem.preview.resource : null);
       setPreviewId(nextPreviewId);
     }, 80);
 
@@ -354,6 +357,9 @@ export default function CommandPaletteModal({
               />
             </div>
 
+            {results.loading && <p className="px-4 text-xs" role="status">Searching resources…</p>}
+            {results.error && <p className="px-4 text-sm" role="alert">Resource search failed. <button onClick={results.retry}>Retry</button></p>}
+            {results.data?.totalItems !== undefined && results.data.totalItems > 50 && <p className="px-4 text-xs">Showing 50 matches. Refine your search or open Library.</p>}
             {items.length > 0 && (
               <div className="max-h-[60vh] overflow-y-auto px-2 pb-2">
                 {items.map((item, index) => {

@@ -13,12 +13,15 @@ public final class ApiDtos {
         public static TagDto of(Tag tag) { return new TagDto(tag.getId(), tag.getName(), tag.getColor()); }
     }
     public record ResourceDto(String id, String type, String title, JsonNode content, String mimeType, Long size,
-        LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastOpenedAt, List<TagDto> tags) {
+        LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastOpenedAt, List<TagDto> tags, boolean favorite) {
         public static ResourceDto of(Resource r, DocumentService documents) {
             return new ResourceDto(r.getId(), r.getType(), r.getTitle(), documents.parse(r.getContent()), r.getMimeType(), r.getSize(),
-                r.getCreatedAt(), r.getUpdatedAt(), r.getLastOpenedAt(), r.getTags().stream().map(TagDto::of).toList());
+                r.getCreatedAt(), r.getUpdatedAt(), r.getLastOpenedAt(), r.getTags().stream().map(TagDto::of).toList(), Boolean.TRUE.equals(r.getFavorite()));
         }
     }
+    public record ResourceSummary(String id, String type, String title, String mimeType, Long size,
+        LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastOpenedAt, List<TagDto> tags, boolean favorite) {}
+    public record FavoriteInput(Boolean favorite) {}
     public record NoteInput(String type, String title, JsonNode content) {}
     public record PageDto<T>(List<T> items, int page, int size, long totalItems, int totalPages) {}
 }

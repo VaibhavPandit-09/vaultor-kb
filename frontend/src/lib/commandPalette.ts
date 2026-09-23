@@ -214,7 +214,7 @@ const commandDefinitions: CommandDefinition[] = [
 ];
 
 export function createRootStep(
-  context: CommandContext,
+  contextFallback: CommandContext,
   lastAction: CommandMemory | null,
   usage: CommandUsage,
 ): CommandStep {
@@ -224,7 +224,7 @@ export function createRootStep(
     title: 'Command palette',
     placeholder: 'Type a command, resource, or intent...',
     emptyState: 'No commands matched your search.',
-    getItems: (query) => {
+    getItems: (query, context = contextFallback) => {
       const commandItems = commandDefinitions
         .filter((command) => command.isAvailable ? command.isAvailable(context) : true)
         .map<CommandItem>((command) => ({
@@ -294,14 +294,14 @@ export function createRootStep(
   };
 }
 
-function buildDeleteSelectStep(context: CommandContext): CommandStep {
+function buildDeleteSelectStep(contextFallback: CommandContext): CommandStep {
   return {
     id: 'delete-select',
     type: 'select',
     title: 'Delete resource',
     placeholder: 'Choose a resource to delete...',
     emptyState: 'No resources matched.',
-    getItems: (query) => rankItems(
+    getItems: (query, context = contextFallback) => rankItems(
       context.resources.map((resource) => ({
         id: `delete-target-${resource.id}`,
         title: resource.title,

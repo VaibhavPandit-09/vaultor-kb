@@ -10,7 +10,7 @@ The application and agents use the same unauthenticated API. Default origin: htt
 
 ## Request and response rules
 
-Send Content-Type: application/json except multipart file uploads. Note content is a structured Tiptap doc object; supply both title and content for updates. Titles contain 1–500 characters; tags 1–100. URL-encode path/query values. Resource DTOs omit storage paths. List resources with page (zero-based), size (1–200), and optional tag name; response is {items,page,size,totalItems,totalPages}. Search returns up to 200 title matches.
+Send Content-Type: application/json except multipart file uploads. Note content is a structured Tiptap doc object; supply both title and content for updates. Titles contain 1–500 characters; tags 1–100. URL-encode path/query values. Resource DTOs omit storage paths. List resources with page (zero-based), size (1–200), q (literal title substring), type, repeated tag names (all required), favorites=true, collection (ID), and sort=recent|updated|title; response is {items,page,size,totalItems,totalPages}. Lists contain metadata only (no content/filePath); GET /resources/{id} retrieves the document. Search returns up to 50 metadata-only title matches. Stable ordering uses resource ID as a tie-breaker; pagination is not a concurrent snapshot.
 
 Send an optional X-Request-ID (1–80 alphanumeric, underscore or hyphen characters). The server returns it on every response or creates a UUID. Problem errors contain status, code, detail, requestId and fieldErrors where applicable. Codes include INVALID_REQUEST (400), NOT_FOUND (404), CONFLICT/WORKSPACE_BUSY (409), UPLOAD_TOO_LARGE (413) and INTERNAL_ERROR (500). Retry a busy request after the operation finishes; avoid blindly retrying non-idempotent creation.
 
@@ -20,11 +20,12 @@ Send an optional X-Request-ID (1–80 alphanumeric, underscore or hyphen charact
 | --- | --- | --- |
 | GET /api/resources | listResources | List resources with pagination |
 | POST /api/resources | createNote | createNote |
-| GET /api/resources/search | searchResources | Title search; capped at 200 results |
+| GET /api/resources/search | searchResources | Title search; capped at 50 metadata summaries |
 | GET /api/resources/{id} | getResource | getResource |
 | DELETE /api/resources/{id} | deleteResource | deleteResource |
 | PUT /api/resources/{id}/note | updateNote | updateNote |
-| POST /api/resources/{id}/open | markResourceOpened | markResourceOpened |
+| PUT /api/resources/{id}/favorite | setResourceFavorite | Persist favorite boolean without changing modified time |
+| POST /api/resources/{id}/open | markResourceOpened | Update lastOpenedAt only; preserve modified time/content/organization |
 | GET /api/resources/{id}/backlinks | getBacklinks | getBacklinks |
 | POST /api/resources/{id}/replace-links | replaceResourceLinks | replaceResourceLinks |
 | POST /api/resources/{id}/tags/{name} | attachTag | attachTag |
@@ -86,3 +87,34 @@ Run API smoke only for specific debugging or explicit requests, not every develo
 ## Individual note exports
 
 POST `/api/exports` with `{ "scope": "notes", "noteId": "<id>", "format": "md" }`. Formats: md, md-assets (ZIP), pdf, docx, discoverable from `/api/export-formats`. The operation snapshots the saved note and local assets before returning. UI callers must flush pending saves first. Poll `/api/operations/{id}`; after SUCCEEDED download `/api/exports/{id}/download`. Operation fields `filename`, `mediaType`, `warnings` describe the output; Content-Disposition/Content-Type match it. Read [NOTE-EXPORTS.md](NOTE-EXPORTS.md) for fidelity, limits and retry behavior. HTTP errors retain problem details/request IDs; asynchronous rendering failures appear in operation detail with the originating request ID.
+
+## Library browsing examples
+
+`GET /api/resources?page=0&size=100&q=meeting&type=note&tag=backend&tag=project&sort=updated` returns summaries matching both tag names. `GET /api/resources?favorites=true&sort=title&size=12` supplies bounded quick access. `PUT /api/resources/{id}/favorite` with `{ "favorite": true }` returns 204; repeating it is safe. Version 2 workspace archives include resource and collection favorites plus memberships; merge remaps organization to new resources.
+
+## Collections and tags
+
+All routes participate in the workspace mutation gate, return X-Request-ID and use the same problem details as resource routes.
+
+| Method and path | Operation ID | Contract |
+| --- | --- | --- |
+| GET /api/collections | listCollections | q, page, size (1–100), favorites; metadata page with id/name/favorite/count |
+| POST /api/collections | createCollection | {name,favorite?}; 201; unique normalized name |
+| PUT /api/collections/{id} | updateCollection | {name,favorite?}; omitted favorite preserves current value |
+| DELETE /api/collections/{id} | deleteCollection | 204; removes only collection/memberships, never resources |
+| GET /api/tags/browse | browseTags | q/page/size (1–100); metadata page with id/name/color/count |
+| POST /api/tags | createTag | {name}; 201; returns existing normalized tag if present |
+| PUT /api/tags/{id}/name | renameTag | {name}; preserves memberships/color; duplicate name returns 409 |
+| POST /api/organization/memberships | changeMemberships | {resourceIds,kind,targetId,action}; 204; atomic, idempotent add/remove |
+
+Collection and tag names contain 1–100 trimmed characters. Collections preserve display casing; tag names normalize to lowercase. Collection/tag browsing is case-insensitive literal substring search, ordered by name then ID. Existing tag color/delete routes remain available.
+
+Membership example:
+
+~~~json
+{"resourceIds":["note-id","file-id"],"kind":"collection","targetId":"collection-id","action":"add"}
+~~~
+
+kind is collection or tag; action is add or remove. Select 1–100 IDs; every resource and the target must exist before any changes apply. Other memberships are untouched. Use GET /api/resources?collection=collection-id&tag=meeting to verify the combined resulting membership. Collection deletion keeps notes/files. There is no bulk resource deletion API.
+
+Archive version 2 includes workspace.organization.collections and workspace.organization.favorites, covered by the workspace JSON checksum. Preview reports organization counts and rejects invalid membership references. See [Library transfer rules](LIBRARY.md) for merge/replace semantics.

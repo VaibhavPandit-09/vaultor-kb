@@ -8,12 +8,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.*;
 import org.springframework.core.io.UrlResource;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController @RequestMapping("/api/resources") @RequiredArgsConstructor
 public class ResourceController {
     private final ResourceRepository resources;
+    private final ResourceBrowseService browse;
     private final RelationshipRepository relationships;
     private final ResourceService service;
     private final TagService tags;
@@ -31,17 +31,18 @@ public class ResourceController {
         try { documents.validate(input.content()); } catch(IllegalArgumentException e) { throw new ApiErrors.FieldError("content", e.getMessage()); }
     }
     @GetMapping
-    public PageDto<ResourceDto> list(@RequestParam(defaultValue="0") int page, @RequestParam(defaultValue="100") int size, @RequestParam(required=false) String tag) {
-        if (page < 0 || size < 1 || size > 200) throw new IllegalArgumentException("page must be nonnegative; size must be 1-200");
-        var paging=org.springframework.data.domain.PageRequest.of(page,size,org.springframework.data.domain.Sort.by("lastOpenedAt","updatedAt","id").descending());
-        var result=tag==null ? resources.findAll(paging) : resources.findDistinctByTags_NameIgnoreCase(tag,paging);
-        return new PageDto<>(result.getContent().stream().map(this::dto).toList(), page, size, result.getTotalElements(), result.getTotalPages());
+    public PageDto<ResourceSummary> list(@RequestParam(defaultValue="0") int page, @RequestParam(defaultValue="100") int size,
+        @RequestParam(defaultValue="") String q, @RequestParam(required=false) String type, @RequestParam(required=false) List<String> tag,
+        @RequestParam(defaultValue="false") boolean favorites, @RequestParam(defaultValue="recent") String sort, @RequestParam(required=false) String collection) {
+        return browse.list(page,size,q,type,tag == null ? List.of() : tag,favorites,sort,collection);
     }
-    @GetMapping("/search") public List<ResourceDto> search(@RequestParam(defaultValue="") String q) {
-        return resources.findByTitleContainingIgnoreCase(q.trim()).stream().sorted(Comparator.comparing((Resource r) -> !r.getTitle().equalsIgnoreCase(q)).thenComparing(Resource::getUpdatedAt, Comparator.reverseOrder())).limit(200).map(this::dto).toList();
+    @GetMapping("/search") public List<ResourceSummary> search(@RequestParam(defaultValue="") String q) {
+        return browse.list(0,50,q,null,List.of(),false,"recent").items();
     }
+    @PutMapping("/{id}/favorite") @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void favorite(@PathVariable String id, @RequestBody FavoriteInput input) { browse.favorite(id,input.favorite()); }
     @GetMapping("/{id}") public ResourceDto one(@PathVariable String id) { return dto(get(id)); }
-    @PostMapping("/{id}/open") public void open(@PathVariable String id) { var r=get(id); r.setLastOpenedAt(LocalDateTime.now()); resources.save(r); }
+    @PostMapping("/{id}/open") public void open(@PathVariable String id) { browse.markOpened(id); }
     @PostMapping public ResourceDto create(@RequestBody NoteInput input) { validate(input); if (input.type()!=null && !input.type().equals("note")) throw new IllegalArgumentException("Use file upload for file resources"); return dto(service.createNote(input.title().trim(), input.content().toString())); }
     @PutMapping("/{id}/note") public ResourceDto update(@PathVariable String id, @RequestBody NoteInput input) { validate(input); if (!get(id).getType().equals("note")) throw new IllegalArgumentException("Resource is not a note"); return dto(service.updateNote(id, input.title().trim(), input.content().toString())); }
     @PostMapping("/file") public ResourceDto upload(@RequestParam MultipartFile file) throws Exception { if(file.isEmpty()) throw new IllegalArgumentException("Choose a nonempty file"); return dto(service.uploadFile(file)); }

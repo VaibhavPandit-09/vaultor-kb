@@ -11,6 +11,7 @@ export interface Resource {
   id: string;
   type: ResourceType;
   title: string;
+  favorite?: boolean;
   content?: JSONContent | string | null;
   filePath?: string | null;
   mimeType?: string | null;
@@ -21,9 +22,7 @@ export interface Resource {
   tags: Tag[];
 }
 
-export interface AuthStatus {
-  isSetup: boolean;
-}
+export type ResourceSummary = Omit<Resource, 'content' | 'filePath'>;
 
 export function isPreviewResource(type: ResourceType) {
   return type === 'file';

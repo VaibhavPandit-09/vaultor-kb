@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "resources")
+@Table(name = "resources", indexes = { @Index(name = "idx_resource_title", columnList = "title,id"), @Index(name = "idx_resource_updated", columnList = "updated_at,id"), @Index(name = "idx_resource_opened", columnList = "last_opened_at,id") })
 @Data
 @NoArgsConstructor
 public class Resource {
@@ -34,6 +34,8 @@ public class Resource {
 
     private Long size;
 
+    private Boolean favorite = false;
+
     private String importFingerprint; // Internal retry identity; omitted from DTOs/archives.
 
     @Column(name = "created_at", nullable = false)
@@ -52,6 +54,10 @@ public class Resource {
         inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
     private Set<Tag> tags = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(name="resource_collections",joinColumns=@JoinColumn(name="resource_id"),inverseJoinColumns=@JoinColumn(name="collection_id"))
+    private Set<ResourceCollection> collections = new HashSet<>();
 
     @PrePersist
     public void prePersist() {

@@ -8,7 +8,7 @@ let sending = false;
 let installed = false;
 let failures = 0;
 export const buildVersion = 'modernization-1';
-export function reportError(action: string, error: unknown, requestId?: string) {
+export function reportError(action: string, error: unknown, requestId?: string, notify = true) {
   const event: DiagnosticEvent = {
     id: crypto.randomUUID(), timestamp: new Date().toISOString(), action: action.slice(0, 120),
     route: window.location.pathname, build: buildVersion, requestId,
@@ -18,7 +18,7 @@ export function reportError(action: string, error: unknown, requestId?: string) 
   console.error(`[${event.id}] ${action}`, error);
   events.push(event); if (events.length > 100) events.shift();
   queue.push(event); queue = queue.slice(-100);
-  window.dispatchEvent(new CustomEvent('vaultor:error', { detail: event }));
+  if (notify) window.dispatchEvent(new CustomEvent('vaultor:error', { detail: event }));
   return event;
 }
 export const getLocalDiagnostics = () => [...events];

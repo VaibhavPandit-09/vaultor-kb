@@ -68,7 +68,7 @@ export default function TableDataPanel({ editor, mode }: { editor: Editor; mode:
       <details className="table-help-text"><summary>About exported values</summary><p>CSV/TSV contain values only. Merged values occupy their top-left cell; covered cells are empty. CSV prefixes formula-like values with an apostrophe. TSV copies original values.</p></details>
     </div>}
     {mode === 'help' && <div className="table-help-text space-y-3">
-      <p>Drag across cells to select a range. Use the edge handles for entire rows or columns. Drag a column edge to resize.</p>
+      <p>Drag across cells to select a range. Use Row → Select row or Column → Select column for entire rows or columns. Drag a column edge to resize.</p>
       <p>Split merged cells before moving rows or columns. Clear filters before structural edits.</p>
       <p>Tab and Shift+Tab move between cells. Enter adds a paragraph. Copy a selected range with Ctrl+C (Cmd+C on Mac).</p>
       <p>Expanded view uses normal note autosave. Its header shows save status and retry. Return to note keeps your changes and undo history.</p>

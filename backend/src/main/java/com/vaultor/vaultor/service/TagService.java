@@ -16,6 +16,7 @@ import java.util.Locale;
 @Service
 @RequiredArgsConstructor
 public class TagService {
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
     private final TagRepository tagRepository;
     private final ResourceRepository resourceRepository;
 
@@ -25,7 +26,7 @@ public class TagService {
     }
 
     public Tag getOrCreateTag(String name) {
-        String safeName = name.trim().toLowerCase();
+        String safeName = OrganizationService.name(name).toLowerCase(Locale.ROOT);
         return tagRepository.findByNameIgnoreCase(safeName)
                 .map(this::ensureTagColor)
                 .orElseGet(() -> tagRepository.save(new Tag(safeName, generateColorForTagName(safeName))));
@@ -77,16 +78,16 @@ public class TagService {
 
     @Transactional
     public void deleteTag(String tagId) {
-        tagRepository.findById(tagId).ifPresent(tag -> {
-            // Remove this tag from all resources that have it
-            List<Resource> allResources = resourceRepository.findAll();
-            for (Resource r : allResources) {
-                if (r.getTags().remove(tag)) {
-                    resourceRepository.save(r);
-                }
-            }
-            tagRepository.delete(tag);
-        });
+        var tag=tagRepository.findById(tagId).orElseThrow();
+        jdbc.update("delete from resource_tags where tag_id=?",tagId);
+        tagRepository.delete(tag);
+    }
+    @Transactional
+    public Tag rename(String id,String name) {
+        String normalized=OrganizationService.name(name).toLowerCase(Locale.ROOT);
+        var duplicate=tagRepository.findByNameIgnoreCase(normalized);
+        if(duplicate.isPresent() && !duplicate.get().getId().equals(id)) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,"A tag with this name already exists");
+        var tag=tagRepository.findById(id).orElseThrow();tag.setName(normalized);return tagRepository.save(tag);
     }
 
     private Tag ensureTagColor(Tag tag) {

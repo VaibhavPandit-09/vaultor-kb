@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject, type ReactNode, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { Editor } from '@tiptap/core';
-import { Columns3, Rows3, GripHorizontal, GripVertical, Trash2, Merge, Split, Undo2, Redo2, Filter, Maximize2, Minimize2, MoreHorizontal, Download, CircleHelp, X, ArrowLeft, CircleAlert } from 'lucide-react';
+import { Columns3, Rows3, Trash2, Merge, Split, Undo2, Redo2, Filter, Maximize2, Minimize2, MoreHorizontal, Download, CircleHelp, X, ArrowLeft, CircleAlert } from 'lucide-react';
 import TableDataPanel from './TableDataPanel';
 import SaveIndicator from '../SaveIndicator';
 import type { SaveStatus } from '../../lib/saveCoordinator';
@@ -11,8 +11,7 @@ import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
 import { useAnchoredPortalPosition } from '../../lib/useAnchoredPortalPosition';
 import { tableOverlayHost, tableToolbarPosition, visibleEditorBounds, type Bounds } from './tableOverlayGeometry';
 
-type Handle = { index: number; top: number; left: number };
-type Geometry = { rows: Handle[]; columns: Handle[]; width: number; available: number; pane: Bounds; table: Bounds; toolbar: NonNullable<ReturnType<typeof tableToolbarPosition>>; host: Element };
+type Geometry = { width: number; available: number; pane: Bounds; table: Bounds; toolbar: NonNullable<ReturnType<typeof tableToolbarPosition>>; host: Element };
 type Menu = 'row' | 'column' | 'more' | 'filter' | 'export' | 'help';
 const titles: Record<Menu, string> = { row: 'Row actions', column: 'Column actions', more: 'Table actions', filter: 'Filter rows', export: 'Copy / export', help: 'Table help' };
 
@@ -87,20 +86,7 @@ export default function TableControls({ editor, active, containerRef, noteTitle 
         const visibleTable = { top: bounds.top, bottom: info.filtered && !info.visible.length ? Math.max(bounds.bottom, bounds.top + 52) : bounds.bottom, left: Math.max(bounds.left, clip.left), right: Math.min(bounds.right, clip.right) };
         const toolbar = full ? { top: pane.top, left: pane.left, maxWidth: pane.right - pane.left } : tableToolbarPosition(visibleTable, pane, toolbarRef.current?.offsetWidth || 310, toolbarRef.current?.offsetHeight || 40);
         if (!toolbar) { setGeometry(null); return; }
-        const visible = info.visible;
-        const rows = visible.map(index => {
-          const row = table.rows[index]?.getBoundingClientRect();
-          return { index, top: row ? row.top + row.height / 2 : bounds.top, left: Math.max(pane.left + 2, clip.left - 20) };
-        }).filter(h => h.top >= pane.top + 9 && h.top <= pane.bottom - 9);
-        const columns = Array.from({ length: current.map.width }, (_, index) => {
-          const offset = current.map.map[(visible[0] ?? 0) * current.map.width + index];
-          const cell = editor.view.nodeDOM(current.tableStart + offset);
-          const rect = cell instanceof Element ? cell.getBoundingClientRect() : null;
-          const cellStart = current.map.findCell(offset).left;
-          const span = Number(current.table.nodeAt(offset)?.attrs.colspan ?? 1);
-          return { index, top: bounds.top - 20, left: rect ? rect.left + rect.width * (index - cellStart + 0.5) / span : bounds.left };
-        }).filter(h => visible.length > 0 && h.top >= pane.top && h.top + 18 <= pane.bottom && h.left >= Math.max(pane.left, clip.left) + 9 && h.left <= Math.min(pane.right, clip.right) - 9);
-        setGeometry({ rows, columns, width: bounds.width, available: Math.min(clip.width, pane.right - pane.left), pane, table: visibleTable, toolbar, host: tableOverlayHost(container) });
+        setGeometry({ width: bounds.width, available: Math.min(clip.width, pane.right - pane.left), pane, table: visibleTable, toolbar, host: tableOverlayHost(container) });
       });
     };
     const selectionChanged = () => {
@@ -199,7 +185,7 @@ export default function TableControls({ editor, active, containerRef, noteTitle 
     {menu && position && <div ref={popupRef} data-table-controls={owner} className="table-popover" role="dialog" aria-label={titles[menu]} style={{ position: 'fixed', top: position.top, left: position.left, width: position.width, maxHeight: position.maxHeight, transform: position.placement === 'top' ? 'translateY(-100%)' : undefined }} onMouseDown={preserveSelection}>
       <div className="table-popover-heading">
         {(menu === 'export' || menu === 'help') && <button type="button" className="table-action" aria-label="Back to table actions" title="Back" onClick={() => setMenu('more')}><ArrowLeft size={14} /></button>}
-        <span>{titles[menu]}</span><button type="button" className="table-action" title="Close menu" aria-label="Close table menu" onClick={() => { close(); anchorRef.current?.focus({ preventScroll: true }); }}><X size={14} /></button>
+        <span>{titles[menu]}{menu === 'row' ? ` · ${ctx.top + 1}–${ctx.bottom}` : menu === 'column' ? ` · ${ctx.left + 1}–${ctx.right}` : ''}</span><button type="button" className="table-action" title="Close menu" aria-label="Close table menu" onClick={() => { close(); anchorRef.current?.focus({ preventScroll: true }); }}><X size={14} /></button>
       </div>
       <div className="table-popover-content">
         {menu === 'row' && <>
@@ -238,7 +224,5 @@ export default function TableControls({ editor, active, containerRef, noteTitle 
         {notice && <p role="status" className="table-feedback">{notice}</p>}
       </div>
     </div>}
-    {geometry.rows.map(handle => <button data-table-controls={owner} type="button" key={`r${handle.index}`} className="table-axis-handle table-row-handle" style={{ top: handle.top, left: handle.left }} aria-label={`Select row ${handle.index + 1}`} title={`Row ${handle.index + 1} actions`} onMouseDown={event => event.preventDefault()} onClick={event => { selectTableAxis(editor, 'row', handle.index); anchorRef.current = event.currentTarget; keyboardOpen.current = event.detail === 0; setMenu('row'); }}><GripVertical size={14} /></button>)}
-    {geometry.columns.map(handle => <button data-table-controls={owner} type="button" key={`c${handle.index}`} className="table-axis-handle table-column-handle" style={{ top: handle.top, left: handle.left }} aria-label={`Select column ${handle.index + 1}`} title={`Column ${handle.index + 1} actions`} onMouseDown={event => event.preventDefault()} onClick={event => { selectTableAxis(editor, 'column', handle.index); anchorRef.current = event.currentTarget; keyboardOpen.current = event.detail === 0; setMenu('column'); }}><GripHorizontal size={14} /></button>)}
   </>, geometry.host);
 }
