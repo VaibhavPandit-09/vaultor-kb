@@ -1456,6 +1456,24 @@
                   "type": "string",
                   "format": "binary"
                 }
+              },
+              "text/markdown": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
@@ -1854,7 +1872,7 @@
     "/exports": {
       "post": {
         "operationId": "startExport",
-        "summary": "startExport",
+        "summary": "Create a workspace archive or snapshot and export one saved note",
         "parameters": [],
         "responses": {
           "200": {
@@ -1921,22 +1939,54 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "scope": {
-                    "const": "workspace",
-                    "default": "workspace"
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "scope": {
+                        "const": "workspace",
+                        "default": "workspace"
+                      },
+                      "format": {
+                        "const": "zip",
+                        "default": "zip"
+                      }
+                    },
+                    "example": {
+                      "scope": "workspace",
+                      "format": "zip"
+                    }
                   },
-                  "format": {
-                    "const": "zip",
-                    "default": "zip"
+                  {
+                    "type": "object",
+                    "required": [
+                      "scope",
+                      "noteId",
+                      "format"
+                    ],
+                    "properties": {
+                      "scope": {
+                        "const": "notes"
+                      },
+                      "noteId": {
+                        "type": "string"
+                      },
+                      "format": {
+                        "enum": [
+                          "md",
+                          "md-assets",
+                          "pdf",
+                          "docx"
+                        ]
+                      }
+                    },
+                    "example": {
+                      "scope": "notes",
+                      "noteId": "note-uuid",
+                      "format": "docx"
+                    }
                   }
-                },
-                "required": [],
-                "example": {
-                  "scope": "workspace",
-                  "format": "zip"
-                }
+                ]
               }
             }
           }
@@ -2710,6 +2760,88 @@
           }
         }
       }
+    },
+    "/resources/imports/{id}": {
+      "put": {
+        "operationId": "importFileResource",
+        "summary": "Create a note or original file with retry-safe client identity",
+        "description": "Write-once import. A repeated UUID and identical payload returns the same resource; changed payload or an occupied non-import ID returns 409. Never replaces an existing note by title. Fingerprints are internal and are not part of workspace archives.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "content": {
+                    "type": "string",
+                    "description": "Serialized structured Tiptap doc, mutually exclusive with file",
+                    "example": "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Imported\"}]}]}"
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Imported resource (new or previously created)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Resource"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid import payload",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Import identity conflict or workspace busy",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Upload limit exceeded"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2984,6 +3116,24 @@
               "resources": 3,
               "files": 1,
               "tags": 1
+            }
+          },
+          "filename": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mediaType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         },

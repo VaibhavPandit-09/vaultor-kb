@@ -41,6 +41,7 @@ public class TransferService {
     @Value("${app.transfer.max-archive-bytes}") private long maxArchive;
     @Value("${app.transfer.max-expanded-bytes}") private long maxExpanded;
     @Value("${app.transfer.max-entries}") private int maxEntries;
+    @Value("${app.export.max-asset-bytes:104857600}") private long maxNoteAssets;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final Set<String> cancellationRequests = ConcurrentHashMap.newKeySet();
     private Path root;
@@ -49,7 +50,7 @@ public class TransferService {
         LocalDateTime createdAt,LocalDateTime updatedAt,LocalDateTime lastOpenedAt,List<String> tags,String binary) {}
     public record Workspace(List<ResourceData> resources,List<TagData> tags,SettingsService.WorkspaceSettings settings) {}
     public record Manifest(int version,String createdAt,int resources,int tags,Map<String,String> checksums) {}
-    public record Operation(String id,String kind,String status,String phase,int progress,String mode,String detail,String requestId,Map<String,Integer> counts) {}
+    public record Operation(String id,String kind,String status,String phase,int progress,String mode,String detail,String requestId,Map<String,Integer> counts,String filename,String mediaType,List<String> warnings) {}
     public record Preview(Operation operation,int resources,int files,int notes,int tags,List<String> warnings) {}
     @PostConstruct public void init() throws Exception {
         root=Path.of(storagePath).toAbsolutePath().normalize().resolveSibling("operations"); Files.createDirectories(root);
@@ -57,28 +58,98 @@ public class TransferService {
             if("CLEANUP".equals(op.getStatus())) { cleanup(op); }
             else if(List.of("QUEUED","RUNNING").contains(op.getStatus())) {
                 discardStagedFiles(op);
-                fail(op,new IllegalStateException("Operation interrupted by restart. Retry from the source archive."));
+                fail(op,new IllegalStateException("Operation interrupted by restart. Create a new export, or retry import from the source archive."));
             }
         }
     }
     @PreDestroy public void shutdown() { worker.shutdown(); }
     private Path directory(String id) { return root.resolve(UUID.fromString(id).toString()); }
-    public Operation dto(TransferOperation op) { return new Operation(op.getId(),op.getKind(),op.getStatus(),op.getPhase(),op.getProgress(),op.getMode(),op.getDetail(),op.getRequestId(),Map.of("resources",Optional.ofNullable(op.getResourceCount()).orElse(0),"files",Optional.ofNullable(op.getFileCount()).orElse(0),"tags",Optional.ofNullable(op.getTagCount()).orElse(0))); }
+    public Operation dto(TransferOperation op) { return new Operation(op.getId(),op.getKind(),op.getStatus(),op.getPhase(),op.getProgress(),op.getMode(),op.getDetail(),op.getRequestId(),Map.of("resources",Optional.ofNullable(op.getResourceCount()).orElse(0),"files",Optional.ofNullable(op.getFileCount()).orElse(0),"tags",Optional.ofNullable(op.getTagCount()).orElse(0)),op.getOutputFilename(),op.getOutputMediaType(),readWarnings(op)); }
+    private List<String> readWarnings(TransferOperation op) { List<String> result=new ArrayList<>();for(JsonNode n:mapper.readTree(op.getWarnings()==null?"[]":op.getWarnings()))result.add(n.asText());return result; }
     public Operation get(String id) { return dto(operations.findById(id).orElseThrow()); }
     private TransferOperation create(String kind) {
         var op=new TransferOperation(); op.setKind(kind); op.setRequestId(MDC.get("requestId")); return operations.save(op);
     }
     private void phase(TransferOperation op,String status,String phase,int progress) {
-        op.setStatus(status);op.setPhase(phase);op.setProgress(progress);operations.save(op);
+        op.setStatus(status);op.setPhase(phase);op.setProgress(progress);saveOperationStatus(op);
         log.info("transfer operationId={} kind={} phase={} progress={} requestId={}",op.getId(),op.getKind(),phase,progress,op.getRequestId());
+    }
+    // Repository save has its own transaction: retry a fresh transaction on transient SQLite contention.
+    private void saveOperationStatus(TransferOperation op) {
+        for(int attempt=0;;attempt++) {
+            try { operations.save(op);return; }
+            catch(org.springframework.dao.DataAccessException e) {
+                if(attempt>=5 || !String.valueOf(e.getMostSpecificCause().getMessage()).contains("SQLITE_BUSY")) throw e;
+                try { Thread.sleep(50L*(attempt+1)); } catch(InterruptedException interrupted) {Thread.currentThread().interrupt();throw e;}
+            }
+        }
     }
     private void fail(TransferOperation op,Exception e) {
         op.setDetail(e.getMessage()==null?"Transfer failed":e.getMessage().substring(0,Math.min(1000,e.getMessage().length())));
         phase(op,"FAILED","failed",op.getProgress()); log.error("transfer failed operationId={}",op.getId(),e);
     }
     public Operation export(String scope,String format) {
+        if (!"workspace".equals(scope) || !"zip".equals(format)) throw new IllegalArgumentException("Note exports require noteId");
         exporters.require(scope,format); var op=create("export");
+        op.setOutputFilename("workspace.zip");op.setOutputMediaType("application/zip");operations.save(op);
         worker.submit(()->run(op,()->gate.exclusive(()->exportArchive(op)))); return dto(op);
+    }
+    /** Snapshot while holding the workspace gate BEFORE returning an operation to the caller. */
+    public Operation exportNote(String noteId,String format) {
+        var renderer=exporters.require("notes",format);
+        if(noteId==null || noteId.isBlank()) throw new IllegalArgumentException("noteId is required for note exports");
+        final TransferOperation[] created=new TransferOperation[1];
+        gate.exclusive(()-> {
+            var note=resources.findById(noteId).orElseThrow();
+            if(!"note".equals(note.getType())) throw new IllegalArgumentException("Only notes can be exported with notes scope");
+            var content=documents.parse(note.getContent());documents.validate(content);
+            var op=create("export");created[0]=op;
+            try {
+                Path dir=directory(op.getId());Files.createDirectories(dir.resolve("assets"));
+                var selected=new ArrayList<ResourceData>();
+                selected.add(new ResourceData(note.getId(),"note",note.getTitle(),content,null,null,note.getCreatedAt(),note.getUpdatedAt(),null,List.of(),null));
+                var binaries=new LinkedHashMap<String,Path>();long total=0;
+                for(String id:documents.references(content)) {
+                    if(id.equals(noteId))continue;
+                    var found=resources.findById(id);if(found.isEmpty())continue;var r=found.get();String binary=null;
+                    if("file".equals(r.getType())) {
+                        Path original=files.getFile(r.getFilePath());
+                        if(Files.isRegularFile(original)) {
+                            total+=Files.size(original);if(total>Math.min(maxArchive,maxNoteAssets))throw new IllegalArgumentException("Note export assets exceed "+Math.min(maxArchive,maxNoteAssets)+" bytes");
+                            binary="assets/"+r.getId()+"-"+safeFilename(r.getTitle()).replaceAll("[^A-Za-z0-9._-]","_");Path target=dir.resolve(binary);Files.copy(original,target);binaries.put(binary,target);
+                        }
+                    }
+                    selected.add(new ResourceData(r.getId(),r.getType(),r.getTitle(),null,r.getMimeType(),r.getSize(),r.getCreatedAt(),r.getUpdatedAt(),null,List.of(),binary));
+                }
+                var snapshot=new Workspace(List.copyOf(selected),List.of(),null);
+                Files.writeString(dir.resolve("snapshot.json"),mapper.writeValueAsString(snapshot));
+                op.setOutputArtifact("artifact."+renderer.format().extension());op.setOutputFilename(safeFilename(note.getTitle())+"."+renderer.format().extension());op.setOutputMediaType(renderer.format().mediaType());op.setResourceCount(1);op.setFileCount(binaries.size());operations.save(op);
+                worker.submit(()->runNote(op,()-> {
+                    try {
+                        gate.exclusive(()->phase(op,"RUNNING","rendering",35));
+                        Path output=dir.resolve("artifact."+renderer.format().extension());renderer.write(snapshot,Map.copyOf(binaries),output);
+                        op.setWarnings(Files.readString(dir.resolve("warnings.json")));gate.exclusive(()->phase(op,"SUCCEEDED","complete",100));
+                    } catch(Exception e) {throw new IllegalStateException("Note export failed: "+e.getMessage(),e);}
+                }));
+            } catch(Exception e) { fail(op,e); }
+        });
+        return dto(created[0]);
+    }
+    // Gate brief status writes, not rendering, so note saves never overlap SQLite progress writes.
+    private void runNote(TransferOperation op,Runnable task) {
+        MDC.put("build","modernization-1");MDC.put("operationId",op.getId());if(op.getRequestId()!=null)MDC.put("requestId",op.getRequestId());
+        boolean[] cancelled={false};
+        try {
+            gate.exclusive(()-> { synchronized(this) {
+                cancelled[0]="CANCELLED".equals(operations.findById(op.getId()).orElseThrow().getStatus());
+                if(!cancelled[0])phase(op,"RUNNING","preparing",5);
+            }});
+            if(!cancelled[0])task.run();
+        } catch(Exception e) {gate.exclusive(()->fail(op,e));} finally {MDC.clear();}
+    }
+    private static String safeFilename(String title) {
+        String name=title.replaceAll("[^\\p{L}\\p{N}._ -]","_").replaceAll("^[. ]+|[. ]+$","");
+        if(name.isBlank())name="note";return name.substring(0,Math.min(100,name.length()));
     }
     private void run(TransferOperation op,Runnable task) {
         MDC.put("build","modernization-1"); MDC.put("operationId",op.getId()); if(op.getRequestId()!=null) MDC.put("requestId",op.getRequestId());
@@ -215,6 +286,6 @@ public class TransferService {
             op.setJournal("[]");phase(op,"SUCCEEDED","complete",100);
         } catch(Exception e) { op.setDetail("Data committed; file cleanup will retry on restart"); operations.save(op); log.error("cleanup pending operationId={}",op.getId(),e); }
     }
-    public Path download(String id) { var op=operations.findById(id).orElseThrow();if(!"export".equals(op.getKind()) || !"SUCCEEDED".equals(op.getStatus())) throw new IllegalArgumentException("Export is not ready");return directory(id).resolve("workspace.zip"); }
+    public Path download(String id) { var op=operations.findById(id).orElseThrow();if(!"export".equals(op.getKind()) || !"SUCCEEDED".equals(op.getStatus())) throw new IllegalArgumentException("Export is not ready");return directory(id).resolve(op.getOutputArtifact()==null ? "workspace.zip" : op.getOutputArtifact()); }
     private static String hash(InputStream input) throws Exception { var digest=MessageDigest.getInstance("SHA-256");byte[] buffer=new byte[8192];int n;while((n=input.read(buffer))!=-1) digest.update(buffer,0,n);return HexFormat.of().formatHex(digest.digest()); }
 }

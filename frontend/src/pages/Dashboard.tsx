@@ -1,4 +1,4 @@
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Plus,
@@ -23,8 +23,11 @@ import {
 } from 'lucide-react';
 import api, { listResources } from '../lib/api';
 import SaveIndicator from '../components/SaveIndicator';
+import { registerCloseNoteShortcut } from '../lib/closeNoteShortcut';
 import ErrorBoundary from '../components/ErrorBoundary';
 import TransferModal from '../components/modals/TransferModal';
+import { historyShortcuts } from '../lib/shortcuts';
+import NoteExportModal from '../components/modals/NoteExportModal';
 import DiagnosticsPanel from '../components/modals/DiagnosticsPanel';
 import { SaveCoordinator } from '../lib/saveCoordinator';
 import type { DiagnosticEvent } from '../lib/diagnostics';
@@ -34,8 +37,12 @@ import { useRestoreFocusOnClose } from '../lib/useRestoreFocusOnClose';
 import { useAnchoredPortalPosition } from '../lib/useAnchoredPortalPosition';
 import BlockEditor, { type NoteSelection } from '../components/editor/BlockEditor';
 import PreviewLayer from '../components/PreviewLayer';
-import { markdownToHtml } from '../components/editor/markdownUtils';
-import { chooseSafeCsvContent } from '../components/editor/csvUtils';
+import type { Editor, Range } from '@tiptap/core';
+import FileImportModal from '../components/modals/FileImportModal';
+import { prepareImport, type ImportSession } from '../lib/fileImports';
+import { pickFiles } from '../lib/filePicker';
+import { captureImportTarget } from '../lib/importTarget';
+import { reportError } from '../lib/diagnostics';
 import AppModal from '../components/modals/AppModal';
 import CommandPaletteModal from '../components/modals/CommandPaletteModal';
 import ShortcutsModal from '../components/modals/ShortcutsModal';
@@ -114,6 +121,7 @@ export default function Dashboard() {
   const [tagInputValue, setTagInputValue] = useState('');
   const [tagPickerSelectedIndex, setTagPickerSelectedIndex] = useState(0);
 
+  const [noteExport, setNoteExport] = useState<{ id: string; title: string } | null>(null);
   const [transferMode, setTransferMode] = useState<'export' | 'import' | null>(null);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [notice, setNotice] = useState<DiagnosticEvent | null>(null);
@@ -141,9 +149,8 @@ export default function Dashboard() {
   const [replaceLoading, setReplaceLoading] = useState(false);
   const [tagDeleteModal, setTagDeleteModal] = useState<{ id: string; name: string } | null>(null);
 
-  const fileUploadRef = useRef<HTMLInputElement>(null);
-  const mdUploadRef = useRef<HTMLInputElement>(null);
-  const csvUploadRef = useRef<HTMLInputElement>(null);
+  const [fileImport, setFileImport] = useState<ImportSession | null>(null);
+  const importBusy = useRef(false);
   const latestNoteContentRef = useRef<string | null>(null);
   const commandPalettePreviewRef = useRef<PreviewSnapshot | null>(null);
   const floatingSidebarHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -656,33 +663,27 @@ export default function Dashboard() {
     }));
   }, []);
 
-  const uploadFileResource = useCallback(async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const { data } = await api.post('/resources/file', formData);
-    return data as Resource;
-  }, []);
-
-  const handleUploadFile = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || uploadPending) return;
-
-    setUploadPending(true);
+  const beginImport = useCallback(async (editor?: Editor, range?: Range, mode?: ImportSession['mode']) => {
+    if (importBusy.current) return;
+    importBusy.current = true; setUploadPending(true);
+    const target = editor && range ? captureImportTarget(editor, range) : undefined;
     try {
-      const data = await uploadFileResource(file);
-      await fetchData();
-      openResourceById(data.id);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setUploadPending(false);
-      if (fileUploadRef.current) fileUploadRef.current.value = '';
-    }
-  }, [fetchData, openResourceById, uploadFileResource, uploadPending]);
-
-  const requestFileUpload = useCallback(() => {
-    openFilePicker(fileUploadRef.current);
+      const accept = mode === 'markdown' ? '.md,.markdown,.txt' : mode === 'csv' ? '.csv,.tsv,.txt' : '';
+      const files = await pickFiles(accept, !target);
+      if (!files.length) { target?.dispose(); importBusy.current = false; if (target && !target.editor.isDestroyed) target.editor.commands.focus(undefined, { scrollIntoView: false }); return; }
+      setFileImport(await prepareImport(files, target, mode));
+    } catch (error) { target?.dispose(); importBusy.current = false; reportError('file.import.prepare', error); }
+    finally { setUploadPending(false); }
   }, []);
+  const requestFileUpload = useCallback(() => { flushSync(() => setCommandPaletteOpen(false)); void beginImport(); }, [beginImport]);
+  const handleRequestMdUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'markdown'); }, [beginImport]);
+  const handleRequestCsvUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'csv'); }, [beginImport]);
+  const handleRequestLinkUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'link'); }, [beginImport]);
+  useEffect(() => () => { fileImport?.target?.dispose(); }, [fileImport]);
+  const closeFileImport = () => {
+    const target = fileImport?.target; target?.dispose(); setFileImport(null); importBusy.current = false;
+    if (target && !target.editor.isDestroyed && target.editor.isInitialized) target.editor.commands.focus(undefined, { scrollIntoView: false });
+  };
 
   useEffect(() => {
     fetchData();
@@ -753,6 +754,7 @@ export default function Dashboard() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
+      if (document.fullscreenElement || event.defaultPrevented || target?.closest('[role="dialog"]')) return;
       const isEditable = Boolean(
         target?.closest('[contenteditable="true"]') ||
         target?.tagName === 'INPUT' ||
@@ -778,12 +780,6 @@ export default function Dashboard() {
         return;
       }
 
-      if (shortcutMatchesEvent(resolvedShortcuts.closeActiveNote, event)) {
-        event.preventDefault();
-        closeActiveNote();
-        return;
-      }
-
       if (shortcutMatchesEvent(resolvedShortcuts.toggleSidebar, event)) {
         event.preventDefault();
         toggleSidebar();
@@ -796,19 +792,19 @@ export default function Dashboard() {
         return;
       }
 
-      if (isMac && event.metaKey && event.key === '[') {
+      if (shortcutMatchesEvent(historyShortcuts().back, event)) {
         event.preventDefault();
         handleBackNavigation();
         return;
       }
 
-      if (isMac && event.metaKey && event.key === ']') {
+      if (shortcutMatchesEvent(historyShortcuts().forward, event)) {
         event.preventDefault();
         handleForwardNavigation();
         return;
       }
 
-      if (!isMac && event.altKey && event.key === 'ArrowLeft') {
+      if (!isMac && event.ctrlKey && event.altKey && !event.shiftKey && event.key === 'ArrowLeft') {
         event.preventDefault();
         handleBackNavigation();
         return;
@@ -823,6 +819,11 @@ export default function Dashboard() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [closeActiveNote, handleBackNavigation, handleForwardNavigation, openCommandPalette, openShortcutsModal, resolvedShortcuts, switchNote, toggleSidebar]);
+
+  useEffect(() => {
+    if (!activeNoteId) return;
+    return registerCloseNoteShortcut(resolvedShortcuts.closeActiveNote, closeActiveNote);
+  }, [activeNoteId, resolvedShortcuts.closeActiveNote, closeActiveNote]);
 
   useEffect(() => {
     if (!replaceLinkModal || !replaceSearch.trim()) {
@@ -1085,52 +1086,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleRequestMdUpload = useCallback(() => {
-    openFilePicker(mdUploadRef.current);
-  }, []);
-
-  const handleRequestCsvUpload = useCallback(() => {
-    openFilePicker(csvUploadRef.current);
-  }, []);
-
-  const handleMdFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const editor = window.__vaultor_editor;
-      const text = await readTextFile(file);
-      const html = markdownToHtml(text);
-      if (editor && !editor.isDestroyed) editor.chain().focus().insertContent(html).run();
-    } catch (error) {
-      console.error('MD upload failed:', error);
-    }
-    if (mdUploadRef.current) mdUploadRef.current.value = '';
-  }, []);
-
-  const handleCsvFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const editor = window.__vaultor_editor;
-      const [text, resource] = await Promise.all([
-        readTextFile(file),
-        uploadFileResource(file),
-      ]);
-
-      syncUploadedResource(resource);
-
-      if (editor && !editor.isDestroyed) {
-        const content = chooseSafeCsvContent(editor, resource, text);
-        editor.chain().focus().insertContent(content).run();
-      }
-
-      void fetchData();
-    } catch (error) {
-      console.error('CSV upload failed:', error);
-    }
-    if (csvUploadRef.current) csvUploadRef.current.value = '';
-  }, [fetchData, syncUploadedResource, uploadFileResource]);
-
   const handleFileDownload = useCallback(async () => {
     if (!activeResource || activeResource.type !== 'file') return;
     try {
@@ -1290,7 +1245,7 @@ export default function Dashboard() {
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-1.5 text-xs font-medium transition-all hover:bg-[var(--surface-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-slate-800"
         >
           {uploadPending ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-          Upload
+          Import files
         </button>
       </div>
 
@@ -1431,9 +1386,6 @@ export default function Dashboard() {
 
   return (
     <div className={`app-root flex h-screen flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen ? 'command-open pointer-events-none' : ''}`}>
-      <input type="file" ref={mdUploadRef} className="pointer-events-none absolute h-px w-px -translate-x-[200vw] opacity-0" accept=".md,.markdown,.txt,text/markdown,text/plain" onChange={handleMdFileChange} />
-      <input type="file" ref={csvUploadRef} className="pointer-events-none absolute h-px w-px -translate-x-[200vw] opacity-0" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain,application/vnd.ms-excel" onChange={handleCsvFileChange} />
-      <input type="file" ref={fileUploadRef} className="pointer-events-none absolute h-px w-px -translate-x-[200vw] opacity-0" onChange={handleUploadFile} />
 
       <CommandPaletteModal
         open={commandPaletteOpen}
@@ -1445,6 +1397,8 @@ export default function Dashboard() {
       <ShortcutsModal open={shortcutsOpen} onClose={closeShortcutsModal} />
       <ErrorBoundary region="settings"><SettingsModal open={settingsOpen} onClose={closeSettingsModal} /></ErrorBoundary>
 
+      {fileImport && <ErrorBoundary region="file import"><FileImportModal session={fileImport} onClose={closeFileImport} onResource={syncUploadedResource} /></ErrorBoundary>}
+      {noteExport && <ErrorBoundary region="note export"><NoteExportModal key={noteExport.id} noteId={noteExport.id} title={noteExport.title} flush={async () => { await commitTitleEditing(); await saves.flush(noteExport.id); }} onClose={() => setNoteExport(null)} /></ErrorBoundary>}
       <ErrorBoundary region="workspace transfer"><TransferModal mode={transferMode} onClose={() => setTransferMode(null)} flush={async () => { await saves.flushAll(); await flushSettings(); }} onImported={afterImport} /></ErrorBoundary>
       <ErrorBoundary region="diagnostics"><DiagnosticsPanel open={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} /></ErrorBoundary>
       {notice && <div role="alert" className="z-[1200] flex items-center gap-3 bg-red-950 p-3 text-sm text-white">
@@ -1695,6 +1649,7 @@ export default function Dashboard() {
                     )}
 
                     </div>
+                    <button type="button" title="Export note" aria-label={`Export ${note.title}`} className="rounded-lg p-2 text-slate-400 hover:bg-background hover:text-primary" onClick={() => setNoteExport({ id: note.id, title: note.title })}><DownloadCloud size={16} /></button>
                     <SaveIndicator status={saves.status(note.id)} onRetry={() => void saves.flush(note.id).catch(() => {})} />
                     </div>
 
@@ -1834,6 +1789,9 @@ export default function Dashboard() {
                     {note.resource?.type === 'note' ? (
                       <ErrorBoundary region="note editor"><BlockEditor
                         noteId={note.id}
+                        noteTitle={note.resource.title}
+                        saveStatus={saves.status(note.id)}
+                        onRetrySave={() => void saves.flush(note.id).catch(() => {})}
                         content={parseNoteContent(note.resource.content)}
                         autosaveDelay={0}
                         isActive={note.id === activeNoteId}
@@ -1846,6 +1804,7 @@ export default function Dashboard() {
                         onUpdate={(json) => handleContentUpdate(note.id, json)}
                         onRequestMdUpload={handleRequestMdUpload}
                         onRequestCsvUpload={handleRequestCsvUpload}
+                        onRequestLinkUpload={handleRequestLinkUpload}
                       /></ErrorBoundary>
                     ) : (
                       <div className="flex h-full items-center justify-center text-sm text-slate-400">
@@ -1889,7 +1848,7 @@ export default function Dashboard() {
               <p className="mb-6 text-sm opacity-80">Open the command palette with {isMac ? 'Cmd+K' : 'Ctrl+K'} to jump anywhere fast.</p>
               <div className="flex gap-3">
                 <button onClick={handleCreateNote} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"><Plus size={16} /> New Note</button>
-                <button onClick={requestFileUpload} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-card"><Upload size={16} /> Upload File</button>
+                <button onClick={requestFileUpload} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-card"><Upload size={16} /> Import files</button>
               </div>
             </div>
           )}
@@ -2160,40 +2119,6 @@ function upsertResourceInList(resources: Resource[], nextResource: Resource) {
   const nextResources = [...resources];
   nextResources[existingIndex] = nextResource;
   return nextResources;
-}
-
-function openFilePicker(input: HTMLInputElement | null) {
-  if (!input) {
-    return;
-  }
-
-  input.value = '';
-  // Release the editable element synchronously before the native dialog takes focus.
-  if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-
-  try {
-    if ('showPicker' in input && typeof input.showPicker === 'function') {
-      input.showPicker();
-      return;
-    }
-  } catch {
-    // Fall through to click for browsers that expose but restrict showPicker.
-  }
-
-  input.click();
-}
-
-function readTextFile(file: File) {
-  if (typeof file.text === 'function') {
-    return file.text();
-  }
-
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
-    reader.onerror = () => reject(reader.error ?? new Error('Unable to read file.'));
-    reader.readAsText(file);
-  });
 }
 
 function getWorkspaceLayoutClass(noteCount: number) {

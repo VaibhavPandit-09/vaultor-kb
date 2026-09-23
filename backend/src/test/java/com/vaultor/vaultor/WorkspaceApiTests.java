@@ -33,6 +33,7 @@ class WorkspaceApiTests {
     @Autowired WorkspaceGate gate;
     @Autowired TransferOperationRepository operationRepository;
     @Autowired ResourceService resourceService;
+    @Autowired FileImportService fileImports;
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
     HttpClient client=HttpClient.newHttpClient();
     HttpResponse<String> request(String method,String path,Object body) throws Exception {
@@ -49,6 +50,24 @@ class WorkspaceApiTests {
     TransferService.Operation await(String id) throws Exception {
         for(int i=0;i<150;i++) {var op=transfers.get(id);if(List.of("SUCCEEDED","FAILED").contains(op.status())) {assertEquals("SUCCEEDED",op.status(),op.detail());return op;}Thread.sleep(50);}
         throw new AssertionError("Transfer timed out");
+    }
+    @Test void fileAndNoteImportsAreRetrySafeAndNeverOverwrite() throws Exception {
+        String fileId=UUID.randomUUID().toString(), noteId=UUID.randomUUID().toString();
+        var csv=new MockMultipartFile("file","sample.csv","text/csv","a,b\n1,2".getBytes());
+        long before=resources.count();
+        try {
+            var file=fileImports.create(fileId,"sample.csv",null,csv);
+            assertEquals(fileId,fileImports.create(fileId,"sample.csv",null,csv).getId());
+            assertEquals(file.getFilePath(),resources.findById(fileId).orElseThrow().getFilePath());
+            String body="{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Imported text\"}]}]}";
+            fileImports.create(noteId,"Same title",body,null);
+            fileImports.create(noteId,"Same title",body,null);
+            assertEquals(before+2,resources.count());
+            assertEquals(json.readTree(body),ok("GET","/resources/"+noteId,null).get("content"));
+            assertThrows(org.springframework.web.server.ResponseStatusException.class,()->fileImports.create(noteId,"Different",body,null));
+            assertThrows(IllegalArgumentException.class,()->fileImports.create(UUID.randomUUID().toString(),"Invalid","{}",null));
+            assertEquals(before+2,resources.count());
+        } finally { if(resources.existsById(fileId)) resourceService.deleteResource(fileId); if(resources.existsById(noteId)) resourceService.deleteResource(noteId); }
     }
     @Test void pastedNumberedListCanBeSavedAndReadBack() throws Exception {
         var content=json.readTree("""

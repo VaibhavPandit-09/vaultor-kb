@@ -1,8 +1,10 @@
+import { flushSync } from 'react-dom';
 type LinkItem = { id: string; title: string; type: 'note' | 'file'; virtual: boolean };
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Editor } from '@tiptap/react';
 import { FileText, File, Search } from 'lucide-react';
 import api from '../../lib/api';
+import { resourceLinkPluginKey, type ResourceLinkState } from './ResourceLinkExtension';
 
 interface ResourceLinkMenuProps {
   editor: Editor;
@@ -10,13 +12,13 @@ interface ResourceLinkMenuProps {
   query: string;
   selectedIndex: number;
   onClose: () => void;
+  onRequestFileUpload: (editor: Editor, range: { from: number; to: number }) => void;
   onUpdateFiltered: (count: number) => void;
 }
 
-export default function ResourceLinkMenu({ editor, range, query, selectedIndex, onClose, onUpdateFiltered }: ResourceLinkMenuProps) {
+export default function ResourceLinkMenu({ editor, range, query, selectedIndex, onClose, onUpdateFiltered, onRequestFileUpload }: ResourceLinkMenuProps) {
   const [items, setItems] = useState<LinkItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -50,32 +52,6 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
     };
   }, [query, onUpdateFiltered]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) {
-      onClose();
-      return;
-    }
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const { data } = await api.post('/resources/file', formData);
-      if (editor) {
-        editor.chain().focus()
-          .deleteRange(range)
-          .insertContent({
-            type: 'resourceLink',
-            attrs: { resourceId: data.id, label: data.title, type: data.type }
-          })
-          .insertContent(' ')
-          .run();
-        onClose();
-      }
-    } catch (err) {
-      console.error('File upload failed', err);
-    }
-  };
-
   const selectItem = useCallback(async (index: number) => {
     const item = items[index];
     if (!item) return;
@@ -86,7 +62,10 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
 
     if (item.virtual) {
       if (type === 'file') {
-        fileInputRef.current?.click();
+        const current = resourceLinkPluginKey.getState(editor.state) as ResourceLinkState | undefined;
+        const insertion = current?.range ?? range;
+        flushSync(onClose);
+        onRequestFileUpload(editor, insertion);
         return;
       }
       try {
@@ -115,17 +94,25 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
         .run();
       onClose();
     }
-  }, [items, editor, range, query, onClose]);
+  }, [items, editor, range, query, onClose, onRequestFileUpload]);
 
   useEffect(() => {
-    window.__executeResourceLink = () => {
-      selectItem(selectedIndex);
+    const view = editor.view;
+    const executors = window.__resourceLinkExecutors ?? new Map<object, () => void>();
+    window.__resourceLinkExecutors = executors;
+    executors.set(view, () => { void selectItem(selectedIndex); });
+    window.__executeResourceLink = requestedView => {
+      if (requestedView) executors.get(requestedView as object)?.();
+      else executors.get(view)?.();
     };
-  }, [selectedIndex, selectItem]);
+    return () => {
+      executors.delete(view);
+      if (!executors.size) { delete window.__executeResourceLink; delete window.__resourceLinkExecutors; }
+    };
+  }, [editor, selectedIndex, selectItem]);
 
   return (
     <div className="w-64 bg-slate-900 border border-slate-700/50 rounded-xl shadow-2xl py-2 flex flex-col max-h-80 overflow-y-auto z-50 animate-in fade-in zoom-in-95 duration-100 tippy-box">
-      <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
       <div className="px-3 py-1.5 mb-1 flex justify-between items-center text-xs font-semibold text-slate-400 border-b border-slate-700/50">
         <span className="flex items-center"><Search size={12} className="mr-1.5" /> Link Resource</span>
         {loading && <span className="animate-pulse">Searching...</span>}

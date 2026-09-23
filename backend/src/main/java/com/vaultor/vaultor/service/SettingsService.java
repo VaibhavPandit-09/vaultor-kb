@@ -90,7 +90,7 @@ public class SettingsService {
         if (incoming != null && incoming.keybindings() != null) {
             incoming.keybindings().forEach((action, keybinding) -> {
                 if (DEFAULT_KEYBINDINGS.containsKey(action)) {
-                    normalizedKeybindings.put(action, normalizeKeybinding(keybinding));
+                    normalizedKeybindings.put(action, normalizeKeybinding(action, keybinding));
                 }
             });
         }
@@ -132,9 +132,14 @@ public class SettingsService {
         return new LocalSettings(theme, accentColor, density, animationMode, previewMode, sidebarMode, uiTransparency, sidebarCollapsed);
     }
 
-    private Keybinding normalizeKeybinding(Keybinding incoming) {
+    private Keybinding normalizeKeybinding(String action, Keybinding incoming) {
         String mac = normalizeShortcutString(incoming == null ? null : incoming.mac());
         String windows = normalizeShortcutString(incoming == null ? null : incoming.windows());
+        String oldDefault = "switchNoteNext".equals(action) ? "Mod+ArrowRight" : "switchNotePrevious".equals(action) ? "Mod+ArrowLeft" : null;
+        if (oldDefault != null) {
+            if (oldDefault.equals(mac) || oldDefault.replace("Mod+", "Mod+Alt+").equals(mac) || ("switchNoteNext".equals(action) ? "Mod+Alt+PageDown" : "Mod+Alt+PageUp").equals(mac)) mac = DEFAULT_KEYBINDINGS.get(action).mac();
+            if (oldDefault.equals(windows) || oldDefault.replace("Mod+", "Mod+Alt+").equals(windows) || ("switchNoteNext".equals(action) ? "Mod+Alt+PageDown" : "Mod+Alt+PageUp").equals(windows)) windows = DEFAULT_KEYBINDINGS.get(action).windows();
+        }
         return new Keybinding(mac, windows);
     }
 
@@ -166,8 +171,8 @@ public class SettingsService {
 
     public static final Map<String, Keybinding> DEFAULT_KEYBINDINGS = Map.of(
             "commandPalette", new Keybinding("Mod+K", "Mod+K"),
-            "switchNoteNext", new Keybinding("Mod+ArrowRight", "Mod+ArrowRight"),
-            "switchNotePrevious", new Keybinding("Mod+ArrowLeft", "Mod+ArrowLeft"),
+            "switchNoteNext", new Keybinding("Alt+ArrowRight", "Alt+ArrowRight"),
+            "switchNotePrevious", new Keybinding("Alt+ArrowLeft", "Alt+ArrowLeft"),
             "closeActiveNote", new Keybinding("Mod+Shift+Backspace", "Mod+Shift+Backspace"),
             "toggleSidebar", new Keybinding("Mod+B", "Mod+B"),
             "openShortcuts", new Keybinding("Mod+Slash", "Mod+Slash")

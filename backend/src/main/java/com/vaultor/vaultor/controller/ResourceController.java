@@ -19,6 +19,11 @@ public class ResourceController {
     private final TagService tags;
     private final FileStorageService files;
     private final DocumentService documents;
+    private final FileImportService imports;
+    @PutMapping(value="/imports/{id}", consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResourceDto importFile(@PathVariable String id, @RequestParam String title, @RequestParam(required=false) String content, @RequestParam(required=false) MultipartFile file) throws Exception {
+        return dto(imports.create(id,title,content,file));
+    }
     private ResourceDto dto(Resource r) { return ResourceDto.of(r, documents); }
     private Resource get(String id) { return resources.findById(id).orElseThrow(); }
     private void validate(NoteInput input) {

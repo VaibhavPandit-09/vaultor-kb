@@ -34,6 +34,8 @@ public class Resource {
 
     private Long size;
 
+    private String importFingerprint; // Internal retry identity; omitted from DTOs/archives.
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

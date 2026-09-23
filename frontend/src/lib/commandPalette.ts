@@ -98,7 +98,7 @@ const commandDefinitions: CommandDefinition[] = [
   },
   {
     id: 'upload_file',
-    title: 'Upload file',
+    title: 'Import files',
     keywords: ['upload', 'file', 'import'],
     getInitialStep: (context) => ({
       type: 'execute',
@@ -106,7 +106,7 @@ const commandDefinitions: CommandDefinition[] = [
     }),
     remember: (context) => ({
       id: 'upload_file',
-      title: 'Upload file',
+      title: 'Import files',
       resume: () => ({
         type: 'execute',
         action: () => context.uploadFile(),

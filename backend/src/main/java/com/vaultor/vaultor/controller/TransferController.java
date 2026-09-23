@@ -10,7 +10,7 @@ import java.util.*;
 public class TransferController {
     private final TransferService transfers;
     private final ExporterRegistry registry;
-    @PostMapping("/exports") public TransferService.Operation export(@RequestBody Map<String,String> body) { return transfers.export(body.getOrDefault("scope","workspace"),body.getOrDefault("format","zip")); }
+    @PostMapping("/exports") public TransferService.Operation export(@RequestBody Map<String,String> body) { return "notes".equals(body.get("scope")) ? transfers.exportNote(body.get("noteId"),body.getOrDefault("format","md")) : transfers.export(body.getOrDefault("scope","workspace"),body.getOrDefault("format","zip")); }
     @GetMapping("/export-formats") public List<ExporterRegistry.Format> formats() { return registry.available(); }
     @PostMapping("/imports/preview") public TransferService.Preview preview(@RequestParam MultipartFile file) throws Exception { return transfers.preview(file); }
     @PostMapping("/imports/{id}/commit") public TransferService.Operation commit(@PathVariable String id,@RequestBody Map<String,String> body) {
@@ -20,6 +20,7 @@ public class TransferController {
     @GetMapping("/operations/{id}") public TransferService.Operation operation(@PathVariable String id) { return transfers.get(id); }
     @PostMapping("/operations/{id}/cancel") public TransferService.Operation cancel(@PathVariable String id) { return transfers.cancel(id); }
     @GetMapping("/exports/{id}/download") public ResponseEntity<FileSystemResource> download(@PathVariable String id) {
-        return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/zip")).header("Content-Disposition","attachment; filename=workspace.zip").body(new FileSystemResource(transfers.download(id)));
+        var file=transfers.download(id);var op=transfers.get(id);
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(op.mediaType()==null?"application/zip":op.mediaType())).header(HttpHeaders.CONTENT_DISPOSITION,ContentDisposition.attachment().filename(op.filename()==null?"workspace.zip":op.filename(),java.nio.charset.StandardCharsets.UTF_8).build().toString()).body(new FileSystemResource(file));
     }
 }

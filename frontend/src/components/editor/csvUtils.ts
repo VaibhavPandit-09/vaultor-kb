@@ -169,12 +169,13 @@ function parseCsvRows(csv: string): string[][] {
     currentCell += char;
   }
 
+  if (inQuotes) throw new Error('CSV contains an unclosed quoted field. Correct the file and import again.');
   currentRow.push(currentCell);
-  pushNormalizedRow(rows, currentRow);
+  if (!csv.endsWith('\n') || currentRow.some(cell => cell.length > 0)) pushNormalizedRow(rows, currentRow);
 
-  const nonEmptyRows = rows.filter((row) => row.some((cell) => cell.trim().length > 0));
-  const safeRows = nonEmptyRows.length > 0 ? nonEmptyRows : [['']];
+  const safeRows = rows.length > 0 ? rows : [['']];
   const columnCount = Math.max(1, ...safeRows.map((row) => row.length));
+  if (columnCount > 500 || columnCount * safeRows.length > 50000) throw new Error('Table import is limited to 500 columns and 50,000 cells. Keep the original file instead.');
 
   return safeRows.map((row) => {
     const normalizedRow = [...row];
@@ -191,6 +192,7 @@ function pushNormalizedRow(rows: string[][], row: string[]) {
     return;
   }
 
+  if (rows.length >= 10000) throw new Error('Table import is limited to 10,000 rows. Keep the original file instead.');
   rows.push(row.map((cell) => cell ?? ''));
 }
 

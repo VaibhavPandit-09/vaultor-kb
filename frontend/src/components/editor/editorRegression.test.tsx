@@ -28,7 +28,7 @@ it('opens CSV and Markdown pickers without scheduling editor focus behind the di
   for (const id of ['upload-csv', 'upload-markdown']) {
     const editor = new Editor({ extensions: [StarterKit], content: '<p>/csv</p>' });
     const focus = vi.spyOn(window, 'requestAnimationFrame');
-    const upload = vi.fn(() => expect(editor.getText()).toBe(''));
+    const upload = vi.fn(() => expect(editor.getText()).toBe('/csv'));
     try {
       getItems(upload, upload).find(item => item.id === id)!.action(editor, { from: 1, to: 5 });
       expect(upload).toHaveBeenCalledOnce();
@@ -39,7 +39,7 @@ it('opens CSV and Markdown pickers without scheduling editor focus behind the di
 
 it('mounts and unmounts the editor in StrictMode without reading an unavailable view', () => {
   const noop = () => {};
-  const result = render(<StrictMode><EscapeManagerProvider><BlockEditor noteId="test" content={{ type: 'doc', content: [{ type: 'paragraph' }] }} autosaveDelay={0} isActive interactionLocked={false} shouldRestoreFocus={false} onUpdate={noop} onSelectionChange={noop} onActivate={noop} onFocusRestored={noop} onRequestMdUpload={noop} onRequestCsvUpload={noop} /></EscapeManagerProvider></StrictMode>);
+  const result = render(<StrictMode><EscapeManagerProvider><BlockEditor noteTitle="Test note" saveStatus="saved" onRetrySave={() => {}} noteId="test" content={{ type: 'doc', content: [{ type: 'paragraph' }] }} autosaveDelay={0} isActive interactionLocked={false} shouldRestoreFocus={false} onUpdate={noop} onSelectionChange={noop} onActivate={noop} onFocusRestored={noop} onRequestMdUpload={noop} onRequestCsvUpload={noop} onRequestLinkUpload={noop} /></EscapeManagerProvider></StrictMode>);
   expect(result.container.querySelector('.tiptap')).toBeTruthy();
   expect(() => result.unmount()).not.toThrow();
 });

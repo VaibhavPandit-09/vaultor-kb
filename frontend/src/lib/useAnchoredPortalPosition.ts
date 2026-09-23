@@ -7,6 +7,7 @@ type AnchoredPortalOptions = {
   offset?: number;
   viewportPadding?: number;
   preferredPlacement?: 'bottom' | 'top';
+  bounds?: { top: number; left: number; right: number; bottom: number };
 };
 
 type AnchoredPortalPosition = {
@@ -27,6 +28,10 @@ export function useAnchoredPortalPosition<T extends HTMLElement>(
   const [position, setPosition] = useState<AnchoredPortalPosition | null>(null);
   const { width = 'anchor', minWidth = 0, align = 'start', offset = 8,
     viewportPadding = 12, preferredPlacement = 'bottom' } = options;
+  const { top: boundTop = 0, left: boundLeft = 0, right: boundRight = Infinity,
+    bottom: boundBottom = Infinity } = options.bounds ?? {};
+
+  const bounded = Boolean(options.bounds);
 
   const updatePosition = useCallback(() => {
     const anchor = anchorRef.current;
@@ -36,29 +41,30 @@ export function useAnchoredPortalPosition<T extends HTMLElement>(
     }
 
     const rect = anchor.getBoundingClientRect();
-    const resolvedWidth = Math.max(minWidth, width === 'anchor' ? rect.width : width);
+    const desiredWidth = Math.max(minWidth, width === 'anchor' ? rect.width : width);
+    const resolvedWidth = bounded ? Math.min(desiredWidth, Math.max(0, Math.min(window.innerWidth, boundRight) - boundLeft - viewportPadding * 2)) : desiredWidth;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const spaceBelow = viewportHeight - rect.bottom - viewportPadding;
-    const spaceAbove = rect.top - viewportPadding;
+    const spaceBelow = Math.min(viewportHeight, boundBottom) - rect.bottom - viewportPadding;
+    const spaceAbove = rect.top - Math.max(0, boundTop) - viewportPadding;
     const placeAbove = preferredPlacement === 'top'
       ? true
       : spaceBelow < DEFAULT_MENU_HEIGHT && spaceAbove > spaceBelow;
 
     let left = align === 'end' ? rect.right - resolvedWidth : rect.left;
-    left = Math.min(viewportWidth - viewportPadding - resolvedWidth, Math.max(viewportPadding, left));
+    left = Math.min(Math.min(viewportWidth, boundRight) - viewportPadding - resolvedWidth, Math.max(boundLeft + viewportPadding, left));
 
     const next: AnchoredPortalPosition = {
       top: placeAbove ? rect.top - offset : rect.bottom + offset,
       left,
       width: resolvedWidth,
-      maxHeight: Math.max(120, (placeAbove ? spaceAbove : spaceBelow) - offset),
+      maxHeight: Math.max(bounded ? 0 : 120, (placeAbove ? spaceAbove : spaceBelow) - offset),
       placement: placeAbove ? 'top' : 'bottom',
     };
     setPosition(previous => previous && Object.keys(next).every(
       key => previous[key as keyof AnchoredPortalPosition] === next[key as keyof AnchoredPortalPosition],
     ) ? previous : next);
-  }, [anchorRef, width, minWidth, align, offset, viewportPadding, preferredPlacement]);
+  }, [anchorRef, width, minWidth, align, offset, viewportPadding, preferredPlacement, boundTop, boundLeft, boundRight, boundBottom, bounded]);
 
   useLayoutEffect(() => {
     if (!open) {
@@ -81,5 +87,5 @@ export function useAnchoredPortalPosition<T extends HTMLElement>(
     };
   }, [open, updatePosition]);
 
-  return { position: open ? position : null };
+  return { position: open ? position : null, updatePosition };
 }

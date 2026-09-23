@@ -1,7 +1,13 @@
 # Documentation
 
+- [Workspace evolution plan](workspace-evolution-plan.md): empty-note closing fix, expanded-table workspace, scalable Library, collections/tags and content search; exactly one sprint per authorization.
+
+- [Editor and portability plan](editor-portability-plan.md): imports and table foundations implemented; individual note exports implemented; table filtering/copy/export implemented; remaining manual verification recorded; one sprint per authorized call.
+
 - [Modernization tracker](history/modernization-plan.md): archived implementation checklist, validation evidence and remaining manual coverage.
 
+- [Table workflows](TABLES.md): contextual table menus, filtering, spreadsheet paste/copy, CSV export and expanded editing.
+- [Individual note exports](NOTE-EXPORTS.md): formats, snapshot semantics, assets, fidelity, limits and verification.
 - [API guide](API.md): shared UI/agent contracts, examples and transfer flow.
 - [Operations guide](OPERATIONS.md): development, Docker, limits, logging and isolated verification.
 - [Living codebase guide](CODEBASE.md): current implementation, source map, API/data contracts, UI/design, setup, validation, limitations, and maintenance history. This is the primary reference for agents and maintainers.

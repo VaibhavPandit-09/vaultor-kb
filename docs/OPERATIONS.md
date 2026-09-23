@@ -1,5 +1,15 @@
 # Development, Docker and debugging
 
+## Verification policy
+
+Keep routine checks minimal: compile affected code and check changed failure-prone behavior selectively. Do not run full suites, API smoke scripts or disposable Docker verification for every UI change. Keep APIs/scripts available for specific debugging or explicit requests. Browser/native checks are reserved for necessary interaction/visual questions. Commands below are available procedures, not a mandatory per-change checklist.
+
+## Ordinary file import verification
+
+Run `node scripts/file-import-smoke.mjs http://127.0.0.1:18080 --disposable` against the isolated test container. It creates five test resources and checks multipart imports, same-request retries, changed-payload conflicts, duplicate-title isolation, file byte equality, backlinks and integrity. It may run after the existing workspace smoke script on the same disposable volume.
+
+Frontend text conversion caps at 5 MiB; CSV conversion caps at 10,000 rows, 500 columns and 50,000 cells. Keep larger files as original resources under the existing upload cap. Native Windows/Vivaldi pointer visibility needs a targeted keyboard-versus-mouse check; API/component tests cannot establish it.
+
 ## Local development
 
 Install Java 25 and Node 20.19+ (Node 24 works). Use the checked-in Maven wrapper. Create backend/data/files before first standalone startup; SQLite needs its parent directory. In frontend run npm ci then npm run dev. In backend run ./mvnw spring-boot:run (PowerShell: .\mvnw.cmd spring-boot:run). Vite proxies /api to localhost:8080.
@@ -55,3 +65,7 @@ docker compose logs --since 10m vaultor | Select-String 'the-request-id'
 Each API request logs method/path/status/duration. Transfer logs include operation ID, originating request ID, phase/progress and build. Unexpected backend errors include stacks. Logs are JSON on stdout/stderr, so no shell inside the container is needed. Configure Docker log rotation for long-running deployments. Browser diagnostics are best-effort bounded batches; their absence does not prove the browser had no error.
 
 409 WORKSPACE_BUSY is temporary: wait for the transfer. Save failed retains the draft; restore backend connectivity and Retry before leaving. A CLEANUP operation reports that data already committed; a restart retries obsolete-file cleanup. Failed pre-commit operations leave the original metadata intact and may be retried from a fresh preview. Integrity findings are reports, never automatic repairs.
+
+## Note export runtime
+
+Both Dockerfiles install fontconfig for the bundled PDF fonts. Note exports use the existing operations directory, worker, logging and restart handling. MAX_NOTE_EXPORT_ASSET_BYTES defaults to 104857600, also capped by MAX_ARCHIVE_BYTES. Expire artifacts manually with the backend stopped; do not delete workspace files. See [NOTE-EXPORTS.md](NOTE-EXPORTS.md) for format fidelity and targeted verification.

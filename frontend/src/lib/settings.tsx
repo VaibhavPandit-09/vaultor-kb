@@ -15,6 +15,7 @@ import {
   getDefaultShortcut,
   getShortcutPlatformLabel,
   normalizeShortcut,
+  migrateNoteShortcut,
   resolveShortcutBindings,
   type PlatformShortcutBindingMap,
   type ShortcutAction,
@@ -447,8 +448,8 @@ function normalizeKeybindings(
       return accumulator;
     }
 
-    const mac = binding.mac ? normalizeShortcut(binding.mac) : '';
-    const windows = binding.windows ? normalizeShortcut(binding.windows) : '';
+    const mac = binding.mac ? migrateNoteShortcut(action, binding.mac) : '';
+    const windows = binding.windows ? migrateNoteShortcut(action, binding.windows) : '';
 
     accumulator[action] = {
       ...(mac ? { mac } : {}),

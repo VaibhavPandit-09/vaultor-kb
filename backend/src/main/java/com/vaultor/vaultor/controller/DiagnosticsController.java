@@ -38,7 +38,7 @@ public class DiagnosticsController {
     @GetMapping("/health") public Map<String,Object> health() {
         resources.count(); return Map.of("status","UP","ready",!gate.busy(),"workspaceBusy",gate.busy(),"build","modernization-1","requestId",Optional.ofNullable(MDC.get("requestId")).orElse(""));
     }
-    @GetMapping("/capabilities") public Map<String,Object> capabilities() { return Map.of("build","modernization-1","authentication",false,"workspaceTransfer",List.of("merge","replace"),"openapi","/api/openapi.json","diagnosticsRetention", "200 events / 24 hours / process lifetime"); }
+    @GetMapping("/capabilities") public Map<String,Object> capabilities() { return Map.of("build","modernization-1","authentication",false,"workspaceTransfer",List.of("merge","replace"),"exportFormats","/api/export-formats","openapi","/api/openapi.json","diagnosticsRetention", "200 events / 24 hours / process lifetime"); }
     @GetMapping("/diagnostics/integrity") public Map<String,Object> integrity() {
         if(!gate.enterRequest()) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,"Workspace transfer in progress");
         try {

@@ -15,6 +15,10 @@ public class TransferOperation {
     private Integer fileCount;
     private Integer tagCount;
     private String requestId;
+    private String outputArtifact;
+    private String outputFilename;
+    private String outputMediaType;
+    @Column(columnDefinition="TEXT") private String warnings="[]";
     private Instant createdAt=Instant.now();
     @Column(columnDefinition="TEXT") private String detail;
     @Column(columnDefinition="TEXT") private String journal="[]";

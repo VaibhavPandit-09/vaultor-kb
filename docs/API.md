@@ -1,5 +1,11 @@
 # Agent and UI API guide
 
+## Ordinary file import
+
+`PUT /api/resources/imports/{id}` accepts a canonical client-generated UUID and multipart `title` plus exactly one of `file` or `content`. Content is a serialized structured Tiptap JSON document. Retry with the same UUID and identical payload to retrieve the same resource without duplicate creation. Different payloads or occupied non-import IDs return 409. This endpoint never replaces by title. Metadata/backlinks commit together, with file bytes staged first. This is separate from workspace ZIP import. OpenAPI operation ID: `importFileResource`.
+
+`scripts/file-import-smoke.mjs` tests this flow against disposable storage, including byte preservation and retries. Frontend conversion choices/limits are in CODEBASE.md.
+
 The application and agents use the same unauthenticated API. Default origin: http://127.0.0.1:8080. Machine-readable specification: GET /api/openapi.json. Discover build/features at GET /api/capabilities and available export formats at GET /api/export-formats. Only workspace ZIP is enabled.
 
 ## Request and response rules
@@ -75,4 +81,8 @@ Merge assigns new resource IDs, rewrites links/table source IDs, unifies normali
 
 GET /health checks database availability and reports ready/workspaceBusy. GET /diagnostics/integrity reports missing binaries, dangling references, invalid documents and document/backlink disagreement without repairs. POST /diagnostics/events accepts at most 20 events with id,timestamp,action,route,message,stack,requestId,build; fields are bounded and server receipt time controls retention. GET returns at most 200 events from the last 24 hours of this process. Do not put note bodies, files, secrets, or whole request payloads into diagnostic messages.
 
-Use scripts/api-smoke.mjs against **empty disposable storage only**. It requires --disposable and refuses an existing resource collection. It verifies notes/files/links/tables/tags/settings and ZIP merge/replace. See [OPERATIONS.md](OPERATIONS.md) for exact commands. API checks establish data correctness; they cannot prove dropdown visibility, positioning or usability. Component tests and manual browser checks cover those separately.
+Run API smoke only for specific debugging or explicit requests, not every development change. Use scripts/api-smoke.mjs against **empty disposable storage only**. It requires --disposable and refuses an existing resource collection. It verifies notes/files/links/tables/tags/settings and ZIP merge/replace. See [OPERATIONS.md](OPERATIONS.md) for exact commands. API checks establish data correctness; they cannot prove dropdown visibility, positioning or usability. Component tests and manual browser checks cover those separately.
+
+## Individual note exports
+
+POST `/api/exports` with `{ "scope": "notes", "noteId": "<id>", "format": "md" }`. Formats: md, md-assets (ZIP), pdf, docx, discoverable from `/api/export-formats`. The operation snapshots the saved note and local assets before returning. UI callers must flush pending saves first. Poll `/api/operations/{id}`; after SUCCEEDED download `/api/exports/{id}/download`. Operation fields `filename`, `mediaType`, `warnings` describe the output; Content-Disposition/Content-Type match it. Read [NOTE-EXPORTS.md](NOTE-EXPORTS.md) for fidelity, limits and retry behavior. HTTP errors retain problem details/request IDs; asynchronous rendering failures appear in operation detail with the originating request ID.

@@ -56,13 +56,13 @@ const shortcutActionMeta: ShortcutActionMeta[] = [
     action: 'switchNoteNext',
     category: 'Navigation',
     description: 'Switch note (next)',
-    defaultShortcut: { mac: 'Mod+ArrowRight', windows: 'Mod+ArrowRight' },
+    defaultShortcut: { mac: 'Alt+ArrowRight', windows: 'Alt+ArrowRight' },
   },
   {
     action: 'switchNotePrevious',
     category: 'Navigation',
     description: 'Switch note (previous)',
-    defaultShortcut: { mac: 'Mod+ArrowLeft', windows: 'Mod+ArrowLeft' },
+    defaultShortcut: { mac: 'Alt+ArrowLeft', windows: 'Alt+ArrowLeft' },
   },
   {
     action: 'closeActiveNote',
@@ -84,12 +84,16 @@ const shortcutActionMeta: ShortcutActionMeta[] = [
   },
 ];
 
+export function historyShortcuts(platform: ShortcutPlatform = getCurrentShortcutPlatform()) {
+  return platform === 'mac' ? { back: 'Mod+BracketLeft', forward: 'Mod+BracketRight' } : { back: 'Mod+Alt+ArrowLeft', forward: 'Mod+Alt+ArrowRight' };
+}
+
 const staticShortcutCategories: ShortcutCategory[] = [
   {
     category: 'Navigation',
     items: [
-      { description: 'Go back', keys: isMac ? ['Cmd', '['] : ['Alt', 'Left'] },
-      { description: 'Go forward', keys: isMac ? ['Cmd', ']'] : ['Alt', 'Right'] },
+      { description: 'Go back', keys: formatShortcutKeys(historyShortcuts().back) },
+      { description: 'Go forward', keys: formatShortcutKeys(historyShortcuts().forward) },
     ],
   },
   {
@@ -119,13 +123,21 @@ export function resolveShortcutBindings(
 ): ShortcutBindingMap {
   return shortcutActionMeta.reduce((bindings, item) => {
     const configured = keybindings?.[item.action]?.[platform];
-    bindings[item.action] = normalizeShortcut(configured || item.defaultShortcut[platform]);
+    bindings[item.action] = migrateNoteShortcut(item.action, configured || item.defaultShortcut[platform]);
     return bindings;
   }, {} as ShortcutBindingMap);
 }
 
 export function getDefaultShortcut(action: ShortcutAction, platform: ShortcutPlatform = getCurrentShortcutPlatform()) {
   return DEFAULT_KEYBINDINGS[action][platform];
+}
+
+// Upgrade only the exact former defaults; preserve all other custom bindings.
+export function migrateNoteShortcut(action: string, shortcut: string): string {
+  const normalized = normalizeShortcut(shortcut);
+  if (action === 'switchNoteNext' && ['Mod+ArrowRight', 'Mod+Alt+PageDown', 'Mod+Alt+ArrowRight'].includes(normalized)) return 'Alt+ArrowRight';
+  if (action === 'switchNotePrevious' && ['Mod+ArrowLeft', 'Mod+Alt+PageUp', 'Mod+Alt+ArrowLeft'].includes(normalized)) return 'Alt+ArrowLeft';
+  return normalized;
 }
 
 export function normalizeShortcut(shortcut: string): string {
@@ -258,7 +270,11 @@ export function getShortcutCategories(bindings: ShortcutBindingMap): ShortcutCat
   }, {});
 
   const dynamicCategories = Object.entries(grouped).map(([category, items]) => ({ category, items }));
-  return [...dynamicCategories, ...staticShortcutCategories];
+  for (const group of staticShortcutCategories) {
+    const existing = dynamicCategories.find(item => item.category === group.category);
+    if (existing) existing.items.push(...group.items); else dynamicCategories.push(group);
+  }
+  return dynamicCategories;
 }
 
 export function validateShortcutBinding(
@@ -271,10 +287,11 @@ export function validateShortcutBinding(
     return 'Press a complete shortcut.';
   }
 
-  if (!normalized.includes('Mod')) {
-    return 'Use Cmd/Ctrl with each app shortcut.';
+  if (!normalized.includes('Mod') && !normalized.includes('Alt')) {
+    return 'Use Cmd/Ctrl or Alt with each app shortcut.';
   }
 
+  if (Object.values(historyShortcuts()).includes(normalized)) return 'That shortcut is reserved for navigation history.';
   if (RESERVED_SHORTCUTS.includes(normalized)) {
     return 'That shortcut is reserved by the browser.';
   }
@@ -314,6 +331,8 @@ function normalizeKeyToken(token: string): string | null {
     return null;
   }
 
+  if (lowered === 'pageup') return 'PageUp';
+  if (lowered === 'pagedown') return 'PageDown';
   if (lowered === 'backspace') {
     return 'Backspace';
   }

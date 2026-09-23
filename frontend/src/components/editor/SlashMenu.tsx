@@ -1,3 +1,4 @@
+import { flushSync } from 'react-dom';
 import { useCallback, useMemo, useRef, useEffect } from 'react';
 import { Editor } from '@tiptap/react';
 import type { Range } from '@tiptap/react';
@@ -19,6 +20,7 @@ import {
   Table,
   Type,
 } from 'lucide-react';
+import { slashCommandPluginKey, type SlashCommandState } from './SlashCommandExtension';
 import { activateResourceLinkSuggestion } from './ResourceLinkExtension';
 import { extractSymbolSearchTerm, formatSymbolName, isSymbolSearchQuery, searchSymbols } from '../../lib/symbols';
 
@@ -34,7 +36,7 @@ interface SlashMenuItem {
   flat?: boolean;
 }
 
-const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuItem[] => [
+const getItems = (onUploadMd: (editor: Editor, range: Range) => void, onUploadCsv: (editor: Editor, range: Range) => void): SlashMenuItem[] => [
   {
     id: 'text',
     title: 'Text',
@@ -202,8 +204,7 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
     icon: <FileUp size={18} />,
     category: 'Import',
     action: (editor, range) => {
-      editor.chain().deleteRange(range).run();
-      onUploadMd();
+      onUploadMd(editor, range);
     },
   },
   {
@@ -214,14 +215,13 @@ const getItems = (onUploadMd: () => void, onUploadCsv: () => void): SlashMenuIte
     icon: <FileSpreadsheet size={18} />,
     category: 'Import',
     action: (editor, range) => {
-      editor.chain().deleteRange(range).run();
-      onUploadCsv();
+      onUploadCsv(editor, range);
     },
   },
 ];
 
 // eslint-disable-next-line react-refresh/only-export-components -- shared command query used by editor plugin.
-export function getFilteredSlashItems(query: string, onUploadMd: () => void, onUploadCsv: () => void): SlashMenuItem[] {
+export function getFilteredSlashItems(query: string, onUploadMd: (editor: Editor, range: Range) => void, onUploadCsv: (editor: Editor, range: Range) => void): SlashMenuItem[] {
   if (isSymbolSearchQuery(query)) {
     return searchSymbols(extractSymbolSearchTerm(query), 32).map((item) => ({
       id: `symbol-${item.name}`,
@@ -250,8 +250,8 @@ interface SlashMenuProps {
   query: string;
   selectedIndex: number;
   onClose: () => void;
-  onUploadMd: () => void;
-  onUploadCsv: () => void;
+  onUploadMd: (editor: Editor, range: Range) => void;
+  onUploadCsv: (editor: Editor, range: Range) => void;
 }
 
 export default function SlashMenu({
@@ -273,10 +273,10 @@ export default function SlashMenu({
   const selectItem = useCallback((index: number) => {
     const item = filtered[index];
     if (item) {
-      item.action(editor, range);
-      if (!item.keepOpen) {
-        onClose();
-      }
+      const current = slashCommandPluginKey.getState(editor.state) as SlashCommandState | undefined;
+      const latestRange = current?.active && current.range ? current.range : range;
+      if (!item.keepOpen) flushSync(onClose);
+      item.action(editor, latestRange);
     }
   }, [filtered, editor, range, onClose]);
 
@@ -299,7 +299,8 @@ export default function SlashMenu({
             <button
               key={item.id}
               data-selected={selected}
-              onClick={() => selectItem(index)}
+              onMouseDown={event => event.preventDefault()}
+                  onClick={() => selectItem(index)}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                 selected ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
@@ -348,6 +349,7 @@ export default function SlashMenu({
                 <button
                   key={item.id}
                   data-selected={selected}
+                  onMouseDown={event => event.preventDefault()}
                   onClick={() => selectItem(itemIndex)}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                     selected ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-slate-100 dark:hover:bg-slate-800'

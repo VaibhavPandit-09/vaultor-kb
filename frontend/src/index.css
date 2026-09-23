@@ -253,3 +253,62 @@ button {
 .tiptap.resize-cursor {
   cursor: col-resize;
 }
+
+/* Table chrome lives in a portal, outside the document's typography and layout. */
+.table-tools, .table-popover { z-index: 60; color: var(--text-primary); background: var(--surface-3); border: 1px solid var(--border-strong); box-shadow: 0 8px 28px #0003, 0 2px 6px #0002; font-family: inherit; font-size: 12px; line-height: 1.45; }
+.table-tools { position: fixed; display: flex; flex-wrap: nowrap; align-items: center; gap: 2px; padding: 4px; border-radius: 12px; width: max-content; overflow-x: auto; }
+.table-action { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: flex-start; gap: 7px; min-height: 30px; padding: 6px 8px; border-radius: 7px; font-size: 12px; line-height: 1.4; text-align: left; transition: background-color .12s; }
+.table-action svg { flex-shrink: 0; }
+.table-action:hover:not(:disabled), .table-action[aria-expanded="true"] { background: color-mix(in srgb, var(--primary) 13%, transparent); color: var(--text-primary); }
+.table-action:focus-visible, .table-axis-handle:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.table-action:disabled { opacity: .4; cursor: not-allowed; }
+.table-tools-compact .table-tool-label { display: none; }
+.table-tool-divider { width: 1px; height: 18px; flex-shrink: 0; background: var(--border-strong); margin: 0 3px; }
+.table-filter-badge { border-radius: 8px; min-width: 16px; padding: 0 4px; font-size: 10px; font-weight: 600; background: var(--primary); color: var(--primary-foreground); text-align: center; }
+.table-popover { z-index: 61; overflow: auto; overscroll-behavior: contain; border-radius: 12px; }
+.table-popover-heading { display: flex; align-items: center; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--border-strong); }
+.table-popover-heading > span { flex: 1; padding-left: 4px; font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+.table-popover-content { display: flex; flex-direction: column; padding: 5px; }
+.table-popover-content > .table-action { width: 100%; }
+.table-popover hr { border-color: var(--border-strong); margin: 5px 3px; }
+.table-help-text { color: var(--text-secondary); font-size: 11px; line-height: 1.6; }
+.table-help-text summary { cursor: pointer; }
+.table-help-text details p, .table-help-text > p { margin: 6px 0; }
+.table-danger { color: #ef4444; }
+.table-delete-confirm { display: flex; flex-direction: column; gap: 5px; font-size: 12px; padding: 8px; border: 1px solid #ef4444; border-radius: 7px; }
+.table-axis-handle { position: fixed; z-index: 59; display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 5px; background: var(--surface-3); color: var(--text-secondary); border: 1px solid var(--border-strong); }
+.table-axis-handle:hover { color: var(--primary); border-color: var(--primary); }
+.table-row-handle { transform: translateY(-50%); }
+.table-column-handle { transform: translateX(-50%); }
+.tiptap table { table-layout: fixed; }
+.tiptap table td, .tiptap table th { overflow-wrap: anywhere; }
+.table-filter-hidden, .table-expanded-hidden { display: none !important; }
+.table-data-panel { padding: 7px; display: flex; flex-direction: column; gap: 12px; }
+.table-panel-summary { display: flex; justify-content: space-between; align-items: center; color: var(--text-secondary); }
+.table-filter-fields, .table-export-fields { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.table-filter-fields > label, .table-export-fields > label { display: flex; flex-direction: column; gap: 5px; color: var(--text-secondary); }
+.table-feedback { font-size: 11px; line-height: 1.5; margin: 4px; padding: 8px; border-radius: 7px; background: var(--surface-2); overflow-wrap: anywhere; }
+.table-notice { color: var(--text-secondary); }
+.table-field { width: 100%; min-width: 0; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text-primary); border-radius: 7px; padding: 7px 8px; font-size: 12px; }
+.table-field:focus-visible { outline: 2px solid var(--primary); }
+.tiptap .table-filter-active .column-resize-handle { pointer-events: none; }
+.editor-workspace:fullscreen { background: var(--background); color: var(--foreground); width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+.editor-workspace:fullscreen > .table-editor-canvas { flex: 1; min-height: 0; overflow: auto; padding: 36px; overscroll-behavior: contain; }
+.editor-workspace:fullscreen .tiptap { max-width: none; }
+.table-expanded-chrome { order: -1; flex-shrink: 0; max-height: 55vh; overflow: auto; z-index: 60; background: var(--surface-2); color: var(--text-primary); border-bottom: 1px solid var(--border-strong); font-size: 12px; }
+.table-expanded-heading { display: flex; align-items: center; gap: 24px; padding: 16px 24px; }
+.table-expanded-title { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }
+.table-expanded-title > span { color: var(--text-tertiary); letter-spacing: .12em; font-size: 10px; font-weight: 600; }
+.table-expanded-title > strong { font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.table-expanded-title > small { color: var(--text-secondary); }
+.table-expanded-save { display: flex; align-items: center; gap: 4px; color: var(--text-secondary); }
+.table-return { border: 1px solid var(--border-strong); }
+.table-expanded-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 16px; background: var(--surface-3); border-top: 1px solid var(--border-subtle); }
+.table-action-group { display: flex; flex-wrap: wrap; gap: 2px; padding-right: 8px; border-right: 1px solid var(--border-strong); }
+.table-action-group:last-child { border-right: 0; }
+.table-expanded-filters { display: flex; align-items: flex-start; padding: 8px 16px; border-top: 1px solid var(--border-strong); max-height: 28vh; overflow: auto; }
+.table-expanded-filters > .table-data-panel { flex: 1; min-width: 0; }
+.table-expanded-filters .table-filter-fields { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+.table-expanded-filters .table-filter-fields > label, .table-expanded-filters .table-filter-fields > input { width: 220px; max-width: 100%; }
+@media (max-width: 640px) { .table-expanded-heading { flex-wrap: wrap; gap: 8px; padding: 10px 14px; } .table-expanded-title { flex-basis: 55%; } .table-expanded-save { order: 3; } .editor-workspace:fullscreen > .table-editor-canvas { padding: 28px 24px; } }
+

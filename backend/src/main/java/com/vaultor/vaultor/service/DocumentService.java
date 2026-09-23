@@ -11,6 +11,12 @@ import java.util.*;
 @Service @RequiredArgsConstructor
 public class DocumentService {
     private final ObjectMapper mapper;
+    /** Actual document children only: never interpret attrs or marks as content nodes. */
+    public static List<JsonNode> children(JsonNode node) {
+        List<JsonNode> result=new ArrayList<>();
+        for(JsonNode child:node.path("content")) result.add(child);
+        return result;
+    }
     public JsonNode parse(String content) {
         if (content == null) return null;
         try { return mapper.readTree(content); }

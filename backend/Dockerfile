@@ -19,6 +19,7 @@ RUN ./mvnw package -DskipTests
 
 # Stage 2: Runtime
 FROM eclipse-temurin:25-jre-alpine
+RUN apk add --no-cache fontconfig
 
 WORKDIR /app
 

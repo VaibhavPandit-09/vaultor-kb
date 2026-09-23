@@ -1,10 +1,14 @@
+import { flushSync } from 'react-dom';
 import type { JSONContent } from '@tiptap/core';
 import { memo, useRef, useState, useEffect, useCallback, useId } from 'react';
 import { useEditor, EditorContent, ReactNodeViewRenderer, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
-import { Table } from '@tiptap/extension-table';
+import { WorkspaceTable } from './WorkspaceTable';
+import TableControls from './TableControls';
+import type { SaveStatus } from '../../lib/saveCoordinator';
+import { TableWorkspace, handleTablePaste, tableViewKey, tableViewState } from './TableWorkspace';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
@@ -23,7 +27,6 @@ import CodeBlockView from './CodeBlockView';
 import { markdownToHtml } from './markdownUtils';
 import { ESCAPE_PRIORITIES, registerFocusRestore, useEscapeLayer } from '../../lib/escape/escape';
 import { SymbolSystemExtension } from './SymbolSystemExtension';
-import { Plus, Trash2 } from 'lucide-react';
 
 const lowlight = createLowlight(all);
 
@@ -35,6 +38,9 @@ type SlashCommandRegistryWindow = typeof window & {
 
 interface BlockEditorProps {
   noteId: string;
+  noteTitle: string;
+  saveStatus: SaveStatus;
+  onRetrySave: () => void;
   content: JSONContent | string | null;
   autosaveDelay: number;
   isActive: boolean;
@@ -45,8 +51,9 @@ interface BlockEditorProps {
   onActivate: (noteId: string) => void;
   onFocusRestored: (noteId: string) => void;
   savedSelection?: NoteSelection | null;
-  onRequestMdUpload: () => void;
-  onRequestCsvUpload: () => void;
+  onRequestMdUpload: (editor: Editor, range: NoteSelection) => void;
+  onRequestCsvUpload: (editor: Editor, range: NoteSelection) => void;
+  onRequestLinkUpload: (editor: Editor, range: NoteSelection) => void;
 }
 
 export interface NoteSelection {
@@ -54,19 +61,11 @@ export interface NoteSelection {
   to: number;
 }
 
-type TableOverlayState = {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-  rowMarkerTop: number;
-  columnMarkerLeft: number;
-  rowCount: number;
-  columnCount: number;
-};
-
 function BlockEditor({
   noteId,
+  noteTitle,
+  saveStatus,
+  onRetrySave,
   content,
   autosaveDelay,
   isActive,
@@ -79,6 +78,7 @@ function BlockEditor({
   savedSelection,
   onRequestMdUpload,
   onRequestCsvUpload,
+  onRequestLinkUpload,
 }: BlockEditorProps) {
   const editorEscapeId = useId();
   const wasActiveRef = useRef(false);
@@ -94,28 +94,9 @@ function BlockEditor({
   const [resourceSelectedIndex, setResourceSelectedIndex] = useState(0);
   const [resourceFilteredCount, setResourceFilteredCount] = useState(0);
 
-  const [isInTable, setIsInTable] = useState(false);
-  const [tableOverlay, setTableOverlay] = useState<TableOverlayState | null>(null);
-  const [tableControlsVisible, setTableControlsVisible] = useState(false);
   const [editorFocused, setEditorFocused] = useState(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tableOverlayFrameRef = useRef<number | null>(null);
-
-  const updateTableOverlay = useCallback((currentEditor: Editor | null | undefined) => {
-    setTableOverlay(resolveTableOverlay(currentEditor, editorContainerRef.current));
-  }, []);
-
-  const queueTableOverlayRefresh = useCallback((currentEditor: Editor | null | undefined) => {
-    if (tableOverlayFrameRef.current !== null) {
-      window.cancelAnimationFrame(tableOverlayFrameRef.current);
-    }
-
-    tableOverlayFrameRef.current = window.requestAnimationFrame(() => {
-      updateTableOverlay(currentEditor);
-      tableOverlayFrameRef.current = null;
-    });
-  }, [updateTableOverlay]);
 
   const editor = useEditor({
     extensions: [
@@ -134,54 +115,8 @@ function BlockEditor({
           return "Type '/' for commands...";
         },
       }),
-      Table.extend({
-        addAttributes() {
-          return {
-            ...this.parent?.(),
-            sourceResourceId: {
-              default: null,
-              parseHTML: (element) => element.getAttribute('data-source-resource-id'),
-              renderHTML: (attributes) => (
-                attributes.sourceResourceId
-                  ? { 'data-source-resource-id': attributes.sourceResourceId }
-                  : {}
-              ),
-            },
-            sourceResourceTitle: {
-              default: null,
-              parseHTML: (element) => element.getAttribute('data-source-resource-title'),
-              renderHTML: (attributes) => (
-                attributes.sourceResourceTitle
-                  ? { 'data-source-resource-title': attributes.sourceResourceTitle }
-                  : {}
-              ),
-            },
-            sourceResourceType: {
-              default: null,
-              parseHTML: (element) => element.getAttribute('data-source-resource-type'),
-              renderHTML: (attributes) => (
-                attributes.sourceResourceType
-                  ? { 'data-source-resource-type': attributes.sourceResourceType }
-                  : {}
-              ),
-            },
-          };
-        },
-        addKeyboardShortcuts() {
-          const parentShortcuts = this.parent?.() ?? {};
-
-          return {
-            ...parentShortcuts,
-            Enter: () => {
-              if (!isSelectionInLastTableRow(this.editor)) {
-                return false;
-              }
-
-              return this.editor.chain().focus().addRowAfter().goToNextCell().run();
-            },
-          };
-        },
-      }).configure({ resizable: true }),
+      WorkspaceTable,
+      TableWorkspace,
       TableRow,
       TableCell,
       TableHeader,
@@ -199,6 +134,7 @@ function BlockEditor({
         class: 'tiptap outline-none min-h-[50vh]',
       },
       handlePaste: (view, event) => {
+        if (handleTablePaste(view, event)) return true;
         const text = event.clipboardData?.getData('text/plain');
         if (text && looksLikeMarkdown(text)) {
           event.preventDefault();
@@ -220,14 +156,6 @@ function BlockEditor({
         onUpdateRef.current(ed.getJSON());
       }, autosaveDelayRef.current);
     },
-    onSelectionUpdate: ({ editor: ed }) => {
-      setIsInTable(ed.isActive('table'));
-      if (ed.isActive('table')) {
-        queueTableOverlayRefresh(ed);
-      } else {
-        setTableOverlay(null);
-      }
-    },
     onFocus: ({ editor: ed }) => {
       setEditorFocused(true);
       (window as typeof window & { __vaultor_editor?: Editor | null }).__vaultor_editor = ed;
@@ -235,13 +163,21 @@ function BlockEditor({
     },
     onBlur: ({ editor: ed }) => {
       setEditorFocused(false);
-      setTableControlsVisible(false);
       onSelectionChange({
         from: ed.state.selection.from,
         to: ed.state.selection.to,
       });
     },
   });
+
+  useEffect(() => {
+    if (!editor) return;
+    const syncExpandedView = () => {
+      if (document.fullscreenElement === editorContainerRef.current && !tableViewState(editor.state).expanded) void document.exitFullscreen().catch(() => {});
+    };
+    editor.on('transaction', syncExpandedView);
+    return () => { editor.off('transaction', syncExpandedView); };
+  }, [editor]);
 
   // Expose editor for parent to call insertContent
   useEffect(() => {
@@ -275,11 +211,6 @@ function BlockEditor({
     };
   }, [resourceFilteredCount]);
 
-  useEffect(() => {
-    if (resourceState?.query !== undefined) {
-      setResourceSelectedIndex(0);
-    }
-  }, [resourceState?.query]);
 
   const closeResourceMenu = useCallback(() => {
     if (editor) {
@@ -342,15 +273,15 @@ function BlockEditor({
     globalWindow.__slashCommandExecutors = executors;
 
     const executeSlashCommand = () => {
-      if (!slashState?.active) return;
-      const filtered = getFilteredSlashItems(slashState.query, onRequestMdUpload, onRequestCsvUpload);
+      const current = slashCommandPluginKey.getState(editor.state) as SlashCommandState | undefined;
+      if (!current?.active) return;
+      const filtered = getFilteredSlashItems(current.query, onRequestMdUpload, onRequestCsvUpload);
       const idx = selectedIndex >= filtered.length ? 0 : selectedIndex;
       const item = filtered[idx];
-      if (item && slashState.range) {
-        item.action(editor, slashState.range);
-        if (!item.keepOpen) {
-          closeSlash();
-        }
+      if (item && current.range) {
+        const range = { ...current.range };
+        if (!item.keepOpen) flushSync(closeSlash);
+        item.action(editor, range);
       }
     };
 
@@ -392,6 +323,7 @@ function BlockEditor({
 
 
 
+        if (state.query !== slashState?.query) setSelectedIndex(0);
         setSlashState(state);
 
         const { from } = editor.state.selection;
@@ -414,6 +346,7 @@ function BlockEditor({
       // Handle Resource Link Plugin State Synchronously
       const rlState = resourceLinkPluginKey.getState(editor.state) as ResourceLinkState | undefined;
       if (rlState?.active) {
+        if (rlState.query !== resourceState?.query) setResourceSelectedIndex(0);
         setResourceState(rlState);
 
         const { from } = editor.state.selection;
@@ -453,17 +386,9 @@ function BlockEditor({
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current);
       }
-      if (tableOverlayFrameRef.current !== null) {
-        window.cancelAnimationFrame(tableOverlayFrameRef.current);
-      }
     };
   }, []);
 
-  useEffect(() => {
-    if (slashState?.query !== undefined) {
-      setSelectedIndex(0);
-    }
-  }, [slashState?.query]);
 
   useEffect(() => {
     if (!editor) {
@@ -482,6 +407,7 @@ function BlockEditor({
     const current = JSON.stringify(editor.getJSON());
     const incoming = JSON.stringify(parsed);
     if (current !== incoming) {
+      editor.view.dispatch(editor.state.tr.setMeta(tableViewKey, { reset: true }));
       editor.commands.setContent(parsed);
     }
   }, [content, editor]);
@@ -515,157 +441,12 @@ function BlockEditor({
     });
   }, [editor, editorFocused, isActive, onSelectionChange]);
 
-  useEffect(() => {
-    if (!editor || !editorFocused || !isInTable) {
-      if (!editorFocused || !isInTable) {
-        setTableOverlay(null);
-        setTableControlsVisible(false);
-      }
-      return;
-    }
-
-    queueTableOverlayRefresh(editor);
-
-    const handleWindowChange = () => queueTableOverlayRefresh(editor);
-    window.addEventListener('resize', handleWindowChange);
-    window.addEventListener('scroll', handleWindowChange, true);
-
-    return () => {
-      window.removeEventListener('resize', handleWindowChange);
-      window.removeEventListener('scroll', handleWindowChange, true);
-    };
-  }, [editor, editorFocused, isInTable, queueTableOverlayRefresh]);
-
-  useEffect(() => {
-    const container = editorContainerRef.current;
-    if (!editor || !editorFocused || !isInTable || !container) {
-      setTableControlsVisible(false);
-      return;
-    }
-
-    const handleMouseMove = (event: MouseEvent) => {
-      const target = event.target instanceof Element ? event.target : null;
-      if (target?.closest('[data-table-control]')) {
-        setTableControlsVisible(true);
-        return;
-      }
-
-      const cell = target?.closest('td, th');
-      const table = target?.closest('table');
-
-      if (!cell || !table || !container.contains(table)) {
-        setTableControlsVisible(false);
-        queueTableOverlayRefresh(editor);
-        return;
-      }
-
-      setTableControlsVisible(true);
-      setTableOverlay(resolveTableOverlayFromCell(cell, table, container));
-    };
-
-    const handleMouseLeave = () => {
-      setTableControlsVisible(false);
-      queueTableOverlayRefresh(editor);
-    };
-
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('mouseleave', handleMouseLeave);
-
-    return () => {
-      container.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('mouseleave', handleMouseLeave);
-    };
-  }, [editor, editorFocused, isInTable, queueTableOverlayRefresh]);
-
-
-
   if (!editor) return null;
 
   return (
-    <div ref={editorContainerRef} className="relative w-full">
-      <EditorContent editor={editor} />
-
-      {tableOverlay && editorFocused && (
-        <div
-          className="pointer-events-none absolute z-30"
-          style={{
-            top: tableOverlay.top,
-            left: tableOverlay.left,
-            width: tableOverlay.width,
-            height: tableOverlay.height,
-          }}
-        >
-          <button
-            type="button"
-            data-table-control="add-column"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => {
-              editor.chain().focus().addColumnAfter().run();
-              queueTableOverlayRefresh(editor);
-            }}
-            className={`pointer-events-auto absolute right-2 top-1/2 inline-flex h-7 -translate-y-1/2 items-center gap-1 rounded-full bg-card/92 px-3 text-[11px] font-medium text-slate-500 shadow-sm backdrop-blur-sm transition-[opacity,transform,color] duration-100 hover:text-primary ${
-              tableControlsVisible ? 'translate-x-0 opacity-100' : 'translate-x-1 opacity-0'
-            }`}
-          >
-            <Plus size={12} /> Add column
-          </button>
-
-          <button
-            type="button"
-            data-table-control="add-row"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => {
-              editor.chain().focus().addRowAfter().run();
-              queueTableOverlayRefresh(editor);
-            }}
-            className={`pointer-events-auto absolute bottom-2 left-1/2 inline-flex h-7 -translate-x-1/2 items-center gap-1 rounded-full bg-card/92 px-3 text-[11px] font-medium text-slate-500 shadow-sm backdrop-blur-sm transition-[opacity,transform,color] duration-100 hover:text-primary ${
-              tableControlsVisible ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0'
-            }`}
-          >
-            <Plus size={12} /> Add row
-          </button>
-
-          {tableOverlay.columnCount > 1 && (
-            <button
-              type="button"
-              data-table-control="delete-column"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => {
-                editor.chain().focus().deleteColumn().run();
-                queueTableOverlayRefresh(editor);
-              }}
-              className={`pointer-events-auto absolute top-2 inline-flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-lg bg-card/92 text-slate-400 shadow-sm backdrop-blur-sm transition-[opacity,color,background-color] duration-100 hover:bg-card hover:text-red-500 ${
-                tableControlsVisible ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{ left: tableOverlay.columnMarkerLeft }}
-              aria-label="Delete column"
-              title="Delete column"
-            >
-              <Trash2 size={12} />
-            </button>
-          )}
-
-          {tableOverlay.rowCount > 1 && (
-            <button
-              type="button"
-              data-table-control="delete-row"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => {
-                editor.chain().focus().deleteRow().run();
-                queueTableOverlayRefresh(editor);
-              }}
-              className={`pointer-events-auto absolute left-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-card/92 text-slate-400 shadow-sm backdrop-blur-sm transition-[opacity,color,background-color] duration-100 hover:bg-card hover:text-red-500 ${
-                tableControlsVisible ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{ top: tableOverlay.rowMarkerTop }}
-              aria-label="Delete row"
-              title="Delete row"
-            >
-              <Trash2 size={12} />
-            </button>
-          )}
-        </div>
-      )}
+    <div ref={editorContainerRef} className="editor-workspace relative w-full">
+      <TableControls editor={editor} active={isActive && !interactionLocked} containerRef={editorContainerRef} noteTitle={noteTitle} saveStatus={saveStatus} onRetrySave={onRetrySave} />
+      <EditorContent className="table-editor-canvas" editor={editor} />
 
       {slashState?.active && menuPos && slashState.range && (
         <div className="absolute z-50" style={{ top: menuPos.top, left: menuPos.left }}>
@@ -689,6 +470,7 @@ function BlockEditor({
             query={resourceState.query}
             selectedIndex={resourceSelectedIndex}
             onClose={closeResourceMenu}
+            onRequestFileUpload={onRequestLinkUpload}
             onUpdateFiltered={setResourceFilteredCount}
           />
         </div>
@@ -699,6 +481,9 @@ function BlockEditor({
 
 const MemoizedBlockEditor = memo(BlockEditor, (prev, next) => (
   prev.noteId === next.noteId
+  && prev.noteTitle === next.noteTitle
+  && prev.saveStatus === next.saveStatus
+  && prev.onRetrySave === next.onRetrySave
   && prev.autosaveDelay === next.autosaveDelay
   && prev.isActive === next.isActive
   && prev.interactionLocked === next.interactionLocked
@@ -712,6 +497,7 @@ const MemoizedBlockEditor = memo(BlockEditor, (prev, next) => (
   && prev.onFocusRestored === next.onFocusRestored
   && prev.onRequestMdUpload === next.onRequestMdUpload
   && prev.onRequestCsvUpload === next.onRequestCsvUpload
+  && prev.onRequestLinkUpload === next.onRequestLinkUpload
 ));
 
 export default MemoizedBlockEditor;
@@ -727,86 +513,6 @@ function parseInitialContent(content: JSONContent | string | null): JSONContent 
     return markdownToHtml(content);
   }
   return { type: 'doc', content: [{ type: 'paragraph' }] };
-}
-
-function isSelectionInLastTableRow(editor: Editor) {
-  const { $from } = editor.state.selection;
-
-  for (let depth = $from.depth; depth > 0; depth -= 1) {
-    const node = $from.node(depth);
-    if (node.type.name !== 'tableRow') {
-      continue;
-    }
-
-    const tableDepth = depth - 1;
-    if (tableDepth < 0) {
-      return false;
-    }
-
-    const table = $from.node(tableDepth);
-    if (table.type.name !== 'table') {
-      return false;
-    }
-
-    return $from.index(tableDepth) === table.childCount - 1;
-  }
-
-  return false;
-}
-
-function resolveTableOverlay(editor: Editor | null | undefined, container: HTMLDivElement | null): TableOverlayState | null {
-  if (!editor || !container) {
-    return null;
-  }
-
-  const domAtPos = editor.view.domAtPos(editor.state.selection.from);
-  const domNode = domAtPos.node instanceof Element ? domAtPos.node : domAtPos.node.parentElement;
-  const cell = domNode?.closest('td, th');
-  const table = domNode?.closest('table');
-  const row = cell?.closest('tr');
-
-  if (!cell || !table || !row) {
-    return null;
-  }
-
-  const tableRect = table.getBoundingClientRect();
-  const containerRect = container.getBoundingClientRect();
-  const rowRect = row.getBoundingClientRect();
-  const cellRect = cell.getBoundingClientRect();
-
-  return {
-    top: tableRect.top - containerRect.top,
-    left: tableRect.left - containerRect.left,
-    width: tableRect.width,
-    height: tableRect.height,
-    rowMarkerTop: rowRect.top - tableRect.top + (rowRect.height / 2),
-    columnMarkerLeft: cellRect.left - tableRect.left + (cellRect.width / 2),
-    rowCount: table.querySelectorAll('tr').length,
-    columnCount: row.children.length,
-  };
-}
-
-function resolveTableOverlayFromCell(cell: Element, table: Element, container: HTMLDivElement): TableOverlayState | null {
-  const row = cell.closest('tr');
-  if (!row) {
-    return null;
-  }
-
-  const tableRect = table.getBoundingClientRect();
-  const containerRect = container.getBoundingClientRect();
-  const rowRect = row.getBoundingClientRect();
-  const cellRect = cell.getBoundingClientRect();
-
-  return {
-    top: tableRect.top - containerRect.top,
-    left: tableRect.left - containerRect.left,
-    width: tableRect.width,
-    height: tableRect.height,
-    rowMarkerTop: rowRect.top - tableRect.top + (rowRect.height / 2),
-    columnMarkerLeft: cellRect.left - tableRect.left + (cellRect.width / 2),
-    rowCount: table.querySelectorAll('tr').length,
-    columnCount: row.children.length,
-  };
 }
 
 function looksLikeMarkdown(text: string): boolean {
