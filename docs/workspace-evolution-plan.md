@@ -175,3 +175,7 @@ Implemented title-only initial defaults in Library and every new Ctrl+K session,
 Validation: production frontend build, final TypeScript and targeted ESLint pass. Fifteen distinct focused cases pass across palette (7), Library (5), mode routing/stale scope (2), and popover dismissal (1). No repeated browser exploration, live API smoke or Docker rebuild. K2 supplied the narrow visual review; K3's new scope controls have component coverage but no new visual pass. Existing bundle-size/Browserslist warnings remain. File-content indexing remains future work.
 
 K1–K3 are complete. Stop for discussion before any further sprint.
+
+### Post-sprint startup correction — 2026-09-24
+
+User-reported container crash reproduced using an existing FTS5 index before Hibernate startup. Individual JDBC metadata extraction fixes the grouped extractor exception without deleting data or disabling schema updates. Focused regression passed after reproducing the original failure. Docker rebuild, normal-volume startup and second restart succeeded; read-only health/search diagnostics show ready and complete coverage (5/5). No user resources were edited or reset.

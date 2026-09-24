@@ -69,3 +69,11 @@ Each API request logs method/path/status/duration. Transfer logs include operati
 ## Note export runtime
 
 Both Dockerfiles install fontconfig for the bundled PDF fonts. Note exports use the existing operations directory, worker, logging and restart handling. MAX_NOTE_EXPORT_ASSET_BYTES defaults to 104857600, also capped by MAX_ARCHIVE_BYTES. Expire artifacts manually with the backend stopped; do not delete workspace files. See [NOTE-EXPORTS.md](NOTE-EXPORTS.md) for format fidelity and targeted verification.
+
+## Startup failure after search indexing
+
+A NoSuchElementException at Hibernate AbstractInformationExtractorImpl.columnInformation during entityManagerFactory initialization can occur when grouped schema discovery inspects SQLite FTS5/shadow columns with empty JDBC type names. Fresh-database tests alone do not cover this restart condition.
+
+application.properties sets spring.jpa.properties.hibernate.hbm2ddl.jdbc_metadata_extraction_strategy=individually so schema update inspects mapped application tables instead. Keep this setting when changing database configuration. Do not delete the database, search tables or volume as a workaround, and do not disable all schema updates. Rebuild the image and run docker compose up -d to use the fix. Verify /api/health and /api/diagnostics/search, then verify one restart. The focused disposable regression is ExistingSearchIndexStartupTest.
+
+Validated 2026-09-24: rebuilt normal Compose image; startup plus restart succeeded with the existing vaultor-kb_vaultor_data volume. Read-only health/search diagnostics reported ready and complete index coverage.
