@@ -144,11 +144,11 @@ One sprint per implementation call. Preserve the current visual style and resour
 - [x] Import handoff with captured destination; Pin and More in collection header.
 - [x] Compact search/filter controls, breadcrumb navigation, contextual bulk actions and distinct empty states.
 
-### Sprint K3 — Title-first search (not started)
-- [ ] Titles-only defaults in Library and Ctrl+K; explicit Include saved note text and collection/global scope.
-- [ ] Preserve query, reset page/disregard stale responses; expose active scope, never broaden silently.
-- [ ] Frontend title/content mode routes to existing metadata/FTS APIs; no schema migration.
-- [ ] Global palette includes collection results; scoped mode lists only member resources.
+### Sprint K3 — Title-first search (complete)
+- [x] Titles-only defaults in Library and Ctrl+K; explicit Include saved note text and collection/global scope.
+- [x] Preserve query, reset page/disregard stale responses; expose active scope, never broaden silently.
+- [x] Frontend title/content mode routes to existing metadata/FTS APIs; no schema migration.
+- [x] Global palette includes collection results; scoped mode lists only member resources.
 
 Validation: compilation and focused regressions per sprint; one narrow visual check when organization/search layout changes. No routine Docker rebuild or broad API smoke. Maintain CODEBASE, Library, search and API docs. Stop after each sprint for discussion.
 
@@ -167,3 +167,11 @@ Completed unified Add resource: immediate existing-resource membership with loca
 Validation: production frontend build, final TypeScript and targeted lint pass. Nine focused cases pass (four picker, four Library, one popover), covering membership retry, create identity/destination, exact-title detection beyond the visible page, composition, import handoff, paging/selection and Escape/outside dismissal. One isolated fixture verified dark wide/light narrow layout, Add resource and options placement; fixture and server removed. No broad API smoke, Docker rebuild or user-data mutation. Native file selection and complete Dashboard navigation were not retested. Exact-title checks can require multiple metadata pages for broad queries; existing bundle/Browserslist warnings remain.
 
 Stop here. K3 title-first search defaults and explicit content/global/collection scope require the next authorization.
+
+### K3 handoff — 2026-09-24
+
+Implemented title-only initial defaults in Library and every new Ctrl+K session, explicit Include saved note text, and searchable Entire workspace/collection scopes. Library scope changes update its destination/breadcrumb while retaining query text. Resource query mode is typed and stripped from wire parameters, selecting the existing metadata or FTS endpoint. Changed mode/scope invalidates stale requests; scoped palette empty queries cannot leak global Open/Pinned suggestions. Global title results include collection names. Content-only snippets and saved-draft reminders remain explicit, and palette Actions/focus behavior is preserved. No backend/API/schema changes.
+
+Validation: production frontend build, final TypeScript and targeted ESLint pass. Fifteen distinct focused cases pass across palette (7), Library (5), mode routing/stale scope (2), and popover dismissal (1). No repeated browser exploration, live API smoke or Docker rebuild. K2 supplied the narrow visual review; K3's new scope controls have component coverage but no new visual pass. Existing bundle-size/Browserslist warnings remain. File-content indexing remains future work.
+
+K1–K3 are complete. Stop for discussion before any further sprint.

@@ -1,3 +1,4 @@
+export type SearchMode = 'title' | 'content';
 import api from './api';
 import type { ResourceSummary } from '../types';
 import type { BrowseQuery, ResourcePage } from './resourceBrowse';

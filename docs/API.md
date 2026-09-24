@@ -141,3 +141,5 @@ GET /api/diagnostics/search inspects coverage. POST /api/diagnostics/search/rebu
 K1 keyboard update does not change API contracts: native form submission uses the existing collection-creation UUID endpoint and rename endpoints. Collection suggestions are not a submission prerequisite; server uniqueness validation and retry fingerprints remain authoritative.
 
 K2 collection add flow also reuses existing contracts: title-paginated GET /resources for selection/exact-name detection, POST /organization/memberships for each immediate add, and PUT /resources/imports/{id} with title/content/collectionId for atomic, retry-safe note creation. No new API or schema is introduced.
+
+K3 frontend search mode is explicit: title (default) uses GET /resources?q=...; content uses GET /resources/query?q=.... Both receive the same optional collection/type/tag/favorites filters. The searchMode field is frontend-only and is never sent as an HTTP parameter. Empty-query content mode uses ordinary browsing within the selected scope. Endpoint defaults/contracts, FTS indexing and database schema are unchanged.

@@ -28,7 +28,7 @@ it('retains failed input and retries once, then closes only on success',async()=
  await waitFor(()=>expect(close).toHaveBeenCalledTimes(1));expect(context.renameResource).toHaveBeenCalledTimes(2);expect(context.renameResource).toHaveBeenLastCalledWith('one','New title');
 });
 it('shows saved snippets as text and Escape backs out before closing',async()=>{
- const {close}=mount();const input=screen.getByRole('combobox');fireEvent.change(input,{target:{value:'nebula'}});await screen.findByText('nebula');expect(screen.getByText('nebula').tagName).toBe('MARK');
+ const {close}=mount();fireEvent.click(screen.getByRole('button',{name:'Search options'}));fireEvent.click(screen.getByLabelText('Include saved note text'));fireEvent.keyDown(screen.getByLabelText('Include saved note text'),{key:'Escape'});const input=screen.getByRole('combobox');fireEvent.change(input,{target:{value:'nebula'}});await screen.findByText('nebula');expect(screen.getByText('nebula').tagName).toBe('MARK');
  fireEvent.click(screen.getByText('Actions for Meeting'));await screen.findByText('Actions · Meeting');fireEvent.keyDown(screen.getByRole('combobox'),{key:'Escape'});await screen.findByText('Search workspace');expect(close).not.toHaveBeenCalled();expect((screen.getByRole('combobox') as HTMLInputElement).value).toBe('nebula');fireEvent.keyDown(screen.getByRole('combobox'),{key:'Escape'});expect(close).toHaveBeenCalledTimes(1);
 });
 it('does not target a hidden note; exposes all commands in command mode',async()=>{
@@ -46,4 +46,13 @@ it('places Actions next in native tab order and restores the highlighted resourc
 });
 it('ignores Enter used to confirm composition',async()=>{
  mount();await screen.findByText('Meeting');fireEvent.keyDown(screen.getByRole('combobox'),{key:'Enter',isComposing:true});expect(context.openResource).not.toHaveBeenCalled();
+});
+it('keeps query when choosing content/scope, isolates scoped empty results, and resets on reopening',async()=>{
+ const scoped={...note,id:'scoped',title:'Scoped note'};
+ vi.mocked(api.get).mockImplementation(async(url,config)=>({data:url==='/collections'?{items:[{id:'topic',name:'Topic',count:1}],totalItems:1,totalPages:1}:url==='/resources/query'?{items:[{resource:scoped,snippet:{text:'needle',highlights:[]}}],totalItems:1,totalPages:1}:url==='/resources'?{items:(config?.params as URLSearchParams)?.get('collection')?[scoped]:[note],totalPages:1,totalItems:1}:{items:[],totalItems:0,totalPages:0}}));
+ const {rerender,close}=mount();const input=screen.getByRole('combobox');fireEvent.change(input,{target:{value:'needle'}});await waitFor(()=>expect(api.get).toHaveBeenCalledWith('/resources',expect.objectContaining({params:expect.any(URLSearchParams)})));
+ fireEvent.click(screen.getByRole('button',{name:'Search options'}));await screen.findByRole('button',{name:'Topic'});fireEvent.click(screen.getByRole('button',{name:'Topic'}));fireEvent.click(screen.getByLabelText('Include saved note text'));
+ await waitFor(()=>expect(vi.mocked(api.get).mock.calls.some(([url,c])=>url==='/resources/query'&&c?.params.get('collection')==='topic'&&c?.params.get('q')==='needle')).toBe(true));expect((input as HTMLInputElement).value).toBe('needle');
+ fireEvent.keyDown(screen.getByLabelText('Include saved note text'),{key:'Escape'});expect(close).not.toHaveBeenCalled();expect(screen.getByText('In Topic')).toBeTruthy();fireEvent.change(input,{target:{value:''}});await screen.findByText('Scoped note');expect(screen.queryByText('Meeting')).toBeNull();
+ rerender(<EscapeManagerProvider><CommandPaletteModal open={false} onClose={close} context={context}/></EscapeManagerProvider>);rerender(<EscapeManagerProvider><CommandPaletteModal open onClose={close} context={context}/></EscapeManagerProvider>);await screen.findByText('Meeting');expect(screen.getByText('Titles only')).toBeTruthy();expect(screen.getByText('Entire workspace')).toBeTruthy();
 });

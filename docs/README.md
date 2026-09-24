@@ -1,6 +1,6 @@
 # Documentation
 
-- [Workspace evolution plan](workspace-evolution-plan.md): empty-note closing and expanded-table workspace implemented; scalable Library and collections/tags implemented; U1 navigation refresh fix complete; U2 resource organization/pins complete; U3 palette/saved-note full-text search complete; K1 form/palette keyboard corrections complete; K2 organization simplification complete; K3 title-first search pending; exactly one sprint per authorization.
+- [Workspace evolution plan](workspace-evolution-plan.md): empty-note closing and expanded-table workspace implemented; scalable Library and collections/tags implemented; U1 navigation refresh fix complete; U2 resource organization/pins complete; U3 palette/saved-note full-text search complete; K1 form/palette keyboard corrections complete; K2 organization simplification complete; K3 title-first search and explicit scope complete; exactly one sprint per authorization.
 
 - [Editor and portability plan](editor-portability-plan.md): imports and table foundations implemented; individual note exports implemented; table filtering/copy/export implemented; remaining manual verification recorded; one sprint per authorized call.
 

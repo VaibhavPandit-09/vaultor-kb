@@ -1,3 +1,5 @@
+import ResourceSearchOptions from './ResourceSearchOptions';
+import type {SearchMode} from '../lib/resourceSearch';
 import LibraryPopover from './LibraryPopover';
 import SearchExcerpt from './SearchExcerpt';
 import type { Resource } from '../types';
@@ -26,6 +28,7 @@ export default function LibraryView({ section, visible, tags, onOpen, onReturn, 
   const currentCollection=detail.data??collection;
   const [manager, setManager] = useState<'manage' | 'bulk' | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  const [searchMode,setSearchMode]=useState<SearchMode>('title');
   const [query, setQuery] = useState(''), [search, setSearch] = useState('');
   const [type, setType] = useState('all'), [sort, setSort] = useState<'title' | 'updated' | 'recent'>('updated');
   const [page, setPage] = useState(0), [scrollTop, setScrollTop] = useState(0), [height, setHeight] = useState(600);
@@ -35,13 +38,13 @@ export default function LibraryView({ section, visible, tags, onOpen, onReturn, 
   const scopeKey=JSON.stringify([section,tagKey,collection?.id]);
   const [previousScope,setPreviousScope]=useState(scopeKey);
   if(previousScope!==scopeKey){setPreviousScope(scopeKey);setPage(0);}
-  const { data, loading, error, retry } = useResourcePage({ collection: collection?.id, page, size: 100, q: search, type, sort: section === 'recent' ? 'recent' : sort, tags, favorites: section === 'favorites' }, visible);
+  const { data, loading, error, retry } = useResourcePage({ collection: collection?.id, page, size: 100, q: search, searchMode, type, sort: section === 'recent' ? 'recent' : sort, tags, favorites: section === 'favorites' }, visible);
   useEffect(() => {
     if (!scroller.current) return;
     const observer = new ResizeObserver(entries => setHeight(entries[0].contentRect.height));
     observer.observe(scroller.current); return () => observer.disconnect();
   }, []);
-  const viewKey=JSON.stringify([page,search,type,sort,scopeKey]);
+  const viewKey=JSON.stringify([page,search,searchMode,type,sort,scopeKey]);
   const [previousView,setPreviousView]=useState(viewKey);
   if(previousView!==viewKey){setPreviousView(viewKey);setSelected([]);setScrollTop(0);}
   useEffect(() => { if(scroller.current) scroller.current.scrollTop=0; },[viewKey]);
@@ -55,10 +58,10 @@ export default function LibraryView({ section, visible, tags, onOpen, onReturn, 
     <LibraryPopover label="More">{close=><><button className="library-button" onClick={()=>{close();organizationFocus.captureFocus();setManager('manage');}}>Collections &amp; tags</button>{currentCollection&&<button className="library-button" onClick={()=>{close();organizationFocus.captureFocus();setManagingCollection(true);}}>Rename / delete collection…</button>}<button className="library-button" onClick={()=>{retry();detail.retry();close();}}><RefreshCw size={16}/>Refresh</button></>}</LibraryPopover></div></header>
     {detail.error&&<p role="alert">{detail.error}<button className="library-button" onClick={detail.retry}>Retry collection</button></p>}
     <div className="library-filters">
-      <label className="library-search"><Search size={17}/><input aria-label="Search saved resources" placeholder="Search titles and saved notes…" value={query} onChange={e=>setQuery(e.target.value)}/></label>
-      <LibraryPopover label="Search options">{()=> <><label className="text-sm">Resource type<select className="organization-input w-full mt-1" aria-label="Resource type" value={type} onChange={e=>{setType(e.target.value);setPage(0);}}><option value="all">All types</option>{resourceKinds.map(kind=><option key={kind.type} value={kind.type}>{kind.plural}</option>)}</select></label><label className="text-sm">Sort<select className="organization-input w-full mt-1" aria-label="Sort resources" value={section==='recent'?'recent':sort} disabled={section==='recent'||Boolean(search)} onChange={e=>{setSort(e.target.value as typeof sort);setPage(0);}}><option value="updated">Recently updated</option><option value="recent">Recently opened</option><option value="title">Title A–Z</option></select></label></>}</LibraryPopover>
+      <label className="library-search"><Search size={17}/><input aria-label="Search resources" placeholder={searchMode==='title'?'Search resource titles…':'Search titles and saved note text…'} value={query} onChange={e=>setQuery(e.target.value)}/></label>
+      <LibraryPopover label="Search options">{()=> <><ResourceSearchOptions mode={searchMode} onMode={mode=>{setSearchMode(mode);setPage(0);}} collection={currentCollection} onCollection={onCollection}/><label className="text-sm">Resource type<select className="organization-input w-full mt-1" aria-label="Resource type" value={type} onChange={e=>{setType(e.target.value);setPage(0);}}><option value="all">All types</option>{resourceKinds.map(kind=><option key={kind.type} value={kind.type}>{kind.plural}</option>)}</select></label><label className="text-sm">Sort<select className="organization-input w-full mt-1" aria-label="Sort resources" value={section==='recent'?'recent':sort} disabled={section==='recent'||(searchMode==='content'&&Boolean(search))} onChange={e=>{setSort(e.target.value as typeof sort);setPage(0);}}><option value="updated">Recently updated</option><option value="recent">Recently opened</option><option value="title">Title A–Z</option></select></label></>}</LibraryPopover>
     </div>
-    <div className="library-summary"><span>{loading?'Loading resources…':(data?.totalItems??0)+' resources'}</span>{Boolean(search)&&<span className="ml-auto">{hasUnsavedChanges?'Saved content · unsaved edits excluded':'Saved note text and file titles'}</span>}</div>
+    <div className="library-summary"><span>{loading?'Loading resources…':(data?.totalItems??0)+' resources'}</span><span className="text-xs text-[var(--text-secondary)]">{searchMode==='title'?'Titles only':hasUnsavedChanges?'Saved content · unsaved edits excluded':'Titles + saved note text'}</span></div>
     {(tags.length>0||type!=='all'||(sort!=='updated'&&section!=='recent'))&&<div className="flex gap-2 flex-wrap">{type!=='all'&&<button className="collection-chip" onClick={()=>setType('all')}>{resourceKind(type).label} ×</button>}{tags.map(tag=><button className="collection-chip" key={tag} onClick={()=>onTagsChange(tags.filter(t=>t!==tag))}>{tag} ×</button>)}{sort!=='updated'&&section!=='recent'&&<button className="collection-chip" onClick={()=>setSort('updated')}>{sort==='title'?'Title A–Z':'Recently opened'} ×</button>}</div>}
     {items.length>0&&<label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]"><input type="checkbox" aria-label="Select page" checked={items.every(item=>selected.includes(item.id))} onChange={e=>setSelected(e.target.checked?items.map(i=>i.id):[])}/>Select page</label>}
     {selected.length>0&&<div className="flex flex-wrap items-center gap-2 text-sm"><span>{selected.length} selected</span><button className="library-button" onClick={()=>{organizationFocus.captureFocus();setManager('bulk');}}>Tags / manage</button><button className="library-button" onClick={()=>{organizationFocus.captureFocus();setPickerIds(selected);}}>Add to collection</button><button className="library-button" onClick={()=>setSelected([])}>Clear selection</button></div>}
@@ -69,7 +72,7 @@ export default function LibraryView({ section, visible, tags, onOpen, onReturn, 
           const kind = resourceKind(resource.type), Icon = kind.icon;
           return <div role="listitem" className="library-row" key={resource.id} style={{ position: 'absolute', top: (start + offset) * rowHeight, height: rowHeight, left: 0, right: 0 }}>
             <input type="checkbox" aria-label={'Select ' + resource.title} checked={selected.includes(resource.id)} onChange={event => setSelected(previous => event.target.checked ? [...previous,resource.id] : previous.filter(id => id !== resource.id))}/>
-            <button className="library-resource" title={resource.title} onClick={() => onOpen(resource.id)}><Icon size={20} /><span><strong>{resource.title}</strong><small>{resource.searchSnippet?.text?<SearchExcerpt snippet={resource.searchSnippet}/>:<>{kind.label}{resource.collections?.length?' · '+resource.collections.map(c=>c.name).join(', '):''}{resource.tags.length ? ' · ' + resource.tags.map(tag => tag.name).join(', ') : ''}</>}</small></span></button>
+            <button className="library-resource" title={resource.title} onClick={() => onOpen(resource.id)}><Icon size={20} /><span><strong>{resource.title}</strong><small>{searchMode==='content'&&resource.searchSnippet?.text?<SearchExcerpt snippet={resource.searchSnippet}/>:<>{kind.label}{resource.collections?.length?' · '+resource.collections.map(c=>c.name).join(', '):''}{resource.tags.length ? ' · ' + resource.tags.map(tag => tag.name).join(', ') : ''}</>}</small></span></button>
             <time className="library-date">{(section === 'recent' ? resource.lastOpenedAt : resource.updatedAt)?.slice(0,10)}</time>
 <button className="library-button" aria-label={`Collections for ${resource.title}`} title="Add to collection" onClick={()=>{organizationFocus.captureFocus();setPickerIds([resource.id]);}}><FolderPlus size={17}/></button>
             <PinButton id={resource.id} name={resource.title} favorite={resource.favorite}/>
