@@ -127,3 +127,43 @@ Complete: search-first Ctrl+K with explicit Actions/Commands and captured resour
 Validation: production frontend build and targeted ESLint pass; 13 focused frontend cases pass (4 palette, 4 Library, 5 navigation refresh). Two disposable SQLite integration cases pass, including ranking/prefix/literal input, attribute exclusion, filters, transactional rollback, note import/edit/delete, rebuild with concurrent mutation, and archive search after merge/replace/rollback. OpenAPI JSON and operation IDs validated; git diff whitespace check passes. An isolated palette fixture checked light/dark themes, result grouping, snippet/selection contrast and Escape; contrast issues found there were corrected. Fixture/server removed. No broad live API smoke or Docker rebuild.
 
 Limitations: file-content search remains future work; search is temporarily unavailable during rebuild. A complete integrated Dashboard/assistive-technology/scale pass was not performed. Shared dialogs/palette still lack a complete focus trap. Existing bundle-size/Browserslist warnings remain. Deployment unchanged. No implementation blockers. Stop after U3 and discuss the next sprint before implementation.
+
+## Simpler organization — authorized sequence (2026-09-24)
+
+One sprint per implementation call. Preserve the current visual style and resource model. Design rule: **Simplicity is sophisticated** — expose primary actions, group secondary actions, and retain discoverability and basic keyboard access.
+
+### Sprint K1 — Restore basic keyboard behavior
+- [x] Semantic collection-create submission with immediate Enter, current-name validation and stable retry identity.
+- [x] Audit create/rename forms: focus, composition, Enter, Escape and duplicate-submission guards.
+- [x] Palette Actions next in natural tab order; preserve result/query when returning.
+- [x] Focused compilation/tests and documentation handoff.
+
+### Sprint K2 — Consolidate collection organization (complete)
+- [x] One Add resource picker: title search, immediate existing-resource membership, inline retry/Added states.
+- [x] Create note from unmatched title and secondary duplicate-title creation; atomic initial membership, open editor.
+- [x] Import handoff with captured destination; Pin and More in collection header.
+- [x] Compact search/filter controls, breadcrumb navigation, contextual bulk actions and distinct empty states.
+
+### Sprint K3 — Title-first search (not started)
+- [ ] Titles-only defaults in Library and Ctrl+K; explicit Include saved note text and collection/global scope.
+- [ ] Preserve query, reset page/disregard stale responses; expose active scope, never broaden silently.
+- [ ] Frontend title/content mode routes to existing metadata/FTS APIs; no schema migration.
+- [ ] Global palette includes collection results; scoped mode lists only member resources.
+
+Validation: compilation and focused regressions per sprint; one narrow visual check when organization/search layout changes. No routine Docker rebuild or broad API smoke. Maintain CODEBASE, Library, search and API docs. Stop after each sprint for discussion.
+
+### K1 handoff — 2026-09-24
+
+Implemented semantic, composition-safe collection creation independent of debounced suggestions; current-name validation, retained failures, stable retry identity and in-flight guards. Audited collection/tag create/rename and inline note title handlers; added initial/rename focus, read-only pending inputs and visible focus rings. Library manager/palette organization handoffs restore invoking focus. Palette Actions is next after its input in native tab order, without custom Tab interception or positive tabindex. Escape restores the parent query/highlight. No backend/API/schema changes.
+
+Validation: production frontend build passes; final TypeScript compilation, 16 focused component cases (5 collection/pin, 4 organization manager, 1 collection rename, 6 palette) and targeted ESLint pass. Tests cover form submission before debounce, composition guards, duplicate suppression, retry identity, focus, Escape, native focus order structure and preserved result/query. No browser/native tab simulation, live API smoke or Docker rebuild; visual/native interaction is not claimed as verified. Existing Browserslist/bundle-size warnings remain. The narrow visual check belongs to upcoming layout/search changes.
+
+Stop here: K2 and K3 remain unstarted.
+
+### K2 handoff — 2026-09-24
+
+Completed unified Add resource: immediate existing-resource membership with local retry, paginated title lookup, exact-name-aware Create note, explicit duplicate-title creation and captured import destination. Creation/open retry retains its UUID and initial collection. Collection header now has Add resource/Pin/More; Library has breadcrumbs, search/options, removable criteria, contextual bulk actions and distinct empty collection/no-match states. No backend/API/schema changes.
+
+Validation: production frontend build, final TypeScript and targeted lint pass. Nine focused cases pass (four picker, four Library, one popover), covering membership retry, create identity/destination, exact-title detection beyond the visible page, composition, import handoff, paging/selection and Escape/outside dismissal. One isolated fixture verified dark wide/light narrow layout, Add resource and options placement; fixture and server removed. No broad API smoke, Docker rebuild or user-data mutation. Native file selection and complete Dashboard navigation were not retested. Exact-title checks can require multiple metadata pages for broad queries; existing bundle/Browserslist warnings remain.
+
+Stop here. K3 title-first search defaults and explicit content/global/collection scope require the next authorization.

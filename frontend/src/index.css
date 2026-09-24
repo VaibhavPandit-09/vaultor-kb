@@ -361,3 +361,11 @@ button {
 .palette-result:hover { background: var(--surface-hover); }
 .palette-result[aria-selected="true"] { background: color-mix(in srgb, var(--primary) 15%, var(--surface-2)); box-shadow: inset 2px 0 var(--primary); }
 .search-excerpt-mark { color: inherit; background: color-mix(in srgb, var(--primary) 25%, transparent); border-radius: 2px; font-weight: 600; }
+
+/* Visible keyboard focus for organization dialogs and palette controls. */
+.library-button:focus-visible, .organization-input:focus-visible, [aria-label="Search and commands"] button:focus-visible, [aria-label="Search and commands"] input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.library-popover { display:flex; flex-direction:column; gap:12px; overflow:auto; padding:14px; border:1px solid var(--border-strong); border-radius:14px; background:var(--surface-3); color:var(--text-primary); box-shadow:0 16px 40px #0004; }
+.collection-add-option { display:flex; align-items:center; gap:10px; width:100%; padding:10px; border-radius:9px; }
+.collection-add-option[aria-selected="true"], .collection-add-option:hover { background:var(--surface-hover); }
+.collection-add-option:focus-visible, .library-popover button:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }

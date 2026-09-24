@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor, renderHook } from '@testing-library/react';
+import type {ReactNode} from 'react';
+import {EscapeManagerProvider} from '../lib/escape/EscapeManagerProvider';
+// @vitest-environment jsdom
+import { act, cleanup, fireEvent, render as rtlRender, screen, waitFor, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import api from '../lib/api';
 vi.mock('../lib/api',()=>({default:{get:vi.fn()}}));
@@ -8,6 +11,7 @@ import { useResourcePage } from '../lib/useResourcePage';
 import { browseResources, setResourceFavorite, type ResourcePage } from '../lib/resourceBrowse';
 vi.mock('../lib/resourceSearch',()=>({searchResourcePage:(...args:Parameters<typeof browseResources>)=>browseResources(...args)}));
 vi.mock('../lib/resourceBrowse', () => ({ browseResources: vi.fn(), setResourceFavorite: vi.fn() }));
+const render=(ui:ReactNode)=>rtlRender(<EscapeManagerProvider>{ui}</EscapeManagerProvider>);
 const page = (prefix = 'Note'): ResourcePage => ({ items: Array.from({length:100}, (_, i) => ({id:`${prefix}-${i}`,type:'note',title:`${prefix} ${i}`,tags:[],createdAt:'2026-09-23',updatedAt:'2026-09-23'})),page:0,size:100,totalItems:205,totalPages:3 });
 beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
@@ -24,6 +28,7 @@ it('virtualizes a bounded page and asks the server for the next page', async () 
   fireEvent.click(screen.getByTitle('Note 0')); expect(open).toHaveBeenCalledWith('Note-0');
   fireEvent.click(screen.getByText('Next'));
   await waitFor(() => expect(browseResources).toHaveBeenLastCalledWith(expect.objectContaining({page:1,size:100}),expect.any(AbortSignal)));
+  fireEvent.click(screen.getByRole('button',{name:'Search options'}));
   fireEvent.change(screen.getByLabelText('Resource type'),{target:{value:'file'}});
   await waitFor(() => expect(browseResources).toHaveBeenLastCalledWith(expect.objectContaining({page:0,type:'file'}),expect.any(AbortSignal)));
 });
@@ -52,5 +57,5 @@ it('combines collection and tag filtering and scopes selection to the current pa
   expect(browseResources).toHaveBeenCalledWith(expect.objectContaining({collection:'atlas',tags:['topic']}),expect.any(AbortSignal));
   fireEvent.click(screen.getByLabelText('Select Note 0'));expect(screen.getByText('1 selected')).toBeTruthy();
   fireEvent.click(screen.getByText('Select page'));expect(screen.getByText('100 selected')).toBeTruthy();
-  fireEvent.click(screen.getByText('Next'));await waitFor(()=>expect(screen.getByText('0 selected')).toBeTruthy());
+  fireEvent.click(screen.getByText('Next'));await waitFor(()=>expect(screen.queryByText('100 selected')).toBeNull());
 });

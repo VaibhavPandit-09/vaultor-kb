@@ -33,3 +33,20 @@ it('synchronizes resource pin controls without duplicate mutations',async()=>{
  vi.mocked(api.put).mockResolvedValue({});render(<><PinButton id="note" name="One"/><PinButton id="note" name="Two"/></>);
  fireEvent.click(screen.getByLabelText('Pin One'));await screen.findByLabelText('Unpin Two');expect(api.put).toHaveBeenCalledTimes(1);
 });
+
+it('submits the current name before debounce and prevents duplicate in-flight creation',async()=>{
+ let finish!:(value:unknown)=>void;vi.mocked(api.put).mockImplementation(()=>new Promise(resolve=>{finish=resolve;}));
+ const created=vi.fn();render(<CollectionPicker resourceIds={[]} onClose={()=>{}} onCreated={created}/>);
+ const input=screen.getByLabelText('Search or create collection');fireEvent.change(input,{target:{value:'Immediate'}});
+ const form=input.closest('form')!;expect(form).toBeTruthy();fireEvent.submit(form);fireEvent.submit(form);
+ expect(api.put).toHaveBeenCalledTimes(1);expect(vi.mocked(api.put).mock.calls[0][1]).toEqual({name:'Immediate',resourceIds:[]});
+ finish({data:{id:'new',name:'Immediate',count:0}});await waitFor(()=>expect(created).toHaveBeenCalledOnce());
+});
+it('does not submit composition or an empty name; preserves failed input for Enter retry',async()=>{
+ vi.mocked(api.put).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({data:{id:'new',name:'Topic',count:0}});
+ render(<CollectionPicker resourceIds={[]} onClose={()=>{}}/>);const input=screen.getByLabelText('Search or create collection'),form=input.closest('form')!;
+ fireEvent.submit(form);expect(api.put).not.toHaveBeenCalled();fireEvent.change(input,{target:{value:'Topic'}});
+ fireEvent.compositionStart(input);expect(fireEvent.keyDown(input,{key:'Enter',isComposing:true})).toBe(false);fireEvent.submit(form);expect(api.put).not.toHaveBeenCalled();fireEvent.compositionEnd(input);
+ fireEvent.submit(form);await screen.findByRole('alert');expect((input as HTMLInputElement).value).toBe('Topic');fireEvent.submit(form);
+ await waitFor(()=>expect(api.put).toHaveBeenCalledTimes(2));expect(vi.mocked(api.put).mock.calls[0][0]).toBe(vi.mocked(api.put).mock.calls[1][0]);
+});

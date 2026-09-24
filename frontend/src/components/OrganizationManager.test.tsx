@@ -27,3 +27,10 @@ it('keeps a rejected collection name available for correction',async()=>{
   fireEvent.change(screen.getByLabelText('New collection'),{target:{value:'Atlas'}});fireEvent.click(screen.getByText('Create'));
   await screen.findByText('A collection with this name already exists');expect((screen.getByLabelText('New collection') as HTMLInputElement).value).toBe('Atlas');
 });
+
+it('focuses rename input and suppresses composition and duplicate form submissions',async()=>{
+ let finish!:(value:unknown)=>void;vi.mocked(api.put).mockImplementation(()=>new Promise(resolve=>{finish=resolve;}));mount();await screen.findByText('Atlas');fireEvent.click(screen.getByLabelText('Rename Atlas'));
+ const input=screen.getByLabelText('Rename collection');expect(document.activeElement).toBe(input);const form=input.closest('form')!;
+ fireEvent.compositionStart(input);fireEvent.submit(form);expect(api.put).not.toHaveBeenCalled();fireEvent.compositionEnd(input);
+ fireEvent.change(input,{target:{value:'Atlas updated'}});fireEvent.submit(form);fireEvent.submit(form);expect(api.put).toHaveBeenCalledOnce();finish({data:{...atlas,name:'Atlas updated'}});await screen.findByText('Saved.');
+});

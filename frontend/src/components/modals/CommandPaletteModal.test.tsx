@@ -34,3 +34,16 @@ it('shows saved snippets as text and Escape backs out before closing',async()=>{
 it('does not target a hidden note; exposes all commands in command mode',async()=>{
  const {close}=mount();fireEvent.change(screen.getByRole('combobox'),{target:{value:'>'}});await screen.findByText('Create note');expect(screen.queryByText('Rename active note')).toBeNull();expect(screen.getByText('Target: None — choose a resource explicitly')).toBeTruthy();fireEvent.click(screen.getByText('Create note'));await waitFor(()=>expect(close).toHaveBeenCalledTimes(1));expect(context.createNote).toHaveBeenCalledOnce();
 });
+
+it('places Actions next in native tab order and restores the highlighted resource after Escape',async()=>{
+ context.openNotes=[note,{...note,id:'two',title:'Second'}];mount();await screen.findByText('Second');
+ const input=screen.getByRole('combobox');fireEvent.keyDown(input,{key:'ArrowDown'});
+ const actions=screen.getByRole('button',{name:'Actions for Second'});
+ const focusable=[...screen.getByRole('dialog').querySelectorAll('input,button:not([disabled])')];expect(focusable[focusable.indexOf(input)+1]).toBe(actions);
+ expect(fireEvent.keyDown(input,{key:'Tab'})).toBe(true);actions.focus();expect(fireEvent.keyDown(actions,{key:'Tab',shiftKey:true})).toBe(true);
+ vi.mocked(api.get).mockResolvedValueOnce({data:{...note,id:'two',title:'Second'}});fireEvent.click(actions);await screen.findByText('Actions · Second');
+ fireEvent.keyDown(screen.getByRole('combobox'),{key:'Escape'});await screen.findByText('Search workspace');expect(screen.getByRole('option',{selected:true}).textContent).toContain('Second');
+});
+it('ignores Enter used to confirm composition',async()=>{
+ mount();await screen.findByText('Meeting');fireEvent.keyDown(screen.getByRole('combobox'),{key:'Enter',isComposing:true});expect(context.openResource).not.toHaveBeenCalled();
+});

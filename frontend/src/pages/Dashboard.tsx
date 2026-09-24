@@ -1525,7 +1525,7 @@ export default function Dashboard() {
         )}
 
         <main className="min-w-0 flex-1 relative">
-          <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></section>:<LibraryView onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onNewNote={()=>void handleCreateNote()} onImport={requestFileUpload} collection={collection} onCollection={setCollection} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); setFocusRestoreNoteId(activeNoteId); }} onOpen={id => void openResourceById(id)} />}</div>
+          <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></section>:<LibraryView onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={setCollection} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); setFocusRestoreNoteId(activeNoteId); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="h-full" hidden={libraryVisible}>
           {openWorkspaceNotes.length > 0 ? (
             <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
@@ -1556,6 +1556,7 @@ export default function Dashboard() {
                             : current
                         ))}
                         onKeyDown={async (event) => {
+                          if (event.nativeEvent.isComposing || event.keyCode === 229) return;
                           if (event.key === 'Enter') {
                             event.preventDefault();
                             await commitTitleEditing();
