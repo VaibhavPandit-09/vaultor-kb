@@ -23,6 +23,13 @@ public class ResourceBrowseService {
     }
     @Transactional(readOnly = true)
     public PageDto<ResourceSummary> list(int page,int size,String q,String type,List<String> tags,boolean favorites,String sort,String collection) {
+        return list(page,size,q,type,tags,favorites,sort,collection,null);
+    }
+    public Map<String,ResourceSummary> byIds(List<String> ids) {
+        if(ids.isEmpty())return Map.of();
+        var result=new HashMap<String,ResourceSummary>();list(0,200,"",null,List.of(),false,"title",null,ids).items().forEach(r->result.put(r.id(),r));return result;
+    }
+    private PageDto<ResourceSummary> list(int page,int size,String q,String type,List<String> tags,boolean favorites,String sort,String collection,List<String> ids) {
         if (page < 0 || size < 1 || size > 200) throw new IllegalArgumentException("page must be nonnegative; size must be 1-200");
         if (q.length() > 500 || tags.size() > 100) throw new IllegalArgumentException("Search allows 500 characters and 100 tags");
         String order = switch (sort) {
@@ -33,6 +40,7 @@ public class ResourceBrowseService {
         };
         var args = new ArrayList<Object>();
         StringBuilder where = new StringBuilder(" where 1=1");
+        if(ids!=null){where.append(" and r.id in ("+String.join(",",Collections.nCopies(ids.size(),"?"))+")");args.addAll(ids);}
         if (!q.isBlank()) { where.append(" and lower(r.title) like ? escape '!'"); args.add("%" + q.trim().toLowerCase(Locale.ROOT).replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%"); }
         if (type != null && !type.isBlank() && !type.equals("all")) { where.append(" and r.type=?"); args.add(type); }
         if (collection != null && !collection.isBlank()) { where.append(" and exists (select 1 from resource_collections rc where rc.resource_id=r.id and rc.collection_id=?)"); args.add(collection); }

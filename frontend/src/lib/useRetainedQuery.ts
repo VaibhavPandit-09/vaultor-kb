@@ -16,7 +16,7 @@ export function useRetainedQuery<T>(key: string, enabled: boolean, scope: Refres
         const data = await fetcher(key, request.signal);
         if (!request.signal.aborted) setState({ key, data, pending: false, error: '' });
       } catch (error) {
-        if (!request.signal.aborted) setState(previous => ({ key, data: previous.key === key ? previous.data : null, pending: false, error: error instanceof Error ? error.message : 'Could not refresh. Retry.' }));
+        if (!request.signal.aborted) setState(previous => ({ key, data: previous.key === key ? previous.data : null, pending: false, error: (error as {response?:{data?:{detail?:string}}})?.response?.data?.detail ?? (error instanceof Error ? error.message : 'Could not refresh. Retry.') }));
       }
     };
     if (enabled) void load();

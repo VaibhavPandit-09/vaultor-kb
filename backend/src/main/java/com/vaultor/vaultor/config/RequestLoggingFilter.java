@@ -24,7 +24,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         try {
             if (!entered) {
                 res.setStatus(409); res.setContentType("application/problem+json");
-                res.getWriter().write("{\"status\":409,\"code\":\"WORKSPACE_BUSY\",\"detail\":\"Workspace transfer is in progress. Retry shortly.\",\"requestId\":\"" + id + "\"}");
+                res.getWriter().write("{\"status\":409,\"code\":\"WORKSPACE_BUSY\",\"detail\":\"Workspace maintenance is in progress. Retry shortly.\",\"requestId\":\"" + id + "\"}");
             } else chain.doFilter(req, res);
         } finally {
             if (guarded && entered) gate.leaveRequest();

@@ -1,6 +1,6 @@
 # Workspace evolution plan
 
-Status: Sprints 1–4, U1 and U2 complete. U3 requires its own implementation call; original Sprint 5 is absorbed into U3. Implement exactly one sprint per authorized request; hand off and discuss before starting the next. Preserve unrelated work and existing workspace data.
+Status: Sprints 1–4 and U1–U3 complete. Original Sprint 5 was delivered within U3; file-content search and broader scale work remain a separate future sprint. Implement exactly one sprint per authorized request; hand off and discuss before starting the next. Preserve unrelated work and existing workspace data.
 
 ## Sprint 1 — Close empty notes reliably
 - [x] Reproduce editor consumption of the close-note shortcut.
@@ -95,12 +95,12 @@ Implement exactly one U sprint per call, then hand off. Preserve the visual styl
 - [x] Preserve current favorites; add batched membership summaries and paginated mixed pin API; preserve archive behavior.
 
 ### Sprint U3 — Search-first Ctrl+K and saved-note full-text search
-- [ ] Deduplicated Open/Pinned/Recent empty state, grouped resource/collection results and explicit previews/actions.
-- [ ] > or Commands mode; clear target and step labels, normal Tab, stable selection IDs, accessible listbox and Escape/focus.
-- [ ] Retain input/errors through failed actions; prevent duplicate execution and close only after success/handoff.
-- [ ] Rebuildable SQLite FTS5 using structured visible note text, title weighting, literal prefix terms, safe snippets and shared Library/palette filters.
-- [ ] Transactional index updates across CRUD/import/replace links/merge/replace; bounded coordinated rebuild, status/rebuild diagnostics.
-- [ ] Saved-content-only search label while drafts are pending; existing drafts survive opening results.
+- [x] Deduplicated Open/Pinned/Recent empty state, grouped resource/collection results and explicit previews/actions.
+- [x] > or Commands mode; clear target and step labels, normal Tab, stable selection IDs, accessible listbox and Escape/focus.
+- [x] Retain input/errors through failed actions; prevent duplicate execution and close only after success/handoff.
+- [x] Rebuildable SQLite FTS5 using structured visible note text, title weighting, literal prefix terms, safe snippets and shared Library/palette filters.
+- [x] Transactional index updates across CRUD/import/replace links/merge/replace; bounded coordinated rebuild, status/rebuild diagnostics.
+- [x] Saved-content-only search label while drafts are pending; existing drafts survive opening results.
 
 Validation remains minimal: compilation and focused tests, targeted visual checks only when needed, disposable mutation data, no routine Docker/API smoke. Keep guide/API/supporting docs synchronized and record actual results.
 
@@ -120,3 +120,10 @@ Decisions: reuse the shared modal/Escape surface for a compact searchable picker
 Validation: frontend production build and targeted lint pass; 18 distinct focused frontend cases pass across membership/pins, Library, navigation refresh, file-import review/retry and organization management. Two disposable SQLite integration cases pass for creation/import atomicity and retry identity, mixed pin ordering, membership metadata, and archive merge/replace/rollback. An isolated browser fixture checked the new membership header and pinned list in both themes, including a narrow note pane and picker/Escape dismissal. The fixture and server were removed; no user workspace was mutated. No broad API smoke tests or Docker rebuild. Existing bundle-size/Browserslist warnings remain.
 
 No implementation blockers. Integrated Dashboard/file-preview layout has not received a full manual pass; the isolated check is not end-to-end UI proof. Deployment is unchanged. Stop here: U3 (Ctrl+K and saved-note full-text search) requires a separate authorization.
+
+### U3 implementation — 2026-09-24
+Complete: search-first Ctrl+K with explicit Actions/Commands and captured resource targets, grouped saved-note/title/collection results, safe snippets, retained failed inputs, normal Tab and layered Escape. Library uses the same ranked saved-content service. SQLite FTS5 is derived from visible structured note text; transaction-local resource triggers cover CRUD, imports, link rewrites and archives. Startup and Diagnostics rebuild through one worker in gated batches of 100. API/OpenAPI, SEARCH.md, Library and living guide are synchronized.
+
+Validation: production frontend build and targeted ESLint pass; 13 focused frontend cases pass (4 palette, 4 Library, 5 navigation refresh). Two disposable SQLite integration cases pass, including ranking/prefix/literal input, attribute exclusion, filters, transactional rollback, note import/edit/delete, rebuild with concurrent mutation, and archive search after merge/replace/rollback. OpenAPI JSON and operation IDs validated; git diff whitespace check passes. An isolated palette fixture checked light/dark themes, result grouping, snippet/selection contrast and Escape; contrast issues found there were corrected. Fixture/server removed. No broad live API smoke or Docker rebuild.
+
+Limitations: file-content search remains future work; search is temporarily unavailable during rebuild. A complete integrated Dashboard/assistive-technology/scale pass was not performed. Shared dialogs/palette still lack a complete focus trap. Existing bundle-size/Browserslist warnings remain. Deployment unchanged. No implementation blockers. Stop after U3 and discuss the next sprint before implementation.

@@ -112,6 +112,9 @@ export default function Dashboard() {
   const filters = useAppSelector((state) => state.vault.filters);
 
   const [newCollectionOpen,setNewCollectionOpen]=useState(false);
+  const [paletteSelection,setPaletteSelection]=useState<Resource[]>([]);
+  const [paletteTarget,setPaletteTarget]=useState<Resource|null>(null);
+  const paletteCreateId=useRef<string|null>(null);
   const [collection, setCollection] = useState<OrganizationItem | null>(null);
   const [libraryVisible, setLibraryVisible] = useState(true);
   const [librarySection, setLibrarySection] = useState<LibrarySection>('library');
@@ -444,10 +447,10 @@ export default function Dashboard() {
     });
   }, [localSettings.previewMode]);
 
-  const openResourceById = useCallback(async (id: string, options?: { focus?: boolean }) => {
-    try { await saves.flushAll(); } catch { return; }
+  const openResourceById = useCallback(async (id: string, options?: { focus?: boolean; throwOnFailure?:boolean }) => {
+    try { await saves.flushAll(); } catch(error) {if(options?.throwOnFailure)throw error;return;}
     const resourceMeta = resourceDetails[id] ?? resources.find((resource) => resource.id === id) ?? await fetchResourceDetails(id);
-    if (!resourceMeta) return;
+    if (!resourceMeta) {if(options?.throwOnFailure)throw new Error("Resource could not be loaded. Retry.");return;}
     if (resourceMeta && isPreviewResource(resourceMeta.type)) {
       openPreview(resourceMeta);
       dispatch(openResourceAction(id));
@@ -514,17 +517,19 @@ export default function Dashboard() {
   }, [fetchResourceDetails, resourceDetails]);
 
   const openCommandPalette = useCallback(() => {
+    const focused=document.activeElement instanceof Element?document.activeElement:null;
+    const noteId=focused?.closest('[data-note-pane]')?.getAttribute('data-note-pane');
+    setPaletteTarget(focused?.closest('[data-preview-resource]')?previewResource:libraryVisible?(paletteSelection.length===1?paletteSelection[0]:null):noteId?resourceDetails[noteId]??null:workspaceResource);
+    paletteCreateId.current=null;
     commandPaletteFocus.captureFocus();
     commandPalettePreviewRef.current = {
       resourceId: previewResourceId,
       resourceType: previewResourceType,
       overrideMode: previewOverrideMode,
     };
-    if (previewResourceId && previewResourceType) {
-      setPreviewOverrideMode('side');
-    }
+
     setCommandPaletteOpen(true);
-  }, [commandPaletteFocus, previewOverrideMode, previewResourceId, previewResourceType]);
+  }, [commandPaletteFocus, previewOverrideMode, previewResourceId, previewResourceType,previewResource,libraryVisible,paletteSelection,resourceDetails,workspaceResource]);
 
   const closeCommandPalette = useCallback((options?: { restorePreview?: boolean; restoreFocus?: boolean }) => {
     setCommandPaletteOpen(false);
@@ -536,30 +541,6 @@ export default function Dashboard() {
       commandPaletteFocus.restoreFocus();
     }
   }, [commandPaletteFocus, restoreCommandPalettePreview]);
-
-  const highlightCommandPalettePreviewResource = useCallback((previewTarget: Resource | null) => {
-    if (!commandPaletteOpen) {
-      return;
-    }
-
-    if (!previewTarget) {
-      restoreCommandPalettePreview(commandPalettePreviewRef.current);
-      return;
-    }
-
-    if (!previewTarget || !isPreviewResource(previewTarget.type)) {
-      restoreCommandPalettePreview(commandPalettePreviewRef.current);
-      return;
-    }
-
-    setPreviewResourceId(previewTarget.id);
-    setPreviewResourceType(previewTarget.type);
-    setPreviewOverrideMode('side');
-
-    if (!resourceDetails[previewTarget.id]) {
-      void fetchResourceDetails(previewTarget.id);
-    }
-  }, [commandPaletteOpen, fetchResourceDetails, resourceDetails, restoreCommandPalettePreview]);
 
   const openShortcutsModal = useCallback(() => {
     shortcutsModalFocus.captureFocus();
@@ -1161,31 +1142,44 @@ export default function Dashboard() {
     };
   }), [openNotes, resourceDetails, resources]);
 
+  const hasUnsavedChanges=saves.dirty();
   const commandPaletteContext = useMemo<CommandContext>(() => ({
     resources,
-    activeNote: workspaceResource?.type === 'note' ? workspaceResource : null,
+    activeNote: !libraryVisible && paletteTarget?.id===workspaceResource?.id && workspaceResource?.type==='note'?workspaceResource:null,
+    targetResource:paletteTarget,
+    selectedResources:libraryVisible&&(!paletteTarget||paletteSelection.some(r=>r.id===paletteTarget.id))?paletteSelection:[],
+    hasUnsavedChanges,
+    openCollection:item=>{setPaletteSelection([]);setCollection(item);setLibrarySection('library');setLibraryVisible(true);dispatch(clearSelectedTags());dismissPreview({restoreFocus:false});},
+    openLibrary:section=>{setPaletteSelection([]);setCollection(null);setLibrarySection(section);setLibraryVisible(true);dismissPreview({restoreFocus:false});},
+    exportResource:resource=>setNoteExport({id:resource.id,title:resource.title}),
+    openDiagnostics:()=>setDiagnosticsOpen(true),
     previewResource,
     openNotes: openWorkspaceNotes
       .map((note) => note.resource)
       .filter((note): note is Resource => Boolean(note)),
     sidebarCollapsed: sidebarCollapsedForContext,
-    openResource: (resourceId: string) => openResourceById(resourceId),
-    createNote: handleCreateNote,
+    openResource: (resourceId: string) => openResourceById(resourceId,{throwOnFailure:true}),
+    createNote: async()=>{
+      await saves.flushAll();
+      paletteCreateId.current??=crypto.randomUUID();const body=new FormData();body.append('title','Untitled Note');body.append('content',JSON.stringify({type:'doc',content:[]}));if(libraryVisible&&collection)body.append('collectionId',collection.id);
+      const {data}=await api.put<Resource>('/resources/imports/'+paletteCreateId.current,body,{backgroundDiagnostic:true});
+      resourcesChanged([data.id],true);await openResourceById(data.id,{throwOnFailure:true});paletteCreateId.current=null;
+    },
     uploadFile: requestFileUpload,
     toggleSidebar,
     openShortcuts: openShortcutsModal,
     openSettings: openSettingsModal,
-    closeActiveNote,
+    closeActiveNote:async()=>{await saves.flushAll();await closeActiveNote();},
     closePreview: () => dismissPreview(),
-    openDeleteFlow: (resourceId: string) => {
-      void handleDeleteResource(resourceId);
+    openDeleteFlow: async (resourceId:string)=>{
+      const [{data:resource},{data:backlinks}]=await Promise.all([api.get<Resource>('/resources/'+resourceId+'/summary',{backgroundDiagnostic:true}),api.get('/resources/'+resourceId+'/backlinks',{backgroundDiagnostic:true})]);
+      setDeleteModal({id:resource.id,title:resource.title,backlinks});
     },
     renameResource,
   }), [
+    libraryVisible,paletteTarget,paletteSelection,saves,collection,dispatch,hasUnsavedChanges,
     closeActiveNote,
     dismissPreview,
-    handleCreateNote,
-    handleDeleteResource,
     openResourceById,
     openSettingsModal,
     openShortcutsModal,
@@ -1206,7 +1200,7 @@ export default function Dashboard() {
     });
   }, [openNotes,fetchResourceDetails]);
 
-  const showLibrary = (section: LibrarySection) => { setCollection(null); setLibrarySection(section); setLibraryVisible(true); dismissPreview({ restoreFocus: false }); };
+  const showLibrary = (section: LibrarySection) => { setPaletteSelection([]);setCollection(null); setLibrarySection(section); setLibraryVisible(true); dismissPreview({ restoreFocus: false }); };
   const openCollection = (item:OrganizationItem) => {showLibrary('library');dispatch(clearSelectedTags());setCollection(item);};
   const sidebarContent = (
     <div className="flex h-full flex-col overflow-hidden">
@@ -1337,8 +1331,6 @@ export default function Dashboard() {
         open={commandPaletteOpen}
         onClose={closeCommandPalette}
         context={commandPaletteContext}
-        onHighlightPreviewResource={highlightCommandPalettePreviewResource}
-        previewVisible={Boolean(previewResourceId)}
       />
       <ShortcutsModal open={shortcutsOpen} onClose={closeShortcutsModal} />
       <ErrorBoundary region="settings"><SettingsModal open={settingsOpen} onClose={closeSettingsModal} /></ErrorBoundary>
@@ -1533,13 +1525,14 @@ export default function Dashboard() {
         )}
 
         <main className="min-w-0 flex-1 relative">
-          <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></section>:<LibraryView onNewNote={()=>void handleCreateNote()} onImport={requestFileUpload} collection={collection} onCollection={setCollection} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); setFocusRestoreNoteId(activeNoteId); }} onOpen={id => void openResourceById(id)} />}</div>
+          <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></section>:<LibraryView onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onNewNote={()=>void handleCreateNote()} onImport={requestFileUpload} collection={collection} onCollection={setCollection} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); setFocusRestoreNoteId(activeNoteId); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="h-full" hidden={libraryVisible}>
           {openWorkspaceNotes.length > 0 ? (
             <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
               {openWorkspaceNotes.map((note, index) => (
                 <div
                   key={note.id}
+                  data-note-pane={note.id}
                   className={getWorkspacePaneClass({
                     noteCount: openWorkspaceNotes.length,
                     isActive: note.id === activeNoteId,

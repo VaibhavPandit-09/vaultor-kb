@@ -5,10 +5,10 @@ import AppModal from './modals/AppModal';
 import api from '../lib/api';
 import { organizationChanged, useOrganizationPage, type OrganizationItem, type OrganizationKind } from '../lib/organization';
 
-export default function OrganizationManager({onClose,onCollection,onTag,tags,resourceIds=[],onApplied,onTagRenamed,selectedCollection}: {
-  onClose:()=>void;onCollection:(item:OrganizationItem|null)=>void;selectedCollection?:OrganizationItem|null;onTag:(name:string)=>void;tags:string[];resourceIds?:string[];onApplied:()=>void;onTagRenamed:(oldName:string,newName:string|null)=>void;
+export default function OrganizationManager({onClose,onCollection,onTag,tags,resourceIds=[],onApplied,onTagRenamed,selectedCollection,initialKind='collection'}: {
+  initialKind?:OrganizationKind;onClose:()=>void;onCollection:(item:OrganizationItem|null)=>void;selectedCollection?:OrganizationItem|null;onTag:(name:string)=>void;tags:string[];resourceIds?:string[];onApplied:()=>void;onTagRenamed:(oldName:string,newName:string|null)=>void;
 }) {
-  const [kind,setKind]=useState<OrganizationKind>('collection'),[query,setQuery]=useState(''),[search,setSearch]=useState(''),[page,setPage]=useState(0);
+  const [kind,setKind]=useState<OrganizationKind>(initialKind),[query,setQuery]=useState(''),[search,setSearch]=useState(''),[page,setPage]=useState(0);
   const [name,setName]=useState(''),[editing,setEditing]=useState<OrganizationItem|null>(null),[deleting,setDeleting]=useState<OrganizationItem|null>(null);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
   const results=useOrganizationPage(kind,search,page);

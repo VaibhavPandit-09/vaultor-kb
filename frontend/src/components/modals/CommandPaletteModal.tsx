@@ -1,400 +1,93 @@
-import type { Resource } from '../../types';
-import { useResourcePage } from '../../lib/useResourcePage';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-} from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  createRootStep,
-  type CommandContext,
-  type CommandItem,
-  type CommandMemory,
-  type CommandStep,
-  type CommandUsage,
-} from '../../lib/commandPalette';
+import { ArrowLeft, Command, FileText, Folder, MoreHorizontal, Paperclip, Search, X } from 'lucide-react';
+import type { Resource } from '../../types';
+import { createRootStep, buildRenameStep, buildDeleteConfirmStep, type CommandContext, type CommandItem, type CommandStep } from '../../lib/commandPalette';
+import { useResourcePage } from '../../lib/useResourcePage';
+import { useOrganizationPage } from '../../lib/organization';
+import { usePins } from '../../lib/organizationControls';
+import { setResourceFavorite } from '../../lib/resourceBrowse';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
 import { useSettings } from '../../lib/settings';
-import { isMac } from '../../lib/shortcuts';
 import { getGlassPanelStyle, getOverlayStyle } from '../../lib/transparency';
+import SearchExcerpt from '../SearchExcerpt';
+import { CollectionPicker } from '../ResourceCollections';
+import OrganizationManager from '../OrganizationManager';
+import api from '../../lib/api';
 
-type StepState = {
-  step: CommandStep;
-  query: string;
-};
-
-interface CommandPaletteModalProps {
-  open: boolean;
-  onClose: (options?: { restorePreview?: boolean; restoreFocus?: boolean }) => void;
-  context: CommandContext;
-  onHighlightPreviewResource: (resource: Resource | null) => void;
-  previewVisible: boolean;
+type Entry={step:CommandStep;query:string};
+type Result=CommandItem & {resource?:Resource;kind?:string};
+interface Props {open:boolean;onClose:(options?:{restorePreview?:boolean;restoreFocus?:boolean})=>void;context:CommandContext;}
+export default function CommandPaletteModal({open,onClose,context}:Props) {
+ const [wasOpen,setWasOpen]=useState(false),[captured,setCaptured]=useState(context);
+ const [query,setQuery]=useState(''),[search,setSearch]=useState(''),[mode,setMode]=useState<'search'|'commands'>('search'),[stack,setStack]=useState<Entry[]>([]);
+ const [selectedId,setSelectedId]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const [organization,setOrganization]=useState<{kind:'collection'|'tag';ids:string[]}|null>(null);
+ const input=useRef<HTMLInputElement>(null),running=useRef(false);
+ if(open!==wasOpen){setWasOpen(open);if(open){setCaptured(context);setQuery('');setSearch('');setMode('search');setStack([]);setSelectedId('');setError('');}}
+ const entry=stack.at(-1),currentQuery=entry?.query??query;
+ useEffect(()=>{const timer=setTimeout(()=>setSearch(currentQuery),150);return()=>clearTimeout(timer);},[currentQuery]);
+ useEffect(()=>{if(open){const frame=requestAnimationFrame(()=>input.current?.focus());return()=>cancelAnimationFrame(frame);}},[open,stack.length,mode]);
+ const selecting=entry?.step.id==='delete-select';
+ const resources=useResourcePage({q:search,size:50,sort:'recent'},open&&((mode==='search'&&!entry)||selecting));
+ const collections=useOrganizationPage('collection',search,0,open&&mode==='search'&&!entry&&Boolean(search.trim()),false,20);
+ const pins=usePins('',0,30,open&&mode==='search'&&!search.trim()&&!entry);
+ const scope={...captured,resources:resources.data?.items??[]};
+ function close(){if(running.current)return;if(stack.length){setStack(v=>v.slice(0,-1));setError('');}else if(mode==='commands'){setMode('search');setQuery('');setError('');}else onClose();}
+ useEscapeLayer({id:'vaultor-command-palette',active:open,priority:ESCAPE_PRIORITIES.commandPalette,restoreFocusOnEscape:false,close});
+ function handoff(kind:'collection'|'tag',ids:string[]){setOrganization({kind,ids});onClose({restoreFocus:false,restorePreview:false});}
+ const action=(id:string,title:string,work:()=>void|Promise<void>,subtitle?:string):Result=>({id,title,subtitle,section:'Commands',onSelect:()=>({type:'execute',action:work})});
+ function actionStep(resource:Resource):CommandStep {return {id:'actions-'+resource.id,type:'select',title:'Actions · '+resource.title,placeholder:'Filter actions…',getItems:filter=>[
+   action('membership','Add to collection',()=>handoff('collection',[resource.id]),resource.title),
+   action('pin',resource.favorite?'Unpin':'Pin',()=>setResourceFavorite(resource.id,!resource.favorite),resource.title),
+   action('tags','Manage tags',()=>handoff('tag',[resource.id]),resource.title),
+   ...(resource.type==='note'?[{id:'rename',title:'Rename',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildRenameStep(resource),query:resource.title})},action('export','Export note',()=>captured.exportResource?.(resource),resource.title)]:[action('preview','Preview file',()=>captured.openResource(resource.id),resource.title),action('download','Download file',()=>{const link=document.createElement('a');link.href='/api/resources/'+resource.id+'/raw';link.download=resource.title;link.click();},resource.title)]),
+   {id:'delete',title:'Delete…',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildDeleteConfirmStep(scope,resource)})}
+ ].filter(item=>item.title.toLowerCase().includes(filter.toLowerCase()))};}
+ const extra:Result[]=[
+  action('library','Open Library',()=>captured.openLibrary?.('library')),
+  action('collections','Browse collections',()=>captured.openLibrary?.('collections')),
+  action('new-collection','Create collection',()=>handoff('collection',[])),
+  action('pinned','View pinned shortcuts',()=>captured.openLibrary?.('favorites')),
+  action('diagnostics','Open Diagnostics',()=>captured.openDiagnostics?.()),
+ ];
+ const targets=captured.selectedResources?.length?captured.selectedResources:captured.targetResource?[captured.targetResource]:[];
+ if(targets.length){extra.push(action('organize','Add target to collection',()=>handoff('collection',targets.map(r=>r.id)),targets.map(r=>r.title).join(', ')),action('target-tags','Manage target tags',()=>handoff('tag',targets.map(r=>r.id)),targets.map(r=>r.title).join(', ')));}
+ if(targets.length===1)extra.push({id:'target-actions',title:'Actions for '+targets[0].title,subtitle:'Explicit target',onSelect:async()=>({type:'push',step:actionStep((await api.get<Resource>('/resources/'+targets[0].id+'/summary',{backgroundDiagnostic:true})).data)})});
+ function resourceItem(resource:Resource,section:string):Result {return {id:'resource-'+resource.id,title:resource.title,subtitle:resource.type==='note'?'Note':'File',resource,kind:resource.type,section,onSelect:()=>({type:'execute',action:()=>captured.openResource(resource.id)})};}
+ let items:Result[]=[];
+ if(entry)items=entry.step.getItems(entry.step.type==='input'?currentQuery:search,scope);
+ else if(mode==='commands')items=[...createRootStep({...scope,resources:[]},null,{}).getItems(search,{...scope,resources:[]}),...extra.filter(item=>!search||((item.title+' '+(item.subtitle??'')).toLowerCase().includes(search.toLowerCase())))];
+ else if(search.trim())items=[...(resources.data?.items??[]).map(r=>resourceItem(r,'Resources')),...(collections.data?.items??[]).map(c=>({...action('collection-'+c.id,c.name,()=>captured.openCollection?.(c),`${c.count} resources`),kind:'collection',section:'Collections'}))];
+ else {
+  const seen=new Set<string>();const add=(item:Result)=>{if(!seen.has(item.id)){seen.add(item.id);items.push(item);}};
+  captured.openNotes.forEach(r=>add(resourceItem(r,'Open')));
+  if(captured.previewResource)add(resourceItem(captured.previewResource,'Open'));
+  (pins.data?.items??[]).forEach(p=>{if(p.kind==='collection')add({...action('collection-'+p.id,p.name,async()=>{const {data}=await api.get('/collections/'+p.id,{backgroundDiagnostic:true});captured.openCollection?.(data);},'Collection'),kind:'collection',section:'Pinned'});else add(resourceItem({id:p.id,type:p.kind as 'note'|'file',title:p.name,favorite:true,tags:[],createdAt:'',updatedAt:''},'Pinned'));});
+  (resources.data?.items??[]).slice(0,20).forEach(r=>add(resourceItem(r,'Recent')));
+ }
+ const searchPending=((mode==='search'&&!entry)||selecting)&&currentQuery.trim()!==search.trim();
+ if(searchPending)items=[];
+ const selected=items.find(item=>item.id===selectedId)??items[0];
+ const highlightedId=selected?.id;
+ useEffect(()=>{if(open&&highlightedId)document.getElementById('palette-option-'+highlightedId)?.scrollIntoView?.({block:'nearest'});},[highlightedId,open]);
+ async function execute(item:Result){if(running.current)return;running.current=true;setBusy(true);setError('');try{
+ const result=await item.onSelect();if(result.type==='push'){setStack(v=>[...v,{step:result.step,query:result.query??result.step.initialQuery??''}]);setSelectedId('');}
+ else if(result.type==='execute'){await result.action();onClose({restorePreview:item.id==='pin',restoreFocus:item.id==='pin'||item.id==='toggle_sidebar'});}
+ }catch(e){setError((e as {response?:{data?:{detail?:string}}})?.response?.data?.detail??(e instanceof Error?e.message:'Action failed. Retry.'));}finally{running.current=false;setBusy(false);}}
+ function change(value:string){setError('');if(entry)setStack(v=>v.map((e,i)=>i===v.length-1?{...e,query:value}:e));else if(value.startsWith('>')){setMode('commands');setQuery(value.slice(1).trimStart());}else setQuery(value);}
+ const {settings}=useSettings();const transparency=settings.local.uiTransparency;
+ const failure=((mode==='search'&&!entry)||selecting)?resources.error||collections.error||pins.error:'';
+ const dialog=organization?.kind==='collection'?<CollectionPicker resourceIds={organization.ids} onClose={()=>setOrganization(null)}/>:organization?<OrganizationManager initialKind="tag" resourceIds={organization.ids} onClose={()=>setOrganization(null)} onApplied={()=>setOrganization(null)} tags={[]} onTag={()=>{}} onTagRenamed={()=>{}} onCollection={()=>{}}/>:null;
+ return <>{dialog}{open&&createPortal(<div className="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-[12vh]" style={getOverlayStyle(transparency,.3)} onClick={()=>{if(!running.current)onClose();}}>
+ <div role="dialog" aria-modal="true" aria-label="Search and commands" className="w-full max-w-2xl rounded-2xl border border-[var(--border-strong)] shadow-xl overflow-hidden" style={getGlassPanelStyle(transparency,20)} onClick={e=>e.stopPropagation()} onKeyDown={e=>e.stopPropagation()}>
+ <header className="flex items-center gap-2 px-4 pt-3 text-sm">{(entry||mode==='commands')&&<button className="library-button" disabled={busy} onClick={close}><ArrowLeft size={14}/>Back</button>}<strong className="truncate flex-1">{entry?.step.title??(mode==='commands'?'Commands':'Search workspace')}</strong>{!entry&&<button className="library-button" disabled={busy} onClick={()=>{setMode(mode==='search'?'commands':'search');setQuery('');}}><Command size={14}/>{mode==='search'?'Commands':'Search'}</button>}<button aria-label="Close palette" disabled={busy} onClick={()=>onClose()}><X size={18}/></button></header>
+ <div className="flex items-center gap-2 px-4 py-3"><Search size={18}/><input ref={input} role="combobox" aria-label={entry?.step.placeholder??'Search titles and saved notes'} aria-expanded="true" aria-controls="palette-results" aria-autocomplete="list" aria-activedescendant={selected?'palette-option-'+selected.id:undefined} className="w-full bg-transparent outline-none" value={currentQuery} disabled={busy} placeholder={entry?.step.placeholder??(mode==='commands'?'Find a command…':'Search titles and saved note text…')} onChange={e=>change(e.target.value)} onKeyDown={e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const index=items.findIndex(i=>i.id===selected?.id);setSelectedId(items[Math.max(0,Math.min(items.length-1,index+(e.key==='ArrowDown'?1:-1)))]?.id??'');}else if(e.key==='Enter'&&selected){e.preventDefault();void execute(selected);}}}/></div>
+ <div className="px-4 pb-2 text-xs text-[var(--text-secondary)]">{context.hasUnsavedChanges?'Search uses saved content; unsaved edits are excluded.':'Searches saved note text and file titles.'}{mode==='commands'&&<p>Target: {targets.length?targets.map(r=>r.title).join(', '):'None — choose a resource explicitly'}</p>}</div>
+ {!entry&&mode==='search'&&search.trim()&&((resources.data?.totalItems??0)>50||(collections.data?.totalItems??0)>20)&&<p className="px-4 pb-2 text-xs text-[var(--text-secondary)]">Showing the first matches. Refine your search or open Library for all results.</p>}
+ {error&&<p role="alert" className="px-4 py-2 text-sm text-red-500">{error} Your input is retained; retry the action.</p>}
+ {failure&&<p role="alert" className="px-4 py-2 text-sm">{failure}<button className="library-button" onClick={()=>{resources.retry();collections.retry();pins.retry();}}>Retry search</button></p>}
+ <div id="palette-results" role="listbox" aria-label="Results" aria-busy={busy} className="max-h-[48vh] overflow-auto p-2">{items.map((item,index)=>{const Icon=item.kind==='collection'?Folder:item.kind==='file'?Paperclip:item.kind==='note'?FileText:Command;return <div key={item.id}>{item.section!==items[index-1]?.section&&<p className="px-3 py-1 text-xs text-[var(--text-tertiary)]">{item.section}</p>}<div role="option" id={'palette-option-'+item.id} aria-selected={item.id===selected?.id} className="palette-result flex gap-3 rounded-lg px-3 py-2 cursor-pointer" onMouseEnter={()=>setSelectedId(item.id)} onClick={()=>void execute(item)}><Icon className="shrink-0 mt-1" size={17}/><div className="min-w-0"><p className="truncate text-sm font-medium">{item.title}</p><p className="text-xs text-[var(--text-secondary)] truncate">{item.resource?.searchSnippet?.text?<SearchExcerpt snippet={item.resource.searchSnippet}/>:item.subtitle}</p></div></div></div>;})}{!items.length&&<p className="p-4 text-sm">{(searchPending||resources.loading)&&mode==='search'?'Searching…':'No matches. Try different words.'}</p>}</div>
+ <footer className="flex flex-wrap gap-2 items-center justify-between border-t border-border p-3 text-xs text-[var(--text-secondary)]"><span>{busy?'Working…':'Enter opens · ↑ ↓ select · Esc back'}</span>{selected?.resource&&<button className="library-button max-w-full min-w-0" disabled={busy} onClick={()=>void execute({id:'resource-actions',title:'Actions',onSelect:async()=>({type:'push',step:actionStep((await api.get<Resource>('/resources/'+selected.resource!.id+'/summary',{backgroundDiagnostic:true})).data)})})}><MoreHorizontal className="shrink-0" size={16}/><span className="truncate">Actions for {selected.title}</span></button>}</footer>
+ </div></div>,document.body)}</>;
 }
-
-export default function CommandPaletteModal({
-  open,
-  onClose,
-  context,
-  onHighlightPreviewResource,
-  previewVisible,
-}: CommandPaletteModalProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const paletteRef = useRef<HTMLDivElement>(null);
-  const wasOpenRef = useRef(false);
-  const [stepStack, setStepStack] = useState<StepState[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [runningId, setRunningId] = useState<string | null>(null);
-  const [lastAction, setLastAction] = useState<CommandMemory | null>(null);
-  const [usage, setUsage] = useState<CommandUsage>({});
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [previewId, setPreviewId] = useState<string | null>(null);
-  const [animateIn, setAnimateIn] = useState(false);
-  const { settings } = useSettings();
-  const smoothAnimations = settings.local.animationMode === 'smooth';
-
-  useEscapeLayer({
-    id: 'vaultor-command-palette',
-    active: open,
-    priority: ESCAPE_PRIORITIES.commandPalette,
-    restoreFocusOnEscape: false,
-    close: () => {
-      handleCloseRequest();
-    },
-  });
-
-  useEffect(() => {
-    if (!open) {
-      wasOpenRef.current = false;
-      setAnimateIn(false);
-      setStepStack([]);
-      setSelectedIndex(0);
-      setRunningId(null);
-      setDebouncedQuery('');
-      setPreviewId(null);
-      onHighlightPreviewResource(null);
-      return;
-    }
-
-    if (wasOpenRef.current) {
-      return;
-    }
-
-    wasOpenRef.current = true;
-    const rootStep = createRootStep(context, lastAction, usage);
-    setStepStack([{ step: rootStep, query: '' }]);
-    setSelectedIndex(0);
-    setRunningId(null);
-    setDebouncedQuery('');
-    setPreviewId(null);
-    setAnimateIn(false);
-    onHighlightPreviewResource(null);
-  }, [context, lastAction, onHighlightPreviewResource, open, usage]);
-
-  useEffect(() => {
-    if (!open || !smoothAnimations) {
-      setAnimateIn(false);
-      return;
-    }
-
-    const rafId = window.requestAnimationFrame(() => {
-      setAnimateIn(true);
-    });
-
-    return () => window.cancelAnimationFrame(rafId);
-  }, [open, smoothAnimations]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const focusInput = () => inputRef.current?.focus();
-    const rafId = window.requestAnimationFrame(focusInput);
-    return () => window.cancelAnimationFrame(rafId);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const placeholderTimer = window.setInterval(() => {
-      setPlaceholderIndex((current) => (current + 1) % PLACEHOLDERS.length);
-    }, 1800);
-
-    return () => window.clearInterval(placeholderTimer);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const stopBackgroundShortcuts = (event: KeyboardEvent) => {
-      const target = event.target;
-      if (target instanceof Node && paletteRef.current?.contains(target)) {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-    };
-
-    window.addEventListener('keydown', stopBackgroundShortcuts, true);
-    window.addEventListener('keypress', stopBackgroundShortcuts, true);
-    window.addEventListener('keyup', stopBackgroundShortcuts, true);
-    return () => {
-      window.removeEventListener('keydown', stopBackgroundShortcuts, true);
-      window.removeEventListener('keypress', stopBackgroundShortcuts, true);
-      window.removeEventListener('keyup', stopBackgroundShortcuts, true);
-    };
-  }, [open]);
-
-  const currentState = stepStack[stepStack.length - 1] ?? null;
-  const currentQuery = currentState?.query ?? '';
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setDebouncedQuery(currentQuery);
-    }, 70);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [currentQuery, open]);
-
-  const results = useResourcePage({ q: debouncedQuery, size: 50, sort: 'recent' }, open);
-  const items = useMemo(() => {
-    if (!currentState) {
-      return [];
-    }
-
-    return currentState.step.getItems(debouncedQuery, { ...context, resources: results.data?.items ?? [] });
-  }, [context, currentState, debouncedQuery, results.data]);
-
-  useEffect(() => {
-    setSelectedIndex((current) => {
-      if (items.length === 0) {
-        return 0;
-      }
-
-      return Math.min(current, items.length - 1);
-    });
-  }, [items.length]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const selectedItem = items[selectedIndex];
-    const nextPreviewId = selectedItem?.preview?.type === 'file'
-      ? selectedItem.preview.resource.id
-      : null;
-
-    if (nextPreviewId === previewId) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      onHighlightPreviewResource(selectedItem?.preview?.type === 'file' ? selectedItem.preview.resource : null);
-      setPreviewId(nextPreviewId);
-    }, 80);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [items, onHighlightPreviewResource, open, previewId, selectedIndex]);
-
-  const updateCurrentQuery = useCallback((query: string) => {
-    setStepStack((previous) => previous.map((entry, index) => (
-      index === previous.length - 1 ? { ...entry, query } : entry
-    )));
-  }, []);
-
-  const stepBack = useCallback(() => {
-    setStepStack((previous) => (previous.length > 1 ? previous.slice(0, -1) : previous));
-    setSelectedIndex(0);
-  }, []);
-
-  const handleCloseRequest = useCallback((options?: { restorePreview?: boolean; restoreFocus?: boolean }) => {
-    if (stepStack.length > 1) {
-      stepBack();
-      return;
-    }
-
-    onClose(options);
-  }, [onClose, stepBack, stepStack.length]);
-
-  const executeItem = useCallback(async (item: CommandItem) => {
-    const result = await item.onSelect();
-    if (result.type === 'noop') {
-      return;
-    }
-
-    if (result.type === 'push') {
-      setStepStack((previous) => [
-        ...previous,
-        {
-          step: result.step,
-          query: result.query ?? result.step.initialQuery ?? '',
-        },
-      ]);
-      setSelectedIndex(0);
-      return;
-    }
-
-    setRunningId(item.id);
-    try {
-      await result.action();
-      setUsage((previous) => ({
-        ...previous,
-        [item.id]: (previous[item.id] ?? 0) + 1,
-      }));
-      if (result.remember) {
-        setLastAction(result.remember);
-      }
-      onHighlightPreviewResource(null);
-      onClose({ restorePreview: false, restoreFocus: false });
-    } finally {
-      setRunningId(null);
-    }
-  }, [onClose, onHighlightPreviewResource]);
-
-  const handleInputKeyDown = useCallback((event: ReactKeyboardEvent<HTMLInputElement>) => {
-    const modKey = isMac ? event.metaKey : event.ctrlKey;
-    event.stopPropagation();
-
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setSelectedIndex((current) => (
-        items.length === 0 ? 0 : Math.min(current + 1, items.length - 1)
-      ));
-      return;
-    }
-
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setSelectedIndex((current) => Math.max(current - 1, 0));
-      return;
-    }
-
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      handleCloseRequest();
-      return;
-    }
-
-    if ((event.key === 'Enter' || (modKey && event.key === 'Enter')) && items[selectedIndex]) {
-      event.preventDefault();
-      void executeItem(items[selectedIndex]);
-      return;
-    }
-
-    if (event.key === 'Tab' && items[selectedIndex]) {
-      event.preventDefault();
-      updateCurrentQuery(items[selectedIndex].title);
-    }
-  }, [executeItem, handleCloseRequest, items, selectedIndex, updateCurrentQuery]);
-
-  if (!open) {
-    return null;
-  }
-
-  const transparency = settings.local.uiTransparency;
-  const previewPanelWidth = 'min(40vw, 44rem)';
-  const palettePreviewInset = `calc(${previewPanelWidth} + 2rem)`;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[80] pointer-events-none">
-      <div
-        className={`absolute inset-y-0 left-0 pointer-events-auto ${
-          smoothAnimations
-            ? `transition-opacity duration-[170ms] ease-out ${animateIn ? 'opacity-100' : 'opacity-0'}`
-            : 'transition-none opacity-100'
-        }`}
-        style={{
-          ...(previewVisible ? { right: previewPanelWidth } : { right: 0 }),
-          ...getOverlayStyle(transparency, 0.18),
-        }}
-        onClick={() => handleCloseRequest()}
-      />
-      <div
-        className={`absolute inset-y-0 left-0 pointer-events-none flex items-start justify-center px-4 pt-[18vh] ${
-          smoothAnimations ? 'transition-[right] duration-[170ms] ease-out' : 'transition-none'
-        }`}
-        style={previewVisible ? { right: palettePreviewInset } : { right: 0 }}
-      >
-        <div
-          ref={paletteRef}
-          className={`command-palette pointer-events-auto w-full max-w-[40rem] ${
-            smoothAnimations
-              ? `transform-gpu transition-[transform,opacity] duration-[170ms] ease-out ${animateIn ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-[0.98] opacity-0'}`
-              : 'transition-none'
-          }`}
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div
-            className="rounded-[1.3rem] border border-white/8 shadow-xl"
-            style={getGlassPanelStyle(transparency, 20)}
-          >
-            <div className="px-4 py-4">
-              <input
-                ref={inputRef}
-                value={currentQuery}
-                onChange={(event) => {
-                  event.stopPropagation();
-                  updateCurrentQuery(event.target.value);
-                }}
-                onKeyDown={handleInputKeyDown}
-                placeholder={currentQuery ? currentState?.step.placeholder : PLACEHOLDERS[placeholderIndex]}
-                className="w-full bg-transparent text-[15px] font-medium text-foreground outline-none placeholder:text-slate-400"
-              />
-            </div>
-
-            {results.loading && <p className="px-4 text-xs" role="status">Searching resources…</p>}
-            {results.error && <p className="px-4 text-sm" role="alert">Resource search failed. <button onClick={results.retry}>Retry</button></p>}
-            {results.data?.totalItems !== undefined && results.data.totalItems > 50 && <p className="px-4 text-xs">Showing 50 matches. Refine your search or open Library.</p>}
-            {items.length > 0 && (
-              <div className="max-h-[60vh] overflow-y-auto px-2 pb-2">
-                {items.map((item, index) => {
-                  const selected = index === selectedIndex;
-                  const running = runningId === item.id;
-
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => void executeItem(item)}
-                      className={`flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
-                        selected ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-background/80'
-                      } ${running ? 'opacity-70' : ''}`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium">{item.title}</div>
-                        {item.subtitle && (
-                          <div className="truncate text-xs text-slate-400">{item.subtitle}</div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
-const PLACEHOLDERS = [
-  'Search or run a command…',
-  'Open note…',
-  'Delete…',
-];

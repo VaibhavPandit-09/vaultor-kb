@@ -1,12 +1,13 @@
 # Documentation
 
-- [Workspace evolution plan](workspace-evolution-plan.md): empty-note closing and expanded-table workspace implemented; scalable Library and collections/tags implemented; U1 navigation refresh fix complete; U2 resource organization/pins complete; U3 palette/full-text search next; exactly one sprint per authorization.
+- [Workspace evolution plan](workspace-evolution-plan.md): empty-note closing and expanded-table workspace implemented; scalable Library and collections/tags implemented; U1 navigation refresh fix complete; U2 resource organization/pins complete; U3 palette/saved-note full-text search complete; exactly one sprint per authorization.
 
 - [Editor and portability plan](editor-portability-plan.md): imports and table foundations implemented; individual note exports implemented; table filtering/copy/export implemented; remaining manual verification recorded; one sprint per authorized call.
 
 - [Modernization tracker](history/modernization-plan.md): archived implementation checklist, validation evidence and remaining manual coverage.
 
 - [Library workflows](LIBRARY.md): paginated metadata browsing, quick access, unified pins, resource-level collections/tag management, bulk organization and transfer semantics.
+- [Search and Ctrl+K](SEARCH.md): saved-note indexing, ranking, palette targeting, diagnostics and limits.
 - [Table workflows](TABLES.md): contextual table menus, filtering, spreadsheet paste/copy, CSV export and expanded editing.
 - [Individual note exports](NOTE-EXPORTS.md): formats, snapshot semantics, assets, fidelity, limits and verification.
 - [API guide](API.md): shared UI/agent contracts, examples and transfer flow.

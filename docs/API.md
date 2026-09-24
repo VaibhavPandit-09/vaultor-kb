@@ -6,11 +6,11 @@
 
 `scripts/file-import-smoke.mjs` tests this flow against disposable storage, including byte preservation and retries. Frontend conversion choices/limits are in CODEBASE.md.
 
-The application and agents use the same unauthenticated API. Default origin: http://127.0.0.1:8080. Machine-readable specification: GET /api/openapi.json. Discover build/features at GET /api/capabilities and available export formats at GET /api/export-formats. Only workspace ZIP is enabled.
+The application and agents use the same unauthenticated API. Default origin: http://127.0.0.1:8080. Machine-readable specification: GET /api/openapi.json. Discover build/features at GET /api/capabilities and available export formats at GET /api/export-formats. Workspace ZIP and individual note Markdown/ZIP/PDF/DOCX exports are enabled; see NOTE-EXPORTS.md.
 
 ## Request and response rules
 
-Send Content-Type: application/json except multipart file uploads. Note content is a structured Tiptap doc object; supply both title and content for updates. Titles contain 1–500 characters; tags 1–100. URL-encode path/query values. Resource DTOs omit storage paths. List resources with page (zero-based), size (1–200), q (literal title substring), type, repeated tag names (all required), favorites=true, collection (ID), and sort=recent|updated|title; response is {items,page,size,totalItems,totalPages}. Lists contain metadata only (no content/filePath); GET /resources/{id} retrieves the document. Search returns up to 50 metadata-only title matches. Stable ordering uses resource ID as a tie-breaker; pagination is not a concurrent snapshot.
+Send Content-Type: application/json except multipart file uploads. Note content is a structured Tiptap doc object; supply both title and content for updates. Titles contain 1–500 characters; tags 1–100. URL-encode path/query values. Resource DTOs omit storage paths. List resources with page (zero-based), size (1–200), q (literal title substring), type, repeated tag names (all required), favorites=true, collection (ID), and sort=recent|updated|title; response is {items,page,size,totalItems,totalPages}. Lists contain metadata only (no content/filePath); GET /resources/{id} retrieves the document. Legacy /resources/search returns up to 50 metadata-only title matches. Saved-note search uses the separate paginated /resources/query contract described in SEARCH.md. Stable ordering uses resource ID as a tie-breaker; pagination is not a concurrent snapshot.
 
 Send an optional X-Request-ID (1–80 alphanumeric, underscore or hyphen characters). The server returns it on every response or creates a UUID. Problem errors contain status, code, detail, requestId and fieldErrors where applicable. Codes include INVALID_REQUEST (400), NOT_FOUND (404), CONFLICT/WORKSPACE_BUSY (409), UPLOAD_TOO_LARGE (413) and INTERNAL_ERROR (500). Retry a busy request after the operation finishes; avoid blindly retrying non-idempotent creation.
 
@@ -21,6 +21,10 @@ Send an optional X-Request-ID (1–80 alphanumeric, underscore or hyphen charact
 | GET /api/resources | listResources | List resources with pagination |
 | POST /api/resources | createNote | createNote |
 | GET /api/resources/search | searchResources | Title search; capped at 50 metadata summaries |
+| GET /api/resources/query | searchSavedResources | Paginated saved-note/title search with safe snippets |
+| GET /api/resources/{id}/summary | getResourceSummary | Fresh metadata without note content |
+| GET /api/diagnostics/search | getSearchIndexStatus | Index coverage, failure and rebuild status |
+| POST /api/diagnostics/search/rebuild | rebuildSearchIndex | Start a bounded asynchronous rebuild; return existing run when busy |
 | GET /api/resources/{id} | getResource | getResource |
 | DELETE /api/resources/{id} | deleteResource | deleteResource |
 | PUT /api/resources/{id}/note | updateNote | updateNote |
@@ -127,3 +131,9 @@ Archive version 2 includes workspace.organization.collections and workspace.orga
 U2 creation semantics: use a stable UUID for PUT /collections/creations/{id}. The name and sorted initial IDs define the request fingerprint. Identical retries return the current collection without reapplying initial memberships; a changed request or normalized-name collision returns 409. Initial resource IDs may be empty, at most 100. The older POST /collections remains a non-idempotent convenience API.
 
 POST /resources accepts optional collectionId on creation. PUT /resources/imports/{id} accepts optional multipart collectionId; the destination participates in its immutable retry fingerprint. Missing collections fail before import file staging; membership and resource metadata commit in one transaction. Retry-safe file imports return an already-created resource even if its memberships were subsequently edited. Favorite fields and workspace ZIP v2 remain unchanged; the UI calls them pins.
+
+## Saved-note search
+
+GET /api/resources/query?q=worker%20allocation&type=note&page=0&size=50 returns ranked {resource,snippet} items and standard pagination. Optional collection, repeated tag and favorites filters match Library. q allows 500 characters/30 literal prefix terms; size is at most 100. Snippet text and UTF-16 highlight ranges are data, never HTML. No file bytes or unsaved drafts are indexed. See [SEARCH.md](SEARCH.md) for ranking and lifecycle.
+
+GET /api/diagnostics/search inspects coverage. POST /api/diagnostics/search/rebuild starts one asynchronous rebuild, then poll GET status until rebuilding=false and inspect complete/failure/invalidDocuments. Repeated POST while running returns that run. Search returns 503 while rebuilding/unavailable; resource calls may return 409 WORKSPACE_BUSY during individual batches. Request IDs correlate rebuild logs. These are ordinary shared APIs; no privileged execution endpoint is added.

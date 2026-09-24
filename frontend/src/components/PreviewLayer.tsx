@@ -128,6 +128,7 @@ export default function PreviewLayer({
         onClick={onClose}
       >
         <div
+          data-preview-resource={resource.id}
           className={`flex h-[84vh] w-full max-w-6xl flex-col overflow-hidden rounded-[1.4rem] border border-white/5 bg-card ${
             smoothAnimations
               ? `shadow-xl transform-gpu transition-[transform,opacity] duration-[170ms] ease-out ${animateIn ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-[0.98] opacity-0'}`
@@ -143,7 +144,7 @@ export default function PreviewLayer({
   }
 
   return (
-    <div className="pointer-events-none fixed inset-y-0 right-0 z-[75] flex w-full justify-end">
+    <div data-preview-resource={resource.id} className="pointer-events-none fixed inset-y-0 right-0 z-[75] flex w-full justify-end">
       <div
         className={`pointer-events-auto flex h-full w-full max-w-full md:max-w-[min(60%,44rem)] xl:max-w-[min(40%,44rem)] flex-col border-l border-white/5 bg-card ${
           smoothAnimations

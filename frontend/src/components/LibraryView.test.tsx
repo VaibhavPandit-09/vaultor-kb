@@ -6,6 +6,7 @@ vi.mock('../lib/api',()=>({default:{get:vi.fn()}}));
 import LibraryView from './LibraryView';
 import { useResourcePage } from '../lib/useResourcePage';
 import { browseResources, setResourceFavorite, type ResourcePage } from '../lib/resourceBrowse';
+vi.mock('../lib/resourceSearch',()=>({searchResourcePage:(...args:Parameters<typeof browseResources>)=>browseResources(...args)}));
 vi.mock('../lib/resourceBrowse', () => ({ browseResources: vi.fn(), setResourceFavorite: vi.fn() }));
 const page = (prefix = 'Note'): ResourcePage => ({ items: Array.from({length:100}, (_, i) => ({id:`${prefix}-${i}`,type:'note',title:`${prefix} ${i}`,tags:[],createdAt:'2026-09-23',updatedAt:'2026-09-23'})),page:0,size:100,totalItems:205,totalPages:3 });
 beforeEach(() => {

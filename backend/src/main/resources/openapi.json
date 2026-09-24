@@ -3929,6 +3929,395 @@
           }
         }
       }
+    },
+    "/resources/query": {
+      "get": {
+        "operationId": "searchSavedResources",
+        "summary": "Search saved resource titles and structured note text",
+        "description": "Title-weighted relevance, then lowercase title and ID. No file-content search. Ordinary browsing remains separate.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "description": "Literal Unicode terms, AND with prefix matching; at most 30 terms. Saved note text and all resource titles.",
+            "required": true,
+            "example": "worker allocation"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "note"
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 100
+            },
+            "style": "form",
+            "explode": true,
+            "description": "Require every selected tag name"
+          },
+          {
+            "name": "favorites",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "collection",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Require membership in this collection ID, combined with all other filters."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "resource": {
+                        "id": "note-id",
+                        "type": "note",
+                        "title": "Worker allocation",
+                        "tags": [],
+                        "collections": [],
+                        "favorite": false
+                      },
+                      "snippet": {
+                        "text": "Allocate workers by demand",
+                        "highlights": [
+                          {
+                            "start": 9,
+                            "end": 16
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "page": 0,
+                  "size": 50,
+                  "totalItems": 1,
+                  "totalPages": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Workspace busy or operation conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected failure; see request ID in logs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Search rebuilding or unavailable; inspect diagnostics and retry",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resources/{id}/summary": {
+      "get": {
+        "operationId": "getResourceSummary",
+        "summary": "Read fresh resource metadata without its document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Workspace busy or operation conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected failure; see request ID in logs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/diagnostics/search": {
+      "get": {
+        "operationId": "getSearchIndexStatus",
+        "summary": "Inspect derived search index coverage and rebuild state",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchStatus"
+                },
+                "example": {
+                  "rebuilding": false,
+                  "processed": 12,
+                  "resources": 12,
+                  "indexed": 12,
+                  "invalidDocuments": 0,
+                  "complete": true,
+                  "failure": "",
+                  "requestId": "startup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Workspace busy or operation conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected failure; see request ID in logs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/diagnostics/search/rebuild": {
+      "post": {
+        "operationId": "rebuildSearchIndex",
+        "summary": "Start one asynchronous search rebuild",
+        "description": "Repeated calls while running return the current rebuild. Batches of 100 coordinate with workspace mutations. Poll status; restart rebuilds derived data again.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Workspace busy or operation conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected failure; see request ID in logs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4720,6 +5109,124 @@
           "totalItems",
           "totalPages"
         ]
+      },
+      "SearchSnippet": {
+        "type": "object",
+        "required": [
+          "text",
+          "highlights"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 600
+          },
+          "highlights": {
+            "type": "array",
+            "description": "Half-open UTF-16 offsets into text. Render as text, never HTML.",
+            "items": {
+              "type": "object",
+              "required": [
+                "start",
+                "end"
+              ],
+              "properties": {
+                "start": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      },
+      "SearchHit": {
+        "type": "object",
+        "required": [
+          "resource",
+          "snippet"
+        ],
+        "properties": {
+          "resource": {
+            "$ref": "#/components/schemas/ResourceSummary"
+          },
+          "snippet": {
+            "$ref": "#/components/schemas/SearchSnippet"
+          }
+        }
+      },
+      "SearchPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "size",
+          "totalItems",
+          "totalPages"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchHit"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        }
+      },
+      "SearchStatus": {
+        "type": "object",
+        "required": [
+          "rebuilding",
+          "processed",
+          "resources",
+          "indexed",
+          "invalidDocuments",
+          "complete",
+          "failure",
+          "requestId"
+        ],
+        "properties": {
+          "rebuilding": {
+            "type": "boolean"
+          },
+          "processed": {
+            "type": "integer"
+          },
+          "resources": {
+            "type": "integer"
+          },
+          "indexed": {
+            "type": "integer"
+          },
+          "invalidDocuments": {
+            "type": "integer"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "failure": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        }
       }
     }
   }

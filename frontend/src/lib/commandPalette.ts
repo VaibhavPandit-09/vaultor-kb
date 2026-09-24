@@ -45,12 +45,19 @@ export type CommandMemory = {
 export type CommandUsage = Record<string, number>;
 
 export type CommandContext = {
+  targetResource?: Resource|null;
+  selectedResources?: Resource[];
+  hasUnsavedChanges?: boolean;
+  openCollection?: (item:import('./organization').OrganizationItem)=>void;
+  openLibrary?: (section:'library'|'collections'|'favorites')=>void;
+  exportResource?: (resource:Resource)=>void;
+  openDiagnostics?: ()=>void;
   resources: Resource[];
   activeNote: Resource | null;
   previewResource: Resource | null;
   openNotes: Resource[];
   sidebarCollapsed: boolean;
-  openResource: (resourceId: string) => void;
+  openResource: (resourceId: string) => void | Promise<void>;
   createNote: () => Promise<void>;
   uploadFile: () => void;
   toggleSidebar: () => void;
@@ -285,7 +292,7 @@ export function createRootStep(
       }
 
       if (!query.trim()) {
-        return getZeroStateItems([...extraItems, ...commandItems], usage).slice(0, 3);
+        return getZeroStateItems([...extraItems, ...commandItems], usage);
       }
 
       return rankItems([...extraItems, ...commandItems, ...resourceItems], query, usage, lastAction?.id ?? null)
@@ -296,34 +303,15 @@ export function createRootStep(
 
 function buildDeleteSelectStep(contextFallback: CommandContext): CommandStep {
   return {
-    id: 'delete-select',
-    type: 'select',
-    title: 'Delete resource',
-    placeholder: 'Choose a resource to delete...',
-    emptyState: 'No resources matched.',
-    getItems: (query, context = contextFallback) => rankItems(
-      context.resources.map((resource) => ({
-        id: `delete-target-${resource.id}`,
-        title: resource.title,
-        subtitle: resource.type === 'note' ? 'Note' : 'File',
-        section: 'Targets',
-        keywords: [resource.type, 'delete', ...(resource.tags || []).map((tag) => tag.name)],
-        aliases: ['del', 'rm', 'remove'],
-        preview: buildResourcePreview(resource),
-        scoreBoost: resource.id === context.activeNote?.id ? 120 : 0,
-        onSelect: async () => ({
-          type: 'push',
-          step: buildDeleteConfirmStep(context, resource),
-        }),
-      })),
-      query,
-      {},
-      null,
-    ),
+    id:'delete-select',type:'select',title:'Delete resource',placeholder:'Find a saved resource…',
+    getItems:(_query,context=contextFallback)=>context.resources.map(resource=>({
+      id:'delete-target-'+resource.id,title:resource.title,subtitle:resource.type,section:'Targets',
+      onSelect:()=>({type:'push',step:buildDeleteConfirmStep(context,resource)})
+    }))
   };
 }
 
-function buildDeleteConfirmStep(context: CommandContext, resource: Resource): CommandStep {
+export function buildDeleteConfirmStep(context: CommandContext, resource: Resource): CommandStep {
   return {
     id: `delete-confirm-${resource.id}`,
     type: 'confirm',
@@ -355,7 +343,7 @@ function buildDeleteConfirmStep(context: CommandContext, resource: Resource): Co
   };
 }
 
-function buildRenameStep(resource: Resource): CommandStep {
+export function buildRenameStep(resource: Resource): CommandStep {
   return {
     id: `rename-${resource.id}`,
     type: 'input',
@@ -383,9 +371,9 @@ function buildRenameStep(resource: Resource): CommandStep {
               id: `rename-${resource.id}`,
               title: `Rename ${resource.title}`,
               subtitle: `to ${trimmed}`,
-              resume: (resumeContext) => ({
+              resume: () => ({
                 type: 'push',
-                step: buildRenameStep(resumeContext.activeNote ?? resource),
+                step: buildRenameStep(resource),
                 query: trimmed,
               }),
             },
@@ -441,6 +429,7 @@ function getZeroStateItems(commandItems: CommandItem[], usage: CommandUsage) {
     ...commandItems.filter((item) => item.id.startsWith('continue-')),
     ...contextual,
     ...recent,
+    ...commandItems,
   ];
 
   seedItems.forEach((item) => {

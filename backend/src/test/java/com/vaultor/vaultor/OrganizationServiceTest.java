@@ -20,6 +20,7 @@ class OrganizationServiceTest {
     static {try {DATA=Files.createTempDirectory("vaultor-organization-test-");}catch(Exception e){throw new ExceptionInInitializerError(e);}}
     @DynamicPropertySource static void properties(DynamicPropertyRegistry p) {p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());}
     @Autowired OrganizationService org;
+    @Autowired ResourceSearchService search;
     @Autowired ResourceService service;
     @Autowired ResourceRepository resources;
     @Autowired ResourceBrowseService browse;
@@ -56,6 +57,7 @@ class OrganizationServiceTest {
         org.save(atlas.id(),new CollectionInput("Atlas",false));
         var merge=transfers.preview(new MockMultipartFile("file","workspace.zip","application/zip",archive));
         await(transfers.commit(merge.operation().id(),"merge").id(),"SUCCEEDED");
+        assertEquals(2,search.search("First",0,20,null,List.of(),null,false).totalItems());
         assertEquals(4,resources.count());assertEquals(1,collections.count());
         assertFalse(collections.findById(atlas.id()).orElseThrow().isFavorite());
         assertEquals(4,org.list("Atlas",false,0,30).items().getFirst().count());
@@ -63,6 +65,7 @@ class OrganizationServiceTest {
         assertEquals(4,org.tags("meeting",0,30).items().getFirst().count());
         var restore=transfers.preview(new MockMultipartFile("file",archive));
         await(transfers.commit(restore.operation().id(),"replace").id(),"SUCCEEDED");
+        assertEquals(1,search.search("First",0,20,null,List.of(),null,false).totalItems());
         assertEquals(2,resources.count());assertTrue(collections.findById(atlas.id()).orElseThrow().isFavorite());
         assertEquals(2,browse.list(0,100,"",null,List.of(),false,"title",atlas.id()).totalItems());
         assertTrue(resources.findById(one).orElseThrow().getFavorite());
@@ -70,6 +73,7 @@ class OrganizationServiceTest {
         var failPreview=transfers.preview(new MockMultipartFile("file",archive));
         jdbc.execute("CREATE TRIGGER reject_collection BEFORE INSERT ON collections BEGIN SELECT RAISE(ABORT,'injected failure'); END");
         try {await(transfers.commit(failPreview.operation().id(),"replace").id(),"FAILED");} finally {jdbc.execute("DROP TRIGGER reject_collection");}
+        assertEquals(1,search.search("First",0,20,null,List.of(),null,false).totalItems());
         assertEquals(2,resources.count());assertEquals(2,org.list("Atlas",false,0,30).items().getFirst().count());
         assertTrue(resources.findById(one).orElseThrow().getFavorite());
         var malformed=new OrganizationData(List.of(new CollectionData("bad","Bad",false,List.of("missing"))),List.of());

@@ -357,3 +357,7 @@ button {
 .resource-collections { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; padding: .5rem .25rem; }
 .collection-chip { display: inline-flex; align-items: center; gap: .3rem; max-width: 13rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: .25rem .5rem; border: 1px solid var(--border-subtle); border-radius: .5rem; font-size: .75rem; color: var(--text-secondary); }
 .collection-chip:hover { background: var(--surface-hover); color: var(--text-primary); }
+
+.palette-result:hover { background: var(--surface-hover); }
+.palette-result[aria-selected="true"] { background: color-mix(in srgb, var(--primary) 15%, var(--surface-2)); box-shadow: inset 2px 0 var(--primary); }
+.search-excerpt-mark { color: inherit; background: color-mix(in srgb, var(--primary) 25%, transparent); border-radius: 2px; font-weight: 600; }

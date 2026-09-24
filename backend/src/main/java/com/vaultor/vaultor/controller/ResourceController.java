@@ -14,6 +14,7 @@ import java.util.*;
 public class ResourceController {
     private final ResourceRepository resources;
     private final ResourceBrowseService browse;
+    private final ResourceSearchService searchService;
     private final RelationshipRepository relationships;
     private final ResourceService service;
     private final TagService tags;
@@ -36,11 +37,13 @@ public class ResourceController {
         @RequestParam(defaultValue="false") boolean favorites, @RequestParam(defaultValue="recent") String sort, @RequestParam(required=false) String collection) {
         return browse.list(page,size,q,type,tag == null ? List.of() : tag,favorites,sort,collection);
     }
+    @GetMapping("/query") public PageDto<ResourceSearchService.Hit> query(@RequestParam String q,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="50") int size,@RequestParam(required=false) String type,@RequestParam(required=false) List<String> tag,@RequestParam(required=false) String collection,@RequestParam(defaultValue="false") boolean favorites) {return searchService.search(q,page,size,type,tag==null?List.of():tag,collection,favorites);}
     @GetMapping("/search") public List<ResourceSummary> search(@RequestParam(defaultValue="") String q) {
         return browse.list(0,50,q,null,List.of(),false,"recent").items();
     }
     @PutMapping("/{id}/favorite") @ResponseStatus(HttpStatus.NO_CONTENT)
     public void favorite(@PathVariable String id, @RequestBody FavoriteInput input) { browse.favorite(id,input.favorite()); }
+    @GetMapping("/{id}/summary") public ResourceSummary summary(@PathVariable String id) {var value=browse.byIds(List.of(id)).get(id);if(value==null)throw new NoSuchElementException("Resource not found");return value;}
     @GetMapping("/{id}") public ResourceDto one(@PathVariable String id) { return dto(get(id)); }
     @PostMapping("/{id}/open") public void open(@PathVariable String id) { browse.markOpened(id); }
     @PostMapping public ResourceDto create(@RequestBody NoteInput input) { validate(input); if (input.type()!=null && !input.type().equals("note")) throw new IllegalArgumentException("Use file upload for file resources"); return dto(service.createNote(input.title().trim(), input.content().toString(),input.collectionId())); }
