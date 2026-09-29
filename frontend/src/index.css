@@ -377,10 +377,10 @@ button {
 .journey-icon:hover:not(:disabled), .journey-trail button:hover:not(:disabled) { background:var(--surface-3); color:var(--text-primary); }
 .journey-icon:disabled { opacity:.3; }
 .journey-bar button:focus-visible, .journey-popover button:focus-visible { outline:2px solid var(--accent, #3b82f6); outline-offset:2px; }
-.journey-trail { display:flex; align-items:center; gap:.15rem; min-width:0; flex:1; animation:journey-fade 200ms ease-out; }
+.journey-trail { display:flex; align-items:center; gap:.15rem; min-width:0; flex:1; overflow-x:auto; scrollbar-width:thin; animation:journey-fade 200ms ease-out; }
 .journey-trail li { display:flex; align-items:center; min-width:0; gap:.2rem; }
-.journey-neighbor { flex:0 1 28%; }
-.journey-current { flex:0 1 auto; font-weight:600; color:var(--text-primary); }
+.journey-neighbor { flex:0 0 auto; max-width:180px; }
+.journey-current { flex:0 0 auto; max-width:220px; font-weight:600; color:var(--text-primary); }
 .journey-divider { flex-shrink:0; opacity:.4; }
 .journey-trail button { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:.35rem .5rem; border-radius:8px; font-size:.82rem; min-width:0; }
 .journey-trail button[aria-current] { background:var(--surface-3); }
@@ -396,5 +396,18 @@ button {
 @keyframes journey-fade { from { opacity:.65; } to { opacity:1; } }
 @keyframes journey-forward { from { opacity:.65; transform:translateX(8px); } to { opacity:1; transform:translateX(0); } }
 @keyframes journey-back { from { opacity:.65; transform:translateX(-8px); } to { opacity:1; transform:translateX(0); } }
-@container journey (max-width:520px) { .journey-neighbor, .journey-current .journey-divider { display:none !important; } .journey-current { flex:1; } }
+@container journey (max-width:520px) { .journey-neighbor, .journey-current { max-width:140px; } .journey-extras .library-button { font-size:.7rem; padding:.35rem; } }
 @media (prefers-reduced-motion:reduce) { .journey-trail, .journey-viewport { animation:none !important; } }
+
+/* Resource links are inline references, not form controls. Keep keyboard focus explicit. */
+.resource-link-node { display:inline; vertical-align:baseline; }
+.tiptap .resource-link-chip { display:inline-flex; align-items:baseline; gap:.32em; max-width:100%; margin:0 .1em; padding:.06em .38em; border:0; border-radius:.45em; background:color-mix(in srgb, var(--text-tertiary) 9%, transparent); color:var(--text-primary); font:inherit; line-height:1.45; text-align:left; cursor:pointer; text-decoration:none; transition:background-color 140ms ease, color 140ms ease; box-shadow:none; }
+.tiptap .resource-link-chip svg { align-self:center; flex-shrink:0; color:var(--accent, #3b82f6); opacity:.8; }
+.tiptap .resource-link-chip span { min-width:0; overflow-wrap:anywhere; text-decoration:underline; text-decoration-color:color-mix(in srgb, var(--text-tertiary) 35%, transparent); text-underline-offset:.18em; text-decoration-thickness:1px; }
+.tiptap .resource-link-chip:hover { background:var(--surface-3); color:var(--accent, #3b82f6); }
+.tiptap .resource-link-chip:focus-visible { outline:2px solid var(--accent, #3b82f6); outline-offset:2px; }
+.journey-extras { flex-shrink:0; }
+.journey-extras .library-button { padding:.35rem .55rem; font-size:.75rem; border-color:transparent; background:transparent; }
+.journey-backlink { display:flex; align-items:center; gap:.5rem; padding:.55rem .6rem; width:100%; text-align:left; border-radius:8px; color:var(--text-primary); }
+.journey-backlink:hover { background:var(--surface-3); }
+.journey-backlink span { min-width:0; overflow-wrap:anywhere; }

@@ -1,3 +1,4 @@
+import LibraryPopover from '../components/LibraryPopover';
 import RecoveryPanel from '../components/RecoveryPanel';
 import { IndexedSessionStore, SessionPersistence, claimTab, defaultLibrary, sameWorkspace, type Identity, type SessionSnapshot, type RecoveryRecord, type NoteDraft } from '../lib/sessionStore';
 import { NoteRecovery } from '../lib/noteRecovery';
@@ -146,6 +147,7 @@ export default function Dashboard() {
   const [sharedDocuments] = useState(() => new SharedNoteDocuments());
   const previewSourcePane = useRef<string | null>(null);
   const [backlinks, setBacklinks] = useState<Resource[]>([]);
+  const [backlinksFor,setBacklinksFor]=useState<string|null>(null);
   const [loadingResourceIds, setLoadingResourceIds] = useState<string[]>([]);
   const [sidebarLoading, setSidebarLoading] = useState(false);
 
@@ -450,7 +452,7 @@ export default function Dashboard() {
     const version = ++backlinkVersion.current;
     try {
       const { data } = await api.get(`/resources/${id}/backlinks`);
-      if (version === backlinkVersion.current && relevant()) setBacklinks(data || []);
+      if (version === backlinkVersion.current && relevant()) {setBacklinks(data || []);setBacklinksFor(id);}
     } catch (error) {
       console.error(error);
       if (version === backlinkVersion.current && relevant()) setBacklinks([]);
@@ -1562,7 +1564,9 @@ export default function Dashboard() {
           <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></section>:<LibraryView key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="h-full" hidden={libraryVisible}>
           <div className="flex h-full min-h-0 flex-col">
-          {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)} />}
+          {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
+            {backlinksFor===activeNoteId&&backlinks.length>0&&<LibraryPopover key={activeNoteId} label={`Linked from (${backlinks.length})`}>{close=><div className="space-y-1">{backlinks.map(resource=><button key={resource.id} className="journey-backlink" onClick={event=>{close();void openResourceById(resource.id,{sourcePaneId:activePaneId??undefined,intent:'link',destination:event.ctrlKey||event.metaKey?'new':'here'});}}><FileText size={15} aria-hidden="true"/><span>{resource.title}</span></button>)}</div>}</LibraryPopover>}
+          </JourneyBar>}
           <div className="min-h-0 flex-1">
           {openWorkspaceNotes.length > 0 ? (
             <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
@@ -1803,23 +1807,7 @@ export default function Dashboard() {
                 </div>
               ))}
 
-              {backlinks.length > 0 && activeNoteId && openWorkspaceNotes.length > 1 && !workspaceSettings.focusMode && (
-                <div className="hidden w-72 flex-shrink-0 overflow-y-auto border-l border-border/60 pl-4 xl:block">
-                  <h4 className="mb-3 flex items-center text-sm font-semibold text-slate-400"><Search size={14} className="mr-2" /> Linked from</h4>
-                  <div className="space-y-2">
-                    {backlinks.map((resource) => (
-                      <button type="button"
-                        key={resource.id}
-                        onClick={event => void openResourceById(resource.id, { sourcePaneId: activePaneId ?? undefined, intent: 'link', destination: event.ctrlKey || event.metaKey ? 'new' : 'here' })}
-                        className="flex cursor-pointer items-center rounded-xl bg-background/70 p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                      >
-                        {resource.type === 'note' ? <FileText size={16} className="mr-3 opacity-80 text-blue-500" /> : <Paperclip size={16} className="mr-3 opacity-80 text-green-500" />}
-                        <span className="truncate text-sm font-medium">{resource.title}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+
             </div>
           ) : activeResourceLoading ? (
             <div className="flex-1 p-8">

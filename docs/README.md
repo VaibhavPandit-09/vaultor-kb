@@ -9,7 +9,7 @@
 - [Library workflows](LIBRARY.md): paginated metadata browsing, quick access, unified pins, resource-level collections/tag management, bulk organization and transfer semantics.
 - [Search and Ctrl+K](SEARCH.md): saved-note indexing, ranking, palette targeting, diagnostics and limits.
 - [Table workflows](TABLES.md): contextual table menus, filtering, spreadsheet paste/copy, CSV export and expanded editing.
-- [Pane navigation and shared editing](NAVIGATION.md): pane ownership, linked opening, duplicate views, source save barriers and current session limitations.
+- [Pane navigation and shared editing](NAVIGATION.md): pane ownership, linked opening, on-demand backlinks, responsive journeys, duplicate views and source save barriers.
 - [Sessions and draft recovery](SESSIONS.md): per-tab IndexedDB layout, recovery journals, conditional note revisions and workspace replacement isolation.
 - [Individual note exports](NOTE-EXPORTS.md): formats, snapshot semantics, assets, fidelity, limits and verification.
 - [API guide](API.md): shared UI/agent contracts, examples and transfer flow.

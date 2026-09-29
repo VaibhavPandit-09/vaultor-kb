@@ -247,3 +247,11 @@ Backend: resource revision_number/revision_seed with tested existing-schema upgr
 Validation: production frontend build, final TypeScript compilation and targeted lint passed; 36 focused frontend tests passed. One disposable SQLite HTTP/transfer regression passed for old-schema startup, revision updates/conflicts, identity rollback and archive replacement isolation. OpenAPI structure/operation IDs and whitespace checked. No browser/native lifecycle check, Docker rebuild, broad API smoke or real workspace mutation. Existing bundle-size/Browserslist warnings remain. Details and limits are authoritative in SESSIONS.md: origin-specific best-effort storage, 500 ms snapshot interval, no persisted undo or automatic age-based pruning, and separate-copy handling for other tabs.
 
 Stop after N4. N5 linked-resource export chains/readable PDF references and N6 integration require separate authorization.
+
+### Corrective handoff before N5 — 2026-09-29
+
+- [x] Remove the automatically opened Linked from column. Backlinks now open explicitly in the shared journey bar and retain source-aware navigation.
+- [x] Refine inline resource references with soft theme surfaces, small icons, restrained underlines and visible keyboard focus.
+- [x] Display complete short journeys; longer paths scroll horizontally with the current visit revealed, and retain the full-path overflow.
+
+Validation: production build, final TypeScript compilation, targeted ESLint and 10 focused journey/popover/editor tests passed. One isolated real-component browser fixture checked dark/wide and light/360px layouts plus backlinks opening, Escape and focus restoration. Full Dashboard integration was not visually exercised. No API/Docker checks or user-data mutation; existing build warnings remain. No API/schema/session changes. N5 linked-chain exports is still pending and requires the next sprint authorization.
