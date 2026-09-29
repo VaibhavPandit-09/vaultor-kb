@@ -22,41 +22,77 @@ public class NoteRenderer {
     private final ObjectMapper mapper;
     public NoteRenderer(DocumentService documents, ObjectMapper mapper) { this.documents=documents; this.mapper=mapper; }
     public void write(TransferService.Workspace snapshot, Map<String,Path> binaries, Path output, String format) throws Exception {
-        var context=new Context(snapshot,binaries,format);
-        var note=snapshot.resources().getFirst(); documents.validate(note.content());
-        String markdown="# "+context.mdText(note.title())+"\n\n";
+        write(snapshot,binaries,output,format,false,false);
+    }
+    public void write(TransferService.Workspace snapshot, Map<String,Path> binaries, Path output, String format, boolean linked, boolean references) throws Exception {
+        var context=new Context(snapshot,binaries,format,linked);
+        var notes=snapshot.resources().stream().filter(r->r.content()!=null && "note".equals(r.type())).toList();
+        for(var note:notes)documents.validate(note.content());
+        boolean packaged=linked && (format.startsWith("md") || snapshot.resources().stream().anyMatch(r->"file".equals(r.type())));
+        Path rendered=packaged?output.resolveSibling("notes."+(format.startsWith("md")?"md":format)):output;
         switch(format) {
             case "md", "md-assets" -> {
-                markdown+=context.md(note.content()).strip()+"\n";
-                if(format.equals("md")) Files.writeString(output,markdown);
-                else try(var zip=new ZipOutputStream(Files.newOutputStream(output))) {
-                    zip.putNextEntry(new ZipEntry("note.md"));zip.write(markdown.getBytes(java.nio.charset.StandardCharsets.UTF_8));zip.closeEntry();
-                    for(var asset:binaries.entrySet()) { zip.putNextEntry(new ZipEntry(asset.getKey())); Files.copy(asset.getValue(),zip);zip.closeEntry(); }
-                    zip.putNextEntry(new ZipEntry("README.txt"));zip.write(("Open note.md with assets/ beside it. Vaultor resource IDs refer to the source workspace, not standalone documents.\n"+String.join("\n",context.warnings)).getBytes(java.nio.charset.StandardCharsets.UTF_8));zip.closeEntry();
+                if(linked || format.equals("md-assets")) try(var zip=new ZipOutputStream(Files.newOutputStream(output))) {
+                    for(var note:notes) {
+                        context.omitted.clear();
+                        String markdown="# "+context.mdText(note.title())+"\n\n"+context.md(note.content()).strip()+"\n";
+                        if(references)markdown+=context.referenceMarkdown();
+                        zipText(zip,linked?context.paths.get(note.id()):"note.md",markdown);
+                    }
+                    for(var asset:new TreeMap<>(binaries).entrySet()) {zip.putNextEntry(new ZipEntry(asset.getKey()));Files.copy(asset.getValue(),zip);zip.closeEntry();}
+                    zipText(zip,"README.txt","Open the note Markdown files with assets/ beside them. External images are not fetched.\n"+String.join("\n",context.warnings));
+                    zipText(zip,"export.json",mapper.writeValueAsString(context.metadata()));
+                } else {
+                    var note=notes.getFirst();String markdown="# "+context.mdText(note.title())+"\n\n"+context.md(note.content()).strip()+"\n";
+                    Files.writeString(output,markdown+(references?context.referenceMarkdown():""));
                 }
             }
             case "pdf" -> {
-                String body="<h1>"+context.xml(note.title())+"</h1>"+context.html(note.content());
+                StringBuilder body=new StringBuilder(),bookmarks=new StringBuilder("<bookmarks>");
+                if(linked){body.append("<h1>Contents</h1><ul>");for(var note:notes)body.append("<li><a href=\"#").append(context.anchors.get(note.id())).append("\">").append(context.xml(note.title())).append("</a></li>");body.append("</ul>");}
+                for(var note:notes) {
+                    String anchor=context.anchors.get(note.id());
+                    if(linked)bookmarks.append("<bookmark name=\"").append(context.xml(note.title())).append("\" href=\"#").append(anchor).append("\"/>");
+                    body.append("<h1 class=\"").append(linked?"note-section":"").append("\" id=\"").append(anchor).append("\">").append(context.xml(note.title())).append("</h1>").append(context.html(note.content()));
+                }
+                bookmarks.append("</bookmarks>");if(references)body.append(context.referenceHtml());
                 var builder=new PdfRendererBuilder();
                 builder.useFont(()->getClass().getResourceAsStream("/fonts/NotoSans-Regular.ttf"),"Noto Sans",400,FontStyle.NORMAL,true);
                 builder.useFont(()->getClass().getResourceAsStream("/fonts/NotoSans-Bold.ttf"),"Noto Sans",700,FontStyle.NORMAL,true);
                 builder.useUriResolver((base,uri)->uri.startsWith("data:image/png;base64,") || uri.startsWith("data:image/jpeg;base64,") ? uri : null);
-                builder.withHtmlContent("<html><head><meta charset=\"UTF-8\"/><style>"+CSS+"</style></head><body>"+body+"</body></html>",null);
-                try(var stream=Files.newOutputStream(output)) { builder.toStream(stream);builder.run(); }
+                builder.withHtmlContent("<html><head><meta charset=\"UTF-8\"/><style>"+CSS+" .note-section {page-break-before:always;}</style>"+(linked?bookmarks:"")+"</head><body>"+body+"</body></html>",null);
+                try(var stream=Files.newOutputStream(rendered)) { builder.toStream(stream);builder.run(); }
             }
             case "docx" -> {
                 try(var doc=new XWPFDocument()) {
                     var section=doc.getDocument().getBody().addNewSectPr();
                     var page=section.addNewPgSz();page.setW(BigInteger.valueOf(11906));page.setH(BigInteger.valueOf(16838));
                     var margin=section.addNewPgMar();margin.setTop(BigInteger.valueOf(1000));margin.setBottom(BigInteger.valueOf(1000));margin.setLeft(BigInteger.valueOf(1000));margin.setRight(BigInteger.valueOf(1000));
-                    var title=doc.createParagraph();title.setStyle("Title");title.setSpacingAfter(240);var run=title.createRun();run.setText(note.title());run.setFontSize(24);run.setBold(true);
-                    context.docBlocks(doc,note.content(),0,"");
-                    try(var out=Files.newOutputStream(output)) { doc.write(out); }
+                    if(linked){doc.createParagraph().createRun().setText("Contents");for(var note:notes)context.internalRun(doc.createParagraph(),context.anchors.get(note.id())).setText(note.title());}
+                    int i=0;
+                    for(var note:notes) {
+                        var title=doc.createParagraph();title.setStyle("Heading1");title.setPageBreak(linked);title.setSpacingAfter(240);
+                        var mark=title.getCTP().addNewBookmarkStart();mark.setId(BigInteger.valueOf(i));mark.setName(context.anchors.get(note.id()));
+                        var run=title.createRun();run.setText(note.title());run.setFontSize(24);run.setBold(true);
+                        title.getCTP().addNewBookmarkEnd().setId(BigInteger.valueOf(i++));
+                        context.docBlocks(doc,note.content(),0,"");
+                    }
+                    if(references && !context.omitted.isEmpty()){doc.createParagraph().createRun().setText("References");for(String ref:context.omitted)doc.createParagraph().createRun().setText(ref);}
+                    try(var out=Files.newOutputStream(rendered)) { doc.write(out); }
                 }
             }
             default -> throw new IllegalArgumentException("Unsupported note format");
         }
+        if(packaged && !format.startsWith("md"))try(var zip=new ZipOutputStream(Files.newOutputStream(output))) {
+            zip.putNextEntry(new ZipEntry("notes."+format));Files.copy(rendered,zip);zip.closeEntry();
+            for(var asset:new TreeMap<>(binaries).entrySet()){zip.putNextEntry(new ZipEntry(asset.getKey()));Files.copy(asset.getValue(),zip);zip.closeEntry();}
+            zipText(zip,"export.json",mapper.writeValueAsString(context.metadata()));
+            zipText(zip,"README.txt","Open notes."+format+". Original linked files are in assets/.\n"+String.join("\n",context.warnings));
+        }
         Files.writeString(output.resolveSibling("warnings.json"),mapper.writeValueAsString(context.warnings));
+    }
+    private void zipText(ZipOutputStream zip,String name,String text) throws IOException {
+        zip.putNextEntry(new ZipEntry(name));zip.write(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));zip.closeEntry();
     }
     private static final String CSS="@page { size: A4; margin: 18mm; @bottom-right { content: counter(page); font-size:9pt; } } body { font-family:'Noto Sans'; font-size:10pt; line-height:1.45; color:#172033; } h1 {font-size:22pt;} h2 {font-size:17pt;} h3 {font-size:14pt;} h1,h2,h3 { page-break-after:avoid; } p {margin:0 0 8pt;} table {border-collapse:collapse; width:100%; table-layout:fixed; margin:10pt 0; -fs-table-paginate:paginate;} td,th {border:0.6pt solid #b8c1cd; padding:5pt; vertical-align:top; word-wrap:break-word;} th {background:#edf1f6;} thead {display:table-header-group;} pre {white-space:pre-wrap; word-wrap:break-word; background:#f1f4f8; padding:8pt; font-family:'Noto Sans'; font-size:9pt;} blockquote {border-left:2pt solid #64748b; padding-left:10pt; margin-left:0;} img {max-width:100%; max-height:220mm;} a {color:#1d4ed8;}";
     private static List<JsonNode> children(JsonNode node) { return DocumentService.children(node); }
@@ -69,10 +105,14 @@ public class NoteRenderer {
         final Map<String,TransferService.ResourceData> resources=new LinkedHashMap<>();
         final Map<String,Path> binaries;
         final String format;
+        final boolean linked;
+        final Map<String,String> anchors=new LinkedHashMap<>(),paths=new LinkedHashMap<>();
+        final Set<String> omitted=new LinkedHashSet<>();
         final Set<String> warnings=new LinkedHashSet<>();
         final java.awt.Font font;
-        Context(TransferService.Workspace snapshot,Map<String,Path> binaries,String format) throws Exception {
-            snapshot.resources().forEach(r->{resources.put(r.id(),r);if("file".equals(r.type()) && r.binary()==null) warn("A referenced file has missing bytes; its label and ID are preserved.");});this.binaries=binaries;this.format=format;
+        Context(TransferService.Workspace snapshot,Map<String,Path> binaries,String format,boolean linked) throws Exception {
+            this.linked=linked;int i=0;for(var r:snapshot.resources())if(r.content()!=null && "note".equals(r.type())) {String anchor="note-"+(++i);anchors.put(r.id(),anchor);paths.put(r.id(),anchor+"-"+r.title().replaceAll("[^A-Za-z0-9_-]","_").substring(0,Math.min(60,r.title().length()))+".md");}
+            snapshot.resources().forEach(r->{resources.put(r.id(),r);if("file".equals(r.type()) && r.binary()==null) warn("A referenced file has missing bytes; its label is preserved.");});this.binaries=binaries;this.format=format;
             try(var in=NoteRenderer.class.getResourceAsStream("/fonts/NotoSans-Regular.ttf")) { font=java.awt.Font.createFont(java.awt.Font.TRUETYPE_FONT,in); }
         }
         void warn(String message) { if(warnings.size()<100) warnings.add(message); }
@@ -84,9 +124,25 @@ public class NoteRenderer {
         TransferService.ResourceData referenced(JsonNode node) { return resources.get(node.path("attrs").path("resourceId").asText()); }
         String label(JsonNode n) { var r=referenced(n);return n.path("attrs").path("label").asText(r==null?"Missing resource":r.title()); }
         String reference(JsonNode n) {
-            var r=referenced(n);String id=n.path("attrs").path("resourceId").asText();
-            warn(r==null?"One or more linked resources are missing; their labels and IDs are preserved.":"Vaultor resource references identify the source workspace; linked notes are not included.");
-            return label(n)+" ("+(r==null?"missing ":"Vaultor resource ")+id+")";
+            var r=referenced(n);String value=label(n);
+            if(r==null) {warn("One or more linked resources are missing; labels are retained.");omitted.add(value+"  -  missing resource");return value+" (unavailable)";}
+            if(linked && r.binary()!=null)return value+" (attachment: "+r.binary().substring("assets/".length())+")";
+            if(r.content()==null){omitted.add(value+"  -  not included");warn("Some linked resources are not included in this document.");}
+            return value;
+        }
+        String target(JsonNode n) {
+            var r=referenced(n);if(r==null)return null;
+            if(linked && anchors.containsKey(r.id()))return format.startsWith("md")?paths.get(r.id()):"#"+anchors.get(r.id());
+            if((linked || format.equals("md-assets")) && asset(n)!=null && !format.equals("pdf"))return asset(n);
+            return null;
+        }
+        String resourceHtml(JsonNode n) {String href=target(n);return href==null?xml(reference(n)):"<a href=\""+xml(href)+"\">"+xml(label(n))+"</a>";}
+        String referenceMarkdown(){return omitted.isEmpty()?"":"\n## References\n\n"+omitted.stream().map(s->"- "+mdText(s)).collect(java.util.stream.Collectors.joining("\n"))+"\n";}
+        String referenceHtml(){return omitted.isEmpty()?"":"<h2>References</h2><ul>"+omitted.stream().map(s->"<li>"+xml(s)+"</li>").collect(java.util.stream.Collectors.joining())+"</ul>";}
+        Object metadata(){return resources.values().stream().map(r->Map.of("id",r.id(),"title",r.title(),"path",r.content()!=null?(format.startsWith("md")?(linked?paths.get(r.id()):"note.md"):"notes."+format+"#"+anchors.get(r.id())):(r.binary()==null?"":r.binary()))).toList();}
+        XWPFRun internalRun(XWPFParagraph p,String anchor) {
+            var link=p.getCTP().addNewHyperlink();link.setAnchor(anchor);
+            var run=new XWPFHyperlinkRun(link,link.addNewR(),p);run.setColor("1D4ED8");run.setUnderline(UnderlinePatterns.SINGLE);return run;
         }
         String asset(JsonNode n) { var r=referenced(n);return r!=null && r.binary()!=null && binaries.containsKey(r.binary()) ? r.binary() : null; }
         String imageData(JsonNode n) {
@@ -112,8 +168,8 @@ public class NoteRenderer {
                 case "codeBlock" -> "<pre>"+xml(wrapCode(text(n),85))+"</pre>";
                 case "hardBreak" -> "<br/>";
                 case "horizontalRule" -> "<hr/>";
-                case "resourceLink" -> format.equals("md-assets") && asset(n)!=null ? "<a href=\""+xml(asset(n))+"\">"+xml(label(n))+"</a>" : xml(reference(n));
-                case "image" -> { String src=format.equals("md-assets")?asset(n):format.equals("pdf")?imageData(n):null; if(src==null) {warn("Image represented by its reference; use an asset ZIP for local file portability.");yield "<p>"+xml(imageLabel(n))+"</p>";}yield "<img src=\""+xml(src)+"\" alt=\""+xml(imageLabel(n))+"\"/>"; }
+                case "resourceLink" -> resourceHtml(n);
+                case "image" -> { String src=(linked || format.equals("md-assets"))?asset(n):format.equals("pdf")?imageData(n):null; if(src==null) {warn("Image represented by its reference; use an asset ZIP for local file portability.");yield "<p>"+xml(imageLabel(n))+"</p>";}yield "<img src=\""+xml(src)+"\" alt=\""+xml(imageLabel(n))+"\"/>"; }
                 case "table" -> htmlTable(n);
                 case "tableRow" -> "<tr>"+body+"</tr>";
                 case "tableCell","tableHeader" -> {String tag=type(n).equals("tableHeader")?"th":"td";yield "<"+tag+" colspan=\""+span(n,"colspan")+"\" rowspan=\""+span(n,"rowspan")+"\">"+body+"</"+tag+">";}
@@ -146,8 +202,8 @@ public class NoteRenderer {
                 case "blockquote" -> "> "+body.strip().replace("\n","\n> ")+"\n\n";
                 case "codeBlock" -> {String code=text(n);String fence="```";while(code.contains(fence))fence+="`";String language=n.path("attrs").path("language").asText("").replaceAll("[^A-Za-z0-9_+-]","");yield fence+language+"\n"+code+"\n"+fence+"\n\n";}
                 case "hardBreak" -> "  \n";case "horizontalRule" -> "---\n\n";
-                case "resourceLink" -> format.equals("md-assets") && asset(n)!=null?"["+mdText(label(n))+"]("+asset(n)+")":mdText(reference(n));
-                case "image" -> {String src=format.equals("md-assets")?asset(n):null;if(src==null){warn("Image preserved as a reference; local assets are included only with Markdown + assets ZIP.");yield mdText(imageLabel(n));}yield "!["+mdText(imageLabel(n))+"]("+src+")";}
+                case "resourceLink" -> target(n)!=null?"["+mdText(label(n))+"]("+target(n)+")":mdText(reference(n));
+                case "image" -> {String src=(linked || format.equals("md-assets"))?asset(n):null;if(src==null){warn("Image preserved as a reference; local assets are included only with Markdown + assets ZIP.");yield mdText(imageLabel(n));}yield "!["+mdText(imageLabel(n))+"]("+src+")";}
                 case "table" -> {warn("Tables use embedded HTML to preserve spans and rich cells; a Markdown viewer with HTML support is required.");yield html(n)+"\n\n";}
                 case "tableRow","tableCell","tableHeader" -> body;
                 default -> {warn("Unsupported block "+type(n)+" exported using its text/content.");yield body;}
@@ -189,6 +245,10 @@ public class NoteRenderer {
                 p.createRun().setText(imageLabel(n));return;
             }
             if(!List.of("text","resourceLink").contains(type(n))) {warn("DOCX block "+type(n)+" rendered using its content.");for(var c:children(n))docInline(p,c);return;}
+            if(type(n).equals("resourceLink") && target(n)!=null) {
+                String href=target(n);var run=href.startsWith("#")?internalRun(p,href.substring(1)):p.createHyperlinkRun(href);
+                run.setText(label(n));run.setFontSize(11);return;
+            }
             String value=type(n).equals("resourceLink")?reference(n):n.path("text").asText();
             String href="";for(var mark:n.path("marks"))if(type(mark).equals("link")){String raw=mark.path("attrs").path("href").asText();href=safeLink(raw);if(href.isEmpty()){value+=" ("+raw+")";warn("Unsupported link target preserved as text.");}}
             XWPFRun r=href.isEmpty()?p.createRun():p.createHyperlinkRun(href);r.setText(value);r.setFontFamily("Noto Sans");r.setFontSize(11);

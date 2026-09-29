@@ -39,11 +39,11 @@ public class TransferService {
     private final TransactionTemplate transaction;
     private final WorkspaceGate gate;
     private final ExporterRegistry exporters;
+    private final NoteExportGraph noteGraph;
     @Value("${app.storage.path}") private String storagePath;
     @Value("${app.transfer.max-archive-bytes}") private long maxArchive;
     @Value("${app.transfer.max-expanded-bytes}") private long maxExpanded;
     @Value("${app.transfer.max-entries}") private int maxEntries;
-    @Value("${app.export.max-asset-bytes:104857600}") private long maxNoteAssets;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final Set<String> cancellationRequests = ConcurrentHashMap.newKeySet();
     private Path root;
@@ -98,41 +98,44 @@ public class TransferService {
         op.setOutputFilename("workspace.zip");op.setOutputMediaType("application/zip");operations.save(op);
         worker.submit(()->run(op,()->gate.exclusive(()->exportArchive(op)))); return dto(op);
     }
-    /** Snapshot while holding the workspace gate BEFORE returning an operation to the caller. */
-    public Operation exportNote(String noteId,String format) {
+    public NoteExportGraph.Preview previewNote(String noteId) {
+        final NoteExportGraph.Preview[] result = new NoteExportGraph.Preview[1];
+        gate.exclusive(() -> result[0] = noteGraph.collect(noteId, true).preview());
+        return result[0];
+    }
+    public Operation exportNote(String noteId,String format) { return exportNote(noteId,format,false,false,null); }
+    /** Snapshot under the mutation gate, before returning an operation. */
+    public Operation exportNote(String noteId,String format,boolean linked,boolean references,String fingerprint) {
         var renderer=exporters.require("notes",format);
-        if(noteId==null || noteId.isBlank()) throw new IllegalArgumentException("noteId is required for note exports");
         final TransferOperation[] created=new TransferOperation[1];
         gate.exclusive(()-> {
-            var note=resources.findById(noteId).orElseThrow();
-            if(!"note".equals(note.getType())) throw new IllegalArgumentException("Only notes can be exported with notes scope");
-            var content=documents.parse(note.getContent());documents.validate(content);
+            var graph=noteGraph.collect(noteId,linked);
+            if(linked && !graph.preview().fingerprint().equals(fingerprint))
+                throw new ResponseStatusException(HttpStatus.CONFLICT,"Linked resources changed. Review the graph and retry export.");
+            var note=graph.workspace().resources().getFirst();
+            boolean packaged=linked && (format.startsWith("md") || graph.preview().files()>0);
+            String extension=packaged?"zip":renderer.format().extension();
             var op=create("export");created[0]=op;
             try {
                 Path dir=directory(op.getId());Files.createDirectories(dir.resolve("assets"));
-                var selected=new ArrayList<ResourceData>();
-                selected.add(new ResourceData(note.getId(),"note",note.getTitle(),content,null,null,note.getCreatedAt(),note.getUpdatedAt(),null,List.of(),null));
-                var binaries=new LinkedHashMap<String,Path>();long total=0;
-                for(String id:documents.references(content)) {
-                    if(id.equals(noteId))continue;
-                    var found=resources.findById(id);if(found.isEmpty())continue;var r=found.get();String binary=null;
-                    if("file".equals(r.getType())) {
-                        Path original=files.getFile(r.getFilePath());
-                        if(Files.isRegularFile(original)) {
-                            total+=Files.size(original);if(total>Math.min(maxArchive,maxNoteAssets))throw new IllegalArgumentException("Note export assets exceed "+Math.min(maxArchive,maxNoteAssets)+" bytes");
-                            binary="assets/"+r.getId()+"-"+safeFilename(r.getTitle()).replaceAll("[^A-Za-z0-9._-]","_");Path target=dir.resolve(binary);Files.copy(original,target);binaries.put(binary,target);
-                        }
-                    }
-                    selected.add(new ResourceData(r.getId(),r.getType(),r.getTitle(),null,r.getMimeType(),r.getSize(),r.getCreatedAt(),r.getUpdatedAt(),null,List.of(),binary));
+                var binaries=new LinkedHashMap<String,Path>();
+                for(var entry:graph.binaries().entrySet()) {
+                    Path target=dir.resolve(entry.getKey());Files.copy(entry.getValue(),target);binaries.put(entry.getKey(),target);
                 }
-                var snapshot=new Workspace(List.copyOf(selected),List.of(),null);
+                var snapshot=graph.workspace();
                 Files.writeString(dir.resolve("snapshot.json"),mapper.writeValueAsString(snapshot));
-                op.setOutputArtifact("artifact."+renderer.format().extension());op.setOutputFilename(safeFilename(note.getTitle())+"."+renderer.format().extension());op.setOutputMediaType(renderer.format().mediaType());op.setResourceCount(1);op.setFileCount(binaries.size());operations.save(op);
+                op.setOutputArtifact("artifact."+extension);op.setOutputFilename(safeFilename(note.title())+"."+extension);
+                op.setOutputMediaType(packaged?"application/zip":renderer.format().mediaType());
+                op.setResourceCount(graph.preview().notes());op.setFileCount(graph.preview().files());operations.save(op);
                 worker.submit(()->runNote(op,()-> {
                     try {
                         gate.exclusive(()->phase(op,"RUNNING","rendering",35));
-                        Path output=dir.resolve("artifact."+renderer.format().extension());renderer.write(snapshot,Map.copyOf(binaries),output);
-                        op.setWarnings(Files.readString(dir.resolve("warnings.json")));gate.exclusive(()->phase(op,"SUCCEEDED","complete",100));
+                        renderer.writeNote(snapshot,Map.copyOf(binaries),dir.resolve("artifact."+extension),linked,references);
+                        if(Files.size(dir.resolve("artifact."+extension))>maxArchive)throw new IllegalArgumentException("Export artifact exceeds "+maxArchive+" bytes");
+                        var warnings=new LinkedHashSet<>(graph.preview().warnings());
+                        for(var warning:mapper.readTree(Files.readString(dir.resolve("warnings.json")))) warnings.add(warning.asText());
+                        op.setWarnings(mapper.writeValueAsString(warnings.stream().limit(100).toList()));
+                        gate.exclusive(()->phase(op,"SUCCEEDED","complete",100));
                     } catch(Exception e) {throw new IllegalStateException("Note export failed: "+e.getMessage(),e);}
                 }));
             } catch(Exception e) { fail(op,e); }

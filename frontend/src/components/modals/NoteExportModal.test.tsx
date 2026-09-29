@@ -74,3 +74,30 @@ it('unmount aborts tracking without initiating a download', async () => {
   await vi.advanceTimersByTimeAsync(1); manager.dispose(); await started;
   expect(click).not.toHaveBeenCalled(); expect(api.get).not.toHaveBeenCalled();
 });
+it('saves only participating notes and sends the final graph fingerprint', async () => {
+  const manager = new NoteExportController(); const flush = vi.fn().mockResolvedValue(undefined), flushNote = vi.fn().mockResolvedValue(undefined);
+  const preview = { notes: 2, files: 0, noteIds: ['root', 'child'], resourceIds: ['root','child'], warnings: [], fingerprint: 'v1' };
+  vi.mocked(api.get).mockResolvedValueOnce({data: preview}).mockResolvedValueOnce({data: {...preview, fingerprint:'v2'}}).mockResolvedValueOnce({data:new Blob()});
+  await manager.start('root','Root',format,flush,{linked:true,flushNote,reviewedGraph:preview});
+  expect(flushNote).toHaveBeenCalledExactlyOnceWith('child');
+  expect(api.post).toHaveBeenCalledWith('/exports',expect.objectContaining({links:'linked',fingerprint:'v2'}),expect.anything());
+  await manager.downloadAgain();expect(flushNote).toHaveBeenCalledOnce();expect(api.post).toHaveBeenCalledOnce();
+});
+it('stops before snapshot when saved links change the reviewed graph', async () => {
+  const manager = new NoteExportController();const preview={notes:1,files:0,noteIds:['root'],resourceIds:['root'],warnings:[],fingerprint:'old'};
+  vi.mocked(api.get).mockResolvedValue({data:{...preview,notes:2,noteIds:['root','new'],resourceIds:['root','new']}});
+  await manager.start('root','Root',format,async()=>{},{linked:true,flushNote:async()=>{},reviewedGraph:preview});
+  expect(api.post).not.toHaveBeenCalled();expect(manager.snapshot()?.error).toContain('review the updated counts');
+});
+it('cancellation during saving prevents preparation without discarding edits', async () => {
+  const manager=new NoteExportController();let release!:()=>void;
+  const started=manager.start('root','Root',format,()=>new Promise<void>(r=>{release=r;}));
+  manager.cancel();release();await started;
+  expect(api.post).not.toHaveBeenCalled();expect(manager.snapshot()?.error).toContain('cancelled');
+});
+it('graph preview counts and package labels precede the format choice', async () => {
+  vi.mocked(api.get).mockImplementation(async url=>({data:url==='/export-formats'?[format,{scope:'notes',format:'pdf',extension:'pdf'}]:{notes:2,files:1,noteIds:['root','child'],resourceIds:['root','child','file'],warnings:[],fingerprint:'v'}}));
+  render(<NoteExportModal noteId="root" title="Root" flush={async()=>{}} flushNote={async()=>{}} onClose={()=>{}}/>);
+  fireEvent.click(screen.getByText('Include linked resources'));
+  await screen.findByText(/2 notes/);expect(screen.getByText('PDF package (.zip)')).toBeTruthy();expect(api.post).not.toHaveBeenCalled();
+});

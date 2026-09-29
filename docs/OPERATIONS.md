@@ -70,7 +70,7 @@ Each API request logs method/path/status/duration. Transfer logs include operati
 
 Closing the note export picker keeps its frontend status controller running; failures and Download again remain in a compact status card. Details exposes operation/request IDs for correlation. Refresh stops client tracking but does not cancel backend rendering; use the operation API to retrieve an existing result. If POST creation loses its response, inspect diagnostics/logs before creating another export. No deployment or runtime configuration changes are required for this UI flow.
 
-Both Dockerfiles install fontconfig for the bundled PDF fonts. Note exports use the existing operations directory, worker, logging and restart handling. MAX_NOTE_EXPORT_ASSET_BYTES defaults to 104857600, also capped by MAX_ARCHIVE_BYTES. Expire artifacts manually with the backend stopped; do not delete workspace files. See [NOTE-EXPORTS.md](NOTE-EXPORTS.md) for format fidelity and targeted verification.
+Both Dockerfiles install fontconfig for the bundled PDF fonts. Note exports use the existing operations directory, worker, logging and restart handling. MAX_NOTE_EXPORT_ASSET_BYTES defaults to 104857600, also capped by MAX_ARCHIVE_BYTES. N5 adds MAX_NOTE_EXPORT_NODES=200, MAX_NOTE_EXPORT_DEPTH=20 and MAX_NOTE_EXPORT_TOTAL_BYTES=157286400. Limits fail explicitly; a changed graph fingerprint returns 409 before creating an operation. Graph snapshot copying holds the workspace gate briefly; rendering runs outside it. Final artifacts are capped by MAX_ARCHIVE_BYTES. Expire artifacts manually with the backend stopped; do not delete workspace files. See [NOTE-EXPORTS.md](NOTE-EXPORTS.md) for format fidelity and targeted verification.
 
 ## Startup failure after search indexing
 

@@ -97,9 +97,11 @@ Run API smoke only for specific debugging or explicit requests, not every develo
 
 ## Individual note exports
 
-The note UI automatically requests the download after success. Backend contracts are unchanged. Status and download retries reuse the operation ID; POST creation is not idempotent and must not be blindly retried after an ambiguous network failure. See NOTE-EXPORTS.md for frontend lifecycle.
+The note UI automatically requests the download after success. N5 adds optional graph scope and preview contracts. Status and download retries reuse the operation ID; POST creation is not idempotent and must not be blindly retried after an ambiguous network failure. See NOTE-EXPORTS.md for frontend lifecycle.
 
 POST `/api/exports` with `{ "scope": "notes", "noteId": "<id>", "format": "md" }`. Formats: md, md-assets (ZIP), pdf, docx, discoverable from `/api/export-formats`. The operation snapshots the saved note and local assets before returning. UI callers must flush pending saves first. Poll `/api/operations/{id}`; after SUCCEEDED download `/api/exports/{id}/download`. Operation fields `filename`, `mediaType`, `warnings` describe the output; Content-Disposition/Content-Type match it. Read [NOTE-EXPORTS.md](NOTE-EXPORTS.md) for fidelity, limits and retry behavior. HTTP errors retain problem details/request IDs; asynchronous rendering failures appear in operation detail with the originating request ID.
+
+GET `/api/exports/notes/{id}/preview` (`previewNoteExportGraph`) returns saved outgoing graph counts, `noteIds`, `resourceIds`, warnings and `fingerprint`. Save participating notes and refresh preview, then POST `{ "scope":"notes", "noteId":"<id>", "format":"pdf", "links":"linked", "fingerprint":"<preview fingerprint>", "references":"true" }`. `links` defaults to `single`; references defaults to false. Changed graph returns 409 before creating an operation. Nodes/depth/byte-limit failures return 400; missing root returns 404. Missing downstream references are warnings. Graph Markdown always downloads a ZIP; PDF/DOCX with files also download ZIP, as reflected by operation filename/mediaType. The opaque fingerprint is a consistency validator, not an authorization token. API clients must not retry ambiguous POST failures blindly. Detailed traversal, output and limits: [Note exports](NOTE-EXPORTS.md).
 
 ## Library browsing examples
 
@@ -153,4 +155,4 @@ K2 collection add flow also reuses existing contracts: title-paginated GET /reso
 
 K3 frontend search mode is explicit: title (default) uses GET /resources?q=...; content uses GET /resources/query?q=.... Both receive the same optional collection/type/tag/favorites filters. The searchMode field is frontend-only and is never sent as an HTTP parameter. Empty-query content mode uses ordinary browsing within the selected scope. Endpoint defaults/contracts, FTS indexing and database schema are unchanged.
 
-N2 navigation/shared editing changes use existing resource/save/preview APIs; no endpoint or revision contract changed. Pane/history state is frontend-only. Planned N4 conditional revisions and N5 graph-export parameters are not available yet. See [NAVIGATION.md](NAVIGATION.md) and the workspace tracker.
+N2 navigation/shared editing changes use existing resource/save/preview APIs; no endpoint or revision contract changed. Pane/history state is frontend-only. N4 conditional revisions and N5 graph-export parameters are now available; see their authoritative sections. See [NAVIGATION.md](NAVIGATION.md) and the workspace tracker.

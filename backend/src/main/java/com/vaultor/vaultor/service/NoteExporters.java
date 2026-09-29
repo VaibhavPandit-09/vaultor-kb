@@ -10,6 +10,7 @@ public class NoteExporters {
     private WorkspaceExporter exporter(NoteRenderer renderer, String format, String mime, String extension) {
         return new WorkspaceExporter() {
             public ExporterRegistry.Format format() { return new ExporterRegistry.Format(ExporterRegistry.Scope.notes, format, mime, extension); }
+            public void writeNote(TransferService.Workspace snapshot, Map<String,Path> binaries, Path destination, boolean linked, boolean references) throws Exception { renderer.write(snapshot,binaries,destination,format,linked,references); }
             public void write(TransferService.Workspace snapshot, Map<String,Path> binaries, Path destination) throws Exception { renderer.write(snapshot, binaries, destination, format); }
         };
     }

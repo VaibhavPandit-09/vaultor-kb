@@ -50,4 +50,26 @@ class NoteRendererTests {
         try(var pdf=Loader.loadPDF(root.resolve("review.pdf").toFile())) {var text=new PDFTextStripper().getText(pdf);assertTrue(text.contains("Allocation"));assertTrue(text.contains("Café"));var render=new PDFRenderer(pdf);for(int i=0;i<pdf.getNumberOfPages();i++)ImageIO.write(render.renderImageWithDPI(i,110),"png",root.resolve("pdf-page-"+(i+1)+".png").toFile());}
         assertTrue(Files.readString(root.resolve("warnings.json")).contains("missing"));
     }
+
+    @Test void graphDocumentsHaveWorkingDestinationsAndReadableStandaloneLinks() throws Exception {
+        Path root=Path.of("target/graph-export-review");Files.createDirectories(root);
+        var a=new TransferService.ResourceData("id-a","note","Project overview",mapper.readTree(NoteExportServiceTests.links("id-b")),null,null,null,null,null,List.of(),null);
+        var b=new TransferService.ResourceData("id-b","note","Implementation notes",mapper.readTree(NoteExportServiceTests.links("id-a")),null,null,null,null,null,List.of(),null);
+        var workspace=new TransferService.Workspace(List.of(a,b),List.of(),null);var renderer=new NoteRenderer(documents,mapper);
+        renderer.write(workspace,Map.of(),root.resolve("graph.pdf"),"pdf",true,false);
+        try(var pdf=Loader.loadPDF(root.resolve("graph.pdf").toFile())) {
+            assertNotNull(pdf.getDocumentCatalog().getDocumentOutline().getFirstChild());
+            int links=0;for(var page:pdf.getPages())for(var annotation:page.getAnnotations())if(annotation instanceof org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink link){assertTrue(link.getDestination()!=null || link.getAction() instanceof org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo);links++;}
+            assertTrue(links>=4,"Contents and cyclic references must be clickable");
+            String text=new PDFTextStripper().getText(pdf);assertFalse(text.contains("id-a"));assertTrue(text.contains("Implementation notes"));
+            var render=new PDFRenderer(pdf);for(int i=0;i<pdf.getNumberOfPages();i++)ImageIO.write(render.renderImageWithDPI(i,90),"png",root.resolve("page-"+(i+1)+".png").toFile());
+        }
+        renderer.write(workspace,Map.of(),root.resolve("graph.docx"),"docx",true,false);
+        try(var doc=new XWPFDocument(Files.newInputStream(root.resolve("graph.docx")))) {
+            String xml=doc.getDocument().xmlText();assertTrue(xml.contains("bookmarkStart"));assertTrue(xml.contains("anchor=\"note-2\""));assertFalse(xml.contains("id-b"));
+        }
+        var omitted=new TransferService.ResourceData("id-b","note",b.title(),null,null,null,null,null,null,List.of(),null);
+        renderer.write(new TransferService.Workspace(List.of(a,omitted),List.of(),null),Map.of(),root.resolve("single.pdf"),"pdf",false,true);
+        try(var pdf=Loader.loadPDF(root.resolve("single.pdf").toFile())) {String text=new PDFTextStripper().getText(pdf);assertFalse(text.contains("id-b"));assertFalse(text.contains("Vaultor resource"));assertTrue(text.contains("References"));}
+    }
 }

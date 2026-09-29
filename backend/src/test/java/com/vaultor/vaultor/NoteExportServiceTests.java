@@ -35,5 +35,44 @@ class NoteExportServiceTests {
         assertEquals(4,exporters.available().stream().filter(f->f.scope()==ExporterRegistry.Scope.notes).count());assertNotNull(exporters.require("workspace","zip"));
         assertThrows(IllegalArgumentException.class,()->transfers.exportNote(note.getId(),"xlsx"));assertThrows(NoSuchElementException.class,()->transfers.exportNote("missing-note","md"));
     }
+
+    @Test void linkedGraphRejectsChangedPreviewAndFreezesCyclicDiamond() throws Exception {
+        var a=resources.createNote("Same title",doc("root"));var b=resources.createNote("Same title",doc("second"));
+        var c=resources.createNote("Third",doc("third"));var d=resources.createNote("Fourth",doc("fourth"));
+        resources.updateNote(a.getId(),a.getTitle(),links(b.getId(),c.getId()));
+        resources.updateNote(b.getId(),b.getTitle(),links(d.getId()));
+        resources.updateNote(c.getId(),c.getTitle(),links(d.getId()));
+        resources.updateNote(d.getId(),d.getTitle(),links(a.getId(),"missing"));
+        var preview=transfers.previewNote(a.getId());assertEquals(4,preview.notes());assertEquals(4,new HashSet<>(preview.noteIds()).size());assertFalse(preview.warnings().isEmpty());
+        resources.updateNote(d.getId(),"Renamed",links(a.getId()));
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,()->transfers.exportNote(a.getId(),"md",true,false,preview.fingerprint()));
+        var current=transfers.previewNote(a.getId());var started=transfers.exportNote(a.getId(),"md",true,false,current.fingerprint());
+        while(!gate.enterRequest())Thread.sleep(10);
+        try{resources.updateNote(a.getId(),"Later change",doc("changed after snapshot"));}finally{gate.leaveRequest();}
+        var op=finish(started.id());assertEquals("SUCCEEDED",op.status(),op.detail());assertEquals("application/zip",op.mediaType());
+        try(var zip=new java.util.zip.ZipFile(transfers.download(op.id()).toFile())) {
+            var entries=zip.stream().filter(e->e.getName().endsWith(".md")).toList();assertEquals(4,entries.size());
+            String root=new String(zip.getInputStream(entries.getFirst()).readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);
+            assertFalse(root.contains("changed after snapshot"));assertTrue(root.contains("note-2-Same_title.md"));assertFalse(root.contains(a.getId()));
+        }
+    }
+    static String links(String... ids) {
+        return "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":["+Arrays.stream(ids).map(id->"{\"type\":\"resourceLink\",\"attrs\":{\"resourceId\":\""+id+"\",\"label\":\"Related note\"}}").collect(java.util.stream.Collectors.joining(","))+"]}]}";
+    }
+
+    @Test void packagesOriginalBytesAndRenderedDocumentsFromTheSnapshot() throws Exception {
+        var file=resources.uploadFile(new org.springframework.mock.web.MockMultipartFile("file","data.csv","text/csv","original,bytes".getBytes()));
+        var note=resources.createNote("Attachments",links(file.getId()));
+        for(String format:List.of("pdf","docx")) {
+            var preview=transfers.previewNote(note.getId());assertEquals(1,preview.files());
+            var started=transfers.exportNote(note.getId(),format,true,false,preview.fingerprint());
+            var op=finish(started.id());assertEquals("SUCCEEDED",op.status(),op.detail());assertTrue(op.filename().endsWith(".zip"));
+            try(var zip=new java.util.zip.ZipFile(transfers.download(op.id()).toFile())) {
+                assertNotNull(zip.getEntry("notes."+format));var asset=zip.stream().filter(e->e.getName().startsWith("assets/")).findFirst().orElseThrow();
+                assertEquals("original,bytes",new String(zip.getInputStream(asset).readAllBytes()));
+                String metadata=new String(zip.getInputStream(zip.getEntry("export.json")).readAllBytes());assertTrue(metadata.contains("notes."+format+"#note-1"));
+            }
+        }
+    }
 }
 

@@ -2,9 +2,11 @@ import api from './api';
 
 export type ExportFormat = { scope: string; format: string; extension: string };
 export type ExportOperation = { id: string; status: string; phase: string; progress: number; detail?: string; requestId?: string; filename?: string; warnings?: string[] };
+export type GraphPreview = { notes: number; files: number; noteIds: string[]; resourceIds: string[]; warnings: string[]; fingerprint: string };
+export type ExportOptions = { linked?: boolean; references?: boolean; reviewedGraph?: GraphPreview; flushNote?: (id: string) => Promise<void> };
 type Stage = 'saving' | 'preparing' | 'downloading' | 'downloaded' | 'error';
 type Retry = 'save' | 'prepare' | 'status' | 'download';
-export type ExportJob = { noteId: string; title: string; format: ExportFormat; stage: Stage; operation?: ExportOperation; error?: string; requestId?: string; retry?: Retry };
+export type ExportJob = { noteId: string; title: string; format: ExportFormat; stage: Stage; operation?: ExportOperation; error?: string; requestId?: string; retry?: Retry; linked?: boolean; graph?: GraphPreview };
 export function exportFailure(error: unknown) {
   const failure = error as { response?: { data?: { detail?: string; requestId?: string } }; message?: string };
   return { error: failure.response?.data?.detail || failure.message || 'Export failed. Please try again.', requestId: failure.response?.data?.requestId };
@@ -16,15 +18,17 @@ export class NoteExportController {
   private listeners = new Set<() => void>();
   private controller?: AbortController;
   private busy = false;
+  private options: ExportOptions = {};
   private flush?: () => Promise<void>;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   snapshot = () => this.job;
   private update(patch: Partial<ExportJob>) { if (this.job) { this.job = { ...this.job, ...patch }; this.listeners.forEach(listener => listener()); } }
   clear = () => { if (!this.busy) { this.job = null; this.flush = undefined; this.listeners.forEach(listener => listener()); } };
+  cancel = () => { if (this.job?.stage === 'saving') { this.controller?.abort(); this.update({ stage: 'error', error: 'Export cancelled before preparation.', retry: undefined }); } };
   dispose = () => { this.controller?.abort(); };
-  start = async (noteId: string, title: string, format: ExportFormat, flush: () => Promise<void>) => {
+  start = async (noteId: string, title: string, format: ExportFormat, flush: () => Promise<void>, options: ExportOptions = {}) => {
     if (this.busy || (this.job && this.job.stage !== 'downloaded')) return;
-    this.job = { noteId, title, format, stage: 'saving' }; this.flush = flush;
+    this.job = { noteId, title, format, stage: 'saving', linked: options.linked }; this.flush = flush; this.options = options;
     await this.run('save');
   };
   retry = async () => { if (this.job?.retry) await this.run(this.job.retry); };
@@ -41,10 +45,29 @@ export class NoteExportController {
         this.update({ stage: 'saving' }); retry = 'save';
         await this.flush?.();
         if (signal.aborted) return;
+        let graph: GraphPreview | undefined;
+        if (this.options.linked) {
+          if (!this.options.flushNote) throw new Error('Linked-note saving is unavailable.');
+          const saved = new Set([this.job.noteId]);
+          for (let round = 0; round < 6; round++) {
+            const response = await api.get<GraphPreview>('/exports/notes/' + this.job.noteId + '/preview', { signal });
+            if (signal.aborted) return;
+            graph = response.data; this.update({ graph });
+            const reviewed = this.options.reviewedGraph;
+            if (reviewed && (graph.files !== reviewed.files || [...graph.resourceIds].sort().join('|') !== [...reviewed.resourceIds].sort().join('|'))) {
+              retry = undefined;
+              throw new Error('Linked resources changed after saving. Dismiss export and review the updated counts.');
+            }
+            const pending = graph.noteIds.filter(id => !saved.has(id));
+            if (!pending.length) break;
+            if (round === 5) throw new Error('Linked notes keep changing. Retry when editing settles.');
+            for (const id of pending) { await this.options.flushNote(id); saved.add(id); if (signal.aborted) return; }
+          }
+        }
         this.update({ stage: 'preparing', operation: undefined });
         // POST is not idempotent. An ambiguous failure must not automatically create another job.
         retry = undefined;
-        const { data } = await api.post<ExportOperation>('/exports', { scope: 'notes', format: this.job.format.format, noteId: this.job.noteId }, { signal });
+        const { data } = await api.post<ExportOperation>('/exports', { scope: 'notes', format: this.job.format.format, noteId: this.job.noteId, ...(this.options.linked ? { links: 'linked', fingerprint: graph?.fingerprint } : {}), ...(this.options.references ? { references: 'true' } : {}) }, { signal });
         if (signal.aborted) return;
         this.update({ operation: data });
       }
@@ -78,7 +101,11 @@ export class NoteExportController {
       } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
       this.update({ stage: 'downloaded' });
     } catch (error) {
-      if (!signal.aborted) this.update({ stage: 'error', ...exportFailure(error), retry });
+      if (!signal.aborted) {
+        const status = (error as { response?: { status?: number } }).response?.status;
+        if (status === 409 && !this.job.operation) retry = 'save';
+        this.update({ stage: 'error', ...exportFailure(error), retry });
+      }
     } finally { this.busy = false; }
   }
   private delay(ms: number, signal: AbortSignal) {

@@ -182,13 +182,13 @@ User-reported container crash reproduced using an existing FTS5 index before Hib
 
 ## Navigation, sessions and exports — 2026-09-29
 
-Deliver exactly one sprint per authorization. Current authorization: N4 persistent sessions and draft recovery (complete; stopped for discussion). Preserve structured documents, the save coordinator and existing visual tokens.
+Deliver exactly one sprint per authorization. Current authorization: N5 linked-resource exports (complete, 2026-09-30; stopped for discussion). Preserve structured documents, the save coordinator and existing visual tokens.
 
 - [x] N1: direct export format actions, note save barrier, automatic download, dialog-independent tracking, bounded status retries, existing-operation download retry, compact feedback and Details. Backend snapshot/API unchanged.
 - [x] N2: stable pane IDs, source-aware link intents, source-only save/navigation barrier, duplicate views sharing document/title/undo/save with independent selections, stale-request guards and accessible links. Files remain temporary previews; pane limits never evict silently.
 - [x] N3: shared focused-pane journey bar, distinct visits/branching, Back/Forward and restored positions, bounded 200 visits per pane, restrained reduced-motion-aware transitions. Direct opens start trails; linked opens extend; Alt+Arrows only switches panes.
 - [x] N4: IndexedDB per-tab sessions and revision-aware draft recovery, Library context and lazy journey restoration, workspace identity/generation isolation, atomic If-Match updates. No silent conflict overwrite or transient UI restoration.
-- [ ] N5: linked-resource export and readable references, as specified below.
+- [x] N5: linked-resource export and readable references, as specified below.
 - [ ] N6 (formerly N5): integration edge checks and one focused visual review, complete navigation/session/export/API/operations documentation. No routine Docker rebuild or broad API smoke.
 
 Decisions: a new pane copies the source journey then evolves independently; duplicate notes share one live document; Ctrl/Cmd-click at capacity offers Open here without changing panes; refresh recovery must retain failed drafts. Each sprint stops for discussion. Compilation and focused failure-path checks only; actual results recorded below. No current blocker.
@@ -201,7 +201,7 @@ Validation: production frontend build, final TypeScript compilation, targeted ES
 
 Stop after N1. N2–N5 remain unstarted and require separate authorization.
 
-### Added export scope — N5 (planned, not implemented)
+### Added export scope — N5 (implemented 2026-09-30)
 
 The user requested export of the outgoing linking chain and readable PDF references. This is a separate export sprint before final integration, expanding the sequence to six sprints; N3 journeys and N4 recovery retain their order. N2 also closes the export picker automatically after browser download handoff; browser disk-save completion is not observable.
 
@@ -255,3 +255,9 @@ Stop after N4. N5 linked-resource export chains/readable PDF references and N6 i
 - [x] Display complete short journeys; longer paths scroll horizontally with the current visit revealed, and retain the full-path overflow.
 
 Validation: production build, final TypeScript compilation, targeted ESLint and 10 focused journey/popover/editor tests passed. One isolated real-component browser fixture checked dark/wide and light/360px layouts plus backlinks opening, Escape and focus restoration. Full Dashboard integration was not visually exercised. No API/Docker checks or user-data mutation; existing build warnings remain. No API/schema/session changes. N5 linked-chain exports is still pending and requires the next sprint authorization.
+
+### N5 handoff — 2026-09-30
+
+Implemented This note / Include linked resources, saved counts and package labels, optional references and cancellation before preparation. Participant-only saving rechecks graph membership; changed scope requires review, and server fingerprints prevent stale snapshots. Bounded deterministic graph traversal includes outgoing note/file/image/table-source references, deduplicates cycles/diamonds and reports missing targets/limits. Immutable snapshots render relative-linked Markdown bundles, combined PDF contents/bookmarks/destinations and Word bookmarks; original files are packaged when needed. UUIDs move out of reading content into package metadata. Workspace archives, session schema and document format are unchanged.
+
+Validation: production frontend build, final TypeScript and targeted ESLint passed; 11 frontend export tests and 6 backend renderer/graph/service tests passed on disposable fixtures. Checked graph PDF pages 1–3 visually. DOCX rendering attempted but blocked by missing LibreOffice; bookmark structure is verified, pagination remains unverified. No browser/Docker/broad API smoke or user-data mutation. Existing build warnings remain. N6 integration remains pending and requires its own authorization.

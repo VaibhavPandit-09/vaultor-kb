@@ -2022,7 +2022,7 @@
     "/exports": {
       "post": {
         "operationId": "startExport",
-        "summary": "Create a workspace archive or snapshot and export one saved note",
+        "summary": "Export a saved note or its outgoing resource graph, or a workspace archive",
         "parameters": [],
         "responses": {
           "200": {
@@ -2128,6 +2128,26 @@
                           "pdf",
                           "docx"
                         ]
+                      },
+                      "links": {
+                        "type": "string",
+                        "enum": [
+                          "single",
+                          "linked"
+                        ],
+                        "default": "single"
+                      },
+                      "references": {
+                        "type": "string",
+                        "enum": [
+                          "true",
+                          "false"
+                        ],
+                        "default": "false"
+                      },
+                      "fingerprint": {
+                        "type": "string",
+                        "description": "Required for linked export; obtain from preview after saving participating notes. Changed graph returns 409 before an operation is created."
                       }
                     },
                     "example": {
@@ -4389,6 +4409,82 @@
           }
         }
       }
+    },
+    "/exports/notes/{id}/preview": {
+      "get": {
+        "operationId": "previewNoteExportGraph",
+        "summary": "Bounded outgoing saved-resource graph; no operation or artifact is created",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Correlation ID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteExportPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Workspace busy or operation conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected failure; see request ID in logs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5302,6 +5398,60 @@
           "requestId": {
             "type": "string"
           }
+        }
+      },
+      "NoteExportPreview": {
+        "type": "object",
+        "required": [
+          "notes",
+          "files",
+          "noteIds",
+          "resourceIds",
+          "warnings",
+          "fingerprint"
+        ],
+        "properties": {
+          "notes": {
+            "type": "integer"
+          },
+          "files": {
+            "type": "integer"
+          },
+          "noteIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resourceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fingerprint": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "notes": 2,
+          "files": 0,
+          "noteIds": [
+            "root",
+            "child"
+          ],
+          "resourceIds": [
+            "root",
+            "child"
+          ],
+          "warnings": [],
+          "fingerprint": "opaque-sha256"
         }
       }
     }

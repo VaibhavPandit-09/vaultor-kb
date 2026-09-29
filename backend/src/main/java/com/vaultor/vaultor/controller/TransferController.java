@@ -10,7 +10,12 @@ import java.util.*;
 public class TransferController {
     private final TransferService transfers;
     private final ExporterRegistry registry;
-    @PostMapping("/exports") public TransferService.Operation export(@RequestBody Map<String,String> body) { return "notes".equals(body.get("scope")) ? transfers.exportNote(body.get("noteId"),body.getOrDefault("format","md")) : transfers.export(body.getOrDefault("scope","workspace"),body.getOrDefault("format","zip")); }
+    @PostMapping("/exports") public TransferService.Operation export(@RequestBody Map<String,String> body) {
+        if(!List.of("single","linked").contains(body.getOrDefault("links","single")))throw new IllegalArgumentException("links must be single or linked");
+        if(!List.of("true","false").contains(body.getOrDefault("references","false")))throw new IllegalArgumentException("references must be true or false");
+        return "notes".equals(body.get("scope")) ? transfers.exportNote(body.get("noteId"),body.getOrDefault("format","md"),"linked".equals(body.get("links")),"true".equals(body.get("references")),body.get("fingerprint")) : transfers.export(body.getOrDefault("scope","workspace"),body.getOrDefault("format","zip"));
+    }
+    @GetMapping("/exports/notes/{id}/preview") public NoteExportGraph.Preview previewNote(@PathVariable String id) { return transfers.previewNote(id); }
     @GetMapping("/export-formats") public List<ExporterRegistry.Format> formats() { return registry.available(); }
     @PostMapping("/imports/preview") public TransferService.Preview preview(@RequestParam MultipartFile file) throws Exception { return transfers.preview(file); }
     @PostMapping("/imports/{id}/commit") public TransferService.Operation commit(@PathVariable String id,@RequestBody Map<String,String> body) {
