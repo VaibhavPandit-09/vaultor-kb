@@ -1,4 +1,6 @@
-import { PaneNavigation, type Pane, type OpenIntent } from '../lib/paneNavigation';
+import JourneyBar from '../components/JourneyBar';
+import JourneyViewport from '../components/JourneyViewport';
+import { PaneNavigation, ResourceUnavailableError, type Pane, type OpenIntent } from '../lib/paneNavigation';
 import { SharedNoteDocuments } from '../lib/sharedNoteDocuments';
 import type { LinkedResourceIntent } from '../lib/resourceLinkNavigation';
 import { affectsScope, notifyResourceChange, subscribeResourceChanges } from '../lib/resourceEvents';
@@ -396,23 +398,25 @@ export default function Dashboard() {
   const resourceLoadVersions = useRef(new Map<string, number>());
   const workspaceEpoch = useRef(0);
   const backlinkVersion = useRef(0);
-  const fetchResourceDetails = useCallback(async (id: string) => {
+  const fetchResourceDetails = useCallback(async (id: string, navigationRequest = false) => {
     const version = (resourceLoadVersions.current.get(id) ?? 0) + 1;
     resourceLoadVersions.current.set(id, version);
     const epoch = workspaceEpoch.current;
     setLoadingResourceIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     try {
-      const { data } = await api.get(`/resources/${id}`);
+      const { data } = await api.get(`/resources/${id}`, { backgroundDiagnostic: navigationRequest });
       if (epoch !== workspaceEpoch.current || resourceLoadVersions.current.get(id) !== version) return null;
+      paneNavigation.rename(id, saves.latest(id)?.title ?? data.title);
       setResourceDetails((prev) => ({ ...prev, [id]: saves.latest(id) ? { ...data, title: saves.latest(id)!.title, content: JSON.stringify(saves.latest(id)!.content) } : data }));
       return data as Resource;
     } catch (error) {
+      if (navigationRequest && (error as { response?: { status?: number } }).response?.status === 404) throw new ResourceUnavailableError('This note is no longer available.');
       console.error(error);
       return null;
     } finally {
       if (resourceLoadVersions.current.get(id) === version) setLoadingResourceIds((prev) => prev.filter((entry) => entry !== id));
     }
-  }, [saves]);
+  }, [saves, paneNavigation]);
 
   const fetchBacklinks = useCallback(async (id: string) => {
     const relevant = () => { const state = paneNavigation.snapshot(); return state.panes.find(p => p.paneId === state.activePaneId)?.id === id; };
@@ -461,7 +465,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     navigationDependencies.current = () => ({
-      load: async id => resourceDetails[id]?.content != null && openNotes.some(p => p.id === id) ? resourceDetails[id] : fetchResourceDetails(id),
+      load: async id => resourceDetails[id]?.content != null && openNotes.some(p => p.id === id) ? resourceDetails[id] : fetchResourceDetails(id, true),
       save: id => exportSaveRef.current(id),
       preview: (resource, sourcePaneId) => { previewSourcePane.current = sourcePaneId ?? null; openPreview(resource); markOpened(resource.id); },
       committed: (id, focus) => { if (focus) { setLibraryVisible(false); dismissPreview({ restoreFocus: false }); dispatch(setCurrentResourceId(id)); } markOpened(id); },
@@ -553,7 +557,9 @@ export default function Dashboard() {
     settingsModalFocus.restoreFocus();
   }, [settingsModalFocus]);
 
-  const saveNoteSelection = useCallback((paneId: string, selection: NoteSelection) => {
+  const saveNoteSelection = useCallback((paneId: string, visitId: string, selection: NoteSelection) => {
+    paneNavigation.recordPosition(paneId, visitId, { selection });
+    const current = paneNavigation.snapshot().panes.find(p => p.paneId === paneId); if (current?.history[current.cursor]?.visitId !== visitId) return;
     paneNavigation.update(panes => { const pane = panes.find(p => p.paneId === paneId); return pane?.selection?.from === selection.from && pane.selection.to === selection.to ? panes : panes.map(p => p.paneId === paneId ? { ...p, selection } : p); });
   }, [paneNavigation]);
   const switchNote = useCallback((direction: 'next' | 'prev') => {
@@ -769,6 +775,7 @@ export default function Dashboard() {
       await saves.flush(id);
       await api.delete(`/resources/${id}`);
       resourceLoadVersions.current.set(id, (resourceLoadVersions.current.get(id) ?? 0) + 1);
+      paneNavigation.markUnavailable(id);
       saves.forget(id);
       if (previewResourceId === id) {
         dismissPreview({ restoreFocus: false });
@@ -797,6 +804,7 @@ export default function Dashboard() {
       await saves.flushAll();
       await api.post(`/resources/${replaceLinkModal.oldId}/replace-links`, { newResourceId: newId });
       saves.clear();
+      paneNavigation.markUnavailable(replaceLinkModal.oldId);
       const ids = [...new Set([...openNotes.map(note => note.id), newId])].filter(id => id !== replaceLinkModal.oldId);
       const fresh = await Promise.all(ids.map(id => api.get<Resource>(`/resources/${id}`).then(response => response.data)));
       setResourceDetails(Object.fromEntries(fresh.map(resource => [resource.id, resource])));
@@ -818,6 +826,7 @@ export default function Dashboard() {
   };
 
   const renameResource = useCallback(async (resourceId: string, title: string) => {
+    paneNavigation.rename(resourceId, title);
     const resource = resourceDetails[resourceId] ?? await fetchResourceDetails(resourceId);
     if (!resource || resource.type !== 'note') {
       return;
@@ -832,7 +841,7 @@ export default function Dashboard() {
     saves.enqueue(resourceId, { title, content: draft?.content ?? parseNoteContent(resource.content) }, 0);
     await saves.flush(resourceId);
     resourcesChanged([resourceId]);
-  }, [fetchResourceDetails, resourceDetails, saves]);
+  }, [fetchResourceDetails, resourceDetails, saves, paneNavigation]);
 
   const startTitleEditing = useCallback((noteId: string, title: string, paneId: string) => {
     const pane = paneNavigation.snapshot().panes.find(p => p.paneId === paneNavigation.snapshot().activePaneId && p.id === noteId) ?? paneNavigation.snapshot().panes.find(p => p.id === noteId);
@@ -1234,7 +1243,7 @@ export default function Dashboard() {
       <ErrorBoundary region="diagnostics"><DiagnosticsPanel open={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} /></ErrorBoundary>
       {paneState.issue && <div role="alert" className="z-[85] flex flex-wrap items-center gap-3 border-b border-border bg-[var(--surface-3)] px-4 py-2 text-sm">
         <span>{paneState.issue.message}</span>
-        <button className="rounded border border-border px-3 py-1 focus-visible:outline-primary" onClick={() => { const issue = paneState.issue!; if (issue.closePaneId) { void paneNavigation.close(issue.closePaneId); return; } void openResourceById(issue.id, { ...issue.options, ...(issue.limit ? { destination: 'here' as const } : {}), throwOnFailure: false }); }}>{paneState.issue.limit ? 'Open here' : 'Retry'}</button>
+        {!paneState.issue.unavailable && <button className="rounded border border-border px-3 py-1 focus-visible:outline-primary" onClick={() => { const issue = paneState.issue!; if (issue.closePaneId) { void paneNavigation.close(issue.closePaneId); return; } void openResourceById(issue.id, { ...issue.options, ...(issue.limit ? { destination: 'here' as const } : {}), throwOnFailure: false }); }}>{paneState.issue.limit ? 'Open here' : 'Retry'}</button>}
         <button aria-label="Dismiss navigation message" onClick={paneNavigation.dismissIssue}><X size={16} /></button>
       </div>}
       {notice && <div role="alert" className="z-[1200] flex items-center gap-3 bg-red-950 p-3 text-sm text-white">
@@ -1425,6 +1434,9 @@ export default function Dashboard() {
         <main className="min-w-0 flex-1 relative">
           <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></section>:<LibraryView onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="h-full" hidden={libraryVisible}>
+          <div className="flex h-full min-h-0 flex-col">
+          {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)} />}
+          <div className="min-h-0 flex-1">
           {openWorkspaceNotes.length > 0 ? (
             <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
               {openWorkspaceNotes.map((note, index) => (
@@ -1629,7 +1641,7 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
-                  <div key={note.id} className="min-h-0 flex-1 overflow-y-auto px-4">
+                  <JourneyViewport visitId={note.history[note.cursor].visitId} initialPosition={paneNavigation.position(note.history[note.cursor].visitId)} direction={note.transition} animationMode={localSettings.animationMode} onPosition={position => paneNavigation.recordPosition(note.paneId, note.history[note.cursor].visitId, position)}>
                     {note.resource?.type === 'note' ? (
                       <ErrorBoundary region="note editor"><BlockEditor
                         key={note.id}
@@ -1645,10 +1657,11 @@ export default function Dashboard() {
                         isActive={!libraryVisible && note.paneId === activePaneId}
                         interactionLocked={commandPaletteOpen || libraryVisible}
                         shouldRestoreFocus={!libraryVisible && paneState.focusPaneId === note.paneId}
+                        selectionRestoreKey={note.history[note.cursor].visitId}
                         savedSelection={note.selection ?? null}
                         onActivate={() => activateOpenNote(note.paneId)}
                         onFocusRestored={() => paneNavigation.focusHandled(note.paneId)}
-                        onSelectionChange={(selection) => saveNoteSelection(note.paneId, selection)}
+                        onSelectionChange={(selection) => saveNoteSelection(note.paneId, note.history[note.cursor].visitId, selection)}
                         onUpdate={(json) => handleContentUpdate(note.id, json)}
                         onRequestMdUpload={handleRequestMdUpload}
                         onRequestCsvUpload={handleRequestCsvUpload}
@@ -1659,7 +1672,7 @@ export default function Dashboard() {
                         Loading note...
                       </div>
                     )}
-                  </div>
+                  </JourneyViewport>
                 </div>
               ))}
 
@@ -1700,6 +1713,8 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+          </div>
+          </div>
           </div>
         </main>
       </div>

@@ -1,3 +1,4 @@
+import { TextSelection } from '@tiptap/pm/state';
 import { SharedHistory, SharedNoteDocuments, isSharedTransaction, resetSharedHistory } from '../../lib/sharedNoteDocuments';
 import { registerResourceLinkNavigation, registerResourceLinkNavigator, type LinkedResourceIntent } from '../../lib/resourceLinkNavigation';
 import { flushSync } from 'react-dom';
@@ -56,6 +57,7 @@ interface BlockEditorProps {
   onActivate: (noteId: string) => void;
   onFocusRestored: (noteId: string) => void;
   savedSelection?: NoteSelection | null;
+  selectionRestoreKey?: string;
   onRequestMdUpload: (editor: Editor, range: NoteSelection) => void;
   onRequestCsvUpload: (editor: Editor, range: NoteSelection) => void;
   onRequestLinkUpload: (editor: Editor, range: NoteSelection) => void;
@@ -81,7 +83,7 @@ function BlockEditor({
   onSelectionChange,
   onActivate,
   onFocusRestored,
-  savedSelection,
+  savedSelection, selectionRestoreKey,
   onRequestMdUpload,
   onRequestCsvUpload,
   onRequestLinkUpload,
@@ -384,7 +386,8 @@ function BlockEditor({
 
   useEffect(() => {
     if (!editor) return;
-    return sharedDocuments.attach(noteId, editor);
+    const detach = sharedDocuments.attach(noteId, editor);
+    return detach;
   }, [editor, noteId, sharedDocuments]);
   useEffect(() => {
     if (!editor) return;
@@ -400,6 +403,16 @@ function BlockEditor({
   useEffect(() => {
     onUpdateRef.current = onUpdate;
   }, [onUpdate]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const saved = savedSelectionRef.current;
+    if (saved) {
+      const resolve = (pos: number) => editor.state.doc.resolve(Math.max(0, Math.min(editor.state.doc.content.size, pos)));
+      editor.view.dispatch(editor.state.tr.setSelection(TextSelection.between(resolve(saved.from), resolve(saved.to))));
+    }
+    initialSelectionRestored.current = true;
+  }, [editor, selectionRestoreKey]);
 
   useEffect(() => {
     autosaveDelayRef.current = autosaveDelay;
@@ -515,6 +528,7 @@ const MemoizedBlockEditor = memo(BlockEditor, (prev, next) => (
   && prev.isActive === next.isActive
   && prev.interactionLocked === next.interactionLocked
   && prev.shouldRestoreFocus === next.shouldRestoreFocus
+  && prev.selectionRestoreKey === next.selectionRestoreKey
   && prev.savedSelection?.from === next.savedSelection?.from
   && prev.savedSelection?.to === next.savedSelection?.to
   && prev.content === next.content

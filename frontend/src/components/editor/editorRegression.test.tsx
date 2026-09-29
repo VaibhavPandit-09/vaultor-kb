@@ -67,3 +67,14 @@ it('two mounted note views retain shared edits through React updates and route l
   expect(opened).toHaveBeenCalledWith({ resourceId: 'target', sourcePaneId: 'left', destination: 'new', intent: 'link' });
   expect(link.getAttribute('aria-label')).toBe('Open Target');
 });
+it('restores a different visit selection in the same editor and clamps stale positions', () => {
+  const shared = new SharedNoteDocuments(), noop = () => {};
+  const props = { paneId: 'p', sharedDocuments: shared, onOpenResource: noop, noteId: 'n', noteTitle: 'Note', saveStatus: 'saved' as const, onRetrySave: noop, content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'hello' }] }] }, autosaveDelay: 0, isActive: true, interactionLocked: false, shouldRestoreFocus: false, onUpdate: noop, onSelectionChange: noop, onActivate: noop, onFocusRestored: noop, onRequestMdUpload: noop, onRequestCsvUpload: noop, onRequestLinkUpload: noop };
+  const view = render(<EscapeManagerProvider><BlockEditor {...props} selectionRestoreKey="first" savedSelection={{ from: 2, to: 2 }} /></EscapeManagerProvider>);
+  const dom = view.container.querySelector('.tiptap') as HTMLElement & { editor: Editor };
+  expect(dom.editor.state.selection.from).toBe(2);
+  view.rerender(<EscapeManagerProvider><BlockEditor {...props} selectionRestoreKey="second" savedSelection={{ from: 4, to: 4 }} /></EscapeManagerProvider>);
+  expect(view.container.querySelector('.tiptap')).toBe(dom); expect(dom.editor.state.selection.from).toBe(4);
+  view.rerender(<EscapeManagerProvider><BlockEditor {...props} selectionRestoreKey="third" savedSelection={{ from: 500, to: 500 }} /></EscapeManagerProvider>);
+  expect(dom.editor.state.selection.from).toBeLessThanOrEqual(dom.editor.state.doc.content.size);
+});

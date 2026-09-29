@@ -182,11 +182,11 @@ User-reported container crash reproduced using an existing FTS5 index before Hib
 
 ## Navigation, sessions and exports — 2026-09-29
 
-Deliver exactly one sprint per authorization. Current authorization: N2, with the export auto-close correction. Preserve structured documents, the save coordinator and existing visual tokens.
+Deliver exactly one sprint per authorization. Current authorization: N3 shared journeys. Preserve structured documents, the save coordinator and existing visual tokens.
 
 - [x] N1: direct export format actions, note save barrier, automatic download, dialog-independent tracking, bounded status retries, existing-operation download retry, compact feedback and Details. Backend snapshot/API unchanged.
 - [x] N2: stable pane IDs, source-aware link intents, source-only save/navigation barrier, duplicate views sharing document/title/undo/save with independent selections, stale-request guards and accessible links. Files remain temporary previews; pane limits never evict silently.
-- [ ] N3: shared focused-pane journey bar, distinct visits/branching, Back/Forward and restored positions, bounded 200 visits per pane, restrained reduced-motion-aware transitions. Direct opens start trails; linked opens extend; Alt+Arrows only switches panes.
+- [x] N3: shared focused-pane journey bar, distinct visits/branching, Back/Forward and restored positions, bounded 200 visits per pane, restrained reduced-motion-aware transitions. Direct opens start trails; linked opens extend; Alt+Arrows only switches panes.
 - [ ] N4: IndexedDB per-tab sessions and revision-aware draft recovery, Library context and lazy journey restoration, workspace identity/generation isolation, atomic If-Match updates. No silent conflict overwrite or transient UI restoration.
 - [ ] N5: linked-resource export and readable references, as specified below.
 - [ ] N6 (formerly N5): integration edge checks and one focused visual review, complete navigation/session/export/API/operations documentation. No routine Docker rebuild or broad API smoke.
@@ -227,3 +227,12 @@ Also applied the requested N1 correction: the export dialog closes after browser
 Validation: production frontend build passed; final TypeScript compilation and targeted ESLint passed. Across focused runs, 31 distinct tests passed: 9 navigation, 5 shared-document/history, 1 shared filtered-table, 4 editor regression/React integration, 5 existing table workflow cases, and 7 export cases including auto-close assertions. No browser, live API, Docker or user-data mutation checks. Existing bundle-size/Browserslist warnings remain. Native keyboard/focus visuals and full Dashboard visual integration remain for the focused integration review. Per-visit reading positions, shared journey UI, persistence and cross-tab conflict protection are not delivered in N2.
 
 Stop here for discussion. N3 is the next implementation sprint; N4 recovery, N5 linked-resource exports and N6 integration follow separately.
+
+
+### N3 handoff — 2026-09-29
+
+Implemented the shared focused-pane journey bar, nearby visits and full-path overflow, distinct cycle visits, branching, independent copied paths, 200-visit bound, scroll/caret restoration, current titles, unavailable destinations and restrained motion. Alt+Arrows remains pane switching only. Library hides the bar and closes its portal. Reading positions are in memory and numeric/clamped; session persistence remains N4.
+
+Validation: production frontend build and targeted ESLint pass; 22 focused navigation, journey and editor tests pass, covering branches, copied positions, missing/transient errors, limits, dismissal, stable typing/title updates and same-editor caret restoration. One isolated fixture visual session checked dark wide and light 320px layouts, full-path overflow and Escape. Full Dashboard integration/reduced-motion visual review remains N6. Existing bundle-size/Browserslist warnings remain; no API/Docker checks or user workspace mutation.
+
+Stop after N3 for discussion. N4 persistent sessions/recovery is next; N5 linked-resource exports and N6 integration remain separately authorized work.

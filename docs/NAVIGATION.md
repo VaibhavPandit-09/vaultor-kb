@@ -1,6 +1,6 @@
 # Pane navigation and shared editing
 
-Implemented N2, 2026-09-29. This is the current navigation reference; journey chrome and persisted sessions remain planned in the workspace tracker.
+Implemented through N3, 2026-09-29. This is the current navigation reference; persisted sessions remain planned in the workspace tracker.
 
 ## Opening resources
 
@@ -20,12 +20,14 @@ SharedNoteDocuments provides live document synchronization for duplicate views i
 
 Each view keeps its own DOM scroll position, selection and table-filter/fullscreen state. Valid source transactions cannot be rejected by another view's local table filter. A remote structural change clears affected filters with a local explanation; ordinary local filtered editing restrictions remain. The shared history lives while a note has mounted editors; it is not durable across closing every view or reload. This is in-browser synchronization, not multi-tab conflict protection.
 
-## History and next steps
+## Journeys and reading positions
 
 A direct open starts a new trail; linked opens extend it. A new linked pane copies the source path through its current cursor. Going back then following a link branches the path. History is bounded to 200 visits per pane. Existing distinct history shortcuts operate on the focused pane; Alt+Arrows only changes pane focus. Current-note ordinary links are no-ops. History navigation never opens another pane or a file preview.
 
-N3 adds the shared journey bar, per-visit reading positions, overflow, unavailable destinations and animation. N4 adds IndexedDB sessions, recovery and revision-aware server contracts. Until then, refresh still loses the open layout, and pending/failed drafts remain memory-only with the existing exit warning. No session restoration is claimed by N2.
+One shared, stable-height journey bar above the note workspace displays the focused pane's current visit and nearby steps, with Back/Forward and a full-path overflow. Narrow layouts retain the current title; all retained visits remain in the keyboard-accessible overflow. Escape dismisses it and restores trigger focus; leaving for Library unmounts the bar and its portal. Each visit has an independent ID, so A → B → A preserves distinct scroll/caret positions. A linked new pane copies the path and positions with fresh IDs; subsequent history is independent. Returning preserves forward visits until a new linked navigation branches. Histories and their position records are bounded to 200 visits per pane. Scroll recording does not rerender the workspace. Revisiting restores scroll and clamped document selection without remounting a same-note editor. Local renames and loaded resource titles update trail labels without rewriting stored link labels. Deleted/404 destinations remain unavailable steps; transient errors retain Retry and leave the cursor unchanged. Adjacent unavailable visits disable Back/Forward; other valid visits remain reachable from overflow. Forward/back use directional 200 ms smooth or 100 ms snappy transitions, pane changes crossfade, and reduced motion disables animation. Typing, saves and title updates do not replay transitions.
+
+Positions are numeric offsets: selections are clamped if content shortened, not semantic anchors across edits while a visit is inactive. Missing external destinations are discovered on loading, not continuously polled. N4 adds IndexedDB sessions, recovery and revision-aware server contracts. Until then, refresh loses the layout/journeys, and pending/failed drafts remain memory-only with the existing exit warning.
 
 ## Validation
 
-Focused tests exercise source replacement, capacity/Open here, failed save/retry/close, stale requests/reset, file preview isolation, direct opens and pane-owned history; real ProseMirror/React views exercise shared steps, schema/formatting, selection mapping, undo/redo, joining/removing views, linked source routing and filtered-table changes. Actual run results are recorded in the sprint tracker and CODEBASE maintenance history. No new browser, Docker or API smoke checks are part of N2.
+Focused tests exercise source replacement, capacity/Open here, failed save/retry/close, stale requests/reset, file preview isolation, direct opens and pane-owned history; real ProseMirror/React views exercise shared steps, schema/formatting, selection mapping, undo/redo, joining/removing views, linked source routing and filtered-table changes. Actual run results are recorded in the sprint tracker and CODEBASE maintenance history. N3 adds cycle/branch/copy/bound/unavailable tests and scroll/caret/overflow checks. A single isolated browser fixture checked dark wide and light 320px layouts, overflow and Escape; full Dashboard integration remains for N6. No API smoke or Docker checks.
