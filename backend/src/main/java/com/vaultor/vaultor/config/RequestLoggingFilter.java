@@ -19,7 +19,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         MDC.put("requestId", id); MDC.put("build", "modernization-1");
         res.setHeader("X-Request-ID", id);
         long started = System.nanoTime();
-        boolean guarded = req.getRequestURI().matches("/api/(resources|tags|settings|collections|organization)(/.*)?");
+        boolean guarded = req.getRequestURI().matches("/api/(resources|tags|settings|collections|organization|workspace)(/.*)?");
         boolean entered = !guarded || gate.enterRequest();
         try {
             if (!entered) {

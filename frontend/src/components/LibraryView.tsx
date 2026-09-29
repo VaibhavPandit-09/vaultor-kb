@@ -1,3 +1,4 @@
+import { defaultLibrary, type LibraryContext } from '../lib/sessionStore';
 import ResourceSearchOptions from './ResourceSearchOptions';
 import type {SearchMode} from '../lib/resourceSearch';
 import LibraryPopover from './LibraryPopover';
@@ -20,7 +21,7 @@ import { useResourcePage } from '../lib/useResourcePage';
 export type LibrarySection = 'library' | 'recent' | 'favorites' | 'collections';
 async function collectionDetails(id:string,signal:AbortSignal) {return (await api.get<OrganizationItem>('/collections/'+id,{signal,backgroundDiagnostic:true})).data;}
 
-export default function LibraryView({ section, visible, tags, onOpen, onReturn, hasNotes, collection = null, onCollection = () => {}, onTagsChange = () => {}, onImport, onOpenCreated, onSelectionChange, hasUnsavedChanges=false }: { onSelectionChange?:(items:Resource[])=>void; hasUnsavedChanges?:boolean; onImport?:()=>void; onOpenCreated?:(id:string)=>Promise<void>; collection?: OrganizationItem | null; onCollection?: (item: OrganizationItem | null) => void; onTagsChange?: (tags: string[]) => void; section: LibrarySection; visible: boolean; tags: string[]; onOpen: (id: string) => void | Promise<void>; onReturn: () => void; hasNotes: boolean }) {
+export default function LibraryView({ section, visible, tags, onOpen, onReturn, hasNotes, collection = null, onCollection = () => {}, onTagsChange = () => {}, onImport, onOpenCreated, onSelectionChange, hasUnsavedChanges=false, initialContext=defaultLibrary, onContextChange }: { initialContext?: LibraryContext; onContextChange?: (value: LibraryContext) => void; onSelectionChange?:(items:Resource[])=>void; hasUnsavedChanges?:boolean; onImport?:()=>void; onOpenCreated?:(id:string)=>Promise<void>; collection?: OrganizationItem | null; onCollection?: (item: OrganizationItem | null) => void; onTagsChange?: (tags: string[]) => void; section: LibrarySection; visible: boolean; tags: string[]; onOpen: (id: string) => void | Promise<void>; onReturn: () => void; hasNotes: boolean }) {
   const organizationFocus=useRestoreFocusOnClose();
   const [managingCollection,setManagingCollection]=useState(false);
   const [pickerIds,setPickerIds]=useState<string[]|null>(null),[adding,setAdding]=useState(false);
@@ -28,10 +29,11 @@ export default function LibraryView({ section, visible, tags, onOpen, onReturn, 
   const currentCollection=detail.data??collection;
   const [manager, setManager] = useState<'manage' | 'bulk' | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
-  const [searchMode,setSearchMode]=useState<SearchMode>('title');
-  const [query, setQuery] = useState(''), [search, setSearch] = useState('');
-  const [type, setType] = useState('all'), [sort, setSort] = useState<'title' | 'updated' | 'recent'>('updated');
+  const [searchMode,setSearchMode]=useState<SearchMode>(initialContext.searchMode);
+  const [query, setQuery] = useState(initialContext.query), [search, setSearch] = useState(initialContext.query);
+  const [type, setType] = useState(initialContext.type), [sort, setSort] = useState<'title' | 'updated' | 'recent'>(initialContext.sort);
   const [page, setPage] = useState(0), [scrollTop, setScrollTop] = useState(0), [height, setHeight] = useState(600);
+  useEffect(() => { onContextChange?.({query,searchMode,type,sort}); }, [query,searchMode,type,sort,onContextChange]);
   const scroller = useRef<HTMLDivElement>(null);
   const tagKey = JSON.stringify(tags);
   useEffect(() => { const timer = setTimeout(() => { setSearch(query); setPage(0); }, 200); return () => clearTimeout(timer); }, [query]);

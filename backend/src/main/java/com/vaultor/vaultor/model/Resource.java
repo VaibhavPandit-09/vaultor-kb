@@ -36,6 +36,17 @@ public class Resource {
 
     private Boolean favorite = false;
 
+    @Version
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    private Long revisionNumber = 0L;
+
+    private String revisionSeed = UUID.randomUUID().toString();
+
+    // Clients treat this as an opaque validator, not a timestamp. Never archived.
+    public String getRevision() {
+        return java.util.UUID.nameUUIDFromBytes((id + ":" + revisionSeed + ":" + revisionNumber).getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString();
+    }
+
     private String importFingerprint; // Internal retry identity; omitted from DTOs/archives.
 
     @Column(name = "created_at", nullable = false)

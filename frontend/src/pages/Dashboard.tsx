@@ -1,3 +1,7 @@
+import RecoveryPanel from '../components/RecoveryPanel';
+import { IndexedSessionStore, SessionPersistence, claimTab, defaultLibrary, sameWorkspace, type Identity, type SessionSnapshot, type RecoveryRecord, type NoteDraft } from '../lib/sessionStore';
+import { NoteRecovery } from '../lib/noteRecovery';
+import { restoreSession } from '../lib/restoreSession';
 import JourneyBar from '../components/JourneyBar';
 import JourneyViewport from '../components/JourneyViewport';
 import { PaneNavigation, ResourceUnavailableError, type Pane, type OpenIntent } from '../lib/paneNavigation';
@@ -115,6 +119,14 @@ export default function Dashboard() {
   const [collection, setCollection] = useState<OrganizationItem | null>(null);
   const [libraryVisible, setLibraryVisible] = useState(true);
   const [librarySection, setLibrarySection] = useState<LibrarySection>('library');
+  const [libraryContext, setLibraryContext] = useState(defaultLibrary);
+  const [sessionReady, setSessionReady] = useState(false), [sessionError, setSessionError] = useState(''), [sessionMessage, setSessionMessage] = useState('');
+  const [bootError, setBootError] = useState(''), [bootAttempt, setBootAttempt] = useState(0);
+  const [recoveryRecords, setRecoveryRecords] = useState<RecoveryRecord[]>([]), [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [localStore] = useState(() => new IndexedSessionStore());
+  const sessionPersistence = useRef<SessionPersistence | null>(null), identityRef = useRef<Identity | null>(null);
+  const identityCheckVersion=useRef(0);
+  const recoveryFocus = useRestoreFocusOnClose();
   const [sidebarError, setSidebarError] = useState('');
   const [tagsError, setTagsError] = useState('');
   const [recencyError, setRecencyError] = useState('');
@@ -153,14 +165,27 @@ export default function Dashboard() {
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [notice, setNotice] = useState<DiagnosticEvent | null>(null);
   const [, saveChanged] = useState(0);
-  const [saves] = useState(() => new SaveCoordinator<{title: string; content: unknown}>(
-    (id, value) => api.put('/resources/' + id + '/note', value), () => saveChanged(v => v + 1)));
+  const [recovery] = useState(() => new NoteRecovery(localStore, () => saveChanged(v => v + 1), setSessionError, record => {
+    setRecoveryRecords(previous => [...previous.filter(r => r.key !== record.key), record]);
+  }));
+  const [saves] = useState(() => new SaveCoordinator<NoteDraft>(
+    async (id, value, version) => {
+      const identity=identityRef.current;
+      let saved:Resource;
+      try {saved=await recovery.write(id, value, version, async revision => (await api.put<Resource>('/resources/' + id + '/note', value, {headers:{'If-Match':'"'+revision+'"'},backgroundDiagnostic:true})).data);}
+      catch(error){const record=recovery.current(id);if(record)setRecoveryRecords(items=>[...items.filter(r=>r.key!==record.key),record]);throw error;}
+      setRecoveryRecords(items=>items.filter(r=>r.key!==('draft:'+identity?.id+':'+identity?.generation+':'+recovery.tabId+':'+id)));
+      if(identity===identityRef.current)setResourceDetails(previous=>previous[id]?{...previous,[id]:{...previous[id],revision:saved.revision,updatedAt:saved.updatedAt}}:previous);
+      return saved;
+    },
+    () => saveChanged(v => v + 1), (id,value,version) => recovery.queued(id,value,version)));
+  useEffect(() => { Object.values(resourceDetails).forEach(resource => recovery.observe(resource)); }, [resourceDetails,recovery]);
   useEffect(() => {
     const error = (event: Event) => setNotice((event as CustomEvent<DiagnosticEvent>).detail);
-    const unload = (event: BeforeUnloadEvent) => { if (saves.dirty()) { event.preventDefault(); event.returnValue = ''; } };
+    const unload = (event: BeforeUnloadEvent) => { if (saves.dirty() || recovery.dirty() || recovery.pending) { event.preventDefault(); event.returnValue = ''; } };
     window.addEventListener('vaultor:error', error); window.addEventListener('beforeunload', unload);
     return () => { window.removeEventListener('vaultor:error', error); window.removeEventListener('beforeunload', unload); };
-  }, [saves]);
+  }, [saves,recovery]);
 
   const [createNotePending, setCreateNotePending] = useState(false);
   const [uploadPending, setUploadPending] = useState(false);
@@ -191,7 +216,7 @@ export default function Dashboard() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleEditNoteId = titleEditState?.noteId ?? null;
 
-  const { settings, resolvedShortcuts, toggleTheme, updateLocalSetting, flushSettings } = useSettings();
+  const { settings, workspaceLoaded, resolvedShortcuts, toggleTheme, updateLocalSetting, flushSettings } = useSettings();
   const collectionCreationFocus=useRestoreFocusOnClose();
   const commandPaletteFocus = useRestoreFocusOnClose();
   const shortcutsModalFocus = useRestoreFocusOnClose();
@@ -406,6 +431,7 @@ export default function Dashboard() {
     try {
       const { data } = await api.get(`/resources/${id}`, { backgroundDiagnostic: navigationRequest });
       if (epoch !== workspaceEpoch.current || resourceLoadVersions.current.get(id) !== version) return null;
+      recovery.observe(data,true);
       paneNavigation.rename(id, saves.latest(id)?.title ?? data.title);
       setResourceDetails((prev) => ({ ...prev, [id]: saves.latest(id) ? { ...data, title: saves.latest(id)!.title, content: JSON.stringify(saves.latest(id)!.content) } : data }));
       return data as Resource;
@@ -416,7 +442,7 @@ export default function Dashboard() {
     } finally {
       if (resourceLoadVersions.current.get(id) === version) setLoadingResourceIds((prev) => prev.filter((entry) => entry !== id));
     }
-  }, [saves, paneNavigation]);
+  }, [saves, paneNavigation, recovery]);
 
   const fetchBacklinks = useCallback(async (id: string) => {
     const relevant = () => { const state = paneNavigation.snapshot(); return state.panes.find(p => p.paneId === state.activePaneId)?.id === id; };
@@ -837,11 +863,12 @@ export default function Dashboard() {
       [resourceId]: { ...resource, title },
     }));
 
+    recovery.observe(resource);
     const draft = saves.latest(resourceId);
     saves.enqueue(resourceId, { title, content: draft?.content ?? parseNoteContent(resource.content) }, 0);
     await saves.flush(resourceId);
     resourcesChanged([resourceId]);
-  }, [fetchResourceDetails, resourceDetails, saves, paneNavigation]);
+  }, [fetchResourceDetails, resourceDetails, saves, paneNavigation, recovery]);
 
   const startTitleEditing = useCallback((noteId: string, title: string, paneId: string) => {
     const pane = paneNavigation.snapshot().panes.find(p => p.paneId === paneNavigation.snapshot().activePaneId && p.id === noteId) ?? paneNavigation.snapshot().panes.find(p => p.id === noteId);
@@ -852,8 +879,9 @@ export default function Dashboard() {
 
   const cancelTitleEditing = useCallback(() => {
     titleEditDismissRef.current = 'cancel';
+    if(titleEditState){const id=titleEditState.noteId, record=recovery.current(id), pending=saves.latest(id);if(pending)recovery.queued(id,pending,saves.version(id));else if(record)void recovery.discard(record);}
     setTitleEditState(null);
-  }, []);
+  }, [titleEditState,recovery,saves]);
 
   const commitTitleEditing = useCallback(async () => {
     if (!titleEditState) {
@@ -878,6 +906,7 @@ export default function Dashboard() {
 
   const handleContentUpdate = (noteId: string, json: unknown) => {
     const resource = resourceDetails[noteId]; if (!resource) return;
+    recovery.observe(resource);
     const title = saves.latest(noteId)?.title ?? resource.title;
     setResourceDetails(prev => ({ ...prev, [noteId]: { ...resource, title, content: JSON.stringify(json) } }));
     saves.enqueue(noteId, { title, content: json }, workspaceSettings.autosaveDelay);
@@ -1025,12 +1054,107 @@ export default function Dashboard() {
 
   const triggerExport = () => setTransferMode('export');
   const afterImport = async () => {
+    identityCheckVersion.current++;
+    const identity=(await api.get<Identity>('/workspace/identity')).data;
+    identityRef.current=identity;recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));
+    setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
     saves.clear();
     workspaceEpoch.current++; resourceLoadVersions.current.clear(); paneNavigation.reset(); setResourceDetails({}); dismissPreview({ restoreFocus: false });
     dispatch(setCurrentResourceId(null));
     recency.reset();setRecencyError('');
     setCollection(null); setLibraryVisible(true); notifyResourceChange({kind:'workspace'});
     window.dispatchEvent(new Event('vaultor:settings-refresh'));
+  };
+
+  // StrictMode observes the same bootstrap request; only its active observer applies it.
+  const bootWork = useRef<Promise<{ identity: Identity; tab: {id:string;seed?:string}; snapshot?: SessionSnapshot; restored?: Awaited<ReturnType<typeof restoreSession>>; records: RecoveryRecord[] }> | null>(null);
+  useEffect(() => {
+    if (!workspaceLoaded || sessionReady) return;
+    let cancelled = false;
+    const work = bootWork.current ??= (async () => {
+      const identity = (await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;
+      const tab = await claimTab();
+      const persistence = new SessionPersistence(localStore,tab.id,setSessionError); sessionPersistence.current = persistence;
+      let snapshot: SessionSnapshot | undefined, records: RecoveryRecord[] = [];
+      try { snapshot = await persistence.load(identity,tab.seed); records = await recovery.all(identity); }
+      catch { setSessionError('Local recovery storage is unavailable. Editing still works; keep this tab open until saved.'); }
+      const restored = snapshot ? await restoreSession(snapshot,workspaceSettings.maxOpenNotes,async id => {
+        try {return (await api.get<Resource>('/resources/'+id,{backgroundDiagnostic:true})).data;} catch(error) {if((error as {response?:{status?:number}}).response?.status===404)return null;throw error;}
+      }) : undefined;
+      const confirmed=(await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;
+      if(!sameWorkspace(identity,confirmed))throw new Error('Workspace changed during restoration.');
+      return {identity,tab,snapshot,restored,records};
+    })();
+    void work.then(async ({identity,tab,snapshot,restored,records}) => {
+      if(cancelled)return;
+      const details = restored?.resources ?? {};
+      const unresolved: RecoveryRecord[] = [], recoverable: {record:RecoveryRecord;resource:Resource}[] = [];
+      // Read before applying anything, so a cancelled hydration cannot enqueue a save.
+      for(const record of records) {
+        if(record.tabId!==tab.id || record.key.endsWith(':'+record.editId) || !sameWorkspace(record.identity,identity)) {unresolved.push(record);continue;}
+        let resource = details[record.noteId];
+        if(!resource) {try {resource=(await api.get<Resource>('/resources/'+record.noteId,{backgroundDiagnostic:true})).data;} catch {unresolved.push(record);continue;}}
+        if(cancelled)return;
+        if(resource.type==='note' && resource.revision===record.baseRevision) recoverable.push({record,resource});
+        else unresolved.push(record);
+      }
+      if(cancelled)return;
+      const isolated:RecoveryRecord[]=[];
+      for(const record of unresolved){try{isolated.push(record.tabId===tab.id?await recovery.isolate(record):record);}catch{isolated.push(record);setSessionError('Could not separate recovery drafts in local storage. Keep this tab open.');}}
+      if(cancelled)return;
+      identityRef.current = identity; recovery.configure(identity,tab.id);
+      Object.values(details).forEach(resource=>recovery.observe(resource));
+      for(const {record,resource} of recoverable) {
+        recovery.observe(resource);
+        details[resource.id]={...resource,title:record.value.title,content:JSON.stringify(record.value.content)};
+        saves.enqueue(resource.id,record.value,workspaceSettings.autosaveDelay);
+      }
+      setResourceDetails(details);
+      if(snapshot&&restored) {
+        paneNavigation.restore(restored.panes,restored.activePaneId,snapshot.positions);
+        setLibraryVisible(snapshot.library.visible||!restored.panes.length);setLibrarySection(snapshot.library.section);setCollection(snapshot.library.collection);setLibraryContext(snapshot.library.context);
+        dispatch(clearSelectedTags());snapshot.library.tags.forEach(tag=>dispatch(toggleSelectedTag(tag)));
+        dispatch(setCurrentResourceId(restored.panes.find(p=>p.paneId===restored.activePaneId)?.id??null));
+        setSessionMessage(restored.messages.join(' '));
+      }
+      setRecoveryRecords(isolated);setSessionReady(true);setBootError('');
+    }).catch(()=>{if(!cancelled){bootWork.current=null;setBootError('Could not restore this workspace. Retry when the server is available.');}});
+    return ()=>{cancelled=true;};
+  },[bootAttempt,workspaceLoaded,sessionReady,localStore,recovery,saves,paneNavigation,dispatch,workspaceSettings.maxOpenNotes,workspaceSettings.autosaveDelay]);
+  const sessionView = useRef({visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext});
+  useEffect(()=>{sessionView.current={visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext};},[libraryVisible,librarySection,collection,filters.selectedTags,libraryContext]);
+  useEffect(()=>{
+    if(!sessionReady)return;
+    let last='';
+    const save=()=>{const identity=identityRef.current;if(!identity)return;const snapshot:SessionSnapshot={version:1,identity,...paneNavigation.exportSession(),library:sessionView.current};const serialized=JSON.stringify(snapshot);if(serialized!==last){last=serialized;void sessionPersistence.current?.save(snapshot);}};
+    save(); const timer=setInterval(save,500);window.addEventListener('pagehide',save);
+    return()=>{clearInterval(timer);window.removeEventListener('pagehide',save);};
+  },[sessionReady,paneNavigation]);
+  useEffect(()=>{
+    if(!sessionReady)return;let stopped=false;
+    const check=async()=>{const version=++identityCheckVersion.current;try {const identity=(await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;if(!stopped&&version===identityCheckVersion.current&&identityRef.current&&!sameWorkspace(identity,identityRef.current)) {
+      workspaceEpoch.current++;resourceLoadVersions.current.clear();backlinkVersion.current++;setBacklinks([]);dispatch(setCurrentResourceId(null));
+      setCommandPaletteOpen(false);setFileImport(null);setTagPickerOpenNoteId(null);setDeleteModal(null);setReplaceLinkModal(null);setRecoveryOpen(false);setTransferMode(null);
+      saves.clear();paneNavigation.reset();setResourceDetails({});setPreviewResourceId(null);setPreviewResourceType(null);setNoteExport(null);setTitleEditState(null);setLibraryVisible(true);setCollection(null);setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
+      identityRef.current=identity;recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));setSessionMessage('The workspace was replaced. Previous drafts are available as separate recovery copies.');notifyResourceChange({kind:'workspace'});
+    }}catch{/* Offline checks must not interrupt editing. */}};
+    const timer=setInterval(()=>void check(),15000);window.addEventListener('focus',check);
+    return()=>{stopped=true;clearInterval(timer);window.removeEventListener('focus',check);};
+  },[sessionReady,saves,paneNavigation,recovery,dispatch]);
+  const resolveRecovery = async (record: RecoveryRecord, copy: boolean) => {
+    const latest=recovery.current(record.noteId);
+    if(latest?.key===record.key&&latest.editId!==record.editId){setRecoveryRecords(items=>items.map(r=>r.key===record.key?latest:r));throw new Error('This draft changed. Review it and choose again.');}
+    let created: Resource | undefined;
+    if(copy){const body=new FormData();body.set('title',(record.value.title||'Untitled note').slice(0,488)+' (recovered)');body.set('content',JSON.stringify(record.value.content));created=(await api.put<Resource>('/resources/imports/'+record.copyId,body)).data;}
+    const own=record.tabId===recovery.tabId;
+    if(own&&latest?.key===record.key&&identityRef.current&&sameWorkspace(record.identity,identityRef.current)) {
+      let saved:Resource|undefined;try{saved=(await api.get<Resource>('/resources/'+record.noteId)).data;}catch(error){if((error as {response?:{status?:number}}).response?.status!==404)throw error;}
+      saves.forget(record.noteId);await recovery.discard(record);
+      if(saved){recovery.observe(saved,true);setResourceDetails(previous=>({...previous,[saved!.id]:saved!}));paneNavigation.rename(saved.id,saved.title);}
+      else paneNavigation.update(panes=>panes.filter(p=>p.id!==record.noteId));
+    } else if(own) await recovery.discard(record);
+    setRecoveryRecords(items=>items.filter(r=>r.key!==record.key));
+    if(created){recovery.observe(created);setResourceDetails(previous=>({...previous,[created!.id]:created!}));resourcesChanged([created.id]);setRecoveryOpen(false);await openResourceById(created.id,{throwOnFailure:true});}
   };
 
   const filteredTags = tags.filter((tag) => tag.name.toLowerCase().includes(tagSearch.toLowerCase()));
@@ -1226,6 +1350,7 @@ export default function Dashboard() {
     </div>
   );
 
+  if(!sessionReady)return <main className="flex h-screen items-center justify-center bg-background text-text"><div role="status">{bootError||'Restoring workspace…'}{bootError&&<button className="library-button ml-3" onClick={()=>setBootAttempt(v=>v+1)}>Retry</button>}</div></main>;
   return (
     <div className={`app-root flex h-screen flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen ? 'command-open pointer-events-none' : ''}`}>
 
@@ -1240,6 +1365,8 @@ export default function Dashboard() {
       {fileImport && <ErrorBoundary region="file import"><FileImportModal session={fileImport} onClose={closeFileImport} onResource={syncUploadedResource} /></ErrorBoundary>}
       <ErrorBoundary region="note export"><NoteExportModal noteId={noteExport?.id} title={noteExport?.title ?? ""} flush={async () => { if (noteExport) await exportSaveRef.current(noteExport.id); }} onClose={() => setNoteExport(null)} /></ErrorBoundary>
       <ErrorBoundary region="workspace transfer"><TransferModal mode={transferMode} onClose={() => setTransferMode(null)} flush={async () => { await saves.flushAll(); await flushSettings(); }} onImported={afterImport} /></ErrorBoundary>
+      {(sessionError||sessionMessage||recoveryRecords.length>0)&&<div className="flex flex-wrap items-center gap-3 border-b border-border bg-[var(--surface-3)] px-4 py-2 text-sm"><span role="status">{sessionError||sessionMessage||(recoveryRecords.length+' recovery drafts available')}</span>{sessionError&&<button className="library-button" onClick={()=>{setSessionError('');void Promise.all([recovery.retryStorage(),sessionPersistence.current?.retry()]).catch(()=>setSessionError('Local recovery storage is still unavailable.'));}}>Retry storage</button>}{recoveryRecords.length>0&&<button className="library-button" onClick={()=>{recoveryFocus.captureFocus();setRecoveryOpen(true);}}>Review drafts ({recoveryRecords.length})</button>}{sessionMessage&&<button aria-label="Dismiss session message" onClick={()=>setSessionMessage('')}><X size={16}/></button>}</div>}
+      {recoveryOpen&&<RecoveryPanel records={recoveryRecords} onResolve={resolveRecovery} canRetry={record=>recovery.current(record.noteId)?.key===record.key&&saves.status(record.noteId)==='failed'} onRetry={record=>saves.flush(record.noteId)} onClose={()=>{setRecoveryOpen(false);recoveryFocus.restoreFocus();}}/>}
       <ErrorBoundary region="diagnostics"><DiagnosticsPanel open={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} /></ErrorBoundary>
       {paneState.issue && <div role="alert" className="z-[85] flex flex-wrap items-center gap-3 border-b border-border bg-[var(--surface-3)] px-4 py-2 text-sm">
         <span>{paneState.issue.message}</span>
@@ -1432,7 +1559,7 @@ export default function Dashboard() {
         )}
 
         <main className="min-w-0 flex-1 relative">
-          <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></section>:<LibraryView onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
+          <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></section>:<LibraryView key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="h-full" hidden={libraryVisible}>
           <div className="flex h-full min-h-0 flex-col">
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)} />}
@@ -1462,11 +1589,11 @@ export default function Dashboard() {
                       <input
                         ref={titleInputRef}
                         value={titleEditState.value}
-                        onChange={(event) => setTitleEditState((current) => (
-                          current && current.noteId === note.id
-                            ? { ...current, value: event.target.value }
-                            : current
-                        ))}
+                        onChange={(event) => {
+                          const value=event.target.value;
+                          setTitleEditState(current=>current&&current.noteId===note.id?{...current,value}:current);
+                          if(note.resource){recovery.observe(note.resource);recovery.queued(note.id,{title:value.trim()||titleEditState.original,content:saves.latest(note.id)?.content??parseNoteContent(note.resource.content)},-Date.now());}
+                        }}
                         onKeyDown={async (event) => {
                           if (event.nativeEvent.isComposing || event.keyCode === 229) return;
                           if (event.key === 'Enter') {

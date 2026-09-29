@@ -30,17 +30,21 @@ public class ResourceService {
         r.setType("note");
         r.setTitle(title != null ? title : "Untitled");
         r.setContent(content);
-        Resource saved = resourceRepository.save(r);
+        Resource saved = resourceRepository.saveAndFlush(r);
         relationshipService.updateLinksForNote(saved.getId(), saved.getContent());
         return saved;
     }
 
     @Transactional
-    public Resource updateNote(String id, String title, String content) {
+    public Resource updateNote(String id, String title, String content) { return updateNote(id,title,content,null); }
+
+    @Transactional
+    public Resource updateNote(String id, String title, String content, String expected) {
         return resourceRepository.findById(id).map(r -> {
+            if (expected != null && !expected.equals("\"" + r.getRevision() + "\"")) throw new com.vaultor.vaultor.controller.ApiErrors.RevisionConflict();
             if (title != null) r.setTitle(title);
             r.setContent(content);
-            Resource saved = resourceRepository.save(r);
+            Resource saved = resourceRepository.saveAndFlush(r);
             relationshipService.updateLinksForNote(saved.getId(), saved.getContent());
             return saved;
         }).orElseThrow(() -> new java.util.NoSuchElementException("Note not found"));

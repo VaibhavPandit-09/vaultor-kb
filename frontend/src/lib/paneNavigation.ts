@@ -29,6 +29,11 @@ export class PaneNavigation {
   focusHandled = (paneId: string) => { if (this.state.focusPaneId === paneId) this.patch({ focusPaneId: null }); };
   dismissIssue = () => this.patch({ issue: null });
   reset = () => { this.requests.clear(); this.patch({ panes: [], activePaneId: null, focusPaneId: null, issue: null }); };
+  exportSession = () => ({ panes: this.state.panes, activePaneId: this.state.activePaneId, positions: Object.fromEntries(this.positions) });
+  restore = (panes: Pane[], activePaneId: string | null, positions: Record<string, ReadingPosition>) => {
+    this.requests.clear(); this.positions = new Map(Object.entries(positions));
+    this.patch({ panes, activePaneId, focusPaneId: null, issue: null, motion: 'replace' });
+  };
   position = (visitId: string): ReadingPosition => this.positions.get(visitId) ?? { scrollTop: 0, scrollLeft: 0 };
   recordPosition = (paneId: string, visitId: string, position: Partial<ReadingPosition>) => {
     const pane = this.state.panes.find(p => p.paneId === paneId);

@@ -32,6 +32,7 @@ public class TransferService {
     private final RelationshipRepository relationships;
     private final RelationshipService linkService;
     private final SettingsService settings;
+    private final WorkspaceIdentityService workspaceIdentity;
     private final FileStorageService files;
     private final DocumentService documents;
     private final ObjectMapper mapper;
@@ -255,6 +256,7 @@ public class TransferService {
             transaction.executeWithoutResult(status -> {
                 List<String> oldFiles=new ArrayList<>();
                 if("replace".equals(op.getMode())) {
+                    workspaceIdentity.replaced();
                     resources.findAll().forEach(r->{if(r.getFilePath()!=null) oldFiles.add(r.getFilePath());});
                     organization.clear();
                     relationships.deleteAll();resources.deleteAll();resources.flush();tags.deleteAll();tags.flush();

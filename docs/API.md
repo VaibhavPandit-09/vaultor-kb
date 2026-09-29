@@ -12,12 +12,19 @@ The application and agents use the same unauthenticated API. Default origin: htt
 
 Send Content-Type: application/json except multipart file uploads. Note content is a structured Tiptap doc object; supply both title and content for updates. Titles contain 1–500 characters; tags 1–100. URL-encode path/query values. Resource DTOs omit storage paths. List resources with page (zero-based), size (1–200), q (literal title substring), type, repeated tag names (all required), favorites=true, collection (ID), and sort=recent|updated|title; response is {items,page,size,totalItems,totalPages}. Lists contain metadata only (no content/filePath); GET /resources/{id} retrieves the document. Legacy /resources/search returns up to 50 metadata-only title matches. Saved-note search uses the separate paginated /resources/query contract described in SEARCH.md. Stable ordering uses resource ID as a tie-breaker; pagination is not a concurrent snapshot.
 
-Send an optional X-Request-ID (1–80 alphanumeric, underscore or hyphen characters). The server returns it on every response or creates a UUID. Problem errors contain status, code, detail, requestId and fieldErrors where applicable. Codes include INVALID_REQUEST (400), NOT_FOUND (404), CONFLICT/WORKSPACE_BUSY (409), UPLOAD_TOO_LARGE (413) and INTERNAL_ERROR (500). Retry a busy request after the operation finishes; avoid blindly retrying non-idempotent creation.
+Send an optional X-Request-ID (1–80 alphanumeric, underscore or hyphen characters). The server returns it on every response or creates a UUID. Problem errors contain status, code, detail, requestId and fieldErrors where applicable. Codes include NOTE_REVISION_CONFLICT (412), INVALID_REQUEST (400), NOT_FOUND (404), CONFLICT/WORKSPACE_BUSY (409), UPLOAD_TOO_LARGE (413) and INTERNAL_ERROR (500). Retry a busy request after the operation finishes; avoid blindly retrying non-idempotent creation.
+
+## Conditional note saves and workspace identity
+
+Read a resource detail's opaque revision and send it quoted as an If-Match header on PUT /resources/{id}/note, alongside the complete title/content. Success returns the new revision. A 412 NOTE_REVISION_CONFLICT leaves the saved note unchanged: retain your draft, fetch fresh detail and resolve explicitly. Do not automatically retry with the newly fetched revision over someone else's content. The UI always uses conditional note saves. Omitting If-Match is an explicit unconditional API update. Revisions can also change on JPA metadata updates; they are not timestamps or portable identifiers.
+
+GET /workspace/identity returns {id,generation}. Identity persists for this storage directory; workspace replace changes generation transactionally, while merge preserves it. Resource replacement also creates fresh opaque revisions. Neither identity/generation nor resource revision internals appear in portable ZIP archives. See [SESSIONS.md](SESSIONS.md) for browser restoration and recovery.
 
 ## Endpoints
 
 | Method and path | Stable operation ID | Purpose |
 | --- | --- | --- |
+| GET /api/workspace/identity | getWorkspaceIdentity | Persistent identity and replacement generation |
 | GET /api/resources | listResources | List resources with pagination |
 | POST /api/resources | createNote | createNote |
 | GET /api/resources/search | searchResources | Title search; capped at 50 metadata summaries |

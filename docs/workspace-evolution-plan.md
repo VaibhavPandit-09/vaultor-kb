@@ -182,12 +182,12 @@ User-reported container crash reproduced using an existing FTS5 index before Hib
 
 ## Navigation, sessions and exports — 2026-09-29
 
-Deliver exactly one sprint per authorization. Current authorization: N3 shared journeys. Preserve structured documents, the save coordinator and existing visual tokens.
+Deliver exactly one sprint per authorization. Current authorization: N4 persistent sessions and draft recovery (complete; stopped for discussion). Preserve structured documents, the save coordinator and existing visual tokens.
 
 - [x] N1: direct export format actions, note save barrier, automatic download, dialog-independent tracking, bounded status retries, existing-operation download retry, compact feedback and Details. Backend snapshot/API unchanged.
 - [x] N2: stable pane IDs, source-aware link intents, source-only save/navigation barrier, duplicate views sharing document/title/undo/save with independent selections, stale-request guards and accessible links. Files remain temporary previews; pane limits never evict silently.
 - [x] N3: shared focused-pane journey bar, distinct visits/branching, Back/Forward and restored positions, bounded 200 visits per pane, restrained reduced-motion-aware transitions. Direct opens start trails; linked opens extend; Alt+Arrows only switches panes.
-- [ ] N4: IndexedDB per-tab sessions and revision-aware draft recovery, Library context and lazy journey restoration, workspace identity/generation isolation, atomic If-Match updates. No silent conflict overwrite or transient UI restoration.
+- [x] N4: IndexedDB per-tab sessions and revision-aware draft recovery, Library context and lazy journey restoration, workspace identity/generation isolation, atomic If-Match updates. No silent conflict overwrite or transient UI restoration.
 - [ ] N5: linked-resource export and readable references, as specified below.
 - [ ] N6 (formerly N5): integration edge checks and one focused visual review, complete navigation/session/export/API/operations documentation. No routine Docker rebuild or broad API smoke.
 
@@ -236,3 +236,14 @@ Implemented the shared focused-pane journey bar, nearby visits and full-path ove
 Validation: production frontend build and targeted ESLint pass; 22 focused navigation, journey and editor tests pass, covering branches, copied positions, missing/transient errors, limits, dismissal, stable typing/title updates and same-editor caret restoration. One isolated fixture visual session checked dark wide and light 320px layouts, full-path overflow and Escape. Full Dashboard integration/reduced-motion visual review remains N6. Existing bundle-size/Browserslist warnings remain; no API/Docker checks or user workspace mutation.
 
 Stop after N3 for discussion. N4 persistent sessions/recovery is next; N5 linked-resource exports and N6 integration remain separately authorized work.
+
+
+### N4 handoff — 2026-09-29
+
+Implemented per-tab IndexedDB sessions and versioned recovery journals, restored focused panes/journeys/positions and Library context, missing-current fallback and lazy older visits. Fresh tabs seed independent layouts; Web Locks protect cloned tab tokens. Restore does not reopen transient UI or run exports/commands. Current pane limits do not delete recovery drafts. Pending content and unsubmitted title edits are journaled, and acknowledgements only remove matching edits. Same-revision drafts recover automatically for their owning tab; conflicts, other sessions and former generations offer recovered copies. Storage/save failures retain visible retry paths.
+
+Backend: resource revision_number/revision_seed with tested existing-schema upgrade, opaque DTO revision, conditional If-Match note writes with structured 412 conflicts, and persistent workspace identity/generation. Replacement changes generation transactionally and assigns new resource revision seeds; merge preserves generation. Internal identifiers stay out of portable archives. Late responses cannot rebase replacement drafts or restore stale layouts.
+
+Validation: production frontend build, final TypeScript compilation and targeted lint passed; 36 focused frontend tests passed. One disposable SQLite HTTP/transfer regression passed for old-schema startup, revision updates/conflicts, identity rollback and archive replacement isolation. OpenAPI structure/operation IDs and whitespace checked. No browser/native lifecycle check, Docker rebuild, broad API smoke or real workspace mutation. Existing bundle-size/Browserslist warnings remain. Details and limits are authoritative in SESSIONS.md: origin-specific best-effort storage, 500 ms snapshot interval, no persisted undo or automatic age-based pruning, and separate-copy handling for other tabs.
+
+Stop after N4. N5 linked-resource export chains/readable PDF references and N6 integration require separate authorization.

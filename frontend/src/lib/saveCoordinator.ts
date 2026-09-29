@@ -4,10 +4,12 @@ type Entry<T> = { value: T; version: number; saved: number; status: SaveStatus; 
 /** One writer per note, coalescing edits without letting an older response win. */
 export class SaveCoordinator<T> {
   private entries = new Map<string, Entry<T>>();
-  private write: (id: string, value: T) => Promise<unknown>;
+  private write: (id: string, value: T, version: number) => Promise<unknown>;
   private changed: () => void;
-  constructor(write: (id: string, value: T) => Promise<unknown>, changed: () => void) { this.write = write; this.changed = changed; }
-  latest(id: string) { return this.entries.get(id)?.value; }
+  private queued?: (id: string, value: T, version: number) => void;
+  constructor(write: (id: string, value: T, version: number) => Promise<unknown>, changed: () => void, queued?: (id: string, value: T, version: number) => void) { this.queued = queued; this.write = write; this.changed = changed; }
+  latest(id: string) { const e=this.entries.get(id); return e && e.version!==e.saved ? e.value : undefined; }
+  version(id: string) { return this.entries.get(id)?.version ?? 0; }
   status(id: string): SaveStatus { return this.entries.get(id)?.status ?? 'saved'; }
   dirty() { return [...this.entries.values()].some(e => e.version !== e.saved); }
   forget(id: string) { const e = this.entries.get(id); clearTimeout(e?.timer); this.entries.delete(id); }
@@ -15,7 +17,7 @@ export class SaveCoordinator<T> {
   enqueue(id: string, value: T, delay: number) {
     const e = this.entries.get(id) ?? { value, version: 0, saved: 0, status: 'saved' as SaveStatus };
     e.value = value; e.version++; e.status = 'saving'; clearTimeout(e.timer);
-    this.entries.set(id, e); this.changed();
+    this.entries.set(id, e); this.queued?.(id, value, e.version); this.changed();
     e.timer = setTimeout(() => { void this.flush(id).catch(() => {}); }, delay);
   }
   async flush(id: string): Promise<void> {
@@ -24,10 +26,10 @@ export class SaveCoordinator<T> {
     if (e.running) { await e.running; if (e.saved !== e.version) return this.flush(id); return; }
     e.running = (async () => {
       try {
-        while (e.saved !== e.version) {
+        while (this.entries.get(id) === e && e.saved !== e.version) {
           const version = e.version; const value = e.value;
           e.status = 'saving'; this.changed();
-          await this.write(id, value); e.saved = version;
+          await this.write(id, value, version); e.saved = version;
         }
         e.status = 'saved';
       } catch (error) { e.status = 'failed'; throw error; }

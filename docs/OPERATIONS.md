@@ -83,3 +83,8 @@ Validated 2026-09-24: rebuilt normal Compose image; startup plus restart succeed
 ## Navigation and shared-note debugging
 
 Pane navigation and duplicate note views are frontend state; there are no new N2 API endpoints or schema changes. Use focused PaneNavigation/sharedNoteDocuments tests for source routing, stale requests and shared undo. Failed source saves keep the pane visible and expose Retry. Do not diagnose a file preview as a history step. Refresh recovery and cross-tab revision conflicts are N4 work; current drafts remain in memory. See [NAVIGATION.md](NAVIGATION.md).
+
+
+## Session/recovery debugging
+
+See [SESSIONS.md](SESSIONS.md) for the authoritative local-storage and revision contracts. Diagnose stale saves using 412 NOTE_REVISION_CONFLICT and request IDs; do not strip If-Match to make a draft overwrite saved content. GET /api/workspace/identity distinguishes replacement generations. Browser IndexedDB storage is tied to the exact origin, independently of Docker data volumes. Do not clear site data while investigating unsaved drafts. The focused SessionRevisionTest uses disposable SQLite/storage and verifies existing-schema upgrade plus replacement isolation; frontend sessionRecovery.test.ts uses fake-indexeddb (development-only dependency). No container rebuild is required for routine frontend development checks.

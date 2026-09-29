@@ -11,6 +11,7 @@ export interface Resource {
   id: string;
   type: ResourceType;
   title: string;
+  revision?: string;
   searchSnippet?: {text:string;highlights:{start:number;end:number}[]};
   favorite?: boolean;
   collections?: {id: string; name: string}[];

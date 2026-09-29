@@ -1,6 +1,6 @@
 # Pane navigation and shared editing
 
-Implemented through N3, 2026-09-29. This is the current navigation reference; persisted sessions remain planned in the workspace tracker.
+Implemented through N4, 2026-09-29. This is the current navigation reference; session persistence and recovery are described in [SESSIONS.md](SESSIONS.md).
 
 ## Opening resources
 
@@ -26,7 +26,7 @@ A direct open starts a new trail; linked opens extend it. A new linked pane copi
 
 One shared, stable-height journey bar above the note workspace displays the focused pane's current visit and nearby steps, with Back/Forward and a full-path overflow. Narrow layouts retain the current title; all retained visits remain in the keyboard-accessible overflow. Escape dismisses it and restores trigger focus; leaving for Library unmounts the bar and its portal. Each visit has an independent ID, so A → B → A preserves distinct scroll/caret positions. A linked new pane copies the path and positions with fresh IDs; subsequent history is independent. Returning preserves forward visits until a new linked navigation branches. Histories and their position records are bounded to 200 visits per pane. Scroll recording does not rerender the workspace. Revisiting restores scroll and clamped document selection without remounting a same-note editor. Local renames and loaded resource titles update trail labels without rewriting stored link labels. Deleted/404 destinations remain unavailable steps; transient errors retain Retry and leave the cursor unchanged. Adjacent unavailable visits disable Back/Forward; other valid visits remain reachable from overflow. Forward/back use directional 200 ms smooth or 100 ms snappy transitions, pane changes crossfade, and reduced motion disables animation. Typing, saves and title updates do not replay transitions.
 
-Positions are numeric offsets: selections are clamped if content shortened, not semantic anchors across edits while a visit is inactive. Missing external destinations are discovered on loading, not continuously polled. N4 adds IndexedDB sessions, recovery and revision-aware server contracts. Until then, refresh loses the layout/journeys, and pending/failed drafts remain memory-only with the existing exit warning.
+Positions are numeric offsets: selections are clamped if content shortened, not semantic anchors across edits while a visit is inactive. Missing external destinations are discovered on loading, not continuously polled. N4 persists layout/journeys and Library context in per-tab IndexedDB records and journals pending/failed drafts with server revision checks. See [SESSIONS.md](SESSIONS.md) for restoration, conflicts, storage failures and remaining limits.
 
 ## Validation
 

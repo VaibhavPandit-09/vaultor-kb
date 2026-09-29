@@ -14,10 +14,10 @@ public final class ApiDtos {
     }
     public record CollectionRef(String id, String name) {}
     public record ResourceDto(String id, String type, String title, JsonNode content, String mimeType, Long size,
-        LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastOpenedAt, List<TagDto> tags, boolean favorite, List<CollectionRef> collections) {
+        LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastOpenedAt, List<TagDto> tags, boolean favorite, List<CollectionRef> collections, String revision) {
         public static ResourceDto of(Resource r, DocumentService documents) {
             return new ResourceDto(r.getId(), r.getType(), r.getTitle(), documents.parse(r.getContent()), r.getMimeType(), r.getSize(),
-                r.getCreatedAt(), r.getUpdatedAt(), r.getLastOpenedAt(), r.getTags().stream().map(TagDto::of).toList(), Boolean.TRUE.equals(r.getFavorite()), r.getCollections().stream().sorted(java.util.Comparator.comparing(c -> c.getName().toLowerCase(java.util.Locale.ROOT))).map(c -> new CollectionRef(c.getId(),c.getName())).toList());
+                r.getCreatedAt(), r.getUpdatedAt(), r.getLastOpenedAt(), r.getTags().stream().map(TagDto::of).toList(), Boolean.TRUE.equals(r.getFavorite()), r.getCollections().stream().sorted(java.util.Comparator.comparing(c -> c.getName().toLowerCase(java.util.Locale.ROOT))).map(c -> new CollectionRef(c.getId(),c.getName())).toList(), r.getRevision());
         }
     }
     public record ResourceSummary(String id, String type, String title, String mimeType, Long size,

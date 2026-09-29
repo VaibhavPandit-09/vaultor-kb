@@ -460,6 +460,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Quoted revision from the last resource detail. A mismatch returns 412 without mutation. Omitting this explicitly performs an unconditional update.",
+            "example": "\"f7e82102-1009-4be1-9671-3881422287ac\""
           }
         ],
         "responses": {
@@ -507,6 +517,23 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Note revision conflict; retain the draft and fetch saved content for explicit resolution.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "example": {
+                  "status": 412,
+                  "code": "NOTE_REVISION_CONFLICT",
+                  "detail": "This note changed elsewhere. Keep your draft and resolve the conflict before saving.",
+                  "requestId": "example-request",
+                  "fieldErrors": {}
                 }
               }
             }
@@ -4318,6 +4345,50 @@
           }
         }
       }
+    },
+    "/workspace/identity": {
+      "get": {
+        "operationId": "getWorkspaceIdentity",
+        "summary": "Read persistent workspace identity and replacement generation",
+        "responses": {
+          "200": {
+            "description": "Internal restoration identity, excluded from portable archives.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "generation"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "generation": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "id": "workspace-uuid",
+                  "generation": "generation-uuid"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Workspace busy or operation conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4461,6 +4532,11 @@
             "items": {
               "$ref": "#/components/schemas/CollectionRef"
             }
+          },
+          "revision": {
+            "type": "string",
+            "description": "Opaque server revision. Send as a quoted If-Match validator on note updates; never infer ordering.",
+            "example": "f7e82102-1009-4be1-9671-3881422287ac"
           }
         },
         "required": [

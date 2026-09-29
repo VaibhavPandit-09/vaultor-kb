@@ -1,6 +1,6 @@
 # Documentation
 
-- [Workspace evolution plan](workspace-evolution-plan.md): empty-note closing and expanded-table workspace implemented; scalable Library and collections/tags implemented; U1 navigation refresh fix complete; U2 resource organization/pins complete; U3 palette/saved-note full-text search complete; K1 form/palette keyboard corrections complete; K2 organization simplification complete; K3 title-first search and explicit scope complete; N1 direct-download exports implemented; N2 pane navigation/shared editing implemented; N3 journeys implemented; N4 session recovery, N5 linked-resource exports and N6 integration pending; exactly one sprint per authorization.
+- [Workspace evolution plan](workspace-evolution-plan.md): empty-note closing and expanded-table workspace implemented; scalable Library and collections/tags implemented; U1 navigation refresh fix complete; U2 resource organization/pins complete; U3 palette/saved-note full-text search complete; K1 form/palette keyboard corrections complete; K2 organization simplification complete; K3 title-first search and explicit scope complete; N1 direct-download exports implemented; N2 pane navigation/shared editing implemented; N3 journeys implemented; N4 session recovery implemented; N5 linked-resource exports and N6 integration pending; exactly one sprint per authorization.
 
 - [Editor and portability plan](editor-portability-plan.md): imports and table foundations implemented; individual note exports implemented; table filtering/copy/export implemented; remaining manual verification recorded; one sprint per authorized call.
 
@@ -10,6 +10,7 @@
 - [Search and Ctrl+K](SEARCH.md): saved-note indexing, ranking, palette targeting, diagnostics and limits.
 - [Table workflows](TABLES.md): contextual table menus, filtering, spreadsheet paste/copy, CSV export and expanded editing.
 - [Pane navigation and shared editing](NAVIGATION.md): pane ownership, linked opening, duplicate views, source save barriers and current session limitations.
+- [Sessions and draft recovery](SESSIONS.md): per-tab IndexedDB layout, recovery journals, conditional note revisions and workspace replacement isolation.
 - [Individual note exports](NOTE-EXPORTS.md): formats, snapshot semantics, assets, fidelity, limits and verification.
 - [API guide](API.md): shared UI/agent contracts, examples and transfer flow.
 - [Operations guide](OPERATIONS.md): development, Docker, limits, logging and isolated verification.
