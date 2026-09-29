@@ -90,6 +90,8 @@ Run API smoke only for specific debugging or explicit requests, not every develo
 
 ## Individual note exports
 
+The note UI automatically requests the download after success. Backend contracts are unchanged. Status and download retries reuse the operation ID; POST creation is not idempotent and must not be blindly retried after an ambiguous network failure. See NOTE-EXPORTS.md for frontend lifecycle.
+
 POST `/api/exports` with `{ "scope": "notes", "noteId": "<id>", "format": "md" }`. Formats: md, md-assets (ZIP), pdf, docx, discoverable from `/api/export-formats`. The operation snapshots the saved note and local assets before returning. UI callers must flush pending saves first. Poll `/api/operations/{id}`; after SUCCEEDED download `/api/exports/{id}/download`. Operation fields `filename`, `mediaType`, `warnings` describe the output; Content-Disposition/Content-Type match it. Read [NOTE-EXPORTS.md](NOTE-EXPORTS.md) for fidelity, limits and retry behavior. HTTP errors retain problem details/request IDs; asynchronous rendering failures appear in operation detail with the originating request ID.
 
 ## Library browsing examples
@@ -143,3 +145,5 @@ K1 keyboard update does not change API contracts: native form submission uses th
 K2 collection add flow also reuses existing contracts: title-paginated GET /resources for selection/exact-name detection, POST /organization/memberships for each immediate add, and PUT /resources/imports/{id} with title/content/collectionId for atomic, retry-safe note creation. No new API or schema is introduced.
 
 K3 frontend search mode is explicit: title (default) uses GET /resources?q=...; content uses GET /resources/query?q=.... Both receive the same optional collection/type/tag/favorites filters. The searchMode field is frontend-only and is never sent as an HTTP parameter. Empty-query content mode uses ordinary browsing within the selected scope. Endpoint defaults/contracts, FTS indexing and database schema are unchanged.
+
+N2 navigation/shared editing changes use existing resource/save/preview APIs; no endpoint or revision contract changed. Pane/history state is frontend-only. Planned N4 conditional revisions and N5 graph-export parameters are not available yet. See [NAVIGATION.md](NAVIGATION.md) and the workspace tracker.

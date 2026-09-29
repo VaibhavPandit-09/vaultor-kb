@@ -44,6 +44,7 @@ export default function PreviewLayer({
     active: open,
     priority: ESCAPE_PRIORITIES.preview,
     close: onClose,
+    restoreFocusOnEscape: false, // Dashboard restores the owning pane.
   });
 
   useEffect(() => {

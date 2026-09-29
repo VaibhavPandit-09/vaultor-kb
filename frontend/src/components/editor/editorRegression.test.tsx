@@ -1,12 +1,13 @@
+import { SharedNoteDocuments } from '../../lib/sharedNoteDocuments';
 // @vitest-environment jsdom
-import { StrictMode } from 'react';
+import { StrictMode, useState } from 'react';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
-import { render, cleanup } from '@testing-library/react';
+import { render, cleanup, act, fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { getItems } from './SlashMenu';
 import { markdownToHtml } from './markdownUtils';
@@ -39,7 +40,30 @@ it('opens CSV and Markdown pickers without scheduling editor focus behind the di
 
 it('mounts and unmounts the editor in StrictMode without reading an unavailable view', () => {
   const noop = () => {};
-  const result = render(<StrictMode><EscapeManagerProvider><BlockEditor noteTitle="Test note" saveStatus="saved" onRetrySave={() => {}} noteId="test" content={{ type: 'doc', content: [{ type: 'paragraph' }] }} autosaveDelay={0} isActive interactionLocked={false} shouldRestoreFocus={false} onUpdate={noop} onSelectionChange={noop} onActivate={noop} onFocusRestored={noop} onRequestMdUpload={noop} onRequestCsvUpload={noop} onRequestLinkUpload={noop} /></EscapeManagerProvider></StrictMode>);
+  const result = render(<StrictMode><EscapeManagerProvider><BlockEditor paneId="test-pane" sharedDocuments={new SharedNoteDocuments()} onOpenResource={() => {}} noteTitle="Test note" saveStatus="saved" onRetrySave={() => {}} noteId="test" content={{ type: 'doc', content: [{ type: 'paragraph' }] }} autosaveDelay={0} isActive interactionLocked={false} shouldRestoreFocus={false} onUpdate={noop} onSelectionChange={noop} onActivate={noop} onFocusRestored={noop} onRequestMdUpload={noop} onRequestCsvUpload={noop} onRequestLinkUpload={noop} /></EscapeManagerProvider></StrictMode>);
   expect(result.container.querySelector('.tiptap')).toBeTruthy();
   expect(() => result.unmount()).not.toThrow();
+});
+
+it('two mounted note views retain shared edits through React updates and route links by source pane', async () => {
+  const shared = new SharedNoteDocuments(), opened = vi.fn();
+  const initial = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'hello' }, { type: 'resourceLink', attrs: { resourceId: 'target', label: 'Target', type: 'note' } }] }] };
+  function Workspace() {
+    const [content, setContent] = useState(initial);
+    const [active, setActive] = useState('left');
+    return <EscapeManagerProvider>{['left', 'right'].map(pane => <BlockEditor key={pane} paneId={pane} sharedDocuments={shared} onOpenResource={opened} noteId="shared" noteTitle="Shared" saveStatus="saved" onRetrySave={() => {}} content={content} autosaveDelay={0} isActive={pane === active} interactionLocked={false} shouldRestoreFocus={false} onUpdate={json => setContent(json as typeof initial)} onSelectionChange={() => {}} onActivate={() => setActive(pane)} onFocusRestored={() => {}} onRequestMdUpload={() => {}} onRequestCsvUpload={() => {}} onRequestLinkUpload={() => {}} />)}</EscapeManagerProvider>;
+  }
+  const view = render(<Workspace />);
+  const dom = [...view.container.querySelectorAll('.tiptap')] as (HTMLElement & { editor: Editor })[];
+  const a = dom[0].editor, b = dom[1].editor;
+  await waitFor(() => expect(dom[0].querySelector('button')).toBeTruthy());
+  act(() => { a.commands.setTextSelection(1); a.commands.insertContent('X'); });
+  expect(a.getText()).toBe(b.getText()); expect(b.getText()).toContain('Xhello');
+  act(() => { b.commands.setTextSelection(7); b.commands.insertContent('Y'); });
+  expect(a.getText()).toBe(b.getText()); expect(a.getText()).toContain('XhelloY');
+  act(() => b.commands.undo()); expect(a.getText()).toBe(b.getText());
+  const link = dom[0].querySelector('button')!;
+  fireEvent.click(link, { ctrlKey: true });
+  expect(opened).toHaveBeenCalledWith({ resourceId: 'target', sourcePaneId: 'left', destination: 'new', intent: 'link' });
+  expect(link.getAttribute('aria-label')).toBe('Open Target');
 });

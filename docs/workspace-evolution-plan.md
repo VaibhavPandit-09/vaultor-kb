@@ -179,3 +179,51 @@ K1–K3 are complete. Stop for discussion before any further sprint.
 ### Post-sprint startup correction — 2026-09-24
 
 User-reported container crash reproduced using an existing FTS5 index before Hibernate startup. Individual JDBC metadata extraction fixes the grouped extractor exception without deleting data or disabling schema updates. Focused regression passed after reproducing the original failure. Docker rebuild, normal-volume startup and second restart succeeded; read-only health/search diagnostics show ready and complete coverage (5/5). No user resources were edited or reset.
+
+## Navigation, sessions and exports — 2026-09-29
+
+Deliver exactly one sprint per authorization. Current authorization: N2, with the export auto-close correction. Preserve structured documents, the save coordinator and existing visual tokens.
+
+- [x] N1: direct export format actions, note save barrier, automatic download, dialog-independent tracking, bounded status retries, existing-operation download retry, compact feedback and Details. Backend snapshot/API unchanged.
+- [x] N2: stable pane IDs, source-aware link intents, source-only save/navigation barrier, duplicate views sharing document/title/undo/save with independent selections, stale-request guards and accessible links. Files remain temporary previews; pane limits never evict silently.
+- [ ] N3: shared focused-pane journey bar, distinct visits/branching, Back/Forward and restored positions, bounded 200 visits per pane, restrained reduced-motion-aware transitions. Direct opens start trails; linked opens extend; Alt+Arrows only switches panes.
+- [ ] N4: IndexedDB per-tab sessions and revision-aware draft recovery, Library context and lazy journey restoration, workspace identity/generation isolation, atomic If-Match updates. No silent conflict overwrite or transient UI restoration.
+- [ ] N5: linked-resource export and readable references, as specified below.
+- [ ] N6 (formerly N5): integration edge checks and one focused visual review, complete navigation/session/export/API/operations documentation. No routine Docker rebuild or broad API smoke.
+
+Decisions: a new pane copies the source journey then evolves independently; duplicate notes share one live document; Ctrl/Cmd-click at capacity offers Open here without changing panes; refresh recovery must retain failed drafts. Each sprint stops for discussion. Compilation and focused failure-path checks only; actual results recorded below. No current blocker.
+
+### N1 handoff — 2026-09-29
+
+Implemented direct format actions and automatic download after the target-note save barrier. An always-mounted frontend controller continues after picker dismissal and exposes a compact status card, Details, relevant conversion warnings and Download again. A synchronous execution guard prevents duplicate starts. Three consecutive polling failures pause tracking; Retry status/download keeps the same operation. Only confirmed preparation failure retries a new snapshot; an ambiguous non-idempotent POST failure requires inspection before explicitly starting over. Retry reads the current note save/title handler. Backend contracts, document formats and snapshot semantics are unchanged.
+
+Validation: production frontend build, final TypeScript compilation, targeted ESLint and seven focused tests passed (save failure/retry, automatic download, dismissal during saving, duplicate choices, bounded status retries, existing-artifact download retry, confirmed preparation failure, ambiguous creation and unmount cancellation). Git whitespace check passed. Existing large-bundle/outdated Browserslist warnings remain; build also emitted plugin timing advice. No browser, API smoke or Docker verification. Native browser download permission/destination and visual layout are not verified here. Full reload stops client tracking; backend operations remain retrievable by ID. One active/unresolved export is retained at a time; no local export persistence.
+
+Stop after N1. N2–N5 remain unstarted and require separate authorization.
+
+### Added export scope — N5 (planned, not implemented)
+
+The user requested export of the outgoing linking chain and readable PDF references. This is a separate export sprint before final integration, expanding the sequence to six sprints; N3 journeys and N4 recovery retain their order. N2 also closes the export picker automatically after browser download handoff; browser disk-save completion is not observable.
+
+- Add an explicit This note / Include linked resources choice, defaulting to This note. Show concise reachable note/file counts before a graph export, preserving one-action format/download behavior.
+- Traverse outgoing structured references recursively, including local file/image/table-source assets; exclude backlinks and remote network fetching. Deduplicate by resource ID, detect cycles and use deterministic ordering. Title collisions must never overwrite package files.
+- Bound graph nodes, depth and total bytes with configurable limits. Report limit failures, missing targets and missing binaries; never silently truncate the requested graph. Cancel before snapshot/preparation where supported.
+- Save pending edits only for participating open notes, then take one consistent immutable graph snapshot under the workspace gate. Continued edits cannot change the prepared output. Preserve the existing operation diagnostics/retry model.
+- PDF: combined note sections with readable titles, a compact contents list, bookmarks and clickable internal destinations. DOCX: named sections/bookmarks and internal links. Markdown bundle: separate note files with rewritten relative links.
+- Include reachable uploaded files as original bytes in a ZIP package alongside rendered notes when the chosen document format cannot contain them naturally. Clearly identify ZIP output before starting; reference attachments by readable filename. Preserve image/render fidelity rules.
+- For standalone This note exports, show readable linked titles; an optional references section identifies omitted/missing targets. No raw UUID strings in the main document body, and no invented links to nonexistent exported pages. Internal IDs, if needed for traceability, belong in package metadata rather than reading content.
+- Verify cyclic/diamond graphs, duplicate titles, missing resources, limit failures, consistent snapshots and working cross-links. Use representative PDF/DOCX visual checks in this export sprint, not routine navigation work. Current renderer behavior remains documented in NOTE-EXPORTS until implementation.
+
+### N2 handoff — 2026-09-29
+
+Completed stable pane identities and source-aware inline/backlink opening. Ordinary links replace only their source; Ctrl/Cmd-click adds without eviction, with Open here at capacity. Direct opens retain replace/split preference, and existing direct targets focus their existing view with a fresh trail. File previews retain source ownership and the side/modal preference, never becoming history. Lowering capacity preserves already-open panes.
+
+Removed Redux/global opening-history ownership and competing navigation effects. Source-note save/load barriers, per-source request tokens, resource-load versions/workspace epochs and focused-note backlink guards preserve panes on failure and discard superseded work. Pending navigation cannot steal focus after an explicit pane switch. Close failures retain the pane and have a dedicated retry. Alt+Arrows only switches panes; existing distinct history shortcuts use the focused pane. The N3 journey presentation/reading-position work remains pending.
+
+SharedNoteDocuments synchronizes steps/appended transactions and history across duplicate views using one schema instance; document/title/save state is shared, selections/scroll/filter/fullscreen state stay per view. Focused checks exposed and fixed cross-schema node identity problems and initial trailing-paragraph normalization. Remote table changes cannot be rejected by another view's filter; structural changes clear affected filters. Authoritative external document replacement clears obsolete undo. Resource links are focusable buttons and both link opening and picker arrows route by editor/source pane.
+
+Also applied the requested N1 correction: the export dialog closes after browser download handoff, retaining the compact Download again card. Graph export/readable PDF references are specified in N5 above, not claimed as implemented. Added authoritative NAVIGATION.md and synchronized CODEBASE, index, table, export, API and operations guidance.
+
+Validation: production frontend build passed; final TypeScript compilation and targeted ESLint passed. Across focused runs, 31 distinct tests passed: 9 navigation, 5 shared-document/history, 1 shared filtered-table, 4 editor regression/React integration, 5 existing table workflow cases, and 7 export cases including auto-close assertions. No browser, live API, Docker or user-data mutation checks. Existing bundle-size/Browserslist warnings remain. Native keyboard/focus visuals and full Dashboard visual integration remain for the focused integration review. Per-visit reading positions, shared journey UI, persistence and cross-tab conflict protection are not delivered in N2.
+
+Stop here for discussion. N3 is the next implementation sprint; N4 recovery, N5 linked-resource exports and N6 integration follow separately.

@@ -1,5 +1,7 @@
+import { SharedHistory, SharedNoteDocuments, isSharedTransaction, resetSharedHistory } from '../../lib/sharedNoteDocuments';
+import { registerResourceLinkNavigation, registerResourceLinkNavigator, type LinkedResourceIntent } from '../../lib/resourceLinkNavigation';
 import { flushSync } from 'react-dom';
-import type { JSONContent } from '@tiptap/core';
+import { createNodeFromContent, type JSONContent } from '@tiptap/core';
 import { memo, useRef, useState, useEffect, useCallback, useId } from 'react';
 import { useEditor, EditorContent, ReactNodeViewRenderer, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -37,6 +39,9 @@ type SlashCommandRegistryWindow = typeof window & {
 };
 
 interface BlockEditorProps {
+  paneId: string;
+  sharedDocuments: SharedNoteDocuments;
+  onOpenResource: (intent: LinkedResourceIntent) => void;
   noteId: string;
   noteTitle: string;
   saveStatus: SaveStatus;
@@ -62,6 +67,7 @@ export interface NoteSelection {
 }
 
 function BlockEditor({
+  paneId, sharedDocuments, onOpenResource,
   noteId,
   noteTitle,
   saveStatus,
@@ -81,7 +87,8 @@ function BlockEditor({
   onRequestLinkUpload,
 }: BlockEditorProps) {
   const editorEscapeId = useId();
-  const wasActiveRef = useRef(false);
+  const initialSelectionRestored = useRef(false);
+  const onSelectionChangeRef = useRef(onSelectionChange);
   const savedSelectionRef = useRef(savedSelection);
   const onUpdateRef = useRef(onUpdate);
   const autosaveDelayRef = useRef(autosaveDelay);
@@ -99,9 +106,12 @@ function BlockEditor({
   const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const editor = useEditor({
+    onBeforeCreate: ({ editor: creating }) => sharedDocuments.prepare(creating),
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        undoRedo: false,
+        underline: false,
         heading: { levels: [1, 2, 3] },
       }),
       CodeBlockLowlight.extend({
@@ -117,6 +127,7 @@ function BlockEditor({
       }),
       WorkspaceTable,
       TableWorkspace,
+      SharedHistory,
       TableRow,
       TableCell,
       TableHeader,
@@ -145,7 +156,8 @@ function BlockEditor({
         return false;
       },
     },
-    onUpdate: ({ editor: ed }) => {
+    onUpdate: ({ editor: ed, transaction }) => {
+      if (isSharedTransaction(transaction)) return;
       if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
       if (autosaveDelayRef.current === 0) {
         onUpdateRef.current(ed.getJSON());
@@ -202,14 +214,15 @@ function BlockEditor({
 
   // Handle explicit resource link navigation
   useEffect(() => {
-    window.__navigateResourceLink = (dir: 'up' | 'down') => {
+    if (!editor) return;
+    return registerResourceLinkNavigator(editor.view, (dir: 'up' | 'down') => {
       setResourceSelectedIndex(prev => {
         if (resourceFilteredCount === 0) return 0;
         if (dir === 'down') return (prev + 1) % resourceFilteredCount;
         return (prev - 1 + resourceFilteredCount) % resourceFilteredCount;
       });
-    };
-  }, [resourceFilteredCount]);
+    });
+  }, [editor, resourceFilteredCount]);
 
 
   const closeResourceMenu = useCallback(() => {
@@ -370,8 +383,19 @@ function BlockEditor({
   }, [editor, slashState, selectedIndex, resourceState]);
 
   useEffect(() => {
+    if (!editor) return;
+    return sharedDocuments.attach(noteId, editor);
+  }, [editor, noteId, sharedDocuments]);
+  useEffect(() => {
+    if (!editor) return;
+    return registerResourceLinkNavigation(editor, (resourceId, newPane) => onOpenResource({ resourceId, sourcePaneId: paneId, destination: newPane ? 'new' : 'here', intent: 'link' }));
+  }, [editor, paneId, onOpenResource]);
+
+  useEffect(() => {
     savedSelectionRef.current = savedSelection;
   }, [savedSelection]);
+
+  useEffect(() => { onSelectionChangeRef.current = onSelectionChange; }, [onSelectionChange]);
 
   useEffect(() => {
     onUpdateRef.current = onUpdate;
@@ -408,7 +432,8 @@ function BlockEditor({
     const incoming = JSON.stringify(parsed);
     if (current !== incoming) {
       editor.view.dispatch(editor.state.tr.setMeta(tableViewKey, { reset: true }));
-      editor.commands.setContent(parsed);
+      const doc = createNodeFromContent(parsed, editor.schema);
+      editor.view.dispatch(resetSharedHistory(editor.state.tr.replaceWith(0, editor.state.doc.content.size, doc.content), editor.state));
     }
   }, [content, editor]);
 
@@ -417,29 +442,28 @@ function BlockEditor({
       return;
     }
 
-    if (isActive && !wasActiveRef.current && shouldRestoreFocus && !interactionLocked) {
-      console.log('Restoring selection');
-      if (savedSelectionRef.current) {
+    if (isActive && shouldRestoreFocus && !interactionLocked) {
+      if (!initialSelectionRestored.current && savedSelectionRef.current) {
         editor.commands.setTextSelection(savedSelectionRef.current);
       }
 
+      initialSelectionRestored.current = true;
       editor.commands.focus(undefined, { scrollIntoView: false });
       onFocusRestored(noteId);
     }
 
-    wasActiveRef.current = isActive;
+
   }, [editor, interactionLocked, isActive, noteId, onFocusRestored, shouldRestoreFocus]);
 
   useEffect(() => {
-    if (!editor || !isActive || !editorFocused) {
-      return;
-    }
-
-    onSelectionChange({
-      from: editor.state.selection.from,
-      to: editor.state.selection.to,
-    });
-  }, [editor, editorFocused, isActive, onSelectionChange]);
+    if (!editor) return;
+    const selected = () => {
+      initialSelectionRestored.current = true;
+      onSelectionChangeRef.current({ from: editor.state.selection.from, to: editor.state.selection.to });
+    };
+    editor.on('selectionUpdate', selected);
+    return () => { editor.off('selectionUpdate', selected); };
+  }, [editor]);
 
   if (!editor) return null;
 
@@ -480,7 +504,10 @@ function BlockEditor({
 }
 
 const MemoizedBlockEditor = memo(BlockEditor, (prev, next) => (
-  prev.noteId === next.noteId
+  prev.paneId === next.paneId
+  && prev.sharedDocuments === next.sharedDocuments
+  && prev.onOpenResource === next.onOpenResource
+  && prev.noteId === next.noteId
   && prev.noteTitle === next.noteTitle
   && prev.saveStatus === next.saveStatus
   && prev.onRetrySave === next.onRetrySave

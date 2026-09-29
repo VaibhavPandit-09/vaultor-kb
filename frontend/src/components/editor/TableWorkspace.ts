@@ -1,3 +1,4 @@
+import { isSharedTransaction } from '../../lib/sharedNoteDocuments';
 import { Extension, type Editor } from '@tiptap/core';
 import { Plugin, PluginKey, TextSelection, type EditorState } from '@tiptap/pm/state';
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view';
@@ -140,18 +141,27 @@ export const TableWorkspace = Extension.create({
       key: tableViewKey,
       state: {
         init: () => ({ filters: {}, expanded: null, notice: '' }),
-        apply(tr, previous) {
+        apply(tr, previous, oldState) {
           const meta = tr.getMeta(tableViewKey);
           if (meta?.reset) return { filters: {}, expanded: null, notice: '' };
           const next = { ...previous, filters: { ...previous.filters }, ...(meta?.notice !== undefined ? { notice: meta.notice } : {}) };
           if (meta?.tableId) { if (Object.keys(meta.filters).length) next.filters[meta.tableId] = meta.filters; else delete next.filters[meta.tableId]; }
           if (meta?.expanded !== undefined) next.expanded = meta.expanded;
+          if (tr.docChanged && isSharedTransaction(tr)) {
+            const before = tables(oldState.doc), after = tables(tr.doc);
+            for (const id of Object.keys(next.filters)) {
+              const old = before.get(id), updated = after.get(id);
+              if (!old || !updated || structure(old.node) !== structure(updated.node) || JSON.stringify(old.node.attrs.columnIds) !== JSON.stringify(updated.node.attrs.columnIds)) {
+                delete next.filters[id]; next.notice = 'Table changed in another pane; filters cleared.';
+              }
+            }
+          }
           if (tr.docChanged) for (const id of Object.keys(next.filters)) if (!tables(tr.doc).has(id)) delete next.filters[id];
           return next;
         },
       },
       filterTransaction(tr, state) {
-        if (!tr.docChanged) return true;
+        if (!tr.docChanged || isSharedTransaction(tr)) return true;
         const before = tables(state.doc), after = tables(tr.doc);
         for (const [id, filters] of Object.entries(tableViewState(state).filters)) {
           const old = before.get(id), next = after.get(id);

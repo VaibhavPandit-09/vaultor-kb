@@ -53,3 +53,7 @@ Five focused cases pass: the reported shortcut collision/help/validation, filter
 Workspace evolution Sprint 2 validation: six focused table-control tests pass, including live save state/retry, docked filter persistence, same-document entry/edit/return and undo. Three editor regressions pass; frontend production build and targeted lint pass. A disposable real BlockEditor fixture visually confirmed the light-theme fullscreen bar does not overlap the table. Dark/small-window layout and full Dashboard integration remain manually unverified for this iteration. No API/Docker checks.
 
 Workspace evolution Sprint 4: removed row/column edge buttons from both views. Two added real-editor regressions verify menus preserve the clicked cell and select the correct row/column in in-note and fullscreen views. All eight table-control cases pass; frontend build and targeted lint pass. No new browser visual check.
+
+## Multiple views of the same note
+
+N2 shares document transactions and undo across duplicate note views while filters/fullscreen/selection remain local. A remote edit cannot be rejected by a local filter; remote structural changes clear affected filters with an explanation to prevent divergent documents. Existing restrictions still apply to edits initiated in the filtered view.

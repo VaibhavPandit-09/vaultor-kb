@@ -1,10 +1,10 @@
 # Individual note exports
 
-Implemented in Sprint 3, 2026-09-23. Use the Export icon beside a note's save indicator. Choose Markdown, Markdown + assets ZIP, PDF or Word DOCX. Pending title/content saves finish first; a failed save retains the draft and offers Retry export. Download appears when rendering completes, alongside conversion warnings and operation/request IDs.
+Use the Export icon beside a note's save indicator. Clicking Markdown, Markdown + assets ZIP, PDF or Word DOCX directly saves that note, prepares a snapshot and requests the download. There is no second confirmation/download step. The picker closes automatically after download handoff; the compact status card retains Download again. Failed saves retain the draft and offer Retry export. Download requested means the browser was handed the file, not that it was successfully saved; Download again remains available. Relevant conversion warnings and technical Details are disclosures rather than persistent instructions.
 
 ## Architecture and API
 
-`NoteExportModal.tsx` uses the shared API client and operation endpoints. Format discovery comes from the exporter registry; no unfinished formats are selectable. Status polling is sequential, aborts on unmount and stops after three consecutive network failures until Retry status check. A failed download can be retried without rendering again. Closing the dialog after preparation does not cancel the operation; its ID remains usable through the API.
+`NoteExportModal.tsx` is always mounted by Dashboard and owns a `NoteExportController` outside the conditional AppModal. The controller captures the target note/format, serializes execution and uses the shared API client. Closing the picker at any stage keeps saving, sequential polling and automatic download alive, with a compact status card. One active or unresolved export is retained at a time; completed downloads may be replaced by a new format choice. Format discovery uses the exporter registry. Status polling stops after three consecutive failures until Retry status check. Status/download retries reuse the operation and do not save or render again. A confirmed FAILED operation permits a fresh snapshot after saving the latest draft. An ambiguous POST failure has no automatic retry because creation is not idempotent: check Diagnostics before explicitly dismissing and starting over. Technical IDs are under Details. Full application unmount/reload stops frontend tracking; backend rendering continues, but old downloads are not automatically replayed. No export state is persisted locally.
 
 ```json
 POST /api/exports
@@ -47,3 +47,13 @@ DOCX uses [Apache POI 5.5.1](https://poi.apache.org/download.cgi). PDF uses the 
 Focused verification: renderer fixtures create all four formats, assert Markdown/ZIP content, DOCX spans/header/image structure and PDF extracted text. The PDF fixture is rendered to PNG for visual inspection. A service test checks snapshots against subsequent edits, discovery, selection errors, request ID retention and MIME/download metadata. Frontend checks cover save failure/retry and changed shortcut behavior. No broad API smoke or browser automation is required for routine development.
 
 DOCX visual pagination remains unverified: the available bundled runtime has no LibreOffice executable. Structural checks do not prove Word page layout. Actual export-dialog usability is also not browser-verified. PDF inspection covers the representative fixture, not every possible note.
+
+### N1 validation — 2026-09-29
+
+Production build, final TypeScript compilation and targeted ESLint passed. Seven focused cases cover save failure/retry, one-click download, dismissal/duplicate suppression, existing-operation download/status retries, bounded polling failures, confirmed renderer failure, ambiguous POST failure and unmount cancellation. No browser/native download or layout verification, API smoke or Docker rebuild. Browser download restrictions may require Download again; the UI cannot confirm the destination was saved. Backend renderers and their prior validation are unchanged.
+
+## Linked-resource export follow-up (planned N5)
+
+Current exports do not recursively include linked notes; the asset ZIP includes directly referenced local files only. PDF/DOCX still show readable labels followed by source-workspace resource IDs. N5 will replace this presentation and add optional outgoing-graph export, cycle/deduplication handling, bounded consistent snapshots, internal document/relative Markdown links, and attachment packages. See the workspace tracker for the authoritative planned scope. These renderer changes are not delivered by N2.
+
+N2 correction validated 2026-09-29: the picker automatically closes only after successful browser download handoff. Save/download failure keeps it open; reopening a completed export does not immediately dismiss it. Existing focused export tests now assert the close callback after handoff and its absence on save failure. Native browser disk-save completion remains unobservable and is not claimed.

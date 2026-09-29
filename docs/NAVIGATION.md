@@ -1,0 +1,31 @@
+# Pane navigation and shared editing
+
+Implemented N2, 2026-09-29. This is the current navigation reference; journey chrome and persisted sessions remain planned in the workspace tracker.
+
+## Opening resources
+
+Every pane has a stable paneId separate from its resource id. An ordinary inline linked-note click replaces only the source pane. Ctrl/Cmd-click creates another pane without evicting anything. A linked destination already displayed elsewhere still opens in the source/destination pane; duplicate views are intentional. Links are native focusable buttons with accessible names, Enter/Space activation and visible focus. The [[ picker's arrow navigation and opening handlers are registered per editor, not through a last-mounted-editor global callback.
+
+Direct opens from Library, sidebar and Ctrl+K honor replace/split preferences. Replace changes only the focused pane. An already displayed direct destination focuses that view and starts a fresh trail. At the configured limit, navigation keeps all panes intact and offers Open here. Lowering the pane limit does not silently close existing panes; close extras explicitly. New panes remain limited to the configured maximum.
+
+Files remain temporary side/modal previews according to the existing setting, including Ctrl/Cmd-click. They do not consume panes, append journeys or trigger note save barriers. Previews remember their source pane and restore its focus on dismissal. Backlinks use the same source-aware linked opening behavior.
+
+## Transactions, saving and failure
+
+PaneNavigation owns panes, focused pane, focus requests, per-pane history and navigation error/retry state. Dashboard supplies resource loading, source-note saving and preview/commit callbacks. Request tokens per source pane invalidate superseded loads/saves; reset invalidates outstanding navigation. An explicit focus change prevents a completing navigation from stealing focus back. Metadata requests have per-resource versions and a workspace epoch. Backlinks apply only to the still-focused note and current request.
+
+Replacement/history/closing save only the departing note, including a pending title edit. Destination loading and saving must succeed before a pane changes. Failure leaves the source and history intact, with Retry. File preview and creating another pane do not require unrelated notes to save. Global workspace operations retain their existing full save barrier. Redux now holds selected-resource highlighting and Library filters, not history.
+
+SharedNoteDocuments provides live document synchronization for duplicate views in this workspace. Editors share one ProseMirror schema instance (including the extension manager), broadcast original and appended transaction steps synchronously, map each receiving view's own selection, and share history plugin state. Mirrored updates never enqueue duplicate saves. Titles and save status come from the existing per-note Dashboard/cache/coordinator; editing a title is reflected in both headers. A newly joined view receives the live document/history once. Ordinary synchronization never repeatedly calls setContent. Explicit authoritative content replacements reset shared undo to prevent stale links returning after server-side link replacement.
+
+Each view keeps its own DOM scroll position, selection and table-filter/fullscreen state. Valid source transactions cannot be rejected by another view's local table filter. A remote structural change clears affected filters with a local explanation; ordinary local filtered editing restrictions remain. The shared history lives while a note has mounted editors; it is not durable across closing every view or reload. This is in-browser synchronization, not multi-tab conflict protection.
+
+## History and next steps
+
+A direct open starts a new trail; linked opens extend it. A new linked pane copies the source path through its current cursor. Going back then following a link branches the path. History is bounded to 200 visits per pane. Existing distinct history shortcuts operate on the focused pane; Alt+Arrows only changes pane focus. Current-note ordinary links are no-ops. History navigation never opens another pane or a file preview.
+
+N3 adds the shared journey bar, per-visit reading positions, overflow, unavailable destinations and animation. N4 adds IndexedDB sessions, recovery and revision-aware server contracts. Until then, refresh still loses the open layout, and pending/failed drafts remain memory-only with the existing exit warning. No session restoration is claimed by N2.
+
+## Validation
+
+Focused tests exercise source replacement, capacity/Open here, failed save/retry/close, stale requests/reset, file preview isolation, direct opens and pane-owned history; real ProseMirror/React views exercise shared steps, schema/formatting, selection mapping, undo/redo, joining/removing views, linked source routing and filtered-table changes. Actual run results are recorded in the sprint tracker and CODEBASE maintenance history. No new browser, Docker or API smoke checks are part of N2.

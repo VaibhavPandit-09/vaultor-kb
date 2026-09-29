@@ -1,3 +1,6 @@
+import { PaneNavigation, type Pane, type OpenIntent } from '../lib/paneNavigation';
+import { SharedNoteDocuments } from '../lib/sharedNoteDocuments';
+import type { LinkedResourceIntent } from '../lib/resourceLinkNavigation';
 import { affectsScope, notifyResourceChange, subscribeResourceChanges } from '../lib/resourceEvents';
 import { RecencyRecorder } from '../lib/recencyRecorder';
 import { organizationChanged } from '../lib/organization';
@@ -6,7 +9,7 @@ import PinButton from '../components/PinButton';
 import { PinnedList, CollectionsView } from '../components/OrganizationViews';
 import type { OrganizationItem } from '../lib/organization';
 import { createPortal, flushSync } from 'react-dom';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import {
   Plus,
   Search,
@@ -45,7 +48,6 @@ import DiagnosticsPanel from '../components/modals/DiagnosticsPanel';
 import { SaveCoordinator } from '../lib/saveCoordinator';
 import type { DiagnosticEvent } from '../lib/diagnostics';
 import type { Resource, Tag, ResourceType } from '../types';
-import { isPreviewResource } from '../types';
 import { useRestoreFocusOnClose } from '../lib/useRestoreFocusOnClose';
 import { useAnchoredPortalPosition } from '../lib/useAnchoredPortalPosition';
 import BlockEditor, { type NoteSelection } from '../components/editor/BlockEditor';
@@ -65,9 +67,6 @@ import type { CommandContext } from '../lib/commandPalette';
 
 import {
   clearSelectedTags,
-  navigateBack,
-  navigateForward,
-  openResource as openResourceAction,
   removeResourceFromState,
   removeSelectedTag,
   setCurrentResourceId,
@@ -87,10 +86,7 @@ interface DeleteModalState {
   backlinks: Resource[];
 }
 
-interface OpenNote {
-  id: string;
-  selection?: NoteSelection;
-}
+
 
 type PreviewSnapshot = {
   resourceId: string | null;
@@ -108,7 +104,6 @@ type TagPickerItem = {
 export default function Dashboard() {
   const dispatch = useAppDispatch();
   const currentResourceId = useAppSelector((state) => state.vault.currentResourceId);
-  const navigation = useAppSelector((state) => state.vault.navigation);
   const filters = useAppSelector((state) => state.vault.filters);
 
   const [newCollectionOpen,setNewCollectionOpen]=useState(false);
@@ -127,9 +122,15 @@ export default function Dashboard() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [resourceDetails, setResourceDetails] = useState<Record<string, Resource>>({});
-  const [openNotes, setOpenNotes] = useState<OpenNote[]>([]);
-  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
-  const [focusRestoreNoteId, setFocusRestoreNoteId] = useState<string | null>(null);
+  const navigationDependencies = useRef<ConstructorParameters<typeof PaneNavigation>[0] | null>(null);
+  const [paneNavigation] = useState(() => new PaneNavigation(() => navigationDependencies.current!()));
+  const paneState = useSyncExternalStore(paneNavigation.subscribe, paneNavigation.snapshot);
+  const openNotes = paneState.panes;
+  const activePaneId = paneState.activePaneId;
+  const activeNoteId = openNotes.find(p => p.paneId === activePaneId)?.id ?? null;
+  const setOpenNotes = useCallback((change: (panes: Pane[]) => Pane[]) => paneNavigation.update(change), [paneNavigation]);
+  const [sharedDocuments] = useState(() => new SharedNoteDocuments());
+  const previewSourcePane = useRef<string | null>(null);
   const [backlinks, setBacklinks] = useState<Resource[]>([]);
   const [loadingResourceIds, setLoadingResourceIds] = useState<string[]>([]);
   const [sidebarLoading, setSidebarLoading] = useState(false);
@@ -184,7 +185,7 @@ export default function Dashboard() {
   const tagInputRef = useRef<HTMLInputElement>(null);
   const [floatingSidebarHovered, setFloatingSidebarHovered] = useState(false);
   const [floatingSidebarPinned, setFloatingSidebarPinned] = useState(false);
-  const [titleEditState, setTitleEditState] = useState<{ noteId: string; value: string; original: string } | null>(null);
+  const [titleEditState, setTitleEditState] = useState<{ noteId: string; paneId: string; value: string; original: string } | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleEditNoteId = titleEditState?.noteId ?? null;
 
@@ -392,29 +393,39 @@ export default function Dashboard() {
   const fetchData = useCallback(async () => { await Promise.all([fetchRecent(),fetchTags()]); }, [fetchRecent,fetchTags]);
   const cancelSidebarRequests = useCallback(() => { recentRequest.current?.abort();browseGeneration.current++;tagGeneration.current++; }, []);
 
+  const resourceLoadVersions = useRef(new Map<string, number>());
+  const workspaceEpoch = useRef(0);
+  const backlinkVersion = useRef(0);
   const fetchResourceDetails = useCallback(async (id: string) => {
+    const version = (resourceLoadVersions.current.get(id) ?? 0) + 1;
+    resourceLoadVersions.current.set(id, version);
+    const epoch = workspaceEpoch.current;
     setLoadingResourceIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     try {
       const { data } = await api.get(`/resources/${id}`);
+      if (epoch !== workspaceEpoch.current || resourceLoadVersions.current.get(id) !== version) return null;
       setResourceDetails((prev) => ({ ...prev, [id]: saves.latest(id) ? { ...data, title: saves.latest(id)!.title, content: JSON.stringify(saves.latest(id)!.content) } : data }));
       return data as Resource;
     } catch (error) {
       console.error(error);
       return null;
     } finally {
-      setLoadingResourceIds((prev) => prev.filter((entry) => entry !== id));
+      if (resourceLoadVersions.current.get(id) === version) setLoadingResourceIds((prev) => prev.filter((entry) => entry !== id));
     }
   }, [saves]);
 
   const fetchBacklinks = useCallback(async (id: string) => {
+    const relevant = () => { const state = paneNavigation.snapshot(); return state.panes.find(p => p.paneId === state.activePaneId)?.id === id; };
+    if (!relevant()) return;
+    const version = ++backlinkVersion.current;
     try {
       const { data } = await api.get(`/resources/${id}/backlinks`);
-      setBacklinks(data || []);
+      if (version === backlinkVersion.current && relevant()) setBacklinks(data || []);
     } catch (error) {
       console.error(error);
-      setBacklinks([]);
+      if (version === backlinkVersion.current && relevant()) setBacklinks([]);
     }
-  }, []);
+  }, [paneNavigation]);
 
   const markOpened = useCallback((id: string) => {
     recency.open(id);
@@ -428,17 +439,18 @@ export default function Dashboard() {
       dispatch(setCurrentResourceId(activeNoteId ?? null));
     }
     if (options?.restoreFocus !== false) {
-      previewFocus.restoreFocus();
+      if (previewSourcePane.current && paneNavigation.snapshot().panes.some(p => p.paneId === previewSourcePane.current)) paneNavigation.activate(previewSourcePane.current, true);
+      else previewFocus.restoreFocus();
     }
-  }, [activeNoteId, dispatch, previewFocus]);
+  }, [activeNoteId, dispatch, previewFocus, paneNavigation]);
 
   const openPreview = useCallback((resource: Resource) => {
     previewFocus.captureFocus();
     setPreviewResourceId(resource.id);
     setPreviewResourceType(resource.type);
     setPreviewOverrideMode(null);
-    void fetchResourceDetails(resource.id);
-  }, [fetchResourceDetails, previewFocus]);
+    setResourceDetails(previous => ({ ...previous, [resource.id]: previous[resource.id] ?? resource }));
+  }, [previewFocus]);
 
   const togglePreviewMode = useCallback(() => {
     setPreviewOverrideMode((current) => {
@@ -447,43 +459,22 @@ export default function Dashboard() {
     });
   }, [localSettings.previewMode]);
 
-  const openResourceById = useCallback(async (id: string, options?: { focus?: boolean; throwOnFailure?:boolean }) => {
-    try { await saves.flushAll(); } catch(error) {if(options?.throwOnFailure)throw error;return;}
-    const resourceMeta = resourceDetails[id] ?? resources.find((resource) => resource.id === id) ?? await fetchResourceDetails(id);
-    if (!resourceMeta) {if(options?.throwOnFailure)throw new Error("Resource could not be loaded. Retry.");return;}
-    if (resourceMeta && isPreviewResource(resourceMeta.type)) {
-      openPreview(resourceMeta);
-      dispatch(openResourceAction(id));
-      markOpened(id);
-      return;
-    }
-
-    if (resourceKind(resourceMeta.type).mode === 'editor') {
-      setLibraryVisible(false);
-      setOpenNotes((prev) => {
-        return upsertOpenNote(prev, id, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior);
-      });
-      setActiveNoteId(id);
-      if (options?.focus !== false) {
-        setFocusRestoreNoteId(id);
-      }
-      dismissPreview({ restoreFocus: false });
-      void fetchResourceDetails(id);
-    }
-
-    dispatch(openResourceAction(id));
-    markOpened(id);
-  }, [dismissPreview, dispatch, fetchResourceDetails, markOpened, openPreview, resources, resourceDetails, saves, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
-
-  const activateOpenNote = useCallback((id: string, options?: { focus?: boolean }) => {
-    setLibraryVisible(false);
-    setActiveNoteId(id);
-    if (options?.focus) {
-      setFocusRestoreNoteId(id);
-    }
-    dispatch(setCurrentResourceId(id));
-    markOpened(id);
-  }, [dispatch, markOpened]);
+  useEffect(() => {
+    navigationDependencies.current = () => ({
+      load: async id => resourceDetails[id]?.content != null && openNotes.some(p => p.id === id) ? resourceDetails[id] : fetchResourceDetails(id),
+      save: id => exportSaveRef.current(id),
+      preview: (resource, sourcePaneId) => { previewSourcePane.current = sourcePaneId ?? null; openPreview(resource); markOpened(resource.id); },
+      committed: (id, focus) => { if (focus) { setLibraryVisible(false); dismissPreview({ restoreFocus: false }); dispatch(setCurrentResourceId(id)); } markOpened(id); },
+      max: workspaceSettings.maxOpenNotes, behavior: workspaceSettings.openBehavior,
+    });
+  }, [resourceDetails, openNotes, fetchResourceDetails, saves, openPreview, markOpened, dismissPreview, dispatch, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
+  const openResourceById = useCallback((id: string, options?: OpenIntent) => paneNavigation.open(id, options), [paneNavigation]);
+  const openLinkedResource = useCallback((request: LinkedResourceIntent) => { void paneNavigation.open(request.resourceId, request); }, [paneNavigation]);
+  const activateOpenNote = useCallback((paneId: string, options?: { focus?: boolean }) => {
+    const pane = paneNavigation.snapshot().panes.find(p => p.paneId === paneId); if (!pane) return;
+    setLibraryVisible(false); paneNavigation.activate(paneId, options?.focus);
+    dispatch(setCurrentResourceId(pane.id)); markOpened(pane.id);
+  }, [dispatch, markOpened, paneNavigation]);
 
   const toggleSidebar = useCallback(() => {
     if (localSettings.sidebarMode === 'floating') {
@@ -562,68 +553,20 @@ export default function Dashboard() {
     settingsModalFocus.restoreFocus();
   }, [settingsModalFocus]);
 
-  const saveNoteSelection = useCallback((noteId: string, selection: NoteSelection) => {
-    setOpenNotes((prev) => prev.map((note) => (
-      note.id === noteId ? { ...note, selection } : note
-    )));
-  }, []);
-
-  const handleNoteFocusRestored = useCallback((noteId: string) => {
-    setFocusRestoreNoteId((current) => (current === noteId ? null : current));
-  }, []);
-
+  const saveNoteSelection = useCallback((paneId: string, selection: NoteSelection) => {
+    paneNavigation.update(panes => { const pane = panes.find(p => p.paneId === paneId); return pane?.selection?.from === selection.from && pane.selection.to === selection.to ? panes : panes.map(p => p.paneId === paneId ? { ...p, selection } : p); });
+  }, [paneNavigation]);
   const switchNote = useCallback((direction: 'next' | 'prev') => {
-    if (openNotes.length < 2 || !activeNoteId) {
-      return;
-    }
-
-    const index = openNotes.findIndex((note) => note.id === activeNoteId);
-    if (index === -1) {
-      return;
-    }
-
-    const nextIndex = direction === 'next'
-      ? (index + 1) % openNotes.length
-      : (index - 1 + openNotes.length) % openNotes.length;
-
-    activateOpenNote(openNotes[nextIndex].id, { focus: true });
-  }, [activateOpenNote, activeNoteId, openNotes]);
-
+    const state = paneNavigation.snapshot(); if (state.panes.length < 2) return;
+    const index = state.panes.findIndex(p => p.paneId === state.activePaneId);
+    const next = (index + (direction === 'next' ? 1 : -1) + state.panes.length) % state.panes.length;
+    activateOpenNote(state.panes[next].paneId, { focus: true });
+  }, [activateOpenNote, paneNavigation]);
   const closeActiveNote = useCallback(async () => {
-    try { await saves.flushAll(); } catch { return; }
-    if (!activeNoteId) {
-      return;
-    }
-
-    setOpenNotes((prev) => {
-      const filtered = prev.filter((note) => note.id !== activeNoteId);
-      const nextActiveId = filtered.length > 0 ? filtered[filtered.length - 1].id : null;
-
-      setActiveNoteId(nextActiveId);
-      setFocusRestoreNoteId(nextActiveId);
-      dispatch(setCurrentResourceId(nextActiveId));
-
-      return filtered;
-    });
-  }, [activeNoteId, dispatch, saves]);
-
-  const handleBackNavigation = useCallback(async () => {
-    try { await saves.flushAll(); } catch { return; }
-    if (navigation.currentIndex <= 0) return;
-    const previousId = navigation.history[navigation.currentIndex - 1];
-    setLibraryVisible(false);
-    dispatch(navigateBack());
-    if (previousId) markOpened(previousId);
-  }, [dispatch, markOpened, navigation.currentIndex, navigation.history, saves]);
-
-  const handleForwardNavigation = useCallback(async () => {
-    try { await saves.flushAll(); } catch { return; }
-    if (navigation.currentIndex >= navigation.history.length - 1) return;
-    const nextId = navigation.history[navigation.currentIndex + 1];
-    setLibraryVisible(false);
-    dispatch(navigateForward());
-    if (nextId) markOpened(nextId);
-  }, [dispatch, markOpened, navigation.currentIndex, navigation.history, saves]);
+    const id = paneNavigation.snapshot().activePaneId; if (id) await paneNavigation.close(id);
+  }, [paneNavigation]);
+  const handleBackNavigation = useCallback(() => paneNavigation.history(-1), [paneNavigation]);
+  const handleForwardNavigation = useCallback(() => paneNavigation.history(1), [paneNavigation]);
 
   const handleCreateNote = useCallback(async () => {
     if (createNotePending) return;
@@ -694,41 +637,12 @@ export default function Dashboard() {
   }, [fetchData,fetchRecent,fetchTags,cancelSidebarRequests]);
 
   useEffect(() => {
-    void saves.flushAll().then(() => setOpenNotes((prev) => limitOpenNotes(prev, workspaceSettings.maxOpenNotes))).catch(() => {});
-  }, [workspaceSettings.maxOpenNotes, saves]);
-
-  useEffect(() => {
-    if (activeNoteId && openNotes.some((note) => note.id === activeNoteId)) {
-      return;
-    }
-
-    const nextActiveId = openNotes[openNotes.length - 1]?.id ?? null;
-    if (nextActiveId === activeNoteId) {
-      return;
-    }
-
-    setActiveNoteId(nextActiveId);
-    setFocusRestoreNoteId(nextActiveId);
-    dispatch(setCurrentResourceId(nextActiveId));
-  }, [activeNoteId, dispatch, openNotes]);
-
-  useEffect(() => {
-    if (!currentResourceId) {
-      setBacklinks([]);
-      return;
-    }
-
-    let active = true;
-    void fetchResourceDetails(currentResourceId).then(resource => {
-      if (!active || !resource) return;
-      if (resource.type === 'note') {
-        setActiveNoteId(currentResourceId);
-        void fetchBacklinks(currentResourceId);
-        setOpenNotes(previous => upsertOpenNote(previous, currentResourceId, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior));
-      } else setBacklinks([]);
-    });
-    return () => { active = false; };
-  }, [currentResourceId, fetchBacklinks, fetchResourceDetails, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
+    dispatch(setCurrentResourceId(activeNoteId));
+    if (activeNoteId) void fetchBacklinks(activeNoteId);
+    else { backlinkVersion.current++; setBacklinks([]); }
+    const version = backlinkVersion;
+    return () => { version.current++; };
+  }, [activeNoteId, fetchBacklinks, dispatch]);
 
   useEffect(() => {
     if (activeResource?.type === 'note') {
@@ -741,16 +655,6 @@ export default function Dashboard() {
 
     latestNoteContentRef.current = null;
   }, [activeResource]);
-
-  useEffect(() => {
-    window.__openResource = (resourceId: string) => {
-      openResourceById(resourceId);
-    };
-
-    return () => {
-      window.__openResource = undefined;
-    };
-  }, [openResourceById]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -805,16 +709,6 @@ export default function Dashboard() {
         return;
       }
 
-      if (!isMac && event.ctrlKey && event.altKey && !event.shiftKey && event.key === 'ArrowLeft') {
-        event.preventDefault();
-        handleBackNavigation();
-        return;
-      }
-
-      if (!isMac && event.altKey && event.key === 'ArrowRight') {
-        event.preventDefault();
-        handleForwardNavigation();
-      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -874,6 +768,7 @@ export default function Dashboard() {
     try {
       await saves.flush(id);
       await api.delete(`/resources/${id}`);
+      resourceLoadVersions.current.set(id, (resourceLoadVersions.current.get(id) ?? 0) + 1);
       saves.forget(id);
       if (previewResourceId === id) {
         dismissPreview({ restoreFocus: false });
@@ -886,13 +781,6 @@ export default function Dashboard() {
       });
       setOpenNotes((prev) => prev.filter((note) => note.id !== id));
       dispatch(removeResourceFromState(id));
-      if (currentResourceId === id) {
-        const remainingNotes = openNotes.filter((note) => note.id !== id);
-        const nextActiveId = remainingNotes.length > 0 ? remainingNotes[remainingNotes.length - 1].id : null;
-        setActiveNoteId(nextActiveId);
-        setFocusRestoreNoteId(nextActiveId);
-        dispatch(setCurrentResourceId(nextActiveId));
-      }
       setDeleteModal(null);
       resourcesChanged(undefined, true);
     } catch (error) {
@@ -946,15 +834,12 @@ export default function Dashboard() {
     resourcesChanged([resourceId]);
   }, [fetchResourceDetails, resourceDetails, saves]);
 
-  const startTitleEditing = useCallback((noteId: string, title: string) => {
-    activateOpenNote(noteId);
+  const startTitleEditing = useCallback((noteId: string, title: string, paneId: string) => {
+    const pane = paneNavigation.snapshot().panes.find(p => p.paneId === paneNavigation.snapshot().activePaneId && p.id === noteId) ?? paneNavigation.snapshot().panes.find(p => p.id === noteId);
+    if (pane) activateOpenNote(pane.paneId);
     titleEditDismissRef.current = null;
-    setTitleEditState({
-      noteId,
-      value: title,
-      original: title,
-    });
-  }, [activateOpenNote]);
+    setTitleEditState(previous => previous?.noteId === noteId ? { ...previous, paneId } : { noteId, paneId, value: title, original: title });
+  }, [activateOpenNote, paneNavigation]);
 
   const cancelTitleEditing = useCallback(() => {
     titleEditDismissRef.current = 'cancel';
@@ -972,6 +857,15 @@ export default function Dashboard() {
     titleEditDismissRef.current = null;
     setTitleEditState(null);
   }, [renameResource, titleEditState]);
+
+  // Retries use today's draft/title handler, not the closure captured when export began.
+  const exportSaveRef = useRef<(id: string) => Promise<void>>(async () => {});
+  useEffect(() => {
+    exportSaveRef.current = async id => {
+      if (titleEditNoteId === id) await commitTitleEditing();
+      await saves.flush(id);
+    };
+  }, [titleEditNoteId, commitTitleEditing, saves]);
 
   const handleContentUpdate = (noteId: string, json: unknown) => {
     const resource = resourceDetails[noteId]; if (!resource) return;
@@ -1123,7 +1017,7 @@ export default function Dashboard() {
   const triggerExport = () => setTransferMode('export');
   const afterImport = async () => {
     saves.clear();
-    setOpenNotes([]); setActiveNoteId(null); setResourceDetails({}); dismissPreview({ restoreFocus: false });
+    workspaceEpoch.current++; resourceLoadVersions.current.clear(); paneNavigation.reset(); setResourceDetails({}); dismissPreview({ restoreFocus: false });
     dispatch(setCurrentResourceId(null));
     recency.reset();setRecencyError('');
     setCollection(null); setLibraryVisible(true); notifyResourceChange({kind:'workspace'});
@@ -1160,7 +1054,6 @@ export default function Dashboard() {
     sidebarCollapsed: sidebarCollapsedForContext,
     openResource: (resourceId: string) => openResourceById(resourceId,{throwOnFailure:true}),
     createNote: async()=>{
-      await saves.flushAll();
       paletteCreateId.current??=crypto.randomUUID();const body=new FormData();body.append('title','Untitled Note');body.append('content',JSON.stringify({type:'doc',content:[]}));if(libraryVisible&&collection)body.append('collectionId',collection.id);
       const {data}=await api.put<Resource>('/resources/imports/'+paletteCreateId.current,body,{backgroundDiagnostic:true});
       resourcesChanged([data.id],true);await openResourceById(data.id,{throwOnFailure:true});paletteCreateId.current=null;
@@ -1169,7 +1062,7 @@ export default function Dashboard() {
     toggleSidebar,
     openShortcuts: openShortcutsModal,
     openSettings: openSettingsModal,
-    closeActiveNote:async()=>{await saves.flushAll();await closeActiveNote();},
+    closeActiveNote,
     closePreview: () => dismissPreview(),
     openDeleteFlow: async (resourceId:string)=>{
       const [{data:resource},{data:backlinks}]=await Promise.all([api.get<Resource>('/resources/'+resourceId+'/summary',{backgroundDiagnostic:true}),api.get('/resources/'+resourceId+'/backlinks',{backgroundDiagnostic:true})]);
@@ -1177,7 +1070,7 @@ export default function Dashboard() {
     },
     renameResource,
   }), [
-    libraryVisible,paletteTarget,paletteSelection,saves,collection,dispatch,hasUnsavedChanges,
+    libraryVisible,paletteTarget,paletteSelection,collection,dispatch,hasUnsavedChanges,
     closeActiveNote,
     dismissPreview,
     openResourceById,
@@ -1207,7 +1100,7 @@ export default function Dashboard() {
       <div className="px-3 py-3 space-y-1">
         <button className="sidebar-nav" onClick={openCommandPalette}><Search size={16} />Search workspace<span className="ml-auto text-xs opacity-60">{resolvedShortcuts.commandPalette.replace('Mod', isMac ? '⌘' : 'Ctrl').replaceAll('+', ' ')}</span></button>
         {([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }] as const).map(({ id, label, Icon }) => <button key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</button>)}
-        {openNotes.length > 0 && <button className="sidebar-nav" onClick={() => { setLibraryVisible(false); setFocusRestoreNoteId(activeNoteId); }}><FileText size={16} />Open notes<span className="ml-auto text-xs opacity-60">{openNotes.length}</span></button>}
+        {openNotes.length > 0 && <button className="sidebar-nav" onClick={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }}><FileText size={16} />Open notes<span className="ml-auto text-xs opacity-60">{openNotes.length}</span></button>}
       </div>
       <button className="sidebar-nav" onClick={()=>{collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>
       <div className="flex gap-1.5 px-3 pb-2">
@@ -1336,9 +1229,14 @@ export default function Dashboard() {
       <ErrorBoundary region="settings"><SettingsModal open={settingsOpen} onClose={closeSettingsModal} /></ErrorBoundary>
 
       {fileImport && <ErrorBoundary region="file import"><FileImportModal session={fileImport} onClose={closeFileImport} onResource={syncUploadedResource} /></ErrorBoundary>}
-      {noteExport && <ErrorBoundary region="note export"><NoteExportModal key={noteExport.id} noteId={noteExport.id} title={noteExport.title} flush={async () => { await commitTitleEditing(); await saves.flush(noteExport.id); }} onClose={() => setNoteExport(null)} /></ErrorBoundary>}
+      <ErrorBoundary region="note export"><NoteExportModal noteId={noteExport?.id} title={noteExport?.title ?? ""} flush={async () => { if (noteExport) await exportSaveRef.current(noteExport.id); }} onClose={() => setNoteExport(null)} /></ErrorBoundary>
       <ErrorBoundary region="workspace transfer"><TransferModal mode={transferMode} onClose={() => setTransferMode(null)} flush={async () => { await saves.flushAll(); await flushSettings(); }} onImported={afterImport} /></ErrorBoundary>
       <ErrorBoundary region="diagnostics"><DiagnosticsPanel open={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} /></ErrorBoundary>
+      {paneState.issue && <div role="alert" className="z-[85] flex flex-wrap items-center gap-3 border-b border-border bg-[var(--surface-3)] px-4 py-2 text-sm">
+        <span>{paneState.issue.message}</span>
+        <button className="rounded border border-border px-3 py-1 focus-visible:outline-primary" onClick={() => { const issue = paneState.issue!; if (issue.closePaneId) { void paneNavigation.close(issue.closePaneId); return; } void openResourceById(issue.id, { ...issue.options, ...(issue.limit ? { destination: 'here' as const } : {}), throwOnFailure: false }); }}>{paneState.issue.limit ? 'Open here' : 'Retry'}</button>
+        <button aria-label="Dismiss navigation message" onClick={paneNavigation.dismissIssue}><X size={16} /></button>
+      </div>}
       {notice && <div role="alert" className="z-[1200] flex items-center gap-3 bg-red-950 p-3 text-sm text-white">
         <span>{notice.message} · {notice.requestId ?? notice.id}</span>
         <button onClick={() => setDiagnosticsOpen(true)}>Details</button>
@@ -1525,17 +1423,19 @@ export default function Dashboard() {
         )}
 
         <main className="min-w-0 flex-1 relative">
-          <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></section>:<LibraryView onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); setFocusRestoreNoteId(activeNoteId); }} onOpen={id => void openResourceById(id)} />}</div>
+          <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></section>:<LibraryView onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="h-full" hidden={libraryVisible}>
           {openWorkspaceNotes.length > 0 ? (
             <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
               {openWorkspaceNotes.map((note, index) => (
                 <div
-                  key={note.id}
+                  key={note.paneId}
                   data-note-pane={note.id}
+                  data-pane-id={note.paneId}
+                  onPointerDownCapture={() => { if (note.paneId !== activePaneId) activateOpenNote(note.paneId); }}
                   className={getWorkspacePaneClass({
                     noteCount: openWorkspaceNotes.length,
-                    isActive: note.id === activeNoteId,
+                    isActive: note.paneId === activePaneId,
                     animationMode: localSettings.animationMode,
                   })}
                 >
@@ -1546,7 +1446,7 @@ export default function Dashboard() {
                   <div className="border-b border-border/60 px-4 pb-3 pt-4">
                     <div className="flex items-center gap-2">
                     <div className="min-w-0 flex-1">
-                    {titleEditState?.noteId === note.id ? (
+                    {titleEditState?.noteId === note.id && titleEditState.paneId === note.paneId ? (
                       <input
                         ref={titleInputRef}
                         value={titleEditState.value}
@@ -1579,14 +1479,14 @@ export default function Dashboard() {
                       />
                     ) : (
                       <button
-                        onClick={() => startTitleEditing(note.id, note.title)}
+                        onClick={() => startTitleEditing(note.id, note.title, note.paneId)}
                         className={`w-full rounded-lg px-2 py-1 text-left text-lg font-semibold transition-colors ${
-                          note.id === activeNoteId
+                          note.paneId === activePaneId
                             ? 'text-foreground hover:bg-background/80'
                             : 'text-slate-500 hover:bg-background/60 hover:text-foreground'
                         }`}
                       >
-                        {note.title}
+                        {titleEditState?.noteId === note.id ? titleEditState.value : note.title}
                       </button>
                     )}
 
@@ -1597,7 +1497,7 @@ export default function Dashboard() {
                     </div>
 
                     <ResourceCollections id={note.id} onOpen={openCollection}/>
-                    {note.id === activeNoteId && note.resource?.type === 'note' && (
+                    {note.paneId === activePaneId && note.resource?.type === 'note' && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {(note.resource.tags ?? []).slice(0, 4).map((tag) => (
                           <span
@@ -1729,22 +1629,26 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
-                  <div className="min-h-0 flex-1 overflow-y-auto px-4">
+                  <div key={note.id} className="min-h-0 flex-1 overflow-y-auto px-4">
                     {note.resource?.type === 'note' ? (
                       <ErrorBoundary region="note editor"><BlockEditor
+                        key={note.id}
+                        paneId={note.paneId}
+                        sharedDocuments={sharedDocuments}
+                        onOpenResource={openLinkedResource}
                         noteId={note.id}
                         noteTitle={note.resource.title}
                         saveStatus={saves.status(note.id)}
                         onRetrySave={() => void saves.flush(note.id).catch(() => {})}
                         content={parseNoteContent(note.resource.content)}
                         autosaveDelay={0}
-                        isActive={!libraryVisible && note.id === activeNoteId}
+                        isActive={!libraryVisible && note.paneId === activePaneId}
                         interactionLocked={commandPaletteOpen || libraryVisible}
-                        shouldRestoreFocus={!libraryVisible && focusRestoreNoteId === note.id}
+                        shouldRestoreFocus={!libraryVisible && paneState.focusPaneId === note.paneId}
                         savedSelection={note.selection ?? null}
-                        onActivate={(noteId) => activateOpenNote(noteId)}
-                        onFocusRestored={handleNoteFocusRestored}
-                        onSelectionChange={(selection) => saveNoteSelection(note.id, selection)}
+                        onActivate={() => activateOpenNote(note.paneId)}
+                        onFocusRestored={() => paneNavigation.focusHandled(note.paneId)}
+                        onSelectionChange={(selection) => saveNoteSelection(note.paneId, selection)}
                         onUpdate={(json) => handleContentUpdate(note.id, json)}
                         onRequestMdUpload={handleRequestMdUpload}
                         onRequestCsvUpload={handleRequestCsvUpload}
@@ -1764,14 +1668,14 @@ export default function Dashboard() {
                   <h4 className="mb-3 flex items-center text-sm font-semibold text-slate-400"><Search size={14} className="mr-2" /> Linked from</h4>
                   <div className="space-y-2">
                     {backlinks.map((resource) => (
-                      <div
+                      <button type="button"
                         key={resource.id}
-                        onClick={() => openResourceById(resource.id)}
+                        onClick={event => void openResourceById(resource.id, { sourcePaneId: activePaneId ?? undefined, intent: 'link', destination: event.ctrlKey || event.metaKey ? 'new' : 'here' })}
                         className="flex cursor-pointer items-center rounded-xl bg-background/70 p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
                       >
                         {resource.type === 'note' ? <FileText size={16} className="mr-3 opacity-80 text-blue-500" /> : <Paperclip size={16} className="mr-3 opacity-80 text-green-500" />}
                         <span className="truncate text-sm font-medium">{resource.title}</span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -1854,32 +1758,6 @@ function parseNoteContent(content: Resource['content']) {
   } catch {
     return content;
   }
-}
-
-function upsertOpenNote(
-  notes: OpenNote[],
-  noteId: string,
-  maxOpenNotes: number,
-  openBehavior: 'replace' | 'split',
-) {
-  const existing = notes.find((note) => note.id === noteId);
-  if (openBehavior === 'replace') {
-    return existing ? [existing] : [{ id: noteId }];
-  }
-
-  if (existing) {
-    return notes;
-  }
-
-  return limitOpenNotes([...notes, { id: noteId }], maxOpenNotes);
-}
-
-function limitOpenNotes(notes: OpenNote[], maxOpenNotes: number) {
-  if (notes.length <= maxOpenNotes) {
-    return notes;
-  }
-
-  return notes.slice(notes.length - maxOpenNotes);
 }
 
 function getTagPickerItems(tags: Tag[], query: string, attachedNames: Set<string>): TagPickerItem[] {

@@ -1,3 +1,4 @@
+import { navigateResourceLink } from '../../lib/resourceLinkNavigation';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
@@ -119,17 +120,13 @@ export const ResourceLinkExtension = Node.create({
 
             if (event.key === 'ArrowDown') {
               event.preventDefault();
-              if (window.__navigateResourceLink) {
-                window.__navigateResourceLink('down');
-              }
+              navigateResourceLink(view, 'down');
               return true;
             }
 
             if (event.key === 'ArrowUp') {
               event.preventDefault();
-              if (window.__navigateResourceLink) {
-                window.__navigateResourceLink('up');
-              }
+              navigateResourceLink(view, 'up');
               return true;
             }
 
