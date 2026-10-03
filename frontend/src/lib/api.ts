@@ -1,8 +1,13 @@
 import axios from 'axios';
 import { reportError } from './diagnostics';
+import { connectionAdapter, getConnection } from './platform';
+import { ensureCompatible } from './connection';
 declare module 'axios' { interface AxiosRequestConfig { backgroundDiagnostic?: boolean } }
-const api = axios.create({ baseURL: '/api' });
-api.interceptors.request.use(config => {
+const api = axios.create({ baseURL: '/api', adapter: connectionAdapter });
+api.interceptors.request.use(async config => {
+  const epoch = getConnection().epoch;
+  await ensureCompatible();
+  if (epoch !== getConnection().epoch) throw new axios.CanceledError('Connection changed');
   config.headers['X-Request-ID'] = crypto.randomUUID();
   if (config.data && typeof config.data.content === 'string') config.data = { ...config.data, content: JSON.parse(config.data.content) };
   return config;

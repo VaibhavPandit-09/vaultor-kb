@@ -17,17 +17,18 @@ public class DiagnosticsController {
     private final DocumentService documents;
     private final LinkExtractionService links;
     private final WorkspaceGate gate;
+    private final BuildInformation build;
     private final Deque<Event> events = new ArrayDeque<>();
     @GetMapping(value="/openapi.json", produces="application/json")
     public org.springframework.core.io.Resource openapi() { return new org.springframework.core.io.ClassPathResource("openapi.json"); }
-    public record Event(String id, String timestamp, String action, String route, String message, String stack, String requestId, String build) {}
+    public record Event(String id, String timestamp, String action, String route, String message, String stack, String requestId, String build, String serverBuild, Integer apiProtocolVersion, Integer connectionEpoch) {}
     @PostMapping("/diagnostics/events") public synchronized void collect(@RequestBody List<Event> incoming) {
         if(incoming.size()>20) throw new IllegalArgumentException("At most 20 diagnostic events per batch");
         for(var e:incoming) {
             if(e==null) throw new IllegalArgumentException("Diagnostic events must be objects");
-            var safe=new Event(cut(e.id(),80),Instant.now().toString(),cut(e.action(),120),cut(e.route(),200),cut(e.message(),1000),cut(e.stack(),6000),cut(e.requestId(),80),cut(e.build(),80));
+            var safe=new Event(cut(e.id(),80),Instant.now().toString(),cut(e.action(),120),cut(e.route(),200),cut(e.message(),1000),cut(e.stack(),6000),cut(e.requestId(),80),cut(e.build(),80),cut(e.serverBuild(),80),e.apiProtocolVersion(),e.connectionEpoch());
             events.addLast(safe); while(events.size()>200) events.removeFirst();
-            log.warn("ui_error eventId={} action={} clientRequestId={} message={} stack={}",safe.id(),safe.action(),safe.requestId(),safe.message(),safe.stack());
+            log.warn("ui_error eventId={} action={} clientRequestId={} clientBuild={} clientProtocol={} message={} stack={}",safe.id(),safe.action(),safe.requestId(),safe.build(),safe.apiProtocolVersion(),safe.message(),safe.stack());
         }
     }
     private String cut(String value,int max) { return value==null?"":value.substring(0,Math.min(max,value.length())); }
@@ -36,9 +37,10 @@ public class DiagnosticsController {
         events.removeIf(e->Instant.parse(e.timestamp()).isBefore(cutoff)); return List.copyOf(events);
     }
     @GetMapping("/health") public Map<String,Object> health() {
-        resources.count(); return Map.of("status","UP","ready",!gate.busy(),"workspaceBusy",gate.busy(),"build","modernization-1","requestId",Optional.ofNullable(MDC.get("requestId")).orElse(""));
+        resources.count(); return Map.of("status","UP","ready",!gate.busy(),"workspaceBusy",gate.busy(),"build",build.version(),"requestId",Optional.ofNullable(MDC.get("requestId")).orElse(""));
     }
-    @GetMapping("/capabilities") public Map<String,Object> capabilities() { return Map.of("build","modernization-1","authentication",false,"workspaceTransfer",List.of("merge","replace"),"exportFormats","/api/export-formats","openapi","/api/openapi.json","diagnosticsRetention", "200 events / 24 hours / process lifetime"); }
+    public record Capabilities(String build, String serverBuild, int apiProtocolVersion, int minimumClientProtocolVersion, boolean authentication, List<String> workspaceTransfer, String exportFormats, String openapi, String diagnosticsRetention) {}
+    @GetMapping("/capabilities") public Capabilities capabilities() { return new Capabilities(build.version(),build.version(),BuildInformation.API_PROTOCOL_VERSION,BuildInformation.MINIMUM_CLIENT_PROTOCOL_VERSION,false,List.of("merge","replace"),"/api/export-formats","/api/openapi.json","200 events / 24 hours / process lifetime"); }
     @GetMapping("/diagnostics/integrity") public Map<String,Object> integrity() {
         if(!gate.enterRequest()) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,"Workspace transfer in progress");
         try {

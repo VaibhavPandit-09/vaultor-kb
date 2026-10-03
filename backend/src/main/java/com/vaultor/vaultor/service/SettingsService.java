@@ -135,6 +135,10 @@ public class SettingsService {
     private Keybinding normalizeKeybinding(String action, Keybinding incoming) {
         String mac = normalizeShortcutString(incoming == null ? null : incoming.mac());
         String windows = normalizeShortcutString(incoming == null ? null : incoming.windows());
+        if ("toggleSidebar".equals(action)) {
+            if ("Mod+B".equals(mac)) mac = "Mod+Alt+B";
+            if ("Mod+B".equals(windows)) windows = "Mod+Alt+B";
+        }
         String oldDefault = "switchNoteNext".equals(action) ? "Mod+ArrowRight" : "switchNotePrevious".equals(action) ? "Mod+ArrowLeft" : null;
         if (oldDefault != null) {
             if (oldDefault.equals(mac) || oldDefault.replace("Mod+", "Mod+Alt+").equals(mac) || ("switchNoteNext".equals(action) ? "Mod+Alt+PageDown" : "Mod+Alt+PageUp").equals(mac)) mac = DEFAULT_KEYBINDINGS.get(action).mac();
@@ -174,7 +178,7 @@ public class SettingsService {
             "switchNoteNext", new Keybinding("Alt+ArrowRight", "Alt+ArrowRight"),
             "switchNotePrevious", new Keybinding("Alt+ArrowLeft", "Alt+ArrowLeft"),
             "closeActiveNote", new Keybinding("Mod+Shift+Backspace", "Mod+Shift+Backspace"),
-            "toggleSidebar", new Keybinding("Mod+B", "Mod+B"),
+            "toggleSidebar", new Keybinding("Mod+Alt+B", "Mod+Alt+B"),
             "openShortcuts", new Keybinding("Mod+Slash", "Mod+Slash")
     );
 

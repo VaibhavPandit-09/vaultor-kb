@@ -74,7 +74,7 @@ const shortcutActionMeta: ShortcutActionMeta[] = [
     action: 'toggleSidebar',
     category: 'Navigation',
     description: 'Toggle sidebar',
-    defaultShortcut: { mac: 'Mod+B', windows: 'Mod+B' },
+    defaultShortcut: { mac: 'Mod+Alt+B', windows: 'Mod+Alt+B' },
   },
   {
     action: 'openShortcuts',
@@ -135,6 +135,7 @@ export function getDefaultShortcut(action: ShortcutAction, platform: ShortcutPla
 // Upgrade only the exact former defaults; preserve all other custom bindings.
 export function migrateNoteShortcut(action: string, shortcut: string): string {
   const normalized = normalizeShortcut(shortcut);
+  if (action === 'toggleSidebar' && normalized === 'Mod+B') return 'Mod+Alt+B';
   if (action === 'switchNoteNext' && ['Mod+ArrowRight', 'Mod+Alt+PageDown', 'Mod+Alt+ArrowRight'].includes(normalized)) return 'Alt+ArrowRight';
   if (action === 'switchNotePrevious' && ['Mod+ArrowLeft', 'Mod+Alt+PageUp', 'Mod+Alt+ArrowLeft'].includes(normalized)) return 'Alt+ArrowLeft';
   return normalized;
@@ -167,7 +168,7 @@ export function normalizeShortcut(shortcut: string): string {
 }
 
 export function shortcutFromKeyboardEvent(event: KeyboardEvent | ReactKeyboardEvent<HTMLElement>): string | null {
-  const keyPart = normalizeKeyToken(event.key);
+  const keyPart = shortcutEventKey(event);
   if (!keyPart || ['Meta', 'Control', 'Shift', 'Alt'].includes(keyPart)) {
     return null;
   }
@@ -222,7 +223,13 @@ export function shortcutMatchesEvent(
     return false;
   }
 
-  return normalizeKeyToken(event.key) === keyPart;
+  return shortcutEventKey(event) === keyPart;
+}
+
+function shortcutEventKey(event: KeyboardEvent | ReactKeyboardEvent<HTMLElement>) {
+  // Option-letter keys on macOS produce accented characters; app shortcuts use the physical letter.
+  if (event.altKey && /^Key[A-Z]$/.test(event.code)) return event.code.slice(3);
+  return normalizeKeyToken(event.key);
 }
 
 export function formatShortcutKeys(shortcut: string): string[] {
@@ -292,6 +299,7 @@ export function validateShortcutBinding(
   }
 
   if (Object.values(historyShortcuts()).includes(normalized)) return 'That shortcut is reserved for navigation history.';
+  if (['Mod+B', 'Mod+Shift+B'].includes(normalized)) return 'That shortcut is used by editor Bold or Quote. Use Ctrl/Cmd+Alt+B for the sidebar.';
   if (RESERVED_SHORTCUTS.includes(normalized)) {
     return 'That shortcut is reserved by the browser.';
   }

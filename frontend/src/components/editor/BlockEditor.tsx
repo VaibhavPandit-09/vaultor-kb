@@ -432,7 +432,8 @@ function BlockEditor({
       return;
     }
 
-    editor.setEditable(!interactionLocked);
+    // Tiptap emits an update by default even though editability changes no content.
+    editor.setEditable(!interactionLocked, false);
   }, [editor, interactionLocked]);
 
   useEffect(() => {

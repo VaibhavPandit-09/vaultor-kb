@@ -47,16 +47,18 @@ it('mounts and unmounts the editor in StrictMode without reading an unavailable 
 
 it('two mounted note views retain shared edits through React updates and route links by source pane', async () => {
   const shared = new SharedNoteDocuments(), opened = vi.fn();
+  const updated = vi.fn();
   const initial = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'hello' }, { type: 'resourceLink', attrs: { resourceId: 'target', label: 'Target', type: 'note' } }] }] };
   function Workspace() {
     const [content, setContent] = useState(initial);
     const [active, setActive] = useState('left');
-    return <EscapeManagerProvider>{['left', 'right'].map(pane => <BlockEditor key={pane} paneId={pane} sharedDocuments={shared} onOpenResource={opened} noteId="shared" noteTitle="Shared" saveStatus="saved" onRetrySave={() => {}} content={content} autosaveDelay={0} isActive={pane === active} interactionLocked={false} shouldRestoreFocus={false} onUpdate={json => setContent(json as typeof initial)} onSelectionChange={() => {}} onActivate={() => setActive(pane)} onFocusRestored={() => {}} onRequestMdUpload={() => {}} onRequestCsvUpload={() => {}} onRequestLinkUpload={() => {}} />)}</EscapeManagerProvider>;
+    return <EscapeManagerProvider>{['left', 'right'].map(pane => <BlockEditor key={pane} paneId={pane} sharedDocuments={shared} onOpenResource={opened} noteId="shared" noteTitle="Shared" saveStatus="saved" onRetrySave={() => {}} content={content} autosaveDelay={0} isActive={pane === active} interactionLocked={false} shouldRestoreFocus={false} onUpdate={json => { updated(json); setContent(json as typeof initial); }} onSelectionChange={() => {}} onActivate={() => setActive(pane)} onFocusRestored={() => {}} onRequestMdUpload={() => {}} onRequestCsvUpload={() => {}} onRequestLinkUpload={() => {}} />)}</EscapeManagerProvider>;
   }
   const view = render(<Workspace />);
   const dom = [...view.container.querySelectorAll('.tiptap')] as (HTMLElement & { editor: Editor })[];
   const a = dom[0].editor, b = dom[1].editor;
   await waitFor(() => expect(dom[0].querySelector('button')).toBeTruthy());
+  expect(updated).not.toHaveBeenCalled();
   act(() => { a.commands.setTextSelection(1); a.commands.insertContent('X'); });
   expect(a.getText()).toBe(b.getText()); expect(b.getText()).toContain('Xhello');
   act(() => { b.commands.setTextSelection(7); b.commands.insertContent('Y'); });

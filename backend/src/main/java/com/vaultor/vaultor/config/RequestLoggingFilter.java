@@ -1,5 +1,6 @@
 package com.vaultor.vaultor.config;
 import com.vaultor.vaultor.service.WorkspaceGate;
+import com.vaultor.vaultor.service.BuildInformation;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -13,10 +14,11 @@ import java.util.UUID;
 @Component @RequiredArgsConstructor @Slf4j
 public class RequestLoggingFilter extends OncePerRequestFilter {
     private final WorkspaceGate gate;
+    private final BuildInformation build;
     @Override protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws ServletException, IOException {
         String supplied = req.getHeader("X-Request-ID");
         String id = supplied != null && supplied.matches("[A-Za-z0-9_-]{1,80}") ? supplied : UUID.randomUUID().toString();
-        MDC.put("requestId", id); MDC.put("build", "modernization-1");
+        MDC.put("requestId", id); MDC.put("build", build.version());
         res.setHeader("X-Request-ID", id);
         long started = System.nanoTime();
         boolean guarded = req.getRequestURI().matches("/api/(resources|tags|settings|collections|organization|workspace)(/.*)?");

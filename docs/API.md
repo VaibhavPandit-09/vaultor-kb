@@ -1,5 +1,11 @@
 # Agent and UI API guide
 
+## Client compatibility (D1)
+
+Before opening a workspace or sending application requests, clients inspect `GET /api/capabilities` (`getCapabilities`). The explicit DTO includes `serverBuild`, `apiProtocolVersion` and `minimumClientProtocolVersion`, plus existing transfer/export/diagnostic metadata; `build` is the server-build alias. Current client/server protocol is 1. Accept only a protocol inside the server's inclusive supported range. Build strings identify releases, not compatibility. Missing metadata or an older protocol requires updating the server; a higher minimum requires updating the client. Frontend/backend must be deployed together. See [PLATFORM.md](PLATFORM.md) for handshake caching, cancellation and platform ownership.
+
+Frontend diagnostic events retain `build` (client build), optional `serverBuild`, `apiProtocolVersion` (client protocol) and `connectionEpoch` (ephemeral delivery ownership), alongside existing bounded fields. All requests, including bootstrap and diagnostic batches, carry `X-Request-ID`. Failed binary downloads preserve bounded JSON problem details rather than treating the problem as a downloaded file. No new authentication, host switching, event-stream endpoint or storage schema is introduced by D1.
+
 ## Ordinary file import
 
 `PUT /api/resources/imports/{id}` accepts a canonical client-generated UUID and multipart `title` plus exactly one of `file` or `content`. Content is a serialized structured Tiptap JSON document. Retry with the same UUID and identical payload to retrieve the same resource without duplicate creation. Different payloads or occupied non-import IDs return 409. This endpoint never replaces by title. Metadata/backlinks commit together, with file bytes staged first. This is separate from workspace ZIP import. OpenAPI operation ID: `importFileResource`.
@@ -156,3 +162,5 @@ K2 collection add flow also reuses existing contracts: title-paginated GET /reso
 K3 frontend search mode is explicit: title (default) uses GET /resources?q=...; content uses GET /resources/query?q=.... Both receive the same optional collection/type/tag/favorites filters. The searchMode field is frontend-only and is never sent as an HTTP parameter. Empty-query content mode uses ordinary browsing within the selected scope. Endpoint defaults/contracts, FTS indexing and database schema are unchanged.
 
 N2 navigation/shared editing changes use existing resource/save/preview APIs; no endpoint or revision contract changed. Pane/history state is frontend-only. N4 conditional revisions and N5 graph-export parameters are now available; see their authoritative sections. See [NAVIGATION.md](NAVIGATION.md) and the workspace tracker.
+
+N6 retains the existing API contracts. Concurrent application transactions serialize through the SQLite connection pool; conditional note updates still reject stale revisions with 412. See [INTEGRATION.md](INTEGRATION.md) for disposable concurrency/replacement verification.

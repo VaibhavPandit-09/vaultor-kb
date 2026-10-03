@@ -1,5 +1,11 @@
 # Development, Docker and debugging
 
+## D1 build and compatibility
+
+Deploy frontend and backend together: the UI now checks the explicit `/api/capabilities` protocol contract before loading settings/workspace. Missing metadata asks for a server update; an unsupported minimum asks for a client update. Current protocol is 1. `BUILD_VERSION` labels backend health/capabilities/request/operation logs; `VITE_BUILD_VERSION` labels the built frontend. Both default to `desktop-d1` and are independent of protocol. Runtime environment changes do not relabel an already-built frontend bundle. Diagnostics reports include both builds and protocol; specification/report downloads use the platform boundary. See [PLATFORM.md](PLATFORM.md).
+
+D1 adds no Electron process, JVM launcher, host switcher, authentication, LAN exposure or installer. Browser same-origin `/api` access remains the deployed transport. Focused contract tests mock adapters/repositories and do not mutate a workspace. No Docker rebuild or live API smoke was performed for this change.
+
 ## Verification policy
 
 Keep routine checks minimal: compile affected code and check changed failure-prone behavior selectively. Do not run full suites, API smoke scripts or disposable Docker verification for every UI change. Keep APIs/scripts available for specific debugging or explicit requests. Browser/native checks are reserved for necessary interaction/visual questions. Commands below are available procedures, not a mandatory per-change checklist.
@@ -88,3 +94,5 @@ Pane navigation and duplicate note views are frontend state; there are no new N2
 ## Session/recovery debugging
 
 See [SESSIONS.md](SESSIONS.md) for the authoritative local-storage and revision contracts. Diagnose stale saves using 412 NOTE_REVISION_CONFLICT and request IDs; do not strip If-Match to make a draft overwrite saved content. GET /api/workspace/identity distinguishes replacement generations. Browser IndexedDB storage is tied to the exact origin, independently of Docker data volumes. Do not clear site data while investigating unsaved drafts. The focused SessionRevisionTest uses disposable SQLite/storage and verifies existing-schema upgrade plus replacement isolation; frontend sessionRecovery.test.ts uses fake-indexeddb (development-only dependency). No container rebuild is required for routine frontend development checks.
+
+N6 configures Hikari maximum-pool-size and minimum-idle to 1 for SQLite. This prevents concurrent deferred transaction lock upgrades; reads also queue. Keep transactions short and run only one backend per database. SessionRevisionTest additionally exercises simultaneous note saves. Final coverage: [INTEGRATION.md](INTEGRATION.md).

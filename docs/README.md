@@ -1,6 +1,9 @@
 # Documentation
 
-- [Workspace evolution plan](workspace-evolution-plan.md): empty-note closing and expanded-table workspace implemented; scalable Library and collections/tags implemented; U1 navigation refresh fix complete; U2 resource organization/pins complete; U3 palette/saved-note full-text search complete; K1 form/palette keyboard corrections complete; K2 organization simplification complete; K3 title-first search and explicit scope complete; N1 direct-download exports implemented; N2 pane navigation/shared editing implemented; N3 journeys implemented; N4 session recovery implemented; N5 linked-resource exports implemented; N6 integration pending; exactly one sprint per authorization.
+- [Desktop and private-network plan](desktop-network-plan.md): D1 platform/compatibility foundation implemented; D2–D9 Windows/Mac shell, bundled server, pairing, browser/LAN access and zero-cost update delivery remain; D10 Ubuntu follow-up. One sprint per authorization.
+- [Platform and connection boundary](PLATFORM.md): browser/platform transport, cancellation, protocol checks, download outcomes, build diagnostics and sidebar shortcut migration.
+
+- [Workspace evolution plan](workspace-evolution-plan.md): empty-note closing and expanded-table workspace implemented; scalable Library and collections/tags implemented; U1 navigation refresh fix complete; U2 resource organization/pins complete; U3 palette/saved-note full-text search complete; K1 form/palette keyboard corrections complete; K2 organization simplification complete; K3 title-first search and explicit scope complete; N1 direct-download exports implemented; N2 pane navigation/shared editing implemented; N3 journeys implemented; N4 session recovery implemented; N5 linked-resource exports implemented; N6 integration complete; exactly one sprint per authorization.
 
 - [Editor and portability plan](editor-portability-plan.md): imports and table foundations implemented; individual note exports implemented; table filtering/copy/export implemented; remaining manual verification recorded; one sprint per authorized call.
 
@@ -12,6 +15,7 @@
 - [Pane navigation and shared editing](NAVIGATION.md): pane ownership, linked opening, on-demand backlinks, responsive journeys, duplicate views and source save barriers.
 - [Sessions and draft recovery](SESSIONS.md): per-tab IndexedDB layout, recovery journals, conditional note revisions and workspace replacement isolation.
 - [Individual note exports](NOTE-EXPORTS.md): standalone/linked-graph formats, snapshot semantics, assets, fidelity, limits and verification.
+- [Integration handoff](INTEGRATION.md): N6 fixes, focused test/visual coverage and remaining verification limits.
 - [API guide](API.md): shared UI/agent contracts, examples and transfer flow.
 - [Operations guide](OPERATIONS.md): development, Docker, limits, logging and isolated verification.
 - [Living codebase guide](CODEBASE.md): current implementation, source map, API/data contracts, UI/design, setup, validation, limitations, and maintenance history. This is the primary reference for agents and maintainers.

@@ -3,6 +3,7 @@ import type { Editor } from '@tiptap/core';
 import { Copy, Download } from 'lucide-react';
 import { describeTable, setTableFilters, tableViewState, tableRows, delimited, ensureTableIdentity, cellText } from './TableWorkspace';
 import { tableContext } from './tableCommands';
+import { getPlatform } from '../../lib/platform';
 
 export default function TableDataPanel({ editor, mode }: { editor: Editor; mode: 'filter' | 'export' | 'help' }) {
   const [column, setColumn] = useState(0);
@@ -27,14 +28,13 @@ export default function TableDataPanel({ editor, mode }: { editor: Editor; mode:
   };
   const rows = () => tableRows(ctx.table, scope === 'visible' ? info.visible : undefined);
   async function copy() {
-    try { await navigator.clipboard.writeText(delimited(rows(), '\t')); setMessage(`Copied ${scope} rows as TSV.`); }
+    try { await getPlatform().writeClipboard(delimited(rows(), '\t')); setMessage(`Copied ${scope} rows as TSV.`); }
     catch { setMessage('Clipboard access failed. Retry, use Ctrl+C on selected cells, or download CSV.'); }
   }
-  function download() {
+  async function download() {
     const blob = new Blob(['\uFEFF' + delimited(rows(), ',', true)], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob), link = document.createElement('a');
-    link.href = url; link.download = `table-${scope}.csv`; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setMessage(`Downloaded ${scope} rows as CSV.`);
+    try { const outcome = await getPlatform().saveBlob(blob, `table-${scope}.csv`); setMessage(outcome === 'cancelled' ? 'Download cancelled.' : `CSV download requested for ${scope} rows.`); }
+    catch { setMessage('CSV download failed. Retry.'); }
   }
   return <div className="table-data-panel">
     {mode === 'filter' && <>

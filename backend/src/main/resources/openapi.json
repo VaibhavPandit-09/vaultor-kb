@@ -2576,7 +2576,7 @@
     "/capabilities": {
       "get": {
         "operationId": "getCapabilities",
-        "summary": "getCapabilities",
+        "summary": "Discover server build and supported client API protocol range",
         "parameters": [],
         "responses": {
           "200": {
@@ -2592,7 +2592,21 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/Capabilities"
+                },
+                "example": {
+                  "build": "desktop-d1",
+                  "serverBuild": "desktop-d1",
+                  "apiProtocolVersion": 1,
+                  "minimumClientProtocolVersion": 1,
+                  "authentication": false,
+                  "workspaceTransfer": [
+                    "merge",
+                    "replace"
+                  ],
+                  "exportFormats": "/api/export-formats",
+                  "openapi": "/api/openapi.json",
+                  "diagnosticsRetention": "200 events / 24 hours / process lifetime"
                 }
               }
             }
@@ -5452,6 +5466,55 @@
           ],
           "warnings": [],
           "fingerprint": "opaque-sha256"
+        }
+      },
+      "Capabilities": {
+        "type": "object",
+        "required": [
+          "build",
+          "serverBuild",
+          "apiProtocolVersion",
+          "minimumClientProtocolVersion",
+          "authentication",
+          "workspaceTransfer",
+          "exportFormats",
+          "openapi",
+          "diagnosticsRetention"
+        ],
+        "properties": {
+          "build": {
+            "type": "string",
+            "description": "Server build; retained alias"
+          },
+          "serverBuild": {
+            "type": "string"
+          },
+          "apiProtocolVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minimumClientProtocolVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "authentication": {
+            "type": "boolean"
+          },
+          "workspaceTransfer": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exportFormats": {
+            "type": "string"
+          },
+          "openapi": {
+            "type": "string"
+          },
+          "diagnosticsRetention": {
+            "type": "string"
+          }
         }
       }
     }

@@ -38,6 +38,7 @@ public class TransferService {
     private final ObjectMapper mapper;
     private final TransactionTemplate transaction;
     private final WorkspaceGate gate;
+    private final BuildInformation build;
     private final ExporterRegistry exporters;
     private final NoteExportGraph noteGraph;
     @Value("${app.storage.path}") private String storagePath;
@@ -144,7 +145,7 @@ public class TransferService {
     }
     // Gate brief status writes, not rendering, so note saves never overlap SQLite progress writes.
     private void runNote(TransferOperation op,Runnable task) {
-        MDC.put("build","modernization-1");MDC.put("operationId",op.getId());if(op.getRequestId()!=null)MDC.put("requestId",op.getRequestId());
+        MDC.put("build",build.version());MDC.put("operationId",op.getId());if(op.getRequestId()!=null)MDC.put("requestId",op.getRequestId());
         boolean[] cancelled={false};
         try {
             gate.exclusive(()-> { synchronized(this) {
@@ -159,7 +160,7 @@ public class TransferService {
         if(name.isBlank())name="note";return name.substring(0,Math.min(100,name.length()));
     }
     private void run(TransferOperation op,Runnable task) {
-        MDC.put("build","modernization-1"); MDC.put("operationId",op.getId()); if(op.getRequestId()!=null) MDC.put("requestId",op.getRequestId());
+        MDC.put("build",build.version()); MDC.put("operationId",op.getId()); if(op.getRequestId()!=null) MDC.put("requestId",op.getRequestId());
         try { synchronized(this) { if("CANCELLED".equals(operations.findById(op.getId()).orElseThrow().getStatus())) return; phase(op,"RUNNING","preparing",5); } task.run(); }
         catch(Exception e) { fail(op,e); } finally { MDC.clear(); }
     }

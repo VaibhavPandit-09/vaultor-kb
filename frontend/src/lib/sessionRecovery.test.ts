@@ -76,3 +76,8 @@ it('restoring pane state does not replay navigation, previews or save commands',
  const {PaneNavigation}=await import('./paneNavigation');const load=vi.fn(),save=vi.fn(),preview=vi.fn(),committed=vi.fn();const navigation=new PaneNavigation(()=>({load,save,preview,committed,max:3,behavior:'split'}));const state=snapshot();
  navigation.restore(state.panes,state.activePaneId,state.positions);expect(navigation.exportSession()).toEqual({panes:state.panes,activePaneId:state.activePaneId,positions:state.positions});expect(load).not.toHaveBeenCalled();expect(save).not.toHaveBeenCalled();expect(preview).not.toHaveBeenCalled();expect(committed).not.toHaveBeenCalled();
 });
+it('malformed positions do not prevent access to independent recovery journals',async()=>{
+ const store=memory(),error=vi.fn(),sessions=new SessionPersistence(store,'tab',error);
+ await store.put('session:workspace:tab',{...snapshot(),positions:{v:null}});
+ expect(await sessions.load(identity)).toBeUndefined();expect(error).toHaveBeenCalledOnce();
+});

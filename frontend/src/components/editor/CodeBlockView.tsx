@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Copy, Check, ChevronDown } from 'lucide-react';
 import { useAnchoredPortalPosition } from '../../lib/useAnchoredPortalPosition';
+import { getPlatform } from '../../lib/platform';
+import { reportError } from '../../lib/diagnostics';
 
 const LANGUAGES = [
   { value: '', label: 'Plain Text' },
@@ -53,10 +55,10 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
 
   const handleCopy = useCallback(() => {
     const text = node.textContent;
-    navigator.clipboard.writeText(text).then(() => {
+    getPlatform().writeClipboard(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    });
+    }).catch(error => reportError('code.copy', error));
   }, [node]);
 
   const handleLangSelect = useCallback((lang: string) => {

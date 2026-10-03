@@ -101,3 +101,12 @@ it('graph preview counts and package labels precede the format choice', async ()
   fireEvent.click(screen.getByText('Include linked resources'));
   await screen.findByText(/2 notes/);expect(screen.getByText('PDF package (.zip)')).toBeTruthy();expect(api.post).not.toHaveBeenCalled();
 });
+it('workspace generation change stops the old export and does not replay it', async () => {
+  let release!:()=>void;
+  const props={noteId:'same-id',title:'Old workspace',flush:()=>new Promise<void>(r=>{release=r;}),onClose:vi.fn()};
+  const view=render(<NoteExportModal key="workspace:g1" {...props}/>);
+  fireEvent.click(await screen.findByText('Markdown (.md)'));
+  view.rerender(<NoteExportModal key="workspace:g2" {...props} noteId={undefined}/>);
+  await act(async()=>release());
+  expect(api.post).not.toHaveBeenCalled();expect(click).not.toHaveBeenCalled();expect(screen.queryByLabelText('Note export')).toBeNull();
+});

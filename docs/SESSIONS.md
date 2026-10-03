@@ -1,6 +1,6 @@
 # Working sessions and draft recovery
 
-Implemented in N4, 2026-09-29. Navigation/journey behavior is described in [NAVIGATION.md](NAVIGATION.md); this document owns persistence and recovery behavior.
+Implemented in N4; reviewed through N6, 2026-09-30. Navigation/journey behavior is described in [NAVIGATION.md](NAVIGATION.md); this document owns persistence and recovery behavior.
 
 ## Session restoration
 
@@ -30,6 +30,6 @@ The app checks workspace identity on focus and every 15 seconds. A changed ident
 
 Storage errors are visible and retryable without disabling editing or successful server saves. Exit warnings remain while saves, staged drafts or journal writes are outstanding. IndexedDB, pagehide writes and unload handlers cannot guarantee survival of every abrupt termination. Recently changed layout/reading position can lag up to the snapshot interval. Browser storage is origin-specific: switching hostname, port or browser profile creates a different store; clearing site data removes it. Sessions/journals have no automatic age-based pruning in this sprint.
 
-Caret positions are numeric and clamped to the restored document; there is no semantic anchoring across server edits while away. The shared editor undo history is not persisted. Recovering a copy does not duplicate its linked resource graph (graph export remains N5).
+Caret positions are numeric and clamped to the restored document; there is no semantic anchoring across server edits while away. The shared editor undo history is not persisted. Recovering a copy does not duplicate its linked resource graph (linked-graph export is a separate export operation).
 
-Validation: frontend compilation, focused IndexedDB/tab identity/journal/restore/Library/recovery component tests, and a disposable SQLite HTTP/transfer test covering existing-schema upgrade, conditional updates, stale rejection, generation rollback and replacement. No production data, Docker rebuild or browser/native refresh testing. Integrated browser lifecycle/layout coverage remains N6.
+Validation: frontend compilation, focused IndexedDB/tab identity/journal/restore/Library/recovery component tests, and a disposable SQLite HTTP/transfer test covering existing-schema upgrade, conditional updates, stale rejection, generation rollback and replacement. N6 added malformed-record validation and checked real Dashboard refresh restoration using disposable storage; see [INTEGRATION.md](INTEGRATION.md). Invalid layouts are discarded with an explanation while recovery journals remain readable. No production data or Docker rebuild.

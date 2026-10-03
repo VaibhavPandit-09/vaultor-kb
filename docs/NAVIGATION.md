@@ -1,6 +1,8 @@
 # Pane navigation and shared editing
 
-Implemented through N4, 2026-09-29. This is the current navigation reference; session persistence and recovery are described in [SESSIONS.md](SESSIONS.md).
+Reviewed through D1, 2026-10-04. This is the current navigation reference; session persistence and recovery are described in [SESSIONS.md](SESSIONS.md).
+
+Sidebar toggle now defaults to Ctrl+Alt+B on Windows/Linux and Cmd+Option+B on Mac, including while editing a note. Bold and Quote keep their editor bindings. Old stored sidebar Mod+B migrates; other custom values remain. Shared help/settings use the same definitions. Alt+Arrows still switches panes and separate history bindings remain unchanged. See [PLATFORM.md](PLATFORM.md) for migration and Option-key matching details.
 
 ## Opening resources
 
@@ -30,6 +32,6 @@ Positions are numeric offsets: selections are clamped if content shortened, not 
 
 ## Validation
 
-Focused tests exercise source replacement, capacity/Open here, failed save/retry/close, stale requests/reset, file preview isolation, direct opens and pane-owned history; real ProseMirror/React views exercise shared steps, schema/formatting, selection mapping, undo/redo, joining/removing views, linked source routing and filtered-table changes. Actual run results are recorded in the sprint tracker and CODEBASE maintenance history. N3 adds cycle/branch/copy/bound/unavailable tests and scroll/caret/overflow checks. A single isolated browser fixture checked dark wide and light 320px layouts, overflow and Escape; full Dashboard integration remains for N6. No API smoke or Docker checks.
+Focused tests exercise source replacement, capacity/Open here, failed save/retry/close, stale requests/reset, file preview isolation, direct opens and pane-owned history; real ProseMirror/React views exercise shared steps, schema/formatting, selection mapping, undo/redo, joining/removing views, linked source routing and filtered-table changes. Actual run results are recorded in the sprint tracker and CODEBASE maintenance history. N3 adds cycle/branch/copy/bound/unavailable tests and scroll/caret/overflow checks. A single isolated browser fixture checked dark wide and light 320px layouts, overflow and Escape; N6 subsequently checked the real Dashboard in dark/light, narrow panes and refresh restoration; see [INTEGRATION.md](INTEGRATION.md). No API smoke or Docker checks.
 
 Backlinks appear only on request through the journey bar's **Linked from** menu for the focused note. Opening a linked or sidebar note never adds an automatic backlinks column or squeezes the editors. Results are associated with the fetched note so stale backlinks do not flash after activation. Inline resource references use a soft theme-aware background, restrained underline and small type icon, with explicit keyboard focus; stored labels and navigation semantics are unchanged.

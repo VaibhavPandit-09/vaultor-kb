@@ -1,4 +1,5 @@
 import api from './api';
+import { getPlatform } from './platform';
 
 export type ExportFormat = { scope: string; format: string; extension: string };
 export type ExportOperation = { id: string; status: string; phase: string; progress: number; detail?: string; requestId?: string; filename?: string; warnings?: string[] };
@@ -92,13 +93,8 @@ export class NoteExportController {
       const operation = this.job.operation!;
       const { data } = await api.get<Blob>('/exports/' + operation.id + '/download', { responseType: 'blob', signal });
       if (signal.aborted) return;
-      const url = URL.createObjectURL(data);
-      try {
-        const link = document.createElement('a'); link.href = url;
-        link.download = operation.filename || this.job.title + '.' + this.job.format.extension;
-        document.body.appendChild(link);
-        try { link.click(); } finally { link.remove(); }
-      } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
+      const outcome = await getPlatform().saveBlob(data, operation.filename || this.job.title + '.' + this.job.format.extension);
+      if (outcome === 'cancelled') throw new Error('Download cancelled. Retry to download the prepared export.');
       this.update({ stage: 'downloaded' });
     } catch (error) {
       if (!signal.aborted) {

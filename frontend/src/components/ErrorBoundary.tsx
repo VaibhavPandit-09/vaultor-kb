@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { reportError } from '../lib/diagnostics';
+import { getPlatform } from '../lib/platform';
 
 export default class ErrorBoundary extends Component<{ children: ReactNode; region: string }, { error: Error | null; reference: string }> {
   state = { error: null as Error | null, reference: '' };
@@ -16,7 +17,7 @@ export default class ErrorBoundary extends Component<{ children: ReactNode; regi
       <p>Your other workspace areas can still be used.</p>
       <p className="text-xs">Reference: {this.state.reference}</p>
       <button className="m-2 rounded border p-2" onClick={() => this.setState({ error: null })}>Try again</button>
-      <button className="m-2 rounded border p-2" onClick={() => void navigator.clipboard.writeText(
+      <button className="m-2 rounded border p-2" onClick={() => void getPlatform().writeClipboard(
         `${this.state.reference}\n${this.state.error?.stack ?? this.state.error?.message}`,
       ).catch(() => {})}>Copy error details</button>
     </section>;

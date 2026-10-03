@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import AppModal from './AppModal';
 import api from '../../lib/api';
+import { getPlatform } from '../../lib/platform';
 type Operation = { id: string; kind: string; status: string; phase: string; progress: number; detail?: string; requestId?: string };
 type Preview = { operation: Operation; resources: number; files: number; notes: number; tags: number; warnings: string[] };
 export default function TransferModal({ mode, onClose, flush, onImported }: {
@@ -41,7 +42,7 @@ export default function TransferModal({ mode, onClose, flush, onImported }: {
   async function download() {
     if(!operation) return;
     const {data} = await api.get('/exports/'+operation.id+'/download', {responseType:'blob'});
-    const url=URL.createObjectURL(data); const link=document.createElement('a');link.href=url;link.download='workspace.zip';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    await getPlatform().saveBlob(data, 'workspace.zip');
   }
   return <AppModal open={mode !== null} onClose={() => { if(!working) {setOperation(null);setPreview(null);setError('');setConfirmed(false);onClose();} }} title={mode === 'export' ? 'Export workspace' : 'Import workspace'} description="Portable ZIP with notes, tags, settings, and files. No password required.">
     <div className="space-y-4">

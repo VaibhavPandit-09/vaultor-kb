@@ -42,6 +42,7 @@ import {
   Palette,
 } from 'lucide-react';
 import api from '../lib/api';
+import { getPlatform } from '../lib/platform';
 import LibraryView, { type LibrarySection } from '../components/LibraryView';
 import { browseResources, resourcesChanged } from '../lib/resourceBrowse';
 import { resourceKind } from '../lib/resourceKinds';
@@ -693,7 +694,7 @@ export default function Dashboard() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      if (document.fullscreenElement || event.defaultPrevented || target?.closest('[role="dialog"]')) return;
+      if (event.isComposing || event.keyCode === 229 || document.fullscreenElement || event.defaultPrevented || target?.closest('[role="dialog"]')) return;
       const isEditable = Boolean(
         target?.closest('[contenteditable="true"]') ||
         target?.tagName === 'INPUT' ||
@@ -1028,14 +1029,7 @@ export default function Dashboard() {
     if (!activeResource || activeResource.type !== 'file') return;
     try {
       const res = await api.get(`/resources/${activeResource.id}/download`, { responseType: 'blob' });
-      const url = URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = activeResource.title || 'download';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
+      await getPlatform().saveBlob(res.data, activeResource.title || 'download');
     } catch (error) {
       console.error('Download failed', error);
     }
@@ -1046,9 +1040,7 @@ export default function Dashboard() {
     try {
       const res = await api.get(`/resources/${activeResource.id}/raw`, { responseType: 'blob' });
       const blob = new Blob([res.data], { type: activeResource.mimeType || 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      await getPlatform().openBlob(blob);
     } catch (error) {
       console.error('Open failed', error);
     }
@@ -1059,6 +1051,7 @@ export default function Dashboard() {
     identityCheckVersion.current++;
     const identity=(await api.get<Identity>('/workspace/identity')).data;
     identityRef.current=identity;recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));
+    setNoteExport(null);setTitleEditState(null);
     setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
     saves.clear();
     workspaceEpoch.current++; resourceLoadVersions.current.clear(); paneNavigation.reset(); setResourceDetails({}); dismissPreview({ restoreFocus: false });
@@ -1365,7 +1358,7 @@ export default function Dashboard() {
       <ErrorBoundary region="settings"><SettingsModal open={settingsOpen} onClose={closeSettingsModal} /></ErrorBoundary>
 
       {fileImport && <ErrorBoundary region="file import"><FileImportModal session={fileImport} onClose={closeFileImport} onResource={syncUploadedResource} /></ErrorBoundary>}
-      <ErrorBoundary region="note export"><NoteExportModal flushNote={id => exportSaveRef.current(id)} noteId={noteExport?.id} title={noteExport?.title ?? ""} flush={async () => { if (noteExport) await exportSaveRef.current(noteExport.id); }} onClose={() => setNoteExport(null)} /></ErrorBoundary>
+      <ErrorBoundary region="note export"><NoteExportModal key={(identityRef.current?.id ?? "") + ":" + (identityRef.current?.generation ?? "")} flushNote={id => exportSaveRef.current(id)} noteId={noteExport?.id} title={noteExport?.title ?? ""} flush={async () => { if (noteExport) await exportSaveRef.current(noteExport.id); }} onClose={() => setNoteExport(null)} /></ErrorBoundary>
       <ErrorBoundary region="workspace transfer"><TransferModal mode={transferMode} onClose={() => setTransferMode(null)} flush={async () => { await saves.flushAll(); await flushSettings(); }} onImported={afterImport} /></ErrorBoundary>
       {(sessionError||sessionMessage||recoveryRecords.length>0)&&<div className="flex flex-wrap items-center gap-3 border-b border-border bg-[var(--surface-3)] px-4 py-2 text-sm"><span role="status">{sessionError||sessionMessage||(recoveryRecords.length+' recovery drafts available')}</span>{sessionError&&<button className="library-button" onClick={()=>{setSessionError('');void Promise.all([recovery.retryStorage(),sessionPersistence.current?.retry()]).catch(()=>setSessionError('Local recovery storage is still unavailable.'));}}>Retry storage</button>}{recoveryRecords.length>0&&<button className="library-button" onClick={()=>{recoveryFocus.captureFocus();setRecoveryOpen(true);}}>Review drafts ({recoveryRecords.length})</button>}{sessionMessage&&<button aria-label="Dismiss session message" onClick={()=>setSessionMessage('')}><X size={16}/></button>}</div>}
       {recoveryOpen&&<RecoveryPanel records={recoveryRecords} onResolve={resolveRecovery} canRetry={record=>recovery.current(record.noteId)?.key===record.key&&saves.status(record.noteId)==='failed'} onRetry={record=>saves.flush(record.noteId)} onClose={()=>{setRecoveryOpen(false);recoveryFocus.restoreFocus();}}/>}
@@ -1587,8 +1580,8 @@ export default function Dashboard() {
                   )}
 
                   <div className="border-b border-border/60 px-4 pb-3 pt-4">
-                    <div className="flex items-center gap-2">
-                    <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="min-w-0 flex-[1_1_10rem]">
                     {titleEditState?.noteId === note.id && titleEditState.paneId === note.paneId ? (
                       <input
                         ref={titleInputRef}
@@ -1623,7 +1616,7 @@ export default function Dashboard() {
                     ) : (
                       <button
                         onClick={() => startTitleEditing(note.id, note.title, note.paneId)}
-                        className={`w-full rounded-lg px-2 py-1 text-left text-lg font-semibold transition-colors ${
+                        className={`w-full break-words rounded-lg px-2 py-1 text-left text-lg font-semibold transition-colors ${
                           note.paneId === activePaneId
                             ? 'text-foreground hover:bg-background/80'
                             : 'text-slate-500 hover:bg-background/60 hover:text-foreground'
@@ -1634,9 +1627,11 @@ export default function Dashboard() {
                     )}
 
                     </div>
+                    <div className="ml-auto flex shrink-0 items-center gap-2">
                     <button type="button" title="Export note" aria-label={`Export ${note.title}`} className="rounded-lg p-2 text-slate-400 hover:bg-background hover:text-primary" onClick={() => setNoteExport({ id: note.id, title: note.title })}><DownloadCloud size={16} /></button>
                     <PinButton id={note.id} name={note.title} favorite={note.resource?.favorite}/>
                     <SaveIndicator status={saves.status(note.id)} onRetry={() => void saves.flush(note.id).catch(() => {})} />
+                    </div>
                     </div>
 
                     <ResourceCollections id={note.id} onOpen={openCollection}/>

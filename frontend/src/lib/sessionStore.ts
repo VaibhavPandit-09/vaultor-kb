@@ -47,9 +47,9 @@ export function claimTab(): Promise<{ id: string; seed?: string }> {
   })();
 }
 export function validSession(value: SessionSnapshot) {
-  return value.version===1 && typeof value.identity?.id==='string' && typeof value.identity.generation==='string'
-    && Array.isArray(value.panes) && value.panes.every(p=>typeof p.paneId==='string' && typeof p.id==='string' && Array.isArray(p.history) && p.history.length>0 && p.history.length<=200 && Number.isInteger(p.cursor) && p.cursor>=0 && p.cursor<p.history.length && p.history.every(v=>typeof v.visitId==='string'&&typeof v.resourceId==='string'&&typeof v.title==='string'))
-    && value.positions && Object.values(value.positions).every(p=>Number.isFinite(p.scrollTop)&&Number.isFinite(p.scrollLeft)&&(!p.selection||(Number.isFinite(p.selection.from)&&Number.isFinite(p.selection.to))))
+  return Boolean(value) && value.version===1 && typeof value.identity?.id==='string' && typeof value.identity.generation==='string'
+    && Array.isArray(value.panes) && value.panes.every(p=>p && typeof p.paneId==='string' && typeof p.id==='string' && Array.isArray(p.history) && p.history.length>0 && p.history.length<=200 && Number.isInteger(p.cursor) && p.cursor>=0 && p.cursor<p.history.length && p.history.every(v=>v && typeof v.visitId==='string'&&typeof v.resourceId==='string'&&typeof v.title==='string'))
+    && value.positions && Object.values(value.positions).every(p=>p && Number.isFinite(p.scrollTop)&&Number.isFinite(p.scrollLeft)&&(!p.selection||(Number.isFinite(p.selection.from)&&Number.isFinite(p.selection.to))))
     && value.library && typeof value.library.visible==='boolean' && ['library','recent','favorites','collections'].includes(value.library.section)
     && Array.isArray(value.library.tags) && value.library.tags.every(t=>typeof t==='string') && (!value.library.collection||(typeof value.library.collection.id==='string'&&typeof value.library.collection.name==='string')) && typeof value.library.context?.type==='string' && typeof value.library.context.query==='string' && ['title','content'].includes(value.library.context.searchMode) && ['title','updated','recent'].includes(value.library.context.sort);
 }

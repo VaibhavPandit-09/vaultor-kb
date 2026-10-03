@@ -35,7 +35,16 @@ class SessionRevisionTest {
   assertThrows(IllegalStateException.class,()->transaction.executeWithoutResult(tx->{identities.replaced();throw new IllegalStateException("rollback");}));assertEquals(original,identities.current());
   String body="{\"title\":\"Original\",\"content\":{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}}";
   var created=request("POST","/resources",body,null);assertEquals(200,created.statusCode(),created.body());var note=json.readTree(created.body());String id=note.get("id").asString(),revision=note.get("revision").asString();
-  var changed=request("PUT","/resources/"+id+"/note",body.replace("Original","Updated"),revision);assertEquals(200,changed.statusCode(),changed.body());String next=json.readTree(changed.body()).get("revision").asString();assertNotEquals(revision,next);
+  // Restored panes and different browser tabs may save at the same time.
+  var another=json.readTree(request("POST","/resources",body,null).body());
+  try(var executor=java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()){
+   var start=new java.util.concurrent.CountDownLatch(1);
+   var first=executor.submit(()->{start.await();return request("PUT","/resources/"+id+"/note",body,revision);});
+   var second=executor.submit(()->{start.await();return request("PUT","/resources/"+another.get("id").asString()+"/note",body,another.get("revision").asString());});
+   start.countDown();assertEquals(200,first.get().statusCode());assertEquals(200,second.get().statusCode());
+  }
+  var currentRevision=json.readTree(request("GET","/resources/"+id,null,null).body()).get("revision").asString();
+  var changed=request("PUT","/resources/"+id+"/note",body.replace("Original","Updated"),currentRevision);assertEquals(200,changed.statusCode(),changed.body());String next=json.readTree(changed.body()).get("revision").asString();assertNotEquals(revision,next);
   var stale=request("PUT","/resources/"+id+"/note",body,revision);assertEquals(412,stale.statusCode(),stale.body());assertEquals("NOTE_REVISION_CONFLICT",json.readTree(stale.body()).get("code").asString());assertEquals("Updated",json.readTree(request("GET","/resources/"+id,null,null).body()).get("title").asString());
   var export=transfers.export("workspace","zip");await(export.id());byte[] archive=Files.readAllBytes(transfers.download(export.id()));
   var preview=transfers.preview(new MockMultipartFile("file","workspace.zip","application/zip",archive));
