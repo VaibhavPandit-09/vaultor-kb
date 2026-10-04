@@ -312,7 +312,11 @@ button {
 /* Library uses bounded server pages and fixed-height virtual rows. */
 .library-view { height:100%; min-height:0; display:flex; flex-direction:column; gap:16px; padding:clamp(16px,3vw,40px); color:var(--text-primary); }
 .library-heading,.library-filters,.library-summary,.library-pagination { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-.library-heading { justify-content:space-between; }
+.library-heading { justify-content:space-between; align-items:flex-end; min-width:0; }
+.library-heading-title { flex:1 1 220px; min-width:0; }
+.library-heading h1 { overflow-wrap:anywhere; }
+.library-heading-actions { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px; margin-left:auto; max-width:100%; }
+.library-heading-actions > * { flex-shrink:0; }
 .library-heading p,.sidebar-section-label { color:var(--text-tertiary); font-size:11px; letter-spacing:.08em; }
 .library-heading h1 { font-size:28px; font-weight:650; }
 .library-button { display:inline-flex; gap:7px; align-items:center; justify-content:center; padding:8px 10px; border-radius:8px; font-size:13px; border:1px solid var(--border-subtle); background:var(--surface-2); }
@@ -333,7 +337,7 @@ button {
 .library-resource strong,.library-resource small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .library-resource strong { font-size:14px; font-weight:500; }
 .library-resource small,.library-date { font-size:12px; color:var(--text-tertiary); }
-.library-message { padding:20px; font-size:14px; display:flex; align-items:center; gap:12px; }
+.library-message { padding:20px; font-size:14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .library-pagination { justify-content:flex-end; font-size:12px; color:var(--text-secondary); }
 .library-pagination>span { margin-right:auto; }
 .sidebar-nav { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; width:100%; text-align:left; font-size:13px; }
@@ -423,8 +427,9 @@ button {
 .desktop-drag-grip::before { content:''; display:block; width:2px; height:12px; margin:7px auto; background:var(--border-color); }
 .desktop-shell .journey-bar { padding-right:170px; position:relative; }
 .desktop-shell .journey-bar button,.desktop-shell .journey-bar ol { -webkit-app-region:no-drag; }
-.desktop-shell .library-heading { padding-right:175px; position:relative; }
-.desktop-shell .journey-bar::before,.desktop-shell .library-heading::before { content:''; position:absolute; top:0; left:0; right:170px; height:30px; -webkit-app-region:drag; pointer-events:none; }
+.desktop-shell .library-view { position:relative; padding-top:40px; }
+.desktop-shell .library-view::before { content:''; position:absolute; top:0; left:0; right:170px; height:30px; -webkit-app-region:drag; }
+.desktop-shell .journey-bar::before { content:''; position:absolute; top:0; left:0; right:170px; height:30px; -webkit-app-region:drag; pointer-events:none; }
 .desktop-shell .journey-bar button,.desktop-shell .journey-bar ol,.desktop-shell .library-heading > * { position:relative; -webkit-app-region:no-drag; }
 .desktop-shell .library-heading button,.desktop-shell .library-heading input { -webkit-app-region:no-drag; }
 .desktop-connection-button { display:flex; align-items:center; gap:.5rem; margin:.25rem .5rem; padding:.5rem; border-radius:8px; font-size:.75rem; color:var(--text-secondary); text-align:left; }
