@@ -1,3 +1,4 @@
+import { inspectWorkspaceDeparture } from '../lib/workspaceDeparture';
 import LibraryPopover from '../components/LibraryPopover';
 import RecoveryPanel from '../components/RecoveryPanel';
 import { IndexedSessionStore, SessionPersistence, claimTab, defaultLibrary, sameWorkspace, type Identity, type SessionSnapshot, type RecoveryRecord, type NoteDraft } from '../lib/sessionStore';
@@ -1115,20 +1116,19 @@ export default function Dashboard() {
   useEffect(() => registerConnectionBarrier(async keepDrafts => {
     if (!sessionReady || !identityRef.current) throw new SwitchBlockedError('Wait for session restoration before leaving the workspace.');
     if (transferMode || uploadPending || importBusy.current || fileImport || createNotePending || deletePending || replacePending || tagDeletePending || tagAddPending || noteExport) throw new SwitchBlockedError('Finish or dismiss the current operation before leaving the workspace.');
-    if (getPlatform().kind === 'desktop') {
-      try {const {data}=await api.get<{active:number}>('/operations/activity',{timeout:8000,backgroundDiagnostic:true});if(data.active)throw new SwitchBlockedError('Wait for active imports/exports to finish before leaving the workspace.');}
-      catch(error){if(error instanceof SwitchBlockedError)throw error;if(!keepDrafts)throw new SwitchBlockedError('Cannot verify server operations. Retry or keep recoverable drafts.',true);}
-    }
-    let currentIdentity: Identity | undefined;
-    try { currentIdentity = (await api.get<Identity>('/workspace/identity', { timeout: 8000, backgroundDiagnostic: true })).data; }
-    catch { if (!keepDrafts) throw new SwitchBlockedError('The current server is unavailable. Keep recoverable drafts and leave the workspace, or retry.', true); }
+    const currentIdentity = await inspectWorkspaceDeparture({
+      desktop: getPlatform().kind === 'desktop', keepDrafts,
+      unsavedNotes: () => saves.dirty() || recovery.dirty() || Boolean(titleEditState && titleEditState.value !== titleEditState.original),
+      activity: async () => (await api.get<{active:number}>('/operations/activity', {timeout:8000,backgroundDiagnostic:true})).data,
+      identity: async () => (await api.get<Identity>('/workspace/identity', {timeout:8000,backgroundDiagnostic:true})).data,
+    });
     const replaced = currentIdentity && !sameWorkspace(currentIdentity, identityRef.current);
     if (replaced && !keepDrafts) throw new SwitchBlockedError('The current workspace changed. Keep its drafts separately and reconnect.', true);
     if (settingsSaveStatus !== 'saved') {
       if (replaced || !currentIdentity) throw new SwitchBlockedError('Settings changes are unsaved. Reconnect to the original workspace before leaving the workspace.');
       try { await flushSettings(); } catch { throw new SwitchBlockedError('Save settings before leaving the workspace. Retry in Settings.'); }
     }
-    if (!keepDrafts) {
+    if (!keepDrafts && currentIdentity) {
       try { await commitTitleEditing(); await saves.flushAll(); }
       catch { throw new SwitchBlockedError('Saving failed. Retry, or keep recoverable drafts and leave the workspace.', true); }
     }
@@ -1137,7 +1137,7 @@ export default function Dashboard() {
       const identity = identityRef.current;
       await sessionPersistence.current?.save({ version: 1, identity, ...paneNavigation.exportSession(), library: sessionView.current }, true);
     } catch { throw new SwitchBlockedError('Recovery storage is unavailable. Keep this workspace open until storage succeeds.'); }
-  }), [sessionReady, transferMode, uploadPending, fileImport, createNotePending, deletePending, replacePending, tagDeletePending, tagAddPending, noteExport, commitTitleEditing, saves, flushSettings, settingsSaveStatus, recovery, paneNavigation]);
+  }), [sessionReady, transferMode, uploadPending, fileImport, createNotePending, deletePending, replacePending, tagDeletePending, tagAddPending, noteExport, titleEditState, commitTitleEditing, saves, flushSettings, settingsSaveStatus, recovery, paneNavigation]);
   useEffect(()=>{sessionView.current={visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext};},[libraryVisible,librarySection,collection,filters.selectedTags,libraryContext]);
   useEffect(()=>{
     if(!sessionReady)return;

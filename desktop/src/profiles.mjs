@@ -19,7 +19,7 @@ export class Profiles {
       if (!/^[\w-]{1,80}$/.test(this.data.clientId) || new Set(this.data.profiles.map(p => p.id)).size !== this.data.profiles.length || (this.data.active !== null && !this.data.profiles.some(p => p.id === this.data.active))) throw new Error('Invalid connection ownership.');
     } catch (error) {
       if (error.code !== 'ENOENT') throw new Error('Connection storage could not be read. It has been preserved; repair connections.json or choose another desktop data directory.');
-      this.data = { version: 1, clientId: randomUUID(), active: null, profiles: [{ id: randomUUID(), name: 'Local server', address: 'http://127.0.0.1:8080', kind: 'local' }] };
+      this.data = { version: 1, clientId: randomUUID(), active: null, profiles: [] };
       await this.persist();
     }
     return this.snapshot();

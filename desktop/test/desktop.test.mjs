@@ -12,7 +12,7 @@ const request = (id = 'request') => ({ id, token: 'token', path: '/resources', m
 test('managed profile is idempotent and preserves an existing selected server', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'vaultor-desktop-test-'));
   try {
-    const profiles = new Profiles(directory); await profiles.load(); await profiles.ensureManaged(); await profiles.ensureManaged();
+    const profiles = new Profiles(directory); await profiles.load(); assert.equal(profiles.snapshot().profiles.length, 0); await profiles.ensureManaged(); await profiles.ensureManaged(); assert.equal(profiles.snapshot().profiles.length, 1);
     assert.equal(profiles.data.active, 'this-computer'); assert.equal(profiles.data.profiles.filter(p => p.source === 'bundled').length, 1);
     const existing = await profiles.add({ name: 'Existing', address: 'http://127.0.0.1:8091' }); await profiles.activate(existing.id, 'old-workspace');
     const restored = new Profiles(directory); await restored.load(); await restored.ensureManaged(); assert.equal(restored.data.active, existing.id);
