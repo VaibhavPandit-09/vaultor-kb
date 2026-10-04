@@ -11,6 +11,9 @@ import java.util.*;
 
 @RestControllerAdvice @Slf4j
 public class ApiErrors {
+    // Disconnected SSE/download clients have no writable response; do not turn them into JSON 500s.
+    @ExceptionHandler(org.springframework.web.context.request.async.AsyncRequestNotUsableException.class)
+    public void disconnected(org.springframework.web.context.request.async.AsyncRequestNotUsableException ignored) {}
     public static class RevisionConflict extends RuntimeException { public RevisionConflict() { super("This note changed elsewhere. Keep your draft and resolve the conflict before saving."); } }
     public static class FieldError extends IllegalArgumentException {
         public final String field;
@@ -23,7 +26,7 @@ public class ApiErrors {
             : e instanceof NoSuchElementException || e instanceof org.springframework.web.servlet.resource.NoResourceFoundException ? 404
             : e instanceof MaxUploadSizeExceededException ? 413
             : e instanceof IllegalArgumentException || e instanceof HttpMessageNotReadableException || e instanceof MethodArgumentTypeMismatchException || e instanceof org.springframework.web.bind.MissingRequestHeaderException ? 400 : 500;
-        String code = switch(status) { case 412 -> "NOTE_REVISION_CONFLICT"; case 400 -> "INVALID_REQUEST"; case 404 -> "NOT_FOUND"; case 409 -> "CONFLICT"; case 413 -> "UPLOAD_TOO_LARGE"; default -> "INTERNAL_ERROR"; };
+        String code = switch(status) { case 428 -> "NOTE_REVISION_REQUIRED"; case 429 -> "RATE_LIMITED"; case 412 -> "NOTE_REVISION_CONFLICT"; case 400 -> "INVALID_REQUEST"; case 404 -> "NOT_FOUND"; case 409 -> "CONFLICT"; case 413 -> "UPLOAD_TOO_LARGE"; default -> "INTERNAL_ERROR"; };
         if(e instanceof com.vaultor.vaultor.host.AccessFailure a) code=a.code;
         String detail = status == 500 ? "Unexpected server error. Use the request ID to find details in logs."
             : revisionConflict ? "This note changed elsewhere. Keep your draft and resolve the conflict before saving."

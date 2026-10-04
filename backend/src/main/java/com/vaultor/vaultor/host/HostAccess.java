@@ -64,6 +64,7 @@ public class HostAccess implements AutoCloseable {
     static String hash(String value){return hash(value.getBytes(StandardCharsets.UTF_8));}
     static boolean same(String a,String b){return a!=null && b!=null && MessageDigest.isEqual(a.getBytes(StandardCharsets.UTF_8),b.getBytes(StandardCharsets.UTF_8));}
     public boolean owner(String key){return same(ownerKey,key);}
+    public synchronized boolean deviceActive(String id){return devices.containsKey(id);}
     static public boolean privateAddress(InetAddress address){
         byte[] b=address.getAddress();return address.isLoopbackAddress() || address.isSiteLocalAddress() || address.isLinkLocalAddress() || b.length==16 && (b[0]&0xfe)==0xfc;
     }
@@ -77,7 +78,9 @@ public class HostAccess implements AutoCloseable {
     private void save(Map<String,Device> next) throws Exception {
         HostFiles.write(directory.resolve("devices.json"),json.writeValueAsBytes(Map.of("version",1,"devices",next.values())));devices=next;
     }
-    public synchronized void revoke(String id) throws Exception {var next=new LinkedHashMap<>(devices);next.remove(id);save(next);pending.values().removeIf(p->id.equals(p.deviceId));}
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private org.springframework.context.ApplicationEventPublisher events;
+    public record DeviceRevoked(String id) {}
+    public void revoke(String id) throws Exception {synchronized(this){var next=new LinkedHashMap<>(devices);next.remove(id);save(next);pending.values().removeIf(p->id.equals(p.deviceId));}if(events!=null)events.publishEvent(new DeviceRevoked(id));}
     private Device add(String name,String kind,String role,String credential) throws Exception {
         if(devices.size()>=1000) throw new AccessFailure(409,"DEVICE_LIMIT","Revoke an unused device before adding another.");
         var d=new Device(UUID.randomUUID().toString(),name,kind,role,hash(credential),secret(),clock.instant().toString());

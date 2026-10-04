@@ -78,6 +78,7 @@ public final class DesktopOwner implements AutoCloseable {
         if (!closing.compareAndSet(false, true)) return;
         var gate=context.getBean(com.vaultor.vaultor.service.WorkspaceGate.class);
         var operations=context.getBean(com.vaultor.vaultor.repository.TransferOperationRepository.class);
+        context.getBean(com.vaultor.vaultor.service.ChangeFeed.class).restarting();
         gate.quiesce();long deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(15);
         try {
             while(System.nanoTime()<deadline) {

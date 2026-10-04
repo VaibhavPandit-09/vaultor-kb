@@ -14,6 +14,8 @@ type NativePart = { name: string; fileId: string; filename: string; type: string
 type NativeSelection = { id: string; name: string; size: number; lastModified: number };
 export type WireRequest = { id: string; token: string; path: string; method: string; timeout: number; headers: Record<string, string>; body?: { kind: 'text'; value: string } | { kind: 'multipart'; parts: (Part | NativePart)[] } };
 export interface DesktopBridge {
+  stream?(value:{token:string;id:string;path:string}):Promise<Result<void>>;
+  onStream?(callback:(event:{id:string;data?:unknown;closed?:boolean})=>void):()=>void;
   bootstrap(): Promise<Result<DesktopState>>;
   nearby?(enabled: boolean): Promise<Result<NearbyHosts>>;
   pairInspect?(value: { name: string; address: string }): Promise<Result<PairInspection>>;
@@ -125,7 +127,13 @@ export function activateDesktop(state: DesktopState) {
     try {const result=unwrap(await bridge.fileAction!({token:state.token,path,filename,mode,requestId}));if(signal?.aborted){if(result.id)void bridge.releaseFile?.({token:state.token,id:result.id});signal.throwIfAborted();}return result;}
     finally{signal?.removeEventListener('abort',cancel);}
   };
-  configureConnection({ profileId: profile.id, kind: profile.kind, hostId: profile.hostId, workspaceId: profile.workspaceId }, { ...previous, kind: 'desktop', request: nativeAdapter(bridge, state.token), writeClipboard: async text => { unwrap(await bridge.writeClipboard(text)); }, ...(bridge.fileAction ? {
+  configureConnection({ profileId: profile.id, kind: profile.kind, hostId: profile.hostId, workspaceId: profile.workspaceId }, { ...previous, kind: 'desktop', request: nativeAdapter(bridge, state.token), writeClipboard: async text => { unwrap(await bridge.writeClipboard(text)); },
+    ...(bridge.stream && bridge.onStream ? {stream:async (path:string,signal:AbortSignal,receive:(data:unknown)=>void)=>{
+      const id=crypto.randomUUID();const remove=bridge.onStream!(event=>{if(event.id===id && !signal.aborted)receive(event.closed?{kind:'disconnected'}:event.data);});
+      const close=()=>{remove();void bridge.cancel(id).catch(()=>{});signal.removeEventListener('abort',close);};signal.addEventListener('abort',close,{once:true});
+      try{unwrap(await bridge.stream!({token:state.token,id,path}));if(signal.aborted){close();throw new axios.CanceledError();}return {close};}catch(e){close();throw e;}
+    }} : {stream:undefined}),
+ ...(bridge.fileAction ? {
     saveApiFile: async (path, filename, signal) => (await action(path, filename, 'save',signal)).outcome as 'saved' | 'cancelled',
     openApiFile: async (path, filename, signal) => { await action(path, filename, 'open',signal); },
     previewApiFile: async (path, filename, signal) => { const file = await action(path, filename, 'preview',signal); return { url: file.url!, release: () => { void bridge.releaseFile!({ token: state.token, id: file.id! }).catch(()=>{}); } }; },

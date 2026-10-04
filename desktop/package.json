@@ -8,7 +8,7 @@
     "build": "npm --prefix ../frontend run build && node scripts/copy-ui.mjs",
     "start": "electron .",
     "test": "node --test test/*.test.mjs",
-    "check": "node --check src/main.mjs && node --check src/preload.cjs && node --check src/transport.mjs && node --check src/owned-server.mjs && node --check scripts/prepare-server.mjs && node --check scripts/package-dev.mjs && node --check src/files.mjs && node --check src/hosting.mjs && node --check src/network.mjs && node --check src/credentials.mjs && node --check src/discovery.mjs && node --check src/connections.mjs",
+    "check": "node --check src/main.mjs && node --check src/preload.cjs && node --check src/transport.mjs && node --check src/owned-server.mjs && node --check scripts/prepare-server.mjs && node --check scripts/package-dev.mjs && node --check src/files.mjs && node --check src/hosting.mjs && node --check src/network.mjs && node --check src/credentials.mjs && node --check src/discovery.mjs && node --check src/connections.mjs && node --check src/change-stream.mjs",
     "smoke": "node scripts/smoke.mjs",
     "prepare-server": "node scripts/prepare-server.mjs",
     "package:dev": "node scripts/package-dev.mjs",

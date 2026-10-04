@@ -1,6 +1,6 @@
 import { getConnection, transport } from './platform';
 export const CLIENT_PROTOCOL = 1;
-export const CLIENT_BUILD = import.meta.env.VITE_BUILD_VERSION || 'desktop-d2';
+export const CLIENT_BUILD = import.meta.env.VITE_BUILD_VERSION || 'desktop-d7';
 export type ServerCapabilities = { serverBuild: string; apiProtocolVersion: number; minimumClientProtocolVersion: number; authentication: boolean };
 let accepted: { epoch: number; capabilities: ServerCapabilities } | undefined;
 let pending: { epoch: number; promise: Promise<ServerCapabilities> } | undefined;

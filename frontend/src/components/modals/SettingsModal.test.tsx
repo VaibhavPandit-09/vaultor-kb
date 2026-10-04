@@ -6,11 +6,11 @@ import SettingsModal from './SettingsModal';
 import { SettingsProvider } from '../../lib/settings';
 import { EscapeManagerProvider } from '../../lib/escape/EscapeManagerProvider';
 import api from '../../lib/api';
-vi.mock('../../lib/api', () => ({ default: { get: vi.fn(), put: vi.fn() } }));
+vi.mock('../../lib/api', () => ({ default: { get: vi.fn(), patch: vi.fn() } }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 it('opens settings menus repeatedly, selects with keyboard, and Escape preserves the parent modal', async () => {
   vi.mocked(api.get).mockResolvedValue({ data: { workspace: { maxOpenNotes: 2 }, local: {}, keybindings: {} } });
-  vi.mocked(api.put).mockImplementation(async (_url, data) => ({ data }));
+  vi.mocked(api.patch).mockImplementation(async (_url, data) => ({ data }));
   const close = vi.fn();
   render(<StrictMode><SettingsProvider><EscapeManagerProvider><SettingsModal open onClose={close} /></EscapeManagerProvider></SettingsProvider></StrictMode>);
   await waitFor(() => expect(api.get).toHaveBeenCalled());
@@ -23,7 +23,7 @@ it('opens settings menus repeatedly, selects with keyboard, and Escape preserves
   fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Home' });
   expect(document.activeElement?.textContent).toContain('1 note');
   fireEvent.click(document.activeElement!);
-  await waitFor(() => expect(api.put).toHaveBeenCalled());
+  await waitFor(() => expect(api.patch).toHaveBeenCalled());
   expect(screen.queryByRole('listbox')).toBeNull();
   fireEvent.click(screen.getByText('1 note').closest('button')!);
   fireEvent(window, new Event('resize')); fireEvent(window, new Event('scroll'));

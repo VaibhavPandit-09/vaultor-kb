@@ -1,10 +1,10 @@
 # Desktop application and private-network hosting
 
-Created/reviewed: 2026-10-04. Status: D1–D5 implemented on Windows; D6 implemented; D7–D9 not started; D10 deferred. Manual OS/Mac validation remains pending.
+Created/reviewed: 2026-10-04. Status: D1–D7 implemented on Windows; D8–D9 not started; D10 deferred. Manual OS/Mac validation remains pending.
 
 ## Delivery and maintenance
 
-Deliver one sprint per explicit authorization, stop after its handoff, and do not interpret Continue as authorization for another sprint if the current one is complete. Interrupted work may resume. The initial request authorized planning; subsequent calls explicitly authorized D1, D2 and D3. D4 was authorized by “start next sprint” and is implemented; D5 was authorized by “start next sprint” and is implemented. D6 was authorized by the next sprint request plus the desktop chrome corrections and is implemented; stop before D7.
+Deliver one sprint per explicit authorization, stop after its handoff, and do not interpret Continue as authorization for another sprint if the current one is complete. Interrupted work may resume. The initial request authorized planning; subsequent calls explicitly authorized D1, D2 and D3. D4 was authorized by “start next sprint” and is implemented; D5 was authorized by “start next sprint” and is implemented. D6 was authorized by the next sprint request plus the desktop chrome corrections and is implemented. D7 is now authorized, including native window hit-testing, default OS theme and unified application/tray icons. Stop before D8.
 
 Maintain this tracker after each completed task: checklists, decisions, blockers, exact checks and remaining limits. Update CODEBASE.md and relevant authoritative docs in the same change. Use docs/README.md for discovery. Historical trackers retain their history; their completed work is not restarted. Archive this tracker under docs/history/ when the sequence is complete, preserving current explanations in supporting docs.
 
@@ -185,14 +185,22 @@ Validation: fifteen focused frontend cases passed (13 desktop/switch/recovery/ch
 
 ### D7 — Multi-device change propagation and mutation reliability
 
-- [ ] Commit-only bounded SSE notifications/replay/gap refresh, authentication/revocation, reconnect and selected-host ownership.
-- [ ] Reconcile Library/sidebar/backlinks/open clean documents while preserving dirty content/title/undo and source-specific conflicts; avoid navigation flicker or broad refresh per keystroke.
-- [ ] Audit and fix cross-device settings updates/metadata mutations; add atomic scoped settings contract and require revision preconditions on network note writes.
-- [ ] Handle other-device deletion and workspace replacement with retained recovery copies; event replay never replays commands/imports/downloads.
-- [ ] Emit operation/hosting restart notifications without making an unreachable client block shutdown indefinitely.
-- [ ] Targeted disposable two-client checks: simultaneous notes/settings/pins/memberships, committed rollback/no-event, gap/reconnect/restart, stale notes, deletion/replacement and no diagnostics/log storms.
+- [x] Fix mouse interaction with native window controls; test actual pointer clicks, not just direct maximize calls.
+- [x] Add OS theme as the default, live-follow OS changes, preserve explicit dark/light choices.
+- [x] Use a consistent Vaultor glyph for window/taskbar/tray and future installers.
+
+- [x] Commit-only bounded SSE notifications/replay/gap refresh, authentication/revocation, reconnect and selected-host ownership.
+- [x] Reconcile Library/sidebar/backlinks/open clean documents while preserving dirty content/title/undo and source-specific conflicts; avoid navigation flicker or broad refresh per keystroke.
+- [x] Audit and fix cross-device settings updates/metadata mutations; add atomic scoped settings contract and require revision preconditions on network note writes.
+- [x] Handle other-device deletion and workspace replacement with retained recovery copies; event replay never replays commands/imports/downloads.
+- [x] Emit operation/hosting restart notifications without making an unreachable client block shutdown indefinitely.
+- [x] Targeted disposable two-client checks: simultaneous notes/settings/pins/memberships, committed rollback/no-event, gap/reconnect/restart, stale notes, deletion/replacement and no diagnostics/log storms.
 
 Acceptance: saved changes appear on other devices, stale edits never silently overwrite, settings updates do not lose another client's fields, and reconnect reconciles safely.
+
+D7 implementation/results: bounded approved metadata SSE and selected-host cancellation; clean-note refresh without echo saves; dirty/deleted drafts retained; generation replacement isolation; scoped atomic settings and required HTTPS revisions. Fixed Windows control hit testing by excluding heading drag regions, made OS theme default/live and added canonical V icon assets. Icons are runtime window/tray assets; executable/pinned shortcut branding is D8. See [MULTI-DEVICE.md](MULTI-DEVICE.md) for authoritative behavior and limits.
+
+Validation: 29 focused frontend cases, one native-stream Node case and one actual disposable owner/approved HTTPS integration case passed. Integration covers concurrent settings, note preconditions, tags/membership/pins, merge/replace notification, rollback/no-event, cursor replay/gap and revoke. Frontend/desktop compilation/build, targeted lint, desktop syntax and Java main/test/JAR staging passed. Real Windows pointer checks cover menu/minimize/maximize/restore/close in Library and note views; native OS-theme following, saved remote edit without extra save and deletion recovery passed. Dark/light/narrow captures inspected. Fixed SSE retaining SQLite’s only connection, native browser-stream fallback and an unnecessary global error banner during background deletion reconciliation. Expected deletion 404s remain bounded diagnostics. No Docker, broad smoke, user data or OS trust/firewall/login changes. Real Windows–Mac interaction, prolonged disconnection/load, host-restart delivery timing and actual browser OS-trust checks remain D9; prior conflict/restart service coverage was not repeated broadly. D7 complete; stop before D8.
 
 ### D8 — Personal installers, existing-data onboarding and zero-cost updates
 
@@ -239,7 +247,7 @@ Keep precise request/response schemas authoritative in OpenAPI during each API s
 | GET /api/owner/devices; DELETE /api/owner/devices/{id} | Owner-only approved device listing/revocation |
 | GET/PUT /api/owner/sharing | Owner-only current hosting configuration; disabling closes listener/streams |
 | GET /api/owner/trust/certificate | Owner-only public trust certificate export; never private material |
-| GET /api/events | Approved SSE invalidations with resume/gap behavior |
+  | GET /api/changes | Approved SSE invalidations with resume/gap behavior |
 | PATCH /api/settings | Atomic scoped updates, validation and concurrency errors; replaces overlapping full-document client writes |
 | PUT /api/resources/{id}/note | Existing conditional update; paired network callers must provide If-Match |
 | Existing resources, organization, transfer, diagnostics APIs | Same services, approved access, request IDs and cancellation semantics |
@@ -255,8 +263,8 @@ Native platform interfaces cover connection verify/activate, host start/stop/sta
 | D3 | Implemented on Windows; Mac validation pending | Bundled Temurin/server, data ownership, portable editor/relaunch; Mac package build/native checks require access |
 | D4 | Implemented on Windows; manual OS/Mac validation pending | Native files/tray/login/quit; pending cases listed above |
 | D5 | Implemented | Disposable both-connector/restart checks passed; D6 UX pending |
-| D6 | Not started | Depends on D5 |
-| D7 | Not started | Depends on D6; required before LAN release |
+| D6 | Implemented on Windows | Paired connections, host UX and integrated chrome; real Mac/network checks D9 |
+| D7 | Implemented on Windows | Saved-change propagation, scoped mutations, native control fixes, default OS theme and unified icons; 29 frontend + one Node + one disposable backend case and targeted native checks passed |
 | D8 | Not started | Depends on D7; release feed is optional, local packages are baseline |
 | D9 | Not started | Depends on D8; two-device/Mac access required |
 | D10 | Deferred follow-up | Requires separate authorization and Ubuntu validation environment |
@@ -277,3 +285,5 @@ Deferred work: Android, Mac Intel, full offline database/sync, collaborative typ
 - 2026-10-04: implemented authorized D4 native files, lifecycle and opt-in startup; updated authoritative desktop/platform/export/session/API/operations/codebase docs. Focused compilation/tests and disposable Windows native lifecycle/PDF preview passed; manual native dialog/OS-login and Mac verification remain. No LAN or D5 implementation.
 
 - 2026-10-04: completed authorized D5 host trust/listeners, pairing/owner browser access, CSRF and approved-agent/OpenAPI contracts. Updated codebase/platform/desktop/operations/API/index docs and HOST-ACCESS.md. Focused actual connectors/restart and transport tests passed; no D6 implementation or real deployment/trust changes.
+
+- 2026-10-04: completed authorized D7 and user-requested chrome/theme/icon corrections. Updated authoritative multi-device/API/desktop/platform/host/session/operations/codebase docs. Exact focused results and deferred native/Mac/fault coverage are recorded above; no D8 implementation.

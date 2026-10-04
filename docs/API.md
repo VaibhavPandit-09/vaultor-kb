@@ -8,7 +8,7 @@
 
 Before opening a workspace or sending application requests, clients inspect `GET /api/capabilities` (`getCapabilities`). The explicit DTO includes `serverBuild`, `apiProtocolVersion` and `minimumClientProtocolVersion`, plus existing transfer/export/diagnostic metadata; `build` is the server-build alias. Current client/server protocol is 1. Accept only a protocol inside the server's inclusive supported range. Build strings identify releases, not compatibility. Missing metadata or an older protocol requires updating the server; a higher minimum requires updating the client. Frontend/backend must be deployed together. See [PLATFORM.md](PLATFORM.md) for handshake caching, cancellation and platform ownership.
 
-Frontend diagnostic events retain `build` (client build), optional `serverBuild`, `apiProtocolVersion` (client protocol) and `connectionEpoch` (ephemeral delivery ownership), alongside existing bounded fields. All requests, including bootstrap and diagnostic batches, carry `X-Request-ID`. Failed binary downloads preserve bounded JSON problem details rather than treating the problem as a downloaded file. Capabilities now report authentication=true for D5 host access; protocol remains 1 and resource contracts are unchanged. Bounded capabilities/host identity are public; workspace/diagnostic/OpenAPI access requires approval. No stream is implemented yet.
+Frontend diagnostic events retain `build` (client build), optional `serverBuild`, `apiProtocolVersion` (client protocol) and `connectionEpoch` (ephemeral delivery ownership), alongside existing bounded fields. All requests, including bootstrap and diagnostic batches, carry `X-Request-ID`. Failed binary downloads preserve bounded JSON problem details rather than treating the problem as a downloaded file. Capabilities report authentication=true, changeFeed=true and scopedSettings=true; protocol remains 1. Bounded capabilities/host identity are public; workspace/diagnostic/OpenAPI/stream access requires approval. D7 contracts are detailed in [MULTI-DEVICE.md](MULTI-DEVICE.md); deploy current frontend/backend together.
 
 ## Ordinary file import
 
@@ -28,7 +28,7 @@ Send an optional X-Request-ID (1–80 alphanumeric, underscore or hyphen charact
 
 ## Conditional note saves and workspace identity
 
-Read a resource detail's opaque revision and send it quoted as an If-Match header on PUT /resources/{id}/note, alongside the complete title/content. Success returns the new revision. A 412 NOTE_REVISION_CONFLICT leaves the saved note unchanged: retain your draft, fetch fresh detail and resolve explicitly. Do not automatically retry with the newly fetched revision over someone else's content. The UI always uses conditional note saves. Omitting If-Match is an explicit unconditional API update. Revisions can also change on JPA metadata updates; they are not timestamps or portable identifiers.
+Read a resource detail's opaque revision and send it quoted as an If-Match header on PUT /resources/{id}/note, alongside the complete title/content. Success returns the new revision. A 412 NOTE_REVISION_CONFLICT leaves the saved note unchanged: retain your draft, fetch fresh detail and resolve explicitly. Do not automatically retry with the newly fetched revision over someone else's content. The UI always uses conditional note saves. HTTPS callers omitting If-Match receive 428 NOTE_REVISION_REQUIRED; local legacy callers may explicitly update unconditionally. Revisions can also change on JPA metadata updates; they are not timestamps or portable identifiers.
 
 GET /workspace/identity returns {id,generation}. Identity persists for this storage directory; workspace replace changes generation transactionally, while merge preserves it. Resource replacement also creates fresh opaque revisions. Neither identity/generation nor resource revision internals appear in portable ZIP archives. See [SESSIONS.md](SESSIONS.md) for browser restoration and recovery.
 
@@ -62,7 +62,9 @@ GET /workspace/identity returns {id,generation}. Identity persists for this stor
 | GET /api/resources/{id}/download | downloadFile | downloadFile |
 | GET /api/exports/{id}/download | downloadExport | downloadExport |
 | GET /api/settings | getSettings | getSettings |
-| PUT /api/settings | replaceSettings | replaceSettings |
+| PATCH /api/settings | patchSettings | Atomic changed-leaf settings merge; null removes a leaf |
+| PUT /api/settings | replaceSettings | Local legacy replacement; rejected on HTTPS |
+| GET /api/changes | watchWorkspaceChanges | Approved metadata-only SSE with cursor replay/reset |
 | GET /api/settings/workspace | getWorkspaceSettings | getWorkspaceSettings |
 | PUT /api/settings/workspace | updateWorkspaceSettings | updateWorkspaceSettings |
 | DELETE /api/settings/workspace | resetWorkspaceSettings | resetWorkspaceSettings |
@@ -175,3 +177,7 @@ N6 retains the existing API contracts. Concurrent application transactions seria
 Desktop lifecycle checks GET /api/operations/activity, returning `{ "active": 0 }`. It counts persisted QUEUED, RUNNING and CLEANUP transfers, excluding PREVIEW and completed results. It is a read-only ordinary application API, not an HTTP server shutdown/control endpoint. The private desktop owner channel separately quiesces mutations and drains active work before shutdown.
 
 D6 uses the existing host access/approval/sharing contracts; no workspace DTO, document format, database schema or endpoint changed. Main injects approved device credentials for paired HTTPS; JSON and native file requests verify the same host pin. Browser approval retry changes are UI-only. Discovery/window/profile operations are narrow Electron IPC, not privileged debug APIs. HOST-ACCESS.md owns current contracts and limits.
+
+## D7 settings and saved-change contracts
+
+OpenAPI 1.3.0 documents `patchSettings` and `watchWorkspaceChanges`. `PATCH /settings` atomically merges changed scalar leaves under workspace/local/keybindings; null removes a leaf. Different fields survive concurrent clients, while same-field edits are last committed wins. Full PUT remains local legacy only; HTTPS callers use PATCH. `GET /changes?cursor=...` is approved metadata-only SSE with bounded replay and reset on gaps/restart. Both browser and desktop use the ordinary approved application services. MULTI-DEVICE.md owns examples, bounds, revision requirements and reconciliation; no privileged debug execution endpoint exists.

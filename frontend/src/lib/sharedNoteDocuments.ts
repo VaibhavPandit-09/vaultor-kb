@@ -1,5 +1,5 @@
 import { Extension, type Editor } from '@tiptap/core';
-import { Plugin, type Transaction, type EditorState } from '@tiptap/pm/state';
+import { Plugin, TextSelection, type Transaction, type EditorState } from '@tiptap/pm/state';
 import type { Schema } from '@tiptap/pm/model';
 import { history, undo, redo } from '@tiptap/pm/history';
 
@@ -19,6 +19,17 @@ export const SharedHistory = Extension.create({
 
 /** Broadcast steps synchronously; local selection/plugin state remain per view. */
 export class SharedNoteDocuments {
+  acceptSaved(noteId: string, content: unknown) {
+    for (const editor of this.groups.get(noteId) ?? []) {
+      if (editor.isDestroyed) continue;
+      const doc = editor.schema.nodeFromJSON(content);
+      if (editor.state.doc.eq(doc)) continue;
+      const tr = editor.state.tr.replaceWith(0, editor.state.doc.content.size, doc.content).setMeta(mirror, true);
+      const clamp=(pos:number)=>tr.doc.resolve(Math.max(0,Math.min(pos,tr.doc.content.size)));
+      tr.setSelection(TextSelection.between(clamp(editor.state.selection.anchor),clamp(editor.state.selection.head)));
+      editor.view.dispatch(resetSharedHistory(tr, editor.state));
+    }
+  }
   private schema?: Schema;
   // ProseMirror steps/history contain NodeType identities, so sibling editors must
   // use the same schema instance, selected before their initial state is created.

@@ -31,8 +31,27 @@ public class SettingsService {
         persistSettings(normalized);
         return normalized;
     }
+    /** Merge only supplied leaf fields inside one database transaction, preserving other clients. */
+    @org.springframework.transaction.annotation.Transactional
+    public SettingsDocument patch(tools.jackson.databind.JsonNode incoming) {
+        if(incoming==null || !incoming.isObject() || incoming.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8).length>65536)throw new IllegalArgumentException("Settings patch must be an object up to 64 KiB");
+        var current=(tools.jackson.databind.node.ObjectNode)objectMapper.valueToTree(getSettings());
+        merge(current,incoming,0);
+        return updateSettings(objectMapper.treeToValue(current,SettingsDocument.class));
+    }
+    private void merge(tools.jackson.databind.node.ObjectNode target,tools.jackson.databind.JsonNode patch,int depth) {
+        if(depth>4)throw new IllegalArgumentException("Invalid settings patch depth");
+        for(var entry:patch.properties()) {
+            String key=entry.getKey();var value=entry.getValue();
+            if(key.length()>100 || depth==0 && !java.util.Set.of("workspace","local","keybindings").contains(key))throw new IllegalArgumentException("Invalid settings patch field");
+            if(value.isObject()) {var child=target.get(key);if(child==null || !child.isObject())child=target.putObject(key);merge((tools.jackson.databind.node.ObjectNode)child,value,depth+1);}
+            else if(value.isNull())target.remove(key);
+            else if(value.isValueNode())target.set(key,value);
+            else throw new IllegalArgumentException("Settings patch fields must be scalar values");
+        }
+    }
 
-    public WorkspaceSettings resetWorkspaceSettings() {
+    @org.springframework.transaction.annotation.Transactional public WorkspaceSettings resetWorkspaceSettings() {
         SettingsDocument current = getSettings();
         SettingsDocument updated = new SettingsDocument(defaultWorkspaceSettings(), current.local(), current.keybindings());
         persistSettings(updated);
@@ -120,7 +139,7 @@ public class SettingsService {
             return defaultLocalSettings();
         }
 
-        String theme = "light".equalsIgnoreCase(incoming.theme()) ? "light" : "dark";
+        String theme = "light".equalsIgnoreCase(incoming.theme()) ? "light" : "dark".equalsIgnoreCase(incoming.theme()) ? "dark" : "os";
         String accentColor = isAccentColor(incoming.accentColor()) ? incoming.accentColor() : defaultLocalSettings().accentColor();
         String density = "compact".equalsIgnoreCase(incoming.density()) ? "compact" : "comfortable";
         String animationMode = "smooth".equalsIgnoreCase(incoming.animationMode()) ? "smooth" : "snappy";
@@ -170,7 +189,7 @@ public class SettingsService {
     }
 
     public static LocalSettings defaultLocalSettings() {
-        return new LocalSettings("dark", "blue", "comfortable", "snappy", "side", "fixed", 0.85d, false);
+        return new LocalSettings("os", "blue", "comfortable", "snappy", "side", "fixed", 0.85d, false);
     }
 
     public static final Map<String, Keybinding> DEFAULT_KEYBINDINGS = Map.of(

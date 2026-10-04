@@ -212,8 +212,9 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
           control: (
             <SettingSelect
               value={settings.local.theme}
-              onChange={(value) => updateLocalSetting('theme', value as 'dark' | 'light')}
+              onChange={(value) => updateLocalSetting('theme', value as 'os' | 'dark' | 'light')}
               options={[
+                { label: 'OS', value: 'os' },
                 { label: 'Dark', value: 'dark' },
                 { label: 'Light', value: 'light' },
               ]}

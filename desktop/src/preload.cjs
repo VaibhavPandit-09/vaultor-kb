@@ -39,6 +39,8 @@ contextBridge.exposeInMainWorld('vaultorDesktop', Object.freeze({
   probe: id => ipcRenderer.invoke('desktop:probe', id),
   activate: ticket => ipcRenderer.invoke('desktop:activate', ticket),
   request: value => ipcRenderer.invoke('desktop:request', value),
+  stream: value => ipcRenderer.invoke('desktop:stream', value),
+  onStream: callback => {const listener=(_event,value)=>callback(value);ipcRenderer.on('desktop:stream-event',listener);return()=>ipcRenderer.removeListener('desktop:stream-event',listener);},
   cancel: id => ipcRenderer.invoke('desktop:cancel', id),
   writeClipboard: text => ipcRenderer.invoke('desktop:clipboard', text),
 }));

@@ -35,3 +35,7 @@ Storage errors are visible and retryable without disabling editing or successful
 Caret positions are numeric and clamped to the restored document; there is no semantic anchoring across server edits while away. The shared editor undo history is not persisted. Recovering a copy does not duplicate its linked resource graph (linked-graph export is a separate export operation).
 
 Validation: frontend compilation, focused IndexedDB/tab identity/journal/restore/Library/recovery component tests, and a disposable SQLite HTTP/transfer test covering existing-schema upgrade, conditional updates, stale rejection, generation rollback and replacement. N6 added malformed-record validation and checked real Dashboard refresh restoration using disposable storage; see [INTEGRATION.md](INTEGRATION.md). Invalid layouts are discarded with an explanation while recovery journals remain readable. No production data or Docker rebuild.
+
+## Incoming saved changes
+
+D7 approved streams refresh clean open documents/title/revision without enqueueing another save. Dirty content/title/undo retain their original base revision; changed server content prompts review and conditional saving prevents overwrites. A deleted open note remains displayed with a recoverable copy. Replacement generation invalidates layout/transient actions while keeping former drafts separate. Focus/reconnect reconcile saved state only; no command/import/download replay or offline synchronization. See MULTI-DEVICE.md for authoritative delivery bounds and actual verification.

@@ -12,6 +12,13 @@ import { EscapeManagerProvider } from './escape/EscapeManagerProvider';
 import axios from 'axios';
 const browser = getPlatform();
 const state: DesktopState = { version: 1, clientId: 'client', sessionId: 'client', profiles: [{ id: 'profile-a', name: 'Local A', kind: 'local', address: 'http://127.0.0.1:8080' }], active: 'profile-a', token: 'token' };
+it('native change streams keep credentials in main and release their listener on cancellation',async()=>{
+  const native=bridge();window.vaultorDesktop=native;let receive!:(event:{id:string;data?:unknown;closed?:boolean})=>void;const remove=vi.fn();
+  native.stream=vi.fn(async()=>({ok:true as const,value:undefined}));native.onStream=vi.fn(fn=>{receive=fn;return remove;});activateDesktop(state);
+  const controller=new AbortController(),sink=vi.fn();await getPlatform().stream!('/changes',controller.signal,sink);
+  const id=vi.mocked(native.stream).mock.calls[0][0].id;receive({id,data:{kind:'resources'}});expect(sink).toHaveBeenCalledTimes(1);controller.abort();receive({id,data:{kind:'resources'}});
+  expect(sink).toHaveBeenCalledTimes(1);expect(remove).toHaveBeenCalled();expect(native.cancel).toHaveBeenCalledWith(id);expect(native.stream).toHaveBeenCalledWith({id,token:state.token,path:'/changes'});
+});
 it('native selections upload opaque tickets instead of reading a large file into renderer memory',async()=>{
   const native=bridge();window.vaultorDesktop=native;
   native.pickFiles=vi.fn(async()=>({ok:true as const,value:[{id:'approved',name:'large.csv',size:40*1024*1024,lastModified:1}]}));

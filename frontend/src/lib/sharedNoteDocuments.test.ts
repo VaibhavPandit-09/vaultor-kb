@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { SharedHistory, SharedNoteDocuments, resetSharedHistory } from './sharedNoteDocuments';
 const editors: Editor[] = [];
 const registry = new SharedNoteDocuments();
@@ -10,6 +10,11 @@ function create(id = 'note') {
   const detach = registry.attach(id, editor); editor.on('destroy', detach); return editor;
 }
 afterEach(() => { editors.splice(0).forEach(editor => editor.destroy()); });
+it('accepts saved remote content in both clean views without emitting local edits or stale undo',()=>{
+  const a=create(),b=create();a.commands.setTextSelection(3);b.commands.setTextSelection(5);const update=vi.fn();a.on('update',({transaction})=>{if(!transaction.getMeta('vaultorSharedTransaction'))update();});
+  registry.acceptSaved('note',{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'new saved note'}]}]});
+  expect(a.getText()).toBe('new saved note');expect(b.getText()).toBe(a.getText());expect(a.state.selection.from).toBe(3);expect(b.state.selection.from).toBe(5);expect(update).not.toHaveBeenCalled();expect(a.commands.undo()).toBe(false);
+});
 it('shares synchronous steps and history while mapping independent selections', () => {
   const a = create(), b = create();
   a.commands.setTextSelection(1); b.commands.setTextSelection(6);

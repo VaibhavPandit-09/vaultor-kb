@@ -33,6 +33,7 @@ public class TransferService {
     private final RelationshipService linkService;
     private final SettingsService settings;
     private final WorkspaceIdentityService workspaceIdentity;
+    private final ChangeFeed changeFeed;
     private final FileStorageService files;
     private final DocumentService documents;
     private final ObjectMapper mapper;
@@ -77,6 +78,7 @@ public class TransferService {
     }
     private void phase(TransferOperation op,String status,String phase,int progress) {
         op.setStatus(status);op.setPhase(phase);op.setProgress(progress);saveOperationStatus(op);
+        changeFeed.committed("operation",List.of(op.getId()),op.getRequestId());
         log.info("transfer operationId={} kind={} phase={} progress={} requestId={}",op.getId(),op.getKind(),phase,progress,op.getRequestId());
     }
     // Repository save has its own transaction: retry a fresh transaction on transient SQLite contention.
@@ -232,7 +234,12 @@ public class TransferService {
         if(op.getMode()!=null) { if(!mode.equals(op.getMode())) throw new IllegalArgumentException("Import already committed with another mode");return dto(op); }
         if(!op.getStatus().equals("PREVIEW")) throw new IllegalArgumentException("Import is not ready");
         op.setMode(mode);phase(op,"QUEUED","queued",0);
-        worker.submit(()->run(op,()->gate.exclusive(()->apply(op))));return dto(op);
+        worker.submit(()->run(op,()-> {
+            gate.exclusive(()->apply(op));
+            // Reconcile again after the mutation gate opens, including interrupted cleanup.
+            if(List.of("CLEANUP","SUCCEEDED").contains(operations.findById(op.getId()).orElseThrow().getStatus()))
+                changeFeed.committed("workspace",List.of(),op.getRequestId());
+        }));return dto(op);
     }
     public synchronized Operation cancel(String id) {
         var op=operations.findById(id).orElseThrow();
@@ -279,6 +286,7 @@ public class TransferService {
                 resources.flush();
                 if(w.organization()!=null) organization.restore(w.organization(),ids,"merge".equals(op.getMode()));
                 op.setJournal(mapper.writeValueAsString(oldFiles));op.setStatus("CLEANUP");op.setPhase("cleanup");operations.save(op);
+                changeFeed.committed("workspace",List.of(),op.getRequestId());
             });
             cleanup(op);
         } catch(Exception e) {

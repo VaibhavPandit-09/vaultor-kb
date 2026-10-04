@@ -32,14 +32,14 @@ public class TagService {
                 .orElseGet(() -> tagRepository.save(new Tag(safeName, generateColorForTagName(safeName))));
     }
 
-    public void addTagToResource(String resourceId, String tagName) {
+    @Transactional public void addTagToResource(String resourceId, String tagName) {
         Resource r = resourceRepository.findById(resourceId).orElseThrow();
         Tag t = getOrCreateTag(tagName);
         r.getTags().add(t);
         resourceRepository.save(r);
     }
 
-    public void removeTagFromResource(String resourceId, String tagName) {
+    @Transactional public void removeTagFromResource(String resourceId, String tagName) {
         Resource r = resourceRepository.findById(resourceId).orElseThrow();
         tagRepository.findByNameIgnoreCase(tagName.trim()).ifPresent(t -> {
             r.getTags().remove(t);

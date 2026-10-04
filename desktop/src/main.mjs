@@ -12,9 +12,11 @@ import { HostingPreferences } from './hosting.mjs';
 import { Credentials } from './credentials.mjs';
 import { Discovery } from './discovery.mjs';
 import { Connections } from './connections.mjs';
+import { startChangeStream } from './change-stream.mjs';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'vaultor', privileges: { standard: true, secure: true, supportFetchAPI: true } },{scheme:'vaultor-file',privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true}}]);
 app.setName('Vaultor');
+if(process.platform==='win32')app.setAppUserModelId('personal.vaultor.desktop');
 const smokeDirectory = process.env.VAULTOR_SMOKE_DIRECTORY || process.env.VAULTOR_OWNED_SMOKE_DIRECTORY || process.env.VAULTOR_CHROME_SMOKE_DIRECTORY;
 if (smokeDirectory) app.setPath('userData', smokeDirectory);
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -59,6 +61,8 @@ else {
   }
   app.on('second-instance', () => { if (window) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } else app.emit('activate'); });
   app.whenReady().then(async () => {
+    const appIcon=nativeImage.createFromPath(fileURLToPath(new URL('../assets/vaultor.png',import.meta.url)));
+    if(process.platform==='darwin')app.dock?.setIcon(appIcon);
     const ui = fileURLToPath(new URL('../ui/', import.meta.url));
     protocol.handle('vaultor', async request => {
       try {
@@ -139,10 +143,11 @@ else {
       return state();
     }));
     handle('desktop:request', value => transport.request(value));
+    handle('desktop:stream', value => startChangeStream(transport,value,event=>window?.webContents.send('desktop:stream-event',event)));
     handle('desktop:cancel', id => { if (typeof id !== 'string' || id.length > 80) throw new Error('Invalid cancellation.'); transport.cancel(id); });
     handle('desktop:clipboard', text => { if (typeof text !== 'string' || text.length > 1048576) throw new Error('Clipboard text exceeds 1 MiB.'); clipboard.writeText(text); });
     const createWindow = () => {
-      window = new BrowserWindow({ frame: false, autoHideMenuBar: true, width: 1320, height: 900, minWidth: 600, minHeight: 480, show: !smokeDirectory && !process.argv.includes('--background') && !(process.platform==='darwin' && app.getLoginItemSettings().wasOpenedAtLogin), backgroundColor: '#0b1220', title: 'Vaultor', webPreferences: { preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false, plugins: true } });
+      window = new BrowserWindow({ icon: appIcon, frame: false, autoHideMenuBar: true, width: 1320, height: 900, minWidth: 600, minHeight: 480, show: !smokeDirectory && !process.argv.includes('--background') && !(process.platform==='darwin' && app.getLoginItemSettings().wasOpenedAtLogin), backgroundColor: '#0b1220', title: 'Vaultor', webPreferences: { preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false, plugins: true } });
       window.setMenuBarVisibility(false);
       if (process.platform !== 'darwin') window.setMenu(null);
       for (const event of ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen']) window.on(event, () => window.webContents.send('desktop:window-status', { maximized: window.isMaximized() }));
@@ -176,8 +181,9 @@ else {
     const showApp=()=>{ if(!window) createWindow(); window.show();window.focus(); };
     app.on('activate',showApp);
     try {
-      const bitmap=Buffer.alloc(16*16*4); for(let y=0;y<16;y++) for(let x=0;x<16;x++){const i=(y*16+x)*4;const v=y>=4&&y<=12&&(x===Math.floor(4+(y-4)/2)||x===Math.floor(12-(y-4)/2));bitmap.set(v?[255,255,255,255]:[59,130,246,255],i);}
-      tray=new Tray(nativeImage.createFromBitmap(bitmap,{width:16,height:16}));tray.setToolTip('Vaultor');tray.on('click',showApp);
+      const trayIcon=process.platform==='darwin'?nativeImage.createFromPath(fileURLToPath(new URL('../assets/vaultorTemplate.png',import.meta.url))):nativeImage.createFromPath(fileURLToPath(new URL('../assets/vaultor-16.png',import.meta.url)));
+      if(process.platform==='darwin')trayIcon.setTemplateImage(true);
+      tray=new Tray(trayIcon);tray.setToolTip('Vaultor');tray.on('click',showApp);
       const trayMenu=()=>tray.setContextMenu(Menu.buildFromTemplate([{label:'Show Vaultor',click:showApp},{label:'Connections & hosting…',click:()=>{showApp();window.webContents.send('desktop:connections');}},{label:'Open in browser',enabled:Boolean(owned.address),click:()=>void openOwnerBrowser().catch(error=>{owned.error=error.message;})},{type:'separator'},{label:'Quit Vaultor',click:()=>app.quit()}]));
       trayMenu();owned.on('status',trayMenu);
     } catch(error){ console.error('Tray unavailable:',error.message);window.show(); }
@@ -194,7 +200,7 @@ else {
     }
     if (process.env.VAULTOR_CHROME_SMOKE_DIRECTORY) {
       const { runChromeSmoke } = await import('../scripts/native-chrome-smoke.mjs');
-      try { await runChromeSmoke(window, smokeDirectory); await owned.stop({ force: true }); discovery.destroy(); app.exit(0); }
+      try { await runChromeSmoke(window, smokeDirectory, owned); await owned.stop({ force: true }); discovery.destroy(); app.exit(0); }
       catch (error) { console.error(error); await owned.stop({ force: true }); discovery.destroy(); app.exit(1); }
     }
   }).catch(error => { console.error('Desktop startup failed:', error.message); app.exit(1); });

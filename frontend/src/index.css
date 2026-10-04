@@ -414,16 +414,18 @@ button {
 
 /* Desktop chrome occupies the existing workspace top edge, never a new title row. */
 .desktop-shell { position:relative; }
-.desktop-window-controls { position:absolute; top:0; right:0; height:34px; display:flex; align-items:center; z-index:3100; border-bottom-left-radius:10px; background:var(--surface-2); color:var(--text-secondary); }
+.desktop-window-controls { -webkit-app-region:no-drag; position:absolute; top:0; right:0; height:34px; display:flex; align-items:center; z-index:3100; border-bottom-left-radius:10px; background:var(--surface-2); color:var(--text-secondary); }
 .desktop-window-controls button { -webkit-app-region:no-drag; display:grid; place-items:center; width:36px; height:34px; transition:background-color 120ms; }
 .desktop-window-controls button:hover { background:var(--surface-3); color:var(--text-primary); }
 .desktop-window-controls button:focus-visible { outline:2px solid var(--accent,#3b82f6); outline-offset:-3px; }
 .desktop-window-controls .desktop-close:hover { background:#dc2626; color:white; }
 .desktop-drag-grip { -webkit-app-region:drag; width:20px; height:26px; cursor:move; }
 .desktop-drag-grip::before { content:''; display:block; width:2px; height:12px; margin:7px auto; background:var(--border-color); }
-.desktop-shell .journey-bar { padding-right:170px; -webkit-app-region:drag; }
+.desktop-shell .journey-bar { padding-right:170px; position:relative; }
 .desktop-shell .journey-bar button,.desktop-shell .journey-bar ol { -webkit-app-region:no-drag; }
-.desktop-shell .library-heading { padding-right:175px; -webkit-app-region:drag; }
+.desktop-shell .library-heading { padding-right:175px; position:relative; }
+.desktop-shell .journey-bar::before,.desktop-shell .library-heading::before { content:''; position:absolute; top:0; left:0; right:170px; height:30px; -webkit-app-region:drag; pointer-events:none; }
+.desktop-shell .journey-bar button,.desktop-shell .journey-bar ol,.desktop-shell .library-heading > * { position:relative; -webkit-app-region:no-drag; }
 .desktop-shell .library-heading button,.desktop-shell .library-heading input { -webkit-app-region:no-drag; }
 .desktop-connection-button { display:flex; align-items:center; gap:.5rem; margin:.25rem .5rem; padding:.5rem; border-radius:8px; font-size:.75rem; color:var(--text-secondary); text-align:left; }
 .desktop-connection-button:hover { background:var(--surface-3); color:var(--text-primary); }

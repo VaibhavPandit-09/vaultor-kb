@@ -1,6 +1,7 @@
 # Documentation
 
-- [Desktop and private-network plan](desktop-network-plan.md): D1–D6 foundation, owned bundled server, native files/lifecycle and host HTTPS/pairing services implemented on Windows; manual OS/Mac validation pending. Connection/trust UX and integrated chrome implemented; D7–D9 concurrent clients and zero-cost update delivery remain; D10 Ubuntu follow-up. One sprint per authorization.
+- [Desktop and private-network plan](desktop-network-plan.md): D1–D7 implemented on Windows, including owned server, native lifecycle, paired HTTPS, saved-change propagation and integrated chrome; D8 installers/updates and D9 real Windows–Mac verification remain; D10 Ubuntu follow-up. One sprint per authorization.
+- [Saved changes across devices](MULTI-DEVICE.md): bounded approved SSE, clean-note refresh, draft/deletion/replacement recovery, scoped settings, revision requirements and actual validation.
 - [Host access and pairing](HOST-ACCESS.md): owner/browser bootstrap, opt-in HTTPS, stable host trust, device approval/revoke, CSRF, approved agents and current limits.
 - [Desktop shell and connections](DESKTOP.md): bundled runtime/server packages, data/process ownership, startup logs, paired profiles/discovery, integrated chrome, persistent sessions, native bridge and current limits.
 - [Platform and connection boundary](PLATFORM.md): browser/platform transport, cancellation, protocol checks, download outcomes, build diagnostics and sidebar shortcut migration.

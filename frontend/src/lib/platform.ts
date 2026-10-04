@@ -35,6 +35,16 @@ const browserAdapter: AxiosAdapter = async config => {
 };
 const browser: PlatformServices = {
   kind: 'browser', request: browserAdapter,
+  async stream(path, signal, receive) {
+    const controller=new AbortController();const combined=AbortSignal.any([signal,controller.signal]);
+    const response=await fetch('/api'+path,{signal:combined,credentials:'same-origin',headers:{Accept:'text/event-stream'},redirect:'error'});
+    if(!response.ok || !response.headers.get('content-type')?.includes('text/event-stream')){await response.body?.cancel();throw new Error('Change notifications unavailable.');}
+    const reader=response.body!.getReader();
+    void (async()=>{let buffer='';const decoder=new TextDecoder();try{
+      for(;;){const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true}).replaceAll('\r','');if(buffer.length>32768)throw new Error('Change event limit exceeded');let end;while((end=buffer.indexOf('\n\n'))>=0){const frame=buffer.slice(0,end);buffer=buffer.slice(end+2);const data=frame.split('\n').filter(l=>l.startsWith('data:')).map(l=>l.slice(5).trimStart()).join('\n');if(data)receive(JSON.parse(data));}}
+    }catch{/* Reconnect controller owns failures. */}finally{await reader.cancel().catch(()=>{});if(!combined.aborted)receive({kind:'disconnected'});}})();
+    return {close:()=>controller.abort()};
+  },
   async saveBlob(blob, filename) {
     const url = URL.createObjectURL(blob), link = document.createElement('a');
     link.href = url; link.download = filename; document.body.appendChild(link);

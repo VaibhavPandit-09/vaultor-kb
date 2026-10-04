@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Vaultor API",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/HOST-ACCESS.md."
   },
   "servers": [
@@ -547,6 +547,9 @@
                 }
               }
             }
+          },
+          "428": {
+            "description": "If-Match required for paired HTTPS notes; NOTE_REVISION_REQUIRED problem response"
           }
         },
         "requestBody": {
@@ -1806,6 +1809,91 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Settings"
+              }
+            }
+          }
+        },
+        "description": "Full document replacement for local legacy callers. Paired HTTPS clients must use PATCH to avoid overwriting unrelated settings."
+      },
+      "patch": {
+        "operationId": "patchSettings",
+        "summary": "Atomically update supplied settings leaves",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsPatch"
+              },
+              "example": {
+                "workspace": {
+                  "maxOpenNotes": 3
+                },
+                "local": {
+                  "device-id": {
+                    "theme": "os"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Correlation ID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Workspace busy or operation conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected failure; see request ID in logs",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           }
@@ -6245,6 +6333,42 @@
           }
         ]
       }
+    },
+    "/changes": {
+      "get": {
+        "operationId": "watchWorkspaceChanges",
+        "summary": "Authenticated bounded workspace change stream",
+        "description": "SSE named change; cursor is process epoch and sequence. Replays at most 64 events from a log of 1000 events/10 minutes; older cursors receive reset. Five-second heartbeats, 120-second connection lifetime, max 64 streams. Revocation closes existing streams. Events contain metadata only, not note bodies or credentials.",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-sent events",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "event:change\nid:12345678-abcd-abcd-abcd-123456789abc:1\ndata:{\"cursor\":\"12345678-abcd-abcd-abcd-123456789abc:1\",\"kind\":\"resources\",\"ids\":[\"resource-id\"],\"requestId\":\"request-id\",\"at\":1791091800000,\"generation\":\"workspace-generation\"}\n\n"
+              }
+            }
+          },
+          "401": {
+            "description": "Device approval required"
+          },
+          "429": {
+            "description": "Too many active streams"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7260,6 +7384,12 @@
           },
           "diagnosticsRetention": {
             "type": "string"
+          },
+          "changeFeed": {
+            "type": "boolean"
+          },
+          "scopedSettings": {
+            "type": "boolean"
           }
         }
       },
@@ -7526,6 +7656,22 @@
           "fingerprint",
           "expiresAt"
         ]
+      },
+      "SettingsPatch": {
+        "type": "object",
+        "description": "Atomic recursive settings leaf patch. Omitted leaves are unchanged; null resets/removes a leaf. Up to 64 KiB, depth four. Same-leaf simultaneous edits are last committed write wins.",
+        "properties": {
+          "workspace": {
+            "type": "object"
+          },
+          "local": {
+            "type": "object"
+          },
+          "keybindings": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
       }
     },
     "securitySchemes": {

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import api from './api';
+import { settingsDiff, combineSettingsPatches, type SettingsPatch } from './settingsPatch';
 import {
   DEFAULT_KEYBINDINGS,
   getCurrentShortcutPlatform,
@@ -32,7 +33,7 @@ export type WorkspaceSettings = {
 };
 
 export type LocalSettings = {
-  theme: 'dark' | 'light';
+  theme: 'os' | 'dark' | 'light';
   accentColor: 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'teal' | 'pink' | 'cyan';
   density: 'comfortable' | 'compact';
   animationMode: 'snappy' | 'smooth';
@@ -54,6 +55,7 @@ type SettingsState = {
 };
 
 type SettingsContextValue = {
+  resolvedTheme: 'dark' | 'light';
   settings: SettingsState;
   workspaceLoaded: boolean;
   saveStatus: 'saved' | 'saving' | 'failed';
@@ -86,7 +88,7 @@ const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
 };
 
 const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
-  theme: 'dark',
+  theme: 'os',
   accentColor: 'blue',
   density: 'comfortable',
   animationMode: 'snappy',
@@ -110,6 +112,14 @@ const accentMap: Record<LocalSettings['accentColor'], string> = {
 const SettingsContext = createContext<SettingsContextValue | undefined>(undefined);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
+  const [osDark, setOsDark] = useState(() => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true);
+  useEffect(() => {
+    const media = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (!media) return;
+    const change = () => setOsDark(media.matches);
+    change(); media.addEventListener('change', change);
+    return () => media.removeEventListener('change', change);
+  }, []);
   const shortcutPlatform = getCurrentShortcutPlatform();
   const shortcutPlatformLabel = getShortcutPlatformLabel(shortcutPlatform);
   const [deviceId] = useState(() => getOrCreateDeviceId());
@@ -117,8 +127,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'failed'>('saved');
   const requestVersionRef = useRef(0);
+  const loadSequenceRef = useRef(0);
   const writeQueue = useRef<Promise<unknown>>(Promise.resolve());
   const documentRef = useRef(settingsDocument);
+  const desiredRef = useRef(settingsDocument);
+  const failedPatch = useRef<SettingsPatch>({});
+  const pendingWrites = useRef(0);
+  const deferredRefresh = useRef(false);
 
   const currentLocalSettings = useMemo(
     () => normalizeLocalSettings(settingsDocument.local[deviceId]),
@@ -129,6 +144,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     () => resolveShortcutBindings(settingsDocument.keybindings, shortcutPlatform),
     [settingsDocument.keybindings, shortcutPlatform],
   );
+  const resolvedTheme = currentLocalSettings.theme === 'os' ? (osDark ? 'dark' : 'light') : currentLocalSettings.theme;
 
   useEffect(() => {
     documentRef.current = settingsDocument;
@@ -136,26 +152,35 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.dataset.theme = currentLocalSettings.theme;
+    root.dataset.theme = resolvedTheme;
+    root.style.colorScheme = resolvedTheme;
     root.dataset.density = currentLocalSettings.density;
     root.dataset.animation = currentLocalSettings.animationMode;
-    root.classList.toggle('dark', currentLocalSettings.theme === 'dark');
-    root.classList.toggle('light', currentLocalSettings.theme === 'light');
+    root.classList.toggle('dark', resolvedTheme === 'dark');
+    root.classList.toggle('light', resolvedTheme === 'light');
     root.style.setProperty('--accent', accentMap[currentLocalSettings.accentColor]);
     root.style.setProperty('--primary', accentMap[currentLocalSettings.accentColor]);
   }, [
     currentLocalSettings.accentColor,
     currentLocalSettings.animationMode,
     currentLocalSettings.density,
-    currentLocalSettings.theme,
+    resolvedTheme,
   ]);
 
   const persistSettingsDocument = useCallback(async (nextDocument: SettingsDocument) => {
+    const patch = settingsDiff(desiredRef.current, nextDocument);
+    desiredRef.current = nextDocument;
     const requestVersion = ++requestVersionRef.current;
+    pendingWrites.current++;
     setSaveStatus('saving');
 
     try {
-      const request = writeQueue.current.catch(() => {}).then(() => api.put('/settings', nextDocument));
+      const request = writeQueue.current.catch(() => {}).then(async () => {
+        // Failed leaves remain pending; a later edit/retry sends them alongside new leaves.
+        const outgoing = combineSettingsPatches(failedPatch.current, patch);
+        try { const result = await api.patch('/settings', outgoing); failedPatch.current = {}; return result; }
+        catch (error) { failedPatch.current = outgoing; throw error; }
+      });
       writeQueue.current = request;
       const { data } = await request;
       if (requestVersion !== requestVersionRef.current) {
@@ -164,6 +189,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
       const normalized = normalizeSettingsDocument(data);
       documentRef.current = normalized;
+      desiredRef.current = normalized;
       setSettingsDocument(normalized);
       setSaveStatus('saved');
     } catch (error) {
@@ -173,6 +199,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       }
 
       setSaveStatus('failed');
+    } finally {
+      pendingWrites.current--;
+      if(!pendingWrites.current && deferredRefresh.current && !Object.keys(failedPatch.current).length){deferredRefresh.current=false;window.dispatchEvent(new Event('vaultor:settings-refresh'));}
     }
   }, []);
 
@@ -180,15 +209,24 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     let active = true;
 
     const loadSettings = async () => {
+      const sequence = ++loadSequenceRef.current;
+      const loadVersion = requestVersionRef.current;
       try {
         const legacyLocalSettings = loadLegacyLocalSettings();
         const legacySidebarCollapsed = loadLegacySidebarCollapsed();
         const { data } = await api.get('/settings');
 
-        if (!active) {
+        if (!active || sequence !== loadSequenceRef.current) return;
+        if (loadVersion !== requestVersionRef.current || pendingWrites.current) {
+          deferredRefresh.current=true;
+          if (!pendingWrites.current && !Object.keys(failedPatch.current).length) {
+            deferredRefresh.current=false;
+            window.dispatchEvent(new Event('vaultor:settings-refresh'));
+          }
           return;
         }
 
+        if (requestVersionRef.current && Object.keys(failedPatch.current).length) return;
         const remoteDocument = normalizeSettingsDocument(data);
         const migratedDocument = applyLegacySettingsMigration(remoteDocument, {
           deviceId,
@@ -198,6 +236,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         });
 
         documentRef.current = migratedDocument.document;
+        desiredRef.current = remoteDocument;
         setSettingsDocument(migratedDocument.document);
 
         if (migratedDocument.changed) {
@@ -329,12 +368,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [deviceId, updateDocument]);
 
   const toggleTheme = useCallback(() => {
-    updateLocalSetting('theme', currentLocalSettings.theme === 'dark' ? 'light' : 'dark');
+    updateLocalSetting('theme', currentLocalSettings.theme === 'os' ? 'light' : currentLocalSettings.theme === 'light' ? 'dark' : 'os');
   }, [currentLocalSettings.theme, updateLocalSetting]);
 
   const retrySave = useCallback(() => { void persistSettingsDocument(documentRef.current); }, [persistSettingsDocument]);
-  const flushSettings = useCallback(async () => { await persistSettingsDocument(documentRef.current); await writeQueue.current; }, [persistSettingsDocument]);
+  const flushSettings = useCallback(async () => { await writeQueue.current.catch(() => {}); if(Object.keys(failedPatch.current).length) await persistSettingsDocument(documentRef.current); await writeQueue.current; }, [persistSettingsDocument]);
   const value = useMemo<SettingsContextValue>(() => ({
+    resolvedTheme,
     settings: {
       workspace: settingsDocument.workspace,
       local: currentLocalSettings,
@@ -355,6 +395,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     resetAllSettings,
     toggleTheme,
   }), [
+    resolvedTheme,
     currentLocalSettings,
     deviceId,
     resetAllSettings,
@@ -421,7 +462,7 @@ function normalizeWorkspaceSettings(input: Partial<WorkspaceSettings> | null | u
 
 function normalizeLocalSettings(input: Partial<LocalSettings> | null | undefined): LocalSettings {
   return {
-    theme: input?.theme === 'light' ? 'light' : 'dark',
+    theme: input?.theme === 'light' || input?.theme === 'dark' ? input.theme : 'os',
     accentColor: isAccentColor(input?.accentColor) ? input.accentColor : DEFAULT_LOCAL_SETTINGS.accentColor,
     density: input?.density === 'compact' ? 'compact' : 'comfortable',
     animationMode: input?.animationMode === 'smooth' ? 'smooth' : 'snappy',

@@ -16,7 +16,7 @@ The backend is authoritative. This is not an offline browser database or a synch
 
 D1 implements shared transport/protocol checks; D2 adds the Electron 44.5.1 development shell and isolated desktop sessions; D3 bundles a pinned, checksum-verified free Temurin 25 JRE and Spring JAR with browser assets. This computer starts an owned loopback server on an OS-assigned port; remembered existing servers remain available. Separate application-data storage, an OS directory lock, private stdio readiness/stop, parent watchdog, bounded crash restarts/logs and graceful owned-process quit preserve data across app replacement. Windows portable launch/editor/relaunch without installed Java is verified. Mac build workflow exists but native verification is pending. D4 adds opaque native file picking, streamed disk saves/previews, tray hiding, opt-in login startup, resume checks and bounded save/recovery/transfer-aware Quit. D5 implements separate owner/HTTPS listeners, persistent per-host CA/device verifiers, bounded code approval/revocation, browser cookies/CSRF, private browser handoff and standalone bootstrap. LAN sharing defaults off; D6 adds sidebar/on-demand connection and hosting controls, private mDNS discovery, matching-code enrollment, safeStorage-protected client credentials, pinned HTTPS for JSON/native files and browser trust instructions. Frameless theme-based controls replace the native title/menu and connection rows. No installer/updater exists yet. Pairing does not introduce accounts/master passwords/encrypted archives. Zero mandatory payments remains a release constraint. See [DESKTOP.md](DESKTOP.md) for authoritative build/path/lifecycle limits and [PLATFORM.md](PLATFORM.md) for shared contracts.
 
-Implementation proceeds one sprint per explicit authorization. Maintain this guide/supporting docs at each handoff and record actual checks/limitations. D1–D6 are implemented on Windows; deployment/network exposure remains separately authorized. Mac native checks remain required before Mac delivery.
+Implementation proceeds one sprint per explicit authorization. Maintain this guide/supporting docs at each handoff and record actual checks/limitations. D1–D7 are implemented on Windows; deployment/network exposure remains separately authorized. D7 adds bounded approved saved-change streams, scoped transactional settings, clean-note reconciliation and retained dirty/deleted recovery copies. OS is the default theme, native drag regions exclude the window controls, and one Vaultor glyph supplies runtime window/tray branding. See [MULTI-DEVICE.md](MULTI-DEVICE.md) for authoritative bounds and validation. Installers/updates remain D8; Mac native checks remain required before Mac delivery.
 
 ## Repository and source map
 
@@ -68,6 +68,8 @@ backend/
 | Bundled JVM/data ownership and packages | `desktop/src/owned-server.mjs`, `desktop/scripts/prepare-server.mjs`, `package-dev.mjs`, `desktop/runtime-lock.json`, `backend/config/DesktopOwner.java` (under src/main/java/com/vaultor/vaultor), backend pom desktop profile; [DESKTOP.md](DESKTOP.md) |
 | Workspace orchestration, panes, sidebar, CRUD, imports | `frontend/src/pages/Dashboard.tsx` |
 | HTTP JSON conversion, request IDs and error reporting | `frontend/src/lib/api.ts` |
+| Saved-change propagation and scoped settings | `frontend/src/lib/changeFeed.ts`, `settingsPatch.ts`, `desktop/src/change-stream.mjs`, backend `ChangeFeed.java`, `ChangeController.java`, `ChangeNotificationFilter.java`, `RequestEntityManager.java`; [MULTI-DEVICE.md](MULTI-DEVICE.md) |
+| Native icon assets and pointer regression | `desktop/assets/vaultor.svg`, PNG/ICO derivatives, `desktop/scripts/native-chrome-smoke.mjs`, `native-pointer.ps1` |
 | Browser session/draft persistence | `frontend/src/lib/sessionStore.ts`, `noteRecovery.ts`, `restoreSession.ts`, `components/RecoveryPanel.tsx`; [SESSIONS.md](SESSIONS.md) |
 | Pane navigation/shared documents | `frontend/src/lib/paneNavigation.ts`, `sharedNoteDocuments.ts`, `resourceLinkNavigation.ts`; [NAVIGATION.md](NAVIGATION.md) |
 | Selected resource/Library filters | `frontend/src/state/store.ts`, `hooks.ts` |
@@ -201,6 +203,8 @@ The workspace is primarily desktop-oriented. Multiple panes and the percentage-w
 
 Authoritative CSS: `frontend/src/index.css`; settings apply root classes/data attributes and accent variables.
 
+Theme preference is `os | light | dark`, default OS. `prefers-color-scheme` changes update resolved colors and tag contrast live; explicit Light/Dark choices persist. The footer cycles OS → Light → Dark → OS. Native controls use the same resolved theme. Their entire container is non-draggable; heading drag regions stop 170px before the right edge to avoid native hit-test overlap. Canonical `desktop/assets/vaultor.svg` supplies the blue V window/tray assets; Mac tray uses its monochrome template. Existing Electron executable/pinned shortcut branding is an installer concern for D8.
+
 | Token | Light | Dark |
 | --- | --- | --- |
 | `--surface-1` | `#f6f7f9` | `#020617` |
@@ -247,7 +251,7 @@ Settings are persisted in `settings.app_settings_v2` as one JSON document:
 ```json
 {
   "workspace": {"maxOpenNotes":2,"openBehavior":"split","autosaveDelay":0,"focusMode":false},
-  "local": {"<device-id>": {"theme":"dark","accentColor":"blue","density":"comfortable","animationMode":"snappy","previewMode":"side","sidebarMode":"fixed","uiTransparency":0.85,"sidebarCollapsed":false}},
+  "local": {"<device-id>": {"theme":"os","accentColor":"blue","density":"comfortable","animationMode":"snappy","previewMode":"side","sidebarMode":"fixed","uiTransparency":0.85,"sidebarCollapsed":false}},
   "keybindings": {"commandPalette":{"mac":"Mod+K","windows":"Mod+K"}}
 }
 ```
@@ -258,7 +262,7 @@ Ctrl+Arrow word movement and Ctrl+Shift+Arrow word selection remain available. M
 
 Sidebar defaults to Ctrl+Alt+B / Cmd+Option+B, leaving Bold and Quote intact inside the editor. Frontend/backend normalization migrate only the former sidebar Mod+B value; an identical custom value cannot be distinguished and also migrates. Other custom values survive. New Bold/Quote conflicts are rejected with guidance. Mac Option-letter matching uses physical letter codes; composition events do not trigger workspace actions. Help/settings derive labels from the shared definitions.
 
-Backend settings migrate legacy `workspace_settings`; frontend migrates `vaultor_local_settings` and `vaultor_sidebar_collapsed`. Keep normalization/defaults aligned between TypeScript and Java. Frontend updates are optimistic, serialized through a write queue, and ignore stale response versions. Failed writes retain the desired configuration with a visible Retry action. Workspace operations flush settings first. The entire document is PUT each time; there is no server-side multi-client concurrency/version checking.
+Backend settings migrate legacy `workspace_settings`; frontend migrates `vaultor_local_settings` and `vaultor_sidebar_collapsed`. Keep normalization/defaults aligned between TypeScript and Java. Frontend writes optimistic leaf patches through a serialized queue and rejects stale read/write responses. Failed leaves remain pending with Retry; incoming refresh waits for outstanding writes. Workspace operations flush settings first. `PATCH /settings` merges transactionally into the latest document; different fields are preserved, same-field writes are last committed wins. Full-document PUT is local legacy only. See [MULTI-DEVICE.md](MULTI-DEVICE.md) for patch bounds and revision requirements on HTTPS note saves.
 
 | Action | Default |
 | --- | --- |
@@ -296,7 +300,7 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 ## Known limitations
 
 - Browser storage is origin-specific and best-effort; session snapshots can lag by 500 ms, shared undo is not persisted, and old session records have no automatic expiry. Native multi-tab/refresh lifecycle verification remains N6; see SESSIONS.md.
-- No multi-user settings conflict resolution or multi-instance SQLite/gate coordination. Full-document settings writes are serialized per browser only.
+- Scoped settings preserve concurrent changes to different fields; same-field edits remain last committed wins. There is no collaborative typing or multi-instance SQLite/gate coordination. Saved-state streams reconcile clean notes, preserve drafts and use existing revision conflicts; prolonged/multi-machine fault testing remains D9.
 - Library uses bounded metadata pages and virtual rows; saved-note/title search uses a derived FTS5 index; file-content search and broad performance checks remain deferred. Collections, paginated organization management, page-scoped bulk membership/tag updates and archive portability of favorites are implemented. Sidebar tag chips and note tag pickers still load the complete tag list. Broad scale verification is Sprint 6. Transfer snapshot memory remains unbounded by streaming.
 - Preview cap is 1 MiB. Table XLSX/PDF and Google Docs exports remain future work. Note export fidelity and DOCX visual-validation limits are documented in NOTE-EXPORTS.md.
 - Full modal focus trapping and a comprehensive mobile editor redesign are not implemented. Existing visual layout is retained; test responsive surfaces when editing them.
@@ -447,3 +451,9 @@ Validation: frontend/desktop production compilation/build and targeted lint/synt
 ### 2026-10-04 — macOS development bundle preparation
 
 Restored the executable bit on the checked-in Maven wrapper; the macOS server-preparation script invokes it directly, and the missing permission prevented a local bundle from being built. No application behavior or architecture changed. Validation: the documented `npm --prefix desktop run prepare-server` completed on Apple Silicon with Java 25/Maven, producing and verifying the pinned Temurin runtime, server JAR and bundle manifest. Frontend build had already passed. No Electron relaunch, live workspace access, native UI check or broad tests were performed.
+
+### 2026-10-04 — D7 saved-state propagation and native polish
+
+Implemented approved bounded metadata SSE, selected-profile native/browser ownership, replay/reset/reconnect and scoped refresh. Clean open notes accept saved remote transactions without echo saves; dirty title/content/undo/base revisions remain recoverable. Deletion retains displayed content; generation replacement isolates former layouts/drafts. Added transactional leaf settings PATCH, failed-leaf retry/stale-read guards, transactional tag mutations and required If-Match on HTTPS notes. SSE excludes request EntityManager lifetime to preserve the single SQLite connection for ordinary requests. Fixed native control hit-testing against heading drag regions; default OS theme follows appearance live; canonical V assets replace runtime window/tray icons. Document/archive/schema/resource model unchanged; new API contracts and build default desktop-d7. MULTI-DEVICE.md is authoritative for bounds.
+
+Validation: production browser/desktop compilation/build, targeted ESLint, desktop syntax, Java main/test compilation and bundled JAR staging passed. Twenty-nine focused frontend cases, one native stream Node case and one actual disposable owner/approved-HTTPS integration case passed (concurrent settings, revisions, membership/tags/pins, archive merge/replace, rollback, replay/gap/revoke). Real Windows pointer checks passed for menu/minimize/maximize/restore/close in Library and note layouts; live OS theme, saved remote editing without echo save and deletion recovery passed. Dark/light/narrow native frames inspected. Initial diagnostics exposed held SQLite connections and native browser-stream fallback; fixed before passing checks. Background deletion no longer produces a global save-error banner. Expected deletion 404 diagnostics remain. No Docker/broad smoke/user data/OS trust/firewall/login changes; no fresh portable installer or Mac check. Existing build/dependency/JVM warnings remain. Real Windows–Mac, prolonged faults, restart delivery timing, OS taskbar/tray appearance and executable/pinned-shortcut branding remain explicitly unverified or carried to D8/D9. Stop before D8.

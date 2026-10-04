@@ -11,6 +11,7 @@ import { SharedNoteDocuments } from '../lib/sharedNoteDocuments';
 import type { LinkedResourceIntent } from '../lib/resourceLinkNavigation';
 import { affectsScope, notifyResourceChange, subscribeResourceChanges } from '../lib/resourceEvents';
 import { RecencyRecorder } from '../lib/recencyRecorder';
+import { watchChanges, type RemoteChange } from '../lib/changeFeed';
 import { organizationChanged } from '../lib/organization';
 import ResourceCollections, { CollectionPicker } from '../components/ResourceCollections';
 import PinButton from '../components/PinButton';
@@ -23,6 +24,7 @@ import {
   Search,
   Sun,
   Moon,
+  Monitor,
   Trash2,
   Database,
   Library,
@@ -222,7 +224,7 @@ export default function Dashboard() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleEditNoteId = titleEditState?.noteId ?? null;
 
-  const { settings, workspaceLoaded, resolvedShortcuts, toggleTheme, updateLocalSetting, flushSettings, saveStatus: settingsSaveStatus } = useSettings();
+  const { settings, resolvedTheme, workspaceLoaded, resolvedShortcuts, toggleTheme, updateLocalSetting, flushSettings, saveStatus: settingsSaveStatus } = useSettings();
   const collectionCreationFocus=useRestoreFocusOnClose();
   const commandPaletteFocus = useRestoreFocusOnClose();
   const shortcutsModalFocus = useRestoreFocusOnClose();
@@ -429,17 +431,18 @@ export default function Dashboard() {
   const resourceLoadVersions = useRef(new Map<string, number>());
   const workspaceEpoch = useRef(0);
   const backlinkVersion = useRef(0);
-  const fetchResourceDetails = useCallback(async (id: string, navigationRequest = false) => {
+  const fetchResourceDetails = useCallback(async (id: string, navigationRequest = false, background = false) => {
     const version = (resourceLoadVersions.current.get(id) ?? 0) + 1;
     resourceLoadVersions.current.set(id, version);
     const epoch = workspaceEpoch.current;
     setLoadingResourceIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     try {
-      const { data } = await api.get(`/resources/${id}`, { backgroundDiagnostic: navigationRequest });
+      const { data } = await api.get(`/resources/${id}`, { backgroundDiagnostic: navigationRequest || background });
       if (epoch !== workspaceEpoch.current || resourceLoadVersions.current.get(id) !== version) return null;
+      const draft=saves.latest(id)??recovery.current(id)?.value;
       recovery.observe(data,true);
-      paneNavigation.rename(id, saves.latest(id)?.title ?? data.title);
-      setResourceDetails((prev) => ({ ...prev, [id]: saves.latest(id) ? { ...data, title: saves.latest(id)!.title, content: JSON.stringify(saves.latest(id)!.content) } : data }));
+      paneNavigation.rename(id, draft?.title ?? data.title);
+      setResourceDetails((prev) => ({ ...prev, [id]: draft ? { ...data, revision:prev[id]?.revision, title:draft.title, content:JSON.stringify(draft.content) } : data }));
       return data as Resource;
     } catch (error) {
       if (navigationRequest && (error as { response?: { status?: number } }).response?.status === 404) throw new ResourceUnavailableError('This note is no longer available.');
@@ -455,7 +458,7 @@ export default function Dashboard() {
     if (!relevant()) return;
     const version = ++backlinkVersion.current;
     try {
-      const { data } = await api.get(`/resources/${id}/backlinks`);
+      const { data } = await api.get(`/resources/${id}/backlinks`, { backgroundDiagnostic: true });
       if (version === backlinkVersion.current && relevant()) {setBacklinks(data || []);setBacklinksFor(id);}
     } catch (error) {
       console.error(error);
@@ -1151,9 +1154,45 @@ export default function Dashboard() {
       saves.clear();paneNavigation.reset();setResourceDetails({});setPreviewResourceId(null);setPreviewResourceType(null);setNoteExport(null);setTitleEditState(null);setLibraryVisible(true);setCollection(null);setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
       identityRef.current=identity;recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));setSessionMessage('The workspace was replaced. Previous drafts are available as separate recovery copies.');notifyResourceChange({kind:'workspace'});
     }}catch{/* Offline checks must not interrupt editing. */}};
-    const timer=setInterval(()=>void check(),15000);window.addEventListener('focus',check);
-    return()=>{stopped=true;clearInterval(timer);window.removeEventListener('focus',check);};
+    window.addEventListener('vaultor:identity-check',check);window.addEventListener('focus',check);
+    return()=>{stopped=true;window.removeEventListener('vaultor:identity-check',check);window.removeEventListener('focus',check);};
   },[sessionReady,saves,paneNavigation,recovery,dispatch]);
+  const remoteReconcile = useRef<(events:RemoteChange[])=>void>(()=>{});
+  remoteReconcile.current = events => {
+    const broad=events.some(e=>e.kind==='reset'||e.kind==='workspace'||(e.generation && e.generation!==identityRef.current?.generation));
+    if(broad)window.dispatchEvent(new Event('vaultor:identity-check'));
+    if(broad || events.some(e=>e.kind==='settings'))window.dispatchEvent(new Event('vaultor:settings-refresh'));
+    if(broad || events.some(e=>e.kind==='organization'))notifyResourceChange({kind:'organization',entity:'all'});
+    if(broad || events.some(e=>e.kind==='tags'))notifyResourceChange({kind:'organization',entity:'tag'});
+    const resourceEvents=events.filter(e=>e.kind==='resources');
+    if(broad || resourceEvents.length || events.some(e=>e.kind==='organization'||e.kind==='tags')) {
+      const ids=resourceEvents.some(e=>!e.ids.length)?undefined:new Set(resourceEvents.flatMap(e=>e.ids));
+      notifyResourceChange({kind:'metadata',ids:ids?[...ids]:undefined,membershipChanged:true});
+      if(activeNoteId)void fetchBacklinks(activeNoteId);
+      for(const id of new Set(openNotes.map(p=>p.id))) {
+        if(!broad && ids?.size && !ids.has(id) && !events.some(e=>e.kind==='organization'||e.kind==='tags'))continue;
+        const epoch=workspaceEpoch.current;const version=(resourceLoadVersions.current.get(id)??0)+1;resourceLoadVersions.current.set(id,version);
+        void api.get<Resource>('/resources/'+id,{backgroundDiagnostic:true}).then(({data})=>{
+          if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
+          const draft=recovery.current(id);
+          if(draft || saves.latest(id)) {
+            if(draft && draft.baseRevision!==data.revision){setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);setSessionMessage('A note changed on another device. Your draft is retained; review it before saving.');}
+            setResourceDetails(prev=>prev[id]?{...prev,[id]:{...prev[id],tags:data.tags,collections:data.collections,favorite:data.favorite}}:prev);
+            return;
+          }
+          recovery.observe(data,true);sharedDocuments.acceptSaved(id,parseNoteContent(data.content));paneNavigation.rename(id,data.title);setResourceDetails(prev=>({...prev,[id]:data}));
+        }).catch(error=>{
+          if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
+          if(error.response?.status===404){paneNavigation.markUnavailable(id);if(!recovery.current(id) && resourceDetails[id])recovery.queued(id,{title:resourceDetails[id].title,content:parseNoteContent(resourceDetails[id].content)},-Date.now());const draft=recovery.current(id);if(draft)setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);setSessionMessage('An open note was deleted on another device. Its displayed content is retained as a recovery copy.');}
+        });
+      }
+    }
+    if(events.some(e=>e.kind==='host-restart'))setSessionMessage('The host is restarting. Drafts remain here while the connection recovers.');
+  };
+  useEffect(()=>{
+    if(!sessionReady)return;const controller=new AbortController();const stop=watchChanges(events=>remoteReconcile.current(events),controller.signal);
+    return()=>{controller.abort();stop();};
+  },[sessionReady]);
   const resolveRecovery = async (record: RecoveryRecord, copy: boolean) => {
     const latest=recovery.current(record.noteId);
     if(latest?.key===record.key&&latest.editId!==record.editId){setRecoveryRecords(items=>items.map(r=>r.key===record.key?latest:r));throw new Error('This draft changed. Review it and choose again.');}
@@ -1235,7 +1274,7 @@ export default function Dashboard() {
   useEffect(() => {
     return subscribeResourceChanges(change => {
       if(change.kind !== 'organization' || change.entity === 'collection') return;
-      for(const note of openNotes) if(!change.resourceIds || change.resourceIds.includes(note.id)) void fetchResourceDetails(note.id);
+      for(const note of openNotes) if(!change.resourceIds || change.resourceIds.includes(note.id)) void fetchResourceDetails(note.id,false,true);
     });
   }, [openNotes,fetchResourceDetails]);
 
@@ -1275,7 +1314,7 @@ export default function Dashboard() {
             <span
               key={tagName}
               className="flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.01em] transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
-              style={getTagPillStyle(findTagColor(tags, tagName), localSettings.theme)}
+              style={getTagPillStyle(findTagColor(tags, tagName), resolvedTheme)}
             >
               {tagName}
               <button onClick={() => dispatch(removeSelectedTag(tagName))} className="ml-1 text-inherit opacity-60 hover:opacity-100"><X size={10} /></button>
@@ -1313,7 +1352,7 @@ export default function Dashboard() {
             <span
               key={tag.id}
               className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-[0.01em] transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
-              style={getTagPillStyle(tag.color, localSettings.theme)}
+              style={getTagPillStyle(tag.color, resolvedTheme)}
             >
               <button onClick={() => { dispatch(toggleSelectedTag(tag.name)); setLibraryVisible(true); }} className="cursor-pointer text-inherit">{tag.name}</button>
               <label
@@ -1356,8 +1395,8 @@ export default function Dashboard() {
             <Settings2 size={16} />
           </button>
           <button onClick={() => setDiagnosticsOpen(true)} className="rounded p-1.5 text-xs" title="Diagnostics">Logs</button>
-          <button onClick={toggleTheme} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary">
-            {localSettings.theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+          <button onClick={toggleTheme} title={'Theme: '+(localSettings.theme==='os'?'OS':localSettings.theme)+ ' · Switch theme'} aria-label={'Switch theme (current: '+localSettings.theme+')'} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary">
+            {localSettings.theme==='os'?<Monitor size={16}/>:localSettings.theme === 'light' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
         </div>
       </div>
@@ -1660,7 +1699,7 @@ export default function Dashboard() {
                           <span
                             key={tag.id}
                             className="flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold tracking-[0.01em] transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
-                            style={getTagPillStyle(tag.color, localSettings.theme)}
+                            style={getTagPillStyle(tag.color, resolvedTheme)}
                           >
                             {tag.name}
                             <button onClick={() => handleRemoveTag(tag.name)} className="ml-1.5 text-inherit opacity-60 hover:opacity-100"><X size={10} /></button>
@@ -1742,7 +1781,7 @@ export default function Dashboard() {
                               <div className="mt-2 max-h-56 space-y-1 overflow-y-auto">
                                 {tagPickerItems.map((item, itemIndex) => {
                                   const selected = itemIndex === tagPickerSelectedIndex;
-                                  const itemStyle = getTagPillStyle(item.color, localSettings.theme);
+                                  const itemStyle = getTagPillStyle(item.color, resolvedTheme);
 
                                   return (
                                     <button
