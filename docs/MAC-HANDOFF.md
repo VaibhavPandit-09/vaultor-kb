@@ -1,6 +1,6 @@
 # D9: Mac mini and two-device completion handoff
 
-Prepared 2026-10-04 for the AI working on the user's Apple Silicon Mac mini. This is the remaining D9 validation, not a new feature sprint. Read AGENTS.md, CODEBASE.md and desktop-network-plan.md first; UPDATES.md, DESKTOP.md, HOST-ACCESS.md and MULTI-DEVICE.md are authoritative. Inspect the current tree and preserve unrelated work. Windows D9 work corrects Connections layout, packages 0.2.1 and supplies an isolated manual-test data directory. Do not declare the overall Windows/Mac release gate complete until the checks below actually pass.
+Prepared 2026-10-04 for the AI working on the user's Apple Silicon Mac mini. This is the remaining D9 validation, not a new feature sprint. Read AGENTS.md, CODEBASE.md and desktop-network-plan.md first; UPDATES.md, DESKTOP.md, HOST-ACCESS.md and MULTI-DEVICE.md are authoritative. Inspect the current tree and preserve unrelated work. Windows D9 work corrects Connections layout, packages 0.2.1 and supplies an isolated manual-test data directory; the checkout has since advanced to 0.2.2. Do not declare the overall Windows/Mac release gate complete until the checks below actually pass.
 
 ## Boundaries and preparation
 
@@ -27,6 +27,8 @@ npm --prefix desktop run check
 node --test desktop/test/network.test.mjs desktop/test/files.test.mjs desktop/test/updates.test.mjs
 npm --prefix desktop run package:release
 ```
+
+The desktop `ci` install runs Electron's `install-electron` binary in its `postinstall` lifecycle so the native executable is present; installing only the Electron npm package may leave `electron` unavailable.
 
 prepare-server chooses the pinned darwin-arm64 Temurin runtime and verifies checksums, then builds the bundled Spring JAR/browser assets. Preserve runtime legal notices. If signing/build fails, repair the actual source/configuration and repeat only the affected check. Package expectations: Vaultor.app, an ad-hoc signature, bundled runtime/server and Vaultor-0.2.2-mac-arm64.dmg plus its signed .vaultor.json. Verify `codesign --verify --deep --strict --verbose=2` against the actual generated app path and inspect its Info.plist executable/architecture. Do not claim notarization. Record installer and unpacked sizes.
 
@@ -90,3 +92,15 @@ Finish by updating desktop-network-plan.md, CODEBASE.md maintenance history, DES
 Windows build 10.0.26300.0, Node 24.18.1, npm 11.16.0, Electron 44.5.1. App 0.2.1 production compilation/scoped lint/syntax passed; 15 frontend and 14 Node network/file/update cases passed. A focused native session passed Connections row placement/dark/light/minimum desktop width, menu/window controls, OS theme and saved-change/deletion recovery. Three Connections frames inspected. The initial popup keyboard helper failure was corrected by not reactivating its parent; rerun passed. Windows disposable 0.2.0 → 0.2.1 installer upgrade/version checks/repair/uninstall/reinstall passed with existing shortcut bytes restored. Final installer: 259,369,342 bytes; unpacked: 736,533,442 bytes. This is not proof of Mac/LAN/OS browser trust/login/update-recovery handoff; those are the remaining gates above.
 
 Post-D9 0.2.2 correction to verify on the real pair: stop the remote Mac host, then switch a clean Windows client to This computer without needing a manual keep-drafts override. Repeat with an unsaved note/title: require Keep drafts and switch and verify the original profile's recovery survives relaunch. Settings/storage failures and known active transfers must still block as documented. Fresh profiles have no automatic localhost:8080 entry; old independent server entries are retained and labeled separately. Build current 0.2.2 sources on Mac; the Windows 0.2.1 baseline above is historical actual validation, not a Mac package claim.
+
+## Mac 0.2.2 development results and remaining gate (2026-10-04)
+
+Verified environment: macOS 27.0.1, Apple Silicon arm64, Node 22.16.0/npm 10.9.2, Temurin Java 25, Electron 44.5.1, Chrome 152.0.7977.83 and Safari 27.0.1; Xcode command-line tools are installed. A private IPv4 address was present, but no real LAN/two-device test was conducted and the address is deliberately not recorded here.
+
+Passed on this checkout: `npm --prefix desktop ci` (including native Electron executable installation), `npm --prefix desktop run build`, `npm --prefix desktop run prepare-server`, `npm --prefix desktop run check`, 14 focused desktop network/file/update tests and five focused `workspaceDeparture` tests. Backend tests are skipped by `prepare-server`; no full backend suite is claimed. The disposable 0.2.2 `package:dev` app at `desktop/packages/darwin-arm64-1791107186161/Electron.app` is arm64 and its ad-hoc Electron.app signature verified. The package occupies 629,944 KiB; this is a development Electron.app size, not a Vaultor release app or DMG size. Native owned-server smoke passed launch, edit/save, PDF preview and relaunch with Java removed from PATH. Native chrome smoke passed Connections layout, theme, credential-storage, default-sharing and window-control assertions. Dark/light/narrow frames in ignored `desktop/artifacts` were generated and reviewed. No user workspace was used.
+
+Current bundled server manifest SHA-256: `ac3c804ecce03ab4c54fdbb1da0149dd2e6bc17e9a13d4da27b7a92142338e26`; server JAR SHA-256: `5ff50348264d6abdfca745bcc7a9b2b4a65f598335838c4c22b45342fe69894b`. These are bundle hashes, not release installer checksums.
+
+Release is blocked: the matching private key was absent at the ignored release-key location and `VAULTOR_RELEASE_KEY` was unset. `package:release` was attempted and stopped at the missing key; no replacement key was generated, rotated or copied. No signed `.vaultor.json` or release DMG exists. Obtain the matching key privately from the user before retrying; never paste it into chat. macOS frontend install reported Node-engine warnings and 24 audit findings (2 low, 4 moderate, 18 high); no audit fix or dependency/version change was made.
+
+Still unverified and required before D9 completion: release package and signed sidecar, Finder/DMG installation and normal Gatekeeper approval, manual titlebar/menu-bar/tray/shortcut/close-to-tray interactions, Mac update/recovery, login/sleep-resume and cleanup, separate browser trust, LAN/mDNS/firewall validation, and one coordinated Windows↔Mac session in both hosting directions. Automated smoke success does not substitute for these manual and partner checks. Preserve this partial status; do not mark D9 complete.

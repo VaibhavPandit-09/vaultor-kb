@@ -5,6 +5,7 @@
   "type": "module",
   "main": "src/main.mjs",
   "scripts": {
+    "postinstall": "install-electron",
     "build": "npm --prefix ../frontend run build && node scripts/copy-ui.mjs",
     "start": "node scripts/start.mjs",
     "test": "node --test test/*.test.mjs",

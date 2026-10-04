@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
-export async function runOwnedSmoke(window, owned, directory) {
+import { DesktopTransport } from '../src/transport.mjs';
+export async function runOwnedSmoke(window, owned, directory, activity) {
   const wc = window.webContents;
   const evaluate = code => wc.executeJavaScript(code);
   async function wait(code, label) {
@@ -11,9 +13,16 @@ export async function runOwnedSmoke(window, owned, directory) {
   await wait("Boolean(document.querySelector('button.library-button')) && document.body.innerText.includes('Library')", 'Bundled workspace auto-start');
   assert.equal(owned.status, 'ready');
   const local = await evaluate('window.vaultorDesktop.localStatus()'); assert.equal(local.value.status, 'ready');
+  const token=randomUUID(),transport=new DesktopTransport();
+  transport.activate({kind:'local',address:owned.address},token,owned.accessKey);
+  const request=async(path,method='GET',body)=>{
+    const id=randomUUID(),result=await transport.request({id,token,path,method,timeout:10000,headers:{'X-Request-ID':randomUUID(),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:{kind:'text',value:JSON.stringify(body)}}:{})});
+    const text=new TextDecoder().decode(result.data);assert.equal(result.status,200,text);return JSON.parse(text);
+  };
   window.close();
   assert.equal(window.isDestroyed(),false);assert.equal(window.isVisible(),false);
-  assert.equal((await fetch(owned.address+'/api/health')).status,200);
+  assert.equal(owned.accessKey === (await readFile(join(owned.data,'host-access','owner.key'),'utf8')).trim(),true,'Disposable owner credentials must match.');
+  await request('/health');
   window.show();window.focus();
   const hosting=await evaluate('window.vaultorDesktop.hosting()');assert.equal(hosting.value.startAtLogin,false);
   if (process.env.VAULTOR_SMOKE_MODE === 'first') {
@@ -26,8 +35,8 @@ export async function runOwnedSmoke(window, owned, directory) {
     window.showInactive(); await new Promise(r => setTimeout(r, 250));
     await writeFile(join(directory, 'native-owned.png'), (await wc.capturePage()).toPNG()); window.hide();
     const noteId=await evaluate("document.querySelector('[data-note-pane]').dataset.notePane");
-    let operation=await (await fetch(owned.address+'/api/exports',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scope:'notes',noteId,format:'pdf'})})).json();
-    for(let i=0;i<100 && operation.status!=='SUCCEEDED';i++){if(operation.status==='FAILED')throw new Error(operation.detail);await new Promise(r=>setTimeout(r,100));operation=await(await fetch(owned.address+'/api/operations/'+operation.id)).json();}
+    let operation=await request('/exports','POST',{scope:'notes',noteId,format:'pdf'});
+    for(let i=0;i<100 && operation.status!=='SUCCEEDED';i++){if(operation.status==='FAILED')throw new Error(operation.detail);await new Promise(r=>setTimeout(r,100));operation=await request('/operations/'+operation.id);}
     assert.equal(operation.status,'SUCCEEDED');
     const preview=await evaluate(`(async()=>{const state=(await window.vaultorDesktop.bootstrap()).value;return window.vaultorDesktop.fileAction({token:state.token,path:'/exports/${operation.id}/download',filename:'preview.pdf',mode:'preview',requestId:'native-preview'});})()`);
     assert.equal(preview.ok,true);
@@ -42,6 +51,12 @@ export async function runOwnedSmoke(window, owned, directory) {
   } else {
     await wait("document.querySelector('.tiptap')?.textContent.includes('Bundled runtime native check.')", 'Relaunch restored saved note/session');
   }
-  const browser = await fetch(owned.address + '/'); assert.equal(browser.status, 200); assert.match(await browser.text(), /<html/);
+  let pending;
+  for(let i=0;i<100;i++){
+    pending=activity();
+    if(!pending.activeFiles&&!pending.pendingSaves&&!pending.dialogPending&&!pending.mutations)break;
+    await new Promise(r=>setTimeout(r,100));
+  }
+  assert.deepEqual(pending,{activeFiles:0,pendingSaves:0,dialogPending:false,mutations:0},'Disposable workspace operations must settle before quit.');
   console.log('Native bundled check: ' + process.env.VAULTOR_SMOKE_MODE + ' passed.');
 }

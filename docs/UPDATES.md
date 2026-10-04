@@ -1,6 +1,6 @@
 # Personal installers and updates
 
-Reviewed 2026-10-04, D9 and 0.2.2 correction. Windows x64 uses a per-user NSIS installer. Mac Apple Silicon has a local build workflow producing an ad-hoc-signed app and DMG; building and native verification on the Mac mini remain pending. No publisher certificate, notarization, subscription, hosted feed or publishing is required. Android and Ubuntu packaging are outside D8.
+Reviewed 2026-10-04, D9 and 0.2.2 correction. Windows x64 uses a per-user NSIS installer. On Apple Silicon, the 0.2.2 development app and disposable native smoke checks have been verified; release DMG generation/installation and the live two-device gate remain pending. The matching private release key is required to produce the signed update manifest and is not present on the Mac. No publisher certificate, notarization, subscription, hosted feed or publishing is required. Android and Ubuntu packaging are outside D8.
 
 ## Build and launch
 

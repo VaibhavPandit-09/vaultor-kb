@@ -1,6 +1,6 @@
 # Desktop application and private-network hosting
 
-Created/reviewed: 2026-10-04. Status: D1–D8 implemented on Windows; D8 Mac package/native verification pending; D9 Windows implementation/validation complete; Mac/two-device gate delegated via MAC-HANDOFF.md; D10 deferred. Manual OS/Mac validation remains pending.
+Created/reviewed: 2026-10-04. Status: D1–D8 implemented on Windows; current Mac 0.2.2 development build/native smoke partially verified; release DMG/manual Mac OS validation and the D9 real two-device gate remain pending in MAC-HANDOFF.md. D9 Windows implementation/validation complete; D10 deferred.
 
 ## Delivery and maintenance
 
@@ -126,7 +126,8 @@ Authorized/implemented 2026-10-04 on Windows. Use a checksum-verified free Temur
 - [x] Capture bounded JVM/shell startup and crash logs; expose them through Diagnostics without secrets. Implement three-attempt restart/backoff and graceful owned-process stop.
 - [x] Produce Windows x64 development package without installed Java/Docker; add target-native Mac arm64 packaging/pinned runtime workflow. Final release installation is D8.
 - [x] Focused disposable Windows checks: first/second startup, locked directory, occupied unrelated port, server crash, failed startup, no orphan/duplicate process, data preserved after replacement of app files; portable native editor/relaunch.
-- [ ] Run Mac arm64 build/package and native startup/menu/storage/quit checks on the Mac mini. No Mac delivery is claimed verified.
+- [x] Build the current Mac arm64 0.2.2 development app and pass disposable owned-server startup/edit/PDF-preview/relaunch plus native chrome smoke. This does not verify a release package.
+- [ ] Produce/install the Mac release DMG; manually verify Finder/Gatekeeper, titlebar/menu-bar/tray/shortcuts, storage, login and quit behavior.
 
 Acceptance: a clean personal installation opens a local workspace and browser endpoint with no external runtime, while existing workspace data remains intact.
 
@@ -204,7 +205,7 @@ Validation: 29 focused frontend cases, one native-stream Node case and one actua
 
 ### D8 — Personal installers, existing-data onboarding and zero-cost updates
 
-- [x] Windows x64 installer and macOS arm64 ad-hoc app/DMG build workflow with bundled runtime. Actual Mac build/native verification is pending, not claimed complete. State unknown-publisher/Gatekeeper approval steps honestly; no paid signing/notarization promises.
+- [x] Windows x64 installer and macOS arm64 ad-hoc app/DMG build workflow with bundled runtime. The current Mac 0.2.2 development app and native smoke checks passed; release DMG/install, manual native OS verification and Gatekeeper steps remain pending. No paid signing/notarization promises.
 - [x] Existing Docker onboarding: connect to upgraded compatible server or explicitly export/import into This computer. Browser-only/Docker hosting remains supported with documented pairing management configuration.
 - [x] Release manifest/checksums/application release signature, local update-package import, configurable HTTPS feed and in-app check/download/progress/errors. Unconfigured feed remains a valid personal setup.
 - [x] Update quiescence, host restart notice, consistent backup, previous-version retention, failure recovery and explicit Mac manual replacement handoff. Preserve data/trust/pairing/login preference.
@@ -227,6 +228,8 @@ D8 remaining validation carried to D9: Mac mini package/build/native checks, gen
 - [ ] Check both themes, narrow window, keyboard dialogs/shortcuts, reduced motion and safe quit with local/remote active clients. Keep it targeted; do not repeatedly explore unrelated UI.
 - [x] Complete current build/install/trust/pairing/network/update/debugging/API docs and provide exact Mac execution handoff; final Mac outcomes remain pending. Maintain the CODEBASE source map. Record exact OS/browser versions, actual results, unavailable access and limitations rather than marking unperformed checks passed.
 - [x] Preserve zero-cost and no-Android boundary. Summarize installer size/runtime footprint measured on the test machines, rather than promising a lightweight app.
+
+Mac development results (2026-10-04): macOS 27.0.1 arm64, Node 22.16.0/npm 10.9.2, Temurin 25, Electron 44.5.1, Chrome 152.0.7977.83 and Safari 27.0.1. Clean desktop install, build, pinned server preparation, desktop check, 14 focused Node tests and five focused frontend workspace-departure tests passed. The disposable arm64 development Electron.app was 629,944 KiB and passed ad-hoc signature verification; it is not the Vaultor release app/DMG. Native owned-server and chrome smokes passed, and dark/light/narrow frames were reviewed. Manifest/JAR hashes and test details are in [MAC-HANDOFF.md](MAC-HANDOFF.md). Release packaging is blocked by the absent matching private key; no key was rotated and no release DMG was produced. Manual Mac installation/native controls, browser trust and the real two-device LAN session remain pending. D9 is partial, not complete.
 
 Release gate: Windows and Mac personal installers, no external Java/Docker requirement, browser retained, opt-in paired HTTPS LAN use, persistent approvals, isolated sessions/drafts, reliable saved-state refresh, native file/lifecycle behavior, working login option and recoverable update path. No user data mutation during verification.
 
@@ -305,3 +308,4 @@ Deferred work: Android, Mac Intel, full offline database/sync, collaborative typ
 - 2026-10-04: D9 Windows menu correction/native validation and 0.2.1 release handoff; user requested MAC-HANDOFF.md for execution on the Mac mini. Updated current guide/desktop/operations/update/index docs. Windows actual results and remaining Mac/two-device gate are recorded above; no D10 implementation.
 
 - 2026-10-04 post-D9 correction: a real stopped Mac host exposed clean-client departure blocking on unavailable /operations/activity. Added bounded concurrent identity/activity policy and retained draft/settings/recovery/known-transfer guards; fresh local profiles no longer include an unused localhost placeholder. Version 0.2.2, production compilation/lint, 19 frontend and five Node cases passed. Windows package built; live stopped-Mac retest remains user/Mac handoff work. No new sprint or Mac release-gate success implied.
+- 2026-10-04 Mac D9 partial: clean desktop install now runs Electron's native executable installer; corrected authenticated owned-server smoke setup/idle barrier and macOS menu assertion. Current 0.2.2 arm64 development app, owned-server/chrome smoke, scoped checks and focused cases passed. Exact environment, bundle hashes and remaining private-key/release/manual/two-device blockers are recorded in MAC-HANDOFF.md. Do not mark the D9 release gate complete.

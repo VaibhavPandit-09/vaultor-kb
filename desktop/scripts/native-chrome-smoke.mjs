@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { app, safeStorage } from 'electron';
+import { app, safeStorage, Menu } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -12,7 +12,10 @@ export async function runChromeSmoke(window, directory, owned) {
   const wait = async (code, label) => { for (let i = 0; i < 500; i++) { if (await evaluate(code).catch(() => false)) return; await new Promise(r => setTimeout(r, 100)); } throw new Error(label + ': ' + await evaluate('document.body.innerText')); };
   await wait("Boolean(document.querySelector('.library-view'))", 'Local workspace');
   window.showInactive(); await new Promise(r => setTimeout(r, 200));
-  assert.equal(window.isMenuBarVisible(), false);
+  if(process.platform==='darwin'){
+    const labels=Menu.getApplicationMenu()?.items.map(item=>item.label)??[];
+    assert.ok(['File','View','Window'].every(label=>labels.includes(label)));
+  }else assert.equal(window.isMenuBarVisible(), false);
   const geometry = await evaluate("({top:document.querySelector('.app-root').getBoundingClientRect().top,controls:document.querySelector('.desktop-window-controls').getBoundingClientRect().height,sidebar:Boolean(document.querySelector('.desktop-connection-button')),noStrip:!document.body.innerText.includes('Local connection')})");
   // Give a hidden Chromium surface time to paint the selected view, not the
   // initial connection frame that preceded workspace activation.

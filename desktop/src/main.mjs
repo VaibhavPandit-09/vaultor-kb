@@ -252,7 +252,7 @@ else {
     }
     if (process.env.VAULTOR_OWNED_SMOKE_DIRECTORY) {
       const { runOwnedSmoke } = await import('../scripts/native-owned-smoke.mjs');
-      try { await runOwnedSmoke(window, owned, smokeDirectory); app.quit(); }
+      try { await runOwnedSmoke(window, owned, smokeDirectory,()=>({activeFiles:files.active.size,pendingSaves:files.saves.size,dialogPending:files.dialogPending,mutations:transport.mutations.size})); app.quit(); }
       catch (error) { console.error(error); await owned.stop({ force: true }); app.exit(1); }
     }
     if (process.env.VAULTOR_CHROME_SMOKE_DIRECTORY) {
