@@ -71,6 +71,15 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>desktop</id>
+            <build><resources>
+                <resource><directory>src/main/resources</directory></resource>
+                <resource><directory>../frontend/dist</directory><targetPath>static</targetPath></resource>
+            </resources></build>
+        </profile>
+    </profiles>
     <build>
         <plugins>
             <plugin>

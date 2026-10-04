@@ -9,6 +9,9 @@ export interface PlatformServices {
   saveBlob(blob: Blob, filename: string): Promise<DownloadOutcome>;
   openBlob(blob: Blob): Promise<void>;
   writeClipboard(text: string): Promise<void>;
+  saveApiFile?: (path: string, filename: string, signal?: AbortSignal) => Promise<DownloadOutcome>;
+  openApiFile?: (path: string, filename: string, signal?: AbortSignal) => Promise<void>;
+  previewApiFile?: (path: string, filename: string, signal?: AbortSignal) => Promise<{ url: string; release: () => void }>;
   /** Future notifications belong to the connection epoch; close releases all native resources. */
   stream?: (path: string, signal: AbortSignal, receive: (data: unknown) => void) => Promise<{ close(): void }>;
 }
@@ -36,6 +39,17 @@ let lifetime = new AbortController();
 let epoch = 0;
 export const getPlatform = () => platform;
 export const getConnection = () => ({ ...identity, epoch });
+export async function saveApiFile(path: string, filename: string, signal?: AbortSignal) {
+  if (platform.saveApiFile) return platform.saveApiFile(path, filename, signal);
+  const { default: api } = await import('./api');
+  const { data } = await api.get<Blob>(path, { responseType: 'blob', signal });
+  return platform.saveBlob(data, filename);
+}
+export async function openApiFile(path: string, filename: string) {
+  if (platform.openApiFile) return platform.openApiFile(path, filename);
+  const { default: api } = await import('./api');
+  const { data } = await api.get<Blob>(path, { responseType: 'blob' }); return platform.openBlob(data);
+}
 /** Shell-only boundary; no renderer UI/server switching is enabled by D1. */
 export function configureConnection(next: ConnectionIdentity, services: PlatformServices) {
   lifetime.abort(); lifetime = new AbortController(); identity = { ...next }; platform = services; epoch++;

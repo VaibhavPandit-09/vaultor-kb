@@ -1,3 +1,4 @@
+import { pickDesktopFiles } from './desktop';
 let active = false;
 const held = new Set<string>();
 window.addEventListener('keydown', event => { if (!event.isComposing) held.add(event.key); }, true);
@@ -8,6 +9,7 @@ window.addEventListener('blur', () => held.clear());
 export function pickFiles(accept = '', multiple = false): Promise<File[]> {
   if (active) return Promise.reject(new Error('A file picker is already open.'));
   active = true;
+  if (window.vaultorDesktop?.pickFiles) return pickDesktopFiles(accept, multiple).finally(() => { active = false; });
   return new Promise((resolve, reject) => {
     const input = document.createElement('input');
     input.type = 'file'; input.accept = accept; input.multiple = multiple;

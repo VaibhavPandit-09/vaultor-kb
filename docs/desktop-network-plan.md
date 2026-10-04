@@ -1,10 +1,10 @@
 # Desktop application and private-network hosting
 
-Created/reviewed: 2026-10-04. Status: D1 complete; D2–D9 not started; D10 deferred.
+Created/reviewed: 2026-10-04. Status: D1–D4 implemented on Windows; Windows manual native save-dialog/OS-login check and Mac native verification pending; D5–D9 not started; D10 deferred.
 
 ## Delivery and maintenance
 
-Deliver one sprint per explicit authorization, stop for discussion after its handoff, and do not interpret Continue as authorization for a subsequent sprint if the current one is already complete. An interrupted sprint may be resumed. The initial request authorized planning only; the subsequent “Start the first sprint” authorized D1 only.
+Deliver one sprint per explicit authorization, stop after its handoff, and do not interpret Continue as authorization for another sprint if the current one is complete. Interrupted work may resume. The initial request authorized planning; subsequent calls explicitly authorized D1, D2 and D3. D4 was authorized by “start next sprint” and is implemented; stop before D5.
 
 Maintain this tracker after each completed task: checklists, decisions, blockers, exact checks and remaining limits. Update CODEBASE.md and relevant authoritative docs in the same change. Use docs/README.md for discovery. Historical trackers retain their history; their completed work is not restarted. Archive this tracker under docs/history/ when the sequence is complete, preserving current explanations in supporting docs.
 
@@ -102,36 +102,54 @@ Validation: frontend production build and final TypeScript check passed; targete
 
 ### D2 — Electron shell and persistent desktop identity
 
-- [ ] Scaffold the dedicated desktop package, secure local UI origin, narrow validated preload bridge and single main window/single-instance behavior.
-- [ ] Preserve native window controls, application menus, focus/Escape and existing editor appearance; allow external web links only through the OS browser.
-- [ ] Add connection screen/compact switcher, offline/startup failure states and local profile storage. Connect to an existing loopback server in development; server bundling follows D3.
-- [ ] Namespace desktop caches/sessions/recovery by host/workspace and establish persistent desktop session ownership across process restarts, independent of browser tabs.
-- [ ] Bridge main-process transport, credential/trust placeholders and cancellation without exposing arbitrary IPC/network targets to uploaded content.
-- [ ] Focused checks: relaunch/session isolation, renderer boundaries, invalid IPC, denied unintended navigation, unreachable host and browser build. One Windows native launch/editor check; Mac launch when the Mac mini is available.
+- [x] Scaffold the dedicated desktop package, secure local UI origin, narrow validated preload bridge and single main window/single-instance behavior.
+- [x] Preserve native window controls, application menus, focus/Escape and existing editor appearance; allow external web links only through the OS browser.
+- [x] Add connection screen/compact switcher, offline/startup failure states and local profile storage. Connect to an existing loopback server in development; server bundling follows D3.
+- [x] Namespace desktop caches/sessions/recovery by connection profile/workspace and establish persistent desktop session ownership across process restarts, independent of browser tabs. Authenticated host identity follows pairing; profiles isolate copied workspace IDs now.
+- [x] Bridge main-process transport, explicit unavailable credential/trust placeholders and cancellation without exposing arbitrary IPC/network targets to uploaded content.
+- [x] Focused checks: relaunch/session isolation, renderer boundaries, invalid IPC, denied unintended navigation, unreachable host and browser build. Windows native launch/editor/relaunch and screenshot checked.
+- [ ] Mac native launch/menu/storage verification when access to the Mac mini is arranged; required before Mac release, not claimed by Windows checks.
 
 Acceptance: installed-style window runs the bundled UI, reconnects safely and retains its session across app relaunch without changing browser sessions.
 
+D2 outcome: Electron 44.5.1 development package/main/preload, same bundled frontend and native menus, loopback profile picker and offline states, bounded main-owned transport, strict save/recovery switch barrier and stable desktop session ownership. No arbitrary network/IPC/credential exposure; active mutations/transfers/exports block switching. No backend API/schema changes. Startup restores last profile/view and current-identity changes cannot silently receive old drafts. See [DESKTOP.md](DESKTOP.md) for current implementation and launch commands.
+
+Checks: production browser/desktop build, final TypeScript, targeted ESLint and desktop syntax passed; four Node cases and 33 distinct frontend cases passed (seven desktop cases rerun after fixing duplicate auto-reconnect). Disposable Windows native launch/typing/relaunch passed; renderer/preload isolation, denied IPC/file target and captured layout checked. Fixture membership response was corrected before the successful native result. No real workspace/API smoke or backend/Docker rebuild. Mac verification remains pending; no claim of verified Mac delivery. Buffered transport is capped at 32 MiB until D4, and native file/lifecycle behavior remains provisional. D3 not started.
+
 ### D3 — Bundled local server, runtime and data ownership
 
-- [ ] Bundle target Java runtime/JAR and license notices; launcher starts on local use, waits for readiness and negotiates identity/protocol.
-- [ ] Establish application-data paths, directory lock, process ownership, port conflict handling and local owner/control channel. Never adopt an unknown server or use Docker data automatically.
-- [ ] Retain files/workspace/host identity outside app installation; handle write permissions, insufficient space and missing/corrupt runtime with recovery UI.
-- [ ] Capture bounded JVM/shell startup and crash logs; expose them through Diagnostics without secrets. Implement three-attempt restart/backoff and graceful owned-process stop.
-- [ ] Produce development packages for Windows x64/Mac arm64 without requiring installed Java/Docker; final release installation is D8.
-- [ ] Focused disposable checks: first/second startup, locked directory, occupied port, server crash, failed startup, no orphan/duplicate process, data preserved after replacement of app files. Native checks on both target machines.
+Authorized/implemented 2026-10-04 on Windows. Use a checksum-verified free Temurin 25 runtime, a managed loopback child with OS-assigned port, private stdio ownership and an application-data workspace independent of Docker. D4 is not authorized. Mac build/native verification remains pending access to the Mac mini.
+
+- [x] Bundle target Java runtime/JAR and license notices; launcher starts on local use, waits for readiness and negotiates identity/protocol.
+- [x] Establish application-data paths, directory lock, process ownership, port conflict handling and local owner/control channel. Never adopt an unknown server or use Docker data automatically.
+- [x] Retain files/workspace/host identity outside app installation; handle write permissions, insufficient space and missing/corrupt runtime with recovery UI.
+- [x] Capture bounded JVM/shell startup and crash logs; expose them through Diagnostics without secrets. Implement three-attempt restart/backoff and graceful owned-process stop.
+- [x] Produce Windows x64 development package without installed Java/Docker; add target-native Mac arm64 packaging/pinned runtime workflow. Final release installation is D8.
+- [x] Focused disposable Windows checks: first/second startup, locked directory, occupied unrelated port, server crash, failed startup, no orphan/duplicate process, data preserved after replacement of app files; portable native editor/relaunch.
+- [ ] Run Mac arm64 build/package and native startup/menu/storage/quit checks on the Mac mini. No Mac delivery is claimed verified.
 
 Acceptance: a clean personal installation opens a local workspace and browser endpoint with no external runtime, while existing workspace data remains intact.
 
+D3 outcome: This computer is a stable bundled profile; fresh launch starts Temurin/Spring on loopback with private stdio owner proof, an OS data lock and parent-death cleanup. UserData/local-workspace keeps database/files/operations/host identity outside application files. Random ports avoid adopting unknown servers. Startup recovery/details and Diagnostics expose bounded logs; restarts stop after three attempts and never replay mutations. Browser UI ships in the JAR. Existing selected connections/data remain intact. See DESKTOP.md for paths, build/package commands, graceful quit and provisional D4 limits.
+
+Validation: browser/desktop production compilation, clean backend main/test compilation and executable packaging passed; targeted ESLint and desktop syntax passed. Five profile/transport policy cases and eight desktop frontend cases passed. Four owned-server cases passed with disposable bundled JVMs (corruption/free-space/log bounds, locking/concurrent startup/occupied unrelated port/crash/relaunch/app-file replacement, bounded restarts, launcher-death release); corruption/host-identity assertions received a focused two-case rerun. Windows portable native create/edit/save/relaunch passed with installed Java excluded; screenshot inspected. Initial native Saved selector was corrected to the existing accessible label. Backend suite was skipped; no Docker/broad user-workspace smoke. Mac remains a validation blocker for Mac delivery. D4 not started.
+
 ### D4 — Native file operations, hosting lifecycle and login startup
 
-- [ ] Native save/open flows for notes/workspace/table exports, file imports and existing previews. Stream large binaries to disk instead of IPC/base64 buffering entire archives.
-- [ ] Distinguish preparation, save-dialog cancellation, actual successful disk write and retry; cancellation must not rerender an export. Browser download semantics remain truthful.
-- [ ] Tray/menu-bar hosting controls, Show app/Open in browser, close-to-background explanation, explicit Quit and bounded save/recovery/operation barrier.
-- [ ] Start at login toggle, off by default, with start-in-background while sharing. Surface OS-denied startup registration; never silently override the user/OS setting.
-- [ ] Sleep/resume and quit during failed saves: retain drafts, show whether clients will be disconnected, do not claim unload requests guarantee saving.
-- [ ] Focused checks: file cancel/write failure/retry, close versus quit, login setting, app reopen/focus and unchanged browser import/export. One necessary native dialog/lifecycle session per OS.
+- [x] Native save/open flows for notes/workspace/table exports, file imports and existing previews. Stream large binaries to disk instead of IPC/base64 buffering entire archives.
+- [x] Distinguish preparation, save-dialog cancellation, actual successful disk write and retry; cancellation must not rerender an export. Browser download semantics remain truthful.
+- [x] Tray/menu-bar hosting controls, Show app/Open in browser, close-to-background explanation, explicit Quit and bounded save/recovery/operation barrier.
+- [x] Start at login toggle, off by default, with start-in-background while sharing. Surface OS-denied startup registration; never silently override the user/OS setting.
+- [x] Sleep/resume and quit during failed saves: retain drafts, show whether clients will be disconnected, do not claim unload requests guarantee saving.
+- [x] Focused checks: file cancel/write failure/retry, close versus quit, login setting, app reopen/focus and unchanged browser import/export. Automated services and Windows lifecycle verified; outstanding native OS checks below.
+
+- [ ] Manual Windows save-dialog confirm/cancel/overwrite and actual OS login launch; Mac mini dialog/menu/startup/quit verification. Automated cancellation of a native save sheet timed out; do not claim that case passed.
 
 Acceptance: desktop file/lifecycle behavior is native, start-at-login is usable, and merely closing the window cannot unexpectedly stop hosting.
+
+D4 outcome: opaque OS-selected import tickets; streamed multipart and API-to-disk transfers, native save outcomes, conservative OS Open and bounded/released preview cache; fixed Chromium PDF viewer integration. Tray close retains the same editor/host; explicit Quit requires save/recovery/layout acknowledgement and transfer-aware owned-server draining. Login is explicit/off by default, with OS-denial reporting and rollback. Resume only probes, never replays mutations. A read-only operation-activity API and shutdown transfer admission prevent new imports/exports racing close. No schema, structured-document or archive-format changes; independent servers remain untouched. Sharing/LAN remains off.
+
+D4 validation: frontend/browser/desktop production compilation, backend main/test compilation/JAR packaging, targeted lint and desktop syntax passed. 33 distinct focused frontend cases passed (desktop 10, export 12, import 11); desktop/export 22 rerun after file-service changes. Four native-file/login service cases passed, including 33 MiB streaming, cancel/no fetch, disk failure/original retention/retry, range/cache/token bounds and fake OS registration/denial/rollback; two backend gate cases passed. Launcher-death JVM cleanup passed. Windows portable native close-to-tray/host-still-live/show/focus/edit/save/session relaunch/explicit Quit passed with installed Java absent, using disposable storage. A narrow real PDF operation/native preview exposed blocked internal viewer resources; after fixing the allowlist and response policy its page was visually inspected and a blank-frame regression capture check passed. A private Chromium DOM-based geometry assertion was unsuitable for its out-of-process viewer and replaced with the screenshot check. Native save-sheet automation timed out; confirm/cancel/overwrite and actual start-at-login launch still need manual OS checks. No user storage, Docker, broad API smoke, real startup registration or Mac launch was touched. Existing bundle/Browserslist and dynamic-import warnings remain. Stop before D5.
 
 ### D5 — Host HTTPS and persistent pairing services
 
@@ -224,9 +242,9 @@ Native platform interfaces cover connection verify/activate, host start/stop/sta
 | Sprint | State | Result |
 | --- | --- | --- |
 | D1 | Complete | Platform/compatibility foundation; Ctrl+Alt+B migration; build/lint, 31 frontend and 4 backend checks passed |
-| D2 | Not started | Depends on D1 |
-| D3 | Not started | Depends on D2; Mac access needed for native validation |
-| D4 | Not started | Depends on D3 |
+| D2 | Implemented; Mac verification pending | Windows shell/native relaunch verified; build/lint, 4 Node and 33 frontend cases passed |
+| D3 | Implemented on Windows; Mac validation pending | Bundled Temurin/server, data ownership, portable editor/relaunch; Mac package build/native checks require access |
+| D4 | Implemented on Windows; manual OS/Mac validation pending | Native files/tray/login/quit; pending cases listed above |
 | D5 | Not started | Depends on D3–D4 |
 | D6 | Not started | Depends on D5 |
 | D7 | Not started | Depends on D6; required before LAN release |
@@ -244,3 +262,7 @@ Deferred work: Android, Mac Intel, full offline database/sync, collaborative typ
 
 - 2026-10-04: created decision-complete D1–D9 Windows/Mac sequence plus separately authorized D10 Ubuntu follow-up; documentation only. No implementation sprint started or execution checks claimed.
 - 2026-10-04: implemented authorized D1, preserving unrelated N6 work; updated PLATFORM/API/navigation/operations/codebase/index docs. Production build, final TypeScript, targeted lint, 31 frontend and 4 backend focused checks passed. Stopped before D2; no hosting/pairing/desktop packaging or live deployment performed.
+- 2026-10-04: implemented authorized D2 development shell/profile/session/IPC boundary, preserving existing work. Builds/lint/syntax, four Node and 33 frontend cases passed; disposable Windows native editor/relaunch and screenshot checked. Mac launch remains pending; D3 stopped before implementation. No user-workspace mutation or backend/Docker checks.
+- 2026-10-04: implemented authorized D3 owned runtime/server and personal development package. Windows bundled JVM checks, portable native editing/relaunch, build/lint and focused frontend/profile checks passed; data preserved, no user storage/Docker touched. Mac build/native verification remains pending. Stopped before D4.
+
+- 2026-10-04: implemented authorized D4 native files, lifecycle and opt-in startup; updated authoritative desktop/platform/export/session/API/operations/codebase docs. Focused compilation/tests and disposable Windows native lifecycle/PDF preview passed; manual native dialog/OS-login and Mac verification remain. No LAN or D5 implementation.

@@ -18,7 +18,7 @@ import SearchExcerpt from '../SearchExcerpt';
 import { CollectionPicker } from '../ResourceCollections';
 import OrganizationManager from '../OrganizationManager';
 import api from '../../lib/api';
-import { getPlatform } from '../../lib/platform';
+import { saveApiFile } from '../../lib/platform';
 
 type Entry={step:CommandStep;query:string;parentSelectedId:string};
 type Result=CommandItem & {resource?:Resource;kind?:string};
@@ -47,7 +47,7 @@ export default function CommandPaletteModal({open,onClose,context}:Props) {
    action('membership','Add to collection',()=>handoff('collection',[resource.id]),resource.title),
    action('pin',resource.favorite?'Unpin':'Pin',()=>setResourceFavorite(resource.id,!resource.favorite),resource.title),
    action('tags','Manage tags',()=>handoff('tag',[resource.id]),resource.title),
-   ...(resource.type==='note'?[{id:'rename',title:'Rename',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildRenameStep(resource),query:resource.title})},action('export','Export note',()=>captured.exportResource?.(resource),resource.title)]:[action('preview','Preview file',()=>captured.openResource(resource.id),resource.title),action('download','Download file',async()=>{const {data}=await api.get<Blob>('/resources/'+resource.id+'/raw',{responseType:'blob'});await getPlatform().saveBlob(data,resource.title);},resource.title)]),
+   ...(resource.type==='note'?[{id:'rename',title:'Rename',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildRenameStep(resource),query:resource.title})},action('export','Export note',()=>captured.exportResource?.(resource),resource.title)]:[action('preview','Preview file',()=>captured.openResource(resource.id),resource.title),action('download','Download file',async()=>{if(await saveApiFile('/resources/'+resource.id+'/raw',resource.title)==='cancelled')throw new Error('Save cancelled. Choose Download to try again.');},resource.title)]),
    {id:'delete',title:'Delete…',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildDeleteConfirmStep(scope,resource)})}
  ].filter(item=>item.title.toLowerCase().includes(filter.toLowerCase()))};}
  const extra:Result[]=[

@@ -14,6 +14,8 @@ Frontend diagnostic events retain `build` (client build), optional `serverBuild`
 
 The application and agents use the same unauthenticated API. Default origin: http://127.0.0.1:8080. Machine-readable specification: GET /api/openapi.json. Discover build/features at GET /api/capabilities and available export formats at GET /api/export-formats. Workspace ZIP and individual note Markdown/ZIP/PDF/DOCX exports are enabled; see NOTE-EXPORTS.md.
 
+D3's owned desktop server uses an OS-assigned 127.0.0.1 port; find its current browser address in the desktop connection bar/Details. Ordinary API contracts/protocol are unchanged. Its lifecycle control is private stdio, not an API endpoint or an agent bypass. Diagnostics in desktop also includes bounded local startup/crash logs obtained through validated main/preload IPC. Standalone/Docker port defaults remain unchanged; see [DESKTOP.md](DESKTOP.md).
+
 ## Request and response rules
 
 Send Content-Type: application/json except multipart file uploads. Note content is a structured Tiptap doc object; supply both title and content for updates. Titles contain 1–500 characters; tags 1–100. URL-encode path/query values. Resource DTOs omit storage paths. List resources with page (zero-based), size (1–200), q (literal title substring), type, repeated tag names (all required), favorites=true, collection (ID), and sort=recent|updated|title; response is {items,page,size,totalItems,totalPages}. Lists contain metadata only (no content/filePath); GET /resources/{id} retrieves the document. Legacy /resources/search returns up to 50 metadata-only title matches. Saved-note search uses the separate paginated /resources/query contract described in SEARCH.md. Stable ordering uses resource ID as a tie-breaker; pagination is not a concurrent snapshot.
@@ -62,6 +64,7 @@ GET /workspace/identity returns {id,generation}. Identity persists for this stor
 | DELETE /api/settings/workspace | resetWorkspaceSettings | resetWorkspaceSettings |
 | POST /api/exports | startExport | startExport |
 | POST /api/imports/{id}/commit | commitImport | Idempotent per import ID; replace requires confirmation=replace |
+| GET /api/operations/activity | getOperationActivity | Count queued/running/cleanup transfers for lifecycle barriers |
 | GET /api/operations/{id} | getOperation | getOperation |
 | POST /api/operations/{id}/cancel | cancelOperation | cancelOperation |
 | GET /api/export-formats | listExportFormats | listExportFormats |
@@ -164,3 +167,5 @@ K3 frontend search mode is explicit: title (default) uses GET /resources?q=...; 
 N2 navigation/shared editing changes use existing resource/save/preview APIs; no endpoint or revision contract changed. Pane/history state is frontend-only. N4 conditional revisions and N5 graph-export parameters are now available; see their authoritative sections. See [NAVIGATION.md](NAVIGATION.md) and the workspace tracker.
 
 N6 retains the existing API contracts. Concurrent application transactions serialize through the SQLite connection pool; conditional note updates still reject stale revisions with 412. See [INTEGRATION.md](INTEGRATION.md) for disposable concurrency/replacement verification.
+
+Desktop lifecycle checks GET /api/operations/activity, returning `{ "active": 0 }`. It counts persisted QUEUED, RUNNING and CLEANUP transfers, excluding PREVIEW and completed results. It is a read-only ordinary application API, not an HTTP server shutdown/control endpoint. The private desktop owner channel separately quiesces mutations and drains active work before shutdown.

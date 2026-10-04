@@ -1,0 +1,174 @@
+import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, dialog, Tray, nativeImage, Notification, powerMonitor } from 'electron';
+import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { resolve, sep } from 'node:path';
+import { Profiles } from './profiles.mjs';
+import { DesktopTransport } from './transport.mjs';
+import { UI_ORIGIN, externalAddress, trustedSender } from './policy.mjs';
+import { OwnedServer } from './owned-server.mjs';
+import { NativeFiles } from './files.mjs';
+import { HostingPreferences } from './hosting.mjs';
+
+protocol.registerSchemesAsPrivileged([{ scheme: 'vaultor', privileges: { standard: true, secure: true, supportFetchAPI: true } },{scheme:'vaultor-file',privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true}}]);
+app.setName('Vaultor');
+const smokeDirectory = process.env.VAULTOR_SMOKE_DIRECTORY || process.env.VAULTOR_OWNED_SMOKE_DIRECTORY;
+if (smokeDirectory) app.setPath('userData', smokeDirectory);
+if (!app.requestSingleInstanceLock()) app.quit();
+else {
+  let window, profiles, owned, files, hosting, tray, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false;
+  const transport = new DesktopTransport(), candidates = new Map();
+  const queue = task => { const next = writes.catch(() => {}).then(task); writes = next; return next; };
+  const state = () => { const data = !startupError && profiles?.snapshot(); if (data) data.profiles = data.profiles.map(p => p.source === 'bundled' ? { ...p, address: owned?.address ?? p.address } : p); return { ...(data || { version: 1, profiles: [], active: null, clientId: '' }), sessionId: data?.clientId ?? '', token, desktopBuild: app.getVersion(), localServer: owned?.snapshot(), error: startupError, access: { mode: token ? 'loopback' : 'unselected', pairingAvailable: false, trustConfigured: false, credentialsStored: false } }; };
+  async function probe(id, issueTicket = true) {
+    const stored = profiles.get(id);
+    const profile = stored.source === 'bundled' ? { ...stored, address: await owned.start() } : stored;
+    const probeTransport = new DesktopTransport();
+    const temporary = randomUUID(); probeTransport.activate(profile, temporary);
+    const get = async path => {
+      const response = await probeTransport.request({ token: temporary, id: randomUUID(), path, method: 'GET', headers: { 'X-Request-ID': randomUUID() }, timeout: 10000 });
+      if (response.status !== 200) throw new Error(`Server check failed (${response.status}).`);
+      return JSON.parse(new TextDecoder().decode(response.data));
+    };
+    const capabilities = await get('/capabilities');
+    if (!Number.isInteger(capabilities.apiProtocolVersion) || capabilities.apiProtocolVersion < 1 || !Number.isInteger(capabilities.minimumClientProtocolVersion) || capabilities.minimumClientProtocolVersion < 1 || capabilities.minimumClientProtocolVersion > capabilities.apiProtocolVersion || typeof capabilities.serverBuild !== 'string') throw new Error('Update this server: compatibility information is missing.');
+    if (capabilities.minimumClientProtocolVersion > 1) throw new Error('Update Vaultor Desktop to connect to this server.');
+    const identity = await get('/workspace/identity');
+    if (typeof identity.id !== 'string' || !identity.id || identity.id.length > 100 || typeof identity.generation !== 'string' || identity.generation.length > 100) throw new Error('Server workspace identity is invalid.');
+    const ticket = issueTicket ? randomUUID() : undefined;
+    if (issueTicket) { candidates.clear(); candidates.set(ticket, { profile, identity, expires: Date.now() + 60000 }); }
+    return { ticket, profile, identity, differentWorkspace: Boolean(profile.workspaceId && profile.workspaceId !== identity.id), serverBuild: capabilities.serverBuild };
+  }
+  function handle(channel, work) {
+    ipcMain.handle(channel, async (event, value) => {
+      if (!trustedSender(event, window?.webContents)) throw new Error('Untrusted desktop caller.');
+      try { return { ok: true, value: await work(value) }; }
+      catch (error) { return { ok: false, error: { code: error.name === 'AbortError' ? 'CANCELLED' : 'DESKTOP_ERROR', detail: error.message === 'fetch failed' ? 'Server unavailable. Check that it is running, then retry.' : String(error.message).slice(0, 1000) } }; }
+    });
+  }
+  app.on('second-instance', () => { if (window) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } else app.emit('activate'); });
+  app.whenReady().then(async () => {
+    const ui = fileURLToPath(new URL('../ui/', import.meta.url));
+    protocol.handle('vaultor', async request => {
+      try {
+        const url = new URL(request.url), pathname = decodeURIComponent(url.pathname);
+        if (url.host !== 'app' || request.method !== 'GET' || pathname.includes('\\') || pathname.includes('\0')) return new Response('Not found', { status: 404 });
+        const file = resolve(ui, '.' + (pathname === '/' ? '/index.html' : pathname));
+        if (!file.startsWith(resolve(ui) + sep)) return new Response('Not found', { status: 404 });
+        const mime = file.endsWith('.html') ? 'text/html' : file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : file.endsWith('.svg') ? 'image/svg+xml' : 'application/octet-stream';
+        return new Response(await readFile(file), { headers: { 'Content-Type': mime, 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' vaultor-file: blob: data:; font-src 'self' data:; connect-src 'self' vaultor-file:; frame-src 'self' vaultor-file: blob: chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai; object-src 'none'; base-uri 'none'; form-action 'none'" } });
+      } catch { return new Response('Build the desktop UI with npm run build.', { status: 404 }); }
+    });
+    profiles = new Profiles(app.getPath('userData'));
+    owned = new OwnedServer({ bundle: fileURLToPath(new URL('../bundle/', import.meta.url)), data: resolve(app.getPath('userData'), 'local-workspace') });
+    files = new NativeFiles({directory:resolve(app.getPath('userData'),'file-cache'),owner:()=>transport.active,dialogs:{open:options=>dialog.showOpenDialog(window,options),save:options=>dialog.showSaveDialog(window,options)},openPath:path=>shell.openPath(path)});
+    transport.files=files;await files.cleanup();protocol.handle('vaultor-file',request=>files.serve(request));
+    hosting=new HostingPreferences({directory:app.getPath('userData'),app,executable:process.execPath,args:app.isPackaged?['--background']:[app.getAppPath(),'--background']});
+    try{await hosting.load();}catch(error){hosting.error=error.message;}
+    owned.on('status', () => {
+      if (owned.status === 'ready' && profiles?.data?.active === 'this-computer' && token) {
+        const checkedToken = token;
+        void probe('this-computer', false).then(checked => {
+          if (token !== checkedToken || profiles.data.active !== 'this-computer' || owned.status !== 'ready') return;
+          if (checked.differentWorkspace) throw new Error('The local workspace changed after restart. Reconnect to review it; drafts remain separate.');
+          transport.activate(checked.profile, token);
+        }).catch(error => { owned.error = error.message; transport.cancelAll(); transport.active = null; });
+      } else if (['failed', 'restarting', 'stopped'].includes(owned.status) && profiles?.data?.active === 'this-computer') { transport.cancelAll(); transport.active = null; }
+    });
+    try { await profiles.load(); if (!process.env.VAULTOR_SMOKE_DIRECTORY) await profiles.ensureManaged(); } catch (error) { startupError = error.message; }
+    handle('desktop:bootstrap', () => state());
+    handle('desktop:local-status', () => owned.snapshot());
+    handle('desktop:hosting',()=>({...hosting.snapshot(),error:hosting.error||hosting.snapshot().error,server:owned.snapshot()}));
+    handle('desktop:login',enabled=>queue(()=>{if(hosting.error)throw new Error(hosting.error);return hosting.setLogin(enabled);}));
+    handle('desktop:host-action',async action=>{
+      if(action==='browser'){if(!owned.address)throw new Error('Start the local host first.');await shell.openExternal(owned.address);return;}
+      if(action==='start'){await owned.start();return;}
+      if(action==='stop'){const approved=await requestQuitBarrier(false);if(!approved.success)throw new Error(approved.error);if(files.active.size||files.saves.size||files.dialogPending||transport.mutations.size)throw new Error('Finish current file operations first.');await owned.stop();return;}
+      throw new Error('Invalid hosting action.');
+    });
+    for(const [channel,method] of [['pick-files','pick'],['read-file','read'],['begin-save','begin'],['save-chunk','chunk'],['finish-save','finish'],['cancel-save','cancel'],['file-action','download'],['release-file','release'],['cancel-file','cancelRequest']]) handle('desktop:'+channel,value=>files[method](value));
+    handle('desktop:quit-reply',value=>{if(!quitWaiter||value?.id!==quitWaiter.id||typeof value.success!=='boolean')throw new Error('Quit request expired.');clearTimeout(quitTimer);quitWaiter.resolve({success:value.success,error:String(value.error||'').slice(0,1000),canKeepDrafts:value.canKeepDrafts===true});quitWaiter=null;});
+    handle('desktop:add-profile', input => queue(() => profiles.add(input)));
+    handle('desktop:probe', id => probe(id));
+    handle('desktop:activate', ticket => queue(async () => {
+      if (transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
+      const candidate = candidates.get(ticket);
+      if (!candidate || candidate.expires < Date.now()) throw new Error('Connection check expired. Retry.');
+      const latest = await probe(candidate.profile.id);
+      if (latest.identity.id !== candidate.identity.id || latest.identity.generation !== candidate.identity.generation) throw new Error('Workspace changed during connection. Retry.');
+      if (transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
+      if (latest.profile.source !== 'bundled') await owned.stop();
+      await files.reset();
+      await profiles.activate(candidate.profile.id, candidate.identity.id);
+      token = randomUUID(); transport.activate(latest.profile, token); candidates.clear();
+      return state();
+    }));
+    handle('desktop:request', value => transport.request(value));
+    handle('desktop:cancel', id => { if (typeof id !== 'string' || id.length > 80) throw new Error('Invalid cancellation.'); transport.cancel(id); });
+    handle('desktop:clipboard', text => { if (typeof text !== 'string' || text.length > 1048576) throw new Error('Clipboard text exceeds 1 MiB.'); clipboard.writeText(text); });
+    const createWindow = () => {
+      window = new BrowserWindow({ width: 1320, height: 900, minWidth: 600, minHeight: 480, show: !smokeDirectory && !process.argv.includes('--background') && !(process.platform==='darwin' && app.getLoginItemSettings().wasOpenedAtLogin), backgroundColor: '#0b1220', title: 'Vaultor', webPreferences: { preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false, plugins: true } });
+      if (smokeDirectory) window.webContents.on('console-message', event => { if (event.level === 'error' || event.level === 'warning') console.error('Renderer:', event.message); });
+      window.webContents.on('will-navigate', (event, url) => { if (url !== UI_ORIGIN + '/') { event.preventDefault(); try { void shell.openExternal(externalAddress(url)); } catch { /* Reject internal/custom/file destinations. */ } } });
+      window.webContents.setWindowOpenHandler(({ url }) => { try { void shell.openExternal(externalAddress(url)); } catch { /* Blob previews stay in app; native file opening is D4. */ } return { action: 'deny' }; });
+      window.webContents.on('will-attach-webview', event => event.preventDefault());
+      window.webContents.on('will-prevent-unload', event => {
+        const choice = dialog.showMessageBoxSync(window, { type: 'warning', buttons: ['Keep editing', 'Close'], defaultId: 0, cancelId: 0, message: 'Changes are still pending.', detail: 'Keep editing to save them. Closing relies on any recovery records already written.' });
+        if (choice === 1) event.preventDefault(); else quitting = false;
+      });
+      const session = window.webContents.session;
+      session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+      session.setPermissionCheckHandler(() => false);
+      session.webRequest.onBeforeRequest((details, callback) => { const allowed = details.url.startsWith(UI_ORIGIN + '/') || details.url.startsWith('blob:' + UI_ORIGIN) || details.url.startsWith('data:') || details.url.startsWith('vaultor-file://cache/') || details.url.startsWith('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/') || details.url.startsWith('chrome://resources/'); callback({ cancel: !allowed }); });
+      window.on('close', event => { if (!stoppedForQuit && tray) { event.preventDefault(); window.hide(); if (!closeExplained) { closeExplained=true; if (Notification.isSupported()) new Notification({title:'Vaultor is still running',body:'Use the tray icon to reopen Vaultor. Quit stops the local host.'}).show(); } } });
+      window.on('closed', () => { transport.cancelAll(); window = undefined; });
+      void window.loadURL(UI_ORIGIN + '/');
+      return window;
+    };
+    Menu.setApplicationMenu(Menu.buildFromTemplate([
+      ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
+      { label: 'File', submenu: [{ role: 'close' }, { role: 'quit' }] },
+      { role: 'editMenu' },
+      { label: 'View', submenu: [{ role: 'reload' }, { role: 'togglefullscreen' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'toggleDevTools' }] },
+      { role: 'windowMenu' },
+    ]));
+    createWindow();
+    const showApp=()=>{ if(!window) createWindow(); window.show();window.focus(); };
+    app.on('activate',showApp);
+    try {
+      const bitmap=Buffer.alloc(16*16*4); for(let y=0;y<16;y++) for(let x=0;x<16;x++){const i=(y*16+x)*4;const v=y>=4&&y<=12&&(x===Math.floor(4+(y-4)/2)||x===Math.floor(12-(y-4)/2));bitmap.set(v?[255,255,255,255]:[59,130,246,255],i);}
+      tray=new Tray(nativeImage.createFromBitmap(bitmap,{width:16,height:16}));tray.setToolTip('Vaultor');tray.on('click',showApp);
+      const trayMenu=()=>tray.setContextMenu(Menu.buildFromTemplate([{label:'Show Vaultor',click:showApp},{label:'Open in browser',enabled:Boolean(owned.address),click:()=>void shell.openExternal(owned.address)},{type:'separator'},{label:'Quit Vaultor',click:()=>app.quit()}]));
+      trayMenu();owned.on('status',trayMenu);
+    } catch(error){ console.error('Tray unavailable:',error.message);window.show(); }
+    powerMonitor.on('resume',()=>{window?.webContents.send('desktop:resume');});
+    if (process.env.VAULTOR_SMOKE_DIRECTORY) {
+      const { runSmoke } = await import('../scripts/native-smoke.mjs');
+      try { await runSmoke(window, process.env.VAULTOR_SMOKE_DIRECTORY); app.exit(0); }
+      catch (error) { console.error(error); app.exit(1); }
+    }
+    if (process.env.VAULTOR_OWNED_SMOKE_DIRECTORY) {
+      const { runOwnedSmoke } = await import('../scripts/native-owned-smoke.mjs');
+      try { await runOwnedSmoke(window, owned, smokeDirectory); app.quit(); }
+      catch (error) { console.error(error); await owned.stop({ force: true }); app.exit(1); }
+    }
+  }).catch(error => { console.error('Desktop startup failed:', error.message); app.exit(1); });
+  app.on('window-all-closed', () => { if (!tray && !quitting) app.quit(); });
+  async function requestQuitBarrier(keepDrafts=false) {
+    if (!window || !token) return {success:true};
+    if(quitWaiter) return {success:false,error:'A leave-workspace check is already running.'};
+    return new Promise(resolve=>{const id=randomUUID();quitWaiter={id,resolve};quitTimer=setTimeout(()=>{quitWaiter=null;resolve({success:false,error:'Save/recovery confirmation timed out. Reopen Vaultor and retry.'});},30000);window.webContents.send('desktop:quit-request',{id,keepDrafts});});
+  }
+  async function finishQuit() {
+    try {
+      if(files?.active.size||files?.saves.size||files?.dialogPending||transport.mutations.size) throw new Error('Finish current file operations before quitting.');
+      let approval=await requestQuitBarrier();
+      if(!approval.success && approval.canKeepDrafts && !smokeDirectory){const choice=dialog.showMessageBoxSync(window,{type:'warning',buttons:['Keep editing','Keep drafts and quit'],defaultId:0,cancelId:0,message:approval.error,detail:'Quit only after local recovery records have been written.'});if(choice===1) approval=await requestQuitBarrier(true);}
+      if(!approval.success) throw new Error(approval.error);
+      if(owned.address&&!smokeDirectory){const choice=dialog.showMessageBoxSync(window,{type:'question',buttons:['Keep hosting','Quit'],defaultId:0,cancelId:0,message:'Quit Vaultor?',detail:'The local host stops. Connected browser clients will be disconnected.'});if(choice!==1){quitting=false;return;}}
+      try {await owned.stop();} catch(error){if(smokeDirectory) throw error;const choice=dialog.showMessageBoxSync(window,{type:'warning',buttons:['Keep hosting','Force quit'],defaultId:0,cancelId:0,message:error.message,detail:'Force quit interrupts server operations. Their persisted journals are recovered on restart. Only this app’s owned server is stopped.'});if(choice!==1){quitting=false;return;}await owned.stop({force:true});}
+      await files?.reset(); stoppedForQuit=true;window?.destroy();tray?.destroy();app.quit();
+    } catch(error){quitting=false;window?.show(); if(smokeDirectory){console.error(error);app.exit(1);}else dialog.showMessageBoxSync(window,{type:'warning',message:'Vaultor is still running',detail:error.message});}
+  }
+  app.on('before-quit',event=>{if(stoppedForQuit||!owned)return;event.preventDefault();if(quitting)return;quitting=true;void finishQuit();});
+}

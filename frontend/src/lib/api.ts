@@ -13,7 +13,7 @@ api.interceptors.request.use(async config => {
   return config;
 });
 api.interceptors.response.use(response => response, error => {
-  if (!axios.isCancel(error)) reportError(String(error.config?.method ?? 'request') + ' ' + String(error.config?.url ?? '').split('?')[0], new Error(error.response?.data?.detail || error.message), error.response?.headers?.['x-request-id'], !error.config?.backgroundDiagnostic);
+  if (!axios.isCancel(error)) reportError(String(error.config?.method ?? 'request') + ' ' + String(error.config?.url ?? '').split('?')[0], new Error(error.response?.data?.detail || error.message), error.response?.headers?.['x-request-id'] ?? error.config?.headers?.['X-Request-ID'], !error.config?.backgroundDiagnostic);
   return Promise.reject(error);
 });
 export default api;

@@ -1,8 +1,8 @@
 # Individual note exports
 
-Implemented through N6, 2026-09-30.
+Implemented through N6; desktop file integration reviewed 2026-10-04 (D4).
 
-Use the Export icon beside a note's save indicator. Clicking Markdown, Markdown + assets ZIP, PDF or Word DOCX directly saves that note, prepares a snapshot and requests the download. There is no second confirmation/download step. The picker closes automatically after download handoff; the compact status card retains Download again. Failed saves retain the draft and offer Retry export. Download requested means the browser was handed the file, not that it was successfully saved; Download again remains available. Relevant conversion warnings and technical Details are disclosures rather than persistent instructions.
+Use the Export icon beside a note's save indicator. Clicking Markdown, Markdown + assets ZIP, PDF or Word DOCX directly saves that note, prepares a snapshot and requests the download. There is no second confirmation/download step. The picker closes automatically after download handoff; the compact status card retains Download again. Failed saves retain the draft and offer Retry export. Download requested means the browser was handed the file, not that it was successfully saved; Download again remains available. Desktop opens a native save dialog and streams directly to disk. Saved is shown only after flushing/closing/renaming the result. Cancelling the save dialog retains the prepared operation for Retry download; it does not repeat rendering. Relevant conversion warnings and technical Details are disclosures rather than persistent instructions.
 
 Choose **This note** (default) or **Include linked resources** before choosing a format. Linked mode previews saved graph counts and missing-resource warnings; Markdown becomes one package choice, while PDF/Word become ZIP packages whenever the graph contains files. Options can include an omitted/missing references list. The picker remains compact and format choice still starts eventual download. Cancel export is available while saving, before snapshot preparation; it stops export continuation without undoing saved edits.
 

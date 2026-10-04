@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ExternalLink, FileText, PanelRight, Paperclip, ScanText, X } from 'lucide-react';
 import ResourceCollections from './ResourceCollections';
 import PinButton from './PinButton';
@@ -18,8 +18,8 @@ interface PreviewLayerProps {
   open: boolean;
   onClose: () => void;
   onToggleMode: () => void;
-  onOpenExternal: () => void;
-  onDownload: () => void;
+  onOpenExternal: () => void | Promise<void>;
+  onDownload: () => void | string | Promise<void | string>;
 }
 
 export default function PreviewLayer({
@@ -36,6 +36,17 @@ export default function PreviewLayer({
 }: PreviewLayerProps) {
   const smoothAnimations = animationMode === 'smooth';
   const [animateIn, setAnimateIn] = useState(false);
+  const actionRunning = useRef(false);
+  const [actionStatus, setActionStatus] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [pending, setPending] = useState(false);
+  async function perform(action: 'open' | 'download') {
+    if (actionRunning.current) return;
+    actionRunning.current = true; setPending(true); setActionError(''); setActionStatus('Preparing…');
+    try { const outcome = await (action === 'open' ? onOpenExternal() : onDownload()); setActionStatus(action === 'open' ? 'Opened in your application' : outcome === 'saved' ? 'Saved' : outcome === 'cancelled' ? 'Save cancelled' : 'Download requested'); }
+    catch (error) { setActionStatus(''); setActionError(error instanceof Error ? error.message : 'File action failed. Retry.'); }
+    finally { actionRunning.current = false; setPending(false); }
+  }
   const { settings } = useSettings();
   const transparency = settings.local.uiTransparency;
 
@@ -83,13 +94,15 @@ export default function PreviewLayer({
             {mode === 'side' ? 'Floating' : 'Side'}
           </button>
           <button
-            onClick={onOpenExternal}
+            disabled={pending}
+            onClick={() => void perform('open')}
             className="inline-flex h-8 items-center gap-1 rounded-lg border border-white/5 bg-background px-2.5 text-[11px] font-medium text-slate-500 transition-colors hover:text-primary"
           >
             <ExternalLink size={13} /> Open
           </button>
           <button
-            onClick={onDownload}
+            disabled={pending}
+            onClick={() => void perform('download')}
             className="h-8 rounded-lg border border-white/5 bg-background px-2.5 text-[11px] font-medium text-slate-500 transition-colors hover:text-primary"
           >
             Download
@@ -105,6 +118,8 @@ export default function PreviewLayer({
       </div>
 
       <div className="px-3 border-b border-border"><ResourceCollections id={resource.id} onOpen={onCollection}/></div>
+      {actionStatus && <p role="status" className="px-3 py-1 text-xs text-[var(--text-secondary)]">{actionStatus}</p>}
+      {actionError && <p role="alert" className="px-3 py-1 text-xs text-red-400">{actionError} Use Open or Download to retry.</p>}
       {overrideActive && (
         <div className="px-3 py-1 text-[11px] text-slate-500">
           {mode === 'modal' ? 'Floating override' : 'Side override'}

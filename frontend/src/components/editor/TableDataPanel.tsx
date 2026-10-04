@@ -33,7 +33,7 @@ export default function TableDataPanel({ editor, mode }: { editor: Editor; mode:
   }
   async function download() {
     const blob = new Blob(['\uFEFF' + delimited(rows(), ',', true)], { type: 'text/csv;charset=utf-8' });
-    try { const outcome = await getPlatform().saveBlob(blob, `table-${scope}.csv`); setMessage(outcome === 'cancelled' ? 'Download cancelled.' : `CSV download requested for ${scope} rows.`); }
+    try { const outcome = await getPlatform().saveBlob(blob, `table-${scope}.csv`); setMessage(outcome === 'cancelled' ? 'Save cancelled.' : outcome==='saved'?`CSV saved for ${scope} rows.`:`CSV download requested for ${scope} rows.`); }
     catch { setMessage('CSV download failed. Retry.'); }
   }
   return <div className="table-data-panel">

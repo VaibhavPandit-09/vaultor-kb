@@ -7,7 +7,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class VaultorApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(VaultorApplication.class, args);
+		var owner = com.vaultor.vaultor.config.DesktopOwner.acquire(System.getenv());
+		try {
+			var context = SpringApplication.run(VaultorApplication.class, args);
+			if (owner != null) owner.ready(context);
+		} catch (Throwable failure) {
+			if (owner != null) owner.close();
+			throw failure;
+		}
 	}
 
 }

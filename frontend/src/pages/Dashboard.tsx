@@ -42,7 +42,8 @@ import {
   Palette,
 } from 'lucide-react';
 import api from '../lib/api';
-import { getPlatform } from '../lib/platform';
+import { getPlatform, saveApiFile, openApiFile } from '../lib/platform';
+import { registerConnectionBarrier, SwitchBlockedError } from '../lib/desktop';
 import LibraryView, { type LibrarySection } from '../components/LibraryView';
 import { browseResources, resourcesChanged } from '../lib/resourceBrowse';
 import { resourceKind } from '../lib/resourceKinds';
@@ -183,9 +184,10 @@ export default function Dashboard() {
     },
     () => saveChanged(v => v + 1), (id,value,version) => recovery.queued(id,value,version)));
   useEffect(() => { Object.values(resourceDetails).forEach(resource => recovery.observe(resource)); }, [resourceDetails,recovery]);
+  useEffect(() => () => saves.clear(), [saves]);
   useEffect(() => {
     const error = (event: Event) => setNotice((event as CustomEvent<DiagnosticEvent>).detail);
-    const unload = (event: BeforeUnloadEvent) => { if (saves.dirty() || recovery.dirty() || recovery.pending) { event.preventDefault(); event.returnValue = ''; } };
+    const unload = (event: BeforeUnloadEvent) => { if (saves.dirty() || recovery.dirty() || recovery.pending || sessionPersistence.current?.pending) { event.preventDefault(); event.returnValue = ''; } };
     window.addEventListener('vaultor:error', error); window.addEventListener('beforeunload', unload);
     return () => { window.removeEventListener('vaultor:error', error); window.removeEventListener('beforeunload', unload); };
   }, [saves,recovery]);
@@ -219,7 +221,7 @@ export default function Dashboard() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleEditNoteId = titleEditState?.noteId ?? null;
 
-  const { settings, workspaceLoaded, resolvedShortcuts, toggleTheme, updateLocalSetting, flushSettings } = useSettings();
+  const { settings, workspaceLoaded, resolvedShortcuts, toggleTheme, updateLocalSetting, flushSettings, saveStatus: settingsSaveStatus } = useSettings();
   const collectionCreationFocus=useRestoreFocusOnClose();
   const commandPaletteFocus = useRestoreFocusOnClose();
   const shortcutsModalFocus = useRestoreFocusOnClose();
@@ -1027,23 +1029,12 @@ export default function Dashboard() {
 
   const handleFileDownload = useCallback(async () => {
     if (!activeResource || activeResource.type !== 'file') return;
-    try {
-      const res = await api.get(`/resources/${activeResource.id}/download`, { responseType: 'blob' });
-      await getPlatform().saveBlob(res.data, activeResource.title || 'download');
-    } catch (error) {
-      console.error('Download failed', error);
-    }
+    return await saveApiFile(`/resources/${activeResource.id}/download`, activeResource.title || 'download');
   }, [activeResource]);
 
   const handleFileOpen = useCallback(async () => {
     if (!activeResource || activeResource.type !== 'file') return;
-    try {
-      const res = await api.get(`/resources/${activeResource.id}/raw`, { responseType: 'blob' });
-      const blob = new Blob([res.data], { type: activeResource.mimeType || 'application/octet-stream' });
-      await getPlatform().openBlob(blob);
-    } catch (error) {
-      console.error('Open failed', error);
-    }
+    await openApiFile(`/resources/${activeResource.id}/raw`, activeResource.title || 'file');
   }, [activeResource]);
 
   const triggerExport = () => setTransferMode('export');
@@ -1117,6 +1108,32 @@ export default function Dashboard() {
     return ()=>{cancelled=true;};
   },[bootAttempt,workspaceLoaded,sessionReady,localStore,recovery,saves,paneNavigation,dispatch,workspaceSettings.maxOpenNotes,workspaceSettings.autosaveDelay]);
   const sessionView = useRef({visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext});
+  useEffect(() => registerConnectionBarrier(async keepDrafts => {
+    if (!sessionReady || !identityRef.current) throw new SwitchBlockedError('Wait for session restoration before leaving the workspace.');
+    if (transferMode || uploadPending || importBusy.current || fileImport || createNotePending || deletePending || replacePending || tagDeletePending || tagAddPending || noteExport) throw new SwitchBlockedError('Finish or dismiss the current operation before leaving the workspace.');
+    if (getPlatform().kind === 'desktop') {
+      try {const {data}=await api.get<{active:number}>('/operations/activity',{timeout:8000,backgroundDiagnostic:true});if(data.active)throw new SwitchBlockedError('Wait for active imports/exports to finish before leaving the workspace.');}
+      catch(error){if(error instanceof SwitchBlockedError)throw error;if(!keepDrafts)throw new SwitchBlockedError('Cannot verify server operations. Retry or keep recoverable drafts.',true);}
+    }
+    let currentIdentity: Identity | undefined;
+    try { currentIdentity = (await api.get<Identity>('/workspace/identity', { timeout: 8000, backgroundDiagnostic: true })).data; }
+    catch { if (!keepDrafts) throw new SwitchBlockedError('The current server is unavailable. Keep recoverable drafts and leave the workspace, or retry.', true); }
+    const replaced = currentIdentity && !sameWorkspace(currentIdentity, identityRef.current);
+    if (replaced && !keepDrafts) throw new SwitchBlockedError('The current workspace changed. Keep its drafts separately and reconnect.', true);
+    if (settingsSaveStatus !== 'saved') {
+      if (replaced || !currentIdentity) throw new SwitchBlockedError('Settings changes are unsaved. Reconnect to the original workspace before leaving the workspace.');
+      try { await flushSettings(); } catch { throw new SwitchBlockedError('Save settings before leaving the workspace. Retry in Settings.'); }
+    }
+    if (!keepDrafts) {
+      try { await commitTitleEditing(); await saves.flushAll(); }
+      catch { throw new SwitchBlockedError('Saving failed. Retry, or keep recoverable drafts and leave the workspace.', true); }
+    }
+    try {
+      await recovery.retryStorage();
+      const identity = identityRef.current;
+      await sessionPersistence.current?.save({ version: 1, identity, ...paneNavigation.exportSession(), library: sessionView.current }, true);
+    } catch { throw new SwitchBlockedError('Recovery storage is unavailable. Keep this workspace open until storage succeeds.'); }
+  }), [sessionReady, transferMode, uploadPending, fileImport, createNotePending, deletePending, replacePending, tagDeletePending, tagAddPending, noteExport, commitTitleEditing, saves, flushSettings, settingsSaveStatus, recovery, paneNavigation]);
   useEffect(()=>{sessionView.current={visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext};},[libraryVisible,librarySection,collection,filters.selectedTags,libraryContext]);
   useEffect(()=>{
     if(!sessionReady)return;
@@ -1345,9 +1362,9 @@ export default function Dashboard() {
     </div>
   );
 
-  if(!sessionReady)return <main className="flex h-screen items-center justify-center bg-background text-text"><div role="status">{bootError||'Restoring workspace…'}{bootError&&<button className="library-button ml-3" onClick={()=>setBootAttempt(v=>v+1)}>Retry</button>}</div></main>;
+  if(!sessionReady)return <main className={`flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} items-center justify-center bg-background text-text`}><div role="status">{bootError||'Restoring workspace…'}{bootError&&<button className="library-button ml-3" onClick={()=>setBootAttempt(v=>v+1)}>Retry</button>}</div></main>;
   return (
-    <div className={`app-root flex h-screen flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen ? 'command-open pointer-events-none' : ''}`}>
+    <div className={`app-root flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen ? 'command-open pointer-events-none' : ''}`}>
 
       <CommandPaletteModal
         open={commandPaletteOpen}

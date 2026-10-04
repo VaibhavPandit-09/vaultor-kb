@@ -1,5 +1,5 @@
 import api from './api';
-import { getPlatform } from './platform';
+import { saveApiFile } from './platform';
 
 export type ExportFormat = { scope: string; format: string; extension: string };
 export type ExportOperation = { id: string; status: string; phase: string; progress: number; detail?: string; requestId?: string; filename?: string; warnings?: string[] };
@@ -7,7 +7,7 @@ export type GraphPreview = { notes: number; files: number; noteIds: string[]; re
 export type ExportOptions = { linked?: boolean; references?: boolean; reviewedGraph?: GraphPreview; flushNote?: (id: string) => Promise<void> };
 type Stage = 'saving' | 'preparing' | 'downloading' | 'downloaded' | 'error';
 type Retry = 'save' | 'prepare' | 'status' | 'download';
-export type ExportJob = { noteId: string; title: string; format: ExportFormat; stage: Stage; operation?: ExportOperation; error?: string; requestId?: string; retry?: Retry; linked?: boolean; graph?: GraphPreview };
+export type ExportJob = { noteId: string; title: string; format: ExportFormat; stage: Stage; operation?: ExportOperation; error?: string; requestId?: string; retry?: Retry; linked?: boolean; graph?: GraphPreview; outcome?: 'saved' | 'requested' };
 export function exportFailure(error: unknown) {
   const failure = error as { response?: { data?: { detail?: string; requestId?: string } }; message?: string };
   return { error: failure.response?.data?.detail || failure.message || 'Export failed. Please try again.', requestId: failure.response?.data?.requestId };
@@ -91,11 +91,9 @@ export class NoteExportController {
       }
       retry = 'download'; this.update({ stage: 'downloading' });
       const operation = this.job.operation!;
-      const { data } = await api.get<Blob>('/exports/' + operation.id + '/download', { responseType: 'blob', signal });
-      if (signal.aborted) return;
-      const outcome = await getPlatform().saveBlob(data, operation.filename || this.job.title + '.' + this.job.format.extension);
+      const outcome = await saveApiFile('/exports/' + operation.id + '/download', operation.filename || this.job.title + '.' + this.job.format.extension, signal);
       if (outcome === 'cancelled') throw new Error('Download cancelled. Retry to download the prepared export.');
-      this.update({ stage: 'downloaded' });
+      this.update({ stage: 'downloaded', outcome });
     } catch (error) {
       if (!signal.aborted) {
         const status = (error as { response?: { status?: number } }).response?.status;

@@ -6,6 +6,7 @@ import Papa from 'papaparse';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import api from '../lib/api';
+import { getPlatform } from '../lib/platform';
 import type { Resource } from '../types';
 
 const MAX_PREVIEW_SIZE = 1 * 1024 * 1024; // 1MB
@@ -43,16 +44,22 @@ function getPreviewType(mime: string | null | undefined, title: string): string 
 }
 
 /** Fetch raw file bytes as a blob URL through the shared API client */
-function useBlobUrl(resourceId: string, mimeType?: string | null) {
+function useBlobUrl(resourceId: string, mimeType?: string | null, title = 'preview.pdf') {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let revoke: string | null = null;
     let active = true;
     const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset stale network result on resource change.
-    setError(false); setBlobUrl(null);
+    setError(null); setBlobUrl(null);
+    const native = getPlatform().previewApiFile;
+    if(native) {
+      let release: (()=>void)|undefined;
+      void native(`/resources/${resourceId}/raw`,title,controller.signal).then(file=>{if(!active){file.release();return;}release=file.release;setBlobUrl(file.url);}).catch(error=>{if(active)setError(error instanceof Error ? error.message : 'File preview failed. Retry.');});
+      return ()=>{active=false;controller.abort();release?.();};
+    }
     api.get(`/resources/${resourceId}/raw`, { responseType: 'blob', signal: controller.signal })
       .then(res => {
         if (!active) return;
@@ -61,10 +68,10 @@ function useBlobUrl(resourceId: string, mimeType?: string | null) {
         revoke = url;
         setBlobUrl(url);
       })
-      .catch(() => { if(active) setError(true); });
+      .catch(() => { if(active) setError('File preview failed. Close and reopen to retry.'); });
 
     return () => { active = false; controller.abort(); if (revoke) URL.revokeObjectURL(revoke); };
-  }, [resourceId, mimeType]);
+  }, [resourceId, mimeType, title]);
 
   return { blobUrl, error };
 }
@@ -127,15 +134,15 @@ function PreviewResolver({ type, resource, tooLarge }: { type: string; resource:
 }
 
 function PDFViewer({ resource }: { resource: Resource }) {
-  const { blobUrl, error } = useBlobUrl(resource.id, 'application/pdf');
-  if (error) return <FallbackViewer message="Failed to load PDF" />;
+  const { blobUrl, error } = useBlobUrl(resource.id, 'application/pdf', resource.title);
+  if (error) return <FallbackViewer message={error} />;
   if (!blobUrl) return <LoadingSpinner />;
   return <iframe src={`${blobUrl}#toolbar=0`} className="h-full min-h-[calc(100vh-9rem)] w-full bg-white" title="PDF Preview" />;
 }
 
 function ImageViewer({ resource }: { resource: Resource }) {
-  const { blobUrl, error } = useBlobUrl(resource.id, resource.mimeType);
-  if (error) return <FallbackViewer message="Failed to load image" />;
+  const { blobUrl, error } = useBlobUrl(resource.id, resource.mimeType, resource.title);
+  if (error) return <FallbackViewer message={error} />;
   if (!blobUrl) return <LoadingSpinner />;
   return (
     <div className="flex min-h-full items-center justify-center bg-background">

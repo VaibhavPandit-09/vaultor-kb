@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import AppModal from './AppModal';
 import api from '../../lib/api';
-import { getPlatform } from '../../lib/platform';
+import { saveApiFile } from '../../lib/platform';
+import { pickFiles } from '../../lib/filePicker';
 type Operation = { id: string; kind: string; status: string; phase: string; progress: number; detail?: string; requestId?: string };
 type Preview = { operation: Operation; resources: number; files: number; notes: number; tags: number; warnings: string[] };
 export default function TransferModal({ mode, onClose, flush, onImported }: {
@@ -41,17 +42,16 @@ export default function TransferModal({ mode, onClose, flush, onImported }: {
   }
   async function download() {
     if(!operation) return;
-    const {data} = await api.get('/exports/'+operation.id+'/download', {responseType:'blob'});
-    await getPlatform().saveBlob(data, 'workspace.zip');
+    const outcome = await saveApiFile('/exports/'+operation.id+'/download', 'workspace.zip');
+    if(outcome==='cancelled') throw new Error('Save cancelled. The prepared ZIP is ready to download again.');
   }
   return <AppModal open={mode !== null} onClose={() => { if(!working) {setOperation(null);setPreview(null);setError('');setConfirmed(false);onClose();} }} title={mode === 'export' ? 'Export workspace' : 'Import workspace'} description="Portable ZIP with notes, tags, settings, and files. No password required.">
     <div className="space-y-4">
       {error && <p role="alert" className="text-red-500">{error}</p>}
-      {mode === 'import' && !working && <label className="block">Choose workspace ZIP
-        <input type="file" accept=".zip" className="block w-full py-3" onChange={event => {
-          const file=event.target.files?.[0]; if(!file) return;
-          void run(async () => { const body=new FormData();body.append('file',file);const {data}=await api.post<Preview>('/imports/preview',body);setPreview(data);setOperation(data.operation);setConfirmed(false); });
-        }} /></label>}
+      {mode === 'import' && !working && <button className="library-button" onClick={()=>void run(async()=>{
+          const file=(await pickFiles('.zip'))[0]; if(!file) return;
+          const body=new FormData();body.append('file',file);const {data}=await api.post<Preview>('/imports/preview',body);setPreview(data);setOperation(data.operation);setConfirmed(false);
+        })}>Choose workspace ZIP</button>}
       {preview && operation?.status === 'PREVIEW' && <>
         <p>{preview.notes} notes · {preview.files} files · {preview.tags} tags</p>
         {preview.warnings.map((warning,index)=><p key={index} className="text-amber-600">{warning}</p>)}

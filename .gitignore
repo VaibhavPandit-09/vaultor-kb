@@ -22,6 +22,12 @@ frontend/dist/
 frontend/dist-ssr/
 frontend/.eslintcache
 frontend/coverage/
+desktop/node_modules/
+desktop/ui/
+desktop/artifacts/
+desktop/bundle/
+desktop/packages/
+desktop/cache/
 
 # Data
 data/

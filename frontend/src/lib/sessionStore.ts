@@ -1,5 +1,7 @@
 import type { Pane, ReadingPosition } from './paneNavigation';
 import type { OrganizationItem } from './organization';
+import { getConnection, getPlatform } from './platform';
+import { getDesktopSessionId } from './desktop';
 export type Identity = { id: string; generation: string };
 export type LibraryContext = { query: string; searchMode: 'title' | 'content'; type: string; sort: 'title' | 'updated' | 'recent' };
 export const defaultLibrary: LibraryContext = { query: '', searchMode: 'title', type: 'all', sort: 'updated' };
@@ -9,10 +11,12 @@ export type RecoveryRecord = { key: string; identity: Identity; tabId: string; n
 export interface LocalStore { get<T>(key: string): Promise<T | undefined>; put(key: string, value: unknown): Promise<void>; delete(key: string): Promise<void>; values<T>(prefix: string): Promise<T[]> }
 /** Separate keys per tab; transactions complete before a write is considered durable. */
 export class IndexedSessionStore implements LocalStore {
+  private readonly name: string;
+  constructor() { this.name = getPlatform().kind === 'desktop' ? 'vaultor-desktop-sessions-' + getConnection().profileId : 'vaultor-working-sessions'; }
   private db?: Promise<IDBDatabase>;
   private open() {
     return this.db ??= new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open('vaultor-working-sessions', 1);
+      const request = indexedDB.open(this.name, 1);
       request.onupgradeneeded = () => request.result.createObjectStore('records');
       request.onsuccess = () => { request.result.onversionchange = () => { request.result.close(); this.db = undefined; }; resolve(request.result); };
       request.onerror = () => { this.db = undefined; reject(request.error); };
@@ -34,6 +38,8 @@ export class IndexedSessionStore implements LocalStore {
 let tabClaim: Promise<{ id: string; seed?: string }> | undefined;
 /** A duplicated tab can inherit sessionStorage. Web Locks prevent it claiming the same record. */
 export function claimTab(): Promise<{ id: string; seed?: string }> {
+  const desktop = getDesktopSessionId();
+  if (getPlatform().kind === 'desktop' && desktop) return Promise.resolve({ id: desktop });
   return tabClaim ??= (async () => {
     let previous: string | undefined;
     try { previous = sessionStorage.getItem('vaultor-session-tab') ?? undefined; } catch { /* IndexedDB can still work. */ }
@@ -71,12 +77,12 @@ export class SessionPersistence {
     return sameWorkspace(value.identity, identity) ? value : undefined;
   }
   retry() { return this.latest ? this.save(this.latest) : Promise.resolve(); }
-  save(value: SessionSnapshot) {
+  save(value: SessionSnapshot, strict = false) {
     this.latest=value; this.pending++;
-    this.chain = this.chain.then(async () => {
+    this.chain = this.chain.catch(() => {}).then(async () => {
       await this.store.put(sessionKey(value.identity, this.tabId), value);
       await this.store.put('latest:' + value.identity.id, this.tabId);
-    }).catch(() => this.error('Session storage failed. Your layout may not survive a refresh.')).finally(() => { this.pending--; });
+    }).catch(error => { this.error('Session storage failed. Your layout may not survive a refresh.'); if (strict) throw error; }).finally(() => { this.pending--; });
     return this.chain;
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { blockConnectionSwitch } from '../../lib/desktop';
 import { Download, FileText, LoaderCircle, X } from 'lucide-react';
 import AppModal from './AppModal';
 import api from '../../lib/api';
@@ -8,7 +9,7 @@ const labels: Record<string, string> = { md: 'Markdown (.md)', 'md-assets': 'Mar
 const button = 'aria-pressed:bg-[var(--surface-3)] aria-pressed:border-primary rounded-xl border border-border px-3 py-2 text-sm hover:bg-[var(--surface-3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50';
 function Progress({ job, manager }: { job: ExportJob; manager: NoteExportController }) {
   const busy = !['error', 'downloaded'].includes(job.stage);
-  const status = { saving: 'Saving note…', preparing: 'Preparing export…', downloading: 'Starting download…', downloaded: 'Download requested', error: 'Export needs attention' }[job.stage];
+  const status = { saving: 'Saving note…', preparing: 'Preparing export…', downloading: 'Saving export…', downloaded: job.outcome === 'saved' ? 'Saved' : 'Download requested', error: 'Export needs attention' }[job.stage];
   return <div className="space-y-3 text-sm">
     <p role="status" className="flex items-center gap-2">{busy ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}{status}</p>
     {job.stage === 'saving' && <button className={button} onClick={manager.cancel}>Cancel export</button>}
@@ -32,6 +33,7 @@ function Progress({ job, manager }: { job: ExportJob; manager: NoteExportControl
 export default function NoteExportModal({ noteId, title, flush, flushNote, onClose }: { noteId?: string; title: string; flush: () => Promise<void>; flushNote?: (id: string) => Promise<void>; onClose: () => void }) {
   const [manager] = useState(() => new NoteExportController());
   const job = useSyncExternalStore(manager.subscribe, manager.snapshot);
+  useEffect(() => { if (job && ['saving', 'preparing', 'downloading'].includes(job.stage)) return blockConnectionSwitch('note export preparation/download'); }, [job]);
   const lastStage = useRef(job?.stage);
   useEffect(() => {
     const justDownloaded = job?.stage === 'downloaded' && lastStage.current !== 'downloaded';

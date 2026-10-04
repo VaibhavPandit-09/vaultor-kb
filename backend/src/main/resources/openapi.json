@@ -3609,7 +3609,7 @@
     "/organization/memberships": {
       "post": {
         "operationId": "changeMemberships",
-        "summary": "Atomically add/remove one tag or collection on 1–100 selected resources",
+        "summary": "Atomically add/remove one tag or collection on 1\u2013100 selected resources",
         "description": "Validates every ID before mutation. Repeating the same add/remove is idempotent; other memberships are preserved. No bulk resource deletion.",
         "requestBody": {
           "required": true,
@@ -4493,6 +4493,36 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/activity": {
+      "get": {
+        "operationId": "getOperationActivity",
+        "summary": "Count active persisted transfers for a safe leave-workspace barrier",
+        "responses": {
+          "200": {
+            "description": "Queued, running or cleanup operation count; completed and staged previews are excluded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "active"
+                  ],
+                  "properties": {
+                    "active": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                },
+                "example": {
+                  "active": 0
                 }
               }
             }

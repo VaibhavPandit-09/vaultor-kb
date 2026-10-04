@@ -22,7 +22,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         res.setHeader("X-Request-ID", id);
         long started = System.nanoTime();
         boolean guarded = req.getRequestURI().matches("/api/(resources|tags|settings|collections|organization|workspace)(/.*)?");
-        boolean entered = !guarded || gate.enterRequest();
+        boolean transfer = !java.util.List.of("GET","HEAD","OPTIONS").contains(req.getMethod()) && req.getRequestURI().matches("/api/(imports|exports|operations)(/.*)?");
+        boolean entered = transfer ? gate.enterTransferRequest() : !guarded || gate.enterRequest();
         try {
             if (!entered) {
                 res.setStatus(409); res.setContentType("application/problem+json");
@@ -30,6 +31,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             } else chain.doFilter(req, res);
         } finally {
             if (guarded && entered) gate.leaveRequest();
+            if (transfer && entered) gate.leaveTransferRequest();
             if (req.getRequestURI().startsWith("/api/")) log.info("http method={} path={} status={} durationMs={}", req.getMethod(), req.getRequestURI(), res.getStatus(), (System.nanoTime()-started)/1_000_000);
             MDC.clear();
         }
