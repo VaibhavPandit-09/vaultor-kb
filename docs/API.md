@@ -173,3 +173,5 @@ N2 navigation/shared editing changes use existing resource/save/preview APIs; no
 N6 retains the existing API contracts. Concurrent application transactions serialize through the SQLite connection pool; conditional note updates still reject stale revisions with 412. See [INTEGRATION.md](INTEGRATION.md) for disposable concurrency/replacement verification.
 
 Desktop lifecycle checks GET /api/operations/activity, returning `{ "active": 0 }`. It counts persisted QUEUED, RUNNING and CLEANUP transfers, excluding PREVIEW and completed results. It is a read-only ordinary application API, not an HTTP server shutdown/control endpoint. The private desktop owner channel separately quiesces mutations and drains active work before shutdown.
+
+D6 uses the existing host access/approval/sharing contracts; no workspace DTO, document format, database schema or endpoint changed. Main injects approved device credentials for paired HTTPS; JSON and native file requests verify the same host pin. Browser approval retry changes are UI-only. Discovery/window/profile operations are narrow Electron IPC, not privileged debug APIs. HOST-ACCESS.md owns current contracts and limits.

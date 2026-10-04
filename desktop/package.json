@@ -8,14 +8,19 @@
     "build": "npm --prefix ../frontend run build && node scripts/copy-ui.mjs",
     "start": "electron .",
     "test": "node --test test/*.test.mjs",
-    "check": "node --check src/main.mjs && node --check src/preload.cjs && node --check src/transport.mjs && node --check src/owned-server.mjs && node --check scripts/prepare-server.mjs && node --check scripts/package-dev.mjs && node --check src/files.mjs && node --check src/hosting.mjs",
+    "check": "node --check src/main.mjs && node --check src/preload.cjs && node --check src/transport.mjs && node --check src/owned-server.mjs && node --check scripts/prepare-server.mjs && node --check scripts/package-dev.mjs && node --check src/files.mjs && node --check src/hosting.mjs && node --check src/network.mjs && node --check src/credentials.mjs && node --check src/discovery.mjs && node --check src/connections.mjs",
     "smoke": "node scripts/smoke.mjs",
     "prepare-server": "node scripts/prepare-server.mjs",
     "package:dev": "node scripts/package-dev.mjs",
     "test:server": "node --test test/owned-server.test.mjs",
-    "smoke:owned": "node scripts/owned-smoke.mjs"
+    "smoke:owned": "node scripts/owned-smoke.mjs",
+    "test:network": "node --test test/network.test.mjs",
+    "smoke:chrome": "node scripts/chrome-smoke.mjs"
   },
   "devDependencies": {
     "electron": "44.5.1"
+  },
+  "dependencies": {
+    "bonjour-service": "1.4.4"
   }
 }

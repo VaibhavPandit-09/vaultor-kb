@@ -1,9 +1,8 @@
 # Documentation
 
-- [Desktop and private-network plan](desktop-network-plan.md): D1–D5 foundation, owned bundled server, native files/lifecycle and host HTTPS/pairing services implemented on Windows; manual OS/Mac validation pending. D6–D9 connection/trust UX, concurrent clients and zero-cost update delivery remain; D10 Ubuntu follow-up. One sprint per authorization.
+- [Desktop and private-network plan](desktop-network-plan.md): D1–D6 foundation, owned bundled server, native files/lifecycle and host HTTPS/pairing services implemented on Windows; manual OS/Mac validation pending. Connection/trust UX and integrated chrome implemented; D7–D9 concurrent clients and zero-cost update delivery remain; D10 Ubuntu follow-up. One sprint per authorization.
 - [Host access and pairing](HOST-ACCESS.md): owner/browser bootstrap, opt-in HTTPS, stable host trust, device approval/revoke, CSRF, approved agents and current limits.
-- [Host access and pairing](HOST-ACCESS.md): owner/browser bootstrap, opt-in HTTPS, stable host trust, device approval/revoke, CSRF, approved agents and current limits.
-- [Desktop shell and connections](DESKTOP.md): bundled runtime/server packages, data/process ownership, startup logs, loopback profiles, persistent sessions, native bridge and current limits.
+- [Desktop shell and connections](DESKTOP.md): bundled runtime/server packages, data/process ownership, startup logs, paired profiles/discovery, integrated chrome, persistent sessions, native bridge and current limits.
 - [Platform and connection boundary](PLATFORM.md): browser/platform transport, cancellation, protocol checks, download outcomes, build diagnostics and sidebar shortcut migration.
 
 - [Workspace evolution plan](workspace-evolution-plan.md): empty-note closing and expanded-table workspace implemented; scalable Library and collections/tags implemented; U1 navigation refresh fix complete; U2 resource organization/pins complete; U3 palette/saved-note full-text search complete; K1 form/palette keyboard corrections complete; K2 organization simplification complete; K3 title-first search and explicit scope complete; N1 direct-download exports implemented; N2 pane navigation/shared editing implemented; N3 journeys implemented; N4 session recovery implemented; N5 linked-resource exports implemented; N6 integration complete; exactly one sprint per authorization.

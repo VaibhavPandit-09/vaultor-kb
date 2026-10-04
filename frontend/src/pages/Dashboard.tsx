@@ -4,6 +4,7 @@ import { IndexedSessionStore, SessionPersistence, claimTab, defaultLibrary, same
 import { NoteRecovery } from '../lib/noteRecovery';
 import { restoreSession } from '../lib/restoreSession';
 import JourneyBar from '../components/JourneyBar';
+import { DesktopConnectionButton } from '../components/DesktopChrome';
 import JourneyViewport from '../components/JourneyViewport';
 import { PaneNavigation, ResourceUnavailableError, type Pane, type OpenIntent } from '../lib/paneNavigation';
 import { SharedNoteDocuments } from '../lib/sharedNoteDocuments';
@@ -1341,6 +1342,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <DesktopConnectionButton/>
       <div className="flex items-center justify-between border-t border-border bg-background/80 p-2">
         <div className="flex items-center gap-0.5">
           <button onClick={triggerExport} title="Export workspace" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><DownloadCloud size={16} /></button>

@@ -1,8 +1,12 @@
 import axios, { type AxiosAdapter } from 'axios';
 import { configureConnection, getPlatform } from './platform';
-export type DesktopProfile = { id: string; name: string; address: string; kind: 'local'; source?: 'bundled'; workspaceId?: string };
+export type DesktopProfile = { id: string; name: string; address: string; kind: 'local' | 'remote'; source?: 'bundled'; workspaceId?: string; hostId?: string; fingerprint?: string };
 export type LocalServerStatus = { status: string; address: string | null; error: string; restartAttempts: number; dataDirectory: string; logError: string; logs: { timestamp: string; message: string }[] };
-export type DesktopState = { version: number; clientId: string; sessionId: string; profiles: DesktopProfile[]; active: string | null; token: string; desktopBuild?: string; localServer?: LocalServerStatus; error?: string; access?: { mode: 'loopback' | 'unselected'; pairingAvailable: false; trustConfigured: false; credentialsStored: false } };
+export type DesktopState = { version: number; clientId: string; sessionId: string; profiles: DesktopProfile[]; active: string | null; token: string; desktopBuild?: string; localServer?: LocalServerStatus; error?: string; access?: { mode: 'loopback' | 'paired' | 'unselected'; pairingAvailable: boolean; trustConfigured: boolean; credentialsStored: boolean } };
+export type PairInspection = { id: string; name: string; address: string; hostId: string; fingerprint: string };
+export type NearbyHosts = { items: { name: string; hostId: string; address: string }[]; error: string };
+export type SharingStatus = { enabled: boolean; listening: boolean; port: number; addresses: string[]; hostId: string; fingerprint: string; stopped?: boolean };
+export type HostDevices = { devices: { id: string; name: string; kind: string; approvedAt: string }[]; requests: { id: string; name: string; kind: string; code: string; expiresAt: string }[]; stopped?: boolean };
 export type DesktopCandidate = { ticket: string; profile: DesktopProfile; identity: { id: string; generation: string }; differentWorkspace: boolean; serverBuild: string };
 type Result<T> = { ok: true; value: T } | { ok: false; error: { code: string; detail: string } };
 type Part = { name: string; value: string | Uint8Array; filename?: string; type?: string };
@@ -11,10 +15,28 @@ type NativeSelection = { id: string; name: string; size: number; lastModified: n
 export type WireRequest = { id: string; token: string; path: string; method: string; timeout: number; headers: Record<string, string>; body?: { kind: 'text'; value: string } | { kind: 'multipart'; parts: (Part | NativePart)[] } };
 export interface DesktopBridge {
   bootstrap(): Promise<Result<DesktopState>>;
+  nearby?(enabled: boolean): Promise<Result<NearbyHosts>>;
+  pairInspect?(value: { name: string; address: string }): Promise<Result<PairInspection>>;
+  pairEnroll?(id: string): Promise<Result<{ id: string; code: string; expiresAt: string }>>;
+  pairStatus?(id: string): Promise<Result<{ state: string; profileId?: string }>>;
+  pairCancel?(): Promise<Result<void>>;
+  forget?(id: string): Promise<Result<DesktopState>>;
+  sharing?(enabled?: boolean): Promise<Result<SharingStatus>>;
+  devices?(): Promise<Result<HostDevices>>;
+  decision?(value: { id: string; code: string; approve: boolean }): Promise<Result<void>>;
+  revoke?(id: string): Promise<Result<void>>;
+  certificate?(): Promise<Result<'saved' | 'cancelled'>>;
+  renewTrust?(): Promise<Result<void>>;
+  openSharedBrowser?(address: string): Promise<Result<void>>;
+  windowStatus?(): Promise<Result<{ maximized: boolean }>>;
+  windowAction?(action: 'minimize' | 'maximize' | 'close' | 'menu'): Promise<Result<{ maximized: boolean }>>;
+  onWindowStatus?(callback: (value: { maximized: boolean }) => void): () => void;
+  onConnections?(callback: () => void): () => void;
   hosting?(): Promise<Result<{ startAtLogin: boolean; registered: boolean; enabledByOS: boolean; supported: boolean; error: string }>>;
   login?(enabled: boolean): Promise<Result<{ startAtLogin: boolean; registered: boolean; enabledByOS: boolean; supported: boolean; error: string }>>;
   hostAction?(action: 'browser' | 'start' | 'stop'): Promise<Result<void>>;
   localStatus?(): Promise<Result<LocalServerStatus>>;
+  onLocalStatus?(callback: (value: LocalServerStatus) => void): () => void;
   addProfile(profile: { name: string; address: string }): Promise<Result<DesktopProfile>>;
   probe(id: string): Promise<Result<DesktopCandidate>>;
   activate(ticket: string): Promise<Result<DesktopState>>;
@@ -103,7 +125,7 @@ export function activateDesktop(state: DesktopState) {
     try {const result=unwrap(await bridge.fileAction!({token:state.token,path,filename,mode,requestId}));if(signal?.aborted){if(result.id)void bridge.releaseFile?.({token:state.token,id:result.id});signal.throwIfAborted();}return result;}
     finally{signal?.removeEventListener('abort',cancel);}
   };
-  configureConnection({ profileId: profile.id, kind: profile.kind, workspaceId: profile.workspaceId }, { ...previous, kind: 'desktop', request: nativeAdapter(bridge, state.token), writeClipboard: async text => { unwrap(await bridge.writeClipboard(text)); }, ...(bridge.fileAction ? {
+  configureConnection({ profileId: profile.id, kind: profile.kind, hostId: profile.hostId, workspaceId: profile.workspaceId }, { ...previous, kind: 'desktop', request: nativeAdapter(bridge, state.token), writeClipboard: async text => { unwrap(await bridge.writeClipboard(text)); }, ...(bridge.fileAction ? {
     saveApiFile: async (path, filename, signal) => (await action(path, filename, 'save',signal)).outcome as 'saved' | 'cancelled',
     openApiFile: async (path, filename, signal) => { await action(path, filename, 'open',signal); },
     previewApiFile: async (path, filename, signal) => { const file = await action(path, filename, 'preview',signal); return { url: file.url!, release: () => { void bridge.releaseFile!({ token: state.token, id: file.id! }).catch(()=>{}); } }; },

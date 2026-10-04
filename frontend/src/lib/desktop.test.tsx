@@ -6,6 +6,8 @@ import { activateDesktop, getDesktopSessionId, nativeAdapter, prepareConnectionS
 import { getPlatform, configureConnection, transport } from './platform';
 import { IndexedSessionStore, claimTab, SessionPersistence, type SessionSnapshot, defaultLibrary } from './sessionStore';
 import DesktopRoot from '../components/DesktopRoot';
+import DesktopChrome, { DesktopConnectionButton } from '../components/DesktopChrome';
+import { HostControls, NearbyConnections } from '../components/DesktopNetwork';
 import { EscapeManagerProvider } from './escape/EscapeManagerProvider';
 import axios from 'axios';
 const browser = getPlatform();
@@ -40,7 +42,8 @@ it('managed startup failure retains other connections and exposes bounded local 
   native.probe = vi.fn(async () => ({ ok: false as const, error: { code: 'DESKTOP_ERROR', detail: 'Check startup logs and retry' } }));
   render(<EscapeManagerProvider><DesktopRoot><p>Workspace</p></DesktopRoot></EscapeManagerProvider>);
   fireEvent.click(await screen.findByText('Local A')); await screen.findByText('Check startup logs and retry');
-  expect(await screen.findByText('Workspace is already in use')).toBeDefined(); expect(screen.getByText('Local A')).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: 'Hosting' }));
+  expect(await screen.findByText('Workspace is already in use')).toBeDefined(); fireEvent.click(screen.getByRole('button', { name: 'Connections' })); expect(screen.getByText('Local A')).toBeDefined();
   expect(screen.queryByText('Workspace')).toBeNull(); expect(native.activate).not.toHaveBeenCalled();
 });
 it('native transport serializes query/text, propagates IDs and parses response bytes through Axios', async () => {
@@ -100,4 +103,40 @@ it('keep-drafts retry refreshes its ticket, prevents duplicate connect and prese
     fireEvent.click(screen.getByText('Keep drafts and switch')); await screen.findByText('Workspace');
     expect(native.probe).toHaveBeenCalledTimes(2); expect(native.activate).toHaveBeenCalledOnce();
   } finally { remove(); }
+});
+it('connection access stays in the sidebar and opens on demand without a connection strip', async () => {
+  const native = bridge(); window.vaultorDesktop = native;
+  render(<EscapeManagerProvider><DesktopRoot><DesktopConnectionButton/><p>Workspace</p></DesktopRoot></EscapeManagerProvider>);
+  fireEvent.click(await screen.findByText('Local A')); await screen.findByText('Workspace');
+  expect(screen.queryByText('Local connection')).toBeNull(); expect(screen.queryByRole('dialog')).toBeNull();
+  fireEvent.click(screen.getByTitle('Connections & hosting')); expect(screen.getByRole('dialog')).toBeDefined();
+  fireEvent.click(screen.getByLabelText('Return to workspace')); expect(screen.queryByRole('dialog')).toBeNull();
+});
+it('network form retains failed values, prevents duplicate Enter, and shows only a comparison code', async () => {
+  const native = bridge(); window.vaultorDesktop = native;
+  native.nearby = vi.fn(async () => ({ ok: true as const, value: { items: [], error: 'Use a manual address' } }));
+  let finish!: (value: Awaited<ReturnType<NonNullable<DesktopBridge['pairInspect']>>>) => void;
+  native.pairInspect = vi.fn<NonNullable<DesktopBridge['pairInspect']>>(() => new Promise(resolve => { finish = resolve; }));
+  native.pairCancel = vi.fn(async () => ({ ok: true as const, value: undefined }));
+  render(<NearbyConnections disabled={false} onPaired={vi.fn()}/>);
+  fireEvent.change(screen.getByLabelText('Connection name'), { target: { value: 'Laptop' } }); fireEvent.change(screen.getByLabelText('Private HTTPS address'), { target: { value: 'https://192.168.1.10:8443' } });
+  const form = screen.getByLabelText('Connection name').closest('form')!; fireEvent.submit(form); fireEvent.submit(form); expect(native.pairInspect).toHaveBeenCalledOnce();
+  finish({ ok: false, error: { code: 'DESKTOP_ERROR', detail: 'Host unavailable' } }); await screen.findByText('Host unavailable');
+  expect(screen.getByLabelText('Connection name')).toHaveProperty('value', 'Laptop');
+  fireEvent.submit(form); finish({ ok: true, value: { id: 'attempt', name: 'Laptop', address: 'https://192.168.1.10:8443', hostId: 'host', fingerprint: 'f'.repeat(64) } });
+  native.pairEnroll = vi.fn(async () => ({ ok: true as const, value: { id: 'attempt', code: '123456', expiresAt: 'later' } }));
+  native.pairStatus = vi.fn(async () => ({ ok: true as const, value: { state: 'PENDING' } }));
+  fireEvent.click(await screen.findByText('Request approval')); await screen.findByLabelText('Verification code 123456'); expect(screen.queryByText(/credential/i)).toBeNull();
+});
+it('host approval requires explicit code comparison and window controls call only narrow actions', async () => {
+  const native = bridge(); window.vaultorDesktop = native;
+  native.sharing = vi.fn(async () => ({ ok: true as const, value: { enabled: false, listening: false, port: 8443, addresses: [], hostId: 'host', fingerprint: 'f'.repeat(64) } }));
+  native.devices = vi.fn(async () => ({ ok: true as const, value: { devices: [], requests: [{ id: 'request', name: 'Client', kind: 'desktop', code: '123456', expiresAt: 'later' }] } }));
+  native.decision = vi.fn(async () => ({ ok: true as const, value: undefined }));
+  native.windowAction = vi.fn(async () => ({ ok: true as const, value: { maximized: true } }));
+  render(<><HostControls disabled={false}/><DesktopChrome/></>);
+  const approve = await screen.findByText('Approve'); fireEvent.submit(approve.closest('form')!); expect(native.decision).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByLabelText('I compared the codes on both devices; they match')); fireEvent.submit(approve.closest('form')!); fireEvent.submit(approve.closest('form')!);
+  await waitFor(() => expect(native.decision).toHaveBeenCalledOnce()); expect(native.decision).toHaveBeenCalledWith({ id: 'request', code: '123456', approve: true });
+  fireEvent.click(screen.getByLabelText('Maximize')); await screen.findByLabelText('Restore window'); expect(native.windowAction).toHaveBeenCalledWith('maximize');
 });

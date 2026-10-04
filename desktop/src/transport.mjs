@@ -1,4 +1,5 @@
-import { MAX_BYTES, validateRequest, loopbackAddress } from './policy.mjs';
+import { MAX_BYTES, validateRequest } from './policy.mjs';
+import { connectionFetch } from './network.mjs';
 export async function boundedResponse(response) {
   if (Number(response.headers.get('content-length')) > MAX_BYTES) { await response.body?.cancel(); throw new Error('Response exceeds the D2 32 MiB limit. Native streaming arrives in D4.'); }
   const reader = response.body?.getReader(); const chunks = []; let size = 0;
@@ -11,7 +12,7 @@ export async function boundedResponse(response) {
 }
 export class DesktopTransport {
   active = null; requests = new Map(); mutations = new Set();
-  activate(profile, token, ownerKey) { this.cancelAll(); this.active = { profile, token, ownerKey }; }
+  activate(profile, token, ownerKey, credential) { this.cancelAll(); this.active = { profile, token, ownerKey, credential }; }
   cancel(id) { this.requests.get(id)?.abort(); }
   cancelAll() { for (const controller of this.requests.values()) controller.abort(); }
   async request(value) {
@@ -35,7 +36,7 @@ export class DesktopTransport {
       }
       if (!value.body.parts.some(part => part.fileId)) for (const key of Object.keys(headers)) if (key.toLowerCase() === 'content-type') delete headers[key];
     }
-      const response = await fetch(loopbackAddress(this.active.profile.address) + '/api' + value.path, { method: value.method, headers, body, ...(value.body?.parts?.some(part => part.fileId) ? { duplex: 'half' } : {}), signal: controller.signal, redirect: 'error' });
+      const response = await connectionFetch(this.active, value.path, { method: value.method, headers, body, ...(value.body?.parts?.some(part => part.fileId) ? { duplex: 'half' } : {}), signal: controller.signal });
       return await boundedResponse(response);
     } finally { clearTimeout(timer); this.requests.delete(value.id); this.mutations.delete(value.id); }
   }

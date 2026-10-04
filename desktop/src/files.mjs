@@ -3,7 +3,7 @@ import { createReadStream } from 'node:fs';
 import { mkdir, open, rename, rm, stat, readdir } from 'node:fs/promises';
 import { join, basename, extname } from 'node:path';
 import { Readable } from 'node:stream';
-import { loopbackAddress } from './policy.mjs';
+import { connectionFetch } from './network.mjs';
 
 export const FILE_LIMIT = 512 * 1024 * 1024;
 const safeName = value => { if (typeof value !== 'string' || !value || value.length > 500) throw new Error('Invalid filename.'); return basename(value.replaceAll('\\', '/')).replace(/[<>:"/\\|?*\x00-\x1f]/g, '_'); };
@@ -86,7 +86,7 @@ export class NativeFiles {
   async cancel({ token, id }) { this.connection(token); const save = this.saves.get(id); if (save?.token === token) { this.saves.delete(id); await save.handle.close(); await rm(save.temp, { force: true }); } }
   async response(path, token, signal) {
     const current = this.connection(token); fileApiPath(path);
-    const response = await fetch(loopbackAddress(current.profile.address) + '/api' + path, { redirect: 'error', signal, headers: { 'X-Request-ID': randomUUID(), ...(current.ownerKey ? { 'X-Vaultor-Owner': current.ownerKey } : {}) } });
+    const response = await connectionFetch(current, path, { signal, headers: { 'X-Request-ID': randomUUID() } });
     if (!response.ok) { const reader = response.body?.getReader(); let message = ''; try { const part = await reader?.read(); if (part) message = new TextDecoder().decode(part.value.subarray(0, 65536)); } finally { await reader?.cancel(); } let detail; try { detail = JSON.parse(message).detail; } catch {} throw new Error((detail || `File request failed (${response.status})`) + ' · ' + (response.headers.get('x-request-id') ?? '')); }
     if (Number(response.headers.get('content-length')) > this.limit) { await response.body?.cancel(); throw new Error('File exceeds the desktop 512 MiB limit.'); } return response;
   }

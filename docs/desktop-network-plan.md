@@ -1,14 +1,14 @@
 # Desktop application and private-network hosting
 
-Created/reviewed: 2026-10-04. Status: D1–D4 implemented on Windows; Windows manual native save-dialog/OS-login check and Mac native verification pending; D5 implemented; D6–D9 not started; D10 deferred.
+Created/reviewed: 2026-10-04. Status: D1–D5 implemented on Windows; D6 implemented; D7–D9 not started; D10 deferred. Manual OS/Mac validation remains pending.
 
 ## Delivery and maintenance
 
-Deliver one sprint per explicit authorization, stop after its handoff, and do not interpret Continue as authorization for another sprint if the current one is complete. Interrupted work may resume. The initial request authorized planning; subsequent calls explicitly authorized D1, D2 and D3. D4 was authorized by “start next sprint” and is implemented; D5 was authorized by “start next sprint” and is implemented; stop before D6.
+Deliver one sprint per explicit authorization, stop after its handoff, and do not interpret Continue as authorization for another sprint if the current one is complete. Interrupted work may resume. The initial request authorized planning; subsequent calls explicitly authorized D1, D2 and D3. D4 was authorized by “start next sprint” and is implemented; D5 was authorized by “start next sprint” and is implemented. D6 was authorized by the next sprint request plus the desktop chrome corrections and is implemented; stop before D7.
 
 Maintain this tracker after each completed task: checklists, decisions, blockers, exact checks and remaining limits. Update CODEBASE.md and relevant authoritative docs in the same change. Use docs/README.md for discovery. Historical trackers retain their history; their completed work is not restarted. Archive this tracker under docs/history/ when the sequence is complete, preserving current explanations in supporting docs.
 
-Current code has unrelated/uncommitted N6 work. Preserve it. Inspect working tree and applicable instructions at the start of every sprint.
+Preserve unrelated work; D6 began from a clean working tree. Inspect working tree and applicable instructions at the start of every sprint.
 
 ## Locked product decisions
 
@@ -169,14 +169,19 @@ Validation: seven backend, ten frontend and nine desktop focused cases passed, p
 
 ### D6 — Sharing, discovery, browser trust and server switching UX
 
-- [ ] Compact host switcher with This computer, remembered servers, Nearby and manual address; search and keyboard form behavior, status/pending/error feedback.
-- [ ] Sharing controls, mDNS advertise/discover/withdraw, remembered identity re-resolution, firewall/private-network troubleshooting and browser-address copy/open actions.
-- [ ] Matching-code pairing UI, Devices management, browser first-approval UI and public certificate trust/removal instructions for Windows/Mac browser clients.
-- [ ] Atomic switch with destination validation, source save/settings/recovery barrier, Keep drafts and switch, origin-bound exports and cancelled stale previews/requests/commands.
-- [ ] Local hosting persists while displaying a remote workspace; forgetting/revoking connections does not delete drafts or resource data. Returning restores that host's layout/context.
-- [ ] Focused two-host disposable checks: duplicate names/copied workspace identities, changed IP, failed discovery/manual fallback, switch failure/stale completion, pending exports/imports, recovery-storage failure, restart without repeat approval and browser trust setup.
+- [x] Remove native title/menu/connection strips; integrated window controls and drag areas use existing workspace space. Connection information moves to a sidebar control and on-demand switcher; window/tray menus retain access when the sidebar is hidden.
+- [x] Compact host switcher with This computer, remembered servers, Nearby and manual address; search and keyboard form behavior, status/pending/error feedback.
+- [x] Sharing controls, mDNS advertise/discover/withdraw, remembered identity re-resolution, firewall/private-network troubleshooting and browser-address copy/open actions.
+- [x] Matching-code pairing UI, Devices management, browser first-approval UI and public certificate trust/removal instructions for Windows/Mac browser clients.
+- [x] Atomic switch with destination validation, source save/settings/recovery barrier, Keep drafts and switch, origin-bound exports and cancelled stale previews/requests/commands.
+- [x] Local hosting persists while displaying a remote workspace; forgetting/revoking connections does not delete drafts or resource data. Returning restores that host's layout/context.
+- [x] Focused two-host disposable checks (implemented checks complete; real cross-machine multicast/OS browser trust remains D9): duplicate names/copied workspace identities, changed IP, failed discovery/manual fallback, switch failure/stale completion, pending exports/imports, recovery-storage failure, restart without repeat approval and browser trust setup.
 
 Acceptance: two desktops can connect without repeated pairing, local/remote switching never mixes data/drafts, and paired LAN browser access works without routine certificate warnings.
+
+D6 decisions/results: no additional top rows. A frameless Electron window uses themed controls over reserved existing heading space; connection information is in the sidebar and on-demand window/tray menu. Connections/Hosting share the established focus/Escape/save barrier. bonjour-service 1.4.4 advertises only active sharing; private HTTPS enrollment observes a chain only, then verified transport plus code approval binds trust. safeStorage credentials never reach renderer or logs; NativeFiles and JSON share strict pinned transport. Same-host/CA re-pair reuses retained recovery identity (100 retired identities bound). Switching does not stop local hosting; saved sharing resumes even when remote is selected. Status polling does not restart an explicitly stopped host. Browser approval now requires code comparison and retries an existing request after transient failure. No workspace/API schema change.
+
+Validation: fifteen focused frontend cases passed (13 desktop/switch/recovery/chrome/enrollment/approval, two browser access cases), nine existing desktop transport/file/login cases passed, and two real disposable hosts passed pairing, credential persistence, wrong pin, restart/renewal, changed-address hints, revocation, same-name/copied-workspace and forgotten-identity recovery. Production-dependency staging is checked separately. Frontend build/lint, desktop/static-page syntax, Java main/test compilation and bundled-JAR preparation passed; backend suite skipped. One targeted Windows native session checked no extra rows, maximize controls, sidebar access, default-off sharing and actual OS-protected storage; dark/light/narrow/Hosting frames inspected. Initial Hosting-tab fixtures, Promise typing and asset-path setup were corrected; hidden Chromium returned stale captures until the disposable window was shown inactive. No Docker/broad smoke, user workspace, OS trust/firewall/login changes, full new portable package or Mac check. Real cross-machine mDNS and browser OS-trust installation are carried to D9, along with prior native-save/OS-login/Mac limitations. Stop before D7.
 
 ### D7 — Multi-device change propagation and mutation reliability
 
@@ -202,7 +207,7 @@ Acceptance: personal packages need no payment/external runtime, existing data st
 
 ### D9 — Windows/Mac integration and release handoff
 
-- [ ] One bounded real two-device session using Windows and the Mac mini, with separate desktop/browser approvals and both hosting directions.
+- [ ] One bounded real two-device session using Windows and the Mac mini, with separate desktop/browser approvals and both hosting directions. Carry D6 real mDNS, private firewall reachability and one-time OS/browser certificate installation/removal checks here.
 - [ ] Verify first launch, local/network/browser access, relaunch, background sharing, login startup, sleep/resume, changed address, revoke/reapprove, incompatible server and TLS renewal.
 - [ ] Verify note links/table editing/shared panes, native uploads/previews/downloads, failed-save switch/recovery, cross-device edits, conflicts, replacement, export while switching and hosting update/recovery.
 - [ ] Check both themes, narrow window, keyboard dialogs/shortcuts, reduced motion and safe quit with local/remote active clients. Keep it targeted; do not repeatedly explore unrelated UI.

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, dialog, Tray, nativeImage, Notification, powerMonitor } from 'electron';
+import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, dialog, Tray, nativeImage, Notification, powerMonitor, safeStorage } from 'electron';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -9,22 +9,25 @@ import { UI_ORIGIN, externalAddress, trustedSender } from './policy.mjs';
 import { OwnedServer } from './owned-server.mjs';
 import { NativeFiles } from './files.mjs';
 import { HostingPreferences } from './hosting.mjs';
+import { Credentials } from './credentials.mjs';
+import { Discovery } from './discovery.mjs';
+import { Connections } from './connections.mjs';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'vaultor', privileges: { standard: true, secure: true, supportFetchAPI: true } },{scheme:'vaultor-file',privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true}}]);
 app.setName('Vaultor');
-const smokeDirectory = process.env.VAULTOR_SMOKE_DIRECTORY || process.env.VAULTOR_OWNED_SMOKE_DIRECTORY;
+const smokeDirectory = process.env.VAULTOR_SMOKE_DIRECTORY || process.env.VAULTOR_OWNED_SMOKE_DIRECTORY || process.env.VAULTOR_CHROME_SMOKE_DIRECTORY;
 if (smokeDirectory) app.setPath('userData', smokeDirectory);
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  let window, profiles, owned, files, hosting, tray, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false;
+  let window, profiles, owned, files, hosting, credentials, discovery, connections, tray, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false;
   const transport = new DesktopTransport(), candidates = new Map();
   const queue = task => { const next = writes.catch(() => {}).then(task); writes = next; return next; };
-  const state = () => { const data = !startupError && profiles?.snapshot(); if (data) data.profiles = data.profiles.map(p => p.source === 'bundled' ? { ...p, address: owned?.address ?? p.address } : p); return { ...(data || { version: 1, profiles: [], active: null, clientId: '' }), sessionId: data?.clientId ?? '', token, desktopBuild: app.getVersion(), localServer: owned?.snapshot(), error: startupError, access: { mode: token ? 'loopback' : 'unselected', pairingAvailable: false, trustConfigured: false, credentialsStored: false } }; };
+  const state = () => { const data = !startupError && profiles?.snapshot(); if (data) data.profiles = data.profiles.map(p => p.source === 'bundled' ? { ...p, address: owned?.address ?? p.address } : p); return { ...(data || { version: 1, profiles: [], active: null, clientId: '' }), sessionId: data?.clientId ?? '', token, desktopBuild: app.getVersion(), localServer: owned?.snapshot(), error: startupError, access: { mode: token ? (transport.active?.profile.kind === 'remote' ? 'paired' : 'loopback') : 'unselected', pairingAvailable: credentials?.available() ?? false, trustConfigured: Boolean(transport.active?.profile.fingerprint), credentialsStored: Boolean(transport.active?.credential) } }; };
   async function probe(id, issueTicket = true) {
     const stored = profiles.get(id);
-    const profile = stored.source === 'bundled' ? { ...stored, address: await owned.start() } : stored;
+    const profile = stored.source === 'bundled' ? { ...stored, address: await owned.start() } : stored.kind === 'remote' ? await connections.resolve(stored) : stored;
     const probeTransport = new DesktopTransport();
-    const temporary = randomUUID(); probeTransport.activate(profile, temporary, profile.source === 'bundled' ? owned.accessKey : undefined);
+    const temporary = randomUUID(); probeTransport.activate(profile, temporary, profile.source === 'bundled' ? owned.accessKey : undefined, profile.kind === 'remote' ? credentials.get(profile.id) : undefined);
     const get = async path => {
       const response = await probeTransport.request({ token: temporary, id: randomUUID(), path, method: 'GET', headers: { 'X-Request-ID': randomUUID() }, timeout: 10000 });
       if (response.status !== 200) throw new Error(`Server check failed (${response.status}).`);
@@ -37,7 +40,8 @@ else {
     if (typeof identity.id !== 'string' || !identity.id || identity.id.length > 100 || typeof identity.generation !== 'string' || identity.generation.length > 100) throw new Error('Server workspace identity is invalid.');
     const ticket = issueTicket ? randomUUID() : undefined;
     if (issueTicket) { candidates.clear(); candidates.set(ticket, { profile, identity, expires: Date.now() + 60000 }); }
-    return { ticket, profile, identity, differentWorkspace: Boolean(profile.workspaceId && profile.workspaceId !== identity.id), serverBuild: capabilities.serverBuild };
+    const { ca, ...publicProfile } = profile;
+    return { ticket, profile: publicProfile, identity, differentWorkspace: Boolean(profile.workspaceId && profile.workspaceId !== identity.id), serverBuild: capabilities.serverBuild };
   }
   async function openOwnerBrowser() {
     if(!owned.address || !owned.accessKey) throw new Error('Start the local host first.');
@@ -68,11 +72,17 @@ else {
     });
     profiles = new Profiles(app.getPath('userData'));
     owned = new OwnedServer({ bundle: fileURLToPath(new URL('../bundle/', import.meta.url)), data: resolve(app.getPath('userData'), 'local-workspace') });
+    credentials = new Credentials(app.getPath('userData'), safeStorage); discovery = new Discovery();
+    connections = new Connections({ owned, profiles, credentials, discovery });
+    const stopAddressWatch = connections.watchAddresses(); app.once('will-quit', stopAddressWatch);
     files = new NativeFiles({directory:resolve(app.getPath('userData'),'file-cache'),owner:()=>transport.active,dialogs:{open:options=>dialog.showOpenDialog(window,options),save:options=>dialog.showSaveDialog(window,options)},openPath:path=>shell.openPath(path)});
     transport.files=files;await files.cleanup();protocol.handle('vaultor-file',request=>files.serve(request));
     hosting=new HostingPreferences({directory:app.getPath('userData'),app,executable:process.execPath,args:app.isPackaged?['--background']:[app.getAppPath(),'--background']});
     try{await hosting.load();}catch(error){hosting.error=error.message;}
     owned.on('status', () => {
+      window?.webContents.send('desktop:local-status', owned.snapshot());
+      if (owned.status === 'ready') void connections.sharing().catch(error => { owned.error = error.message; });
+      else discovery.withdraw();
       if (owned.status === 'ready' && profiles?.data?.active === 'this-computer' && token) {
         const checkedToken = token;
         void probe('this-computer', false).then(checked => {
@@ -82,11 +92,27 @@ else {
         }).catch(error => { owned.error = error.message; transport.cancelAll(); transport.active = null; });
       } else if (['failed', 'restarting', 'stopped'].includes(owned.status) && profiles?.data?.active === 'this-computer') { transport.cancelAll(); transport.active = null; }
     });
-    try { await profiles.load(); if (!process.env.VAULTOR_SMOKE_DIRECTORY) await profiles.ensureManaged(); } catch (error) { startupError = error.message; }
+    try { await profiles.load(); await credentials.load(); if (!process.env.VAULTOR_SMOKE_DIRECTORY) await profiles.ensureManaged(); } catch (error) { startupError = error.message; }
+    if (!startupError && !smokeDirectory) void connections.resumeHosting();
     handle('desktop:bootstrap', () => state());
     handle('desktop:local-status', () => owned.snapshot());
     handle('desktop:hosting',()=>({...hosting.snapshot(),error:hosting.error||hosting.snapshot().error,server:owned.snapshot()}));
     handle('desktop:login',enabled=>queue(()=>{if(hosting.error)throw new Error(hosting.error);return hosting.setLogin(enabled);}));
+    handle('desktop:nearby', enabled => { if (typeof enabled !== 'boolean') throw new Error('Invalid discovery action.'); if (enabled) discovery.start(); else discovery.stop(); return discovery.snapshot(); });
+    handle('desktop:pair-inspect', value => queue(() => connections.prepare(value)));
+    handle('desktop:pair-enroll', id => queue(() => connections.enroll(id)));
+    handle('desktop:pair-status', id => queue(() => connections.poll(id)));
+    handle('desktop:pair-cancel', () => queue(() => { connections.attempt = null; }));
+    handle('desktop:forget', id => queue(async () => { await profiles.forget(id); await credentials.remove(id); return state(); }));
+    handle('desktop:sharing', value => queue(() => connections.sharing(value)));
+    handle('desktop:devices', async () => owned.address ? ({ devices: await connections.owner('/devices'), requests: await connections.owner('/pairings') }) : ({ devices: [], requests: [], stopped: true }));
+    handle('desktop:decision', value => queue(() => { if (!value || !/^[\w-]{1,80}$/.test(value.id) || !/^[0-9]{6}$/.test(value.code) || typeof value.approve !== 'boolean') throw new Error('Check the six-digit code.'); return connections.owner('/pairings/' + value.id + (value.approve ? '/approve' : '/reject'), 'POST', { code: value.code }); }));
+    handle('desktop:revoke', id => queue(() => { if (!/^[\w-]{1,80}$/.test(id)) throw new Error('Invalid device.'); return connections.owner('/devices/' + id, 'DELETE'); }));
+    handle('desktop:certificate', async () => { await owned.start(); const response = await fetch(owned.address + '/api/owner/trust/certificate', { headers: { 'X-Vaultor-Owner': owned.accessKey }, redirect: 'error', signal: AbortSignal.timeout(10000) }); if (!response.ok) throw new Error('Certificate export failed.'); const text = await response.text(); if (text.length > 16000 || !text.startsWith('-----BEGIN CERTIFICATE-----')) throw new Error('Invalid public certificate.'); const chosen = await dialog.showSaveDialog(window, { defaultPath: 'Vaultor-host-ca.pem', filters: [{ name: 'Public certificate', extensions: ['pem'] }] }); if (!chosen.canceled && chosen.filePath) { const { writeFile } = await import('node:fs/promises'); await writeFile(chosen.filePath, text); } return chosen.canceled ? 'cancelled' : 'saved'; });
+    handle('desktop:renew-trust', () => queue(() => connections.owner('/trust/renew', 'POST')));
+    handle('desktop:open-shared-browser', async address => { const status = await connections.sharing(); if (!status.listening || !status.addresses.includes(address)) throw new Error('Choose a current shared browser address.'); await shell.openExternal(address); });
+    handle('desktop:window-status', () => ({ maximized: window?.isMaximized() ?? false }));
+    handle('desktop:window-action', action => { if (action === 'minimize') window.minimize(); else if (action === 'maximize') window.isMaximized() ? window.unmaximize() : window.maximize(); else if (action === 'close') window.close(); else if (action === 'menu') windowMenu().popup({ window }); else throw new Error('Invalid window action.'); return { maximized: window?.isMaximized() ?? false }; });
     handle('desktop:host-action',async action=>{
       if(action==='browser'){if(!owned.address)throw new Error('Start the local host first.');await openOwnerBrowser();return;}
       if(action==='start'){await owned.start();return;}
@@ -104,17 +130,22 @@ else {
       const latest = await probe(candidate.profile.id);
       if (latest.identity.id !== candidate.identity.id || latest.identity.generation !== candidate.identity.generation) throw new Error('Workspace changed during connection. Retry.');
       if (transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
-      if (latest.profile.source !== 'bundled') await owned.stop();
-      await files.reset();
+      const actual = latest.profile.source === 'bundled' ? latest.profile : { ...profiles.get(latest.profile.id), address: latest.profile.address };
+      const credential = actual.kind === 'remote' ? credentials.get(actual.id) : undefined;
+      if (actual.kind === 'remote' && actual.address !== profiles.get(actual.id).address) await profiles.update(actual.id, { address: actual.address });
       await profiles.activate(candidate.profile.id, candidate.identity.id);
-      token = randomUUID(); transport.activate(latest.profile, token, latest.profile.source === 'bundled' ? owned.accessKey : undefined); candidates.clear();
+      await files.reset();
+      token = randomUUID(); transport.activate(actual, token, actual.source === 'bundled' ? owned.accessKey : undefined, credential); candidates.clear();
       return state();
     }));
     handle('desktop:request', value => transport.request(value));
     handle('desktop:cancel', id => { if (typeof id !== 'string' || id.length > 80) throw new Error('Invalid cancellation.'); transport.cancel(id); });
     handle('desktop:clipboard', text => { if (typeof text !== 'string' || text.length > 1048576) throw new Error('Clipboard text exceeds 1 MiB.'); clipboard.writeText(text); });
     const createWindow = () => {
-      window = new BrowserWindow({ width: 1320, height: 900, minWidth: 600, minHeight: 480, show: !smokeDirectory && !process.argv.includes('--background') && !(process.platform==='darwin' && app.getLoginItemSettings().wasOpenedAtLogin), backgroundColor: '#0b1220', title: 'Vaultor', webPreferences: { preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false, plugins: true } });
+      window = new BrowserWindow({ frame: false, autoHideMenuBar: true, width: 1320, height: 900, minWidth: 600, minHeight: 480, show: !smokeDirectory && !process.argv.includes('--background') && !(process.platform==='darwin' && app.getLoginItemSettings().wasOpenedAtLogin), backgroundColor: '#0b1220', title: 'Vaultor', webPreferences: { preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false, plugins: true } });
+      window.setMenuBarVisibility(false);
+      if (process.platform !== 'darwin') window.setMenu(null);
+      for (const event of ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen']) window.on(event, () => window.webContents.send('desktop:window-status', { maximized: window.isMaximized() }));
       if (smokeDirectory) window.webContents.on('console-message', event => { if (event.level === 'error' || event.level === 'warning') console.error('Renderer:', event.message); });
       window.webContents.on('will-navigate', (event, url) => { if (url !== UI_ORIGIN + '/') { event.preventDefault(); try { void shell.openExternal(externalAddress(url)); } catch { /* Reject internal/custom/file destinations. */ } } });
       window.webContents.setWindowOpenHandler(({ url }) => { try { void shell.openExternal(externalAddress(url)); } catch { /* Blob previews stay in app; native file opening is D4. */ } return { action: 'deny' }; });
@@ -132,23 +163,25 @@ else {
       void window.loadURL(UI_ORIGIN + '/');
       return window;
     };
-    Menu.setApplicationMenu(Menu.buildFromTemplate([
+    const windowMenu = () => Menu.buildFromTemplate([
+      { label: 'Connections & hosting…', click: () => window?.webContents.send('desktop:connections') },
       ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
       { label: 'File', submenu: [{ role: 'close' }, { role: 'quit' }] },
       { role: 'editMenu' },
       { label: 'View', submenu: [{ role: 'reload' }, { role: 'togglefullscreen' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'toggleDevTools' }] },
       { role: 'windowMenu' },
-    ]));
+    ]);
+    Menu.setApplicationMenu(process.platform === 'darwin' ? windowMenu() : null);
     createWindow();
     const showApp=()=>{ if(!window) createWindow(); window.show();window.focus(); };
     app.on('activate',showApp);
     try {
       const bitmap=Buffer.alloc(16*16*4); for(let y=0;y<16;y++) for(let x=0;x<16;x++){const i=(y*16+x)*4;const v=y>=4&&y<=12&&(x===Math.floor(4+(y-4)/2)||x===Math.floor(12-(y-4)/2));bitmap.set(v?[255,255,255,255]:[59,130,246,255],i);}
       tray=new Tray(nativeImage.createFromBitmap(bitmap,{width:16,height:16}));tray.setToolTip('Vaultor');tray.on('click',showApp);
-      const trayMenu=()=>tray.setContextMenu(Menu.buildFromTemplate([{label:'Show Vaultor',click:showApp},{label:'Open in browser',enabled:Boolean(owned.address),click:()=>void openOwnerBrowser().catch(error=>{owned.error=error.message;})},{type:'separator'},{label:'Quit Vaultor',click:()=>app.quit()}]));
+      const trayMenu=()=>tray.setContextMenu(Menu.buildFromTemplate([{label:'Show Vaultor',click:showApp},{label:'Connections & hosting…',click:()=>{showApp();window.webContents.send('desktop:connections');}},{label:'Open in browser',enabled:Boolean(owned.address),click:()=>void openOwnerBrowser().catch(error=>{owned.error=error.message;})},{type:'separator'},{label:'Quit Vaultor',click:()=>app.quit()}]));
       trayMenu();owned.on('status',trayMenu);
     } catch(error){ console.error('Tray unavailable:',error.message);window.show(); }
-    powerMonitor.on('resume',()=>{window?.webContents.send('desktop:resume');});
+    powerMonitor.on('resume',()=>{discovery.withdraw();if(owned.address)void connections.owner('/trust/renew','POST').then(()=>connections.sharing()).catch(error=>{owned.error=error.message;});window?.webContents.send('desktop:resume');});
     if (process.env.VAULTOR_SMOKE_DIRECTORY) {
       const { runSmoke } = await import('../scripts/native-smoke.mjs');
       try { await runSmoke(window, process.env.VAULTOR_SMOKE_DIRECTORY); app.exit(0); }
@@ -158,6 +191,11 @@ else {
       const { runOwnedSmoke } = await import('../scripts/native-owned-smoke.mjs');
       try { await runOwnedSmoke(window, owned, smokeDirectory); app.quit(); }
       catch (error) { console.error(error); await owned.stop({ force: true }); app.exit(1); }
+    }
+    if (process.env.VAULTOR_CHROME_SMOKE_DIRECTORY) {
+      const { runChromeSmoke } = await import('../scripts/native-chrome-smoke.mjs');
+      try { await runChromeSmoke(window, smokeDirectory); await owned.stop({ force: true }); discovery.destroy(); app.exit(0); }
+      catch (error) { console.error(error); await owned.stop({ force: true }); discovery.destroy(); app.exit(1); }
     }
   }).catch(error => { console.error('Desktop startup failed:', error.message); app.exit(1); });
   app.on('window-all-closed', () => { if (!tray && !quitting) app.quit(); });
@@ -174,7 +212,7 @@ else {
       if(!approval.success) throw new Error(approval.error);
       if(owned.address&&!smokeDirectory){const choice=dialog.showMessageBoxSync(window,{type:'question',buttons:['Keep hosting','Quit'],defaultId:0,cancelId:0,message:'Quit Vaultor?',detail:'The local host stops. Connected browser clients will be disconnected.'});if(choice!==1){quitting=false;return;}}
       try {await owned.stop();} catch(error){if(smokeDirectory) throw error;const choice=dialog.showMessageBoxSync(window,{type:'warning',buttons:['Keep hosting','Force quit'],defaultId:0,cancelId:0,message:error.message,detail:'Force quit interrupts server operations. Their persisted journals are recovered on restart. Only this app’s owned server is stopped.'});if(choice!==1){quitting=false;return;}await owned.stop({force:true});}
-      await files?.reset(); stoppedForQuit=true;window?.destroy();tray?.destroy();app.quit();
+      discovery?.destroy(); await files?.reset(); stoppedForQuit=true;window?.destroy();tray?.destroy();app.quit();
     } catch(error){quitting=false;window?.show(); if(smokeDirectory){console.error(error);app.exit(1);}else dialog.showMessageBoxSync(window,{type:'warning',message:'Vaultor is still running',detail:error.message});}
   }
   app.on('before-quit',event=>{if(stoppedForQuit||!owned)return;event.preventDefault();if(quitting)return;quitting=true;void finishQuit();});
