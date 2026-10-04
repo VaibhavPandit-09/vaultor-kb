@@ -1,6 +1,6 @@
 # Desktop shell and connections
 
-Reviewed 2026-10-04, D8. Electron 44.5.1 runs the bundled React UI against **This computer**, its owned Java server, or a remembered paired private-network host. Browser access uses owner handoff or paired HTTPS. Native file/tray/login, client pairing/discovery/trust, integrated chrome and saved-change propagation are implemented; personal installers/updates are implemented; see [UPDATES.md](UPDATES.md). Android remains deferred. Windows development launch/relaunch and actual window-control pointer hits are verified; Mac verification awaits the Mac mini.
+Reviewed 2026-10-04, D9 Windows handoff. Electron 44.5.1 runs the bundled React UI against **This computer**, its owned Java server, or a remembered paired private-network host. Browser access uses owner handoff or paired HTTPS. Native file/tray/login, client pairing/discovery/trust, integrated chrome and saved-change propagation are implemented; personal installers/updates are implemented; see [UPDATES.md](UPDATES.md). Android remains deferred. Windows development launch/relaunch and actual window-control pointer hits are verified; Mac verification awaits the Mac mini.
 
 ## Development launch
 
@@ -99,3 +99,13 @@ Saved changes use a main-owned, selected-profile stream with the same pin/creden
 D8 packaging uses resources/bundle for the JRE/JAR and resources/app for bundled UI/main/preload. Installed and developer shells share the Vaultor app identity. Update preparation uses the existing save/recovery barrier and stops only the owned server before backup; independent servers are untouched. See UPDATES.md for limits, manifests, private-key continuity and actual validation.
 
 D8 validation: eight distinct Node and 16 focused frontend cases passed, with final recovery checks rerun after checksum verification changes. Windows installed/native and branded developer checks passed, including Updates, OS theme and actual window controls. Install/same-version repair/uninstall/reinstall passed in a temporary directory; installed PE icons matched Vaultor.ico. Updates screenshot inspected. Initial native errors in taskbar API naming and renamed-developer runtime layout were corrected before success. Different-version upgrade, real taskbar cache, Mac and live release-feed checks remain pending in D9. No Docker or user workspace tests were run.
+
+## D9 connection layout and isolated integration
+
+Connections uses left-aligned icon/name/address rows with a right-aligned Connect/Reconnect action, compact secondary authorization/forget actions and stable fixed heading/tabs/footer. Only the body scrolls. Nearby manual address entry and existing-server/archive paths use consistent disclosures. Dark/light and narrow layout use existing tokens; connection semantics remain unchanged.
+
+For a manual disposable session, create an empty absolute directory and set VAULTOR_DESKTOP_TEST_DIRECTORY before launching. It changes all Electron app data, including profiles, owned server, sessions and update staging. It does not automatically execute a smoke scenario; do not enable login startup from a terminal-only isolated environment. Clear the variable before normal launch. Automated smoke directories take precedence. [MAC-HANDOFF.md](MAC-HANDOFF.md) supplies exact commands, Mac packaging and the real two-device checklist. Windows-only integration does not establish Mac/LAN/firewall/trust success.
+
+D9 Windows native validation passed for Connections alignment, both themes/minimum window width, menu/window actions, OS theme and saved-change/deletion recovery. Three Connections frames inspected. The native pointer helper now preserves the popup foreground during menu-key delivery; its initial failure was corrected before the successful rerun. Fifteen frontend and 14 Node focused cases passed; live Mac/two-device and OS trust/login checks are still pending.
+
+Windows D9 final installer upgrade from 0.2.0 to 0.2.1, installed-version verification, repair/uninstall/reinstall passed on disposable storage. The final installer is 259,369,342 bytes and unpacked build 736,533,442 bytes; Mac footprint is unmeasured. Installer-only rerun preserved existing shortcut bytes and reused separate successful native coverage.

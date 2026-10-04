@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { safeStorage } from 'electron';
+import { app, safeStorage } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -23,11 +23,17 @@ export async function runChromeSmoke(window, directory, owned) {
   const restored = new Credentials(join(directory, 'native-credential-test'), safeStorage); await restored.load(); assert.equal(restored.get('disposable'), secret);
   window.webContents.send('desktop:updates-open');
   await wait("document.body.innerText.includes('Vaultor updates')",'Update dialog');
-  assert.ok(await evaluate("document.body.innerText.includes('Import update') && document.body.innerText.includes('0.2.0')"));
+  assert.ok(await evaluate("document.body.innerText.includes('Import update') && document.body.innerText.includes("+JSON.stringify(app.getVersion())+")"));
   await capture('desktop-updates.png');
   await evaluate("document.querySelector('button[aria-label=\"Close modal\"]').click()");
   await evaluate("document.querySelector('.desktop-connection-button').click()");
   await wait("document.querySelector('[role=dialog]')?.textContent.includes('Nearby')", 'Connection UI');
+  assert.ok(await evaluate("(()=>{const c=document.querySelector('.desktop-profile-open');return c.querySelector('.desktop-profile-label').getBoundingClientRect().right<=c.querySelector('.desktop-profile-action').getBoundingClientRect().left;})()"));
+  nativeTheme.themeSource='dark';await wait("document.documentElement.dataset.theme==='dark'",'Connection dark');await capture('desktop-connections-dark.png');
+  nativeTheme.themeSource='light';await wait("document.documentElement.dataset.theme==='light'",'Connection light');await capture('desktop-connections-light.png');
+  const originalBounds=window.getBounds();window.setSize(440,760);await new Promise(r=>setTimeout(r,250));
+  assert.ok(await evaluate("(()=>{const d=document.querySelector('.desktop-connections-dialog');return d.scrollWidth<=d.clientWidth&&d.getBoundingClientRect().right<=innerWidth;})()"));
+  await capture('desktop-connections-narrow.png');window.setBounds(originalBounds);nativeTheme.themeSource='dark';
   await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent==='Hosting').click()");
   await wait("document.body.innerText.includes('Share this computer on the private network')", 'Hosting controls');
   const check = await evaluate("[...document.querySelectorAll('input[type=checkbox]')].find(i=>i.parentElement.textContent.includes('Share this computer')).checked"); assert.equal(check, false);

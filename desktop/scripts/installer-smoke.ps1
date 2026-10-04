@@ -1,22 +1,29 @@
-param([string]$Installer = "$PSScriptRoot\..\releases\Vaultor-0.2.0-windows-x64.exe")
+param([string]$Installer = "$PSScriptRoot\..\releases\Vaultor-0.2.1-windows-x64.exe", [string]$PriorInstaller = "", [switch]$SkipNative, [switch]$PreserveShortcuts)
 $ErrorActionPreference = 'Stop'
 $existing = Get-ChildItem HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall | Get-ItemProperty | Where-Object DisplayName -EQ 'Vaultor'
 if ($existing) { throw 'An installed Vaultor already exists. Use a disposable Windows account for this check.' }
-foreach ($folder in @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('Programs'))) {
-    if (Test-Path -LiteralPath (Join-Path $folder 'Vaultor.lnk')) { throw 'An existing Vaultor shortcut must not be overwritten by this check.' }
-}
+$existingLinks = @(@([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('Programs')) | ForEach-Object { Join-Path $_ 'Vaultor.lnk' } | Where-Object { Test-Path -LiteralPath $_ })
+if ($existingLinks.Count -and -not $PreserveShortcuts) { throw 'An existing Vaultor shortcut must not be overwritten by this check. Use PreserveShortcuts to back up and restore its exact bytes.' }
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('vaultor-installer-' + [Guid]::NewGuid())
 $appPath = Join-Path $testRoot 'app'
 $sentinel = Join-Path $testRoot 'data\retained.txt'
 New-Item -ItemType Directory -Path (Split-Path $sentinel) -Force | Out-Null
 Set-Content -LiteralPath $sentinel -Value 'Disposable storage must survive uninstall'
+$savedLinks = @($existingLinks | ForEach-Object {
+    $backup = Join-Path $testRoot ([Guid]::NewGuid().ToString() + '.lnk')
+    Copy-Item -LiteralPath $_ -Destination $backup
+    [PSCustomObject]@{Original=$_;Backup=$backup}
+})
 $installerPath = (Resolve-Path -LiteralPath $Installer).Path
-function Install-Checked {
-    $process = Start-Process -FilePath $installerPath -ArgumentList @('/S', "/D=$appPath") -WindowStyle Hidden -PassThru -Wait
+function Install-Checked([string]$Source = $installerPath) {
+    $process = Start-Process -FilePath $Source -ArgumentList @('/S', "/D=$appPath") -WindowStyle Hidden -PassThru -Wait
     if ($process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
     foreach ($file in @('Vaultor.exe', 'resources\bundle\manifest.json', 'resources\app\release-trust.json')) {
         if (-not (Test-Path -LiteralPath (Join-Path $appPath $file))) { throw "Missing installed file: $file" }
     }
+    $manifest = Get-Content -LiteralPath ($Source + '.vaultor.json') -Raw | ConvertFrom-Json
+    $installed = Get-Content -LiteralPath (Join-Path $appPath 'resources\app\package.json') -Raw | ConvertFrom-Json
+    if ($installed.version -ne $manifest.manifest.appVersion) { throw 'Installed version does not match the built release' }
 }
 function Uninstall-Checked {
     $uninstaller = Join-Path $appPath 'Uninstall Vaultor.exe'
@@ -28,13 +35,17 @@ function Uninstall-Checked {
     if (-not (Test-Path -LiteralPath $sentinel)) { throw 'Uninstall removed separate data' }
 }
 try {
+    if ($PriorInstaller) { Install-Checked (Resolve-Path -LiteralPath $PriorInstaller).Path }
     Install-Checked
-    & node "$PSScriptRoot\chrome-smoke.mjs" (Join-Path $appPath 'Vaultor.exe')
-    if ($LASTEXITCODE -ne 0) { throw 'Installed native app check failed' }
+    if (-not $SkipNative) {
+        & node "$PSScriptRoot\chrome-smoke.mjs" (Join-Path $appPath 'Vaultor.exe')
+        if ($LASTEXITCODE -ne 0) { throw 'Installed native app check failed' }
+    }
     Install-Checked # Same-version repair, not a claim of a different-version upgrade.
     Uninstall-Checked
     Install-Checked
-    Write-Output "Installer/repair/uninstall/reinstall passed. Disposable files: $testRoot"
+    Write-Output "Installer/upgrade-if-supplied/repair/uninstall/reinstall passed. Disposable files: $testRoot"
 } finally {
-    if (Test-Path -LiteralPath (Join-Path $appPath 'Uninstall Vaultor.exe')) { Uninstall-Checked }
+    try { if (Test-Path -LiteralPath (Join-Path $appPath 'Uninstall Vaultor.exe')) { Uninstall-Checked } }
+    finally { foreach ($link in $savedLinks) { Copy-Item -LiteralPath $link.Backup -Destination $link.Original -Force } }
 }

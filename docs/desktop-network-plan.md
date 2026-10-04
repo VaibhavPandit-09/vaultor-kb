@@ -1,6 +1,6 @@
 # Desktop application and private-network hosting
 
-Created/reviewed: 2026-10-04. Status: D1–D8 implemented on Windows; D8 Mac package/native verification pending; D9 not started; D10 deferred. Manual OS/Mac validation remains pending.
+Created/reviewed: 2026-10-04. Status: D1–D8 implemented on Windows; D8 Mac package/native verification pending; D9 Windows implementation/validation complete; Mac/two-device gate delegated via MAC-HANDOFF.md; D10 deferred. Manual OS/Mac validation remains pending.
 
 ## Delivery and maintenance
 
@@ -225,10 +225,16 @@ D8 remaining validation carried to D9: Mac mini package/build/native checks, gen
 - [ ] Verify first launch, local/network/browser access, relaunch, background sharing, login startup, sleep/resume, changed address, revoke/reapprove, incompatible server and TLS renewal.
 - [ ] Verify note links/table editing/shared panes, native uploads/previews/downloads, failed-save switch/recovery, cross-device edits, conflicts, replacement, export while switching and hosting update/recovery.
 - [ ] Check both themes, narrow window, keyboard dialogs/shortcuts, reduced motion and safe quit with local/remote active clients. Keep it targeted; do not repeatedly explore unrelated UI.
-- [ ] Complete build/install/trust/pairing/network/update/debugging/API docs and CODEBASE source map. Record exact OS/browser versions, actual results, unavailable access and limitations rather than marking unperformed checks passed.
-- [ ] Preserve zero-cost and no-Android boundary. Summarize installer size/runtime footprint measured on the test machines, rather than promising a lightweight app.
+- [x] Complete current build/install/trust/pairing/network/update/debugging/API docs and provide exact Mac execution handoff; final Mac outcomes remain pending. Maintain the CODEBASE source map. Record exact OS/browser versions, actual results, unavailable access and limitations rather than marking unperformed checks passed.
+- [x] Preserve zero-cost and no-Android boundary. Summarize installer size/runtime footprint measured on the test machines, rather than promising a lightweight app.
 
 Release gate: Windows and Mac personal installers, no external Java/Docker requirement, browser retained, opt-in paired HTTPS LAN use, persistent approvals, isolated sessions/drafts, reliable saved-state refresh, native file/lifecycle behavior, working login option and recoverable update path. No user data mutation during verification.
+
+D9 actual Windows results (2026-10-04): production frontend/desktop build, scoped lint and desktop syntax passed; 15 focused frontend and 14 Node network/file/update cases passed. Real disposable loopback hosts verified pairing/reconnect/address hints/revocation without loss; this is not a real two-device LAN session. Branded 0.2.1 native window check passed, including connection row geometry, dark/light and minimum-width frames, OS theme, native menu/window actions, saved remote editing and deletion recovery. Three Connections frames were inspected. An initial native-menu automation failure was corrected by keeping foreground focus on the popup during keyboard selection rather than reactivating its parent; the affected session then passed. Expected 404s came from deliberate disposable note deletion.
+
+The user requested an exact Mac AI handoff instead of SSH access: [MAC-HANDOFF.md](MAC-HANDOFF.md) contains prerequisites, same private release-key continuity, platform-native builds, isolated data commands, both hosting directions, separate browser/desktop approval, trust/firewall cleanup, native files/controls, concurrency/recovery, update/rollback and documentation gates. Remaining Mac/Linux/real network checks are not marked passed. No Docker, public release feed, real workspace mutation, OS trust/firewall change or actual login registration was performed. Manual integration can use absolute existing VAULTOR_DESKTOP_TEST_DIRECTORY; terminal-only isolation must not be assumed for login startup.
+
+Final Windows 0.2.1 installer measured 259,369,342 bytes (about 247 MiB), unpacked files 736,533,442 bytes (about 702 MiB). Mac size is unmeasured. Final disposable Windows 0.2.0 → 0.2.1 upgrade, installed-version checks, same-version repair, uninstall and reinstall passed. Native coverage used the same packaged executable in its separate successful session; the installer-only rerun used SkipNative to avoid repeating UI exploration. Existing shortcut bytes were backed up/restored, temporary installation registration removed, and separate disposable data remained. D9 is the last Windows/Mac sprint, but its full release gate remains open until the Mac/two-device handoff passes. D10 is separately authorized; Android remains deferred.
 
 ### D10 — Ubuntu x64 follow-up (separate authorization)
 
@@ -272,7 +278,7 @@ Native platform interfaces cover connection verify/activate, host start/stop/sta
 | D6 | Implemented on Windows | Paired connections, host UX and integrated chrome; real Mac/network checks D9 |
 | D7 | Implemented on Windows | Saved-change propagation, scoped mutations, native control fixes, default OS theme and unified icons; 29 frontend + one Node + one disposable backend case and targeted native checks passed |
 | D8 | Implemented on Windows; Mac build/native verification pending | Branded developer/installed executable, NSIS installer, signed local/optional HTTPS updates, snapshot/recovery and explicit existing-data onboarding; Windows installer/native checks passed |
-| D9 | Not started | Depends on D8; two-device/Mac access required |
+| D9 | Windows implementation/native checks complete; Mac/two-device checks pending | Connection menu fixed; 0.2.1 package; exact Mac execution handoff requested by user; full cross-platform release gate remains open |
 | D10 | Deferred follow-up | Requires separate authorization and Ubuntu validation environment |
 
 Planning validation: inspected current guide/index, session/recovery identities, transport/diagnostics/download implementations, server config/CORS and packaging. No code edits, runtime checks, builds, tests, purchases, certificate installation, network exposure or deployment performed. Plan docs were reviewed for cross-sprint coverage and preservation of existing N6 work.
@@ -295,3 +301,5 @@ Deferred work: Android, Mac Intel, full offline database/sync, collaborative typ
 - 2026-10-04: completed authorized D7 and user-requested chrome/theme/icon corrections. Updated authoritative multi-device/API/desktop/platform/host/session/operations/codebase docs. Exact focused results and deferred native/Mac/fault coverage are recorded above; no D8 implementation.
 
 - 2026-10-04: completed authorized D8 implementation on Windows, including requested executable/taskbar branding. Added UPDATES.md and synchronized current architecture/platform/host/session/operations/API docs. Actual checks, corrected native failures and pending Mac/upgrade/feed checks recorded above. D9 and D10 not started.
+
+- 2026-10-04: D9 Windows menu correction/native validation and 0.2.1 release handoff; user requested MAC-HANDOFF.md for execution on the Mac mini. Updated current guide/desktop/operations/update/index docs. Windows actual results and remaining Mac/two-device gate are recorded above; no D10 implementation.

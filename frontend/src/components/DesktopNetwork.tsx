@@ -38,14 +38,14 @@ export function NearbyConnections({ disabled, onPaired }: { disabled: boolean; o
   return <div className="space-y-3">
     {!inspection && <>
       <div className="flex items-center gap-2 text-sm"><Wifi size={15}/><h2 className="font-medium">Nearby</h2></div>
-      {nearby.items.length === 0 && <p className="text-xs text-[var(--text-secondary)]">No hosts found yet. Enable sharing on the other computer, or enter its address below.</p>}
+      {nearby.items.length === 0 && <p className="text-xs text-[var(--text-secondary)]">No nearby hosts. Enable sharing on the other computer, or connect by address.</p>}
       {nearby.error && <p role="status" className="text-xs">{nearby.error}</p>}
-      <div className="space-y-1">{nearby.items.map(item => <button className="library-button w-full text-left text-sm" disabled={disabled || busy} key={item.hostId + item.address} onClick={() => { setName(item.name); setAddress(item.address); }}><span>{item.name}</span><small className="block text-[var(--text-tertiary)]">{item.address}</small></button>)}</div>
-      <form className="space-y-2" onSubmit={event => { event.preventDefault(); if ((event.nativeEvent as SubmitEvent & { isComposing?: boolean }).isComposing) return; const attempt = ++serial.current; void work(async () => { const value = unwrap(await bridge.pairInspect!({ name, address })); if (alive.current && attempt === serial.current) setInspection(value); }); }}>
+      <div className="space-y-1">{nearby.items.map(item => <button className="desktop-nearby-host" disabled={disabled || busy} key={item.hostId + item.address} onClick={() => { setName(item.name); setAddress(item.address); }}><span>{item.name}</span><small className="block text-[var(--text-tertiary)]">{item.address}</small></button>)}</div>
+      <details className="desktop-connection-disclosure"><summary>Connect by address</summary><form className="desktop-address-form" onSubmit={event => { event.preventDefault(); if ((event.nativeEvent as SubmitEvent & { isComposing?: boolean }).isComposing) return; const attempt = ++serial.current; void work(async () => { const value = unwrap(await bridge.pairInspect!({ name, address })); if (alive.current && attempt === serial.current) setInspection(value); }); }}>
         <label className="block text-xs">Connection name<input className="block w-full rounded-lg border border-border bg-background p-2 mt-1" value={name} maxLength={100} required onChange={e => setName(e.target.value)}/></label>
         <label className="block text-xs">Private HTTPS address<input className="block w-full rounded-lg border border-border bg-background p-2 mt-1" value={address} required placeholder="https://192.168.1.20:8443" onChange={e => setAddress(e.target.value)}/></label>
         <button className="library-button" disabled={disabled || busy || !name.trim()}>{busy ? 'Checking…' : 'Connect & pair'}</button>
-      </form>
+      </form></details>
     </>}
     {inspection && <section className="rounded-xl border border-border bg-background p-3 space-y-3">
       <h2 className="font-medium flex gap-2 items-center"><ShieldCheck size={17}/>{inspection.name}</h2>

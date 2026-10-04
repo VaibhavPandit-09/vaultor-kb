@@ -15,14 +15,16 @@ public class VaultorPointer {
 '@
 [VaultorPointer]::SetProcessDPIAware() | Out-Null
 $target = [IntPtr]::new([long]::Parse($Handle))
-[VaultorPointer]::SetForegroundWindow($target) | Out-Null
 if ($Escape -or $MenuSelect) {
+ # The preceding pointer click already owns foreground focus. Re-activating the
+ # parent window here can dismiss its native popup before sending menu keys.
  foreach ($key in $(if($MenuSelect){40,13}else{27})) {
   [VaultorPointer]::keybd_event($key,0,0,[UIntPtr]::Zero)
   [VaultorPointer]::keybd_event($key,0,2,[UIntPtr]::Zero)
   Start-Sleep -Milliseconds 150
  }
 } else {
+ [VaultorPointer]::SetForegroundWindow($target) | Out-Null
  $scale = [VaultorPointer]::GetDpiForWindow($target) / 96.0
  $point = New-Object VaultorPointer+Point
  $point.X = [int]($X * $scale); $point.Y = [int]($Y * $scale)

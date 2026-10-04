@@ -12,5 +12,5 @@ await new Promise((resolve, reject) => {
   child.once('error', reject); child.once('exit', code => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error('Native chrome check failed: ' + code)); });
 });
 await mkdir(new URL('../artifacts/', import.meta.url), { recursive: true });
-for (const name of ['desktop-chrome-dark.png', 'desktop-chrome-light.png', 'desktop-chrome-narrow.png', 'desktop-chrome-note.png', 'desktop-hosting.png','desktop-updates.png']) await cp(join(directory, name), new URL('../artifacts/' + name, import.meta.url));
+for (const name of ['desktop-chrome-dark.png', 'desktop-chrome-light.png', 'desktop-chrome-narrow.png', 'desktop-chrome-note.png', 'desktop-hosting.png','desktop-updates.png','desktop-connections-dark.png','desktop-connections-light.png','desktop-connections-narrow.png']) await cp(join(directory, name), new URL('../artifacts/' + name, import.meta.url));
 console.log('Disposable check directory: ' + directory);

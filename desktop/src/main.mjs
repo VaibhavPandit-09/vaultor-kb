@@ -2,7 +2,7 @@ import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, dialog, 
 import { randomUUID } from 'node:crypto';
 import { readFile,stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { resolve, sep } from 'node:path';
+import { isAbsolute, resolve, sep } from 'node:path';
 import { Profiles } from './profiles.mjs';
 import { DesktopTransport } from './transport.mjs';
 import { UI_ORIGIN, externalAddress, trustedSender } from './policy.mjs';
@@ -22,7 +22,10 @@ const packaged = resolve(app.getAppPath()) === resolve(process.resourcesPath, 'a
 app.setName('Vaultor');
 if(process.platform==='win32')app.setAppUserModelId('personal.vaultor.desktop');
 const smokeDirectory = process.env.VAULTOR_SMOKE_DIRECTORY || process.env.VAULTOR_OWNED_SMOKE_DIRECTORY || process.env.VAULTOR_CHROME_SMOKE_DIRECTORY;
-if (smokeDirectory) app.setPath('userData', smokeDirectory);
+// Manual integration sessions need isolated data without automatically executing a smoke scenario.
+const testDirectory = process.env.VAULTOR_DESKTOP_TEST_DIRECTORY;
+if (testDirectory && !isAbsolute(testDirectory)) throw new Error('VAULTOR_DESKTOP_TEST_DIRECTORY must be an absolute existing directory.');
+if (smokeDirectory || testDirectory) app.setPath('userData', smokeDirectory || testDirectory);
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   let window, profiles, owned, files, hosting, credentials, discovery, connections, tray, updates, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false, updating=false;

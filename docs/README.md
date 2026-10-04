@@ -1,6 +1,7 @@
 # Documentation
 
-- [Desktop and private-network plan](desktop-network-plan.md): D1–D8 implemented on Windows, including owned server, native lifecycle, paired HTTPS, saved-change propagation and integrated chrome; personal installer/update support implemented; D9 real Windows–Mac verification remains; D10 Ubuntu follow-up. One sprint per authorization.
+- [Desktop and private-network plan](desktop-network-plan.md): D1–D8 implemented on Windows, including owned server, native lifecycle, paired HTTPS, saved-change propagation and integrated chrome; personal installer/update support implemented; D9 Windows handoff/menu polish complete; Mac/two-device verification remains with a precise handoff; D10 Ubuntu follow-up. One sprint per authorization.
+- [Mac mini completion handoff](MAC-HANDOFF.md): exact D9 Mac build/package/native and real two-device checklist, isolated test data, private-key continuity, cleanup and honest release gates.
 - [Personal installers and updates](UPDATES.md): Windows branding/installers, Mac build workflow, free release signing, local/optional HTTPS updates, existing-data onboarding, backup/recovery and verification limits.
 - [Saved changes across devices](MULTI-DEVICE.md): bounded approved SSE, clean-note refresh, draft/deletion/replacement recovery, scoped settings, revision requirements and actual validation.
 - [Host access and pairing](HOST-ACCESS.md): owner/browser bootstrap, opt-in HTTPS, stable host trust, device approval/revoke, CSRF, approved agents and current limits.
