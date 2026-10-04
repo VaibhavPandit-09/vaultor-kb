@@ -429,6 +429,9 @@ export function useSettings() {
   }
   return context;
 }
+// Native update/recovery dialogs can open before any workspace provider exists.
+// eslint-disable-next-line react-refresh/only-export-components -- Companion context hook, like useSettings above.
+export function useOptionalSettings() { return useContext(SettingsContext); }
 
 function createDefaultSettingsDocument(): SettingsDocument {
   return {

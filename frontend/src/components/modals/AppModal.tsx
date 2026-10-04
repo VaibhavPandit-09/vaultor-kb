@@ -1,7 +1,7 @@
 import { useId, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
-import { useSettings } from '../../lib/settings';
+import { useOptionalSettings } from '../../lib/settings';
 import { getGlassPanelStyle, getOverlayStyle } from '../../lib/transparency';
 
 type EscapeLayerKind = 'modal' | 'commandPalette';
@@ -30,8 +30,8 @@ export default function AppModal({
   restoreFocusOnEscape = true,
 }: AppModalProps) {
   const modalId = useId();
-  const { settings } = useSettings();
-  const transparency = settings.local.uiTransparency;
+  const context = useOptionalSettings();
+  const transparency = context?.settings.local.uiTransparency ?? 1;
 
   useEscapeLayer({
     id: `app-modal-${modalId}`,

@@ -1,6 +1,6 @@
 # Desktop application and private-network hosting
 
-Created/reviewed: 2026-10-04. Status: D1–D7 implemented on Windows; D8–D9 not started; D10 deferred. Manual OS/Mac validation remains pending.
+Created/reviewed: 2026-10-04. Status: D1–D8 implemented on Windows; D8 Mac package/native verification pending; D9 not started; D10 deferred. Manual OS/Mac validation remains pending.
 
 ## Delivery and maintenance
 
@@ -204,14 +204,20 @@ Validation: 29 focused frontend cases, one native-stream Node case and one actua
 
 ### D8 — Personal installers, existing-data onboarding and zero-cost updates
 
-- [ ] Windows x64 installer and macOS arm64 ad-hoc app/DMG with bundled runtime. State unknown-publisher/Gatekeeper approval steps honestly; no paid signing/notarization promises.
-- [ ] Existing Docker onboarding: connect to upgraded compatible server or explicitly export/import into This computer. Browser-only/Docker hosting remains supported with documented pairing management configuration.
-- [ ] Release manifest/checksums/application release signature, local update-package import, configurable HTTPS feed and in-app check/download/progress/errors. Unconfigured feed remains a valid personal setup.
-- [ ] Update quiescence, host restart notice, consistent backup, previous-version retention, failure recovery and explicit Mac manual replacement handoff. Preserve data/trust/pairing/login preference.
-- [ ] Build/release scripts run on user's own Windows/Mac machines; include exact free prerequisites/license notices. Never publish releases or incur subscriptions automatically.
-- [ ] Targeted native install/upgrade/uninstall/reinstall checks with disposable data and corrupted/wrong-platform/oversized/unsigned-manifest packages. Test migration failure/restore and client-only update not altering remote host.
+- [x] Windows x64 installer and macOS arm64 ad-hoc app/DMG build workflow with bundled runtime. Actual Mac build/native verification is pending, not claimed complete. State unknown-publisher/Gatekeeper approval steps honestly; no paid signing/notarization promises.
+- [x] Existing Docker onboarding: connect to upgraded compatible server or explicitly export/import into This computer. Browser-only/Docker hosting remains supported with documented pairing management configuration.
+- [x] Release manifest/checksums/application release signature, local update-package import, configurable HTTPS feed and in-app check/download/progress/errors. Unconfigured feed remains a valid personal setup.
+- [x] Update quiescence, host restart notice, consistent backup, previous-version retention, failure recovery and explicit Mac manual replacement handoff. Preserve data/trust/pairing/login preference.
+- [x] Build/release scripts run on user's own Windows/Mac machines; include exact free prerequisites/license notices. Never publish releases or incur subscriptions automatically.
+- [x] Targeted Windows install/same-version repair/uninstall/reinstall checks (real different-version OS upgrade and Mac install pending) with disposable data and corrupted/wrong-platform/oversized/unsigned-manifest packages. Test migration failure/restore and client-only update not altering remote host.
 
 Acceptance: personal packages need no payment/external runtime, existing data stays discoverable, and in-app update workflow has no false claim of unattended Mac installation or successful download before disk completion.
+
+D8 actual validation: production browser/desktop build and targeted ESLint passed; desktop syntax passed. Sixteen focused frontend cases and eight distinct Node update/branding cases passed. Final backup/recovery cases were rerun after adding copied-backup hash verification and revalidation of retained previous installers. Optional HTTPS tests use bounded fixtures; no release feed was published. Windows developer branded launch and installed native launch/control/theme/update-dialog checks passed on disposable storage. Installer repair/uninstall/reinstall passed; temporary registration/shortcuts were removed, and separate disposable storage remained. Packaged Vaultor.exe PE icon data matched the canonical ICO. Native Updates screenshot was inspected.
+
+Initial installed startup failed because the taskbar API name was incorrect; corrected to BrowserWindow.setAppDetails with appIconPath/relaunchDisplayName. A renamed developer executable also reports isPackaged=true; selection now uses the actual resources/app layout, and developer native launch passed afterward. Expected 404 diagnostics came from deliberately deleting the disposable note. No user workspace, real pairing/trust/firewall/login preference, Docker or broad API smoke was altered/run.
+
+D8 remaining validation carried to D9: Mac mini package/build/native checks, genuine different-version installer upgrade and end-to-end native install/rollback handoff, live hosted HTTPS release feed, OS cached/pinned taskbar appearance, and real Docker owner-key/archive onboarding. Service tests cover rejection/recovery, not every native failure dialog. No paid signing/notarization or unattended Mac update is implied. Developer/installer commands and key/recovery limits are authoritative in [UPDATES.md](UPDATES.md). Stop before D9.
 
 ### D9 — Windows/Mac integration and release handoff
 
@@ -265,7 +271,7 @@ Native platform interfaces cover connection verify/activate, host start/stop/sta
 | D5 | Implemented | Disposable both-connector/restart checks passed; D6 UX pending |
 | D6 | Implemented on Windows | Paired connections, host UX and integrated chrome; real Mac/network checks D9 |
 | D7 | Implemented on Windows | Saved-change propagation, scoped mutations, native control fixes, default OS theme and unified icons; 29 frontend + one Node + one disposable backend case and targeted native checks passed |
-| D8 | Not started | Depends on D7; release feed is optional, local packages are baseline |
+| D8 | Implemented on Windows; Mac build/native verification pending | Branded developer/installed executable, NSIS installer, signed local/optional HTTPS updates, snapshot/recovery and explicit existing-data onboarding; Windows installer/native checks passed |
 | D9 | Not started | Depends on D8; two-device/Mac access required |
 | D10 | Deferred follow-up | Requires separate authorization and Ubuntu validation environment |
 
@@ -287,3 +293,5 @@ Deferred work: Android, Mac Intel, full offline database/sync, collaborative typ
 - 2026-10-04: completed authorized D5 host trust/listeners, pairing/owner browser access, CSRF and approved-agent/OpenAPI contracts. Updated codebase/platform/desktop/operations/API/index docs and HOST-ACCESS.md. Focused actual connectors/restart and transport tests passed; no D6 implementation or real deployment/trust changes.
 
 - 2026-10-04: completed authorized D7 and user-requested chrome/theme/icon corrections. Updated authoritative multi-device/API/desktop/platform/host/session/operations/codebase docs. Exact focused results and deferred native/Mac/fault coverage are recorded above; no D8 implementation.
+
+- 2026-10-04: completed authorized D8 implementation on Windows, including requested executable/taskbar branding. Added UPDATES.md and synchronized current architecture/platform/host/session/operations/API docs. Actual checks, corrected native failures and pending Mac/upgrade/feed checks recorded above. D9 and D10 not started.

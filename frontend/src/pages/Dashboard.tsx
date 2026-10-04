@@ -46,7 +46,7 @@ import {
 } from 'lucide-react';
 import api from '../lib/api';
 import { getPlatform, saveApiFile, openApiFile } from '../lib/platform';
-import { registerConnectionBarrier, SwitchBlockedError } from '../lib/desktop';
+import { registerConnectionBarrier, SwitchBlockedError,consumeLocalArchiveImport } from '../lib/desktop';
 import LibraryView, { type LibrarySection } from '../components/LibraryView';
 import { browseResources, resourcesChanged } from '../lib/resourceBrowse';
 import { resourceKind } from '../lib/resourceKinds';
@@ -1157,6 +1157,11 @@ export default function Dashboard() {
     window.addEventListener('vaultor:identity-check',check);window.addEventListener('focus',check);
     return()=>{stopped=true;window.removeEventListener('vaultor:identity-check',check);window.removeEventListener('focus',check);};
   },[sessionReady,saves,paneNavigation,recovery,dispatch]);
+  useEffect(()=>{
+    if(!sessionReady)return;
+    const handoff=()=>{if(consumeLocalArchiveImport())setTransferMode('import');};handoff();
+    window.addEventListener('vaultor:local-archive-import',handoff);return()=>window.removeEventListener('vaultor:local-archive-import',handoff);
+  },[sessionReady]);
   const remoteReconcile = useRef<(events:RemoteChange[])=>void>(()=>{});
   remoteReconcile.current = events => {
     const broad=events.some(e=>e.kind==='reset'||e.kind==='workspace'||(e.generation && e.generation!==identityRef.current?.generation));

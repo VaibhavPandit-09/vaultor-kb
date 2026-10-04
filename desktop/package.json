@@ -1,26 +1,32 @@
 {
   "name": "vaultor-desktop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "main": "src/main.mjs",
   "scripts": {
     "build": "npm --prefix ../frontend run build && node scripts/copy-ui.mjs",
-    "start": "electron .",
+    "start": "node scripts/start.mjs",
     "test": "node --test test/*.test.mjs",
-    "check": "node --check src/main.mjs && node --check src/preload.cjs && node --check src/transport.mjs && node --check src/owned-server.mjs && node --check scripts/prepare-server.mjs && node --check scripts/package-dev.mjs && node --check src/files.mjs && node --check src/hosting.mjs && node --check src/network.mjs && node --check src/credentials.mjs && node --check src/discovery.mjs && node --check src/connections.mjs && node --check src/change-stream.mjs",
+    "check": "node --check src/main.mjs && node --check src/preload.cjs && node --check src/transport.mjs && node --check src/owned-server.mjs && node --check scripts/prepare-server.mjs && node --check scripts/package-dev.mjs && node --check src/files.mjs && node --check src/hosting.mjs && node --check src/network.mjs && node --check src/credentials.mjs && node --check src/discovery.mjs && node --check src/connections.mjs && node --check src/change-stream.mjs && node --check src/updates.mjs && node --check scripts/start.mjs && node --check scripts/package-release.mjs",
     "smoke": "node scripts/smoke.mjs",
     "prepare-server": "node scripts/prepare-server.mjs",
     "package:dev": "node scripts/package-dev.mjs",
     "test:server": "node --test test/owned-server.test.mjs",
     "smoke:owned": "node scripts/owned-smoke.mjs",
     "test:network": "node --test test/network.test.mjs",
-    "smoke:chrome": "node scripts/chrome-smoke.mjs"
+    "smoke:chrome": "node scripts/chrome-smoke.mjs",
+    "package:release": "node scripts/package-release.mjs",
+    "release:key": "node scripts/release-key.mjs"
   },
   "devDependencies": {
-    "electron": "44.5.1"
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3",
+    "resedit": "1.7.2"
   },
   "dependencies": {
     "bonjour-service": "1.4.4"
-  }
+  },
+  "description": "Personal knowledge workspace with a bundled local server",
+  "author": "Vaultor contributors"
 }

@@ -1,0 +1,12 @@
+import {generateKeyPairSync} from 'node:crypto';
+import {mkdir,writeFile,access} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+import {join} from 'node:path';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const directory=join(root,'cache','release-signing');await mkdir(directory,{recursive:true,mode:0o700});
+const privateFile=join(directory,'private.pem'),publicFile=join(root,'release-trust.json');
+if(await access(privateFile).then(()=>true,()=>false) || await access(publicFile).then(()=>true,()=>false))throw new Error('Release identity already exists. Preserve it; never rotate automatically.');
+const keys=generateKeyPairSync('ed25519');
+await writeFile(privateFile,keys.privateKey.export({type:'pkcs8',format:'pem'}),{flag:'wx',mode:0o600});
+await writeFile(publicFile,JSON.stringify({version:1,publicKey:keys.publicKey.export({type:'spki',format:'pem'})},null,2)+'\n',{flag:'wx'});
+console.log('Created free personal release identity. Back up desktop/cache/release-signing/private.pem privately. Only the public key is bundled.');

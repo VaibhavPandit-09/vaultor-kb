@@ -21,6 +21,11 @@ export async function runChromeSmoke(window, directory, owned) {
   const credentials = new Credentials(join(directory, 'native-credential-test'), safeStorage); await credentials.load();
   const secret = randomBytes(32).toString('hex'); await credentials.set('disposable', secret);
   const restored = new Credentials(join(directory, 'native-credential-test'), safeStorage); await restored.load(); assert.equal(restored.get('disposable'), secret);
+  window.webContents.send('desktop:updates-open');
+  await wait("document.body.innerText.includes('Vaultor updates')",'Update dialog');
+  assert.ok(await evaluate("document.body.innerText.includes('Import update') && document.body.innerText.includes('0.2.0')"));
+  await capture('desktop-updates.png');
+  await evaluate("document.querySelector('button[aria-label=\"Close modal\"]').click()");
   await evaluate("document.querySelector('.desktop-connection-button').click()");
   await wait("document.querySelector('[role=dialog]')?.textContent.includes('Nearby')", 'Connection UI');
   await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent==='Hosting').click()");

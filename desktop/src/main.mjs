@@ -1,6 +1,6 @@
 import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, dialog, Tray, nativeImage, Notification, powerMonitor, safeStorage } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile,stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve, sep } from 'node:path';
 import { Profiles } from './profiles.mjs';
@@ -13,32 +13,38 @@ import { Credentials } from './credentials.mjs';
 import { Discovery } from './discovery.mjs';
 import { Connections } from './connections.mjs';
 import { startChangeStream } from './change-stream.mjs';
+import { Updates } from './updates.mjs';
+import { spawn } from 'node:child_process';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'vaultor', privileges: { standard: true, secure: true, supportFetchAPI: true } },{scheme:'vaultor-file',privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true}}]);
+// A renamed developer Electron executable reports isPackaged=true; use our actual app layout.
+const packaged = resolve(app.getAppPath()) === resolve(process.resourcesPath, 'app');
 app.setName('Vaultor');
 if(process.platform==='win32')app.setAppUserModelId('personal.vaultor.desktop');
 const smokeDirectory = process.env.VAULTOR_SMOKE_DIRECTORY || process.env.VAULTOR_OWNED_SMOKE_DIRECTORY || process.env.VAULTOR_CHROME_SMOKE_DIRECTORY;
 if (smokeDirectory) app.setPath('userData', smokeDirectory);
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  let window, profiles, owned, files, hosting, credentials, discovery, connections, tray, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false;
+  let window, profiles, owned, files, hosting, credentials, discovery, connections, tray, updates, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false, updating=false;
   const transport = new DesktopTransport(), candidates = new Map();
   const queue = task => { const next = writes.catch(() => {}).then(task); writes = next; return next; };
-  const state = () => { const data = !startupError && profiles?.snapshot(); if (data) data.profiles = data.profiles.map(p => p.source === 'bundled' ? { ...p, address: owned?.address ?? p.address } : p); return { ...(data || { version: 1, profiles: [], active: null, clientId: '' }), sessionId: data?.clientId ?? '', token, desktopBuild: app.getVersion(), localServer: owned?.snapshot(), error: startupError, access: { mode: token ? (transport.active?.profile.kind === 'remote' ? 'paired' : 'loopback') : 'unselected', pairingAvailable: credentials?.available() ?? false, trustConfigured: Boolean(transport.active?.profile.fingerprint), credentialsStored: Boolean(transport.active?.credential) } }; };
+  const state = () => { const data = !startupError && profiles?.snapshot(); if (data) data.profiles = data.profiles.map(p => p.source === 'bundled' ? { ...p, address: owned?.address ?? p.address } : p); return { ...(data || { version: 1, profiles: [], active: null, clientId: '' }), sessionId: data?.clientId ?? '', token, desktopBuild: app.getVersion(), localServer: owned?.snapshot(), error: startupError, access: { mode: token ? (transport.active?.profile.kind === 'remote' ? 'paired' : 'loopback') : 'unselected', pairingAvailable: credentials?.available() ?? false, trustConfigured: Boolean(transport.active?.profile.fingerprint), credentialsStored: Boolean(transport.active?.credential || transport.active?.ownerKey) } }; };
   async function probe(id, issueTicket = true) {
     const stored = profiles.get(id);
     const profile = stored.source === 'bundled' ? { ...stored, address: await owned.start() } : stored.kind === 'remote' ? await connections.resolve(stored) : stored;
     const probeTransport = new DesktopTransport();
-    const temporary = randomUUID(); probeTransport.activate(profile, temporary, profile.source === 'bundled' ? owned.accessKey : undefined, profile.kind === 'remote' ? credentials.get(profile.id) : undefined);
+    const temporary = randomUUID(); probeTransport.activate(profile, temporary, profile.source === 'bundled' ? owned.accessKey : profile.kind==='local'?credentials.get(profile.id):undefined, profile.kind === 'remote' ? credentials.get(profile.id) : undefined);
     const get = async path => {
       const response = await probeTransport.request({ token: temporary, id: randomUUID(), path, method: 'GET', headers: { 'X-Request-ID': randomUUID() }, timeout: 10000 });
       if (response.status !== 200) throw new Error(`Server check failed (${response.status}).`);
       return JSON.parse(new TextDecoder().decode(response.data));
     };
     const capabilities = await get('/capabilities');
+    if(capabilities.changeFeed!==true || capabilities.scopedSettings!==true)throw new Error('Update this server to the current Vaultor version before connecting. D7 settings and change-feed contracts are required.');
     if (!Number.isInteger(capabilities.apiProtocolVersion) || capabilities.apiProtocolVersion < 1 || !Number.isInteger(capabilities.minimumClientProtocolVersion) || capabilities.minimumClientProtocolVersion < 1 || capabilities.minimumClientProtocolVersion > capabilities.apiProtocolVersion || typeof capabilities.serverBuild !== 'string') throw new Error('Update this server: compatibility information is missing.');
     if (capabilities.minimumClientProtocolVersion > 1) throw new Error('Update Vaultor Desktop to connect to this server.');
     const identity = await get('/workspace/identity');
+    if(profile.source==='bundled')await updates?.confirmStart();
     if (typeof identity.id !== 'string' || !identity.id || identity.id.length > 100 || typeof identity.generation !== 'string' || identity.generation.length > 100) throw new Error('Server workspace identity is invalid.');
     const ticket = issueTicket ? randomUUID() : undefined;
     if (issueTicket) { candidates.clear(); candidates.set(ticket, { profile, identity, expires: Date.now() + 60000 }); }
@@ -55,7 +61,9 @@ else {
   function handle(channel, work) {
     ipcMain.handle(channel, async (event, value) => {
       if (!trustedSender(event, window?.webContents)) throw new Error('Untrusted desktop caller.');
-      try { return { ok: true, value: await work(value) }; }
+      try {
+        if(updating && !['desktop:updates-status','desktop:window-status','desktop:window-action','desktop:quit-reply','desktop:cancel','desktop:cancel-file'].includes(channel))throw new Error('Vaultor is preparing an update. Wait for completion.');
+        return { ok: true, value: await work(value) }; }
       catch (error) { return { ok: false, error: { code: error.name === 'AbortError' ? 'CANCELLED' : 'DESKTOP_ERROR', detail: error.message === 'fetch failed' ? 'Server unavailable. Check that it is running, then retry.' : String(error.message).slice(0, 1000) } }; }
     });
   }
@@ -75,13 +83,15 @@ else {
       } catch { return new Response('Build the desktop UI with npm run build.', { status: 404 }); }
     });
     profiles = new Profiles(app.getPath('userData'));
-    owned = new OwnedServer({ bundle: fileURLToPath(new URL('../bundle/', import.meta.url)), data: resolve(app.getPath('userData'), 'local-workspace') });
+    owned = new OwnedServer({ bundle: packaged?resolve(process.resourcesPath,'bundle'):fileURLToPath(new URL('../bundle/', import.meta.url)), data: resolve(app.getPath('userData'), 'local-workspace') });
+    const releaseTrust=JSON.parse(await readFile(fileURLToPath(new URL('../release-trust.json',import.meta.url)),'utf8'));
+    updates=new Updates({directory:resolve(app.getPath('userData'),'updates'),workspace:owned.data,publicKey:releaseTrust.publicKey,currentVersion:app.getVersion(),onState:value=>window?.webContents.send('desktop:updates-state',value)});await updates.load();
     credentials = new Credentials(app.getPath('userData'), safeStorage); discovery = new Discovery();
     connections = new Connections({ owned, profiles, credentials, discovery });
     const stopAddressWatch = connections.watchAddresses(); app.once('will-quit', stopAddressWatch);
     files = new NativeFiles({directory:resolve(app.getPath('userData'),'file-cache'),owner:()=>transport.active,dialogs:{open:options=>dialog.showOpenDialog(window,options),save:options=>dialog.showSaveDialog(window,options)},openPath:path=>shell.openPath(path)});
     transport.files=files;await files.cleanup();protocol.handle('vaultor-file',request=>files.serve(request));
-    hosting=new HostingPreferences({directory:app.getPath('userData'),app,executable:process.execPath,args:app.isPackaged?['--background']:[app.getAppPath(),'--background']});
+    hosting=new HostingPreferences({directory:app.getPath('userData'),app,executable:process.execPath,args:packaged?['--background']:[app.getAppPath(),'--background']});
     try{await hosting.load();}catch(error){hosting.error=error.message;}
     owned.on('status', () => {
       window?.webContents.send('desktop:local-status', owned.snapshot());
@@ -99,6 +109,38 @@ else {
     try { await profiles.load(); await credentials.load(); if (!process.env.VAULTOR_SMOKE_DIRECTORY) await profiles.ensureManaged(); } catch (error) { startupError = error.message; }
     if (!startupError && !smokeDirectory) void connections.resumeHosting();
     handle('desktop:bootstrap', () => state());
+    handle('desktop:updates-status',()=>updates.snapshot());
+    handle('desktop:updates-configure',feed=>updates.configure(feed));
+    handle('desktop:updates-check',()=>updates.check());
+    handle('desktop:updates-download',()=>updates.download());
+    handle('desktop:updates-cancel',()=>updates.cancel());
+    handle('desktop:updates-import',async()=>{
+      const chosen=await dialog.showOpenDialog(window,{title:'Import Vaultor update manifest',properties:['openFile'],filters:[{name:'Signed Vaultor manifest',extensions:['json']}]});
+      if(chosen.canceled)return updates.snapshot();return updates.importPackage(chosen.filePaths[0]);
+    });
+    const updateBarrier=async()=>{
+      const approval=await requestQuitBarrier();if(!approval.success)throw new Error(approval.error);
+      if(files.active.size||files.saves.size||files.dialogPending||transport.mutations.size)throw new Error('Finish current file/workspace operations before updating.');
+      updating=true;window?.webContents.send('desktop:updates-state',{...updates.snapshot(),phase:'preparing'});
+      discovery.withdraw();transport.cancelAll();
+    };
+    const installFile=async file=>{
+      if(process.platform==='win32')await new Promise((done,reject)=>{const child=spawn(file,[],{detached:true,windowsHide:true,stdio:'ignore'});child.once('error',reject);child.once('spawn',()=>{child.unref();done();});});
+      else {const error=await shell.openPath(file);if(error)throw new Error(error);}
+      stoppedForQuit=true;discovery.destroy();await files.reset();window?.destroy();tray?.destroy();app.quit();
+    };
+    handle('desktop:updates-install',()=>queue(async()=>{
+      const answer=await dialog.showMessageBox(window,{type:'question',buttons:['Cancel','Back up and update'],defaultId:0,cancelId:0,message:'Update Vaultor?',detail:'Save pending changes, stop this computer’s host, and create a verified local recovery backup. Paired clients disconnect. Remote servers remain untouched. '+(process.platform==='darwin'?'The disk image opens; quit and replace Vaultor.app manually.':'The personal installer opens; finish its steps, then reopen Vaultor.')});if(answer.response!==1)return updates.snapshot();
+      try{const prepared=await updates.prepare({barrier:updateBarrier,stop:()=>owned.stop()});await installFile(prepared.file);}
+      catch(e){updating=false;window?.webContents.send('desktop:updates-state',updates.snapshot());throw e;}
+    }));
+    handle('desktop:updates-restore',()=>queue(async()=>{
+      const answer=await dialog.showMessageBox(window,{type:'warning',buttons:['Cancel','Restore local backup'],defaultId:0,cancelId:0,message:'Restore the workspace from before updating?',detail:'This replaces only the managed local workspace. Current data is retained in a separate folder. Use the previous app installer afterward if its schema is incompatible. Remote hosts and client drafts/preferences are untouched.'});if(answer.response!==1)return updates.snapshot();
+      try{const restored=await updates.restore({barrier:updateBarrier,stop:()=>owned.stop()});updating=false;
+        if(restored.previous){await dialog.showMessageBox(window,{message:'Recovery restored',detail:'The previous retained installer will open. Complete installation and reopen Vaultor.'});await installFile(restored.previous);}
+        else {await dialog.showMessageBox(window,{message:'Recovery restored',detail:'Vaultor will quit. Reinstall the original version if needed; the restored workspace and preserved data remain on disk.'});stoppedForQuit=true;discovery.destroy();await files.reset();window?.destroy();tray?.destroy();app.quit();}
+      }catch(e){updating=false;window?.webContents.send('desktop:updates-state',updates.snapshot());throw e;}
+    }));
     handle('desktop:local-status', () => owned.snapshot());
     handle('desktop:hosting',()=>({...hosting.snapshot(),error:hosting.error||hosting.snapshot().error,server:owned.snapshot()}));
     handle('desktop:login',enabled=>queue(()=>{if(hosting.error)throw new Error(hosting.error);return hosting.setLogin(enabled);}));
@@ -125,7 +167,17 @@ else {
     });
     for(const [channel,method] of [['pick-files','pick'],['read-file','read'],['begin-save','begin'],['save-chunk','chunk'],['finish-save','finish'],['cancel-save','cancel'],['file-action','download'],['release-file','release'],['cancel-file','cancelRequest']]) handle('desktop:'+channel,value=>files[method](value));
     handle('desktop:quit-reply',value=>{if(!quitWaiter||value?.id!==quitWaiter.id||typeof value.success!=='boolean')throw new Error('Quit request expired.');clearTimeout(quitTimer);quitWaiter.resolve({success:value.success,error:String(value.error||'').slice(0,1000),canKeepDrafts:value.canKeepDrafts===true});quitWaiter=null;});
-    handle('desktop:add-profile', input => queue(() => profiles.add(input)));
+    const authorizeLocal=async profile=>{
+      if(profile.kind!=='local'||profile.source==='bundled')throw new Error('Choose an existing local server.');
+      if(!credentials.available())throw new Error('Unlock the OS credential store first.');
+      const chosen=await dialog.showOpenDialog(window,{title:'Choose this server’s host-access/owner.key',properties:['openFile']});if(chosen.canceled)throw new Error('Local server authorization cancelled.');
+      if((await stat(chosen.filePaths[0])).size>128)throw new Error('Invalid owner key file.');const key=(await readFile(chosen.filePaths[0],'utf8')).trim();if(!/^[a-f0-9]{64}$/.test(key))throw new Error('Invalid owner key file.');
+      const check=new DesktopTransport(),token=randomUUID();check.activate(profile,token,key);
+      const response=await check.request({id:randomUUID(),token,path:'/workspace/identity',method:'GET',headers:{'X-Request-ID':randomUUID()},timeout:10000});if(response.status!==200)throw new Error('This key was not accepted by the local server.');
+      await credentials.set(profile.id,key);return state();
+    };
+    handle('desktop:authorize-local',id=>queue(()=>authorizeLocal(profiles.get(id))));
+    handle('desktop:add-profile', input => queue(async()=>{const profile=await profiles.add(input);try{await authorizeLocal(profile);return profile;}catch(e){await profiles.forget(profile.id);throw e;}}));
     handle('desktop:probe', id => probe(id));
     handle('desktop:activate', ticket => queue(async () => {
       if (transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
@@ -139,7 +191,7 @@ else {
       if (actual.kind === 'remote' && actual.address !== profiles.get(actual.id).address) await profiles.update(actual.id, { address: actual.address });
       await profiles.activate(candidate.profile.id, candidate.identity.id);
       await files.reset();
-      token = randomUUID(); transport.activate(actual, token, actual.source === 'bundled' ? owned.accessKey : undefined, credential); candidates.clear();
+      token = randomUUID(); transport.activate(actual, token, actual.source === 'bundled' ? owned.accessKey : actual.kind==='local'?credentials.get(actual.id):undefined, credential); candidates.clear();
       return state();
     }));
     handle('desktop:request', value => transport.request(value));
@@ -149,6 +201,7 @@ else {
     const createWindow = () => {
       window = new BrowserWindow({ icon: appIcon, frame: false, autoHideMenuBar: true, width: 1320, height: 900, minWidth: 600, minHeight: 480, show: !smokeDirectory && !process.argv.includes('--background') && !(process.platform==='darwin' && app.getLoginItemSettings().wasOpenedAtLogin), backgroundColor: '#0b1220', title: 'Vaultor', webPreferences: { preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false, plugins: true } });
       window.setMenuBarVisibility(false);
+      if(process.platform==='win32')window.setAppDetails({appId:'personal.vaultor.desktop',relaunchDisplayName:'Vaultor',appIconPath:fileURLToPath(new URL('../assets/vaultor.ico',import.meta.url)),relaunchCommand:'"'+process.execPath+'"'+(packaged?'':' "'+app.getAppPath()+'"')});
       if (process.platform !== 'darwin') window.setMenu(null);
       for (const event of ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen']) window.on(event, () => window.webContents.send('desktop:window-status', { maximized: window.isMaximized() }));
       if (smokeDirectory) window.webContents.on('console-message', event => { if (event.level === 'error' || event.level === 'warning') console.error('Renderer:', event.message); });
@@ -170,6 +223,7 @@ else {
     };
     const windowMenu = () => Menu.buildFromTemplate([
       { label: 'Connections & hosting…', click: () => window?.webContents.send('desktop:connections') },
+      { label: 'Updates…', click: () => window?.webContents.send('desktop:updates-open') },
       ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
       { label: 'File', submenu: [{ role: 'close' }, { role: 'quit' }] },
       { role: 'editMenu' },

@@ -28,6 +28,7 @@ desktop/artifacts/
 desktop/bundle/
 desktop/packages/
 desktop/cache/
+desktop/releases/
 
 # Data
 data/

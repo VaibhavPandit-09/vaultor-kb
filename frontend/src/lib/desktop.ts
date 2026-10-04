@@ -1,5 +1,8 @@
 import axios, { type AxiosAdapter } from 'axios';
-import { configureConnection, getPlatform } from './platform';
+import { configureConnection, getPlatform, getConnection } from './platform';
+let pendingArchiveEpoch:number|undefined;
+export function requestLocalArchiveImport(){const connection=getConnection();if(connection.profileId!=='this-computer')return;pendingArchiveEpoch=connection.epoch;window.dispatchEvent(new Event('vaultor:local-archive-import'));}
+export function consumeLocalArchiveImport(){const connection=getConnection(),requested=pendingArchiveEpoch===connection.epoch&&connection.profileId==='this-computer';pendingArchiveEpoch=undefined;return requested;}
 export type DesktopProfile = { id: string; name: string; address: string; kind: 'local' | 'remote'; source?: 'bundled'; workspaceId?: string; hostId?: string; fingerprint?: string };
 export type LocalServerStatus = { status: string; address: string | null; error: string; restartAttempts: number; dataDirectory: string; logError: string; logs: { timestamp: string; message: string }[] };
 export type DesktopState = { version: number; clientId: string; sessionId: string; profiles: DesktopProfile[]; active: string | null; token: string; desktopBuild?: string; localServer?: LocalServerStatus; error?: string; access?: { mode: 'loopback' | 'paired' | 'unselected'; pairingAvailable: boolean; trustConfigured: boolean; credentialsStored: boolean } };
@@ -9,14 +12,26 @@ export type SharingStatus = { enabled: boolean; listening: boolean; port: number
 export type HostDevices = { devices: { id: string; name: string; kind: string; approvedAt: string }[]; requests: { id: string; name: string; kind: string; code: string; expiresAt: string }[]; stopped?: boolean };
 export type DesktopCandidate = { ticket: string; profile: DesktopProfile; identity: { id: string; generation: string }; differentWorkspace: boolean; serverBuild: string };
 type Result<T> = { ok: true; value: T } | { ok: false; error: { code: string; detail: string } };
+export type UpdateStatus={phase:string;feed:string;currentVersion:string;version?:string;progress:number;error:string;backupDirectory:string;recoveryAvailable:boolean;previousPackageAvailable:boolean};
 type Part = { name: string; value: string | Uint8Array; filename?: string; type?: string };
 type NativePart = { name: string; fileId: string; filename: string; type: string };
 type NativeSelection = { id: string; name: string; size: number; lastModified: number };
 export type WireRequest = { id: string; token: string; path: string; method: string; timeout: number; headers: Record<string, string>; body?: { kind: 'text'; value: string } | { kind: 'multipart'; parts: (Part | NativePart)[] } };
 export interface DesktopBridge {
+  updatesStatus?():Promise<Result<UpdateStatus>>;
+  updatesConfigure?(feed:string):Promise<Result<UpdateStatus>>;
+  updatesCheck?():Promise<Result<UpdateStatus>>;
+  updatesDownload?():Promise<Result<UpdateStatus>>;
+  updatesCancel?():Promise<Result<void>>;
+  updatesImport?():Promise<Result<UpdateStatus>>;
+  updatesInstall?():Promise<Result<void|UpdateStatus>>;
+  updatesRestore?():Promise<Result<void|UpdateStatus>>;
+  onUpdates?(callback:(value:UpdateStatus)=>void):()=>void;
+  onUpdatesOpen?(callback:()=>void):()=>void;
   stream?(value:{token:string;id:string;path:string}):Promise<Result<void>>;
   onStream?(callback:(event:{id:string;data?:unknown;closed?:boolean})=>void):()=>void;
   bootstrap(): Promise<Result<DesktopState>>;
+  authorizeLocal?(id:string):Promise<Result<DesktopState>>;
   nearby?(enabled: boolean): Promise<Result<NearbyHosts>>;
   pairInspect?(value: { name: string; address: string }): Promise<Result<PairInspection>>;
   pairEnroll?(id: string): Promise<Result<{ id: string; code: string; expiresAt: string }>>;
