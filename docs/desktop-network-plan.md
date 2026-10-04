@@ -1,10 +1,10 @@
 # Desktop application and private-network hosting
 
-Created/reviewed: 2026-10-04. Status: D1–D4 implemented on Windows; Windows manual native save-dialog/OS-login check and Mac native verification pending; D5–D9 not started; D10 deferred.
+Created/reviewed: 2026-10-04. Status: D1–D4 implemented on Windows; Windows manual native save-dialog/OS-login check and Mac native verification pending; D5 implemented; D6–D9 not started; D10 deferred.
 
 ## Delivery and maintenance
 
-Deliver one sprint per explicit authorization, stop after its handoff, and do not interpret Continue as authorization for another sprint if the current one is complete. Interrupted work may resume. The initial request authorized planning; subsequent calls explicitly authorized D1, D2 and D3. D4 was authorized by “start next sprint” and is implemented; stop before D5.
+Deliver one sprint per explicit authorization, stop after its handoff, and do not interpret Continue as authorization for another sprint if the current one is complete. Interrupted work may resume. The initial request authorized planning; subsequent calls explicitly authorized D1, D2 and D3. D4 was authorized by “start next sprint” and is implemented; D5 was authorized by “start next sprint” and is implemented; stop before D6.
 
 Maintain this tracker after each completed task: checklists, decisions, blockers, exact checks and remaining limits. Update CODEBASE.md and relevant authoritative docs in the same change. Use docs/README.md for discovery. Historical trackers retain their history; their completed work is not restarted. Archive this tracker under docs/history/ when the sequence is complete, preserving current explanations in supporting docs.
 
@@ -153,15 +153,19 @@ D4 validation: frontend/browser/desktop production compilation, backend main/tes
 
 ### D5 — Host HTTPS and persistent pairing services
 
-- [ ] Separate host identity/trust/pairing storage from portable workspace settings. Create/renew unique CA/leaf material; preserve approval through workspace replacement.
-- [ ] Separate owner loopback access from opt-in HTTPS network access; close all API/static-binary/export/diagnostic/stream bypasses and replace wildcard paired-mode CORS.
-- [ ] Implement enrollment, code-bound host approval, durable credentials, browser cookies/CSRF, device list/revoke and strict owner-only management.
-- [ ] Implement local Open in browser handoff and standalone/Docker owner-bootstrap procedure; keep network peer approval available without the Electron host window.
-- [ ] Add structured pairing/access/TLS errors and bounded request logging with no credentials/codes/private keys. Extend OpenAPI and approved-agent instructions.
-- [ ] Define trusted-host lifecycle: pinning, changed trust verification, leaf renewal/address updates and public certificate export; no automatic OS trust changes.
-- [ ] Disposable service/API checks specifically for unapproved access, approval/retry/replay/expiry, revocation, restart persistence, certificate renewal, replacement identity and cookie/CSRF/CORS protections. Check both connectors, not only controller methods.
+- [x] Separate host identity/trust/pairing storage from portable workspace settings. Create/renew unique CA/leaf material; preserve approval through workspace replacement.
+- [x] Separate owner loopback access from opt-in HTTPS network access; close all API/static-binary/export/diagnostic/stream bypasses and replace wildcard paired-mode CORS.
+- [x] Implement enrollment, code-bound host approval, durable credentials, browser cookies/CSRF, device list/revoke and strict owner-only management.
+- [x] Implement local Open in browser handoff and standalone/Docker owner-bootstrap procedure; keep network peer approval available without the Electron host window.
+- [x] Add structured pairing/access/TLS errors and bounded request logging with no credentials/codes/private keys. Extend OpenAPI and approved-agent instructions.
+- [x] Define trusted-host lifecycle: pinning, changed trust verification, leaf renewal/address updates and public certificate export; no automatic OS trust changes.
+- [x] Disposable service/API checks specifically for unapproved access, approval/retry/replay/expiry, revocation, restart persistence, certificate renewal, replacement identity and cookie/CSRF/CORS protections. Check both connectors, not only controller methods.
 
 Acceptance: approval survives normal lifecycle changes, unapproved peers cannot use workspace APIs, and no reintroduced encrypted-note/login flow is required.
+
+D5 decisions/results: services are implemented in host/ with separate private host-access storage; existing host.json is reused. Public descriptor is GET /api/access/host. The managed owner key is distinct from lifecycle proof and supplied only by main. Standalone/Docker use explicit local bootstrap; Docker retains host-loopback publication despite container-internal 0.0.0.0. The minimal browser page supports enrollment and owner approval; final UI/discovery/client pinning/protected profiles remain D6. Incomplete enrollment expires after restart; approved but uncompleted entries can be revoked. No continuous address watcher or IPv6 listener yet; owner leaf renewal/startup refreshes SANs. HOST-ACCESS.md owns full contracts.
+
+Validation: seven backend, ten frontend and nine desktop focused cases passed, plus one real bundled-JVM crash/relaunch/preservation/bootstrap/approved-agent scenario. Both actual owner HTTP and trusted HTTPS connectors were checked with disposable storage and real restart, denied assets/APIs/owner routes, code/secret/replay/expiry/bounds/revoke, cookies/CSRF/origin/CORS, renewal and replacement generation isolation. Compilation, production build/package, targeted lint, desktop syntax and OpenAPI references passed. Added file-test assertion initially used the wrong token argument; corrected. No Docker, broad API smoke, live user storage, OS trust installation, visual browser/native or Mac checks. D4 manual save/OS-login and Mac checks remain pending. Stop before D6.
 
 ### D6 — Sharing, discovery, browser trust and server switching UX
 
@@ -224,7 +228,7 @@ Keep precise request/response schemas authoritative in OpenAPI during each API s
 | Interface | Access / purpose |
 | --- | --- |
 | GET /api/capabilities | Bounded pre-pair protocol/build discovery; no workspace contents |
-| GET /api/host | Bounded public host name/identity/protocol hint |
+| GET /api/access/host | Bounded public host name/identity/protocol hint |
 | POST /api/pairings; GET /api/pairings/{id}; POST /api/pairings/{id}/complete | Enrollment, secret-bound status and retry-safe credential/cookie completion |
 | POST /api/owner/pairings/{id}/approve or /reject | Owner-only code-verified decision |
 | GET /api/owner/devices; DELETE /api/owner/devices/{id} | Owner-only approved device listing/revocation |
@@ -245,7 +249,7 @@ Native platform interfaces cover connection verify/activate, host start/stop/sta
 | D2 | Implemented; Mac verification pending | Windows shell/native relaunch verified; build/lint, 4 Node and 33 frontend cases passed |
 | D3 | Implemented on Windows; Mac validation pending | Bundled Temurin/server, data ownership, portable editor/relaunch; Mac package build/native checks require access |
 | D4 | Implemented on Windows; manual OS/Mac validation pending | Native files/tray/login/quit; pending cases listed above |
-| D5 | Not started | Depends on D3–D4 |
+| D5 | Implemented | Disposable both-connector/restart checks passed; D6 UX pending |
 | D6 | Not started | Depends on D5 |
 | D7 | Not started | Depends on D6; required before LAN release |
 | D8 | Not started | Depends on D7; release feed is optional, local packages are baseline |
@@ -266,3 +270,5 @@ Deferred work: Android, Mac Intel, full offline database/sync, collaborative typ
 - 2026-10-04: implemented authorized D3 owned runtime/server and personal development package. Windows bundled JVM checks, portable native editing/relaunch, build/lint and focused frontend/profile checks passed; data preserved, no user storage/Docker touched. Mac build/native verification remains pending. Stopped before D4.
 
 - 2026-10-04: implemented authorized D4 native files, lifecycle and opt-in startup; updated authoritative desktop/platform/export/session/API/operations/codebase docs. Focused compilation/tests and disposable Windows native lifecycle/PDF preview passed; manual native dialog/OS-login and Mac verification remain. No LAN or D5 implementation.
+
+- 2026-10-04: completed authorized D5 host trust/listeners, pairing/owner browser access, CSRF and approved-agent/OpenAPI contracts. Updated codebase/platform/desktop/operations/API/index docs and HOST-ACCESS.md. Focused actual connectors/restart and transport tests passed; no D6 implementation or real deployment/trust changes.

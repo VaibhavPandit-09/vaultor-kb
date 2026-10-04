@@ -31,7 +31,7 @@ export class OwnedServer extends EventEmitter {
   async log(message) {
     if ((this.logPending ?? 0) >= 200) return; // Bound disk-write backlog as well as the visible ring.
     this.logPending = (this.logPending ?? 0) + 1;
-    const clean = String(message).replaceAll(this.ownerToken ?? '\0', '[redacted]').slice(0, 2000);
+    const clean = String(message).replaceAll(this.ownerToken ?? '\0', '[redacted]').replaceAll(this.accessKey ?? '\0', '[redacted]').slice(0, 2000);
     this.lines.push({ timestamp: new Date().toISOString(), message: clean }); if (this.lines.length > 200) this.lines.shift();
     const item = JSON.stringify(this.lines.at(-1)) + '\n';
     this.logs = this.logs.catch(() => {}).then(async () => {
@@ -72,7 +72,8 @@ export class OwnedServer extends EventEmitter {
       this.hostId = host.id;
       if (this.stopping) throw new Error('Local server startup was cancelled. Reconnect to start it again.');
       this.ownerToken = randomBytes(32).toString('hex');
-      const env = { ...process.env, VAULTOR_DESKTOP_DATA: this.data, VAULTOR_OWNER_PID: String(process.pid), VAULTOR_OWNER_TOKEN: this.ownerToken, DB_PATH: join(this.data, 'app.db'), STORAGE_PATH: join(this.data, 'files'), BUILD_VERSION: 'desktop-d3' };
+      this.accessKey = randomBytes(32).toString('hex');
+      const env = { ...process.env, VAULTOR_DESKTOP_DATA: this.data, VAULTOR_OWNER_PID: String(process.pid), VAULTOR_OWNER_TOKEN: this.ownerToken, VAULTOR_LOCAL_OWNER_KEY:this.accessKey, HOST_ACCESS_PATH:join(this.data,'host-access'), DB_PATH: join(this.data, 'app.db'), STORAGE_PATH: join(this.data, 'files'), BUILD_VERSION: 'desktop-d5' };
       for (const key of ['JAVA_TOOL_OPTIONS', 'JDK_JAVA_OPTIONS', '_JAVA_OPTIONS', 'CLASSPATH']) delete env[key];
       const child = this.spawnProcess(files.java, ['-Xms64m', '-Xmx768m', '-jar', files.jar, '--server.address=127.0.0.1', '--server.port=0', '--server.shutdown=graceful', '--spring.lifecycle.timeout-per-shutdown-phase=15s'], { cwd: this.data, env, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
       this.child = child;

@@ -1,8 +1,10 @@
 // Uses only the shared application API. Run against explicitly disposable storage.
 import assert from 'node:assert/strict';
+import { agentAccess } from './agent-access.mjs';
 import { randomUUID } from 'node:crypto';
 const base = process.argv[2] ?? 'http://127.0.0.1:18080';
 if (!process.argv.includes('--disposable')) throw new Error('Pass --disposable for a test workspace only.');
+const { fetch } = await agentAccess(base);
 const requestId = 'file-import-' + Date.now();
 async function call(method, path, body, expected = 200) {
   const response = await fetch(base + '/api' + path, { method, headers: { 'X-Request-ID': requestId }, body, signal: AbortSignal.timeout(20000) });

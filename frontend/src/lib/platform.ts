@@ -16,8 +16,25 @@ export interface PlatformServices {
   stream?: (path: string, signal: AbortSignal, receive: (data: unknown) => void) => Promise<{ close(): void }>;
 }
 const browserRequest = axios.getAdapter(axios.defaults.adapter);
+let browserAccess: { epoch: number; promise: Promise<string> } | undefined;
+const browserAdapter: AxiosAdapter = async config => {
+  if (!['get', 'head', 'options'].includes((config.method || 'get').toLowerCase())) {
+    const currentEpoch = getConnection().epoch;
+    if (browserAccess?.epoch !== currentEpoch) {
+      const promise = browserRequest({ ...config, baseURL: '/api', url: '/access/session', method: 'get', params: undefined, data: undefined, responseType: 'json', headers: new axios.AxiosHeaders(), signal: undefined }).then(response => {
+        const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+        if (typeof data.csrf !== 'string' || !data.csrf) throw new Error('Refresh your browser access session before making changes.');
+        return data.csrf as string;
+      }).catch(error => { if (browserAccess?.promise === promise) browserAccess = undefined; throw error; });
+      browserAccess = { epoch: currentEpoch, promise };
+    }
+    config.headers.set('X-Vaultor-CSRF', await browserAccess!.promise);
+    if (currentEpoch !== getConnection().epoch) throw new axios.CanceledError('Connection changed');
+  }
+  return browserRequest(config);
+};
 const browser: PlatformServices = {
-  kind: 'browser', request: browserRequest,
+  kind: 'browser', request: browserAdapter,
   async saveBlob(blob, filename) {
     const url = URL.createObjectURL(blob), link = document.createElement('a');
     link.href = url; link.download = filename; document.body.appendChild(link);

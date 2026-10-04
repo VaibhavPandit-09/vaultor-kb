@@ -1,5 +1,4 @@
 package com.vaultor.vaultor.config;
-import com.vaultor.vaultor.service.WorkspaceGate;
 import com.vaultor.vaultor.service.BuildInformation;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -11,9 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.util.UUID;
 
-@Component @RequiredArgsConstructor @Slf4j
+@Component @RequiredArgsConstructor @Slf4j @org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
 public class RequestLoggingFilter extends OncePerRequestFilter {
-    private final WorkspaceGate gate;
     private final BuildInformation build;
     @Override protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws ServletException, IOException {
         String supplied = req.getHeader("X-Request-ID");
@@ -21,17 +19,9 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         MDC.put("requestId", id); MDC.put("build", build.version());
         res.setHeader("X-Request-ID", id);
         long started = System.nanoTime();
-        boolean guarded = req.getRequestURI().matches("/api/(resources|tags|settings|collections|organization|workspace)(/.*)?");
-        boolean transfer = !java.util.List.of("GET","HEAD","OPTIONS").contains(req.getMethod()) && req.getRequestURI().matches("/api/(imports|exports|operations)(/.*)?");
-        boolean entered = transfer ? gate.enterTransferRequest() : !guarded || gate.enterRequest();
         try {
-            if (!entered) {
-                res.setStatus(409); res.setContentType("application/problem+json");
-                res.getWriter().write("{\"status\":409,\"code\":\"WORKSPACE_BUSY\",\"detail\":\"Workspace maintenance is in progress. Retry shortly.\",\"requestId\":\"" + id + "\"}");
-            } else chain.doFilter(req, res);
+            chain.doFilter(req, res);
         } finally {
-            if (guarded && entered) gate.leaveRequest();
-            if (transfer && entered) gate.leaveTransferRequest();
             if (req.getRequestURI().startsWith("/api/")) log.info("http method={} path={} status={} durationMs={}", req.getMethod(), req.getRequestURI(), res.getStatus(), (System.nanoTime()-started)/1_000_000);
             MDC.clear();
         }

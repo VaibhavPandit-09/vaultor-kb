@@ -32,6 +32,9 @@ VOLUME /data
 # Envrionment paths
 ENV DB_PATH=/data/app.db
 ENV STORAGE_PATH=/data/files
+ENV HOST_ACCESS_PATH=/data/host-access
+# Docker's published owner port stays on host loopback; requests still require owner access.
+ENV OWNER_BIND_ADDRESS=0.0.0.0
 
 COPY --from=backend-builder /app/target/vaultor-0.0.1-SNAPSHOT.jar app.jar
 

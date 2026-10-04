@@ -16,3 +16,5 @@ Root `README.md` and this discovery file are intentionally small entry points; s
 Preserve the resource-based model, structured Tiptap JSON, shared API client, shared settings/design tokens, and centralized Escape/focus behavior. Consult the guide's known limitations before changing saving, links, workspace operations, or import/export. Use disposable data for tests that mutate a workspace.
 
 When debugging, prefer existing API diagnostics and narrowly targeted service/component checks. Ordinary UI development does not require API testing. Use browser/native UI debugging only when necessary to establish a visual/interaction fact or explicitly requested by the user; avoid repetitive browser inspection.
+
+For local owner or paired LAN API access, follow [docs/HOST-ACCESS.md](docs/HOST-ACCESS.md). Never bypass approval/TLS/revision checks or expose credentials in logs, renderer storage, URLs or portable archives.

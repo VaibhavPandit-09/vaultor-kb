@@ -30,6 +30,8 @@ VOLUME /data
 # Define ENV vars that reference the volume
 ENV DB_PATH=/data/app.db
 ENV STORAGE_PATH=/data/files
+ENV HOST_ACCESS_PATH=/data/host-access
+ENV OWNER_BIND_ADDRESS=0.0.0.0
 
 # Copy JAR from builder
 COPY --from=builder /app/target/vaultor-0.0.1-SNAPSHOT.jar app.jar

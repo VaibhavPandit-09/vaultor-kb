@@ -19,10 +19,10 @@ class SessionRevisionTest {
  static final Path DATA;
  static {try{DATA=Files.createTempDirectory("vaultor-session-test-");
  try(var connection=java.sql.DriverManager.getConnection("jdbc:sqlite:"+DATA.resolve("app.db"));var statement=connection.createStatement()){statement.execute("CREATE TABLE resources (id varchar(255) PRIMARY KEY,type varchar(255) NOT NULL,title varchar(255) NOT NULL,content TEXT,created_at timestamp NOT NULL,updated_at timestamp NOT NULL)");statement.execute("INSERT INTO resources VALUES ('legacy-note','note','Legacy','{\"type\":\"doc\",\"content\":[]}','2026-09-29 00:00:00','2026-09-29 00:00:00')");}}catch(Exception e){throw new ExceptionInInitializerError(e);}}
- @DynamicPropertySource static void properties(DynamicPropertyRegistry p){p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());}
+ @DynamicPropertySource static void properties(DynamicPropertyRegistry p){p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.host.path",()->DATA.resolve("host-access").toString());p.add("app.storage.path",()->DATA.resolve("files").toString());}
  @Autowired Environment env; @Autowired ObjectMapper json; @Autowired WorkspaceIdentityService identities; @Autowired TransferService transfers; @Autowired TransactionTemplate transaction;
  HttpResponse<String> request(String method,String path,String body,String revision)throws Exception{
-  var b=HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+env.getProperty("local.server.port")+"/api"+path)).header("Content-Type","application/json");
+  var b=HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+env.getProperty("local.server.port")+"/api"+path)).header("Content-Type","application/json").header("X-Vaultor-Owner",Files.readString(DATA.resolve("host-access/owner.key")));
   if(revision!=null)b.header("If-Match","\""+revision+"\"");
   return HttpClient.newHttpClient().send(b.method(method,body==null?HttpRequest.BodyPublishers.noBody():HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());
  }

@@ -24,7 +24,7 @@ else {
     const stored = profiles.get(id);
     const profile = stored.source === 'bundled' ? { ...stored, address: await owned.start() } : stored;
     const probeTransport = new DesktopTransport();
-    const temporary = randomUUID(); probeTransport.activate(profile, temporary);
+    const temporary = randomUUID(); probeTransport.activate(profile, temporary, profile.source === 'bundled' ? owned.accessKey : undefined);
     const get = async path => {
       const response = await probeTransport.request({ token: temporary, id: randomUUID(), path, method: 'GET', headers: { 'X-Request-ID': randomUUID() }, timeout: 10000 });
       if (response.status !== 200) throw new Error(`Server check failed (${response.status}).`);
@@ -38,6 +38,13 @@ else {
     const ticket = issueTicket ? randomUUID() : undefined;
     if (issueTicket) { candidates.clear(); candidates.set(ticket, { profile, identity, expires: Date.now() + 60000 }); }
     return { ticket, profile, identity, differentWorkspace: Boolean(profile.workspaceId && profile.workspaceId !== identity.id), serverBuild: capabilities.serverBuild };
+  }
+  async function openOwnerBrowser() {
+    if(!owned.address || !owned.accessKey) throw new Error('Start the local host first.');
+    const response=await fetch(owned.address+'/api/owner/browser-ticket',{method:'POST',headers:{'X-Vaultor-Owner':owned.accessKey},redirect:'error',signal:AbortSignal.timeout(10000)});
+    if(!response.ok) throw new Error('Browser handoff failed. Retry from the local host.');
+    const value=await response.json();if(!/^[a-f0-9]{64}$/.test(value.ticket))throw new Error('Invalid browser handoff.');
+    await shell.openExternal(owned.address+'/access#ticket='+value.ticket);
   }
   function handle(channel, work) {
     ipcMain.handle(channel, async (event, value) => {
@@ -71,7 +78,7 @@ else {
         void probe('this-computer', false).then(checked => {
           if (token !== checkedToken || profiles.data.active !== 'this-computer' || owned.status !== 'ready') return;
           if (checked.differentWorkspace) throw new Error('The local workspace changed after restart. Reconnect to review it; drafts remain separate.');
-          transport.activate(checked.profile, token);
+          transport.activate(checked.profile, token, checked.profile.source === 'bundled' ? owned.accessKey : undefined);
         }).catch(error => { owned.error = error.message; transport.cancelAll(); transport.active = null; });
       } else if (['failed', 'restarting', 'stopped'].includes(owned.status) && profiles?.data?.active === 'this-computer') { transport.cancelAll(); transport.active = null; }
     });
@@ -81,7 +88,7 @@ else {
     handle('desktop:hosting',()=>({...hosting.snapshot(),error:hosting.error||hosting.snapshot().error,server:owned.snapshot()}));
     handle('desktop:login',enabled=>queue(()=>{if(hosting.error)throw new Error(hosting.error);return hosting.setLogin(enabled);}));
     handle('desktop:host-action',async action=>{
-      if(action==='browser'){if(!owned.address)throw new Error('Start the local host first.');await shell.openExternal(owned.address);return;}
+      if(action==='browser'){if(!owned.address)throw new Error('Start the local host first.');await openOwnerBrowser();return;}
       if(action==='start'){await owned.start();return;}
       if(action==='stop'){const approved=await requestQuitBarrier(false);if(!approved.success)throw new Error(approved.error);if(files.active.size||files.saves.size||files.dialogPending||transport.mutations.size)throw new Error('Finish current file operations first.');await owned.stop();return;}
       throw new Error('Invalid hosting action.');
@@ -100,7 +107,7 @@ else {
       if (latest.profile.source !== 'bundled') await owned.stop();
       await files.reset();
       await profiles.activate(candidate.profile.id, candidate.identity.id);
-      token = randomUUID(); transport.activate(latest.profile, token); candidates.clear();
+      token = randomUUID(); transport.activate(latest.profile, token, latest.profile.source === 'bundled' ? owned.accessKey : undefined); candidates.clear();
       return state();
     }));
     handle('desktop:request', value => transport.request(value));
@@ -138,7 +145,7 @@ else {
     try {
       const bitmap=Buffer.alloc(16*16*4); for(let y=0;y<16;y++) for(let x=0;x<16;x++){const i=(y*16+x)*4;const v=y>=4&&y<=12&&(x===Math.floor(4+(y-4)/2)||x===Math.floor(12-(y-4)/2));bitmap.set(v?[255,255,255,255]:[59,130,246,255],i);}
       tray=new Tray(nativeImage.createFromBitmap(bitmap,{width:16,height:16}));tray.setToolTip('Vaultor');tray.on('click',showApp);
-      const trayMenu=()=>tray.setContextMenu(Menu.buildFromTemplate([{label:'Show Vaultor',click:showApp},{label:'Open in browser',enabled:Boolean(owned.address),click:()=>void shell.openExternal(owned.address)},{type:'separator'},{label:'Quit Vaultor',click:()=>app.quit()}]));
+      const trayMenu=()=>tray.setContextMenu(Menu.buildFromTemplate([{label:'Show Vaultor',click:showApp},{label:'Open in browser',enabled:Boolean(owned.address),click:()=>void openOwnerBrowser().catch(error=>{owned.error=error.message;})},{type:'separator'},{label:'Quit Vaultor',click:()=>app.quit()}]));
       trayMenu();owned.on('status',trayMenu);
     } catch(error){ console.error('Tray unavailable:',error.message);window.show(); }
     powerMonitor.on('resume',()=>{window?.webContents.send('desktop:resume');});

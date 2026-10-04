@@ -1,7 +1,9 @@
 // Node 20+. Mutates only an explicitly acknowledged, initially empty test workspace.
 import assert from 'node:assert/strict';
+import { agentAccess } from './agent-access.mjs';
 const base = process.argv[2] ?? 'http://127.0.0.1:18080';
 if (!process.argv.includes('--disposable')) throw new Error('Pass --disposable only for an empty disposable workspace. This test performs replacement imports.');
+const { fetch } = await agentAccess(base);
 const requestId = `smoke-${Date.now()}`;
 async function request(method, path, body, raw = false) {
   const multipart = body instanceof FormData;

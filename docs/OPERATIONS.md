@@ -1,8 +1,8 @@
 # Development, Docker and debugging
 
-## Desktop development (D4)
+## Desktop development (D5)
 
-Run npm --prefix desktop ci, npm --prefix desktop run build, npm --prefix desktop run prepare-server, then npm --prefix desktop start. This computer starts its own bundled Temurin/Spring child and separate application-data workspace; remembered existing loopback servers remain available. package:dev creates a portable development folder requiring neither installed Java nor Docker. Build tools still need Java 25/Node. No LAN exposure or installer exists yet. [DESKTOP.md](DESKTOP.md) owns setup, ownership, paths, bounded logs, native files, tray/login lifecycle and transfer limits. Windows portable launch/editor/relaunch was verified on disposable data with no installed Java in its environment; Mac verification is pending.
+Run npm --prefix desktop ci, npm --prefix desktop run build, npm --prefix desktop run prepare-server, then npm --prefix desktop start. This computer starts its own bundled Temurin/Spring child and separate application-data workspace; remembered existing loopback servers remain available. package:dev creates a portable development folder requiring neither installed Java nor Docker. Build tools still need Java 25/Node. Sharing is off by default; D5 host HTTPS/pairing services are implemented, with D6 desktop/client UX pending. No installer exists yet. [DESKTOP.md](DESKTOP.md) owns setup, ownership, paths, bounded logs, native files, tray/login lifecycle and transfer limits. Windows portable launch/editor/relaunch was verified on disposable data with no installed Java in its environment; Mac verification is pending.
 
 ## D1 build and compatibility
 
@@ -22,7 +22,7 @@ Frontend text conversion caps at 5 MiB; CSV conversion caps at 10,000 rows, 500 
 
 ## Local development
 
-Install Java 25 and Node 20.19+ (Node 24 works). Use the checked-in Maven wrapper. Create backend/data/files before first standalone startup; SQLite needs its parent directory. In frontend run npm ci then npm run dev. In backend run ./mvnw spring-boot:run (PowerShell: .\mvnw.cmd spring-boot:run). Vite proxies /api to localhost:8080.
+Install Java 25 and Node 20.19+ (Node 24 works). Use the checked-in Maven wrapper. Create backend/data/files before first standalone startup; SQLite needs its parent directory. In frontend run npm ci then npm run dev. In backend run ./mvnw spring-boot:run (PowerShell: .\mvnw.cmd spring-boot:run). Vite proxies /api and /access to 127.0.0.1:8080 on fixed port 5173; use the local browser handoff described in HOST-ACCESS.md.
 
 Checks: frontend npm run build, npm run lint, npm test; backend ./mvnw test. Tests use disposable SQLite/storage. The production Dockerfile embeds frontend assets in Spring Boot. Backend-only Dockerfile does not build the UI.
 
@@ -34,12 +34,18 @@ docker compose up -d
 docker compose logs -f --tail 200 vaultor
 ~~~
 
-Compose binds 127.0.0.1:8080, stores /data in the named vaultor_data volume and restarts unless stopped. Existing data is retained. Do not run docker compose down -v on a real workspace. The workspace has no authentication. For deployment outside your own machine, make an explicit hosting/access decision rather than assuming this is a public multi-user service.
+Compose binds 127.0.0.1:8080, stores /data in the named vaultor_data volume and restarts unless stopped. Existing data is retained. Do not run docker compose down -v on a real workspace. Owner access now requires a local owner key/browser handoff; opt-in HTTPS clients require host approval. [HOST-ACCESS.md](HOST-ACCESS.md) owns bootstrap, trust, owner/device APIs and recovery. Do not expose the HTTP owner port on LAN or the Internet.
 
 | Environment | Default | Purpose |
 | --- | --- | --- |
 | DB_PATH | ./data/app.db (Docker /data/app.db) | SQLite file |
 | STORAGE_PATH | ./data/files (Docker /data/files) | Uploaded binaries; sibling operations/ stores transfer artifacts |
+| HOST_ACCESS_PATH | ./data/host-access (Docker /data/host-access) | Separate host secrets, approvals and sharing preference |
+| HOST_NETWORK_PORT | 8443 | Opt-in HTTPS listener; not published by Compose by default |
+| OWNER_BIND_ADDRESS | 127.0.0.1 (Docker 0.0.0.0 internally) | HTTP owner listener; publish only host loopback |
+| HOST_ACCESS_PATH | ./data/host-access (Docker /data/host-access) | Separate host secrets, approvals and sharing preference |
+| HOST_NETWORK_PORT | 8443 | Opt-in HTTPS listener; not published by Compose by default |
+| OWNER_BIND_ADDRESS | 127.0.0.1 (Docker 0.0.0.0 internally) | HTTP owner listener; publish only host loopback |
 | LOG_LEVEL | INFO | com.vaultor structured application log level |
 | MAX_UPLOAD_SIZE | 512MB | Multipart file/request cap |
 | MAX_ARCHIVE_BYTES | 536870912 | Compressed import/export limit |
@@ -55,12 +61,22 @@ The verification Compose file uses the built image, loopback port 18080 and a pr
 ~~~powershell
 docker compose build
 docker compose -p vaultor-check-unique -f docker-compose.yml -f docker-compose.verify.yml up -d --no-build
+# Copy only the disposable container's owner key to a private temporary file first.
+docker compose -p vaultor-check-unique -f docker-compose.yml -f docker-compose.verify.yml cp vaultor:/data/host-access/owner.key "$env:TEMP/vaultor-check-owner.key"
+$env:VAULTOR_OWNER_KEY_FILE = "$env:TEMP/vaultor-check-owner.key"
+# Copy only the disposable container's owner key to a private temporary file first.
+docker compose -p vaultor-check-unique -f docker-compose.yml -f docker-compose.verify.yml cp vaultor:/data/host-access/owner.key "$env:TEMP/vaultor-check-owner.key"
+$env:VAULTOR_OWNER_KEY_FILE = "$env:TEMP/vaultor-check-owner.key"
 node scripts/api-smoke.mjs http://127.0.0.1:18080 --disposable
+Remove-Item -LiteralPath $env:VAULTOR_OWNER_KEY_FILE
+Remove-Item Env:VAULTOR_OWNER_KEY_FILE
+Remove-Item -LiteralPath $env:VAULTOR_OWNER_KEY_FILE
+Remove-Item Env:VAULTOR_OWNER_KEY_FILE
 docker compose -p vaultor-check-unique -f docker-compose.yml -f docker-compose.verify.yml logs --tail 100
 docker compose -p vaultor-check-unique -f docker-compose.yml -f docker-compose.verify.yml down
 ~~~
 
-Wait for GET /api/health to return UP before running the script. Port 18080 must be free. The script intentionally creates/replaces test resources and leaves the volume for inspection. Normal production startup is separate from this verification.
+Use the disposable owner credential and wait for GET /api/health to return UP before running the script. Port 18080 must be free. The script intentionally creates/replaces test resources and leaves the volume for inspection. Normal production startup is separate from this verification.
 
 ## Correlating a UI failure
 
@@ -72,7 +88,7 @@ Use the failed response's X-Request-ID / problem requestId in Docker logs:
 docker compose logs --since 10m vaultor | Select-String 'the-request-id'
 ~~~
 
-Each API request logs method/path/status/duration. Transfer logs include operation ID, originating request ID, phase/progress and build. Unexpected backend errors include stacks. Logs are JSON on stdout/stderr, so no shell inside the container is needed. Configure Docker log rotation for long-running deployments. Browser diagnostics are best-effort bounded batches; their absence does not prove the browser had no error.
+Each API request logs method/path/status/duration. Transfer logs include operation ID, originating request ID, phase/progress and build. Unexpected backend errors include stacks. Logs are JSON on stdout/stderr, so no shell inside the container is needed. Compose limits JSON logs to three 10 MiB files; standalone stdout redirection needs its own rotation. Browser diagnostics are best-effort bounded batches; their absence does not prove the browser had no error.
 
 409 WORKSPACE_BUSY is temporary: wait for the transfer. Save failed retains the draft; restore backend connectivity and Retry before leaving. A CLEANUP operation reports that data already committed; a restart retries obsolete-file cleanup. Failed pre-commit operations leave the original metadata intact and may be retried from a fresh preview. Integrity findings are reports, never automatic repairs.
 

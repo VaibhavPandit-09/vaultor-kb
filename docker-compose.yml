@@ -8,6 +8,11 @@ services:
     volumes:
       - vaultor_data:/data
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   vaultor_data:

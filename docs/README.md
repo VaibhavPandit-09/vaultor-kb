@@ -1,6 +1,8 @@
 # Documentation
 
-- [Desktop and private-network plan](desktop-network-plan.md): D1–D4 foundation, owned bundled server and native files/lifecycle implemented on Windows; manual OS/Mac validation pending. D5–D9 pairing, browser/LAN access and zero-cost update delivery remain; D10 Ubuntu follow-up. One sprint per authorization.
+- [Desktop and private-network plan](desktop-network-plan.md): D1–D5 foundation, owned bundled server, native files/lifecycle and host HTTPS/pairing services implemented on Windows; manual OS/Mac validation pending. D6–D9 connection/trust UX, concurrent clients and zero-cost update delivery remain; D10 Ubuntu follow-up. One sprint per authorization.
+- [Host access and pairing](HOST-ACCESS.md): owner/browser bootstrap, opt-in HTTPS, stable host trust, device approval/revoke, CSRF, approved agents and current limits.
+- [Host access and pairing](HOST-ACCESS.md): owner/browser bootstrap, opt-in HTTPS, stable host trust, device approval/revoke, CSRF, approved agents and current limits.
 - [Desktop shell and connections](DESKTOP.md): bundled runtime/server packages, data/process ownership, startup logs, loopback profiles, persistent sessions, native bridge and current limits.
 - [Platform and connection boundary](PLATFORM.md): browser/platform transport, cancellation, protocol checks, download outcomes, build diagnostics and sidebar shortcut migration.
 

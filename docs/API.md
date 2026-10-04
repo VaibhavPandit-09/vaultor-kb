@@ -1,10 +1,14 @@
 # Agent and UI API guide
 
-## Client compatibility (D1)
+## Host access (D5)
+
+[HOST-ACCESS.md](HOST-ACCESS.md) owns authorization and its examples. Public GET /api/capabilities and /api/access/host expose bounded build/trust information. Everything else requires the owner HTTP connector or an approved HTTPS device/browser session; X-Vaultor-Owner is main/private-local only, Authorization: Bearer is HTTPS client only, browser mutations require X-Vaultor-CSRF. Never strip If-Match, disable TLS checking, forward credentials to another origin or bypass approval to debug. OpenAPI 1.2.0 documents global security schemes, public exceptions and owner-only operations. HOST_ACCESS_PATH is excluded from archives and workspace replacement.
+
+## Client compatibility
 
 Before opening a workspace or sending application requests, clients inspect `GET /api/capabilities` (`getCapabilities`). The explicit DTO includes `serverBuild`, `apiProtocolVersion` and `minimumClientProtocolVersion`, plus existing transfer/export/diagnostic metadata; `build` is the server-build alias. Current client/server protocol is 1. Accept only a protocol inside the server's inclusive supported range. Build strings identify releases, not compatibility. Missing metadata or an older protocol requires updating the server; a higher minimum requires updating the client. Frontend/backend must be deployed together. See [PLATFORM.md](PLATFORM.md) for handshake caching, cancellation and platform ownership.
 
-Frontend diagnostic events retain `build` (client build), optional `serverBuild`, `apiProtocolVersion` (client protocol) and `connectionEpoch` (ephemeral delivery ownership), alongside existing bounded fields. All requests, including bootstrap and diagnostic batches, carry `X-Request-ID`. Failed binary downloads preserve bounded JSON problem details rather than treating the problem as a downloaded file. No new authentication, host switching, event-stream endpoint or storage schema is introduced by D1.
+Frontend diagnostic events retain `build` (client build), optional `serverBuild`, `apiProtocolVersion` (client protocol) and `connectionEpoch` (ephemeral delivery ownership), alongside existing bounded fields. All requests, including bootstrap and diagnostic batches, carry `X-Request-ID`. Failed binary downloads preserve bounded JSON problem details rather than treating the problem as a downloaded file. Capabilities now report authentication=true for D5 host access; protocol remains 1 and resource contracts are unchanged. Bounded capabilities/host identity are public; workspace/diagnostic/OpenAPI access requires approval. No stream is implemented yet.
 
 ## Ordinary file import
 
@@ -12,9 +16,9 @@ Frontend diagnostic events retain `build` (client build), optional `serverBuild`
 
 `scripts/file-import-smoke.mjs` tests this flow against disposable storage, including byte preservation and retries. Frontend conversion choices/limits are in CODEBASE.md.
 
-The application and agents use the same unauthenticated API. Default origin: http://127.0.0.1:8080. Machine-readable specification: GET /api/openapi.json. Discover build/features at GET /api/capabilities and available export formats at GET /api/export-formats. Workspace ZIP and individual note Markdown/ZIP/PDF/DOCX exports are enabled; see NOTE-EXPORTS.md.
+The application and approved agents use the same APIs, protected by local owner access or paired LAN credentials. See [HOST-ACCESS.md](HOST-ACCESS.md) for enrollment, browser CSRF, owner bootstrap and agent authorization. Default origin: http://127.0.0.1:8080. Machine-readable specification: GET /api/openapi.json. Discover build/features at GET /api/capabilities and available export formats at GET /api/export-formats. Workspace ZIP and individual note Markdown/ZIP/PDF/DOCX exports are enabled; see NOTE-EXPORTS.md.
 
-D3's owned desktop server uses an OS-assigned 127.0.0.1 port; find its current browser address in the desktop connection bar/Details. Ordinary API contracts/protocol are unchanged. Its lifecycle control is private stdio, not an API endpoint or an agent bypass. Diagnostics in desktop also includes bounded local startup/crash logs obtained through validated main/preload IPC. Standalone/Docker port defaults remain unchanged; see [DESKTOP.md](DESKTOP.md).
+The owned desktop server uses an OS-assigned 127.0.0.1 port; find its current browser address in the desktop connection bar/Details. Ordinary API contracts/protocol are unchanged. Its lifecycle control is private stdio, not an API endpoint or an agent bypass. Diagnostics in desktop also includes bounded local startup/crash logs obtained through validated main/preload IPC. Standalone/Docker port defaults remain unchanged; see [DESKTOP.md](DESKTOP.md).
 
 ## Request and response rules
 

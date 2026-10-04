@@ -7,11 +7,12 @@ import { join } from 'node:path';
 import { createServer } from 'node:net';
 import { spawn } from 'node:child_process';
 import { OwnedServer, verifyBundle } from '../src/owned-server.mjs';
+import { agentAccess } from '../../scripts/agent-access.mjs';
 
 const bundle = fileURLToPath(new URL('../bundle/', import.meta.url));
 const temp = () => mkdtemp(join(tmpdir(), 'vaultor-owned-test-'));
 const wait = async predicate => { for (let n = 0; n < 240; n++) { if (predicate()) return; await new Promise(r => setTimeout(r, 250)); } throw new Error('State did not settle'); };
-const get = async (host, path) => { const response = await fetch(host.address + '/api' + path); assert.equal(response.status, 200); return response.json(); };
+const get = async (host, path) => { const response = await fetch(host.address + '/api' + path,{headers:{'X-Vaultor-Owner':host.accessKey}}); assert.equal(response.status, 200); return response.json(); };
 
 test('bundle failures preserve files; space/log bounds are actionable', { timeout: 30000 }, async () => {
   const data = await temp(); await writeFile(join(data, 'sentinel'), 'keep');
@@ -36,9 +37,25 @@ test('real bundled JVM uses private ownership, locked data, ephemeral port and p
     const addresses = await Promise.all([host.start(), host.start()]); assert.equal(addresses[0], addresses[1]);
     assert.notEqual(Number(new URL(host.address).port), occupied.address().port);
     const identity = await get(host, '/workspace/identity'); assert.equal((await get(host, '/health')).status, 'UP');
+    assert.equal((await fetch(host.address+'/api/health')).status,401);
+    await host.log('Owner material '+host.accessKey);assert.equal(JSON.stringify(host.snapshot()).includes(host.accessKey),false);
+    const previousKeyFile=process.env.VAULTOR_OWNER_KEY_FILE;
+    try {
+      process.env.VAULTOR_OWNER_KEY_FILE=join(data,'host-access','owner.key');const approved=await agentAccess(host.address);
+      assert.equal((await approved.fetch(host.address+'/api/health')).status,200);
+      await assert.rejects(approved.fetch('http://example.com/api/health'),/cross server origins/);
+    } finally {if(previousKeyFile===undefined)delete process.env.VAULTOR_OWNER_KEY_FILE;else process.env.VAULTOR_OWNER_KEY_FILE=previousKeyFile;}
+    const runtime=await verifyBundle(bundle);
+    const output=await new Promise((resolve,reject)=>{
+      const child=spawn(runtime.java,['-jar',runtime.jar,'--owner-bootstrap='+host.address,'--host-access='+join(data,'host-access')],{windowsHide:true,stdio:['ignore','pipe','pipe']});let result='';
+      child.stdout.on('data',chunk=>{result+=chunk;if(result.length>8192)child.kill();});child.once('error',reject);child.once('close',code=>code===0?resolve(result.trim()):reject(new Error('Owner bootstrap command failed')));
+    });
+    const handoff=new URL(output);assert.equal(handoff.origin,host.address);const ticket=new URLSearchParams(handoff.hash.slice(1)).get('ticket');assert.match(ticket,/^[a-f0-9]{64}$/);
+    const browser=await fetch(host.address+'/api/access/bootstrap',{method:'POST',headers:{'Content-Type':'application/json','Origin':host.address},body:JSON.stringify({ticket})});assert.equal(browser.status,200);
+    const ownerCookie=browser.headers.get('set-cookie').split(';')[0];assert.equal((await fetch(host.address+'/api/owner/devices',{headers:{Cookie:ownerCookie}})).status,200);
     const hostId = host.hostId;
-    const html = await fetch(host.address + '/'); assert.equal(html.status, 200); assert.match(await html.text(), /<html/);
-    const created = await fetch(host.address + '/api/resources', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'Owned test', type: 'note', content: { type: 'doc', content: [{ type: 'paragraph' }] } }) });
+    const html = await fetch(host.address + '/', {headers:{'X-Vaultor-Owner':host.accessKey}}); assert.equal(html.status, 200); assert.match(await html.text(), /<html/);
+    const created = await fetch(host.address + '/api/resources', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Vaultor-Owner':host.accessKey }, body: JSON.stringify({ title: 'Owned test', type: 'note', content: { type: 'doc', content: [{ type: 'paragraph' }] } }) });
     assert.ok(created.ok, await created.text());
     await assert.rejects(other.start(), /startup/); assert.ok(other.lines.some(l => l.message.includes('already in use')));
     assert.equal((await get(host, '/workspace/identity')).id, identity.id);

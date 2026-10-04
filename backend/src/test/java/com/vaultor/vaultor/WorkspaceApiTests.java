@@ -23,6 +23,7 @@ class WorkspaceApiTests {
     static final Path DATA;
     static { try { DATA=Files.createTempDirectory("vaultor-api-test-"); } catch(Exception e) {throw new ExceptionInInitializerError(e);} }
     @DynamicPropertySource static void properties(DynamicPropertyRegistry p) {
+        p.add("app.host.path",()->DATA.resolve("host-access").toString());
         p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());
     }
     @Autowired Environment env;
@@ -37,7 +38,7 @@ class WorkspaceApiTests {
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
     HttpClient client=HttpClient.newHttpClient();
     HttpResponse<String> request(String method,String path,Object body) throws Exception {
-        var builder=HttpRequest.newBuilder(URI.create("http://localhost:"+env.getProperty("local.server.port")+"/api"+path)).header("X-Request-ID","test-request");
+        var builder=HttpRequest.newBuilder(URI.create("http://localhost:"+env.getProperty("local.server.port")+"/api"+path)).header("X-Request-ID","test-request").header("X-Vaultor-Owner",Files.readString(DATA.resolve("host-access/owner.key")));
         builder.method(method,body==null?HttpRequest.BodyPublishers.noBody():HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).header("Content-Type","application/json");
         return client.send(builder.build(),HttpResponse.BodyHandlers.ofString());
     }

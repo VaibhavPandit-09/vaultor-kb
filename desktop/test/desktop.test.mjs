@@ -37,6 +37,7 @@ test('renderer boundaries reject external APIs, arbitrary headers/methods, overs
   for (const value of ['file:///tmp/a', 'javascript:alert(1)', 'vaultor://app/']) assert.throws(() => externalAddress(value));
   assert.equal(externalAddress('https://example.com'), 'https://example.com/');
   assert.throws(() => validateRequest({ ...request(), headers: { Authorization: 'anything' } }, 'token'));
+  assert.throws(() => validateRequest({ ...request(), headers: { 'X-Vaultor-Owner': 'anything' } }, 'token'));
   assert.throws(() => validateRequest({ ...request(), method: 'CONNECT' }, 'token'));
   assert.throws(() => validateRequest({ ...request(), token: 'old' }, 'token'));
   assert.throws(() => validateRequest({ ...request(), method: 'POST', body: { kind: 'text', value: 'x'.repeat(MAX_BYTES + 1) } }, 'token'));

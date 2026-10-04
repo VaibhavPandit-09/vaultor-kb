@@ -11,7 +11,7 @@ export async function boundedResponse(response) {
 }
 export class DesktopTransport {
   active = null; requests = new Map(); mutations = new Set();
-  activate(profile, token) { this.cancelAll(); this.active = { profile, token }; }
+  activate(profile, token, ownerKey) { this.cancelAll(); this.active = { profile, token, ownerKey }; }
   cancel(id) { this.requests.get(id)?.abort(); }
   cancelAll() { for (const controller of this.requests.values()) controller.abort(); }
   async request(value) {
@@ -22,7 +22,7 @@ export class DesktopTransport {
     if (!['GET', 'HEAD'].includes(value.method)) this.mutations.add(value.id);
     const timer = setTimeout(() => controller.abort(), value.timeout);
     try {
-    const headers = { ...value.headers }; let body;
+    const headers = { ...value.headers, ...(this.active.ownerKey ? { 'X-Vaultor-Owner': this.active.ownerKey } : {}) }; let body;
     if (value.body?.kind === 'text') body = value.body.value;
     if (value.body?.kind === 'multipart') {
       for (const key of Object.keys(headers)) if (key.toLowerCase() === 'content-type') delete headers[key];

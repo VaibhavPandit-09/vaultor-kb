@@ -16,10 +16,7 @@ import java.io.IOException;
 public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins("*")
-                .allowedMethods("*")
-                .allowedHeaders("*");
+        // Same-origin browser access; Electron main uses the private owner channel.
     }
 
     @Override

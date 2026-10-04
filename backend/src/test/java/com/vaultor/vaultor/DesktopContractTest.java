@@ -28,10 +28,10 @@ class DesktopContractTest {
         assertEquals(capabilities.build(),capabilities.serverBuild());
         assertEquals(1,capabilities.apiProtocolVersion());
         assertEquals(1,capabilities.minimumClientProtocolVersion());
-        assertFalse(capabilities.authentication());
+        assertTrue(capabilities.authentication());
     }
     @Test void requestLogsAndResponsesKeepTheirBuildAndCorrelation() throws Exception {
-        var filter = new RequestLoggingFilter(mock(WorkspaceGate.class),new BuildInformation("test-build"));
+        var filter = new RequestLoggingFilter(new BuildInformation("test-build"));
         var request = new MockHttpServletRequest("GET","/api/capabilities");
         request.addHeader("X-Request-ID","client-id");
         var response = new MockHttpServletResponse();

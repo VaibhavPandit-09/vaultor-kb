@@ -40,7 +40,7 @@ public class DiagnosticsController {
         resources.count(); return Map.of("status","UP","ready",!gate.busy(),"workspaceBusy",gate.busy(),"build",build.version(),"requestId",Optional.ofNullable(MDC.get("requestId")).orElse(""));
     }
     public record Capabilities(String build, String serverBuild, int apiProtocolVersion, int minimumClientProtocolVersion, boolean authentication, List<String> workspaceTransfer, String exportFormats, String openapi, String diagnosticsRetention) {}
-    @GetMapping("/capabilities") public Capabilities capabilities() { return new Capabilities(build.version(),build.version(),BuildInformation.API_PROTOCOL_VERSION,BuildInformation.MINIMUM_CLIENT_PROTOCOL_VERSION,false,List.of("merge","replace"),"/api/export-formats","/api/openapi.json","200 events / 24 hours / process lifetime"); }
+    @GetMapping("/capabilities") public Capabilities capabilities() { return new Capabilities(build.version(),build.version(),BuildInformation.API_PROTOCOL_VERSION,BuildInformation.MINIMUM_CLIENT_PROTOCOL_VERSION,true,List.of("merge","replace"),"/api/export-formats","/api/openapi.json","200 events / 24 hours / process lifetime"); }
     @GetMapping("/diagnostics/integrity") public Map<String,Object> integrity() {
         if(!gate.enterRequest()) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,"Workspace transfer in progress");
         try {

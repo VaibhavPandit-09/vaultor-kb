@@ -24,11 +24,12 @@ test('native saves cancel without fetching; failed writes retain destination; re
 
 test('selected binaries above IPC limit stream as multipart; previews support ranges and stay bounded', async()=>{
   const root=await mkdtemp(join(tmpdir(),'vaultor-stream-'));const source=join(root,'large.csv');await writeFile(source,Buffer.alloc(33*1024*1024,65));
-  let received=0,contentType='';const server=createServer(async(req,res)=>{contentType=req.headers['content-type'];for await(const data of req)received+=data.length;res.end('{}');});
-  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const owner={token:'one',profile:{address:'http://127.0.0.1:'+server.address().port}};
+  let received=0,contentType='';const server=createServer(async(req,res)=>{assert.equal(req.headers['x-vaultor-owner'],'private-owner');contentType=req.headers['content-type'];for await(const data of req)received+=data.length;res.end('{}');});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const owner={token:'one',ownerKey:'private-owner',profile:{address:'http://127.0.0.1:'+server.address().port}};
   const files=new NativeFiles({directory:join(root,'cache'),owner:()=>owner,dialogs:{open:async()=>({canceled:false,filePaths:[source]})}});
   try{
-    const [selected]=await files.pick({token:'one'});const transport=new DesktopTransport();transport.files=files;transport.activate(owner.profile,'one');
+    const [selected]=await files.pick({token:'one'});const transport=new DesktopTransport();transport.files=files;transport.activate(owner.profile,'one',owner.ownerKey);
+    const binary=await files.response('/resources/id/raw',owner.token,new AbortController().signal);await binary.arrayBuffer();received=0;
     await transport.request({token:'one',id:'upload',path:'/resources/upload',method:'POST',timeout:30000,headers:{'content-type':'multipart/form-data'},body:{kind:'multipart',parts:[{name:'file',fileId:selected.id,filename:'large.csv',type:'text/csv'}]}});
     assert.ok(received>selected.size);assert.match(contentType,/^multipart\/form-data; boundary=vaultor-/);assert.equal(transport.mutations.size,0);
     files.limit=16;files.response=async()=>new Response('abcdef',{headers:{'content-type':'application/pdf'}});

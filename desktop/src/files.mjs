@@ -86,7 +86,7 @@ export class NativeFiles {
   async cancel({ token, id }) { this.connection(token); const save = this.saves.get(id); if (save?.token === token) { this.saves.delete(id); await save.handle.close(); await rm(save.temp, { force: true }); } }
   async response(path, token, signal) {
     const current = this.connection(token); fileApiPath(path);
-    const response = await fetch(loopbackAddress(current.profile.address) + '/api' + path, { redirect: 'error', signal, headers: { 'X-Request-ID': randomUUID() } });
+    const response = await fetch(loopbackAddress(current.profile.address) + '/api' + path, { redirect: 'error', signal, headers: { 'X-Request-ID': randomUUID(), ...(current.ownerKey ? { 'X-Vaultor-Owner': current.ownerKey } : {}) } });
     if (!response.ok) { const reader = response.body?.getReader(); let message = ''; try { const part = await reader?.read(); if (part) message = new TextDecoder().decode(part.value.subarray(0, 65536)); } finally { await reader?.cancel(); } let detail; try { detail = JSON.parse(message).detail; } catch {} throw new Error((detail || `File request failed (${response.status})`) + ' · ' + (response.headers.get('x-request-id') ?? '')); }
     if (Number(response.headers.get('content-length')) > this.limit) { await response.body?.cancel(); throw new Error('File exceeds the desktop 512 MiB limit.'); } return response;
   }
