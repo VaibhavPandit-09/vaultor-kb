@@ -2,7 +2,8 @@ import { flushSync } from 'react-dom';
 type LinkItem = { id: string; title: string; type: 'note' | 'file'; virtual: boolean };
 import { useState, useEffect, useCallback } from 'react';
 import { Editor } from '@tiptap/react';
-import { FileText, File, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { resourceKind } from '../../lib/resourceKinds';
 import api from '../../lib/api';
 import { resourceLinkPluginKey, type ResourceLinkState } from './ResourceLinkExtension';
 
@@ -124,7 +125,7 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
         </div>
       )}
       
-      {items.map((item, index) => (
+      {items.map((item, index) => {const Icon=resourceKind(item.type).icon;return (
         <button
           key={item.id}
           className={`w-full flex items-center px-3 py-2 text-sm text-left transition-colors ${
@@ -132,15 +133,15 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
           }`}
           onClick={() => selectItem(index)}
         >
-          {item.type === 'note' ? <FileText size={16} className={`mr-3 ${item.virtual ? 'text-green-400' : 'opacity-70'}`} /> : <File size={16} className={`mr-3 ${item.virtual ? 'text-green-400' : 'opacity-70'}`} />}
+          <Icon size={16} className={`mr-3 ${item.virtual ? 'text-green-400' : 'opacity-70'}`} />
           <div className={`flex-1 truncate ${item.virtual ? 'italic text-slate-400' : ''}`}>
             {item.virtual ? item.title : item.title}
           </div>
           <div className="text-[10px] ml-2 uppercase opacity-50 font-semibold tracking-wider">
-             {item.virtual ? 'New' : item.type}
+             {item.virtual ? 'New' : resourceKind(item.type).label}
           </div>
         </button>
-      ))}
+      );})}
     </div>
   );
 }

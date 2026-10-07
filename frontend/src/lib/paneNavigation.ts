@@ -1,3 +1,4 @@
+import { resourceKind } from './resourceKinds';
 import type { Resource } from '../types';
 export type ReadingPosition = { scrollTop: number; scrollLeft: number; selection?: { from: number; to: number } };
 export type Visit = { visitId: string; resourceId: string; title: string; unavailable?: boolean };
@@ -71,6 +72,7 @@ export class PaneNavigation {
       const resource = await dep.load(id);
       if (!valid()) return;
       if (!resource) throw new Error('Resource could not be loaded.');
+      if (resourceKind(resource.type).mode === 'unsupported') throw new Error('This resource type is not supported by this app: '+resource.type);
       if (resource.type !== 'note' && intent === 'history') throw new ResourceUnavailableError('This journey step is no longer a note.');
       if (resource.type !== 'note') { dep.preview(resource, sourcePaneId); return; }
       if (intent === 'link' && destination === 'here' && source?.id === id) return;

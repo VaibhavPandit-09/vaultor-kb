@@ -25,22 +25,21 @@ beforeEach(() => {
   vi.mocked(api.get).mockImplementation(async url=>({data:url==='/collections'?{items:[{id:'atlas',name:'Atlas',count:100}],totalPages:1,totalItems:1}:{id:'atlas',name:'Atlas',count:100}}));
 });
 afterEach(() => { cleanup(); vi.resetAllMocks(); vi.unstubAllGlobals(); });
-it('uses independent grouped previews and bounded full pages', async () => {
+it('uses one mixed bounded page and filters without per-type query fanout', async () => {
   const open=vi.fn();
   render(<LibraryView section="library" visible tags={[]} hasNotes onReturn={() => {}} onOpen={open} />);
-  await screen.findByText('Note 0');
-  expect(screen.getAllByRole('listitem').length).toBe(14);
-  expect(screen.getByText('205')).toBeTruthy();
-  expect(browseResources).toHaveBeenCalledWith(expect.objectContaining({type:'file',size:12}),expect.any(AbortSignal));
-  expect(screen.queryByText('Note 99')).toBeNull();
-  fireEvent.click(screen.getByTitle('Note 0')); expect(open).toHaveBeenCalledWith('Note-0');
-  fireEvent.click(screen.getByRole('button',{name:'View all notes'}));
   await screen.findByText('Note 99');
+  expect(screen.getAllByRole('listitem').length).toBe(100);
+  expect(browseResources).toHaveBeenCalledTimes(1);
+  expect(browseResources).toHaveBeenCalledWith(expect.objectContaining({type:'all',size:100}),expect.any(AbortSignal));
+  fireEvent.click(screen.getByTitle('Note 0')); expect(open).toHaveBeenCalledWith('Note-0');
   fireEvent.click(screen.getByText('Next'));
   await waitFor(() => expect(browseResources).toHaveBeenLastCalledWith(expect.objectContaining({page:1,size:100}),expect.any(AbortSignal)));
-  fireEvent.click(screen.getByRole('button',{name:'Search options'}));
-  fireEvent.change(screen.getByLabelText('Resource type'),{target:{value:'file'}});
+  fireEvent.click(screen.getByRole('button',{name:'Filter resource type'}));
+  fireEvent.change(screen.getByLabelText('Find a type'),{target:{value:'fil'}});
+  fireEvent.click(screen.getByRole('button',{name:'Files'}));
   await waitFor(() => expect(browseResources).toHaveBeenLastCalledWith(expect.objectContaining({page:0,type:'file'}),expect.any(AbortSignal)));
+  expect(screen.queryByRole('dialog')).toBeNull();
 });
 it('offers retry on a failed page and keeps pin failures visible', async () => {
   vi.mocked(browseResources).mockRejectedValueOnce(new Error('Unavailable'));
@@ -66,8 +65,6 @@ it('combines collection and tag filtering and scopes selection to the current pa
   await screen.findByText('Note 0');
   expect(browseResources).toHaveBeenCalledWith(expect.objectContaining({collection:'atlas',tags:['topic']}),expect.any(AbortSignal));
   fireEvent.click(screen.getByLabelText('Select Note 0'));expect(screen.getByText('1 selected')).toBeTruthy();
-  fireEvent.click(screen.getByText('Select visible resources'));expect(screen.getByText('14 selected')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button',{name:'View all notes'}));await screen.findByText('Note 99');
   fireEvent.click(screen.getByText('Select visible resources'));expect(screen.getByText('100 selected')).toBeTruthy();
   fireEvent.click(screen.getByText('Next'));await waitFor(()=>expect(screen.queryByText('100 selected')).toBeNull());
 });

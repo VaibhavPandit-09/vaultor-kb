@@ -29,5 +29,11 @@ class SidebarSettingsTest {
         service.patch(mapper.readTree("{\"local\":{\"device\":{\"sidebarSections\":{\"pinned\":{\"collapsed\":true}}}}}"));
         assertFalse(service.getSettings().local().get("device").sidebarSections().get("pinned").visible());
         assertEquals(3,service.getSettings().local().get("device").sidebarSections().size());
+        service.patch(mapper.readTree("{\"local\":{\"device\":{\"sidebarSections\":{\"pinned\":{\"type\":\"collection\"},\"recent\":{\"type\":\"future\"}}}}}"));
+        assertEquals("collection",service.getSettings().local().get("device").sidebarSections().get("pinned").type());
+        assertEquals("future",service.getSettings().local().get("device").sidebarSections().get("recent").type());
+        assertTrue(service.getSettings().local().get("device").sidebarSections().get("recent").collapsed());
+        service.patch(mapper.readTree("{\"local\":{\"device\":{\"sidebarSections\":{\"recent\":{\"type\":\"bad value\"}}}}}"));
+        assertEquals("all",service.getSettings().local().get("device").sidebarSections().get("recent").type());
     }
 }

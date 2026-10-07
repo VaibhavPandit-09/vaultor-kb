@@ -15,7 +15,8 @@ import OrganizationManager from './OrganizationManager';
 import type { OrganizationItem } from '../lib/organization';
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Search, RefreshCw } from 'lucide-react';
-import { resourceKinds, resourceKind } from '../lib/resourceKinds';
+import ResourceTypeFilter from './ResourceTypeFilter';
+import { resourceKind } from '../lib/resourceKinds';
 import { useResourcePage } from '../lib/useResourcePage';
 
 export type LibrarySection = 'library' | 'recent' | 'favorites' | 'collections';
@@ -40,13 +41,10 @@ export default function LibraryView({ section, visible, tags, onOpen, onReturn, 
   const [previousScope,setPreviousScope]=useState(scopeKey);
   if(previousScope!==scopeKey){setPreviousScope(scopeKey);setPage(0);}
   const criteria = { collection: collection?.id, q: search, searchMode, sort: section === 'recent' ? 'recent' as const : sort, tags, favorites: section === 'favorites' };
-  const notes = useResourcePage({ ...criteria, type: 'note', page: 0, size: 12 }, visible && type === 'all');
-  const files = useResourcePage({ ...criteria, type: 'file', page: 0, size: 12 }, visible && type === 'all');
-  const single = useResourcePage({ ...criteria, type, page, size: 100 }, visible && type !== 'all');
-  const items = useMemo(() => type === 'all' ? [...notes.data?.items??[], ...files.data?.items??[]] : single.data?.items??[], [type,notes.data,files.data,single.data]);
-  const totalItems = type === 'all' ? (notes.data?.totalItems??0) + (files.data?.totalItems??0) : single.data?.totalItems??0;
-  const loading = type === 'all' ? notes.loading || files.loading : single.loading;
-  const retry = () => { notes.retry(); files.retry(); single.retry(); };
+  const result = useResourcePage({ ...criteria, type, page, size: 100 }, visible);
+  const items = useMemo(() => result.data?.items ?? [], [result.data]);
+  const totalItems = result.data?.totalItems ?? 0, loading = result.loading;
+  const retry = result.retry;
   const viewKey=JSON.stringify([page,search,searchMode,type,sort,scopeKey]);
   const [previousView,setPreviousView]=useState(viewKey);
   if(previousView!==viewKey){setPreviousView(viewKey);setSelected([]);}
@@ -59,19 +57,17 @@ export default function LibraryView({ section, visible, tags, onOpen, onReturn, 
     {detail.error&&<p role="alert">{detail.error}<button className="library-button" onClick={detail.retry}>Retry collection</button></p>}
     <div className="library-filters">
       <label className="library-search"><Search size={17}/><input aria-label="Search resources" placeholder={searchMode==='title'?'Search resource titles…':'Search titles and saved note text…'} value={query} onChange={e=>setQuery(e.target.value)}/></label>
-      <LibraryPopover label="Search options">{()=> <><ResourceSearchOptions mode={searchMode} onMode={mode=>{setSearchMode(mode);setPage(0);}} collection={currentCollection} onCollection={onCollection}/><label className="text-sm">Resource type<select className="organization-input w-full mt-1" aria-label="Resource type" value={type} onChange={e=>{setType(e.target.value);setPage(0);}}><option value="all">All types</option>{resourceKinds.map(kind=><option key={kind.type} value={kind.type}>{kind.plural}</option>)}</select></label><label className="text-sm">Sort<select className="organization-input w-full mt-1" aria-label="Sort resources" value={section==='recent'?'recent':sort} disabled={section==='recent'||(searchMode==='content'&&Boolean(search))} onChange={e=>{setSort(e.target.value as typeof sort);setPage(0);}}><option value="updated">Recently updated</option><option value="recent">Recently opened</option><option value="title">Title A–Z</option></select></label></>}</LibraryPopover>
+      <ResourceTypeFilter value={type} onChange={value=>{setType(value);setPage(0);}}/><LibraryPopover label="Search options">{()=> <><ResourceSearchOptions mode={searchMode} onMode={mode=>{setSearchMode(mode);setPage(0);}} collection={currentCollection} onCollection={onCollection}/><label className="text-sm">Sort<select className="organization-input w-full mt-1" aria-label="Sort resources" value={section==='recent'?'recent':sort} disabled={section==='recent'||(searchMode==='content'&&Boolean(search))} onChange={e=>{setSort(e.target.value as typeof sort);setPage(0);}}><option value="updated">Recently updated</option><option value="recent">Recently opened</option><option value="title">Title A–Z</option></select></label></>}</LibraryPopover>
     </div>
-    <nav className="browse-type-tabs" aria-label="Resource types">{[{type:'all',plural:'All'},...resourceKinds].map(kind=><button key={kind.type} aria-pressed={type===kind.type} onClick={()=>{setType(kind.type);setPage(0);}}>{kind.plural}</button>)}</nav>
+
     <div className="library-summary"><span>{loading?'Loading resources…':totalItems+' resources'}</span><span className="text-xs text-[var(--text-secondary)]">{searchMode==='title'?'Titles only':hasUnsavedChanges?'Saved content · unsaved edits excluded':'Titles + saved note text'}</span></div>
     {(tags.length>0||type!=='all'||(sort!=='updated'&&section!=='recent'))&&<div className="flex gap-2 flex-wrap">{type!=='all'&&<button className="collection-chip" onClick={()=>setType('all')}>{resourceKind(type).label} ×</button>}{tags.map(tag=><button className="collection-chip" key={tag} onClick={()=>onTagsChange(tags.filter(t=>t!==tag))}>{tag} ×</button>)}{sort!=='updated'&&section!=='recent'&&<button className="collection-chip" onClick={()=>setSort('updated')}>{sort==='title'?'Title A–Z':'Recently opened'} ×</button>}</div>}
     {items.length>0&&<label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]"><input type="checkbox" aria-label="Select visible resources" checked={items.every(item=>selected.includes(item.id))} onChange={e=>setSelected(e.target.checked?items.map(i=>i.id):[])}/>Select visible resources</label>}
     {selected.length>0&&<div className="flex flex-wrap items-center gap-2 text-sm"><span>{selected.length} selected</span><button className="library-button" onClick={()=>{organizationFocus.captureFocus();setManager('bulk');}}>Tags / manage</button><button className="library-button" onClick={()=>{organizationFocus.captureFocus();setPickerIds(selected);}}>Add to collection</button><button className="library-button" onClick={()=>setSelected([])}>Clear selection</button></div>}
-    {type === 'all' ? ([{kind:'note',result:notes},{kind:'file',result:files}]).map(({kind,result}) => <BrowseGroup key={kind} label={resourceKind(kind).plural} count={result.data?.totalItems??0} loading={result.loading} error={result.error} retry={result.retry} onViewAll={(result.data?.totalItems??0)>12?()=>{setType(kind);setPage(0);}:undefined}>
-      {result.data?.items.map(resource => <BrowseResourceRow key={resource.id} resource={resource} onOpen={onOpen} recent={section==='recent'} contentMode={searchMode==='content'} selected={selected.includes(resource.id)} onSelect={checked=>setSelected(previous=>checked?[...previous,resource.id]:previous.filter(id=>id!==resource.id))} onCollections={id=>{organizationFocus.captureFocus();setPickerIds([id]);}}/>)}
-    </BrowseGroup>) : <><BrowseGroup label={resourceKind(type).plural} count={single.data?.totalItems??0} loading={single.loading} error={single.error} retry={single.retry}>
+    <BrowseGroup label="Resources" count={totalItems} loading={loading} error={result.error} retry={retry}>
       {items.map(resource=><BrowseResourceRow key={resource.id} resource={resource} onOpen={onOpen} recent={section==='recent'} contentMode={searchMode==='content'} selected={selected.includes(resource.id)} onSelect={checked=>setSelected(previous=>checked?[...previous,resource.id]:previous.filter(id=>id!==resource.id))} onCollections={id=>{organizationFocus.captureFocus();setPickerIds([id]);}}/>)}
-    </BrowseGroup><BrowsePagination page={page} totalPages={single.data?.totalPages??0} loading={single.loading} onPage={setPage}/></>}
-    {!loading && totalItems===0 && !(type==='all'?notes.error||files.error:single.error) && <div className="browse-empty">{currentCollection?.count===0&&!search&&type==='all'&&!tags.length ? 'This collection is empty. Add a resource to get started.' : !search&&type==='all'&&!tags.length&&!currentCollection ? section === 'favorites' ? 'Pin resources to keep them here.' : section === 'recent' ? 'Recently opened resources will appear here.' : 'Your Library is empty. Create a note or import files from the sidebar.' : 'No resources match these filters.'}{page>0&&<button className="library-button" onClick={()=>setPage(0)}>Back to first page</button>}</div>}
+    </BrowseGroup><BrowsePagination page={page} totalPages={result.data?.totalPages??0} loading={loading} onPage={setPage}/>
+    {!loading && totalItems===0 && !result.error && <div className="browse-empty">{currentCollection?.count===0&&!search&&type==='all'&&!tags.length ? 'This collection is empty. Add a resource to get started.' : !search&&type==='all'&&!tags.length&&!currentCollection ? section === 'favorites' ? 'Pin resources to keep them here.' : section === 'recent' ? 'Recently opened resources will appear here.' : 'Your Library is empty. Create a note or import files from the sidebar.' : 'No resources match these filters.'}{type!=='all'&&<button className="library-button" onClick={()=>{setType('all');setPage(0);}}>Clear type filter</button>}{page>0&&<button className="library-button" onClick={()=>setPage(0)}>Back to first page</button>}</div>}
     {managingCollection&&currentCollection&&<CollectionManagement collection={currentCollection} onClose={()=>{setManagingCollection(false);organizationFocus.restoreFocus();}} onChanged={onCollection}/>}
     {pickerIds&&<CollectionPicker resourceIds={pickerIds} onClose={()=>{setPickerIds(null);organizationFocus.restoreFocus();}}/>}
     {adding&&currentCollection&&<AddExistingResources collection={currentCollection} onOpen={onOpenCreated??onOpen} onImport={onImport??(()=>{})} onClose={restore=>{setAdding(false);if(restore!==false)organizationFocus.restoreFocus();}}/>}

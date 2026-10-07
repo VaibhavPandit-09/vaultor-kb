@@ -8,6 +8,14 @@ function setup() {
   return { dep, nav: new PaneNavigation(() => dep) };
 }
 describe('pane navigation commits', () => {
+  it('keeps an unknown resource identifiable without previewing it or leaving the source', async () => {
+    const {nav,dep}=setup();await nav.open('A');
+    dep.load.mockResolvedValueOnce({...note('unknown'),type:'future'});
+    await nav.open('unknown',{intent:'link'});
+    expect(nav.snapshot().panes[0].id).toBe('A');
+    expect(nav.snapshot().issue?.message).toContain('not supported');
+    expect(dep.preview).not.toHaveBeenCalled();expect(dep.save).not.toHaveBeenCalled();
+  });
   it('linked replacement leaves other panes intact and permits duplicate views', async () => {
     const { nav, dep } = setup(); await nav.open('A'); const first = nav.snapshot().activePaneId!; await nav.open('B'); const second = nav.snapshot().activePaneId!;
     await nav.open('B', { sourcePaneId: first, intent: 'link', destination: 'here' });

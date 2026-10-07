@@ -4027,6 +4027,16 @@
               "maximum": 100,
               "default": 50
             }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "description": "Optional shortcut filter: all, collection or resource type. Defaults to all; paging and totals use the filter."
           }
         ],
         "responses": {
@@ -7121,11 +7131,8 @@
             "type": "string"
           },
           "kind": {
-            "enum": [
-              "note",
-              "file",
-              "collection"
-            ]
+            "type": "string",
+            "description": "collection for organizational shortcuts; otherwise the resource type."
           },
           "name": {
             "type": "string"
@@ -7133,6 +7140,17 @@
           "count": {
             "type": "integer",
             "description": "Resource count for a collection; zero for resources."
+          },
+          "resource": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResourceSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Batch-enriched resource metadata; null for collection shortcuts. No note body."
           }
         }
       },
@@ -7156,6 +7174,10 @@
           },
           "totalPages": {
             "type": "integer"
+          },
+          "appliedKind": {
+            "type": "string",
+            "description": "Confirms server-side shortcut filtering. all when no kind was requested."
           }
         },
         "required": [

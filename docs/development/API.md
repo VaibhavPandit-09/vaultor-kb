@@ -132,7 +132,7 @@ All routes participate in the workspace mutation gate, return X-Request-ID and u
 | GET /api/collections/{id} | getCollection | name, pin state and membership count |
 | PUT /api/collections/creations/{id} | createCollectionOnce | canonical client UUID; {name,resourceIds:[]}; atomic retry-safe creation and initial membership |
 | PUT /api/collections/{id}/favorite | setCollectionPin | {favorite:boolean}; 204; preserves collection name |
-| GET /api/organization/pins | listPinnedItems | q/page/size (1–100); mixed {id,kind,name,count} page, alphabetical name/kind/id |
+| GET /api/organization/pins | listPinnedItems | q/page/size (1–100), optional kind (all/collection/resource type); mixed {id,kind,name,count,resource?} page with appliedKind, alphabetical name/kind/id. Resource is batch-enriched metadata only |
 | POST /api/organization/selection | getSelectedResourceMemberships | read-only {resourceIds:[1–100 IDs]}; [{id,name,selectedCount}], selected collections only |
 | POST /api/collections | createCollection | {name,favorite?}; 201; unique normalized name |
 | PUT /api/collections/{id} | updateCollection | {name,favorite?}; omitted favorite preserves current value |
@@ -187,6 +187,6 @@ D8 adds no backend update/schema endpoints. Installer/update orchestration is na
 
 ## Device sidebar presentation — 0.3.0
 
-Existing GET/PATCH /settings persists `local[deviceId].sidebarSections`, with known `pinned`, `recent`, `tags` entries, each `{visible:boolean,collapsed:boolean}`. Omitted/null entries normalize to visible/expanded; unknown section names are ignored. Scalar leaf patches preserve unrelated fields. There are no new endpoints, database migrations or portable archive fields. Update the host to 0.3.0 before relying on these fields: previous hosts discard them during normalization.
+Existing GET/PATCH /settings persists `local[deviceId].sidebarSections`, with known `pinned`, `recent`, `tags` entries, each `{visible:boolean,collapsed:boolean,type:string}`. Omitted/null entries normalize to visible/expanded/All; unknown section names are ignored. Scalar leaf patches preserve unrelated fields. There are no new endpoints, database migrations or portable archive fields. Update the host to 0.3.1 before relying on type choices; 0.3.0 retains visibility/collapse but drops type during normalization. Tags has no type filter and normalizes type to all. Resource/shortcut type choices accept identifier strings up to 80 characters; unknown restored types remain explicit rather than silently broadening the query.
 
 Browsing groups independently call GET /resources with type and size=12 (overview) or size=100 (selected type), q/title mode, collection/tag/favorites and sort; counts come from each filtered response. Pinned collections use GET /collections?favorites=true with the same sizes. Sidebar uses size=4 pinned and size=6 recent per type. Content opt-in continues through /resources/query with the existing collection scope and bounded snippets.

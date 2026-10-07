@@ -1,3 +1,4 @@
+import { resourceKind } from '../lib/resourceKinds';
 import { SidebarSection, SidebarCustomization, SidebarRecent } from '../components/SidebarSections';
 import { inspectWorkspaceDeparture } from '../lib/workspaceDeparture';
 import LibraryPopover from '../components/LibraryPopover';
@@ -37,7 +38,6 @@ import {
   DownloadCloud,
   X,
   FileText,
-  Paperclip,
   Upload,
   AlertTriangle,
   Loader2,
@@ -1311,8 +1311,8 @@ export default function Dashboard() {
       <div className="border-t border-border" />
 
       <div className="flex-1 overflow-y-auto py-2" style={{overflowAnchor:'none'}}>
-        <SidebarSection name="pinned" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('favorites')}><PinnedList compact visible={sidebarPreferences.pinned.visible&&!sidebarPreferences.pinned.collapsed} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></SidebarSection>
-        <SidebarSection name="recent" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('recent')}><SidebarRecent enabled={sidebarPreferences.recent.visible&&!sidebarPreferences.recent.collapsed} activeId={!libraryVisible?currentResourceId??undefined:undefined} onOpen={id=>void openResourceById(id)} onDelete={(id,event)=>void handleDeleteResource(id,event)} onResources={setResources}/>{recencyError&&<button className="sidebar-nav text-xs" onClick={()=>recency.retry()}>{recencyError} Retry</button>}</SidebarSection>
+        <SidebarSection name="pinned" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('favorites')}><PinnedList compact filterType={sidebarPreferences.pinned.type} activeId={!libraryVisible?currentResourceId??undefined:undefined} visible={sidebarPreferences.pinned.visible&&!sidebarPreferences.pinned.collapsed} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></SidebarSection>
+        <SidebarSection name="recent" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('recent')}><SidebarRecent type={sidebarPreferences.recent.type} enabled={sidebarPreferences.recent.visible&&!sidebarPreferences.recent.collapsed} activeId={!libraryVisible?currentResourceId??undefined:undefined} onOpen={id=>void openResourceById(id)} onDelete={(id,event)=>void handleDeleteResource(id,event)} onResources={setResources}/>{recencyError&&<button className="sidebar-nav text-xs" onClick={()=>recency.retry()}>{recencyError} Retry</button>}</SidebarSection>
       </div>
       <div className="border-t border-border" />
       <SidebarSection name="tags" preferences={sidebarPreferences} onChange={updateSidebarPreferences}><div className="flex max-h-40 flex-col px-3 py-2">
@@ -1504,7 +1504,7 @@ export default function Dashboard() {
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={replacePending}
               >
-                {resource.type === 'note' ? <FileText size={14} className="text-blue-500" /> : <Paperclip size={14} className="text-green-500" />}
+                {(() => {const Icon=resourceKind(resource.type).icon;return <Icon size={14} className="text-[var(--text-secondary)]"/>;})()}
                 <span className="truncate text-sm font-medium">{resource.title}</span>
               </button>
             ))}

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import type { Resource } from '../types';
-import { resourceKind } from '../lib/resourceKinds';
+import { resourceKind, resourceDescription } from '../lib/resourceKinds';
 import PinButton from './PinButton';
 import LibraryPopover from './LibraryPopover';
 import SearchExcerpt from './SearchExcerpt';
@@ -25,7 +25,7 @@ export function BrowseResourceRow({ resource, onOpen, onCollections, selected, o
   const kind = resourceKind(resource.type), Icon = kind.icon;
   return <div role="listitem" className="library-row">
     {onSelect && <input type="checkbox" aria-label={'Select ' + resource.title} checked={selected} onChange={event => onSelect(event.target.checked)}/>}
-    <button className="library-resource" title={resource.title} onClick={() => onOpen(resource.id)}><Icon size={19}/><span><strong>{resource.title}</strong><small>{contentMode && resource.searchSnippet?.text ? <SearchExcerpt snippet={resource.searchSnippet}/> : <>{resource.collections?.map(item => item.name).join(' · ') || kind.label}{resource.tags.length > 0 && ' · ' + resource.tags.map(tag => tag.name).join(', ')}</>}</small></span></button>
+    <button className="library-resource" title={resource.title} onClick={() => onOpen(resource.id)}><Icon size={19}/><span><strong>{resource.title}</strong><small>{contentMode && resource.searchSnippet?.text ? <>{resourceDescription(resource)} · <SearchExcerpt snippet={resource.searchSnippet}/></> : <>{resourceDescription(resource)}{resource.collections?.length ? ' · ' + resource.collections.map(item => item.name).join(' · ') : ''}{resource.tags.length > 0 && ' · ' + resource.tags.map(tag => tag.name).join(', ')}</>}</small></span></button>
     <time className="library-date">{(recent ? resource.lastOpenedAt : resource.updatedAt)?.slice(0, 10)}</time>
     <div className="browse-row-actions"><PinButton id={resource.id} name={resource.title} favorite={resource.favorite}/>{onCollections && <LibraryPopover label={'Actions for ' + resource.title} trigger={<MoreHorizontal size={17}/>} className="browse-icon-button">{close => <button className="library-button" onClick={() => { close(); onCollections(resource.id); }}>Add to collection</button>}</LibraryPopover>}</div>
   </div>;

@@ -1,19 +1,29 @@
 // @vitest-environment jsdom
 import {act,cleanup,fireEvent,render,renderHook,screen,waitFor} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
-import {SidebarSection} from './SidebarSections';
+import {SidebarSection,SidebarRecent} from './SidebarSections';
 import {normalizeSidebarSections} from '../lib/sidebarPreferences';
 import {useResourcePage} from '../lib/useResourcePage';
 import {browseResources} from '../lib/resourceBrowse';
 import {notifyResourceChange} from '../lib/resourceEvents';
 vi.mock('../lib/resourceBrowse',()=>({browseResources:vi.fn()}));
 afterEach(()=>{cleanup();vi.resetAllMocks();});
+it('renders recent resources in server order with one bounded mixed query',async()=>{
+ const items=[{id:'f',title:'New file',type:'file',tags:[],createdAt:'',updatedAt:''},{id:'n',title:'Older note',type:'note',tags:[],createdAt:'',updatedAt:''}];
+ vi.mocked(browseResources).mockResolvedValue({items,page:0,size:12,totalItems:2,totalPages:1});
+ const report=vi.fn();render(<SidebarRecent enabled onOpen={()=>{}} onDelete={()=>{}} onResources={report}/>);
+ await screen.findByTitle('New file · File');
+ expect(screen.getAllByTitle(/ · /).map(button=>button.textContent)).toEqual(['New file','Older note']);
+ expect(browseResources).toHaveBeenCalledTimes(1);
+ expect(browseResources).toHaveBeenCalledWith({type:'all',sort:'recent',size:12},expect.any(AbortSignal));
+ expect(report).toHaveBeenLastCalledWith(items);
+});
 it('keeps cached children mounted while collapsed or hidden and separates View all',()=>{
  const prefs=normalizeSidebarSections(undefined),change=vi.fn(),all=vi.fn();
  const view=render(<SidebarSection name="recent" preferences={prefs} onChange={change} onViewAll={all}><button>Cached note</button></SidebarSection>);
- fireEvent.click(screen.getByRole('button',{name:'Recent'}));expect(change).toHaveBeenCalledWith({...prefs,recent:{visible:true,collapsed:true}});
+ fireEvent.click(screen.getByRole('button',{name:'Recent'}));expect(change).toHaveBeenCalledWith({...prefs,recent:{visible:true,collapsed:true,type:'all'}});
  fireEvent.click(screen.getByRole('button',{name:'View all'}));expect(all).toHaveBeenCalledOnce();
- view.rerender(<SidebarSection name="recent" preferences={{...prefs,recent:{visible:false,collapsed:true}}} onChange={change}><button>Cached note</button></SidebarSection>);
+ view.rerender(<SidebarSection name="recent" preferences={{...prefs,recent:{visible:false,collapsed:true,type:'all'}}} onChange={change}><button>Cached note</button></SidebarSection>);
  expect(screen.queryByRole('button',{name:'Cached note'})).toBeNull();expect(screen.getByText('Cached note')).toBeTruthy();
 });
 it('suspends browsing while disabled and keeps rows on reopen and failed refresh',async()=>{

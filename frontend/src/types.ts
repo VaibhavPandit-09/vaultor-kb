@@ -5,7 +5,8 @@ export interface Tag {
   color: string;
 }
 
-export type ResourceType = 'note' | 'file';
+// Unknown server types remain identifiable without being dispatched as files.
+export type ResourceType = 'note' | 'file' | (string & {});
 
 export interface Resource {
   id: string;

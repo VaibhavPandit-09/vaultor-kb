@@ -1,10 +1,11 @@
+import { collectionKind, resourceKind, resourceDescription } from '../../lib/resourceKinds';
 import ResourceSearchOptions from '../ResourceSearchOptions';
 import LibraryPopover from '../LibraryPopover';
 import type {SearchMode} from '../../lib/resourceSearch';
 import type {OrganizationItem} from '../../lib/organization';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, Command, FileText, Folder, MoreHorizontal, Paperclip, Search, X } from 'lucide-react';
+import { ArrowLeft, Command, MoreHorizontal, Search, X } from 'lucide-react';
 import type { Resource } from '../../types';
 import { createRootStep, buildRenameStep, buildDeleteConfirmStep, type CommandContext, type CommandItem, type CommandStep } from '../../lib/commandPalette';
 import { useResourcePage } from '../../lib/useResourcePage';
@@ -47,7 +48,7 @@ export default function CommandPaletteModal({open,onClose,context}:Props) {
    action('membership','Add to collection',()=>handoff('collection',[resource.id]),resource.title),
    action('pin',resource.favorite?'Unpin':'Pin',()=>setResourceFavorite(resource.id,!resource.favorite),resource.title),
    action('tags','Manage tags',()=>handoff('tag',[resource.id]),resource.title),
-   ...(resource.type==='note'?[{id:'rename',title:'Rename',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildRenameStep(resource),query:resource.title})},action('export','Export note',()=>captured.exportResource?.(resource),resource.title)]:[action('preview','Preview file',()=>captured.openResource(resource.id),resource.title),action('download','Download file',async()=>{if(await saveApiFile('/resources/'+resource.id+'/raw',resource.title)==='cancelled')throw new Error('Save cancelled. Choose Download to try again.');},resource.title)]),
+   ...(resource.type==='note'?[{id:'rename',title:'Rename',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildRenameStep(resource),query:resource.title})},action('export','Export note',()=>captured.exportResource?.(resource),resource.title)]:resourceKind(resource.type).mode==='preview'?[action('preview','Preview file',()=>captured.openResource(resource.id),resource.title),action('download','Download file',async()=>{if(await saveApiFile('/resources/'+resource.id+'/raw',resource.title)==='cancelled')throw new Error('Save cancelled. Choose Download to try again.');},resource.title)]:[]),
    {id:'delete',title:'Delete…',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildDeleteConfirmStep(scope,resource)})}
  ].filter(item=>item.title.toLowerCase().includes(filter.toLowerCase()))};}
  const extra:Result[]=[
@@ -60,7 +61,7 @@ export default function CommandPaletteModal({open,onClose,context}:Props) {
  const targets=captured.selectedResources?.length?captured.selectedResources:captured.targetResource?[captured.targetResource]:[];
  if(targets.length){extra.push(action('organize','Add target to collection',()=>handoff('collection',targets.map(r=>r.id)),targets.map(r=>r.title).join(', ')),action('target-tags','Manage target tags',()=>handoff('tag',targets.map(r=>r.id)),targets.map(r=>r.title).join(', ')));}
  if(targets.length===1)extra.push({id:'target-actions',title:'Actions for '+targets[0].title,subtitle:'Explicit target',onSelect:async()=>({type:'push',step:actionStep((await api.get<Resource>('/resources/'+targets[0].id+'/summary',{backgroundDiagnostic:true})).data)})});
- function resourceItem(resource:Resource,section:string):Result {return {id:'resource-'+resource.id,title:resource.title,subtitle:resource.type==='note'?'Note':'File',resource,kind:resource.type,section,onSelect:()=>({type:'execute',action:()=>captured.openResource(resource.id)})};}
+ function resourceItem(resource:Resource,section:string):Result {return {id:'resource-'+resource.id,title:resource.title,subtitle:resourceDescription(resource),resource,kind:resource.type,section,onSelect:()=>({type:'execute',action:()=>captured.openResource(resource.id)})};}
  let items:Result[]=[];
  if(entry)items=entry.step.getItems(entry.step.type==='input'?currentQuery:search,scope);
  else if(mode==='commands')items=[...createRootStep({...scope,resources:[]},null,{}).getItems(search,{...scope,resources:[]}),...extra.filter(item=>!search||((item.title+' '+(item.subtitle??'')).toLowerCase().includes(search.toLowerCase())))];
@@ -69,7 +70,7 @@ export default function CommandPaletteModal({open,onClose,context}:Props) {
   const seen=new Set<string>();const add=(item:Result)=>{if(!seen.has(item.id)){seen.add(item.id);items.push(item);}};
   captured.openNotes.forEach(r=>add(resourceItem(r,'Open')));
   if(captured.previewResource)add(resourceItem(captured.previewResource,'Open'));
-  (pins.data?.items??[]).forEach(p=>{if(p.kind==='collection')add({...action('collection-'+p.id,p.name,async()=>{const {data}=await api.get('/collections/'+p.id,{backgroundDiagnostic:true});captured.openCollection?.(data);},'Collection'),kind:'collection',section:'Pinned'});else add(resourceItem({id:p.id,type:p.kind as 'note'|'file',title:p.name,favorite:true,tags:[],createdAt:'',updatedAt:''},'Pinned'));});
+  (pins.data?.items??[]).forEach(p=>{if(p.entityKind==='collection')add({...action('collection-'+p.id,p.name,async()=>{const {data}=await api.get('/collections/'+p.id,{backgroundDiagnostic:true});captured.openCollection?.(data);},'Collection'),kind:'collection',section:'Pinned'});else add(resourceItem(p.resource??{id:p.id,type:p.resourceType,title:p.name,favorite:true,tags:[],createdAt:'',updatedAt:''},'Pinned'));});
   (resources.data?.items??[]).slice(0,20).forEach(r=>add(resourceItem(r,'Recent')));
  }
  const searchPending=((mode==='search'&&!entry)||selecting)&&currentQuery.trim()!==search.trim();
@@ -95,7 +96,7 @@ export default function CommandPaletteModal({open,onClose,context}:Props) {
  {!entry&&mode==='search'&&search.trim()&&((resources.data?.totalItems??0)>50||(!searchCollection&&searchMode==='title'&&(collections.data?.totalItems??0)>20))&&<p className="px-4 pb-2 text-xs text-[var(--text-secondary)]">Showing the first matches. Refine your search or open Library for all results.</p>}
  {error&&<p role="alert" className="px-4 py-2 text-sm text-red-500">{error} Your input is retained; retry the action.</p>}
  {failure&&<p role="alert" className="px-4 py-2 text-sm">{failure}<button className="library-button" onClick={()=>{resources.retry();collections.retry();pins.retry();}}>Retry search</button></p>}
- <div id="palette-results" role="listbox" aria-label="Results" aria-busy={busy} className="max-h-[48vh] overflow-auto p-2">{items.map((item,index)=>{const Icon=item.kind==='collection'?Folder:item.kind==='file'?Paperclip:item.kind==='note'?FileText:Command;return <div key={item.id}>{item.section!==items[index-1]?.section&&<p className="px-3 py-1 text-xs text-[var(--text-tertiary)]">{item.section}</p>}<div role="option" id={'palette-option-'+item.id} aria-selected={item.id===selected?.id} className="palette-result flex gap-3 rounded-lg px-3 py-2 cursor-pointer" onMouseEnter={()=>setSelectedId(item.id)} onClick={()=>void execute(item)}><Icon className="shrink-0 mt-1" size={17}/><div className="min-w-0"><p className="truncate text-sm font-medium">{item.title}</p><p className="text-xs text-[var(--text-secondary)] truncate">{searchMode==='content'&&item.resource?.searchSnippet?.text?<SearchExcerpt snippet={item.resource.searchSnippet}/>:item.subtitle}</p></div></div></div>;})}{!items.length&&<p className="p-4 text-sm">{(searchPending||resources.loading)&&mode==='search'?'Searching…':'No matches. Try different words.'}</p>}</div>
+ <div id="palette-results" role="listbox" aria-label="Results" aria-busy={busy} className="max-h-[48vh] overflow-auto p-2">{items.map((item,index)=>{const Icon=item.kind==='collection'?collectionKind.icon:item.kind?resourceKind(item.kind).icon:Command;return <div key={item.id}>{item.section!==items[index-1]?.section&&<p className="px-3 py-1 text-xs text-[var(--text-tertiary)]">{item.section}</p>}<div role="option" id={'palette-option-'+item.id} aria-selected={item.id===selected?.id} className="palette-result flex gap-3 rounded-lg px-3 py-2 cursor-pointer" onMouseEnter={()=>setSelectedId(item.id)} onClick={()=>void execute(item)}><Icon className="shrink-0 mt-1" size={17}/><div className="min-w-0"><p className="truncate text-sm font-medium">{item.title}</p><p className="text-xs text-[var(--text-secondary)] truncate">{searchMode==='content'&&item.resource?.searchSnippet?.text?<SearchExcerpt snippet={item.resource.searchSnippet}/>:item.subtitle}</p></div></div></div>;})}{!items.length&&<p className="p-4 text-sm">{(searchPending||resources.loading)&&mode==='search'?'Searching…':'No matches. Try different words.'}</p>}</div>
 
  </div></div>,document.body)}</>;
 }

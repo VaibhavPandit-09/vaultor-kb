@@ -156,12 +156,13 @@ public class SettingsService {
         for (String name : java.util.List.of("pinned", "recent", "tags")) {
             SidebarSection value = incoming == null ? null : incoming.get(name);
             result.put(name, new SidebarSection(value == null || !Boolean.FALSE.equals(value.visible()),
-                    value != null && Boolean.TRUE.equals(value.collapsed())));
+                    value != null && Boolean.TRUE.equals(value.collapsed()),
+                    !name.equals("tags") && value != null && value.type()!=null && value.type().matches("[a-zA-Z0-9_-]{1,80}") ? value.type() : "all"));
         }
         return result;
     }
 
-    public record SidebarSection(Boolean visible, Boolean collapsed) {}
+    public record SidebarSection(Boolean visible, Boolean collapsed, String type) {}
 
     private Keybinding normalizeKeybinding(String action, Keybinding incoming) {
         String mac = normalizeShortcutString(incoming == null ? null : incoming.mac());

@@ -128,3 +128,6 @@ Library/Recent/Collections/Pinned share content-sized groups and one page scroll
 For a release build while the development server locks desktop/bundle, set VAULTOR_BUILD_BUNDLE to an absolute directory inside desktop/cache before prepare-server and package:release. Preparation retains its predecessor; packaging verifies and copies this selected bundle into the usual resources/bundle path. The default remains desktop/bundle. This does not switch the running application's workspace or terminate user processes.
 
 UI copying stages a fresh directory rather than merging asset hashes; previous UI remains under ignored cache. Packaged UI and embedded browser assets must match the current dist bytes.
+
+
+Current browsing layout check (0.3.1, 2026-10-07) uses an owned disposable workspace and creates temporary fixtures: mixed pins/recent resources, sparse/empty pages, 102-resource and 101-note pagination, bounded Type filter choices, both themes/narrow controls, collapse/hide, preference persistence and Escape/focus. The packaged Windows executable passed and eight frames were inspected. The historical 2026-10-04 read-only result above does not describe the current mutating fixture check. Mac 0.3.1 remains pending under MAC-HANDOFF.md; release notes own installer checksums/publication status.

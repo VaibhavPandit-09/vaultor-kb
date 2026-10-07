@@ -1,3 +1,4 @@
+import { resourceKind, resourceDescription } from './resourceKinds';
 import type { Resource } from '../types';
 import { isPreviewResource } from '../types';
 
@@ -258,10 +259,10 @@ export function createRootStep(
       const resourceItems = context.resources.map<CommandItem>((resource) => ({
         id: `resource-${resource.id}`,
         title: resource.title,
-        subtitle: resource.type === 'note' ? 'Note' : 'File',
-        section: resource.type === 'note' ? 'Notes' : 'Files',
+        subtitle: resourceDescription(resource),
+        section: resourceKind(resource.type).plural,
         keywords: [resource.type, ...(resource.tags || []).map((tag) => tag.name)],
-        aliases: resource.type === 'note' ? ['note'] : ['file'],
+        aliases: [resource.type],
         preview: buildResourcePreview(resource),
         scoreBoost: getResourceContextBoost(resource, context),
         onSelect: async () => ({
@@ -270,7 +271,7 @@ export function createRootStep(
           remember: {
             id: `resource-${resource.id}`,
             title: `Open ${resource.title}`,
-            subtitle: resource.type === 'note' ? 'Open note' : 'Open file preview',
+            subtitle: resourceKind(resource.type).action,
             resume: (resumeContext) => ({
               type: 'execute',
               action: () => resumeContext.openResource(resource.id),

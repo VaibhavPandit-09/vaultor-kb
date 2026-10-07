@@ -1,5 +1,6 @@
+import { resourceKind, resourceDescription } from '../../lib/resourceKinds';
 import { useEffect, useMemo, useState } from 'react';
-import { FileText, Paperclip, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import api from '../../lib/api';
 import type { Resource } from '../../types';
 import AppModal from './AppModal';
@@ -100,10 +101,10 @@ export default function GlobalSearchModal({ open, onClose, onSelect }: GlobalSea
                 index === selectedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              {resource.type === 'note' ? <FileText size={16} /> : <Paperclip size={16} />}
+              {(() => {const Icon=resourceKind(resource.type).icon;return <Icon size={16}/>;})()}
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{resource.title}</div>
-                <div className="text-xs uppercase tracking-wide text-slate-400">{resource.type}</div>
+                <div className="text-xs uppercase tracking-wide text-slate-400">{resourceDescription(resource)}</div>
               </div>
             </button>
           ))}

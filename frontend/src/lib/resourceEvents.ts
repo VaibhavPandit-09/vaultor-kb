@@ -17,7 +17,7 @@ export type RefreshScope = 'resources' | 'recent' | 'tags' | 'collections' | 'pi
 export function affectsScope(change: ResourceChange, scope: RefreshScope) {
   if (change.kind === 'workspace') return true;
   if (change.kind === 'opened') return scope === 'recent';
-  if (scope === 'pins') return change.kind === 'pins' || change.kind === 'metadata' || (change.kind === 'organization' && change.entity !== 'tag');
+  if (scope === 'pins') return change.kind === 'pins' || change.kind === 'metadata' || change.kind === 'organization';
   if (change.kind === 'metadata') return scope === 'resources' || scope === 'recent' || Boolean(change.membershipChanged);
   if (change.kind === 'pins') return change.entity === 'resource' ? scope === 'resources' || scope === 'recent' : scope === 'collections';
   if (scope === 'resources' || scope === 'recent') return true;

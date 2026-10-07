@@ -1,6 +1,6 @@
 # D9: Mac mini and two-device completion handoff
 
-Prepared 2026-10-04 for the AI working on the user's Apple Silicon Mac mini. This is the remaining D9 validation, not a new feature sprint. Read AGENTS.md, CODEBASE.md and desktop-network-plan.md first; UPDATES.md, DESKTOP.md, HOST-ACCESS.md and MULTI-DEVICE.md are authoritative. Inspect the current tree and preserve unrelated work. Windows D9 work corrects Connections layout, packages 0.2.1 and supplies an isolated manual-test data directory; the recorded Mac D9 development checks used 0.2.2; the current 0.3.0 release handoff is below. Do not declare the overall Windows/Mac release gate complete until the checks below actually pass.
+Prepared 2026-10-04 for the AI working on the user's Apple Silicon Mac mini. This is the remaining D9 validation, not a new feature sprint. Read AGENTS.md, CODEBASE.md and desktop-network-plan.md first; UPDATES.md, DESKTOP.md, HOST-ACCESS.md and MULTI-DEVICE.md are authoritative. Inspect the current tree and preserve unrelated work. Windows D9 work corrects Connections layout, packages 0.2.1 and supplies an isolated manual-test data directory; the recorded Mac D9 development checks used 0.2.2; the current 0.3.1 release handoff is below. Do not declare the overall Windows/Mac release gate complete until the checks below actually pass.
 
 ## Boundaries and preparation
 
@@ -119,3 +119,36 @@ Windows 0.3.0 ships first. No 0.3.0 Mac artifact/native verification is claimed.
 7. Verify both uploaded Mac assets, update GitHub release notes with the actual Mac checks/platform availability, and make a documentation-only follow-up commit updating current guides/tracker. If code repairs are required, stop this same-version handoff and prepare a new version instead.
 
 The Windows-first release is https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.3.0. Update the host as well as clients to persist the new sidebar preferences; 0.2.2 hosts still normalize unknown device fields away. Browser UI follows its host build. Ubuntu/Mac Intel/Android packages remain deferred.
+
+## 0.3.1 mixed browsing release: exact Mac delivery
+
+For current delivery use immutable **v0.3.1**, not v0.3.0. Fetch the tag and use a clean detached checkout. Preserve the original signing key and source version. Set BUILD_VERSION/VITE_BUILD_VERSION=0.3.1, install dependencies, run desktop build/prepare-server/package:release natively on arm64. Expected pair: Vaultor-0.3.1-mac-arm64.dmg and .dmg.vaultor.json.
+
+Run the focused eight frontend files listed in the 0.3.1 release notes, scoped lint, MixedBrowseTest and SidebarSettingsTest. Run VAULTOR_LAYOUT_SMOKE=1 with chrome-smoke against the packaged Vaultor executable and inspect the eight frames. This version checks mixed ordering, filtered 100-item paging, bounded searchable type controls, both themes/narrow layouts, sidebar collapse/hiding and keyboard focus. Complete the manual Finder/Dock/tray/install/update checks above using disposable data; prior 0.2.2 native results do not certify 0.3.1. Use private matching-key transfer, never Git/chat.
+
+After actual native verification, preflight and publish the absent platform pair using `npm --prefix desktop run publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.3.1.md` from that exact tag. Verify uploaded bytes; preserve the Windows pair/tag. Record actual Mac availability/results in release notes and a documentation-only follow-up commit. If a runtime fix is necessary, prepare a higher version instead of changing tagged artifacts. Update a Mac host too for new sidebar type persistence/pin filtering.
+
+### Exact 0.3.1 Mac commands
+
+Use a separate clean checkout and keep the private key outside it:
+
+```sh
+git fetch origin --tags
+git worktree add --detach ../vaultor-0.3.1 v0.3.1
+cd ../vaultor-0.3.1
+npm --prefix frontend ci
+npm --prefix desktop ci
+export VITE_BUILD_VERSION=0.3.1
+export BUILD_VERSION=0.3.1
+export VAULTOR_RELEASE_KEY="/absolute/private/path/to/original-private.pem"
+npm --prefix desktop run build
+npm --prefix frontend test -- src/components/LibraryView.test.tsx src/components/OrganizationViews.test.tsx src/components/SidebarSections.test.tsx src/components/ResourceTypeFilter.test.tsx src/lib/sidebarPreferences.test.ts src/lib/paneNavigation.test.ts src/components/modals/CommandPaletteModal.test.tsx src/lib/navigationRefresh.test.tsx
+(cd backend && ./mvnw '-Dtest=MixedBrowseTest,SidebarSettingsTest' test)
+npm --prefix desktop run prepare-server
+npm --prefix desktop run package:release
+codesign --verify --deep --strict --verbose=2 desktop/releases/mac-arm64/Vaultor.app
+VAULTOR_LAYOUT_SMOKE=1 node desktop/scripts/chrome-smoke.mjs "$PWD/desktop/releases/mac-arm64/Vaultor.app/Contents/MacOS/Vaultor"
+npm --prefix desktop run publish:release
+```
+
+Inspect desktop/artifacts/browse-*.png and complete the manual platform checks before the authorized missing-platform upload command above. Native version/runtime/signature and actual checks must match this tagged source. Do not merely upload a development app. If key/native access or a check fails, retain the missing-platform status and report the specific blocker.

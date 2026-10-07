@@ -33,3 +33,7 @@ Rebuild clears the index then rebuilds batches of 100 IDs, taking the shared wor
 Focused tests cover palette deduplication, normal Tab, explicit targeting, safe snippets, Escape, failed rename/retry; service tests cover ranking/prefix/literal input, attribute exclusion, filters, CRUD/import/rollback, rebuild with concurrent mutation and archive search after merge/replace/rollback. The isolated palette fixture was visually checked in light/dark themes, including highlighted snippets and selected-result contrast. It was removed afterward. This is not a full integrated Dashboard or assistive-technology pass. No routine live API smoke or Docker verification was performed.
 
 File-content extraction, fuzzy matching, synonym expansion and broader scale/performance verification remain future work. Rebuilding temporarily makes full-text search unavailable; ordinary browsing remains usable between gated batches. Palette and shared dialogs do not yet implement a complete focus trap.
+
+## Shared type presentation (0.3.1)
+
+Ctrl+K, pickers and browsing use the same resource-kind labels/icons. Files show concise format metadata where known; unknown types retain a neutral icon and refuse unsupported opening rather than becoming file previews. Library uses a single searchable Type filter alongside search; changing it preserves query/mode/scope while resetting the page and bulk selection. Mixed browsing remains bounded at 100; title-first/content-opt-in search semantics and saved-only draft behavior are unchanged.

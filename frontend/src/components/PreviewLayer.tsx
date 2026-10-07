@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import { ExternalLink, FileText, PanelRight, Paperclip, ScanText, X } from 'lucide-react';
+import { resourceKind, resourceDescription } from '../lib/resourceKinds';
+import { ExternalLink, PanelRight, ScanText, X } from 'lucide-react';
 import ResourceCollections from './ResourceCollections';
 import PinButton from './PinButton';
 import type { OrganizationItem } from '../lib/organization';
@@ -70,16 +71,17 @@ export default function PreviewLayer({
     return () => window.cancelAnimationFrame(rafId);
   }, [open, smoothAnimations]);
 
+  const Icon = resourceKind(resource.type).icon;
   const chrome = (
     <>
       <div className="flex min-h-12 flex-wrap items-center justify-between gap-3 py-2 border-b border-white/5 px-3">
         <div className="flex min-w-0 items-center gap-2">
           <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-background text-slate-500">
-            {resource.type === 'note' ? <FileText size={13} /> : <Paperclip size={13} />}
+            <Icon size={13} />
           </span>
           <div className="min-w-0">
             <h3 className="truncate text-sm font-medium text-foreground">{resource.title}</h3>
-            <div className="truncate text-[11px] text-slate-500">{resource.mimeType || 'Previewable resource'}</div>
+            <div className="truncate text-[11px] text-slate-500">{resourceDescription(resource)}</div>
           </div>
         </div>
 
