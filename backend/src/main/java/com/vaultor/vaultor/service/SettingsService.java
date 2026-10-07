@@ -139,7 +139,7 @@ public class SettingsService {
             return defaultLocalSettings();
         }
 
-        String theme = "light".equalsIgnoreCase(incoming.theme()) ? "light" : "dark".equalsIgnoreCase(incoming.theme()) ? "dark" : "os";
+        String theme = "light".equalsIgnoreCase(incoming.theme()) ? "light" : "dark".equalsIgnoreCase(incoming.theme()) ? "dark" : "oled".equalsIgnoreCase(incoming.theme()) ? "oled" : "os";
         String accentColor = isAccentColor(incoming.accentColor()) ? incoming.accentColor() : defaultLocalSettings().accentColor();
         String density = "compact".equalsIgnoreCase(incoming.density()) ? "compact" : "comfortable";
         String animationMode = "smooth".equalsIgnoreCase(incoming.animationMode()) ? "smooth" : "snappy";

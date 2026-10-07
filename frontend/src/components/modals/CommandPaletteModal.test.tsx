@@ -12,7 +12,7 @@ const note:Resource={id:'one',type:'note',title:'Meeting',tags:[],createdAt:'',u
 let context:CommandContext;
 beforeEach(()=>{
  context={resources:[note],activeNote:null,targetResource:null,previewResource:null,openNotes:[note],sidebarCollapsed:false,openResource:vi.fn(),createNote:vi.fn(),uploadFile:vi.fn(),toggleSidebar:vi.fn(),openShortcuts:vi.fn(),openSettings:vi.fn(),closeActiveNote:vi.fn(),closePreview:vi.fn(),openDeleteFlow:vi.fn(),renameResource:vi.fn()};
- vi.mocked(api.get).mockImplementation(async url=>({data:url==='/resources/one/summary'?note:url==='/resources/query'?{items:[{resource:note,snippet:{text:'Visible nebula text',highlights:[{start:8,end:14}]}}],page:0,totalPages:1,totalItems:1}:url==='/resources'?{items:[note],page:0,totalPages:1,totalItems:1}:url==='/organization/pins'?{items:[{id:'one',kind:'note',name:'Meeting'}],totalPages:1,totalItems:1}:{items:[],totalItems:0,totalPages:0}}));
+ vi.mocked(api.get).mockImplementation(async url=>({data:url==='/resources/one/summary'?note:url==='/resources/two/summary'?{...note,id:'two',title:'Second'}:url==='/resources/query'?{items:[{resource:note,snippet:{text:'Visible nebula text',highlights:[{start:8,end:14}]}}],page:0,totalPages:1,totalItems:1}:url==='/resources'?{items:[note],page:0,totalPages:1,totalItems:1}:url==='/organization/pins'?{items:[{id:'one',kind:'note',name:'Meeting'}],totalPages:1,totalItems:1}:{items:[],totalItems:0,totalPages:0}}));
 });
 afterEach(()=>{cleanup();vi.resetAllMocks();});
 function mount(){const close=vi.fn(),preview=context.openResource;const view=render(<EscapeManagerProvider><CommandPaletteModal open onClose={close} context={context}/></EscapeManagerProvider>);return {...view,close,preview};}
@@ -41,7 +41,7 @@ it('places Actions next in native tab order and restores the highlighted resourc
  const actions=screen.getByRole('button',{name:'Actions for Second'});
  const focusable=[...screen.getByRole('dialog').querySelectorAll('input,button:not([disabled])')];expect(focusable[focusable.indexOf(input)+1]).toBe(actions);
  expect(fireEvent.keyDown(input,{key:'Tab'})).toBe(true);actions.focus();expect(fireEvent.keyDown(actions,{key:'Tab',shiftKey:true})).toBe(true);
- vi.mocked(api.get).mockResolvedValueOnce({data:{...note,id:'two',title:'Second'}});fireEvent.click(actions);await screen.findByText('Actions · Second');
+ fireEvent.click(actions);await screen.findByText('Actions · Second');
  fireEvent.keyDown(screen.getByRole('combobox'),{key:'Escape'});await screen.findByText('Search workspace');expect(screen.getByRole('option',{selected:true}).textContent).toContain('Second');
 });
 it('ignores Enter used to confirm composition',async()=>{

@@ -19,7 +19,7 @@ it('routes keyboard uploads to the originating editor when two link menus exist'
     </>);
     await waitFor(() => expect(screen.getAllByText('Upload File')).toHaveLength(2));
     act(() => { window.__executeResourceLink?.(first.view); });
-    expect(upload).toHaveBeenCalledWith(first, { from: 1, to: 6 });
+    await waitFor(() => { act(() => { window.__executeResourceLink?.(first.view); }); expect(upload).toHaveBeenCalledWith(first, { from: 1, to: 6 }); });
     expect(first.getText()).toBe('[[one'); expect(second.getText()).toBe('[[two');
     ui.unmount();
     expect(window.__resourceLinkExecutors).toBeUndefined();

@@ -1579,7 +1579,7 @@ export default function Dashboard() {
                     ? 'translate-x-0 opacity-100'
                     : '-translate-x-[calc(100%+0.75rem)] opacity-0'
                 }`}
-                style={getGlassPanelStyle(uiTransparency, 16)}
+                style={getGlassPanelStyle(uiTransparency, 16, 'canvas')}
                 onMouseEnter={showFloatingSidebar}
                 onMouseLeave={scheduleFloatingSidebarHide}
               >

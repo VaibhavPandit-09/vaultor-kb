@@ -4,6 +4,10 @@
 
 @layer base {
   :root {
+    --resource-menu-bg: #0f172a;
+    --resource-menu-border: #33415580;
+    --resource-menu-text: #cbd5e1;
+    --resource-menu-hover: #1e293b;
     --surface-1: #f6f7f9;
     --surface-2: #ffffff;
     --surface-3: #eef2f6;
@@ -53,6 +57,31 @@
     --overlay-rgb: 2, 6, 23;
     --primary: var(--accent);
     --primary-foreground: #ffffff;
+  }
+
+  /* OLED keeps large surfaces black; elevation is neutral and restrained. */
+  :root[data-theme='oled'] {
+    --surface-1: #000000;
+    --surface-2: #000000;
+    --surface-3: #141414;
+    --surface-4: #1e1e1e;
+    --surface-raised: #0a0a0a;
+    --resource-menu-bg: var(--surface-raised);
+    --resource-menu-border: var(--border-strong);
+    --resource-menu-text: var(--text-secondary);
+    --resource-menu-hover: var(--surface-hover);
+    --text-primary: #e8e8e8;
+    --text-secondary: #b3b3b3;
+    --text-tertiary: #858585;
+    --border-subtle: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.22);
+    --card-rgb: 0, 0, 0;
+    --panel-rgb: 10, 10, 10;
+    --border-color: var(--border-subtle);
+    --surface-hover: #141414;
+    --overlay-rgb: 0, 0, 0;
+    --glass-opacity: 1;
+    --glass-blur: 0px;
   }
 
   :root[data-density='compact'] {
@@ -309,7 +338,7 @@ button {
 @media (max-width: 640px) { .table-expanded-heading { flex-wrap: wrap; gap: 8px; padding: 10px 14px; } .table-expanded-title { flex-basis: 55%; } .table-expanded-save { order: 3; } .editor-workspace:fullscreen > .table-editor-canvas { padding: 28px 24px; } }
 
 
-/* Browsing uses independent bounded groups and one page scroll container. */
+/* Browsing uses bounded mixed lists and one page scroll container. */
 .library-view { height:100%; min-height:0; min-width:0; overflow:auto; display:flex; flex-direction:column; align-items:stretch; gap:18px; padding:clamp(16px,3vw,40px); color:var(--text-primary); scrollbar-gutter:stable; }
 .library-view > * { flex-shrink:0; }
 .library-heading,.library-filters,.library-summary,.library-pagination { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
@@ -527,3 +556,19 @@ button {
 .sidebar-shortcut-delete:hover { color:var(--danger, #ef4444); }
 .sidebar-shortcut button:focus-visible { outline:2px solid var(--primary); outline-offset:2px; border-radius:4px; }
 @media (hover:none) { .sidebar-shortcut-delete { opacity:1; } }
+
+/* Semantic OLED exceptions for raised surfaces and legacy dark utilities. */
+:root[data-theme='oled'] :is([role='listbox'], .table-popover, .desktop-connections-dialog, .library-popover, .journey-popover, .table-context-menu) { background-color:var(--surface-raised); border-color:var(--border-strong); }
+:root[data-theme='oled'] :is(.bg-slate-900, .dark\:bg-slate-900\/50, .bg-slate-100, .dark\:bg-slate-800, .bg-slate-50, .dark\:bg-slate-950) { background-color:var(--surface-raised); }
+:root[data-theme='oled'] :is(.hover\:bg-slate-800, .dark\:hover\:bg-slate-800, .hover\:bg-slate-100, .dark\:hover\:bg-slate-800\/30, .hover\:bg-slate-50):hover { background-color:var(--surface-hover); }
+:root[data-theme='oled'] .text-slate-300 { color:var(--text-secondary); }
+:root[data-theme='oled'] :is(.text-slate-400, .text-slate-500, .dark\:text-slate-600) { color:var(--text-tertiary); }
+:root[data-theme='oled'] .tiptap pre { background:var(--surface-raised); color:var(--text-primary); border:1px solid var(--border-subtle); }
+:root[data-theme='oled'] .tiptap code { background-color:var(--surface-3); }
+:root[data-theme='oled'] .tiptap pre code { background:transparent; }
+:root[data-theme='oled'] .tiptap blockquote { color:var(--text-secondary); }
+:root[data-theme='oled'] ::selection { background:#29456b; color:var(--text-primary); }
+:root[data-theme='oled'] .desktop-window-controls { border-left:1px solid var(--border-subtle); border-bottom:1px solid var(--border-subtle); }
+
+/* Side previews must clear the native controls at the workspace top edge. */
+.desktop-shell [data-preview-resource].pointer-events-none > .pointer-events-auto { padding-top:34px; }

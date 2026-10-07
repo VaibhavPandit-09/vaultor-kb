@@ -208,23 +208,23 @@ The workspace is primarily desktop-oriented. Multiple panes and the percentage-w
 
 Authoritative CSS: `frontend/src/index.css`; settings apply root classes/data attributes and accent variables.
 
-Theme preference is `os | light | dark`, default OS. `prefers-color-scheme` changes update resolved colors and tag contrast live; explicit Light/Dark choices persist. The footer cycles OS → Light → Dark → OS. Native controls use the same resolved theme. Their entire container is non-draggable; heading drag regions stop 170px before the right edge to avoid native hit-test overlap. Canonical `desktop/assets/vaultor.svg` supplies the blue V window/tray assets; Mac tray uses its monochrome template. Existing Electron executable/pinned shortcut branding is an installer concern for D8.
+Theme preference is `os | light | dark | oled`, default OS. OS follows Light/Dark; explicit choices persist per device. OLED keeps the dark component class/native color scheme with its own neutral true-black tokens. The footer cycles OS → Light → Dark → OLED → OS. See [APPEARANCE.md](workspace/APPEARANCE.md) for surfaces, opacity, contrast and media boundaries. Native controls use the same resolved theme. Their entire container is non-draggable; heading drag regions stop 170px before the right edge to avoid native hit-test overlap. Canonical `desktop/assets/vaultor.svg` supplies the blue V window/tray assets; Mac tray uses its monochrome template. Existing Electron executable/pinned shortcut branding is an installer concern for D8.
 
-| Token | Light | Dark |
-| --- | --- | --- |
-| `--surface-1` | `#f6f7f9` | `#020617` |
-| `--surface-2` | `#ffffff` | `#0b1220` |
-| `--surface-3` | `#eef2f6` | `#111a2e` |
-| `--surface-4` | `#e8edf3` | `#182235` |
-| `--text-primary` | `#111827` | `#f8fafc` |
-| `--text-secondary` | `#374151` | `#cbd5e1` |
-| `--text-tertiary` | `#6b7280` | `#94a3b8` |
-| `--border-subtle` | `rgba(17,24,39,0.08)` | `rgba(148,163,184,0.14)` |
-| `--border-strong` | `rgba(17,24,39,0.14)` | `rgba(148,163,184,0.22)` |
+| Token | Light | Dark | OLED |
+| --- | --- | --- | --- |
+| `--surface-1` | `#f6f7f9` | `#020617` | `#000000` |
+| `--surface-2` | `#ffffff` | `#0b1220` | `#000000` |
+| `--surface-3` | `#eef2f6` | `#111a2e` | `#141414` |
+| `--surface-4` | `#e8edf3` | `#182235` | `#1e1e1e` |
+| `--text-primary` | `#111827` | `#f8fafc` | `#e8e8e8` |
+| `--text-secondary` | `#374151` | `#cbd5e1` | `#b3b3b3` |
+| `--text-tertiary` | `#6b7280` | `#94a3b8` | `#858585` |
+| `--border-subtle` | `rgba(17,24,39,0.08)` | `rgba(148,163,184,0.14)` | `rgba(255,255,255,0.12)` |
+| `--border-strong` | `rgba(17,24,39,0.14)` | `rgba(148,163,184,0.22)` | `rgba(255,255,255,0.22)` |
 
-Semantic aliases include background, foreground, muted/subtle foreground, card, sidebar, surface-hover, border, primary, and primary-foreground. Tailwind exposes background/foreground/card/cardForeground/border/primary. Use semantic surfaces for new UI and check both themes; some existing controls still hardcode slate/white values.
+Semantic aliases include background, foreground, muted/subtle foreground, card, sidebar, surface-hover, border, primary, and primary-foreground. Tailwind exposes background/foreground/card/cardForeground/border/primary. Use semantic surfaces for new UI and check Light, Dark and OLED. Raised menus use --surface-raised with existing-theme fallbacks; OLED overrides remaining legacy slate utilities without changing original Light/Dark values. Original media/PDF white is intentionally retained.
 
-Accent options: blue `#3b82f6`, purple `#8b5cf6`, green `#22c55e`, orange `#f97316`, red `#ef4444`, teal `#14b8a6`, pink `#ec4899`, cyan `#06b6d4`. Compact density sets the root to 15px and smaller form/control text. Base transitions are 40ms; smooth mode uses 170ms, with component-specific overrides. Glass helpers clamp opacity to 0.6-1 and calculate background/overlay blur. The setting named transparency is used as panel alpha: higher means more opaque.
+Accent options: blue `#3b82f6`, purple `#8b5cf6`, green `#22c55e`, orange `#f97316`, red `#ef4444`, teal `#14b8a6`, pink `#ec4899`, cyan `#06b6d4`. Compact density sets the root to 15px and smaller form/control text. Base transitions are 40ms; smooth mode uses 170ms, with component-specific overrides. Glass helpers clamp opacity to 0.6-1 and calculate background/overlay blur. The setting named transparency is used as panel alpha: higher means more opaque. OLED sets --glass-opacity=1 and --glass-blur=0px without modifying the stored value; panel RGB is 10/10/10 and canvas RGB is 0/0/0. Returning to other themes restores the saved alpha/blur.
 
 Editor CSS defines relaxed paragraph lines; H1/H2/H3 at 3xl/2xl/xl; conventional list indentation; primary-accent quote borders; dark code surfaces; pink inline code; yellow highlight; horizontally scrollable tables; selected-cell outlines; 8px scrollbars. Preserve these shared rules when adding blocks.
 
@@ -503,3 +503,7 @@ Release tooling adds explicit immutable missing-platform upload/retry checks, se
 ### 2026-10-07 — Scalable mixed browsing (0.3.1)
 
 Replaces fixed Notes/Files/Collections browsing groups with mixed server-ordered lists and one shared searchable Type filter. Sidebar uses 12 total pins/recent resources; all main resource/pin views use 100-item pages. Sidebar visibility/collapse/type stay device-specific and outside archives. Mixed pin API adds kind/appliedKind and optional metadata summaries while preserving existing fields. Labels/icons/opening modes come from resourceKinds; collection shortcuts remain organizational entities. Unknown resource types never become file previews. Resource model, database, structured documents, saving and session ownership are unchanged. Host 0.3.1+ is required for sidebar type persistence and pin filtering. Production frontend/desktop compilation, scoped ESLint, fresh embedded Java/server compilation and original-key artifact preflight passed. Forty-two focused frontend cases (Library, OrganizationViews, SidebarSections, ResourceTypeFilter, sidebarPreferences, PaneNavigation, CommandPaletteModal and navigationRefresh) and two backend cases (MixedBrowseTest and SidebarSettingsTest) passed. One disposable packaged Windows session passed mixed Recent order, pin filtering/type preference persistence, empty/sparse/102-resource paging, 101-note filtered paging, bounded type popover with 25 DOM-only future-choice layout fixtures, both themes/narrow long titles, collapse/hide/defaults, Escape/focus and native-control clearance. Eight frames were inspected; all five packaged UI files match dist and embedded browser assets byte-for-byte. A pin-envelope refactor initially altered the tag-page return type; compilation caught it and focused backend checks/fresh packaging passed after correction. No broad API/Docker run or user installation/uninstall; Mac native/package/two-device verification remains pending. Existing Browserslist/bundle-size/mixed-import/Java-agent/deprecation/ASAR warnings remain. Windows-only 0.3.1 was published at 2026-10-07T17:06:07Z from immutable tag v0.3.1 (6eb92e70b2a1279cc52116a7a0aaa2ea048d8b47). Both GitHub asset sizes/digests match the original-key verified pair; exact checksums and same-tag Mac handoff are in versioned release notes/MAC-HANDOFF. Mac packaging/native verification remains pending. This final publication-status documentation update has no additional architectural or shipped-code effect.
+
+### 2026-10-07 — OLED appearance (0.3.2)
+
+Added device-specific OLED preference, true-black main surfaces, neutral raised panels, dark native controls and preserved opacity settings. Theme normalization is additive in TypeScript/Java; no database, archive, note, save, session or protocol migration. Shared editor/menu surfaces retain Light/Dark defaults. Side previews reserve 34px for native controls; browser layout is unchanged. Production frontend/desktop and fresh embedded Java/server compilation, scoped lint, eleven focused frontend cases and two backend settings cases passed. One disposable packaged Windows session passed saved OLED reload, OS/cycle/native dark semantics, exact black main surfaces, all neutral text-token contrast checks, saved opacity restoration, palette/menu Escape/focus, notes/code/tables, side/floating previews, native-control clearance, settings/export/connections/hosting, narrow layout and reduced motion. Fourteen frames were captured; representative frames and the corrected preview clearance were inspected. All five packaged UI files match dist and embedded browser assets byte-for-byte. Original-key artifact preflight passed. Focused test fixtures and native assertions were corrected during validation; no broad API smoke, Docker build or user installation/uninstall was performed. Existing Browserslist/chunk/mixed-import/Java-agent/deprecation/ASAR warnings remain. Physical OLED hardware, Mac native packaging and two-device verification remain unverified. Verified Windows artifacts are ready for immutable source/tag and GitHub publication; Mac remains pending.

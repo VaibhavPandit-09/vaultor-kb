@@ -34,7 +34,7 @@ export type WorkspaceSettings = {
 };
 
 export type LocalSettings = {
-  theme: 'os' | 'dark' | 'light';
+  theme: 'os' | 'dark' | 'light' | 'oled';
   accentColor: 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'teal' | 'pink' | 'cyan';
   density: 'comfortable' | 'compact';
   animationMode: 'snappy' | 'smooth';
@@ -57,7 +57,7 @@ type SettingsState = {
 };
 
 type SettingsContextValue = {
-  resolvedTheme: 'dark' | 'light';
+  resolvedTheme: 'dark' | 'light' | 'oled';
   settings: SettingsState;
   workspaceLoaded: boolean;
   saveStatus: 'saved' | 'saving' | 'failed';
@@ -156,10 +156,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = window.document.documentElement;
     root.dataset.theme = resolvedTheme;
-    root.style.colorScheme = resolvedTheme;
+    root.style.colorScheme = resolvedTheme === 'light' ? 'light' : 'dark';
     root.dataset.density = currentLocalSettings.density;
     root.dataset.animation = currentLocalSettings.animationMode;
-    root.classList.toggle('dark', resolvedTheme === 'dark');
+    root.classList.toggle('dark', resolvedTheme !== 'light');
     root.classList.toggle('light', resolvedTheme === 'light');
     root.style.setProperty('--accent', accentMap[currentLocalSettings.accentColor]);
     root.style.setProperty('--primary', accentMap[currentLocalSettings.accentColor]);
@@ -371,7 +371,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [deviceId, updateDocument]);
 
   const toggleTheme = useCallback(() => {
-    updateLocalSetting('theme', currentLocalSettings.theme === 'os' ? 'light' : currentLocalSettings.theme === 'light' ? 'dark' : 'os');
+    updateLocalSetting('theme', currentLocalSettings.theme === 'os' ? 'light' : currentLocalSettings.theme === 'light' ? 'dark' : currentLocalSettings.theme === 'dark' ? 'oled' : 'os');
   }, [currentLocalSettings.theme, updateLocalSetting]);
 
   const retrySave = useCallback(() => { void persistSettingsDocument(documentRef.current); }, [persistSettingsDocument]);
@@ -468,7 +468,7 @@ function normalizeWorkspaceSettings(input: Partial<WorkspaceSettings> | null | u
 
 function normalizeLocalSettings(input: Partial<LocalSettings> | null | undefined): LocalSettings {
   return {
-    theme: input?.theme === 'light' || input?.theme === 'dark' ? input.theme : 'os',
+    theme: input?.theme === 'light' || input?.theme === 'dark' || input?.theme === 'oled' ? input.theme : 'os',
     accentColor: isAccentColor(input?.accentColor) ? input.accentColor : DEFAULT_LOCAL_SETTINGS.accentColor,
     density: input?.density === 'compact' ? 'compact' : 'comfortable',
     animationMode: input?.animationMode === 'smooth' ? 'smooth' : 'snappy',

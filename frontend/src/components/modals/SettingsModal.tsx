@@ -212,11 +212,12 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
           control: (
             <SettingSelect
               value={settings.local.theme}
-              onChange={(value) => updateLocalSetting('theme', value as 'os' | 'dark' | 'light')}
+              onChange={(value) => updateLocalSetting('theme', value as LocalSettings['theme'])}
               options={[
                 { label: 'OS', value: 'os' },
                 { label: 'Dark', value: 'dark' },
                 { label: 'Light', value: 'light' },
+                { label: 'OLED', value: 'oled' },
               ]}
             />
           ),
@@ -269,7 +270,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
         },
         {
           label: 'UI transparency',
-          description: 'Control the transparency of glassy surfaces like the command palette, floating sidebar, previews, and popovers.',
+          description: settings.local.theme === 'oled' ? 'OLED keeps surfaces opaque. Your transparency preference is retained for other themes.' : 'Control the transparency of glassy surfaces like the command palette, floating sidebar, previews, and popovers.',
           control: (
             <RangeControl
               value={settings.local.uiTransparency}
@@ -830,7 +831,7 @@ function SettingSelect({
             }
             if (event.key === 'Tab') setOpen(false);
           }}
-          className="overflow-hidden rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-2)] p-1.5 shadow-[0_22px_44px_rgba(15,23,42,0.14)]"
+          className="overflow-hidden rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-raised,var(--surface-2))] p-1.5 shadow-[0_22px_44px_rgba(15,23,42,0.14)]"
           style={{
             position: 'fixed',
             top: position.top,

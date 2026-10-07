@@ -1,6 +1,6 @@
 # D9: Mac mini and two-device completion handoff
 
-Prepared 2026-10-04 for the AI working on the user's Apple Silicon Mac mini. This is the remaining D9 validation, not a new feature sprint. Read AGENTS.md, CODEBASE.md and desktop-network-plan.md first; UPDATES.md, DESKTOP.md, HOST-ACCESS.md and MULTI-DEVICE.md are authoritative. Inspect the current tree and preserve unrelated work. Windows D9 work corrects Connections layout, packages 0.2.1 and supplies an isolated manual-test data directory; the recorded Mac D9 development checks used 0.2.2; the current 0.3.1 release handoff is below. Do not declare the overall Windows/Mac release gate complete until the checks below actually pass.
+Prepared 2026-10-04 for the AI working on the user's Apple Silicon Mac mini. This is the remaining D9 validation, not a new feature sprint. Read AGENTS.md, CODEBASE.md and desktop-network-plan.md first; UPDATES.md, DESKTOP.md, HOST-ACCESS.md and MULTI-DEVICE.md are authoritative. Inspect the current tree and preserve unrelated work. Windows D9 work corrects Connections layout, packages 0.2.1 and supplies an isolated manual-test data directory; the recorded Mac D9 development checks used 0.2.2; the current 0.3.2 OLED release handoff is below. Do not declare the overall Windows/Mac release gate complete until the checks below actually pass.
 
 ## Boundaries and preparation
 
@@ -122,7 +122,7 @@ The Windows-first release is https://github.com/VaibhavPandit-09/vaultor-kb/rele
 
 ## 0.3.1 mixed browsing release: exact Mac delivery
 
-For current delivery use immutable **v0.3.1**, not v0.3.0. Fetch the tag and use a clean detached checkout. Preserve the original signing key and source version. Set BUILD_VERSION/VITE_BUILD_VERSION=0.3.1, install dependencies, run desktop build/prepare-server/package:release natively on arm64. Expected pair: Vaultor-0.3.1-mac-arm64.dmg and .dmg.vaultor.json.
+For the historical mixed-browsing delivery use immutable **v0.3.1**. Current OLED delivery is v0.3.2 below. Fetch the tag and use a clean detached checkout. Preserve the original signing key and source version. Set BUILD_VERSION/VITE_BUILD_VERSION=0.3.1, install dependencies, run desktop build/prepare-server/package:release natively on arm64. Expected pair: Vaultor-0.3.1-mac-arm64.dmg and .dmg.vaultor.json.
 
 Run the focused eight frontend files listed in the 0.3.1 release notes, scoped lint, MixedBrowseTest and SidebarSettingsTest. Run VAULTOR_LAYOUT_SMOKE=1 with chrome-smoke against the packaged Vaultor executable and inspect the eight frames. This version checks mixed ordering, filtered 100-item paging, bounded searchable type controls, both themes/narrow layouts, sidebar collapse/hiding and keyboard focus. Complete the manual Finder/Dock/tray/install/update checks above using disposable data; prior 0.2.2 native results do not certify 0.3.1. Use private matching-key transfer, never Git/chat.
 
@@ -152,3 +152,29 @@ npm --prefix desktop run publish:release
 ```
 
 Inspect desktop/artifacts/browse-*.png and complete the manual platform checks before the authorized missing-platform upload command above. Native version/runtime/signature and actual checks must match this tagged source. Do not merely upload a development app. If key/native access or a check fails, retain the missing-platform status and report the specific blocker.
+
+## 0.3.2 OLED: current same-tag Mac handoff
+
+Use a clean detached worktree at immutable v0.3.2. Obtain the original matching private key privately as documented above; never rotate it or publish it. On the Apple Silicon Mac run:
+
+```sh
+git fetch origin tag v0.3.2
+git worktree add --detach ../vaultor-0.3.2 v0.3.2
+cd ../vaultor-0.3.2
+export BUILD_VERSION=0.3.2
+export VITE_BUILD_VERSION=0.3.2
+export VAULTOR_RELEASE_KEY="<private original-key path>"
+npm --prefix frontend ci
+npm --prefix desktop ci
+npm --prefix desktop run build
+(cd frontend && npx vitest run src/lib/settings.test.tsx src/components/editor/ResourceLinkMenu.test.tsx src/components/modals/CommandPaletteModal.test.tsx)
+(cd backend && ./mvnw -Dtest=SidebarSettingsTest test)
+npm --prefix desktop run prepare-server
+npm --prefix desktop run package:release
+codesign --verify --deep --strict --verbose=2 desktop/releases/mac-arm64/Vaultor.app
+VAULTOR_OLED_SMOKE=1 node desktop/scripts/chrome-smoke.mjs "$PWD/desktop/releases/mac-arm64/Vaultor.app/Contents/MacOS/Vaultor"
+npm --prefix desktop run publish:release
+npm --prefix desktop run publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.3.2.md
+```
+
+Inspect all OLED frames, then verify Finder/Dock/menu-bar/window controls, install and manual updater import with disposable data. Record real Mac results, same-tag DMG/sidecar hashes and update-host requirements. Preserve Windows bytes/tag. This is an ad-hoc personal build, not notarized. If source repairs are necessary, release a higher version rather than rewriting this tag. Existing 0.2.2 Mac results do not certify 0.3.2. Physical OLED testing is separately dependent on the display.

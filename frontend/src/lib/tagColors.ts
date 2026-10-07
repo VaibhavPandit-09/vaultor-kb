@@ -17,19 +17,19 @@ export function generateTagColor(tagName: string) {
   return `hsl(${hue} ${saturation}% ${lightness}%)`;
 }
 
-export function getTagPillStyle(color: string, theme: 'dark' | 'light') {
+export function getTagPillStyle(color: string, theme: 'dark' | 'light' | 'oled') {
   const { start, end } = generateTagGradient(color);
   const gradientStart = start;
   const gradientEnd = end;
   const text = getReadableTextColor(getAverageColor(gradientStart, gradientEnd));
-  const shadowAlpha = theme === 'dark' ? 0.16 : 0.1;
+  const shadowAlpha = theme !== 'light' ? 0.16 : 0.1;
 
   return {
-    backgroundImage: `linear-gradient(180deg, rgba(255,255,255,${theme === 'dark' ? 0.16 : 0.26}) 0%, rgba(255,255,255,0) 42%), linear-gradient(135deg, rgb(${gradientStart.r}, ${gradientStart.g}, ${gradientStart.b}) 0%, rgb(${gradientEnd.r}, ${gradientEnd.g}, ${gradientEnd.b}) 100%)`,
+    backgroundImage: `linear-gradient(180deg, rgba(255,255,255,${theme !== 'light' ? 0.16 : 0.26}) 0%, rgba(255,255,255,0) 42%), linear-gradient(135deg, rgb(${gradientStart.r}, ${gradientStart.g}, ${gradientStart.b}) 0%, rgb(${gradientEnd.r}, ${gradientEnd.g}, ${gradientEnd.b}) 100%)`,
     backgroundColor: `rgb(${gradientEnd.r}, ${gradientEnd.g}, ${gradientEnd.b})`,
-    borderColor: `rgba(255,255,255,${theme === 'dark' ? 0.24 : 0.52})`,
+    borderColor: `rgba(255,255,255,${theme !== 'light' ? 0.24 : 0.52})`,
     color: `rgb(${text.r}, ${text.g}, ${text.b})`,
-    boxShadow: `inset 0 1px 0 rgba(255,255,255,${theme === 'dark' ? 0.18 : 0.34}), 0 1px 2px rgba(15,23,42,${shadowAlpha}), 0 6px 12px rgba(15,23,42,${shadowAlpha * 0.7})`,
+    boxShadow: `inset 0 1px 0 rgba(255,255,255,${theme !== 'light' ? 0.18 : 0.34}), 0 1px 2px rgba(15,23,42,${shadowAlpha}), 0 6px 12px rgba(15,23,42,${shadowAlpha * 0.7})`,
   };
 }
 

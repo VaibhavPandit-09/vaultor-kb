@@ -340,3 +340,13 @@ Production frontend/desktop compilation, scoped ESLint, fresh embedded Java/serv
 - [x] Windows 0.3.1 installer/sidecar verified; release source `6eb92e70b2a1279cc52116a7a0aaa2ea048d8b47` committed/pushed and immutable v0.3.1 tag pushed. Windows-only release published at 2026-10-07T17:06:07Z; both GitHub asset sizes/digests match local verified bytes. [Published release](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.3.1).
 - [ ] Mac arm64 package/native verification remains blocked; exact same-tag original-key handoff is in MAC-HANDOFF.md. Ubuntu/Mac Intel/Android remain outside this delivery.
 - [x] Actual validation, compatibility, release checksums and user update steps recorded. Final publication-status documentation has no additional shipped-code effect.
+
+## 0.3.2 — OLED appearance and Windows delivery
+
+Authorized as one coordinated update, with OS unchanged as default and separate opaque OLED option.
+
+- [x] Frontend/backend device preference, OS → Light → Dark → OLED cycle and native dark semantics.
+- [x] True-black canvases, neutral raised surfaces, legacy editor/menu audit and stored transparency preservation.
+- [x] Final focused/native checks and reviewed disposable frames. Production frontend/desktop and fresh embedded Java/server compilation, scoped lint, eleven focused frontend cases and two backend settings cases passed. One disposable packaged Windows session passed saved OLED reload, OS/cycle/native dark semantics, exact black main surfaces, all neutral text-token contrast checks, saved opacity restoration, palette/menu Escape/focus, notes/code/tables, side/floating previews, native-control clearance, settings/export/connections/hosting, narrow layout and reduced motion. Fourteen frames were captured; representative frames and the corrected preview clearance were inspected. All five packaged UI files match dist and embedded browser assets byte-for-byte. Original-key artifact preflight passed. Focused test fixtures and native assertions were corrected during validation; no broad API smoke, Docker build or user installation/uninstall was performed. Existing Browserslist/chunk/mixed-import/Java-agent/deprecation/ASAR warnings remain. Physical OLED hardware, Mac native packaging and two-device verification remain unverified.
+- [ ] Fresh UI/server, original-key Windows pair, immutable source/tag and verified GitHub publication.
+- [ ] Mac same-tag packaging/native verification; access/key on native Mac remains unavailable.

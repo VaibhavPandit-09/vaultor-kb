@@ -9,14 +9,14 @@ export function clampTransparency(value: number) {
   return Math.min(MAX_TRANSPARENCY, Math.max(MIN_TRANSPARENCY, value));
 }
 
-export function getGlassPanelStyle(value: number, blurMultiplier = 18) {
+export function getGlassPanelStyle(value: number, blurMultiplier = 18, surface: 'panel' | 'canvas' = 'panel') {
   const transparency = clampTransparency(value);
   const blur = Math.round(Math.max(8, transparency * blurMultiplier));
 
   return {
-    background: `rgba(var(--card-rgb), ${transparency})`,
-    backdropFilter: `blur(${blur}px)`,
-    WebkitBackdropFilter: `blur(${blur}px)`,
+    background: `rgba(var(${surface === 'canvas' ? '--card-rgb' : '--panel-rgb, var(--card-rgb)'}), var(--glass-opacity, ${transparency}))`,
+    backdropFilter: `blur(var(--glass-blur, ${blur}px))`,
+    WebkitBackdropFilter: `blur(var(--glass-blur, ${blur}px))`,
   };
 }
 
@@ -27,7 +27,7 @@ export function getOverlayStyle(value: number, baseAlpha = 0.42) {
 
   return {
     background: `rgba(var(--overlay-rgb), ${overlayAlpha})`,
-    backdropFilter: `blur(${blur}px)`,
-    WebkitBackdropFilter: `blur(${blur}px)`,
+    backdropFilter: `blur(var(--glass-blur, ${blur}px))`,
+    WebkitBackdropFilter: `blur(var(--glass-blur, ${blur}px))`,
   };
 }

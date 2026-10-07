@@ -11,6 +11,10 @@ export async function runChromeSmoke(window, directory, owned) {
   const evaluate = code => window.webContents.executeJavaScript(code);
   const wait = async (code, label) => { for (let i = 0; i < 500; i++) { if (await evaluate(code).catch(() => false)) return; await new Promise(r => setTimeout(r, 100)); } throw new Error(label + ': ' + await evaluate('document.body.innerText')); };
   await wait("Boolean(document.querySelector('.library-view'))", 'Local workspace');
+  if (process.env.VAULTOR_OLED_SMOKE === '1') {
+    const { runOledSmoke } = await import('./native-oled-smoke.mjs');
+    await runOledSmoke(window, directory, owned); return;
+  }
   if (process.env.VAULTOR_LAYOUT_SMOKE === '1') {
     const { runLayoutSmoke } = await import('./native-layout-smoke.mjs');
     await runLayoutSmoke(window, directory, owned); return;

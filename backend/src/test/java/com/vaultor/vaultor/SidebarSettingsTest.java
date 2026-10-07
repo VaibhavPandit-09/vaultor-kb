@@ -36,4 +36,20 @@ class SidebarSettingsTest {
         service.patch(mapper.readTree("{\"local\":{\"device\":{\"sidebarSections\":{\"recent\":{\"type\":\"bad value\"}}}}}"));
         assertEquals("all",service.getSettings().local().get("device").sidebarSections().get("recent").type());
     }
+    @Test void oledPersistsAcrossReloadAndScopedPatches() {
+        var repository = mock(SettingRepository.class);
+        var stored = new AtomicReference<Setting>();
+        when(repository.findById(anyString())).thenAnswer(call -> Optional.ofNullable(stored.get()));
+        when(repository.save(any(Setting.class))).thenAnswer(call -> { stored.set(call.getArgument(0)); return stored.get(); });
+        var mapper = new ObjectMapper();
+        var service = new SettingsService(repository, mapper);
+        service.patch(mapper.readTree("{\"local\":{\"device\":{\"theme\":\"oled\",\"uiTransparency\":0.65}}}"));
+        service.patch(mapper.readTree("{\"local\":{\"device\":{\"accentColor\":\"purple\"}}}"));
+        var restored = new SettingsService(repository, mapper).getSettings().local().get("device");
+        assertEquals("oled",restored.theme()); assertEquals(0.65,restored.uiTransparency());
+        assertEquals("purple",restored.accentColor());
+        service.patch(mapper.readTree("{\"local\":{\"device\":{\"theme\":\"unknown\"}}}"));
+        assertEquals("os",service.getSettings().local().get("device").theme());
+    }
+
 }

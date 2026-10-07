@@ -113,7 +113,7 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
   }, [editor, selectedIndex, selectItem]);
 
   return (
-    <div className="w-64 bg-slate-900 border border-slate-700/50 rounded-xl shadow-2xl py-2 flex flex-col max-h-80 overflow-y-auto z-50 animate-in fade-in zoom-in-95 duration-100 tippy-box">
+    <div className="w-64 bg-[var(--resource-menu-bg)] border border-[var(--resource-menu-border)] rounded-xl shadow-2xl py-2 flex flex-col max-h-80 overflow-y-auto z-50 animate-in fade-in zoom-in-95 duration-100 tippy-box">
       <div className="px-3 py-1.5 mb-1 flex justify-between items-center text-xs font-semibold text-slate-400 border-b border-slate-700/50">
         <span className="flex items-center"><Search size={12} className="mr-1.5" /> Link Resource</span>
         {loading && <span className="animate-pulse">Searching...</span>}
@@ -129,7 +129,7 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
         <button
           key={item.id}
           className={`w-full flex items-center px-3 py-2 text-sm text-left transition-colors ${
-            index === selectedIndex ? 'bg-primary/20 text-blue-400 font-medium' : 'text-slate-300 hover:bg-slate-800'
+            index === selectedIndex ? 'bg-primary/20 text-blue-400 font-medium' : 'text-[var(--resource-menu-text)] hover:bg-[var(--resource-menu-hover)]'
           }`}
           onClick={() => selectItem(index)}
         >
