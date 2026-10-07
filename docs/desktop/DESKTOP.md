@@ -119,3 +119,12 @@ This computer is Vaultor's bundled, automatically managed server and its own wor
 If the previous server is unreachable and no note/title drafts remain, the client can switch after strict local session/recovery persistence without asking that offline server to save. Unsaved notes require explicit Keep drafts and switch; known active operations, pending local work, unsaved settings and failed recovery writes remain guarded. When identity is reachable but activity cannot be checked, the existing review/retry warning remains. Departure checks run concurrently with bounded timeouts. The failure that motivated 0.2.2 and actual checks are recorded in CODEBASE.md.
 
 Page-header correction (2026-10-04): production build/scoped lint, seven focused Library/popover tests and a read-only disposable Windows layout check passed; inspected dark/light/narrow frames show full-width heading action alignment and safe long-title wrapping. To rerun only this focused check in PowerShell: `$env:VAULTOR_LAYOUT_SMOKE="1"; npm --prefix desktop run smoke:chrome`; remove the environment variable afterward with `Remove-Item Env:VAULTOR_LAYOUT_SMOKE`. It checks More dismissal and captures ignored `desktop/artifacts/*-layout-*.png` without the broader native/API scenarios. Quit the current development app through its tray and start it again to load the rebuilt UI; installed release packages remain snapshots. No installer or Mac rebuild was performed for this correction.
+
+
+## 0.3.0 browsing and parallel build preparation
+
+Library/Recent/Collections/Pinned share content-sized groups and one page scrollbar, retaining the separate 40px top native-control/drag band. Sidebar options stores collapse/hide under device sidebarSections; connection and main navigation remain reachable. [LIBRARY.md](../workspace/LIBRARY.md) owns grouping/counts/behavior.
+
+For a release build while the development server locks desktop/bundle, set VAULTOR_BUILD_BUNDLE to an absolute directory inside desktop/cache before prepare-server and package:release. Preparation retains its predecessor; packaging verifies and copies this selected bundle into the usual resources/bundle path. The default remains desktop/bundle. This does not switch the running application's workspace or terminate user processes.
+
+UI copying stages a fresh directory rather than merging asset hashes; previous UI remains under ignored cache. Packaged UI and embedded browser assets must match the current dist bytes.

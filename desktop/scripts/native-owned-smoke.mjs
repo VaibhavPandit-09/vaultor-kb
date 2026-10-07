@@ -26,7 +26,7 @@ export async function runOwnedSmoke(window, owned, directory, activity) {
   window.show();window.focus();
   const hosting=await evaluate('window.vaultorDesktop.hosting()');assert.equal(hosting.value.startAtLogin,false);
   if (process.env.VAULTOR_SMOKE_MODE === 'first') {
-    await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='New Note').click()");
+    await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim().toLowerCase()==='new note').click()");
     await wait("Boolean(document.querySelector('.tiptap'))", 'New note');
     await evaluate("document.querySelector('.tiptap').focus()"); wc.insertText('Bundled runtime native check.');
     await wait("document.querySelector('.tiptap')?.textContent.includes('Bundled runtime native check.')", 'Typing');

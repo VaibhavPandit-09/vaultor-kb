@@ -148,8 +148,20 @@ public class SettingsService {
         double uiTransparency = incoming.uiTransparency() == null ? defaultLocalSettings().uiTransparency() : Math.max(0.6d, Math.min(1d, incoming.uiTransparency()));
         boolean sidebarCollapsed = incoming.sidebarCollapsed() != null && incoming.sidebarCollapsed();
 
-        return new LocalSettings(theme, accentColor, density, animationMode, previewMode, sidebarMode, uiTransparency, sidebarCollapsed);
+        return new LocalSettings(theme, accentColor, density, animationMode, previewMode, sidebarMode, uiTransparency, sidebarCollapsed, normalizeSidebarSections(incoming.sidebarSections()));
     }
+
+    private static Map<String, SidebarSection> normalizeSidebarSections(Map<String, SidebarSection> incoming) {
+        Map<String, SidebarSection> result = new LinkedHashMap<>();
+        for (String name : java.util.List.of("pinned", "recent", "tags")) {
+            SidebarSection value = incoming == null ? null : incoming.get(name);
+            result.put(name, new SidebarSection(value == null || !Boolean.FALSE.equals(value.visible()),
+                    value != null && Boolean.TRUE.equals(value.collapsed())));
+        }
+        return result;
+    }
+
+    public record SidebarSection(Boolean visible, Boolean collapsed) {}
 
     private Keybinding normalizeKeybinding(String action, Keybinding incoming) {
         String mac = normalizeShortcutString(incoming == null ? null : incoming.mac());
@@ -189,7 +201,7 @@ public class SettingsService {
     }
 
     public static LocalSettings defaultLocalSettings() {
-        return new LocalSettings("os", "blue", "comfortable", "snappy", "side", "fixed", 0.85d, false);
+        return new LocalSettings("os", "blue", "comfortable", "snappy", "side", "fixed", 0.85d, false, normalizeSidebarSections(null));
     }
 
     public static final Map<String, Keybinding> DEFAULT_KEYBINDINGS = Map.of(
@@ -222,7 +234,8 @@ public class SettingsService {
             String previewMode,
             String sidebarMode,
             Double uiTransparency,
-            Boolean sidebarCollapsed
+            Boolean sidebarCollapsed,
+            Map<String, SidebarSection> sidebarSections
     ) {}
 
     public record Keybinding(

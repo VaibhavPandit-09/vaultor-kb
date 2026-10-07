@@ -56,7 +56,7 @@ npm --prefix desktop run package:release
 npm --prefix desktop run publish:release
 ```
 
-`prepare-server` follows `build`: the backend JAR embeds browser assets, so UI-only app releases still need a fresh JAR. The script uses pinned, checksum-verified platform Java runtimes. Installed apps need no system Java or Docker. `package:release` verifies the original signing identity and writes installers plus signed sidecars under ignored `desktop/releases/`; it never publishes automatically. `publish:release` without flags is a local signature/size/checksum/version preflight, not a GitHub mutation.
+`build` stages a clean UI directory and retains the previous copy under ignored desktop/cache, preventing accumulated obsolete asset hashes in installers. `prepare-server` follows `build`: the backend JAR embeds browser assets, so UI-only app releases still need a fresh JAR. The script uses pinned, checksum-verified platform Java runtimes. Installed apps need no system Java or Docker. `package:release` verifies the original signing identity and writes installers plus signed sidecars under ignored `desktop/releases/`; it never publishes automatically. `publish:release` without flags is a local signature/size/checksum/version preflight, not a GitHub mutation.
 
 Run compilation and focused checks for the changed failure-prone behavior, plus package verification. Use native build/install checks on each target as appropriate; don't repeat broad API/Docker suites by default. Actual installation/native validation is separate from artifact-byte validation. Read the Mac handoff and existing installer/native scripts before invoking anything that affects the OS; use disposable storage. Never uninstall the user's real installation as a test.
 
@@ -72,7 +72,7 @@ git tag -a vVERSION -m "Vaultor VERSION"
 git push origin vVERSION
 ```
 
-Do not move an existing tag or overwrite an existing published release. A correction gets a new version.
+Do not move an existing tag or overwrite any existing release asset. A correction gets a new version. The sole same-version exception is adding a previously absent, verified platform pair from the exact existing tag with --add-platform; byte-identical retries are allowed.
 
 4. From repository root, stage the local target into a draft using reviewed notes:
 
@@ -80,7 +80,7 @@ Do not move an existing tag or overwrite an existing published release. A correc
 npm --prefix desktop run publish:release -- --publish --notes docs/desktop/releases/vVERSION.md
 ```
 
-The helper verifies original-key signatures, exact size/checksum, package version, clean tree and remote tag pointing to HEAD; it discovers the repository through `gh`. It creates a draft and uploads only the installer and its `.vaultor.json`. It reuses identical existing draft assets on retry and rejects different bytes or published-release edits. It never uploads application storage, host backups or private keys. GitHub availability/permissions failures leave publication incomplete and must be reported.
+The helper verifies original-key signatures, exact size/checksum, package version, clean tree and remote tag pointing to HEAD; it discovers the repository through `gh`. It creates a draft and uploads only the installer and its `.vaultor.json`. It reuses identical existing draft assets on retry and rejects different bytes. Published releases require explicit --add-platform for missing-platform delivery or identical retries; normal upload refuses them. It never uploads application storage, host backups or private keys. GitHub availability/permissions failures leave publication incomplete and must be reported.
 
 5. On the other native machine, check out the same tagged commit, build/verify, and run the same publisher to add that platform pair to the existing draft. If transferring already verified artifacts to one publishing machine, use `--platform darwin` or `--platform win32` to preflight/upload that target; this is not native validation.
 6. Inspect the draft and its downloaded pairs. Require four assets for a complete release: Windows EXE + sidecar and Mac DMG + sidecar. Confirm version, commit, source trust, actual platform checks, compatibility, warnings and recovery directions. Update draft notes if necessary using `gh release edit vVERSION --notes-file docs/desktop/releases/vVERSION.md`.
@@ -101,3 +101,17 @@ The current updater deliberately rejects redirects and does not send workspace c
 ## After release
 
 Preserve the original private key and prior artifact pairs privately for recovery; don't erase the build output before retaining the previous version. Keep CODEBASE, UPDATES, installation guide and tracker synchronized with actual publication and platform state. Reconnect/host instructions must maintain revision/TLS/pairing checks. Do not mutate user data or roll back a database blindly. If a release is broken, stop recommending it, publish a new fixed version and document recovery; do not replace bytes under its existing signed version/tag.
+
+
+## Add a missing platform after Windows-first publication
+
+On the native Mac, check out the immutable vVERSION source and retain its package/lock versions. Obtain the matching original private key privately, build fresh UI/server and DMG, then perform the required native checks. Read the versioned notes and handoff, preflight, and upload:
+
+```text
+npm --prefix desktop run publish:release
+npm --prefix desktop run publish:release -- --publish --add-platform --notes docs/desktop/releases/vVERSION.md
+```
+
+The helper requires the existing release, clean tree, remote tag at HEAD and original-key verified pair. It adds only absent installer/sidecar assets; existing assets are downloaded and checked for identical SHA-256 before retry reuse. It never overwrites existing bytes, moves the tag or changes release notes/publication status. After successful Mac verification/upload, update public release notes with actual results through GitHub; maintain living documentation in a subsequent documentation-only commit. Do not commit code repairs under the immutable tag: repairs need a new version for both platforms.
+
+If the development app locks desktop/bundle on Windows, set VAULTOR_BUILD_BUNDLE to an absolute new directory inside desktop/cache before prepare-server and package:release. Both scripts use that verified directory; the installed app still receives resources/bundle normally. Existing bundles are retained instead of deleted, and no user process needs to be terminated.

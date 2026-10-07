@@ -1,3 +1,4 @@
+import { SidebarSection, SidebarCustomization, SidebarRecent } from '../components/SidebarSections';
 import { inspectWorkspaceDeparture } from '../lib/workspaceDeparture';
 import LibraryPopover from '../components/LibraryPopover';
 import RecoveryPanel from '../components/RecoveryPanel';
@@ -22,11 +23,11 @@ import { createPortal, flushSync } from 'react-dom';
 import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import {
   Plus,
+  ChevronDown,
   Search,
   Sun,
   Moon,
   Monitor,
-  Trash2,
   Database,
   Library,
   Clock,
@@ -49,8 +50,7 @@ import api from '../lib/api';
 import { getPlatform, saveApiFile, openApiFile } from '../lib/platform';
 import { registerConnectionBarrier, SwitchBlockedError,consumeLocalArchiveImport } from '../lib/desktop';
 import LibraryView, { type LibrarySection } from '../components/LibraryView';
-import { browseResources, resourcesChanged } from '../lib/resourceBrowse';
-import { resourceKind } from '../lib/resourceKinds';
+import { resourcesChanged } from '../lib/resourceBrowse';
 import SaveIndicator from '../components/SaveIndicator';
 import { registerCloseNoteShortcut } from '../lib/closeNoteShortcut';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -134,10 +134,8 @@ export default function Dashboard() {
   const sessionPersistence = useRef<SessionPersistence | null>(null), identityRef = useRef<Identity | null>(null);
   const identityCheckVersion=useRef(0);
   const recoveryFocus = useRestoreFocusOnClose();
-  const [sidebarError, setSidebarError] = useState('');
   const [tagsError, setTagsError] = useState('');
   const [recencyError, setRecencyError] = useState('');
-  const [sidebarReady, setSidebarReady] = useState(false);
   const [recency] = useState(() => new RecencyRecorder((id, signal) => api.post('/resources/' + id + '/open', null, {signal, timeout: 8000, backgroundDiagnostic: true}), setRecencyError));
   useEffect(() => () => recency.reset(), [recency]);
   const [resources, setResources] = useState<Resource[]>([]);
@@ -155,7 +153,6 @@ export default function Dashboard() {
   const [backlinks, setBacklinks] = useState<Resource[]>([]);
   const [backlinksFor,setBacklinksFor]=useState<string|null>(null);
   const [loadingResourceIds, setLoadingResourceIds] = useState<string[]>([]);
-  const [sidebarLoading, setSidebarLoading] = useState(false);
 
   const [tagSearch, setTagSearch] = useState('');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -225,7 +222,7 @@ export default function Dashboard() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleEditNoteId = titleEditState?.noteId ?? null;
 
-  const { settings, resolvedTheme, workspaceLoaded, resolvedShortcuts, toggleTheme, updateLocalSetting, flushSettings, saveStatus: settingsSaveStatus } = useSettings();
+  const { settings, resolvedTheme, workspaceLoaded, resolvedShortcuts, toggleTheme, updateLocalSetting, flushSettings, saveStatus: settingsSaveStatus, retrySave: retrySettingsSave } = useSettings();
   const collectionCreationFocus=useRestoreFocusOnClose();
   const commandPaletteFocus = useRestoreFocusOnClose();
   const shortcutsModalFocus = useRestoreFocusOnClose();
@@ -402,32 +399,21 @@ export default function Dashboard() {
     setTagPickerSelectedIndex(0);
   }, [tagInputValue, tagPickerOpenNoteId]);
 
-  const browseGeneration = useRef(0), tagGeneration = useRef(0);
-  const recentRequest = useRef<AbortController | null>(null);
-  const fetchRecent = useCallback(async () => {
-    const generation = ++browseGeneration.current;
-    recentRequest.current?.abort();
-    const controller = new AbortController(); recentRequest.current = controller;
-    setSidebarLoading(true); setSidebarError('');
-    try {
-      const data = await browseResources({size:12,sort:'recent'},controller.signal);
-      if (generation !== browseGeneration.current || controller.signal.aborted) return;
-      setResources(data.items); setSidebarReady(true);
-    } catch (error) {
-      if (generation === browseGeneration.current && !controller.signal.aborted) {setSidebarError('Could not refresh Recent.'); console.error(error);}
-    } finally {
-      if (generation === browseGeneration.current) setSidebarLoading(false);
-    }
-  }, []);
+  const tagsEnabled = (localSettings.sidebarSections.tags.visible && !localSettings.sidebarSections.tags.collapsed) || Boolean(tagPickerOpenNoteId);
+  const tagGeneration = useRef(0);
+  const tagRequest = useRef<AbortController | null>(null);
   const fetchTags = useCallback(async () => {
+    if (!tagsEnabled) return;
+    tagRequest.current?.abort();
+    const controller = new AbortController(); tagRequest.current = controller;
     const generation = ++tagGeneration.current;
     try {
-      const {data} = await api.get('/tags', {backgroundDiagnostic:true});
+      const {data} = await api.get('/tags', {backgroundDiagnostic:true,signal:controller.signal});
       if (generation === tagGeneration.current) {setTags(data || []);setTagsError('');}
-    } catch { if (generation === tagGeneration.current) setTagsError('Could not refresh tags.'); }
-  }, []);
-  const fetchData = useCallback(async () => { await Promise.all([fetchRecent(),fetchTags()]); }, [fetchRecent,fetchTags]);
-  const cancelSidebarRequests = useCallback(() => { recentRequest.current?.abort();browseGeneration.current++;tagGeneration.current++; }, []);
+    } catch { if (!controller.signal.aborted && generation === tagGeneration.current) setTagsError('Could not refresh tags.'); }
+  }, [tagsEnabled]);
+  const fetchData = useCallback(async () => { await fetchTags(); }, [fetchTags]);
+  const cancelSidebarRequests = useCallback(() => { tagGeneration.current++; tagRequest.current?.abort(); }, []);
 
   const resourceLoadVersions = useRef(new Map<string, number>());
   const workspaceEpoch = useRef(0);
@@ -662,21 +648,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     void fetchData();
-    let timer: ReturnType<typeof setTimeout> | undefined;
     const unsubscribe = subscribeResourceChanges(change => {
-      if (affectsScope(change,'recent')) {
-        clearTimeout(timer); recentRequest.current?.abort(); browseGeneration.current++;
-        if (change.kind === 'opened') {
-          if(change.phase === 'settled') timer=setTimeout(() => void fetchRecent(),150);
-        } else {
-          if(change.kind === 'workspace') {setResources([]);setSidebarReady(false);}
-          void fetchRecent();
-        }
-      }
       if(affectsScope(change,'tags')) void fetchTags();
+      if(change.kind==='workspace') {setResources([]);setTags([]);}
     });
-    return () => {unsubscribe();clearTimeout(timer);cancelSidebarRequests();};
-  }, [fetchData,fetchRecent,fetchTags,cancelSidebarRequests]);
+    return () => {unsubscribe();cancelSidebarRequests();};
+  }, [fetchData,fetchTags,cancelSidebarRequests]);
 
   useEffect(() => {
     dispatch(setCurrentResourceId(activeNoteId));
@@ -1284,24 +1261,26 @@ export default function Dashboard() {
   }, [openNotes,fetchResourceDetails]);
 
   const showLibrary = (section: LibrarySection) => { setPaletteSelection([]);setCollection(null); setLibrarySection(section); setLibraryVisible(true); dismissPreview({ restoreFocus: false }); };
+  const returnToNotes = () => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); };
+  const sidebarPreferences = localSettings.sidebarSections;
+  const updateSidebarPreferences = (value: typeof sidebarPreferences) => updateLocalSetting('sidebarSections', value);
   const openCollection = (item:OrganizationItem) => {showLibrary('library');dispatch(clearSelectedTags());setCollection(item);};
   const sidebarContent = (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="px-3 py-3 space-y-1">
-        <button className="sidebar-nav" onClick={openCommandPalette}><Search size={16} />Search workspace<span className="ml-auto text-xs opacity-60">{resolvedShortcuts.commandPalette.replace('Mod', isMac ? '⌘' : 'Ctrl').replaceAll('+', ' ')}</span></button>
+        <div className="flex items-center gap-1"><button className="sidebar-nav" onClick={openCommandPalette}><Search size={16} />Search workspace<span className="ml-auto text-xs opacity-60">{resolvedShortcuts.commandPalette.replace('Mod', isMac ? '⌘' : 'Ctrl').replaceAll('+', ' ')}</span></button><SidebarCustomization preferences={sidebarPreferences} onChange={updateSidebarPreferences} status={settingsSaveStatus} onRetry={retrySettingsSave}/></div>
         {([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }] as const).map(({ id, label, Icon }) => <button key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</button>)}
         {openNotes.length > 0 && <button className="sidebar-nav" onClick={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }}><FileText size={16} />Open notes<span className="ml-auto text-xs opacity-60">{openNotes.length}</span></button>}
       </div>
-      <button className="sidebar-nav" onClick={()=>{collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>
-      <div className="flex gap-1.5 px-3 pb-2">
+      <div className="sidebar-create-actions flex gap-1.5 px-3 pb-2">
         <button
           onClick={handleCreateNote}
           disabled={createNotePending}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-1.5 text-xs font-medium text-white transition-all hover:bg-primary/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {createNotePending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-          New Note
-        </button>
+          New note
+        </button><LibraryPopover label="Create options" trigger={<ChevronDown size={14}/>} className="sidebar-create-menu">{close=><button className="library-button" onClick={()=>{close();collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>}</LibraryPopover>
         <button
           onClick={requestFileUpload}
           disabled={uploadPending}
@@ -1332,17 +1311,11 @@ export default function Dashboard() {
       <div className="border-t border-border" />
 
       <div className="flex-1 overflow-y-auto py-2" style={{overflowAnchor:'none'}}>
-        <PinnedList compact onViewAll={()=>showLibrary('favorites')} onResource={id=>void openResourceById(id)} onCollection={openCollection}/>
-        <p className="sidebar-section-label">Recent <button onClick={() => showLibrary('recent')}>View all</button></p>
-        {sidebarLoading && !sidebarReady ? <p className="px-4 text-xs opacity-60">Loading…</p> : resources.map(resource => <SidebarItem key={resource.id} resource={resource} isActive={!libraryVisible && currentResourceId === resource.id} onClick={() => void openResourceById(resource.id)} onDelete={event => void handleDeleteResource(resource.id, event)} />)}
-        {sidebarError && <button className="sidebar-nav text-xs" onClick={() => void fetchRecent()}>{sidebarError} Retry</button>}
-        {recencyError && <button className="sidebar-nav text-xs" onClick={() => recency.retry()}>{recencyError} Retry</button>}
+        <SidebarSection name="pinned" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('favorites')}><PinnedList compact visible={sidebarPreferences.pinned.visible&&!sidebarPreferences.pinned.collapsed} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></SidebarSection>
+        <SidebarSection name="recent" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('recent')}><SidebarRecent enabled={sidebarPreferences.recent.visible&&!sidebarPreferences.recent.collapsed} activeId={!libraryVisible?currentResourceId??undefined:undefined} onOpen={id=>void openResourceById(id)} onDelete={(id,event)=>void handleDeleteResource(id,event)} onResources={setResources}/>{recencyError&&<button className="sidebar-nav text-xs" onClick={()=>recency.retry()}>{recencyError} Retry</button>}</SidebarSection>
       </div>
       <div className="border-t border-border" />
-      <div className="flex max-h-40 flex-col px-3 py-2">
-        <div className="mb-1.5 flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tags</span>
-        </div>
+      <SidebarSection name="tags" preferences={sidebarPreferences} onChange={updateSidebarPreferences}><div className="flex max-h-40 flex-col px-3 py-2">
         {tags.length > 3 && (
           <input
             type="text"
@@ -1384,7 +1357,7 @@ export default function Dashboard() {
           ))}
           {filteredTags.length === 0 && <span className="text-[10px] text-slate-400">No tags</span>}
         </div>
-      </div>
+      </div></SidebarSection>
 
       <DesktopConnectionButton/>
       <div className="flex items-center justify-between border-t border-border bg-background/80 p-2">
@@ -1617,7 +1590,7 @@ export default function Dashboard() {
         )}
 
         <main className="min-w-0 flex-1 relative">
-          <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></section>:<LibraryView key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
+          <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/></section>:<LibraryView key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="h-full" hidden={libraryVisible}>
           <div className="flex h-full min-h-0 flex-col">
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
@@ -2172,21 +2145,4 @@ function getWorkspacePaneClass({
 
   const widthClass = isActive ? 'flex-[1.2]' : 'flex-[0.9]';
   return `relative flex min-w-0 ${widthClass} flex-col overflow-hidden ${shellClass} ${motionClass} ${visualClass}`;
-}
-
-function SidebarItem({ resource, isActive, onClick, onDelete }: { resource: Resource; isActive: boolean; onClick: () => void; onDelete: (event: React.MouseEvent) => void }) {
-  const Icon = resourceKind(resource.type).icon;
-  return (
-    <div
-      className={`group mx-2 mb-0.5 flex cursor-pointer items-center justify-between rounded-lg border-l-2 px-3 py-1.5 transition-all ${
-        isActive ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'
-      }`}
-    >
-      <button onClick={onClick} title={resource.title} className="flex min-w-0 flex-1 items-center overflow-hidden pr-2 text-left">
-        <Icon size={14} className={`mr-2 flex-shrink-0 ${isActive ? 'text-primary' : 'text-slate-400'}`} />
-        <span className={`truncate text-[13px] ${isActive ? 'font-medium text-primary' : ''}`}>{resource.title}</span>
-      </button>
-      <button aria-label={`Delete ${resource.title}`} onClick={onDelete} className="flex-shrink-0 p-0.5 text-slate-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 focus:opacity-100"><Trash2 size={12} /></button>
-    </div>
-  );
 }

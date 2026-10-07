@@ -183,3 +183,10 @@ D6 uses the existing host access/approval/sharing contracts; no workspace DTO, d
 OpenAPI 1.3.0 documents `patchSettings` and `watchWorkspaceChanges`. `PATCH /settings` atomically merges changed scalar leaves under workspace/local/keybindings; null removes a leaf. Different fields survive concurrent clients, while same-field edits are last committed wins. Full PUT remains local legacy only; HTTPS callers use PATCH. `GET /changes?cursor=...` is approved metadata-only SSE with bounded replay and reset on gaps/restart. Both browser and desktop use the ordinary approved application services. MULTI-DEVICE.md owns examples, bounds, revision requirements and reconciliation; no privileged debug execution endpoint exists.
 
 D8 adds no backend update/schema endpoints. Installer/update orchestration is native main-only IPC, not an agent execution API. Compatibility requires protocol 1 and changeFeed/scopedSettings. Existing-server onboarding verifies /workspace/identity using an explicitly selected owner key or paired HTTPS; archives still use the same reviewed transfer APIs. See UPDATES.md for package manifests and local recovery.
+
+
+## Device sidebar presentation — 0.3.0
+
+Existing GET/PATCH /settings persists `local[deviceId].sidebarSections`, with known `pinned`, `recent`, `tags` entries, each `{visible:boolean,collapsed:boolean}`. Omitted/null entries normalize to visible/expanded; unknown section names are ignored. Scalar leaf patches preserve unrelated fields. There are no new endpoints, database migrations or portable archive fields. Update the host to 0.3.0 before relying on these fields: previous hosts discard them during normalization.
+
+Browsing groups independently call GET /resources with type and size=12 (overview) or size=100 (selected type), q/title mode, collection/tag/favorites and sort; counts come from each filtered response. Pinned collections use GET /collections?favorites=true with the same sizes. Sidebar uses size=4 pinned and size=6 recent per type. Content opt-in continues through /resources/query with the existing collection scope and bounded snippets.

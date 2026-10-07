@@ -15,17 +15,27 @@ const render=(ui:ReactNode)=>rtlRender(<EscapeManagerProvider>{ui}</EscapeManage
 const page = (prefix = 'Note'): ResourcePage => ({ items: Array.from({length:100}, (_, i) => ({id:`${prefix}-${i}`,type:'note',title:`${prefix} ${i}`,tags:[],createdAt:'2026-09-23',updatedAt:'2026-09-23'})),page:0,size:100,totalItems:205,totalPages:3 });
 beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
-  vi.mocked(browseResources).mockResolvedValue(page());
+  vi.mocked(browseResources).mockImplementation(async (query = {}) => {
+    const type = query.type === 'file' ? 'file' : 'note';
+    const totalItems = type === 'file' ? 2 : 205;
+    const size = query.size ?? 100, index = query.page ?? 0;
+    const prefix = type === 'file' ? 'File' : 'Note';
+    return {items:Array.from({length:Math.min(size,Math.max(0,totalItems-index*size))},(_,i)=>({id:`${prefix}-${index*size+i}`,type,title:`${prefix} ${index*size+i}`,tags:[],createdAt:'2026-09-23',updatedAt:'2026-09-23'})),size,page:index,totalItems,totalPages:Math.ceil(totalItems/size)};
+  });
   vi.mocked(api.get).mockImplementation(async url=>({data:url==='/collections'?{items:[{id:'atlas',name:'Atlas',count:100}],totalPages:1,totalItems:1}:{id:'atlas',name:'Atlas',count:100}}));
 });
 afterEach(() => { cleanup(); vi.resetAllMocks(); vi.unstubAllGlobals(); });
-it('virtualizes a bounded page and asks the server for the next page', async () => {
+it('uses independent grouped previews and bounded full pages', async () => {
   const open=vi.fn();
   render(<LibraryView section="library" visible tags={[]} hasNotes onReturn={() => {}} onOpen={open} />);
   await screen.findByText('Note 0');
-  expect(screen.getAllByRole('listitem').length).toBeLessThan(30);
+  expect(screen.getAllByRole('listitem').length).toBe(14);
+  expect(screen.getByText('205')).toBeTruthy();
+  expect(browseResources).toHaveBeenCalledWith(expect.objectContaining({type:'file',size:12}),expect.any(AbortSignal));
   expect(screen.queryByText('Note 99')).toBeNull();
   fireEvent.click(screen.getByTitle('Note 0')); expect(open).toHaveBeenCalledWith('Note-0');
+  fireEvent.click(screen.getByRole('button',{name:'View all notes'}));
+  await screen.findByText('Note 99');
   fireEvent.click(screen.getByText('Next'));
   await waitFor(() => expect(browseResources).toHaveBeenLastCalledWith(expect.objectContaining({page:1,size:100}),expect.any(AbortSignal)));
   fireEvent.click(screen.getByRole('button',{name:'Search options'}));
@@ -56,7 +66,9 @@ it('combines collection and tag filtering and scopes selection to the current pa
   await screen.findByText('Note 0');
   expect(browseResources).toHaveBeenCalledWith(expect.objectContaining({collection:'atlas',tags:['topic']}),expect.any(AbortSignal));
   fireEvent.click(screen.getByLabelText('Select Note 0'));expect(screen.getByText('1 selected')).toBeTruthy();
-  fireEvent.click(screen.getByText('Select page'));expect(screen.getByText('100 selected')).toBeTruthy();
+  fireEvent.click(screen.getByText('Select visible resources'));expect(screen.getByText('14 selected')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button',{name:'View all notes'}));await screen.findByText('Note 99');
+  fireEvent.click(screen.getByText('Select visible resources'));expect(screen.getByText('100 selected')).toBeTruthy();
   fireEvent.click(screen.getByText('Next'));await waitFor(()=>expect(screen.queryByText('100 selected')).toBeNull());
 });
 it('retains query while opting into content and changing collection destination',async()=>{

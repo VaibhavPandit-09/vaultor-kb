@@ -1,5 +1,12 @@
-import { cp, mkdir } from 'node:fs/promises';
-const destination = new URL('../ui/', import.meta.url);
-await mkdir(destination, { recursive: true });
-await cp(new URL('../../frontend/dist/', import.meta.url), destination, { recursive: true });
-console.log('Bundled frontend copied to desktop/ui.');
+import { cp, mkdir, rename, access, mkdtemp, stat } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+const root=fileURLToPath(new URL('../',import.meta.url)), source=fileURLToPath(new URL('../../frontend/dist/',import.meta.url));
+await access(join(source,'index.html'));
+const cache=join(root,'cache');await mkdir(cache,{recursive:true});
+const staging=await mkdtemp(join(cache,'ui-'));
+await cp(source,staging,{recursive:true});
+const destination=join(root,'ui');
+if(await stat(destination).catch(()=>null))await rename(destination,join(cache,'previous-ui-'+Date.now()));
+await rename(staging,destination);
+console.log('Fresh bundled frontend copied to desktop/ui; previous assets retained in cache.');

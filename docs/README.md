@@ -6,6 +6,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Install and update on each platform](desktop/INSTALLATION-AND-UPDATES.md): exact Windows/Mac steps, browser/Docker/Ubuntu paths, available targets and recovery.
 - [Agent-owned release process](desktop/RELEASE-PROCESS.md): standing responsibility for versions, native builds, verified artifacts, tags and GitHub publication.
+- [0.3.0 browsing release](desktop/releases/v0.3.0.md): Windows package availability, focused checks and Mac follow-up.
 - [Release notes template](desktop/RELEASE-NOTES-TEMPLATE.md): public platform/compatibility/validation checklist; versioned notes belong in `desktop/releases/` when preparing a real release.
 - [Updater contracts and recovery](desktop/UPDATES.md): manifest trust, staging, stop-before-backup, installation and rollback limits.
 - [Desktop shell and connections](desktop/DESKTOP.md): bundled Java/server, storage/process ownership, native lifecycle and integrated chrome.

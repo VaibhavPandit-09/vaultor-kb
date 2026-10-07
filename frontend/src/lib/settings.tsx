@@ -1,3 +1,4 @@
+import { normalizeSidebarSections, type SidebarSections } from './sidebarPreferences';
 import {
   createContext,
   useCallback,
@@ -41,6 +42,7 @@ export type LocalSettings = {
   sidebarMode: 'fixed' | 'floating';
   uiTransparency: number;
   sidebarCollapsed: boolean;
+  sidebarSections: SidebarSections;
 };
 
 export type SettingsDocument = {
@@ -96,6 +98,7 @@ const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
   sidebarMode: 'fixed',
   uiTransparency: 0.85,
   sidebarCollapsed: false,
+  sidebarSections: normalizeSidebarSections(undefined),
 };
 
 const accentMap: Record<LocalSettings['accentColor'], string> = {
@@ -477,6 +480,7 @@ function normalizeLocalSettings(input: Partial<LocalSettings> | null | undefined
         : (input as { commandPaletteTransparency?: number } | null | undefined)?.commandPaletteTransparency,
     ),
     sidebarCollapsed: Boolean(input?.sidebarCollapsed),
+    sidebarSections: normalizeSidebarSections(input?.sidebarSections),
   };
 }
 

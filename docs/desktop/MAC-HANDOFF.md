@@ -1,10 +1,10 @@
 # D9: Mac mini and two-device completion handoff
 
-Prepared 2026-10-04 for the AI working on the user's Apple Silicon Mac mini. This is the remaining D9 validation, not a new feature sprint. Read AGENTS.md, CODEBASE.md and desktop-network-plan.md first; UPDATES.md, DESKTOP.md, HOST-ACCESS.md and MULTI-DEVICE.md are authoritative. Inspect the current tree and preserve unrelated work. Windows D9 work corrects Connections layout, packages 0.2.1 and supplies an isolated manual-test data directory; the checkout has since advanced to 0.2.2. Do not declare the overall Windows/Mac release gate complete until the checks below actually pass.
+Prepared 2026-10-04 for the AI working on the user's Apple Silicon Mac mini. This is the remaining D9 validation, not a new feature sprint. Read AGENTS.md, CODEBASE.md and desktop-network-plan.md first; UPDATES.md, DESKTOP.md, HOST-ACCESS.md and MULTI-DEVICE.md are authoritative. Inspect the current tree and preserve unrelated work. Windows D9 work corrects Connections layout, packages 0.2.1 and supplies an isolated manual-test data directory; the recorded Mac D9 development checks used 0.2.2; the current 0.3.0 release handoff is below. Do not declare the overall Windows/Mac release gate complete until the checks below actually pass.
 
 ## Boundaries and preparation
 
-- No payment, publisher signing, notarization, publishing, Android or Ubuntu implementation. No broad redesign. Fix defects found in these flows and maintain living docs in the same change.
+- No payment, publisher signing, notarization, Android or Ubuntu implementation. GitHub publication of verified artifact pairs is authorized under RELEASE-PROCESS.md; preserve the original source/signing identity. No broad redesign. Fix defects found in these flows and maintain living docs in the same change.
 - Use disposable server data and browser profiles. Do not import, replace, delete or pair against the user's real workspace. Quit the user's normal Vaultor deliberately before a native test; do not kill arbitrary Java processes.
 - Get the latest repository including D9 changes from Windows. Do not copy Windows desktop/bundle, node_modules or packaged executables to Mac as runnable Mac artifacts. Ignored build directories are machine-specific.
 - Record macOS version, `uname -m` (must be arm64), Node/npm, Java, Electron version, browser versions, LAN addresses, package checksum and exact test results. Do not print owner keys, device credentials, private certificates, recovery note bodies or the private release signing key.
@@ -104,3 +104,18 @@ Current bundled server manifest SHA-256: `ac3c804ecce03ab4c54fdbb1da0149dd2e6bc1
 Release is blocked: the matching private key was absent at the ignored release-key location and `VAULTOR_RELEASE_KEY` was unset. `package:release` was attempted and stopped at the missing key; no replacement key was generated, rotated or copied. No signed `.vaultor.json` or release DMG exists. Obtain the matching key privately from the user before retrying; never paste it into chat. macOS frontend install reported Node-engine warnings and 24 audit findings (2 low, 4 moderate, 18 high); no audit fix or dependency/version change was made.
 
 Still unverified and required before D9 completion: release package and signed sidecar, Finder/DMG installation and normal Gatekeeper approval, manual titlebar/menu-bar/tray/shortcut/close-to-tray interactions, Mac update/recovery, login/sleep-resume and cleanup, separate browser trust, LAN/mDNS/firewall validation, and one coordinated Windows↔Mac session in both hosting directions. Automated smoke success does not substitute for these manual and partner checks. Preserve this partial status; do not mark D9 complete.
+
+
+## 0.3.0 Windows-first browsing release: exact Mac delivery
+
+Windows 0.3.0 ships first. No 0.3.0 Mac artifact/native verification is claimed. The matching private key and arranged native access remain required; earlier 0.2.2 development checks do not certify this version.
+
+1. Read AGENTS/CODEBASE, inspect unrelated work, fetch origin/tags, and create a clean detached checkout of **v0.3.0**. Do not bump versions or move the tag.
+2. Privately obtain the original key as described above; never regenerate it or upload it. Verify arm64, Java25 and Node20.19+; install frontend/desktop dependencies.
+3. Set VITE_BUILD_VERSION and BUILD_VERSION to 0.3.0. Build frontend/desktop, prepare the pinned darwin-arm64 server/runtime, and package:release on the Mac. Expected pair: Vaultor-0.3.0-mac-arm64.dmg and .dmg.vaultor.json.
+4. Run the focused frontend browsing tests and scoped lint, SidebarSettingsTest, release-artifact/publication-policy tests. Verify codesign against the generated Vaultor.app. Use disposable native/storage profiles, not the user's installation.
+5. Run `VAULTOR_LAYOUT_SMOKE=1 node desktop/scripts/chrome-smoke.mjs "<absolute packaged Vaultor executable>"`. This focused session creates temporary API fixtures with its owned access key and checks empty/sparse/paginated groups, mixed pins, both themes, long titles, narrow layout, collapse/hide/defaults, Escape/focus and control clearance. Inspect the eight ignored desktop/artifacts/browse-*.png frames. Run the existing owned launch/edit/relaunch check only where needed for the Mac package. Finish Finder/Dock/menu-bar/tray/keyboard/install/update approval checks above; report actual results.
+6. Preflight with publish:release, then add the missing pair with `npm --prefix desktop run publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.3.0.md`. This must use the same v0.3.0 source. Existing Windows assets and signing identity are immutable; identical retries are safe, differing bytes fail.
+7. Verify both uploaded Mac assets, update GitHub release notes with the actual Mac checks/platform availability, and make a documentation-only follow-up commit updating current guides/tracker. If code repairs are required, stop this same-version handoff and prepare a new version instead.
+
+The Windows-first release is https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.3.0. Update the host as well as clients to persist the new sidebar preferences; 0.2.2 hosts still normalize unknown device fields away. Browser UI follows its host build. Ubuntu/Mac Intel/Android packages remain deferred.

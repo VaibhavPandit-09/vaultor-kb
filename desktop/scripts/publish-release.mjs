@@ -3,11 +3,12 @@ import { readFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, basename, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkPublicationMode, checkIdenticalAsset } from './release-publication-policy.mjs';
 import { releaseArtifacts } from './release-artifacts.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const args = process.argv.slice(2);
-if (args.some(value => !['--publish', '--platform', 'win32', 'darwin', '--notes'].includes(value) && value.startsWith('--'))) throw new Error('Unknown release option.');
+if (args.some(value => !['--publish', '--add-platform', '--platform', 'win32', 'darwin', '--notes'].includes(value) && value.startsWith('--'))) throw new Error('Unknown release option.');
 const option = name => { const i = args.indexOf(name); return i < 0 ? undefined : args[i + 1]; };
 const platform = option('--platform') ?? process.platform;
 const pkg = JSON.parse(await readFile(join(root, 'desktop/package.json'), 'utf8'));
@@ -32,7 +33,7 @@ if (!args.includes('--publish')) {
   // Listing first distinguishes an absent release from an authentication/network failure.
   const releases = JSON.parse(run('gh', ['api', `repos/${repo}/releases`, '--paginate', '--slurp'])).flat();
   const release = releases.find(item => item.tag_name === tag);
-  if (release && !release.draft) throw new Error('Published releases are immutable in this workflow. Create a newer version.');
+  checkPublicationMode(release, args.includes('--add-platform'));
   if (!release) run('gh', ['release', 'create', tag, '--repo', repo, '--verify-tag', '--draft', '--title', `Vaultor ${pkg.version}`, '--notes-file', resolve(root, notes)]);
   const existing = JSON.parse(run('gh', ['release', 'view', tag, '--repo', repo, '--json', 'assets'])).assets;
   for (const path of [pair.installer, pair.sidecar]) {
@@ -45,12 +46,12 @@ if (!args.includes('--publish')) {
         const { createHash } = await import('node:crypto');
         const { createReadStream } = await import('node:fs');
         const digest = async file => { const hash = createHash('sha256'); for await (const chunk of createReadStream(file)) hash.update(chunk); return hash.digest('hex'); };
-        if (await digest(path) !== await digest(join(temp, name))) throw new Error(`Existing release asset differs: ${name}. Use a new version; do not overwrite.`);
+        checkIdenticalAsset(await digest(path), await digest(join(temp, name)), name);
       } finally {
         if (dirname(resolve(temp)) !== resolve(tmpdir()) || !basename(temp).startsWith('vaultor-release-verify-')) throw new Error('Unexpected verification directory; refusing cleanup.');
         await rm(temp, { recursive: true, force: true });
       }
     } else run('gh', ['release', 'upload', tag, path, '--repo', repo]);
   }
-  console.log(`Draft release https://github.com/${repo}/releases/tag/${tag} contains verified ${platform} artifacts. Finish the other platform and release checklist before publishing.`);
+  console.log(`${release && !release.draft ? 'Published release' : 'Draft release'} https://github.com/${repo}/releases/tag/${tag} contains verified ${platform} artifacts. Existing assets and source tag were preserved.`);
 }

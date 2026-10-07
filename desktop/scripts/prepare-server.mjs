@@ -52,7 +52,8 @@ const files = [];
 async function walk(directory, prefix = '') { for (const entry of await readdir(directory, { withFileTypes: true })) { const relative = prefix + entry.name, path = join(directory, entry.name); if (entry.isDirectory()) await walk(path, relative + '/'); else files.push({ path: relative, sha256: await digest(path) }); } }
 await walk(staging);
 await writeFile(join(staging, 'manifest.json'), JSON.stringify({ version: 1, platform, arch, runtime: pinned.name, files }, null, 2));
-const destination = join(root, 'bundle');
+const destination = process.env.VAULTOR_BUILD_BUNDLE ? resolve(process.env.VAULTOR_BUILD_BUNDLE) : join(root, 'bundle');
+if (process.env.VAULTOR_BUILD_BUNDLE && !destination.startsWith(resolve(root, 'cache') + (platform === 'win32' ? '\\' : '/'))) throw new Error('Alternate build bundles must stay inside desktop/cache.');
 // Never recursively delete a bundle; retain its previous copy outside installation data.
 if (await stat(destination).catch(() => null)) await rename(destination, join(root, 'cache', 'previous-bundle-' + Date.now()));
 await rename(staging, destination);

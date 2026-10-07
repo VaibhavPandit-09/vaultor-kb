@@ -313,3 +313,21 @@ Deferred work: Android, Mac Intel, full offline database/sync, collaborative typ
 - 2026-10-04 post-D9 layout correction: reviewed the Mac commit and retained its partial release gate. More/New collection now align with the content edge; page actions reserve only the native top band, with flexible long-title wrapping, consistent collection-row spacing and distinct empty/search messages. Production build/scoped lint/script syntax, seven focused Library/popover tests and one disposable Windows native layout check passed; dark/light/narrow frames reviewed. No installer, API smoke, Docker or Mac rerun. Design conventions recorded in CODEBASE.md to prevent repeating whole-row chrome spacers.
 
 - 2026-10-07 release ownership/documentation: topic folders and links reorganized; INSTALLATION-AND-UPDATES.md and RELEASE-PROCESS.md define device steps and standing agent responsibility for versioned verified artifacts/source tags/GitHub publication. Added draft-only publisher and original-key artifact preflight; no automatic feed/CI secret or app release is implied. Mac DMG/native/two-device gates remain pending. This task is documentation/release tooling, not another desktop sprint. Validation: local-link/OpenAPI checks, script syntax, focused signature/checksum/platform/version guard test and dry-run preflight of the existing Windows package passed. No installer build/publication or native/API/Docker/Mac rerun.
+
+
+## 0.3.0 — Coherent browsing and Windows-first release
+
+Authorized 2026-10-07 as one coordinated update.
+
+- [x] Shared content-sized browsing groups/rows and accurate per-type metadata queries; overview 12/type, full type 100/page.
+- [x] Grouped pinned/recent quick access, collapsible/hideable sections, normalized device settings and consistent creation controls.
+- [x] Same shell for Collections/Pinned; secondary row organization and local pin feedback retained.
+- [x] Explicit missing-platform release upload mode preserving original bytes/tag.
+- [x] Production compilation/scoped lint; eleven frontend, one backend settings and two Node artifact/publication cases passed.
+- [x] Disposable packaged Windows visual session passed empty/sparse/101-note pagination, mixed pins, long titles, dark/light/narrow, collapse/hide/defaults, Escape/focus and native controls; eight frames inspected.
+- [x] Fresh 0.3.0 Windows UI/server/installer, packaged check and original-key artifact preflight. Final installer is 244,860,425 bytes; current desktop/browser assets match with no obsolete files.
+- [ ] Commit/push/tag and publish the verified Windows pair to GitHub; record final status after publication.
+- [ ] Mac arm64 package/native verification from the same release tag: blocked without arranged Mac access/original key there; Windows-first explicitly approved.
+- [ ] Authoritative docs, source commit/tag and user update handoff.
+
+No broad API smoke or Docker rebuild is planned. API fixtures are allowed only for the requested disposable visual/package check; owner/revision/TLS checks remain intact.

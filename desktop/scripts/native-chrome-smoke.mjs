@@ -13,7 +13,7 @@ export async function runChromeSmoke(window, directory, owned) {
   await wait("Boolean(document.querySelector('.library-view'))", 'Local workspace');
   if (process.env.VAULTOR_LAYOUT_SMOKE === '1') {
     const { runLayoutSmoke } = await import('./native-layout-smoke.mjs');
-    await runLayoutSmoke(window, directory); return;
+    await runLayoutSmoke(window, directory, owned); return;
   }
   window.showInactive(); await new Promise(r => setTimeout(r, 200));
   if(process.platform==='darwin'){
@@ -67,7 +67,7 @@ export async function runChromeSmoke(window, directory, owned) {
   window.setSize(1320, 900); await new Promise(r => setTimeout(r, 250));
   nativeTheme.themeSource='dark';await wait("document.documentElement.dataset.theme==='dark'",'Dark capture');
   await capture('desktop-chrome-dark.png');
-  await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='New Note').click()");
+  await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim().toLowerCase()==='new note').click()");
   await wait("Boolean(document.querySelector('.journey-bar') && document.querySelector('.tiptap'))", 'Note journey');
   await click('Maximize');assert.equal(window.isMaximized(),true);await click('Restore window');
   const noteId=await evaluate("document.querySelector('[data-note-pane]').dataset.notePane");

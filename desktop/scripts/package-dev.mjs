@@ -19,6 +19,7 @@ await mkdir(join(app, 'scripts'));
 await cp(join(root, 'scripts', 'native-owned-smoke.mjs'), join(app, 'scripts', 'native-owned-smoke.mjs'));
 await cp(join(root, 'scripts', 'native-chrome-smoke.mjs'), join(app, 'scripts', 'native-chrome-smoke.mjs'));
 await cp(join(root, 'scripts', 'native-pointer.ps1'), join(app, 'scripts', 'native-pointer.ps1'));
+await cp(join(root, 'scripts', 'native-layout-smoke.mjs'), join(app, 'scripts', 'native-layout-smoke.mjs'));
 await copyProductionDependencies(root, app);
 const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
 await writeFile(join(app, 'package.json'), JSON.stringify({ name: 'vaultor-desktop', version: pkg.version, type: 'module', main: 'src/main.mjs', dependencies: pkg.dependencies }));
