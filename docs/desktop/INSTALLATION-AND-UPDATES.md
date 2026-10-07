@@ -16,7 +16,7 @@ Use the [Vaultor GitHub Releases page](https://github.com/VaibhavPandit-09/vault
 
 Keep each installer and its signed sidecar in the **same folder**, with their exact original names. Do not download source-code assets for installation. No Java or Docker is needed on a device running a packaged desktop app. Unsigned personal OS installers are separate from the app's Ed25519-signed update manifests: the latter verify update identity and bytes, but do not remove SmartScreen or Gatekeeper prompts.
 
-As of this guide, no GitHub release has been published. Local Windows 0.2.2 artifacts exist; the Mac release-key/build gate remains outstanding. This documentation change does not manufacture a new application release. Future app changes must follow the agent release checklist, including a version bump and published artifacts.
+**[Vaultor 0.3.0 is published for Windows x64](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.3.0)** (2026-10-07). Download Vaultor-0.3.0-windows-x64.exe and its .exe.vaultor.json together; their GitHub digests match the verified local pair. Mac 0.3.0 remains unavailable until native build/signing-key/verification gates are met; [MAC-HANDOFF.md](MAC-HANDOFF.md) specifies same-tag delivery. Update the host to 0.3.0 to persist the new sidebar preferences; updating a Windows client does not upgrade a Mac host. Future app changes must follow the agent release checklist.
 
 ## First installation — Windows
 

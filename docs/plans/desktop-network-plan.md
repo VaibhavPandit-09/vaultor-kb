@@ -326,8 +326,8 @@ Authorized 2026-10-07 as one coordinated update.
 - [x] Production compilation/scoped lint; eleven frontend, one backend settings and two Node artifact/publication cases passed.
 - [x] Disposable packaged Windows visual session passed empty/sparse/101-note pagination, mixed pins, long titles, dark/light/narrow, collapse/hide/defaults, Escape/focus and native controls; eight frames inspected.
 - [x] Fresh 0.3.0 Windows UI/server/installer, packaged check and original-key artifact preflight. Final installer is 244,860,425 bytes; current desktop/browser assets match with no obsolete files.
-- [ ] Commit/push/tag and publish the verified Windows pair to GitHub; record final status after publication.
+- [x] Release source 9ee968cbf2c4af0f58fe58bde1529d6007c34278 committed/pushed; immutable v0.3.0 tag pushed. Windows-only release published 2026-10-07T15:59:36Z; both GitHub asset digests/sizes match the verified pair. [Published release](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.3.0).
 - [ ] Mac arm64 package/native verification from the same release tag: blocked without arranged Mac access/original key there; Windows-first explicitly approved.
-- [ ] Authoritative docs, source commit/tag and user update handoff.
+- [x] CODEBASE, Library/API/desktop/operations/release docs and exact Mac missing-platform handoff updated with actual checks and platform limitations. User update: download both Windows files → Updates → Import update → select .vaultor.json → Ready → Install update.
 
 No broad API smoke or Docker rebuild is planned. API fixtures are allowed only for the requested disposable visual/package check; owner/revision/TLS checks remain intact.
