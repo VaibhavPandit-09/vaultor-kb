@@ -22,7 +22,7 @@ Pins persist in the existing favorite fields in the database and do not change m
 - `pages/Dashboard.tsx`: bounded quick access, detail fetching and mounted note/Library switching.
 - `ResourceBrowseService`: SQL metadata projection, page count, page-local batched tags/collection summaries, validated sorting and favorite mutations.
 
-See [API.md](API.md) for the HTTP contract. Do not restore an eager loop over every resource page to populate a UI picker.
+See [API.md](../development/API.md) for the HTTP contract. Do not restore an eager loop over every resource page to populate a UI picker.
 
 ## Validation — 2026-09-23
 

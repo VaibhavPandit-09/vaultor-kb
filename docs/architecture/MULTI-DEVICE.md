@@ -1,6 +1,6 @@
 # Saved changes across devices
 
-Reviewed 2026-10-04, desktop D7. Browser and desktop clients reconcile saved state from the selected host. This is saved-change notification, not collaborative typing or offline synchronization. Note JSON, archives and workspace ownership are unchanged. [HOST-ACCESS.md](HOST-ACCESS.md) owns approval/trust; [SESSIONS.md](SESSIONS.md) owns draft recovery.
+Reviewed 2026-10-04, desktop D7. Browser and desktop clients reconcile saved state from the selected host. This is saved-change notification, not collaborative typing or offline synchronization. Note JSON, archives and workspace ownership are unchanged. [HOST-ACCESS.md](../security/HOST-ACCESS.md) owns approval/trust; [SESSIONS.md](../workspace/SESSIONS.md) owns draft recovery.
 
 ## Feed and ownership
 

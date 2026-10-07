@@ -1,33 +1,46 @@
 # Documentation
 
-- [Desktop and private-network plan](desktop-network-plan.md): D1–D8 implemented on Windows, including owned server, native lifecycle, paired HTTPS, saved-change propagation and integrated chrome; personal installer/update support implemented; D9 Windows handoff/menu polish complete; Mac/two-device verification remains with a precise handoff; D10 Ubuntu follow-up. One sprint per authorization.
-- [Mac mini completion handoff](MAC-HANDOFF.md): exact D9 Mac build/package/native and real two-device checklist, isolated test data, private-key continuity, cleanup and honest release gates.
-- [Personal installers and updates](UPDATES.md): Windows branding/installers, Mac build workflow, free release signing, local/optional HTTPS updates, existing-data onboarding, backup/recovery and verification limits.
-- [Saved changes across devices](MULTI-DEVICE.md): bounded approved SSE, clean-note refresh, draft/deletion/replacement recovery, scoped settings, revision requirements and actual validation.
-- [Host access and pairing](HOST-ACCESS.md): owner/browser bootstrap, opt-in HTTPS, stable host trust, device approval/revoke, CSRF, approved agents and current limits.
-- [Desktop shell and connections](DESKTOP.md): bundled runtime/server packages, data/process ownership, startup logs, paired profiles/discovery, integrated chrome, persistent sessions, native bridge and current limits.
-- [Desktop setup troubleshooting](DESKTOP-SETUP-TROUBLESHOOTING.md): root-vs-package npm commands, missing Electron/resedit, bundled-server setup, independent localhost profiles, Mac smoke fixes and release-key blocker.
-- [Platform and connection boundary](PLATFORM.md): browser/platform transport, cancellation, protocol checks, download outcomes, build diagnostics and sidebar shortcut migration.
+Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow guide. Agents also read [AGENTS.md](../AGENTS.md). Keep one authoritative explanation per topic and update the guide in every relevant change.
 
-- [Workspace evolution plan](workspace-evolution-plan.md): empty-note closing and expanded-table workspace implemented; scalable Library and collections/tags implemented; U1 navigation refresh fix complete; U2 resource organization/pins complete; U3 palette/saved-note full-text search complete; K1 form/palette keyboard corrections complete; K2 organization simplification complete; K3 title-first search and explicit scope complete; N1 direct-download exports implemented; N2 pane navigation/shared editing implemented; N3 journeys implemented; N4 session recovery implemented; N5 linked-resource exports implemented; N6 integration complete; exactly one sprint per authorization.
+## Desktop installation, connections and releases — `desktop/`
 
-- [Editor and portability plan](editor-portability-plan.md): imports and table foundations implemented; individual note exports implemented; table filtering/copy/export implemented; remaining manual verification recorded; one sprint per authorized call.
+- [Install and update on each platform](desktop/INSTALLATION-AND-UPDATES.md): exact Windows/Mac steps, browser/Docker/Ubuntu paths, available targets and recovery.
+- [Agent-owned release process](desktop/RELEASE-PROCESS.md): standing responsibility for versions, native builds, verified artifacts, tags and GitHub publication.
+- [Release notes template](desktop/RELEASE-NOTES-TEMPLATE.md): public platform/compatibility/validation checklist; versioned notes belong in `desktop/releases/` when preparing a real release.
+- [Updater contracts and recovery](desktop/UPDATES.md): manifest trust, staging, stop-before-backup, installation and rollback limits.
+- [Desktop shell and connections](desktop/DESKTOP.md): bundled Java/server, storage/process ownership, native lifecycle and integrated chrome.
+- [Desktop setup troubleshooting](desktop/DESKTOP-SETUP-TROUBLESHOOTING.md): npm/Electron/resedit, bundled-server setup and release-key blockers.
+- [Mac mini completion handoff](desktop/MAC-HANDOFF.md): exact remaining Mac release/native and real two-device checks.
 
-- [Modernization tracker](history/modernization-plan.md): archived implementation checklist, validation evidence and remaining manual coverage.
+## Workspace workflows — `workspace/`
 
-- [Library workflows](LIBRARY.md): paginated metadata browsing, quick access, unified pins, resource-level collections/tag management, bulk organization and transfer semantics.
-- [Search and Ctrl+K](SEARCH.md): saved-note indexing, ranking, palette targeting, diagnostics and limits.
-- [Table workflows](TABLES.md): contextual table menus, filtering, spreadsheet paste/copy, CSV export and expanded editing.
-- [Pane navigation and shared editing](NAVIGATION.md): pane ownership, linked opening, on-demand backlinks, responsive journeys, duplicate views and source save barriers.
-- [Sessions and draft recovery](SESSIONS.md): per-tab IndexedDB layout, recovery journals, conditional note revisions and workspace replacement isolation.
-- [Individual note exports](NOTE-EXPORTS.md): standalone/linked-graph formats, snapshot semantics, assets, fidelity, limits and verification.
-- [Integration handoff](INTEGRATION.md): N6 fixes, focused test/visual coverage and remaining verification limits.
-- [API guide](API.md): shared UI/agent contracts, examples and transfer flow.
-- [Operations guide](OPERATIONS.md): development, Docker, limits, logging and isolated verification.
-- [Living codebase guide](CODEBASE.md): current implementation, source map, API/data contracts, UI/design, setup, validation, limitations, and maintenance history. This is the primary reference for agents and maintainers.
-- [Agent instructions](../AGENTS.md): repository-wide requirement to read and maintain the guide.
-- [Historical v2 specification](history/vaultor-v2-spec.md): former root README; describes product intent and includes claims that differ from current code.
-- [Historical v1 specification](history/vaultor-v1-spec.md): earlier product model and delivery notes.
-- [Original frontend template README](history/frontend-template.md): archived scaffolding documentation, not the current development guide.
+- [Library and organization](workspace/LIBRARY.md): browsing, collections, tags, pins and bulk actions.
+- [Search and Ctrl+K](workspace/SEARCH.md): title-first search, saved-text opt-in, scope, actions and indexing.
+- [Tables](workspace/TABLES.md): in-note/expanded controls, filters, paste/copy and CSV export.
+- [Pane navigation](workspace/NAVIGATION.md): journeys, source/destination ownership and shared editing.
+- [Sessions and drafts](workspace/SESSIONS.md): restoration, recovery, conditional revisions and workspace isolation.
+- [Note exports](workspace/NOTE-EXPORTS.md): linked graphs/assets, snapshots, fidelity and limits.
+- [Integration handoff](workspace/INTEGRATION.md): focused validation and remaining verification limits.
 
-Put new documentation here and add a link to this index. Update the current guide in the same change as the implementation. Preserve historical documents as historical context.
+## Architecture, development and host security
+
+- [Platform and connection boundary](architecture/PLATFORM.md): transport, cancellation, protocols and native/browser ownership.
+- [Saved changes across devices](architecture/MULTI-DEVICE.md): approved SSE, clean-note refresh and dirty-note conflicts.
+- [API guide](development/API.md): shared UI/agent contracts and diagnostics.
+- [Operations](development/OPERATIONS.md): development, Docker, data/limits, logs and isolated verification.
+- [Host access and pairing](security/HOST-ACCESS.md): owner bootstrap, HTTPS trust, persistent approvals and approved agent access.
+
+## Active execution trackers — `plans/`
+
+- [Desktop/private-network plan](plans/desktop-network-plan.md): D1–D9 Windows implementation; partial Mac development checks, pending release/two-device gate; D10 Ubuntu deferred.
+- [Workspace evolution](plans/workspace-evolution-plan.md): Library/organization/search/navigation/session work and integration results.
+- [Editor and portability](plans/editor-portability-plan.md): imports, tables and exports; actual validation and remaining manual coverage.
+
+## Historical context — `history/`
+
+- [Modernization tracker](history/modernization-plan.md): archived implementation checklist and validation.
+- [v2 specification](history/vaultor-v2-spec.md): former product intent; some claims differ from current implementation.
+- [v1 specification](history/vaultor-v1-spec.md): earlier model and delivery notes.
+- [Frontend template](history/frontend-template.md): archived scaffolding, not the current guide.
+
+Keep CODEBASE and this index at the docs root for agent discovery. Put topic guides in their relevant folder, link them here and repair relative links when moving files. Archive completed historical specifications rather than rewriting them as current behavior. App updates are owned by agents, not left as user build homework; see the release process above.

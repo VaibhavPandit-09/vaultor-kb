@@ -17,4 +17,8 @@ Preserve the resource-based model, structured Tiptap JSON, shared API client, sh
 
 When debugging, prefer existing API diagnostics and narrowly targeted service/component checks. Ordinary UI development does not require API testing. Use browser/native UI debugging only when necessary to establish a visual/interaction fact or explicitly requested by the user; avoid repetitive browser inspection.
 
-For local owner or paired LAN API access, follow [docs/HOST-ACCESS.md](docs/HOST-ACCESS.md). Never bypass approval/TLS/revision checks or expose credentials in logs, renderer storage, URLs or portable archives.
+For local owner or paired LAN API access, follow [docs/security/HOST-ACCESS.md](docs/security/HOST-ACCESS.md). Never bypass approval/TLS/revision checks or expose credentials in logs, renderer storage, URLs or portable archives.
+
+## Agent-owned releases
+
+The user delegates installed-app release preparation and GitHub publication to implementation agents. For every change affecting a shipped app, follow [docs/desktop/RELEASE-PROCESS.md](docs/desktop/RELEASE-PROCESS.md): bump package/lock versions, build fresh UI and bundled server, perform focused/native checks, preserve the original signing identity, create verified platform installers/sidecars, commit/push/tag the intended source, stage GitHub assets and publish when the supported-platform gate is met. Return a usable release URL and update steps, not just instructions for the user to build. Documentation/test-only changes with no shipped behavior do not need new installers. Never claim unavailable Mac/Linux artifacts are ready; report precise blockers and handoffs. No private keys, credentials or workspace backups may enter GitHub, logs or portable archives. This is standing release authorization within the requested change, not permission to include unrelated work or change security/paid-service settings.

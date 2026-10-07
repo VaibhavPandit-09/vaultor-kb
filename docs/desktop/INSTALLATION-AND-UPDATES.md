@@ -1,0 +1,94 @@
+# Install and update Vaultor on each device
+
+Reviewed 2026-10-07. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
+
+## What you download
+
+Use the [Vaultor GitHub Releases page](https://github.com/VaibhavPandit-09/vaultor-kb/releases). Pick a **published** release and read its platform availability and known limitations. A Git commit, source ZIP, development package or draft release is not an installed-app update.
+
+| Device | Required files for in-app updating | Current support |
+| --- | --- | --- |
+| Windows x64 | `Vaultor-VERSION-windows-x64.exe` and the same filename plus `.vaultor.json` | Installer and in-app update flow implemented and tested |
+| macOS Apple Silicon | `Vaultor-VERSION-mac-arm64.dmg` and the same filename plus `.vaultor.json` | Packaging implemented; development app tested; release DMG/install/update verification still pending |
+| macOS Intel | None | No supported desktop package |
+| Ubuntu/Linux | None | Desktop packaging is deferred; browser access and Docker server are available |
+| Android | None | Native app deferred; browser access available |
+
+Keep each installer and its signed sidecar in the **same folder**, with their exact original names. Do not download source-code assets for installation. No Java or Docker is needed on a device running a packaged desktop app. Unsigned personal OS installers are separate from the app's Ed25519-signed update manifests: the latter verify update identity and bytes, but do not remove SmartScreen or Gatekeeper prompts.
+
+As of this guide, no GitHub release has been published. Local Windows 0.2.2 artifacts exist; the Mac release-key/build gate remains outstanding. This documentation change does not manufacture a new application release. Future app changes must follow the agent release checklist, including a version bump and published artifacts.
+
+## First installation — Windows
+
+1. Download the Windows `.exe` from a published release. Use Windows x64; ARM Windows is not a verified target.
+2. Run the installer for your Windows user. Choose the intended install location and finish. If Windows warns about an unknown publisher, verify the release source before explicitly allowing your own personal build. Do not disable security protections globally.
+3. Start **Vaultor** from its installed shortcut. A new installation opens **This computer**, which starts the bundled local server. An existing installation retains its selected connection and data.
+4. Open Connections & hosting from the sidebar or window ellipsis menu if you want a different server. **This computer** is the app-managed local workspace; an **independent local server** is a separate server you explicitly configured.
+5. Check the application version in window menu → **Updates**. Old pinned Electron development shortcuts can retain the wrong target/icon; use the installed Vaultor shortcut instead.
+
+## First installation — Apple Silicon Mac
+
+Follow these steps only when the release lists a produced and verified Mac arm64 DMG. Until then, [MAC-HANDOFF.md](MAC-HANDOFF.md) covers development builds and outstanding native checks.
+
+1. Download and open the Mac `.dmg`. Drag **Vaultor.app** into **Applications**.
+2. Eject the disk image and open the copy in Applications, not the copy inside the mounted image.
+3. This is a personal ad-hoc-signed build, without paid notarization. If macOS blocks it, approve this known build using the normal **Privacy & Security → Open Anyway** flow where offered. Never disable Gatekeeper globally or blindly clear quarantine on unknown downloads.
+4. Select **This computer** or connect to your remembered LAN host. Installed packages bundle Java.
+5. Check the application version in **Updates**. Pairing and local workspace data live separately from Vaultor.app and should survive app replacement.
+
+## Update an installed desktop app — preferred route
+
+1. Find the newer published release on GitHub. Download your platform's installer **and** `.vaultor.json` into one folder.
+2. In the running app, open window menu → **Updates** → **Import update**. Select the `.vaultor.json`, not the installer. Mac users can also reach Updates through the application's native menu.
+3. Wait for verification to reach **Ready**. Wrong platform, signature, version or checksum failures must be resolved by obtaining the correct release; do not bypass verification.
+4. Choose **Install update** and confirm the host interruption. The app flushes drafts/settings, stops its own local server and verifies a local workspace backup before starting installation. If saving, storage, transfers or backup fails, resolve the error and retry; never assume the backup completed.
+5. On Windows, complete the ordinary installer, then reopen Vaultor. On Mac, the app opens the verified DMG and quits; manually replace Applications/Vaultor.app, then reopen it. Mac app replacement is **not unattended**.
+6. Confirm the new version in Updates. Check the selected workspace, open notes and pairing. Select **This computer** once when appropriate so a local startup can confirm the update journal. Merely connecting to a remote server does not confirm a local workspace migration.
+
+Closing the window can hide Vaultor to the tray/menu bar instead of stopping it. For manual replacement or a first-install repair, use **Quit** from the tray/application menu. Do not replace app files while its bundled host is running. Running an installer directly is possible but bypasses the app's pre-update backup flow; prefer Import update.
+
+The app remembers data, profiles, pairing and drafts. Never delete its application-data directory to perform an update. Client-only updates do not update or back up a remote host. If local startup fails afterward, use Updates → recovery Details → **Restore local backup** as described in [UPDATES.md](UPDATES.md). Preserve backups and failed recovery directories; do not publish them.
+
+## Updating a Mac host and its Windows clients
+
+Each device is a separate installation. For a Mac hosting a shared workspace:
+
+1. Stop editing from connected clients and finish workspace transfers. Export an independent workspace archive if you want an additional portable copy.
+2. Update the **host Mac** with its Mac package. Hosting stops during installation; clients can retain drafts and switch to a local workspace if needed.
+3. Reopen the Mac app, verify the local workspace and sharing state, then reconnect clients. Existing approvals should persist; repeated pairing is not a normal update requirement.
+4. Update Windows clients with the Windows package when needed. Read release compatibility notes; if a release requires coordinated versions, follow its stated order instead of assuming every old client works.
+
+App version and server protocol are distinct. Every desktop release includes its own bundled server, but a client connected to the Mac uses the Mac's server. The connection check explains an incompatible client/server combination.
+
+## Optional in-app HTTPS feed
+
+Updates → **Update source and recovery** can store a platform-specific HTTPS manifest URL. **Check**, **Download**, and **Install update** are currently explicit actions; there is no periodic automatic check or silent installation.
+
+The signed manifest and its named installer must be served at sibling URLs without redirects. Direct GitHub Release asset links normally redirect and are **not a supported feed** under the current transport policy. Do not paste a GitHub release page, `latest` URL or raw manifest URL whose sibling installer is absent into this setting. GitHub download + Import update is the supported zero-cost baseline. A compatible feed is optional future hosting work, not a prerequisite or a promise that GitHub publication alone enables automatic updates.
+
+## Browser and Docker — Windows, Mac and Ubuntu
+
+A browser is a client of a server; it has no Vaultor installer. Updating the host updates the browser UI. Refresh after deployment and retain draft recovery if changes are pending. Remote browser access still requires HTTPS trust and pairing; see [HOST-ACCESS.md](../security/HOST-ACCESS.md). Never expose the owner listener publicly.
+
+For an existing Docker/Compose deployment, from the repository root:
+
+```text
+git status --short
+git fetch origin --tags
+docker compose stop vaultor
+docker compose cp vaultor:/data PRIVATE_BACKUP_DIRECTORY/workspace-before-VERSION
+git checkout vVERSION
+docker compose build
+docker compose up -d
+docker compose logs --tail 100 vaultor
+```
+
+Preserve local source/config changes before checkout. Use a published release tag that includes source; do not substitute a random newer commit. Before stopping, finish edits/transfers. Replace PRIVATE_BACKUP_DIRECTORY with an existing absolute folder outside the repository, on storage you control; require a successful copy before rebuilding. The stopped-container copy includes SQLite, uploaded files, operation journals and host access state consistently. Those host credentials make this backup private: never upload it to GitHub or use it as a portable workspace export. Keep your original deployment directory, Compose project name and volume mapping unchanged. See [OPERATIONS.md](../development/OPERATIONS.md) for paths, owner bootstrap and deployment debugging. **Never use `docker compose down -v` for an update**: that deletes the workspace volume. Rebuild/recreate with the same volume and configuration; afterward verify readiness and open the browser. Docker deployment does not install or update a desktop client. No blanket OS-trust/firewall change is part of updating.
+
+For a standalone JAR deployment, quit the existing server after finishing writes, back up its configured SQLite/files/operations/host-access storage together, build the published tag with `npm --prefix frontend ci` then `npm --prefix frontend run build`, and run the Maven wrapper from backend with `-Pdesktop -DskipTests clean package` (Windows: `.\mvnw.cmd`; Mac/Ubuntu: `./mvnw`). The desktop profile embeds the frontend. Replace `backend/target/vaultor-0.0.1-SNAPSHOT.jar` and restart it with `java -jar` using the same data paths/configuration and working directory. Follow [OPERATIONS.md](../development/OPERATIONS.md); do not copy a live SQLite file as an update backup.
+
+Ubuntu can use the browser against another host, or host Docker/standalone. There is no AppImage/DEB, Linux update manifest or supported Electron installer yet. macOS Intel and Android native packages also remain deferred. Do not treat source compilation as a verified personal installer for these platforms.
+
+## If no update is available
+
+Ask the implementation agent for the release URL and platform-specific asset pair. Agents own the build/publish work after app changes; you should not need to regenerate signing keys or build Windows packages yourself. If Mac access, original signing identity, GitHub access or native verification is missing, the agent must state exactly which platform is blocked and leave a precise handoff. An unbuilt/untested platform must never be described as released.

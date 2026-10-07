@@ -2,7 +2,7 @@
 
 Reviewed through D1, 2026-10-04. This is the current navigation reference; session persistence and recovery are described in [SESSIONS.md](SESSIONS.md).
 
-Sidebar toggle now defaults to Ctrl+Alt+B on Windows/Linux and Cmd+Option+B on Mac, including while editing a note. Bold and Quote keep their editor bindings. Old stored sidebar Mod+B migrates; other custom values remain. Shared help/settings use the same definitions. Alt+Arrows still switches panes and separate history bindings remain unchanged. See [PLATFORM.md](PLATFORM.md) for migration and Option-key matching details.
+Sidebar toggle now defaults to Ctrl+Alt+B on Windows/Linux and Cmd+Option+B on Mac, including while editing a note. Bold and Quote keep their editor bindings. Old stored sidebar Mod+B migrates; other custom values remain. Shared help/settings use the same definitions. Alt+Arrows still switches panes and separate history bindings remain unchanged. See [PLATFORM.md](../architecture/PLATFORM.md) for migration and Option-key matching details.
 
 ## Opening resources
 

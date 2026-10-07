@@ -1,6 +1,8 @@
 # Personal installers and updates
 
-Reviewed 2026-10-04, D9 and 0.2.2 correction. Windows x64 uses a per-user NSIS installer. On Apple Silicon, the 0.2.2 development app and disposable native smoke checks have been verified; release DMG generation/installation and the live two-device gate remain pending. The matching private release key is required to produce the signed update manifest and is not present on the Mac. No publisher certificate, notarization, subscription, hosted feed or publishing is required. Android and Ubuntu packaging are outside D8.
+Reviewed 2026-10-07. Windows x64 uses a per-user NSIS installer. On Apple Silicon, the 0.2.2 development app and disposable native smoke checks have been verified; release DMG generation/installation and the live two-device gate remain pending. The matching private release key is required to produce the signed update manifest and is not present on the Mac. No publisher certificate, notarization, subscription, hosted feed or publishing is required. Android and Ubuntu packaging are outside D8.
+
+For device-by-device installation and updating, read [INSTALLATION-AND-UPDATES.md](INSTALLATION-AND-UPDATES.md). Agents own packaging/publication after app changes through [RELEASE-PROCESS.md](RELEASE-PROCESS.md); this document owns the updater integrity, backup and recovery contracts.
 
 ## Build and launch
 
@@ -11,7 +13,6 @@ npm --prefix frontend ci
 npm --prefix desktop ci
 npm --prefix desktop run build
 npm --prefix desktop run prepare-server
-npm --prefix desktop run release:key
 npm --prefix desktop run package:release
 ```
 
@@ -32,13 +33,13 @@ Connections & hosting → Bring an existing workspace offers two paths:
 - Connect to an upgraded compatible server. Protected independent loopback HTTP servers require selecting their existing `owner.key` in a native dialog; main verifies access and keeps it in OS-protected credential storage. Existing local profiles have an Authorize action. Keys never enter renderer state. Remote hosts use the existing paired HTTPS flow.
 - Export a workspace ZIP from the original server, select This computer, then review/import it through the existing merge/replace dialog. Destination capture is connection-epoch scoped; a failed switch cannot import into a different server. No database or host directory is silently adopted.
 
-Current desktop connections require protocol 1 plus changeFeed/scopedSettings capabilities. Use [HOST-ACCESS.md](HOST-ACCESS.md) for standalone/Docker owner bootstrap, HTTPS publication and pairing. Docker/browser hosting remains supported; the installer does not migrate, stop or delete those servers.
+Current desktop connections require protocol 1 plus changeFeed/scopedSettings capabilities. Use [HOST-ACCESS.md](../security/HOST-ACCESS.md) for standalone/Docker owner bootstrap, HTTPS publication and pairing. Docker/browser hosting remains supported; the installer does not migrate, stop or delete those servers.
 
 ## In-app updates
 
 The window ellipsis menu → Updates opens a compact dialog independent of workspace startup. It remains available if the server cannot start. Local import is the baseline: choose the `.vaultor.json` sidecar, keeping its named installer beside it. Import validates and copies the installer into main-owned staging; it does not execute immediately. Same-version reinstall is permitted; ordinary downgrades are rejected.
 
-An optional HTTPS manifest URL enables in-app Check → Download → Install update. The feed defaults unset. Store the signed sidecar at that URL and the installer at its named sibling URL. Hosting/release publication is your separate choice; no service or fee is automatically configured. Checks are explicit, not periodic background polling. Downloads stream to disk with progress and cancellation; only verified complete files become Ready. Workspace credentials are never sent to the release feed. Redirects fail.
+An optional HTTPS manifest URL enables in-app Check → Download → Install update. The feed defaults unset. Store the signed sidecar at that URL and the installer at its named sibling URL. Agents publish verified installer/sidecar pairs to GitHub Releases under the standing release workflow; no compatible HTTPS feed or paid service is automatically configured. GitHub asset redirects are not supported by this feed transport; use manual download and Import update. Checks are explicit, not periodic background polling. Downloads stream to disk with progress and cancellation; only verified complete files become Ready. Workspace credentials are never sent to the release feed. Redirects fail.
 
 Signed envelope format:
 
@@ -74,7 +75,7 @@ If preparation fails after stopping the host, reconnect/start This computer expl
 
 ## Validation
 
-D8 focused tests cover signatures/platform/path/size/protocol rejection, package corruption, persisted staging, save-before-stop, snapshot trust/data, migration-failure recovery, damaged backup rejection, optional feed credentials/redirect policy, retention and client-only isolation. Executable branding checks compare embedded PE icon data against the canonical ICO. Frontend checks cover update dialog operation outside SettingsProvider and existing connection/settings flows. Windows installation/same-version repair/uninstallation/reinstallation, branded developer/installed native checks and actual packaged PE icon comparison passed. The Updates screenshot was inspected. Initial taskbar API and renamed-developer runtime-layout failures were corrected. Exact results and remaining validation are recorded in [the tracker](desktop-network-plan.md).
+D8 focused tests cover signatures/platform/path/size/protocol rejection, package corruption, persisted staging, save-before-stop, snapshot trust/data, migration-failure recovery, damaged backup rejection, optional feed credentials/redirect policy, retention and client-only isolation. Executable branding checks compare embedded PE icon data against the canonical ICO. Frontend checks cover update dialog operation outside SettingsProvider and existing connection/settings flows. Windows installation/same-version repair/uninstallation/reinstallation, branded developer/installed native checks and actual packaged PE icon comparison passed. The Updates screenshot was inspected. Initial taskbar API and renamed-developer runtime-layout failures were corrected. Exact results and remaining validation are recorded in [the tracker](../plans/desktop-network-plan.md).
 
 `powershell -NoProfile -File desktop/scripts/installer-smoke.ps1` refuses to run if Vaultor is already installed. It also refuses existing Vaultor shortcuts unless -PreserveShortcuts explicitly backs up and restores their exact bytes, even after failure. It uses a temporary install directory and disposable native workspace, exercises install/same-version repair/uninstall/reinstall, then uninstalls its test copy. It does not claim a different-version OS upgrade, real HTTPS publishing, real OS taskbar cache inspection or Mac verification. No routine Docker or broad API smoke is required.
 
@@ -86,8 +87,7 @@ D9 Windows validation: final 0.2.1 installer is 259,369,342 bytes (~247 MiB), un
 
 An update is an explicitly built application release with a higher stable desktop/package.json version, the correct OS/architecture, original release-key signature and matching installer checksum. Note edits, workspace imports, Git commits and source changes do not by themselves update an installed app. A local import can reinstall the same version; a feed reports an available update only for a strictly higher version. There is no background automatic check, publish or install.
 
-For the next release, from desktop run `npm version patch --no-git-tag-version` (or deliberately choose minor/major), updating package.json and package-lock.json together. Rebuild the frontend/UI; prepare-server is also required when backend or embedded browser assets change. Run the focused checks appropriate to the actual change, then package:release on Windows x64 and separately on Apple Silicon macOS with the same private release key. Preserve old installers/sidecars outside the build output if needed for recovery. Never regenerate the key between releases. Do not edit a version/checksum in a signed manifest by hand; build generates the signature.
-
+Agents follow [RELEASE-PROCESS.md](RELEASE-PROCESS.md) for versioning, native builds, original-key verification, source tags and GitHub draft/publication. `publish:release` is a dry-run preflight by default; `--publish` stages verified pairs in a draft without changing the original identity or overwriting released bytes. App-facing changes require release handoff; documentation-only changes do not. Missing platform access/key/native checks remain explicit blockers.
 Personal local distribution: transfer the installer and its `.vaultor.json` together. Open the installed app's window menu → Updates → Import update, choose the sidecar, then Install update after validation. Windows completes its normal installer; Mac opens the DMG for manual replacement. Alternatively run the known installer directly, but that bypasses the in-app pre-update workspace backup flow. The 0.2.2 Windows package fixes stopped-host switching and local profile confusion; the Mac package must be built there before offering it as a Mac update.
 
 Optional feed: deliberately host each platform's signed manifest and named sibling installer at an HTTPS URL and configure that platform's manifest URL in Updates → Update source and recovery. Check and Download are explicit. Uploading a new version's signed manifest makes it discoverable; a Git push alone does not. No hosting/publishing is configured automatically. Keep the feed pointed at the correct platform; OS/version/signature mismatches fail rather than installing.

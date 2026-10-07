@@ -18,7 +18,8 @@
     "test:network": "node --test test/network.test.mjs",
     "smoke:chrome": "node scripts/chrome-smoke.mjs",
     "package:release": "node scripts/package-release.mjs",
-    "release:key": "node scripts/release-key.mjs"
+    "release:key": "node scripts/release-key.mjs",
+    "publish:release": "node scripts/publish-release.mjs"
   },
   "devDependencies": {
     "electron": "44.5.1",

@@ -3,7 +3,7 @@
   "info": {
     "title": "Vaultor API",
     "version": "1.3.0",
-    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/HOST-ACCESS.md."
+    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md."
   },
   "servers": [
     {

@@ -2,7 +2,7 @@
 
 Status: Sprint 1 implemented; native pointer verification remains outstanding. Sprints 2–4 are implemented; remaining manual verification limits are recorded below. DOCX visual pagination remains unverified. Created 2026-09-22.
 
-Sprint 1 is implemented as recorded in the handoff below; Sprint 2 was subsequently authorized and implemented; Sprint 3 was subsequently authorized and implemented; Sprint 4 was subsequently authorized and implemented. Read [CODEBASE.md](CODEBASE.md) for current implementation. This plan incorporates the user's approval of text-import choices, individual exports and table improvements, plus the corrected picker reproduction and request for filtering only among spreadsheet features.
+Sprint 1 is implemented as recorded in the handoff below; Sprint 2 was subsequently authorized and implemented; Sprint 3 was subsequently authorized and implemented; Sprint 4 was subsequently authorized and implemented. Read [CODEBASE.md](../CODEBASE.md) for current implementation. This plan incorporates the user's approval of text-import choices, individual exports and table improvements, plus the corrected picker reproduction and request for filtering only among spreadsheet features.
 
 ## Execution contract
 
@@ -166,7 +166,7 @@ Stop after Sprint 2. Discuss before Sprint 3 (individual Markdown/PDF/DOCX expor
 
 ### Sprint 3 handoff — 2026-09-23
 
-Implemented individual export through the title-bar Export icon, save barrier, discovery, progress, conversion warnings, retry and downloadable Markdown/asset ZIP/PDF/DOCX. Snapshot content/title and local binaries before returning the operation; render on the existing worker independently of later edits. Extended operation metadata and OpenAPI; added POI/OpenHTMLtoPDF and licensed Noto Sans fonts. Format fidelity, dependencies and limits are in [NOTE-EXPORTS.md](NOTE-EXPORTS.md).
+Implemented individual export through the title-bar Export icon, save barrier, discovery, progress, conversion warnings, retry and downloadable Markdown/asset ZIP/PDF/DOCX. Snapshot content/title and local binaries before returning the operation; render on the existing worker independently of later edits. Extended operation metadata and OpenAPI; added POI/OpenHTMLtoPDF and licensed Noto Sans fonts. Format fidelity, dependencies and limits are in [NOTE-EXPORTS.md](../workspace/NOTE-EXPORTS.md).
 
 Changed default note switching to Alt+Left/Right, migrating both earlier defaults while keeping other custom bindings. Non-Mac history now uses Ctrl+Alt+Left/Right; Mac history remains Cmd+[ / Cmd+]. Shortcut capture accepts Alt bindings.
 
@@ -181,7 +181,7 @@ Stop after Sprint 3. Discuss before authorizing Sprint 4 (table filtering, expan
 
 ### Sprint 4 handoff — 2026-09-23
 
-Implemented [table workflows](TABLES.md): per-column session filters, visible counts/no-results, hidden-row transaction protection, atomic TSV paste and rectangular copy, explicit all/visible CSV export, and same-editor fullscreen expansion. No formulas or sorting. CSV is generated locally from the current editor document (including unsaved changes); persisted resource APIs retain all structured data.
+Implemented [table workflows](../workspace/TABLES.md): per-column session filters, visible counts/no-results, hidden-row transaction protection, atomic TSV paste and rectangular copy, explicit all/visible CSV export, and same-editor fullscreen expansion. No formulas or sorting. CSV is generated locally from the current editor document (including unsaved changes); persisted resource APIs retain all structured data.
 
 Fixed the screenshot's shortcut collision: migration now covers stored Mod+Alt+Arrow, not just the older Mod+Arrow/PageUp/PageDown defaults. Alt+Arrow switches notes, history remains Ctrl+Alt+Arrow on Windows/Cmd+brackets on Mac. Help, dispatch and reserved-key validation share one history mapping; duplicate Navigation groups/React keys were removed.
 

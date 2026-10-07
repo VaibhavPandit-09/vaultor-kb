@@ -60,7 +60,7 @@ Stop here. Discuss/authorize Sprint 3 (scalable Library/sidebar) separately. Col
 
 ## Sprint 3 handoff — 2026-09-23
 
-Library/sidebar implemented; authoritative behavior and limitations are in [LIBRARY.md](LIBRARY.md). Server queries project metadata only; 100-row Library pages are virtualized; quick access is bounded at 12 per group. Search/pickers no longer rely on loading the whole workspace. Favorites persist locally in the database; archive organization support remains Sprint 4. Notes stay mounted when Library is shown.
+Library/sidebar implemented; authoritative behavior and limitations are in [LIBRARY.md](../workspace/LIBRARY.md). Server queries project metadata only; 100-row Library pages are virtualized; quick access is bounded at 12 per group. Search/pickers no longer rely on loading the whole workspace. Favorites persist locally in the database; archive organization support remains Sprint 4. Notes stay mounted when Library is shown.
 
 Validation: frontend production build, targeted ESLint, three Library/hook tests, and one Spring/SQLite integration test with 205 disposable resources pass. No browser, live API smoke or Docker rebuild. Full Dashboard/theme/narrow-screen manual review is unperformed; broad scale coverage remains Sprint 6. Existing build warnings concern bundle size and Browserslist data. No blockers to implementation.
 
@@ -74,7 +74,7 @@ Also resolved the table discussion: removed all repeated row/column edge buttons
 
 Validation: one disposable Spring/SQLite organization/transfer integration test passes, including merge/replace, invalid membership archive rejection and injected late-commit rollback. Fifteen frontend cases pass (4 Library, 3 organization manager, 8 table controls). Frontend production build and targeted ESLint pass. No live API smoke, browser or Docker checks. Layout/native interaction is not manually verified; running deployment unchanged. No implementation blockers.
 
-Authoritative behavior: [LIBRARY.md](LIBRARY.md), [API.md](API.md), [TABLES.md](TABLES.md). Remaining scope: note full-text search in Sprint 5, file search/broader scale checks in Sprint 6. Existing sidebar tag chips/pickers still fetch the tag list. Stop after this sprint; do not begin Sprint 5 automatically.
+Authoritative behavior: [LIBRARY.md](../workspace/LIBRARY.md), [API.md](../development/API.md), [TABLES.md](../workspace/TABLES.md). Remaining scope: note full-text search in Sprint 5, file search/broader scale checks in Sprint 6. Existing sidebar tag chips/pickers still fetch the tag list. Stop after this sprint; do not begin Sprint 5 automatically.
 
 ## Usability update — authorized sequence
 
@@ -266,4 +266,4 @@ Validation: production frontend build, final TypeScript and targeted ESLint pass
 
 Completed the final authorized sprint. Fixed unnecessary saves from editor editability updates, serialized SQLite transactions through a single Hikari connection, isolated export tracking by workspace generation, closed stale import-related dialogs, guarded malformed session positions, and wrapped note header actions in narrow panes. No API/document/archive schema changes. SQLite reads also serialize; transactions must remain short.
 
-Validation: production frontend build and targeted ESLint passed; 55 distinct focused frontend cases passed, with the 11 editor/shared-view cases rerun after the mount-save fix. One disposable backend revision/concurrent-save/replacement test passed. A focused real-Dashboard browser session checked keyboard links, split panes, short/full journeys, refresh and Library query restoration, save-failure retry, both themes and narrow headers. Reduced-motion CSS was inspected but not visually emulated; Word pagination remains unverified. No Docker rebuild, broad API smoke or user-workspace mutation. See [INTEGRATION.md](INTEGRATION.md) for the coverage matrix and remaining limits. All N1–N6 sprints are complete.
+Validation: production frontend build and targeted ESLint passed; 55 distinct focused frontend cases passed, with the 11 editor/shared-view cases rerun after the mount-save fix. One disposable backend revision/concurrent-save/replacement test passed. A focused real-Dashboard browser session checked keyboard links, split panes, short/full journeys, refresh and Library query restoration, save-failure retry, both themes and narrow headers. Reduced-motion CSS was inspected but not visually emulated; Word pagination remains unverified. No Docker rebuild, broad API smoke or user-workspace mutation. See [INTEGRATION.md](../workspace/INTEGRATION.md) for the coverage matrix and remaining limits. All N1–N6 sprints are complete.

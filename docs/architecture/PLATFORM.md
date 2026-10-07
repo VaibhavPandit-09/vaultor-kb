@@ -1,6 +1,6 @@
 # Platform and connection boundary
 
-Reviewed 2026-10-04, desktop sprint D7. Browser and the Electron development shell share these interfaces. This computer now owns a bundled loopback Java server; paired remote-host selection, private-LAN trust and integrated desktop chrome are implemented. See [the tracker](desktop-network-plan.md) and [DESKTOP.md](DESKTOP.md).
+Reviewed 2026-10-04, desktop sprint D7. Browser and the Electron development shell share these interfaces. This computer now owns a bundled loopback Java server; paired remote-host selection, private-LAN trust and integrated desktop chrome are implemented. See [the tracker](../plans/desktop-network-plan.md) and [DESKTOP.md](../desktop/DESKTOP.md).
 
 ## Transport and compatibility
 
@@ -36,4 +36,4 @@ Browser mutations obtain /access/session through same-origin transport, deduplic
 
 Window controls and the sidebar connection context are frontend components; narrow IPC operates only the owned native window. Server metadata is on demand, with a sidebar status dot. Window/tray menus retain connection access when the sidebar is hidden. Scoped main local-status events keep host controls current without continuously probing healthy workspaces. D7 adds approved saved-change streams without mutation replay; profile changes cancel their ownership. Window-control hit testing excludes native drag regions; OS theme is the default and follows system appearance live. See DESKTOP.md and HOST-ACCESS.md for ownership, bounds and actual validation.
 
-D8 adds main-only update IPC and native independent-loopback owner-key authorization. No update request uses the workspace transport or device credentials. Updates stays mounted beside desktop chrome before workspace SettingsProvider; AppModal can render with default transparency without that provider. Archive onboarding is an epoch-scoped deliberate handoff to the existing import review dialog, not a new backend operation. See [UPDATES.md](UPDATES.md).
+D8 adds main-only update IPC and native independent-loopback owner-key authorization. No update request uses the workspace transport or device credentials. Updates stays mounted beside desktop chrome before workspace SettingsProvider; AppModal can render with default transparency without that provider. Archive onboarding is an epoch-scoped deliberate handoff to the existing import review dialog, not a new backend operation. See [UPDATES.md](../desktop/UPDATES.md).
