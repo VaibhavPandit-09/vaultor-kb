@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Vaultor API",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration."
   },
   "servers": [
@@ -4040,7 +4040,7 @@
       "get": {
         "operationId": "searchSavedResources",
         "summary": "Search saved resource titles and structured note text",
-        "description": "Title-weighted relevance, then lowercase title and ID. No file-content search. Ordinary browsing remains separate.",
+        "description": "Literal prefix search over saved note text, resource titles and asynchronously extracted supported PDF/UTF-8 file text. Title weight 10, body 1; deterministic title/ID ties. fileCoverage counts the selected type/category/collection/tag/pin scope independently of query matches. Partial coverage does not broaden scope. PDF 20 MiB/100 pages, UTF-8 text 4 MiB, 500000 UTF-16 units, 15 seconds/128 MiB subprocess heap; encrypted/invalid/unsupported files are reported. No OCR, remote fetching or code execution.",
         "parameters": [
           {
             "name": "page",
@@ -6757,6 +6757,72 @@
           }
         }
       }
+    },
+    "/diagnostics/search/files": {
+      "get": {
+        "summary": "Paginated saved-file extraction status; no file paths or bodies",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active file coverage page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileIndexPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/diagnostics/search/files/retry": {
+      "post": {
+        "summary": "Retry unavailable extraction, or reindex one active file by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search status; retry keeps original files unchanged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchStatus"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7742,6 +7808,9 @@
               "other",
               null
             ]
+          },
+          "fileCoverage": {
+            "$ref": "#/components/schemas/FileCoverage"
           }
         }
       },
@@ -7781,6 +7850,9 @@
           },
           "requestId": {
             "type": "string"
+          },
+          "files": {
+            "$ref": "#/components/schemas/FileCoverage"
           }
         }
       },
@@ -8349,6 +8421,109 @@
           },
           "sourceRevision": {
             "type": "string"
+          }
+        }
+      },
+      "FileCoverage": {
+        "type": "object",
+        "description": "Scoped active saved-file extraction coverage; unsupported files and no-text PDFs are accounted for without claiming OCR.",
+        "properties": {
+          "files": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "indexed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "queued": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "indexing": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unsupported": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limitExceeded": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "encrypted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "invalid": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "noText": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "failure": {
+            "type": "string"
+          }
+        }
+      },
+      "FileIndexEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "indexing",
+              "indexed",
+              "unsupported",
+              "limit-exceeded",
+              "encrypted",
+              "invalid",
+              "no-text",
+              "failed"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "FileIndexPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileIndexEntry"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
           }
         }
       }

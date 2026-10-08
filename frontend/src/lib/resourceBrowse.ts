@@ -2,7 +2,7 @@ import api from './api';
 import {resourceFilter} from './resourceKinds';
 import { notifyResourceChange } from './resourceEvents';
 import type { ResourceSummary } from '../types';
-export type ResourcePage = { items: ResourceSummary[]; page: number; size: number; totalItems: number; totalPages: number;appliedCategory?:string };
+export type ResourcePage = { items: ResourceSummary[]; page: number; size: number; totalItems: number; totalPages: number;appliedCategory?:string;fileCoverage?:import("./resourceSearch").FileCoverage };
 export type BrowseQuery = { collection?: string; page?: number; size?: number; q?: string; type?: string; category?:string; tags?: string[]; favorites?: boolean; sort?: 'title' | 'updated' | 'recent' };
 export function browseResources(query: BrowseQuery = {}, signal?: AbortSignal): Promise<ResourcePage> {
   const params = new URLSearchParams();

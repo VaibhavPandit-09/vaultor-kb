@@ -6,6 +6,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Install and update on each platform](desktop/INSTALLATION-AND-UPDATES.md): exact Windows/Mac steps, browser/Docker/Ubuntu paths, available targets and recovery.
 - [Agent-owned release process](desktop/RELEASE-PROCESS.md): standing responsibility for versions, native builds, verified artifacts, tags and GitHub publication.
+- [0.7.0 saved file-content search](desktop/releases/v0.7.0.md): bounded PDF/text indexing, coverage/retry, Windows release and exact Mac handoff.
 - [0.6.0 resource discovery](desktop/releases/v0.6.0.md): Windows release, image categories, bounded thumbnails, saved references and same-tag Mac handoff.
 - [0.5.0 resource lifecycle](desktop/releases/v0.5.0.md): Windows delivery, Trash/Restore, protocol-3/archive-3 compatibility and Mac handoff.
 - [0.4.1 one-click Windows updates](desktop/releases/v0.4.1.md): automatic GitHub downloads, silent installation/relaunch and transition steps.
@@ -26,6 +27,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 - [Appearance and OLED](workspace/APPEARANCE.md): true-black surfaces, opacity overrides, device persistence and media boundaries.
 - [Resource lifecycle](workspace/RESOURCE-LIFECYCLE.md): shared Actions, revision-checked Trash/Restore, retained drafts, durable purge retries and portable state.
 - [Library and organization](workspace/LIBRARY.md): browsing, collections, tags, pins and bulk actions.
+- [File search measurements](development/FILE-SEARCH-MEASUREMENTS.md): bounded Atlas observation, partial coverage, sampled latency/memory and import timeout limitation.
 - [Search and Ctrl+K](workspace/SEARCH.md): title-first search, saved-text opt-in, scope, actions and indexing.
 - [Saved references and resource discovery](workspace/REFERENCES.md): file categories, static thumbnails, saved source/occurrence counts and safe reference navigation.
 - [Managed images](workspace/IMAGES.md): paste/drop/upload, placement tools, authenticated previews/copy, portability and compatibility.

@@ -149,3 +149,7 @@ Set VAULTOR_LAYOUT_SMOKE=1 and run `node desktop/scripts/chrome-smoke.mjs "<abso
 ## Focused discovery check
 
 Run `node desktop/scripts/discovery-check.mjs` against the freshly packaged Windows executable. It creates protected disposable data/profile under the system temp directory, uses generated Atlas PNG fixtures from ignored desktop/cache/atlas/media, checks category/reference counts and bounded thumbnails, and exercises source occurrence navigation/focus with screenshots. `--final` rechecks affected references/source/narrow behavior without repeating all theme frames. This small fixture is not an Atlas performance measurement, real LAN/touch check or physical OLED verification.
+
+## Saved file-content focused checks
+
+node desktop/scripts/file-search-check.mjs runs a protected disposable host then the packaged Windows app, testing body-vs-title/scoped results, incomplete coverage, invalid/byte-limited inputs, paginated status and restart reuse, with two UI frames. Generated Atlas paper-001.pdf is required under ignored cache/atlas/media. node desktop/scripts/file-search-atlas.mjs imports the verified synthetic baseline into a new temp root for a bounded60-second indexing observation; --resume accepts only its own marked prior report/root. Large replacement can monopolize the single SQLite connection and time out status; do not mistake that for completed scale certification. [SEARCH.md](../workspace/SEARCH.md) owns extraction states/limits.

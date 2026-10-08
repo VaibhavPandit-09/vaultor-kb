@@ -26,5 +26,5 @@ public final class ApiDtos {
     }
     public record FavoriteInput(Boolean favorite) {}
     public record NoteInput(String type, String title, JsonNode content, String collectionId) { public NoteInput(String type,String title,JsonNode content) {this(type,title,content,null);} }
-    public record PageDto<T>(List<T> items, int page, int size, long totalItems, int totalPages,String appliedCategory) {public PageDto(List<T> items,int page,int size,long totalItems,int totalPages){this(items,page,size,totalItems,totalPages,null);}}
+    public record PageDto<T>(List<T> items, int page, int size, long totalItems, int totalPages,String appliedCategory,com.vaultor.vaultor.service.FileContentIndex.Coverage fileCoverage) {public PageDto(List<T> items,int page,int size,long totalItems,int totalPages,String appliedCategory){this(items,page,size,totalItems,totalPages,appliedCategory,null);}public PageDto(List<T> items,int page,int size,long totalItems,int totalPages){this(items,page,size,totalItems,totalPages,null,null);}}
 }

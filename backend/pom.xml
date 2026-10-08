@@ -33,6 +33,7 @@
         <maven.compiler.release>25</maven.compiler.release>
     </properties>
     <dependencies>
+        <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>3.0.8</version></dependency>
         <dependency><groupId>com.twelvemonkeys.imageio</groupId><artifactId>imageio-webp</artifactId><version>3.14.0</version></dependency>
         <dependency><groupId>org.bouncycastle</groupId><artifactId>bcpkix-jdk18on</artifactId><version>1.86</version></dependency>
         <dependency><groupId>org.apache.poi</groupId><artifactId>poi-ooxml</artifactId><version>5.5.1</version></dependency>

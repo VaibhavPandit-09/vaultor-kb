@@ -17,12 +17,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 /** Derived search data. SQLite triggers keep every resource mutation and its index in one transaction. */
-@Service @RequiredArgsConstructor @DependsOn("entityManagerFactory") @Slf4j
+@Service @RequiredArgsConstructor @DependsOn("fileContentIndex") @Slf4j
 public class ResourceSearchService {
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transaction;
     private final WorkspaceGate gate;
     private final ResourceBrowseService browse;
+    private final FileContentIndex files;
     private final ExecutorService worker=Executors.newSingleThreadExecutor(Thread.ofPlatform().name("search-rebuild").factory());
     private final AtomicBoolean running=new AtomicBoolean();
     private volatile String failure="",requestId="";
@@ -42,7 +43,7 @@ public class ResourceSearchService {
                   when json_extract(value,'$.type')='image' then coalesce(json_extract(value,'$.attrs.alt'),'')||' '||coalesce(json_extract(value,'$.attrs.caption'),'') end as piece
                 from nodes order by path
               )
-            ),'') else '' end
+            ),'') when %1$s.type='file' then coalesce((select f.body from file_search f where f.id=%1$s.id and f.version=coalesce(%1$s.revision_seed,'')||':'||coalesce(%1$s.revision_number,0)||':'||coalesce(%1$s.file_path,'') and f.generation=(select value from settings where key_name='workspace_generation') and f.state='indexed'),'') else '' end
             """.formatted(row);
     }
     @PostConstruct public void initialize() {
@@ -58,16 +59,17 @@ public class ResourceSearchService {
         } catch(Exception e) {failure="Search initialization failed; rebuild after resolving the database error.";log.error("search_initialize_failed",e);}
     }
     @PreDestroy public void shutdown(){worker.shutdownNow();}
-    public record Status(boolean rebuilding,long processed,long resources,long indexed,long invalidDocuments,boolean complete,String failure,String requestId) {}
+    public record Status(boolean rebuilding,long processed,long resources,long indexed,long invalidDocuments,boolean complete,String failure,String requestId,FileContentIndex.Coverage files) {}
     public Status status() {
         long total=jdbc.queryForObject("select count(*) from resources",Long.class),indexed=0;
         try {indexed=jdbc.queryForObject("select count(distinct id) from resource_fts where id in (select id from resources)",Long.class);} catch(Exception ignored) {}
         long invalid=jdbc.queryForObject("select count(*) from resources where type='note' and (content is null or not json_valid(content))",Long.class);
-        return new Status(running.get(),processed,total,indexed,invalid,!running.get()&&failure.isEmpty()&&total==indexed&&invalid==0,failure,requestId);
+        return new Status(running.get(),processed,total,indexed,invalid,!running.get()&&failure.isEmpty()&&total==indexed&&invalid==0,failure,requestId,files.coverage("",List.of()));
     }
     public Status rebuild(String origin) {
         if(!running.compareAndSet(false,true))return status();
         requestId=origin;processed=0;failure="";
+        try{if(!"startup".equals(origin))files.rebuild();}catch(Exception e){running.set(false);failure="Search rebuild failed; retry from Diagnostics.";return status();}
         worker.submit(()->{
             try {
                 gate.exclusive(()->transaction.executeWithoutResult(tx->jdbc.update("delete from resource_fts")));
@@ -116,11 +118,13 @@ public class ResourceSearchService {
         if(pins)where.append(" and coalesce(r.favorite,0)=1");
         if(collection!=null&&!collection.isBlank()){where.append(" and exists(select 1 from resource_collections rc where rc.resource_id=r.id and rc.collection_id=?)");args.add(collection);}
         for(String tag:tags.stream().distinct().toList()){where.append(" and exists(select 1 from resource_tags rt join tags t on t.id=rt.tag_id where rt.resource_id=r.id and t.name=?)");args.add(tag.trim().toLowerCase(Locale.ROOT));}
+        var coverage=files.coverage(where.toString().substring(where.indexOf(" and resource_fts match ?")+" and resource_fts match ?".length()),args.subList(1,args.size()));
+        if(words.isEmpty())return new PageDto<>(List.of(),page,size,0,0,category,coverage);
         long total=jdbc.queryForObject("select count(*)"+where,Long.class,args.toArray());
         args.add(size);args.add((long)page*size);
         record Match(String id,String marked){}
         var matches=jdbc.query("select r.id,snippet(resource_fts,2,char(57344),char(57345),' … ',40)"+where+" order by bm25(resource_fts,0,10,1),lower(r.title),r.id limit ? offset ?",(rs,n)->new Match(rs.getString(1),rs.getString(2)),args.toArray());
         var summaries=browse.byIds(matches.stream().map(Match::id).toList());
-        return new PageDto<>(matches.stream().filter(m->summaries.containsKey(m.id())).map(m->new Hit(summaries.get(m.id()),snippet(m.marked()))).toList(),page,size,total,(int)((total+size-1)/size),category);
+        return new PageDto<>(matches.stream().filter(m->summaries.containsKey(m.id())).map(m->new Hit(summaries.get(m.id()),snippet(m.marked()))).toList(),page,size,total,(int)((total+size-1)/size),category,coverage);
     }
 }

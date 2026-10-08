@@ -71,7 +71,7 @@ it('combines collection and tag filtering and scopes selection to the current pa
 it('retains query while opting into content and changing collection destination',async()=>{
  const changeScope=vi.fn();render(<LibraryView section="library" visible tags={[]} collection={{id:'atlas',name:'Atlas',count:100}} onCollection={changeScope} hasNotes={false} onReturn={()=>{}} onOpen={()=>{}}/>);
  const input=screen.getByLabelText('Search resources');fireEvent.change(input,{target:{value:'needle'}});await screen.findByText('Note 0');fireEvent.click(screen.getByRole('button',{name:'Search options'}));
- const toggle=screen.getByLabelText('Include saved note text');expect((toggle as HTMLInputElement).checked).toBe(false);fireEvent.click(toggle);expect((input as HTMLInputElement).value).toBe('needle');await waitFor(()=>expect((screen.getByLabelText('Sort resources') as HTMLSelectElement).disabled).toBe(true));fireEvent.click(screen.getByRole('button',{name:'Entire workspace'}));expect(changeScope).toHaveBeenCalledWith(null);expect((input as HTMLInputElement).value).toBe('needle');
+ const toggle=screen.getByLabelText('Include saved content');expect((toggle as HTMLInputElement).checked).toBe(false);fireEvent.click(toggle);expect((input as HTMLInputElement).value).toBe('needle');await waitFor(()=>expect((screen.getByLabelText('Sort resources') as HTMLSelectElement).disabled).toBe(true));fireEvent.click(screen.getByRole('button',{name:'Entire workspace'}));expect(changeScope).toHaveBeenCalledWith(null);expect((input as HTMLInputElement).value).toBe('needle');
 });
 it('starts from restored title/content mode and query without restoring bulk selection',()=>{
  const context={query:'saved query',searchMode:'content' as const,type:'note',sort:'title' as const};
