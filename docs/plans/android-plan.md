@@ -1,6 +1,6 @@
 # Vaultor for Android — execution tracker
 
-Created 2026-10-08; reviewed 2026-10-09. **A1 implemented and published; A2 in progress; A3–A6 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
+Created 2026-10-08; reviewed 2026-10-09. **A1–A2 implemented and published; A3 in progress; A4–A6 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
 
 ## Delivery and agreed boundaries
 
@@ -76,14 +76,14 @@ Status: **Implemented and published (2026-10-09)**. User authorized A2; A3–A6 
 
 ## A3 — Native browsing, search and journeys
 
-Status: **Not started**. Depends on A2 recovery.
+Status: **Implemented; final tagged APK/publication gate pending (2026-10-09)**. User authorized A3 only. Release milestone: Android0.1.0-alpha.3 / versionCode3; desktop/host0.7.1 stays unchanged.
 
-- [ ] Implement mobile destinations for Library, Recent, Pinned and Collections with one mixed list, shared type/category descriptors, concise metadata and touch-accessible row actions. Use bounded server pages and cancellation; never download all note bodies.
-- [ ] Default title search; explicit saved-content mode and collection scope preserve query, reset paging and show coverage/snippets honestly. No silent scope broadening. Collections stay destinations, not resource types.
-- [ ] Add one active-note journey with back/forward/overflow, distinct visits/cycles, branch replacement, current-title resolution and unavailable steps. Direct opens start a trail; files preview without advancing it. Reuse the 200-visit bound and recover reading positions.
-- [ ] Specify Android Back priority: top sheet/picker/preview, focused editor keyboard as appropriate, journey/navigation destination, then app exit. No conflicting WebView/native back ownership. Integrate predictive Back where supported by the selected stack.
-- [ ] Preserve query/filters/destination/scroll after return and restart; retain rows on background failure and offer local Retry. Empty states are compact and actionable.
-- [ ] Measure first usable browsing, scrolling, query latency and bounded caches on Small then Atlas; exercise both emulator generations, long titles and large font sizes.
+- [x] Implement mobile destinations for Library, Recent, Pinned and Collections with one mixed list, shared type/category descriptors, concise metadata and touch-accessible row actions. Use bounded server pages and cancellation; never download all note bodies.
+- [x] Default title search; explicit saved-content mode and collection scope preserve query, reset paging and show coverage/snippets honestly. No silent scope broadening. Collections stay destinations, not resource types.
+- [x] Add one active-note journey with back/forward/overflow, distinct visits/cycles, branch replacement, current-title resolution and unavailable steps. Direct opens start a trail; files preview without advancing it. Reuse the 200-visit bound and recover reading positions.
+- [x] Specify Android Back priority: top sheet/picker/preview, focused editor keyboard as appropriate, journey/navigation destination, then app exit. No conflicting WebView/native back ownership. Integrate predictive Back where supported by the selected stack.
+- [x] Preserve query/filters/destination/scroll after return and restart; retain rows on background failure and offer local Retry. Empty states are compact and actionable.
+- [x] Measure first usable browsing, scrolling, query latency and bounded caches on Small then Atlas; exercise both emulator generations, long titles and large font sizes.
 
 **Acceptance:** find and navigate resources without losing drafts or search context; saved-content search remains opt-in and scoped. Publish a signed browsing APK.
 
@@ -162,3 +162,11 @@ Published Android-only prerelease at **2026-10-08T21:55:09Z** (2026-10-09 local)
 Fresh tagged-source release/application-test compilation and APK identity/lock/version/API/arm64+x86_64/16KiB alignment/signature checks passed. Exact staged bytes installed over the existing fixture application on both emulators. All four native storage/address/migration tests passed again on API36 and API37. API37 retained approval and reopened its recovered note/session with transient panels closed; API36 retained its existing scope/cache and reopened the last note offline after the old fixture host stopped. Candidate permission-denial/retry/pairing suite passed five cases on API37; final candidate and tagged APK hashes are identical. The foreign-Trash restart/recovered-copy action passed on API37 before tagging. A1-to-A2 protected-draft upgrade, clean/dirty notifications and recovered original preservation passed earlier on API36 as detailed above.
 
 Publisher verified a clean pushed source/tag, original signer policy, all staged assets and downloaded byte comparisons before publication. GitHub release is non-draft/prerelease; its three asset digests match local APK/checksum/manifest. Desktop/Mac0.7.1 remains unchanged. Owned disposable hosts/listeners and both emulators stopped; no personal data or phone access. This publication ledger changes no runtime architecture. **A2 complete; four sprints A3–A6 remain unstarted.** Physical Samsung/One UI and outstanding native/real-LAN cases remain open as previously listed. Install the single APK over alpha.1; do not uninstall/clear data.
+
+## A3 implementation and candidate gate
+
+Implemented native mixed 100-row paging, title-first/explicit saved-content and collection scope, retained three-page cache, local retry/cancellation, a persisted 200-visit note journey and compact editor navigation. Editor remains mounted behind browsing/Hosts/Recovery; hidden/background browsing requests stop. Native window keyboard visibility prevents stale modal keyboard flags consuming Back. No desktop/server/protocol/archive change.
+
+TypeScript, 32 focused Jest tests, fresh editor schema/refusal/activation checks, scoped lint (zero errors/19 warnings) and signed release/application-test builds passed. API36 native storage/policy plus Small browsing suite passed six cases; Atlas query/paging/scroll passed one. API37 five native storage/policy cases passed; its final matching-code pairing/editor/browsing/picker/link-and-native-Back case passed separately after the keyboard fix. Small70/Atlas5,000 verified counts; first-page timing samples77/76/82ms and103/91/82ms, body-only query28/40ms, first usable Library1,839/1,635ms. Six scripted scrolls2,825/2,779ms include harness overhead; no FPS/Wi-Fi/heap claim. Actual setup/failed-run corrections/visual limitations are in ANDROID.md.
+
+Final same-tag installs/publication follow. Samsung/One UI, TalkBack, physical OLED/Wi-Fi and OEM lifecycle checks remain user-only/open. Image viewing/input belongs to A4, organization mutations A5, full themes/touch/motion/discovery/updater A6. Stop after A3.

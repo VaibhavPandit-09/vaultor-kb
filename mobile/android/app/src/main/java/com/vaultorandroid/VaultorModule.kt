@@ -115,7 +115,9 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   }
   private fun ca(p: JSONObject): X509Certificate = CertificateFactory.getInstance("X.509")
     .generateCertificate(Base64.decode(p.getString("ca"),Base64.NO_WRAP).inputStream()) as X509Certificate
-  private fun request(p: JSONObject, path: String, method: String="GET", body: String?=null, secret: String?=null, revision: String?=null, token:String?=null, multipart:Boolean=false): JSONObject {
+  private val browseSequence=java.util.concurrent.atomic.AtomicLong()
+  @Volatile private var browseConnection:HttpsURLConnection?=null
+  private fun request(p: JSONObject, path: String, method: String="GET", body: String?=null, secret: String?=null, revision: String?=null, token:String?=null, multipart:Boolean=false,browse:Long?=null): JSONObject {
     val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint")) { "Host identity changed; explicit pairing is required." }
     val con=URI(address(p.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection
     con.sslSocketFactory=context(cert).socketFactory
@@ -125,6 +127,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     if(secret!=null) con.setRequestProperty("X-Vaultor-Pairing",secret)
     if(revision!=null) con.setRequestProperty("If-Match",revision)
     try {
+      if(browse!=null) {require(browse==browseSequence.get());browseConnection=con}
       if(token!=null) {requests.add(con);require(token==epoch) {"Connection changed."}}
       if(body!=null) {
         require(body.toByteArray().size <= 1500000);con.doOutput=true
@@ -140,8 +143,9 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       val stream=if(status in 200..299) con.inputStream else con.errorStream
       val bytes=stream?.use { it.readNBytes(1500001) } ?: ByteArray(0)
       require(bytes.size<=1500000) { "Response exceeds the mobile document limit." }
+      if(browse!=null) require(browse==browseSequence.get()) {"Obsolete browsing response."}
       return JSONObject().put("status",status).put("body",String(bytes,Charsets.UTF_8))
-    } finally {requests.remove(con);con.disconnect()}
+    } finally {requests.remove(con);if(browseConnection===con)browseConnection=null;con.disconnect()}
   }
   private fun json(response: JSONObject): JSONObject {
     require(response.getInt("status") in 200..299) { "Host refused this request (${response.getInt("status")})." }
@@ -245,6 +249,11 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     write(state);"{}"
   }
   @ReactMethod fun uuid(promise:Promise)=run(promise) {JSONObject().put("id",UUID.randomUUID().toString()).toString()}
+  @ReactMethod fun isKeyboardVisible(promise:Promise) {
+    ctx.runOnUiQueueThread {
+      promise.resolve(ctx.currentActivity?.window?.decorView?.rootWindowInsets?.isVisible(android.view.WindowInsets.Type.ime())==true)
+    }
+  }
   @ReactMethod fun activate(hostId:String, promise:Promise)=run(promise) {
     val state=read();val profiles=state.getJSONObject("profiles");require(profiles.has(hostId));cancelRequests();state.put("selected",hostId);write(state)
     JSONObject().put("hostId",hostId).put("epoch",epoch).put("address",profiles.getJSONObject(hostId).getString("address")).toString()
@@ -265,11 +274,40 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   @ReactMethod fun apiFor(hostId:String,token:String,path:String,method:String,body:String?,revision:String?,promise:Promise)=net(promise) {
     val validId="[a-fA-F0-9-]{36}"
     require((method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/$validId)")))) ||
+      (method=="GET" && path.matches(Regex("/resources/$validId/summary"))) || (method=="POST" && path.matches(Regex("/resources/$validId/open")) && body==null) ||
       (method=="PUT" && ((path.matches(Regex("/resources/$validId/note")) && revision!=null) || path.matches(Regex("/resources/imports/$validId"))))) {"Unsupported mobile operation."}
     val p=selected(hostId,token)
     if(path=="/capabilities") {val h=json(request(p,"/access/host",token=token));require(h.getString("hostId")==hostId && h.getString("fingerprint")==p.getString("fingerprint"))}
     request(p,path,method,body,revision=revision,token=token,multipart=path.contains("/imports/")).toString()
   }
+
+  private fun validateBrowsePath(path:String) {
+    require(path.length<=12000);val uri=URI(path)
+    require(uri.scheme==null && uri.rawAuthority==null && uri.fragment==null && uri.path in listOf("/resources","/resources/query","/collections","/organization/pins"))
+    val seen=HashSet<String>()
+    for(pair in (uri.rawQuery ?: "").split("&").filter {it.isNotEmpty()}) {
+      val pieces=pair.split("=",limit=2);require(pieces.size==2)
+      val key=java.net.URLDecoder.decode(pieces[0],"UTF-8");val value=java.net.URLDecoder.decode(pieces[1],"UTF-8");require(seen.add(key))
+      require(when(key) {
+        "page" -> value.toIntOrNull()?.let {it in 0..100000} ?: false
+        "size" -> value.toIntOrNull()?.let {it in 1..100} ?: false
+        "q" -> value.length<=1000
+        "type" -> value in listOf("note","file")
+        "kind" -> value in listOf("note","file","collection")
+        "category" -> value in listOf("image","pdf","audio","video","text","other")
+        "collection" -> value.matches(Regex("[a-fA-F0-9-]{36}"))
+        "favorites" -> value in listOf("true","false")
+        "sort" -> value in listOf("title","updated","recent")
+        else -> false
+      }) {"Unsupported browsing parameter."}
+    }
+  }
+  @ReactMethod fun cancelBrowse() {browseSequence.incrementAndGet();browseConnection?.disconnect();browseConnection=null}
+  @ReactMethod fun browseApiFor(hostId:String,token:String,path:String,promise:Promise) {
+    val ticket=browseSequence.incrementAndGet();browseConnection?.disconnect()
+    net(promise) {validateBrowsePath(path);require(ticket==browseSequence.get());val p=selected(hostId,token);request(p,path,token=token,browse=ticket).toString()}
+  }
+
   @ReactMethod fun addListener(name:String) {} // Required NativeEventEmitter lifecycle surface.
   @ReactMethod fun removeListeners(count:Double) {}
   @ReactMethod fun stopChanges() {stream?.disconnect();stream=null}

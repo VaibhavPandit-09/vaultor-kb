@@ -27,7 +27,14 @@ const ResourceLink = Node.create({
   }),
   renderHTML: ({ node }) => [
     'span',
-    { class: 'resource-link' },
+    {
+      class: 'resource-link',
+      'data-resource-id': node.attrs.resourceId,
+      role: 'button',
+      tabindex: '0',
+      'aria-label': 'Open ' + (node.attrs.label || 'linked resource'),
+      contenteditable: 'false',
+    },
     node.attrs.label || 'Linked resource',
   ],
 });
@@ -94,6 +101,20 @@ const editor = new Editor({
       send({ type: 'changed', loadId, content: e.getJSON() });
   },
 });
+function openLink(event) {
+  const link = event.target.closest?.('.resource-link');
+  if (!link || loading || blocked) return;
+  if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
+  const resourceId = link.dataset.resourceId;
+  if (!/^[a-f0-9-]{36}$/i.test(resourceId ?? '')) return;
+  event.preventDefault();
+  event.stopPropagation();
+  send({ type: 'open', loadId, resourceId });
+}
+// Capture before ProseMirror's Enter handling: activating an atom is navigation,
+// never a newline or document transaction.
+document.querySelector('#editor').addEventListener('click', openLink, true);
+document.querySelector('#editor').addEventListener('keydown', openLink, true);
 let positionTimer;
 function reading() {
   if (loading || blocked || positionTimer) return;

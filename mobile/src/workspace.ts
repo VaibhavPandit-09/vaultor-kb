@@ -1,4 +1,16 @@
 import { type Doc, type Note, scopeFor } from './bridge';
+import {
+  advance,
+  emptyJourney,
+  normalizeJourney,
+  type Journey,
+} from './journey';
+import {
+  defaultBrowse,
+  normalizeBrowse,
+  type BrowseConfig,
+  type ResourceSummary,
+} from './browse';
 
 export type Host = { hostId: string; address: string; epoch: string };
 export type Position = { anchor: number; head: number; scroll: number };
@@ -24,6 +36,9 @@ export type Session = {
   noteId?: string;
   position?: Position;
   at?: number;
+  journey?: Journey;
+  browse?: BrowseConfig;
+  view?: 'browse' | 'note';
 };
 type Bootstrap = {
   profiles: Omit<Host, 'epoch'>[];
@@ -50,6 +65,16 @@ export type WorkspaceState = {
   busy: boolean;
   loadId: number;
   content?: Doc;
+  journey: Journey;
+  browse: BrowseConfig;
+  view: 'browse' | 'note';
+  preview?: ResourceSummary;
+  browseVersion: number;
+  navigationRetry?: {
+    id: string;
+    intent: 'direct' | 'linked' | 'history';
+    index?: number;
+  };
 };
 export interface Port {
   storage<T>(action: string, value?: object): Promise<T>;
@@ -60,8 +85,10 @@ export interface Port {
     method?: string,
     body?: unknown,
     revision?: string,
+    channel?: 'browse',
   ): Promise<any>;
   uuid(): Promise<string>;
+  cancelBrowse?(): void;
 }
 export class HostError extends Error {
   constructor(public status: number, message: string) {
@@ -84,12 +111,18 @@ export class MobileWorkspace {
     unavailable: false,
     busy: false,
     loadId: 0,
+    journey: emptyJourney(),
+    navigationRetry: undefined,
+    browse: defaultBrowse(),
+    view: 'browse',
+    browseVersion: 0,
   };
   private listeners = new Set<() => void>();
   private queue: Promise<unknown> = Promise.resolve();
   private epoch = 0;
   private navigation = 0;
   private edits = 0;
+  private journeyRequest = 0;
   constructor(private port: Port) {}
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -151,6 +184,11 @@ export class MobileWorkspace {
       note: undefined,
       draft: undefined,
       scope: '',
+      journey: emptyJourney(),
+      navigationRetry: undefined,
+      browse: defaultBrowse(),
+      view: 'browse',
+      preview: undefined,
       content: undefined,
     });
     await this.connect(true);
@@ -186,15 +224,14 @@ export class MobileWorkspace {
           supported: false,
           status: 'Workspace replaced. Former drafts remain in Recovery.',
           position: undefined,
+          journey: emptyJourney(),
+          navigationRetry: undefined,
+          browse: defaultBrowse(),
+          view: 'browse',
+          preview: undefined,
         });
       }
       this.patch({ scope, connection: 'online' });
-      const list = await this.port.api(
-        host,
-        '/resources?page=0&size=30&type=note',
-      );
-      this.valid(epoch);
-      this.patch({ notes: list.items });
       if (restore && !this.state.note) {
         const session = await this.port.storage<Session | null>('getSession', {
           scope,
@@ -206,6 +243,18 @@ export class MobileWorkspace {
           session?.noteId ??
           b.drafts.find(d => d.scope === scope && !d.resolved)?.noteId;
         if (id) await this.open(id, session?.position);
+        this.valid(epoch);
+        const journey = normalizeJourney(session?.journey);
+        this.patch({
+          browse: normalizeBrowse(session?.browse),
+          view:
+            session?.view === 'browse' || !this.state.note ? 'browse' : 'note',
+          journey:
+            journey.visits[journey.cursor]?.id === this.snapshot().note?.id
+              ? journey
+              : this.state.journey,
+        });
+        await this.session();
       } else if (this.state.note) await this.reconcile();
       await this.refreshRecovery();
     } catch (e) {
@@ -251,20 +300,29 @@ export class MobileWorkspace {
       supported: false,
       conflict: false,
       unavailable: false,
+      journey: normalizeJourney(session.journey),
+      browse: normalizeBrowse(session.browse),
+      view: session.view === 'browse' ? 'browse' : 'note',
     });
   }
-  async open(id: string, position?: Position) {
+  async open(id: string, position?: Position, strict = false) {
+    const ticket = ++this.navigation,
+      epoch = this.epoch;
     await this.protect();
+    this.valid(epoch);
+    if (ticket !== this.navigation) return;
     const host = this.state.host;
     if (!host) return;
-    const epoch = this.epoch,
-      ticket = ++this.navigation,
-      scope = this.state.scope;
+    const scope = this.state.scope;
     let note: Note;
     try {
       note = await this.port.api(host, '/resources/' + id);
     } catch (e) {
-      if (e instanceof HostError && (e.status === 404 || e.status === 410)) {
+      if (
+        !strict &&
+        e instanceof HostError &&
+        (e.status === 404 || e.status === 410)
+      ) {
         const cached = await this.port.storage<Note | null>('getCache', {
           scope,
           noteId: id,
@@ -304,6 +362,12 @@ export class MobileWorkspace {
             conflict: true,
             supported: false,
             status: 'Saved note unavailable · local version retained',
+            view: 'note',
+            journey: advance(
+              emptyJourney(),
+              { id, title: note.title, position, unavailable: true },
+              false,
+            ),
           });
           return;
         }
@@ -314,6 +378,8 @@ export class MobileWorkspace {
     if (ticket !== this.navigation) return;
     if (note.type !== 'note')
       throw Error('This destination is not an editable note.');
+    if (strict && note.trashedAt)
+      throw new HostError(410, 'This note is in Trash.');
     const d = await this.port.storage<Draft | null>('getDraft', {
       scope,
       noteId: id,
@@ -363,8 +429,21 @@ export class MobileWorkspace {
         : draft
         ? 'Recovered protected draft'
         : 'Saved',
+      view: 'note',
+      journey: strict
+        ? this.state.journey
+        : advance(
+            emptyJourney(),
+            {
+              id,
+              title: note.title,
+              position,
+              unavailable: Boolean(note.trashedAt),
+            },
+            false,
+          ),
     });
-    await this.session();
+    if (!strict) await this.session();
   }
   loaded() {
     this.patch({ supported: true });
@@ -406,7 +485,9 @@ export class MobileWorkspace {
     if (this.state.draft) await this.port.storage('putDraft', this.state.draft);
   }
   reading(position: Position) {
-    this.patch({ position });
+    const journey = normalizeJourney(this.state.journey);
+    if (journey.cursor >= 0) journey.visits[journey.cursor].position = position;
+    this.patch({ position, journey });
     void this.session().catch(e => this.report(e));
   }
   private async session() {
@@ -417,6 +498,9 @@ export class MobileWorkspace {
         scope,
         noteId: note?.id,
         position,
+        journey: this.state.journey,
+        browse: this.state.browse,
+        view: this.state.view,
       });
   }
   async save() {
@@ -539,6 +623,12 @@ export class MobileWorkspace {
       }
       this.patch({
         note: saved,
+        journey: {
+          ...this.state.journey,
+          visits: this.state.journey.visits.map(v =>
+            v.id === saved.id ? { ...v, title: saved.title } : v,
+          ),
+        },
         content: contentOf(saved),
         loadId: this.state.loadId + 1,
         connection: 'online',
@@ -672,6 +762,10 @@ export class MobileWorkspace {
       supported: false,
       conflict: false,
       unavailable: false,
+      view: 'browse',
+      journey: emptyJourney(),
+      navigationRetry: undefined,
+      preview: undefined,
     });
     await this.session();
     await this.refreshRecovery();
@@ -686,6 +780,11 @@ export class MobileWorkspace {
     this.patch({
       host,
       scope: '',
+      journey: emptyJourney(),
+      navigationRetry: undefined,
+      browse: defaultBrowse(),
+      view: 'browse',
+      preview: undefined,
       note: undefined,
       draft: undefined,
       content: undefined,
@@ -716,10 +815,154 @@ export class MobileWorkspace {
         supported: false,
         conflict: false,
         connection: 'offline',
+        journey: emptyJourney(),
+        navigationRetry: undefined,
+        browse: defaultBrowse(),
+        view: 'browse',
+        preview: undefined,
       });
     }
   }
   async changedFeed() {
-    if (!this.state.busy) await this.connect(false);
+    if (!this.state.busy) {
+      await this.connect(false);
+      this.patch({ browseVersion: this.state.browseVersion + 1 });
+    }
+  }
+  browseApi(path: string) {
+    if (!this.state.host || this.state.connection !== 'online')
+      return Promise.reject(
+        Error(
+          'Host unavailable. Reconnect to browse; protected drafts remain.',
+        ),
+      );
+    return this.port.api(
+      this.state.host,
+      path,
+      'GET',
+      undefined,
+      undefined,
+      'browse',
+    );
+  }
+  cancelBrowse() {
+    this.port.cancelBrowse?.();
+  }
+  updateBrowse(browse: BrowseConfig) {
+    this.patch({ browse });
+    void this.session().catch(e => this.report(e));
+  }
+  async showBrowser() {
+    await this.protect();
+    this.patch({ view: 'browse', preview: undefined });
+    await this.session();
+  }
+  async returnToNote() {
+    if (this.state.note) {
+      this.patch({ view: 'note' });
+      await this.session();
+    }
+  }
+  dismissPreview() {
+    this.patch({ preview: undefined });
+  }
+  async routeResource(id: string, linked = false) {
+    this.navigation++; // Supersede loads before waiting for destination metadata.
+    const host = this.state.host,
+      epoch = this.epoch,
+      request = ++this.journeyRequest;
+    if (!host) return;
+    const resource: ResourceSummary = await this.port.api(
+      host,
+      '/resources/' + id + '/summary',
+    );
+    this.valid(epoch);
+    if (request !== this.journeyRequest) return;
+    if (resource.type === 'note')
+      await this.navigate(id, linked ? 'linked' : 'direct');
+    else if (resource.type === 'file') {
+      this.patch({ preview: resource });
+      void this.port
+        .api(host, '/resources/' + id + '/open', 'POST')
+        .catch(() => {});
+    } else
+      throw Error('Unsupported resource type: ' + (resource.type || 'unknown'));
+  }
+  async navigate(
+    id: string,
+    intent: 'direct' | 'linked' | 'history' = 'direct',
+    index?: number,
+  ) {
+    if (this.state.note?.id === id && intent !== 'history') {
+      if (intent === 'direct')
+        this.patch({
+          journey: advance(
+            emptyJourney(),
+            { id, title: this.state.note.title, position: this.state.position },
+            false,
+          ),
+          view: 'note',
+        });
+      await this.session();
+      return;
+    }
+    const old = normalizeJourney(this.state.journey),
+      epoch = this.epoch,
+      request = ++this.journeyRequest;
+    const position =
+      intent === 'history' && index !== undefined
+        ? old.visits[index]?.position
+        : undefined;
+    try {
+      await this.open(id, position, true);
+      this.valid(epoch);
+      if (request !== this.journeyRequest || this.state.note?.id !== id) return;
+      let journey: Journey;
+      if (intent === 'history' && index !== undefined) {
+        journey = {
+          visits: old.visits.map(v => ({
+            ...v,
+            title: v.id === id ? this.state.note!.title : v.title,
+          })),
+          cursor: index,
+        };
+        journey.visits[index].unavailable = false;
+      } else
+        journey = advance(
+          old,
+          { id, title: this.state.note.title, position },
+          intent === 'linked',
+        );
+      this.patch({ journey, view: 'note' });
+      this.patch({ navigationRetry: undefined });
+      await this.session();
+      const host = this.state.host;
+      if (host)
+        void this.port
+          .api(host, '/resources/' + id + '/open', 'POST')
+          .catch(() => {});
+    } catch (e) {
+      if (epoch !== this.epoch || request !== this.journeyRequest) return;
+      this.patch({ navigationRetry: { id, intent, index } });
+      if (
+        e instanceof HostError &&
+        [404, 410].includes(e.status) &&
+        index !== undefined
+      ) {
+        old.visits[index].unavailable = true;
+        this.patch({ journey: old });
+        await this.session();
+      }
+      throw e;
+    }
+  }
+  async history(index: number) {
+    const j = this.state.journey;
+    if (index < 0 || index >= j.visits.length || index === j.cursor) return;
+    await this.navigate(j.visits[index].id, 'history', index);
+  }
+  async retryNavigation() {
+    const retry = this.state.navigationRetry;
+    if (retry) await this.navigate(retry.id, retry.intent, retry.index);
   }
 }

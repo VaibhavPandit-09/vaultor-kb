@@ -13,6 +13,7 @@ export function bridgeMessage(
 ): {
   type: string;
   content?: Doc;
+  resourceId?: string;
   position?: { anchor: number; head: number; scroll: number };
 } | null {
   if (raw.length > 1500000) return null;
@@ -21,6 +22,12 @@ export function bridgeMessage(
     if (m.protocol !== 1 || typeof m.type !== 'string') return null;
     if (m.type === 'ready') return { type: 'ready' };
     if (m.loadId !== loadId) return null;
+    if (
+      m.type === 'open' &&
+      typeof m.resourceId === 'string' &&
+      /^[a-f0-9-]{36}$/i.test(m.resourceId)
+    )
+      return { type: 'open', resourceId: m.resourceId };
     if (m.type === 'changed' || m.type === 'loaded')
       return m.content?.type === 'doc'
         ? { type: m.type, content: m.content }

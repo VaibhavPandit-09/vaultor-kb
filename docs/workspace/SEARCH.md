@@ -1,5 +1,7 @@
 # Saved-resource search and Ctrl+K
 
+Android A3 uses native search fields rather than Ctrl+K: Titles only is default, Saved content is explicit, and collection scope preserves the query without broadening it. It reuses the same paginated title/FTS endpoints, saved-only snippets and file-coverage contract. [ANDROID.md](../android/ANDROID.md) owns mobile controls and actual emulator results.
+
 ## Palette
 
 Ctrl+K opens search. Empty input groups deduplicated Open, Pinned and Recent items. Typing searches resource titles only by default, with collection-name matches grouped separately in global title mode. Search options offers Include saved content and a searchable collection selector. Ctrl+K resets to Titles only / Entire workspace on each opening. Title mode shows type metadata; content mode additionally shows safe note/file excerpts. Enter opens the highlighted result; Arrow keys change the highlight, Tab focuses the highlighted resource’s Actions button, Enter/Space opens it, and Shift+Tab returns to input using native tab order. Escape returns one step before closing and restores the parent result identity/query. Highlighting a file never opens a preview.

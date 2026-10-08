@@ -115,10 +115,14 @@ const send = m =>
 send({ type: 'load', loadId: 'roundtrip', content: doc });
 const result = messages.findLast(m => m.type === 'loaded');
 assert.ok(result, 'full schema loads');
-const updatesBeforeLock = messages.filter(m=>m.type==='changed').length;
-send({type:'editable',value:false});
-send({type:'editable',value:true});
-assert.equal(messages.filter(m=>m.type==='changed').length,updatesBeforeLock,'Saving locks must not create phantom edits');
+const updatesBeforeLock = messages.filter(m => m.type === 'changed').length;
+send({ type: 'editable', value: false });
+send({ type: 'editable', value: true });
+assert.equal(
+  messages.filter(m => m.type === 'changed').length,
+  updatesBeforeLock,
+  'Saving locks must not create phantom edits',
+);
 // Every supplied attribute/content must survive; new default attributes are permitted.
 function retained(original, actual) {
   for (const [key, value] of Object.entries(original)) {
@@ -138,6 +142,45 @@ function retained(original, actual) {
   }
 }
 retained(doc, result.content);
+const resourceId = '00000000-0000-4000-8000-000000000001';
+send({
+  type: 'load',
+  loadId: 'links',
+  content: {
+    type: 'doc',
+    content: [
+      {
+        type: 'paragraph',
+        content: [
+          {
+            type: 'resourceLink',
+            attrs: { resourceId, label: 'Linked note', type: 'note' },
+          },
+        ],
+      },
+    ],
+  },
+});
+const link = dom.window.document.querySelector('.resource-link');
+assert.equal(link.getAttribute('role'), 'button');
+assert.equal(link.getAttribute('tabindex'), '0');
+const beforeLink = messages.filter(m => m.type === 'changed').length;
+link.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+assert.deepEqual(messages.at(-1), {
+  protocol: 1,
+  type: 'open',
+  loadId: 'links',
+  resourceId,
+});
+link.dispatchEvent(
+  new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+);
+assert.equal(messages.at(-1).type, 'open');
+assert.equal(
+  messages.filter(m => m.type === 'changed').length,
+  beforeLink,
+  'Link activation must not edit the document',
+);
 send({
   type: 'load',
   loadId: 'unsupported',

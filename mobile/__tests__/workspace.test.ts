@@ -138,6 +138,85 @@ async function opened() {
   x.model.loaded();
   return x;
 }
+
+test('linked journey, history positions and browse context persist without losing drafts', async () => {
+  const x = await opened();
+  x.server.a[other] = { ...x.server.a[id], id: other, title: 'Second' };
+  x.model.changed(doc('protected'));
+  x.model.reading({ anchor: 2, head: 2, scroll: 70 });
+  await x.model.navigate(other, 'linked');
+  expect(x.model.state.journey.visits.map(v => v.id)).toEqual([id, other]);
+  await x.model.history(0);
+  expect(x.model.state.content).toEqual(doc('protected'));
+  expect(x.model.state.position?.scroll).toBe(70);
+  x.model.updateBrowse({
+    ...x.model.state.browse,
+    query: 'find',
+    type: 'note',
+    scroll: 83,
+  });
+  const load = x.model.state.loadId;
+  await x.model.showBrowser();
+  await x.model.returnToNote();
+  expect(x.model.state.loadId).toBe(load);
+  const restored = new MobileWorkspace(x.port);
+  await restored.initialize();
+  expect(restored.state.journey.cursor).toBe(0);
+  expect(restored.state.browse.query).toBe('find');
+  expect(restored.state.browse.scroll).toBe(83);
+  const twice = new MobileWorkspace(x.port);
+  await twice.initialize();
+  expect(twice.state.journey.cursor).toBe(0);
+  expect(twice.state.browse.query).toBe('find');
+});
+test('failed journey leaves source visible and deleted history step retryable', async () => {
+  const x = await opened();
+  x.server.a[other] = { ...x.server.a[id], id: other };
+  await x.model.navigate(other, 'linked');
+  delete x.server.a[id];
+  await expect(x.model.history(0)).rejects.toThrow('Missing');
+  expect(x.model.state.note?.id).toBe(other);
+  expect(x.model.state.journey.cursor).toBe(1);
+  expect(x.model.state.journey.visits[0].unavailable).toBe(true);
+  expect(x.model.state.navigationRetry?.id).toBe(id);
+  x.server.a[id] = { ...x.server.a[other], id, title: 'Restored' };
+  await x.model.retryNavigation();
+  expect(x.model.state.journey.visits[0].unavailable).toBe(false);
+});
+test('rapid destination loads cannot commit an obsolete note', async () => {
+  const x = await opened();
+  x.server.a[other] = { ...x.server.a[id], id: other, title: 'Second' };
+  const original = x.port.api;
+  let release!: (n: Note) => void;
+  x.port.api = async (h, path, ...args) =>
+    path === '/resources/' + other
+      ? new Promise<Note>(r => (release = r))
+      : original(h, path, ...args);
+  const first = x.model.navigate(other, 'linked');
+  await new Promise<void>(r => setTimeout(r, 0));
+  // A subsequent direct open of the current note must supersede the pending load.
+  await x.model.routeResource(id);
+  release(x.server.a[other]);
+  await first;
+  expect(x.model.state.note?.id).toBe(id);
+  expect(x.model.state.journey.visits).toHaveLength(1);
+});
+test('file links never replace note or extend journey; generation resets layout only', async () => {
+  const x = await opened();
+  x.server.a[other] = { ...x.server.a[id], id: other, type: 'file' };
+  const journey = x.model.state.journey;
+  await x.model.routeResource(other, true);
+  expect(x.model.state.preview?.id).toBe(other);
+  expect(x.model.state.note?.id).toBe(id);
+  expect(x.model.state.journey).toBe(journey);
+  x.model.changed(doc('local'));
+  await x.model.protect();
+  x.setGeneration('g2');
+  await x.model.connect();
+  expect(x.model.state.journey.visits).toHaveLength(0);
+  expect(x.model.state.view).toBe('browse');
+  expect(Object.values(x.data.drafts)).toHaveLength(1);
+});
 test('pending drafts restore by matching host/workspace/revision and session position', async () => {
   const x = await opened();
   x.model.changed(doc('draft'));

@@ -1,10 +1,10 @@
 import { OwnedServer } from '../../desktop/src/owned-server.mjs';
-import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
+import { mkdtemp, writeFile, mkdir, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 process.env.HOST_NETWORK_PORT = '0';
 const root = await mkdtemp(join(tmpdir(), 'vaultor-android-a1-'));
 const owned = new OwnedServer({
@@ -22,9 +22,16 @@ async function api(path, method = 'GET', body) {
       headers: {
         'X-Vaultor-Owner': owned.accessKey,
         'X-Vaultor-Protocol': '3',
-        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(body && !(body instanceof FormData)
+          ? { 'Content-Type': 'application/json' }
+          : {}),
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body:
+        body instanceof FormData
+          ? body
+          : body
+          ? JSON.stringify(body)
+          : undefined,
     });
     if (r.status === 409) {
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -57,6 +64,10 @@ try {
     title: 'A1 Editor fixture',
     content: paragraph,
   });
+  const linked=await api('/resources','POST',{title:'A3 Linked fixture',content:paragraph});
+  const linkContent=(id,label)=>({type:'doc',content:[...paragraph.content,{type:'paragraph',content:[{type:'resourceLink',attrs:{resourceId:id,label,type:'note'}}]}]});
+  await api('/resources/'+simple.id+'/note','PUT',{title:simple.title,content:linkContent(linked.id,linked.title)});
+  await api('/resources/'+linked.id+'/note','PUT',{title:linked.title,content:linkContent(simple.id,simple.title)});
   await api('/resources', 'POST', {
     title: 'A1 Unsupported fixture',
     content: {
@@ -92,6 +103,60 @@ try {
     try {
       const command = JSON.parse(line);
       if (command.stop) break;
+      if (command.dataset) {
+        if (!['small', 'atlas'].includes(command.dataset))
+          throw Error('Only marked Small/Atlas baselines allowed');
+        const directory = new URL(
+          command.dataset === 'small'
+            ? '../../desktop/cache/atlas/small/'
+            : '../../desktop/cache/atlas/',
+          import.meta.url,
+        );
+        const manifest = JSON.parse(
+          await readFile(new URL('manifest.json', directory), 'utf8'),
+        );
+        if (
+          manifest.seed !== 'atlas-2026-10-v1' ||
+          manifest.small !== (command.dataset === 'small')
+        )
+          throw Error('Baseline identity differs');
+        const bytes = await readFile(new URL('baseline.zip', directory));
+        if (
+          createHash('sha256').update(bytes).digest('hex') !==
+          manifest.archive.sha256
+        )
+          throw Error('Baseline checksum differs');
+        const form = new FormData();
+        form.set(
+          'file',
+          new Blob([bytes], { type: 'application/zip' }),
+          'atlas-baseline.zip',
+        );
+        const preview = await api('/imports/preview', 'POST', form);
+        const operation = await api(
+          '/imports/' + preview.operation.id + '/commit',
+          'POST',
+          { mode: 'replace', confirmation: 'replace' },
+        );
+        let complete = false;
+        for (let n = 0; n < 1200; n++) {
+          const status = await api('/operations/' + operation.id);
+          if (status.status === 'SUCCEEDED') {
+            complete = true;
+            break;
+          }
+          if (['FAILED', 'CANCELLED'].includes(status.status))
+            throw Error('Fixture import failed');
+          await new Promise(r => setTimeout(r, 250));
+        }
+        if (!complete) throw Error('Fixture import timed out');
+        console.log(
+          JSON.stringify({
+            datasetReady: command.dataset,
+            resources: manifest.resources.length,
+          }),
+        );
+      }
       if (command.approve) {
         if (!/^[0-9]{6}$/.test(command.approve))
           throw Error('Invalid test comparison code');
@@ -133,7 +198,14 @@ try {
       }
       if (command.trash) {
         const n = await api('/resources/' + simple.id);
-        await api('/resources/lifecycle', 'PUT', [{operationId: randomUUID(), resourceId: simple.id, action: 'trash', revision: n.revision}]);
+        await api('/resources/lifecycle', 'PUT', [
+          {
+            operationId: randomUUID(),
+            resourceId: simple.id,
+            action: 'trash',
+            revision: n.revision,
+          },
+        ]);
         console.log('Disposable note trashed');
       }
       if (command.revoke) {

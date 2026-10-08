@@ -1,3 +1,5 @@
+import BrowseScreen, { Action, ChoiceSheet } from './BrowseScreen';
+import { presentation } from './browse';
 import React, {
   useEffect,
   useCallback,
@@ -7,6 +9,7 @@ import React, {
 } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Alert,
   AppState,
   BackHandler,
@@ -73,19 +76,22 @@ export default function WorkspaceScreen() {
       storage: (action, value = {}) =>
         parse(native.storage(action, JSON.stringify(value))),
       activate: id => parse<Host>(native.activate(id)),
+      cancelBrowse: () => native.cancelBrowse(),
       uuid: async () => (await parse<{ id: string }>(native.uuid())).id,
-      api: async (host, path, method = 'GET', body, revision) => {
+      api: async (host, path, method = 'GET', body, revision, channel) => {
         const deadline = Date.now() + 30000;
         for (;;) {
           const r = await parse<{ status: number; body: string }>(
-            native.apiFor(
-              host.hostId,
-              host.epoch,
-              path,
-              method,
-              body === undefined ? null : JSON.stringify(body),
-              revision ?? null,
-            ),
+            channel === 'browse'
+              ? native.browseApiFor(host.hostId, host.epoch, path)
+              : native.apiFor(
+                  host.hostId,
+                  host.epoch,
+                  path,
+                  method,
+                  body === undefined ? null : JSON.stringify(body),
+                  revision ?? null,
+                ),
           );
           let value;
           try {
@@ -95,6 +101,7 @@ export default function WorkspaceScreen() {
           }
           if (
             method === 'GET' &&
+            channel !== 'browse' &&
             r.status === 409 &&
             value?.code === 'WORKSPACE_BUSY' &&
             Date.now() < deadline
@@ -126,7 +133,8 @@ export default function WorkspaceScreen() {
     [code, setCode] = useState(''),
     [connections, setConnections] = useState(false),
     [recovery, setRecovery] = useState(false),
-    [renderer, setRenderer] = useState(0);
+    [renderer, setRenderer] = useState(0),
+    [trail, setTrail] = useState(false);
   const loadId = String(state.loadId) + ':' + renderer;
   const run = useCallback(
     (action: () => Promise<void>) => void model.perform(action),
@@ -287,17 +295,17 @@ export default function WorkspaceScreen() {
   const leave = useCallback(
     () =>
       run(async () => {
-        await model.leave();
+        keyboard.current = false;
+        Keyboard.dismiss();
+        web.current?.injectJavaScript(
+          'window.vaultorReceive(JSON.stringify({protocol:1,type:"blur"}));true;',
+        );
+        await model.showBrowser();
       }),
     [model, run],
   );
   useEffect(() => {
-    const back = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (keyboard.current) {
-        Keyboard.dismiss();
-        inject({ type: 'blur' });
-        return true;
-      }
+    const screenBack = () => {
       if (recovery) {
         setRecovery(false);
         return true;
@@ -306,8 +314,22 @@ export default function WorkspaceScreen() {
         setConnections(false);
         return true;
       }
-      if (current.current.note) {
-        leave();
+      if (current.current.view === 'note' && current.current.note) {
+        if (current.current.journey.cursor > 0)
+          run(() => model.history(current.current.journey.cursor - 1));
+        else leave();
+        return true;
+      }
+      if (
+        current.current.view === 'browse' &&
+        current.current.browse.collection
+      ) {
+        model.updateBrowse({
+          ...current.current.browse,
+          collection: undefined,
+          page: 0,
+          scroll: 0,
+        });
         return true;
       }
       if (current.current.busy) return true;
@@ -330,9 +352,40 @@ export default function WorkspaceScreen() {
         return true;
       }
       return false;
+    };
+    const back = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (current.current.preview) {
+        model.dismissPreview();
+        return true;
+      }
+      if (trail) {
+        setTrail(false);
+        return true;
+      }
+      if (keyboard.current) {
+        keyboard.current = false;
+        const source = current.current.loadId,
+          host = current.current.host?.epoch;
+        native
+          .isKeyboardVisible()
+          .then((visible: boolean) => {
+            if (
+              source !== current.current.loadId ||
+              host !== current.current.host?.epoch
+            )
+              return;
+            if (visible) {
+              Keyboard.dismiss();
+              inject({ type: 'blur' });
+            } else if (!screenBack()) BackHandler.exitApp();
+          })
+          .catch((error: unknown) => model.report(error));
+        return true;
+      }
+      return screenBack();
     });
     return () => back.remove();
-  }, [connections, recovery, model, leave, run]);
+  }, [connections, recovery, model, leave, run, trail]);
   const switchHost = (id: string) =>
     run(async () => {
       try {
@@ -443,50 +496,70 @@ export default function WorkspaceScreen() {
     </View>
   );
   const hostView = connections || !state.host;
+  const hostsAction = () =>
+    run(async () => {
+      await model.protect();
+      setConnections(!hostView);
+      setCode('');
+    });
+  const recoveryAction = () =>
+    run(async () => {
+      await model.protect();
+      await model.refreshRecovery();
+      setRecovery(!recovery);
+    });
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
       <View style={s.header}>
         <Text numberOfLines={1} style={s.title}>
-          {state.note && !hostView && !recovery ? state.note.title : 'Vaultor'}
+          {state.note && state.view === 'note' && !hostView && !recovery
+            ? state.note.title
+            : 'Vaultor'}
         </Text>
-        <View style={s.actions}>
-          {state.note && !hostView && !recovery ? (
-            <Button label="Notes" disabled={state.busy} onPress={leave} />
+        <View style={s.headerActions}>
+          {state.note && state.view === 'note' && !hostView && !recovery ? (
+            <Button label="Library" disabled={state.busy} onPress={leave} />
           ) : null}
-          <Button
-            label={hostView ? 'Done' : 'Hosts'}
-            disabled={state.busy}
-            onPress={() =>
-              run(async () => {
-                await model.protect();
-                setConnections(!hostView);
-                setCode('');
-              })
-            }
-          />
-          <Button
-            label={
-              recovery ? 'Close recovery' : `Recovery ${state.recovery.length}`
-            }
-            disabled={state.busy}
-            onPress={() =>
-              run(async () => {
-                await model.protect();
-                await model.refreshRecovery();
-                setRecovery(!recovery);
-              })
-            }
-          />
+          {hostView ? (
+            <Action label="Done" disabled={state.busy} onPress={hostsAction} />
+          ) : recovery ? (
+            <Action
+              label="Close recovery"
+              disabled={state.busy}
+              onPress={recoveryAction}
+            />
+          ) : (
+            <Action
+              label="More"
+              disabled={state.busy}
+              onPress={() =>
+                Alert.alert('Workspace', undefined, [
+                  { text: 'Hosts', onPress: hostsAction },
+                  {
+                    text: `Recovery ${state.recovery.length}`,
+                    onPress: recoveryAction,
+                  },
+                  { text: 'Close', style: 'cancel' },
+                ])
+              }
+            />
+          )}
         </View>
       </View>
       {state.error ? (
         <View accessibilityRole="alert" style={s.error}>
           <Text style={s.errorText}>{state.error}</Text>
           <Button
-            label="Retry connection"
+            label={
+              state.navigationRetry ? 'Retry navigation' : 'Retry connection'
+            }
             disabled={state.busy}
             onPress={() =>
               run(async () => {
+                if (state.navigationRetry) {
+                  await model.retryNavigation();
+                  return;
+                }
                 await permission();
                 await model.connect(false);
               })
@@ -587,7 +660,7 @@ export default function WorkspaceScreen() {
               <Text style={s.muted}>
                 Approve only the matching code on the host.
               </Text>
-              <Button
+              <Action
                 label="I approved the matching code"
                 disabled={state.busy}
                 onPress={() => finishPairing()}
@@ -610,41 +683,54 @@ export default function WorkspaceScreen() {
             />
           ) : null}
         </ScrollView>
-      ) : state.note ? null : (
-        <ScrollView contentContainerStyle={s.content}>
-          <Text style={s.heading}>Notes</Text>
-          <Text style={s.muted}>
-            {state.connection} · First 30 notes; complete browsing follows in
-            A3.
-          </Text>
-          {state.notes.map(n => (
-            <Button
-              key={n.id}
-              label={n.title}
-              disabled={state.busy}
-              onPress={() => run(() => model.open(n.id))}
-            />
-          ))}
-          <Button
-            label="Refresh"
-            disabled={state.busy}
-            onPress={() =>
-              run(async () => {
-                await permission();
-                await model.connect(false);
-              })
-            }
-          />
-        </ScrollView>
-      )}
+      ) : null}
+      <BrowseScreen
+        model={model}
+        visible={!hostView && !recovery && state.view === 'browse'}
+        onAction={run}
+      />
       {state.note ? (
         <View
-          style={[s.workspace, (hostView || recovery) && s.hidden]}
-          pointerEvents={hostView || recovery ? 'none' : 'auto'}
+          style={[
+            s.workspace,
+            (hostView || recovery || state.view === 'browse') && s.hidden,
+          ]}
+          pointerEvents={
+            hostView || recovery || state.view === 'browse' ? 'none' : 'auto'
+          }
           importantForAccessibility={
-            hostView || recovery ? 'no-hide-descendants' : 'auto'
+            hostView || recovery || state.view === 'browse'
+              ? 'no-hide-descendants'
+              : 'yes'
           }
         >
+          <View style={s.actions}>
+            <Action
+              label="‹"
+              accessibilityLabel="Back in journey"
+              disabled={state.journey.cursor <= 0 || state.busy}
+              onPress={() => run(() => model.history(state.journey.cursor - 1))}
+            />
+            <Action
+              label="›"
+              accessibilityLabel="Forward in journey"
+              disabled={
+                state.journey.cursor + 1 >= state.journey.visits.length ||
+                state.busy
+              }
+              onPress={() => run(() => model.history(state.journey.cursor + 1))}
+            />
+            <Text numberOfLines={1} style={s.trailTitle}>
+              {state.journey.visits
+                .slice(
+                  Math.max(0, state.journey.cursor - 2),
+                  state.journey.cursor + 1,
+                )
+                .map(v => v.title)
+                .join(' › ')}
+            </Text>
+            <Action label="Journey" onPress={() => setTrail(true)} />
+          </View>
           <View style={s.status}>
             <Text style={s.muted}>
               {state.connection} · {state.status}
@@ -687,7 +773,7 @@ export default function WorkspaceScreen() {
           ) : null}
           <View style={s.actions}>
             {['bold', 'italic', 'undo', 'redo'].map(name => (
-              <Button
+              <Action
                 key={name}
                 label={name}
                 disabled={
@@ -726,7 +812,11 @@ export default function WorkspaceScreen() {
               else if (m.type === 'unsupported') model.unsupported();
               else if (m.type === 'changed' && m.content)
                 model.changed(m.content);
-              else if (m.type === 'position' && m.position)
+              else if (m.type === 'open' && m.resourceId) {
+                Keyboard.dismiss();
+                inject({ type: 'blur' });
+                run(() => model.routeResource(m.resourceId!, true));
+              } else if (m.type === 'position' && m.position)
                 model.reading(m.position);
             }}
             onRenderProcessGone={() => {
@@ -754,13 +844,76 @@ export default function WorkspaceScreen() {
           ) : null}
         </View>
       ) : null}
+      {trail ? (
+        <ChoiceSheet
+          title="Journey"
+          choices={state.journey.visits.map((v, index) => ({
+            value: String(index),
+            label:
+              (index === state.journey.cursor ? 'Current · ' : '') +
+              v.title +
+              (v.unavailable ? ' · unavailable' : ''),
+          }))}
+          close={() => setTrail(false)}
+          onChoose={index => run(() => model.history(Number(index)))}
+        />
+      ) : null}
+      {state.preview ? (
+        <Modal
+          transparent
+          animationType="fade"
+          onRequestClose={() => model.dismissPreview()}
+        >
+          <View style={s.previewScrim}>
+            <View style={s.previewPanel}>
+              <Text style={s.heading}>{state.preview.title}</Text>
+              <Text style={s.muted}>
+                {presentation(state.preview).label} ·{' '}
+                {state.preview.mimeType ?? 'Unknown format'}
+              </Text>
+              <Text style={s.muted}>
+                File content can be viewed in the desktop app. Your note remains
+                open.
+              </Text>
+              <Action
+                label="Close preview"
+                onPress={() => model.dismissPreview()}
+              />
+            </View>
+          </View>
+        </Modal>
+      ) : null}
     </SafeAreaView>
   );
 }
 const s = StyleSheet.create({
+  trailTitle: { flex: 1, color: '#b3b3b3', fontSize: 12 },
+  previewScrim: {
+    flex: 1,
+    backgroundColor: '#000b',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  previewPanel: {
+    backgroundColor: '#0a0a0a',
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 16,
+    padding: 20,
+    gap: 14,
+  },
   root: { flex: 1, backgroundColor: '#000' },
-  header: { padding: 12, borderBottomWidth: 1, borderColor: '#252525', gap: 8 },
-  title: { color: '#e8e8e8', fontSize: 20, fontWeight: '600' },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderColor: '#252525',
+    gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  title: { color: '#e8e8e8', fontSize: 18, fontWeight: '600', flex: 1 },
   content: { padding: 16, gap: 14 },
   heading: { color: '#e8e8e8', fontSize: 18, fontWeight: '600' },
   muted: { color: '#b3b3b3', fontSize: 13, lineHeight: 19 },
@@ -785,6 +938,7 @@ const s = StyleSheet.create({
   disabled: { opacity: 0.45 },
   actions: {
     flexDirection: 'row',
+    alignItems: 'center',
     flexWrap: 'wrap',
     gap: 6,
     paddingHorizontal: 6,

@@ -15,6 +15,15 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class StorageTest {
+  @Test fun boundedBrowsingPolicy() {
+    val module=VaultorModule(BridgeReactContext(InstrumentationRegistry.getInstrumentation().targetContext))
+    val check=VaultorModule::class.java.getDeclaredMethod("validateBrowsePath",String::class.java).apply {isAccessible=true}
+    for(path in listOf("/resources?page=2&size=100&q=title&type=file&category=pdf&sort=recent","/resources/query?size=100&q=saved&collection=00000000-0000-4000-8000-000000000001","/organization/pins?page=0&size=100&kind=collection","/collections?page=0&size=100&q="))check.invoke(module,path)
+    for(path in listOf("https://example.com/resources","//example.com/resources","/resources?size=101","/resources?page=-1","/resources?size=100&size=100","/resources?token=secret","/resources?collection=bad","/resources/delete")) {
+      try {check.invoke(module,path);fail("Unbounded/unsupported browsing accepted")}
+      catch(e:java.lang.reflect.InvocationTargetException) {assertTrue(e.cause is IllegalArgumentException)}
+    }
+  }
   @Test fun migratesA1ProtectedDraftWithoutChangingItsContent() {
     val context=BridgeReactContext(InstrumentationRegistry.getInstrumentation().targetContext)
     val module=VaultorModule(context);val file=File(context.noBackupFilesDir,"vaultor-state.bin")
