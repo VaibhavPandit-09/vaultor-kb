@@ -1,6 +1,6 @@
 # Resource lifecycle, discovery and Android readiness
 
-Created/reviewed 2026-10-08. Planning only; no runtime changes or test workspace has been generated. This is the execution tracker for the user's approved direction after 0.4.1. Historical Library/navigation/editor trackers remain evidence of earlier work, not competing specifications.
+Created/reviewed 2026-10-08. Sprint 1 fixtures and baseline complete; shipped runtime remains 0.4.1. This is the execution tracker for the user's approved direction. Historical Library/navigation/editor trackers remain evidence of earlier work, not competing specifications.
 
 ## Delivery and decisions
 
@@ -19,14 +19,16 @@ At planning, Library row Actions only offers Add to collection; Ctrl+K has delet
 
 ## Sprint 1 — Primary test workspace and baseline
 
-Status: **Not started**.
+Status: **Complete (2026-10-08), with measurement limitations recorded**. Atlas has 5,000 resources in its own marked profile, created through protected import/organization APIs. Personal data/connection remain untouched. [Procedure](../development/PRIMARY-TEST-WORKSPACE.md) and [actual baseline](../development/ATLAS-BASELINE.md) are authoritative.
 
-- [ ] Implement a deterministic, resumable generator and verifier from the fixture specification; generate a real reusable workspace for the user and a clean baseline copy/archive. No changes to the personal workspace or default connection.
-- [ ] Use a dedicated host/profile and clearly named connection, separate local data/credentials and dynamic loopback port. Build through existing application import/create APIs where practical; never write raw note rows that bypass indexes/references/retry contracts.
-- [ ] Record resource/format counts, bytes, seed/schema version, archive hash, expected search/usage results and launch/reset instructions. Supply a usable way to open this workspace, rather than only a generator script.
-- [ ] Capture baseline timings/memory on documented hardware for startup, mixed/type/collection browsing, title/content search, large tags, image-heavy shared panes and long journeys. Distinguish cold/warm and median/tail measurements from estimates.
-- [ ] Establish small fixture subsets for focused failure tests and Android-sized viewport/slow-network cases. Current unsupported features are labelled future expectations, not claimed generator results.
-- [ ] Update fixture guide, OPERATIONS, CODEBASE and this tracker. No broad API/Docker run; narrowly scoped fixture creation/verification is intentional.
+- [x] Deterministic/resumable generator, verifier, populated workspace and portable baseline; identical file-import replay retained 5,000 resources.
+- [x] Separate marked host/profile, named connection and dynamic loopback, protected normal APIs and bounded membership batches; personal connection untouched.
+- [x] Actual manifest/counts/hashes, launch/reset instructions and reviewed logical archive. Video and encrypted/malformed subsets explicitly omitted.
+- [x] Hardware/API warm median/max plus native startup/images/shared undo/200 journeys and memory snapshots; cold-cache, continuous peak and cache-release bounds remain unmeasured.
+- [x] Generated 70-resource small profile and separate invalid/limit files; reset after an extra note restored 70. Captured 412px desktop layout; slow-network/recovery scenarios documented but not executed. Real Android remains pending.
+- [x] Fixture guide, baseline report, OPERATIONS, CODEBASE and index updated. Focused two-test/Node/Python/ZIP/PDF/native verification; no broad API smoke, Docker or shipped-app build.
+
+Handoff: seed atlas-2026-10-v1; 80 collections/250 tags/300 pins; 10,452,524-byte archive, hash in fixture guide. Native startup returned 409 while FTS rebuilt; retry reached usable Library at 20.71s. Sidebar plus two panes at 412px is unreadable; sampled working set grew after journeys. These are Sprint 5 findings, not fixed or certified here. No runtime/schema/protocol/version change, installer or release tag is required. Sprint 2 awaits separate authorization.
 
 Acceptance: the user can open the synthetic workspace independently, return to their own connection, and reset only generated data using a verified ownership marker. Generation retry cannot duplicate resources. Report actual disk/time budget and expected-results manifest.
 
@@ -92,4 +94,4 @@ Acceptance: a reproducible scale report identifies observed limits, core lifecyc
 
 ## Handoff record (fill after each sprint)
 
-For each sprint record: source/version/tag/release URL where applicable; migration/protocol/archive changes; focused test commands/results; fixture seed/counts/hash; measured hardware/timings; actual visual/native coverage; unsupported platforms; remaining defects and next authorized scope. All implementation checkboxes above remain pending at planning.
+For each sprint record: source/version/tag/release URL where applicable; migration/protocol/archive changes; focused tests; fixture seed/counts/hash; hardware/timings; actual native coverage; unsupported platforms and next authorized scope. Sprint 1 is documented above; Sprints 2–5 remain unstarted.

@@ -131,8 +131,12 @@ Settings clients use transactional PATCH leaves, not overlapping full-document P
 
 Use [UPDATES.md](../desktop/UPDATES.md) as the authoritative build, key continuity, optional feed, backup/recovery and existing-Docker onboarding guide. Build/UI/server preparation precedes package:release. No release publishing, paid OS signing or remote migration occurs automatically. Windows npm start now launches a cached branded Vaultor.exe; quit the old app first and repin obsolete Electron shortcuts if necessary. The update dialog remains accessible through the native menu even if the owned server fails startup. The disposable installer-smoke.ps1 refuses an existing Vaultor installation; do not substitute real app data in tests. Mac package/native verification remains pending.
 
-D9 manual integration: VAULTOR_DESKTOP_TEST_DIRECTORY must be an absolute existing empty directory chosen for the test. It isolates Electron profiles, sessions, owned server and update staging; clear it before normal user launch. Unlike smoke-directory variables, it does not trigger automated scenarios. Never test login registration assuming terminal-only variables will be inherited. Use MAC-HANDOFF.md for Mac and both-machine instructions and cleanup.
+D9 manual integration: VAULTOR_DESKTOP_TEST_DIRECTORY must be an absolute dedicated directory chosen for the test, initially empty for fresh D9 fixtures; Atlas intentionally reuses its marked synthetic profile. It isolates Electron profiles, sessions, owned server and update staging; clear the environment variable before normal user launch. Unlike smoke-directory variables, it does not trigger automated scenarios. Never test login registration assuming terminal-only variables will be inherited. Use MAC-HANDOFF.md for Mac and both-machine instructions and cleanup.
 
+
+## Primary synthetic workspace
+
+[Vaultor Lab — Atlas](PRIMARY-TEST-WORKSPACE.md) is generated under ignored `desktop/cache/atlas`: 5,000 resources, a separate host/profile and verified portable baseline. `node desktop/scripts/atlas.mjs open` launches it without changing the personal connection. Quit its app/tray before generation, verification or `reset --discard-lab-changes`; reset refuses unmarked/foreign storage and uses confirmed normal archive replacement. Python/Pillow/ReportLab are needed only for regeneration. [ATLAS-BASELINE.md](ATLAS-BASELINE.md) records actual API/native timings, memory snapshots and startup/narrow-layout findings; no cold-cache, Android or slow-network certification is claimed.
 
 ### Focused grouped-browsing packaged check
 
