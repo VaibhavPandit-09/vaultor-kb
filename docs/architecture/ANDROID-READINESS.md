@@ -1,6 +1,6 @@
 # Android client readiness
 
-Reviewed 2026-10-08. Planning requirements; no Android client, native verification or offline sync is implemented. The current browser/Electron boundary is authoritative in [PLATFORM.md](PLATFORM.md). The completed shared-work results are tracked in [resource-lifecycle-plan.md](../plans/resource-lifecycle-plan.md). The authoritative six-sprint Android scope, Windows-only agent testing, APK milestones and physical-device acceptance boundary are in [android-plan.md](../plans/android-plan.md); implementation remains unstarted.
+Reviewed 2026-10-09. A1 Android prototype is published and A2 durable editing/recovery is implemented. Offline synchronization remains deferred. Current mobile implementation and validation are authoritative in [ANDROID.md](../android/ANDROID.md). The current browser/Electron boundary is authoritative in [PLATFORM.md](PLATFORM.md). The completed shared-work results are tracked in [resource-lifecycle-plan.md](../plans/resource-lifecycle-plan.md). The authoritative six-sprint Android scope, Windows-only agent testing, APK milestones and physical-device acceptance boundary are in [android-plan.md](../plans/android-plan.md); A3–A6 remain unstarted.
 
 ## Product boundary
 
@@ -29,7 +29,7 @@ Resource actions and Trash/Restore now use protocol 3, metadata summaries and pe
 | Distribution/updates | Personal installable APK route first; no paid store requirement | Device install approvals, reproducible signed builds, privately preserved signing identity and verified update path |
 | Workspace switching | Save or explicitly retain scoped drafts before switching | Exercise unavailable hosts and generation changes without crossing credentials/drafts |
 
-These are recommendations, not settled implementation claims. Do not promise a seamless React Native editor merely because the desktop editor already exists. Use shared contracts and extract reusable logic where it helps; do not undertake a speculative whole-codebase rewrite.
+A1 selected React Native 0.87.1, a restricted Tiptap 3.31.4 WebView, original-key APK signing and manual pinned HTTPS enrollment. A2 adds scoped sessions/recovery and native notifications; discovery and updater remain A6. The remaining entries are planned gates, not completed parity claims. Do not promise a seamless React Native editor merely because the desktop editor already exists. Use shared contracts and extract reusable logic where it helps; do not undertake a speculative whole-codebase rewrite.
 
 ## Prototype acceptance and handoff
 

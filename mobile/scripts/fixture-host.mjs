@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
+import { randomUUID } from 'node:crypto';
 process.env.HOST_NETWORK_PORT = '0';
 const root = await mkdtemp(join(tmpdir(), 'vaultor-android-a1-'));
 const owned = new OwnedServer({
@@ -108,6 +109,38 @@ try {
         console.log(
           JSON.stringify({ noteRevision: n.revision, content: n.content }),
         );
+      }
+      if (command.editNote) {
+        const n = await api('/resources/' + simple.id);
+        await api('/resources/' + simple.id + '/note', 'PUT', {
+          title: n.title,
+          content: {
+            type: 'doc',
+            content: [
+              {
+                type: 'paragraph',
+                content: [
+                  {
+                    type: 'text',
+                    text: String(command.editNote).slice(0, 500),
+                  },
+                ],
+              },
+            ],
+          },
+        });
+        console.log('Disposable foreign note edit committed');
+      }
+      if (command.trash) {
+        const n = await api('/resources/' + simple.id);
+        await api('/resources/lifecycle', 'PUT', [{operationId: randomUUID(), resourceId: simple.id, action: 'trash', revision: n.revision}]);
+        console.log('Disposable note trashed');
+      }
+      if (command.revoke) {
+        const devices = await api('/owner/devices');
+        for (const d of devices.filter(v => v.name === 'Vaultor Android'))
+          await api('/owner/devices/' + d.id, 'DELETE');
+        console.log('Disposable Android approval revoked');
       }
     } catch (e) {
       console.log('Fixture action refused: ' + e.message);

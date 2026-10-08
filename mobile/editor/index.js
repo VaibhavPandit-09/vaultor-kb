@@ -94,6 +94,25 @@ const editor = new Editor({
       send({ type: 'changed', loadId, content: e.getJSON() });
   },
 });
+let positionTimer;
+function reading() {
+  if (loading || blocked || positionTimer) return;
+  positionTimer = setTimeout(() => {
+    positionTimer = undefined;
+    if (!loading && !blocked)
+      send({
+        type: 'position',
+        loadId,
+        position: {
+          anchor: editor.state.selection.anchor,
+          head: editor.state.selection.head,
+          scroll: window.scrollY,
+        },
+      });
+  }, 500);
+}
+editor.on('selectionUpdate', reading);
+window.addEventListener('scroll', reading, { passive: true });
 function validate(node, depth = 0) {
   if (!node || typeof node !== 'object' || depth > 80)
     throw Error('Unsupported document');
@@ -127,10 +146,22 @@ window.vaultorReceive = raw => {
         errorOnInvalidContent: true,
       });
       editor.setEditable(true, false);
+      if (m.position) {
+        const max = editor.state.doc.content.size;
+        editor.commands.setTextSelection({
+          from: Math.max(0, Math.min(max, m.position.anchor || 0)),
+          to: Math.max(0, Math.min(max, m.position.head || 0)),
+        });
+        requestAnimationFrame(() =>
+          window.scrollTo(0, Math.max(0, m.position.scroll || 0)),
+        );
+      }
       loading = false;
       send({ type: 'loaded', loadId, content: editor.getJSON() });
     } else if (m.type === 'editable' && !blocked) {
       editor.setEditable(m.value === true, false);
+    } else if (m.type === 'blur') {
+      editor.commands.blur();
     } else if (m.type === 'command' && !blocked && editor.isEditable) {
       const commands = {
         bold: () => editor.chain().focus().toggleBold().run(),

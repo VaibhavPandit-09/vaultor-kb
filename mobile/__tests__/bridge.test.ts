@@ -1,5 +1,22 @@
 import { bridgeMessage, scopeFor } from '../src/bridge';
 describe('restricted editor messages', () => {
+  test('reading context is bounded and belongs to the current editor load', () => {
+    const message = (scroll: number, loadId = 'current') =>
+      JSON.stringify({
+        protocol: 1,
+        type: 'position',
+        loadId,
+        position: { anchor: 2, head: 3, scroll },
+      });
+    expect(bridgeMessage(message(40), 'current')?.position).toEqual({
+      anchor: 2,
+      head: 3,
+      scroll: 40,
+    });
+    expect(bridgeMessage(message(-1), 'current')).toBeNull();
+    expect(bridgeMessage(message(10000001), 'current')).toBeNull();
+    expect(bridgeMessage(message(40, 'old'), 'current')).toBeNull();
+  });
   test('accepts only current document protocol messages', () => {
     expect(
       bridgeMessage(

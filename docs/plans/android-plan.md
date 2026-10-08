@@ -1,6 +1,6 @@
 # Vaultor for Android — execution tracker
 
-Created 2026-10-08; reviewed 2026-10-09. **A1 implemented and published; A2–A6 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
+Created 2026-10-08; reviewed 2026-10-09. **A1 implemented and published; A2 in progress; A3–A6 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
 
 ## Delivery and agreed boundaries
 
@@ -57,16 +57,20 @@ Status: **Implemented and published (2026-10-09 local date)**. This call covers 
 
 **Acceptance:** actual signed APK installs in both emulators, pairs without repeated enrollment after relaunch, opens a real structured note and retains safe edits. Editor findings decide whether A2 proceeds with WebView or requires an explicitly revised architecture. Alternative native-editor work is not silently inserted into later sprints.
 
+## User feedback and assigned follow-ups
+
+2026-10-09: user installed A1 and successfully connected to a server on the Mac mini. This is user-reported interoperability, not agent-run Mac/Samsung certification. Editing interaction and surrounding appearance feel poor. A2 addresses input/lifecycle reliability and removes avoidable editing obstruction; A3 owns mobile navigation/editor chrome integration, A4 owns image tools, and A6 owns complete themes, touch polish and motion. Do not rush decorative changes or treat the prototype appearance as final.
+
 ## A2 — Durable editing, sessions and multi-device recovery
 
-Status: **Not started**. Depends on A1 trust/editor gate.
+Status: **Implemented; final tagged APK publication gate in progress (2026-10-09)**. User authorized A2; A3–A6 remain unstarted.
 
-- [ ] Complete host/workspace/generation-scoped journal and session storage; acknowledge/remove only the exact saved edit version. Define bounded cache retention and explicit draft handling on sign-out/revoke/host removal.
-- [ ] Recover matching revisions automatically; preserve both versions on conflicts, with Open recovered copy / Use saved version. Do not overwrite server content or silently drop unsupported documents.
-- [ ] Restore the active note and reading context after app termination; keep transient dialogs/previews closed. Host switching saves or explicitly retains drafts, handles an unavailable source and cancels old epochs.
-- [ ] Reconnect bounded authenticated notifications on foreground; reconcile clean notes and mark dirty conflicts/deletions. Handle cursor gaps, maintenance, address changes and revocation. Never replay mutations merely because the connection returned.
-- [ ] Distinguish offline/disconnected/saving/failed states. Retain local pending edits but do not claim full offline workspace access or synchronization. Android Back must not silently discard edits.
-- [ ] Test process termination, rotation, background/foreground, interrupted saves, unknown server outcomes, foreign edits, generation replacement and denied/revoked access. Verify APK upgrade preserves pending drafts/pairing.
+- [x] Complete host/workspace/generation-scoped journal and session storage; acknowledge/remove only the exact saved edit version. Define bounded cache retention and explicit draft handling on sign-out/revoke/host removal.
+- [x] Recover matching revisions automatically; preserve both versions on conflicts, with Open recovered copy / Use saved version. Do not overwrite server content or silently drop unsupported documents.
+- [x] Restore the active note and reading context after app termination; keep transient dialogs/previews closed. Host switching saves or explicitly retains drafts, handles an unavailable source and cancels old epochs.
+- [x] Reconnect bounded authenticated notifications on foreground; reconcile clean notes and mark dirty conflicts/deletions. Handle cursor gaps, maintenance, address changes and revocation. Never replay mutations merely because the connection returned.
+- [x] Distinguish offline/disconnected/saving/failed states. Retain local pending edits but do not claim full offline workspace access or synchronization. Android Back must not silently discard edits.
+- [x] Test process termination, rotation, background/foreground, interrupted saves, unknown server outcomes, foreign edits, generation replacement and denied/revoked access. Verify APK upgrade preserves pending drafts/pairing.
 
 **Acceptance:** interrupted edits survive safely; another device's changes cannot be silently overwritten; scoped sessions and credentials never bleed across hosts. Publish a signed recovery-tested APK.
 
@@ -140,3 +144,13 @@ Published Android-only prerelease at 2026-10-08T18:48:40Z: [Vaultor Android 0.1.
 ## Reference guidance
 
 Recheck current official requirements when implementation starts: [React Native environment](https://reactnative.dev/docs/set-up-your-environment), [React Native security](https://reactnative.dev/docs/security), [Android emulator acceleration](https://developer.android.com/studio/run/emulator-acceleration), [Android instrumented testing](https://developer.android.com/studio/test/test-in-android-studio), and [Android LAN permissions](https://developer.android.com/privacy-and-security/local-network-permission). These support toolchain/security/testing choices; they do not prove Vaultor or Samsung behavior.
+
+### 2026-10-09 — A2 durable editing and recovery
+
+Implemented Android 0.1.0-alpha.2 / versionCode2; original package/signer retained. Native encrypted schema2 migrates A1 approval/draft data, isolates host/workspace/generation journals and sessions, separates local storage from network work and bounds retained records/caches. MobileWorkspace owns exact edit acknowledgments, save-while-typing, conditional conflicts, independent former-version retention, UUID-stable recovered copies, explicit save-or-keep host switches and stale-epoch refusal. Native pinned SSE reconciles on foreground, preserves dirty notes and blocks revoked access; restart restores note/reading context with transient surfaces closed. No desktop/server/API/protocol/archive change.
+
+Checks: TypeScript and release JS/Kotlin/native compilation passed; 22 Jest bridge/controller tests and full editor schema/refusal/Save-lock checks passed. Scoped lint zero errors/13 warnings (no-void, one shadow and one inline style). Four native storage/address tests passed on API36 and API37; API37 pairing/editor plus storage suite passed five cases with denied network permission/retry and real matching-code approval. Installed API36 A1-to-A2 upgrade preserved approval and pending draft; restored draft saved conditionally. Native SSE accepted a clean foreign edit and retained a dirty conflict. Use saved version and recovered-copy import passed with unchanged original; protected force-stop restoration, background/foreground, offline cached reopening and revoked access refusal were exercised. API37 restart after foreign Trash exposed a missing recovery record; fixed and covered by a new controller test. Native tests initially contained an obsolete null expectation for a newer edit; corrected to verify it remains. The first API37 run exposed premature permission prompting; fixed to prompt on pairing/remembered reconnect. Captured API36 recovery/editor frame inspected. Final tagged-source installation/publication and the Trash recovery action are recorded in the publication follow-up, not claimed by this pre-publication entry.
+
+Open gates: physical S24/Samsung Keyboard/One UI, real Wi-Fi/Mac reconnection/address changes, TLS identity replacement, simultaneous native two-host races, OEM process/battery behavior and large-workspace scale remain unverified. Pure controller tests cover cross-host/generation isolation, stale responses, failed/unknown saves and UUID retries; they are not native hardware evidence. A1 tooling advisories and same-laptop key backup limitation remain. User reports Mac connection success and poor prototype editing feel; A3 navigation/chrome, A4 image tools and A6 full touch/theme/motion polish retain those follow-ups. Four future sprints remain unstarted.
+
+A2 final candidate gate: API37 same-signer install-over retained approval/session; restart after foreign Trash created one protected recovery record. Explicit recovered-copy confirmation created/opened a separate note and acknowledged the source record (Recovery 0). The original remains trashed; no restore/purge was replayed. The final tagged-source install/publication gate follows.

@@ -5,11 +5,16 @@ export type Note = {
   title: string;
   content: Doc | string;
   revision: string;
+  trashedAt?: string | null;
 };
 export function bridgeMessage(
   raw: string,
   loadId: string,
-): { type: string; content?: Doc } | null {
+): {
+  type: string;
+  content?: Doc;
+  position?: { anchor: number; head: number; scroll: number };
+} | null {
   if (raw.length > 1500000) return null;
   try {
     const m = JSON.parse(raw);
@@ -21,6 +26,17 @@ export function bridgeMessage(
         ? { type: m.type, content: m.content }
         : null;
     if (m.type === 'unsupported') return { type: m.type };
+    if (
+      m.type === 'position' &&
+      m.position &&
+      ['anchor', 'head', 'scroll'].every(
+        k =>
+          Number.isFinite(m.position[k]) &&
+          m.position[k] >= 0 &&
+          m.position[k] <= 10000000,
+      )
+    )
+      return { type: m.type, position: m.position };
   } catch {}
   return null;
 }
