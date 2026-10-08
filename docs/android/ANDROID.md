@@ -1,6 +1,6 @@
 # Vaultor for Android
 
-Reviewed 2026-10-09. A1 implementation and emulator gates passed; publication is the remaining release gate. [The tracker](../plans/android-plan.md) owns sprint scope. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
+Reviewed 2026-10-09. A1 is implemented and published as an emulator-verified Android-only prototype. [The tracker](../plans/android-plan.md) owns sprint scope. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
 
 ## Prototype boundary
 
@@ -54,6 +54,10 @@ Release builds use VAULTOR_ANDROID_KEYSTORE and VAULTOR_ANDROID_KEY_PASSWORD env
 Agents own each Android release. Complete the authorized sprint's installed-APK checks and update this guide/tracker/CODEBASE and `docs/android/releases/<version>.md`; commit/push the intended source and immutable `android/v<version>` tag. Build fresh from that tagged source, run `node mobile/scripts/verify-apk.mjs`, install the exact staged bytes in both emulator generations, then run `node mobile/scripts/publish-apk.mjs` for read-only preflight and again with `--publish`. It requires clean tagged/pushed source, original public signer/package policy and checksum, creates a prerelease draft, uploads APK/SHA256SUMS.txt/android-release.json, downloads and compares all assets, then publishes. Existing assets are immutable: identical retries are accepted, differing bytes refused. Never move a published tag. Record actual final checksum/URL/results in a documentation-only follow-up. Desktop stable updater ignores this Android prerelease; no desktop installer is rebuilt for mobile-only changes.
 
 A6 will use credential-free HTTPS update metadata plus expected Android APK signing identity, package and monotonically increasing versionCode. Metadata alone never authorizes installation; Android signature verification and user installation consent remain required. No silent installation is promised. Before then, download the APK directly from its published release and install over the existing app; do not uninstall as an update instruction because that removes protected local data. The first install may require Android's per-source APK permission. Check Android version is at least 16 before installation.
+
+## Published APK
+
+Published Android-only prerelease at 2026-10-08T18:48:40Z: [Vaultor Android 0.1.0-alpha.1](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.1), immutable tag android/v0.1.0-alpha.1 / source 3371f53cac6b1ddee5044a7b8506881a45f33d8b. APK 40,071,324 bytes, SHA-256 8d6a2555515ecf4be75738d3f7a955a2f44cccdaf3c2250a0705c69865b4f557; original APK certificate af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567. Fresh tagged-source build and exact staged APK installs/reconnects passed on API36/37; final API37 conditional Save changed the disposable host revision/body. APK/package/target/minimum/ABI/16KiB alignment/signature and package/lock/Gradle agreement verified; tampered and test-package APKs refused. All three downloaded GitHub assets match local bytes/digests; byte-identical publication retry passed and release is non-draft/prerelease. Owned fixture host and both emulators stopped. This publication ledger has no additional runtime/architectural effect. Five future sprints remain unstarted; Samsung/One UI acceptance is user-only and open.
 
 ## User-only S24 prototype check
 

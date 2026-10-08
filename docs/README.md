@@ -49,7 +49,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 ## Android — `android/`
 
 - [Android implementation and APK delivery](android/ANDROID.md): isolated toolchain, native trust/drafts, prototype limits, signing, installation and actual validation.
-- [0.1.0-alpha.1 A1 prototype](android/releases/0.1.0-alpha.1.md): Android-only APK scope and emulator evidence; user-only S24 checklist.
+- [0.1.0-alpha.1 A1 prototype](android/releases/0.1.0-alpha.1.md): published Android-only APK scope and emulator evidence; user-only S24 checklist.
 
 ## Active execution trackers — `plans/`
 
