@@ -41,6 +41,10 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
+- [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): five pending sprints for the primary fixture workspace, safe Trash/actions, image categories/usage, saved file search and measured integration.
+- [Deferred roadmap](plans/future-roadmap.md): scheduled backups explicitly parked for later, OCR/offline/platform follow-ups and scope boundaries.
+- [Primary synthetic workspace specification](development/PRIMARY-TEST-WORKSPACE.md): Atlas corpus, isolation, reproducible generation, user launch/reset handoff and baseline measurements; generation is pending Sprint 1.
+- [Android readiness](architecture/ANDROID-READINESS.md): shared contracts, platform boundaries, pending client decisions and a separately authorized native prototype gate.
 - [Desktop/private-network plan](plans/desktop-network-plan.md): D1–D9 Windows implementation; partial Mac development checks, pending release/two-device gate; D10 Ubuntu deferred.
 - [Workspace evolution](plans/workspace-evolution-plan.md): Library/organization/search/navigation/session work and integration results.
 - [Editor and portability](plans/editor-portability-plan.md): imports, tables and exports; actual validation and remaining manual coverage.
