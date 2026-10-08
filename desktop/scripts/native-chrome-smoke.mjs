@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { app, safeStorage, Menu } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { Credentials } from '../src/credentials.mjs';
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -41,7 +41,7 @@ export async function runChromeSmoke(window, directory, owned, updates) {
   const restored = new Credentials(join(directory, 'native-credential-test'), safeStorage); await restored.load(); assert.equal(restored.get('disposable'), secret);
   window.webContents.send('desktop:updates-open');
   await wait("document.body.innerText.includes('Vaultor updates')",'Update dialog');
-  assert.ok(await evaluate("document.body.innerText.includes('Import update') && document.body.innerText.includes("+JSON.stringify(app.getVersion())+")"));
+  assert.ok(await evaluate("document.body.textContent.includes('Import update') && document.body.textContent.includes("+JSON.stringify(app.getVersion())+")"));
   await capture('desktop-updates.png');
   await evaluate("document.querySelector('button[aria-label=\"Close modal\"]').click()");
   await evaluate("document.querySelector('.desktop-connection-button').click()");
@@ -90,8 +90,8 @@ export async function runChromeSmoke(window, directory, owned, updates) {
   assert.equal((await get()).revision,saved.revision,'Applying remote content must not create a new save');
   const noteClear = await evaluate("(()=>{const c=document.querySelector('.desktop-window-controls').getBoundingClientRect();return [...document.querySelectorAll('.journey-bar button')].every(b=>{const r=b.getBoundingClientRect();return r.width===0||r.right<=c.left||r.top>=c.bottom;});})()"); assert.ok(noteClear, 'Window controls must not overlap note navigation.');
   await capture('desktop-chrome-note.png');
-  const deleted=await fetch(owned.address+'/api/resources/'+noteId,{method:'DELETE',headers:{'X-Vaultor-Owner':owned.accessKey,'X-Request-ID':'chrome-delete'}});assert.equal(deleted.status,204);
-  await wait("document.body.innerText.includes('deleted on another device') && document.body.innerText.includes('Review drafts')",'Remote deletion recovery');
+  const deleted=await fetch(owned.address+'/api/resources/lifecycle',{method:'PUT',headers:{'X-Vaultor-Owner':owned.accessKey,'X-Vaultor-Protocol':'3','Content-Type':'application/json','X-Request-ID':'chrome-delete'},body:JSON.stringify([{operationId:randomUUID(),resourceId:noteId,action:'trash',revision:saved.revision}])});assert.equal(deleted.status,200);
+  await wait("document.body.innerText.includes('unavailable or in Trash') && document.body.innerText.includes('Review drafts')",'Remote deletion recovery');
   assert.ok(await evaluate("document.querySelector('.tiptap')?.textContent.includes('Saved from another client')"));
   await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Library').click()");
   await wait("Boolean(document.querySelector('.library-view'))", 'Return to Library');

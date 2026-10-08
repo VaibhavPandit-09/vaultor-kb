@@ -9,6 +9,6 @@ module.exports = {
     deleteAppDataOnUninstall: false, runAfterFinish: true, shortcutName: 'Vaultor',
     installerIcon: 'assets/vaultor.ico', uninstallerIcon: 'assets/vaultor.ico', artifactName: 'Vaultor-${version}-windows-x64.exe' },
   mac: { target: [{ target: 'dmg', arch: ['arm64'] }], icon: 'assets/vaultor.icns',
-    identity: '-', hardenedRuntime: false, notarize: false, artifactName: 'Vaultor-${version}-mac-arm64.dmg' },
+    identity: '-', hardenedRuntime: false, notarize: false, signIgnore: ['[/\\\\]bundle[/\\\\]'], artifactName: 'Vaultor-${version}-mac-arm64.dmg' },
   dmg: { sign: false },
 };
