@@ -98,3 +98,6 @@ Manage each device independently. Updating a Windows client updates that app and
 
 
 0.3.0 is a Windows-first grouped-browsing update. Mac delivery remains pending at the same source tag; update a host to 0.3.0 to persist sidebarSections device settings. Full update/platform instructions and actual release validation are in [v0.3.0 notes](releases/v0.3.0.md).
+
+
+Current 0.4.0 Windows release is published and original-key verified; use [the installation guide](INSTALLATION-AND-UPDATES.md). Both host and clients require API protocol 2 for managed images, while the signed sidecar retains updater envelope minimumProtocol 1 for upgrading existing apps. Mac 0.4.0 remains unavailable until same-tag native verification/publication. GitHub manual pair import is the available update path.
