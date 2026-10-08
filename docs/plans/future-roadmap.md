@@ -14,7 +14,7 @@ Before implementation decide defaults for cadence, count/age/byte retention, des
 
 ## Android client — next platform under consideration
 
-The user is approaching Android work; readiness is active design scope, client implementation remains separately authorized. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) records contracts, decisions and the prototype gate. Preserve desktop/browser access and no mandatory payment. Do not interpret this as authorization for Play Store enrollment, APK publication, offline synchronization or unattended remote-host exposure.
+The user is approaching Android work; the six-sprint [Android execution plan](android-plan.md) is now recorded, with every sprint unstarted and implementation separately authorized. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) records contracts, decisions and the prototype gate. Preserve desktop/browser access and no mandatory payment. Do not interpret this as authorization for Play Store enrollment, APK publication, offline synchronization or unattended remote-host exposure.
 
 ## Later discovery and platform work
 

@@ -1,6 +1,6 @@
 # Android client readiness
 
-Reviewed 2026-10-08. Planning requirements; no Android client, native verification or offline sync is implemented. The current browser/Electron boundary is authoritative in [PLATFORM.md](PLATFORM.md). Upcoming shared work is tracked in [resource-lifecycle-plan.md](../plans/resource-lifecycle-plan.md).
+Reviewed 2026-10-08. Planning requirements; no Android client, native verification or offline sync is implemented. The current browser/Electron boundary is authoritative in [PLATFORM.md](PLATFORM.md). The completed shared-work results are tracked in [resource-lifecycle-plan.md](../plans/resource-lifecycle-plan.md). The authoritative six-sprint Android scope, Windows-only agent testing, APK milestones and physical-device acceptance boundary are in [android-plan.md](../plans/android-plan.md); implementation remains unstarted.
 
 ## Product boundary
 
@@ -20,10 +20,10 @@ Resource actions and Trash/Restore now use protocol 3, metadata summaries and pe
 
 | Decision | Recommended starting direction | Evidence/gate needed |
 | --- | --- | --- |
-| Shell | React Native client with a platform adapter; no Electron dependency | Confirm toolchain, physical Android device and free distribution route |
-| Note editor | Evaluate embedding the existing structured editor in a constrained WebView first | Real IME/composition, selection, clipboard, image paste/share, bridge security, keyboard/scroll and accessibility tests; retain a native-editor alternative if this fails |
+| Shell | React Native client with a platform adapter; no Electron dependency | Pin/build toolchain on Windows; primary user device is S24 Ultra / One UI 8.5, with One UI 9 compatibility required |
+| Note editor | Evaluate embedding the existing structured editor in a constrained WebView first | Agent-run emulator IME/selection/bridge/keyboard checks and user-only Samsung acceptance; retain a native-editor alternative if the gate fails |
 | First scope | Pair/connect, browse/search, note read/edit/save, file preview and image insertion | Small end-to-end prototype on the synthetic workspace before duplicating every desktop screen |
-| Host discovery | Remembered/manual address always available; discovery as a convenience | Android network permissions, background limits and changing LAN addresses tested natively |
+| Host discovery | Remembered/manual address always available; discovery as a convenience | Android network permissions, background limits and changing addresses tested in emulators; Samsung/real LAN checks are user-only |
 | Authentication | Host-approved persistent device identity with protected native storage | Decide mobile TLS/CA trust flow and revocation/re-pair recovery; no desktop secret-copy shortcut |
 | Background/offline | Reconnect and retain drafts; defer full offline synchronization | Document app suspension/process death, journal persistence and conflict recovery |
 | Distribution/updates | Personal installable APK route first; no paid store requirement | Device install approvals, reproducible signed builds, privately preserved signing identity and verified update path |
@@ -33,11 +33,11 @@ These are recommendations, not settled implementation claims. Do not promise a s
 
 ## Prototype acceptance and handoff
 
-After separate authorization, validate on a real Android device against a Windows/Mac host: first pairing/relaunch, title/content/scope search, editing/revision conflict, image upload/original download, Trash/Restore updates, host shutdown/reconnect, rotation, IME, back-button/modal ownership, app suspension/process death and bounded caches. Test reduced motion and at least dark/light/OLED surrounds without altering image pixels.
+After separate authorization, agents validate the built APK on Windows Android 16/17 emulators against disposable hosts; the user alone validates the S24 Ultra. Agents must not access, pair ADB with or control the user phone. Distinguish emulator results from Samsung/One UI acceptance for: first pairing/relaunch, title/content/scope search, editing/revision conflict, image upload/original download, Trash/Restore updates, host shutdown/reconnect, rotation, IME, back-button/modal ownership, app suspension/process death and bounded caches. Test reduced motion and at least dark/light/OLED surrounds without altering image pixels.
 
 The handoff must contain actual endpoint/capability matrix and minimum protocol, supported document nodes, client storage/security model, deferred behaviors, fixture seed/results and platform build/signing instructions. No host startup dependencies, file paths, trust secrets or restore generations enter portable archives. Android work does not unblock unverified Mac release binaries automatically.
 
-Atlas Sprint 1 now provides [5,000-resource and 70-resource fixtures](../development/PRIMARY-TEST-WORKSPACE.md). Its [baseline](../development/ATLAS-BASELINE.md) exposed unreadable side-by-side notes with the sidebar at 412px, startup FTS connection retries and unpaged legacy usage payloads (the current UI now uses bounded references; Sprint 5 still needs scale measurement). These are findings to resolve/measure before a native prototype; no Android device, IME, slow-network or mobile clipboard check has run. Transfer the logical archive into disposable host storage rather than copying desktop credentials or sessions.
+Atlas Sprint 1 now provides [5,000-resource and 70-resource fixtures](../development/PRIMARY-TEST-WORKSPACE.md). Its [baseline](../development/ATLAS-BASELINE.md) exposed unreadable side-by-side notes with the sidebar at 412px, startup FTS connection retries and unpaged legacy usage payloads (the current UI now uses bounded references). [SCALE-INTEGRATION.md](../development/SCALE-INTEGRATION.md) records completed Windows Sprint 5 fixes/measurements; Android emulator/Samsung IME, slow-network and mobile clipboard checks remain unrun. Transfer the logical archive into disposable host storage rather than copying desktop credentials or sessions.
 
 0.7.0 hosts add scoped saved PDF/UTF-8 content results and fileCoverage, paginated file-index status/retry. Android can reuse these metadata/snippet contracts without decoding files locally; no offline/OCR/native client is implemented. Search must stay opt-in and display pending/unsupported/limited coverage. [SEARCH.md](../workspace/SEARCH.md) owns limits.
 
@@ -62,10 +62,10 @@ The editor schema comes from BlockEditor/extensions, not arbitrary host JSON acc
 
 ## Separately authorized Android prototype milestone
 
-1. Decide physical device, React Native toolchain, private APK signing-key ownership and personal installation/update route. No paid store/account is required by this proposal.
+1. Follow android-plan.md: user-owned S24 Ultra / One UI 8.5 acceptance, Android 16/17 emulator coverage, selected React Native toolchain, private APK signing identity and free GitHub APK distribution. No agent phone access or paid store/account.
 2. Implement an adapter for pinned LAN JSON/binary/SSE, protected credentials, system appearance/reduced motion, image picking/share and recovery. Manual address entry remains independent of discovery.
 3. Prove the constrained WebView editor against the full schema: IME/composition, selection/undo, touch scrolling, clipboard/share, bridge origin restrictions and process death. Retain a native-editor alternative if this fails.
 4. Prototype pair/connect, scoped title/content browsing, note read/edit/conditional save and image upload/preview on Small, then Atlas. Measure caches/startup; never copy Electron IPC or host paths.
-5. Test conflicts, shutdown/reconnect, generation changes, revoke/re-pair, rotation, Android Back/modal ownership and suspension recovery on real hardware before expanding feature parity.
+5. Test conflicts, shutdown/reconnect, generation changes, revoke/re-pair, rotation, Android Back/modal ownership and suspension recovery on emulators before expanding feature parity; user-only physical acceptance remains separately recorded.
 
 This is future scope, not authorization to implement Android. Offline synchronization, OCR, scheduled backups and Android hosting remain deferred. A 412px desktop check cannot certify Android IME, touch, network permissions or lifecycle behavior.
