@@ -69,3 +69,7 @@ Markdown paths have deterministic numeric prefixes plus sanitized titles, so equ
 ### N5 validation — 2026-09-30
 
 Production frontend build, final TypeScript compilation and targeted ESLint pass. Eleven frontend export tests cover prior lifecycle/retries plus graph participants/fingerprint, changed membership, cancellation and counts/package labels. Six backend renderer/graph/service tests pass using disposable storage, covering cycle/diamond deduplication, equal titles, immutable snapshots, stale previews, missing assets, node/depth/byte limits, original-byte ZIP packaging, PDF destinations/bookmarks and DOCX anchor structure. Three pages of the graph PDF fixture were visually inspected and are readable. DOCX rendering was attempted with render_docx.py but LibreOffice is unavailable; Word pagination remains unverified. No browser exploration, Docker rebuild, broad API smoke or user-data mutation. Existing build warnings remain. N6 results and remaining limits are recorded in [INTEGRATION.md](INTEGRATION.md).
+
+## Trash — 0.5.0
+
+Trashed roots cannot be exported as active notes. Linked graph snapshots exclude trashed destinations, retain their labels and report unavailable-reference warnings. Complete workspace ZIP format 3 instead includes Trash and its original binaries/organization; unfinished permanent cleanup must be completed first. Previously prepared immutable exports can still describe the earlier saved snapshot. See [RESOURCE-LIFECYCLE.md](RESOURCE-LIFECYCLE.md).

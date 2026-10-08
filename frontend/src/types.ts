@@ -13,6 +13,8 @@ export interface Resource {
   type: ResourceType;
   title: string;
   revision?: string;
+  trashedAt?: string | null;
+  cleanupPending?: boolean;
   searchSnippet?: {text:string;highlights:{start:number;end:number}[]};
   favorite?: boolean;
   collections?: {id: string; name: string}[];

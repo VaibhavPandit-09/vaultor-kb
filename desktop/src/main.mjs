@@ -45,8 +45,8 @@ else {
     };
     const capabilities = await get('/capabilities');
     if(capabilities.changeFeed!==true || capabilities.scopedSettings!==true)throw new Error('Update this server to the current Vaultor version before connecting. D7 settings and change-feed contracts are required.');
-    if (!Number.isInteger(capabilities.apiProtocolVersion) || capabilities.apiProtocolVersion < 2 || !Number.isInteger(capabilities.minimumClientProtocolVersion) || capabilities.minimumClientProtocolVersion < 1 || capabilities.minimumClientProtocolVersion > capabilities.apiProtocolVersion || typeof capabilities.serverBuild !== 'string') throw new Error('Update this server: compatibility information is missing.');
-    if (capabilities.minimumClientProtocolVersion > 2) throw new Error('Update Vaultor Desktop to connect to this server.');
+    if (!Number.isInteger(capabilities.apiProtocolVersion) || capabilities.apiProtocolVersion < 3 || !Number.isInteger(capabilities.minimumClientProtocolVersion) || capabilities.minimumClientProtocolVersion < 1 || capabilities.minimumClientProtocolVersion > capabilities.apiProtocolVersion || typeof capabilities.serverBuild !== 'string') throw new Error('Update this server: resource lifecycle protocol 3 is required.');
+    if (capabilities.minimumClientProtocolVersion > 3) throw new Error('Update Vaultor Desktop to connect to this server.');
     const identity = await get('/workspace/identity');
     if(profile.source==='bundled')await updates?.confirmStart();
     if (typeof identity.id !== 'string' || !identity.id || identity.id.length > 100 || typeof identity.generation !== 'string' || identity.generation.length > 100) throw new Error('Server workspace identity is invalid.');

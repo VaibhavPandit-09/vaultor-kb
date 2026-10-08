@@ -6,7 +6,7 @@ Reviewed 2026-10-08. Planning requirements; no Android client, native verificati
 
 Keep the Windows/Mac-hosted workspace authoritative and browser access available. An Android client connects to an approved host on the LAN; it does not bundle the Java server. Reuse stable resource IDs, structured Tiptap JSON, revisions, scoped organization, paged APIs and saved-change streams. Do not share Electron IPC, filesystem paths, browser credentials or transient preview URLs as Android contracts.
 
-Resource actions, Trash/Restore, categories, usage paging and saved-content coverage must be platform-neutral. Keep view selection, drafts and preview/cache state local to a client. Host identity/workspace generation scope caches and recovery. Unsupported content must remain intact and block unsafe editing rather than be stripped and saved.
+Resource actions and Trash/Restore now use protocol 3, metadata summaries and per-item revision/UUID identities; archives use format 3. Categories, usage paging and saved-content coverage remain later sprints and must be platform-neutral. Keep view selection, drafts and preview/cache state local to a client. Host identity/workspace generation scope caches and recovery. Unsupported content must remain intact and block unsafe editing rather than be stripped and saved.
 
 ## Required design checks in current sprints
 

@@ -36,6 +36,12 @@ public class Resource {
 
     private Boolean favorite = false;
 
+    // Additive, nullable columns: existing rows remain active. Never auto-purge.
+    private LocalDateTime trashedAt;
+    private Boolean purgePending = false;
+    @Column(columnDefinition = "TEXT")
+    private String trashOrganization;
+
     @Version
     @Column(nullable = false, columnDefinition = "bigint default 0")
     private Long revisionNumber = 0L;

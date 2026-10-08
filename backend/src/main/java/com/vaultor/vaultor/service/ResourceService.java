@@ -41,6 +41,7 @@ public class ResourceService {
     @Transactional
     public Resource updateNote(String id, String title, String content, String expected) {
         return resourceRepository.findById(id).map(r -> {
+            requireActive(r);
             if (expected != null && !expected.equals("\"" + r.getRevision() + "\"")) throw new com.vaultor.vaultor.controller.ApiErrors.RevisionConflict();
             if (title != null) r.setTitle(title);
             r.setContent(content);
@@ -69,34 +70,17 @@ public class ResourceService {
     }
 
     public void deleteResource(String id) {
-        resourceRepository.findById(id).ifPresent(r -> {
-            if ("file".equals(r.getType()) && r.getFilePath() != null) {
-                try {
-                    fileStorageService.deleteFile(r.getFilePath());
-                } catch (IOException ignored) {}
-            }
-            relationshipService.deleteRelationshipsFor(id);
-            resourceRepository.delete(r);
-        });
+        throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.METHOD_NOT_ALLOWED,"Use revision-checked Trash. Permanent deletion is available only in Trash.");
     }
 
     @Transactional
     public void replaceLinksAndDelete(String oldId, String newId) {
-        if (newId == null || oldId.equals(newId) || !resourceRepository.existsById(newId)) {
-            throw new IllegalArgumentException("Replacement resource not found");
-        }
-        for (Resource note : resourceRepository.findByTypeOrderByUpdatedAtDesc("note")) {
-            var content = documents.parse(note.getContent());
-            if (documents.references(content).contains(oldId)) {
-                note.setContent(documents.remap(content, java.util.Map.of(oldId, newId)).toString());
-                resourceRepository.save(note);
-                relationshipService.updateLinksForNote(note.getId(), note.getContent());
-            }
-        }
-        deleteResource(oldId);
+        throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.METHOD_NOT_ALLOWED,"Reference replacement and deletion are separate actions. Use Trash without rewriting referring notes.");
     }
 
     public Resource getResourceOrThrow(String id) {
-        return resourceRepository.findById(id).orElseThrow(() -> new java.util.NoSuchElementException("Resource not found"));
+        var resource=resourceRepository.findById(id).orElseThrow(() -> new java.util.NoSuchElementException("Resource not found"));requireActive(resource);return resource;
     }
+    @Transactional public Resource rename(String id,String title,String expected) {var r=getResourceOrThrow(id);if(title==null||title.isBlank()||title.length()>500)throw new IllegalArgumentException("Title must contain 1–500 characters");if(!("\""+r.getRevision()+"\"").equals(expected))throw new com.vaultor.vaultor.controller.ApiErrors.RevisionConflict();r.setTitle(title.trim());return resourceRepository.saveAndFlush(r);}
+    public static void requireActive(Resource resource) {if(resource.getTrashedAt()!=null)throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.GONE,"Resource is in Trash. Restore it before opening or editing.");}
 }

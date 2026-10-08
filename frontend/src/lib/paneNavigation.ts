@@ -48,6 +48,9 @@ export class PaneNavigation {
   markUnavailable = (resourceId: string) => {
     this.update(panes => panes.map(p => ({ ...p, history: p.history.map(v => v.resourceId === resourceId ? { ...v, unavailable: true } : v) })));
   };
+  markAvailable = (resourceId: string) => {
+    this.update(panes=>panes.map(p=>({...p,history:p.history.map(v=>v.resourceId===resourceId?{...v,unavailable:false}:v)})));
+  };
   jump = async (paneId: string, index: number) => {
     const pane = this.state.panes.find(p => p.paneId === paneId), target = pane?.history[index];
     if (!pane || !target || target.unavailable || index === pane.cursor) return;

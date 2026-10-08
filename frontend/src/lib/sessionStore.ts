@@ -5,7 +5,7 @@ import { getDesktopSessionId } from './desktop';
 export type Identity = { id: string; generation: string };
 export type LibraryContext = { query: string; searchMode: 'title' | 'content'; type: string; sort: 'title' | 'updated' | 'recent' };
 export const defaultLibrary: LibraryContext = { query: '', searchMode: 'title', type: 'all', sort: 'updated' };
-export type SessionSnapshot = { version: 1; identity: Identity; panes: Pane[]; activePaneId: string | null; positions: Record<string, ReadingPosition>; library: { visible: boolean; section: 'library' | 'recent' | 'favorites' | 'collections'; collection: OrganizationItem | null; tags: string[]; context: LibraryContext } };
+export type SessionSnapshot = { version: 1; identity: Identity; panes: Pane[]; activePaneId: string | null; positions: Record<string, ReadingPosition>; library: { visible: boolean; section: 'library' | 'recent' | 'favorites' | 'collections' | 'trash'; collection: OrganizationItem | null; tags: string[]; context: LibraryContext } };
 export type NoteDraft = { title: string; content: unknown };
 export type RecoveryRecord = { key: string; identity: Identity; tabId: string; noteId: string; editId: string; version: number; baseRevision: string; value: NoteDraft; copyId: string };
 export interface LocalStore { get<T>(key: string): Promise<T | undefined>; put(key: string, value: unknown): Promise<void>; delete(key: string): Promise<void>; values<T>(prefix: string): Promise<T[]> }
@@ -56,7 +56,7 @@ export function validSession(value: SessionSnapshot) {
   return Boolean(value) && value.version===1 && typeof value.identity?.id==='string' && typeof value.identity.generation==='string'
     && Array.isArray(value.panes) && value.panes.every(p=>p && typeof p.paneId==='string' && typeof p.id==='string' && Array.isArray(p.history) && p.history.length>0 && p.history.length<=200 && Number.isInteger(p.cursor) && p.cursor>=0 && p.cursor<p.history.length && p.history.every(v=>v && typeof v.visitId==='string'&&typeof v.resourceId==='string'&&typeof v.title==='string'))
     && value.positions && Object.values(value.positions).every(p=>p && Number.isFinite(p.scrollTop)&&Number.isFinite(p.scrollLeft)&&(!p.selection||(Number.isFinite(p.selection.from)&&Number.isFinite(p.selection.to))))
-    && value.library && typeof value.library.visible==='boolean' && ['library','recent','favorites','collections'].includes(value.library.section)
+    && value.library && typeof value.library.visible==='boolean' && ['library','recent','favorites','collections','trash'].includes(value.library.section)
     && Array.isArray(value.library.tags) && value.library.tags.every(t=>typeof t==='string') && (!value.library.collection||(typeof value.library.collection.id==='string'&&typeof value.library.collection.name==='string')) && typeof value.library.context?.type==='string' && typeof value.library.context.query==='string' && ['title','content'].includes(value.library.context.searchMode) && ['title','updated','recent'].includes(value.library.context.sort);
 }
 export const sameWorkspace = (a: Identity, b: Identity) => a.id === b.id && a.generation === b.generation;

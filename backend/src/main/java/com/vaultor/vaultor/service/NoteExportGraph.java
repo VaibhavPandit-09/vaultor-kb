@@ -35,7 +35,7 @@ public class NoteExportGraph {
                 if(seen.size()>maxNodes) throw new IllegalArgumentException("Export graph exceeds "+maxNodes+" resources");
                 if(visit.depth()>maxDepth) throw new IllegalArgumentException("Export graph exceeds depth "+maxDepth);
                 var found=resources.findById(visit.id());
-                if(found.isEmpty()) {
+                if(found.isEmpty() || found.get().getTrashedAt()!=null) {
                     if(visit.depth()==0)throw new NoSuchElementException("Note not found");
                     version.append("missing:").append(visit.id());warnings.add("A linked resource is missing; its label is retained.");continue;
                 }

@@ -15,9 +15,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class ResourceSearchTest {
  static final Path DATA;
  static{try{DATA=Files.createTempDirectory("vaultor-search-test-");}catch(Exception e){throw new ExceptionInInitializerError(e);}}
- @DynamicPropertySource static void props(DynamicPropertyRegistry p){p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());}
+ @DynamicPropertySource static void props(DynamicPropertyRegistry p){p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());p.add("app.host.path",()->DATA.resolve("host").toString());}
+ @Autowired ResourceLifecycleService lifecycle;
  @Autowired WorkspaceGate gate;
- @Autowired ResourceSearchService search;@Autowired ResourceService resources;@Autowired FileImportService imports;@Autowired OrganizationService org;@Autowired ResourceBrowseService browse;@Autowired JdbcTemplate jdbc;@Autowired TransactionTemplate tx;
+ @Autowired ResourceSearchService search;@Autowired ResourceService resources;@Autowired FileImportService imports;
+    @Autowired OrganizationService org;@Autowired ResourceBrowseService browse;@Autowired JdbcTemplate jdbc;@Autowired TransactionTemplate tx;
  static String doc(String text){return "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\""+text+"\"}]}]}";}
  void ready()throws Exception{long deadline=System.nanoTime()+10_000_000_000L;while(search.status().rebuilding()&&System.nanoTime()<deadline)Thread.sleep(10);assertTrue(search.status().complete(),search.status().toString());}
  long count(String q){return search.search(q,0,50,null,List.of(),null,false).totalItems();}
@@ -31,7 +33,7 @@ class ResourceSearchTest {
  tx.executeWithoutResult(status->{jdbc.update("update resources set title='Rollbackword' where id=?",body.getId());assertEquals(1,count("rollbackword"));status.setRollbackOnly();});assertEquals(0,count("rollbackword"));
  String imported=UUID.randomUUID().toString();imports.create(imported,"Import",doc("Importmarker"),null);assertEquals(1,count("importmarker"));
  resources.updateNote(body.getId(),"Meeting",doc("Replacementword"));assertEquals(0,count("telescope"));assertEquals(1,count("replacementword"));
- resources.deleteResource(imported);assertEquals(0,count("importmarker"));
+ lifecycle.apply(new ResourceLifecycleService.Item(UUID.randomUUID().toString(),imported,"trash",resources.getResourceOrThrow(imported).getRevision()));assertEquals(0,count("importmarker"));
  resources.createNote("Visible structure","{\"type\":\"doc\",\"attrs\":{\"private\":{\"type\":\"text\",\"text\":\"hiddenattribute\"}},\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"resourceLink\",\"attrs\":{\"resourceId\":\"secretidentifier\",\"label\":\"Visiblelabel\"}}]}]}");
  assertEquals(1,count("visiblelabel"));assertEquals(0,count("hiddenattribute"));assertEquals(0,count("secretidentifier"));
  var imageNote=resources.createNote("Image search","{\"type\":\"doc\",\"content\":[{\"type\":\"image\",\"attrs\":{\"resourceId\":\"privateimageid\",\"caption\":\"captionword\",\"alt\":\"alternativeword\"}}]}");assertEquals(1,count("captionword"));assertEquals(1,count("alternativeword"));assertEquals(0,count("privateimageid"));

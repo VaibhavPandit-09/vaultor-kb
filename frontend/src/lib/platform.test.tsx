@@ -9,7 +9,7 @@ import ConnectionGate from '../components/ConnectionGate';
 import api from './api';
 
 const browser = getPlatform();
-const caps = { serverBuild: 'test-server', apiProtocolVersion: 2, minimumClientProtocolVersion: 2, authentication: false };
+const caps = { serverBuild: 'test-server', apiProtocolVersion: 3, minimumClientProtocolVersion: 3, authentication: false };
 function services(request: AxiosAdapter): PlatformServices { return { ...browser, kind: 'desktop', request }; }
 function respond(data: unknown, status = 200): AxiosAdapter { return async config => ({ config, data, status, statusText: '', headers: { 'x-request-id': 'server-id' } }); }
 afterEach(() => { cleanup(); configureConnection({ profileId: 'browser', kind: 'browser' }, browser); vi.restoreAllMocks(); });
@@ -17,12 +17,12 @@ afterEach(() => { cleanup(); configureConnection({ profileId: 'browser', kind: '
 it('rejects missing/unsupported contracts and tells which side needs updating', () => {
   expect(() => validateCapabilities({} as typeof caps)).toThrow('Update the server');
   expect(() => validateCapabilities({ ...caps, apiProtocolVersion: 0 })).toThrow();
-  expect(() => validateCapabilities({ ...caps, apiProtocolVersion: 3, minimumClientProtocolVersion: 3 })).toThrow('Update this app');
-  expect(validateCapabilities({ ...caps, apiProtocolVersion: 2 })).toMatchObject({ apiProtocolVersion: 2 });
+  expect(() => validateCapabilities({ ...caps, apiProtocolVersion: 4, minimumClientProtocolVersion: 4 })).toThrow('Update this app');
+  expect(validateCapabilities({ ...caps, apiProtocolVersion: 3 })).toMatchObject({ apiProtocolVersion: 3 });
 });
 it('does not mount workspace children or send mutations to an incompatible server; retry works', async () => {
   let compatible = false;
-  const request = vi.fn<AxiosAdapter>(async config => ({ config, status: 200, statusText: '', headers: {}, data: compatible ? caps : { ...caps, apiProtocolVersion: 3, minimumClientProtocolVersion: 3 } }));
+  const request = vi.fn<AxiosAdapter>(async config => ({ config, status: 200, statusText: '', headers: {}, data: compatible ? caps : { ...caps, apiProtocolVersion: 4, minimumClientProtocolVersion: 4 } }));
   configureConnection({ profileId: 'test', kind: 'local' }, services(request));
   vi.spyOn(console, 'error').mockImplementation(() => {});
   render(<ConnectionGate><p>Workspace loaded</p></ConnectionGate>);

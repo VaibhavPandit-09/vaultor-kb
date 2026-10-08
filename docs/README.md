@@ -6,6 +6,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Install and update on each platform](desktop/INSTALLATION-AND-UPDATES.md): exact Windows/Mac steps, browser/Docker/Ubuntu paths, available targets and recovery.
 - [Agent-owned release process](desktop/RELEASE-PROCESS.md): standing responsibility for versions, native builds, verified artifacts, tags and GitHub publication.
+- [0.5.0 resource lifecycle](desktop/releases/v0.5.0.md): Windows delivery, Trash/Restore, protocol-3/archive-3 compatibility and Mac handoff.
 - [0.4.1 one-click Windows updates](desktop/releases/v0.4.1.md): automatic GitHub downloads, silent installation/relaunch and transition steps.
 - [0.4.0 settings/images/motion release](desktop/releases/v0.4.0.md): Windows delivery, protocol-2 compatibility and exact Mac handoff.
 - [0.3.2 OLED release](desktop/releases/v0.3.2.md): Windows delivery, validation and same-tag Mac handoff.
@@ -22,6 +23,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 - [Settings](workspace/SETTINGS.md): focused categories, global search, scoped controls/resets, saving and keyboard access.
 - [Interaction motion](workspace/MOTION.md): shared Smooth/Snappy transitions, selection, inert exits and reduced motion.
 - [Appearance and OLED](workspace/APPEARANCE.md): true-black surfaces, opacity overrides, device persistence and media boundaries.
+- [Resource lifecycle](workspace/RESOURCE-LIFECYCLE.md): shared Actions, revision-checked Trash/Restore, retained drafts, durable purge retries and portable state.
 - [Library and organization](workspace/LIBRARY.md): browsing, collections, tags, pins and bulk actions.
 - [Search and Ctrl+K](workspace/SEARCH.md): title-first search, saved-text opt-in, scope, actions and indexing.
 - [Managed images](workspace/IMAGES.md): paste/drop/upload, placement tools, authenticated previews/copy, portability and compatibility.
@@ -41,7 +43,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
-- [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): Atlas Sprint 1 complete; four pending sprints for safe Trash/actions, image categories/usage, saved file search and measured integration.
+- [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): Atlas and lifecycle Sprints 1–2 implemented; three pending sprints for safe Trash/actions, image categories/usage, saved file search and measured integration.
 - [Deferred roadmap](plans/future-roadmap.md): scheduled backups explicitly parked for later, OCR/offline/platform follow-ups and scope boundaries.
 - [Primary synthetic workspace](development/PRIMARY-TEST-WORKSPACE.md): generated Atlas corpus, isolated launch/reset, checkpoint recovery and small/fault fixtures.
 - [Atlas baseline](development/ATLAS-BASELINE.md): actual counts, Windows timing/memory, validation and scale/readiness findings.

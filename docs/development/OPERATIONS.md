@@ -141,3 +141,7 @@ D9 manual integration: VAULTOR_DESKTOP_TEST_DIRECTORY must be an absolute dedica
 ### Focused grouped-browsing packaged check
 
 Set VAULTOR_LAYOUT_SMOKE=1 and run `node desktop/scripts/chrome-smoke.mjs "<absolute packaged executable>"`. This is one targeted visual/native session, not the broad chrome/API suite. It creates an owned disposable workspace with empty/sparse/mixed-pinned and 101-note paginated fixtures, using normal owner authorization; it checks both themes, narrow long titles, content-sized borders, sidebar collapse/hide/defaults, Escape/focus restoration and native-control clearance. Review eight browse-*.png frames under ignored desktop/artifacts. No real workspace is used. Existing independent launch/edit/relaunch checks remain separately available.
+
+## Lifecycle validation and rollback
+
+0.5.0 adds protocol-3 Trash/Restore and archive format 3. See [RESOURCE-LIFECYCLE.md](../workspace/RESOURCE-LIFECYCLE.md). `desktop/scripts/lifecycle-check.mjs` always creates an isolated temporary profile, uses its owned protected host, injects a disposable binary cleanup failure, restarts that host and checks native Actions/Trash/Restore/shared-view reconciliation through CDP. Set VAULTOR_BUILD_BUNDLE to the freshly verified release bundle and run it against matching win-unpacked artifacts. It preserves screenshots/report under its reported temp directory; it is not shipped in installers and never opens Atlas/personal data. No old executable should write to an upgraded database; rollback restores a matching pre-upgrade backup.

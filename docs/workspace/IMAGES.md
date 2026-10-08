@@ -1,6 +1,6 @@
 # Managed images in notes
 
-Reviewed 2026-10-08. Implemented in the 0.4.0 Sprint 2 development build; the installed release follows Sprint 3. Both client and host must support protocol 2. Existing 0.3.x clients cannot open the new host; new clients require an updated host before editors mount.
+Reviewed 2026-10-08. Implemented and shipped in 0.4.0; current 0.5.0 lifecycle clients and hosts require protocol 3 (managed images originally introduced protocol 2). Older clients cannot open the current host; new clients require an updated host before editors mount. Images remain File resources and follow the Trash/Restore semantics in RESOURCE-LIFECYCLE.md.
 
 ## Add and edit
 

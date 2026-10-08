@@ -17,6 +17,7 @@ import java.util.UUID;
 @Service @RequiredArgsConstructor
 public class FileImportService {
     private final ResourceRepository resources;
+    private final com.vaultor.vaultor.repository.LifecycleRequestRepository lifecycle;
     private final FileStorageService files;
     private final DocumentService documents;
     private final RelationshipService links;
@@ -42,9 +43,11 @@ public class FileImportService {
         String fingerprint = HexFormat.of().formatHex(digest.digest());
         var existing = resources.findById(id);
         if (existing.isPresent()) {
+            ResourceService.requireActive(existing.get());
             if (!fingerprint.equals(existing.get().getImportFingerprint())) throw new ResponseStatusException(HttpStatus.CONFLICT, "Import ID already used with different content");
             return existing.get();
         }
+        if(lifecycle.existsByResourceIdAndStatus(id,"purged"))throw new ResponseStatusException(HttpStatus.GONE,"This original was permanently deleted. Use a new import identity for an explicit new resource.");
         if(collectionId != null && !collections.existsById(collectionId)) throw new java.util.NoSuchElementException("Collection not found");
         String stored = file == null ? null : files.storeFile(file);
         try {

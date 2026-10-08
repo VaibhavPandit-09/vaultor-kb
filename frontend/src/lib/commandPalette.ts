@@ -123,7 +123,7 @@ const commandDefinitions: CommandDefinition[] = [
   },
   {
     id: 'delete_resource',
-    title: 'Delete resource',
+    title: 'Move resource to Trash',
     keywords: ['delete', 'remove', 'resource'],
     aliases: ['del', 'rm'],
     scoreBoost: () => 180,
@@ -133,7 +133,7 @@ const commandDefinitions: CommandDefinition[] = [
     }),
     remember: () => ({
       id: 'delete_resource',
-      title: 'Continue delete',
+      title: 'Continue moving to Trash',
       subtitle: 'Choose a resource to remove',
       resume: (context) => ({
         type: 'push',
@@ -304,7 +304,7 @@ export function createRootStep(
 
 function buildDeleteSelectStep(contextFallback: CommandContext): CommandStep {
   return {
-    id:'delete-select',type:'select',title:'Delete resource',placeholder:'Find a saved resource…',
+    id:'delete-select',type:'select',title:'Move resource to Trash',placeholder:'Find a saved resource…',
     getItems:(_query,context=contextFallback)=>context.resources.map(resource=>({
       id:'delete-target-'+resource.id,title:resource.title,subtitle:resource.type,section:'Targets',
       onSelect:()=>({type:'push',step:buildDeleteConfirmStep(context,resource)})
@@ -316,14 +316,14 @@ export function buildDeleteConfirmStep(context: CommandContext, resource: Resour
   return {
     id: `delete-confirm-${resource.id}`,
     type: 'confirm',
-    title: 'Confirm delete',
+    title: 'Move to Trash',
     placeholder: 'Press Enter to continue...',
     emptyState: 'Confirm deletion.',
     getItems: () => [
       {
         id: `delete-confirm-action-${resource.id}`,
-        title: `Delete "${resource.title}"`,
-        subtitle: 'Open the delete flow for this resource',
+        title: `Move "${resource.title}" to Trash`,
+        subtitle: 'Review saved usage and keep the original recoverable',
         section: 'Confirm',
         preview: buildResourcePreview(resource),
         onSelect: async () => ({
@@ -331,7 +331,7 @@ export function buildDeleteConfirmStep(context: CommandContext, resource: Resour
           action: () => context.openDeleteFlow(resource.id),
           remember: {
             id: `delete-resource-${resource.id}`,
-            title: `Delete ${resource.title}`,
+            title: `Move ${resource.title} to Trash`,
             subtitle: 'Delete flow',
             resume: (context) => ({
               type: 'execute',

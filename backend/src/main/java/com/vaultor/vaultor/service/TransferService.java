@@ -42,6 +42,7 @@ public class TransferService {
     private final BuildInformation build;
     private final ExporterRegistry exporters;
     private final NoteExportGraph noteGraph;
+    private final LifecycleRequestRepository lifecycleRequests;
     @Value("${app.storage.path}") private String storagePath;
     @Value("${app.transfer.max-archive-bytes}") private long maxArchive;
     @Value("${app.transfer.max-expanded-bytes}") private long maxExpanded;
@@ -51,7 +52,9 @@ public class TransferService {
     private Path root;
     public record TagData(String id,String name,String color) {}
     public record ResourceData(String id,String type,String title,JsonNode content,String mimeType,Long size,
-        LocalDateTime createdAt,LocalDateTime updatedAt,LocalDateTime lastOpenedAt,List<String> tags,String binary) {}
+        LocalDateTime createdAt,LocalDateTime updatedAt,LocalDateTime lastOpenedAt,List<String> tags,String binary,LocalDateTime trashedAt,String trashOrganization) {
+        public ResourceData(String id,String type,String title,JsonNode content,String mimeType,Long size,LocalDateTime createdAt,LocalDateTime updatedAt,LocalDateTime lastOpenedAt,List<String> tags,String binary) {this(id,type,title,content,mimeType,size,createdAt,updatedAt,lastOpenedAt,tags,binary,null,null);}
+    }
     public record Workspace(List<ResourceData> resources,List<TagData> tags,SettingsService.WorkspaceSettings settings,OrganizationService.OrganizationData organization) {
         public Workspace(List<ResourceData> resources,List<TagData> tags,SettingsService.WorkspaceSettings settings) {this(resources,tags,settings,new OrganizationService.OrganizationData(List.of(),List.of()));}
     }
@@ -169,8 +172,9 @@ public class TransferService {
     private void exportArchive(TransferOperation op) {
         try {
             Path dir=directory(op.getId());Files.createDirectories(dir);
+            if(resources.findAll().stream().anyMatch(r->Boolean.TRUE.equals(r.getPurgePending())))throw new IllegalArgumentException("Finish pending permanent-deletion cleanup before exporting the complete workspace");
             Workspace snapshot=transaction.execute(status -> new Workspace(resources.findAll().stream().map(r->new ResourceData(
-                r.getId(),r.getType(),r.getTitle(),documents.parse(r.getContent()),r.getMimeType(),r.getSize(),r.getCreatedAt(),r.getUpdatedAt(),r.getLastOpenedAt(),r.getTags().stream().map(Tag::getId).toList(),"file".equals(r.getType())?"files/"+r.getId():null)).toList(),
+                r.getId(),r.getType(),r.getTitle(),documents.parse(r.getContent()),r.getMimeType(),r.getSize(),r.getCreatedAt(),r.getUpdatedAt(),r.getLastOpenedAt(),r.getTags().stream().map(Tag::getId).toList(),"file".equals(r.getType())?"files/"+r.getId():null,r.getTrashedAt(),r.getTrashOrganization())).toList(),
                 tags.findAll().stream().map(t->new TagData(t.getId(),t.getName(),t.getColor())).toList(),settings.getSettings().workspace(),organization.snapshot()));
             op.setResourceCount(snapshot.resources().size());op.setTagCount(snapshot.tags().size());op.setFileCount((int)snapshot.resources().stream().filter(r->"file".equals(r.type())).count());
             Map<String,Path> binaries=new LinkedHashMap<>();
@@ -194,13 +198,13 @@ public class TransferService {
                 }
             }
             var manifest=mapper.readValue(Files.readString(dir.resolve("manifest.json")),Manifest.class);
-            if((manifest.version()!=1 && manifest.version()!=2) || manifest.checksums()==null) throw new IllegalArgumentException("Unsupported archive format");
+            if((manifest.version()<1 || manifest.version()>3) || manifest.checksums()==null) throw new IllegalArgumentException("Unsupported archive format");
             Set<String> expected=new HashSet<>(manifest.checksums().keySet());expected.add("manifest.json");if(!expected.equals(names)) throw new IllegalArgumentException("Archive entries do not match manifest");
             for(var item:manifest.checksums().entrySet()) {
                 if(!names.contains(item.getKey())) throw new IllegalArgumentException("Missing archive entry");
                 try(var in=Files.newInputStream(dir.resolve(item.getKey()))) { if(!hash(in).equals(item.getValue())) throw new IllegalArgumentException("Checksum mismatch: "+item.getKey()); }
             }
-            Workspace workspace=readWorkspace(op); if(manifest.version()==2 && workspace.organization()==null) throw new IllegalArgumentException("Organization section missing"); validateWorkspace(workspace,dir);
+            Workspace workspace=readWorkspace(op); if(manifest.version()>=2 && workspace.organization()==null) throw new IllegalArgumentException("Organization section missing"); validateWorkspace(workspace,dir);
             if(workspace.resources().size()!=manifest.resources() || workspace.tags().size()!=manifest.tags()) throw new IllegalArgumentException("Manifest counts do not match");
             List<String> warnings=new ArrayList<>();
             if(workspace.organization()!=null) warnings.add("Organization: "+workspace.organization().collections().size()+" collections; "+workspace.organization().favorites().size()+" favorite resources. Merge matches collections by name and preserves existing collection favorites.");
@@ -224,6 +228,7 @@ public class TransferService {
             else if("file".equals(r.type())) {
                 if(!("files/"+r.id()).equals(r.binary()) || !Files.isRegularFile(dir.resolve(r.binary())) || r.size()==null || Files.size(dir.resolve(r.binary()))!=r.size()) throw new IllegalArgumentException("File missing or size mismatch");
             } else throw new IllegalArgumentException("Unknown resource type");
+            if(r.trashOrganization()!=null) {var labels=mapper.readTree(r.trashOrganization());if(!labels.isArray()||labels.size()>200||r.trashOrganization().length()>40000)throw new IllegalArgumentException("Invalid Trash organization metadata");for(var label:labels)if(!label.isTextual()||label.asText().length()>130)throw new IllegalArgumentException("Invalid Trash organization label");}
         }
         if(w.organization()!=null) OrganizationService.validate(w.organization(),ids);
     }
@@ -267,6 +272,7 @@ public class TransferService {
             transaction.executeWithoutResult(status -> {
                 List<String> oldFiles=new ArrayList<>();
                 if("replace".equals(op.getMode())) {
+                    lifecycleRequests.deleteAll();lifecycleRequests.flush();
                     workspaceIdentity.replaced();
                     resources.findAll().forEach(r->{if(r.getFilePath()!=null) oldFiles.add(r.getFilePath());});
                     organization.clear();
@@ -280,6 +286,7 @@ public class TransferService {
                 }
                 for(var r:w.resources()) {
                     var entity=new Resource();entity.setId(ids.get(r.id()));entity.setType(r.type());entity.setTitle(r.title());entity.setContent(r.content()==null?null:documents.remap(r.content(),ids).toString());entity.setFilePath(binaries.get(r.id()));entity.setMimeType(r.mimeType());entity.setSize(r.size());entity.setCreatedAt(r.createdAt());entity.setUpdatedAt(r.updatedAt());entity.setLastOpenedAt(r.lastOpenedAt());
+                    entity.setTrashedAt(r.trashedAt());entity.setTrashOrganization(r.trashOrganization());
                     entity.setTags(new HashSet<>(r.tags().stream().map(mappedTags::get).toList()));resources.save(entity);
                     if("note".equals(r.type())) linkService.updateLinksForNote(entity.getId(),entity.getContent());
                 }

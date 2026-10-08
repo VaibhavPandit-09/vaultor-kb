@@ -4,10 +4,18 @@ import { PaneNavigation, ResourceUnavailableError } from './paneNavigation';
 import type { Resource } from '../types';
 const note = (id: string) => ({ id, title: id, type: 'note', content: '{}' } as Resource);
 function setup() {
-  const dep = { load: vi.fn(async (id: string) => note(id)), save: vi.fn(async (_id: string) => {}), preview: vi.fn(), committed: vi.fn(), max: 3, behavior: 'split' as 'split' | 'replace' };
+  const dep = { load: vi.fn(async (id: string) => note(id)), save: vi.fn(async (_id: string) => {void _id;}), preview: vi.fn(), committed: vi.fn(), max: 3, behavior: 'split' as 'split' | 'replace' };
   return { dep, nav: new PaneNavigation(() => dep) };
 }
 describe('pane navigation commits', () => {
+  it('retains unavailable visits and reading positions and resolves them after restore',async()=>{
+    const {nav}=setup();await nav.open('A');const pane=nav.snapshot().panes[0];
+    nav.recordPosition(pane.paneId,pane.history[0].visitId,{scrollTop:123,selection:{from:2,to:2}});
+    await nav.open('B',{sourcePaneId:pane.paneId,intent:'link',destination:'here'});
+    nav.markUnavailable('A');await nav.jump(pane.paneId,0);expect(nav.snapshot().panes[0].id).toBe('B');
+    nav.markAvailable('A');await nav.jump(pane.paneId,0);expect(nav.snapshot().panes[0].id).toBe('A');
+    expect(nav.position(pane.history[0].visitId)).toMatchObject({scrollTop:123,selection:{from:2,to:2}});
+  });
   it('keeps an unknown resource identifiable without previewing it or leaving the source', async () => {
     const {nav,dep}=setup();await nav.open('A');
     dep.load.mockResolvedValueOnce({...note('unknown'),type:'future'});

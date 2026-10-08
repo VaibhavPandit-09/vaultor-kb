@@ -29,7 +29,9 @@ public class ResourceBrowseService {
         if(ids.isEmpty())return Map.of();
         var result=new HashMap<String,ResourceSummary>();list(0,200,"",null,List.of(),false,"title",null,ids).items().forEach(r->result.put(r.id(),r));return result;
     }
-    private PageDto<ResourceSummary> list(int page,int size,String q,String type,List<String> tags,boolean favorites,String sort,String collection,List<String> ids) {
+    private PageDto<ResourceSummary> list(int page,int size,String q,String type,List<String> tags,boolean favorites,String sort,String collection,List<String> ids) {return list(page,size,q,type,tags,favorites,sort,collection,ids,false);}
+    @Transactional(readOnly=true) public PageDto<ResourceSummary> trash(int page,int size,String q) {return list(page,size,q,null,List.of(),false,"updated",null,null,true);}
+    private PageDto<ResourceSummary> list(int page,int size,String q,String type,List<String> tags,boolean favorites,String sort,String collection,List<String> ids,boolean trash) {
         if (page < 0 || size < 1 || size > 200) throw new IllegalArgumentException("page must be nonnegative; size must be 1-200");
         if (q.length() > 500 || tags.size() > 100) throw new IllegalArgumentException("Search allows 500 characters and 100 tags");
         String order = switch (sort) {
@@ -39,7 +41,7 @@ public class ResourceBrowseService {
             default -> throw new IllegalArgumentException("sort must be title, updated or recent");
         };
         var args = new ArrayList<Object>();
-        StringBuilder where = new StringBuilder(" where 1=1");
+        StringBuilder where = new StringBuilder(trash?" where r.trashed_at is not null":" where r.trashed_at is null");
         if(ids!=null){where.append(" and r.id in ("+String.join(",",Collections.nCopies(ids.size(),"?"))+")");args.addAll(ids);}
         if (!q.isBlank()) { where.append(" and lower(r.title) like ? escape '!'"); args.add("%" + q.trim().toLowerCase(Locale.ROOT).replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%"); }
         if (type != null && !type.isBlank() && !type.equals("all")) { where.append(" and r.type=?"); args.add(type); }
@@ -50,8 +52,8 @@ public class ResourceBrowseService {
         }
         long total = Objects.requireNonNull(jdbc.queryForObject("select count(*) from resources r" + where, Long.class, args.toArray()));
         args.add(size); args.add((long)page * size);
-        var items = jdbc.query("select r.id,r.type,r.title,r.mime_type,r.size,r.created_at,r.updated_at,r.last_opened_at,r.favorite from resources r" + where + " order by " + order + " limit ? offset ?",
-            (rs, n) -> new ResourceSummary(rs.getString("id"),rs.getString("type"),rs.getString("title"),rs.getString("mime_type"),rs.getObject("size") == null ? null : rs.getLong("size"),date(rs,"created_at"),date(rs,"updated_at"),date(rs,"last_opened_at"),new ArrayList<>(),rs.getBoolean("favorite"),new ArrayList<>()), args.toArray());
+        var items = jdbc.query("select r.id,r.type,r.title,r.mime_type,r.size,r.created_at,r.updated_at,r.last_opened_at,r.favorite,r.revision_seed,r.revision_number,r.trashed_at,r.purge_pending from resources r" + where + " order by " + order + " limit ? offset ?",
+            (rs, n) -> new ResourceSummary(rs.getString("id"),rs.getString("type"),rs.getString("title"),rs.getString("mime_type"),rs.getObject("size") == null ? null : rs.getLong("size"),date(rs,"created_at"),date(rs,"updated_at"),date(rs,"last_opened_at"),new ArrayList<>(),rs.getBoolean("favorite"),new ArrayList<>(),UUID.nameUUIDFromBytes((rs.getString("id")+":"+rs.getString("revision_seed")+":"+rs.getLong("revision_number")).getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString(),date(rs,"trashed_at"),rs.getBoolean("purge_pending")), args.toArray());
         if (!items.isEmpty()) {
             var byId = new HashMap<String,ResourceSummary>(); items.forEach(item -> byId.put(item.id(),item));
             String placeholders = String.join(",", Collections.nCopies(items.size(), "?"));
@@ -64,11 +66,11 @@ public class ResourceBrowseService {
     }
     @Transactional
     public void markOpened(String id) {
-        if (jdbc.update("update resources set last_opened_at=? where id=?", java.sql.Timestamp.valueOf(LocalDateTime.now()), id) != 1) throw new NoSuchElementException("Resource not found");
+        if (jdbc.update("update resources set last_opened_at=? where id=? and trashed_at is null", java.sql.Timestamp.valueOf(LocalDateTime.now()), id) != 1) throw new NoSuchElementException("Active resource not found");
     }
     @Transactional
     public void favorite(String id, Boolean value) {
         if (value == null) throw new IllegalArgumentException("favorite is required");
-        if (jdbc.update("update resources set favorite=? where id=?", value, id) != 1) throw new NoSuchElementException("Resource not found");
+        if (jdbc.update("update resources set favorite=? where id=? and trashed_at is null", value, id) != 1) throw new NoSuchElementException("Active resource not found");
     }
 }

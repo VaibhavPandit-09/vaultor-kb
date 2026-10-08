@@ -34,8 +34,14 @@ class WorkspaceApiTests {
     @Autowired WorkspaceGate gate;
     @Autowired TransferOperationRepository operationRepository;
     @Autowired ResourceService resourceService;
+    @Autowired ResourceLifecycleService lifecycle;
     @Autowired FileImportService fileImports;
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
+    void purgeDisposable(String id) {
+        var original=resources.findById(id).orElseThrow();
+        lifecycle.apply(new ResourceLifecycleService.Item(UUID.randomUUID().toString(),id,"trash",original.getRevision()));
+        lifecycle.apply(new ResourceLifecycleService.Item(UUID.randomUUID().toString(),id,"purge",resources.findById(id).orElseThrow().getRevision()));
+    }
     HttpClient client=HttpClient.newHttpClient();
     HttpResponse<String> request(String method,String path,Object body) throws Exception {
         var builder=HttpRequest.newBuilder(URI.create("http://localhost:"+env.getProperty("local.server.port")+"/api"+path)).header("X-Request-ID","test-request").header("X-Vaultor-Owner",Files.readString(DATA.resolve("host-access/owner.key")));
@@ -47,6 +53,12 @@ class WorkspaceApiTests {
         return response.body().isBlank()?json.createObjectNode():json.readTree(response.body());
     }
     Map<String,Object> note(String title, Object content) { return Map.of("type","note","title",title,"content",content); }
+    @Test void lifecycleUsageDoesNotBorrowASecondConnectionInsideOpenView() throws Exception {
+        var target=resourceService.createNote("Usage target","{\"type\":\"doc\",\"content\":[]}");
+        var source=resourceService.createNote("Usage source","{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"resourceLink\",\"attrs\":{\"resourceId\":\""+target.getId()+"\",\"type\":\"note\",\"label\":\"Target\"}}]}]}");
+        try {assertTimeoutPreemptively(java.time.Duration.ofSeconds(5),()->assertEquals(1,ok("GET","/resources/"+target.getId()+"/usage",null).path("sources").asInt()));}
+        finally {purgeDisposable(source.getId());purgeDisposable(target.getId());}
+    }
     Object empty() {return Map.of("type","doc","content",List.of());}
     TransferService.Operation await(String id) throws Exception {
         for(int i=0;i<150;i++) {var op=transfers.get(id);if(List.of("SUCCEEDED","FAILED").contains(op.status())) {assertEquals("SUCCEEDED",op.status(),op.detail());return op;}Thread.sleep(50);}
@@ -68,7 +80,7 @@ class WorkspaceApiTests {
             assertThrows(org.springframework.web.server.ResponseStatusException.class,()->fileImports.create(noteId,"Different",body,null));
             assertThrows(IllegalArgumentException.class,()->fileImports.create(UUID.randomUUID().toString(),"Invalid","{}",null));
             assertEquals(before+2,resources.count());
-        } finally { if(resources.existsById(fileId)) resourceService.deleteResource(fileId); if(resources.existsById(noteId)) resourceService.deleteResource(noteId); }
+        } finally { if(resources.existsById(fileId)) purgeDisposable(fileId); if(resources.existsById(noteId)) purgeDisposable(noteId); }
     }
     @Test void pastedNumberedListCanBeSavedAndReadBack() throws Exception {
         var content=json.readTree("""
@@ -78,7 +90,7 @@ class WorkspaceApiTests {
         try {
             ok("PUT","/resources/"+id+"/note",note("Paste regression",content));
             assertEquals(content,ok("GET","/resources/"+id,null).get("content"));
-        } finally { ok("DELETE","/resources/"+id,null); }
+        } finally { purgeDisposable(id); }
     }
     @Test void fullWorkspaceFlowAndInvalidArchives() throws Exception {
         String target=ok("POST","/resources",note("Target",empty())).path("id").asText();
@@ -90,9 +102,9 @@ class WorkspaceApiTests {
         assertEquals(1,ok("GET","/resources?page=0&size=1",null).path("items").size());
         var bad=request("POST","/resources",note("",empty()));assertEquals(400,bad.statusCode());assertEquals("INVALID_REQUEST",json.readTree(bad.body()).path("code").asText());
         String replacement=ok("POST","/resources",note("Replacement",empty())).path("id").asText();
-        ok("POST","/resources/"+target+"/replace-links",Map.of("newResourceId",replacement));
-        assertTrue(ok("GET","/resources/"+source,null).path("content").toString().contains(replacement));
-        assertEquals(400,request("POST","/resources/"+source+"/replace-links",Map.of("newResourceId",source)).statusCode());
+        assertEquals(405,request("POST","/resources/"+target+"/replace-links",Map.of("newResourceId",replacement)).statusCode());
+        assertTrue(ok("GET","/resources/"+source,null).path("content").toString().contains(target));
+        purgeDisposable(replacement);
         var settings=ok("GET","/settings",null);ok("PUT","/settings",settings);
         var export=transfers.export("workspace","zip");await(export.id());byte[] archive=Files.readAllBytes(transfers.download(export.id()));
         var preview=transfers.preview(new MockMultipartFile("file","workspace.zip","application/zip",archive));assertEquals(2,preview.resources());
@@ -140,7 +152,7 @@ class WorkspaceApiTests {
             assertTrue(resources.existsById(resource.getId()));assertTrue(resources.existsById(binary.getId()));
             try(var paths=Files.list(DATA.resolve("files"))) {assertEquals(before,paths.map(p->p.getFileName().toString()).collect(java.util.stream.Collectors.toSet()));}
         } finally {
-            jdbc.execute("DROP TRIGGER reject_test");resourceService.deleteResource(resource.getId());resourceService.deleteResource(binary.getId());
+            jdbc.execute("DROP TRIGGER reject_test");purgeDisposable(resource.getId());purgeDisposable(binary.getId());
         }
     }
 }

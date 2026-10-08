@@ -1,5 +1,8 @@
+import ResourceActions from '../components/ResourceActions';
+import ResourceLifecycleDialog from '../components/ResourceLifecycleDialog';
+import TrashView from '../components/TrashView';
+import { RESOURCE_ACTION_EVENT, type ActionRequest } from '../lib/resourceActions';
 import { hasPendingImages } from '../lib/noteImages';
-import { resourceKind } from '../lib/resourceKinds';
 import { SidebarSection, SidebarCustomization, SidebarRecent } from '../components/SidebarSections';
 import { inspectWorkspaceDeparture } from '../lib/workspaceDeparture';
 import LibraryPopover from '../components/LibraryPopover';
@@ -10,7 +13,7 @@ import { restoreSession } from '../lib/restoreSession';
 import JourneyBar from '../components/JourneyBar';
 import { DesktopConnectionButton } from '../components/DesktopChrome';
 import JourneyViewport from '../components/JourneyViewport';
-import { PaneNavigation, ResourceUnavailableError, type Pane, type OpenIntent } from '../lib/paneNavigation';
+import { PaneNavigation, ResourceUnavailableError, type OpenIntent } from '../lib/paneNavigation';
 import { SharedNoteDocuments } from '../lib/sharedNoteDocuments';
 import type { LinkedResourceIntent } from '../lib/resourceLinkNavigation';
 import { affectsScope, notifyResourceChange, subscribeResourceChanges } from '../lib/resourceEvents';
@@ -35,12 +38,12 @@ import {
   Clock,
   Pin,
   Folder,
+  Trash2,
   UploadCloud,
   DownloadCloud,
   X,
   FileText,
   Upload,
-  AlertTriangle,
   Loader2,
   Command,
   Tag as TagIcon,
@@ -48,7 +51,7 @@ import {
   Palette,
 } from 'lucide-react';
 import api from '../lib/api';
-import { getPlatform, saveApiFile, openApiFile } from '../lib/platform';
+import { getConnection, getPlatform, saveApiFile, openApiFile } from '../lib/platform';
 import { registerConnectionBarrier, SwitchBlockedError,consumeLocalArchiveImport } from '../lib/desktop';
 import LibraryView, { type LibrarySection } from '../components/LibraryView';
 import { resourcesChanged } from '../lib/resourceBrowse';
@@ -94,27 +97,8 @@ import { getGlassPanelStyle, getOverlayStyle } from '../lib/transparency';
 
 
 
-interface DeleteModalState {
-  id: string;
-  title: string;
-  backlinks: Resource[];
-}
-
-
-
-type PreviewSnapshot = {
-  resourceId: string | null;
-  resourceType: ResourceType | null;
-  overrideMode: 'side' | 'modal' | null;
-};
-
-type TagPickerItem = {
-  name: string;
-  type: 'existing' | 'create';
-  score: number;
-  color: string;
-};
-
+type PreviewSnapshot = { resourceId:string|null;resourceType:ResourceType|null;overrideMode:'side'|'modal'|null };
+type TagPickerItem = {name:string;type:'existing'|'create';score:number;color:string};
 export default function Dashboard() {
   const dispatch = useAppDispatch();
   const currentResourceId = useAppSelector((state) => state.vault.currentResourceId);
@@ -148,7 +132,6 @@ export default function Dashboard() {
   const openNotes = paneState.panes;
   const activePaneId = paneState.activePaneId;
   const activeNoteId = openNotes.find(p => p.paneId === activePaneId)?.id ?? null;
-  const setOpenNotes = useCallback((change: (panes: Pane[]) => Pane[]) => paneNavigation.update(change), [paneNavigation]);
   const [sharedDocuments] = useState(() => new SharedNoteDocuments());
   const previewSourcePane = useRef<string | null>(null);
   const [backlinks, setBacklinks] = useState<Resource[]>([]);
@@ -197,15 +180,10 @@ export default function Dashboard() {
   const [createNotePending, setCreateNotePending] = useState(false);
   const [uploadPending, setUploadPending] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
-  const [replacePending, setReplacePending] = useState(false);
   const [tagDeletePending, setTagDeletePending] = useState(false);
   const [tagAddPending, setTagAddPending] = useState(false);
 
-  const [deleteModal, setDeleteModal] = useState<DeleteModalState | null>(null);
-  const [replaceLinkModal, setReplaceLinkModal] = useState<{ oldId: string; title: string; backlinks: Resource[] } | null>(null);
-  const [replaceSearch, setReplaceSearch] = useState('');
-  const [replaceResults, setReplaceResults] = useState<Resource[]>([]);
-  const [replaceLoading, setReplaceLoading] = useState(false);
+  const [lifecycleTargets,setLifecycleTargets]=useState<Resource[]|null>(null);
   const [tagDeleteModal, setTagDeleteModal] = useState<{ id: string; name: string } | null>(null);
 
   const [fileImport, setFileImport] = useState<ImportSession | null>(null);
@@ -433,7 +411,7 @@ export default function Dashboard() {
       setResourceDetails((prev) => ({ ...prev, [id]: draft ? { ...data, revision:prev[id]?.revision, title:draft.title, content:JSON.stringify(draft.content) } : data }));
       return data as Resource;
     } catch (error) {
-      if (navigationRequest && (error as { response?: { status?: number } }).response?.status === 404) throw new ResourceUnavailableError('This note is no longer available.');
+      if (navigationRequest && [404,410].includes((error as { response?: { status?: number } }).response?.status ?? 0)) throw new ResourceUnavailableError('This note is no longer available.');
       console.error(error);
       return null;
     } finally {
@@ -740,108 +718,43 @@ export default function Dashboard() {
     return registerCloseNoteShortcut(resolvedShortcuts.closeActiveNote, closeActiveNote);
   }, [activeNoteId, resolvedShortcuts.closeActiveNote, closeActiveNote, libraryVisible]);
 
-  useEffect(() => {
-    if (!replaceLinkModal || !replaceSearch.trim()) {
-      setReplaceResults([]);
-      setReplaceLoading(false);
-      return;
-    }
-
-    let active = true;
-    const timer = window.setTimeout(async () => {
-      setReplaceLoading(true);
-      try {
-        const { data } = await api.get(`/resources/search?q=${encodeURIComponent(replaceSearch)}`);
-        if (!active) return;
-        setReplaceResults((data || []).filter((resource: Resource) => resource.id !== replaceLinkModal.oldId));
-      } catch (error) {
-        console.error(error);
-        if (active) setReplaceResults([]);
-      } finally {
-        if (active) setReplaceLoading(false);
-      }
-    }, 200);
-
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-    };
-  }, [replaceLinkModal, replaceSearch]);
-
   const handleDeleteResource = useCallback(async (id: string, event?: React.MouseEvent) => {
     event?.stopPropagation();
-    try {
-      const { data: linkedFrom } = await api.get(`/resources/${id}/backlinks`);
-      const resource = resourceDetails[id] ?? resources.find((item) => item.id === id) ?? await fetchResourceDetails(id);
-      setDeleteModal({
-        id,
-        title: resource?.title || 'Resource',
-        backlinks: linkedFrom || [],
-      });
-    } catch (error) {
-      console.error(error);
+    const {data}=await api.get<Resource>('/resources/'+id+'/summary');setLifecycleTargets([data]);
+  }, []);
+  const resourceActionHandler=useRef<(request:ActionRequest)=>Promise<void>>(async()=>{});
+  resourceActionHandler.current=async request=>{
+    if(request.epoch!==getConnection().epoch)throw new Error('Connection changed. Reopen the action.');
+    const resource=request.resources[0];if(!resource)throw new Error('Choose a resource.');
+    if(request.action==='open'){await openResourceById(resource.id);return;}
+    if(request.action==='trash'){setLifecycleTargets(request.resources);return;}
+    if(request.action==='export'){setNoteExport({id:resource.id,title:resource.title});return;}
+    if(request.action==='restored'){paneNavigation.markAvailable(resource.id);resourcesChanged([resource.id],true);return;}
+    if(request.action==='rename'){
+      if(resource.type==='note')await renameResource(resource.id,request.value??'');
+      else {const {data:fresh}=await api.get<Resource>('/resources/'+resource.id+'/summary');await api.patch('/resources/'+resource.id+'/title',{title:request.value},{headers:{'If-Match':'"'+fresh.revision+'"'}});resourcesChanged([resource.id]);}return;
     }
-  }, [resources, resourceDetails, fetchResourceDetails]);
-
-  const executeDelete = async (id: string) => {
-    setDeletePending(true);
-    try {
-      await saves.flush(id);
-      await api.delete(`/resources/${id}`);
-      resourceLoadVersions.current.set(id, (resourceLoadVersions.current.get(id) ?? 0) + 1);
-      paneNavigation.markUnavailable(id);
-      saves.forget(id);
-      if (previewResourceId === id) {
-        dismissPreview({ restoreFocus: false });
-      }
-      setResources((prev) => prev.filter((resource) => resource.id !== id));
-      setResourceDetails((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-      setOpenNotes((prev) => prev.filter((note) => note.id !== id));
-      dispatch(removeResourceFromState(id));
-      setDeleteModal(null);
-      resourcesChanged(undefined, true);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setDeletePending(false);
+    if(request.action==='prepare-trash'){await exportSaveRef.current(resource.id);return;}
+    if(request.action==='retain-draft'){
+      const pending=saves.latest(resource.id);if(pending)recovery.queued(resource.id,pending,saves.version(resource.id));
+      await recovery.retryStorage();return;
+    }
+    if(request.action==='removed'){
+      resourceLoadVersions.current.set(resource.id,(resourceLoadVersions.current.get(resource.id)??0)+1);
+      const draft=recovery.current(resource.id);if(draft)setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);
+      paneNavigation.markUnavailable(resource.id);saves.forget(resource.id);
+      if(previewResourceId===resource.id)dismissPreview({restoreFocus:false});
+      setResources(items=>items.filter(r=>r.id!==resource.id));
+      setResourceDetails(previous=>previous[resource.id]?{...previous,[resource.id]:{...previous[resource.id],trashedAt:new Date().toISOString()}}:previous);
+      dispatch(removeResourceFromState(resource.id));return;
     }
   };
-
-  const executeReplaceLinks = async (newId: string) => {
-    if (!replaceLinkModal) return;
-    setReplacePending(true);
-    try {
-      await saves.flushAll();
-      await api.post(`/resources/${replaceLinkModal.oldId}/replace-links`, { newResourceId: newId });
-      saves.clear();
-      paneNavigation.markUnavailable(replaceLinkModal.oldId);
-      const ids = [...new Set([...openNotes.map(note => note.id), newId])].filter(id => id !== replaceLinkModal.oldId);
-      const fresh = await Promise.all(ids.map(id => api.get<Resource>(`/resources/${id}`).then(response => response.data)));
-      setResourceDetails(Object.fromEntries(fresh.map(resource => [resource.id, resource])));
-      setOpenNotes(notes => notes.filter(note => note.id !== replaceLinkModal.oldId));
-      dispatch(removeResourceFromState(replaceLinkModal.oldId));
-      setReplaceLinkModal(null);
-      setDeleteModal(null);
-      setReplaceSearch('');
-      setReplaceResults([]);
-      resourcesChanged(undefined, true);
-      if (currentResourceId === replaceLinkModal.oldId) {
-        openResourceById(newId);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setReplacePending(false);
-    }
-  };
+  useEffect(()=>{const receive=(event:Event)=>{event.preventDefault();const request=(event as CustomEvent<ActionRequest>).detail;void resourceActionHandler.current(request).then(request.resolve,request.reject);};window.addEventListener(RESOURCE_ACTION_EVENT,receive);return()=>window.removeEventListener(RESOURCE_ACTION_EVENT,receive);},[]);
 
   const renameResource = useCallback(async (resourceId: string, title: string) => {
     paneNavigation.rename(resourceId, title);
     const resource = resourceDetails[resourceId] ?? await fetchResourceDetails(resourceId);
+    if (resource?.type === 'file') {const {data:fresh}=await api.get<Resource>('/resources/'+resourceId+'/summary');await api.patch('/resources/'+resourceId+'/title',{title},{headers:{'If-Match':'"'+fresh.revision+'"'}});resourcesChanged([resourceId]);return;}
     if (!resource || resource.type !== 'note') {
       return;
     }
@@ -893,7 +806,7 @@ export default function Dashboard() {
   }, [titleEditNoteId, commitTitleEditing, saves]);
 
   const handleContentUpdate = (noteId: string, json: unknown) => {
-    const resource = resourceDetails[noteId]; if (!resource) return;
+    const resource = resourceDetails[noteId]; if (!resource || resource.trashedAt) return;
     recovery.observe(resource);
     const title = saves.latest(noteId)?.title ?? resource.title;
     setResourceDetails(prev => ({ ...prev, [noteId]: { ...resource, title, content: JSON.stringify(json) } }));
@@ -1048,7 +961,7 @@ export default function Dashboard() {
       try { snapshot = await persistence.load(identity,tab.seed); records = await recovery.all(identity); }
       catch { setSessionError('Local recovery storage is unavailable. Editing still works; keep this tab open until saved.'); }
       const restored = snapshot ? await restoreSession(snapshot,workspaceSettings.maxOpenNotes,async id => {
-        try {return (await api.get<Resource>('/resources/'+id,{backgroundDiagnostic:true})).data;} catch(error) {if((error as {response?:{status?:number}}).response?.status===404)return null;throw error;}
+        try {return (await api.get<Resource>('/resources/'+id,{backgroundDiagnostic:true})).data;} catch(error) {if([404,410].includes((error as {response?:{status?:number}}).response?.status??0))return null;throw error;}
       }) : undefined;
       const confirmed=(await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;
       if(!sameWorkspace(identity,confirmed))throw new Error('Workspace changed during restoration.');
@@ -1094,7 +1007,7 @@ export default function Dashboard() {
   useEffect(() => registerConnectionBarrier(async keepDrafts => {
     if (!sessionReady || !identityRef.current) throw new SwitchBlockedError('Wait for session restoration before leaving the workspace.');
     if (hasPendingImages()) throw new SwitchBlockedError('Wait for image uploads to finish before leaving this workspace.');
-    if (transferMode || uploadPending || importBusy.current || fileImport || createNotePending || deletePending || replacePending || tagDeletePending || tagAddPending || noteExport) throw new SwitchBlockedError('Finish or dismiss the current operation before leaving the workspace.');
+    if (transferMode || uploadPending || importBusy.current || fileImport || createNotePending || deletePending || tagDeletePending || tagAddPending || noteExport) throw new SwitchBlockedError('Finish or dismiss the current operation before leaving the workspace.');
     const currentIdentity = await inspectWorkspaceDeparture({
       desktop: getPlatform().kind === 'desktop', keepDrafts,
       unsavedNotes: () => saves.dirty() || recovery.dirty() || Boolean(titleEditState && titleEditState.value !== titleEditState.original),
@@ -1116,7 +1029,7 @@ export default function Dashboard() {
       const identity = identityRef.current;
       await sessionPersistence.current?.save({ version: 1, identity, ...paneNavigation.exportSession(), library: sessionView.current }, true);
     } catch { throw new SwitchBlockedError('Recovery storage is unavailable. Keep this workspace open until storage succeeds.'); }
-  }), [sessionReady, transferMode, uploadPending, fileImport, createNotePending, deletePending, replacePending, tagDeletePending, tagAddPending, noteExport, titleEditState, commitTitleEditing, saves, flushSettings, settingsSaveStatus, recovery, paneNavigation]);
+  }), [sessionReady, transferMode, uploadPending, fileImport, createNotePending, deletePending, tagDeletePending, tagAddPending, noteExport, titleEditState, commitTitleEditing, saves, flushSettings, settingsSaveStatus, recovery, paneNavigation]);
   useEffect(()=>{sessionView.current={visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext};},[libraryVisible,librarySection,collection,filters.selectedTags,libraryContext]);
   useEffect(()=>{
     if(!sessionReady)return;
@@ -1129,7 +1042,7 @@ export default function Dashboard() {
     if(!sessionReady)return;let stopped=false;
     const check=async()=>{const version=++identityCheckVersion.current;try {const identity=(await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;if(!stopped&&version===identityCheckVersion.current&&identityRef.current&&!sameWorkspace(identity,identityRef.current)) {
       workspaceEpoch.current++;resourceLoadVersions.current.clear();backlinkVersion.current++;setBacklinks([]);dispatch(setCurrentResourceId(null));
-      setCommandPaletteOpen(false);setFileImport(null);setTagPickerOpenNoteId(null);setDeleteModal(null);setReplaceLinkModal(null);setRecoveryOpen(false);setTransferMode(null);
+      setCommandPaletteOpen(false);setFileImport(null);setTagPickerOpenNoteId(null);setLifecycleTargets(null);setRecoveryOpen(false);setTransferMode(null);
       saves.clear();paneNavigation.reset();setResourceDetails({});setPreviewResourceId(null);setPreviewResourceType(null);setNoteExport(null);setTitleEditState(null);setLibraryVisible(true);setCollection(null);setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
       identityRef.current=identity;recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));setSessionMessage('The workspace was replaced. Previous drafts are available as separate recovery copies.');notifyResourceChange({kind:'workspace'});
     }}catch{/* Offline checks must not interrupt editing. */}};
@@ -1153,21 +1066,32 @@ export default function Dashboard() {
       const ids=resourceEvents.some(e=>!e.ids.length)?undefined:new Set(resourceEvents.flatMap(e=>e.ids));
       notifyResourceChange({kind:'metadata',ids:ids?[...ids]:undefined,membershipChanged:true});
       if(activeNoteId)void fetchBacklinks(activeNoteId);
+      if(previewResourceId && (broad || !ids?.size || ids.has(previewResourceId))) {
+        const previewId=previewResourceId,epoch=workspaceEpoch.current;
+        void api.get<Resource>('/resources/'+previewId+'/summary',{backgroundDiagnostic:true}).catch(error=>{if(epoch===workspaceEpoch.current && [404,410].includes(error.response?.status))dismissPreview();});
+      }
+      const openIds=new Set(openNotes.map(p=>p.id));
+      const journeyIds=new Set(paneNavigation.snapshot().panes.flatMap(p=>p.history.map(v=>v.resourceId)));
+      for(const id of ids??[])if(!openIds.has(id)&&journeyIds.has(id)) {
+        const epoch=workspaceEpoch.current;
+        void api.get<Resource>('/resources/'+id+'/summary',{backgroundDiagnostic:true}).then(()=>{if(epoch===workspaceEpoch.current)paneNavigation.markAvailable(id);}).catch(error=>{if(epoch===workspaceEpoch.current && [404,410].includes(error.response?.status))paneNavigation.markUnavailable(id);});
+      }
       for(const id of new Set(openNotes.map(p=>p.id))) {
         if(!broad && ids?.size && !ids.has(id) && !events.some(e=>e.kind==='organization'||e.kind==='tags'))continue;
         const epoch=workspaceEpoch.current;const version=(resourceLoadVersions.current.get(id)??0)+1;resourceLoadVersions.current.set(id,version);
         void api.get<Resource>('/resources/'+id,{backgroundDiagnostic:true}).then(({data})=>{
           if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
+          paneNavigation.markAvailable(id);
           const draft=recovery.current(id);
           if(draft || saves.latest(id)) {
             if(draft && draft.baseRevision!==data.revision){setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);setSessionMessage('A note changed on another device. Your draft is retained; review it before saving.');}
             setResourceDetails(prev=>prev[id]?{...prev,[id]:{...prev[id],tags:data.tags,collections:data.collections,favorite:data.favorite}}:prev);
             return;
           }
-          recovery.observe(data,true);sharedDocuments.acceptSaved(id,parseNoteContent(data.content));paneNavigation.rename(id,data.title);setResourceDetails(prev=>({...prev,[id]:data}));
+          paneNavigation.markAvailable(id);recovery.observe(data,true);sharedDocuments.acceptSaved(id,parseNoteContent(data.content));paneNavigation.rename(id,data.title);setResourceDetails(prev=>({...prev,[id]:data}));
         }).catch(error=>{
           if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
-          if(error.response?.status===404){paneNavigation.markUnavailable(id);if(!recovery.current(id) && resourceDetails[id])recovery.queued(id,{title:resourceDetails[id].title,content:parseNoteContent(resourceDetails[id].content)},-Date.now());const draft=recovery.current(id);if(draft)setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);setSessionMessage('An open note was deleted on another device. Its displayed content is retained as a recovery copy.');}
+          if([404,410].includes(error.response?.status)){paneNavigation.markUnavailable(id);if(!recovery.current(id) && resourceDetails[id])recovery.queued(id,{title:resourceDetails[id].title,content:parseNoteContent(resourceDetails[id].content)},-Date.now());const draft=recovery.current(id);if(draft)setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);saves.forget(id);setResourceDetails(previous=>previous[id]?{...previous,[id]:{...previous[id],trashedAt:new Date().toISOString()}}:previous);setSessionMessage('An open note is unavailable or in Trash. Editing is paused; its content is retained as a recovery copy.');}
         });
       }
     }
@@ -1184,7 +1108,7 @@ export default function Dashboard() {
     if(copy){const body=new FormData();body.set('title',(record.value.title||'Untitled note').slice(0,488)+' (recovered)');body.set('content',JSON.stringify(record.value.content));created=(await api.put<Resource>('/resources/imports/'+record.copyId,body)).data;}
     const own=record.tabId===recovery.tabId;
     if(own&&latest?.key===record.key&&identityRef.current&&sameWorkspace(record.identity,identityRef.current)) {
-      let saved:Resource|undefined;try{saved=(await api.get<Resource>('/resources/'+record.noteId)).data;}catch(error){if((error as {response?:{status?:number}}).response?.status!==404)throw error;}
+      let saved:Resource|undefined;try{saved=(await api.get<Resource>('/resources/'+record.noteId)).data;}catch(error){if(![404,410].includes((error as {response?:{status?:number}}).response?.status??0))throw error;}
       saves.forget(record.noteId);await recovery.discard(record);
       if(saved){recovery.observe(saved,true);setResourceDetails(previous=>({...previous,[saved!.id]:saved!}));paneNavigation.rename(saved.id,saved.title);}
       else paneNavigation.update(panes=>panes.filter(p=>p.id!==record.noteId));
@@ -1233,15 +1157,13 @@ export default function Dashboard() {
     openSettings: openSettingsModal,
     closeActiveNote,
     closePreview: () => dismissPreview(),
-    openDeleteFlow: async (resourceId:string)=>{
-      const [{data:resource},{data:backlinks}]=await Promise.all([api.get<Resource>('/resources/'+resourceId+'/summary',{backgroundDiagnostic:true}),api.get('/resources/'+resourceId+'/backlinks',{backgroundDiagnostic:true})]);
-      setDeleteModal({id:resource.id,title:resource.title,backlinks});
-    },
+    openDeleteFlow: async (resourceId:string)=>{await handleDeleteResource(resourceId);},
     renameResource,
   }), [
     libraryVisible,paletteTarget,paletteSelection,collection,dispatch,hasUnsavedChanges,
     closeActiveNote,
     dismissPreview,
+    handleDeleteResource,
     openResourceById,
     openSettingsModal,
     openShortcutsModal,
@@ -1271,7 +1193,7 @@ export default function Dashboard() {
     <div className="flex h-full flex-col overflow-hidden">
       <div className="px-3 py-3 space-y-1">
         <div className="flex items-center gap-1"><button className="sidebar-nav" onClick={openCommandPalette}><Search size={16} />Search workspace<span className="ml-auto text-xs opacity-60">{resolvedShortcuts.commandPalette.replace('Mod', isMac ? '⌘' : 'Ctrl').replaceAll('+', ' ')}</span></button><SidebarCustomization preferences={sidebarPreferences} onChange={updateSidebarPreferences} status={settingsSaveStatus} onRetry={retrySettingsSave}/></div>
-        {([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }] as const).map(({ id, label, Icon }) => <button key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</button>)}
+        {([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }, { id: 'trash', label: 'Trash', Icon: Trash2 }] as const).map(({ id, label, Icon }) => <button key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</button>)}
         {openNotes.length > 0 && <button className="sidebar-nav" onClick={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }}><FileText size={16} />Open notes<span className="ml-auto text-xs opacity-60">{openNotes.length}</span></button>}
       </div>
       <div className="sidebar-create-actions flex gap-1.5 px-3 pb-2">
@@ -1412,111 +1334,7 @@ export default function Dashboard() {
         <button onClick={() => { void saves.flushAll().catch(() => {}); }}>Retry saves</button>
         <button onClick={() => setNotice(null)}>Dismiss</button>
       </div>}
-      <AppModal
-        open={Boolean(deleteModal)}
-        onClose={() => {
-          if (!deletePending) setDeleteModal(null);
-        }}
-        title={deleteModal?.backlinks.length ? 'Referenced Resource' : 'Delete Resource'}
-        description={deleteModal?.backlinks.length
-          ? `This resource is referenced by ${deleteModal.backlinks.length} resource${deleteModal.backlinks.length === 1 ? '' : 's'}.`
-          : 'This resource will be deleted permanently.'}
-        footer={
-          <>
-            <button
-              onClick={() => setDeleteModal(null)}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-background"
-              disabled={deletePending}
-            >
-              Cancel
-            </button>
-            {Boolean(deleteModal?.backlinks.length) && (
-              <button
-                onClick={() => deleteModal && setReplaceLinkModal({ oldId: deleteModal.id, title: deleteModal.title, backlinks: deleteModal.backlinks })}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
-                disabled={deletePending}
-              >
-                Replace Links
-              </button>
-            )}
-            <button
-              onClick={() => deleteModal && executeDelete(deleteModal.id)}
-              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={deletePending}
-            >
-              {deletePending ? 'Deleting...' : 'Delete Anyway'}
-            </button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
-            <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
-            <div>
-              <div className="font-medium">{deleteModal?.title}</div>
-              <div className="mt-1 text-xs opacity-80">Delete is permanent, so Vaultor pauses here before removing the resource.</div>
-            </div>
-          </div>
-          {Boolean(deleteModal?.backlinks.length) && (
-            <div className="max-h-44 space-y-2 overflow-y-auto">
-              {deleteModal?.backlinks.map((resource) => (
-                <div key={resource.id} className="flex items-center gap-3 rounded-xl bg-background px-3 py-2 text-sm">
-                  <FileText size={14} className="text-slate-400" />
-                  <span className="truncate">{resource.title}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </AppModal>
-
-      <AppModal
-        open={Boolean(replaceLinkModal)}
-        onClose={() => {
-          if (!replacePending) setReplaceLinkModal(null);
-        }}
-        title="Replace Links"
-        description="Choose a resource to receive all incoming links before the original is deleted."
-        footer={
-          <button
-            onClick={() => setReplaceLinkModal(null)}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-background"
-            disabled={replacePending}
-          >
-            Cancel
-          </button>
-        }
-      >
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-            <input
-              autoFocus
-              value={replaceSearch}
-              onChange={(event) => setReplaceSearch(event.target.value)}
-              placeholder="Search replacement resource..."
-              className="w-full rounded-xl border border-border bg-background py-3 pl-9 pr-4 text-sm outline-none transition-colors focus:border-primary"
-            />
-          </div>
-          <div className="max-h-64 space-y-1 overflow-y-auto">
-            {replaceResults.map((resource) => (
-              <button
-                key={resource.id}
-                onClick={() => executeReplaceLinks(resource.id)}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={replacePending}
-              >
-                {(() => {const Icon=resourceKind(resource.type).icon;return <Icon size={14} className="text-[var(--text-secondary)]"/>;})()}
-                <span className="truncate text-sm font-medium">{resource.title}</span>
-              </button>
-            ))}
-            {!replaceLoading && replaceSearch.trim() && replaceResults.length === 0 && (
-              <div className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-slate-500">No matches found.</div>
-            )}
-            {replaceLoading && <div className="px-1 text-sm text-slate-400">Searching replacements...</div>}
-          </div>
-        </div>
-      </AppModal>
+      {lifecycleTargets&&<ResourceLifecycleDialog resources={lifecycleTargets} action="trash" onBusy={setDeletePending} onClose={()=>setLifecycleTargets(null)}/>}
 
       <AppModal
         open={Boolean(tagDeleteModal)}
@@ -1592,7 +1410,7 @@ export default function Dashboard() {
         )}
 
         <main className="min-w-0 flex-1 relative">
-          <div className="h-full" hidden={!libraryVisible}>{librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/></section>:<LibraryView key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
+          <div className="h-full" hidden={!libraryVisible}>{librarySection==='trash'?<TrashView hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/></section>:<LibraryView key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="h-full" hidden={libraryVisible}>
           <div className="flex h-full min-h-0 flex-col">
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
@@ -1653,6 +1471,7 @@ export default function Dashboard() {
                       />
                     ) : (
                       <button
+                        disabled={Boolean(note.resource?.trashedAt)}
                         onClick={() => startTitleEditing(note.id, note.title, note.paneId)}
                         className={`w-full break-words rounded-lg px-2 py-1 text-left text-lg font-semibold transition-colors ${
                           note.paneId === activePaneId
@@ -1666,14 +1485,14 @@ export default function Dashboard() {
 
                     </div>
                     <div className="ml-auto flex shrink-0 items-center gap-2">
-                    <button type="button" title="Export note" aria-label={`Export ${note.title}`} className="rounded-lg p-2 text-slate-400 hover:bg-background hover:text-primary" onClick={() => setNoteExport({ id: note.id, title: note.title })}><DownloadCloud size={16} /></button>
-                    <PinButton id={note.id} name={note.title} favorite={note.resource?.favorite}/>
+                    <button type="button" disabled={Boolean(note.resource?.trashedAt)} title="Export note" aria-label={`Export ${note.title}`} className="rounded-lg p-2 text-slate-400 hover:bg-background hover:text-primary" onClick={() => setNoteExport({ id: note.id, title: note.title })}><DownloadCloud size={16} /></button>
+                    <PinButton id={note.id} name={note.title} favorite={note.resource?.favorite}/>{note.resource&&!note.resource.trashedAt&&<ResourceActions resource={note.resource}/>}
                     <SaveIndicator status={saves.status(note.id)} onRetry={() => void saves.flush(note.id).catch(() => {})} />
                     </div>
                     </div>
 
-                    <ResourceCollections id={note.id} onOpen={openCollection}/>
-                    {note.paneId === activePaneId && note.resource?.type === 'note' && (
+                    {note.resource?.trashedAt?<p role="status" className="text-sm text-[var(--text-secondary)]">This note is unavailable. Editing is paused; its content is retained. <button className="library-button" onClick={()=>showLibrary('trash')}>Open Trash</button><button className="library-button" onClick={()=>setRecoveryOpen(true)}>Recovery copies</button></p>:<ResourceCollections id={note.id} onOpen={openCollection}/> }
+                    {note.paneId === activePaneId && note.resource?.type === 'note' && !note.resource.trashedAt && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {(note.resource.tags ?? []).slice(0, 4).map((tag) => (
                           <span
@@ -1819,7 +1638,7 @@ export default function Dashboard() {
                         content={parseNoteContent(note.resource.content)}
                         autosaveDelay={0}
                         isActive={!libraryVisible && note.paneId === activePaneId}
-                        interactionLocked={commandPaletteOpen || libraryVisible}
+                        interactionLocked={commandPaletteOpen || libraryVisible || Boolean(note.resource.trashedAt)}
                         shouldRestoreFocus={!libraryVisible && paneState.focusPaneId === note.paneId}
                         selectionRestoreKey={note.history[note.cursor].visitId}
                         savedSelection={note.selection ?? null}

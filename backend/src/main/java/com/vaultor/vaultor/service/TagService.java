@@ -34,6 +34,7 @@ public class TagService {
 
     @Transactional public void addTagToResource(String resourceId, String tagName) {
         Resource r = resourceRepository.findById(resourceId).orElseThrow();
+        ResourceService.requireActive(r);
         Tag t = getOrCreateTag(tagName);
         r.getTags().add(t);
         resourceRepository.save(r);
@@ -41,6 +42,7 @@ public class TagService {
 
     @Transactional public void removeTagFromResource(String resourceId, String tagName) {
         Resource r = resourceRepository.findById(resourceId).orElseThrow();
+        ResourceService.requireActive(r);
         tagRepository.findByNameIgnoreCase(tagName.trim()).ifPresent(t -> {
             r.getTags().remove(t);
             resourceRepository.save(r);

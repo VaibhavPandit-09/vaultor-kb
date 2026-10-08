@@ -26,7 +26,7 @@ export function validateRequest(value, token) {
   if (!Number.isInteger(value.timeout) || value.timeout < 1 || value.timeout > 120000) throw new Error('Invalid request timeout.');
   if (!value.headers || typeof value.headers !== 'object' || Array.isArray(value.headers)) throw new Error('Invalid request headers.');
   for (const [key, item] of Object.entries(value.headers)) {
-    if (!['content-type', 'if-match', 'x-request-id', 'accept'].includes(key.toLowerCase()) || typeof item !== 'string' || item.length > 1000 || /[\r\n]/.test(item)) throw new Error('Invalid request header.');
+    if (!['content-type', 'if-match', 'x-request-id', 'x-vaultor-protocol', 'accept'].includes(key.toLowerCase()) || typeof item !== 'string' || item.length > 1000 || /[\r\n]/.test(item)) throw new Error('Invalid request header.');
   }
   if (value.body?.kind === 'text') {
     if (typeof value.body.value !== 'string' || Buffer.byteLength(value.body.value) > MAX_BYTES) throw new Error('Request exceeds the D2 32 MiB limit.');

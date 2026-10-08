@@ -10,6 +10,7 @@ api.interceptors.request.use(async config => {
   await ensureCompatible();
   if (epoch !== getConnection().epoch) throw new axios.CanceledError('Connection changed');
   config.headers['X-Request-ID'] = crypto.randomUUID();
+  config.headers['X-Vaultor-Protocol'] = '3';
   if (!['get','head','options'].includes(config.method??'get')) rememberMutation(String(config.headers['X-Request-ID']));
   if (config.data && typeof config.data.content === 'string') config.data = { ...config.data, content: JSON.parse(config.data.content) };
   return config;

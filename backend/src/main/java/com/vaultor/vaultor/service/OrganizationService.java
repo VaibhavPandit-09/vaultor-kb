@@ -52,12 +52,12 @@ public class OrganizationService {
     private List<String> selection(List<String> ids,boolean emptyAllowed) {
         if(ids==null || (!emptyAllowed && ids.isEmpty()) || ids.size()>100 || ids.stream().anyMatch(Objects::isNull)) throw new IllegalArgumentException("Select up to 100 resource IDs");
         var result=ids.stream().distinct().sorted().toList();
-        for(String id:result) if(jdbc.queryForObject("select count(*) from resources where id=?",Long.class,id)!=1) throw new NoSuchElementException("Resource not found");
+        for(String id:result) if(jdbc.queryForObject("select count(*) from resources where id=? and trashed_at is null",Long.class,id)!=1) throw new NoSuchElementException("Resource not found");
         return result;
     }
     @Transactional(readOnly=true) public CollectionDto get(String id) {
         var c=collections.findById(id).orElseThrow();
-        return new CollectionDto(c.getId(),c.getName(),c.isFavorite(),jdbc.queryForObject("select count(*) from resource_collections where collection_id=?",Long.class,id));
+        return new CollectionDto(c.getId(),c.getName(),c.isFavorite(),jdbc.queryForObject("select count(*) from resource_collections where resource_id in (select id from resources where trashed_at is null) and collection_id=?",Long.class,id));
     }
     @Transactional public CollectionDto createOnce(String id,CreationInput input) {
         if(!UUID.fromString(id).toString().equals(id)) throw new IllegalArgumentException("Creation ID must be a canonical UUID");
@@ -92,7 +92,7 @@ public class OrganizationService {
     @Transactional(readOnly=true) public PinsPage pins(String q,int page,int size,String kind) {
         paging(page,size);
         if(kind!=null && !kind.matches("[a-zA-Z0-9_-]{1,80}")) throw new IllegalArgumentException("Invalid shortcut kind");
-        String from=" from (select id,type as kind,title as name,0 as members from resources where favorite=1 union all select c.id,'collection' as kind,c.name,(select count(*) from resource_collections rc where rc.collection_id=c.id) as members from collections c where c.favorite=1) p where lower(name) like ? escape '!'";
+        String from=" from (select id,type as kind,title as name,0 as members from resources where favorite=1 and trashed_at is null union all select c.id,'collection' as kind,c.name,(select count(*) from resource_collections rc join resources active on active.id=rc.resource_id where active.trashed_at is null and rc.collection_id=c.id) as members from collections c where c.favorite=1) p where lower(name) like ? escape '!'";
         var args=new ArrayList<Object>();args.add(query(q));
         if(kind!=null && !kind.equals("all")){from+=" and kind=?";args.add(kind);}
         long total=jdbc.queryForObject("select count(*)"+from,Long.class,args.toArray());
@@ -118,7 +118,7 @@ public class OrganizationService {
     public CollectionPage list(String q,boolean favorites,int page,int size) {
         paging(page,size);String where=" where lower(c.name) like ? escape '!'"+(favorites?" and c.favorite=1":"");String pattern=query(q);
         long total=jdbc.queryForObject("select count(*) from collections c"+where,Long.class,pattern);
-        var items=jdbc.query("select c.id,c.name,c.favorite,(select count(*) from resource_collections rc where rc.collection_id=c.id) as members from collections c"+where+" order by c.normalized_name,c.id limit ? offset ?",(rs,n)->new CollectionDto(rs.getString(1),rs.getString(2),rs.getBoolean(3),rs.getLong(4)),pattern,size,(long)page*size);
+        var items=jdbc.query("select c.id,c.name,c.favorite,(select count(*) from resource_collections rc join resources active on active.id=rc.resource_id where active.trashed_at is null and rc.collection_id=c.id) as members from collections c"+where+" order by c.normalized_name,c.id limit ? offset ?",(rs,n)->new CollectionDto(rs.getString(1),rs.getString(2),rs.getBoolean(3),rs.getLong(4)),pattern,size,(long)page*size);
         boolean exactMatch=jdbc.queryForObject("select count(*) from collections where normalized_name=?",Long.class,q.trim().toLowerCase(Locale.ROOT))>0;
         return new CollectionPage(items,page,size,total,(int)((total+size-1)/size),exactMatch);
     }
@@ -126,7 +126,7 @@ public class OrganizationService {
     public PageDto<TagSummary> tags(String q,int page,int size) {
         paging(page,size);String pattern=query(q);
         long total=jdbc.queryForObject("select count(*) from tags where lower(name) like ? escape '!'",Long.class,pattern);
-        var items=jdbc.query("select t.id,t.name,t.color,(select count(*) from resource_tags rt where rt.tag_id=t.id) from tags t where lower(t.name) like ? escape '!' order by t.name,t.id limit ? offset ?",(rs,n)->new TagSummary(rs.getString(1),rs.getString(2),rs.getString(3),rs.getLong(4)),pattern,size,(long)page*size);
+        var items=jdbc.query("select t.id,t.name,t.color,(select count(*) from resource_tags rt join resources active on active.id=rt.resource_id where active.trashed_at is null and rt.tag_id=t.id) from tags t where lower(t.name) like ? escape '!' order by t.name,t.id limit ? offset ?",(rs,n)->new TagSummary(rs.getString(1),rs.getString(2),rs.getString(3),rs.getLong(4)),pattern,size,(long)page*size);
         return new PageDto<>(items,page,size,total,(int)((total+size-1)/size));
     }
     @Transactional
@@ -137,7 +137,7 @@ public class OrganizationService {
         var entity=id==null?new ResourceCollection():collections.findById(id).orElseThrow();
         entity.setName(display);entity.setNormalizedName(normalized);if(input.favorite()!=null)entity.setFavorite(input.favorite());
         collections.saveAndFlush(entity);
-        long count=jdbc.queryForObject("select count(*) from resource_collections where collection_id=?",Long.class,entity.getId());
+        long count=jdbc.queryForObject("select count(*) from resource_collections where resource_id in (select id from resources where trashed_at is null) and collection_id=?",Long.class,entity.getId());
         return new CollectionDto(entity.getId(),entity.getName(),entity.isFavorite(),count);
     }
     @Transactional public void delete(String id) {
@@ -153,7 +153,7 @@ public class OrganizationService {
         else throw new IllegalArgumentException("kind must be collection or tag");
         if(jdbc.queryForObject("select count(*) from "+parent+" where id=?",Long.class,input.targetId())!=1) throw new NoSuchElementException("Organization target not found");
         var ids=new LinkedHashSet<>(input.resourceIds());
-        for(String id:ids) if(jdbc.queryForObject("select count(*) from resources where id=?",Long.class,id)!=1) throw new NoSuchElementException("Resource not found: "+id);
+        for(String id:ids) if(jdbc.queryForObject("select count(*) from resources where id=? and trashed_at is null",Long.class,id)!=1) throw new NoSuchElementException("Resource not found: "+id);
         for(String id:ids) {
             if("add".equals(input.action())) jdbc.update("insert into "+table+" (resource_id,"+column+") select ?,? where not exists (select 1 from "+table+" where resource_id=? and "+column+"=?)",id,input.targetId(),id,input.targetId());
             else jdbc.update("delete from "+table+" where resource_id=? and "+column+"=?",id,input.targetId());

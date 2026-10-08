@@ -2,13 +2,13 @@
 
 ## Host access (D5)
 
-[HOST-ACCESS.md](../security/HOST-ACCESS.md) owns authorization and its examples. Public GET /api/capabilities and /api/access/host expose bounded build/trust information. Everything else requires the owner HTTP connector or an approved HTTPS device/browser session; X-Vaultor-Owner is main/private-local only, Authorization: Bearer is HTTPS client only, browser mutations require X-Vaultor-CSRF. Never strip If-Match, disable TLS checking, forward credentials to another origin or bypass approval to debug. OpenAPI 1.2.0 documents global security schemes, public exceptions and owner-only operations. HOST_ACCESS_PATH is excluded from archives and workspace replacement.
+[HOST-ACCESS.md](../security/HOST-ACCESS.md) owns authorization and its examples. Public GET /api/capabilities and /api/access/host expose bounded build/trust information. Everything else requires the owner HTTP connector or an approved HTTPS device/browser session; X-Vaultor-Owner is main/private-local only, Authorization: Bearer is HTTPS client only, browser mutations require X-Vaultor-CSRF. Never strip If-Match, disable TLS checking, forward credentials to another origin or bypass approval to debug. OpenAPI 1.4.0 documents global security schemes, public exceptions and owner-only operations. HOST_ACCESS_PATH is excluded from archives and workspace replacement.
 
 ## Client compatibility
 
-Before opening a workspace or sending application requests, clients inspect `GET /api/capabilities` (`getCapabilities`). The explicit DTO includes `serverBuild`, `apiProtocolVersion` and `minimumClientProtocolVersion`, plus existing transfer/export/diagnostic metadata; `build` is the server-build alias. Current client/server protocol is 2, with minimum client protocol 2 (0.4.0 image editing). Accept only a protocol inside the server's inclusive supported range. Build strings identify releases, not compatibility. Missing metadata or an older protocol requires updating the server; a higher minimum requires updating the client. Frontend/backend must be deployed together. See [PLATFORM.md](../architecture/PLATFORM.md) for handshake caching, cancellation and platform ownership.
+Before opening a workspace or sending application requests, clients inspect `GET /api/capabilities` (`getCapabilities`). The explicit DTO includes `serverBuild`, `apiProtocolVersion` and `minimumClientProtocolVersion`, plus existing transfer/export/diagnostic metadata; `build` is the server-build alias. Current client/server protocol is 3, with minimum client protocol 3 (0.5.0 resource lifecycle). Accept only a protocol inside the server's inclusive supported range. Build strings identify releases, not compatibility. Missing metadata or an older protocol requires updating the server; a higher minimum requires updating the client. Frontend/backend must be deployed together. See [PLATFORM.md](../architecture/PLATFORM.md) for handshake caching, cancellation and platform ownership.
 
-Frontend diagnostic events retain `build` (client build), optional `serverBuild`, `apiProtocolVersion` (client protocol) and `connectionEpoch` (ephemeral delivery ownership), alongside existing bounded fields. All requests, including bootstrap and diagnostic batches, carry `X-Request-ID`. Failed binary downloads preserve bounded JSON problem details rather than treating the problem as a downloaded file. Capabilities report authentication=true, changeFeed=true and scopedSettings=true; protocol is 2, minimum client protocol 2. Bounded capabilities/host identity are public; workspace/diagnostic/OpenAPI/stream access requires approval. D7 contracts are detailed in [MULTI-DEVICE.md](../architecture/MULTI-DEVICE.md); deploy current frontend/backend together.
+Frontend diagnostic events retain `build` (client build), optional `serverBuild`, `apiProtocolVersion` (client protocol) and `connectionEpoch` (ephemeral delivery ownership), alongside existing bounded fields. All requests, including bootstrap and diagnostic batches, carry `X-Request-ID`. Failed binary downloads preserve bounded JSON problem details rather than treating the problem as a downloaded file. Capabilities report authentication=true, changeFeed=true and scopedSettings=true; protocol is 3, minimum client protocol 3. Bounded capabilities/host identity are public; workspace/diagnostic/OpenAPI/stream access requires approval. D7 contracts are detailed in [MULTI-DEVICE.md](../architecture/MULTI-DEVICE.md); deploy current frontend/backend together.
 
 ## Ordinary file import
 
@@ -45,12 +45,12 @@ GET /workspace/identity returns {id,generation}. Identity persists for this stor
 | GET /api/diagnostics/search | getSearchIndexStatus | Index coverage, failure and rebuild status |
 | POST /api/diagnostics/search/rebuild | rebuildSearchIndex | Start a bounded asynchronous rebuild; return existing run when busy |
 | GET /api/resources/{id} | getResource | getResource |
-| DELETE /api/resources/{id} | deleteResource | deleteResource |
+| DELETE /api/resources/{id} | deleteResource (retired, 405) | deleteResource (retired) |
 | PUT /api/resources/{id}/note | updateNote | updateNote |
 | PUT /api/resources/{id}/favorite | setResourceFavorite | Persist favorite boolean without changing modified time |
 | POST /api/resources/{id}/open | markResourceOpened | Update lastOpenedAt only; preserve modified time/content/organization |
 | GET /api/resources/{id}/backlinks | getBacklinks | getBacklinks |
-| POST /api/resources/{id}/replace-links | replaceResourceLinks | replaceResourceLinks |
+| POST /api/resources/{id}/replace-links | replaceResourceLinks (retired, 405) | replaceResourceLinks (retired) |
 | POST /api/resources/{id}/tags/{name} | attachTag | attachTag |
 | DELETE /api/resources/{id}/tags/{name} | detachTag | detachTag |
 | GET /api/tags | listTags | listTags |
@@ -89,7 +89,7 @@ Example JSON for POST /api/resources:
 {"type":"note","title":"Agent check","content":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Hello"}]}]}}
 ~~~
 
-Read the returned id, GET /api/resources/{id}, then PUT /api/resources/{id}/note with a complete title/content pair. A resource link is {"type":"resourceLink","attrs":{"resourceId":"target-id","label":"Target","type":"note"}} inside a paragraph. Saving rebuilds backlinks; GET the target's /backlinks to verify. Table attrs.sourceResourceId tracks the source asset and is remapped during import but is not a backlink edge. POST /resources/{old}/replace-links with {"newResourceId":"target-id"} rewrites stored documents and deletes the old resource; the IDs must differ.
+Read the returned id, GET /api/resources/{id}, then PUT /api/resources/{id}/note with a complete title/content pair. A resource link is {"type":"resourceLink","attrs":{"resourceId":"target-id","label":"Target","type":"note"}} inside a paragraph. Saving rebuilds backlinks; GET the target's /backlinks to verify. Table attrs.sourceResourceId tracks the source asset and is remapped during import but is not a backlink edge. The former POST /resources/{old}/replace-links and DELETE /resources/{id} are retired (405) and never rewrite/delete originals. Use revision-checked Trash; permanent deletion is only available for trashed resources.
 
 Attach a tag with POST /resources/{id}/tags/{name}, list /tags, update its /color with {"color":"#336699"}, remove an association with DELETE on the same resource/tag route. Global tag deletion is separate. GET /settings before PUTting the complete document; retain local device entries and keybindings when editing workspace values. The /settings/workspace endpoints update only that section.
 
@@ -120,7 +120,7 @@ GET `/api/exports/notes/{id}/preview` (`previewNoteExportGraph`) returns saved o
 
 ## Library browsing examples
 
-`GET /api/resources?page=0&size=100&q=meeting&type=note&tag=backend&tag=project&sort=updated` returns summaries matching both tag names. `GET /api/resources?favorites=true&sort=title&size=12` filters pinned resources only; mixed sidebar shortcuts use `GET /api/organization/pins?size=12`. Details and resource summaries include `collections:[{id,name}]`, batched for lists without hydrating note bodies. `PUT /api/resources/{id}/favorite` with `{ "favorite": true }` returns 204; repeating it is safe. Version 2 workspace archives include resource and collection favorites plus memberships; merge remaps organization to new resources.
+`GET /api/resources?page=0&size=100&q=meeting&type=note&tag=backend&tag=project&sort=updated` returns summaries matching both tag names. `GET /api/resources?favorites=true&sort=title&size=12` filters pinned resources only; mixed sidebar shortcuts use `GET /api/organization/pins?size=12`. Details and resource summaries include `collections:[{id,name}]`, batched for lists without hydrating note bodies. `PUT /api/resources/{id}/favorite` with `{ "favorite": true }` returns 204; repeating it is safe. Version 3 workspace archives retain resource and collection favorites plus memberships; merge remaps organization to new resources.
 
 ## Collections and tags
 
@@ -152,7 +152,7 @@ Membership example:
 
 kind is collection or tag; action is add or remove. Select 1–100 IDs; every resource and the target must exist before any changes apply. Other memberships are untouched. Use GET /api/resources?collection=collection-id&tag=meeting to verify the combined resulting membership. Collection deletion keeps notes/files. There is no bulk resource deletion API.
 
-Archive version 2 includes workspace.organization.collections and workspace.organization.favorites, covered by the workspace JSON checksum. Preview reports organization counts and rejects invalid membership references. See [Library transfer rules](../workspace/LIBRARY.md) for merge/replace semantics.
+Archive version 3 includes workspace.organization.collections and workspace.organization.favorites, covered by the workspace JSON checksum. Preview reports organization counts and rejects invalid membership references. See [Library transfer rules](../workspace/LIBRARY.md) for merge/replace semantics.
 
 U2 creation semantics: use a stable UUID for PUT /collections/creations/{id}. The name and sorted initial IDs define the request fingerprint. Identical retries return the current collection without reapplying initial memberships; a changed request or normalized-name collision returns 409. Initial resource IDs may be empty, at most 100. The older POST /collections remains a non-idempotent convenience API.
 
@@ -182,7 +182,7 @@ D6 uses the existing host access/approval/sharing contracts; no workspace DTO, d
 
 OpenAPI 1.3.0 documents `patchSettings` and `watchWorkspaceChanges`. `PATCH /settings` atomically merges changed scalar leaves under workspace/local/keybindings; null removes a leaf. Different fields survive concurrent clients, while same-field edits are last committed wins. Full PUT remains local legacy only; HTTPS callers use PATCH. `GET /changes?cursor=...` is approved metadata-only SSE with bounded replay and reset on gaps/restart. Both browser and desktop use the ordinary approved application services. MULTI-DEVICE.md owns examples, bounds, revision requirements and reconciliation; no privileged debug execution endpoint exists.
 
-D8 adds no backend update/schema endpoints. Installer/update orchestration is native main-only IPC, not an agent execution API. Current compatibility requires protocol 2 and changeFeed/scopedSettings. Existing-server onboarding verifies /workspace/identity using an explicitly selected owner key or paired HTTPS; archives still use the same reviewed transfer APIs. See UPDATES.md for package manifests and local recovery.
+D8 adds no backend update/schema endpoints. Installer/update orchestration is native main-only IPC, not an agent execution API. Current compatibility requires protocol 3 and changeFeed/scopedSettings. Existing-server onboarding verifies /workspace/identity using an explicitly selected owner key or paired HTTPS; archives still use the same reviewed transfer APIs. See UPDATES.md for package manifests and local recovery.
 
 
 ## Device sidebar presentation — 0.3.0
@@ -198,3 +198,20 @@ Device-scoped local settings accept theme= os | light | dark | oled (default os)
 ## Managed image metadata and clipboard rendering (0.4.0)
 
 Authenticated `GET /api/resources/{id}/image-info` inspects file bytes and returns `{format,width,height,bytes,animated}` with no storage paths. PNG/JPEG/WebP/GIF are supported at 20 MiB/40 MP; invalid formats or limits return request errors. `GET /api/resources/{id}/image-png` supplies a bounded first-frame PNG for explicit clipboard copying. Original raw/download APIs remain unchanged. Image placements use the existing retry-safe file import UUID contract and persist only resourceId/alt/caption/width/alignment. Protocol 2 is required on hosts and clients before editors mount. See [IMAGES.md](../workspace/IMAGES.md).
+
+## Resource lifecycle — protocol 3 / archive 3
+
+All routes retain normal owner/paired authorization, CSRF and workspace admission. Resource/detail summaries expose opaque `revision`, nullable `trashedAt` and `cleanupPending`; list summaries never include note bodies or storage paths. Active reads, binary/image endpoints and note updates reject Trash (410 RESOURCE_TRASHED); active summary lookup is 404 because the item is excluded. Normal title/FTS/pin/organization-count queries exclude Trash.
+
+| Route | Contract |
+| --- | --- |
+| GET /resources/trash?page=0&size=100&q=title | Metadata-only ResourcePage, title substring, newest-trash order; size 1–200 |
+| GET /resources/{id}/usage | `{sources:number}` distinct active saved referring notes; links/images, no unsaved/table-provenance count |
+| PUT /resources/lifecycle | Header `X-Vaultor-Protocol: 3` required; array of 1–100 `{operationId:UUID,resourceId,action:trash|restore|purge,revision}` |
+| GET /resources/{id}/lifecycle-pending | Original durable purge item, including its original expected revision; 404 if absent |
+| PATCH /resources/{id}/title | `{title}` 1–500 trimmed characters, quoted `If-Match` revision required; active note/file; stale 412 |
+| DELETE /resources/{id}; POST /resources/{id}/replace-links | Retired: 405 ACTION_RETIRED; no hard-delete/rewrite fallback |
+
+Lifecycle returns HTTP 200 with per-item `{operationId,resourceId,status,revision,detail,warnings}`; `status` is trashed/restored/purged/cleanup-pending/failed. Inspect every result; HTTP success does not imply all items succeeded. Same UUID + exact original input replays, changed input conflicts. Stale revisions fail before mutation. Validation of the batch itself is 400; protocol below 3 is 426 CLIENT_UPDATE_REQUIRED. Restore warnings name unavailable organization labels, without recreating deleted organizations. Purge requires Trash, persists irreversible intent before deleting bytes and retains retryable tombstones on IO/finalization failure. Retry cleanup against the original item, not the new tombstone revision. Once purged, the original import UUID is refused (410) instead of recreating it.
+
+Complete ZIP manifest 3 preserves Trash timestamps, original content/bytes and surviving memberships/favorites; formats 1/2 remain readable with absent lifecycle state active. Purge-pending export is refused. Operational identities are excluded from portable archives and cleared atomically on replacement. See [RESOURCE-LIFECYCLE.md](../workspace/RESOURCE-LIFECYCLE.md) for drafts, races, rollback and host-first deployment. Both 0.5.0 clients and hosts require protocol 3; mobile implementations must use these platform-neutral identities and inspect per-item results.

@@ -93,3 +93,9 @@ Ubuntu can use the browser against another host, or host Docker/standalone. Ther
 ## If no update is available
 
 Ask the implementation agent for the release URL and platform-specific asset pair. Agents own the build/publish work after app changes; you should not need to regenerate signing keys or build Windows packages yourself. If Mac access, original signing identity, GitHub access or native verification is missing, the agent must state exactly which platform is blocked and leave a precise handoff. An unbuilt/untested platform must never be described as released.
+
+## 0.5.0 lifecycle update order
+
+Update hosts before remote clients: both require API protocol 3. Windows 0.4.1 installed users open window menu → Updates → Check for updates → **Update and restart**; downloads, signed-sidecar verification, save/recovery backup and installation are handled internally. There is no two-file selection step. Existing 0.4.0 and older installations can use the manual transition described above. A local desktop update includes its bundled host; a remote Mac/Windows host is a separate installation. Mac 0.5.0 availability must match release assets and native validation; use the exact same-tag MAC-HANDOFF when its pair is absent. The app must refuse an old remote host instead of opening editors.
+
+The additive Trash schema is not a safe in-place downgrade: old servers treat retained originals as active. Rollback requires stopping the host and restoring its pre-update workspace backup with the corresponding older app, not merely reinstalling old binaries. Portable workspace ZIPs now use format 3 and retain Trash; complete export refuses unfinished permanent cleanup.

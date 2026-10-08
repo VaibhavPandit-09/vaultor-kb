@@ -18,7 +18,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class OrganizationServiceTest {
     static final Path DATA;
     static {try {DATA=Files.createTempDirectory("vaultor-organization-test-");}catch(Exception e){throw new ExceptionInInitializerError(e);}}
-    @DynamicPropertySource static void properties(DynamicPropertyRegistry p) {p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());}
+    @DynamicPropertySource static void properties(DynamicPropertyRegistry p) {p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());p.add("app.host.path",()->DATA.resolve("host").toString());}
+    @Autowired ResourceLifecycleService lifecycle;
     @Autowired OrganizationService org;
     @Autowired ResourceSearchService search;
     @Autowired ResourceService service;
@@ -80,7 +81,7 @@ class OrganizationServiceTest {
         var path=DATA.resolve("bad.zip");exporter.write(new TransferService.Workspace(List.of(),List.of(),settings.getSettings().workspace(),malformed),Map.of(),path);
         assertThrows(IllegalArgumentException.class,()->transfers.preview(new MockMultipartFile("file",Files.readAllBytes(path))));
         assertEquals(2,resources.count());
-        service.deleteResource(two);assertEquals(1,org.list("Atlas",false,0,30).items().getFirst().count());
-        org.delete(atlas.id());assertEquals(1,resources.count());
+        lifecycle.apply(new ResourceLifecycleService.Item(UUID.randomUUID().toString(),two,"trash",resources.findById(two).orElseThrow().getRevision()));assertEquals(1,org.list("Atlas",false,0,30).items().getFirst().count());
+        org.delete(atlas.id());assertEquals(2,resources.count()); // Trash retains the second original.
     }
 }

@@ -3,6 +3,7 @@ import { resourceKind, resourceDescription } from '../lib/resourceKinds';
 import { ExternalLink, PanelRight, ScanText, X } from 'lucide-react';
 import ResourceCollections from './ResourceCollections';
 import PinButton from './PinButton';
+import ResourceActions from './ResourceActions';
 import type { OrganizationItem } from '../lib/organization';
 import FilePreview from './FilePreview';
 import type { Resource } from '../types';
@@ -74,6 +75,7 @@ export default function PreviewLayer({
 
         <div className="flex flex-shrink-0 items-center gap-1.5">
           <PinButton id={resource.id} name={resource.title} favorite={resource.favorite}/>
+          <ResourceActions resource={resource}/>
           <button
             onClick={onToggleMode}
             className="inline-flex h-8 items-center gap-1 rounded-lg border border-white/5 bg-background px-2.5 text-[11px] font-medium text-slate-500 transition-colors hover:text-primary"
@@ -159,6 +161,6 @@ function PreviewContent({ resource }: { resource: Resource }) {
     case 'file':
       return <FilePreview resource={resource} />;
     default:
-      return <FilePreview resource={resource} />;
+      return <p role="alert">Preview is unsupported for this resource type.</p>;
   }
 }

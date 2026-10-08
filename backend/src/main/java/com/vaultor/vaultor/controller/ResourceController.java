@@ -22,6 +22,12 @@ public class ResourceController {
     private final DocumentService documents;
     private final FileImportService imports;
     private final ImageService images;
+    private final ResourceLifecycleService lifecycle;
+    @GetMapping("/trash") public PageDto<ResourceSummary> trash(@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="100") int size,@RequestParam(defaultValue="") String q) {return browse.trash(page,size,q);}
+    @PutMapping("/lifecycle") public List<ResourceLifecycleService.Result> lifecycle(@RequestBody List<ResourceLifecycleService.Item> items,@RequestHeader("X-Vaultor-Protocol") int protocol) {if(protocol<3)throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UPGRADE_REQUIRED,"Update the client for safe resource lifecycle operations");return lifecycle.bulk(items);}
+    @GetMapping("/{id}/usage") public ResourceLifecycleService.Usage usage(@PathVariable String id) {return lifecycle.usage(id);}
+    @GetMapping("/{id}/lifecycle-pending") public ResourceLifecycleService.Item pending(@PathVariable String id) {return lifecycle.pending(id);}
+    @PatchMapping("/{id}/title") public ResourceDto rename(@PathVariable String id,@RequestBody Map<String,String> input,@RequestHeader("If-Match") String expected) {return dto(service.rename(id,input.get("title"),expected));}
     @GetMapping("/{id}/image-info") public ImageService.Info imageInfo(@PathVariable String id) throws Exception { return images.info(id); }
     @PutMapping(value="/imports/{id}", consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResourceDto importFile(@PathVariable String id, @RequestParam String title, @RequestParam(required=false) String content, @RequestParam(required=false) MultipartFile file, @RequestParam(required=false) String collectionId) throws Exception {
@@ -29,7 +35,7 @@ public class ResourceController {
     }
     @GetMapping(value="/{id}/image-png", produces="image/png") public byte[] imagePng(@PathVariable String id) throws Exception { return images.clipboardPng(id); }
     private ResourceDto dto(Resource r) { return ResourceDto.of(r, documents); }
-    private Resource get(String id) { return resources.findById(id).orElseThrow(); }
+    private Resource get(String id) { return service.getResourceOrThrow(id); }
     private void validate(NoteInput input) {
         if (input.title() == null || input.title().isBlank() || input.title().length() > 500) throw new ApiErrors.FieldError("title", "Title must contain 1-500 characters");
         try { documents.validate(input.content()); } catch(IllegalArgumentException e) { throw new ApiErrors.FieldError("content", e.getMessage()); }
@@ -53,8 +59,8 @@ public class ResourceController {
     @PutMapping("/{id}/note") public ResourceDto update(@PathVariable String id, @RequestBody NoteInput input, @RequestHeader(value="If-Match", required=false) String expected,jakarta.servlet.http.HttpServletRequest request) { if(request.isSecure() && expected==null)throw new org.springframework.web.server.ResponseStatusException(HttpStatus.PRECONDITION_REQUIRED,"Network note updates require If-Match");validate(input); if (!get(id).getType().equals("note")) throw new IllegalArgumentException("Resource is not a note"); return dto(service.updateNote(id, input.title().trim(), input.content().toString(), expected)); }
     @PostMapping("/file") public ResourceDto upload(@RequestParam MultipartFile file) throws Exception { if(file.isEmpty()) throw new IllegalArgumentException("Choose a nonempty file"); return dto(service.uploadFile(file)); }
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable String id) { get(id); service.deleteResource(id); }
-    @GetMapping("/{id}/backlinks") public List<ResourceDto> backlinks(@PathVariable String id) { get(id); return resources.findAllById(relationships.findByToIdAndType(id,"link").stream().map(Relationship::getFromId).toList()).stream().map(this::dto).toList(); }
-    @PostMapping("/{id}/replace-links") public void replace(@PathVariable String id, @RequestBody Map<String,String> input) { get(id); service.replaceLinksAndDelete(id,input.get("newResourceId")); }
+    @GetMapping("/{id}/backlinks") public List<ResourceDto> backlinks(@PathVariable String id) { get(id); return resources.findAllById(relationships.findByToIdAndType(id,"link").stream().map(Relationship::getFromId).toList()).stream().filter(r->r.getTrashedAt()==null).map(this::dto).toList(); }
+    @PostMapping("/{id}/replace-links") public void replace(@PathVariable String id, @RequestBody Map<String,String> input) { throw new org.springframework.web.server.ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,"Combined link replacement and deletion is retired. Move originals to Trash; referring labels remain intact."); }
     @PostMapping("/{id}/tags/{name}") public void tag(@PathVariable String id,@PathVariable String name) { if(name.isBlank() || name.length()>100) throw new IllegalArgumentException("Tag must contain 1-100 characters"); tags.addTagToResource(id,name); }
     @DeleteMapping("/{id}/tags/{name}") public void untag(@PathVariable String id,@PathVariable String name) { tags.removeTagFromResource(id,name); }
     @GetMapping("/{id}/raw") public ResponseEntity<org.springframework.core.io.Resource> raw(@PathVariable String id) throws Exception { return binary(id,false); }
