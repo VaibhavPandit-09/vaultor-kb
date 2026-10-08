@@ -1,4 +1,38 @@
-# Current release handoff — 0.7.0 saved-content search
+# Current release handoff — 0.7.1 saved-content search
+
+Windows 0.7.1 has passed the release gate; Mac arm64 remains unavailable until the exact v0.7.1 native build and verification pass. Do not treat the older sections below as current source/version instructions.
+
+0. The user requested this Mac AI handoff for Sprint 5. After checking out v0.7.1, verify batched reference paging/counts/20-occurrence bounds, live large-import polling (no pool timeout), 30-second approved startup retry, compact focused-pane switching at 412px, sidebar Escape/focus, native-control clearance and refresh identities/journeys. Read development/SCALE-INTEGRATION.md for actual Windows results and unresolved memory/startup/LAN gates. Build using the commands below; record all unavailable native tests honestly.
+
+1. Read AGENTS, CODEBASE, RELEASE-PROCESS and workspace/SEARCH. Fetch and check out **v0.7.1** exactly after Windows publication; keep package/lock version 0.7.1 and the immutable tag unchanged.
+2. On the Apple Silicon Mac mini use Node 20.19+/24, JDK 25 and free Apple command-line tools. Obtain the existing matching private release key by authorized private transfer outside Git; set VAULTOR_RELEASE_KEY to its protected path. Never regenerate or log it.
+3. Run the following from repository root:
+
+```sh
+npm --prefix frontend ci
+npm --prefix desktop ci
+export VITE_BUILD_VERSION=0.7.1
+export BUILD_VERSION=0.7.1
+npm --prefix desktop run build
+npm --prefix desktop run prepare-server
+npm --prefix desktop run check
+npm --prefix desktop run package:release
+npm --prefix desktop run publish:release
+```
+
+4. Verify arm64 Vaultor.app with codesign --verify --deep --strict and its original-key DMG sidecar. No paid notarization is claimed. Install and launch with a new disposable profile. Check protocol/minimum client 3, archive 3, relaunch/data retention, native menus/focus/Escape and update verification.
+5. With disposable PDF and UTF-8 text files, verify title-only exclusion, explicit saved-content matches, collection/tag/category/pin isolation, Unicode/literal snippets, pending/unsupported/no-text/encrypted/invalid/limit states, pagination and retry. Check rename/Trash/Restore, generation replacement, restart reuse and archive-derived rebuild; original bytes must remain unchanged. Verify bundled-Java subprocess launching and the 15-second timeout/128 MiB heap/96 MiB metaspace controls. Check export PDF regression (PDFBox is now pinned 3.0.8). No OCR/office extraction or page-jump is claimed. Inspect Library/Ctrl+K/Diagnostics layout/focus. No domain schema migration; file_search is disposable derived data.
+6. Coordinate a real paired Windows–Mac session when available. Update the host first, reconnect without routine re-pairing, test category isolation, references, saved-change refresh and source focus. Do not bypass approval/TLS/revisions. Record checks unavailable instead of certifying them.
+7. From a clean exact-tag checkout, add only the absent verified Mac pair:
+
+```sh
+npm --prefix desktop run publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.7.1.md
+```
+
+Download the uploaded pair and verify original signature, size and SHA-256. Preserve existing Windows bytes and tag; identical retries are permitted, differing bytes refused. Update GitHub release availability and living docs only after actual Mac checks pass. Report hardware, exact source/checks and usable URL. No Intel/Linux/Android package is authorized here.
+
+
+# Historical release handoff — 0.7.0 saved-content search
 
 Windows 0.7.0 is published from v0.7.0 (1aa70a6f42b030a58fb067a59d1be845db27d6db); Mac arm64 remains unavailable until this exact same-tag build and native verification pass. Do not treat the older sections below as current source/version instructions.
 

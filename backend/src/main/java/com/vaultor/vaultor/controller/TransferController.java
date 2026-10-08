@@ -10,8 +10,7 @@ import java.util.*;
 public class TransferController {
     private final TransferService transfers;
     private final ExporterRegistry registry;
-    private final com.vaultor.vaultor.repository.TransferOperationRepository operations;
-    @GetMapping("/operations/activity") public Map<String,Long> activity() { return Map.of("active",operations.countByStatusIn(List.of("QUEUED","RUNNING","CLEANUP"))); }
+    @GetMapping("/operations/activity") public Map<String,Long> activity() { return Map.of("active",transfers.activity()); }
     @PostMapping("/exports") public TransferService.Operation export(@RequestBody Map<String,String> body) {
         if(!List.of("single","linked").contains(body.getOrDefault("links","single")))throw new IllegalArgumentException("links must be single or linked");
         if(!List.of("true","false").contains(body.getOrDefault("references","false")))throw new IllegalArgumentException("references must be true or false");

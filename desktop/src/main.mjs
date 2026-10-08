@@ -16,6 +16,7 @@ import { startChangeStream } from './change-stream.mjs';
 import { Updates } from './updates.mjs';
 import {supportsAutomaticInstall,startUpdateHandoff} from './update-handoff.mjs';
 import { spawn } from 'node:child_process';
+import { probeReady } from './probe-ready.mjs';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'vaultor', privileges: { standard: true, secure: true, supportFetchAPI: true } },{scheme:'vaultor-file',privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true}}]);
 // A renamed developer Electron executable reports isPackaged=true; use our actual app layout.
@@ -38,11 +39,7 @@ else {
     const profile = stored.source === 'bundled' ? { ...stored, address: await owned.start() } : stored.kind === 'remote' ? await connections.resolve(stored) : stored;
     const probeTransport = new DesktopTransport();
     const temporary = randomUUID(); probeTransport.activate(profile, temporary, profile.source === 'bundled' ? owned.accessKey : profile.kind==='local'?credentials.get(profile.id):undefined, profile.kind === 'remote' ? credentials.get(profile.id) : undefined);
-    const get = async path => {
-      const response = await probeTransport.request({ token: temporary, id: randomUUID(), path, method: 'GET', headers: { 'X-Request-ID': randomUUID() }, timeout: 10000 });
-      if (response.status !== 200) throw new Error(`Server check failed (${response.status}).`);
-      return JSON.parse(new TextDecoder().decode(response.data));
-    };
+    const get = path => probeReady(() => probeTransport.request({ token: temporary, id: randomUUID(), path, method: 'GET', headers: { 'X-Request-ID': randomUUID() }, timeout: 10000 }));
     const capabilities = await get('/capabilities');
     if(capabilities.changeFeed!==true || capabilities.scopedSettings!==true)throw new Error('Update this server to the current Vaultor version before connecting. D7 settings and change-feed contracts are required.');
     if (!Number.isInteger(capabilities.apiProtocolVersion) || capabilities.apiProtocolVersion < 3 || !Number.isInteger(capabilities.minimumClientProtocolVersion) || capabilities.minimumClientProtocolVersion < 1 || capabilities.minimumClientProtocolVersion > capabilities.apiProtocolVersion || typeof capabilities.serverBuild !== 'string') throw new Error('Update this server: resource lifecycle protocol 3 is required.');

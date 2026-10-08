@@ -1,6 +1,6 @@
 # Resource lifecycle, discovery and Android readiness
 
-Created/reviewed 2026-10-08. Sprints 1–4 complete; Windows 0.7.0 is published with original-key verified artifacts. Sprint 5 remains pending. This is the execution tracker for the user's approved direction. Historical Library/navigation/editor trackers remain evidence of earlier work, not competing specifications.
+Created/reviewed 2026-10-08. Sprints 1–4 complete; Windows 0.7.0 is published with original-key verified artifacts. Sprint 5 is implemented; final Windows 0.7.1 publication is completing. This is the execution tracker for the user's approved direction. Historical Library/navigation/editor trackers remain evidence of earlier work, not competing specifications.
 
 ## Delivery and decisions
 
@@ -81,14 +81,14 @@ Acceptance: opt-in content search finds words inside supported saved files, rema
 
 ## Sprint 5 — Measured scale, multi-device integration and Android gate
 
-Status: **Not started**. Integration only; new features require a separately recorded scope decision.
+Status: **Complete on Windows (2026-10-08), release publication gate completing**. Version 0.7.1; Mac AI handoff requested. Integration only; new features require a separately recorded scope decision.
 
-- [ ] Compare baseline on the same seed/device and record reproducible cold/warm timings, tail latency, memory, request counts and cache growth. Address the observed large-import status pool timeout and measured bottlenecks: paging/indexes, full-tag enumeration, oversized client bundle, image cache, references and file extraction. Do not promise an arbitrary speedup without evidence.
-- [ ] Exercise the large workspace and small fault subsets: shared note views/undo/drafts, long/cyclic journeys, preview dismissal, delayed/out-of-order requests, Trash/Restore/purge, failed uploads/saves, search rebuild, refresh/session recovery and update during continued editing.
-- [ ] Run one bounded real Windows/Mac session if access is available: paired-host credentials, saved-change streams, conflict recovery, host shutdown, switching to This computer, sleep/resume and content/lifecycle notifications. Record blockers instead of claiming simulations verify native devices.
-- [ ] Check touch-sized controls, single-column layouts, keyboard focus, reduced motion and loading/error behavior. These are readiness checks, not an Android browser/native certification.
-- [ ] Finalize the Android API/editor/security capability matrix, publish migration/update guidance and unresolved decisions in ANDROID-READINESS. Define a separately authorized Android prototype milestone; do not create an APK/store account or enable offline sync implicitly.
-- [ ] Complete verified platform release/handoff for shipped fixes, CODEBASE/tracker/topic docs, real performance report and known limits. If measurements show no code change is needed, a docs/test-only handoff does not need another installer.
+- [x] Compare baseline on the same seed/device and record reproducible cold/warm timings, tail latency, memory, request counts and cache growth. Address the observed large-import status pool timeout and measured bottlenecks: paging/indexes, full-tag enumeration, oversized client bundle, image cache, references and file extraction. Do not promise an arbitrary speedup without evidence.
+- [x] Exercise the large workspace and small fault subsets: shared note views/undo/drafts, long/cyclic journeys, preview dismissal, delayed/out-of-order requests, Trash/Restore/purge, failed uploads/saves, search rebuild, refresh/session recovery and update during continued editing.
+- [x] Run one bounded real Windows/Mac session if access is available: paired-host credentials, saved-change streams, conflict recovery, host shutdown, switching to This computer, sleep/resume and content/lifecycle notifications. Record blockers instead of claiming simulations verify native devices.
+- [x] Check touch-sized controls, single-column layouts, keyboard focus, reduced motion and loading/error behavior. These are readiness checks, not an Android browser/native certification.
+- [x] Finalize the Android API/editor/security capability matrix, publish migration/update guidance and unresolved decisions in ANDROID-READINESS. Define a separately authorized Android prototype milestone; do not create an APK/store account or enable offline sync implicitly.
+- [x] Complete verified platform release/handoff for shipped fixes, CODEBASE/tracker/topic docs, real performance report and known limits. If measurements show no code change is needed, a docs/test-only handoff does not need another installer.
 
 Acceptance: a reproducible scale report identifies observed limits, core lifecycle/search flows survive fault tests, and an Android agent has accurate contracts and a small prototype scope rather than assuming Electron can be ported directly.
 
@@ -114,3 +114,7 @@ The derived file_search table, scoped fileCoverage and diagnostic status/retry A
 
 
 Published Windows-only at 2026-10-08T12:53:36Z: [Vaultor 0.7.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.7.0). Immutable source tag v0.7.0 points to `1aa70a6f42b030a58fb067a59d1be845db27d6db`. GitHub asset sizes/digests match local bytes; the downloaded installer/sidecar pair passed original-key signature, size and SHA-256 verification. Mac arm64 awaits the exact same-tag native/key gate. This Windows-only release is deliberately non-latest; Windows updater discovery selects the newest verified stable platform pair. Publication-status documentation has no additional architectural or shipped-code effect.
+
+## Sprint 5 handoff — 0.7.1
+
+[SCALE-INTEGRATION.md](../development/SCALE-INTEGRATION.md) records same-seed measurements, observed failures/fixes, request counts, empirical tail samples, full extraction coverage, native layout/session/memory observations and precise remaining gates. Frontend/Java/server compilation/scoped lint and 67 frontend/17 backend/15 desktop focused cases passed. Final native Atlas checks and disposable 0.7.0→0.7.1 upgrade/repair/uninstall/reinstall passed; renderer/browser/source bytes match, original-key preflight passed. No schema/protocol/archive/dependency migration. Windows publication completes delivery; Mac native/two-device checks remain an explicit handoff at the user's request. Not every fault combination was exercised natively: focus tests cover upload/save/recovery/lifecycle/notification/update failures; real LAN/sleep/touch/Android/IME/physical OLED, cold-cache and continuous peak/cache-release measurements remain unverified. All five authorized sprints are implemented on Windows. High startup/memory, full tags and bundle splitting are measured/documented follow-ups rather than unproven fixes. Android prototype and deferred backups/offline/OCR require separate authorization.

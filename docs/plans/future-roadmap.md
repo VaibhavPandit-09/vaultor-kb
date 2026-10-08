@@ -22,6 +22,6 @@ The user is approaching Android work; readiness is active design scope, client i
 - Full offline browsing/edit synchronization is separate from draft recovery; it needs mutation queues, conflict/deletion semantics and storage budgets across devices.
 - Ubuntu native delivery remains the existing D10 deferred sprint; Mac native installation/update and real multi-device checks remain tracked blockers, not silently removed from scope.
 - Thumbnail gallery/attachment maintenance may follow measured usage. Never automatically delete files merely because saved backlinks report no source: drafts, independent resources and another device's uploads can still depend on them.
-- Performance follow-ups come from the synthetic baseline report; add concrete measured problems rather than an open-ended optimization sprint.
+- Performance follow-ups are grounded in [SCALE-INTEGRATION.md](../development/SCALE-INTEGRATION.md): 23.28-second Atlas startup, high shared-view process-tree memory, the large renderer bundle, bounded tag discovery, and cold-cache/concurrent-client measurements. These require a separately authorized plan; no general speedup or leak fix is claimed.
 
 Maintain this file when priorities change. Move an item to an authorized tracker before implementing it and retain a link to its new owner rather than duplicate specifications.

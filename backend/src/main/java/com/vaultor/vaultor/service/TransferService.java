@@ -49,6 +49,8 @@ public class TransferService {
     @Value("${app.transfer.max-entries}") private int maxEntries;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final Set<String> cancellationRequests = ConcurrentHashMap.newKeySet();
+    // Immutable last-committed snapshots only for live work. Never retain historical operations.
+    private final Map<String,Operation> activeStatus = new ConcurrentHashMap<>();
     private Path root;
     public record TagData(String id,String name,String color) {}
     public record ResourceData(String id,String type,String title,JsonNode content,String mimeType,Long size,
@@ -75,9 +77,22 @@ public class TransferService {
     private Path directory(String id) { return root.resolve(UUID.fromString(id).toString()); }
     public Operation dto(TransferOperation op) { return new Operation(op.getId(),op.getKind(),op.getStatus(),op.getPhase(),op.getProgress(),op.getMode(),op.getDetail(),op.getRequestId(),Map.of("resources",Optional.ofNullable(op.getResourceCount()).orElse(0),"files",Optional.ofNullable(op.getFileCount()).orElse(0),"tags",Optional.ofNullable(op.getTagCount()).orElse(0)),op.getOutputFilename(),op.getOutputMediaType(),readWarnings(op)); }
     private List<String> readWarnings(TransferOperation op) { List<String> result=new ArrayList<>();for(JsonNode n:mapper.readTree(op.getWarnings()==null?"[]":op.getWarnings()))result.add(n.asText());return result; }
-    public Operation get(String id) { return dto(operations.findById(id).orElseThrow()); }
+    public Operation get(String id) {
+        UUID.fromString(id);
+        var active=activeStatus.get(id);if(active!=null)return active;
+        if(!gate.enterRequest())throw new ResponseStatusException(HttpStatus.CONFLICT,"Workspace maintenance is in progress. Retry shortly.");
+        try{return dto(operations.findById(id).orElseThrow());}finally{gate.leaveRequest();}
+    }
+    public long activity() {
+        if(!gate.enterRequest())return activeStatus.values().stream().filter(op->List.of("QUEUED","RUNNING","CLEANUP").contains(op.status())).count();
+        try{return operations.countByStatusIn(List.of("QUEUED","RUNNING","CLEANUP"));}finally{gate.leaveRequest();}
+    }
+    private void remember(TransferOperation op) {
+        if(List.of("QUEUED","RUNNING","CLEANUP").contains(op.getStatus()))activeStatus.put(op.getId(),dto(op));
+        else activeStatus.remove(op.getId());
+    }
     private TransferOperation create(String kind) {
-        var op=new TransferOperation(); op.setKind(kind); op.setRequestId(MDC.get("requestId")); return operations.save(op);
+        var op=new TransferOperation(); op.setKind(kind); op.setRequestId(MDC.get("requestId"));op=operations.save(op);remember(op);return op;
     }
     private void phase(TransferOperation op,String status,String phase,int progress) {
         op.setStatus(status);op.setPhase(phase);op.setProgress(progress);saveOperationStatus(op);
@@ -87,7 +102,7 @@ public class TransferService {
     // Repository save has its own transaction: retry a fresh transaction on transient SQLite contention.
     private void saveOperationStatus(TransferOperation op) {
         for(int attempt=0;;attempt++) {
-            try { operations.save(op);return; }
+            try { operations.save(op);remember(op);return; }
             catch(org.springframework.dao.DataAccessException e) {
                 if(attempt>=5 || !String.valueOf(e.getMostSpecificCause().getMessage()).contains("SQLITE_BUSY")) throw e;
                 try { Thread.sleep(50L*(attempt+1)); } catch(InterruptedException interrupted) {Thread.currentThread().interrupt();throw e;}
@@ -296,7 +311,7 @@ public class TransferService {
                 op.setJournal(mapper.writeValueAsString(oldFiles));op.setStatus("CLEANUP");op.setPhase("cleanup");operations.save(op);
                 changeFeed.committed("workspace",List.of(),op.getRequestId());
             });
-            cleanup(op);
+            remember(op);cleanup(op);
         } catch(Exception e) {
             var durable=operations.findById(op.getId()).orElseThrow();
             if("CLEANUP".equals(durable.getStatus())) { cleanup(durable); return; }

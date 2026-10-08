@@ -1,4 +1,5 @@
 import ResourceReferences from '../components/ResourceReferences';
+import {useNarrowWorkspace} from '../lib/useNarrowWorkspace';
 import {revealReference} from '../lib/referenceNavigation';
 import ResourceActions from '../components/ResourceActions';
 import ResourceLifecycleDialog from '../components/ResourceLifecycleDialog';
@@ -214,7 +215,8 @@ export default function Dashboard() {
   const uiTransparency = localSettings.uiTransparency;
   const { position: tagPickerPosition } = useAnchoredPortalPosition(Boolean(tagPickerOpenNoteId), tagPickerRef, { width: 288, minWidth: 288, offset: 8 });
   const effectivePreviewMode = previewOverrideMode ?? localSettings.previewMode;
-  const isFloatingSidebarMode = localSettings.sidebarMode === 'floating';
+  const narrowWorkspace = useNarrowWorkspace();
+  const isFloatingSidebarMode = narrowWorkspace || localSettings.sidebarMode === 'floating';
   const sidebarCollapsed = localSettings.sidebarCollapsed;
   const fixedSidebarHidden = workspaceSettings.focusMode || (isFloatingSidebarMode ? true : sidebarCollapsed);
   const floatingSidebarVisible = !workspaceSettings.focusMode && isFloatingSidebarMode && (floatingSidebarPinned || floatingSidebarHovered);
@@ -469,7 +471,7 @@ export default function Dashboard() {
   }, [dispatch, markOpened, paneNavigation]);
 
   const toggleSidebar = useCallback(() => {
-    if (localSettings.sidebarMode === 'floating') {
+    if (isFloatingSidebarMode) {
       clearFloatingSidebarHideTimeout();
       setFloatingSidebarPinned((current) => {
         const next = !current;
@@ -480,7 +482,8 @@ export default function Dashboard() {
     }
 
     updateLocalSetting('sidebarCollapsed', !sidebarCollapsed);
-  }, [clearFloatingSidebarHideTimeout, localSettings.sidebarMode, sidebarCollapsed, updateLocalSetting]);
+  }, [clearFloatingSidebarHideTimeout, isFloatingSidebarMode, sidebarCollapsed, updateLocalSetting]);
+  useEscapeLayer({id:'floating-sidebar',active:floatingSidebarVisible,priority:ESCAPE_PRIORITIES.popover,close:()=>{clearFloatingSidebarHideTimeout();setFloatingSidebarPinned(false);setFloatingSidebarHovered(false);document.querySelector<HTMLButtonElement>('[aria-label="Toggle sidebar"]')?.focus();}});
 
   const restoreCommandPalettePreview = useCallback((snapshot: PreviewSnapshot | null) => {
     if (!snapshot?.resourceId || !snapshot.resourceType) {
@@ -1375,6 +1378,7 @@ export default function Dashboard() {
             />
             <div className="pointer-events-none absolute inset-y-0 left-0 z-30 flex items-start pl-2 pt-2 pb-2">
               <div
+                inert={!floatingSidebarVisible}
                 className={`pointer-events-auto h-full w-72 overflow-hidden rounded-2xl ${
                   smoothAnimations
                     ? 'shadow-xl transition-[transform,opacity] duration-[170ms] ease-out'
@@ -1387,6 +1391,7 @@ export default function Dashboard() {
                 style={getGlassPanelStyle(uiTransparency, 16, 'canvas')}
                 onMouseEnter={showFloatingSidebar}
                 onMouseLeave={scheduleFloatingSidebarHide}
+                onClick={event=>{if(narrowWorkspace && (event.target as HTMLElement).closest('.sidebar-nav,.sidebar-shortcut-open')){clearFloatingSidebarHideTimeout();setFloatingSidebarPinned(false);setFloatingSidebarHovered(false);}}}
               >
                 {sidebarContent}
               </div>
@@ -1394,21 +1399,26 @@ export default function Dashboard() {
           </>
         )}
 
-        <main className="min-w-0 flex-1 relative">
-          <div className="h-full" hidden={!libraryVisible}>{librarySection==='trash'?<TrashView hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/></section>:<LibraryView key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
-          <div className="h-full" hidden={libraryVisible}>
+        <main className="workspace-main min-w-0 flex-1 relative flex flex-col" data-pane-count={openWorkspaceNotes.length} data-narrow={narrowWorkspace}>
+          <div className="workspace-compact-controls">
+            {narrowWorkspace && !workspaceSettings.focusMode && <button className="library-button" aria-label="Toggle sidebar" aria-expanded={floatingSidebarVisible} onClick={toggleSidebar}>Menu</button>}
+            {!libraryVisible && openWorkspaceNotes.length>1 && <label className="workspace-pane-switcher">Pane <select aria-label="Focused pane" value={activePaneId ?? ''} onChange={event=>activateOpenNote(event.target.value)}>{openWorkspaceNotes.map((note,index)=><option key={note.paneId} value={note.paneId}>{index+1} · {note.resource?.title ?? 'Untitled note'}</option>)}</select></label>}
+          </div>
+          <div className="workspace-view h-full" hidden={!libraryVisible}>{librarySection==='trash'?<TrashView hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'?<CollectionsView visible={libraryVisible} onOpen={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>:librarySection==='favorites'?<section className="library-view"><PinnedList visible={libraryVisible} onResource={id=>void openResourceById(id)} onCollection={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/></section>:<LibraryView key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
+          <div className="workspace-view h-full" hidden={libraryVisible}>
           <div className="flex h-full min-h-0 flex-col">
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
             {activeNoteId&&resourceDetails[activeNoteId]&&<button className="library-button" onClick={()=>setReferenceTarget(resourceDetails[activeNoteId])}>References</button>}
           </JourneyBar>}
           <div className="min-h-0 flex-1">
           {openWorkspaceNotes.length > 0 ? (
-            <div className={getWorkspaceLayoutClass(openWorkspaceNotes.length)}>
+            <div className={`workspace-pane-layout ${getWorkspaceLayoutClass(openWorkspaceNotes.length)}`}>
               {openWorkspaceNotes.map((note, index) => (
                 <div
                   key={note.paneId}
                   data-note-pane={note.id}
                   data-pane-id={note.paneId}
+                  data-focused={note.paneId === activePaneId}
                   onPointerDownCapture={() => { if (note.paneId !== activePaneId) activateOpenNote(note.paneId); }}
                   className={getWorkspacePaneClass({
                     noteCount: openWorkspaceNotes.length,

@@ -36,7 +36,7 @@ test('packaged discovery resolves its locked production tree without development
 test('two real hosts pair, pin, reconnect, isolate copied workspaces, recover address hints and revoke without data loss', { timeout: 180000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'vaultor-network-test-'));
   const priorPort = process.env.HOST_NETWORK_PORT; process.env.HOST_NETWORK_PORT = '0';
-  const bundle = fileURLToPath(new URL('../bundle/', import.meta.url));
+  const bundle = process.env.VAULTOR_BUILD_BUNDLE ?? fileURLToPath(new URL('../bundle/', import.meta.url));
   const a = new OwnedServer({ bundle, data: join(directory, 'a') }), b = new OwnedServer({ bundle, data: join(directory, 'b') });
   const discovery = { advertise() {}, withdraw() {}, resolve: async () => [] };
   try {

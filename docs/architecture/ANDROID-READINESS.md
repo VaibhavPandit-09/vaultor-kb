@@ -40,3 +40,32 @@ The handoff must contain actual endpoint/capability matrix and minimum protocol,
 Atlas Sprint 1 now provides [5,000-resource and 70-resource fixtures](../development/PRIMARY-TEST-WORKSPACE.md). Its [baseline](../development/ATLAS-BASELINE.md) exposed unreadable side-by-side notes with the sidebar at 412px, startup FTS connection retries and unpaged legacy usage payloads (the current UI now uses bounded references; Sprint 5 still needs scale measurement). These are findings to resolve/measure before a native prototype; no Android device, IME, slow-network or mobile clipboard check has run. Transfer the logical archive into disposable host storage rather than copying desktop credentials or sessions.
 
 0.7.0 hosts add scoped saved PDF/UTF-8 content results and fileCoverage, paginated file-index status/retry. Android can reuse these metadata/snippet contracts without decoding files locally; no offline/OCR/native client is implemented. Search must stay opt-in and display pending/unsupported/limited coverage. [SEARCH.md](../workspace/SEARCH.md) owns limits.
+
+## Current contract matrix — Sprint 5
+
+Protocol/minimum client **3**, logical archive **3**, and updater protocol **1** are independent. All paths below start with `/api`. Capability handshake precedes editor mounting. Read-only handshake retries only authenticated `409 WORKSPACE_BUSY`, with a bounded wait; never replay a mutation or ignore approval errors.
+
+| Capability | Shared contract | Android responsibility / gate |
+| --- | --- | --- |
+| Identity | `GET /capabilities`, `/workspace/identity`; opaque ID/generation | Scope sessions/caches/recovery; reject incompatible hosts |
+| Approval | `/access/host`, pairing request/code approval/completion and revocation | Protected native credentials and pinned TLS; desktop safeStorage is not portable |
+| Browse/search | `/resources` title metadata, `/resources/query` explicit saved content; paged scope/category filters | One mixed list; preserve query/scope; discard stale responses; show fileCoverage |
+| Organization | `/organization/pins`, `/collections`, memberships, paged tags | Collections are destinations/shortcuts; avoid full-tag enumeration |
+| Documents | `/resources/{id}`, `PUT /resources/{id}/note`, `PATCH /resources/{id}/title`; revision/If-Match | Durable local draft journal; retain both versions on 412 |
+| Notifications | `/changes?cursor=…`; bounded metadata SSE, reset on gaps/restart | Suspension/reconnect; refresh clean state; never replay commands/downloads |
+| Lifecycle | `/resources/trash`, `/resources/{id}/usage`, `PUT /resources/lifecycle` bounded UUID/revision operations | Same-ID Trash/Restore; distinguish placement/membership removal; explicit purge |
+| References | `/resources/{id}/references?direction=incoming|outgoing&page=…&size=…` | Metadata/occurrences; validate revision/path or fall back |
+| Images/files | Retry-safe `PUT /resources/imports/{uuid}`, authenticated original download, `/image-info`, `/thumbnail`, `/image-png` | Native picking/share/clipboard, cancellation, bounded caches; original bytes unchanged |
+| Transfers | `/imports/preview`, `/imports/{id}/commit`, `/exports`, `/operations/{id}` | Poll retained status without replay; active snapshots remain readable during commit |
+
+The editor schema comes from BlockEditor/extensions, not arbitrary host JSON acceptance. Preserve doc/paragraph/text, headings, lists/tasks, blockquote, code, horizontal rules, tables/cells/headers, resourceLink, managed image and their supported marks/attributes. Validate the complete schema: unknown nodes/marks retain original JSON and block unsafe saving. Do not downconvert desktop documents to plain text. Image JSON contains resource IDs/placement attributes, never transient URLs, credentials or bytes.
+
+## Separately authorized Android prototype milestone
+
+1. Decide physical device, React Native toolchain, private APK signing-key ownership and personal installation/update route. No paid store/account is required by this proposal.
+2. Implement an adapter for pinned LAN JSON/binary/SSE, protected credentials, system appearance/reduced motion, image picking/share and recovery. Manual address entry remains independent of discovery.
+3. Prove the constrained WebView editor against the full schema: IME/composition, selection/undo, touch scrolling, clipboard/share, bridge origin restrictions and process death. Retain a native-editor alternative if this fails.
+4. Prototype pair/connect, scoped title/content browsing, note read/edit/conditional save and image upload/preview on Small, then Atlas. Measure caches/startup; never copy Electron IPC or host paths.
+5. Test conflicts, shutdown/reconnect, generation changes, revoke/re-pair, rotation, Android Back/modal ownership and suspension recovery on real hardware before expanding feature parity.
+
+This is future scope, not authorization to implement Android. Offline synchronization, OCR, scheduled backups and Android hosting remain deferred. A 412px desktop check cannot certify Android IME, touch, network permissions or lifecycle behavior.

@@ -1,7 +1,7 @@
 // Focused native performance session against marked Atlas only, never personal data.
 import {spawn,execFileSync} from 'node:child_process';import {readFile,writeFile} from 'node:fs/promises';import {join} from 'node:path';import {createServer} from 'node:net';import {performance} from 'node:perf_hooks';import {fileURLToPath} from 'node:url';
 import {rootGuard,defaultRoot,atomic,prepareProfile} from './atlas.mjs';
-const root=await rootGuard(defaultRoot),manifest=JSON.parse(await readFile(join(root,'manifest.json'),'utf8'));
+const root=await rootGuard(process.env.ATLAS_ROOT??defaultRoot),manifest=JSON.parse(await readFile(join(root,'manifest.json'),'utf8'));
 await prepareProfile(root);
 const socket=createServer();await new Promise(r=>socket.listen(0,'127.0.0.1',r));const port=socket.address().port;await new Promise(r=>socket.close(r));
 const app=fileURLToPath(new URL('../releases/win-unpacked/Vaultor.exe',import.meta.url));const env={...process.env,VAULTOR_DESKTOP_TEST_DIRECTORY:join(root,'profile')};delete env.ELECTRON_RUN_AS_NODE;delete env.VAULTOR_UPDATE_RELAUNCH_CHECK;
@@ -22,6 +22,8 @@ try{
  ws=new WebSocket(target.webSocketDebuggerUrl);await new Promise((r,j)=>{ws.addEventListener('open',r,{once:true});ws.addEventListener('error',j,{once:true});});ws.addEventListener('message',event=>{const value=JSON.parse(event.data);const item=pending.get(value.id);if(item){pending.delete(value.id);value.error?item.reject(new Error(value.error.message)):item.resolve(value.result);}});
  await wait("Boolean(document.querySelector('.sidebar-nav'))");
  await evaluate("[...document.querySelectorAll('.sidebar-nav')].find(b=>b.textContent.trim()==='Library')?.click()");
+ await wait("Boolean(document.querySelector('input[placeholder=\"Search resource titles…\"],input[placeholder=\"Search resource titles...\"]'))");
+ await evaluate("(()=>{const input=document.querySelector('input[placeholder=\"Search resource titles…\"],input[placeholder=\"Search resource titles...\"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'');input.dispatchEvent(new Event('input',{bubbles:true}));})()");
  await wait("document.querySelectorAll('.library-resource').length===100");report.samples.startupUsableMs=performance.now()-began;report.memoryBefore=await memory();await screenshot('atlas-library');
  await measure('recentDestinationMs',async()=>{await evaluate("[...document.querySelectorAll('.sidebar-nav')].find(b=>b.textContent.trim()==='Recent').click()");await wait("document.querySelector('.library-heading h1')?.textContent==='Recently opened'&&document.querySelectorAll('.library-resource').length===100");});
  await measure('pinnedDestinationMs',async()=>{await evaluate("[...document.querySelectorAll('.sidebar-nav')].find(b=>b.textContent.trim()==='Pinned').click()");await wait("['Pinned','Pinned shortcuts'].includes(document.querySelector('.library-heading h1')?.textContent)&&document.querySelectorAll('.library-resource').length>0");});
@@ -30,7 +32,7 @@ try{
  await evaluate("[...document.querySelectorAll('.sidebar-nav')].find(b=>b.textContent.trim()==='Library').click()");await wait("document.querySelector('.library-heading h1')?.textContent==='Library'");
  await evaluate("(()=>{const input=document.querySelector('input[placeholder=\"Search resource titles…\"],input[placeholder=\"Search resource titles...\"]');if(!input)throw new Error('Missing title search');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Atlas — Start here');input.dispatchEvent(new Event('input',{bubbles:true}));})()");
  await wait("[...document.querySelectorAll('.library-resource')].some(b=>b.textContent.includes('Atlas — Start here'))");
- await measure('imageHeavyOpenMs',async()=>{await evaluate(openStart+'.click()');await wait("document.querySelector('.tiptap')?.editor?.getJSON().content[0].content[0].text==='Atlas — Start here'");await wait("document.querySelectorAll('.tiptap img').length>=3");});
+ await measure('imageHeavyOpenMs',async()=>{await evaluate(openStart+".querySelector('button').click()");await wait("document.querySelector('.tiptap')?.editor?.getJSON().content[0].content[0].text==='Atlas — Start here'");await wait("document.querySelectorAll('.tiptap img').length>=3");});
  await screenshot('atlas-images');report.memoryImages=await memory();
  await measure('journey200VisitsMs',async()=>{for(let n=0;n<199;n++){const before=await evaluate("document.querySelector('.journey-current button').textContent");await evaluate("document.querySelector('.tiptap .resource-link-chip').click()");await wait(`document.querySelector('.journey-current button')?.textContent!==${JSON.stringify(before)}`);}});
  const steps=await evaluate("document.querySelector('[aria-label=\"Show full journey\"]').title");if(steps!=='200 of 200 steps')throw new Error('Journey bound differs: '+steps);report.journey=steps;await screenshot('atlas-journey');
@@ -41,7 +43,25 @@ try{
   await wait("JSON.stringify(document.querySelectorAll('.tiptap')[0].editor.getJSON())===JSON.stringify(document.querySelectorAll('.tiptap')[1].editor.getJSON())");
  });
  await evaluate("document.querySelectorAll('.tiptap')[0].editor.commands.insertContent('Atlas temporary shared benchmark edit')");await wait("document.querySelectorAll('.tiptap')[1].innerText.includes('Atlas temporary shared benchmark edit')");await evaluate("document.querySelectorAll('.tiptap')[1].editor.commands.undo()");await wait("![...document.querySelectorAll('.tiptap')].some(e=>e.innerText.includes('Atlas temporary shared benchmark edit'))");report.sharedUndo=true;report.memoryShared=await memory();await screenshot('atlas-shared');
- await command('Emulation.setDeviceMetricsOverride',{width:412,height:915,deviceScaleFactor:1,mobile:false});await screenshot('atlas-narrow');report.narrowViewport={width:412,height:915};
+ if(process.env.ATLAS_SPRINT5==='1'){
+  const paneIds=await evaluate("[...document.querySelectorAll('[data-pane-id]')].map(e=>e.dataset.paneId)");
+  await command('Emulation.setDeviceMetricsOverride',{width:412,height:915,deviceScaleFactor:1,mobile:false});
+  await wait("[...document.querySelectorAll('[data-pane-id]')].filter(e=>e.getBoundingClientRect().width>0).length===1");
+  const width=await evaluate("document.querySelector('[data-focused=true]').getBoundingClientRect().width");if(width<350)throw new Error('Focused pane still compressed: '+width);
+  await evaluate("(()=>{const select=document.querySelector('select[aria-label=\"Focused pane\"]');select.value=select.options[0].value;select.dispatchEvent(new Event('change',{bubbles:true}));})()");
+  await wait(`document.querySelector('[data-focused=true]')?.dataset.paneId===${JSON.stringify(paneIds[0])}`);
+  await evaluate("document.querySelector('[aria-label=\"Toggle sidebar\"]').click()");await wait("document.querySelector('[aria-label=\"Toggle sidebar\"]').getAttribute('aria-expanded')==='true'");
+  await command('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await wait("document.activeElement?.getAttribute('aria-label')==='Toggle sidebar'&&document.querySelector('[aria-label=\"Toggle sidebar\"]').getAttribute('aria-expanded')==='false'");
+  await screenshot('atlas-narrow');report.narrowViewport={width:412,height:915,paneWidth:width,mounted:2,visible:1,paneSwitch:true,sidebarEscapeFocus:true};
+  for(const theme of ['light','oled']){await evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)};document.documentElement.classList.toggle('dark',${theme!=='light'})`);await screenshot('atlas-narrow-'+theme);}report.themeFrames='Temporary Light/OLED tokens; stored preference untouched';
+  await command('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});await screenshot('atlas-narrow-reduced');report.reducedMotion=true;
+  await command('Emulation.setDeviceMetricsOverride',{width:1366,height:915,deviceScaleFactor:1,mobile:false});await wait("[...document.querySelectorAll('[data-pane-id]')].filter(e=>e.getBoundingClientRect().width>0).length===2");
+  await sleep(500);const stepsBefore=await evaluate("document.querySelector('[aria-label=\"Show full journey\"]').title");await evaluate('window.__atlasReload=true');await command('Page.reload');await wait("window.__atlasReload!==true&&document.querySelectorAll('[data-pane-id]').length===2&&Boolean(document.querySelector('.journey-current button'))");
+  const restored=await evaluate("[...document.querySelectorAll('[data-pane-id]')].map(e=>e.dataset.paneId)");if(JSON.stringify(paneIds)!==JSON.stringify(restored))throw new Error('Pane identities lost on refresh');
+  if(await evaluate("document.querySelector('[aria-label=\"Show full journey\"]').title")!==stepsBefore)throw new Error('Journey lost on refresh');report.sessionRestored=true;
+  await evaluate("[...document.querySelectorAll('.sidebar-nav')].find(b=>b.textContent.trim()==='Library').click()");await wait("document.querySelector('.library-heading h1')?.textContent==='Library'");
+  await sleep(5000);report.memorySettledLibrary=await memory();await screenshot('atlas-settled-library');
+ }else{await command('Emulation.setDeviceMetricsOverride',{width:412,height:915,deviceScaleFactor:1,mobile:false});await screenshot('atlas-narrow');report.narrowViewport={width:412,height:915};}
  await sleep(1000);await evaluate("window.vaultorDesktop.hostAction('stop')");await wait("(async()=>((await window.vaultorDesktop.localStatus()).value.status==='stopped'))()");report.hostStoppedSafely=true;
  await atomic(join(root,'native-report.json'),report);console.log('Atlas native baseline passed.');
 }catch(e){report.failure=e.message;report.visibleFailure=await evaluate("document.body.innerText.slice(0,1500)").catch(()=>null);await screenshot('atlas-native-failure').catch(()=>{});await atomic(join(root,'native-report.json'),report);throw e;}

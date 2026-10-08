@@ -225,3 +225,7 @@ Category intersects resource type/kind, query, collection, tags and pins on `/re
 ## Saved file-content extraction — 0.7.0
 
 GET resources/query adds scoped fileCoverage and supported saved PDF/UTF-8 file bodies, preserving all filters/ranking/snippet contracts. Diagnostics search status adds files; GET diagnostics/search/files returns bounded title/state/detail pages (default30,max100), POST diagnostics/search/files/retry retries unavailable entries or reindexes id. Rebuild clears derived file text and requeues originals. No storage paths/body/credentials in status. API protocol/minimum client3 and archive3 remain unchanged. [SEARCH.md](../workspace/SEARCH.md) is authoritative for limits, process controls, states and failure semantics.
+
+## Transfer status during maintenance — 0.7.1
+
+`GET /operations/{id}` returns immutable last-committed snapshots for live transfers without borrowing SQLite during a long import. Terminal/historical records remain durable in the operation table; their reads acquire admission before borrowing the connection and return a retryable 409 if maintenance is active. `GET /operations/activity` can count current live snapshots during maintenance. Snapshot entries are removed after terminal status; no indefinite historical cache. Operations MVC paths do not install the request EntityManager. Mutations, atomic workspace commit, cancellation limits, authentication, output/snapshot semantics and restart recovery are unchanged. Status does not claim success before the durable transaction completes.

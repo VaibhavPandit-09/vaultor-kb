@@ -68,6 +68,15 @@ class ResourceDiscoveryTest {
   var replace=transfers.preview(new MockMultipartFile("file","discovery.zip","application/zip",archive));transfers.commit(replace.operation().id(),"replace");awaitTransfer(replace.operation().id());assertEquals(1,browse.list(0,100,title,"file",List.of(),false,"title",null,"image").totalItems());assertEquals(source.getId(),refs.list(target.getId(),"incoming",0,30).items().getFirst().id());
  }
  void awaitTransfer(String id)throws Exception {for(int i=0;i<400;i++){var op=transfers.get(id);if(op.status().equals("SUCCEEDED"))return;if(op.status().equals("FAILED"))fail(op.detail());Thread.sleep(25);}fail("Transfer timeout");}
+ @Test void referencePagesRetainCompleteCountsAndTwentyOccurrencesPerSelectedSource() {
+  var target=service.createNote("Paged target",empty);
+  String link="{\"type\":\"resourceLink\",\"attrs\":{\"resourceId\":\""+target.getId()+"\",\"type\":\"note\",\"label\":\"Repeat\"}}";
+  String doc="{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":["+String.join(",",Collections.nCopies(25,link))+"]}]}";
+  for(int i=0;i<120;i++)service.createNote("Paged source "+String.format("%03d",i),doc);
+  var first=refs.list(target.getId(),"incoming",0,100);assertEquals(120,first.totalItems());assertEquals(3000,first.totalOccurrences());assertEquals(2,first.totalPages());assertEquals(100,first.items().size());
+  for(var row:first.items()){assertEquals(25,row.noteLinks());assertEquals(20,row.occurrences().size());assertEquals("Repeat",row.occurrences().getFirst().label());}
+  var second=refs.list(target.getId(),"incoming",1,100);assertEquals(20,second.items().size());assertEquals(120,second.totalItems());assertTrue(Collections.disjoint(first.items().stream().map(ResourceReferences.Entry::id).toList(),second.items().stream().map(ResourceReferences.Entry::id).toList()));
+ }
  @Test void boundedMimeInspectionClassifiesSupportedSignaturesAndRejectsFalseClaims()throws Exception {
   var values=Map.of("pdf","%PDF-1.4","audio","RIFF1234WAVEfixture","video","0000ftypisomfixture","text","ordinary utf8 text");
   for(var entry:values.entrySet()){Path path=DATA.resolve(entry.getKey()+".binary");Files.writeString(path,entry.getValue());String expected=Map.of("pdf","application/pdf","audio","audio/wav","video","video/mp4","text","text/plain").get(entry.getKey());assertEquals(expected,FileMime.detect(path,"image/png"));}

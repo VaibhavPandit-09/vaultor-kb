@@ -39,3 +39,7 @@ Saved references now open on demand through **References** in the focused-note w
 ## Trash and restored originals — 0.5.0
 
 Trash is a remembered Library destination; dialogs/selections remain transient. Unavailable notes pause editing while retaining their journey visits and any local recovery content; direct actions preserve mounted panes rather than dropping their trail. Restoration can resolve visits again, without replacing retained/conflicting drafts. File previews dismiss on unavailability. See [RESOURCE-LIFECYCLE.md](RESOURCE-LIFECYCLE.md) for conditional identities and recovery.
+
+## Compact desktop presentation — 0.7.1
+
+When available workspace width is at most 850px (two panes) or 1200px (three), only the focused pane is visible. Other editors stay mounted with their live documents/undo/selection intact. The Pane selector changes focus without recording a visit or closing notes. Wider windows restore the side-by-side layout automatically. At viewport widths up to 760px, the sidebar becomes an on-demand overlay with Menu and Escape; selecting navigation closes it. Closed overlays are inert. Resizing changes presentation only, never stored pane/sidebar preferences. This is responsive desktop/browser behavior, not Android certification.

@@ -1,6 +1,6 @@
 # Sprint 4 saved-file extraction observation
 
-Reviewed 2026-10-08. This is a bounded observation on the same Windows machine and atlas-2026-10-v1 corpus as the [Atlas baseline](ATLAS-BASELINE.md), not a completed Sprint 5 comparison.
+Reviewed 2026-10-08. This is a bounded observation on the same Windows machine and atlas-2026-10-v1 corpus as the [Atlas baseline](ATLAS-BASELINE.md), not a completed Sprint 5 comparison. The subsequent completed Windows observations and fixes are in [SCALE-INTEGRATION.md](SCALE-INTEGRATION.md); the Sprint 4 observations below remain historical.
 
 A verified synthetic baseline ZIP was imported into a new protected temp workspace; the user's original Atlas profile and personal workspace were untouched. 5,000 resources were verified, including 1,000 active Files. The first 5,000-resource replacement completed, but polling operation status hit the single Hikari connection's 30-second timeout during its long committing transaction. This failure is retained as a Sprint 5 limitation; it is not fixed in Sprint 4. The marked completed disposable copy was restarted to observe indexing.
 

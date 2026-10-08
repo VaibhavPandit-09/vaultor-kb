@@ -10,6 +10,6 @@ public class RequestEntityManager implements WebMvcConfigurer {
     public RequestEntityManager(EntityManagerFactory factory){this.factory=factory;}
     @Override public void addInterceptors(InterceptorRegistry registry) {
         var interceptor=new OpenEntityManagerInViewInterceptor();interceptor.setEntityManagerFactory(factory);
-        registry.addWebRequestInterceptor(interceptor).excludePathPatterns("/api/changes");
+        registry.addWebRequestInterceptor(interceptor).excludePathPatterns("/api/changes", "/api/operations/**");
     }
 }
