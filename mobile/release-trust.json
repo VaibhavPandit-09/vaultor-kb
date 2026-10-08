@@ -1,0 +1,8 @@
+{
+  "minimumApi": 36,
+  "signerSha256": "af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567",
+  "version": 1,
+  "updatePolicy": "HTTPS metadata plus Android APK signature, expected package and monotonic versionCode; no workspace credentials; user-controlled installation",
+  "applicationId": "com.vaultor.app",
+  "apiProtocol": 3
+}

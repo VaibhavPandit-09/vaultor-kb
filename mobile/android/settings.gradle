@@ -1,0 +1,6 @@
+pluginManagement { includeBuild(System.getenv("VAULTOR_GRADLE_PLUGIN_DIR") ?: "../node_modules/@react-native/gradle-plugin") }
+plugins { id("com.facebook.react.settings") }
+extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+rootProject.name = 'VaultorAndroid'
+include ':app'
+includeBuild(System.getenv("VAULTOR_GRADLE_PLUGIN_DIR") ?: "../node_modules/@react-native/gradle-plugin")

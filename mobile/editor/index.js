@@ -1,0 +1,150 @@
+import { Editor, Node } from '@tiptap/core';
+import StarterKit from '@tiptap/starter-kit';
+import {
+  Table,
+  TableRow,
+  TableCell,
+  TableHeader,
+} from '@tiptap/extension-table';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
+import Highlight from '@tiptap/extension-highlight';
+import CodeBlock from '@tiptap/extension-code-block-lowlight';
+import { all, createLowlight } from 'lowlight';
+const send = value =>
+  window.ReactNativeWebView.postMessage(
+    JSON.stringify({ protocol: 1, ...value }),
+  );
+const ResourceLink = Node.create({
+  name: 'resourceLink',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  addAttributes: () => ({
+    resourceId: { default: null },
+    label: { default: null },
+    type: { default: 'note' },
+  }),
+  renderHTML: ({ node }) => [
+    'span',
+    { class: 'resource-link' },
+    node.attrs.label || 'Linked resource',
+  ],
+});
+const Image = Node.create({
+  name: 'image',
+  group: 'block',
+  atom: true,
+  addAttributes: () => ({
+    resourceId: { default: null },
+    alt: { default: '' },
+    caption: { default: '' },
+    width: { default: 100 },
+    alignment: { default: 'center' },
+  }),
+  renderHTML: ({ node }) => [
+    'figure',
+    { class: 'image-placement', contenteditable: 'false' },
+    ['div', {}, node.attrs.alt || 'Image placement — preview arrives in A4'],
+    ['figcaption', {}, node.attrs.caption || ''],
+  ],
+});
+const WorkspaceTable = Table.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      ...Object.fromEntries(
+        [
+          'tableId',
+          'columnIds',
+          'sourceResourceId',
+          'sourceResourceTitle',
+          'sourceResourceType',
+        ].map(k => [k, { default: null }]),
+      ),
+    };
+  },
+});
+let loadId = '',
+  loading = true,
+  blocked = false;
+const editor = new Editor({
+  element: document.querySelector('#editor'),
+  extensions: [
+    StarterKit.configure({ codeBlock: false, trailingNode: false }),
+    CodeBlock.configure({ lowlight: createLowlight(all) }),
+    WorkspaceTable,
+    TableRow,
+    TableCell,
+    TableHeader,
+    TaskList,
+    TaskItem.configure({ nested: true }),
+    Highlight.configure({ multicolor: true }),
+    ResourceLink,
+    Image,
+  ],
+  enableContentCheck: true,
+  content: { type: 'doc', content: [{ type: 'paragraph' }] },
+  onContentError: () => {
+    blocked = true;
+    send({ type: 'unsupported', loadId });
+  },
+  onUpdate: ({ editor: e }) => {
+    if (!loading && !blocked)
+      send({ type: 'changed', loadId, content: e.getJSON() });
+  },
+});
+function validate(node, depth = 0) {
+  if (!node || typeof node !== 'object' || depth > 80)
+    throw Error('Unsupported document');
+  const type = editor.schema.nodes[node.type];
+  if (!type) throw Error('Unknown node');
+  for (const key of Object.keys(node.attrs || {}))
+    if (!Object.hasOwn(type.spec.attrs || {}, key))
+      throw Error('Unknown attribute');
+  for (const mark of node.marks || []) {
+    const mt = editor.schema.marks[mark.type];
+    if (!mt) throw Error('Unknown mark');
+    for (const key of Object.keys(mark.attrs || {}))
+      if (!Object.hasOwn(mt.spec.attrs || {}, key))
+        throw Error('Unknown mark attribute');
+  }
+  for (const child of node.content || []) validate(child, depth + 1);
+}
+window.vaultorReceive = raw => {
+  try {
+    if (typeof raw !== 'string' || raw.length > 1500000) return;
+    const m = JSON.parse(raw);
+    if (m.protocol !== 1) return;
+    if (m.type === 'load') {
+      loading = true;
+      blocked = false;
+      loadId = m.loadId;
+      validate(m.content);
+      editor.schema.nodeFromJSON(m.content).check();
+      editor.commands.setContent(m.content, {
+        emitUpdate: false,
+        errorOnInvalidContent: true,
+      });
+      editor.setEditable(true, false);
+      loading = false;
+      send({ type: 'loaded', loadId, content: editor.getJSON() });
+    } else if (m.type === 'editable' && !blocked) {
+      editor.setEditable(m.value === true, false);
+    } else if (m.type === 'command' && !blocked && editor.isEditable) {
+      const commands = {
+        bold: () => editor.chain().focus().toggleBold().run(),
+        italic: () => editor.chain().focus().toggleItalic().run(),
+        undo: () => editor.chain().focus().undo().run(),
+        redo: () => editor.chain().focus().redo().run(),
+      };
+      commands[m.name]?.();
+    }
+  } catch {
+    blocked = true;
+    editor.setEditable(false, false);
+    send({ type: 'unsupported', loadId });
+  }
+};
+editor.setEditable(false, false);
+send({ type: 'ready' });

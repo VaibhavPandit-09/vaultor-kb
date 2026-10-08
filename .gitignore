@@ -34,3 +34,5 @@ desktop/releases/
 data/
 app.db
 files/
+
+# Android project dependencies and private build output are covered by mobile/.gitignore

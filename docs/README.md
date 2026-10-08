@@ -46,9 +46,14 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 - [Operations](development/OPERATIONS.md): development, Docker, data/limits, logs and isolated verification.
 - [Host access and pairing](security/HOST-ACCESS.md): owner bootstrap, HTTPS trust, persistent approvals and approved agent access.
 
+## Android — `android/`
+
+- [Android implementation and APK delivery](android/ANDROID.md): isolated toolchain, native trust/drafts, prototype limits, signing, installation and actual validation.
+- [0.1.0-alpha.1 A1 prototype](android/releases/0.1.0-alpha.1.md): Android-only APK scope and emulator evidence; user-only S24 checklist.
+
 ## Active execution trackers — `plans/`
 
-- [Vaultor for Android](plans/android-plan.md): six unstarted sprints, Windows emulator testing, no agent phone access, signed APK milestones and S24 Ultra / One UI 8.5–9 user acceptance.
+- [Vaultor for Android](plans/android-plan.md): A1 prototype and five later sprints, Windows emulator testing, no agent phone access, signed APK milestones and S24 Ultra / One UI 8.5–9 user acceptance.
 
 - [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): All five sprints implemented on Windows; measured integration, platform limits and separate Android prototype gate recorded.
 - [Deferred roadmap](plans/future-roadmap.md): scheduled backups explicitly parked for later, OCR/offline/platform follow-ups and scope boundaries.
