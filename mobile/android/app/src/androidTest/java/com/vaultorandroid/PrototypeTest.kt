@@ -89,7 +89,7 @@ class PrototypeTest {
     device.findObject(By.text("Return to note")).click()
     assertTrue(device.wait(Until.hasObject(By.text("Save")),5000))
     tapBundledLink(device)
-    assertTrue(device.wait(Until.hasObject(By.text("A3 Linked fixture")),10000))
+    assertTrue(device.wait(Until.hasObject(By.text("A3 Linked fixture").clazz("android.widget.TextView")),10000))
     device.pressBack()
     assertTrue(device.wait(Until.hasObject(By.text("A1 Editor fixture")),10000))
     Log.i("VaultorPrototypeTest","LINK_AND_NATIVE_BACK")

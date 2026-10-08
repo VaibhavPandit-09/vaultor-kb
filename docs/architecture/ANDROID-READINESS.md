@@ -1,6 +1,6 @@
 # Android client readiness
 
-Reviewed 2026-10-09. A1–A2 are published; A3 implements native browsing, explicit search and active-note journeys with release verification in progress. Offline synchronization remains deferred. Current mobile implementation and validation are authoritative in [ANDROID.md](../android/ANDROID.md). The current browser/Electron boundary is authoritative in [PLATFORM.md](PLATFORM.md). The completed shared-work results are tracked in [resource-lifecycle-plan.md](../plans/resource-lifecycle-plan.md). The authoritative six-sprint Android scope, Windows-only agent testing, APK milestones and physical-device acceptance boundary are in [android-plan.md](../plans/android-plan.md); A4–A6 remain unstarted.
+Reviewed 2026-10-09. A1–A3 are published; A3 implements native browsing, explicit search and active-note journeys. Offline synchronization remains deferred. Current mobile implementation and validation are authoritative in [ANDROID.md](../android/ANDROID.md). The current browser/Electron boundary is authoritative in [PLATFORM.md](PLATFORM.md). The completed shared-work results are tracked in [resource-lifecycle-plan.md](../plans/resource-lifecycle-plan.md). The authoritative six-sprint Android scope, Windows-only agent testing, APK milestones and physical-device acceptance boundary are in [android-plan.md](../plans/android-plan.md); A4–A6 remain unstarted.
 
 ## Product boundary
 

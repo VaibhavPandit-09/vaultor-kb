@@ -1,6 +1,6 @@
 # Vaultor for Android
 
-Reviewed 2026-10-09. A1–A2 are published; A3 browsing/navigation is implemented with release verification in progress. Current Android 0.1.0-alpha.3 (versionCode3) adds native browsing and journeys; actual publication evidence is recorded below. [The tracker](../plans/android-plan.md) owns sprint scope. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
+Reviewed 2026-10-09. A1–A3 are published. Current Android 0.1.0-alpha.3 (versionCode3) adds native browsing and journeys; actual publication evidence is recorded below. [The tracker](../plans/android-plan.md) owns sprint scope. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
 
 ## Prototype boundary
 
@@ -137,3 +137,11 @@ Counts verified: Small40 notes/8 collections/20 pins; Atlas4,000 notes/80 collec
 Initial harness failures were corrected: remembered-host startup, uppercase Android dialog button labels, preservation of prior search in the benchmark, and attempting Atlas reads before replacement completed. One benchmark Kotlin local-name conflict was fixed. These failed runs are not counted as passes. Final installed-source/publication gates remain separately recorded below.
 
 A3 final candidate interaction gate: API37 actual screen touch followed a bundled inline note link, then Android Back returned to the source; type-picker dismissal and Return to note retained the editor. A stale modal keyboard flag initially consumed Back; it was corrected with native window IME visibility and explicit focus release. Five native storage/policy cases passed on API37; the corrected prototype case passed separately. Android17 already had LAN permission from A2, so this A3 run preserved that grant rather than claiming a fresh denial/retry test.
+
+## A3 published APK and final verification
+
+Published Android-only prerelease at **2026-10-08T23:00:44Z** (2026-10-09 local): [Vaultor Android 0.1.0-alpha.3](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.3). Immutable tag **android/v0.1.0-alpha.3**, source **4c55af16c9405e79000d94998ba68c2704cb42ca**. APK **40,163,388 bytes**, SHA-256 **a754e93ebba27105a0b603b5597d24292b35be19bcdf8d4c7c90111e7f8731fa**. Original public signer **af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567**; package com.vaultor.app / versionCode3 / minimumAPI36 / targetAPI37 / protocol3.
+
+Fresh tagged-source APK installed over the existing app on API36 and API37. Five native storage/policy tests passed on each exact staged install. Android17 restored its note and journey. Final pairing/editor/browsing/picker/inline-link/native-Back checks passed on both generations. On API36, the first final interaction run matched the destination link text still in the source WebView and pressed Back before navigation completed. The focused test now waits for the destination's native TextView heading; rebuilding the test APK and rerunning passed. This test-only follow-up does not change the shipped APK or move the source tag. Android17 retained its previously granted LAN permission; no new denial/retry result is claimed for A3.
+
+Publisher verified the clean pushed source/tag, original signer policy and staged assets, then downloaded and compared all three artifacts byte-for-byte before publication. GitHub confirms non-draft/prerelease status and matching asset sizes/digests. Desktop/Mac0.7.1 remains unchanged. Owned temporary host and both emulators were stopped; no personal workspace or phone access. Install the single APK over the existing app; do not uninstall or clear data. Samsung/One UI, TalkBack, real Wi-Fi and OEM lifecycle remain user-only/open. **A3 complete; A4–A6 remain unstarted.**

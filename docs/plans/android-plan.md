@@ -1,6 +1,6 @@
 # Vaultor for Android — execution tracker
 
-Created 2026-10-08; reviewed 2026-10-09. **A1–A2 implemented and published; A3 in progress; A4–A6 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
+Created 2026-10-08; reviewed 2026-10-09. **A1–A3 implemented and published; A4–A6 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
 
 ## Delivery and agreed boundaries
 
@@ -76,7 +76,7 @@ Status: **Implemented and published (2026-10-09)**. User authorized A2; A3–A6 
 
 ## A3 — Native browsing, search and journeys
 
-Status: **Implemented; final tagged APK/publication gate pending (2026-10-09)**. User authorized A3 only. Release milestone: Android0.1.0-alpha.3 / versionCode3; desktop/host0.7.1 stays unchanged.
+Status: **Implemented and published (2026-10-09 local)**. User authorized A3 only. Release milestone: Android0.1.0-alpha.3 / versionCode3; desktop/host0.7.1 stays unchanged.
 
 - [x] Implement mobile destinations for Library, Recent, Pinned and Collections with one mixed list, shared type/category descriptors, concise metadata and touch-accessible row actions. Use bounded server pages and cancellation; never download all note bodies.
 - [x] Default title search; explicit saved-content mode and collection scope preserve query, reset paging and show coverage/snippets honestly. No silent scope broadening. Collections stay destinations, not resource types.
@@ -169,4 +169,12 @@ Implemented native mixed 100-row paging, title-first/explicit saved-content and 
 
 TypeScript, 32 focused Jest tests, fresh editor schema/refusal/activation checks, scoped lint (zero errors/19 warnings) and signed release/application-test builds passed. API36 native storage/policy plus Small browsing suite passed six cases; Atlas query/paging/scroll passed one. API37 five native storage/policy cases passed; its final matching-code pairing/editor/browsing/picker/link-and-native-Back case passed separately after the keyboard fix. Small70/Atlas5,000 verified counts; first-page timing samples77/76/82ms and103/91/82ms, body-only query28/40ms, first usable Library1,839/1,635ms. Six scripted scrolls2,825/2,779ms include harness overhead; no FPS/Wi-Fi/heap claim. Actual setup/failed-run corrections/visual limitations are in ANDROID.md.
 
-Final same-tag installs/publication follow. Samsung/One UI, TalkBack, physical OLED/Wi-Fi and OEM lifecycle checks remain user-only/open. Image viewing/input belongs to A4, organization mutations A5, full themes/touch/motion/discovery/updater A6. Stop after A3.
+Final same-tag installs and publication passed; the exact ledger follows. Samsung/One UI, TalkBack, physical OLED/Wi-Fi and OEM lifecycle checks remain user-only/open. Image viewing/input belongs to A4, organization mutations A5, full themes/touch/motion/discovery/updater A6. Stop after A3.
+
+## A3 published APK and final verification
+
+Published Android-only prerelease at **2026-10-08T23:00:44Z** (2026-10-09 local): [Vaultor Android 0.1.0-alpha.3](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.3). Immutable tag **android/v0.1.0-alpha.3**, source **4c55af16c9405e79000d94998ba68c2704cb42ca**. APK **40,163,388 bytes**, SHA-256 **a754e93ebba27105a0b603b5597d24292b35be19bcdf8d4c7c90111e7f8731fa**. Original public signer **af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567**; package com.vaultor.app / versionCode3 / minimumAPI36 / targetAPI37 / protocol3.
+
+Fresh tagged-source APK installed over the existing app on API36 and API37. Five native storage/policy tests passed on each exact staged install. Android17 restored its note and journey. Final pairing/editor/browsing/picker/inline-link/native-Back checks passed on both generations. On API36, the first final interaction run matched the destination link text still in the source WebView and pressed Back before navigation completed. The focused test now waits for the destination's native TextView heading; rebuilding the test APK and rerunning passed. This test-only follow-up does not change the shipped APK or move the source tag. Android17 retained its previously granted LAN permission; no new denial/retry result is claimed for A3.
+
+Publisher verified the clean pushed source/tag, original signer policy and staged assets, then downloaded and compared all three artifacts byte-for-byte before publication. GitHub confirms non-draft/prerelease status and matching asset sizes/digests. Desktop/Mac0.7.1 remains unchanged. Owned temporary host and both emulators were stopped; no personal workspace or phone access. Install the single APK over the existing app; do not uninstall or clear data. Samsung/One UI, TalkBack, real Wi-Fi and OEM lifecycle remain user-only/open. **A3 complete; A4–A6 remain unstarted.**
