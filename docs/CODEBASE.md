@@ -568,3 +568,5 @@ Added shared Actions, bounded Trash/Restore, revision-checked retry-safe mutatio
 Published Windows-only on 2026-10-08 at 09:45:07 UTC: [Vaultor 0.5.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.5.0). Immutable source tag v0.5.0 points to `697cd171106c8a612096c7a645d7467f67b14a77`. Both GitHub asset sizes/digests match local artifacts; the downloaded pair passed original-key signature, size and SHA-256 verification. Mac arm64 awaits exact same-tag native build/key/verification; existing Windows assets must not be replaced. Publication-status documentation has no additional shipped-code or architectural effect.
 
 Post-publication default Windows updater check discovered and original-key verified 0.5.0 from a 0.4.1 client. No installer execution or workspace mutation was performed for discovery.
+
+Post-publication documentation correction restores the full platform installation/recovery procedures while updating only the current release paragraph. No shipped-code or architectural effect; section presence and diff were checked.
