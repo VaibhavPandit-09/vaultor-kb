@@ -1,6 +1,6 @@
 # Current release handoff — 0.7.1 saved-content search
 
-Windows 0.7.1 has passed the release gate; Mac arm64 remains unavailable until the exact v0.7.1 native build and verification pass. Do not treat the older sections below as current source/version instructions.
+Windows 0.7.1 is published from immutable v0.7.1 source `3e455cd05e6ad722e7a38e07d9b102dd25e39609`; Mac arm64 remains unavailable until the exact v0.7.1 native build and verification pass. Do not treat the older sections below as current source/version instructions.
 
 0. The user requested this Mac AI handoff for Sprint 5. After checking out v0.7.1, verify batched reference paging/counts/20-occurrence bounds, live large-import polling (no pool timeout), 30-second approved startup retry, compact focused-pane switching at 412px, sidebar Escape/focus, native-control clearance and refresh identities/journeys. Read development/SCALE-INTEGRATION.md for actual Windows results and unresolved memory/startup/LAN gates. Build using the commands below; record all unavailable native tests honestly.
 

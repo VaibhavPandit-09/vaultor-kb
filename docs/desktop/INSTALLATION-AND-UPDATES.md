@@ -63,9 +63,9 @@ App version and server protocol are distinct. Every desktop release includes its
 
 ## Optional in-app HTTPS feed
 
-Updates → **Update source and recovery** can store a platform-specific HTTPS manifest URL. **Check**, **Download**, and **Install update** are currently explicit actions; there is no periodic automatic check or silent installation.
+Updates → Advanced can store a platform-specific HTTPS manifest URL. Blank uses the built-in GitHub release discovery. The app checks once after normal installed startup and on opening Updates; it does not continuously poll or install silently without the explicit Update and restart action.
 
-The signed manifest and its named installer must be served at sibling URLs without redirects. Direct GitHub Release asset links normally redirect and are **not a supported feed** under the current transport policy. Do not paste a GitHub release page, `latest` URL or raw manifest URL whose sibling installer is absent into this setting. GitHub download + Import update is the supported zero-cost baseline. A compatible feed is optional future hosting work, not a prerequisite or a promise that GitHub publication alone enables automatic updates.
+Custom manifests require a sibling installer and reject redirects. The built-in GitHub source separately permits bounded, credential-free GitHub asset redirects and verifies the original-key signed pair. Do not paste a release page or latest URL as a custom manifest. A custom feed is optional; publishing a verified GitHub platform pair enables the normal zero-cost in-app update workflow.
 
 ## Browser and Docker — Windows, Mac and Ubuntu
 
