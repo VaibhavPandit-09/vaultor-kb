@@ -48,7 +48,7 @@ public class OrganizationService {
     public record SelectionInput(List<String> resourceIds) {}
     public record MembershipDto(String id,String name,long selectedCount) {}
     public record PinnedItem(String id,String kind,String name,long count,com.vaultor.vaultor.controller.ApiDtos.ResourceSummary resource) {}
-    public record PinsPage(List<PinnedItem> items,int page,int size,long totalItems,int totalPages,String appliedKind) {}
+    public record PinsPage(List<PinnedItem> items,int page,int size,long totalItems,int totalPages,String appliedKind,String appliedCategory) {}
     private List<String> selection(List<String> ids,boolean emptyAllowed) {
         if(ids==null || (!emptyAllowed && ids.isEmpty()) || ids.size()>100 || ids.stream().anyMatch(Objects::isNull)) throw new IllegalArgumentException("Select up to 100 resource IDs");
         var result=ids.stream().distinct().sorted().toList();
@@ -90,17 +90,24 @@ public class OrganizationService {
     }
     @Transactional(readOnly=true) public PinsPage pins(String q,int page,int size) { return pins(q,page,size,null); }
     @Transactional(readOnly=true) public PinsPage pins(String q,int page,int size,String kind) {
+        return pins(q,page,size,kind,null);
+    }
+    @Transactional(readOnly=true) public PinsPage pins(String q,int page,int size,String kind,String category) {
         paging(page,size);
         if(kind!=null && !kind.matches("[a-zA-Z0-9_-]{1,80}")) throw new IllegalArgumentException("Invalid shortcut kind");
-        String from=" from (select id,type as kind,title as name,0 as members from resources where favorite=1 and trashed_at is null union all select c.id,'collection' as kind,c.name,(select count(*) from resource_collections rc join resources active on active.id=rc.resource_id where active.trashed_at is null and rc.collection_id=c.id) as members from collections c where c.favorite=1) p where lower(name) like ? escape '!'";
+        String from=" from (select id,type as kind,title as name,0 as members,mime_type from resources where favorite=1 and trashed_at is null union all select c.id,'collection' as kind,c.name,(select count(*) from resource_collections rc join resources active on active.id=rc.resource_id where active.trashed_at is null and rc.collection_id=c.id) as members,null as mime_type from collections c where c.favorite=1) p where lower(name) like ? escape '!'";
         var args=new ArrayList<Object>();args.add(query(q));
         if(kind!=null && !kind.equals("all")){from+=" and kind=?";args.add(kind);}
+        if(category!=null&&!category.isBlank()) {
+            if(!FileCategories.VALUES.contains(category))throw new IllegalArgumentException("Unknown file category");
+            from+=" and kind='file' and ("+FileCategories.expression("r").replace("r.type","p.kind").replace("r.mime_type","p.mime_type")+")=?";args.add(category);
+        }
         long total=jdbc.queryForObject("select count(*)"+from,Long.class,args.toArray());
         args.add(size);args.add((long)page*size);
         var items=jdbc.query("select id,kind,name,members"+from+" order by lower(name),kind,id limit ? offset ?",(rs,n)->new PinnedItem(rs.getString(1),rs.getString(2),rs.getString(3),rs.getLong(4),null),args.toArray());
         var summaries=browse.byIds(items.stream().filter(p->!p.kind().equals("collection")).map(PinnedItem::id).toList());
         items=items.stream().map(p->new PinnedItem(p.id(),p.kind(),p.name(),p.count(),summaries.get(p.id()))).toList();
-        return new PinsPage(items,page,size,total,(int)((total+size-1)/size),kind==null?"all":kind);
+        return new PinsPage(items,page,size,total,(int)((total+size-1)/size),kind==null?"all":kind,category);
     }
 
     public record CollectionInput(String name,Boolean favorite) {}

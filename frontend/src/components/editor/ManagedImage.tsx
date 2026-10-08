@@ -4,6 +4,9 @@ import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tip
 import { useEffect, useRef, useState, useId } from 'react';
 import { ImageIcon, MoreHorizontal } from 'lucide-react';
 import { copyImage, downloadImage, loadImage, imageUploadPlugin } from '../../lib/noteImages';
+import {requestResourceAction} from '../../lib/resourceActions';
+import api from '../../lib/api';
+import type {Resource} from '../../types';
 import { openResourceLink } from '../../lib/resourceLinkNavigation';
 import { useEscapeLayer, ESCAPE_PRIORITIES } from '../../lib/escape/escape';
 
@@ -42,7 +45,7 @@ function ImagePlacement({ node, selected, updateAttributes, deleteNode, editor, 
       {['left', 'center', 'right'].map(alignment => <button key={alignment} aria-label={`Align image ${alignment}`} aria-pressed={attrs.alignment === alignment} onClick={() => updateAttributes({ alignment })}>{alignment}</button>)}
       <button onClick={() => setDetails(value => !value)} aria-expanded={details}>Caption & alt</button><button onClick={replace}>Replace</button>
       <button aria-label="More image actions" aria-expanded={more} onClick={() => setMore(value => !value)}><MoreHorizontal size={16} /></button>
-      {more && <div className="image-more" role="group" aria-label="More image actions"><button onClick={() => { setMore(false); openResourceLink(editor, attrs.resourceId, false); }}>Preview</button><button onClick={() => action(() => copyImage(attrs.resourceId))}>Copy image</button><button onClick={() => action(() => downloadImage(attrs.resourceId))}>Download original</button><button onClick={deleteNode}>Remove from note</button></div>}
+      {more && <div className="image-more" role="group" aria-label="More image actions"><button onClick={() => { setMore(false); openResourceLink(editor, attrs.resourceId, false); }}>Preview</button><button onClick={() => action(() => copyImage(attrs.resourceId))}>Copy image</button><button onClick={() => action(() => downloadImage(attrs.resourceId))}>Download original</button><button onClick={()=>action(async()=>{const {data}=await api.get<Resource>('/resources/'+attrs.resourceId+'/summary');setMore(false);await requestResourceAction('references',[data]);})}>Used in…</button><button onClick={deleteNode}>Remove from note</button></div>}
     </div>
     {details && <div className="image-details"><label>Alternative text<input maxLength={2000} value={attrs.alt} onChange={event => updateAttributes({ alt: event.target.value })} /></label><label>Caption<input maxLength={2000} value={attrs.caption} onChange={event => updateAttributes({ caption: event.target.value })} /></label></div>}
     {attrs.caption && <div className="image-caption">{attrs.caption}</div>}

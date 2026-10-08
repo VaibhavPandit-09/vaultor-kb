@@ -29,6 +29,6 @@ it('uses one mixed pin query and filters server paging while preserving title se
 it('refuses an unacknowledged filter from an older server instead of broadening it',async()=>{
  vi.mocked(api.get).mockResolvedValue({data:{items:[{id:'n',kind:'note',name:'Other type',count:0}],totalItems:10,totalPages:1}});
  render(<EscapeManagerProvider><PinnedList compact filterType="file" onResource={()=>{}} onCollection={()=>{}}/></EscapeManagerProvider>);
- await screen.findByText('Update the connected server to 0.3.1 or later to filter pinned shortcuts.');
+ await screen.findByText('Update the connected server to 0.6.0 or later to filter pinned shortcuts.');
  expect(screen.queryByText('Other type')).toBeNull();
 });

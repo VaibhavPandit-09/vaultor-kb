@@ -1,3 +1,5 @@
+import ResourceReferences from '../components/ResourceReferences';
+import {revealReference} from '../lib/referenceNavigation';
 import ResourceActions from '../components/ResourceActions';
 import ResourceLifecycleDialog from '../components/ResourceLifecycleDialog';
 import TrashView from '../components/TrashView';
@@ -134,8 +136,7 @@ export default function Dashboard() {
   const activeNoteId = openNotes.find(p => p.paneId === activePaneId)?.id ?? null;
   const [sharedDocuments] = useState(() => new SharedNoteDocuments());
   const previewSourcePane = useRef<string | null>(null);
-  const [backlinks, setBacklinks] = useState<Resource[]>([]);
-  const [backlinksFor,setBacklinksFor]=useState<string|null>(null);
+  const [referenceTarget,setReferenceTarget]=useState<Resource|null>(null);
   const [loadingResourceIds, setLoadingResourceIds] = useState<string[]>([]);
 
   const [tagSearch, setTagSearch] = useState('');
@@ -396,7 +397,6 @@ export default function Dashboard() {
 
   const resourceLoadVersions = useRef(new Map<string, number>());
   const workspaceEpoch = useRef(0);
-  const backlinkVersion = useRef(0);
   const fetchResourceDetails = useCallback(async (id: string, navigationRequest = false, background = false) => {
     const version = (resourceLoadVersions.current.get(id) ?? 0) + 1;
     resourceLoadVersions.current.set(id, version);
@@ -418,19 +418,6 @@ export default function Dashboard() {
       if (resourceLoadVersions.current.get(id) === version) setLoadingResourceIds((prev) => prev.filter((entry) => entry !== id));
     }
   }, [saves, paneNavigation, recovery]);
-
-  const fetchBacklinks = useCallback(async (id: string) => {
-    const relevant = () => { const state = paneNavigation.snapshot(); return state.panes.find(p => p.paneId === state.activePaneId)?.id === id; };
-    if (!relevant()) return;
-    const version = ++backlinkVersion.current;
-    try {
-      const { data } = await api.get(`/resources/${id}/backlinks`, { backgroundDiagnostic: true });
-      if (version === backlinkVersion.current && relevant()) {setBacklinks(data || []);setBacklinksFor(id);}
-    } catch (error) {
-      console.error(error);
-      if (version === backlinkVersion.current && relevant()) setBacklinks([]);
-    }
-  }, [paneNavigation]);
 
   const markOpened = useCallback((id: string) => {
     recency.open(id);
@@ -634,13 +621,7 @@ export default function Dashboard() {
     return () => {unsubscribe();cancelSidebarRequests();};
   }, [fetchData,fetchTags,cancelSidebarRequests]);
 
-  useEffect(() => {
-    dispatch(setCurrentResourceId(activeNoteId));
-    if (activeNoteId) void fetchBacklinks(activeNoteId);
-    else { backlinkVersion.current++; setBacklinks([]); }
-    const version = backlinkVersion;
-    return () => { version.current++; };
-  }, [activeNoteId, fetchBacklinks, dispatch]);
+  useEffect(() => {dispatch(setCurrentResourceId(activeNoteId));},[activeNoteId,dispatch]);
 
   useEffect(() => {
     if (activeResource?.type === 'note') {
@@ -726,6 +707,15 @@ export default function Dashboard() {
   resourceActionHandler.current=async request=>{
     if(request.epoch!==getConnection().epoch)throw new Error('Connection changed. Reopen the action.');
     const resource=request.resources[0];if(!resource)throw new Error('Choose a resource.');
+    if(request.action==='references'){setReferenceTarget(resource);return;}
+    if(request.action==='reference-open'){
+      const anchor=JSON.parse(request.value??'{}') as {path:string;targetId:string;revision:string};
+      await openResourceById(resource.id,{throwOnFailure:true});
+      const pane=paneNavigation.snapshot().panes.find(p=>p.paneId===paneNavigation.snapshot().activePaneId&&p.id===resource.id);
+      const {data:latest}=await api.get<Resource>('/resources/'+resource.id+'/summary');
+      if(!pane||saves.latest(resource.id)||recovery.current(resource.id)||latest.revision!==anchor.revision||!await revealReference(pane.paneId,resource.id,anchor.path,anchor.targetId))setSessionMessage('Opened the source note. Its occurrence may have moved; locate the link or image in the current content.');
+      return;
+    }
     if(request.action==='open'){await openResourceById(resource.id);return;}
     if(request.action==='trash'){setLifecycleTargets(request.resources);return;}
     if(request.action==='export'){setNoteExport({id:resource.id,title:resource.title});return;}
@@ -833,7 +823,6 @@ export default function Dashboard() {
     try {
       await api.post(`/resources/${resourceId}/tags/${encodeURIComponent(normalizedTagName)}`);
       await fetchResourceDetails(resourceId);
-      await fetchBacklinks(resourceId);
       organizationChanged('tag',[resourceId]);
       return true;
     } catch (error) {
@@ -844,7 +833,7 @@ export default function Dashboard() {
     } finally {
       setTagAddPending(false);
     }
-  }, [fetchBacklinks, fetchData, fetchResourceDetails, tags]);
+  }, [fetchData, fetchResourceDetails, tags]);
 
   const handleTagColorChange = useCallback(async (tagId: string, color: string) => {
     const normalizedColor = color.trim().toLowerCase();
@@ -895,7 +884,6 @@ export default function Dashboard() {
     try {
       await api.delete(`/resources/${activeResource.id}/tags/${encodeURIComponent(tagName.trim())}`);
       void fetchResourceDetails(activeResource.id);
-      void fetchBacklinks(activeResource.id);
       organizationChanged('tag',[activeResource.id]);
     } catch (error) {
       console.error(error);
@@ -911,9 +899,6 @@ export default function Dashboard() {
       organizationChanged('tag');
       if (activeResource) {
         await fetchResourceDetails(activeResource.id);
-        if (activeResource.type === 'note') {
-          await fetchBacklinks(activeResource.id);
-        }
       }
       setTagDeleteModal(null);
     } catch (error) {
@@ -1041,7 +1026,7 @@ export default function Dashboard() {
   useEffect(()=>{
     if(!sessionReady)return;let stopped=false;
     const check=async()=>{const version=++identityCheckVersion.current;try {const identity=(await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;if(!stopped&&version===identityCheckVersion.current&&identityRef.current&&!sameWorkspace(identity,identityRef.current)) {
-      workspaceEpoch.current++;resourceLoadVersions.current.clear();backlinkVersion.current++;setBacklinks([]);dispatch(setCurrentResourceId(null));
+      workspaceEpoch.current++;resourceLoadVersions.current.clear();setReferenceTarget(null);dispatch(setCurrentResourceId(null));
       setCommandPaletteOpen(false);setFileImport(null);setTagPickerOpenNoteId(null);setLifecycleTargets(null);setRecoveryOpen(false);setTransferMode(null);
       saves.clear();paneNavigation.reset();setResourceDetails({});setPreviewResourceId(null);setPreviewResourceType(null);setNoteExport(null);setTitleEditState(null);setLibraryVisible(true);setCollection(null);setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
       identityRef.current=identity;recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));setSessionMessage('The workspace was replaced. Previous drafts are available as separate recovery copies.');notifyResourceChange({kind:'workspace'});
@@ -1065,7 +1050,6 @@ export default function Dashboard() {
     if(broad || resourceEvents.length || events.some(e=>e.kind==='organization'||e.kind==='tags')) {
       const ids=resourceEvents.some(e=>!e.ids.length)?undefined:new Set(resourceEvents.flatMap(e=>e.ids));
       notifyResourceChange({kind:'metadata',ids:ids?[...ids]:undefined,membershipChanged:true});
-      if(activeNoteId)void fetchBacklinks(activeNoteId);
       if(previewResourceId && (broad || !ids?.size || ids.has(previewResourceId))) {
         const previewId=previewResourceId,epoch=workspaceEpoch.current;
         void api.get<Resource>('/resources/'+previewId+'/summary',{backgroundDiagnostic:true}).catch(error=>{if(epoch===workspaceEpoch.current && [404,410].includes(error.response?.status))dismissPreview();});
@@ -1334,6 +1318,7 @@ export default function Dashboard() {
         <button onClick={() => { void saves.flushAll().catch(() => {}); }}>Retry saves</button>
         <button onClick={() => setNotice(null)}>Dismiss</button>
       </div>}
+      {referenceTarget&&<ResourceReferences resource={referenceTarget} localNotes={openNotes.filter((p,index,all)=>all.findIndex(other=>other.id===p.id)===index).flatMap(p=>{const draft=saves.latest(p.id)??recovery.current(p.id)?.value;return draft?[{id:p.id,title:draft.title,content:parseNoteContent(draft.content as Resource['content'])}]:[];})} onClose={()=>setReferenceTarget(null)}/>}
       {lifecycleTargets&&<ResourceLifecycleDialog resources={lifecycleTargets} action="trash" onBusy={setDeletePending} onClose={()=>setLifecycleTargets(null)}/>}
 
       <AppModal
@@ -1414,7 +1399,7 @@ export default function Dashboard() {
           <div className="h-full" hidden={libraryVisible}>
           <div className="flex h-full min-h-0 flex-col">
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
-            {backlinksFor===activeNoteId&&backlinks.length>0&&<LibraryPopover key={activeNoteId} label={`Linked from (${backlinks.length})`}>{close=><div className="space-y-1">{backlinks.map(resource=><button key={resource.id} className="journey-backlink" onClick={event=>{close();void openResourceById(resource.id,{sourcePaneId:activePaneId??undefined,intent:'link',destination:event.ctrlKey||event.metaKey?'new':'here'});}}><FileText size={15} aria-hidden="true"/><span>{resource.title}</span></button>)}</div>}</LibraryPopover>}
+            {activeNoteId&&resourceDetails[activeNoteId]&&<button className="library-button" onClick={()=>setReferenceTarget(resourceDetails[activeNoteId])}>References</button>}
           </JourneyBar>}
           <div className="min-h-0 flex-1">
           {openWorkspaceNotes.length > 0 ? (

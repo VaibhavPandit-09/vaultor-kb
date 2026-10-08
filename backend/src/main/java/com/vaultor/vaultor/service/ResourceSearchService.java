@@ -101,13 +101,18 @@ public class ResourceSearchService {
     }
     @org.springframework.transaction.annotation.Transactional(readOnly=true)
     public PageDto<Hit> search(String q,int page,int size,String type,List<String> tags,String collection,boolean pins) {
+        return search(q,page,size,type,tags,collection,pins,null);
+    }
+    @org.springframework.transaction.annotation.Transactional(readOnly=true)
+    public PageDto<Hit> search(String q,int page,int size,String type,List<String> tags,String collection,boolean pins,String category) {
         if(page<0||size<1||size>100||q.length()>500||tags.size()>100)throw new IllegalArgumentException("Search allows page>=0, size 1–100, 500 characters and 100 tags");
         if(running.get()||!failure.isEmpty())throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"Search index is rebuilding or unavailable. Check Diagnostics and retry.");
         var terms=TERMS.matcher(q);var words=new ArrayList<String>();while(terms.find()){if(words.size()==30)throw new IllegalArgumentException("Search allows at most 30 terms");words.add("\""+terms.group()+"\"*");}
-        if(words.isEmpty())return new PageDto<>(List.of(),page,size,0,0);
+        if(words.isEmpty())return new PageDto<>(List.of(),page,size,0,0,category);
         var args=new ArrayList<Object>();args.add(String.join(" AND ",words));
         StringBuilder where=new StringBuilder(" from resource_fts join resources r on r.id=resource_fts.id where r.trashed_at is null and resource_fts match ?");
         if(type!=null&&!type.isBlank()&&!type.equals("all")){if(!List.of("note","file").contains(type))throw new IllegalArgumentException("Unknown resource type");where.append(" and r.type=?");args.add(type);}
+        FileCategories.filter(where,args,"r",category);
         if(pins)where.append(" and coalesce(r.favorite,0)=1");
         if(collection!=null&&!collection.isBlank()){where.append(" and exists(select 1 from resource_collections rc where rc.resource_id=r.id and rc.collection_id=?)");args.add(collection);}
         for(String tag:tags.stream().distinct().toList()){where.append(" and exists(select 1 from resource_tags rt join tags t on t.id=rt.tag_id where rt.resource_id=r.id and t.name=?)");args.add(tag.trim().toLowerCase(Locale.ROOT));}
@@ -116,6 +121,6 @@ public class ResourceSearchService {
         record Match(String id,String marked){}
         var matches=jdbc.query("select r.id,snippet(resource_fts,2,char(57344),char(57345),' … ',40)"+where+" order by bm25(resource_fts,0,10,1),lower(r.title),r.id limit ? offset ?",(rs,n)->new Match(rs.getString(1),rs.getString(2)),args.toArray());
         var summaries=browse.byIds(matches.stream().map(Match::id).toList());
-        return new PageDto<>(matches.stream().filter(m->summaries.containsKey(m.id())).map(m->new Hit(summaries.get(m.id()),snippet(m.marked()))).toList(),page,size,total,(int)((total+size-1)/size));
+        return new PageDto<>(matches.stream().filter(m->summaries.containsKey(m.id())).map(m->new Hit(summaries.get(m.id()),snippet(m.marked()))).toList(),page,size,total,(int)((total+size-1)/size),category);
     }
 }

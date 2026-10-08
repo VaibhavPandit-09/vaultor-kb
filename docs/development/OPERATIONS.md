@@ -145,3 +145,7 @@ Set VAULTOR_LAYOUT_SMOKE=1 and run `node desktop/scripts/chrome-smoke.mjs "<abso
 ## Lifecycle validation and rollback
 
 0.5.0 adds protocol-3 Trash/Restore and archive format 3. See [RESOURCE-LIFECYCLE.md](../workspace/RESOURCE-LIFECYCLE.md). `desktop/scripts/lifecycle-check.mjs` always creates an isolated temporary profile, uses its owned protected host, injects a disposable binary cleanup failure, restarts that host and checks native Actions/Trash/Restore/shared-view reconciliation through CDP. Set VAULTOR_BUILD_BUNDLE to the freshly verified release bundle and run it against matching win-unpacked artifacts. It preserves screenshots/report under its reported temp directory; it is not shipped in installers and never opens Atlas/personal data. No old executable should write to an upgraded database; rollback restores a matching pre-upgrade backup.
+
+## Focused discovery check
+
+Run `node desktop/scripts/discovery-check.mjs` against the freshly packaged Windows executable. It creates protected disposable data/profile under the system temp directory, uses generated Atlas PNG fixtures from ignored desktop/cache/atlas/media, checks category/reference counts and bounded thumbnails, and exercises source occurrence navigation/focus with screenshots. `--final` rechecks affected references/source/narrow behavior without repeating all theme frames. This small fixture is not an Atlas performance measurement, real LAN/touch check or physical OLED verification.

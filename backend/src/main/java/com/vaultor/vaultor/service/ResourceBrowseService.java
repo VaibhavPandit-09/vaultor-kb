@@ -23,15 +23,16 @@ public class ResourceBrowseService {
     }
     @Transactional(readOnly = true)
     public PageDto<ResourceSummary> list(int page,int size,String q,String type,List<String> tags,boolean favorites,String sort,String collection) {
-        return list(page,size,q,type,tags,favorites,sort,collection,null);
+        return list(page,size,q,type,tags,favorites,sort,collection,null,false,null);
     }
+    @Transactional(readOnly=true) public PageDto<ResourceSummary> list(int page,int size,String q,String type,List<String> tags,boolean favorites,String sort,String collection,String category) {return list(page,size,q,type,tags,favorites,sort,collection,null,false,category);}
     public Map<String,ResourceSummary> byIds(List<String> ids) {
         if(ids.isEmpty())return Map.of();
         var result=new HashMap<String,ResourceSummary>();list(0,200,"",null,List.of(),false,"title",null,ids).items().forEach(r->result.put(r.id(),r));return result;
     }
-    private PageDto<ResourceSummary> list(int page,int size,String q,String type,List<String> tags,boolean favorites,String sort,String collection,List<String> ids) {return list(page,size,q,type,tags,favorites,sort,collection,ids,false);}
-    @Transactional(readOnly=true) public PageDto<ResourceSummary> trash(int page,int size,String q) {return list(page,size,q,null,List.of(),false,"updated",null,null,true);}
-    private PageDto<ResourceSummary> list(int page,int size,String q,String type,List<String> tags,boolean favorites,String sort,String collection,List<String> ids,boolean trash) {
+    private PageDto<ResourceSummary> list(int page,int size,String q,String type,List<String> tags,boolean favorites,String sort,String collection,List<String> ids) {return list(page,size,q,type,tags,favorites,sort,collection,ids,false,null);}
+    @Transactional(readOnly=true) public PageDto<ResourceSummary> trash(int page,int size,String q) {return list(page,size,q,null,List.of(),false,"updated",null,null,true,null);}
+    private PageDto<ResourceSummary> list(int page,int size,String q,String type,List<String> tags,boolean favorites,String sort,String collection,List<String> ids,boolean trash,String category) {
         if (page < 0 || size < 1 || size > 200) throw new IllegalArgumentException("page must be nonnegative; size must be 1-200");
         if (q.length() > 500 || tags.size() > 100) throw new IllegalArgumentException("Search allows 500 characters and 100 tags");
         String order = switch (sort) {
@@ -45,6 +46,7 @@ public class ResourceBrowseService {
         if(ids!=null){where.append(" and r.id in ("+String.join(",",Collections.nCopies(ids.size(),"?"))+")");args.addAll(ids);}
         if (!q.isBlank()) { where.append(" and lower(r.title) like ? escape '!'"); args.add("%" + q.trim().toLowerCase(Locale.ROOT).replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%"); }
         if (type != null && !type.isBlank() && !type.equals("all")) { where.append(" and r.type=?"); args.add(type); }
+        FileCategories.filter(where,args,"r",category);
         if (collection != null && !collection.isBlank()) { where.append(" and exists (select 1 from resource_collections rc where rc.resource_id=r.id and rc.collection_id=?)"); args.add(collection); }
         if (favorites) where.append(" and coalesce(r.favorite,0)=1");
         for (String tag : tags.stream().map(t -> t.trim().toLowerCase(Locale.ROOT)).distinct().toList()) {
@@ -62,7 +64,7 @@ public class ResourceBrowseService {
             }, items.stream().map(ResourceSummary::id).toArray());
             jdbc.query("select rc.resource_id,c.id,c.name from resource_collections rc join collections c on c.id=rc.collection_id where rc.resource_id in (" + placeholders + ") order by c.normalized_name,c.id", rs -> { byId.get(rs.getString(1)).collections().add(new CollectionRef(rs.getString(2),rs.getString(3))); }, items.stream().map(ResourceSummary::id).toArray());
         }
-        return new PageDto<>(items,page,size,total,(int)((total+size-1)/size));
+        return new PageDto<>(items,page,size,total,(int)((total+size-1)/size),category);
     }
     @Transactional
     public void markOpened(String id) {

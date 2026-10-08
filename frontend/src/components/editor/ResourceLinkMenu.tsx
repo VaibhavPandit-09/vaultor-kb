@@ -1,9 +1,9 @@
 import { flushSync } from 'react-dom';
-type LinkItem = { id: string; title: string; type: 'note' | 'file'; virtual: boolean };
+type LinkItem = { id: string; title: string; type: 'note' | 'file'; mimeType?:string; virtual: boolean };
 import { useState, useEffect, useCallback } from 'react';
 import { Editor } from '@tiptap/react';
 import { Search } from 'lucide-react';
-import { resourceKind } from '../../lib/resourceKinds';
+import { resourcePresentation,resourceDescription } from '../../lib/resourceKinds';
 import api from '../../lib/api';
 import { resourceLinkPluginKey, type ResourceLinkState } from './ResourceLinkExtension';
 
@@ -125,7 +125,7 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
         </div>
       )}
       
-      {items.map((item, index) => {const Icon=resourceKind(item.type).icon;return (
+      {items.map((item, index) => {const Icon=resourcePresentation(item).icon;return (
         <button
           key={item.id}
           className={`w-full flex items-center px-3 py-2 text-sm text-left transition-colors ${
@@ -138,7 +138,7 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
             {item.virtual ? item.title : item.title}
           </div>
           <div className="text-[10px] ml-2 uppercase opacity-50 font-semibold tracking-wider">
-             {item.virtual ? 'New' : resourceKind(item.type).label}
+             {item.virtual ? 'New' : resourceDescription({...item,title:item.title})}
           </div>
         </button>
       );})}

@@ -17,7 +17,7 @@ it('searches types, keeps restored unknown filters visible and restores keyboard
  fireEvent.click(trigger);fireEvent.keyDown(document,{key:'Escape'});await waitFor(()=>expect(screen.queryByRole('dialog')).toBeNull());expect(document.activeElement).toBe(trigger);
 });
 it('keeps resource type and file format distinct and never describes unknown types as files',()=>{
- expect(resourceDescription({type:'file',mimeType:'application/pdf',title:'x'})).toBe('File · PDF');
+ expect(resourceDescription({type:'file',mimeType:'application/pdf',title:'x'})).toBe('PDF');
  expect(resourceDescription({type:'future',title:'x'})).toBe('future');
  expect(resourceKind('future').mode).toBe('unsupported');
 });

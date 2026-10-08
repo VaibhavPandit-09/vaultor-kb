@@ -1,4 +1,35 @@
-# Current release handoff — 0.5.0 lifecycle
+# Current release handoff — 0.6.0 discovery
+
+Windows 0.6.0 passed its release gate; Mac arm64 remains unavailable until this exact same-tag build and native verification pass. Do not treat the older sections below as current source/version instructions.
+
+1. Read AGENTS, CODEBASE, RELEASE-PROCESS and workspace/REFERENCES. Fetch and check out **v0.6.0** exactly after Windows publication; keep package/lock version 0.6.0 and the immutable tag unchanged.
+2. On the Apple Silicon Mac mini use Node 20.19+/24, JDK 25 and free Apple command-line tools. Obtain the existing matching private release key by authorized private transfer outside Git; set VAULTOR_RELEASE_KEY to its protected path. Never regenerate or log it.
+3. Run the following from repository root:
+
+```sh
+npm --prefix frontend ci
+npm --prefix desktop ci
+export VITE_BUILD_VERSION=0.6.0
+export BUILD_VERSION=0.6.0
+npm --prefix desktop run build
+npm --prefix desktop run prepare-server
+npm --prefix desktop run check
+npm --prefix desktop run package:release
+npm --prefix desktop run publish:release
+```
+
+4. Verify arm64 Vaultor.app with codesign --verify --deep --strict and its original-key DMG sidecar. No paid notarization is claimed. Install and launch with a new disposable profile. Check protocol/minimum client 3, archive 3, relaunch/data retention, native menus/focus/Escape and update verification.
+5. With disposable PNG/JPEG/GIF/WebP, PDF/text and binary resources, verify mixed title/category counts and paging, static bounded thumbnails, original bytes, Used in/Links out, repeated placements/cycles, missing/Trash/Restore, saved-vs-draft warnings and source occurrence fallback. Verify all themes and a narrow window. Categories are Files, not new resource kinds; no schema migration.
+6. Coordinate a real paired Windows–Mac session when available. Update the host first, reconnect without routine re-pairing, test category isolation, references, saved-change refresh and source focus. Do not bypass approval/TLS/revisions. Record checks unavailable instead of certifying them.
+7. From a clean exact-tag checkout, add only the absent verified Mac pair:
+
+```sh
+npm --prefix desktop run publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.6.0.md
+```
+
+Download the uploaded pair and verify original signature, size and SHA-256. Preserve existing Windows bytes and tag; identical retries are permitted, differing bytes refused. Update GitHub release availability and living docs only after actual Mac checks pass. Report hardware, exact source/checks and usable URL. No Intel/Linux/Android package is authorized here.
+
+# Historical release handoff — 0.5.0 lifecycle
 
 Windows 0.5.0 is published from immutable tag v0.5.0; no Mac 0.5.0 pair is certified from Windows. Follow this section for current release delivery; the D9 and earlier-version sections below are historical evidence.
 

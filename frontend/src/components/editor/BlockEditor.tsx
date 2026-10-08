@@ -1,3 +1,4 @@
+import {registerReferenceView} from '../../lib/referenceNavigation';
 import { ManagedImage } from './ManagedImage';
 import ImagePicker from './ImagePicker';
 import { validateImageContent, attachImageUploads, clipboardImages, imageJobVersion, subscribeImageJobs, noteImageJobs, uploadNoteImages, retryImageJob, removeImageJob, insertImageJob } from '../../lib/noteImages';
@@ -430,8 +431,10 @@ function BlockEditor({
   }, [editor, noteId, sharedDocuments]);
   useEffect(() => {
     if (!editor) return;
-    return registerResourceLinkNavigation(editor, (resourceId, newPane) => onOpenResource({ resourceId, sourcePaneId: paneId, destination: newPane ? 'new' : 'here', intent: 'link' }));
-  }, [editor, paneId, onOpenResource]);
+    const detachReference=registerReferenceView(paneId,noteId,editor);
+    const detachLink=registerResourceLinkNavigation(editor, (resourceId, newPane) => onOpenResource({ resourceId, sourcePaneId: paneId, destination: newPane ? 'new' : 'here', intent: 'link' }));
+    return()=>{detachReference();detachLink();};
+  }, [editor, paneId, noteId, onOpenResource]);
 
   useEffect(() => {
     savedSelectionRef.current = savedSelection;

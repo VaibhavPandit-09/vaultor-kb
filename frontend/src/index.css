@@ -740,3 +740,6 @@ button:focus-visible, [role='option']:focus-visible { outline:2px solid var(--ac
 }
 
 .image-toolbar { transition:opacity var(--motion-interaction) var(--motion-ease); }
+
+/* Bounded static previews and flat reference rows share theme/motion tokens. */
+.resource-thumbnail{position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:2.5rem;height:2.5rem;color:var(--text-secondary);border-radius:.5rem;overflow:hidden}.resource-thumbnail img{width:100%;height:100%;object-fit:contain}.resource-thumbnail button{position:absolute;right:0;bottom:0;background:var(--surface-2);border:1px solid var(--border-subtle);border-radius:50%;width:1.25rem;height:1.25rem}.reference-view{display:flex;flex-direction:column;gap:.75rem}.reference-row{padding:.75rem 0;border-bottom:1px solid var(--border-subtle)}.reference-row>small{color:var(--text-secondary)}.reference-row summary{font-size:.8rem;color:var(--text-secondary);cursor:pointer;padding:.5rem 0}.reference-occurrence{display:flex;gap:.5rem;flex-wrap:wrap;text-align:left;width:100%;padding:.4rem .5rem;font-size:.8rem;border-radius:.4rem}.reference-occurrence span{color:var(--text-secondary)}.reference-occurrence:hover{background:var(--surface-hover)}

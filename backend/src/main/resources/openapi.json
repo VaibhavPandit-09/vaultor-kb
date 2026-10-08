@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Vaultor API",
-    "version": "1.4.0",
-    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405."
+    "version": "1.5.0",
+    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration."
   },
   "servers": [
     {
@@ -94,6 +94,22 @@
               "type": "string"
             },
             "description": "Require membership in this collection ID, combined with all other filters."
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "image",
+                "pdf",
+                "audio",
+                "video",
+                "text",
+                "other"
+              ]
+            },
+            "description": "File category, intersected with kind/type and all existing filters before totals/paging. Images remain files. Response echoes appliedCategory; older hosts lacking the echo must not silently broaden filtering."
           }
         ],
         "responses": {
@@ -3951,6 +3967,22 @@
               "maxLength": 80
             },
             "description": "Optional shortcut filter: all, collection or resource type. Defaults to all; paging and totals use the filter."
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "image",
+                "pdf",
+                "audio",
+                "video",
+                "text",
+                "other"
+              ]
+            },
+            "description": "File category, intersected with kind/type and all existing filters before totals/paging. Images remain files. Response echoes appliedCategory; older hosts lacking the echo must not silently broaden filtering."
           }
         ],
         "responses": {
@@ -4077,6 +4109,22 @@
               "type": "string"
             },
             "description": "Require membership in this collection ID, combined with all other filters."
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "image",
+                "pdf",
+                "audio",
+                "video",
+                "text",
+                "other"
+              ]
+            },
+            "description": "File category, intersected with kind/type and all existing filters before totals/paging. Images remain files. Response echoes appliedCategory; older hosts lacking the echo must not silently broaden filtering."
           }
         ],
         "responses": {
@@ -6609,6 +6657,106 @@
           }
         }
       }
+    },
+    "/resources/{id}/references": {
+      "get": {
+        "operationId": "resourceReferences",
+        "summary": "Paged saved incoming source notes or outgoing destinations; no note bodies",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "incoming",
+                "outgoing"
+              ],
+              "default": "incoming"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Distinct notes/destinations and true occurrence totals, first 20 occurrences per entry. Active saved sources only. Outgoing missing/trashed targets remain identifiable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferencePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid paging/direction"
+          },
+          "404": {
+            "description": "Resource missing"
+          }
+        }
+      }
+    },
+    "/resources/{id}/thumbnail": {
+      "get": {
+        "operationId": "resourceThumbnail",
+        "summary": "Authenticated static first-frame PNG thumbnail of an active supported image",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "At most 320×320 pixels and 384 KiB. Input limited to 20 MiB/40 MP. Cache-Control no-store. Original bytes unchanged.",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unsupported/oversized/invalid image"
+          },
+          "404": {
+            "description": "Missing or trashed resource"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6797,6 +6945,21 @@
           },
           "totalPages": {
             "type": "integer"
+          },
+          "appliedCategory": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "image",
+              "pdf",
+              "audio",
+              "video",
+              "text",
+              "other",
+              null
+            ]
           }
         },
         "required": [
@@ -7198,6 +7361,21 @@
           "exactMatch": {
             "type": "boolean",
             "description": "Whether any collection name exactly matches the trimmed query, ignoring case, independent of pagination."
+          },
+          "appliedCategory": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "image",
+              "pdf",
+              "audio",
+              "video",
+              "text",
+              "other",
+              null
+            ]
           }
         },
         "required": [
@@ -7228,6 +7406,21 @@
           },
           "totalPages": {
             "type": "integer"
+          },
+          "appliedCategory": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "image",
+              "pdf",
+              "audio",
+              "video",
+              "text",
+              "other",
+              null
+            ]
           }
         },
         "required": [
@@ -7433,6 +7626,21 @@
           "appliedKind": {
             "type": "string",
             "description": "Confirms server-side shortcut filtering. all when no kind was requested."
+          },
+          "appliedCategory": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "image",
+              "pdf",
+              "audio",
+              "video",
+              "text",
+              "other",
+              null
+            ]
           }
         },
         "required": [
@@ -7519,6 +7727,21 @@
           },
           "totalPages": {
             "type": "integer"
+          },
+          "appliedCategory": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "image",
+              "pdf",
+              "audio",
+              "video",
+              "text",
+              "other",
+              null
+            ]
           }
         }
       },
@@ -8020,6 +8243,112 @@
             "type": "integer",
             "minimum": 0,
             "description": "Distinct active saved source notes; no unsaved references."
+          }
+        }
+      },
+      "ReferenceOccurrence": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Saved structured-document child indices; validate revision and resource ID before selecting."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "note-link",
+              "file-link",
+              "resource-link"
+            ]
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "kind",
+          "label"
+        ]
+      },
+      "ReferenceEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revision": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "trashed": {
+            "type": "boolean"
+          },
+          "noteLinks": {
+            "type": "integer"
+          },
+          "fileLinks": {
+            "type": "integer"
+          },
+          "images": {
+            "type": "integer"
+          },
+          "otherLinks": {
+            "type": "integer"
+          },
+          "occurrences": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "$ref": "#/components/schemas/ReferenceOccurrence"
+            }
+          }
+        }
+      },
+      "ReferencePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReferenceEntry"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          },
+          "totalOccurrences": {
+            "type": "integer"
+          },
+          "sourceRevision": {
+            "type": "string"
           }
         }
       }

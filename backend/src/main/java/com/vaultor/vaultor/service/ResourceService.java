@@ -57,7 +57,7 @@ public class ResourceService {
         r.setType("file");
         r.setTitle(file.getOriginalFilename());
         r.setFilePath(storedName);
-        r.setMimeType(file.getContentType());
+        r.setMimeType(FileMime.detect(fileStorageService.getFile(r.getFilePath()),file.getContentType()));
         r.setSize(file.getSize());
         return resourceRepository.save(r);
     }

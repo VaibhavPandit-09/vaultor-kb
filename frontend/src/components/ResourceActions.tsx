@@ -22,6 +22,7 @@ export default function ResourceActions({resource}:{resource:Resource}) {
  const form=useFormKeyboard(()=>void work(()=>requestResourceAction('rename',[resource],name.trim()),done));
  return <><LibraryPopover label={'Actions for '+resource.title} trigger={<MoreHorizontal size={17}/>} className="browse-icon-button">{close=><>
  {capabilities.open?<button className="library-button" disabled={busy} onClick={()=>void work(()=>requestResourceAction('open',[resource]),close)}>{resourceKind(resource.type).action}</button>:<p className="text-xs">Opening this resource type is unsupported.</p>}
+ <button className="library-button" onClick={()=>{close();void work(()=>requestResourceAction('references',[resource]));}}>Used in / links…</button>
  {capabilities.rename&&<button className="library-button" onClick={()=>{close();focus.captureFocus();setName(resource.title);setDialog('rename');}}>Rename…</button>}
  <button className="library-button" onClick={()=>{close();focus.captureFocus();setDialog('collection');}}>Add to collection…</button>
  <button className="library-button" onClick={()=>{close();focus.captureFocus();setDialog('tags');}}>Manage tags…</button>

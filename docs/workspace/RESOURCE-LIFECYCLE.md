@@ -1,6 +1,6 @@
 # Resource actions, Trash and recovery
 
-Reviewed 2026-10-08 for Vaultor 0.5.0, lifecycle Sprint 2. This owns lifecycle semantics; [Library](LIBRARY.md), [sessions](SESSIONS.md), [API](../development/API.md) and [release delivery](../desktop/RELEASE-PROCESS.md) own their respective contracts.
+Reviewed 2026-10-08 for Vaultor 0.6.0, lifecycle/discovery Sprints 2–3. This owns lifecycle semantics; [Library](LIBRARY.md), [sessions](SESSIONS.md), [API](../development/API.md) and [release delivery](../desktop/RELEASE-PROCESS.md) own their respective contracts.
 
 ## Actions and distinctions
 
@@ -15,7 +15,7 @@ Trash has one bounded, metadata-only title-search list, 100 rows per UI page, ch
 
 ## Confirmation, drafts and shared views
 
-Confirmation names each original and checks how many distinct **active saved notes** refer to it through links/image placements. Repeated placements count once. This count excludes unsaved references, references from trashed notes and table provenance; paged occurrences/Used in are Sprint 3 work. If usage cannot be checked, Retry is required before proceeding.
+Confirmation names each original and checks how many distinct **active saved notes** refer to it through links/image placements. Repeated placements count once. This count excludes unsaved references, references from trashed notes and table provenance; the on-demand [References view](REFERENCES.md) provides paginated sources and bounded occurrences. If usage cannot be checked, Retry is required before proceeding.
 
 A local Trash action first flushes only its target note's document/title. A failed save keeps the input and recovery record; **Keep recoverable drafts and trash saved versions** explicitly waits for local recovery storage before continuing. Storage failure blocks this choice. Unrelated failed saves do not participate. Bulk actions retain failed targets and remove successful targets from selection/confirmation.
 
@@ -43,4 +43,4 @@ Do not run an older server against an upgraded database: it does not understand 
 
 ## Checks and limits
 
-Focused disposable tests cover additive old-table migration, stale revisions, retry replay, partial failures, organization/bytes/reference retention, rollback, cleanup failure and archive merge/replace. Native/restart results and artifact availability are recorded in [0.5.0 release notes](../desktop/releases/v0.5.0.md). No personal data, broad API smoke or Docker rebuild is required. Actual Mac/LAN verification is separate. Image categories, paged reference views, file-body search and measured Atlas integration remain later authorized sprints.
+Focused disposable tests cover additive old-table migration, stale revisions, retry replay, partial failures, organization/bytes/reference retention, rollback, cleanup failure and archive merge/replace. Native/restart results and artifact availability are recorded in [0.5.0 release notes](../desktop/releases/v0.5.0.md). No personal data, broad API smoke or Docker rebuild is required. Actual Mac/LAN verification is separate. Image categories and paged reference views are implemented in 0.6.0; [REFERENCES.md](REFERENCES.md) owns their limits. File-body search and measured Atlas integration remain Sprints 4–5.

@@ -12,7 +12,7 @@ public class OrganizationController {
     @PutMapping("/collections/creations/{id}") public CollectionDto createOnce(@PathVariable String id,@RequestBody CreationInput input) {return service.createOnce(id,input);}
     @PutMapping("/collections/{id}/favorite") @ResponseStatus(HttpStatus.NO_CONTENT) public void pin(@PathVariable String id,@RequestBody ApiDtos.FavoriteInput input) {service.pin(id,input.favorite());}
     @PostMapping("/organization/selection") public java.util.List<MembershipDto> selection(@RequestBody SelectionInput input) {return service.memberships(input);}
-    @GetMapping("/organization/pins") public PinsPage pins(@RequestParam(defaultValue="") String q,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="50") int size,@RequestParam(required=false) String kind) {return service.pins(q,page,size,kind);}
+    @GetMapping("/organization/pins") public PinsPage pins(@RequestParam(defaultValue="") String q,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="50") int size,@RequestParam(required=false) String kind,@RequestParam(required=false) String category) {return service.pins(q,page,size,kind,category);}
     @PostMapping("/collections") @ResponseStatus(HttpStatus.CREATED) public CollectionDto create(@RequestBody CollectionInput input) {return service.save(null,input);}
     @PutMapping("/collections/{id}") public CollectionDto update(@PathVariable String id,@RequestBody CollectionInput input) {return service.save(id,input);}
     @DeleteMapping("/collections/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable String id) {service.delete(id);}

@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Resource } from '../types';
-import { resourceKind, resourceDescription } from '../lib/resourceKinds';
+import { resourceDescription } from '../lib/resourceKinds';
 import PinButton from './PinButton';
 import ResourceActions from './ResourceActions';
+import ResourceThumbnail from './ResourceThumbnail';
 import SearchExcerpt from './SearchExcerpt';
 
 export function BrowseHeading({ title, kicker = 'YOUR WORKSPACE', actions }: { title: string; kicker?: string; actions?: ReactNode }) {
@@ -22,11 +23,11 @@ export function BrowsePagination({ page, totalPages, loading, onPage }: { page: 
   return <nav aria-label="Result pages" className="library-pagination"><span>Page {page + 1} of {Math.max(totalPages, page + 1)}</span><button className="library-button" disabled={loading || page === 0} onClick={() => onPage(page - 1)}><ChevronLeft size={15}/>Previous</button><button className="library-button" disabled={loading || page + 1 >= totalPages} onClick={() => onPage(page + 1)}>Next<ChevronRight size={15}/></button></nav>;
 }
 export function BrowseResourceRow({ resource, onOpen, onCollections, selected, onSelect, contentMode = false, recent = false }: { resource: Resource; onOpen: (id: string) => void; onCollections?: (id: string) => void; selected?: boolean; onSelect?: (checked: boolean) => void; contentMode?: boolean; recent?: boolean }) {
-  const kind = resourceKind(resource.type), Icon = kind.icon;
+
   void onCollections;
   return <div role="listitem" className="library-row">
     {onSelect && <input type="checkbox" aria-label={'Select ' + resource.title} checked={selected} onChange={event => onSelect(event.target.checked)}/>}
-    <button className="library-resource" title={resource.title} onClick={() => onOpen(resource.id)}><Icon size={19}/><span><strong>{resource.title}</strong><small>{contentMode && resource.searchSnippet?.text ? <>{resourceDescription(resource)} · <SearchExcerpt snippet={resource.searchSnippet}/></> : <>{resourceDescription(resource)}{resource.collections?.length ? ' · ' + resource.collections.map(item => item.name).join(' · ') : ''}{resource.tags.length > 0 && ' · ' + resource.tags.map(tag => tag.name).join(', ')}</>}</small></span></button>
+    <div className="library-resource"><ResourceThumbnail resource={resource}/><button className="min-w-0 flex-1 text-left" title={resource.title} onClick={() => onOpen(resource.id)}><span><strong>{resource.title}</strong><small>{contentMode && resource.searchSnippet?.text ? <>{resourceDescription(resource)} · <SearchExcerpt snippet={resource.searchSnippet}/></> : <>{resourceDescription(resource)}{resource.collections?.length ? ' · ' + resource.collections.map(item => item.name).join(' · ') : ''}{resource.tags.length > 0 && ' · ' + resource.tags.map(tag => tag.name).join(', ')}</>}</small></span></button></div>
     <time className="library-date">{(recent ? resource.lastOpenedAt : resource.updatedAt)?.slice(0, 10)}</time>
     <div className="browse-row-actions"><PinButton id={resource.id} name={resource.title} favorite={resource.favorite}/><ResourceActions resource={resource}/></div>
   </div>;

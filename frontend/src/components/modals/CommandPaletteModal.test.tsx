@@ -41,7 +41,7 @@ it('places Actions next in native tab order and restores the highlighted resourc
  const actions=screen.getByRole('button',{name:'Actions for Second'});
  const focusable=[...screen.getByRole('dialog').querySelectorAll('input,button:not([disabled])')];expect(focusable[focusable.indexOf(input)+1]).toBe(actions);
  expect(fireEvent.keyDown(input,{key:'Tab'})).toBe(true);actions.focus();expect(fireEvent.keyDown(actions,{key:'Tab',shiftKey:true})).toBe(true);
- fireEvent.click(actions);await screen.findByText('Actions · Second');
+ fireEvent.click(actions);await screen.findByText('Actions · Second');await waitFor(()=>expect(screen.getByRole('button',{name:'Back'}).hasAttribute('disabled')).toBe(false));
  fireEvent.keyDown(screen.getByRole('combobox'),{key:'Escape'});await screen.findByText('Search workspace');expect(screen.getByRole('option',{selected:true}).textContent).toContain('Second');
 });
 it('ignores Enter used to confirm composition',async()=>{

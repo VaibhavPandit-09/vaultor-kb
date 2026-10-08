@@ -41,3 +41,7 @@ Ctrl+K, pickers and browsing use the same resource-kind labels/icons. Files show
 ## Lifecycle exclusion — 0.5.0
 
 Title browsing, Ctrl+K and saved-content search exclude trashed resources on the server. FTS rows remain derived data, but queries join active originals; restore makes them searchable again transactionally. Collections themselves can remain empty. Actions hand off to revision-checked Trash; the old combined reference-rewrite/delete flow is retired. See [RESOURCE-LIFECYCLE.md](RESOURCE-LIFECYCLE.md).
+
+## File-category isolation — 0.6.0
+
+Title and saved-note-content services accept category=image|pdf|audio|video|text|other, intersecting existing type/collection/tag/pin filters before totals and paging and echoing appliedCategory. File results still search titles only; body extraction belongs to Sprint 4. The shared registry identifies image/PDF/etc. consistently in palette/pickers/inline links without changing domain kinds. Category filtering cannot silently fall back on an older host; update that host. See [REFERENCES.md](REFERENCES.md).

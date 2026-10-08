@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { ListFilter, Check } from 'lucide-react';
 import LibraryPopover from './LibraryPopover';
-import { collectionKind, resourceKinds, resourceKind } from '../lib/resourceKinds';
+import { collectionKind, resourceFilters, filterLabel } from '../lib/resourceKinds';
 
 export default function ResourceTypeFilter({ value, onChange, collections = false, compact = false, label = 'Filter resource type' }: { value: string; onChange: (type: string) => void; collections?: boolean; compact?: boolean; label?: string }) {
   const [query, setQuery] = useState('');
-  const kinds = [...(collections ? [collectionKind] : []), ...resourceKinds];
-  const current = value === 'all' ? 'All types' : value === 'collection' && collections ? collectionKind.plural : resourceKind(value).plural;
+  const kinds = [...(collections ? [collectionKind] : []), ...resourceFilters];
+  const current = value === 'all' ? 'All types' : value === 'collection' && collections ? collectionKind.plural : filterLabel(value);
   const options = [{ type: 'all', plural: 'All types' }, ...kinds];
   // Preserve an unrecognized restored filter explicitly instead of silently broadening it.
   if (!options.some(option => option.type === value)) options.push({ type: value, plural: current });

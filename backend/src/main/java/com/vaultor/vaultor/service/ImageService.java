@@ -25,6 +25,24 @@ public class ImageService {
         if(!"file".equals(resource.getType()))throw new IllegalArgumentException("Choose an image file resource");
         return png(files.getFile(resource.getFilePath()));
     }
+    /** Static first-frame thumbnail; subsampling bounds decoded memory before scaling. */
+    public byte[] thumbnail(String id) throws IOException {
+        var resource=resources.getResourceOrThrow(id);
+        if(!"file".equals(resource.getType()))throw new IllegalArgumentException("Choose an image file resource");
+        Path path=files.getFile(resource.getFilePath());var info=inspect(path);
+        try(ImageInputStream input=ImageIO.createImageInputStream(path.toFile())) {
+            var reader=ImageIO.getImageReaders(input).next();
+            try {
+                reader.setInput(input);var param=reader.getDefaultReadParam();
+                int sample=Math.max(1,(int)Math.ceil(Math.max(info.width(),info.height())/320.0));param.setSourceSubsampling(sample,sample,0,0);
+                var frame=reader.read(0,param);
+                if(frame.getWidth()>320||frame.getHeight()>320)throw new IllegalArgumentException("Thumbnail decoder did not honor its bounds");
+                var output=new ByteArrayOutputStream();ImageIO.write(frame,"png",output);
+                if(output.size()>384*1024)throw new IllegalArgumentException("Thumbnail exceeds its bounded size");
+                return output.toByteArray();
+            } finally {reader.dispose();}
+        }
+    }
     public static Info inspect(Path path) throws IOException {
         long size=Files.size(path);
         if(size==0 || size>MAX_BYTES)throw new IllegalArgumentException("Inline images must be nonempty and at most 20 MiB. Import larger files as ordinary resources.");

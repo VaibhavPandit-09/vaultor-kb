@@ -23,6 +23,9 @@ public class ResourceController {
     private final FileImportService imports;
     private final ImageService images;
     private final ResourceLifecycleService lifecycle;
+    private final ResourceReferences references;
+    @GetMapping("/{id}/references") public ResourceReferences.Page references(@PathVariable String id,@RequestParam(defaultValue="incoming") String direction,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="30") int size) {return references.list(id,direction,page,size);}
+    @GetMapping(value="/{id}/thumbnail",produces="image/png") public ResponseEntity<byte[]> thumbnail(@PathVariable String id) throws Exception {return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(images.thumbnail(id));}
     @GetMapping("/trash") public PageDto<ResourceSummary> trash(@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="100") int size,@RequestParam(defaultValue="") String q) {return browse.trash(page,size,q);}
     @PutMapping("/lifecycle") public List<ResourceLifecycleService.Result> lifecycle(@RequestBody List<ResourceLifecycleService.Item> items,@RequestHeader("X-Vaultor-Protocol") int protocol) {if(protocol<3)throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UPGRADE_REQUIRED,"Update the client for safe resource lifecycle operations");return lifecycle.bulk(items);}
     @GetMapping("/{id}/usage") public ResourceLifecycleService.Usage usage(@PathVariable String id) {return lifecycle.usage(id);}
@@ -43,10 +46,10 @@ public class ResourceController {
     @GetMapping
     public PageDto<ResourceSummary> list(@RequestParam(defaultValue="0") int page, @RequestParam(defaultValue="100") int size,
         @RequestParam(defaultValue="") String q, @RequestParam(required=false) String type, @RequestParam(required=false) List<String> tag,
-        @RequestParam(defaultValue="false") boolean favorites, @RequestParam(defaultValue="recent") String sort, @RequestParam(required=false) String collection) {
-        return browse.list(page,size,q,type,tag == null ? List.of() : tag,favorites,sort,collection);
+        @RequestParam(defaultValue="false") boolean favorites, @RequestParam(defaultValue="recent") String sort, @RequestParam(required=false) String collection,@RequestParam(required=false) String category) {
+        return browse.list(page,size,q,type,tag == null ? List.of() : tag,favorites,sort,collection,category);
     }
-    @GetMapping("/query") public PageDto<ResourceSearchService.Hit> query(@RequestParam String q,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="50") int size,@RequestParam(required=false) String type,@RequestParam(required=false) List<String> tag,@RequestParam(required=false) String collection,@RequestParam(defaultValue="false") boolean favorites) {return searchService.search(q,page,size,type,tag==null?List.of():tag,collection,favorites);}
+    @GetMapping("/query") public PageDto<ResourceSearchService.Hit> query(@RequestParam String q,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="50") int size,@RequestParam(required=false) String type,@RequestParam(required=false) List<String> tag,@RequestParam(required=false) String collection,@RequestParam(defaultValue="false") boolean favorites,@RequestParam(required=false) String category) {return searchService.search(q,page,size,type,tag==null?List.of():tag,collection,favorites,category);}
     @GetMapping("/search") public List<ResourceSummary> search(@RequestParam(defaultValue="") String q) {
         return browse.list(0,50,q,null,List.of(),false,"recent").items();
     }

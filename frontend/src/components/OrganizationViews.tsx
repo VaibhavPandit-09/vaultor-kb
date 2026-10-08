@@ -5,7 +5,7 @@ import { useOrganizationPage, type OrganizationItem } from '../lib/organization'
 import { usePins } from '../lib/organizationControls';
 import ResourceTypeFilter from './ResourceTypeFilter';
 import type { Resource } from '../types';
-import { resourceKind, resourceDescription, collectionKind } from '../lib/resourceKinds';
+import { resourceDescription, collectionKind, resourcePresentation } from '../lib/resourceKinds';
 import PinButton from './PinButton';
 import { SidebarShortcut } from './SidebarItem';
 import { CollectionPicker } from './ResourceCollections';
@@ -29,7 +29,7 @@ export function PinnedList({compact=false,visible=true,filterType='all',activeId
   const isCollection=item.entityKind==='collection';
   const collection={id:item.id,name:item.name,count:item.count,favorite:true};
   const resource:Resource=item.resource??{id:item.id,type:item.entityKind==='resource'?item.resourceType:'',title:item.name,favorite:true,tags:[],createdAt:'',updatedAt:''};
-  const Icon=isCollection?collectionKind.icon:resourceKind(resource.type).icon;
+  const Icon=isCollection?collectionKind.icon:resourcePresentation(resource).icon;
   if(compact)return <SidebarShortcut resource={isCollection?undefined:resource} key={item.entityKind+'-'+item.id} title={item.name} description={isCollection?collectionKind.label:resourceDescription(resource)} icon={Icon} isActive={!isCollection&&activeId===item.id} onClick={()=>isCollection?onCollection(collection):onResource(item.id)}/>;
   return isCollection?<CollectionRow key={'collection-'+item.id} item={collection} onOpen={onCollection}/>:<BrowseResourceRow key={'resource-'+item.id} resource={resource} onOpen={onResource} onCollections={id=>{focus.captureFocus();setPickerIds([id]);}}/>;
  });

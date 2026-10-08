@@ -257,13 +257,14 @@ public class TransferService {
     private void apply(TransferOperation op) {
         try {
             Workspace w=readWorkspace(op);validateWorkspace(w,directory(op.getId()));
-            Map<String,String> ids=new HashMap<>();Map<String,String> binaries=new HashMap<>();
+            Map<String,String> ids=new HashMap<>();Map<String,String> binaries=new HashMap<>();Map<String,String> verifiedMimes=new HashMap<>();
             for(var r:w.resources()) ids.put(r.id(),"replace".equals(op.getMode()) ? r.id() : UUID.randomUUID().toString());
             for(var r:w.resources()) if(r.binary()!=null) binaries.put(r.id(),UUID.randomUUID()+"_import");
             op.setJournal(mapper.writeValueAsString(binaries.values()));operations.save(op);
             Files.createDirectories(Path.of(storagePath));
             for(var r:w.resources()) if(r.binary()!=null) {
                 Files.copy(directory(op.getId()).resolve(r.binary()),files.getFile(binaries.get(r.id())));
+                verifiedMimes.put(r.id(),FileMime.detect(files.getFile(binaries.get(r.id())),r.mimeType()));
             }
             synchronized(this) {
                 if(cancellationRequests.remove(op.getId())) { discardStagedFiles(op); phase(op,"CANCELLED","cancelled",0); return; }
@@ -285,7 +286,7 @@ public class TransferService {
                     mappedTags.put(t.id(),tag);
                 }
                 for(var r:w.resources()) {
-                    var entity=new Resource();entity.setId(ids.get(r.id()));entity.setType(r.type());entity.setTitle(r.title());entity.setContent(r.content()==null?null:documents.remap(r.content(),ids).toString());entity.setFilePath(binaries.get(r.id()));entity.setMimeType(r.mimeType());entity.setSize(r.size());entity.setCreatedAt(r.createdAt());entity.setUpdatedAt(r.updatedAt());entity.setLastOpenedAt(r.lastOpenedAt());
+                    var entity=new Resource();entity.setId(ids.get(r.id()));entity.setType(r.type());entity.setTitle(r.title());entity.setContent(r.content()==null?null:documents.remap(r.content(),ids).toString());entity.setFilePath(binaries.get(r.id()));entity.setMimeType(verifiedMimes.getOrDefault(r.id(),r.mimeType()));entity.setSize(r.size());entity.setCreatedAt(r.createdAt());entity.setUpdatedAt(r.updatedAt());entity.setLastOpenedAt(r.lastOpenedAt());
                     entity.setTrashedAt(r.trashedAt());entity.setTrashOrganization(r.trashOrganization());
                     entity.setTags(new HashSet<>(r.tags().stream().map(mappedTags::get).toList()));resources.save(entity);
                     if("note".equals(r.type())) linkService.updateLinksForNote(entity.getId(),entity.getContent());

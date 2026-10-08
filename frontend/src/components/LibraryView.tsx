@@ -17,7 +17,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Search, RefreshCw } from 'lucide-react';
 import ResourceTypeFilter from './ResourceTypeFilter';
 import { requestResourceAction } from '../lib/resourceActions';
-import { resourceKind } from '../lib/resourceKinds';
+import { filterLabel } from '../lib/resourceKinds';
 import { useResourcePage } from '../lib/useResourcePage';
 
 export type LibrarySection = 'library' | 'recent' | 'favorites' | 'collections' | 'trash';
@@ -64,7 +64,7 @@ export default function LibraryView({ section, visible, tags, onOpen, onReturn, 
     </div>
 
     <div className="library-summary"><span>{loading?'Loading resources…':totalItems+' resources'}</span><span className="text-xs text-[var(--text-secondary)]">{searchMode==='title'?'Titles only':hasUnsavedChanges?'Saved content · unsaved edits excluded':'Titles + saved note text'}</span></div>
-    {(tags.length>0||type!=='all'||(sort!=='updated'&&section!=='recent'))&&<div className="flex gap-2 flex-wrap">{type!=='all'&&<button className="collection-chip" onClick={()=>setType('all')}>{resourceKind(type).label} ×</button>}{tags.map(tag=><button className="collection-chip" key={tag} onClick={()=>onTagsChange(tags.filter(t=>t!==tag))}>{tag} ×</button>)}{sort!=='updated'&&section!=='recent'&&<button className="collection-chip" onClick={()=>setSort('updated')}>{sort==='title'?'Title A–Z':'Recently opened'} ×</button>}</div>}
+    {(tags.length>0||type!=='all'||(sort!=='updated'&&section!=='recent'))&&<div className="flex gap-2 flex-wrap">{type!=='all'&&<button className="collection-chip" onClick={()=>setType('all')}>{filterLabel(type)} ×</button>}{tags.map(tag=><button className="collection-chip" key={tag} onClick={()=>onTagsChange(tags.filter(t=>t!==tag))}>{tag} ×</button>)}{sort!=='updated'&&section!=='recent'&&<button className="collection-chip" onClick={()=>setSort('updated')}>{sort==='title'?'Title A–Z':'Recently opened'} ×</button>}</div>}
     {items.length>0&&<label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]"><input type="checkbox" aria-label="Select visible resources" checked={items.every(item=>selected.includes(item.id))} onChange={e=>setSelected(e.target.checked?items.map(i=>i.id):[])}/>Select visible resources</label>}
     {selected.length>0&&<div className="flex flex-wrap items-center gap-2 text-sm"><span>{selected.length} selected</span><button className="library-button" onClick={()=>{organizationFocus.captureFocus();setManager('bulk');}}>Tags / manage</button><button className="library-button" onClick={()=>{organizationFocus.captureFocus();setPickerIds(selected);}}>Add to collection</button><button className="library-button text-red-500" onClick={()=>void requestResourceAction('trash',items.filter(item=>selected.includes(item.id)))}>Move to Trash…</button><button className="library-button" onClick={()=>setSelected([])}>Clear selection</button></div>}
     <BrowseGroup label="Resources" count={totalItems} loading={loading} error={result.error} retry={retry}>

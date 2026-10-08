@@ -1,4 +1,4 @@
-import { resourceKind, resourceDescription } from '../../lib/resourceKinds';
+import { resourceDescription, resourcePresentation } from '../../lib/resourceKinds';
 import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import api from '../../lib/api';
@@ -101,7 +101,7 @@ export default function GlobalSearchModal({ open, onClose, onSelect }: GlobalSea
                 index === selectedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              {(() => {const Icon=resourceKind(resource.type).icon;return <Icon size={16}/>;})()}
+              {(() => {const Icon=resourcePresentation(resource).icon;return <Icon size={16}/>;})()}
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{resource.title}</div>
                 <div className="text-xs uppercase tracking-wide text-slate-400">{resourceDescription(resource)}</div>

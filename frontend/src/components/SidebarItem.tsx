@@ -1,7 +1,7 @@
 import type React from 'react';
 import { Trash2, type LucideIcon } from 'lucide-react';
 import type { Resource } from '../types';
-import { resourceKind, resourceDescription } from '../lib/resourceKinds';
+import { resourceDescription, resourcePresentation } from '../lib/resourceKinds';
 import ResourceActions from './ResourceActions';
 
 export function SidebarShortcut({title,description,icon:Icon,isActive=false,onClick,onDelete,resource}:{title:string;description:string;icon:LucideIcon;isActive?:boolean;onClick:()=>void;onDelete?:(event:React.MouseEvent)=>void;resource?:Resource}) {
@@ -11,5 +11,5 @@ export function SidebarShortcut({title,description,icon:Icon,isActive=false,onCl
  </div>;
 }
 export default function SidebarItem({ resource, isActive, onClick, onDelete }: { resource: Resource; isActive: boolean; onClick: () => void; onDelete: (event: React.MouseEvent) => void }) {
- return <SidebarShortcut resource={resource} title={resource.title} description={resourceDescription(resource)} icon={resourceKind(resource.type).icon} isActive={isActive} onClick={onClick} onDelete={onDelete}/>;
+ return <SidebarShortcut resource={resource} title={resource.title} description={resourceDescription(resource)} icon={resourcePresentation(resource).icon} isActive={isActive} onClick={onClick} onDelete={onDelete}/>;
 }

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { resourceKind, resourceDescription } from '../lib/resourceKinds';
+import { resourceDescription, resourcePresentation } from '../lib/resourceKinds';
 import { ExternalLink, PanelRight, ScanText, X } from 'lucide-react';
 import ResourceCollections from './ResourceCollections';
 import PinButton from './PinButton';
@@ -59,7 +59,7 @@ export default function PreviewLayer({
     restoreFocusOnEscape: false, // Dashboard restores the owning pane.
   });
 
-  const Icon = resourceKind(resource.type).icon;
+  const Icon = resourcePresentation(resource).icon;
   const chrome = (
     <>
       <div className="flex min-h-12 flex-wrap items-center justify-between gap-3 py-2 border-b border-white/5 px-3">

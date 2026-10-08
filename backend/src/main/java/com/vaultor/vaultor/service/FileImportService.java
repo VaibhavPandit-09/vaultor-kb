@@ -50,11 +50,12 @@ public class FileImportService {
         if(lifecycle.existsByResourceIdAndStatus(id,"purged"))throw new ResponseStatusException(HttpStatus.GONE,"This original was permanently deleted. Use a new import identity for an explicit new resource.");
         if(collectionId != null && !collections.existsById(collectionId)) throw new java.util.NoSuchElementException("Collection not found");
         String stored = file == null ? null : files.storeFile(file);
+        String mime=stored==null?null:FileMime.detect(files.getFile(stored),file.getContentType());
         try {
             return transaction.execute(status -> {
                 var resource = new Resource(); resource.setId(id); resource.setType(kind); resource.setTitle(title.trim());
                 resource.setContent(normalized); resource.setImportFingerprint(fingerprint); resource.setFilePath(stored);
-                if (file != null) { resource.setSize(file.getSize()); resource.setMimeType(file.getContentType()); }
+                if (file != null) { resource.setSize(file.getSize()); resource.setMimeType(mime); }
                 if(collectionId != null) resource.getCollections().add(collections.findById(collectionId).orElseThrow());
                 var saved = resources.saveAndFlush(resource);
                 if (normalized != null) links.updateLinksForNote(id, normalized);

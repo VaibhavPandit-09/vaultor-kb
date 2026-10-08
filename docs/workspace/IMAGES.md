@@ -35,3 +35,7 @@ Tiptap content validation is enabled. Unknown/unsupported structured content dis
 ## Validation
 
 Focused editor/upload tests cover source ownership, mapped anchors, retry identity/order, closed-note insertion, shared attributes/undo and limits. Backend tests cover header limits/formats, GIF animation/WebP decode, original preservation, references/remapping, saved captions/alt search and export fidelity. The native development helper `VAULTOR_IMAGES_SMOKE=1` uses an owned disposable workspace and real OS clipboard, restoring its captured clipboard items using reconstructed ClipboardItems. Actual results/platform limitations are recorded in CODEBASE and the tracker. Browser clipboard permission prompts and physical/native Mac checks require their respective environments.
+
+## Discovery and usage — 0.6.0
+
+Images remain File resources. Images in the shared Type filter selects all matching saved image metadata before server paging; the existing-image picker now uses this category query rather than filtering an arbitrary mixed page. Rows load bounded static thumbnails, never all original image bytes. Image More and replacement tools expose Used in, distinguish saved sources from placements and explain placement-only replacement. See [REFERENCES.md](REFERENCES.md) for thumbnail limits, historical MIME metadata, saved-only counts and validated source navigation.
