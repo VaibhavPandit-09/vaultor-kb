@@ -1,6 +1,6 @@
 # Current release handoff — 0.7.0 saved-content search
 
-Windows 0.7.0 release gate is being completed for v0.7.0; Mac arm64 remains unavailable until this exact same-tag build and native verification pass. Do not treat the older sections below as current source/version instructions.
+Windows 0.7.0 is published from v0.7.0 (1aa70a6f42b030a58fb067a59d1be845db27d6db); Mac arm64 remains unavailable until this exact same-tag build and native verification pass. Do not treat the older sections below as current source/version instructions.
 
 1. Read AGENTS, CODEBASE, RELEASE-PROCESS and workspace/SEARCH. Fetch and check out **v0.7.0** exactly after Windows publication; keep package/lock version 0.7.0 and the immutable tag unchanged.
 2. On the Apple Silicon Mac mini use Node 20.19+/24, JDK 25 and free Apple command-line tools. Obtain the existing matching private release key by authorized private transfer outside Git; set VAULTOR_RELEASE_KEY to its protected path. Never regenerate or log it.
@@ -19,7 +19,7 @@ npm --prefix desktop run publish:release
 ```
 
 4. Verify arm64 Vaultor.app with codesign --verify --deep --strict and its original-key DMG sidecar. No paid notarization is claimed. Install and launch with a new disposable profile. Check protocol/minimum client 3, archive 3, relaunch/data retention, native menus/focus/Escape and update verification.
-5. With disposable PDF and UTF-8 text files, verify title-only exclusion, explicit saved-content matches, collection/tag/category/pin isolation, Unicode/literal snippets, pending/unsupported/no-text/encrypted/invalid/limit states, pagination and retry. Check rename/Trash/Restore, generation replacement, restart reuse and archive-derived rebuild; original bytes must remain unchanged. Verify bundled-Java subprocess launching and the 15-second timeout/128 MiB heap/96 MiB metaspace controls. Check export PDF regression (PDFBox is now pinned3.0.8). No OCR/office extraction or page-jump is claimed. Inspect Library/Ctrl+K/Diagnostics layout/focus. No domain schema migration; file_search is disposable derived data.
+5. With disposable PDF and UTF-8 text files, verify title-only exclusion, explicit saved-content matches, collection/tag/category/pin isolation, Unicode/literal snippets, pending/unsupported/no-text/encrypted/invalid/limit states, pagination and retry. Check rename/Trash/Restore, generation replacement, restart reuse and archive-derived rebuild; original bytes must remain unchanged. Verify bundled-Java subprocess launching and the 15-second timeout/128 MiB heap/96 MiB metaspace controls. Check export PDF regression (PDFBox is now pinned 3.0.8). No OCR/office extraction or page-jump is claimed. Inspect Library/Ctrl+K/Diagnostics layout/focus. No domain schema migration; file_search is disposable derived data.
 6. Coordinate a real paired Windows–Mac session when available. Update the host first, reconnect without routine re-pairing, test category isolation, references, saved-change refresh and source focus. Do not bypass approval/TLS/revisions. Record checks unavailable instead of certifying them.
 7. From a clean exact-tag checkout, add only the absent verified Mac pair:
 

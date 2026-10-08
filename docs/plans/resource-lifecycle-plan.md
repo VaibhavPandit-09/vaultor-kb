@@ -1,6 +1,6 @@
 # Resource lifecycle, discovery and Android readiness
 
-Created/reviewed 2026-10-08. Sprints 1–4 complete; Windows 0.7.0 has passed the final release gate. Sprint 5 remains pending. This is the execution tracker for the user's approved direction. Historical Library/navigation/editor trackers remain evidence of earlier work, not competing specifications.
+Created/reviewed 2026-10-08. Sprints 1–4 complete; Windows 0.7.0 is published with original-key verified artifacts. Sprint 5 remains pending. This is the execution tracker for the user's approved direction. Historical Library/navigation/editor trackers remain evidence of earlier work, not competing specifications.
 
 ## Delivery and decisions
 
@@ -67,7 +67,7 @@ Acceptance: users can find images as images, understand where any resource is us
 
 ## Sprint 4 — Explicit saved file-content search
 
-Status: **Complete (2026-10-08), Windows release gate passed**. Version 0.7.0. Bounded saved PDF/text extraction and visible coverage; API protocol 3 and archive 3 retained. OCR/office extractors remain deferred.
+Status: **Complete (2026-10-08), Windows-only release published**. Version 0.7.0. Bounded saved PDF/text extraction and visible coverage; API protocol 3 and archive 3 retained. OCR/office extractors remain deferred.
 
 - [x] Extend content mode to supported text-bearing PDFs and plain-text formats (text/Markdown/CSV/JSON/code), using a vetted, pinned extractor and explicit byte/page/output/time limits decided from fixture results. Audit licensing/dependency footprint. Never fetch external links, run code/macros, or render executable snippets.
 - [x] Keep title-only as default in Library/Ctrl+K. Rename the opt-in appropriately to Include saved content, explain supported formats, and preserve global/collection/tag/category/pin isolation. File results must not imply scanning unsaved editor text or other workspaces.
@@ -110,4 +110,7 @@ Published Windows-only at 2026-10-08T12:15:42Z: [Vaultor 0.6.0](https://github.c
 
 Frontend/Java production compilation and scoped lint passed; 17 distinct focused frontend, 15 backend and two desktop checks passed. Actual owned-subprocess timeout termination, missing-byte failure/retry, UTF-8/literal/title-weighted results, collection/category/pin isolation, revision/generation invalidation, Trash/Restore and archive-derived consistency passed. Packaged Windows host/native Library and Ctrl+K body snippets/coverage and restart reuse passed; two frames were inspected. Full 5,000-resource/1,000-file Atlas observation is partial: six warm content searches median 164.0 ms/max 248.2 ms, 63 indexed/133 unsupported/3 no-text/801 pending after 60 seconds. A large replacement caused a 30-second pool timeout on status but completed; retained for Sprint 5. No complete throughput, cold-cache, peak/child memory, native Mac/LAN/touch or physical OLED claim. No personal data, broad API smoke or Docker runs.
 
-The derived file_search table, scoped fileCoverage and diagnostic status/retry APIs are additive. API/minimum client 3 and logical archive 3 remain. PDFBox is pinned to 3.0.8 (Apache-2.0), preserving the existing export stack. Exact limits/states and storage/version/generation invalidation are in SEARCH.md. Original files, note documents, drafts and title-first defaults remain intact. Final renderer/embedded-browser/source bytes match; original-key installer preflight and disposable upgrade/repair/uninstall/reinstall with sentinel retention passed. Windows publication follows the verified gate; Mac native verification remains unavailable with an exact v0.7.0 handoff. Stop after Sprint 4; one sprint remains, with the large-import timeout an explicit integration item.
+The derived file_search table, scoped fileCoverage and diagnostic status/retry APIs are additive. API/minimum client 3 and logical archive 3 remain. PDFBox is pinned to 3.0.8 (Apache-2.0), preserving the existing export stack. Exact limits/states and storage/version/generation invalidation are in SEARCH.md. Original files, note documents, drafts and title-first defaults remain intact. Final renderer/embedded-browser/source bytes match; original-key installer preflight and disposable upgrade/repair/uninstall/reinstall with sentinel retention passed. Windows publication passed the verified gate; Mac native verification remains unavailable with an exact v0.7.0 handoff. Stop after Sprint 4; one sprint remains, with the large-import timeout an explicit integration item.
+
+
+Published Windows-only at 2026-10-08T12:53:36Z: [Vaultor 0.7.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.7.0). Immutable source tag v0.7.0 points to `1aa70a6f42b030a58fb067a59d1be845db27d6db`. GitHub asset sizes/digests match local bytes; the downloaded installer/sidecar pair passed original-key signature, size and SHA-256 verification. Mac arm64 awaits the exact same-tag native/key gate. This Windows-only release is deliberately non-latest; Windows updater discovery selects the newest verified stable platform pair. Publication-status documentation has no additional architectural or shipped-code effect.
