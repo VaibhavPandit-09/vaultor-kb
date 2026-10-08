@@ -36,7 +36,7 @@ test('failed barriers, changed staged package and damaged backup never replace w
 });
 test('optional HTTPS feed verifies manifest/download and does not send workspace credentials',async()=>{
  const f=await fixture(),bytes=Buffer.from('test installer'),release=envelope(bytes),calls=[];
- await assert.rejects(f.updates.check(),/No update feed/);await f.updates.configure('https://releases.test/windows/latest.json');
+ await f.updates.configure('https://releases.test/windows/latest.json');
  f.updates.fetcher=async(url,options)=>{calls.push({url,options});return new Response(url.endsWith('.json')?JSON.stringify(release):bytes);};
  await f.updates.check();assert.equal(f.updates.snapshot().phase,'available');await f.updates.download();assert.equal(f.updates.snapshot().phase,'ready');assert.equal(calls[1].url,'https://releases.test/windows/Vaultor-0.3.0.exe');assert.ok(calls.every(c=>!c.options.headers&&c.options.redirect==='error'));
 });

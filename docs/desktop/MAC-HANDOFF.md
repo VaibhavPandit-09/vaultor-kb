@@ -221,3 +221,12 @@ npm --prefix desktop run publish:release -- --publish --add-platform --notes doc
 ```
 
 The helper preserves existing Windows assets and the source tag, accepting identical retries and refusing differing bytes. It does not edit publication notes/status. Then update GitHub notes with actual Mac results/availability; update living docs in a separate documentation-only commit. Never claim Windows-only publication updates a Mac host.
+
+
+## 0.4.1 — update transport and remaining Mac one-click gate
+
+Windows 0.4.1 adds default GitHub discovery/internal downloads and a verified silent NSIS handoff/relaunch. Macs receive platform-filtered automatic downloads, but still explicitly open a DMG for manual replacement. Standard Electron macOS auto-update requires its supported signing setup; our personal ad-hoc/no-payment constraint does not permit pretending that path is verified. No automatic Mac helper is enabled or published in this Windows delivery.
+
+For the Mac AI: fetch/check out immutable **v0.4.1**, build fresh UI/server with VITE_BUILD_VERSION/BUILD_VERSION=0.4.1, preserve original trust/private key, and follow the exact build/native/package/add-platform steps above with version 0.4.1. Include `node --test desktop/test/github-updates.test.mjs desktop/test/updates.test.mjs desktop/test/update-handoff.test.mjs`, frontend DesktopUpdates tests and a native Mac check of platform-specific release discovery, download, DMG handoff, credential isolation and startup state. A Windows-only GitHub release must never supply its EXE to a Mac. Publish a verified same-tag Mac pair through --add-platform only if all native gates pass; do not move existing source/tag/assets.
+
+To complete **one-click Mac replacement**, arrange native access and implement a separately authorized subsequent release: a helper must survive parent exit, use original-key/hash verification, mount only the verified artifact, check bundle identity/version/architecture/ad-hoc signature, retain the old application, replace only an owned writable installation atomically, preserve data, relaunch and recover/report interrupted replacement. Test paths with spaces, running processes, permission/quarantine prompts, partial copies, failure rollback and no security-policy changes on disposable Mac installations. Do not enable that capability merely from Windows unit tests. Record the actual OS approval flow rather than bypassing Gatekeeper or trust. The user owns an Apple Silicon Mac mini; native access/key transfer is currently unavailable here.

@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('vaultorDesktop', Object.freeze({
   updatesDownload:()=>ipcRenderer.invoke('desktop:updates-download'),
   updatesCancel:()=>ipcRenderer.invoke('desktop:updates-cancel'),
   updatesImport:()=>ipcRenderer.invoke('desktop:updates-import'),
+  updatesApply:()=>ipcRenderer.invoke('desktop:updates-apply'),
   updatesInstall:()=>ipcRenderer.invoke('desktop:updates-install'),
   updatesRestore:()=>ipcRenderer.invoke('desktop:updates-restore'),
   onUpdates:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('desktop:updates-state',listener);return()=>ipcRenderer.removeListener('desktop:updates-state',listener);},

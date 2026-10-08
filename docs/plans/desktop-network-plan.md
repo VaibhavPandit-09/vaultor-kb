@@ -375,3 +375,16 @@ Sprint 3 results (2026-10-08): shared finite motion lifecycle/tokens cover setti
 Windows-only 0.4.0 published at 2026-10-08T04:38:39Z from immutable tag v0.4.0 (`c2d430592600db006131a2c2665aad1101ce80db`). Both GitHub asset sizes/digests match local bytes; the downloaded installer/sidecar pair also passed original-key signature, size and SHA-256 verification. [Published release](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.4.0). Mac arm64 remains pending under the exact same-tag handoff; the partial release is deliberately non-latest. This publication-status documentation change has no additional architectural or shipped-code effect.
 
 All three 0.4.0 implementation sprints are complete. User update: download both Windows files into one folder → window menu → Updates → Import update → select .vaultor.json → Ready → Install update → finish installer/reopen. Update hosts and clients to 0.4.0/API protocol 2 together; a Windows client does not update the Mac host. No remaining feature sprint is implied by the Mac verification handoff.
+
+
+## 0.4.1 — one-click Windows updates
+
+Authorized 2026-10-08: replace mandatory manual pair download/import/installer steps with default GitHub discovery and Update and restart. Preserve original-key verification, bounded platform selection, save/recovery barriers, stopped-host backup and remote-host isolation. Custom feeds/manual import remain Advanced. Automatic installation requires a verified Windows installer installation; Mac native replacement remains gated pending native access. Deliver a fresh original-key Windows release and exact Mac handoff; 0.4.0 needs one transition update to gain this capability.
+
+- [x] GitHub stable per-platform release discovery and bounded credential-free downloads.
+- [x] Single update action, progress/cancel/retry and Advanced fallback.
+- [x] Silent Windows helper, safe parent exit, installer revalidation, version validation/relaunch and visible failure journal.
+- [x] Focused component/service checks, disposable native/installer handoff validation and documentation.
+- [ ] 0.4.1 fresh UI/server/package, original-key verified artifacts, immutable source/tag and GitHub publication.
+
+Validation: four frontend and 15 updater/artifact tests, scoped lint, frontend/embedded server compilation passed. Packaged real GitHub download and two frames checked; separate disposable 0.4.0 → 0.4.1 silent upgrade/relaunch/server startup/data retention passed. Parent-lifetime and shutdown-race failures corrected; packaged source/UI/server bytes verified. No real user installation or Mac verification claimed.

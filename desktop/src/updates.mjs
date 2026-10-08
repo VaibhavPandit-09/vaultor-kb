@@ -1,3 +1,4 @@
+import {githubAsset,githubRelease,boundedJSON} from './github-updates.mjs';
 import {createHash,verify,randomUUID} from 'node:crypto';
 import {createReadStream,createWriteStream} from 'node:fs';
 import {readFile,writeFile,mkdir,rename,stat,cp,readdir,lstat,rm,statfs} from 'node:fs/promises';
@@ -23,27 +24,45 @@ function inside(root,path){const p=resolve(path);if(!p.startsWith(resolve(root)+
 /** Update files never come from a workspace host. Only signed publisher manifests are trusted. */
 export class Updates {
  constructor({directory,workspace,publicKey,currentVersion,platform=process.platform,arch=process.arch,fetcher=fetch,onState=()=>{}}){Object.assign(this,{directory:resolve(directory),workspace:resolve(workspace),publicKey,currentVersion,platform,arch,fetcher,onState});this.state={phase:'idle',feed:'',currentVersion,progress:0,error:''};this.records=[];}
- snapshot(){return {...this.state,backupDirectory:this.journal?.backup??'',recoveryAvailable:Boolean(this.journal?.backup),previousPackageAvailable:Boolean(this.journal?.previous)};}
+ snapshot(){return {...this.state,source:this.state.feed?'custom':'github',availableVersion:this.available?.envelope.manifest.appVersion,candidateVersion:this.candidate?.envelope.manifest.appVersion,backupDirectory:this.journal?.backup??'',recoveryAvailable:Boolean(this.journal?.backup),previousPackageAvailable:Boolean(this.journal?.previous)};}
  publish(values){this.state={...this.state,...values};this.onState(this.snapshot());}
  async load(){
   await mkdir(this.directory,{recursive:true,mode:0o700});
   try{const saved=JSON.parse(await readFile(join(this.directory,'settings.json'),'utf8'));this.state.feed=feedAddress(saved.feed);}catch(e){if(e.code!=='ENOENT')this.state.error='Update preferences are damaged. Configure the feed again; workspace data is untouched.';}
   try{this.records=JSON.parse(await readFile(join(this.directory,'packages.json'),'utf8'));if(!Array.isArray(this.records)||this.records.length>2)throw new Error();for(const r of this.records){inside(this.directory,r.file);validateRelease(r.envelope,this.publicKey,this.platform,this.arch);}}catch(e){this.records=[];if(e.code!=='ENOENT')this.state.error='Retained update packages could not be read. Import a signed package again.';}
   try{this.journal=JSON.parse(await readFile(join(this.directory,'journal.json'),'utf8'));inside(join(this.directory,'backups'),this.journal.backup);if(this.journal.previous)inside(this.directory,this.journal.previous);this.publish({phase:this.journal.status==='awaiting-start'?'awaiting-start':'idle',version:this.journal.targetVersion});}catch(e){if(e.code!=='ENOENT'){this.journal=null;this.state.error='Update recovery journal is damaged. Keep backup files and use the documented manual recovery procedure.';}}
+  try{const handoff=JSON.parse((await readFile(join(this.directory,'handoff-status.json'),'utf8')).replace(/^\uFEFF/,''));if(handoff.phase==='error')this.state.error=String(handoff.error).slice(0,1000);}catch(e){if(e.code!=='ENOENT')this.state.error='Update handoff status could not be read. Review recovery before retrying.';}
   const candidate=this.records.find(r=>r.envelope.manifest.appVersion===this.journal?.targetVersion)||this.records[0];
   if(candidate){this.candidate=candidate;this.publish({phase:this.journal?.status==='awaiting-start'?'awaiting-start':'ready',version:candidate.envelope.manifest.appVersion});}
  }
  async configure(feed){if(this.running)throw new Error('Finish the current update action first.');feed=feedAddress(feed);await atomic(join(this.directory,'settings.json'),{feed});this.available=null;this.publish({feed,error:'',phase:this.candidate?'ready':'idle'});return this.snapshot();}
  async exclusive(task){if(this.running)throw new Error('An update action is already running.');this.running=true;try{return await task();}catch(e){this.publish({phase:this.candidate?'ready':'error',error:e.message});throw e;}finally{this.running=false;}}
  async check(){return this.exclusive(async()=>{
-  if(!this.state.feed)throw new Error('No update feed configured. Import a local signed update package, or configure an HTTPS manifest URL.');
-  this.publish({phase:'checking',error:'',progress:0});
-  const response=await this.fetcher(this.state.feed,{redirect:'error',signal:AbortSignal.timeout(15000)});if(!response.ok)throw new Error('Update check failed ('+response.status+'). Retry.');
-  let bytes=0;const chunks=[];try{for await(const chunk of response.body){bytes+=chunk.length;if(bytes>MAX_MANIFEST)throw new Error('Release manifest exceeds 16 KiB.');chunks.push(chunk);}}finally{await response.body?.cancel?.().catch(()=>{});}
-  const envelope=JSON.parse(Buffer.concat(chunks).toString('utf8'));const m=validateRelease(envelope,this.publicKey,this.platform,this.arch);
+  this.available=null; this.publish({phase:'checking',error:'',progress:0});
+  let envelope,url;
+  if (this.state.feed) {
+   envelope=await boundedJSON(await this.fetcher(this.state.feed,{redirect:'error',signal:AbortSignal.timeout(15000)}),MAX_MANIFEST);
+   url=new URL(envelope?.manifest?.filename,this.state.feed).href;
+  } else {
+   const release=await githubRelease(this.fetcher,this.platform,this.arch,newer,this.currentVersion);
+   if(!release){this.publish({phase:this.candidate&&newer(this.candidate.envelope.manifest.appVersion,this.currentVersion)?'ready':'current',version:this.candidate?.envelope.manifest.appVersion,error:''});return this.snapshot();}
+   envelope=release.envelope;url=release.url;
+   const checked=validateRelease(envelope,this.publicKey,this.platform,this.arch);
+   if(checked.appVersion!==release.version||checked.size!==release.size||checked.filename!==decodeURIComponent(new URL(url).pathname.split('/').pop()))throw new Error('GitHub assets do not match the signed release.');
+  }
+  const m=validateRelease(envelope,this.publicKey,this.platform,this.arch);
   if(!newer(m.appVersion,this.currentVersion)){this.publish({phase:this.candidate?'ready':'current',error:''});return this.snapshot();}
-  this.available={envelope,url:new URL(m.filename,this.state.feed).href};this.publish({phase:'available',version:m.appVersion});return this.snapshot();
+  this.available={envelope,url,github:!this.state.feed};this.publish({phase:'available',version:m.appVersion});return this.snapshot();
  });}
+ async stageLatest(){
+  if(this.running)throw new Error('An update action is already running.');
+  if(this.available){
+   if(this.candidate && this.candidate.envelope.manifest.appVersion===this.available.envelope.manifest.appVersion && this.candidate.envelope.manifest.sha256===this.available.envelope.manifest.sha256){await this.verifyFile(this.candidate.file,this.candidate.envelope);return this.snapshot();}
+   return this.download();
+  }
+  if(this.candidate){await this.verifyFile(this.candidate.file,this.candidate.envelope);return this.snapshot();}
+  await this.check(); if(!this.available)throw new Error('No newer release is available for this device.'); return this.download();
+ }
  async verifyFile(file,envelope){const m=validateRelease(envelope,this.publicKey,this.platform,this.arch);const info=await lstat(file);if(!info.isFile()||info.isSymbolicLink()||info.size!==m.size||await hash(file)!==m.sha256)throw new Error('Update package size/checksum mismatch. Nothing will be installed.');return m;}
  async space(bytes){const info=await statfs(this.directory);if(Number(info.bavail)*Number(info.bsize)<bytes+256*1024*1024)throw new Error('Not enough disk space to stage the update and recovery backup. Free space and retry.');}
  async retain(file,envelope){await this.verifyFile(file,envelope);const next=[{file,envelope},...this.records.filter(r=>r.envelope.manifest.appVersion!==envelope.manifest.appVersion)].slice(0,2);await atomic(join(this.directory,'packages.json'),next);const old=this.records;this.records=next;this.candidate=next[0];this.publish({phase:'ready',version:envelope.manifest.appVersion,progress:100,error:''});for(const r of old)if(!next.some(n=>n.file===r.file)&&r.file!==this.journal?.previous)await rm(inside(this.directory,r.file),{force:true});return this.snapshot();}
@@ -60,7 +79,7 @@ export class Updates {
   const file=inside(this.directory,join(this.directory,'package-'+randomUUID()+(this.platform==='win32'?'.exe':'.dmg')));this.controller=new AbortController();let count=0;
   this.publish({phase:'downloading',progress:0,error:''});
   const timeout=setTimeout(()=>this.controller.abort(),600000);
-  try{const response=await this.fetcher(url,{redirect:'error',signal:this.controller.signal});if(!response.ok)throw new Error('Update download failed ('+response.status+').');
+  try{const response=this.available.github?await githubAsset(this.fetcher,url,this.controller.signal):await this.fetcher(url,{redirect:'error',signal:this.controller.signal});if(!response.ok)throw new Error('Update download failed ('+response.status+').');
    if(Number(response.headers.get('content-length'))>m.size)throw new Error('Update exceeds signed size.');
    const bound=new Transform({transform:(chunk,_encoding,done)=>{count+=chunk.length;if(count>m.size)done(new Error('Update exceeds signed size.'));else{const progress=Math.floor(count/m.size*100);if(progress!==this.state.progress)this.publish({progress});done(null,chunk);}}});
    await pipeline(Readable.fromWeb(response.body),bound,createWriteStream(file,{flags:'wx',mode:0o600}),{signal:this.controller.signal});return await this.retain(file,envelope);

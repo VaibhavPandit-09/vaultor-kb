@@ -1,0 +1,7 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,mkdir,writeFile} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';import {supportsAutomaticInstall,startUpdateHandoff} from '../src/update-handoff.mjs';
+test('automatic install requires the actual Windows installer location, not portable/development/Mac',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'vaultor-handoff-test-'));const exe=join(root,'Vaultor.exe');assert.equal(await supportsAutomaticInstall(exe,true,'win32'),false);await writeFile(join(root,'Uninstall Vaultor.exe'),'fixture');assert.equal(await supportsAutomaticInstall(exe,true,'win32'),true);assert.equal(await supportsAutomaticInstall(exe,false,'win32'),false);assert.equal(await supportsAutomaticInstall(exe,true,'darwin'),false);assert.equal(await supportsAutomaticInstall(join(root,'electron.exe'),true,'win32'),false);
+});
+test('real Windows helper refuses a missing installed executable before exit/installation', {skip:process.platform!=='win32'},async()=>{
+ const root=await mkdtemp(join(tmpdir(),'vaultor-handoff-test-'));await mkdir(join(root,'updates'));await writeFile(join(root,'package.exe'),'fixture');await assert.rejects(startUpdateHandoff({directory:join(root,'updates'),executable:join(root,'missing','Vaultor.exe'),file:join(root,'package.exe'),manifest:{appVersion:'0.4.1',size:7,sha256:'a'.repeat(64)}}),/Invalid installed application/);
+});

@@ -1,6 +1,6 @@
 import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, ClipboardItem, dialog, Tray, nativeImage, Notification, powerMonitor, safeStorage } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { readFile,stat } from 'node:fs/promises';
+import { readFile,stat,writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { isAbsolute, resolve, sep } from 'node:path';
 import { Profiles } from './profiles.mjs';
@@ -14,6 +14,7 @@ import { Discovery } from './discovery.mjs';
 import { Connections } from './connections.mjs';
 import { startChangeStream } from './change-stream.mjs';
 import { Updates } from './updates.mjs';
+import {supportsAutomaticInstall,startUpdateHandoff} from './update-handoff.mjs';
 import { spawn } from 'node:child_process';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'vaultor', privileges: { standard: true, secure: true, supportFetchAPI: true } },{scheme:'vaultor-file',privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true}}]);
@@ -28,7 +29,7 @@ if (testDirectory && !isAbsolute(testDirectory)) throw new Error('VAULTOR_DESKTO
 if (smokeDirectory || testDirectory) app.setPath('userData', smokeDirectory || testDirectory);
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  let window, profiles, owned, files, hosting, credentials, discovery, connections, tray, updates, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false, updating=false;
+  let window, profiles, owned, files, hosting, credentials, discovery, connections, tray, updates, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false, updating=false, updateApplying=false, automaticInstall=false;
   const transport = new DesktopTransport(), candidates = new Map();
   const queue = task => { const next = writes.catch(() => {}).then(task); writes = next; return next; };
   const state = () => { const data = !startupError && profiles?.snapshot(); if (data) data.profiles = data.profiles.map(p => p.source === 'bundled' ? { ...p, address: owned?.address ?? p.address } : p); return { ...(data || { version: 1, profiles: [], active: null, clientId: '' }), sessionId: data?.clientId ?? '', token, desktopBuild: app.getVersion(), localServer: owned?.snapshot(), error: startupError, access: { mode: token ? (transport.active?.profile.kind === 'remote' ? 'paired' : 'loopback') : 'unselected', pairingAvailable: credentials?.available() ?? false, trustConfigured: Boolean(transport.active?.profile.fingerprint), credentialsStored: Boolean(transport.active?.credential || transport.active?.ownerKey) } }; };
@@ -65,6 +66,7 @@ else {
     ipcMain.handle(channel, async (event, value) => {
       if (!trustedSender(event, window?.webContents)) throw new Error('Untrusted desktop caller.');
       try {
+        if(updateApplying && channel.startsWith('desktop:updates-') && !['desktop:updates-status','desktop:updates-cancel'].includes(channel))throw new Error('An update action is already running.');
         if(updating && !['desktop:updates-status','desktop:window-status','desktop:window-action','desktop:quit-reply','desktop:cancel','desktop:cancel-file'].includes(channel))throw new Error('Vaultor is preparing an update. Wait for completion.');
         return { ok: true, value: await work(value) }; }
       catch (error) { return { ok: false, error: { code: error.name === 'AbortError' ? 'CANCELLED' : 'DESKTOP_ERROR', detail: error.message === 'fetch failed' ? 'Server unavailable. Check that it is running, then retry.' : String(error.message).slice(0, 1000) } }; }
@@ -88,7 +90,8 @@ else {
     profiles = new Profiles(app.getPath('userData'));
     owned = new OwnedServer({ bundle: packaged?resolve(process.resourcesPath,'bundle'):fileURLToPath(new URL('../bundle/', import.meta.url)), data: resolve(app.getPath('userData'), 'local-workspace') });
     const releaseTrust=JSON.parse(await readFile(fileURLToPath(new URL('../release-trust.json',import.meta.url)),'utf8'));
-    updates=new Updates({directory:resolve(app.getPath('userData'),'updates'),workspace:owned.data,publicKey:releaseTrust.publicKey,currentVersion:app.getVersion(),onState:value=>window?.webContents.send('desktop:updates-state',value)});await updates.load();
+    updates=new Updates({directory:resolve(app.getPath('userData'),'updates'),workspace:owned.data,publicKey:releaseTrust.publicKey,currentVersion:app.getVersion(),onState:value=>window?.webContents.send('desktop:updates-state',{...value,automaticInstall})});await updates.load();automaticInstall=await supportsAutomaticInstall(process.execPath,packaged);
+    const updateStatus=()=>({...updates.snapshot(),automaticInstall});
     credentials = new Credentials(app.getPath('userData'), safeStorage); discovery = new Discovery();
     connections = new Connections({ owned, profiles, credentials, discovery });
     const stopAddressWatch = connections.watchAddresses(); app.once('will-quit', stopAddressWatch);
@@ -112,7 +115,8 @@ else {
     try { await profiles.load(); await credentials.load(); if (!process.env.VAULTOR_SMOKE_DIRECTORY) await profiles.ensureManaged(); } catch (error) { startupError = error.message; }
     if (!startupError && !smokeDirectory) void connections.resumeHosting();
     handle('desktop:bootstrap', () => state());
-    handle('desktop:updates-status',()=>updates.snapshot());
+    if(packaged&&!smokeDirectory&&!testDirectory){const updateTimer=setTimeout(()=>void updates.check().catch(()=>{}),10000);updateTimer.unref();app.once('will-quit',()=>clearTimeout(updateTimer));}
+    handle('desktop:updates-status',()=>updateStatus());
     handle('desktop:updates-configure',feed=>updates.configure(feed));
     handle('desktop:updates-check',()=>updates.check());
     handle('desktop:updates-download',()=>updates.download());
@@ -132,10 +136,27 @@ else {
       else {const error=await shell.openPath(file);if(error)throw new Error(error);}
       stoppedForQuit=true;discovery.destroy();await files.reset();window?.destroy();tray?.destroy();app.quit();
     };
+    handle('desktop:updates-apply',()=>{
+      if(updateApplying)throw new Error('An update action is already running.');
+      updateApplying=true;
+      return queue(async()=>{
+        try{
+          await updates.stageLatest();
+          if(!automaticInstall){const answer=await dialog.showMessageBox(window,{type:'question',buttons:['Cancel','Open installer'],defaultId:0,cancelId:0,message:'Install Vaultor update?',detail:'Save pending work and back up the local workspace, then open the installer. Automatic replacement is not yet available for this installation.'});if(answer.response!==1)return updateStatus();}
+          const prepared=await updates.prepare({barrier:updateBarrier,stop:()=>owned.stop()});
+          if(automaticInstall){
+            await startUpdateHandoff({directory:updates.directory,file:prepared.file,manifest:updates.candidate.envelope.manifest});
+            stoppedForQuit=true;discovery.destroy();await files.reset();window?.destroy();tray?.destroy();app.quit();
+          }else await installFile(prepared.file);
+        }catch(e){updating=false;updates.publish({error:e.message});throw e;}
+        finally{updateApplying=false;}
+      });
+    });
+    // Compatibility path for older UI callers; explicit manual installation remains available.
     handle('desktop:updates-install',()=>queue(async()=>{
-      const answer=await dialog.showMessageBox(window,{type:'question',buttons:['Cancel','Back up and update'],defaultId:0,cancelId:0,message:'Update Vaultor?',detail:'Save pending changes, stop this computer’s host, and create a verified local recovery backup. Paired clients disconnect. Remote servers remain untouched. '+(process.platform==='darwin'?'The disk image opens; quit and replace Vaultor.app manually.':'The personal installer opens; finish its steps, then reopen Vaultor.')});if(answer.response!==1)return updates.snapshot();
+      const answer=await dialog.showMessageBox(window,{type:'question',buttons:['Cancel','Back up and update'],defaultId:0,cancelId:0,message:'Update Vaultor?',detail:'Save pending work, stop local hosting and create a verified recovery backup before opening the installer.'});if(answer.response!==1)return updateStatus();
       try{const prepared=await updates.prepare({barrier:updateBarrier,stop:()=>owned.stop()});await installFile(prepared.file);}
-      catch(e){updating=false;window?.webContents.send('desktop:updates-state',updates.snapshot());throw e;}
+      catch(e){updating=false;throw e;}
     }));
     handle('desktop:updates-restore',()=>queue(async()=>{
       const answer=await dialog.showMessageBox(window,{type:'warning',buttons:['Cancel','Restore local backup'],defaultId:0,cancelId:0,message:'Restore the workspace from before updating?',detail:'This replaces only the managed local workspace. Current data is retained in a separate folder. Use the previous app installer afterward if its schema is incompatible. Remote hosts and client drafts/preferences are untouched.'});if(answer.response!==1)return updates.snapshot();
@@ -244,6 +265,14 @@ else {
     ]);
     Menu.setApplicationMenu(process.platform === 'darwin' ? windowMenu() : null);
     createWindow();
+    if(testDirectory&&process.env.VAULTOR_UPDATE_RELAUNCH_CHECK==='1'){
+      if(!resolve(testDirectory).includes('vaultor-oneclick-'))throw new Error('Expected disposable relaunch profile.');
+      window.webContents.once('did-finish-load',async()=>{
+        for(let i=0;i<600;i++){if(owned.status==='ready'){await writeFile(resolve(testDirectory,'update-relaunch.json'),JSON.stringify({version:app.getVersion(),ready:true}));stoppedForQuit=true;await owned.stop();discovery.destroy();app.exit(0);return;}await new Promise(done=>setTimeout(done,100));}
+        await writeFile(resolve(testDirectory,'update-relaunch.json'),JSON.stringify({version:app.getVersion(),ready:false}));stoppedForQuit=true;await owned.stop({force:true});discovery.destroy();app.exit(1);
+      });
+    }
+
     const showApp=()=>{ if(!window) createWindow(); window.show();window.focus(); };
     app.on('activate',showApp);
     try {
@@ -266,7 +295,7 @@ else {
     }
     if (process.env.VAULTOR_CHROME_SMOKE_DIRECTORY) {
       const { runChromeSmoke } = await import('../scripts/native-chrome-smoke.mjs');
-      try { await runChromeSmoke(window, smokeDirectory, owned); await owned.stop({ force: true }); discovery.destroy(); app.exit(0); }
+      try { await runChromeSmoke(window, smokeDirectory, owned, updates); await owned.stop({ force: true }); discovery.destroy(); app.exit(0); }
       catch (error) { console.error(error); await owned.stop({ force: true }); discovery.destroy(); app.exit(1); }
     }
   }).catch(error => { console.error('Desktop startup failed:', error.message); app.exit(1); });

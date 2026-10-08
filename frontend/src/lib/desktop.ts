@@ -12,7 +12,7 @@ export type SharingStatus = { enabled: boolean; listening: boolean; port: number
 export type HostDevices = { devices: { id: string; name: string; kind: string; approvedAt: string }[]; requests: { id: string; name: string; kind: string; code: string; expiresAt: string }[]; stopped?: boolean };
 export type DesktopCandidate = { ticket: string; profile: DesktopProfile; identity: { id: string; generation: string }; differentWorkspace: boolean; serverBuild: string };
 type Result<T> = { ok: true; value: T } | { ok: false; error: { code: string; detail: string } };
-export type UpdateStatus={phase:string;feed:string;currentVersion:string;version?:string;progress:number;error:string;backupDirectory:string;recoveryAvailable:boolean;previousPackageAvailable:boolean};
+export type UpdateStatus={automaticInstall?:boolean;source?:'github'|'custom';availableVersion?:string;candidateVersion?:string;phase:string;feed:string;currentVersion:string;version?:string;progress:number;error:string;backupDirectory:string;recoveryAvailable:boolean;previousPackageAvailable:boolean};
 type Part = { name: string; value: string | Uint8Array; filename?: string; type?: string };
 type NativePart = { name: string; fileId: string; filename: string; type: string };
 type NativeSelection = { id: string; name: string; size: number; lastModified: number };
@@ -24,6 +24,7 @@ export interface DesktopBridge {
   updatesDownload?():Promise<Result<UpdateStatus>>;
   updatesCancel?():Promise<Result<void>>;
   updatesImport?():Promise<Result<UpdateStatus>>;
+  updatesApply?():Promise<Result<void|UpdateStatus>>;
   updatesInstall?():Promise<Result<void|UpdateStatus>>;
   updatesRestore?():Promise<Result<void|UpdateStatus>>;
   onUpdates?(callback:(value:UpdateStatus)=>void):()=>void;

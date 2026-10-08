@@ -6,6 +6,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Install and update on each platform](desktop/INSTALLATION-AND-UPDATES.md): exact Windows/Mac steps, browser/Docker/Ubuntu paths, available targets and recovery.
 - [Agent-owned release process](desktop/RELEASE-PROCESS.md): standing responsibility for versions, native builds, verified artifacts, tags and GitHub publication.
+- [0.4.1 one-click Windows updates](desktop/releases/v0.4.1.md): automatic GitHub downloads, silent installation/relaunch and transition steps.
 - [0.4.0 settings/images/motion release](desktop/releases/v0.4.0.md): Windows delivery, protocol-2 compatibility and exact Mac handoff.
 - [0.3.2 OLED release](desktop/releases/v0.3.2.md): Windows delivery, validation and same-tag Mac handoff.
 - [0.3.1 mixed browsing release](desktop/releases/v0.3.1.md): prior Windows correction, checks and Mac handoff.

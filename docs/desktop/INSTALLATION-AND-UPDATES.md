@@ -38,16 +38,17 @@ Follow these steps only when the release lists a produced and verified Mac arm64
 
 ## Update an installed desktop app — preferred route
 
-1. Find the newer published release on GitHub. Download your platform's installer **and** `.vaultor.json` into one folder.
-2. In the running app, open window menu → **Updates** → **Import update**. Select the `.vaultor.json`, not the installer. Mac users can also reach Updates through the application's native menu.
-3. Wait for verification to reach **Ready**. Wrong platform, signature, version or checksum failures must be resolved by obtaining the correct release; do not bypass verification.
-4. Choose **Install update** and confirm the host interruption. The app flushes drafts/settings, stops its own local server and verifies a local workspace backup before starting installation. If saving, storage, transfers or backup fails, resolve the error and retry; never assume the backup completed.
-5. On Windows, complete the ordinary installer, then reopen Vaultor. On Mac, the app opens the verified DMG and quits; manually replace Applications/Vaultor.app, then reopen it. Mac app replacement is **not unattended**.
-6. Confirm the new version in Updates. Check the selected workspace, open notes and pairing. Select **This computer** once when appropriate so a local startup can confirm the update journal. Merely connecting to a remote server does not confirm a local workspace migration.
+With 0.4.1 or newer installed on Windows, open window menu → **Updates**. The app checks GitHub automatically. When a complete Windows release is available, click **Update and restart**. Vaultor downloads/verifies it, saves your work, backs up the managed workspace, updates in its current location and reopens. No browser download, JSON selection or installer wizard is needed. Download progress supports Cancel; failures offer retry and retain verified packages. Local hosting briefly disconnects paired devices. Remote hosts update separately.
 
-Closing the window can hide Vaultor to the tray/menu bar instead of stopping it. For manual replacement or a first-install repair, use **Quit** from the tray/application menu. Do not replace app files while its bundled host is running. Running an installer directly is possible but bypasses the app's pre-update backup flow; prefer Import update.
+Confirm the new version in Updates, the selected workspace, open notes and pairing. Select This computer when appropriate to confirm its local update journal. Data/profiles/drafts remain separate from installed app files. OS prompts can still appear on a personal unsigned build; never disable security globally.
 
-The app remembers data, profiles, pairing and drafts. Never delete its application-data directory to perform an update. Client-only updates do not update or back up a remote host. If local startup fails afterward, use Updates → recovery Details → **Restore local backup** as described in [UPDATES.md](UPDATES.md). Preserve backups and failed recovery directories; do not publish them.
+### One transition update from 0.4.0 or older
+
+Those versions do not contain the new updater. Download the 0.4.1 Windows EXE from the published release, finish saving, **Quit** Vaultor through the tray/menu (closing can merely hide it), run that installer and reopen. This single-file manual route preserves app data but does not run the app's pre-update backup. For a verified backed-up transition, keep the EXE and signed sidecar together and use the existing Updates → Import update → Install update flow once. Later Windows updates use Update and restart.
+
+### Advanced and unsupported installations
+
+Advanced contains manual import (signed sidecar beside the installer), custom manifest source (blank uses GitHub), same-version repair and recovery. On Mac or portable/development Windows copies, automatic replacement is not verified: **Download and install** fetches/verifies the files and opens the installer after confirmation. Mac users still manually replace Vaultor.app from the DMG. Native Mac one-click work remains pending in MAC-HANDOFF.md. Never delete app data to update. If local startup fails, use Advanced → Restore pre-update workspace; preserve backups and failed recovery directories.
 
 ## Updating a Mac host and its Windows clients
 
