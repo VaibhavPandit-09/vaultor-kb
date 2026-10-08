@@ -1,6 +1,6 @@
 # Resource lifecycle, discovery and Android readiness
 
-Created/reviewed 2026-10-08. Sprints 1–2 implemented; Windows 0.5.0 release verification is complete and publication is the final gate. Sprints 3–5 remain pending. This is the execution tracker for the user's approved direction. Historical Library/navigation/editor trackers remain evidence of earlier work, not competing specifications.
+Created/reviewed 2026-10-08. Sprints 1–2 complete; Windows 0.5.0 is published with original-key verified artifacts. Sprints 3–5 remain pending. This is the execution tracker for the user's approved direction. Historical Library/navigation/editor trackers remain evidence of earlier work, not competing specifications.
 
 ## Delivery and decisions
 
@@ -34,7 +34,7 @@ Acceptance: the user can open the synthetic workspace independently, return to t
 
 ## Sprint 2 — Safe lifecycle and consistent actions
 
-Status: **Implemented; final Windows publication gate (2026-10-08)**. Version 0.5.0, protocol/minimum client 3 and archive format 3. Additive nullable lifecycle fields leave old rows active; a durable local operation ledger coordinates retry. [RESOURCE-LIFECYCLE.md](../workspace/RESOURCE-LIFECYCLE.md) owns current semantics. Windows native checks passed; Mac native build/access remains unavailable.
+Status: **Complete (2026-10-08), Windows-only release published**. Version 0.5.0, protocol/minimum client 3 and archive format 3. Additive nullable lifecycle fields leave old rows active; a durable local operation ledger coordinates retry. [RESOURCE-LIFECYCLE.md](../workspace/RESOURCE-LIFECYCLE.md) owns current semantics. Windows native checks passed; Mac native build/access remains unavailable.
 
 - [x] Add persistent resource lifecycle state and Trash listing/restore/purge contracts with bounded paging and metadata-only summaries. Design the additive migration and restart/rollback checks before changing the existing schema. Trash is workspace data shared across devices.
 - [x] Retain original bytes, stable IDs, structured documents, tags, memberships and pin state in Trash. Exclude trashed resources from normal browsing/search/pins/Recent/pickers/counts. No automatic purge in this update.
@@ -95,3 +95,5 @@ Acceptance: a reproducible scale report identifies observed limits, core lifecyc
 ## Handoff record (fill after each sprint)
 
 For each sprint record: source/version/tag/release URL where applicable; migration/protocol/archive changes; focused tests; fixture seed/counts/hash; hardware/timings; actual native coverage; unsupported platforms and next authorized scope. Sprint 1 is documented above. Sprint 2 results: frontend/Java production compilation and scoped lint passed; 49 distinct focused frontend, 12 backend and five desktop checks passed. Disposable old-schema migration, restore/partial failure, revision conflicts, retired DELETE/protocol refusal, archive merge/replace and uncertain cleanup tests passed. A real host restart preserved the pending purge identity and allowed the same-identity cleanup retry. Native Windows actions, Rename focus/Escape, usage confirmation, Trash/Restore identity and duplicate views becoming read-only after foreign Trash passed. Four frames were captured and inspected. The 680px two-pane layout is still cramped and notification/native-control clearance needs Sprint 5; it is not certified as phone-ready. Installer upgrade/repair/uninstall/reinstall checks preserve separate sentinel storage. No personal workspace, broad API smoke or Docker runs. Saved usage is a distinct count, not paginated reference inspection; local retry ledgers have no retention cleanup yet. Actual Mac/two-device/touch checks are unavailable. Sprints 3–5 remain unstarted. Windows release notes and exact same-tag Mac handoff are linked from the documentation index.
+
+Published Windows-only on 2026-10-08 at 09:45:07 UTC: [Vaultor 0.5.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.5.0). Immutable source tag v0.5.0 points to `697cd171106c8a612096c7a645d7467f67b14a77`. Both GitHub asset sizes/digests match local artifacts; the downloaded pair passed original-key signature, size and SHA-256 verification. Mac arm64 awaits exact same-tag native build/key/verification; existing Windows assets must not be replaced. Publication-status documentation has no additional shipped-code or architectural effect.

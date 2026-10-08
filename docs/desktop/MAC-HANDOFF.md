@@ -1,6 +1,6 @@
 # Current release handoff — 0.5.0 lifecycle
 
-Windows 0.5.0 is the current lifecycle release target; no Mac 0.5.0 pair is certified from Windows. Follow this section for current release delivery; the D9 and earlier-version sections below are historical evidence.
+Windows 0.5.0 is published from immutable tag v0.5.0; no Mac 0.5.0 pair is certified from Windows. Follow this section for current release delivery; the D9 and earlier-version sections below are historical evidence.
 
 1. Read AGENTS, CODEBASE, RELEASE-PROCESS and workspace/RESOURCE-LIFECYCLE. Fetch and check out **v0.5.0** exactly; do not bump versions, move the tag or include newer source in these artifacts. The tag must be published before beginning same-version delivery.
 2. Use the Apple Silicon Mac mini (arm64), Node 20.19+/24, JDK 25 and free Apple command-line tools. Obtain the existing matching private release key through an authorized private transfer, outside Git; set VAULTOR_RELEASE_KEY and restrict permissions. Do not regenerate or log it.
