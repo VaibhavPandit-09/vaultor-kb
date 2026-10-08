@@ -1,6 +1,6 @@
 # Current release handoff — 0.6.0 discovery
 
-Windows 0.6.0 passed its release gate; Mac arm64 remains unavailable until this exact same-tag build and native verification pass. Do not treat the older sections below as current source/version instructions.
+Windows 0.6.0 is published from v0.6.0 (d1fb85fdd55d2604733042b390a49ea325282119); Mac arm64 remains unavailable until this exact same-tag build and native verification pass. Do not treat the older sections below as current source/version instructions.
 
 1. Read AGENTS, CODEBASE, RELEASE-PROCESS and workspace/REFERENCES. Fetch and check out **v0.6.0** exactly after Windows publication; keep package/lock version 0.6.0 and the immutable tag unchanged.
 2. On the Apple Silicon Mac mini use Node 20.19+/24, JDK 25 and free Apple command-line tools. Obtain the existing matching private release key by authorized private transfer outside Git; set VAULTOR_RELEASE_KEY to its protected path. Never regenerate or log it.

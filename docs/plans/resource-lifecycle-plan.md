@@ -1,6 +1,6 @@
 # Resource lifecycle, discovery and Android readiness
 
-Created/reviewed 2026-10-08. Sprints 1–3 complete; 0.6.0 Windows release checks passed. Sprints 4–5 remain pending. This is the execution tracker for the user's approved direction. Historical Library/navigation/editor trackers remain evidence of earlier work, not competing specifications.
+Created/reviewed 2026-10-08. Sprints 1–3 complete; Windows 0.6.0 is published with original-key verified artifacts. Sprints 4–5 remain pending. This is the execution tracker for the user's approved direction. Historical Library/navigation/editor trackers remain evidence of earlier work, not competing specifications.
 
 ## Delivery and decisions
 
@@ -52,7 +52,7 @@ Acceptance: resources can be managed from browsing without Ctrl+K workarounds; T
 
 ## Sprint 3 — Image discovery and useful reference views
 
-Status: **Complete (2026-10-08), Windows release gate passed**. Version 0.6.0; backward-compatible category/reference/thumbnail contracts retain API protocol 3 and archive 3. Original-key Windows-first delivery; Mac native verification remains unavailable. No Android implementation.
+Status: **Complete (2026-10-08), Windows-only release published**. Version 0.6.0; backward-compatible category/reference/thumbnail contracts retain API protocol 3 and archive 3. Original-key Windows-first delivery; Mac native verification remains unavailable. No Android implementation.
 
 - [x] Extend the authoritative kind/capability registry with file-category descriptors and shared labels/icons. Expose Images, PDFs, Audio, Video, Text and Other files through the single searchable Type filter, while Files remains an umbrella. No permanent stacked groups or query per descriptor. Use verified MIME metadata; unknown formats remain explicit.
 - [x] Add server-side category filtering to metadata/title/content/pin queries so paging and totals describe the selected category. Keep existing type fields backward compatible and preserve query/scope/type preferences. No filtering only the current page.
@@ -103,3 +103,5 @@ Published Windows-only on 2026-10-08 at 09:45:07 UTC: [Vaultor 0.5.0](https://gi
 Frontend/Java production compilation and scoped lint passed; 47 distinct focused frontend, 11 backend and two desktop tests passed. Disposable Windows checks covered mixed categories/counts, references with repeated placements/cycles/missing/Trash targets, archive merge/replace, bounded MIME inspection, static thumbnails/original bytes, cache invalidation, retained rows, stale responses, exact occurrence selection and focus/Escape. One focused native session captured seven frames across simulated theme tokens and a 680px layout; final affected reference/source/narrow frames and keyboard ownership were rechecked. Disposable 0.5.0 → 0.6.0 installer upgrade, repair, uninstall/reinstall and separate sentinel retention passed with prior shortcuts restored. Five renderer assets match fresh dist and embedded browser JAR; packaged source matches. Original-key artifact preflight passed. No personal storage, broad API smoke or Docker build. Native Mac/LAN/touch/physical OLED remain unverified; reference JSON scanning and Atlas scale measurements remain Sprint 5 work.
 
 No schema/dependency/protocol/archive migration: API/minimum client 3 and archive 3 remain. New category/reference APIs require a 0.6.0 host; older protocol-3 hosts produce an explicit capability/update message rather than silently broadening a category. Historical MIME rows are not reclassified automatically. Incoming references count active saved notes; unsaved local references are marked separately. Occurrence lists cap at 20 per row while totals remain complete. Legacy unpaged backlinks remains for older callers; the UI uses bounded references. Android implementation and scheduled backups remain deferred. Stop after Sprint 3; two sprints remain.
+
+Published Windows-only at 2026-10-08T12:15:42Z: [Vaultor 0.6.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.6.0). Immutable source tag v0.6.0 points to d1fb85fdd55d2604733042b390a49ea325282119. GitHub asset sizes/digests match local bytes; the downloaded installer/sidecar pair passed original-key signature, size and SHA-256 verification. Mac arm64 awaits the exact same-tag native/key gate. The partial release is deliberately non-latest; Windows updater discovery selects the newest verified stable platform pair. Publication-status documentation has no additional architectural or shipped-code effect.
