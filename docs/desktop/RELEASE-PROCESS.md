@@ -1,6 +1,6 @@
 # Agent-owned release process
 
-Reviewed 2026-10-07. This is the authoritative implementation-agent checklist. The user-facing steps are in [INSTALLATION-AND-UPDATES.md](INSTALLATION-AND-UPDATES.md); updater contracts/recovery are in [UPDATES.md](UPDATES.md). Agents must read this when making an installed-app change, and carry release preparation through to usable GitHub artifacts whenever access permits. Do not merely tell the user to rebuild.
+Reviewed 2026-10-08. This is the authoritative implementation-agent checklist. The user-facing steps are in [INSTALLATION-AND-UPDATES.md](INSTALLATION-AND-UPDATES.md); updater contracts/recovery are in [UPDATES.md](UPDATES.md). Agents must read this when making an installed-app change, and carry release preparation through to usable GitHub artifacts whenever access permits. Do not merely tell the user to rebuild.
 
 ## Scope and standing authorization
 

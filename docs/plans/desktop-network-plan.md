@@ -385,6 +385,6 @@ Authorized 2026-10-08: replace mandatory manual pair download/import/installer s
 - [x] Single update action, progress/cancel/retry and Advanced fallback.
 - [x] Silent Windows helper, safe parent exit, installer revalidation, version validation/relaunch and visible failure journal.
 - [x] Focused component/service checks, disposable native/installer handoff validation and documentation.
-- [ ] 0.4.1 fresh UI/server/package, original-key verified artifacts, immutable source/tag and GitHub publication.
+- [x] 0.4.1 fresh UI/server/package, original-key verified artifacts, immutable source/tag and GitHub publication. Published Windows-only on 2026-10-08 at 06:30:33 UTC: [Vaultor 0.4.1](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.4.1). Immutable source tag v0.4.1 points to `ee8a769a6b501163f7f6e83e0c6c6c7f458db1e0`. Both GitHub asset sizes/digests match local artifacts; the downloaded pair passed original-key signature, size and SHA-256 verification. Mac arm64 remains unavailable pending same-tag native build/key/verification. Publication-status documentation has no additional shipped-code or architectural effect.
 
 Validation: four frontend and 15 updater/artifact tests, scoped lint, frontend/embedded server compilation passed. Packaged real GitHub download and two frames checked; separate disposable 0.4.0 → 0.4.1 silent upgrade/relaunch/server startup/data retention passed. Parent-lifetime and shutdown-race failures corrected; packaged source/UI/server bytes verified. No real user installation or Mac verification claimed.
