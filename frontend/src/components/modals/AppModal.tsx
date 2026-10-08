@@ -46,7 +46,7 @@ export default function AppModal({
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={getOverlayStyle(transparency, 0.38)} onClick={onClose}>
       <div
-        role="dialog" aria-modal="true" aria-labelledby={modalId}
+        data-motion-surface="panel" data-motion-key={'dialog:'+title} role="dialog" aria-modal="true" aria-labelledby={modalId}
         className={`max-h-[90vh] overflow-y-auto w-full ${widthClassName} rounded-[28px] border border-[color:var(--border-strong)] bg-[var(--surface-1)]/80 shadow-[0_24px_60px_rgba(15,23,42,0.18)]`}
         style={getGlassPanelStyle(transparency, 16)}
         onClick={(event) => event.stopPropagation()}

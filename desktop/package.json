@@ -1,12 +1,13 @@
 {
   "name": "vaultor-desktop",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "main": "src/main.mjs",
   "scripts": {
     "postinstall": "install-electron",
     "build": "npm --prefix ../frontend run build && node scripts/copy-ui.mjs",
+    "prestart": "npm run build",
     "start": "node scripts/start.mjs",
     "test": "node --test test/*.test.mjs",
     "check": "node --check src/main.mjs && node --check src/preload.cjs && node --check src/transport.mjs && node --check src/owned-server.mjs && node --check scripts/prepare-server.mjs && node --check scripts/package-dev.mjs && node --check src/files.mjs && node --check src/hosting.mjs && node --check src/network.mjs && node --check src/credentials.mjs && node --check src/discovery.mjs && node --check src/connections.mjs && node --check src/change-stream.mjs && node --check src/updates.mjs && node --check scripts/start.mjs && node --check scripts/package-release.mjs",

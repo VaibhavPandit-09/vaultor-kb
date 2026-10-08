@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, dialog, Tray, nativeImage, Notification, powerMonitor, safeStorage } from 'electron';
+import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, ClipboardItem, dialog, Tray, nativeImage, Notification, powerMonitor, safeStorage } from 'electron';
 import { randomUUID } from 'node:crypto';
 import { readFile,stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -44,8 +44,8 @@ else {
     };
     const capabilities = await get('/capabilities');
     if(capabilities.changeFeed!==true || capabilities.scopedSettings!==true)throw new Error('Update this server to the current Vaultor version before connecting. D7 settings and change-feed contracts are required.');
-    if (!Number.isInteger(capabilities.apiProtocolVersion) || capabilities.apiProtocolVersion < 1 || !Number.isInteger(capabilities.minimumClientProtocolVersion) || capabilities.minimumClientProtocolVersion < 1 || capabilities.minimumClientProtocolVersion > capabilities.apiProtocolVersion || typeof capabilities.serverBuild !== 'string') throw new Error('Update this server: compatibility information is missing.');
-    if (capabilities.minimumClientProtocolVersion > 1) throw new Error('Update Vaultor Desktop to connect to this server.');
+    if (!Number.isInteger(capabilities.apiProtocolVersion) || capabilities.apiProtocolVersion < 2 || !Number.isInteger(capabilities.minimumClientProtocolVersion) || capabilities.minimumClientProtocolVersion < 1 || capabilities.minimumClientProtocolVersion > capabilities.apiProtocolVersion || typeof capabilities.serverBuild !== 'string') throw new Error('Update this server: compatibility information is missing.');
+    if (capabilities.minimumClientProtocolVersion > 2) throw new Error('Update Vaultor Desktop to connect to this server.');
     const identity = await get('/workspace/identity');
     if(profile.source==='bundled')await updates?.confirmStart();
     if (typeof identity.id !== 'string' || !identity.id || identity.id.length > 100 || typeof identity.generation !== 'string' || identity.generation.length > 100) throw new Error('Server workspace identity is invalid.');
@@ -200,7 +200,16 @@ else {
     handle('desktop:request', value => transport.request(value));
     handle('desktop:stream', value => startChangeStream(transport,value,event=>window?.webContents.send('desktop:stream-event',event)));
     handle('desktop:cancel', id => { if (typeof id !== 'string' || id.length > 80) throw new Error('Invalid cancellation.'); transport.cancel(id); });
-    handle('desktop:clipboard', text => { if (typeof text !== 'string' || text.length > 1048576) throw new Error('Clipboard text exceeds 1 MiB.'); clipboard.writeText(text); });
+    handle('desktop:copy-image', async value => {
+      if (!value || typeof value.resourceId !== 'string' || !/^[\w-]{1,80}$/.test(value.resourceId)) throw new Error('Invalid image resource.');
+      files.connection(value.token);
+      const response=await files.response('/resources/'+value.resourceId+'/image-png',value.token);
+      const chunks=[];let size=0;
+      for await (const chunk of response.body) {size+=chunk.length;if(size>160*1024*1024)throw new Error('Image clipboard representation exceeds its safety limit.');chunks.push(chunk);}
+      files.connection(value.token);const image=nativeImage.createFromBuffer(Buffer.concat(chunks));if(image.isEmpty())throw new Error('Image cannot be copied. Download the original instead.');
+      const dimensions=image.getSize();if(dimensions.width*dimensions.height>40000000)throw new Error('Image exceeds 40 megapixels.');await clipboard.write([new ClipboardItem({'image/png':new Blob([image.toPNG()],{type:'image/png'})})]);
+    });
+    handle('desktop:clipboard', text => { if (typeof text !== 'string' || text.length > 1048576) throw new Error('Clipboard text exceeds 1 MiB.'); return clipboard.writeText(text); });
     const createWindow = () => {
       window = new BrowserWindow({ icon: appIcon, frame: false, autoHideMenuBar: true, width: 1320, height: 900, minWidth: 600, minHeight: 480, show: !smokeDirectory && !process.argv.includes('--background') && !(process.platform==='darwin' && app.getLoginItemSettings().wasOpenedAtLogin), backgroundColor: '#0b1220', title: 'Vaultor', webPreferences: { preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false, plugins: true } });
       window.setMenuBarVisibility(false);

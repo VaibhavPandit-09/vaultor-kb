@@ -36,6 +36,8 @@ interface SlashMenuItem {
   flat?: boolean;
 }
 
+const imageItem: SlashMenuItem = { id: 'image', title: 'Image', command: 'image photo picture screenshot', description: 'Upload or choose an image', icon: <FileUp size={18} />, category: 'Rich Blocks', action: (editor, range) => { editor.chain().focus().deleteRange(range).run(); editor.view.dom.dispatchEvent(new CustomEvent('vaultor:image-picker', { detail: { position: editor.state.selection.from } })); } };
+
 const getItems = (onUploadMd: (editor: Editor, range: Range) => void, onUploadCsv: (editor: Editor, range: Range) => void): SlashMenuItem[] => [
   {
     id: 'text',
@@ -236,7 +238,7 @@ export function getFilteredSlashItems(query: string, onUploadMd: (editor: Editor
     }));
   }
 
-  const items = getItems(onUploadMd, onUploadCsv);
+  const items = [...getItems(onUploadMd, onUploadCsv), imageItem];
   const normalizedQuery = query.toLowerCase();
   return items.filter((item) => (
     item.title.toLowerCase().includes(normalizedQuery)
@@ -292,7 +294,7 @@ export default function SlashMenu({
 
   if (symbolMode) {
     return (
-      <div ref={menuRef} className="max-h-80 w-72 overflow-y-auto rounded-xl border border-border bg-[var(--surface-raised,var(--card))] p-1 shadow-2xl">
+      <div data-motion-surface="menu" ref={menuRef} className="max-h-80 w-72 overflow-y-auto rounded-xl border border-border bg-[var(--surface-raised,var(--card))] p-1 shadow-2xl">
         {filtered.map((item, index) => {
           const selected = index === selectedIndex;
           return (
@@ -333,7 +335,7 @@ export default function SlashMenu({
   let globalIndex = 0;
 
   return (
-    <div ref={menuRef} className="max-h-80 w-72 overflow-y-auto rounded-xl border border-border bg-[var(--surface-raised,var(--card))] shadow-2xl">
+    <div data-motion-surface="menu" ref={menuRef} className="max-h-80 w-72 overflow-y-auto rounded-xl border border-border bg-[var(--surface-raised,var(--card))] shadow-2xl">
       {Object.entries(categories).map(([category, categoryItems]) => (
         <div key={category}>
           <div className="sticky top-0 bg-slate-50 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:bg-slate-900/50">

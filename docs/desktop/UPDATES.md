@@ -1,6 +1,6 @@
 # Personal installers and updates
 
-Reviewed 2026-10-07. Windows x64 uses a per-user NSIS installer. On Apple Silicon, the 0.2.2 development app and disposable native smoke checks have been verified; release DMG generation/installation and the live two-device gate remain pending. The matching private release key is required to produce the signed update manifest and is not present on the Mac. No publisher certificate, notarization, subscription, hosted feed or publishing is required. Android and Ubuntu packaging are outside D8.
+Reviewed 2026-10-08. Windows x64 uses a per-user NSIS installer. On Apple Silicon, the 0.2.2 development app and disposable native smoke checks have been verified; release DMG generation/installation and the live two-device gate remain pending. The matching private release key is required to produce the signed update manifest and is not present on the Mac. No publisher certificate, notarization, subscription, hosted feed or publishing is required. Android and Ubuntu packaging are outside D8.
 
 For device-by-device installation and updating, read [INSTALLATION-AND-UPDATES.md](INSTALLATION-AND-UPDATES.md). Agents own packaging/publication after app changes through [RELEASE-PROCESS.md](RELEASE-PROCESS.md); this document owns the updater integrity, backup and recovery contracts.
 
@@ -64,6 +64,8 @@ Mac uses platform darwin, arch arm64 and .dmg. Stable three-part versions, platf
 ## Installation and recovery
 
 Install requires native confirmation explaining host-client interruption. The same safe-Quit barrier flushes notes/settings/recovery/session state and refuses conflicting native file or mutation work. Main freezes new work, withdraws discovery, cancels transports and gracefully stops its owned server. A server with active transfers may refuse shutdown. Only after stop does main inventory/copy the local workspace, including SQLite, binaries, operation journals and host trust/device verifiers. Symlinks/special files and more than 100,000 files fail explicitly.
+
+The sidecar minimumProtocol=1 describes the updater envelope/installer protocol, not the resource-editing API protocol. It deliberately remains 1 so existing 0.3.x apps can verify/import the 0.4.0 installer. The 0.4.0 client and host require resource API protocol 2; update both devices before reconnecting. No trust rotation is involved.
 
 Hash manifest, retained package records and an update journal live under the app's updates directory. At most two package versions and two completed backup directories are normally retained; a journal-referenced previous package is protected from ordinary pruning. Failed partial backup staging can remain for manual inspection. Restore-preserved workspaces are intentionally not automatically deleted. Client preferences, protected credentials, login settings and IndexedDB drafts remain in place, outside server snapshots. Host backups include private trust material; never publish them or put them into portable archives.
 

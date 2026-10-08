@@ -113,7 +113,7 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
   }, [editor, selectedIndex, selectItem]);
 
   return (
-    <div className="w-64 bg-[var(--resource-menu-bg)] border border-[var(--resource-menu-border)] rounded-xl shadow-2xl py-2 flex flex-col max-h-80 overflow-y-auto z-50 animate-in fade-in zoom-in-95 duration-100 tippy-box">
+    <div data-motion-surface="menu" className="w-64 bg-[var(--resource-menu-bg)] border border-[var(--resource-menu-border)] rounded-xl shadow-2xl py-2 flex flex-col max-h-80 overflow-y-auto z-50 animate-in fade-in zoom-in-95 duration-100 tippy-box">
       <div className="px-3 py-1.5 mb-1 flex justify-between items-center text-xs font-semibold text-slate-400 border-b border-slate-700/50">
         <span className="flex items-center"><Search size={12} className="mr-1.5" /> Link Resource</span>
         {loading && <span className="animate-pulse">Searching...</span>}

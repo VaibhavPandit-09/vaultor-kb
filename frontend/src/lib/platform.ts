@@ -9,6 +9,7 @@ export interface PlatformServices {
   saveBlob(blob: Blob, filename: string): Promise<DownloadOutcome>;
   openBlob(blob: Blob): Promise<void>;
   writeClipboard(text: string): Promise<void>;
+  copyResourceImage?: (resourceId: string) => Promise<void>;
   saveApiFile?: (path: string, filename: string, signal?: AbortSignal) => Promise<DownloadOutcome>;
   openApiFile?: (path: string, filename: string, signal?: AbortSignal) => Promise<void>;
   previewApiFile?: (path: string, filename: string, signal?: AbortSignal) => Promise<{ url: string; release: () => void }>;

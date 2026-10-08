@@ -62,7 +62,7 @@ export async function runOledSmoke(window, directory, owned) {
   assert.equal(await evaluate("getComputedStyle(document.querySelector('[aria-label=\"Search and commands\"]')).backgroundColor"),'rgb(10, 10, 10)');
   await capture('oled-palette.png');key('Escape');await wait("!document.querySelector('[aria-label=\"Search and commands\"]')");
   await evaluate("document.querySelector('button[title=\"Settings\"]').click()");await wait("Boolean(document.querySelector('[role=dialog]'))");
-  await evaluate("[...document.querySelectorAll('[role=dialog] button')].find(b=>b.textContent.startsWith('Local')).click()");await capture('oled-settings.png');
+  await evaluate("[...document.querySelectorAll('[role=dialog] button')].find(b=>b.textContent.trim()==='Appearance').click()");await capture('oled-settings.png');
   assert.ok(await evaluate("document.body.innerText.includes('OLED keeps surfaces opaque')"));key('Escape');await wait("!document.querySelector('[role=dialog]')");
   await evaluate("document.querySelector('button[aria-label^=\"Export OLED\"]').click()");await wait("Boolean(document.querySelector('[role=dialog]'))");await capture('oled-export.png');key('Escape');
   await click('#sidebar-pinned .sidebar-shortcut-open','Reference.txt');await wait("Boolean(document.querySelector('[data-preview-resource]'))");

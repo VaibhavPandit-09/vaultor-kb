@@ -59,6 +59,7 @@ export interface DesktopBridge {
   activate(ticket: string): Promise<Result<DesktopState>>;
   request(value: WireRequest): Promise<Result<{ status: number; headers: Record<string, string>; data: Uint8Array }>>;
   cancel(id: string): Promise<Result<void>>;
+  copyResourceImage?(value: { token: string; resourceId: string }): Promise<Result<void>>;
   writeClipboard(text: string): Promise<Result<void>>;
   pickFiles?(value: { token: string; accept: string; multiple: boolean }): Promise<Result<NativeSelection[]>>;
   readFile?(value: { token: string; id: string; offset: number; length: number }): Promise<Result<Uint8Array>>;
@@ -148,6 +149,7 @@ export function activateDesktop(state: DesktopState) {
       const close=()=>{remove();void bridge.cancel(id).catch(()=>{});signal.removeEventListener('abort',close);};signal.addEventListener('abort',close,{once:true});
       try{unwrap(await bridge.stream!({token:state.token,id,path}));if(signal.aborted){close();throw new axios.CanceledError();}return {close};}catch(e){close();throw e;}
     }} : {stream:undefined}),
+ ...(bridge.copyResourceImage ? {copyResourceImage: async (resourceId: string) => { unwrap(await bridge.copyResourceImage!({ token: state.token, resourceId })); }} : {}),
  ...(bridge.fileAction ? {
     saveApiFile: async (path, filename, signal) => (await action(path, filename, 'save',signal)).outcome as 'saved' | 'cancelled',
     openApiFile: async (path, filename, signal) => { await action(path, filename, 'open',signal); },

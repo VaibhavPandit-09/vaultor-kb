@@ -113,7 +113,7 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
 
             {showLangPicker && langMenuPosition && createPortal(
               <div
-                ref={languageMenuRef}
+                data-motion-surface="menu" ref={languageMenuRef}
                 className="overflow-hidden rounded-xl border border-[var(--border-strong)] bg-[var(--surface-raised,var(--surface-2))] shadow-[0_20px_38px_rgba(15,23,42,0.14)]"
                 style={{
                   position: 'fixed',

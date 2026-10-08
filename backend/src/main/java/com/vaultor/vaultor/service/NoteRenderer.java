@@ -148,11 +148,19 @@ public class NoteRenderer {
         String imageData(JsonNode n) {
             String path=asset(n);if(path==null) { warn("Image unavailable locally; preserved as an image reference. Remote images are not downloaded.");return null; }
             var r=referenced(n);
-            if(!List.of("image/png","image/jpeg").contains(r.mimeType())) {warn("Only local PNG/JPEG images embed in PDF/DOCX; other images remain references.");return null;}
-            try { if(Files.size(binaries.get(path))>10*1024*1024) {warn("Images over 10 MiB remain references in PDF/DOCX.");return null;}return "data:"+r.mimeType()+";base64,"+Base64.getEncoder().encodeToString(Files.readAllBytes(binaries.get(path))); }
-            catch(IOException e) { throw new UncheckedIOException(e); }
+            try {
+                var info=ImageService.inspect(binaries.get(path));
+                if(info.animated())warn("Animated images export as their first frame in PDF/Word; asset packages retain originals.");
+                byte[] bytes=info.format().equals("jpeg")||info.format().equals("png")?Files.readAllBytes(binaries.get(path)):ImageService.png(binaries.get(path));
+                String mime=info.format().equals("jpeg")?"image/jpeg":"image/png";
+                return "data:"+mime+";base64,"+Base64.getEncoder().encodeToString(bytes);
+            } catch(IllegalArgumentException e) {warn(e.getMessage()+" Image retained as a reference.");return null;}
+            catch(IOException e) {throw new UncheckedIOException(e);}
         }
-        String imageLabel(JsonNode n) { return "Image: "+n.path("attrs").path("alt").asText(n.path("attrs").path("src").asText("local asset")); }
+        String imageLabel(JsonNode n) { var r=referenced(n);return n.path("attrs").path("alt").asText("").isBlank()?(r==null?"Unavailable image":r.title()):n.path("attrs").path("alt").asText(); }
+        int imageWidth(JsonNode n) {return Math.clamp(n.path("attrs").path("width").asInt(100),20,100);}
+        String imageAlign(JsonNode n) {String align=n.path("attrs").path("alignment").asText("center");return Set.of("left","center","right").contains(align)?align:"center";}
+        String imageCaption(JsonNode n) {return n.path("attrs").path("caption").asText("");}
         String html(JsonNode n) {
             String body=List.of("table","codeBlock").contains(type(n)) ? "" : children(n).stream().map(this::html).collect(java.util.stream.Collectors.joining());
             String out=switch(type(n)) {
@@ -169,7 +177,7 @@ public class NoteRenderer {
                 case "hardBreak" -> "<br/>";
                 case "horizontalRule" -> "<hr/>";
                 case "resourceLink" -> resourceHtml(n);
-                case "image" -> { String src=(linked || format.equals("md-assets"))?asset(n):format.equals("pdf")?imageData(n):null; if(src==null) {warn("Image represented by its reference; use an asset ZIP for local file portability.");yield "<p>"+xml(imageLabel(n))+"</p>";}yield "<img src=\""+xml(src)+"\" alt=\""+xml(imageLabel(n))+"\"/>"; }
+                case "image" -> { String src=format.equals("pdf")?imageData(n):asset(n); if(src==null) {warn("Image represented by its reference; use an asset ZIP for local file portability.");yield "<p>"+xml(imageLabel(n))+"</p>";}yield "<div style=\"text-align:"+imageAlign(n)+"\"><img style=\"width:"+imageWidth(n)+"%\" src=\""+xml(src)+"\" alt=\""+xml(imageLabel(n))+"\"/>"+(imageCaption(n).isBlank()?"":"<p>"+xml(imageCaption(n))+"</p>")+"</div>"; }
                 case "table" -> htmlTable(n);
                 case "tableRow" -> "<tr>"+body+"</tr>";
                 case "tableCell","tableHeader" -> {String tag=type(n).equals("tableHeader")?"th":"td";yield "<"+tag+" colspan=\""+span(n,"colspan")+"\" rowspan=\""+span(n,"rowspan")+"\">"+body+"</"+tag+">";}
@@ -203,7 +211,7 @@ public class NoteRenderer {
                 case "codeBlock" -> {String code=text(n);String fence="```";while(code.contains(fence))fence+="`";String language=n.path("attrs").path("language").asText("").replaceAll("[^A-Za-z0-9_+-]","");yield fence+language+"\n"+code+"\n"+fence+"\n\n";}
                 case "hardBreak" -> "  \n";case "horizontalRule" -> "---\n\n";
                 case "resourceLink" -> target(n)!=null?"["+mdText(label(n))+"]("+target(n)+")":mdText(reference(n));
-                case "image" -> {String src=(linked || format.equals("md-assets"))?asset(n):null;if(src==null){warn("Image preserved as a reference; local assets are included only with Markdown + assets ZIP.");yield mdText(imageLabel(n));}yield "!["+mdText(imageLabel(n))+"]("+src+")";}
+                case "image" -> {String src=(linked || format.equals("md-assets"))?asset(n):null;if(src==null){warn("Image preserved as a workspace reference; local assets require Markdown + assets ZIP.");src="vaultor:resource/"+n.path("attrs").path("resourceId").asText();}yield "!["+mdText(imageLabel(n))+"]("+src+")"+(imageCaption(n).isBlank()?"":"\n\n"+mdText(imageCaption(n)))+"\n\n";}
                 case "table" -> {warn("Tables use embedded HTML to preserve spans and rich cells; a Markdown viewer with HTML support is required.");yield html(n)+"\n\n";}
                 case "tableRow","tableCell","tableHeader" -> body;
                 default -> {warn("Unsupported block "+type(n)+" exported using its text/content.");yield body;}
@@ -241,7 +249,8 @@ public class NoteRenderer {
         void docInline(XWPFParagraph p,JsonNode n) throws Exception {
             if(type(n).equals("hardBreak")){p.createRun().addBreak();return;}
             if(type(n).equals("image")) {
-                String data=imageData(n);if(data!=null){byte[] bytes=Base64.getDecoder().decode(data.substring(data.indexOf(',')+1));var image=ImageIO.read(new ByteArrayInputStream(bytes));if(image!=null){double scale=Math.min(1,Math.min(560.0/image.getWidth(),720.0/image.getHeight()));p.createRun().addPicture(new ByteArrayInputStream(bytes),data.startsWith("data:image/png")?Document.PICTURE_TYPE_PNG:Document.PICTURE_TYPE_JPEG,"image",Units.pixelToEMU((int)(image.getWidth()*scale)),Units.pixelToEMU((int)(image.getHeight()*scale)));return;}}
+                p.setAlignment(ParagraphAlignment.valueOf(imageAlign(n).toUpperCase(Locale.ROOT)));
+                String data=imageData(n);if(data!=null){byte[] bytes=Base64.getDecoder().decode(data.substring(data.indexOf(',')+1));var image=ImageIO.read(new ByteArrayInputStream(bytes));if(image!=null){double scale=Math.min(1,Math.min(560.0*imageWidth(n)/100/image.getWidth(),720.0/image.getHeight()));p.createRun().addPicture(new ByteArrayInputStream(bytes),data.startsWith("data:image/png")?Document.PICTURE_TYPE_PNG:Document.PICTURE_TYPE_JPEG,"image",Units.pixelToEMU((int)(image.getWidth()*scale)),Units.pixelToEMU((int)(image.getHeight()*scale)));if(!imageCaption(n).isBlank()){var caption=paragraph(p.getBody());caption.setAlignment(p.getAlignment());caption.createRun().setText(imageCaption(n));}return;}}
                 p.createRun().setText(imageLabel(n));return;
             }
             if(!List.of("text","resourceLink").contains(type(n))) {warn("DOCX block "+type(n)+" rendered using its content.");for(var c:children(n))docInline(p,c);return;}

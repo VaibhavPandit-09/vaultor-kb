@@ -34,6 +34,7 @@ class ResourceSearchTest {
  resources.deleteResource(imported);assertEquals(0,count("importmarker"));
  resources.createNote("Visible structure","{\"type\":\"doc\",\"attrs\":{\"private\":{\"type\":\"text\",\"text\":\"hiddenattribute\"}},\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"resourceLink\",\"attrs\":{\"resourceId\":\"secretidentifier\",\"label\":\"Visiblelabel\"}}]}]}");
  assertEquals(1,count("visiblelabel"));assertEquals(0,count("hiddenattribute"));assertEquals(0,count("secretidentifier"));
+ var imageNote=resources.createNote("Image search","{\"type\":\"doc\",\"content\":[{\"type\":\"image\",\"attrs\":{\"resourceId\":\"privateimageid\",\"caption\":\"captionword\",\"alt\":\"alternativeword\"}}]}");assertEquals(1,count("captionword"));assertEquals(1,count("alternativeword"));assertEquals(0,count("privateimageid"));
  search.rebuild("test");while(!gate.enterRequest())Thread.sleep(5);try{resources.createNote("Concurrent",doc("Concurrentword"));}finally{gate.leaveRequest();}ready();assertEquals(1,count("concurrentword"));assertEquals(1,count("replacementword"));
  }
 }

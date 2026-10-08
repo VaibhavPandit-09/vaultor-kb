@@ -182,7 +182,7 @@ export default function TableControls({ editor, active, containerRef, noteTitle 
       {trigger('more', 'More', <MoreHorizontal size={17} />)}
       {notice && <button type="button" className="table-action table-notice" title={notice} aria-label="Table notification" onClick={event => open('help', event)}><CircleAlert size={16} /></button>}
     </div>}
-    {menu && position && <div ref={popupRef} data-table-controls={owner} className="table-popover" role="dialog" aria-label={titles[menu]} style={{ position: 'fixed', top: position.top, left: position.left, width: position.width, maxHeight: position.maxHeight, transform: position.placement === 'top' ? 'translateY(-100%)' : undefined }} onMouseDown={preserveSelection}>
+    {menu && position && <div data-motion-surface="menu" ref={popupRef} data-table-controls={owner} className="table-popover" role="dialog" aria-label={titles[menu]} style={{ position: 'fixed', top: position.top, left: position.left, width: position.width, maxHeight: position.maxHeight, transform: position.placement === 'top' ? 'translateY(-100%)' : undefined }} onMouseDown={preserveSelection}>
       <div className="table-popover-heading">
         {(menu === 'export' || menu === 'help') && <button type="button" className="table-action" aria-label="Back to table actions" title="Back" onClick={() => setMenu('more')}><ArrowLeft size={14} /></button>}
         <span>{titles[menu]}{menu === 'row' ? ` · ${ctx.top + 1}–${ctx.bottom}` : menu === 'column' ? ` · ${ctx.left + 1}–${ctx.right}` : ''}</span><button type="button" className="table-action" title="Close menu" aria-label="Close table menu" onClick={() => { close(); anchorRef.current?.focus({ preventScroll: true }); }}><X size={14} /></button>

@@ -42,11 +42,13 @@ function isMeaningfullyFocusable(element: Element | null): element is HTMLElemen
   return element.isContentEditable || element.tagName === 'TEXTAREA' || element.tagName === 'INPUT';
 }
 
-function focusWithoutScroll(element: HTMLElement | null) {
+export function focusWithoutScroll(element: HTMLElement | null) {
   if (!element?.isConnected) {
     return;
   }
 
+  // Focus the owning view immediately; its registered callback restores editor selection.
+  element.focus({ preventScroll: true });
   const restoreFocus = focusRestoreRegistry.get(element);
   if (restoreFocus) {
     restoreFocus();

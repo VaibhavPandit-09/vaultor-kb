@@ -7,7 +7,7 @@ import { connectionFetch } from './network.mjs';
 
 export const FILE_LIMIT = 512 * 1024 * 1024;
 const safeName = value => { if (typeof value !== 'string' || !value || value.length > 500) throw new Error('Invalid filename.'); return basename(value.replaceAll('\\', '/')).replace(/[<>:"/\\|?*\x00-\x1f]/g, '_'); };
-export function fileApiPath(path) { if (typeof path !== 'string' || !/^\/(?:exports\/[\w-]+\/download|resources\/[\w-]+\/(?:raw|download)|openapi\.json)$/.test(path)) throw new Error('Invalid file endpoint.'); return path; }
+export function fileApiPath(path) { if (typeof path !== 'string' || !/^\/(?:exports\/[\w-]+\/download|resources\/[\w-]+\/(?:raw|download|image-png)|openapi\.json)$/.test(path)) throw new Error('Invalid file endpoint.'); return path; }
 const openable = name => /\.(pdf|png|jpe?g|gif|webp|txt|md|csv|tsv|docx|xlsx|pptx|mp3|mp4)$/i.test(name);
 export class NativeFiles {
   constructor({ directory, dialogs, owner, openPath, limit = FILE_LIMIT }) { Object.assign(this, { directory, dialogs, owner, openPath, limit }); this.picked = new Map(); this.saves = new Map(); this.previews = new Map(); this.active = new Set(); this.jobs = new Map(); this.pendingCache = new Map(); this.dialogPending=false; }

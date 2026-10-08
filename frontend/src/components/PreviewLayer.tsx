@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { resourceKind, resourceDescription } from '../lib/resourceKinds';
 import { ExternalLink, PanelRight, ScanText, X } from 'lucide-react';
 import ResourceCollections from './ResourceCollections';
@@ -35,8 +35,7 @@ export default function PreviewLayer({
   onOpenExternal,
   onDownload,
 }: PreviewLayerProps) {
-  const smoothAnimations = animationMode === 'smooth';
-  const [animateIn, setAnimateIn] = useState(false);
+  void animationMode; // Shared motion reads the resolved device preference.
   const actionRunning = useRef(false);
   const [actionStatus, setActionStatus] = useState('');
   const [actionError, setActionError] = useState('');
@@ -58,18 +57,6 @@ export default function PreviewLayer({
     close: onClose,
     restoreFocusOnEscape: false, // Dashboard restores the owning pane.
   });
-
-  useEffect(() => {
-    if (!open || !smoothAnimations) {
-      return;
-    }
-
-    const rafId = window.requestAnimationFrame(() => {
-      setAnimateIn(true);
-    });
-
-    return () => window.cancelAnimationFrame(rafId);
-  }, [open, smoothAnimations]);
 
   const Icon = resourceKind(resource.type).icon;
   const chrome = (
@@ -137,21 +124,14 @@ export default function PreviewLayer({
   if (mode === 'modal') {
     return (
       <div
-        className={`fixed inset-0 z-[75] flex items-center justify-center bg-slate-950/40 p-3 backdrop-blur-sm ${
-          smoothAnimations
-            ? `transition-opacity duration-[170ms] ease-out ${animateIn ? 'opacity-100' : 'opacity-0'}`
-            : 'transition-none opacity-100'
-        }`}
+        className="fixed inset-0 z-[75] flex items-center justify-center bg-slate-950/40 p-3 backdrop-blur-sm"
         style={getOverlayStyle(transparency, 0.28)}
         onClick={onClose}
       >
         <div
           data-preview-resource={resource.id}
-          className={`flex h-[84vh] w-full max-w-6xl flex-col overflow-hidden rounded-[1.4rem] border border-white/5 bg-card ${
-            smoothAnimations
-              ? `shadow-xl transform-gpu transition-[transform,opacity] duration-[170ms] ease-out ${animateIn ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-[0.98] opacity-0'}`
-              : 'shadow-lg transition-none opacity-100'
-          }`}
+          data-motion-surface="panel" data-motion-key="file-preview"
+          className="flex h-[84vh] w-full max-w-6xl flex-col overflow-hidden rounded-[1.4rem] border border-white/5 bg-card shadow-xl"
           style={getGlassPanelStyle(transparency, 18)}
           onClick={(event) => event.stopPropagation()}
         >
@@ -164,11 +144,8 @@ export default function PreviewLayer({
   return (
     <div data-preview-resource={resource.id} className="pointer-events-none fixed inset-y-0 right-0 z-[75] flex w-full justify-end">
       <div
-        className={`pointer-events-auto flex h-full w-full max-w-full md:max-w-[min(60%,44rem)] xl:max-w-[min(40%,44rem)] flex-col border-l border-white/5 bg-card ${
-          smoothAnimations
-            ? `shadow-lg transform-gpu transition-[transform,opacity] duration-[170ms] ease-out ${animateIn ? 'translate-x-0 opacity-100' : 'translate-x-2 opacity-0'}`
-            : 'transition-none opacity-100'
-        }`}
+        data-motion-surface="side" data-motion-key="file-preview"
+        className="pointer-events-auto flex h-full w-full max-w-full md:max-w-[min(60%,44rem)] xl:max-w-[min(40%,44rem)] flex-col border-l border-white/5 bg-card shadow-lg"
         style={getGlassPanelStyle(transparency, 16)}
       >
         {chrome}

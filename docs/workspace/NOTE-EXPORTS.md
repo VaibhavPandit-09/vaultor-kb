@@ -36,11 +36,11 @@ Completed artifacts and snapshots live beside existing workspace operations and 
 | Internal links | Standalone exports retain readable labels, with optional omitted/missing references. Linked exports rewrite note links to relative Markdown filenames, PDF destinations or Word bookmarks. IDs never decorate reading content; package metadata retains them. |
 | Missing targets/bytes | References remain visible; warnings identify missing resources/files without dropping surrounding content |
 | Assets | Single-note asset ZIP contains `note.md`, `assets/`, `README.txt` and `export.json`. Linked Markdown ZIP contains separate numbered note files. Linked PDF/DOCX with files packages `notes.pdf`/`notes.docx` and original `assets/`; PDF attachment references use readable filenames. Missing files are warned about, not fabricated. |
-| Images | Locally referenced PNG/JPEG images up to 10 MiB embed in PDF/DOCX. Missing, remote or unsupported images remain text references with warnings; ZIP includes local source bytes |
+| Images | Resource-backed PNG/JPEG/WebP/GIF up to 20 MiB/40 MP embed in PDF/DOCX with captions, alignment and proportional width. GIF/WebP use static first-frame PNG conversion; animated sources warn. Missing/unsupported images remain references; ZIP retains original bytes |
 | Unicode | Markdown/DOCX retain original Unicode. PDF bundles Noto Sans; unsupported glyphs become explicit U+ codepoint labels with a warning rather than invisible text |
 | Unknown blocks/marks | Recognized child text/content retained, unsupported formatting reported in bounded warnings |
 
-Image nodes are supported by the export renderer for structured documents; this does not add an image-insertion command to the editor. Existing editor imports that preserve an image only as text cannot reconstruct missing binaries during export.
+The editor inserts resource-backed image blocks through paste/drop or `/image`; [IMAGES.md](IMAGES.md) owns insertion/tools/loading. Imported Markdown that retained an external image only as text cannot reconstruct missing binaries during export. Plain Markdown uses meaningful workspace image references; asset packages use original relative asset paths.
 
 Asset snapshots default to 100 MiB total, bounded additionally by MAX_ARCHIVE_BYTES; configure MAX_NOTE_EXPORT_ASSET_BYTES to change the note limit. Tables are bounded at 500 columns, 10,000 rows and 50,000 logical cells. Invalid/out-of-bounds/overlapping spans fail the operation. Warning lists cap at 100 unique messages. Large/complex documents may take longer; progress is phase-based, not a measured rendering percentage.
 

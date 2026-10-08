@@ -38,7 +38,8 @@ public class ResourceSearchService {
                 from nodes n,json_each(n.value,'$.content') child where child.type='object'
               ) select group_concat(piece,' ') from (
                 select case when json_extract(value,'$.type')='text' then json_extract(value,'$.text')
-                  when json_extract(value,'$.type')='resourceLink' then json_extract(value,'$.attrs.label') end as piece
+                  when json_extract(value,'$.type')='resourceLink' then json_extract(value,'$.attrs.label')
+                  when json_extract(value,'$.type')='image' then coalesce(json_extract(value,'$.attrs.alt'),'')||' '||coalesce(json_extract(value,'$.attrs.caption'),'') end as piece
                 from nodes order by path
               )
             ),'') else '' end

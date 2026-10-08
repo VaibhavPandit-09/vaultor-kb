@@ -21,10 +21,13 @@ public class ResourceController {
     private final FileStorageService files;
     private final DocumentService documents;
     private final FileImportService imports;
+    private final ImageService images;
+    @GetMapping("/{id}/image-info") public ImageService.Info imageInfo(@PathVariable String id) throws Exception { return images.info(id); }
     @PutMapping(value="/imports/{id}", consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResourceDto importFile(@PathVariable String id, @RequestParam String title, @RequestParam(required=false) String content, @RequestParam(required=false) MultipartFile file, @RequestParam(required=false) String collectionId) throws Exception {
         return dto(imports.create(id,title,content,file,collectionId));
     }
+    @GetMapping(value="/{id}/image-png", produces="image/png") public byte[] imagePng(@PathVariable String id) throws Exception { return images.clipboardPng(id); }
     private ResourceDto dto(Resource r) { return ResourceDto.of(r, documents); }
     private Resource get(String id) { return resources.findById(id).orElseThrow(); }
     private void validate(NoteInput input) {

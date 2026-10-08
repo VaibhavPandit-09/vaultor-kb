@@ -32,7 +32,7 @@ public class LinkExtractionService {
 
     private void traverse(JsonNode node, Set<String> links) {
         if (node.isObject()) {
-            if (node.has("type") && "resourceLink".equals(node.get("type").asText())) {
+            if (node.has("type") && java.util.Set.of("resourceLink", "image").contains(node.get("type").asText())) {
                 JsonNode attrs = node.get("attrs");
                 if (attrs != null && attrs.has("resourceId")) {
                     links.add(attrs.get("resourceId").asText());

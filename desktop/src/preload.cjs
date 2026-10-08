@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('vaultorDesktop', Object.freeze({
   saveChunk: value => ipcRenderer.invoke('desktop:save-chunk', value),
   finishSave: value => ipcRenderer.invoke('desktop:finish-save', value),
   cancelSave: value => ipcRenderer.invoke('desktop:cancel-save', value),
+  copyResourceImage: value => ipcRenderer.invoke('desktop:copy-image', value),
   fileAction: value => ipcRenderer.invoke('desktop:file-action', value),
   cancelFile: value => ipcRenderer.invoke('desktop:cancel-file',value),
   releaseFile: value => ipcRenderer.invoke('desktop:release-file', value),

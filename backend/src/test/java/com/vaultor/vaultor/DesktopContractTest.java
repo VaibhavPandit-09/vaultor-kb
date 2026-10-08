@@ -26,8 +26,8 @@ class DesktopContractTest {
         var capabilities = controller.capabilities();
         assertEquals("test-build",capabilities.serverBuild());
         assertEquals(capabilities.build(),capabilities.serverBuild());
-        assertEquals(1,capabilities.apiProtocolVersion());
-        assertEquals(1,capabilities.minimumClientProtocolVersion());
+        assertEquals(2,capabilities.apiProtocolVersion());
+        assertEquals(2,capabilities.minimumClientProtocolVersion());
         assertTrue(capabilities.authentication());
     }
     @Test void requestLogsAndResponsesKeepTheirBuildAndCorrelation() throws Exception {

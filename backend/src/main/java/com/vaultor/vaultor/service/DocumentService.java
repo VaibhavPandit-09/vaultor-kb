@@ -41,6 +41,14 @@ public class DocumentService {
             }
         }
         if ("resourceLink".equals(node.path("type").asText()) && node.path("attrs").path("resourceId").asText().isBlank()) throw new IllegalArgumentException("Resource links require resourceId");
+        if ("image".equals(node.path("type").asText())) {
+            var attrs=node.path("attrs");
+            if(attrs.path("resourceId").asText().isBlank())throw new IllegalArgumentException("Images require resourceId; embedded bytes and external URLs are not supported");
+            for(String key:List.of("src","url","data","token"))if(attrs.has(key))throw new IllegalArgumentException("Images cannot persist URLs, bytes or credentials");
+            int width=attrs.path("width").asInt(100);if(width<20||width>100)throw new IllegalArgumentException("Image width must be 20-100 percent");
+            if(!Set.of("left","center","right").contains(attrs.path("alignment").asText("center")))throw new IllegalArgumentException("Invalid image alignment");
+            for(String key:List.of("alt","caption"))if(attrs.path(key).asText().length()>2000)throw new IllegalArgumentException("Image text is limited to 2000 characters");
+        }
         if (node.has("content")) {
             if (!node.get("content").isArray()) throw new IllegalArgumentException("Node content must be an array");
             for (JsonNode child : node.get("content")) validateNode(child);

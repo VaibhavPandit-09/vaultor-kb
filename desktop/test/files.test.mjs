@@ -4,7 +4,7 @@ import { mkdtemp, writeFile, readFile, rm, readdir, mkdir } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:http';
-import { NativeFiles } from '../src/files.mjs';
+import { NativeFiles, fileApiPath } from '../src/files.mjs';
 import { DesktopTransport } from '../src/transport.mjs';
 import { HostingPreferences } from '../src/hosting.mjs';
 
@@ -57,4 +57,9 @@ test('login is opt-in, persisted, OS denial visible and failed persistence rolls
     denied=true;assert.match(next.snapshot().error,/OS/);await assert.rejects(next.setLogin(true),/OS/);denied=false;
     await mkdir(join(root,'hosting.json.tmp'));await assert.rejects(preferences.setLogin(false),/previous registration/);assert.equal(enabled,true);
   }finally{await rm(root,{recursive:true,force:true});}
+});
+
+test('image clipboard endpoint stays inside the narrow approved resource path',()=>{
+ assert.equal(fileApiPath('/resources/image-id/image-png'),'/resources/image-id/image-png');
+ for(const path of ['https://example.com/resources/id/image-png','/resources/../image-png','/resources/id/image-png?token=secret','/resources/id/other','/resources/id/image-info']) assert.throws(()=>fileApiPath(path),/Invalid file endpoint/);
 });

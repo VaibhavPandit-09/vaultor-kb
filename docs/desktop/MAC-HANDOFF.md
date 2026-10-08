@@ -1,6 +1,6 @@
 # D9: Mac mini and two-device completion handoff
 
-Prepared 2026-10-04 for the AI working on the user's Apple Silicon Mac mini. This is the remaining D9 validation, not a new feature sprint. Read AGENTS.md, CODEBASE.md and desktop-network-plan.md first; UPDATES.md, DESKTOP.md, HOST-ACCESS.md and MULTI-DEVICE.md are authoritative. Inspect the current tree and preserve unrelated work. Windows D9 work corrects Connections layout, packages 0.2.1 and supplies an isolated manual-test data directory; the recorded Mac D9 development checks used 0.2.2; the current 0.3.2 OLED release handoff is below. Do not declare the overall Windows/Mac release gate complete until the checks below actually pass.
+Prepared 2026-10-04 for the AI working on the user's Apple Silicon Mac mini. This is the remaining D9 validation, not a new feature sprint. Read AGENTS.md, CODEBASE.md and desktop-network-plan.md first; UPDATES.md, DESKTOP.md, HOST-ACCESS.md and MULTI-DEVICE.md are authoritative. Inspect the current tree and preserve unrelated work. Windows D9 work corrects Connections layout, packages 0.2.1 and supplies an isolated manual-test data directory; the recorded Mac D9 development checks used 0.2.2; the current 0.4.0 settings/images/motion release handoff is below. Do not declare the overall Windows/Mac release gate complete until the checks below actually pass.
 
 ## Boundaries and preparation
 
@@ -178,3 +178,46 @@ npm --prefix desktop run publish:release -- --publish --add-platform --notes doc
 ```
 
 Inspect all OLED frames, then verify Finder/Dock/menu-bar/window controls, install and manual updater import with disposable data. Record real Mac results, same-tag DMG/sidecar hashes and update-host requirements. Preserve Windows bytes/tag. This is an ad-hoc personal build, not notarized. If source repairs are necessary, release a higher version rather than rewriting this tag. Existing 0.2.2 Mac results do not certify 0.3.2. Physical OLED testing is separately dependent on the display.
+
+## 0.4.0 — exact same-tag Mac completion
+
+Windows-first publication is authorized. No native Mac packaging, clipboard/pointer, keychain, DMG update or two-device verification is claimed from Windows. Read the release notes at `docs/desktop/releases/v0.4.0.md` and check out **v0.4.0**, never a later master snapshot. Preserve package/lock version 0.4.0 and the original Ed25519 public identity. Obtain its matching private key privately as described above; do not regenerate trust.
+
+On the Apple Silicon Mac, from the repository root:
+
+```sh
+git fetch origin --tags
+git checkout --detach v0.4.0
+uname -m
+node --version
+java -version
+xcode-select -p
+npm --prefix frontend ci
+npm --prefix desktop ci
+export VITE_BUILD_VERSION=0.4.0
+export BUILD_VERSION=0.4.0
+# Set VAULTOR_RELEASE_KEY to the privately transferred matching key, outside Git.
+npm --prefix desktop run build
+npm --prefix desktop run prepare-server
+npm --prefix desktop run check
+npm --prefix frontend test -- src/lib/motion.test.ts src/lib/useRestoreFocusOnClose.test.tsx src/components/modals/SettingsModal.test.tsx src/lib/noteImages.test.ts src/components/editor/BlockEditor.images.test.tsx src/lib/sharedNoteDocuments.test.ts
+node --test desktop/test/files.test.mjs desktop/test/updates.test.mjs
+npm --prefix desktop run package:release
+codesign --verify --deep --strict --verbose=2 desktop/releases/mac-arm64/Vaultor.app
+VAULTOR_MOTION_SMOKE=1 node desktop/scripts/chrome-smoke.mjs "$PWD/desktop/releases/mac-arm64/Vaultor.app/Contents/MacOS/Vaultor"
+npm --prefix desktop run publish:release
+```
+
+Use disposable app/server storage for the native helper; it exercises settings themes/search/resets, OS clipboard image paste/copy, saved session reload, Smooth/Snappy feedback, palette keyboard actions, source focus, reduced motion and narrow OLED. Inspect the fourteen resulting `desktop/artifacts` captures. If native shortcut or helper assumptions differ on macOS, establish the actual behavior before changing assertions; changes affecting shipped code need a newer version, not moved 0.4.0 source/tag.
+
+Perform one manual Mac session: clipboard screenshot paste, drop multiple images, shared two-pane undo/resize, native clipboard copy, image previews, menu/tray/Dock/dragging, Cmd-based controls, ad-hoc signed DMG launch and update from a disposable previous installation. Verify original image bytes and PDF/Word first-frame/caption output on disposable data. Preserve the user's installation/data. Record exact Mac OS/CPU/tool versions, SHA-256/bytes, test outcomes and any failure.
+
+Both hosts and clients now require API protocol 2. Update the host to 0.4.0 before connecting updated clients; old clients are intentionally rejected, with no silent image stripping. Coordinate one Windows/Mac LAN session for compatibility rejection, paired reconnect, duplicate-view edits/conflicts and export; loopback does not prove Wi-Fi or OS trust.
+
+Only after these gates pass, upload the missing original-key Mac pair:
+
+```sh
+npm --prefix desktop run publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.4.0.md
+```
+
+The helper preserves existing Windows assets and the source tag, accepting identical retries and refusing differing bytes. It does not edit publication notes/status. Then update GitHub notes with actual Mac results/availability; update living docs in a separate documentation-only commit. Never claim Windows-only publication updates a Mac host.

@@ -70,12 +70,12 @@ export function convertText(kind: ImportKind, text: string): { doc: JSONContent;
 }
 
 /** Retrying the same ID returns the original creation, even after a lost response. */
-export async function importResource(id: string, file: File, doc?: JSONContent, collectionId?: string): Promise<Resource> {
+export async function importResource(id: string, file: File, doc?: JSONContent, collectionId?: string, progress?: (percent: number) => void): Promise<Resource> {
   const body = new FormData();
   if(collectionId) body.append('collectionId',collectionId);
   body.append('title', doc ? noteTitle(file.name) : file.name);
   if (doc) body.append('content', JSON.stringify(doc)); else body.append('file', file);
-  const { data } = await api.put<Resource>('/resources/imports/' + id, body);
+  const { data } = await api.put<Resource>('/resources/imports/' + id, body, { onUploadProgress: event => progress?.(Math.round((event.progress ?? 0) * 85)) });
   return data;
 }
 

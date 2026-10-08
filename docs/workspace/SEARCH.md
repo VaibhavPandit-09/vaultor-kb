@@ -20,7 +20,7 @@ Library uses FTS only for nonempty queries with Include saved note text enabled.
 
 ## Derived index and diagnostics
 
-ResourceSearchService owns resource_fts, an FTS5 table containing resource ID, title and derived body. Recursive traversal follows document content arrays in order and extracts text nodes plus resourceLink labels. Headings, lists, code and table cells are included through that traversal. Arbitrary attributes, resource IDs, raw JSON and binary file contents are excluded.
+ResourceSearchService owns resource_fts, an FTS5 table containing resource ID, title and derived body. Recursive traversal follows document content arrays in order and extracts text nodes, resourceLink labels and managed-image captions/alternative text. Headings, lists, code and table cells are included through that traversal. Arbitrary attributes, resource IDs, raw JSON and binary file contents are excluded.
 
 SQLite insert/update/delete triggers maintain the index in the same resource transaction, including rename/edit, file-to-note import, link replacement and archive merge/replace. A rollback rolls back index changes. The index is disposable derived data and is not exported in logical workspace archives.
 

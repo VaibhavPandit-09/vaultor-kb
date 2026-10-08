@@ -6,6 +6,7 @@ import Papa from 'papaparse';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import api from '../lib/api';
+import { IMAGE_BYTES, loadImage } from '../lib/noteImages';
 import { getPlatform } from '../lib/platform';
 import type { Resource } from '../types';
 
@@ -100,7 +101,8 @@ interface FilePreviewProps {
 
 export default function FilePreview({ resource }: FilePreviewProps) {
   const [attempt, setAttempt] = useState(0);
-  const tooLarge = (resource.size ?? 0) > MAX_PREVIEW_SIZE;
+  const image = /^image\/(png|jpeg|webp|gif)$/.test(resource.mimeType ?? '');
+  const tooLarge = (resource.size ?? 0) > (image ? IMAGE_BYTES : MAX_PREVIEW_SIZE);
   const previewType = tooLarge ? 'fallback' : getPreviewType(resource.mimeType, resource.title);
 
   return (
@@ -119,7 +121,7 @@ export default function FilePreview({ resource }: FilePreviewProps) {
 
 function PreviewResolver({ type, resource, tooLarge }: { type: string; resource: Resource; tooLarge: boolean }) {
   if (tooLarge) {
-    return <FallbackViewer message="File too large for inline preview (> 1 MB)" />;
+    return <FallbackViewer message="File exceeds the inline preview limit (20 MiB for supported images; 1 MiB for other files)" />;
   }
 
   switch (type) {
@@ -141,13 +143,13 @@ function PDFViewer({ resource }: { resource: Resource }) {
 }
 
 function ImageViewer({ resource }: { resource: Resource }) {
-  const { blobUrl, error } = useBlobUrl(resource.id, resource.mimeType, resource.title);
+  const [zoom, setZoom] = useState<number | 'fit'>('fit'), [naturalWidth, setNaturalWidth] = useState(0);
+  const [blobUrl, setBlobUrl] = useState<string>(), [error, setError] = useState('');
+  useEffect(() => { const controller = new AbortController(); let active = true, release: (() => void) | undefined; void loadImage(resource.id, controller.signal).then(file => { if (!active) { file.release(); return; } release = file.release; setBlobUrl(file.url); }).catch(error => { if (active) setError(error instanceof Error ? error.message : 'Image preview failed.'); }); return () => { active = false; controller.abort(); release?.(); }; }, [resource.id]);
   if (error) return <FallbackViewer message={error} />;
   if (!blobUrl) return <LoadingSpinner />;
   return (
-    <div className="flex min-h-full items-center justify-center bg-background">
-      <img src={blobUrl} alt={resource.title} className="max-h-full max-w-full object-contain" />
-    </div>
+    <div className="bg-background min-h-full"><div className="image-preview-tools"><button onClick={() => setZoom('fit')}>Fit</button><button onClick={() => setZoom(1)}>Actual size</button><button onClick={() => setZoom(value => Math.max(.1, (value === 'fit' ? 1 : value) - .25))}>−</button><button onClick={() => setZoom(value => Math.min(4, (value === 'fit' ? 1 : value) + .25))}>+</button><span>{zoom === 'fit' ? 'Fit' : Math.round(zoom * 100) + '%'}</span></div><div className="image-preview-canvas"><img src={blobUrl} alt={resource.title} onLoad={event => setNaturalWidth(event.currentTarget.naturalWidth)} style={zoom === 'fit' ? {maxWidth:'100%',height:'auto'} : {maxWidth:'none',width:`${naturalWidth * zoom}px`}} /></div></div>
   );
 }
 

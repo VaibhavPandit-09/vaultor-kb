@@ -1,3 +1,4 @@
+import { hasPendingImages } from '../lib/noteImages';
 import { resourceKind } from '../lib/resourceKinds';
 import { SidebarSection, SidebarCustomization, SidebarRecent } from '../components/SidebarSections';
 import { inspectWorkspaceDeparture } from '../lib/workspaceDeparture';
@@ -1092,6 +1093,7 @@ export default function Dashboard() {
   const sessionView = useRef({visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext});
   useEffect(() => registerConnectionBarrier(async keepDrafts => {
     if (!sessionReady || !identityRef.current) throw new SwitchBlockedError('Wait for session restoration before leaving the workspace.');
+    if (hasPendingImages()) throw new SwitchBlockedError('Wait for image uploads to finish before leaving this workspace.');
     if (transferMode || uploadPending || importBusy.current || fileImport || createNotePending || deletePending || replacePending || tagDeletePending || tagAddPending || noteExport) throw new SwitchBlockedError('Finish or dismiss the current operation before leaving the workspace.');
     const currentIdentity = await inspectWorkspaceDeparture({
       desktop: getPlatform().kind === 'desktop', keepDrafts,

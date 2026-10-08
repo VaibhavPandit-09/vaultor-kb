@@ -1,9 +1,12 @@
+import { ManagedImage } from './ManagedImage';
+import ImagePicker from './ImagePicker';
+import { validateImageContent, attachImageUploads, clipboardImages, imageJobVersion, subscribeImageJobs, noteImageJobs, uploadNoteImages, retryImageJob, removeImageJob, insertImageJob } from '../../lib/noteImages';
 import { TextSelection } from '@tiptap/pm/state';
 import { SharedHistory, SharedNoteDocuments, isSharedTransaction, resetSharedHistory } from '../../lib/sharedNoteDocuments';
 import { registerResourceLinkNavigation, registerResourceLinkNavigator, type LinkedResourceIntent } from '../../lib/resourceLinkNavigation';
 import { flushSync } from 'react-dom';
 import { createNodeFromContent, type JSONContent } from '@tiptap/core';
-import { memo, useRef, useState, useEffect, useCallback, useId } from 'react';
+import { memo, useRef, useState, useEffect, useCallback, useId, useSyncExternalStore } from 'react';
 import { useEditor, EditorContent, ReactNodeViewRenderer, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -107,8 +110,18 @@ function BlockEditor({
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [imagePicker, setImagePicker] = useState<{ position: number; replaceId?: string }>();
+  const invalidContent = useRef(false);
+  const [contentError, setContentError] = useState(false);
+  useSyncExternalStore(subscribeImageJobs, imageJobVersion);
+  const imageJobs = noteImageJobs(noteId);
   const editor = useEditor({
-    onBeforeCreate: ({ editor: creating }) => sharedDocuments.prepare(creating),
+    enableContentCheck: true,
+    onContentError: () => { invalidContent.current = true; setContentError(true); },
+    onBeforeCreate: ({ editor: creating }) => {
+      sharedDocuments.prepare(creating);
+      try { validateImageContent(creating.options.content); } catch { invalidContent.current = true; setContentError(true); creating.options.content = { type: 'doc', content: [{ type: 'paragraph' }] }; }
+    },
     extensions: [
       StarterKit.configure({
         codeBlock: false,
@@ -139,6 +152,7 @@ function BlockEditor({
       Underline,
       SlashCommandExtension,
       ResourceLinkExtension,
+      ManagedImage,
       SymbolSystemExtension,
     ],
     content: parseInitialContent(content),
@@ -146,20 +160,45 @@ function BlockEditor({
       attributes: {
         class: 'tiptap outline-none min-h-[50vh]',
       },
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved || !event.dataTransfer) return false;
+        const files = clipboardImages(event.dataTransfer); if (!files.length) return false;
+        event.preventDefault(); const position = view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos ?? view.state.selection.from;
+        if (window.__vaultor_editor?.view === view) uploadNoteImages(noteId, window.__vaultor_editor, files, position);
+        else view.dom.dispatchEvent(new CustomEvent('vaultor:image-files', { detail: { files, position } }));
+        return true;
+      },
       handlePaste: (view, event) => {
+        if (event.clipboardData) {
+          const files = clipboardImages(event.clipboardData);
+          if (files.length) {
+            event.preventDefault();
+            const text = event.clipboardData.getData('text/plain');
+            if (text) view.dispatch(view.state.tr.insertText(text));
+            view.dom.dispatchEvent(new CustomEvent('vaultor:image-files', { detail: { files, position: view.state.selection.from } }));
+            return true;
+          }
+          if (/<img\b/i.test(event.clipboardData.getData('text/html'))) {
+            event.preventDefault(); const text = event.clipboardData.getData('text/plain');
+            if (text) view.dispatch(view.state.tr.insertText(text));
+            view.dom.dispatchEvent(new CustomEvent('vaultor:image-reference'));
+            return true;
+          }
+        }
         if (handleTablePaste(view, event)) return true;
         const text = event.clipboardData?.getData('text/plain');
         if (text && looksLikeMarkdown(text)) {
           event.preventDefault();
-          const html = markdownToHtml(text);
-          view.pasteHTML(html);
+          const template = document.createElement('template'); template.innerHTML = markdownToHtml(text);
+          template.content.querySelectorAll('img').forEach(image => image.replaceWith(document.createTextNode(`[Image: ${image.getAttribute('alt') || 'image'}] (${image.getAttribute('src') || ''})`)));
+          view.pasteHTML(template.innerHTML);
           return true;
         }
         return false;
       },
     },
     onUpdate: ({ editor: ed, transaction }) => {
-      if (isSharedTransaction(transaction)) return;
+      if (invalidContent.current || isSharedTransaction(transaction)) return;
       if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
       if (autosaveDelayRef.current === 0) {
         onUpdateRef.current(ed.getJSON());
@@ -167,7 +206,7 @@ function BlockEditor({
       }
 
       updateTimeoutRef.current = setTimeout(() => {
-        onUpdateRef.current(ed.getJSON());
+        if (!invalidContent.current) onUpdateRef.current(ed.getJSON());
       }, autosaveDelayRef.current);
     },
     onFocus: ({ editor: ed }) => {
@@ -385,7 +424,7 @@ function BlockEditor({
   }, [editor, slashState, selectedIndex, resourceState]);
 
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || invalidContent.current) return;
     const detach = sharedDocuments.attach(noteId, editor);
     return detach;
   }, [editor, noteId, sharedDocuments]);
@@ -433,11 +472,11 @@ function BlockEditor({
     }
 
     // Tiptap emits an update by default even though editability changes no content.
-    editor.setEditable(!interactionLocked, false);
+    editor.setEditable(!interactionLocked && !invalidContent.current, false);
   }, [editor, interactionLocked]);
 
   useEffect(() => {
-    if (!editor || !content || editor.isFocused) {
+    if (!editor || invalidContent.current || !content || editor.isFocused) {
       return;
     }
 
@@ -446,7 +485,9 @@ function BlockEditor({
     const incoming = JSON.stringify(parsed);
     if (current !== incoming) {
       editor.view.dispatch(editor.state.tr.setMeta(tableViewKey, { reset: true }));
-      const doc = createNodeFromContent(parsed, editor.schema);
+      let doc;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Unsupported incoming server content disables editing without saving a stripped document.
+      try { validateImageContent(parsed); doc = createNodeFromContent(parsed, editor.schema, { errorOnInvalidContent: true }); } catch { invalidContent.current = true; editor.setEditable(false, false); setContentError(true); return; }
       editor.view.dispatch(resetSharedHistory(editor.state.tr.replaceWith(0, editor.state.doc.content.size, doc.content), editor.state));
     }
   }, [content, editor]);
@@ -479,10 +520,23 @@ function BlockEditor({
     return () => { editor.off('selectionUpdate', selected); };
   }, [editor]);
 
+  useEffect(() => {
+    if (!editor || invalidContent.current) return;
+    const detach = attachImageUploads(noteId, editor);
+    const files = (event: Event) => { const detail = (event as CustomEvent<{ files: File[]; position: number }>).detail; uploadNoteImages(noteId, editor, detail.files, detail.position); };
+    const picker = (event: Event) => setImagePicker((event as CustomEvent).detail ?? { position: editor.state.selection.from });
+    const reference = () => { setImagePicker({ position: editor.state.selection.from }); };
+    editor.view.dom.addEventListener('vaultor:image-files', files); editor.view.dom.addEventListener('vaultor:image-picker', picker); editor.view.dom.addEventListener('vaultor:image-reference', reference);
+    return () => { detach(); editor.view.dom.removeEventListener('vaultor:image-files', files); editor.view.dom.removeEventListener('vaultor:image-picker', picker); editor.view.dom.removeEventListener('vaultor:image-reference', reference); };
+  }, [editor, noteId]);
+
   if (!editor) return null;
 
+  if (contentError) return <div role="alert" className="image-error">This note contains unsupported document content. Its original JSON is retained and editing/saving is disabled. Update the app or open it with a compatible client.</div>;
   return (
     <div ref={editorContainerRef} className="editor-workspace relative w-full">
+      {imagePicker && <ImagePicker editor={editor} noteId={noteId} {...imagePicker} close={() => setImagePicker(undefined)} />}
+      {imageJobs.length > 0 && <div className="image-upload-jobs" aria-live="polite">{imageJobs.map(job => <div key={job.id}><span>{job.file?.name ?? 'Uploaded image'} · {job.status === 'pending' ? `Uploading… ${job.progress}%` : job.error ?? 'Ready to insert in this note'}</span>{job.status === 'failed' && <button onClick={() => void retryImageJob(job.id)}>Retry</button>}{job.status === 'ready' && job.resourceId && <button onClick={() => insertImageJob(job.id, editor)}>Insert here</button>}<button onClick={() => removeImageJob(job.id)}>Remove</button></div>)}</div>}
       <TableControls editor={editor} active={isActive && !interactionLocked} containerRef={editorContainerRef} noteTitle={noteTitle} saveStatus={saveStatus} onRetrySave={onRetrySave} />
       <EditorContent className="table-editor-canvas" editor={editor} />
 
@@ -546,11 +600,11 @@ export default MemoizedBlockEditor;
 
 function parseInitialContent(content: JSONContent | string | null): JSONContent | string {
   if (!content) return { type: 'doc', content: [{ type: 'paragraph' }] };
-  if (typeof content === 'object' && content.type === 'doc') return content;
+  if (typeof content === 'object' && content.type === 'doc') return content.content?.length === 0 ? { ...content, content: [{ type: 'paragraph' }] } : content;
   if (typeof content === 'string') {
     try {
       const parsed = JSON.parse(content);
-      if (parsed.type === 'doc') return parsed;
+      if (parsed.type === 'doc') return parseInitialContent(parsed);
     } catch { /* treat as markdown */ }
     return markdownToHtml(content);
   }

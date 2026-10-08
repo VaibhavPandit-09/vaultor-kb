@@ -2685,8 +2685,8 @@
                 "example": {
                   "build": "desktop-d1",
                   "serverBuild": "desktop-d1",
-                  "apiProtocolVersion": 1,
-                  "minimumClientProtocolVersion": 1,
+                  "apiProtocolVersion": 2,
+                  "minimumClientProtocolVersion": 2,
                   "authentication": false,
                   "workspaceTransfer": [
                     "merge",
@@ -6376,6 +6376,106 @@
           },
           "429": {
             "description": "Too many active streams"
+          }
+        }
+      }
+    },
+    "/resources/{id}/image-info": {
+      "get": {
+        "operationId": "getImageInfo",
+        "summary": "Inspect a managed image before decoding",
+        "description": "Authenticated. PNG/JPEG/WebP/GIF only, at most 20 MiB and 40 megapixels. Returns dimensions/animation status without paths.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded image metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "format",
+                    "width",
+                    "height",
+                    "bytes",
+                    "animated"
+                  ],
+                  "properties": {
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "png",
+                        "jpeg",
+                        "webp",
+                        "gif"
+                      ]
+                    },
+                    "width": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "height": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "bytes": {
+                      "type": "integer",
+                      "maximum": 20971520
+                    },
+                    "animated": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unsupported format or image limits exceeded"
+          },
+          "404": {
+            "description": "Resource missing"
+          }
+        }
+      }
+    },
+    "/resources/{id}/image-png": {
+      "get": {
+        "operationId": "getImageClipboardPng",
+        "summary": "Authenticated bounded first-frame PNG for image clipboard copying",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original bounded image rendered as a first-frame PNG; original file remains unchanged",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unsupported image or limits exceeded"
           }
         }
       }
