@@ -49,7 +49,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 ## Android — `android/`
 
 - [Android organization and lifecycle](android/ORGANIZATION.md): contextual Actions, memberships, saved References, checked occurrences and durable Trash/Restore/purge.
-- [0.1.0-alpha.7 A7 organization](android/releases/0.1.0-alpha.7.md): Android-only lifecycle release and actual validation gates.
+- [0.1.0-alpha.7.1 A7 organization](android/releases/0.1.0-alpha.7.1.md): Android-only lifecycle release and actual validation gates.
 
 - [Android implementation and APK delivery](android/ANDROID.md): isolated toolchain, native trust/drafts, prototype limits, signing, installation and actual validation.
 - [Android interaction design](android/DESIGN.md): implemented A5 navigation foundation and planned writing/autosave/contextual tools; current implementation remains in ANDROID.md.

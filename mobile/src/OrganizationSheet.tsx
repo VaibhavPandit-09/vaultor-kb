@@ -66,6 +66,7 @@ export default function OrganizationSheet({
     [keep, setKeep] = useState(false),
     [pendingName, setPendingName] = useState(false);
   const definitiveFailures = useRef(new Set<string>());
+  const nativeBackAt = useRef(0);
   const pending = useRef(false),
     mounted = useRef(true),
     counter = useRef(0);
@@ -320,10 +321,21 @@ export default function OrganizationSheet({
             'create-note': 'Create new note',
           }[mode];
   return (
-    <Modal transparent animationType="none" onRequestClose={leave}>
-      <View style={s.scrim}>
-        <View style={s.panel} accessibilityViewIsModal>
-          <View style={s.header}>
+    <Modal
+      transparent
+      animationType="none"
+      onRequestClose={() => {
+        // Android can deliver dispatcher and key-up close callbacks for one Back.
+        // Accept the first immediately; prevent that gesture from popping two levels.
+        const now = Date.now();
+        if (now - nativeBackAt.current < 250) return;
+        nativeBackAt.current = now;
+        leave();
+      }}
+    >
+      <View collapsable={false} style={s.scrim}>
+        <View collapsable={false} style={s.panel} accessibilityViewIsModal>
+          <View collapsable={false} style={s.header}>
             {mode !== 'actions' && target.kind !== 'new-collection' ? (
               <Action
                 label="‹"
@@ -347,7 +359,7 @@ export default function OrganizationSheet({
             contentContainerStyle={s.content}
           >
             {error ? (
-              <View>
+              <View collapsable={false}>
                 <Text accessibilityRole="alert" style={s.error}>
                   {error}
                 </Text>
@@ -363,559 +375,578 @@ export default function OrganizationSheet({
                 {busy ? 'Working…' : 'Refreshing…'}
               </Text>
             ) : null}
-            {mode === 'actions' ? (
-              <View style={s.actions}>
-                {target.kind === 'bulk' ? (
-                  <Text style={s.secondary}>
-                    {resources.length} selected resources
-                  </Text>
-                ) : (
-                  <Text style={s.secondary}>
-                    {collection
-                      ? 'Collection'
-                      : presentation(meta ?? { type: 'unknown' }).label}
-                  </Text>
-                )}
-                {target.kind === 'resource' && meta && !trashed ? (
-                  <Action
-                    label={
-                      presentation(meta).action === 'editor'
-                        ? 'Open note'
-                        : presentation(meta).action === 'preview'
-                        ? 'Preview file'
-                        : 'Check availability'
-                    }
-                    disabled={busy}
-                    onPress={() =>
-                      void act(async () => {
-                        await model.routeResource(target.id);
-                        close();
-                      })
-                    }
-                  />
-                ) : null}
-                {collection ? (
-                  <Action
-                    label="Add resource"
-                    disabled={busy || !meta}
-                    onPress={() => go('add')}
-                  />
-                ) : null}
-                {target.kind !== 'bulk' &&
-                !trashed &&
-                (collection || ['note', 'file'].includes(meta?.type)) ? (
-                  <Action
-                    label="Rename"
-                    disabled={busy || !meta}
-                    onPress={() => {
-                      setName(collection ? meta.name : meta.title);
-                      go('rename');
-                    }}
-                  />
-                ) : null}
-                {target.kind !== 'bulk' && !trashed ? (
-                  <Action
-                    label={meta?.favorite ? 'Unpin' : 'Pin'}
-                    disabled={busy || !meta}
-                    onPress={() =>
-                      void act(async () => {
-                        await org.pin(target, !meta.favorite);
-                        await refreshMeta();
-                      })
-                    }
-                  />
-                ) : null}
-                {!collection && !trashed ? (
-                  <Action
-                    label="Collections"
-                    disabled={busy || !resources.length}
-                    onPress={() => go('collections')}
-                  />
-                ) : null}
-                {target.kind === 'resource' && !trashed ? (
-                  <Action
-                    label="Tags"
-                    disabled={busy || !meta}
-                    onPress={() => go('tags')}
-                  />
-                ) : null}
-                {target.kind === 'resource' ? (
-                  <Action
-                    label="References"
-                    disabled={busy || !meta}
-                    onPress={() => go('references')}
-                  />
-                ) : null}
-                {collection ? (
-                  <Action
-                    label="Delete collection…"
-                    disabled={busy || !meta}
-                    onPress={() => go('delete-collection')}
-                  />
-                ) : (
-                  <>
-                    {trashed || target.resources?.every(r => r.trashedAt) ? (
-                      <>
+            <View key={mode} collapsable={false}>
+              {mode === 'actions' ? (
+                <View collapsable={false} style={s.actions}>
+                  {target.kind === 'bulk' ? (
+                    <Text style={s.secondary}>
+                      {resources.length} selected resources
+                    </Text>
+                  ) : (
+                    <Text style={s.secondary}>
+                      {collection
+                        ? 'Collection'
+                        : presentation(meta ?? { type: 'unknown' }).label}
+                    </Text>
+                  )}
+                  {target.kind === 'resource' && meta && !trashed ? (
+                    <Action
+                      label={
+                        presentation(meta).action === 'editor'
+                          ? 'Open note'
+                          : presentation(meta).action === 'preview'
+                          ? 'Preview file'
+                          : 'Check availability'
+                      }
+                      disabled={busy}
+                      onPress={() =>
+                        void act(async () => {
+                          await model.routeResource(target.id);
+                          close();
+                        })
+                      }
+                    />
+                  ) : null}
+                  {collection ? (
+                    <Action
+                      label="Add resource"
+                      disabled={busy || !meta}
+                      onPress={() => go('add')}
+                    />
+                  ) : null}
+                  {target.kind !== 'bulk' &&
+                  !trashed &&
+                  (collection || ['note', 'file'].includes(meta?.type)) ? (
+                    <Action
+                      label="Rename"
+                      disabled={busy || !meta}
+                      onPress={() => {
+                        setName(collection ? meta.name : meta.title);
+                        go('rename');
+                      }}
+                    />
+                  ) : null}
+                  {target.kind !== 'bulk' && !trashed ? (
+                    <Action
+                      label={meta?.favorite ? 'Unpin' : 'Pin'}
+                      disabled={busy || !meta}
+                      onPress={() =>
+                        void act(async () => {
+                          await org.pin(target, !meta.favorite);
+                          await refreshMeta();
+                        })
+                      }
+                    />
+                  ) : null}
+                  {!collection && !trashed ? (
+                    <Action
+                      label="Collections"
+                      disabled={busy || !resources.length}
+                      onPress={() => go('collections')}
+                    />
+                  ) : null}
+                  {target.kind === 'resource' && !trashed ? (
+                    <Action
+                      label="Tags"
+                      disabled={busy || !meta}
+                      onPress={() => go('tags')}
+                    />
+                  ) : null}
+                  {target.kind === 'resource' ? (
+                    <Action
+                      label="References"
+                      disabled={busy || !meta}
+                      onPress={() => go('references')}
+                    />
+                  ) : null}
+                  {collection ? (
+                    <Action
+                      label="Delete collection…"
+                      disabled={busy || !meta}
+                      onPress={() => go('delete-collection')}
+                    />
+                  ) : (
+                    <>
+                      {trashed || target.resources?.every(r => r.trashedAt) ? (
+                        <>
+                          <Action
+                            label="Restore"
+                            disabled={
+                              busy || resources.some(r => r.cleanupPending)
+                            }
+                            onPress={() => reviewAction('restore')}
+                          />
+                          <Action
+                            label={
+                              meta?.cleanupPending
+                                ? 'Retry permanent deletion…'
+                                : 'Delete permanently…'
+                            }
+                            disabled={busy}
+                            onPress={() => reviewAction('purge')}
+                          />
+                        </>
+                      ) : (
                         <Action
-                          label="Restore"
-                          disabled={
-                            busy || resources.some(r => r.cleanupPending)
-                          }
-                          onPress={() => reviewAction('restore')}
+                          label="Move to Trash…"
+                          disabled={busy || !resources.length}
+                          onPress={() => reviewAction('trash')}
                         />
-                        <Action
-                          label={
-                            meta?.cleanupPending
-                              ? 'Retry permanent deletion…'
-                              : 'Delete permanently…'
-                          }
-                          disabled={busy}
-                          onPress={() => reviewAction('purge')}
-                        />
-                      </>
-                    ) : (
-                      <Action
-                        label="Move to Trash…"
-                        disabled={busy || !resources.length}
-                        onPress={() => reviewAction('trash')}
-                      />
-                    )}
-                  </>
-                )}
-              </View>
-            ) : null}
-            {mode === 'rename' || mode === 'create-note' ? (
-              <>
-                <Text style={s.secondary}>
-                  {mode !== 'create-note' &&
-                  (collection || target.kind === 'new-collection')
-                    ? 'Collection name'
-                    : 'Resource title'}
-                </Text>
-                <TextInput
-                  accessibilityLabel="Name"
-                  autoFocus
-                  editable={!busy && !pendingName}
-                  value={name}
-                  onChangeText={setName}
-                  maxLength={
-                    mode !== 'create-note' &&
+                      )}
+                    </>
+                  )}
+                </View>
+              ) : null}
+              {mode === 'rename' || mode === 'create-note' ? (
+                <>
+                  <Text style={s.secondary}>
+                    {mode !== 'create-note' &&
                     (collection || target.kind === 'new-collection')
-                      ? 100
-                      : 500
-                  }
-                  style={s.input}
-                  returnKeyType="done"
-                  onSubmitEditing={submitName}
-                />
-                {pendingName ? (
-                  <Text style={s.secondary}>
-                    Retry finishes the same pending creation.
+                      ? 'Collection name'
+                      : 'Resource title'}
                   </Text>
-                ) : null}
-                <Action
-                  label={
-                    mode === 'create-note'
-                      ? 'Create note'
-                      : target.kind === 'new-collection'
-                      ? 'Create collection'
-                      : 'Save name'
-                  }
-                  disabled={busy || !name.trim()}
-                  onPress={submitName}
-                />
-              </>
-            ) : null}
-            {['collections', 'tags', 'add'].includes(mode) ? (
-              <>
-                <TextInput
-                  accessibilityLabel="Find organization or resource"
-                  placeholder="Search titles or names"
-                  placeholderTextColor="#858585"
-                  value={q}
-                  onChangeText={v => {
-                    setQ(v);
-                    setPage(0);
-                    setMessages({});
-                  }}
-                  style={s.input}
-                  maxLength={100}
-                />
-                {mode === 'collections' &&
-                target.kind === 'bulk' &&
-                model.state.browse.collection ? (
+                  <TextInput
+                    accessibilityLabel="Name"
+                    autoFocus
+                    editable={!busy && !pendingName}
+                    value={name}
+                    onChangeText={setName}
+                    maxLength={
+                      mode !== 'create-note' &&
+                      (collection || target.kind === 'new-collection')
+                        ? 100
+                        : 500
+                    }
+                    style={s.input}
+                    returnKeyType="done"
+                    onSubmitEditing={submitName}
+                  />
+                  {pendingName ? (
+                    <Text style={s.secondary}>
+                      Retry finishes the same pending creation.
+                    </Text>
+                  ) : null}
                   <Action
                     label={
-                      'Remove membership · ' +
-                      model.state.browse.collection.name
+                      mode === 'create-note'
+                        ? 'Create note'
+                        : target.kind === 'new-collection'
+                        ? 'Create collection'
+                        : 'Save name'
                     }
-                    disabled={busy}
-                    onPress={() => {
-                      const c = model.state.browse.collection!;
-                      member(c, false);
-                    }}
+                    disabled={busy || !name.trim()}
+                    onPress={submitName}
                   />
-                ) : null}
-                {mode === 'collections' && target.kind === 'resource'
-                  ? (meta?.collections ?? []).map((c: any) => (
-                      <View style={s.row} key={'member' + c.id}>
-                        <Text style={s.rowTitle}>{c.name}</Text>
-                        <Action
-                          label="Remove membership"
-                          disabled={busy}
-                          onPress={() => member(c, false)}
-                        />
+                </>
+              ) : null}
+              {['collections', 'tags', 'add'].includes(mode) ? (
+                <>
+                  <TextInput
+                    accessibilityLabel="Find organization or resource"
+                    placeholder="Search titles or names"
+                    placeholderTextColor="#858585"
+                    value={q}
+                    onChangeText={v => {
+                      setQ(v);
+                      setPage(0);
+                      setMessages({});
+                    }}
+                    style={s.input}
+                    maxLength={100}
+                  />
+                  {mode === 'collections' &&
+                  target.kind === 'bulk' &&
+                  model.state.browse.collection ? (
+                    <Action
+                      label={
+                        'Remove membership · ' +
+                        model.state.browse.collection.name
+                      }
+                      disabled={busy}
+                      onPress={() => {
+                        const c = model.state.browse.collection!;
+                        member(c, false);
+                      }}
+                    />
+                  ) : null}
+                  {mode === 'collections' && target.kind === 'resource'
+                    ? (meta?.collections ?? []).map((c: any) => (
+                        <View
+                          collapsable={false}
+                          style={s.row}
+                          key={'member' + c.id}
+                        >
+                          <Text style={s.rowTitle}>{c.name}</Text>
+                          <Action
+                            label="Remove membership"
+                            disabled={busy}
+                            onPress={() => member(c, false)}
+                          />
+                        </View>
+                      ))
+                    : null}
+                  {mode === 'tags' ? (
+                    <>
+                      <View collapsable={false} style={s.actions}>
+                        {(meta?.tags ?? []).map((tag: any) => (
+                          <Action
+                            key={tag.id}
+                            label={tag.name + ' ×'}
+                            accessibilityLabel={'Remove tag ' + tag.name}
+                            disabled={busy}
+                            onPress={() =>
+                              void act(async () => {
+                                await org.tag(
+                                  target.id,
+                                  tag.name,
+                                  false,
+                                  tag.id,
+                                );
+                                await refreshMeta();
+                              })
+                            }
+                          />
+                        ))}
                       </View>
-                    ))
-                  : null}
-                {mode === 'tags' ? (
-                  <>
-                    <View style={s.actions}>
-                      {(meta?.tags ?? []).map((tag: any) => (
+                      {q.trim() ? (
                         <Action
-                          key={tag.id}
-                          label={tag.name + ' ×'}
-                          accessibilityLabel={'Remove tag ' + tag.name}
+                          label={'Add tag “' + q.trim() + '”'}
                           disabled={busy}
                           onPress={() =>
                             void act(async () => {
-                              await org.tag(target.id, tag.name, false, tag.id);
+                              await org.tag(target.id, q, true);
                               await refreshMeta();
                             })
                           }
                         />
+                      ) : null}
+                    </>
+                  ) : null}
+                  {rows.map(row => {
+                    const added =
+                      mode === 'collections'
+                        ? meta?.collections?.some((c: any) => c.id === row.id)
+                        : mode === 'add'
+                        ? row.collections?.some((c: any) => c.id === target.id)
+                        : meta?.tags?.some((t: any) => t.id === row.id);
+                    return (
+                      <View collapsable={false} key={row.id} style={s.row}>
+                        <View collapsable={false} style={s.rowText}>
+                          <Text style={s.rowTitle}>
+                            {mode === 'add'
+                              ? presentation(row).icon + '  ' + row.title
+                              : row.name}
+                          </Text>
+                          <Text style={s.secondary}>
+                            {messages[row.id] ??
+                              (added
+                                ? 'Added'
+                                : mode === 'add'
+                                ? presentation(row).label
+                                : '')}
+                          </Text>
+                        </View>
+                        <Action
+                          label={
+                            added || messages[row.id] === 'Added'
+                              ? 'Added'
+                              : 'Add'
+                          }
+                          disabled={
+                            busy ||
+                            loading ||
+                            added ||
+                            messages[row.id] === 'Added'
+                          }
+                          onPress={() =>
+                            mode === 'tags'
+                              ? void act(async () => {
+                                  await org.tag(target.id, row.name, true);
+                                  await refreshMeta();
+                                })
+                              : member(
+                                  row,
+                                  true,
+                                  mode === 'add' ? [row.id] : undefined,
+                                )
+                          }
+                        />
+                      </View>
+                    );
+                  })}
+                  {!rows.length && !loading ? (
+                    <Text style={s.secondary}>No matches.</Text>
+                  ) : null}
+                  {mode === 'add' &&
+                  q.trim() &&
+                  !rows.some(
+                    r =>
+                      r.type === 'note' &&
+                      r.title.toLowerCase() === q.trim().toLowerCase(),
+                  ) ? (
+                    <Action
+                      label={'Create note “' + q.trim() + '”'}
+                      disabled={busy || loading}
+                      onPress={() => {
+                        setPendingName(false);
+                        setName(q);
+                        go('create-note');
+                        void model.pendingCreation().then(p => {
+                          if (p && mounted.current) {
+                            setName(p.title);
+                            setPendingName(true);
+                          }
+                        });
+                      }}
+                    />
+                  ) : null}
+                  {mode === 'add' ? (
+                    <Action
+                      label="Create new note…"
+                      disabled={busy}
+                      onPress={() => {
+                        setPendingName(false);
+                        setName(q);
+                        go('create-note');
+                        void model.pendingCreation().then(p => {
+                          if (p && mounted.current) {
+                            setName(p.title);
+                            setPendingName(true);
+                          }
+                        });
+                      }}
+                    />
+                  ) : null}
+                </>
+              ) : null}
+              {mode === 'references' ? (
+                <>
+                  <View collapsable={false} style={s.segment}>
+                    <Action
+                      label="Used in"
+                      active={direction === 'incoming'}
+                      disabled={busy}
+                      onPress={() => {
+                        if (direction === 'incoming') return;
+                        setRows([]);
+                        setRefs(undefined);
+                        setLoading(true);
+                        setDirection('incoming');
+                        setPage(0);
+                      }}
+                    />
+                    <Action
+                      label="Links to"
+                      active={direction === 'outgoing'}
+                      disabled={busy}
+                      onPress={() => {
+                        if (direction === 'outgoing') return;
+                        setRows([]);
+                        setRefs(undefined);
+                        setLoading(true);
+                        setDirection('outgoing');
+                        setPage(0);
+                      }}
+                    />
+                  </View>
+                  <Text style={s.secondary}>
+                    Saved content · {refs?.totalItems ?? 0} resources ·{' '}
+                    {refs?.totalOccurrences ?? 0} occurrences. Unsaved
+                    references on other devices are not included.
+                  </Text>
+                  {rows.map(row => (
+                    <View collapsable={false} key={row.id} style={s.reference}>
+                      <Action
+                        label={
+                          row.title + (row.available ? '' : ' · unavailable')
+                        }
+                        disabled={busy || loading || !row.available}
+                        onPress={() => openRef(row)}
+                      />
+                      <Text style={s.secondary}>
+                        {presentation(row).label} ·{' '}
+                        {row.noteLinks +
+                          row.fileLinks +
+                          row.images +
+                          row.otherLinks}{' '}
+                        occurrences
+                      </Text>
+                      {row.occurrences?.map((o: any) => (
+                        <Action
+                          key={o.path}
+                          label={
+                            (o.kind === 'image' ? 'Image' : 'Link') +
+                            ' · ' +
+                            (o.label || 'Open occurrence')
+                          }
+                          disabled={
+                            busy ||
+                            loading ||
+                            (direction === 'incoming' && !row.available)
+                          }
+                          onPress={() => openRef(row, o)}
+                        />
                       ))}
                     </View>
-                    {q.trim() ? (
-                      <Action
-                        label={'Add tag “' + q.trim() + '”'}
-                        disabled={busy}
-                        onPress={() =>
-                          void act(async () => {
-                            await org.tag(target.id, q, true);
-                            await refreshMeta();
-                          })
-                        }
-                      />
-                    ) : null}
-                  </>
-                ) : null}
-                {rows.map(row => {
-                  const added =
-                    mode === 'collections'
-                      ? meta?.collections?.some((c: any) => c.id === row.id)
-                      : mode === 'add'
-                      ? row.collections?.some((c: any) => c.id === target.id)
-                      : meta?.tags?.some((t: any) => t.id === row.id);
-                  return (
-                    <View key={row.id} style={s.row}>
-                      <View style={s.rowText}>
-                        <Text style={s.rowTitle}>
-                          {mode === 'add'
-                            ? presentation(row).icon + '  ' + row.title
-                            : row.name}
-                        </Text>
-                        <Text style={s.secondary}>
-                          {messages[row.id] ??
-                            (added
-                              ? 'Added'
-                              : mode === 'add'
-                              ? presentation(row).label
-                              : '')}
-                        </Text>
-                      </View>
-                      <Action
-                        label={
-                          added || messages[row.id] === 'Added'
-                            ? 'Added'
-                            : 'Add'
-                        }
-                        disabled={
-                          busy ||
-                          loading ||
-                          added ||
-                          messages[row.id] === 'Added'
-                        }
-                        onPress={() =>
-                          mode === 'tags'
-                            ? void act(async () => {
-                                await org.tag(target.id, row.name, true);
-                                await refreshMeta();
-                              })
-                            : member(
-                                row,
-                                true,
-                                mode === 'add' ? [row.id] : undefined,
-                              )
-                        }
-                      />
-                    </View>
-                  );
-                })}
-                {!rows.length && !loading ? (
-                  <Text style={s.secondary}>No matches.</Text>
-                ) : null}
-                {mode === 'add' &&
-                q.trim() &&
-                !rows.some(
-                  r =>
-                    r.type === 'note' &&
-                    r.title.toLowerCase() === q.trim().toLowerCase(),
-                ) ? (
+                  ))}
+                  {!rows.length && !loading ? (
+                    <Text style={s.secondary}>No saved references.</Text>
+                  ) : null}
+                </>
+              ) : null}
+              {['collections', 'tags', 'add', 'references'].includes(mode) &&
+              pages > 1 ? (
+                <View collapsable={false} style={s.actions}>
                   <Action
-                    label={'Create note “' + q.trim() + '”'}
-                    disabled={busy || loading}
-                    onPress={() => {
-                      setPendingName(false);
-                      setName(q);
-                      go('create-note');
-                      void model.pendingCreation().then(p => {
-                        if (p && mounted.current) {
-                          setName(p.title);
-                          setPendingName(true);
-                        }
-                      });
-                    }}
+                    label="Previous"
+                    disabled={busy || loading || page === 0}
+                    onPress={() => setPage(p => p - 1)}
                   />
-                ) : null}
-                {mode === 'add' ? (
+                  <Text style={s.secondary}>
+                    {page + 1} / {pages}
+                  </Text>
                   <Action
-                    label="Create new note…"
-                    disabled={busy}
-                    onPress={() => {
-                      setPendingName(false);
-                      setName(q);
-                      go('create-note');
-                      void model.pendingCreation().then(p => {
-                        if (p && mounted.current) {
-                          setName(p.title);
-                          setPendingName(true);
-                        }
-                      });
-                    }}
-                  />
-                ) : null}
-              </>
-            ) : null}
-            {mode === 'references' ? (
-              <>
-                <View style={s.segment}>
-                  <Action
-                    label="Used in"
-                    active={direction === 'incoming'}
-                    disabled={busy}
-                    onPress={() => {
-                      if (direction === 'incoming') return;
-                      setRows([]);
-                      setRefs(undefined);
-                      setLoading(true);
-                      setDirection('incoming');
-                      setPage(0);
-                    }}
-                  />
-                  <Action
-                    label="Links to"
-                    active={direction === 'outgoing'}
-                    disabled={busy}
-                    onPress={() => {
-                      if (direction === 'outgoing') return;
-                      setRows([]);
-                      setRefs(undefined);
-                      setLoading(true);
-                      setDirection('outgoing');
-                      setPage(0);
-                    }}
+                    label="Next"
+                    disabled={busy || loading || page + 1 >= pages}
+                    onPress={() => setPage(p => p + 1)}
                   />
                 </View>
-                <Text style={s.secondary}>
-                  Saved content · {refs?.totalItems ?? 0} resources ·{' '}
-                  {refs?.totalOccurrences ?? 0} occurrences. Unsaved references
-                  on other devices are not included.
-                </Text>
-                {rows.map(row => (
-                  <View key={row.id} style={s.reference}>
-                    <Action
-                      label={
-                        row.title + (row.available ? '' : ' · unavailable')
-                      }
-                      disabled={busy || loading || !row.available}
-                      onPress={() => openRef(row)}
-                    />
-                    <Text style={s.secondary}>
-                      {presentation(row).label} ·{' '}
-                      {row.noteLinks +
-                        row.fileLinks +
-                        row.images +
-                        row.otherLinks}{' '}
-                      occurrences
-                    </Text>
-                    {row.occurrences?.map((o: any) => (
+              ) : null}
+              {mode === 'confirm' ? (
+                <>
+                  <Text style={s.secondary}>
+                    {action === 'purge'
+                      ? 'Permanently deletes originals and their bytes. Referring notes keep broken links. This cannot be undone.'
+                      : action === 'trash'
+                      ? 'Trash affects the original everywhere. It does not remove a placement or only collection membership.'
+                      : 'Restore keeps the original identity. Recovery drafts remain separate.'}{' '}
+                    Saved usage excludes unsaved drafts.
+                  </Text>
+                  {review.map(item => (
+                    <View
+                      collapsable={false}
+                      key={item.resource.id}
+                      style={s.reference}
+                    >
+                      <Text style={s.rowTitle}>{item.resource.title}</Text>
+                      <Text style={s.secondary}>
+                        {item.sources} active saved notes use this original
+                      </Text>
+                      <Text style={s.secondary}>
+                        {messages[item.resource.id] ?? 'Ready'}
+                      </Text>
+                    </View>
+                  ))}
+                  {!review.length ? (
+                    <>
                       <Action
-                        key={o.path}
+                        label="Retry review"
+                        disabled={busy}
+                        onPress={() =>
+                          void act(async () =>
+                            setReview(
+                              await org.review(resources, action, keep),
+                            ),
+                          )
+                        }
+                      />
+                      {action === 'trash' ? (
+                        <Action
+                          label="Keep protected drafts and review saved versions"
+                          disabled={busy}
+                          onPress={() =>
+                            void act(async () => {
+                              setKeep(true);
+                              setReview(
+                                await org.review(resources, action, true),
+                              );
+                            })
+                          }
+                        />
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <Action
                         label={
-                          (o.kind === 'image' ? 'Image' : 'Link') +
-                          ' · ' +
-                          (o.label || 'Open occurrence')
+                          action === 'purge'
+                            ? 'Confirm permanent deletion / Retry'
+                            : action === 'trash'
+                            ? 'Confirm Trash / Retry'
+                            : 'Confirm Restore / Retry'
                         }
                         disabled={
                           busy ||
-                          loading ||
-                          (direction === 'incoming' && !row.available)
+                          review.every(
+                            i => messages[i.resource.id] === 'Completed',
+                          )
                         }
-                        onPress={() => openRef(row, o)}
+                        onPress={execute}
                       />
-                    ))}
-                  </View>
-                ))}
-                {!rows.length && !loading ? (
-                  <Text style={s.secondary}>No saved references.</Text>
-                ) : null}
-              </>
-            ) : null}
-            {['collections', 'tags', 'add', 'references'].includes(mode) &&
-            pages > 1 ? (
-              <View style={s.actions}>
-                <Action
-                  label="Previous"
-                  disabled={busy || loading || page === 0}
-                  onPress={() => setPage(p => p - 1)}
-                />
-                <Text style={s.secondary}>
-                  {page + 1} / {pages}
-                </Text>
-                <Action
-                  label="Next"
-                  disabled={busy || loading || page + 1 >= pages}
-                  onPress={() => setPage(p => p + 1)}
-                />
-              </View>
-            ) : null}
-            {mode === 'confirm' ? (
-              <>
-                <Text style={s.secondary}>
-                  {action === 'purge'
-                    ? 'Permanently deletes originals and their bytes. Referring notes keep broken links. This cannot be undone.'
-                    : action === 'trash'
-                    ? 'Trash affects the original everywhere. It does not remove a placement or only collection membership.'
-                    : 'Restore keeps the original identity. Recovery drafts remain separate.'}{' '}
-                  Saved usage excludes unsaved drafts.
-                </Text>
-                {review.map(item => (
-                  <View key={item.resource.id} style={s.reference}>
-                    <Text style={s.rowTitle}>{item.resource.title}</Text>
-                    <Text style={s.secondary}>
-                      {item.sources} active saved notes use this original
-                    </Text>
-                    <Text style={s.secondary}>
-                      {messages[item.resource.id] ?? 'Ready'}
-                    </Text>
-                  </View>
-                ))}
-                {!review.length ? (
-                  <>
-                    <Action
-                      label="Retry review"
-                      disabled={busy}
-                      onPress={() =>
-                        void act(async () =>
-                          setReview(await org.review(resources, action, keep)),
-                        )
-                      }
-                    />
-                    {action === 'trash' ? (
                       <Action
-                        label="Keep protected drafts and review saved versions"
-                        disabled={busy}
+                        label={
+                          action === 'trash'
+                            ? 'Review latest revisions'
+                            : 'Refresh Trash and review again'
+                        }
+                        disabled={
+                          busy ||
+                          review.every(
+                            i => messages[i.resource.id] === 'Completed',
+                          ) ||
+                          review.some(
+                            i =>
+                              messages[i.resource.id] !== 'Completed' &&
+                              (i.resource.cleanupPending ||
+                                !definitiveFailures.current.has(i.resource.id)),
+                          )
+                        }
                         onPress={() =>
                           void act(async () => {
-                            setKeep(true);
+                            for (const i of review)
+                              if (definitiveFailures.current.has(i.resource.id))
+                                await org.reviewLatest(i.resource, action);
+                            if (action !== 'trash') {
+                              await model.organizationChanged();
+                              close();
+                              return;
+                            }
+                            const unfinished = review
+                              .filter(
+                                i => messages[i.resource.id] !== 'Completed',
+                              )
+                              .map(i => i.resource);
+                            setMessages({});
+                            definitiveFailures.current.clear();
                             setReview(
-                              await org.review(resources, action, true),
+                              await org.review(unfinished, action, keep),
                             );
                           })
                         }
                       />
-                    ) : null}
-                  </>
-                ) : (
-                  <>
-                    <Action
-                      label={
-                        action === 'purge'
-                          ? 'Confirm permanent deletion / Retry'
-                          : action === 'trash'
-                          ? 'Confirm Trash / Retry'
-                          : 'Confirm Restore / Retry'
-                      }
-                      disabled={
-                        busy ||
-                        review.every(
-                          i => messages[i.resource.id] === 'Completed',
-                        )
-                      }
-                      onPress={execute}
-                    />
-                    <Action
-                      label={
-                        action === 'trash'
-                          ? 'Review latest revisions'
-                          : 'Refresh Trash and review again'
-                      }
-                      disabled={
-                        busy ||
-                        review.every(
-                          i => messages[i.resource.id] === 'Completed',
-                        ) ||
-                        review.some(
-                          i =>
-                            messages[i.resource.id] !== 'Completed' &&
-                            (i.resource.cleanupPending ||
-                              !definitiveFailures.current.has(i.resource.id)),
-                        )
-                      }
-                      onPress={() =>
-                        void act(async () => {
-                          for (const i of review)
-                            if (definitiveFailures.current.has(i.resource.id))
-                              await org.reviewLatest(i.resource, action);
-                          if (action !== 'trash') {
-                            await model.organizationChanged();
-                            close();
-                            return;
-                          }
-                          const unfinished = review
-                            .filter(
-                              i => messages[i.resource.id] !== 'Completed',
-                            )
-                            .map(i => i.resource);
-                          setMessages({});
-                          definitiveFailures.current.clear();
-                          setReview(await org.review(unfinished, action, keep));
-                        })
-                      }
-                    />
-                  </>
-                )}
-              </>
-            ) : null}
-            {mode === 'delete-collection' ? (
-              <>
-                <Text style={s.secondary}>
-                  Deletes this collection and its memberships. Notes, files and
-                  image originals survive.
-                </Text>
-                <Action
-                  label="Delete collection"
-                  disabled={busy}
-                  onPress={() =>
-                    void act(async () => {
-                      await org.deleteCollection(target.id);
-                      close();
-                    })
-                  }
-                />
-              </>
-            ) : null}
+                    </>
+                  )}
+                </>
+              ) : null}
+              {mode === 'delete-collection' ? (
+                <>
+                  <Text style={s.secondary}>
+                    Deletes this collection and its memberships. Notes, files
+                    and image originals survive.
+                  </Text>
+                  <Action
+                    label="Delete collection"
+                    disabled={busy}
+                    onPress={() =>
+                      void act(async () => {
+                        await org.deleteCollection(target.id);
+                        close();
+                      })
+                    }
+                  />
+                </>
+              ) : null}
+            </View>
           </ScrollView>
         </View>
       </View>

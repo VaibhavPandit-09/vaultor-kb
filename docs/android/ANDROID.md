@@ -1,10 +1,10 @@
 # Vaultor for Android
 
-Reviewed 2026-10-09. A1–A6 are published; A7 organization/lifecycle is implemented for Android0.1.0-alpha.7 (versionCode8), with its publication gate in [A7 notes](releases/0.1.0-alpha.7.md). A8–A9 remain unstarted. [The tracker](../plans/android-plan.md) owns sprint scope. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
+Reviewed 2026-10-09. A1–A6 are published; A7 organization/lifecycle is implemented for Android0.1.0-alpha.7.1 (versionCode9), with its publication gate in [A7 notes](releases/0.1.0-alpha.7.1.md). A8–A9 remain unstarted. [The tracker](../plans/android-plan.md) owns sprint scope. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
 
 ## Prototype boundary
 
-`mobile/` contains React Native 0.87.1 / React 19.2.3, WebView 14.0.1 and a locally bundled Tiptap 3.31.4 editor. Permanent package `com.vaultor.app`, current version `0.1.0-alpha.7`, versionCode 8; the original application ID and signer remain unchanged. Minimum API 36 (Android 16); compile/target API 37 (Android 17). Android-only tags use `android/v…`; desktop versions/update feeds are separate.
+`mobile/` contains React Native 0.87.1 / React 19.2.3, WebView 14.0.1 and a locally bundled Tiptap 3.31.4 editor. Permanent package `com.vaultor.app`, current version `0.1.0-alpha.7.1`, versionCode 9; the original application ID and signer remain unchanged. Minimum API 36 (Android 16); compile/target API 37 (Android 17). Android-only tags use `android/v…`; desktop versions/update feeds are separate.
 
 The mobile client implements manual private IPv4 HTTPS enrollment, matching-code host approval, remembered native credentials, capability/workspace identity checks, paged mixed Library/Recent/Pinned/Collections, conditional editing, remembered host switching, scoped sessions and protected recovery drafts. Native code owns transport and AndroidKeyStore AES-GCM/AtomicFile storage in noBackupFilesDir; credentials never enter React state, WebView, URLs or logs. Android backup is disabled. The observed host CA is enrollment-only: no HTTP or credential is sent through the observation socket. All actual requests validate the selected CA chain, hostname and host identity; redirects and public addresses are refused. Approval must be matched on the host. A1 uses the existing server's `desktop` enrollment kind with the explicit device name **Vaultor Android**, avoiding a server contract change.
 

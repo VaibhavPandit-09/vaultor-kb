@@ -1,6 +1,6 @@
 # Android organization and resource lifecycle
 
-A7 adds one contextual Actions sheet to browsing rows, note More and file previews. Long-press a resource to start selection; collection rows never enter resource selection. Selection clears when the query, page, type, mode, destination, collection or workspace changes. Successful lifecycle items leave the selection; unsuccessful items remain available for retry. No permanent bulk toolbar is shown.
+A7 adds one contextual Actions sheet to browsing rows, note More and file previews. Long-press a resource to start selection; collection rows never enter resource selection. Selection clears when the query, page, type, mode, destination, collection or workspace changes. Successful lifecycle items leave the selection; unsuccessful items remain available for retry. No permanent bulk toolbar is shown. Native Back returns a nested sheet to Actions; callbacks within250ms are treated as one gesture to prevent dispatcher/key-up duplication from dismissing two levels. The first Back and explicit header controls remain immediate.
 
 ## Collections, metadata and membership
 
@@ -26,4 +26,4 @@ Organization operation records use the existing encrypted native journal, scoped
 
 ## Validation and limits
 
-Actual A7 release checks and platform limitations are recorded in [release notes](releases/0.1.0-alpha.7.md) and [ANDROID.md](ANDROID.md). Windows emulators are the agent test boundary. Samsung Keyboard, TalkBack, S24 Ultra/One UI8.5–9, actual Mac/Wi-Fi races and OEM lifecycle remain user-owned gates. A8 settings/discovery/updater and A9 integration are separate sprints.
+Actual A7 release checks and platform limitations are recorded in [release notes](releases/0.1.0-alpha.7.1.md) and [ANDROID.md](ANDROID.md). Windows emulators are the agent test boundary. Samsung Keyboard, TalkBack, S24 Ultra/One UI8.5–9, actual Mac/Wi-Fi races and OEM lifecycle remain user-owned gates. A8 settings/discovery/updater and A9 integration are separate sprints.
