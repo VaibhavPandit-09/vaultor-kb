@@ -330,18 +330,66 @@ assert.equal(
   'A removed placement anchor cannot target another node',
 );
 // Reading/editing and theme changes must not reload the document or emit saves.
-send({ type: 'load', loadId: 'reading', content: doc, editable: false, theme: 'light' });
+send({
+  type: 'load',
+  loadId: 'reading',
+  content: doc,
+  editable: false,
+  theme: 'light',
+});
 const readMessages = messages.filter(m => m.type === 'changed').length;
-assert.equal(dom.window.document.querySelector('.tiptap').getAttribute('contenteditable'), 'false');
+assert.equal(
+  dom.window.document.querySelector('.tiptap').getAttribute('contenteditable'),
+  'false',
+);
 assert.equal(dom.window.document.documentElement.dataset.theme, 'light');
 send({ type: 'command', name: 'bold' });
 assert.equal(messages.filter(m => m.type === 'changed').length, readMessages);
 send({ type: 'editable', value: true });
-assert.equal(dom.window.document.querySelector('.tiptap').getAttribute('contenteditable'), 'true');
+assert.equal(
+  dom.window.document.querySelector('.tiptap').getAttribute('contenteditable'),
+  'true',
+);
 send({ type: 'editable', value: false });
 send({ type: 'theme', value: 'dark' });
 assert.equal(dom.window.document.documentElement.dataset.theme, 'dark');
 assert.equal(messages.filter(m => m.type === 'changed').length, readMessages);
+
+// Native tooling blurs the keyboard, but formatting keeps the selected range and shared undo.
+send({
+  type: 'load',
+  loadId: 'accessory',
+  editable: true,
+  content: {
+    type: 'doc',
+    content: [{ type: 'paragraph', content: [text('A6 selected text')] }],
+  },
+  position: { anchor: 1, head: 3, scroll: 0 },
+});
+send({ type: 'blur' });
+send({ type: 'command', name: 'italic' });
+assert.equal(
+  messages.filter(m => m.type === 'changed').at(-1).content.content[0]
+    .content[0].text,
+  'A6',
+);
+assert.equal(
+  messages.filter(m => m.type === 'changed').at(-1).content.content[0]
+    .content[0].marks[0].type,
+  'italic',
+);
+send({ type: 'command', name: 'undo' });
+assert.equal(
+  messages.filter(m => m.type === 'changed').at(-1).content.content[0]
+    .content[0].marks,
+  undefined,
+);
+send({ type: 'command', name: 'redo' });
+assert.equal(
+  messages.filter(m => m.type === 'changed').at(-1).content.content[0]
+    .content[0].marks[0].type,
+  'italic',
+);
 send({
   type: 'load',
   loadId: 'unsupported',

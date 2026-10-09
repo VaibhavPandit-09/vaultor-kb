@@ -35,6 +35,7 @@ class MediaTest {
     val bootstrap=JSONObject(result {module.storage("bootstrap","{}",it)});val host=bootstrap.getString("selected");require(host.isNotEmpty())
     val profiles=bootstrap.getJSONArray("profiles");val profile=(0 until profiles.length()).map {profiles.getJSONObject(it)}.first {it.getString("hostId")==host};require(profile.getString("address").startsWith("https://127.0.0.1:"))
     val activated=JSONObject(result {module.activate(host,it)});val identityResponse=JSONObject(result {module.apiFor(host,activated.getString("epoch"),"/workspace/identity","GET",null,null,it)});val identity=JSONObject(identityResponse.getString("body"))
+    val settings=JSONObject(result {module.apiFor(host,activated.getString("epoch"),"/settings/workspace","GET",null,null,it)});assertEquals(200,settings.getInt("status"));assertTrue(JSONObject(settings.getString("body")).getInt("autosaveDelay") in 0..1000)
     val scope=JSONArray().put(host).put(identity.getString("id")).put(identity.getString("generation")).toString();val session=bootstrap.getJSONObject("sessions").optJSONObject(scope);val note=session?.optString("noteId") ?: error("Open the disposable fixture note first")
     val args=JSONObject().put("hostId",host).put("epoch",activated.getString("epoch")).put("scope",scope)
     val dir=File(ctx.noBackupFilesDir,"media-inputs").apply {mkdirs()};val catalog=File(dir,"catalog.bin");val before=if(catalog.exists())catalog.readBytes()else null

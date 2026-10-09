@@ -47,6 +47,7 @@ class PrototypeTest {
     val context=instrumentation.targetContext
     val intent=context.packageManager.getLaunchIntentForPackage(context.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(intent)
+    if(InstrumentationRegistry.getArguments().getString("reuseApproval")!="true") {
     if(device.wait(Until.hasObject(By.desc("Open navigation")),6000)) {
       for(attempt in 1..20) {device.findObject(By.desc("Open navigation"))?.click();if(device.wait(Until.hasObject(By.desc("Switch workspace or manage connections")),1000))break}
       assertTrue(device.hasObject(By.desc("Switch workspace or manage connections")))
@@ -75,35 +76,47 @@ class PrototypeTest {
     for (attempt in 1..45) {
       device.findObject(By.text("I approved the matching code"))?.click()
       if(device.wait(Until.hasObject(By.text("Your space.")),1000) || device.hasObject(By.text("Edit")) || device.hasObject(By.text("Library"))) {opened=true;break}
-      if(attempt==3)device.dumpWindowHierarchy(java.io.File(context.getExternalFilesDir(null),"a5-pair-window.xml"))
+      if(attempt==3)device.dumpWindowHierarchy(java.io.File(context.getExternalFilesDir(null),"a6-pair-window.xml"))
     }
     assertTrue("Disposable matching-code host approval did not complete",opened)
     Log.i("VaultorPrototypeTest","APPROVAL_COMPLETE")
+    }
+    if(InstrumentationRegistry.getArguments().getString("reuseApproval")=="true" && !device.hasObject(By.text("Browse Library"))) {
+      assertTrue(device.wait(Until.hasObject(By.desc("Open navigation")),30000))
+      device.findObject(By.desc("Open navigation")).click()
+      assertTrue(device.wait(Until.hasObject(By.desc("Library")),5000))
+      device.findObject(By.desc("Library")).click()
+    }
     device.findObject(By.text("Browse Library"))?.click()
     assertTrue(device.wait(Until.hasObject(By.text("A1 Editor fixture")),15000))
     if(!device.hasObject(By.text("Edit")))device.findObject(By.text("A1 Editor fixture")).click()
     assertTrue(device.wait(Until.hasObject(By.text("Edit")),20000))
-    assertFalse("Read mode must not expose Save",device.hasObject(By.text("Save")))
+    assertFalse("Read mode must not expose writing tools",device.hasObject(By.text("Insert")))
     assertTrue(device.wait(Until.hasObject(By.clazz("android.webkit.WebView")),10000))
-    device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"a5-reading.png"))
+    device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"a6-reading.png"))
     device.findObject(By.text("Edit")).click()
-    assertTrue(device.wait(Until.hasObject(By.text("Save")),5000))
+    assertTrue(device.wait(Until.hasObject(By.text("Insert")),5000))
     assertTrue(device.wait(Until.hasObject(By.pkg("com.google.android.inputmethod.latin")),8000))
-    device.executeShellCommand("input text A5Typed")
-    assertTrue(device.wait(Until.hasObject(By.textContains("protected on this device")),10000))
-    device.findObject(By.text("undo")).click()
-    device.findObject(By.text("Save")).click()
-    assertTrue(device.wait(Until.hasObject(By.text("Saved")),15000))
-    device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"a5-edit-keyboard.png"))
-    device.pressBack() // IME first; editing still owns the document.
-    assertTrue(device.wait(Until.hasObject(By.text("Save")),5000))
+    device.executeShellCommand("input text A6Typed")
+    assertTrue(device.wait(Until.hasObject(By.text("Saved to host")),10000))
+    device.findObject(By.text("Format")).click()
+    assertTrue(device.wait(Until.hasObject(By.text("Bold")),5000))
+    device.findObject(By.text("Bold")).click()
+    device.findObject(By.text("Undo")).click()
+    Thread.sleep(800)
+    assertTrue(device.wait(Until.hasObject(By.text("Saved to host")),15000))
+    device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"a6-edit-keyboard.png"))
+    if(device.hasObject(By.pkg("com.google.android.inputmethod.latin"))) {
+      device.pressBack() // IME first, when currently visible.
+      assertTrue(device.wait(Until.hasObject(By.text("Insert")),5000))
+    }
     device.pressBack() // Then reading, without navigating away.
     assertTrue(device.wait(Until.hasObject(By.text("Edit")),5000))
     assertTrue(device.hasObject(By.text("A1 Editor fixture")))
     Log.i("VaultorPrototypeTest","EDITOR_OPENED_READ_EDIT_BACK")
     device.findObject(By.desc("Open navigation")).click()
     assertTrue(device.wait(Until.hasObject(By.desc("View all recent")),5000))
-    device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"a5-drawer.png"))
+    device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"a6-drawer.png"))
     device.findObject(By.desc("View all recent")).click()
     assertTrue(device.wait(Until.hasObject(By.text("Return to note")),10000))
     assertTrue(device.wait(Until.hasObject(By.text("A1 Editor fixture")),10000))
@@ -122,6 +135,33 @@ class PrototypeTest {
     assertTrue(device.wait(Until.hasObject(By.text("A1 Editor fixture")),10000))
     Log.i("VaultorPrototypeTest","LINK_AND_NATIVE_BACK")
     Log.i("VaultorPrototypeTest","BROWSE_BACK_RETAINED_EDITOR")
+    device.findObject(By.desc("Open navigation")).click()
+    assertTrue(device.wait(Until.hasObject(By.desc("Home")),5000))
+    device.findObject(By.desc("Home")).click()
+    assertTrue(device.wait(Until.hasObject(By.text("New note")),5000))
+    device.findObject(By.text("New note")).click()
+    assertTrue(device.wait(Until.hasObject(By.desc("Note title")),5000))
+    device.findObject(By.desc("Note title")).text="A6 quick capture"
+    device.findObject(By.text("Create note")).click()
+    assertTrue(device.wait(Until.hasObject(By.text("Insert")),15000))
+    assertTrue(device.wait(Until.hasObject(By.pkg("com.google.android.inputmethod.latin")),8000))
+    device.executeShellCommand("input text NewCapture")
+    assertTrue(device.wait(Until.hasObject(By.text("Saved to host")),15000))
+    assertFalse(device.hasObject(By.text("Save")))
+    Log.i("VaultorPrototypeTest","QUICK_CAPTURE_AUTOSAVED")
+    var terminated=false
+    instrumentation.runOnMainSync {
+      val activity=ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED).first()
+      fun web(view:View):WebView? {if(view is WebView)return view;if(view is ViewGroup)for(i in 0 until view.childCount){val found=web(view.getChildAt(i));if(found!=null)return found};return null}
+      terminated=web(activity.window.decorView)?.webViewRenderProcess?.terminate()==true
+    }
+    assertTrue("Owned editor renderer did not terminate",terminated)
+    assertTrue(device.wait(Until.hasObject(By.text("Reopen editor")),15000))
+    device.findObject(By.text("Reopen editor")).click()
+    assertTrue(device.wait(Until.gone(By.text("Reopen editor")),15000))
+    assertTrue(device.wait(Until.hasObject(By.text("Insert")),15000))
+    assertTrue(device.wait(Until.gone(By.text("Editor stopped. Protected drafts remain. Reopen the editor.")),15000))
+    Log.i("VaultorPrototypeTest","RENDERER_REOPENED")
     // Real keyboard/text, undo and persistence are exercised by the focused host/UI harness.
   }
 }

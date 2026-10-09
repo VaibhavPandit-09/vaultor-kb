@@ -25,6 +25,7 @@ function setup() {
     drafts: {} as Record<string, Draft>,
     sessions: {} as Record<string, any>,
     cache: {} as Record<string, Note>,
+    creations: {} as Record<string, any>,
   };
   const server: Record<string, Record<string, Note>> = {
     a: {
@@ -78,6 +79,14 @@ function setup() {
         delete data.drafts[k];
       }
       if (action === 'getSession') result = data.sessions[value.scope] ?? null;
+      if (action === 'getCreation')
+        result = data.creations[value.scope] ?? null;
+      if (action === 'putCreation') data.creations[value.scope] = clone(value);
+      if (
+        action === 'ackCreation' &&
+        data.creations[value.scope]?.id === value.id
+      )
+        delete data.creations[value.scope];
       if (action === 'putSession') data.sessions[value.scope] = clone(value);
       if (action === 'getCache') result = data.cache[k] ?? null;
       if (action === 'putCache') data.cache[k] = clone(value.note);
@@ -91,6 +100,7 @@ function setup() {
         return { apiProtocolVersion: 3, minimumClientProtocolVersion: 3 };
       if (path === '/workspace/identity')
         return { id: 'workspace', generation };
+      if (path === '/settings/workspace') return { autosaveDelay: 500 };
       if (path.includes('?'))
         return { items: Object.values(server[host.hostId]) };
       if (path.includes('/imports/')) {
@@ -277,7 +287,7 @@ test('failed Save retries exact draft without changing saved revision', async ()
   expect(Object.values(x.data.drafts)).toHaveLength(0);
   expect(x.server.a[id].content).toEqual(doc('mine'));
 });
-test('unknown successful outcome is retained and cannot overwrite a foreign revision', async () => {
+test('unknown successful outcome reconciles without another PUT', async () => {
   const x = await opened();
   x.model.changed(doc('mine'));
   const api = x.port.api;
@@ -288,8 +298,14 @@ test('unknown successful outcome is retained and cannot overwrite a foreign revi
   };
   await expect(x.model.save()).rejects.toThrow();
   expect(x.model.state.draft).toBeDefined();
-  x.port.api = api;
-  await expect(x.model.save()).rejects.toBeInstanceOf(HostError);
+  let puts = 0;
+  x.port.api = async (...args) => {
+    if (args[2] === 'PUT') puts++;
+    return api(...args);
+  };
+  await x.model.save();
+  expect(puts).toBe(0);
+  expect(x.model.state.draft).toBeUndefined();
   expect(x.server.a[id].content).toEqual(doc('mine'));
 });
 test('recovered copy uncertain retry reuses import UUID and retains original', async () => {
@@ -478,4 +494,165 @@ test('Home origin, retained draft and Library query survive direct opens and res
   expect(restored.snapshot().noteOrigin).toBe('home');
   await restored.returnToNote();
   expect(restored.snapshot().content).toEqual(doc('protected from Home'));
+});
+
+test('debounced autosave protects first, coalesces edits and uses the workspace delay', async () => {
+  jest.useFakeTimers();
+  const x = await opened();
+  x.model.enableAutosave(true);
+  x.model.changed(doc('one'));
+  await x.model.protect();
+  x.model.changed(doc('two'));
+  await x.model.protect();
+  expect(Object.values(x.data.drafts)[0].content).toEqual(doc('two'));
+  await jest.advanceTimersByTimeAsync(499);
+  expect(x.server.a[id].revision).toBe('r1');
+  await jest.advanceTimersByTimeAsync(1);
+  expect(x.server.a[id].content).toEqual(doc('two'));
+  expect(x.model.state.status).toBe('Saved to host');
+  x.model.enableAutosave(false);
+  jest.useRealTimers();
+});
+test('simultaneous saves serialize and newer typing survives the exact acknowledgment', async () => {
+  const x = await opened();
+  let release!: () => void;
+  x.setHold(
+    new Promise<void>(r => {
+      release = r;
+    }),
+  );
+  x.model.changed(doc('first'));
+  const a = x.model.save(),
+    b = x.model.save();
+  await x.model.protect();
+  x.model.changed(doc('newer'));
+  await x.model.protect();
+  release();
+  await Promise.all([a, b]);
+  x.setHold(undefined);
+  expect(x.server.a[id].revision).toBe('r1x');
+  expect(x.model.state.draft?.content).toEqual(doc('newer'));
+  await x.model.save();
+  expect(x.server.a[id].content).toEqual(doc('newer'));
+});
+test('unknown outcome plus foreign edit stops writes and keeps both versions', async () => {
+  const x = await opened(),
+    api = x.port.api;
+  x.model.changed(doc('mine'));
+  x.port.api = async (...args) => {
+    const value = await api(...args);
+    if (args[2] === 'PUT') throw Error('lost');
+    return value;
+  };
+  await expect(x.model.save()).rejects.toThrow();
+  x.server.a[id] = {
+    ...x.server.a[id],
+    content: doc('foreign'),
+    revision: 'foreign',
+  };
+  x.port.api = api;
+  await expect(x.model.save()).rejects.toBeInstanceOf(HostError);
+  expect(x.model.state.conflict).toBe(true);
+  expect(x.model.state.draft?.content).toEqual(doc('mine'));
+  expect(x.server.a[id].content).toEqual(doc('foreign'));
+});
+test('restart reconciles a durable receipt and keeps later local typing', async () => {
+  const x = await opened(),
+    api = x.port.api;
+  x.model.changed(doc('sent'));
+  x.port.api = async (...args) => {
+    const value = await api(...args);
+    if (args[2] === 'PUT') throw Error('lost');
+    return value;
+  };
+  await expect(x.model.save()).rejects.toThrow();
+  x.model.changed(doc('later'));
+  await x.model.protect();
+  x.port.api = api;
+  const restored = new MobileWorkspace(x.port);
+  await restored.initialize();
+  restored.loaded();
+  expect(restored.state.conflict).toBe(false);
+  expect(restored.state.draft?.content).toEqual(doc('later'));
+  await restored.save();
+  expect(x.server.a[id].content).toEqual(doc('later'));
+});
+test('failed local protection prevents autosave requests and remains retryable', async () => {
+  const x = await opened(),
+    storage = x.port.storage;
+  let fail = true;
+  x.port.storage = async (action, value) => {
+    if (action === 'putDraft' && fail) throw Error('disk full');
+    return storage(action, value);
+  };
+  x.model.changed(doc('retained'));
+  await expect(x.model.save()).rejects.toThrow('disk full');
+  expect(x.server.a[id].revision).toBe('r1');
+  expect(x.model.state.draft).toBeDefined();
+  fail = false;
+  await x.model.save();
+  expect(x.server.a[id].content).toEqual(doc('retained'));
+});
+test('creation retry after restart preserves UUID, title and collection identity', async () => {
+  const x = await opened(),
+    api = x.port.api;
+  let uuids = 0;
+  x.port.uuid = async () => {
+    uuids++;
+    return other;
+  };
+  x.port.api = async (...args) => {
+    const value = await api(...args);
+    if (args[1].includes('/imports/')) throw Error('lost');
+    return value;
+  };
+  await expect(x.model.createNote('Quick capture', id)).rejects.toThrow();
+  expect((await x.model.pendingCreation())?.collectionId).toBe(id);
+  x.port.api = api;
+  const restored = new MobileWorkspace(x.port);
+  await restored.initialize();
+  await restored.createNote('must not replace uncertain title');
+  expect(uuids).toBe(1);
+  expect(x.copies).toEqual([other, other]);
+  expect(restored.state.note?.title).toBe('Quick capture');
+  expect(restored.state.createdNoteId).toBe(other);
+  expect(await restored.pendingCreation()).toBeNull();
+});
+test('a timer from the former note cannot save an unsupported destination', async () => {
+  jest.useFakeTimers();
+  const x = await opened();
+  x.server.a[other] = { ...x.server.a[id], id: other };
+  x.model.enableAutosave(true);
+  x.model.changed(doc('source'));
+  await x.model.protect();
+  await x.model.open(other);
+  await jest.advanceTimersByTimeAsync(600);
+  expect(x.model.state.error).toBe('');
+  expect(x.server.a[id].content).toEqual(doc('saved'));
+  expect(Object.values(x.data.drafts)[0].content).toEqual(doc('source'));
+  x.model.enableAutosave(false);
+  jest.useRealTimers();
+});
+test('background protection succeeds offline and an explicit retry reconciles safely', async () => {
+  const x = await opened();
+  x.model.enableAutosave(true);
+  x.model.changed(doc('background'));
+  x.setOffline(true);
+  await x.model.background();
+  await x.model.save().catch(() => {});
+  expect(Object.values(x.data.drafts)[0].content).toEqual(doc('background'));
+  x.setOffline(false);
+  await x.model.save();
+  expect(x.server.a[id].content).toEqual(doc('background'));
+});
+test('valid renderer reopening clears its own failure without hiding save errors', async () => {
+  const x = await opened();
+  x.model.report(
+    Error('Editor stopped. Protected drafts remain. Reopen the editor.'),
+  );
+  x.model.loaded();
+  expect(x.model.state.error).toBe('');
+  x.model.report(Error('Storage failed'));
+  x.model.loaded();
+  expect(x.model.state.error).toBe('Storage failed');
 });

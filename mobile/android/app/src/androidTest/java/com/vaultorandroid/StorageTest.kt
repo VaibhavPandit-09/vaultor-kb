@@ -106,4 +106,32 @@ class StorageTest {
       assertFalse(file.readBytes().toString(Charsets.UTF_8).contains("fixture-2"))
     } finally {if(original!=null)file.writeBytes(original) else file.delete()}
   }
+  @Test fun pendingCreationAndSaveReceiptSurviveModuleRestart() {
+    val context=BridgeReactContext(InstrumentationRegistry.getInstrumentation().targetContext)
+    val module=VaultorModule(context);val file=File(context.noBackupFilesDir,"vaultor-state.bin")
+    val original=if(file.exists())file.readBytes() else null
+    val id="00000000-0000-4000-8000-000000000006"
+    val scope="a6-disposable"
+    try {
+      val creation=JSONObject().put("scope",scope).put("id",id).put("title","A6 retained capture").put("collectionId",id)
+      result {module.storage("putCreation",creation.toString(),it)}
+      val restarted=VaultorModule(context)
+      val lookup=JSONObject().put("scope",scope)
+      assertEquals(id,JSONObject(result {restarted.storage("getCreation",lookup.toString(),it)}).getString("id"))
+      result {restarted.storage("ackCreation",JSONObject(lookup.toString()).put("id","00000000-0000-4000-8000-000000000007").toString(),it)}
+      assertNotEquals("null",result {restarted.storage("getCreation",lookup.toString(),it)})
+      val draft=JSONObject().put("scope",scope).put("noteId",id).put("version","later").put("revision","r1").put("title","A6 retained capture").put("content",JSONObject().put("type","doc"))
+        .put("sent",JSONObject().put("version","sent").put("revision","r1").put("title","A6 retained capture").put("content",JSONObject().put("type","doc")))
+      result {restarted.storage("putDraft",draft.toString(),it)}
+      assertEquals("sent",JSONObject(result {VaultorModule(context).storage("getDraft",draft.toString(),it)}).getJSONObject("sent").getString("version"))
+      assertFalse(file.readBytes().toString(Charsets.UTF_8).contains("A6 retained capture"))
+      val large=JSONObject().put("type","doc").put("content",org.json.JSONArray().put(JSONObject().put("type","paragraph").put("content",org.json.JSONArray().put(JSONObject().put("type","text").put("text","x".repeat(800000))))))
+      draft.put("content",large);draft.getJSONObject("sent").put("content",large)
+      result {restarted.storage("putDraft",draft.toString(),it)}
+      assertTrue(JSONObject(result {restarted.storage("getDraft",JSONObject().put("scope",scope).put("noteId",id).toString(),it)}).getJSONObject("sent").getJSONObject("content").toString().length>800000)
+      result {restarted.storage("ackCreation",creation.toString(),it)}
+      assertEquals("null",result {restarted.storage("getCreation",lookup.toString(),it)})
+    } finally {if(original!=null)file.writeBytes(original) else file.delete()}
+  }
+
 }

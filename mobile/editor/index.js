@@ -499,10 +499,60 @@ window.vaultorReceive = raw => {
       editor.commands.blur();
     } else if (m.type === 'command' && !blocked && editor.isEditable) {
       const commands = {
-        bold: () => editor.chain().focus().toggleBold().run(),
-        italic: () => editor.chain().focus().toggleItalic().run(),
-        undo: () => editor.chain().focus().undo().run(),
-        redo: () => editor.chain().focus().redo().run(),
+        bold: () =>
+          editor
+            .chain()
+            .focus(undefined, { scrollIntoView: false })
+            .toggleBold()
+            .run(),
+        italic: () =>
+          editor
+            .chain()
+            .focus(undefined, { scrollIntoView: false })
+            .toggleItalic()
+            .run(),
+        heading: () =>
+          editor
+            .chain()
+            .focus(undefined, { scrollIntoView: false })
+            .toggleHeading({ level: 2 })
+            .run(),
+        bullet: () =>
+          editor
+            .chain()
+            .focus(undefined, { scrollIntoView: false })
+            .toggleBulletList()
+            .run(),
+        ordered: () =>
+          editor
+            .chain()
+            .focus(undefined, { scrollIntoView: false })
+            .toggleOrderedList()
+            .run(),
+        quote: () =>
+          editor
+            .chain()
+            .focus(undefined, { scrollIntoView: false })
+            .toggleBlockquote()
+            .run(),
+        code: () =>
+          editor
+            .chain()
+            .focus(undefined, { scrollIntoView: false })
+            .toggleCodeBlock()
+            .run(),
+        undo: () =>
+          editor
+            .chain()
+            .focus(undefined, { scrollIntoView: false })
+            .undo()
+            .run(),
+        redo: () =>
+          editor
+            .chain()
+            .focus(undefined, { scrollIntoView: false })
+            .redo()
+            .run(),
       };
       commands[m.name]?.();
     }

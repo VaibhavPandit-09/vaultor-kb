@@ -25,11 +25,19 @@ export type Draft = {
   recoveryKey?: string;
   copyId?: string;
   copyScope?: string;
+  // Durable receipt: a timeout is not evidence that the host rejected this edit.
+  sent?: { version: string; revision: string; title: string; content: Doc };
 };
 export type Summary = Pick<
   Draft,
   'scope' | 'noteId' | 'title' | 'version' | 'resolved' | 'recoveryKey'
 >;
+export type Creation = {
+  scope: string;
+  id: string;
+  title: string;
+  collectionId?: string;
+};
 export type Session = {
   scope: string;
   hostId: string;
@@ -72,6 +80,7 @@ export type WorkspaceState = {
   noteOrigin: 'home' | 'browse';
   preview?: ResourceSummary;
   browseVersion: number;
+  createdNoteId?: string;
   navigationRetry?: {
     id: string;
     intent: 'direct' | 'linked' | 'history';
@@ -126,7 +135,48 @@ export class MobileWorkspace {
   private navigation = 0;
   private edits = 0;
   private journeyRequest = 0;
+  private saveRequest?: Promise<void>;
+  private autosaveTimer?: ReturnType<typeof setTimeout>;
+  private autosaveEnabled = false;
+  private autosaveDelay = 500;
+  private creationRequest?: Promise<void>;
   constructor(private port: Port) {}
+  enableAutosave(enabled: boolean) {
+    this.autosaveEnabled = enabled;
+    if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
+    if (enabled) this.scheduleSave();
+  }
+  private scheduleSave() {
+    if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
+    if (
+      !this.autosaveEnabled ||
+      !this.state.supported ||
+      !this.state.draft ||
+      this.state.conflict ||
+      this.state.unavailable ||
+      this.state.connection !== 'online'
+    )
+      return;
+    const scope = this.state.scope,
+      noteId = this.state.note?.id;
+    this.autosaveTimer = setTimeout(() => {
+      if (
+        this.autosaveEnabled &&
+        this.state.supported &&
+        this.state.scope === scope &&
+        this.state.note?.id === noteId &&
+        !this.state.conflict &&
+        !this.state.unavailable
+      )
+        void this.save().catch(e => this.report(e));
+    }, this.autosaveDelay);
+  }
+  async background() {
+    this.enableAutosave(false);
+    await this.protect();
+    // Protection is required; a network flush is only best effort.
+    void this.save().catch(e => this.report(e));
+  }
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
     return () => {
@@ -235,6 +285,17 @@ export class MobileWorkspace {
         });
       }
       this.patch({ scope, connection: 'online' });
+      try {
+        const settings = await this.port.api(host, '/settings/workspace');
+        this.valid(epoch);
+        if (Number.isFinite(settings.autosaveDelay))
+          this.autosaveDelay = Math.max(
+            0,
+            Math.min(1000, settings.autosaveDelay),
+          );
+      } catch {
+        this.valid(epoch); // Older/offline settings retain the bounded local default.
+      }
       if (restore && !this.state.note) {
         const session = await this.port.storage<Session | null>('getSession', {
           scope,
@@ -324,6 +385,7 @@ export class MobileWorkspace {
   async open(id: string, position?: Position, strict = false) {
     const ticket = ++this.navigation,
       epoch = this.epoch;
+    await this.saveRequest?.catch(() => {});
     await this.protect();
     this.valid(epoch);
     if (ticket !== this.navigation) return;
@@ -423,6 +485,26 @@ export class MobileWorkspace {
       this.valid(epoch);
       if (ticket !== this.navigation) return;
     }
+    if (
+      draft?.sent &&
+      note.revision !== draft.sent.revision &&
+      note.title === draft.sent.title &&
+      JSON.stringify(contentOf(note)) === JSON.stringify(draft.sent.content)
+    ) {
+      if (draft.version === draft.sent.version) {
+        await this.port.storage('ackDraft', {
+          scope,
+          noteId: id,
+          version: draft.version,
+        });
+        draft = undefined;
+      } else {
+        draft = { ...draft, revision: note.revision, sent: undefined };
+        await this.port.storage('putDraft', draft);
+      }
+      this.valid(epoch);
+      if (ticket !== this.navigation) return;
+    }
     const conflict = Boolean(
       note.trashedAt || (draft && draft.revision !== note.revision),
     );
@@ -431,6 +513,7 @@ export class MobileWorkspace {
     if (ticket !== this.navigation) return;
     this.patch({
       note,
+      createdNoteId: undefined,
       draft,
       content: draft?.content ?? contentOf(note),
       position,
@@ -444,7 +527,7 @@ export class MobileWorkspace {
         ? 'Saved version changed · review recovery'
         : draft
         ? 'Recovered protected draft'
-        : 'Saved',
+        : 'Saved to host',
       view: 'note',
       journey: strict
         ? this.state.journey
@@ -462,7 +545,16 @@ export class MobileWorkspace {
     if (!strict) await this.session();
   }
   loaded() {
-    this.patch({ supported: true });
+    this.patch({
+      supported: true,
+      error: [
+        'Editor stopped. Protected drafts remain. Reopen the editor.',
+        'Unsupported content retained. Editing and saving are disabled.',
+      ].includes(this.state.error)
+        ? ''
+        : this.state.error,
+    });
+    this.scheduleSave();
   }
   unsupported() {
     this.patch({
@@ -480,6 +572,7 @@ export class MobileWorkspace {
       revision: this.state.draft?.revision ?? note.revision,
       content,
       version: Date.now() + ':' + ++this.edits,
+      sent: this.state.draft?.sent,
     };
     this.patch({ draft, content, status: 'Protecting draft…' });
     this.queue = this.queue
@@ -487,7 +580,8 @@ export class MobileWorkspace {
       .then(() => this.port.storage('putDraft', draft))
       .then(() => {
         if (this.state.draft?.version === draft.version)
-          this.patch({ status: 'Unsaved · protected on this device' });
+          this.patch({ status: 'On this phone' });
+        this.scheduleSave();
       })
       .catch(e => {
         this.patch({ status: 'Recovery write failed' });
@@ -521,7 +615,19 @@ export class MobileWorkspace {
       });
   }
   async save() {
-    const { draft, host, note, scope } = this.state;
+    if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
+    if (this.saveRequest) return this.saveRequest;
+    this.saveRequest = this.saveOnce();
+    try {
+      await this.saveRequest;
+    } finally {
+      this.saveRequest = undefined;
+    }
+    this.scheduleSave();
+  }
+  private async saveOnce() {
+    let { draft } = this.state;
+    const { host, note, scope } = this.state;
     if (!draft) return;
     if (
       !host ||
@@ -538,36 +644,78 @@ export class MobileWorkspace {
     this.valid(epoch);
     this.patch({ status: 'Saving…' });
     try {
-      const saved: Note = await this.port.api(
-        host,
-        '/resources/' + note.id + '/note',
-        'PUT',
-        { title: draft.title, content: draft.content },
-        `"${draft.revision}"`,
-      );
+      let saved: Note | undefined;
+      if (draft.sent) {
+        const remote: Note = await this.port.api(host, '/resources/' + note.id);
+        this.valid(epoch);
+        if (remote.trashedAt) throw new HostError(410, 'Note is in Trash.');
+        if (remote.revision !== draft.sent.revision) {
+          if (
+            remote.title !== draft.sent.title ||
+            JSON.stringify(contentOf(remote)) !==
+              JSON.stringify(draft.sent.content)
+          )
+            throw new HostError(
+              412,
+              'The host changed. Both versions retained.',
+            );
+          saved = remote;
+          draft = { ...draft, version: draft.sent.version };
+        }
+      }
+      if (!saved) {
+        const sent = {
+          version: draft.version,
+          revision: draft.revision,
+          title: draft.title,
+          content: draft.content,
+        };
+        if (this.state.draft)
+          this.patch({ draft: { ...this.state.draft, sent } });
+        await this.protect(); // Persist the exact request before the network can commit it.
+        this.valid(epoch);
+        saved = await this.port.api(
+          host,
+          '/resources/' + note.id + '/note',
+          'PUT',
+          { title: draft.title, content: draft.content },
+          `"${draft.revision}"`,
+        );
+      }
       this.valid(epoch);
+      if (!saved)
+        throw Error('Host returned no save acknowledgment. Retry safely.');
+      await this.queue.catch(() => {});
       await this.port.storage('ackDraft', {
         scope,
         noteId: note.id,
         version: draft.version,
       });
       this.valid(epoch);
+      if (this.state.scope !== scope || this.state.note?.id !== note.id) return;
       const latest = this.state.draft;
       if (latest && latest.version !== draft.version) {
-        const rebased = { ...latest, revision: saved.revision };
-        await this.port.storage('putDraft', rebased);
-        this.valid(epoch);
+        const rebased = {
+          ...latest,
+          revision: saved.revision,
+          sent: undefined,
+        };
         this.patch({
           note: saved,
           draft: rebased,
-          status: 'Unsaved · protected on this device',
+          status: 'On this phone',
+          connection: 'online',
+          error: '',
         });
+        await this.protect();
+        this.valid(epoch);
       } else
         this.patch({
           note: saved,
           draft: undefined,
-          status: 'Saved',
+          status: 'Saved to host',
           connection: 'online',
+          error: '',
         });
       await this.port.storage('putCache', {
         scope,
@@ -577,6 +725,7 @@ export class MobileWorkspace {
       await this.refreshRecovery();
     } catch (e) {
       if (epoch !== this.epoch) return;
+      if (this.state.scope !== scope || this.state.note?.id !== note.id) return;
       if (e instanceof HostError && e.status === 412) {
         this.patch({
           conflict: true,
@@ -593,7 +742,7 @@ export class MobileWorkspace {
         });
       } else {
         this.patch({
-          status: 'Save failed · draft retained',
+          status: 'On this phone · host save needs retry',
           connection:
             e instanceof HostError && (e.status === 401 || e.status === 403)
               ? 'revoked'
@@ -604,6 +753,11 @@ export class MobileWorkspace {
     }
   }
   async reconcile() {
+    if (this.saveRequest) return;
+    if (this.state.draft?.sent && !this.state.conflict) {
+      await this.save();
+      return;
+    }
     const { host, note, scope } = this.state;
     if (!host || !note) return;
     const epoch = this.epoch,
@@ -768,6 +922,51 @@ export class MobileWorkspace {
     this.patch({ status: 'Recovered copy created' });
     await this.refreshRecovery();
   }
+  async pendingCreation() {
+    return this.port.storage<Creation | null>('getCreation', {
+      scope: this.state.scope,
+    });
+  }
+  async createNote(title: string, collectionId?: string) {
+    if (this.creationRequest) return this.creationRequest;
+    this.creationRequest = this.createOnce(title, collectionId);
+    try {
+      await this.creationRequest;
+    } finally {
+      this.creationRequest = undefined;
+    }
+  }
+  private async createOnce(title: string, collectionId?: string) {
+    const { host, scope } = this.state;
+    if (!host || !scope) throw Error('Connect to a workspace first.');
+    const epoch = this.epoch;
+    await this.protect();
+    let pending = await this.pendingCreation();
+    this.valid(epoch);
+    if (!pending) {
+      title = title.trim();
+      if (!title || title.length > 500)
+        throw Error('Enter a title of 1–500 characters.');
+      pending = { scope, id: await this.port.uuid(), title, collectionId };
+      await this.port.storage('putCreation', pending);
+      this.valid(epoch);
+    }
+    const saved: Note = await this.port.api(
+      host,
+      '/resources/imports/' + pending.id,
+      'PUT',
+      {
+        title: pending.title,
+        collectionId: pending.collectionId,
+        content: { type: 'doc', content: [{ type: 'paragraph' }] },
+      },
+    );
+    this.valid(epoch);
+    await this.navigate(saved.id);
+    this.valid(epoch);
+    await this.port.storage('ackCreation', { scope, id: pending.id });
+    this.patch({ createdNoteId: saved.id });
+  }
   async leave() {
     await this.protect();
     this.navigation++;
@@ -788,6 +987,7 @@ export class MobileWorkspace {
     await this.refreshRecovery();
   }
   async switchHost(id: string, keep = false) {
+    await this.saveRequest?.catch(() => {});
     await this.protect();
     if (this.state.draft && !keep) await this.save();
     await this.protect();

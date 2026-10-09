@@ -30,17 +30,19 @@ class MediaUiTest {
   }
   @Test fun clipboardPlacementToolsAndSave() {
     val instrumentation=InstrumentationRegistry.getInstrumentation();val ctx=instrumentation.targetContext;val device=UiDevice.getInstance(instrumentation)
-    ctx.startActivity(ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));if(device.wait(Until.hasObject(By.text("Edit")),3000))device.findObject(By.text("Edit")).click();assertTrue(device.wait(Until.hasObject(By.text("Add image/file")),20000))
+    ctx.startActivity(ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));for(attempt in 1..60){if(device.hasObject(By.text("Insert")))break;device.findObject(By.text("Edit"))?.click();Thread.sleep(500)};assertTrue(device.wait(Until.hasObject(By.text("Insert")),5000))
     val file=File(File(ctx.cacheDir,"media-share").apply {mkdirs()},"ui-image.png");val bitmap=Bitmap.createBitmap(96,64,Bitmap.Config.ARGB_8888);bitmap.eraseColor(android.graphics.Color.CYAN);file.outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,100,it)};bitmap.recycle()
     val uri=FileProvider.getUriForFile(ctx,ctx.packageName+".media",file)
     instrumentation.runOnMainSync {(ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newUri(ctx.contentResolver,"Fixture image",uri))}
-    device.findObject(By.text("Add image/file")).click();assertTrue(device.wait(Until.hasObject(By.text("Paste clipboard image")),5000));device.findObject(By.text("Paste clipboard image")).click()
+    // Let Android's temporary clipboard preview clear the bottom accessory target.
+    Thread.sleep(6500)
+    device.findObject(By.text("Insert")).click();assertTrue(device.wait(Until.hasObject(By.text("Paste clipboard image")),5000));device.findObject(By.text("Paste clipboard image")).click()
     assertTrue(device.wait(Until.hasObject(By.text("No pending inputs.")),30000));device.findObject(By.text("Close inputs")).click()
-    touchImage(device);assertTrue(device.wait(Until.hasObject(By.text("Image tools")),10000));device.findObject(By.desc("Image width percentage")).text="44";device.findObject(By.desc("Image caption")).text="A4 caption";device.findObject(By.desc("Image alternative text")).text="Cyan rectangle"
-    device.findObject(By.text("Apply image changes")).click();assertTrue(device.wait(Until.hasObject(By.text("Save")),10000));device.findObject(By.text("Save")).click()
+    touchImage(device);assertTrue(device.wait(Until.hasObject(By.text("Image tools")),10000));device.findObject(By.desc("Image width percentage")).text="44";device.findObject(By.desc("Image caption")).text="A4 caption";device.findObject(By.text("More image options")).click();device.findObject(By.desc("Image alternative text")).text="Cyan rectangle"
+    device.findObject(By.text("Apply image changes")).click();assertTrue(device.wait(Until.hasObject(By.text("Insert")),10000));Thread.sleep(800)
     assertTrue(device.wait(Until.hasObject(By.textContains("Saved")),20000));touchImage(device);assertTrue(device.wait(Until.hasObject(By.text("Image tools")),5000));assertEquals("44",device.findObject(By.desc("Image width percentage")).text);assertEquals("A4 caption",device.findObject(By.desc("Image caption")).text)
-    device.findObject(By.text("Preview image")).click();assertTrue(device.wait(Until.hasObject(By.text("Close preview")),10000));assertTrue(device.wait(Until.hasObject(By.text("Fit")),15000));device.findObject(By.text("Close preview")).click();assertTrue(device.wait(Until.hasObject(By.text("Save")),5000))
-    touchImage(device);assertTrue(device.wait(Until.hasObject(By.text("Copy image")),5000));device.findObject(By.text("Copy image")).click();Thread.sleep(1500)
+    device.findObject(By.text("More image options")).click();device.findObject(By.text("Preview image")).click();assertTrue(device.wait(Until.hasObject(By.text("Close preview")),10000));assertTrue(device.wait(Until.hasObject(By.text("Fit")),15000));device.findObject(By.text("Close preview")).click();assertTrue(device.wait(Until.hasObject(By.text("Insert")),5000))
+    touchImage(device);assertTrue(device.wait(Until.hasObject(By.text("More image options")),5000));device.findObject(By.text("More image options")).click();assertTrue(device.wait(Until.hasObject(By.text("Copy image")),5000));device.findObject(By.text("Copy image")).click();Thread.sleep(1500)
     var copied:android.net.Uri?=null;instrumentation.runOnMainSync {copied=(ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).primaryClip?.getItemAt(0)?.uri}
     assertNotNull(copied);assertEquals("content",copied!!.scheme);val copiedBytes=ctx.contentResolver.openInputStream(copied!!)?.use {it.readBytes()} ?: error("Clipboard original unreadable");val copiedBitmap=android.graphics.BitmapFactory.decodeByteArray(copiedBytes,0,copiedBytes.size);assertEquals(96,copiedBitmap.width);assertEquals(64,copiedBitmap.height);assertEquals(android.graphics.Color.CYAN,copiedBitmap.getPixel(10,10));copiedBitmap.recycle()
     device.findObject(By.text("Close image tools")).click()
@@ -48,9 +50,9 @@ class MediaUiTest {
   }
   @Test fun cancelledPickersAndExplicitShareTarget() {
     val instrumentation=InstrumentationRegistry.getInstrumentation();val ctx=instrumentation.targetContext;val device=UiDevice.getInstance(instrumentation)
-    ctx.startActivity(ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));if(device.wait(Until.hasObject(By.text("Edit")),3000))device.findObject(By.text("Edit")).click();assertTrue(device.wait(Until.hasObject(By.text("Add image/file")),20000))
+    ctx.startActivity(ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));if(device.wait(Until.hasObject(By.text("Edit")),10000))device.findObject(By.text("Edit")).click();assertTrue(device.wait(Until.hasObject(By.text("Insert")),20000))
     for(label in listOf("Photos","Files")) {
-      device.findObject(By.text("Add image/file")).click();assertTrue(device.wait(Until.hasObject(By.text(label)),5000));device.findObject(By.text(label)).click();Thread.sleep(1200);device.pressBack();assertTrue(device.wait(Until.hasObject(By.text("Add image/file")),10000))
+      device.findObject(By.text("Insert")).click();assertTrue(device.wait(Until.hasObject(By.text(label)),5000));device.findObject(By.text(label)).click();Thread.sleep(1200);device.pressBack();assertTrue(device.wait(Until.hasObject(By.text("Insert")),10000))
     }
     val file=File(File(ctx.cacheDir,"media-share").apply {mkdirs()},"shared-a4.txt").apply {writeText("Disposable shared content")};val uri=FileProvider.getUriForFile(ctx,ctx.packageName+".media",file)
     val intent=Intent(Intent.ACTION_SEND).setClassName(ctx.packageName,"com.vaultorandroid.MainActivity").setType("text/plain").putExtra(Intent.EXTRA_STREAM,uri).putExtra(Intent.EXTRA_TEXT,"Accompanying shared text").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION).apply {clipData=ClipData.newRawUri("Fixture shared input",uri)}

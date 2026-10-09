@@ -1,6 +1,6 @@
 # Android interaction design
 
-Reviewed 2026-10-09. **A5 foundation implemented; A6–A9 remain planned.** Android alpha.5 is the published navigation milestone; actual checks are recorded in the tracker. [ANDROID.md](ANDROID.md) describes current behavior; [the execution tracker](../plans/android-plan.md) owns implementation order, acceptance and actual evidence. This document owns the Android-specific design direction. Do not describe future writing, organization, preferences or motion recommendations as shipped behavior.
+Reviewed 2026-10-09. **A5 navigation and A6 writing are implemented; A6 publication is pending final artifact checks. A7–A9 remain planned.** Actual checks are recorded in the tracker. [ANDROID.md](ANDROID.md) describes current behavior; [the execution tracker](../plans/android-plan.md) owns implementation order, acceptance and actual evidence. This document owns the Android-specific design direction. Do not describe future organization, preferences or motion recommendations as shipped behavior.
 
 ## Purpose and principles
 
@@ -45,7 +45,7 @@ The alpha.5 implementation supplies this shell, read/Edit separation, contextual
 
 ## Automatic saving and honest status
 
-Alpha.4 currently requires explicit Save; local protected recovery is already separate. A6 must implement automatic saving before removing the ordinary Save action. During A5's transition retain manual Save in editing only and explain its temporary status in release notes.
+A6 implements local-protection-first automatic saving and removes ordinary Save. Done ends editing; compact status distinguishes local protection and host acknowledgment. [WRITING.md](WRITING.md) owns the implemented receipt/reconciliation/accessory/creation contract.
 
 - Journal each changed edit locally and debounce conditional host saving using the existing applicable settings. Coalesce requests; never run competing saves or discard newer edit versions when older acknowledgments arrive.
 - Show a small status affordance with accessible text. Distinguish Saving, Saved to host, On this phone / waiting for host and protection failure. Routine successful saves must not announce every keystroke or produce toasts.

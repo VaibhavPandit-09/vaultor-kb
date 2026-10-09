@@ -34,6 +34,7 @@ const call = async <T,>(action: string, value: object = {}) =>
 export type MediaHandle = {
   receive(message: NonNullable<ReturnType<typeof bridgeMessage>>): void;
   pending(): number;
+  open(): void;
 };
 export default forwardRef<
   MediaHandle,
@@ -61,6 +62,7 @@ export default forwardRef<
     [page, setPage] = useState(0),
     [pages, setPages] = useState(0),
     [searchRetry, setSearchRetry] = useState(0);
+  const [more, setMore] = useState(false);
   const pick = useRef<
       | { kind: string; replacement?: { anchor: string; attrs: Placement } }
       | undefined
@@ -254,6 +256,9 @@ export default forwardRef<
     setSelected(undefined);
   };
   useImperativeHandle(ref, () => ({
+    open() {
+      if (visible) setMenu(true);
+    },
     pending: () => items.length,
     receive(m) {
       if (m.type === 'mediaThumbnail' && m.resourceId && m.token) {
@@ -282,6 +287,7 @@ export default forwardRef<
               });
           });
       } else if (m.type === 'mediaSelect' && m.anchor && m.attrs) {
+        setMore(false);
         send({ type: 'blur', loadId });
         Keyboard.dismiss();
         setSelected({ anchor: m.anchor, attrs: normalizePlacement(m.attrs) });
@@ -368,13 +374,6 @@ export default forwardRef<
   };
   return (
     <>
-      {visible ? (
-        <Action
-          label="Add image/file"
-          onPress={() => setMenu(true)}
-          disabled={busy || !editable}
-        />
-      ) : null}
       {items.length ? (
         <Action
           label={'Pending inputs ' + items.length}
@@ -544,19 +543,21 @@ export default forwardRef<
                 }
                 style={s.input}
               />
-              <TextInput
-                accessibilityLabel="Image alternative text"
-                placeholder="Alternative text"
-                placeholderTextColor="#858585"
-                value={selected.attrs.alt}
-                onChangeText={alt =>
-                  setSelected({
-                    ...selected,
-                    attrs: { ...selected.attrs, alt },
-                  })
-                }
-                style={s.input}
-              />
+              {more ? (
+                <TextInput
+                  accessibilityLabel="Image alternative text"
+                  placeholder="Alternative text"
+                  placeholderTextColor="#858585"
+                  value={selected.attrs.alt}
+                  onChangeText={alt =>
+                    setSelected({
+                      ...selected,
+                      attrs: { ...selected.attrs, alt },
+                    })
+                  }
+                  style={s.input}
+                />
+              ) : null}
               <View style={s.actions}>
                 <Action
                   label="Apply image changes"
@@ -564,64 +565,72 @@ export default forwardRef<
                   disabled={!editable}
                 />
                 <Action
-                  label="Replace image"
-                  disabled={!editable || busy}
-                  onPress={() => {
-                    const target = selected;
-                    setSelected(undefined);
-                    choose('files', target);
-                  }}
-                />
-                <Action
-                  label="Preview image"
-                  onPress={() => {
-                    const id = selected.attrs.resourceId;
-                    setSelected(undefined);
-                    void model.perform(() => model.routeResource(id, true));
-                  }}
-                />
-                <Action
-                  label="Retry image"
-                  onPress={() => {
-                    setSelected(undefined);
-                    send({ type: 'mediaRetry', loadId });
-                  }}
-                />
-                <Action label="Copy image" onPress={() => original('copy')} />
-                <Action
-                  label="Save original"
-                  onPress={() => original('save')}
-                />
-                <Action
-                  label="Remove placement"
-                  disabled={!editable || busy}
-                  onPress={() =>
-                    Alert.alert(
-                      'Remove this placement?',
-                      'The original resource and other placements remain.',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Remove',
-                          onPress: () => {
-                            send({
-                              type: 'mediaEdit',
-                              loadId,
-                              anchor: selected.anchor,
-                              remove: true,
-                            });
-                            setSelected(undefined);
-                          },
-                        },
-                      ],
-                    )
-                  }
+                  label={more ? 'Fewer image options' : 'More image options'}
+                  onPress={() => setMore(!more)}
                 />
                 <Action
                   label="Close image tools"
                   onPress={() => setSelected(undefined)}
                 />
               </View>
+              {more ? (
+                <View style={s.actions}>
+                  <Action
+                    label="Replace image"
+                    disabled={!editable || busy}
+                    onPress={() => {
+                      const target = selected;
+                      setSelected(undefined);
+                      choose('files', target);
+                    }}
+                  />
+                  <Action
+                    label="Preview image"
+                    onPress={() => {
+                      const id = selected.attrs.resourceId;
+                      setSelected(undefined);
+                      void model.perform(() => model.routeResource(id, true));
+                    }}
+                  />
+                  <Action
+                    label="Retry image"
+                    onPress={() => {
+                      setSelected(undefined);
+                      send({ type: 'mediaRetry', loadId });
+                    }}
+                  />
+                  <Action label="Copy image" onPress={() => original('copy')} />
+                  <Action
+                    label="Save original"
+                    onPress={() => original('save')}
+                  />
+                  <Action
+                    label="Remove placement"
+                    disabled={!editable || busy}
+                    onPress={() =>
+                      Alert.alert(
+                        'Remove this placement?',
+                        'The original resource and other placements remain.',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Remove',
+                            onPress: () => {
+                              send({
+                                type: 'mediaEdit',
+                                loadId,
+                                anchor: selected.anchor,
+                                remove: true,
+                              });
+                              setSelected(undefined);
+                            },
+                          },
+                        ],
+                      )
+                    }
+                  />
+                </View>
+              ) : null}
               {error ? <Text style={s.error}>{error}</Text> : null}
             </ScrollView>
           </View>

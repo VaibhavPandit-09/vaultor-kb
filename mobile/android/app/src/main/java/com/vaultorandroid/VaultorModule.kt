@@ -150,7 +150,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
         require(body.toByteArray().size <= 1500000);con.doOutput=true
         val bytes=if(multipart) {
           val payload=JSONObject(body);val boundary="vaultor-"+UUID.randomUUID();con.setRequestProperty("Content-Type","multipart/form-data; boundary=$boundary")
-          listOf("title" to payload.getString("title"),"content" to payload.getJSONObject("content").toString()).joinToString("") {(name,value)->"--$boundary\r\nContent-Disposition: form-data; name=\"$name\"\r\n\r\n$value\r\n"}.plus("--$boundary--\r\n").toByteArray(Charsets.UTF_8)
+          listOfNotNull("title" to payload.getString("title"),"content" to payload.getJSONObject("content").toString(),payload.optString("collectionId").takeIf {it.isNotEmpty() && it!="null"}?.let {require(it.matches(Regex("[a-fA-F0-9-]{36}")));"collectionId" to it}).joinToString("") {(name,value)->"--$boundary\r\nContent-Disposition: form-data; name=\"$name\"\r\n\r\n$value\r\n"}.plus("--$boundary--\r\n").toByteArray(Charsets.UTF_8)
         } else {con.setRequestProperty("Content-Type","application/json");body.toByteArray(Charsets.UTF_8)}
         if(token!=null) require(token==epoch)
         con.outputStream.use { it.write(bytes) }
@@ -207,7 +207,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     JSONObject().put("address",p.getString("address")).put("hostId",p.getString("hostId")).toString()
   }
   @ReactMethod fun api(path:String, method:String, body:String?, revision:String?, promise:Promise)=run(promise) {
-    require((method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/[a-fA-F0-9-]{36})")))) ||
+    require((method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path=="/settings/workspace" || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/[a-fA-F0-9-]{36})")))) ||
       (method=="PUT" && path.matches(Regex("/resources/[a-fA-F0-9-]{36}/note")) && revision!=null)) {"Unsupported mobile operation."}
     val profile=read().getJSONObject("profile")
     if(path=="/capabilities") {
@@ -226,7 +226,8 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
 
   /** Scoped local state; public summaries never contain native host credentials. */
   @ReactMethod fun storage(action:String, input:String, promise:Promise)=run(promise) {
-    require(input.length<=1500000);val a=JSONObject(input);val state=read()
+    // A save receipt may contain the prior document alongside a newer local edit.
+    require(input.length<=(if(action=="putDraft")3010000 else 1500000));val a=JSONObject(input);val state=read()
     val drafts=state.optJSONObject("drafts") ?: JSONObject().also {state.put("drafts",it)}
     val sessions=state.optJSONObject("sessions") ?: JSONObject().also {state.put("sessions",it)}
     val cache=state.optJSONObject("cache") ?: JSONObject().also {state.put("cache",it)}
@@ -242,6 +243,8 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       "putDraft" -> {
         val key=entryKey();require(drafts.has(key) || drafts.length()<32) {"32 retained drafts reached. Resolve a draft before editing another note."}
         require(a.getString("version").length in 1..100 && a.getString("revision").length in 1..100 && a.getJSONObject("content").getString("type")=="doc")
+        require(a.getJSONObject("content").toString().length<=1500000)
+        a.optJSONObject("sent")?.let {require(it.getJSONObject("content").toString().length<=1500000 && it.getString("version").length in 1..100 && it.getString("revision").length in 1..100)}
         drafts.put(key,a);state.remove("draft")
       }
       "ackDraft","keepSaved" -> {
@@ -250,6 +253,17 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
           if(action=="ackDraft") drafts.remove(key) else {val archive=key+"\n"+d.getString("version");d.put("resolved",true).put("recoveryKey",archive);drafts.remove(key);drafts.put(archive,d)}
           state.remove("draft")
         }
+      }
+      "getCreation" -> return@run state.optJSONObject("creations")?.optJSONObject(a.getString("scope"))?.toString() ?: "null"
+      "putCreation","ackCreation" -> {
+        val scope=a.getString("scope");require(scope.length in 1..512)
+        val creations=state.optJSONObject("creations") ?: JSONObject().also {state.put("creations",it)}
+        val id=a.getString("id");require(id.matches(Regex("[a-fA-F0-9-]{36}")))
+        if(action=="putCreation") {
+          require(creations.has(scope) || creations.length()<32) {"Resolve a pending creation first."}
+          require(a.getString("title").trim().length in 1..500)
+          creations.put(scope,a)
+        } else if(creations.optJSONObject(scope)?.optString("id")==id) creations.remove(scope)
       }
       "getSession" -> return@run sessions.optJSONObject(a.getString("scope"))?.toString() ?: "null"
       "putSession" -> {
@@ -311,7 +325,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   }
   @ReactMethod fun apiFor(hostId:String,token:String,path:String,method:String,body:String?,revision:String?,promise:Promise)=net(promise) {
     val validId="[a-fA-F0-9-]{36}"
-    require((method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/$validId)")))) ||
+    require((method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path=="/settings/workspace" || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/$validId)")))) ||
       (method=="GET" && path.matches(Regex("/resources/$validId/summary"))) || (method=="POST" && path.matches(Regex("/resources/$validId/open")) && body==null) ||
       (method=="PUT" && ((path.matches(Regex("/resources/$validId/note")) && revision!=null) || path.matches(Regex("/resources/imports/$validId"))))) {"Unsupported mobile operation."}
     val p=selected(hostId,token)

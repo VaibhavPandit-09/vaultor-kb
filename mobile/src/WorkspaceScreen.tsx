@@ -5,6 +5,7 @@ import { normalizeBrowse } from './browse';
 import BrowseScreen, { Action, ChoiceSheet } from './BrowseScreen';
 import MediaTools, { type MediaHandle } from './MediaTools';
 import ResourcePreview from './ResourcePreview';
+import CreateNoteSheet from './CreateNoteSheet';
 import React, {
   useEffect,
   useCallback,
@@ -89,6 +90,8 @@ export default function WorkspaceScreen() {
   const menuButton = useRef<React.ElementRef<typeof Pressable>>(null);
   const [drawer, setDrawer] = useState(false),
     [editing, setEditing] = useState(false),
+    [formatting, setFormatting] = useState(false),
+    [creating, setCreating] = useState(false),
     [reducedMotion, setReducedMotion] = useState(false),
     [searchRequest, setSearchRequest] = useState(0);
   const model = useRef(
@@ -219,11 +222,22 @@ export default function WorkspaceScreen() {
     ready.current = false;
   }, [loadId]);
   useEffect(() => {
-    setEditing(false);
-  }, [state.loadId]);
+    setEditing(state.createdNoteId === state.note?.id && !!state.createdNoteId);
+    setFormatting(false);
+  }, [state.loadId, state.createdNoteId, state.note?.id]);
   useEffect(() => {
-    const focus = editing && !wasEditing.current;
-    wasEditing.current = editing;
+    model.enableAutosave(true);
+    return () => model.enableAutosave(false);
+  }, [model]);
+  useEffect(() => {
+    if (!editing) wasEditing.current = false;
+    const focus =
+      editing &&
+      !wasEditing.current &&
+      ready.current &&
+      state.supported &&
+      !creating;
+    if (focus) wasEditing.current = true;
     if (ready.current) {
       if (focus) web.current?.requestFocus();
       inject({ type: 'theme', value: scheme === 'light' ? 'light' : 'dark' });
@@ -245,6 +259,7 @@ export default function WorkspaceScreen() {
     }
   }, [
     editing,
+    creating,
     drawer,
     connections,
     recovery,
@@ -331,8 +346,9 @@ export default function WorkspaceScreen() {
         native.stopChanges();
         if (timer) clearTimeout(timer);
         if (reconcile) clearTimeout(reconcile);
-        void model.protect().catch(e => model.report(e));
+        void model.background().catch(e => model.report(e));
       } else {
+        model.enableAutosave(true);
         void model.perform(async () => {
           await permission();
           await model.connect(false);
@@ -523,6 +539,7 @@ export default function WorkspaceScreen() {
       }
       if (current.current.busy) return true;
       if (
+        current.current.draft ||
         current.current.recovery.length ||
         (media.current?.pending() ?? 0) > 0
       ) {
@@ -801,19 +818,6 @@ export default function WorkspaceScreen() {
                     }
                   }}
                 />
-                {editing ? (
-                  <Action
-                    label="Save"
-                    disabled={
-                      state.busy ||
-                      !state.supported ||
-                      state.conflict ||
-                      state.unavailable ||
-                      state.connection === 'revoked'
-                    }
-                    onPress={() => run(() => model.save())}
-                  />
-                ) : null}
                 <Action
                   label="•••"
                   accessibilityLabel="Note actions"
@@ -840,6 +844,12 @@ export default function WorkspaceScreen() {
                   }
                 />
               </>
+            ) : !hostView && !recovery ? (
+              <Action
+                label="New note"
+                disabled={state.busy || state.connection !== 'online'}
+                onPress={() => setCreating(true)}
+              />
             ) : null}
           </View>
         </View>
@@ -848,7 +858,11 @@ export default function WorkspaceScreen() {
             <Text style={s.errorText}>{state.error}</Text>
             <Button
               label={
-                state.navigationRetry ? 'Retry navigation' : 'Retry connection'
+                state.navigationRetry
+                  ? 'Retry navigation'
+                  : state.draft && !state.conflict
+                  ? 'Retry saving'
+                  : 'Retry connection'
               }
               disabled={state.busy}
               onPress={() =>
@@ -858,7 +872,8 @@ export default function WorkspaceScreen() {
                     return;
                   }
                   await permission();
-                  await model.connect(false);
+                  if (state.draft && !state.conflict) await model.save();
+                  else await model.connect(false);
                 })
               }
             />
@@ -1050,7 +1065,14 @@ export default function WorkspaceScreen() {
             state.draft ||
             state.unavailable ||
             state.connection !== 'online' ? (
-              <Text accessibilityLiveRegion="polite" style={s.noteStatus}>
+              <Text
+                accessibilityLiveRegion={
+                  state.conflict || state.status === 'Recovery write failed'
+                    ? 'polite'
+                    : 'none'
+                }
+                style={s.noteStatus}
+              >
                 {state.connection !== 'online' ? 'Host unavailable · ' : ''}
                 {state.status}
               </Text>
@@ -1139,19 +1161,30 @@ export default function WorkspaceScreen() {
             />
             {editing ? (
               <View style={s.actions}>
-                {['bold', 'italic', 'undo', 'redo'].map(name => (
-                  <Action
-                    key={name}
-                    label={name}
-                    disabled={
-                      !state.supported ||
-                      state.conflict ||
-                      state.unavailable ||
-                      state.connection === 'revoked'
-                    }
-                    onPress={() => inject({ type: 'command', name })}
-                  />
-                ))}
+                <Action
+                  label="Insert"
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    inject({ type: 'blur' });
+                    media.current?.open();
+                  }}
+                />
+                <Action
+                  label="Format"
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    inject({ type: 'blur' });
+                    setFormatting(true);
+                  }}
+                />
+                <Action
+                  label="Undo"
+                  onPress={() => inject({ type: 'command', name: 'undo' })}
+                />
+                <Action
+                  label="Redo"
+                  onPress={() => inject({ type: 'command', name: 'redo' })}
+                />
               </View>
             ) : null}
             {!state.supported ? (
@@ -1169,6 +1202,25 @@ export default function WorkspaceScreen() {
           </View>
         ) : null}
       </View>
+      {creating ? (
+        <CreateNoteSheet model={model} close={() => setCreating(false)} />
+      ) : null}
+      {formatting ? (
+        <ChoiceSheet
+          title="Format"
+          close={() => setFormatting(false)}
+          choices={[
+            { value: 'bold', label: 'Bold' },
+            { value: 'italic', label: 'Italic' },
+            { value: 'heading', label: 'Heading' },
+            { value: 'bullet', label: 'Bullet list' },
+            { value: 'ordered', label: 'Numbered list' },
+            { value: 'quote', label: 'Quote' },
+            { value: 'code', label: 'Code block' },
+          ]}
+          onChoose={name => inject({ type: 'command', name })}
+        />
+      ) : null}
       {drawer ? (
         <WorkspaceDrawer
           feed={feed}
