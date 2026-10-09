@@ -60,7 +60,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
-- [Vaultor for Android](plans/android-plan.md): A1 prototype, A2 recovery, A3 browsing, A4 images and five remaining Android-first sprints A5–A9, Windows emulator testing, no agent phone access, signed APK milestones and S24 Ultra / One UI 8.5–9 user acceptance.
+- [Vaultor for Android](plans/android-plan.md): A1 prototype, A2 recovery, A3 browsing, A4 images and A5 navigation foundation and four remaining Android-first sprints A6–A9, Windows emulator testing, no agent phone access, signed APK milestones and S24 Ultra / One UI 8.5–9 user acceptance.
 
 - [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): All five sprints implemented on Windows; measured integration, platform limits and separate Android prototype gate recorded.
 - [Deferred roadmap](plans/future-roadmap.md): scheduled backups explicitly parked for later, OCR/offline/platform follow-ups and scope boundaries.

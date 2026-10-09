@@ -1,6 +1,6 @@
 # Android interaction design
 
-Reviewed 2026-10-09. **A5 foundation implemented; A6–A9 remain planned.** Android alpha.5 is the navigation candidate; publication and actual checks are recorded in the tracker. [ANDROID.md](ANDROID.md) describes current behavior; [the execution tracker](../plans/android-plan.md) owns implementation order, acceptance and actual evidence. This document owns the Android-specific design direction. Do not describe future writing, organization, preferences or motion recommendations as shipped behavior.
+Reviewed 2026-10-09. **A5 foundation implemented; A6–A9 remain planned.** Android alpha.5 is the published navigation milestone; actual checks are recorded in the tracker. [ANDROID.md](ANDROID.md) describes current behavior; [the execution tracker](../plans/android-plan.md) owns implementation order, acceptance and actual evidence. This document owns the Android-specific design direction. Do not describe future writing, organization, preferences or motion recommendations as shipped behavior.
 
 ## Purpose and principles
 

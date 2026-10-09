@@ -1,6 +1,6 @@
 # Vaultor for Android — execution tracker
 
-Created 2026-10-08; reviewed 2026-10-09. **A1–A4 implemented and published; A5 implemented, final publication gate in progress; A6–A9 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
+Created 2026-10-08; reviewed 2026-10-09. **A1–A5 implemented and published; A6–A9 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
 
 ## Delivery and agreed boundaries
 
@@ -118,7 +118,7 @@ Physical Samsung/One UI/camera/provider acceptance remains user-only. Exact adap
 
 ## A5 — Android interaction foundation and navigation
 
-Status: **Implemented (2026-10-09); final APK publication gate in progress.** Depends on published A1–A4. The design contract is [DESIGN.md](../android/DESIGN.md).
+Status: **Implemented and published (2026-10-09), Android0.1.0-alpha.5.** Depends on published A1–A4. The design contract is [DESIGN.md](../android/DESIGN.md).
 
 - [x] Build a concrete interaction prototype comparing drawer-led and minimal bottom-navigation layouts for Home/Library, reading, keyboard-open editing, image selection and workspace switching. Use real content. Record the choice and action/space tradeoffs before integrating the shell.
 - [x] Implement the chosen shell with compact top bars, a workspace drawer reachable inside a note, bounded Home recent/pinned previews and retained Library/Collections/search context. No duplicated permanent navigation or resource-type blocks. Reuse mixed server paging/cancellation and cached metadata.
@@ -272,3 +272,13 @@ One targeted visual session inspected API36 dark reading/real keyboard/drawer; A
 On Android17 the checksum-verified disposable Atlas5,000 case passed bounded mixed100-row paging,4,000notes/80collections/300pins,66-member collection, saved-body opt-in with title exclusion and scripted scrolling. Warm loopback first-page samples191/116/103ms, secondpage101ms; body query84ms/title query56ms; first usable Library2,126ms; six scripted scrolls3,097ms include harness overhead. No FPS, heap, Wi-Fi or performance-improvement claim. Dataset replacement targeted only the freshly created temporary host, never personal data.
 
 Early failures exposed a real Edit keyboard focus issue and edge-to-edge tool overlap; native cancellable Edit focus plus KeyboardAvoidingView corrected them. Harness fixes cover offscreen Pair with many remembered hosts, restored Library instead of assumed Home and the header accessibility class. External UI-automation diagnostics also interrupted a run; subsequent tests used one instrumentation owner. Failed/interrupted runs are not passes. Physical S24/Samsung Keyboard/One UI8.5/9, TalkBack, actual Wi-Fi/Mac, OEM lifecycle and physical OLED remain user-only/unverified. No phone access. Stop after A5 publication for discussion.
+
+## A5 published APK and final verification
+
+Published Android-only prerelease at **2026-10-09T09:32:21Z**: [Vaultor Android0.1.0-alpha.5](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.5). Immutable tag **android/v0.1.0-alpha.5**, source **6935ba3aedd019ce9b33b3736b1c609660e76bdc**. APK **40,252,740bytes**, SHA-256 **b3add504504b3337362fe1067cc81698518dcd0339f7b75104eb4a47a4f10c4a**. Original public signer **af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567**; package com.vaultor.app/versionCode5/minimumAPI36/targetAPI37/protocol3.
+
+Fresh clean tagged-source release/application-test compilation and package/lock/Gradle/API/arm64+x86_64/16KiB alignment/original-signature verification passed. The exact staged APK installed over retained applications on Android16 and17; five native storage/policy cases passed on each. Android17 retained its Atlas Library query/scroll destination. Android16 safely opened the new workspace Home, then an Atlas note read-only; explicit Edit opened the real IME, first Back retained Edit/Save, second returned to reading/Edit with no Save. The final tagged APK hash equals the candidate that passed Android17 Atlas and the corrected left-docked wide visual check. Earlier full navigation plus nine storage/media/UI cases per generation used the pre-docking candidate; no repeated full-suite claim is made for the tagged artifact.
+
+Publisher verified the clean pushed source/tag, original signer and manifest/checksum/APK, downloaded and compared all staged bytes, then published. GitHub confirms non-draft/prerelease status and matching asset sizes/digests. Desktop/Mac0.7.1 and protocol3 remain unchanged. Install only the APK over the existing app; do not uninstall or clear data. Manual Save remains editing-only until A6. Physical Samsung/One UI8.5/9, TalkBack, real Wi-Fi/Mac, hardware OLED and OEM lifecycle remain user-only/open. This follow-up is documentation-only and does not move the source tag. **A5 complete; four sprints A6–A9 remain unstarted.**
+
+Owned temporary host/listener and both emulators were stopped after final verification. No personal workspace or phone access.
