@@ -458,3 +458,24 @@ test('restart after foreign trash turns a cached clean note into recoverable con
   await restored.recoveredCopy(restored.state.recovery[0]);
   expect(restored.state.note?.id).toBe(other);
 });
+
+test('Home origin, retained draft and Library query survive direct opens and restart', async () => {
+  const { model, data, port } = setup();
+  await model.initialize();
+  await model.showHome();
+  await model.navigate(id, 'direct');
+  model.loaded();
+  model.changed(doc('protected from Home'));
+  await model.protect();
+  expect(model.snapshot().noteOrigin).toBe('home');
+  await model.leaveNote();
+  expect(model.snapshot().view).toBe('home');
+  expect(model.snapshot().content).toEqual(doc('protected from Home'));
+  expect(Object.values(data.sessions)[0].view).toBe('home');
+  const restored = new MobileWorkspace(port);
+  await restored.initialize();
+  expect(restored.snapshot().view).toBe('home');
+  expect(restored.snapshot().noteOrigin).toBe('home');
+  await restored.returnToNote();
+  expect(restored.snapshot().content).toEqual(doc('protected from Home'));
+});

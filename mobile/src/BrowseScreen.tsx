@@ -1,3 +1,4 @@
+import { useThemeStyles } from './ui';
 import React, {
   useEffect,
   useRef,
@@ -21,15 +22,8 @@ import {
   filters,
   presentation,
   type BrowseRow,
-  type Destination,
 } from './browse';
 import type { MobileWorkspace } from './workspace';
-const destinations: { value: Destination; label: string }[] = [
-  { value: 'library', label: 'Library' },
-  { value: 'recent', label: 'Recent' },
-  { value: 'pinned', label: 'Pinned' },
-  { value: 'collections', label: 'Collections' },
-];
 export function Action({
   label,
   onPress,
@@ -43,8 +37,12 @@ export function Action({
   disabled?: boolean;
   accessibilityLabel?: string;
 }) {
+  const styles = useThemeStyles(sheetStyles);
+  const [focused, setFocused] = useState(false);
   return (
     <Pressable
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ selected: active, disabled }}
@@ -53,6 +51,7 @@ export function Action({
       style={({ pressed }) => [
         styles.action,
         active && styles.active,
+        focused && styles.focused,
         pressed && styles.pressed,
         disabled && styles.disabled,
       ]}
@@ -66,12 +65,15 @@ export function ChoiceSheet({
   choices,
   close,
   onChoose,
+  searchable = choices.length > 8,
 }: {
   title: string;
   choices: { value: string; label: string }[];
   close: () => void;
   onChoose: (value: string) => void;
+  searchable?: boolean;
 }) {
+  const styles = useThemeStyles(sheetStyles);
   const [q, setQ] = useState('');
   return (
     <Modal transparent animationType="fade" onRequestClose={close}>
@@ -87,16 +89,19 @@ export function ChoiceSheet({
             </Text>
             <Action label="Done" onPress={close} />
           </View>
-          <TextInput
-            autoFocus
-            accessibilityLabel={'Search ' + title}
-            value={q}
-            onChangeText={setQ}
-            placeholder="Find an option"
-            placeholderTextColor="#858585"
-            style={styles.input}
-          />
+          {searchable ? (
+            <TextInput
+              autoFocus
+              accessibilityLabel={'Search ' + title}
+              value={q}
+              onChangeText={setQ}
+              placeholder="Find an option"
+              placeholderTextColor="#858585"
+              style={styles.input}
+            />
+          ) : null}
           <FlatList
+            style={styles.choiceList}
             keyboardShouldPersistTaps="handled"
             data={choices.filter(c =>
               c.label.toLowerCase().includes(q.toLowerCase()),
@@ -106,8 +111,8 @@ export function ChoiceSheet({
               <Action
                 label={item.label}
                 onPress={() => {
-                  onChoose(item.value);
                   close();
+                  onChoose(item.value);
                 }}
               />
             )}
@@ -121,11 +126,20 @@ export default function BrowseScreen({
   model,
   visible,
   onAction,
+  searchRequest = 0,
+  suspended = false,
 }: {
   model: MobileWorkspace;
   visible: boolean;
   onAction: (action: () => Promise<void>) => void;
+  searchRequest?: number;
+  suspended?: boolean;
 }) {
+  const styles = useThemeStyles(sheetStyles);
+  const input = useRef<React.ElementRef<typeof TextInput>>(null);
+  useEffect(() => {
+    if (visible && searchRequest) input.current?.focus();
+  }, [visible, searchRequest]);
   const state = useSyncExternalStore(model.subscribe, model.snapshot);
   const [active, setActive] = useState(AppState.currentState === 'active');
   useEffect(() => {
@@ -143,7 +157,9 @@ export default function BrowseScreen({
   ).current;
   const b = useSyncExternalStore(browser.subscribe, browser.snapshot),
     list = useRef<FlatList<BrowseRow>>(null);
-  const [sheet, setSheet] = useState<'type' | 'sort' | 'scope' | undefined>(),
+  const [sheet, setSheet] = useState<
+      'options' | 'type' | 'sort' | 'scope' | undefined
+    >(),
     [scopeQuery, setScopeQuery] = useState(''),
     [scopeChoices, setScopeChoices] = useState<
       { value: string; label: string }[]
@@ -163,7 +179,7 @@ export default function BrowseScreen({
   }, [state.scope, browser, state.browse]);
   const path = browsePath(b.config);
   useEffect(() => {
-    if (!visible || !active || !state.scope || sheet === 'scope') {
+    if (!visible || suspended || !active || !state.scope || sheet === 'scope') {
       browser.suspend();
       return;
     }
@@ -179,6 +195,7 @@ export default function BrowseScreen({
     };
   }, [
     visible,
+    suspended,
     active,
     state.scope,
     state.connection,
@@ -247,13 +264,6 @@ export default function BrowseScreen({
       ? [{ value: 'collection', label: 'Collections' }]
       : [],
   );
-  const selectDestination = (destination: Destination) =>
-    browser.configure({
-      destination,
-      collection: undefined,
-      type: '',
-      mode: 'title',
-    });
   const activate = (row: BrowseRow) => {
     if (row.kind === 'collection')
       browser.configure({
@@ -264,90 +274,67 @@ export default function BrowseScreen({
   };
   return (
     <View style={styles.root}>
-      <View style={styles.tabs}>
-        {destinations.map(d => (
-          <Action
-            key={d.value}
-            label={d.label}
-            active={b.config.destination === d.value}
-            onPress={() => selectDestination(d.value)}
-          />
-        ))}
-      </View>
-      <View style={styles.title}>
-        <Text accessibilityRole="header" style={styles.heading}>
-          {b.config.collection?.name ??
-            destinations.find(d => d.value === b.config.destination)?.label}
-        </Text>
-        {state.note ? (
-          <Action
-            label="Return to note"
-            onPress={() => onAction(() => model.returnToNote())}
-          />
-        ) : null}
-      </View>
+      {state.note ? (
+        <Action
+          label="Return to note"
+          onPress={() => onAction(() => model.returnToNote())}
+        />
+      ) : null}
       {b.config.collection ? (
         <Action
           label="‹ Library"
           onPress={() => browser.configure({ collection: undefined })}
         />
       ) : null}
-      <TextInput
-        maxLength={500}
-        accessibilityLabel="Search resources"
-        placeholder={
-          b.config.destination === 'collections'
-            ? 'Find a collection'
-            : b.config.mode === 'title'
-            ? 'Search titles'
-            : 'Search saved content'
-        }
-        placeholderTextColor="#858585"
-        style={styles.input}
-        value={b.config.query}
-        onChangeText={query => browser.configure({ query })}
-        returnKeyType="search"
-      />
-      <View style={styles.tabs}>
-        {b.config.destination !== 'collections' ? (
-          <>
-            <Action
-              label={
-                choices.find(c => c.value === b.config.type)?.label ??
-                'All types'
-              }
-              active={Boolean(b.config.type)}
-              onPress={() => setSheet('type')}
-            />
-            <Action
-              label={
-                b.config.mode === 'title' ? 'Titles only' : 'Saved content'
-              }
-              active={b.config.mode === 'content'}
-              onPress={() =>
-                browser.configure({
-                  mode: b.config.mode === 'title' ? 'content' : 'title',
-                  type: b.config.type === 'collection' ? '' : b.config.type,
-                })
-              }
-            />
-            {b.config.destination === 'library' ? (
-              <Action
-                label="Scope"
-                active={Boolean(b.config.collection)}
-                onPress={() => {
-                  setScopePage(0);
-                  setScopeQuery('');
-                  setSheet('scope');
-                }}
-              />
-            ) : null}
-          </>
-        ) : null}
-        {b.config.destination === 'library' ? (
-          <Action label="Sort" onPress={() => setSheet('sort')} />
-        ) : null}
+      <View style={styles.searchRow}>
+        <TextInput
+          ref={input}
+          maxLength={500}
+          accessibilityLabel="Search resources"
+          placeholder={
+            b.config.destination === 'collections'
+              ? 'Find a collection'
+              : b.config.mode === 'title'
+              ? 'Search titles'
+              : 'Search saved content'
+          }
+          placeholderTextColor="#858585"
+          style={[styles.input, styles.searchInput]}
+          value={b.config.query}
+          onChangeText={query => browser.configure({ query })}
+          returnKeyType="search"
+        />
+        <Action
+          label="Filters"
+          active={Boolean(
+            b.config.type || b.config.mode === 'content' || b.config.collection,
+          )}
+          onPress={() => setSheet('options')}
+        />
       </View>
+      {b.config.type || b.config.mode === 'content' ? (
+        <View style={styles.tabs}>
+          {b.config.type ? (
+            <Action
+              label={
+                (choices.find(c => c.value === b.config.type)?.label ??
+                  b.config.type) + ' ×'
+              }
+              accessibilityLabel="Clear type filter"
+              active
+              onPress={() => browser.configure({ type: '' })}
+            />
+          ) : null}
+          {b.config.mode === 'content' ? (
+            <Action
+              label="Saved content ×"
+              accessibilityLabel="Search titles only"
+              active
+              onPress={() => browser.configure({ mode: 'title' })}
+            />
+          ) : null}
+        </View>
+      ) : null}
       {b.config.mode === 'content' ? (
         <Text style={styles.meta}>
           Saved content only · open drafts are excluded.{' '}
@@ -489,6 +476,58 @@ export default function BrowseScreen({
           ) : undefined
         }
       />
+      {sheet === 'options' ? (
+        <ChoiceSheet
+          title="Search options"
+          searchable={false}
+          close={() => setSheet(undefined)}
+          choices={[
+            {
+              value: 'type',
+              label:
+                'Type · ' +
+                (choices.find(c => c.value === b.config.type)?.label ??
+                  'All types'),
+            },
+            ...(b.config.destination !== 'collections'
+              ? [
+                  {
+                    value: 'mode',
+                    label:
+                      b.config.mode === 'title'
+                        ? 'Include saved content'
+                        : 'Titles only',
+                  },
+                ]
+              : []),
+            ...(b.config.destination === 'library'
+              ? [
+                  {
+                    value: 'scope',
+                    label:
+                      'Scope · ' +
+                      (b.config.collection?.name ?? 'Entire workspace'),
+                  },
+                  { value: 'sort', label: 'Sort · ' + b.config.sort },
+                ]
+              : []),
+          ]}
+          onChoose={value => {
+            if (value === 'mode')
+              browser.configure({
+                mode: b.config.mode === 'title' ? 'content' : 'title',
+                type: b.config.type === 'collection' ? '' : b.config.type,
+              });
+            else {
+              if (value === 'scope') {
+                setScopePage(0);
+                setScopeQuery('');
+              }
+              setSheet(value as 'type' | 'sort' | 'scope');
+            }
+          }}
+        />
+      ) : null}
       {sheet === 'type' ? (
         <ChoiceSheet
           title="Type"
@@ -587,7 +626,11 @@ export default function BrowseScreen({
     </View>
   );
 }
-const styles = StyleSheet.create({
+const sheetStyles = StyleSheet.create({
+  focused: { borderWidth: 2, borderColor: '#8db7ff' },
+  choiceList: { flexGrow: 0 },
+  searchInput: { flex: 1 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   root: { flex: 1, paddingHorizontal: 16, gap: 10 },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   title: {
@@ -604,8 +647,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   action: {
-    minHeight: 44,
-    minWidth: 44,
+    minHeight: 48,
+    minWidth: 48,
     padding: 10,
     borderRadius: 10,
     justifyContent: 'center',
@@ -654,6 +697,5 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
     maxHeight: '80%',
-    minHeight: 300,
   },
 });

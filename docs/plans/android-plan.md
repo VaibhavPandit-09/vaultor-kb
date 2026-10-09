@@ -1,18 +1,32 @@
 # Vaultor for Android — execution tracker
 
-Created 2026-10-08; reviewed 2026-10-09. **A1–A4 implemented and published; A5–A6 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
+Created 2026-10-08; reviewed 2026-10-09. **A1–A4 implemented and published; A5 implemented, final publication gate in progress; A6–A9 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
 
 ## Delivery and agreed boundaries
 
-Deliver **six sequential sprints, one per authorized implementation call**, stopping after each for discussion. At each start inspect source/working tree, verify relevant contracts, mark that sprint in progress, and preserve unrelated work. At each finish update CODEBASE, this tracker and affected authoritative guides with actual checks, APK availability and limitations. Do not silently start the next sprint.
+Deliver **nine sequential sprints total, one per authorized implementation call**, stopping after each for discussion. At each start inspect source/working tree, verify relevant contracts, mark that sprint in progress, and preserve unrelated work. At each finish update CODEBASE, this tracker and affected authoritative guides with actual checks, APK availability and limitations. Do not silently start the next sprint.
 
 - Primary user device: **Samsung Galaxy S24 Ultra, currently One UI 8.5**. Support its current Android generation and One UI 9 / Android 17; no older-Android compatibility effort. Implemented minimum Android 16 / API 36; compile/target API37. User confirms the phone Android version locally before installation; no agent phone inspection. Pinned actual toolchain is in ANDROID.md.
 - **Agents never access the user's phone:** no USB/wireless ADB pairing, device control, credential retrieval or remote inspection. Development and agent-run tests occur on Windows with emulators and disposable hosts. The user installs APKs and voluntarily reports Samsung-specific results. Do not ask to connect the phone as a workaround for failed emulator tests.
 - React Native mobile shell with a bundled, constrained Tiptap editor WebView is the starting architecture, subject to A1's editor gate. No Electron or Java host in Android. Windows/Mac remains authoritative; browser/desktop access is retained.
-- Mobile gets one active note, a compact journey and temporary previews. Native touch navigation, sheets and row menus replace desktop multi-pane/sidebar layouts. Collections/Tags remain organization concepts; Notes/Files remain storage kinds, images/PDFs remain file categories.
+- Mobile gets one active note, a compact journey and temporary previews. Android-specific navigation, a workspace drawer, contextual sheets and row menus replace desktop multi-pane layouts. A persistent sidebar is adaptive to available width, not a compulsory phone layout. Collections/Tags remain organization concepts; Notes/Files remain storage kinds, images/PDFs remain file categories.
 - Reuse stable resource IDs, structured JSON, conditional revisions, idempotent UUID operations, paginated search and saved-change contracts. Do not copy desktop IPC, paths or sessions into mobile. Extract reusable domain logic only where it is actually needed; no speculative repository rewrite.
 - Zero mandatory payments: local builds/tests and personal signed APK distribution through GitHub. No Play Store/cloud testing enrollment. Offline sync, Android hosting, OCR, scheduled backups, drawing/handwriting recognition, tablets/DeX-specific polish and iOS remain outside this milestone.
 - Preserve all themes/accents, true-black OLED, media colors, resource ownership and safe saving. Mobile preferences are device-scoped. Separate host approvals, workspace sessions and drafts; switching hosts never crosses those boundaries.
+
+## Revised sequence after A4 — 2026-10-09
+
+The user requested a phone-first design rethink before further implementation. **Planning authorization only: no A5 implementation starts in this change.** The former two remaining sprints are replaced by five; completed A1–A4 source tags, evidence and historical ledger entries remain unchanged. [Android interaction design](../android/DESIGN.md) owns the planned UI philosophy; ANDROID.md continues to describe shipped alpha.4 behavior.
+
+| Sprint | Deliverable | Dependency and handoff |
+| --- | --- | --- |
+| A5 | Interaction prototype, workspace drawer and compact reading/browsing shell | A1–A4; review chosen navigation before A6 |
+| A6 | Writing experience, safe automatic saving and contextual image tools | A5 shell; review actual keyboard/editing APK |
+| A7 | Organization, references and resource lifecycle | A6 safety; original A5 domain scope retained |
+| A8 | Mobile settings, discovery and verified in-app updates | A7; original A6 platform scope retained |
+| A9 | Integrated motion, accessibility, performance and release acceptance | A5–A8; original A6 integration scope retained |
+
+No permanent Save/formatting/journey strips in the target design. A5 keeps an explicitly transitional editing-only Save until A6's autosave gate passes. Baseline theme/accessibility/keyboard correctness belongs in A5/A6, not only final polish. A5 compares drawer-led navigation with a minimal bottom-navigation alternative and records one model, avoiding duplicate navigation systems. The drawer-led hybrid is the default; substantive deviations are discussed at handoff. Stop after every sprint for discussion. Publish safe, usable, original-key Android APK milestones under the existing process; do not label prototypes Samsung-certified or assign future versionCodes before checking published assets.
 
 ## Testing and release ownership
 
@@ -40,7 +54,7 @@ Each sprint reports passed/failed/blocked checks and unavailable hardware cases.
 - Use a separate Android version/tag namespace (recommended `android/v0.1.0-alpha.1`, increasing versionCode for every APK). Confirm before the first build; never label an Android-only APK a desktop update or bump desktop versions for mobile-only code. Desktop updater must ignore Android prereleases. Any shipped host changes use the existing desktop release gate separately.
 - Publish an immutable source tag, verified **release-signed installable APK**, SHA-256, compatibility/scope notes and exact install/update directions as a clearly Android-only GitHub prerelease at every safe usable milestone. A1 builds the Android-specific packaging/publication path; do not run the Windows pair publisher against APKs. No sensitive data/test profiles are assets.
 - Verify upgrade from the previous APK, same signer/application ID, increasing versionCode, and retained approvals/preferences/drafts. Avoid uninstall as an update instruction: it can remove local data. Signing-key loss is a real upgrade blocker. No automatic Android backup of credentials/trust; define recovery/session backup exclusions explicitly.
-- First install is a user-initiated APK with Android's per-source installation permission. Later A6 adds in-app Check/download/verify/install handoff, retaining a direct APK fallback. Android owns installation consent; never promise silent replacement. Verify downloaded bytes, expected signer, package/version and supported HTTPS destinations before launch; no workspace credentials enter update requests. Decide authenticated update metadata trust in A1 and implement it before A6's install action.
+- First install is a user-initiated APK with Android's per-source installation permission. Later A8 adds in-app Check/download/verify/install handoff, retaining a direct APK fallback. Android owns installation consent; never promise silent replacement. Verify downloaded bytes, expected signer, package/version and supported HTTPS destinations before launch; no workspace credentials enter update requests. Decide authenticated update metadata trust in A1 and implement it before A8's install action.
 - If a gate fails, record the blocker and fix it within the authorized sprint where possible. Never claim a debug-only build, untested APK, draft release or absent asset is delivered. Signed APKs may be narrower than final scope, but must preserve data and identify unavailable actions.
 
 ## A1 — Toolchain, secure connection and editor proof
@@ -59,7 +73,7 @@ Status: **Implemented and published (2026-10-09 local date)**. This call covers 
 
 ## User feedback and assigned follow-ups
 
-2026-10-09: user installed A1 and successfully connected to a server on the Mac mini. This is user-reported interoperability, not agent-run Mac/Samsung certification. Editing interaction and surrounding appearance feel poor. A2 addresses input/lifecycle reliability and removes avoidable editing obstruction; A3 owns mobile navigation/editor chrome integration, A4 owns image tools, and A6 owns complete themes, touch polish and motion. Do not rush decorative changes or treat the prototype appearance as final.
+2026-10-09: user installed A1 and successfully connected to a server on the Mac mini. This is user-reported interoperability, not agent-run Mac/Samsung certification. Editing interaction and surrounding appearance feel poor. The initial assignments to A3 navigation, A4 tools and former A6 polish did not resolve the broader interaction model. After A4 the user rejected the stacked Save/formatting/journey controls and requested an Android-specific design. Revised A5 owns navigation/layout, A6 owns writing/autosave/contextual tools, A8 owns settings and A9 owns integrated polish. Do not treat the prototype appearance as final.
 
 ## A2 — Durable editing, sessions and multi-device recovery
 
@@ -102,31 +116,69 @@ Status: **Implemented and published (2026-10-09)**. User authorized A4 only. Rel
 
 Physical Samsung/One UI/camera/provider acceptance remains user-only. Exact adapter bounds and unverified platform cases are in [MEDIA.md](../android/MEDIA.md); no claim of full Samsung parity. Final APK identity and publication are recorded below.
 
-## A5 — Organization, references and resource lifecycle
+## A5 — Android interaction foundation and navigation
 
-Status: **Not started**. Depends on A3 browsing and A4 placements.
+Status: **Implemented (2026-10-09); final APK publication gate in progress.** Depends on published A1–A4. The design contract is [DESIGN.md](../android/DESIGN.md).
 
-- [ ] Add shared resource Actions: create/rename, pins, tags, collection membership, immediate add-existing and retry-safe create-and-add. Validate current input; keep it after failures. Respect existing device/workspace setting boundaries.
+- [x] Build a concrete interaction prototype comparing drawer-led and minimal bottom-navigation layouts for Home/Library, reading, keyboard-open editing, image selection and workspace switching. Use real content. Record the choice and action/space tradeoffs before integrating the shell.
+- [x] Implement the chosen shell with compact top bars, a workspace drawer reachable inside a note, bounded Home recent/pinned previews and retained Library/Collections/search context. No duplicated permanent navigation or resource-type blocks. Reuse mixed server paging/cancellation and cached metadata.
+- [x] Open existing notes for reading with the IME closed; expose Edit and preserve the same live document/undo/scroll when entering editing. Keep explicit Save only in editing as a documented transition until A6. No nonfunctional creation or autosave claims.
+- [x] Move journey controls to compact contextual access/history; preserve 200 visits, branching, current titles, missing targets and source-owned temporary previews. Define Back/drawer/sheet/IME/editing/journey/browsing priority without competing handlers.
+- [x] Move connection details to the workspace selector; preserve actionable protection/connection failures. Short action sheets do not autofocus search; real searchable pickers retain intentional initial focus.
+- [x] Establish reusable screen/top-bar/drawer/sheet/row tokens, safe insets, readable OLED/Light/Dark surfaces, touch targets, screen-reader labels and reduced-motion behavior. Adapt to narrow/landscape/split-screen widths; no full tablet/DeX scope.
+- [x] Run focused navigation/focus/state tests and Android16/17 release-APK interactions. Inspect a targeted comparison including keyboard, long titles, enlarged fonts, empty/mixed lists, retained drafts and drawer reopening. Upgrade alpha.4 without losing approvals/session/recovery.
+
+**Acceptance:** reading is content-first, navigation is reachable without abandoning the note, keyboard-open space is usable, and the chosen shell is available in a signed APK for discussion. Stop before A6; record unresolved design feedback instead of assuming prototype acceptance.
+
+## A6 — Effortless writing, autosave and contextual media
+
+Status: **Not started.** Depends on A5's reviewed interaction model. No new editor engine unless demonstrated failures require a separately reviewed plan.
+
+- [ ] Implement local-protection-first debounced conditional autosave using applicable existing settings, exact-version acknowledgments and coalesced requests. Preserve typing during saves and distinguish Saved to host / On this phone / Saving / protection failure. Reconcile uncertain outcomes before retry; conflicts retain both versions and stop unsafe writes.
+- [ ] Remove ordinary Save only after that gate passes. Done ends editing, not a server-save promise. Deliberate navigation, backgrounding, host switching and epoch cancellation preserve protected edits; process-exit network flushing is best effort, not a durability guarantee.
+- [ ] Provide one compact keyboard accessory with Insert, Format and Undo; make Redo readily reachable when useful. Preserve native selection actions and hardware shortcuts, caret visibility, composition, undo and scroll through tool opening. No hidden gesture-only access or moving input text.
+- [ ] Add ordinary New note / quick capture with retry-safe UUID identity and explicit collection destination where applicable. New notes enter editing, existing notes read first. Retain failed input and reconcile unknown creation results without duplicates.
+- [ ] Consolidate insertion into contextual sheets. Rework image selection/tools with width/alignment/caption first and accessible secondary alt/replace/preview/copy/download/remove actions. Preserve mapped anchors, original bytes, queue ownership, undo and upload retry identity; do not regress A4 bounds or Share/camera/picker flows.
+- [ ] Test mixed text/image input, selection/composition, image tools and IME, typing during acknowledgment, offline/failed saves, storage failure, conflicts, force-stop recovery, renderer restart, host switch and moved/deleted upload targets. Exercise both emulator generations and large fonts; no physical Samsung claim.
+
+**Acceptance:** a real note can be written and illustrated without permanent operational strips or manual Save, with honest status and proven recovery. Publish the editing APK and stop for user feedback before domain expansion.
+
+## A7 — Organization, references and resource lifecycle
+
+Status: **Not started.** Depends on A6. Retains the original A5 organization scope within the new mobile patterns.
+
+- [ ] Add shared resource Actions: create/rename collections and resources as applicable, pins, tags, collection membership, immediate add-existing and retry-safe create-and-add. Validate current input; preserve failures and operation identity. Build on A6 note creation instead of duplicating it.
 - [ ] Implement metadata-only incoming/outgoing References and saved usage with counts/paging. Validate revision/occurrence before selection; fall back safely for edited/missing/unknown paths. Files remain temporary previews.
-- [ ] Implement Trash/Restore with same identities and revision/UUID checks, distinguish delete original / remove placement / remove membership, and explain saved usage without implying draft usage is exhaustive.
-- [ ] Support explicit permanent-delete confirmation and durable cleanup Retry, never automatic purge. Safe partial results retain resource-specific feedback and unfinished selections.
-- [ ] Handle foreign Trash/Restore in open editors and journeys, recover drafts, retain unavailable steps and show restored targets. Keep unknown resource kinds neutral and unsupported actions explicit.
-- [ ] Test collection creation identity, membership retries, changed usage/conflicts, image ownership, restore/purge failures and archive-derived/generation notifications with disposable hosts.
+- [ ] Implement Trash/Restore with same identities and revision/UUID checks. Distinguish delete original / remove placement / remove membership; explain saved usage without implying draft coverage is exhaustive.
+- [ ] Support explicit permanent-delete confirmation and durable cleanup Retry, never automatic purge. Safe partial results retain resource-specific feedback and unfinished selections. Use contextual bulk actions, not a permanent strip.
+- [ ] Handle foreign Trash/Restore in editors and journeys, recover drafts, retain unavailable steps and reconcile restored targets. Unknown resource kinds remain neutral with explicit unsupported feedback.
+- [ ] Test creation identity, membership retries, changed usage/conflicts, image ownership, restore/purge failures and generation notifications with disposable hosts. Check keyboard/Back dismissal and source focus in nested sheets.
 
-**Acceptance:** consistent mobile organization/lifecycle without ambiguous deletion, duplicate creation or silent draft loss. Publish a lifecycle-capable APK.
+**Acceptance:** mobile organization and lifecycle are discoverable without ambiguous deletion, duplicate creation or silent draft loss. Publish a lifecycle-capable APK and stop.
 
-## A6 — Polish, verified updates and release handoff
+## A8 — Settings, discovery and verified updates
 
-Status: **Not started**. Depends on A1–A5 gates.
+Status: **Not started.** Depends on A7; baseline theme/accessibility correctness is already required in A5/A6.
 
-- [ ] Finish mobile settings, OS/Light/Dark/OLED, accents, reduced motion and distinct Snappy/Smooth. Respect Android font scaling, accessibility labels/focus, touch targets, safe insets and keyboard; media pixels remain unmodified. No hover-only actions or constant decorative animation.
-- [ ] Add convenient host discovery without making it required; test permission denial, no results, changed addresses, explicit trust changes and reconnect. No public exposure or internet-hosting feature.
-- [ ] Implement verified in-app APK update discovery/download/installation handoff under the A1 trust policy. Test cancellation, tampered/wrong-signer/wrong-package/downgrade/incompatible assets, offline retry, installation permission denial, correct upgrade and retained journal/pairing. No silent installs.
-- [ ] Run one final release-APK integration matrix on Android 16/17: Small/Atlas, keyboard, navigation cycles, images, conflict/recovery, host shutdown, permission/revocation, process/renderer death, rotation, large fonts, both theme families/OLED, reduced motion and memory/cache observations. Separate actual Windows-host evidence from untested Mac/real Wi-Fi/sleep claims.
-- [ ] Resolve user-reported S24 issues within scope; track One UI 8.5/9 acceptance separately. If physical feedback is unavailable, publish an emulator-verified candidate with the physical gate explicitly open, not a fully Samsung-certified release.
-- [ ] Publish the final verified signed APK/tag/checksum, installation/update/recovery guide, versioned notes and short S24/One UI 9 checklist. Update CODEBASE, readiness and this tracker with actual results and outstanding gates. Stop; future parity/offline/tablet work needs new authorization.
+- [ ] Implement compact mobile settings using flat rows/contextual controls: OS/Light/Dark/OLED, accents, reduced motion, Snappy/Smooth and applicable device/workspace preferences. Preserve scope, immediate feedback, retry and exact reset confirmation; do not embed desktop settings cards. Preserve media colors.
+- [ ] Add host discovery behind the workspace selector without making it required. Test permission denial, empty results, changed addresses, explicit trust changes and reconnect. Retain manual address and protected save-or-keep switching; no internet-hosting feature.
+- [ ] Implement verified in-app APK discovery/download/install handoff under the established trust policy. One clear update action leads to Android's required installation consent; advanced/manual APK fallback remains available.
+- [ ] Test cancellation, tampered/wrong-signer/wrong-package/downgrade/incompatible assets, offline retry, installation permission denial and actual upgrade retaining journals/approvals. Verify Android prereleases remain isolated from desktop feeds; no silent-install claim.
+- [ ] Check settings/discovery/update sheets with keyboard, large fonts, narrow windows, screen-reader labels, reduced motion and retained editor state. Publish a verified settings/update-capable APK with precise installation steps.
 
-**Acceptance:** a usable, emulator-verified Android release with safe upgrades, precise compatibility and honest S24 status. Stable Samsung-ready labeling requires user-reported acceptance; it does not require agents accessing the phone.
+**Acceptance:** host access, personal appearance and updates use the same mobile interaction language and preserve trust/data. Stop before final integration.
+
+## A9 — Motion, integration, performance and release handoff
+
+Status: **Not started.** Depends on A5–A8 gates and reviewed APK feedback.
+
+- [ ] Finish coordinated Snappy/Smooth transitions across drawer, sheets, destinations, contextual tools and notifications. Reduced motion removes spatial effects; closed surfaces release focus immediately. No hover dependency, constant decoration, editor remounts or animation on typing/saves/refreshes.
+- [ ] Run a focused final release-APK matrix on Android16/17: Small/Atlas, keyboard/composition/selection, journeys, images, conflicts/recovery, host shutdown, permission/revocation, process/renderer death, rotation, font scaling, all themes/accents, accessibility and narrow layouts. Measure bounded cache/memory/startup/scroll behavior rather than claiming responsiveness from screenshots.
+- [ ] Verify upgrade from alpha.4 and intervening milestones, session/query/reading restoration, no replay of commands/uploads, retained approvals/recovery and safe updater retry. Use disposable data and explicit emulator serials only.
+- [ ] Resolve user-reported S24 issues within scope. Keep Samsung Keyboard, One UI8.5/9, real camera/share/SAF, physical OLED and OEM lifecycle acceptance user-owned. Provide an exact Mac AI/real-LAN handoff when direct verification is unavailable; no agent phone access.
+- [ ] Publish the final verified signed APK/tag/checksum and update/recovery guide with versioned notes, actual measurements and short S24/One UI checklist. Update CODEBASE, current Android/media/design guides, readiness and this tracker; record deviations and remaining gates.
+
+**Acceptance:** coherent browsing/reading/writing and safe upgrades in the actual installed APK, with an honest emulator-verified release and explicit physical-device status. Stable Samsung-ready labeling requires user-reported acceptance. Stop; offline sync, backups, hosting and expanded tablet parity require new authorization.
 
 ## Per-sprint handoff ledger
 
@@ -138,9 +190,9 @@ Published Android-only prerelease at 2026-10-08T18:48:40Z: [Vaultor Android 0.1.
 
 - Minimum API36 is implemented; the user confirms Android16+ in About phone before installation. Physical One UI acceptance remains user-owned.
 - Resolved A1: RN0.87.1, WebView14.0.1, bundled Tiptap3.31.4, AndroidJUnitRunner/UI Automator, JDK17, SDK36/37, Gradle9.4.1; editor/trust gates passed.
-- Resolved A1: com.vaultor.app; original Android signer privately owner-restricted with a byte-verified same-laptop backup; HTTPS metadata plus APK-signature/package/monotonic versionCode policy. Off-device disaster backup remains unverified; Android updater implementation is A6.
-- Initial distribution is manual GitHub APK; A6 introduces in-app installer handoff. No Play Store fee or automatic-install claim.
-- Manual address is mandatory, discovery comes in A6. Phone portrait is primary; resizing remains safe, but tablets/DeX feature parity is deferred.
+- Resolved A1: com.vaultor.app; original Android signer privately owner-restricted with a byte-verified same-laptop backup; HTTPS metadata plus APK-signature/package/monotonic versionCode policy. Off-device disaster backup remains unverified; Android updater implementation is A8.
+- Initial distribution is manual GitHub APK; A8 introduces in-app installer handoff. No Play Store fee or automatic-install claim.
+- Manual address is mandatory, discovery comes in A8. Phone portrait is primary; resizing remains safe, but tablets/DeX feature parity is deferred.
 - Mac-host interoperability can be user-tested or separately handed off to the Mac AI. Lack of Mac artifact verification is not permission to fake certification or downgrade security.
 
 ## Reference guidance
@@ -204,3 +256,19 @@ Matching-code/editor/browsing/picker/inline-link/native-Back checks passed on bo
 Publisher verified clean pushed source/tag, original signer and all staged files, downloaded all three assets for byte comparisons, then published. GitHub confirms non-draft/prerelease status and matching APK/manifest/checksum sizes/digests. Desktop/Mac0.7.1 and protocol3 remain unchanged. Owned disposable hosts/listeners and both emulators were stopped; no personal workspace or phone access. Install only the APK over the existing app; do not uninstall/clear data. This publication ledger is documentation-only and does not alter the source tag or runtime.
 
 Physical Samsung/One UI8.5/9 camera capture, clipboard/share providers/cold URI grants, real Wi-Fi/Mac media transfers, TalkBack, external-viewer outcomes and OEM process/battery behavior remain user-only/open. Animated previews remain static first-frame; originals are preserved. Word alt-description omission and possible repeated Android Share delivery are documented in MEDIA.md. **A4 complete; two sprints A5–A6 remain unstarted.**
+
+## 2026-10-09 — Android-first redesign planning after A4
+
+Replaced the former two remaining sprints with A5–A9: interaction shell, writing/autosave/media, organization/lifecycle, settings/discovery/updater, final motion/integration. Added DESIGN.md as the planned interaction contract. A1–A4 history and immutable tags remain intact; alpha.4/manual saving remains current. Documentation-only scope/link/whitespace checks passed; no runtime changes, builds, emulator sessions, source publication or new APK. **Five sprints remain unstarted; this request authorizes planning only.**
+
+## A5 implementation and candidate checks (2026-10-09)
+
+Implemented Android0.1.0-alpha.5/versionCode5: drawer-led Home/Library/reading shell, contextual Journey/Filters, shared OS palette, IME-aware editing, retained origin/session/editor and sequential bounded mixed quick access. Original signer/package and host0.7.1/protocol3 remain unchanged. A6 autosave/accessory, A7 organization, A8 preferences/discovery/updater and A9 integration remain unstarted. DESIGN.md owns the comparison/decision; ANDROID.md owns implemented contracts.
+
+TypeScript,45focused Jest tests and fresh bundled-editor schema/refusal/read-mode/theme/media/undo checks passed. Scoped lint zero errors/38 warnings (no-void, shadow and existing inline styles); release/application-test compilation and package/lock/API/ABI/16KiB/original-signature checks passed. Android16 and17 each passed the actual matching-code approval/read/Edit/IME/typing/undo/conditional-save/Back/drawer/Filters/inline-link test and nine storage/media/UI regression cases. Installation over alpha.4 retained approvals/session.
+
+One targeted visual session inspected API36 dark reading/real keyboard/drawer; API37 Light reading and temporary image preview, Small70 mixed Home/pins,900x2100/130% text with wrapped titles, compact options without IME and empty search. Wide docking was corrected from right to the same left edge. Final candidate left-side wide docking was rebuilt and inspected; installed/tagged artifact checks are recorded after completion. Explicit theme preference and full motion/TalkBack remain later gates. Drawer collapse is in-memory for an opening; it is not yet a saved device preference.
+
+On Android17 the checksum-verified disposable Atlas5,000 case passed bounded mixed100-row paging,4,000notes/80collections/300pins,66-member collection, saved-body opt-in with title exclusion and scripted scrolling. Warm loopback first-page samples191/116/103ms, secondpage101ms; body query84ms/title query56ms; first usable Library2,126ms; six scripted scrolls3,097ms include harness overhead. No FPS, heap, Wi-Fi or performance-improvement claim. Dataset replacement targeted only the freshly created temporary host, never personal data.
+
+Early failures exposed a real Edit keyboard focus issue and edge-to-edge tool overlap; native cancellable Edit focus plus KeyboardAvoidingView corrected them. Harness fixes cover offscreen Pair with many remembered hosts, restored Library instead of assumed Home and the header accessibility class. External UI-automation diagnostics also interrupted a run; subsequent tests used one instrumentation owner. Failed/interrupted runs are not passes. Physical S24/Samsung Keyboard/One UI8.5/9, TalkBack, actual Wi-Fi/Mac, OEM lifecycle and physical OLED remain user-only/unverified. No phone access. Stop after A5 publication for discussion.

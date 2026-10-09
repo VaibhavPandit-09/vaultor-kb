@@ -266,6 +266,27 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     write(state);"{}"
   }
   @ReactMethod fun uuid(promise:Promise)=run(promise) {JSONObject().put("id",UUID.randomUUID().toString()).toString()}
+  private val keyboardRequest=java.util.concurrent.atomic.AtomicLong()
+  /** User-triggered Edit only; cancellation prevents delayed IME focus after dismissal. */
+  @ReactMethod fun editorKeyboard(show:Boolean) {
+    val ticket=keyboardRequest.incrementAndGet()
+    if(!show)return
+    ctx.runOnUiQueueThread {
+      fun find(view:android.view.View):android.webkit.WebView? {
+        if(view is android.webkit.WebView)return view
+        if(view is android.view.ViewGroup)for(i in 0 until view.childCount){val found=find(view.getChildAt(i));if(found!=null)return found}
+        return null
+      }
+      val activity=ctx.currentActivity ?: return@runOnUiQueueThread
+      val web=find(activity.window.decorView) ?: return@runOnUiQueueThread
+      web.requestFocus()
+      web.postDelayed({
+        if(ticket==keyboardRequest.get() && web.isShown && activity.hasWindowFocus()) {
+          (ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).showSoftInput(web,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+        }
+      },200)
+    }
+  }
   @ReactMethod fun isKeyboardVisible(promise:Promise) {
     ctx.runOnUiQueueThread {
       promise.resolve(ctx.currentActivity?.window?.decorView?.rootWindowInsets?.isVisible(android.view.WindowInsets.Type.ime())==true)

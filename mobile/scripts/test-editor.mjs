@@ -329,6 +329,19 @@ assert.equal(
   false,
   'A removed placement anchor cannot target another node',
 );
+// Reading/editing and theme changes must not reload the document or emit saves.
+send({ type: 'load', loadId: 'reading', content: doc, editable: false, theme: 'light' });
+const readMessages = messages.filter(m => m.type === 'changed').length;
+assert.equal(dom.window.document.querySelector('.tiptap').getAttribute('contenteditable'), 'false');
+assert.equal(dom.window.document.documentElement.dataset.theme, 'light');
+send({ type: 'command', name: 'bold' });
+assert.equal(messages.filter(m => m.type === 'changed').length, readMessages);
+send({ type: 'editable', value: true });
+assert.equal(dom.window.document.querySelector('.tiptap').getAttribute('contenteditable'), 'true');
+send({ type: 'editable', value: false });
+send({ type: 'theme', value: 'dark' });
+assert.equal(dom.window.document.documentElement.dataset.theme, 'dark');
+assert.equal(messages.filter(m => m.type === 'changed').length, readMessages);
 send({
   type: 'load',
   loadId: 'unsupported',

@@ -30,7 +30,7 @@ class MediaUiTest {
   }
   @Test fun clipboardPlacementToolsAndSave() {
     val instrumentation=InstrumentationRegistry.getInstrumentation();val ctx=instrumentation.targetContext;val device=UiDevice.getInstance(instrumentation)
-    ctx.startActivity(ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));assertTrue(device.wait(Until.hasObject(By.text("Add image/file")),20000))
+    ctx.startActivity(ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));if(device.wait(Until.hasObject(By.text("Edit")),3000))device.findObject(By.text("Edit")).click();assertTrue(device.wait(Until.hasObject(By.text("Add image/file")),20000))
     val file=File(File(ctx.cacheDir,"media-share").apply {mkdirs()},"ui-image.png");val bitmap=Bitmap.createBitmap(96,64,Bitmap.Config.ARGB_8888);bitmap.eraseColor(android.graphics.Color.CYAN);file.outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,100,it)};bitmap.recycle()
     val uri=FileProvider.getUriForFile(ctx,ctx.packageName+".media",file)
     instrumentation.runOnMainSync {(ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newUri(ctx.contentResolver,"Fixture image",uri))}
@@ -48,7 +48,7 @@ class MediaUiTest {
   }
   @Test fun cancelledPickersAndExplicitShareTarget() {
     val instrumentation=InstrumentationRegistry.getInstrumentation();val ctx=instrumentation.targetContext;val device=UiDevice.getInstance(instrumentation)
-    ctx.startActivity(ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));assertTrue(device.wait(Until.hasObject(By.text("Add image/file")),20000))
+    ctx.startActivity(ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));if(device.wait(Until.hasObject(By.text("Edit")),3000))device.findObject(By.text("Edit")).click();assertTrue(device.wait(Until.hasObject(By.text("Add image/file")),20000))
     for(label in listOf("Photos","Files")) {
       device.findObject(By.text("Add image/file")).click();assertTrue(device.wait(Until.hasObject(By.text(label)),5000));device.findObject(By.text(label)).click();Thread.sleep(1200);device.pressBack();assertTrue(device.wait(Until.hasObject(By.text("Add image/file")),10000))
     }

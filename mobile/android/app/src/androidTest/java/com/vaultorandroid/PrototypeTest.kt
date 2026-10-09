@@ -47,11 +47,12 @@ class PrototypeTest {
     val context=instrumentation.targetContext
     val intent=context.packageManager.getLaunchIntentForPackage(context.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(intent)
-    if(device.wait(Until.hasObject(By.text("More")),10000)) {
-      val hosts=By.text(java.util.regex.Pattern.compile("(?i)hosts"))
-      for(attempt in 1..35) {device.findObject(By.text("More"))?.click();if(device.wait(Until.hasObject(hosts),1000))break}
-      assertTrue(device.hasObject(hosts));device.findObject(hosts).click()
-    } else if(device.hasObject(By.text("Hosts")))device.findObject(By.text("Hosts")).click()
+    if(device.wait(Until.hasObject(By.desc("Open navigation")),6000)) {
+      for(attempt in 1..20) {device.findObject(By.desc("Open navigation"))?.click();if(device.wait(Until.hasObject(By.desc("Switch workspace or manage connections")),1000))break}
+      assertTrue(device.hasObject(By.desc("Switch workspace or manage connections")))
+      for(attempt in 1..10) {device.findObject(By.desc("Switch workspace or manage connections"))?.click();if(device.wait(Until.hasObject(By.text("Connect to your workspace")),1000))break}
+    }
+    for(attempt in 1..8) {if(device.hasObject(By.text("Pair with host")))break;device.findObject(By.scrollable(true))?.scroll(Direction.DOWN,0.75f)}
     assertTrue(device.wait(Until.hasObject(By.text("Pair with host")),30000))
     device.findObject(By.desc("Host HTTPS address")).text=address
     if(device.hasObject(By.pkg("com.google.android.inputmethod.latin"))) device.pressBack()
@@ -73,25 +74,50 @@ class PrototypeTest {
     var opened=false
     for (attempt in 1..45) {
       device.findObject(By.text("I approved the matching code"))?.click()
-      if(device.wait(Until.hasObject(By.text("A1 Editor fixture")),1000)) {opened=true;break}
+      if(device.wait(Until.hasObject(By.text("Your space.")),1000) || device.hasObject(By.text("Edit")) || device.hasObject(By.text("Library"))) {opened=true;break}
+      if(attempt==3)device.dumpWindowHierarchy(java.io.File(context.getExternalFilesDir(null),"a5-pair-window.xml"))
     }
     assertTrue("Disposable matching-code host approval did not complete",opened)
-    device.findObject(By.text("A1 Editor fixture")).click()
-    assertTrue(device.wait(Until.hasObject(By.text("Save")),20000))
+    Log.i("VaultorPrototypeTest","APPROVAL_COMPLETE")
+    device.findObject(By.text("Browse Library"))?.click()
+    assertTrue(device.wait(Until.hasObject(By.text("A1 Editor fixture")),15000))
+    if(!device.hasObject(By.text("Edit")))device.findObject(By.text("A1 Editor fixture")).click()
+    assertTrue(device.wait(Until.hasObject(By.text("Edit")),20000))
+    assertFalse("Read mode must not expose Save",device.hasObject(By.text("Save")))
     assertTrue(device.wait(Until.hasObject(By.clazz("android.webkit.WebView")),10000))
-    Log.i("VaultorPrototypeTest","EDITOR_OPENED")
-    device.findObject(By.text("Library")).click()
+    device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"a5-reading.png"))
+    device.findObject(By.text("Edit")).click()
+    assertTrue(device.wait(Until.hasObject(By.text("Save")),5000))
+    assertTrue(device.wait(Until.hasObject(By.pkg("com.google.android.inputmethod.latin")),8000))
+    device.executeShellCommand("input text A5Typed")
+    assertTrue(device.wait(Until.hasObject(By.textContains("protected on this device")),10000))
+    device.findObject(By.text("undo")).click()
+    device.findObject(By.text("Save")).click()
+    assertTrue(device.wait(Until.hasObject(By.text("Saved")),15000))
+    device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"a5-edit-keyboard.png"))
+    device.pressBack() // IME first; editing still owns the document.
+    assertTrue(device.wait(Until.hasObject(By.text("Save")),5000))
+    device.pressBack() // Then reading, without navigating away.
+    assertTrue(device.wait(Until.hasObject(By.text("Edit")),5000))
+    assertTrue(device.hasObject(By.text("A1 Editor fixture")))
+    Log.i("VaultorPrototypeTest","EDITOR_OPENED_READ_EDIT_BACK")
+    device.findObject(By.desc("Open navigation")).click()
+    assertTrue(device.wait(Until.hasObject(By.desc("View all recent")),5000))
+    device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"a5-drawer.png"))
+    device.findObject(By.desc("View all recent")).click()
     assertTrue(device.wait(Until.hasObject(By.text("Return to note")),10000))
-    device.findObject(By.text("Recent")).click()
     assertTrue(device.wait(Until.hasObject(By.text("A1 Editor fixture")),10000))
-    device.findObject(By.text("All types")).click()
+    device.findObject(By.text("Filters")).click()
+    assertTrue(device.wait(Until.hasObject(By.text("Type · All types")),5000))
+    assertFalse("Short options must not open IME",device.hasObject(By.pkg("com.google.android.inputmethod.latin")))
+    device.findObject(By.text("Type · All types")).click()
     assertTrue(device.wait(Until.hasObject(By.text("PDFs")),5000))
-    device.pressBack() // Picker owns Back; active editor is retained.
+    device.pressBack(); if(device.hasObject(By.text("PDFs")))device.pressBack()
     assertTrue(device.wait(Until.hasObject(By.text("Return to note")),5000))
     device.findObject(By.text("Return to note")).click()
-    assertTrue(device.wait(Until.hasObject(By.text("Save")),5000))
+    assertTrue(device.wait(Until.hasObject(By.text("Edit")),5000))
     tapBundledLink(device)
-    assertTrue(device.wait(Until.hasObject(By.text("A3 Linked fixture").clazz("android.widget.TextView")),10000))
+    assertTrue(device.wait(Until.hasObject(By.text("A3 Linked fixture").clazz("android.view.View")),10000))
     device.pressBack()
     assertTrue(device.wait(Until.hasObject(By.text("A1 Editor fixture")),10000))
     Log.i("VaultorPrototypeTest","LINK_AND_NATIVE_BACK")

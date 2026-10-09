@@ -335,6 +335,9 @@ function validate(node, depth = 0) {
   }
   for (const child of node.content || []) validate(child, depth + 1);
 }
+function theme(value) {
+  document.documentElement.dataset.theme = value === 'light' ? 'light' : 'dark';
+}
 window.vaultorReceive = raw => {
   try {
     if (typeof raw !== 'string' || raw.length > 1500000) return;
@@ -351,7 +354,8 @@ window.vaultorReceive = raw => {
         emitUpdate: false,
         errorOnInvalidContent: true,
       });
-      editor.setEditable(true, false);
+      theme(m.theme);
+      editor.setEditable(m.editable !== false, false);
       if (m.position) {
         const max = editor.state.doc.content.size;
         editor.commands.setTextSelection({
@@ -485,8 +489,12 @@ window.vaultorReceive = raw => {
           inputId: m.inputId,
           valid: true,
         });
+    } else if (m.type === 'theme') {
+      theme(m.value);
     } else if (m.type === 'editable' && !blocked) {
       editor.setEditable(m.value === true, false);
+      if (m.value === true && m.focus === true)
+        editor.commands.focus(undefined, { scrollIntoView: false });
     } else if (m.type === 'blur') {
       editor.commands.blur();
     } else if (m.type === 'command' && !blocked && editor.isEditable) {

@@ -38,7 +38,8 @@ export type Session = {
   at?: number;
   journey?: Journey;
   browse?: BrowseConfig;
-  view?: 'browse' | 'note';
+  view?: 'home' | 'browse' | 'note';
+  noteOrigin?: 'home' | 'browse';
 };
 type Bootstrap = {
   profiles: Omit<Host, 'epoch'>[];
@@ -67,7 +68,8 @@ export type WorkspaceState = {
   content?: Doc;
   journey: Journey;
   browse: BrowseConfig;
-  view: 'browse' | 'note';
+  view: 'home' | 'browse' | 'note';
+  noteOrigin: 'home' | 'browse';
   preview?: ResourceSummary;
   browseVersion: number;
   navigationRetry?: {
@@ -114,7 +116,8 @@ export class MobileWorkspace {
     journey: emptyJourney(),
     navigationRetry: undefined,
     browse: defaultBrowse(),
-    view: 'browse',
+    view: 'home',
+    noteOrigin: 'browse',
     browseVersion: 0,
   };
   private listeners = new Set<() => void>();
@@ -247,8 +250,15 @@ export class MobileWorkspace {
         const journey = normalizeJourney(session?.journey);
         this.patch({
           browse: normalizeBrowse(session?.browse),
+          noteOrigin: session?.noteOrigin === 'home' ? 'home' : 'browse',
           view:
-            session?.view === 'browse' || !this.state.note ? 'browse' : 'note',
+            session?.view === 'home'
+              ? 'home'
+              : session?.view === 'browse'
+              ? 'browse'
+              : !this.state.note
+              ? 'home'
+              : 'note',
           journey:
             journey.visits[journey.cursor]?.id === this.snapshot().note?.id
               ? journey
@@ -302,7 +312,13 @@ export class MobileWorkspace {
       unavailable: false,
       journey: normalizeJourney(session.journey),
       browse: normalizeBrowse(session.browse),
-      view: session.view === 'browse' ? 'browse' : 'note',
+      noteOrigin: session.noteOrigin === 'home' ? 'home' : 'browse',
+      view:
+        session.view === 'home'
+          ? 'home'
+          : session.view === 'browse'
+          ? 'browse'
+          : 'note',
     });
   }
   async open(id: string, position?: Position, strict = false) {
@@ -501,6 +517,7 @@ export class MobileWorkspace {
         journey: this.state.journey,
         browse: this.state.browse,
         view: this.state.view,
+        noteOrigin: this.state.noteOrigin,
       });
   }
   async save() {
@@ -852,6 +869,15 @@ export class MobileWorkspace {
     this.patch({ browse });
     void this.session().catch(e => this.report(e));
   }
+  async leaveNote() {
+    if (this.state.noteOrigin === 'home') await this.showHome();
+    else await this.showBrowser();
+  }
+  async showHome() {
+    await this.protect();
+    this.patch({ view: 'home', preview: undefined });
+    await this.session();
+  }
   async showBrowser() {
     await this.protect();
     this.patch({ view: 'browse', preview: undefined });
@@ -893,6 +919,12 @@ export class MobileWorkspace {
     intent: 'direct' | 'linked' | 'history' = 'direct',
     index?: number,
   ) {
+    const origin =
+      this.state.view === 'home'
+        ? 'home'
+        : this.state.view === 'browse'
+        ? 'browse'
+        : this.state.noteOrigin;
     if (this.state.note?.id === id && intent !== 'history') {
       if (intent === 'direct')
         this.patch({
@@ -902,6 +934,7 @@ export class MobileWorkspace {
             false,
           ),
           view: 'note',
+          noteOrigin: origin,
         });
       await this.session();
       return;
@@ -933,7 +966,11 @@ export class MobileWorkspace {
           { id, title: this.state.note.title, position },
           intent === 'linked',
         );
-      this.patch({ journey, view: 'note' });
+      this.patch({
+        journey,
+        view: 'note',
+        noteOrigin: intent === 'direct' ? origin : this.state.noteOrigin,
+      });
       this.patch({ navigationRetry: undefined });
       await this.session();
       const host = this.state.host;

@@ -1,3 +1,4 @@
+import { useThemeStyles } from './ui';
 import React, {
   forwardRef,
   useEffect,
@@ -43,6 +44,7 @@ export default forwardRef<
     send(value: object): void;
   }
 >(function MediaTools({ model, loadId, visible, send }, ref) {
+  const s = useThemeStyles(sheetStyles);
   const current = useRef({ model, loadId, send });
   current.current = { model, loadId, send };
   const [items, setItems] = useState<MediaInput[]>([]),
@@ -705,7 +707,7 @@ export default forwardRef<
     </>
   );
 });
-const s = StyleSheet.create({
+const sheetStyles = StyleSheet.create({
   scrim: {
     flex: 1,
     backgroundColor: '#000b',

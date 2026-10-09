@@ -1,3 +1,4 @@
+import { useThemeStyles } from './ui';
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   Modal,
@@ -12,6 +13,7 @@ import { Action } from './BrowseScreen';
 import type { MobileWorkspace } from './workspace';
 const native = NativeModules.VaultorNative;
 export default function ResourcePreview({ model }: { model: MobileWorkspace }) {
+  const s = useThemeStyles(sheetStyles);
   const state = model.snapshot(),
     r = state.preview;
   const [data, setData] = useState<{
@@ -200,7 +202,7 @@ export default function ResourcePreview({ model }: { model: MobileWorkspace }) {
     </Modal>
   );
 }
-const s = StyleSheet.create({
+const sheetStyles = StyleSheet.create({
   scrim: {
     flex: 1,
     backgroundColor: '#000b',

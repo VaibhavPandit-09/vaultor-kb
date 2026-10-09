@@ -1,3 +1,7 @@
+import { HomeScreen, WorkspaceDrawer } from './NavigationSurface';
+import { QuickAccess, backIntent, type RootDestination } from './navigation';
+import { usePalette, useThemeStyles } from './ui';
+import { normalizeBrowse } from './browse';
 import BrowseScreen, { Action, ChoiceSheet } from './BrowseScreen';
 import MediaTools, { type MediaHandle } from './MediaTools';
 import ResourcePreview from './ResourcePreview';
@@ -10,6 +14,10 @@ import React, {
 } from 'react';
 import {
   ActivityIndicator,
+  AccessibilityInfo,
+  findNodeHandle,
+  useColorScheme,
+  useWindowDimensions,
   Alert,
   AppState,
   BackHandler,
@@ -55,22 +63,34 @@ const Button = ({
   label: string;
   onPress: () => void;
   disabled?: boolean;
-}) => (
-  <Pressable
-    accessibilityRole="button"
-    accessibilityLabel={label}
-    disabled={disabled}
-    onPress={onPress}
-    style={({ pressed }) => [
-      s.button,
-      pressed && s.pressed,
-      disabled && s.disabled,
-    ]}
-  >
-    <Text style={s.buttonText}>{label}</Text>
-  </Pressable>
-);
+}) => {
+  const s = useThemeStyles(sheet);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        s.button,
+        pressed && s.pressed,
+        disabled && s.disabled,
+      ]}
+    >
+      <Text style={s.buttonText}>{label}</Text>
+    </Pressable>
+  );
+};
 export default function WorkspaceScreen() {
+  const s = useThemeStyles(sheet),
+    palette = usePalette(),
+    scheme = useColorScheme(),
+    { fontScale, width } = useWindowDimensions();
+  const menuButton = useRef<React.ElementRef<typeof Pressable>>(null);
+  const [drawer, setDrawer] = useState(false),
+    [editing, setEditing] = useState(false),
+    [reducedMotion, setReducedMotion] = useState(false),
+    [searchRequest, setSearchRequest] = useState(0);
   const model = useRef(
     new MobileWorkspace({
       storage: (action, value = {}) =>
@@ -124,12 +144,28 @@ export default function WorkspaceScreen() {
     }),
   ).current;
   const state = useSyncExternalStore(model.subscribe, model.snapshot);
+  const shortcuts = useRef(
+    new QuickAccess(
+      path => model.browseApi(path),
+      () => model.cancelBrowse(),
+    ),
+  ).current;
+  const feed = useSyncExternalStore(shortcuts.subscribe, shortcuts.snapshot);
+  useEffect(() => {
+    void AccessibilityInfo.isReduceMotionEnabled().then(setReducedMotion);
+    const event = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      setReducedMotion,
+    );
+    return () => event.remove();
+  }, []);
   const web = useRef<WebView<{}>>(null),
     hostScroll = useRef<React.ElementRef<typeof ScrollView>>(null),
     media = useRef<MediaHandle>(null),
     ready = useRef(false),
     current = useRef(state),
-    keyboard = useRef(false);
+    keyboard = useRef(false),
+    wasEditing = useRef(false);
   current.current = state;
   const [address, setAddress] = useState('https://'),
     [code, setCode] = useState(''),
@@ -158,6 +194,8 @@ export default function WorkspaceScreen() {
         loadId,
         content: state.content,
         position: state.position,
+        editable: editing,
+        theme: scheme === 'light' ? 'light' : 'dark',
       });
     }
   };
@@ -181,16 +219,37 @@ export default function WorkspaceScreen() {
     ready.current = false;
   }, [loadId]);
   useEffect(() => {
-    if (ready.current)
+    setEditing(false);
+  }, [state.loadId]);
+  useEffect(() => {
+    const focus = editing && !wasEditing.current;
+    wasEditing.current = editing;
+    if (ready.current) {
+      if (focus) web.current?.requestFocus();
+      inject({ type: 'theme', value: scheme === 'light' ? 'light' : 'dark' });
       inject({
         type: 'editable',
         value:
+          editing &&
+          !drawer &&
+          state.view === 'note' &&
+          !connections &&
+          !recovery &&
           state.supported &&
           !state.conflict &&
           !state.unavailable &&
           state.connection !== 'revoked',
+        focus,
       });
+      native.editorKeyboard(focus);
+    }
   }, [
+    editing,
+    drawer,
+    connections,
+    recovery,
+    state.view,
+    scheme,
     state.supported,
     state.conflict,
     state.unavailable,
@@ -309,6 +368,97 @@ export default function WorkspaceScreen() {
       hidden.remove();
     };
   }, []);
+  useEffect(() => {
+    shortcuts.bind(state.scope);
+    if (
+      !state.host ||
+      connections ||
+      recovery ||
+      (!drawer && state.view !== 'home')
+    ) {
+      shortcuts.suspend();
+      return;
+    }
+    let active = true;
+    const refresh = () => {
+      if (active && AppState.currentState === 'active')
+        void shortcuts.refresh();
+    };
+    const timer = setTimeout(refresh, 20);
+    const event = AppState.addEventListener('change', value => {
+      if (value === 'active') refresh();
+      else shortcuts.suspend();
+    });
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      event.remove();
+      shortcuts.suspend();
+    };
+  }, [
+    shortcuts,
+    state.scope,
+    state.host,
+    state.view,
+    state.browseVersion,
+    state.connection,
+    drawer,
+    connections,
+    recovery,
+  ]);
+  const closeDrawer = () => {
+    setDrawer(false);
+    requestAnimationFrame(() => {
+      const tag = findNodeHandle(menuButton.current);
+      if (tag) AccessibilityInfo.setAccessibilityFocus(tag);
+    });
+  };
+  const selectDestination = (destination: RootDestination, search = false) => {
+    closeDrawer();
+    Keyboard.dismiss();
+    inject({ type: 'blur' });
+    run(async () => {
+      if (destination === 'home') await model.showHome();
+      else {
+        if (state.browse.destination !== destination || search)
+          model.updateBrowse(
+            normalizeBrowse({
+              ...state.browse,
+              destination,
+              collection: undefined,
+              query: search ? '' : state.browse.query,
+              type: '',
+              mode: 'title',
+              page: 0,
+              scroll: 0,
+            }),
+          );
+        await model.showBrowser();
+        if (search) setSearchRequest(n => n + 1);
+      }
+    });
+  };
+  const shortcutOpen = (id: string, collection?: string) => {
+    closeDrawer();
+    run(async () => {
+      if (collection !== undefined) {
+        await model.protect();
+        model.updateBrowse(
+          normalizeBrowse({
+            ...state.browse,
+            destination: 'library',
+            collection: { id, name: collection },
+            query: '',
+            type: '',
+            mode: 'title',
+            page: 0,
+            scroll: 0,
+          }),
+        );
+        await model.showBrowser();
+      } else await model.routeResource(id);
+    });
+  };
   const leave = useCallback(
     () =>
       run(async () => {
@@ -317,12 +467,34 @@ export default function WorkspaceScreen() {
         web.current?.injectJavaScript(
           'window.vaultorReceive(JSON.stringify({protocol:1,type:"blur"}));true;',
         );
-        await model.showBrowser();
+        await model.leaveNote();
       }),
     [model, run],
   );
   useEffect(() => {
     const screenBack = () => {
+      if (drawer) {
+        closeDrawer();
+        return true;
+      }
+      const intent = backIntent({
+        transient: recovery || connections,
+        keyboard: false,
+        editing,
+        view: current.current.view,
+        cursor: current.current.journey.cursor,
+        collection: Boolean(current.current.browse.collection),
+      });
+      if (intent === 'read') {
+        setEditing(false);
+        Keyboard.dismiss();
+        inject({ type: 'blur' });
+        return true;
+      }
+      if (intent === 'home') {
+        run(() => model.showHome());
+        return true;
+      }
       if (recovery) {
         setRecovery(false);
         return true;
@@ -405,7 +577,17 @@ export default function WorkspaceScreen() {
       return screenBack();
     });
     return () => back.remove();
-  }, [connections, recovery, model, leave, run, trail, inject]);
+  }, [
+    connections,
+    recovery,
+    model,
+    leave,
+    run,
+    trail,
+    inject,
+    editing,
+    drawer,
+  ]);
   const switchHost = (id: string) =>
     run(async () => {
       try {
@@ -529,360 +711,492 @@ export default function WorkspaceScreen() {
       setRecovery(!recovery);
     });
   return (
-    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-      <View style={s.header}>
-        <Text numberOfLines={1} style={s.title}>
-          {state.note && state.view === 'note' && !hostView && !recovery
-            ? state.note.title
-            : 'Vaultor'}
-        </Text>
-        <View style={s.headerActions}>
-          {state.note && state.view === 'note' && !hostView && !recovery ? (
-            <Button label="Library" disabled={state.busy} onPress={leave} />
+    <SafeAreaView
+      style={[s.root, drawer && width >= 840 && s.docked]}
+      edges={['top', 'bottom']}
+    >
+      <View
+        style={s.main}
+        importantForAccessibility={
+          drawer && width < 840 ? 'no-hide-descendants' : 'auto'
+        }
+      >
+        <View style={s.header}>
+          {!hostView && !recovery ? (
+            <Pressable
+              ref={menuButton}
+              accessibilityRole="button"
+              accessibilityLabel="Open navigation"
+              onPress={() => {
+                Keyboard.dismiss();
+                inject({ type: 'blur' });
+                setDrawer(true);
+              }}
+              style={s.navButton}
+            >
+              <Text style={[s.navGlyph, { color: palette.text }]}>☰</Text>
+            </Pressable>
           ) : null}
-          {hostView ? (
-            <Action label="Done" disabled={state.busy} onPress={hostsAction} />
-          ) : recovery ? (
+          {state.view === 'note' && !hostView && !recovery ? (
             <Action
-              label="Close recovery"
+              label="‹"
+              accessibilityLabel="Back"
               disabled={state.busy}
-              onPress={recoveryAction}
+              onPress={() => {
+                if (editing) {
+                  setEditing(false);
+                  Keyboard.dismiss();
+                  inject({ type: 'blur' });
+                } else if (state.journey.cursor > 0)
+                  run(() => model.history(state.journey.cursor - 1));
+                else leave();
+              }}
             />
-          ) : (
-            <Action
-              label="More"
-              disabled={state.busy}
-              onPress={() =>
-                Alert.alert('Workspace', undefined, [
-                  { text: 'Hosts', onPress: hostsAction },
-                  {
-                    text: `Recovery ${state.recovery.length}`,
-                    onPress: recoveryAction,
-                  },
-                  { text: 'Close', style: 'cancel' },
-                ])
-              }
-            />
-          )}
-        </View>
-      </View>
-      {state.error ? (
-        <View accessibilityRole="alert" style={s.error}>
-          <Text style={s.errorText}>{state.error}</Text>
-          <Button
-            label={
-              state.navigationRetry ? 'Retry navigation' : 'Retry connection'
-            }
-            disabled={state.busy}
-            onPress={() =>
-              run(async () => {
-                if (state.navigationRetry) {
-                  await model.retryNavigation();
-                  return;
-                }
-                await permission();
-                await model.connect(false);
-              })
-            }
-          />
-        </View>
-      ) : null}
-      {state.busy ? (
-        <ActivityIndicator
-          style={{ position: 'absolute', top: 8, right: 8 }}
-          color="#70a5ff"
-        />
-      ) : null}
-      {recovery ? (
-        <ScrollView contentContainerStyle={s.content}>
-          <Text style={s.heading}>Recovery</Text>
-          <Text style={s.muted}>
-            Drafts remain separate by host and workspace. Copies are created
-            only on the explicitly selected destination.
+          ) : null}
+          <Text accessibilityRole="header" numberOfLines={1} style={s.title}>
+            {hostView
+              ? 'Workspaces'
+              : recovery
+              ? 'Recovery'
+              : state.view === 'note'
+              ? state.note?.title
+              : state.view === 'home'
+              ? 'Vaultor'
+              : state.browse.collection?.name ??
+                {
+                  library: 'Library',
+                  recent: 'Recent',
+                  pinned: 'Pinned',
+                  collections: 'Collections',
+                }[state.browse.destination]}
           </Text>
-          {state.recovery.length ? (
-            state.recovery.map(renderRecovery)
-          ) : (
-            <Text style={s.muted}>No retained drafts.</Text>
-          )}
-        </ScrollView>
-      ) : hostView ? (
-        <ScrollView
-          ref={hostScroll}
-          contentContainerStyle={s.content}
-          keyboardShouldPersistTaps="handled"
-          onContentSizeChange={() => {
-            if (code) hostScroll.current?.scrollToEnd({ animated: true });
-          }}
-        >
-          <Text style={s.heading}>Connect to your workspace</Text>
-          <Text style={s.muted}>
-            Enable Sharing on your Windows or Mac host. Saved approvals are
-            remembered.
-          </Text>
-          {state.hosts.map(h => (
-            <View style={s.row} key={h.hostId}>
-              <Text style={s.muted}>{h.address}</Text>
-              <View style={s.actions}>
-                <Button
-                  label={
-                    h.hostId === state.host?.hostId ? 'Reconnect' : 'Connect'
+          <View style={s.headerActions}>
+            {hostView ? (
+              <Action
+                label="Done"
+                disabled={state.busy}
+                onPress={hostsAction}
+              />
+            ) : recovery ? (
+              <Action
+                label="Close recovery"
+                disabled={state.busy}
+                onPress={recoveryAction}
+              />
+            ) : state.view === 'note' ? (
+              <>
+                <Action
+                  label={editing ? 'Done' : 'Edit'}
+                  disabled={
+                    !state.supported ||
+                    state.conflict ||
+                    state.unavailable ||
+                    state.connection === 'revoked'
                   }
-                  disabled={state.busy}
-                  onPress={() => switchHost(h.hostId)}
+                  onPress={() => {
+                    setEditing(!editing);
+                    if (editing) {
+                      Keyboard.dismiss();
+                      inject({ type: 'blur' });
+                    }
+                  }}
                 />
-                <Button
-                  label="Remove host"
-                  disabled={state.busy}
+                {editing ? (
+                  <Action
+                    label="Save"
+                    disabled={
+                      state.busy ||
+                      !state.supported ||
+                      state.conflict ||
+                      state.unavailable ||
+                      state.connection === 'revoked'
+                    }
+                    onPress={() => run(() => model.save())}
+                  />
+                ) : null}
+                <Action
+                  label="•••"
+                  accessibilityLabel="Note actions"
                   onPress={() =>
                     Alert.alert(
-                      'Remove remembered approval?',
-                      'Credentials and clean caches are removed on this device. Recovery drafts remain; revoke access on the host to invalidate the server approval.',
+                      'Note',
+                      state.draft ? state.status : undefined,
                       [
-                        { text: 'Keep', style: 'cancel' },
                         {
-                          text: 'Remove',
-                          style: 'destructive',
-                          onPress: () =>
-                            run(async () => {
-                              await model.protect();
-                              await native.signOut(h.hostId);
-                              model.forgotten(h.hostId);
-                              await model.refreshRecovery();
-                              setConnections(true);
-                            }),
+                          text: 'Journey',
+                          onPress: () => {
+                            Keyboard.dismiss();
+                            inject({ type: 'blur' });
+                            setTrail(true);
+                          },
                         },
+                        {
+                          text: 'Library',
+                          onPress: () => selectDestination('library'),
+                        },
+                        { text: 'Close', style: 'cancel' },
                       ],
                     )
                   }
                 />
-              </View>
-            </View>
-          ))}
-          <TextInput
-            accessibilityLabel="Host HTTPS address"
-            style={s.input}
-            value={address}
-            onChangeText={setAddress}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <Button
-            label="Pair with host"
-            disabled={state.busy}
-            onPress={() =>
-              run(async () => {
-                await model.protect();
-                await permission();
-                const result = await parse<{ code: string }>(
-                  native.beginPairing(address),
-                );
-                setCode(result.code);
-              })
-            }
-          />
-          {code ? (
-            <>
-              <Text style={s.heading}>Compare code: {code}</Text>
-              <Text style={s.muted}>
-                Approve only the matching code on the host.
-              </Text>
-              <Action
-                label="I approved the matching code"
-                disabled={state.busy}
-                onPress={() => finishPairing()}
-              />
-            </>
-          ) : null}
-          {state.host ? (
+              </>
+            ) : null}
+          </View>
+        </View>
+        {state.error ? (
+          <View accessibilityRole="alert" style={s.error}>
+            <Text style={s.errorText}>{state.error}</Text>
             <Button
-              label="Verify changed address"
+              label={
+                state.navigationRetry ? 'Retry navigation' : 'Retry connection'
+              }
+              disabled={state.busy}
+              onPress={() =>
+                run(async () => {
+                  if (state.navigationRetry) {
+                    await model.retryNavigation();
+                    return;
+                  }
+                  await permission();
+                  await model.connect(false);
+                })
+              }
+            />
+          </View>
+        ) : null}
+        {state.busy ? (
+          <ActivityIndicator
+            style={{ position: 'absolute', top: 8, right: 8 }}
+            color="#70a5ff"
+          />
+        ) : null}
+        {recovery ? (
+          <ScrollView contentContainerStyle={s.content}>
+            <Text style={s.heading}>Recovery</Text>
+            <Text style={s.muted}>
+              Drafts remain separate by host and workspace. Copies are created
+              only on the explicitly selected destination.
+            </Text>
+            {state.recovery.length ? (
+              state.recovery.map(renderRecovery)
+            ) : (
+              <Text style={s.muted}>No retained drafts.</Text>
+            )}
+          </ScrollView>
+        ) : hostView ? (
+          <ScrollView
+            ref={hostScroll}
+            contentContainerStyle={s.content}
+            keyboardShouldPersistTaps="handled"
+            onContentSizeChange={() => {
+              if (code) hostScroll.current?.scrollToEnd({ animated: true });
+            }}
+          >
+            <Text style={s.heading}>Connect to your workspace</Text>
+            <Text style={s.muted}>
+              Enable Sharing on your Windows or Mac host. Saved approvals are
+              remembered.
+            </Text>
+            {state.hosts.map(h => (
+              <View style={s.row} key={h.hostId}>
+                <Text style={s.muted}>{h.address}</Text>
+                <View style={s.actions}>
+                  <Button
+                    label={
+                      h.hostId === state.host?.hostId ? 'Reconnect' : 'Connect'
+                    }
+                    disabled={state.busy}
+                    onPress={() => switchHost(h.hostId)}
+                  />
+                  <Button
+                    label="Remove host"
+                    disabled={state.busy}
+                    onPress={() =>
+                      Alert.alert(
+                        'Remove remembered approval?',
+                        'Credentials and clean caches are removed on this device. Recovery drafts remain; revoke access on the host to invalidate the server approval.',
+                        [
+                          { text: 'Keep', style: 'cancel' },
+                          {
+                            text: 'Remove',
+                            style: 'destructive',
+                            onPress: () =>
+                              run(async () => {
+                                await model.protect();
+                                await native.signOut(h.hostId);
+                                model.forgotten(h.hostId);
+                                await model.refreshRecovery();
+                                setConnections(true);
+                              }),
+                          },
+                        ],
+                      )
+                    }
+                  />
+                </View>
+              </View>
+            ))}
+            <TextInput
+              accessibilityLabel="Host HTTPS address"
+              style={s.input}
+              value={address}
+              onChangeText={setAddress}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Button
+              label="Pair with host"
               disabled={state.busy}
               onPress={() =>
                 run(async () => {
                   await model.protect();
                   await permission();
-                  await native.changeAddress(state.host!.hostId, address);
-                  await model.adopted();
-                  setConnections(false);
+                  const result = await parse<{ code: string }>(
+                    native.beginPairing(address),
+                  );
+                  setCode(result.code);
                 })
               }
             />
-          ) : null}
-        </ScrollView>
-      ) : null}
-      <View style={s.actions}>
-        <MediaTools
-          ref={media}
-          model={model}
-          loadId={loadId}
-          visible={state.view === 'note' && !hostView && !recovery}
-          send={inject}
-        />
-      </View>
-      <BrowseScreen
-        model={model}
-        visible={!hostView && !recovery && state.view === 'browse'}
-        onAction={run}
-      />
-      {state.note ? (
-        <View
-          style={[
-            s.workspace,
-            (hostView || recovery || state.view === 'browse') && s.hidden,
-          ]}
-          pointerEvents={
-            hostView || recovery || state.view === 'browse' ? 'none' : 'auto'
-          }
-          importantForAccessibility={
-            hostView || recovery || state.view === 'browse'
-              ? 'no-hide-descendants'
-              : 'yes'
-          }
-        >
-          <View style={s.actions}>
-            <Action
-              label="‹"
-              accessibilityLabel="Back in journey"
-              disabled={state.journey.cursor <= 0 || state.busy}
-              onPress={() => run(() => model.history(state.journey.cursor - 1))}
-            />
-            <Action
-              label="›"
-              accessibilityLabel="Forward in journey"
-              disabled={
-                state.journey.cursor + 1 >= state.journey.visits.length ||
-                state.busy
-              }
-              onPress={() => run(() => model.history(state.journey.cursor + 1))}
-            />
-            <Text numberOfLines={1} style={s.trailTitle}>
-              {state.journey.visits
-                .slice(
-                  Math.max(0, state.journey.cursor - 2),
-                  state.journey.cursor + 1,
-                )
-                .map(v => v.title)
-                .join(' › ')}
-            </Text>
-            <Action label="Journey" onPress={() => setTrail(true)} />
-          </View>
-          <View style={s.status}>
-            <Text style={s.muted}>
-              {state.connection} · {state.status}
-            </Text>
-            <Button
-              label="Save"
-              disabled={
-                state.busy ||
-                !state.supported ||
-                state.conflict ||
-                state.unavailable ||
-                state.connection === 'revoked'
-              }
-              onPress={() => run(() => model.save())}
-            />
-          </View>
-          {state.conflict ? (
-            <View style={s.recovery}>
-              <Text style={s.muted}>
-                Your local version is retained. The saved original will not be
-                overwritten.
-              </Text>
-              <View style={s.actions}>
-                <Button
-                  label="Open recovered copy"
-                  disabled={state.busy || state.connection !== 'online'}
-                  onPress={() => {
-                    if (state.draft) copy(state.draft);
-                  }}
+            {code ? (
+              <>
+                <Text style={s.heading}>Compare code: {code}</Text>
+                <Text style={s.muted}>
+                  Approve only the matching code on the host.
+                </Text>
+                <Action
+                  label="I approved the matching code"
+                  disabled={state.busy}
+                  onPress={() => finishPairing()}
                 />
-                {!state.unavailable ? (
-                  <Button
-                    label="Use saved version"
-                    disabled={state.busy}
-                    onPress={() => run(() => model.useSaved())}
-                  />
-                ) : null}
-              </View>
-            </View>
-          ) : null}
-          <View style={s.actions}>
-            {['bold', 'italic', 'undo', 'redo'].map(name => (
-              <Action
-                key={name}
-                label={name}
-                disabled={
-                  !state.supported ||
-                  state.conflict ||
-                  state.unavailable ||
-                  state.connection === 'revoked'
+              </>
+            ) : null}
+            {state.host ? (
+              <Button
+                label="Verify changed address"
+                disabled={state.busy}
+                onPress={() =>
+                  run(async () => {
+                    await model.protect();
+                    await permission();
+                    await native.changeAddress(state.host!.hostId, address);
+                    await model.adopted();
+                    setConnections(false);
+                  })
                 }
-                onPress={() => inject({ type: 'command', name })}
               />
-            ))}
-          </View>
-          <WebView<{}>
-            ref={web}
-            key={loadId}
-            source={{ uri: 'file:///android_asset/editor.html' }}
-            originWhitelist={['file://']}
-            javaScriptEnabled
-            domStorageEnabled={false}
-            allowFileAccess
-            allowFileAccessFromFileURLs={false}
-            allowUniversalAccessFromFileURLs={false}
-            mixedContentMode="never"
-            setSupportMultipleWindows={false}
-            onShouldStartLoadWithRequest={r =>
-              r.url === 'file:///android_asset/editor.html' ||
-              r.url === 'about:blank'
+            ) : null}
+          </ScrollView>
+        ) : null}
+        <View style={s.actions}>
+          <MediaTools
+            ref={media}
+            model={model}
+            loadId={loadId}
+            visible={
+              editing &&
+              state.view === 'note' &&
+              !hostView &&
+              !recovery &&
+              !drawer
             }
-            onMessage={e => {
-              const m = bridgeMessage(e.nativeEvent.data, loadId);
-              if (!m) return;
-              if (m.type.startsWith('media')) {
-                media.current?.receive(m);
-                return;
-              }
-              if (m.type === 'ready') {
-                ready.current = true;
-                load();
-              } else if (m.type === 'loaded') model.loaded();
-              else if (m.type === 'unsupported') model.unsupported();
-              else if (m.type === 'changed' && m.content)
-                model.changed(m.content);
-              else if (m.type === 'open' && m.resourceId) {
-                Keyboard.dismiss();
-                inject({ type: 'blur' });
-                run(() => model.routeResource(m.resourceId!, true));
-              } else if (m.type === 'position' && m.position)
-                model.reading(m.position);
-            }}
-            onRenderProcessGone={() => {
-              ready.current = false;
-              model.unsupported();
-              model.report(
-                Error(
-                  'Editor stopped. Protected drafts remain. Reopen the editor.',
-                ),
-              );
-            }}
-            style={s.web}
+            send={inject}
           />
-          {!state.supported ? (
-            <Button
-              label="Reopen editor"
-              disabled={state.busy}
-              onPress={() =>
-                run(async () => {
-                  await model.protect();
-                  setRenderer(v => v + 1);
-                })
-              }
-            />
-          ) : null}
         </View>
+        {!hostView &&
+        !recovery &&
+        !(drawer && width < 840) &&
+        state.view === 'home' ? (
+          <HomeScreen
+            feed={feed}
+            select={selectDestination}
+            open={shortcutOpen}
+            retry={() => {
+              void shortcuts.refresh();
+            }}
+            returnToNote={
+              state.note ? () => run(() => model.returnToNote()) : undefined
+            }
+          />
+        ) : null}
+        <BrowseScreen
+          model={model}
+          visible={
+            !hostView &&
+            !recovery &&
+            !(drawer && width < 840) &&
+            state.view === 'browse'
+          }
+          suspended={drawer}
+          searchRequest={searchRequest}
+          onAction={run}
+        />
+        {state.note ? (
+          <View
+            style={[
+              s.workspace,
+              (hostView || recovery || state.view !== 'note') && s.hidden,
+            ]}
+            pointerEvents={
+              hostView || recovery || state.view !== 'note' ? 'none' : 'auto'
+            }
+            importantForAccessibility={
+              hostView || recovery || state.view !== 'note'
+                ? 'no-hide-descendants'
+                : 'yes'
+            }
+          >
+            {editing ||
+            state.draft ||
+            state.unavailable ||
+            state.connection !== 'online' ? (
+              <Text accessibilityLiveRegion="polite" style={s.noteStatus}>
+                {state.connection !== 'online' ? 'Host unavailable · ' : ''}
+                {state.status}
+              </Text>
+            ) : null}
+            {state.conflict ? (
+              <View style={s.recovery}>
+                <Text style={s.muted}>
+                  Your local version is retained. The saved original will not be
+                  overwritten.
+                </Text>
+                <View style={s.actions}>
+                  <Button
+                    label="Open recovered copy"
+                    disabled={state.busy || state.connection !== 'online'}
+                    onPress={() => {
+                      if (state.draft) copy(state.draft);
+                    }}
+                  />
+                  {!state.unavailable ? (
+                    <Button
+                      label="Use saved version"
+                      disabled={state.busy}
+                      onPress={() => run(() => model.useSaved())}
+                    />
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
+            <WebView<{}>
+              ref={web}
+              key={loadId}
+              source={{ uri: 'file:///android_asset/editor.html' }}
+              originWhitelist={['file://']}
+              textZoom={Math.round(fontScale * 100)}
+              javaScriptEnabled
+              domStorageEnabled={false}
+              allowFileAccess
+              allowFileAccessFromFileURLs={false}
+              allowUniversalAccessFromFileURLs={false}
+              mixedContentMode="never"
+              setSupportMultipleWindows={false}
+              onShouldStartLoadWithRequest={r =>
+                r.url === 'file:///android_asset/editor.html' ||
+                r.url === 'about:blank'
+              }
+              onMessage={e => {
+                const m = bridgeMessage(e.nativeEvent.data, loadId);
+                if (!m) return;
+                if (
+                  m.type === 'mediaSelect' &&
+                  !editing &&
+                  m.attrs?.resourceId
+                ) {
+                  run(() => model.routeResource(m.attrs!.resourceId));
+                  return;
+                }
+                if (m.type.startsWith('media')) {
+                  media.current?.receive(m);
+                  return;
+                }
+                if (m.type === 'ready') {
+                  ready.current = true;
+                  load();
+                } else if (m.type === 'loaded') model.loaded();
+                else if (m.type === 'unsupported') model.unsupported();
+                else if (m.type === 'changed' && m.content)
+                  model.changed(m.content);
+                else if (m.type === 'open' && m.resourceId) {
+                  Keyboard.dismiss();
+                  inject({ type: 'blur' });
+                  run(() => model.routeResource(m.resourceId!, true));
+                } else if (m.type === 'position' && m.position)
+                  model.reading(m.position);
+              }}
+              onRenderProcessGone={() => {
+                ready.current = false;
+                model.unsupported();
+                model.report(
+                  Error(
+                    'Editor stopped. Protected drafts remain. Reopen the editor.',
+                  ),
+                );
+              }}
+              style={s.web}
+              containerStyle={s.web}
+            />
+            {editing ? (
+              <View style={s.actions}>
+                {['bold', 'italic', 'undo', 'redo'].map(name => (
+                  <Action
+                    key={name}
+                    label={name}
+                    disabled={
+                      !state.supported ||
+                      state.conflict ||
+                      state.unavailable ||
+                      state.connection === 'revoked'
+                    }
+                    onPress={() => inject({ type: 'command', name })}
+                  />
+                ))}
+              </View>
+            ) : null}
+            {!state.supported ? (
+              <Button
+                label="Reopen editor"
+                disabled={state.busy}
+                onPress={() =>
+                  run(async () => {
+                    await model.protect();
+                    setRenderer(v => v + 1);
+                  })
+                }
+              />
+            ) : null}
+          </View>
+        ) : null}
+      </View>
+      {drawer ? (
+        <WorkspaceDrawer
+          feed={feed}
+          select={selectDestination}
+          open={shortcutOpen}
+          retry={() => {
+            void shortcuts.refresh();
+          }}
+          close={closeDrawer}
+          current={
+            state.view === 'home'
+              ? 'home'
+              : state.view === 'browse'
+              ? state.browse.destination
+              : ''
+          }
+          host={state.host?.address}
+          recoveryCount={state.recovery.length}
+          reducedMotion={reducedMotion}
+          hosts={() => {
+            closeDrawer();
+            hostsAction();
+          }}
+          recovery={() => {
+            closeDrawer();
+            recoveryAction();
+          }}
+        />
       ) : null}
       {trail ? (
         <ChoiceSheet
@@ -902,7 +1216,22 @@ export default function WorkspaceScreen() {
     </SafeAreaView>
   );
 }
-const s = StyleSheet.create({
+const sheet = StyleSheet.create({
+  main: { flex: 1 },
+  navButton: {
+    minWidth: 48,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+  navGlyph: { fontSize: 22 },
+  noteStatus: {
+    color: '#b3b3b3',
+    fontSize: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
   trailTitle: { flex: 1, color: '#b3b3b3', fontSize: 12 },
   previewScrim: {
     flex: 1,
@@ -918,10 +1247,11 @@ const s = StyleSheet.create({
     padding: 20,
     gap: 14,
   },
-  root: { flex: 1, backgroundColor: '#000' },
+  root: { flex: 1, backgroundColor: '#000', flexDirection: 'row' },
+  docked: { flexDirection: 'row-reverse' },
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderBottomWidth: 1,
     borderColor: '#252525',
     gap: 8,
