@@ -654,3 +654,7 @@ Publisher verified the clean pushed source/tag, original signer policy and stage
 ### 2026-10-09 — Android A4 managed images and native file handling
 
 Implemented the source-bound encrypted media adapter and mapped editor transactions described in [MEDIA.md](android/MEDIA.md). Original resources/bytes, saved JSON, drafts, protocol3 and desktop0.7.1 are preserved. TypeScript,40Jest/editor checks, original-key APK compilation/identity/16KiB checks and nine storage/media/UI cases per Android16/17 emulator passed; actual Share-input force-stop restoration and disposable image/reference/export artifact checks passed. Scoped lint zero errors/24warnings. Fixed loading-label visibility, verification-control scrolling, local media-error presentation and content-sized tools. Final tagged-source publication evidence follows. Physical Samsung/One UI/camera/TalkBack/real-LAN gates remain open; A5/A6 not started.
+
+### 2026-10-09 — A4 final media review
+
+Image tools release editor focus/IME, and thumbnail replies require the placement’s current resource identity. Extended editor tests cover replacement/undo, stale-thumbnail refusal and retaining a second placement; TypeScript and editor compilation/checks passed. No API, schema, resource or persistence-boundary change.

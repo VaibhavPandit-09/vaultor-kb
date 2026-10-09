@@ -142,11 +142,13 @@ const Image = Node.create({
         status.hidden = false;
       };
       views.set(token, {
-        ready(data) {
+        ready(data, resourceId) {
+          if (resourceId !== current.attrs.resourceId) return;
           img.src = data;
           status.hidden = true;
         },
-        fail() {
+        fail(resourceId) {
+          if (resourceId !== current.attrs.resourceId) return;
           status.textContent =
             'Image unavailable · open tools to Retry/Replace';
           status.hidden = false;
@@ -173,7 +175,12 @@ const Image = Node.create({
           const changed = next.attrs.resourceId !== current.attrs.resourceId;
           current = next;
           apply();
-          if (changed) fetch();
+          if (changed) {
+            img.removeAttribute('src');
+            status.textContent = 'Loading image…';
+            status.hidden = false;
+            fetch();
+          }
           return true;
         },
         destroy() {
@@ -364,8 +371,8 @@ window.vaultorReceive = raw => {
         /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(m.data) &&
         m.data.length < 530000
       )
-        view?.ready(m.data);
-      else view?.fail();
+        view?.ready(m.data, m.resourceId);
+      else view?.fail(m.resourceId);
     } else if (m.type === 'mediaRetry' && m.loadId === loadId) {
       for (const view of views.values()) view.fetch();
     } else if (

@@ -266,6 +266,7 @@ export default forwardRef<
                 type: 'mediaThumbnail',
                 loadId: requestLoad,
                 token: m.token,
+                resourceId: m.resourceId,
                 data: result.data,
               });
           })
@@ -275,6 +276,7 @@ export default forwardRef<
                 type: 'mediaThumbnail',
                 loadId: requestLoad,
                 token: m.token,
+                resourceId: m.resourceId,
               });
           });
       } else if (m.type === 'mediaSelect' && m.anchor && m.attrs) {

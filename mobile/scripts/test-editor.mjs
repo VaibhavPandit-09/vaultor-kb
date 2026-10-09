@@ -257,6 +257,41 @@ assert.equal(
   100,
   'Attribute update is one undoable transaction',
 );
+dom.window.document.querySelector('.image-frame').click();
+const replacement = messages.at(-1);
+const replacementId = '00000000-0000-4000-8000-000000000099';
+send({
+  type: 'mediaEdit',
+  loadId: 'media',
+  anchor: replacement.anchor,
+  attrs: { ...replacement.attrs, resourceId: replacementId },
+});
+const thumbnail = messages.findLast(m => m.type === 'mediaThumbnail');
+assert.equal(thumbnail.resourceId, replacementId);
+send({
+  type: 'mediaThumbnail',
+  loadId: 'media',
+  token: thumbnail.token,
+  resourceId,
+  data: 'data:image/png;base64,iVBORw0KGgo=',
+});
+assert.equal(
+  dom.window.document.querySelector('.image-frame img').hasAttribute('src'),
+  false,
+  'A delayed thumbnail for the replaced resource cannot paint the new placement',
+);
+send({
+  type: 'mediaThumbnail',
+  loadId: 'media',
+  token: thumbnail.token,
+  resourceId: replacementId,
+  data: 'data:image/png;base64,iVBORw0KGgo=',
+});
+assert.equal(
+  dom.window.document.querySelector('.image-frame img').hasAttribute('src'),
+  true,
+);
+send({ type: 'command', name: 'undo' });
 send({ type: 'mediaAnchor', loadId: 'media', anchor: 'second-placement' });
 send({
   type: 'mediaInsert',
