@@ -74,6 +74,7 @@ class PrototypeTest {
     device.findObject(By.scrollable(true))?.scroll(Direction.DOWN,0.8f)
     var opened=false
     for (attempt in 1..45) {
+      if(!device.hasObject(By.text("I approved the matching code"))) device.findObject(By.scrollable(true))?.scroll(Direction.DOWN,0.5f)
       device.findObject(By.text("I approved the matching code"))?.click()
       if(device.wait(Until.hasObject(By.text("Your space.")),1000) || device.hasObject(By.text("Edit")) || device.hasObject(By.text("Library"))) {opened=true;break}
       if(attempt==3)device.dumpWindowHierarchy(java.io.File(context.getExternalFilesDir(null),"a6-pair-window.xml"))

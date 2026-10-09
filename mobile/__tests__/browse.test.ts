@@ -155,3 +155,21 @@ test('cycles are visits, current link no-op, branching drops forward and bounds 
     }).visits[0].position,
   ).toBeUndefined();
 });
+
+test('Trash restores only title browsing without silently retained scope/type filters', () => {
+  const b = normalizeBrowse({
+    ...defaultBrowse(),
+    destination: 'trash',
+    mode: 'content',
+    type: 'image',
+    collection: {
+      id: '00000000-0000-4000-8000-000000000001',
+      name: 'Collection',
+    },
+    query: 'image',
+  });
+  expect(b.mode).toBe('title');
+  expect(b.type).toBe('');
+  expect(b.collection).toBeUndefined();
+  expect(browsePath(b)).toBe('/resources/trash?page=0&size=100&q=image');
+});

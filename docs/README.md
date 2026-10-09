@@ -48,6 +48,9 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [Android organization and lifecycle](android/ORGANIZATION.md): contextual Actions, memberships, saved References, checked occurrences and durable Trash/Restore/purge.
+- [0.1.0-alpha.7 A7 organization](android/releases/0.1.0-alpha.7.md): Android-only lifecycle release and actual validation gates.
+
 - [Android implementation and APK delivery](android/ANDROID.md): isolated toolchain, native trust/drafts, prototype limits, signing, installation and actual validation.
 - [Android interaction design](android/DESIGN.md): implemented A5 navigation foundation and planned writing/autosave/contextual tools; current implementation remains in ANDROID.md.
 - [A5 navigation comparison](android/design/a5-navigation-comparison.html): interactive drawer/bottom-navigation layout study; simulated keyboard, not native evidence.
@@ -62,7 +65,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
-- [Vaultor for Android](plans/android-plan.md): A1 prototype, A2 recovery, A3 browsing, A4 images and A5 navigation and A6 writing, with three remaining Android-first sprints A7–A9, Windows emulator testing, no agent phone access, signed APK milestones and S24 Ultra / One UI 8.5–9 user acceptance.
+- [Vaultor for Android](plans/android-plan.md): A1 prototype, A2 recovery, A3 browsing, A4 images and A5 navigation and A6 writing, with A7 organization/lifecycle and two remaining Android-first sprints A8–A9, Windows emulator testing, no agent phone access, signed APK milestones and S24 Ultra / One UI 8.5–9 user acceptance.
 
 - [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): All five sprints implemented on Windows; measured integration, platform limits and separate Android prototype gate recorded.
 - [Deferred roadmap](plans/future-roadmap.md): scheduled backups explicitly parked for later, OCR/offline/platform follow-ups and scope boundaries.

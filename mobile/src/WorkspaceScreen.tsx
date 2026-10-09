@@ -1,3 +1,5 @@
+import OrganizationSheet from './OrganizationSheet';
+import { type Target } from './organization';
 import { HomeScreen, WorkspaceDrawer } from './NavigationSurface';
 import { QuickAccess, backIntent, type RootDestination } from './navigation';
 import { usePalette, useThemeStyles } from './ui';
@@ -147,6 +149,17 @@ export default function WorkspaceScreen() {
     }),
   ).current;
   const state = useSyncExternalStore(model.subscribe, model.snapshot);
+  const [organizationTarget, setOrganizationTarget] = useState<Target>();
+  const [noteMenu, setNoteMenu] = useState(false);
+  const [completedIds, setCompletedIds] = useState<string[]>([]);
+  const organizationOpen = useRef(false);
+  organizationOpen.current = Boolean(organizationTarget);
+  const organize = (target: Target) => {
+    Keyboard.dismiss();
+    inject({ type: 'blur' });
+    setCompletedIds([]);
+    setOrganizationTarget(target);
+  };
   const shortcuts = useRef(
     new QuickAccess(
       path => model.browseApi(path),
@@ -170,6 +183,7 @@ export default function WorkspaceScreen() {
     keyboard = useRef(false),
     wasEditing = useRef(false);
   current.current = state;
+
   const [address, setAddress] = useState('https://'),
     [code, setCode] = useState(''),
     [connections, setConnections] = useState(false),
@@ -190,6 +204,31 @@ export default function WorkspaceScreen() {
       ),
     [loadId],
   );
+  useEffect(() => {
+    const selection = state.referenceSelection;
+    if (!selection || !state.supported || !ready.current) return;
+    if (state.note?.revision === selection.revision && !state.draft)
+      inject({
+        type: 'selectReference',
+        path: selection.path,
+        targetId: selection.targetId,
+      });
+    else
+      model.report(
+        Error(
+          'Saved occurrence changed. Opened the note without moving its selection.',
+        ),
+      );
+    model.consumeReference();
+  }, [
+    state.referenceSelection,
+    state.supported,
+    state.note?.revision,
+    state.draft,
+    inject,
+    model,
+  ]);
+
   const load = () => {
     if (ready.current && state.content) {
       inject({
@@ -226,9 +265,9 @@ export default function WorkspaceScreen() {
     setFormatting(false);
   }, [state.loadId, state.createdNoteId, state.note?.id]);
   useEffect(() => {
-    model.enableAutosave(true);
+    model.enableAutosave(!organizationTarget);
     return () => model.enableAutosave(false);
-  }, [model]);
+  }, [model, organizationTarget]);
   useEffect(() => {
     if (!editing) wasEditing.current = false;
     const focus =
@@ -246,6 +285,7 @@ export default function WorkspaceScreen() {
         value:
           editing &&
           !drawer &&
+          !organizationTarget &&
           state.view === 'note' &&
           !connections &&
           !recovery &&
@@ -260,6 +300,7 @@ export default function WorkspaceScreen() {
   }, [
     editing,
     creating,
+    organizationTarget,
     drawer,
     connections,
     recovery,
@@ -348,7 +389,7 @@ export default function WorkspaceScreen() {
         if (reconcile) clearTimeout(reconcile);
         void model.background().catch(e => model.report(e));
       } else {
-        model.enableAutosave(true);
+        model.enableAutosave(!organizationOpen.current);
         void model.perform(async () => {
           await permission();
           await model.connect(false);
@@ -788,6 +829,7 @@ export default function WorkspaceScreen() {
                   recent: 'Recent',
                   pinned: 'Pinned',
                   collections: 'Collections',
+                  trash: 'Trash',
                 }[state.browse.destination]}
           </Text>
           <View style={s.headerActions}>
@@ -824,35 +866,51 @@ export default function WorkspaceScreen() {
                 <Action
                   label="•••"
                   accessibilityLabel="Note actions"
-                  onPress={() =>
-                    Alert.alert(
-                      'Note',
-                      state.draft ? state.status : undefined,
-                      [
-                        {
-                          text: 'Journey',
-                          onPress: () => {
-                            Keyboard.dismiss();
-                            inject({ type: 'blur' });
-                            setTrail(true);
-                          },
-                        },
-                        {
-                          text: 'Library',
-                          onPress: () => selectDestination('library'),
-                        },
-                        { text: 'Close', style: 'cancel' },
-                      ],
-                    )
-                  }
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    inject({ type: 'blur' });
+                    setNoteMenu(true);
+                  }}
                 />
               </>
             ) : !hostView && !recovery ? (
-              <Action
-                label="New note"
-                disabled={state.busy || state.connection !== 'online'}
-                onPress={() => setCreating(true)}
-              />
+              <>
+                {state.view === 'browse' &&
+                state.browse.destination === 'collections' ? (
+                  <Action
+                    label="New collection"
+                    onPress={() =>
+                      organize({
+                        kind: 'new-collection',
+                        id: 'new',
+                        title: 'New collection',
+                      })
+                    }
+                  />
+                ) : state.browse.collection && state.view === 'browse' ? (
+                  <Action
+                    label="•••"
+                    accessibilityLabel="Collection actions"
+                    onPress={() =>
+                      organize({
+                        kind: 'collection',
+                        id: state.browse.collection!.id,
+                        title: state.browse.collection!.name,
+                      })
+                    }
+                  />
+                ) : null}
+                {!(
+                  state.view === 'browse' &&
+                  ['collections', 'trash'].includes(state.browse.destination)
+                ) ? (
+                  <Action
+                    label="New note"
+                    disabled={state.busy || state.connection !== 'online'}
+                    onPress={() => setCreating(true)}
+                  />
+                ) : null}
+              </>
             ) : null}
           </View>
         </View>
@@ -1045,7 +1103,9 @@ export default function WorkspaceScreen() {
             !(drawer && width < 840) &&
             state.view === 'browse'
           }
-          suspended={drawer}
+          suspended={drawer || Boolean(organizationTarget)}
+          onOrganize={organize}
+          completedIds={completedIds}
           searchRequest={searchRequest}
           onAction={run}
         />
@@ -1141,6 +1201,12 @@ export default function WorkspaceScreen() {
                   ready.current = true;
                   load();
                 } else if (m.type === 'loaded') model.loaded();
+                else if (m.type === 'referenceSelected' && !m.valid)
+                  model.report(
+                    Error(
+                      'Saved occurrence moved. Opened the note without moving its selection.',
+                    ),
+                  );
                 else if (m.type === 'unsupported') model.unsupported();
                 else if (m.type === 'changed' && m.content)
                   model.changed(m.content);
@@ -1254,6 +1320,28 @@ export default function WorkspaceScreen() {
           }}
         />
       ) : null}
+      {noteMenu ? (
+        <ChoiceSheet
+          title="Note actions"
+          searchable={false}
+          choices={[
+            { value: 'resource', label: 'Resource actions' },
+            { value: 'journey', label: 'Journey' },
+            { value: 'library', label: 'Library' },
+          ]}
+          close={() => setNoteMenu(false)}
+          onChoose={value => {
+            if (value === 'journey') setTrail(true);
+            else if (value === 'library') selectDestination('library');
+            else if (state.note)
+              organize({
+                kind: 'resource',
+                id: state.note.id,
+                title: state.note.title,
+              });
+          }}
+        />
+      ) : null}
       {trail ? (
         <ChoiceSheet
           title="Journey"
@@ -1268,7 +1356,29 @@ export default function WorkspaceScreen() {
           onChoose={index => run(() => model.history(Number(index)))}
         />
       ) : null}
-      {state.preview ? <ResourcePreview model={model} /> : null}
+      {state.preview ? (
+        <ResourcePreview
+          model={model}
+          onOrganize={r => {
+            model.dismissPreview();
+            organize({
+              kind: 'resource',
+              id: r.id,
+              title: r.title,
+              resource: r,
+            });
+          }}
+        />
+      ) : null}
+      {organizationTarget ? (
+        <OrganizationSheet
+          key={organizationTarget.kind + ':' + organizationTarget.id}
+          model={model}
+          target={organizationTarget}
+          completed={setCompletedIds}
+          close={() => setOrganizationTarget(undefined)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

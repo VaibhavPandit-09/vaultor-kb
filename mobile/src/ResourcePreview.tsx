@@ -10,9 +10,16 @@ import {
   NativeModules,
 } from 'react-native';
 import { Action } from './BrowseScreen';
+import type { ResourceSummary } from './browse';
 import type { MobileWorkspace } from './workspace';
 const native = NativeModules.VaultorNative;
-export default function ResourcePreview({ model }: { model: MobileWorkspace }) {
+export default function ResourcePreview({
+  model,
+  onOrganize,
+}: {
+  model: MobileWorkspace;
+  onOrganize: (resource: ResourceSummary) => void;
+}) {
   const s = useThemeStyles(sheetStyles);
   const state = model.snapshot(),
     r = state.preview;
@@ -88,6 +95,7 @@ export default function ResourcePreview({ model }: { model: MobileWorkspace }) {
             <Text numberOfLines={2} style={s.title}>
               {r.title}
             </Text>
+            <Action label="Resource actions" onPress={() => onOrganize(r)} />
             <Action
               label="Close preview"
               onPress={() => model.dismissPreview()}

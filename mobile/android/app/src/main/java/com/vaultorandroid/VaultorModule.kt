@@ -270,6 +270,20 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
         val scope=a.getString("scope");require(scope.length in 1..512);a.put("at",System.currentTimeMillis());sessions.put(scope,a)
         while(sessions.length()>32) {val oldest=sessions.keys().asSequence().minBy {sessions.getJSONObject(it).optLong("at")};sessions.remove(oldest)}
       }
+      "getOrganization" -> return@run state.optJSONObject("organizationPending")?.optJSONObject(a.getString("scope"))?.optJSONObject(a.getString("key"))?.toString() ?: "null"
+      "putOrganization" -> {
+        require(a.getString("scope").length<=500 && a.getString("key").length<=150 && a.getString("id").matches(Regex("[a-fA-F0-9-]{36}")))
+        val all=state.optJSONObject("organizationPending") ?: JSONObject().also {state.put("organizationPending",it)}
+        require(all.has(a.getString("scope")) || all.length()<32) {"Pending organization workspace limit reached."}
+        val ops=all.optJSONObject(a.getString("scope")) ?: JSONObject().also {all.put(a.getString("scope"),it)}
+        require(ops.has(a.getString("key")) || ops.length()<100) {"Resolve pending organization operations first."}
+        ops.put(a.getString("key"),a)
+      }
+      "ackOrganization" -> {
+        val all=state.optJSONObject("organizationPending");val ops=all?.optJSONObject(a.getString("scope"));val old=ops?.optJSONObject(a.getString("key"))
+        if(old?.optString("id")==a.optString("id")) ops.remove(a.getString("key"))
+        if(ops!=null && ops.length()==0)all.remove(a.getString("scope"))
+      }
       "getCache" -> return@run cache.optJSONObject(entryKey())?.getJSONObject("note")?.toString() ?: "null"
       "putCache" -> {
         val key=entryKey();a.put("at",System.currentTimeMillis());cache.put(key,a)
@@ -323,9 +337,22 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     require(h.getString("hostId")==hostId && h.getString("fingerprint")==p.getString("fingerprint"))
     synchronized(stateLock) {require(captured==epoch);val state=read();state.getJSONObject("profiles").put(hostId,p);write(state);cancelRequests()};"{}"
   }
+  private fun organizationPath(path:String,method:String,revision:String?):Boolean {
+    val id="[a-fA-F0-9-]{36}"
+    if(method=="GET" && path.matches(Regex("/(collections/$id|resources/$id/(usage|lifecycle-pending))")))return true
+    if(method=="GET" && path.matches(Regex("/resources/$id/references\\?direction=(incoming|outgoing)&page=[0-9]{1,6}&size=30")))return true
+    if(method=="GET" && path.substringBefore("?") in listOf("/collections","/tags/browse","/resources","/resources/trash")) {try {validateBrowsePath(path);return true}catch(_:Exception){return false}}
+    if(method=="PUT" && path.matches(Regex("/collections/creations/$id")))return true
+    if(method=="PUT" && path.matches(Regex("/(collections/$id(?:/favorite)?|resources/$id/favorite|resources/lifecycle)")))return true
+    if(method=="PATCH" && path.matches(Regex("/resources/$id/title")) && revision!=null)return true
+    if(method=="DELETE" && path.matches(Regex("/collections/$id")))return true
+    if(method=="POST" && path in listOf("/organization/memberships","/tags"))return true
+    if(method in listOf("POST","DELETE") && path.matches(Regex("/resources/$id/tags/[^/?#]{1,1200}")))return true
+    return false
+  }
   @ReactMethod fun apiFor(hostId:String,token:String,path:String,method:String,body:String?,revision:String?,promise:Promise)=net(promise) {
     val validId="[a-fA-F0-9-]{36}"
-    require((method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path=="/settings/workspace" || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/$validId)")))) ||
+    require(organizationPath(path,method,revision) || (method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path=="/settings/workspace" || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/$validId)")))) ||
       (method=="GET" && path.matches(Regex("/resources/$validId/summary"))) || (method=="POST" && path.matches(Regex("/resources/$validId/open")) && body==null) ||
       (method=="PUT" && ((path.matches(Regex("/resources/$validId/note")) && revision!=null) || path.matches(Regex("/resources/imports/$validId"))))) {"Unsupported mobile operation."}
     val p=selected(hostId,token)
@@ -335,7 +362,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
 
   private fun validateBrowsePath(path:String) {
     require(path.length<=12000);val uri=URI(path)
-    require(uri.scheme==null && uri.rawAuthority==null && uri.fragment==null && uri.path in listOf("/resources","/resources/query","/collections","/organization/pins"))
+    require(uri.scheme==null && uri.rawAuthority==null && uri.fragment==null && uri.path in listOf("/resources","/resources/query","/resources/trash","/collections","/tags/browse","/organization/pins"))
     val seen=HashSet<String>()
     for(pair in (uri.rawQuery ?: "").split("&").filter {it.isNotEmpty()}) {
       val pieces=pair.split("=",limit=2);require(pieces.size==2)

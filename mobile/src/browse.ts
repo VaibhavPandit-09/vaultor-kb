@@ -1,4 +1,9 @@
-export type Destination = 'library' | 'recent' | 'pinned' | 'collections';
+export type Destination =
+  | 'library'
+  | 'recent'
+  | 'pinned'
+  | 'collections'
+  | 'trash';
 export type ResourceSummary = {
   id: string;
   type: string;
@@ -6,6 +11,11 @@ export type ResourceSummary = {
   mimeType?: string;
   updatedAt?: string;
   lastOpenedAt?: string;
+  revision?: string;
+  favorite?: boolean;
+  trashedAt?: string;
+  cleanupPending?: boolean;
+  tags?: { id: string; name: string }[];
   collections?: { id: string; name: string }[];
 };
 export type BrowseRow = {
@@ -40,22 +50,30 @@ export function normalizeBrowse(value: unknown): BrowseConfig {
   if (!v) return defaultBrowse();
   return {
     ...defaultBrowse(),
-    destination: ['library', 'recent', 'pinned', 'collections'].includes(
-      v.destination ?? '',
-    )
+    destination: [
+      'library',
+      'recent',
+      'pinned',
+      'collections',
+      'trash',
+    ].includes(v.destination ?? '')
       ? v.destination!
       : 'library',
     query: typeof v.query === 'string' ? v.query.slice(0, 500) : '',
-    mode: v.mode === 'content' ? 'content' : 'title',
+    mode:
+      v.destination !== 'trash' && v.mode === 'content' ? 'content' : 'title',
     type:
-      filters.some(f => f.value === v.type) ||
-      (v.destination === 'pinned' &&
-        v.mode !== 'content' &&
-        v.type === 'collection')
+      v.destination !== 'trash' &&
+      (filters.some(f => f.value === v.type) ||
+        (v.destination === 'pinned' &&
+          v.mode !== 'content' &&
+          v.type === 'collection'))
         ? v.type!
         : '',
     collection:
-      v.collection && /^[a-f0-9-]{36}$/i.test(v.collection.id)
+      v.destination !== 'trash' &&
+      v.collection &&
+      /^[a-f0-9-]{36}$/i.test(v.collection.id)
         ? { id: v.collection.id, name: String(v.collection.name).slice(0, 500) }
         : undefined,
     sort: ['title', 'recent', 'updated'].includes(v.sort ?? '')
@@ -117,6 +135,13 @@ export function browsePath(c: BrowseConfig) {
     q: c.query,
   };
   let path = '/resources';
+  if (c.destination === 'trash')
+    return (
+      '/resources/trash?page=' +
+      c.page +
+      '&size=100&q=' +
+      encodeURIComponent(c.query)
+    );
   if (c.destination === 'collections') path = '/collections';
   else if (
     c.destination === 'pinned' &&

@@ -656,3 +656,35 @@ test('valid renderer reopening clears its own failure without hiding save errors
   x.model.loaded();
   expect(x.model.state.error).toBe('Storage failed');
 });
+
+test('reference occurrence preserves drafts and rejects stale saved paths', async () => {
+  const x = await opened();
+  await x.model.openOccurrence(id, 'r1', '/0/0', other);
+  expect(x.model.state.referenceSelection?.targetId).toBe(other);
+  x.model.consumeReference();
+  x.model.loaded();
+  x.model.changed(doc('unsaved'));
+  await x.model.openOccurrence(id, 'r1', '/0/0', other);
+  expect(x.model.state.referenceSelection).toBeUndefined();
+  expect(x.model.state.content).toEqual(doc('unsaved'));
+  expect(x.model.state.error).toContain('may have moved');
+});
+test('foreign Trash then Restore keeps a recovery draft and re-enables explicit saved recovery', async () => {
+  const x = await opened();
+  x.server.a[id].trashedAt = 'now';
+  await x.model.reconcile();
+  expect(x.model.state.unavailable).toBe(true);
+  expect(x.model.state.journey.visits[0].unavailable).toBe(true);
+  x.server.a[id] = {
+    ...x.server.a[id],
+    trashedAt: undefined,
+    revision: 'restored',
+  };
+  await x.model.reconcile();
+  expect(x.model.state.unavailable).toBe(false);
+  expect(x.model.state.conflict).toBe(true);
+  expect(x.model.state.draft?.content).toEqual(doc('saved'));
+  await x.model.useSaved();
+  expect(x.model.state.journey.visits[0].unavailable).toBe(false);
+  expect(x.model.state.recovery.length).toBeGreaterThan(0);
+});

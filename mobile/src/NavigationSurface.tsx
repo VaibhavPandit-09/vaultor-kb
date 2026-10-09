@@ -168,6 +168,7 @@ export function WorkspaceDrawer(
             ['home', '⌂', 'Home'],
             ['library', '▤', 'Library'],
             ['collections', '▦', 'Collections'],
+            ['trash', '♲', 'Trash'],
           ] as const
         ).map(([value, icon, label]) => (
           <Action

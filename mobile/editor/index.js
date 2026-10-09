@@ -1,3 +1,4 @@
+import { NodeSelection } from '@tiptap/pm/state';
 import { Editor, Node, Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { closeHistory } from '@tiptap/pm/history';
@@ -368,6 +369,43 @@ window.vaultorReceive = raw => {
       }
       loading = false;
       send({ type: 'loaded', loadId, content: editor.getJSON() });
+    } else if (
+      m.type === 'selectReference' &&
+      m.loadId === loadId &&
+      !blocked
+    ) {
+      let valid = false;
+      if (
+        typeof m.path === 'string' &&
+        /^\/\d+(?:\/\d+)*$/.test(m.path) &&
+        m.path.length < 2000
+      ) {
+        let node = editor.state.doc,
+          position = 0;
+        const indices = m.path.slice(1).split('/').map(Number);
+        valid = indices.length <= 100;
+        for (let depth = 0; valid && depth < indices.length; depth++) {
+          const index = indices[depth];
+          if (!Number.isSafeInteger(index) || index >= node.childCount) {
+            valid = false;
+            break;
+          }
+          for (let i = 0; i < index; i++) position += node.child(i).nodeSize;
+          node = node.child(index);
+          if (depth < indices.length - 1) position++;
+        }
+        valid =
+          valid &&
+          ['image', 'resourceLink'].includes(node.type.name) &&
+          node.attrs.resourceId === m.targetId;
+        if (valid)
+          editor.view.dispatch(
+            editor.state.tr
+              .setSelection(NodeSelection.create(editor.state.doc, position))
+              .scrollIntoView(),
+          );
+      }
+      send({ type: 'referenceSelected', loadId, valid });
     } else if (m.type === 'mediaThumbnail' && m.loadId === loadId) {
       const view = views.get(m.token);
       if (

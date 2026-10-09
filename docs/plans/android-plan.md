@@ -1,6 +1,6 @@
 # Vaultor for Android — execution tracker
 
-Created 2026-10-08; reviewed 2026-10-09. **A1–A6 implemented and published; A7–A9 not started.** The user authorized A6 implementation on 2026-10-09; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
+Created 2026-10-08; reviewed 2026-10-09. **A1–A6 published; A7 in progress; A8–A9 not started.** The user authorized A7 implementation on 2026-10-09; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
 
 ## Delivery and agreed boundaries
 
@@ -145,7 +145,7 @@ Status: **Implemented and published (2026-10-09), Android0.1.0-alpha.6.1.** User
 
 ## A7 — Organization, references and resource lifecycle
 
-Status: **Not started.** Depends on A6. Retains the original A5 organization scope within the new mobile patterns.
+Status: **In progress (2026-10-09).** User authorized A7. Depends on published A6. Retains the original A5 organization scope within the new mobile patterns.
 
 - [ ] Add shared resource Actions: create/rename collections and resources as applicable, pins, tags, collection membership, immediate add-existing and retry-safe create-and-add. Validate current input; preserve failures and operation identity. Build on A6 note creation instead of duplicating it.
 - [ ] Implement metadata-only incoming/outgoing References and saved usage with counts/paging. Validate revision/occurrence before selection; fall back safely for edited/missing/unknown paths. Files remain temporary previews.
@@ -306,3 +306,16 @@ Published Android-only prerelease at **2026-10-09T10:39:09Z**: [Vaultor Android0
 Fresh clean tagged-source release/application-test compilation, package/lock/Gradle/original-signature/API/arm64+x86_64/16KiB verification and bundled-editor checks passed. The exact staged APK installed over retained applications on Android16 and17. Each passed eight native storage/media cases, including encrypted sent receipts/creation IDs, exact acknowledgments, receipt size and authenticated workspace-settings loading, plus the focused read/Edit/real IME/Format/Undo/autosave/Back/drawer/filter/link/quick-capture/renderer-termination-and-reopen case. Approval/session retention passed. Corrected candidate and final APK hashes match; broader clipboard/Share/UI/offline/narrow-font evidence above is candidate evidence, not a repeated full-suite claim for the tagged APK. Native lifecycle checks are bounded emulator observations, not Samsung/OEM guarantees.
 
 Publisher verified clean pushed source/tag, original signer and manifest/checksum/APK, downloaded and compared all three assets before publication. GitHub confirms non-draft/prerelease status and matching public digests/sizes. Desktop/Mac0.7.1 remains unchanged. Install only the APK over the existing app; do not uninstall/clear data. No host update is required. A8 owns the in-app updater. Physical S24/Samsung Keyboard/One UI8.5–9, TalkBack, real Wi-Fi/Mac races and OEM lifecycle remain user-only/open. Owned disposable host/listener and both emulators stopped; no phone or personal workspace access. This follow-up is documentation-only and leaves source tags/assets immutable. **A6 complete; three sprints A7–A9 remain unstarted.**
+
+
+## A7 implementation and candidate checks — 2026-10-09
+
+Implemented Android0.1.0-alpha.7/versionCode8: shared contextual Actions, encrypted UUID collection creation, immediate membership, protected conditional rename, pins/JSON tags, paged saved References/checked occurrence selection, Trash/Restore and explicit permanent-delete/cleanup retry, contextual partial selection and foreign lifecycle recovery. Original signer/package, host0.7.1/protocol3 and desktop remain unchanged. ORGANIZATION.md owns the implemented behavior. A8/A9 remain unstarted.
+
+TypeScript, 68 focused Jest tests, fresh editor schema/refusal/checked-selection-without-mutation checks and scoped lint (zero errors/47 warnings) passed. Controller tests cover uncertain/reopened identity, duplicate prevention, epoch/scope targeting, membership, save/protection failure, saved usage, conditional rename, tag JSON, cross-device committed cleanup and refusal to reset uncertain operations. Browse tests cover Trash normalization; workspace checks cover occurrence fallback and foreign Trash/Restore with independent recovery.
+
+Paired disposable-host candidate tests passed on Android16/17: encrypted pending exact acknowledgment/policy, real rename stale412, tags/membership/pins, saved References/usage/path, UUID replay, same-ID Restore and explicit purge. The latest Android17 candidate additionally passed byte-for-byte original managed-image preservation through Trash/Restore and note More → Resource actions, plus the collection/Add/References/Trash/Restore UI path. Candidate Android16 Light/Dark screenshots were inspected for sheet layout/contrast. Read/Edit/IME/Format/Undo/autosave/Back/link/quick-capture/renderer recovery passed on both generations before the final Actions refinements. Final exact tagged APK checks/publication are a separate gate.
+
+Corrected failures: encoded tag paths are intentionally rejected by the host, so Android now sends JSON names and ID membership. Note More exceeded Android Alert's three-button limit; it now uses the shared choice sheet. A managed-image test initially staged outside FileProvider's root; the disposable fixture now uses the existing media-share root. A cold emulator install attempted before package service readiness ran an obsolete test APK; that failed run is excluded and correct installs are rechecked after full boot. No approval, TLS, canonical-path or revision protection was bypassed. Physical Samsung Keyboard/One UI8.5–9/TalkBack/actual LAN/Mac races and OEM lifecycle remain unverified/user-owned.
+
+Latest candidate gate: Android16 passed both native organization/image cases and the final UI case including note Actions. The UI harness now waits for enabled Close after Add and for Rename after returning from References; premature Back while Add was pending and premature scroll were not counted as passes. Android17 latest runtime passed all three cases. No runtime changes followed these checks. Immutable source/tag rebuilding and exact staged installs follow before publication.

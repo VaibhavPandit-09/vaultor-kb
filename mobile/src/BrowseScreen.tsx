@@ -1,3 +1,4 @@
+import { targetFor, type Target } from './organization';
 import { useThemeStyles } from './ui';
 import React, {
   useEffect,
@@ -6,7 +7,6 @@ import React, {
   useSyncExternalStore,
 } from 'react';
 import {
-  Alert,
   AppState,
   FlatList,
   Modal,
@@ -129,8 +129,12 @@ export default function BrowseScreen({
   onAction,
   searchRequest = 0,
   suspended = false,
+  onOrganize,
+  completedIds,
 }: {
   model: MobileWorkspace;
+  onOrganize: (target: Target) => void;
+  completedIds?: string[];
   visible: boolean;
   onAction: (action: () => Promise<void>) => void;
   searchRequest?: number;
@@ -168,6 +172,31 @@ export default function BrowseScreen({
     [scopePage, setScopePage] = useState(0),
     [scopeMore, setScopeMore] = useState(false),
     [scopeError, setScopeError] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggle = (id: string) =>
+    setSelected(old => {
+      const next = new Set(old);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  useEffect(
+    () => setSelected(new Set()),
+    [
+      state.scope,
+      b.config.query,
+      b.config.type,
+      b.config.collection?.id,
+      b.config.mode,
+      b.config.page,
+      b.config.destination,
+    ],
+  );
+  useEffect(() => {
+    if (completedIds?.length)
+      setSelected(
+        old => new Set([...old].filter(id => !completedIds.includes(id))),
+      );
+  }, [completedIds]);
   const scopeTicket = useRef(0),
     restored = useRef('');
   const [scopeRetry, setScopeRetry] = useState(0);
@@ -271,6 +300,7 @@ export default function BrowseScreen({
         destination: 'library',
         collection: { id: row.id, name: row.title },
       });
+    else if (b.config.destination === 'trash') onOrganize(targetFor(row));
     else onAction(() => model.routeResource(row.id));
   };
   return (
@@ -305,13 +335,17 @@ export default function BrowseScreen({
           onChangeText={query => browser.configure({ query })}
           returnKeyType="search"
         />
-        <Action
-          label="Filters"
-          active={Boolean(
-            b.config.type || b.config.mode === 'content' || b.config.collection,
-          )}
-          onPress={() => setSheet('options')}
-        />
+        {b.config.destination !== 'trash' ? (
+          <Action
+            label="Filters"
+            active={Boolean(
+              b.config.type ||
+                b.config.mode === 'content' ||
+                b.config.collection,
+            )}
+            onPress={() => setSheet('options')}
+          />
+        ) : null}
       </View>
       {b.config.type || b.config.mode === 'content' ? (
         <View style={styles.tabs}>
@@ -371,7 +405,29 @@ export default function BrowseScreen({
                 : 'resources'
             }`}
       </Text>
+      {selected.size ? (
+        <View style={styles.bar}>
+          <Action
+            label={'Actions · ' + selected.size}
+            onPress={() =>
+              onOrganize({
+                kind: 'bulk',
+                id: 'selection',
+                title: 'Selected resources',
+                resources: b.rows
+                  .filter(r => r.kind === 'resource' && selected.has(r.id))
+                  .map(r => r.resource!),
+              })
+            }
+          />
+          <Action
+            label="Clear selection"
+            onPress={() => setSelected(new Set())}
+          />
+        </View>
+      ) : null}
       <FlatList
+        extraData={selected}
         removeClippedSubviews={false}
         ref={list}
         data={b.rows}
@@ -406,12 +462,49 @@ export default function BrowseScreen({
               : presentation(item.resource!);
           return (
             <View style={styles.row}>
+              {selected.size && item.kind === 'resource' ? (
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityLabel={'Select ' + item.title}
+                  accessibilityState={{ checked: selected.has(item.id) }}
+                  onPress={() => toggle(item.id)}
+                  style={styles.action}
+                >
+                  <Text style={styles.actionText}>
+                    {selected.has(item.id) ? '☑' : '☐'}
+                  </Text>
+                </Pressable>
+              ) : null}
               <Pressable
                 style={styles.rowMain}
                 accessibilityRole="button"
                 accessibilityLabel={`${item.title}, ${p.label}`}
+                accessibilityHint={
+                  item.kind === 'resource'
+                    ? 'Long press to select resources'
+                    : undefined
+                }
+                accessibilityActions={
+                  item.kind === 'resource'
+                    ? [{ name: 'longpress', label: 'Select resource' }]
+                    : undefined
+                }
+                onAccessibilityAction={e => {
+                  if (
+                    e.nativeEvent.actionName === 'longpress' &&
+                    item.kind === 'resource'
+                  )
+                    toggle(item.id);
+                }}
                 disabled={b.loading && b.applied !== path}
-                onPress={() => activate(item)}
+                onLongPress={() => {
+                  if (item.kind === 'resource') toggle(item.id);
+                }}
+                onPress={() =>
+                  selected.size && item.kind === 'resource'
+                    ? toggle(item.id)
+                    : activate(item)
+                }
               >
                 <Text accessibilityElementsHidden style={styles.icon}>
                   {p.icon}
@@ -438,22 +531,7 @@ export default function BrowseScreen({
               <Action
                 label="•••"
                 accessibilityLabel={'Actions for ' + item.title}
-                onPress={() =>
-                  Alert.alert(item.title, p.label, [
-                    {
-                      text:
-                        item.kind === 'collection'
-                          ? 'Open collection'
-                          : p.action === 'editor'
-                          ? 'Open note'
-                          : p.action === 'preview'
-                          ? 'View file information'
-                          : 'Check availability',
-                      onPress: () => activate(item),
-                    },
-                    { text: 'Close', style: 'cancel' },
-                  ])
-                }
+                onPress={() => onOrganize(targetFor(item))}
               />
             </View>
           );

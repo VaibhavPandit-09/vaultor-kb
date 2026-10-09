@@ -113,6 +113,38 @@ const doc = {
 const send = m =>
   dom.window.vaultorReceive(JSON.stringify({ protocol: 1, ...m }));
 send({ type: 'load', loadId: 'roundtrip', content: doc });
+const selectionUpdates = messages.filter(m => m.type === 'changed').length;
+send({
+  type: 'selectReference',
+  loadId: 'roundtrip',
+  path: '/1/3',
+  targetId: 'source',
+});
+assert.equal(messages.at(-1).type, 'referenceSelected');
+assert.equal(messages.at(-1).valid, true);
+assert.ok(
+  dom.window.document.querySelector('.resource-link.ProseMirror-selectednode'),
+);
+send({
+  type: 'selectReference',
+  loadId: 'roundtrip',
+  path: '/1/3',
+  targetId: 'other',
+});
+assert.equal(messages.at(-1).valid, false);
+send({
+  type: 'selectReference',
+  loadId: 'roundtrip',
+  path: '/99/0',
+  targetId: 'source',
+});
+assert.equal(messages.at(-1).valid, false);
+assert.equal(
+  messages.filter(m => m.type === 'changed').length,
+  selectionUpdates,
+  'reference selection must not mutate saved JSON',
+);
+
 const result = messages.findLast(m => m.type === 'loaded');
 assert.ok(result, 'full schema loads');
 const updatesBeforeLock = messages.filter(m => m.type === 'changed').length;

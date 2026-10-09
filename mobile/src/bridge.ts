@@ -63,6 +63,8 @@ export function bridgeMessage(
       return m.content?.type === 'doc'
         ? { type: m.type, content: m.content }
         : null;
+    if (m.type === 'referenceSelected' && typeof m.valid === 'boolean')
+      return { type: m.type, valid: m.valid };
     if (m.type === 'unsupported') return { type: m.type };
     if (
       m.type === 'position' &&

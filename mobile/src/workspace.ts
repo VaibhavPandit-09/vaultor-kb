@@ -81,6 +81,7 @@ export type WorkspaceState = {
   preview?: ResourceSummary;
   browseVersion: number;
   createdNoteId?: string;
+  referenceSelection?: { path: string; targetId: string; revision: string };
   navigationRetry?: {
     id: string;
     intent: 'direct' | 'linked' | 'history';
@@ -383,6 +384,7 @@ export class MobileWorkspace {
     });
   }
   async open(id: string, position?: Position, strict = false) {
+    this.patch({ referenceSelection: undefined });
     const ticket = ++this.navigation,
       epoch = this.epoch;
     await this.saveRequest?.catch(() => {});
@@ -775,6 +777,7 @@ export class MobileWorkspace {
         this.patch({
           conflict: true,
           status: 'Changed on another device · draft retained',
+          unavailable: false,
         });
         return;
       }
@@ -817,6 +820,12 @@ export class MobileWorkspace {
           unavailable: true,
           conflict: true,
           status: 'Saved note unavailable · local version retained',
+          journey: {
+            ...this.state.journey,
+            visits: this.state.journey.visits.map(v =>
+              v.id === note.id ? { ...v, unavailable: true } : v,
+            ),
+          },
         });
       } else {
         this.patch({
@@ -859,6 +868,14 @@ export class MobileWorkspace {
       content: contentOf(saved),
       conflict: false,
       unavailable: false,
+      journey: {
+        ...this.state.journey,
+        visits: this.state.journey.visits.map(v =>
+          v.id === saved.id
+            ? { ...v, title: saved.title, unavailable: false }
+            : v,
+        ),
+      },
       status: 'Saved version · former draft retained in Recovery',
       loadId: this.state.loadId + 1,
       supported: false,
@@ -926,6 +943,92 @@ export class MobileWorkspace {
     return this.port.storage<Creation | null>('getCreation', {
       scope: this.state.scope,
     });
+  }
+  async organizationApi(
+    path: string,
+    method = 'GET',
+    body?: unknown,
+    revision?: string,
+  ) {
+    const { host, scope } = this.state,
+      epoch = this.epoch;
+    if (!host || !scope) throw Error('Connect to a workspace first.');
+    const result = await this.port.api(host, path, method, body, revision);
+    this.valid(epoch);
+    if (scope !== this.state.scope)
+      throw Error('Workspace changed. Reopen Actions.');
+    return result;
+  }
+  organizationStorage<T>(action: string, value: object) {
+    return this.port.storage<T>(action, value);
+  }
+  operationId() {
+    return this.port.uuid();
+  }
+  async prepareResource(id: string, keep = false) {
+    if (this.state.note?.id !== id) return;
+    await this.saveRequest?.catch(() => {});
+    if (keep) await this.protect();
+    else if (this.state.draft) await this.save();
+    await this.protect();
+  }
+  async organizationChanged(id?: string, unavailable = false) {
+    this.patch({ browseVersion: this.state.browseVersion + 1 });
+    if (unavailable && this.state.preview?.id === id) this.dismissPreview();
+    if (id && this.state.note?.id === id) {
+      if (unavailable) await this.reconcile();
+      else {
+        const fresh = await this.organizationApi(
+          '/resources/' + id + '/summary',
+        );
+        if (this.state.note?.id !== id) return;
+        if (this.state.draft && fresh.revision !== this.state.note.revision) {
+          await this.reconcile();
+          return;
+        }
+        this.patch({
+          note: {
+            ...this.state.note,
+            title: fresh.title,
+            revision: fresh.revision,
+          },
+          journey: {
+            ...this.state.journey,
+            visits: this.state.journey.visits.map(v =>
+              v.id === id
+                ? { ...v, title: fresh.title, unavailable: false }
+                : v,
+            ),
+          },
+        });
+      }
+    }
+  }
+  async openOccurrence(
+    sourceId: string,
+    revision: string,
+    path: string,
+    targetId: string,
+  ) {
+    await this.navigate(sourceId);
+    if (this.state.note?.id !== sourceId)
+      throw Error('Source could not be opened.');
+    if (
+      this.state.draft ||
+      this.state.note.revision !== revision ||
+      !/^\/\d+(?:\/\d+)*$/.test(path)
+    ) {
+      this.report(
+        Error(
+          'Source opened. This saved occurrence may have moved; no selection was applied.',
+        ),
+      );
+      return;
+    }
+    this.patch({ referenceSelection: { path, targetId, revision } });
+  }
+  consumeReference() {
+    this.patch({ referenceSelection: undefined });
   }
   async createNote(title: string, collectionId?: string) {
     if (this.creationRequest) return this.creationRequest;
