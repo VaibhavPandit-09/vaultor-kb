@@ -89,6 +89,8 @@ class PrototypeTest {
       device.findObject(By.desc("Library")).click()
     }
     device.findObject(By.text("Browse Library"))?.click()
+    // Reused sessions preserve Library queries; the fixture explicitly clears its own search.
+    if(InstrumentationRegistry.getArguments().getString("reuseApproval")=="true" && device.wait(Until.hasObject(By.desc("Search resources")),5000)) {device.findObject(By.desc("Search resources")).text="";if(device.hasObject(By.pkg("com.google.android.inputmethod.latin")))device.pressBack()}
     assertTrue(device.wait(Until.hasObject(By.text("A1 Editor fixture")),15000))
     if(!device.hasObject(By.text("Edit")))device.findObject(By.text("A1 Editor fixture")).click()
     assertTrue(device.wait(Until.hasObject(By.text("Edit")),20000))

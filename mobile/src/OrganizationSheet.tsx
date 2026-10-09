@@ -196,12 +196,13 @@ export default function OrganizationSheet({
       go('actions');
     else close();
   };
-  const submitName = () =>
+  const submitName = (inputName = name) =>
     void act(async () => {
+      setName(inputName);
       if (mode === 'create-note') {
         try {
           org.check();
-          await model.createNote(name, target.id);
+          await model.createNote(inputName, target.id);
           close();
         } catch (e) {
           const p = await model.pendingCreation();
@@ -213,18 +214,18 @@ export default function OrganizationSheet({
         }
       } else if (target.kind === 'new-collection') {
         try {
-          await org.createCollection(name);
+          await org.createCollection(inputName);
           close();
         } catch (e) {
           const p = await org.pending('collection:create');
           if (p) {
             setName(p.body.name);
             setPendingName(true);
-          }
+          } else setPendingName(false);
           throw e;
         }
       } else {
-        await org.rename(target, name, meta?.revision);
+        await org.rename(target, inputName, meta?.revision);
         close();
       }
     });
@@ -519,7 +520,9 @@ export default function OrganizationSheet({
                     }
                     style={s.input}
                     returnKeyType="done"
-                    onSubmitEditing={submitName}
+                    onSubmitEditing={event =>
+                      submitName(event.nativeEvent.text)
+                    }
                   />
                   {pendingName ? (
                     <Text style={s.secondary}>
@@ -535,7 +538,7 @@ export default function OrganizationSheet({
                         : 'Save name'
                     }
                     disabled={busy || !name.trim()}
-                    onPress={submitName}
+                    onPress={() => submitName()}
                   />
                 </>
               ) : null}

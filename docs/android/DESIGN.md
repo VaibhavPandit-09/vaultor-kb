@@ -1,6 +1,6 @@
 # Android interaction design
 
-Reviewed 2026-10-09. **A5 navigation and A6 writing are published; A7 organization/lifecycle is implemented for corrected alpha.7.1 with its release gate tracked separately; A8–A9 remain planned.** Actual checks are recorded in the tracker. [ANDROID.md](ANDROID.md) describes current behavior; [the execution tracker](../plans/android-plan.md) owns implementation order, acceptance and actual evidence. This document owns the Android-specific design direction. [ORGANIZATION.md](ORGANIZATION.md) owns implemented A7 contextual actions and deletion/reference safety. Do not describe future preferences or motion recommendations as shipped behavior.
+Reviewed 2026-10-09. **A5 navigation and A6 writing are published; A7 organization/lifecycle is implemented for corrected alpha.7.2 with its release gate tracked separately; A8–A9 remain planned.** Actual checks are recorded in the tracker. [ANDROID.md](ANDROID.md) describes current behavior; [the execution tracker](../plans/android-plan.md) owns implementation order, acceptance and actual evidence. This document owns the Android-specific design direction. [ORGANIZATION.md](ORGANIZATION.md) owns implemented A7 contextual actions and deletion/reference safety. Do not describe future preferences or motion recommendations as shipped behavior.
 
 ## Purpose and principles
 

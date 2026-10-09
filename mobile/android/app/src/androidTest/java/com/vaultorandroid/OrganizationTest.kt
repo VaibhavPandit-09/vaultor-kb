@@ -35,7 +35,9 @@ class OrganizationTest {
   val bootstrap=JSONObject(result {module.storage("bootstrap","{}",it)});val host=bootstrap.getString("selected");val profile=bootstrap.getJSONArray("profiles").let {a->(0 until a.length()).map {a.getJSONObject(it)}.first {it.getString("hostId")==host}}
   require(profile.getString("address").startsWith("https://127.0.0.1:")){"Disposable loopback fixture required"}
   val epoch=JSONObject(result {module.activate(host,it)}).getString("epoch")
-  fun raw(path:String,method:String="GET",body:Any?=null,revision:String?=null)=JSONObject(result {module.apiFor(host,epoch,path,method,body?.toString(),revision,it)})
+  fun raw(path:String,method:String="GET",body:Any?=null,revision:String?=null):JSONObject {
+   var reply=JSONObject();for(attempt in 1..5){reply=JSONObject(result {module.apiFor(host,epoch,path,method,body?.toString(),revision,it)});val problem=runCatching {JSONObject(reply.optString("body"))}.getOrNull();if(reply.optInt("status")!=409||problem?.optString("code")!="WORKSPACE_BUSY"||attempt==5)return reply;Thread.sleep(250)};return reply
+  }
   fun api(path:String,method:String="GET",body:Any?=null,revision:String?=null):JSONObject {val r=raw(path,method,body,revision);assertTrue("Unexpected HTTP ${r.optInt("status")} at $path: ${r.optString("body").take(600)}",r.getInt("status") in 200..299);return if(r.optString("body").isBlank())JSONObject()else JSONObject(r.getString("body"))}
   fun trashRow(id:String,q:String):JSONObject {val rows=api("/resources/trash?page=0&size=100&q=$q").getJSONArray("items");return (0 until rows.length()).map {rows.getJSONObject(it)}.first {it.getString("id")==id}}
   val note=UUID.randomUUID().toString();val source=UUID.randomUUID().toString();val collection=UUID.randomUUID().toString()
@@ -73,7 +75,8 @@ class OrganizationTest {
   var preview:JSONObject?=null;for(attempt in 1..3){try{preview=JSONObject(result {module.media("preview",imageArgs.toString(),it)});break}catch(e:org.junit.ComparisonFailure){if(!e.message.orEmpty().contains("(409)")||attempt==3)throw e;Thread.sleep(200)}};assertEquals(48,preview!!.getInt("width"));assertEquals(1,api("/resources/$imageId/usage").getInt("sources"));val digest=java.security.MessageDigest.getInstance("SHA-256").digest((scope+imageId+"raw").toByteArray()).joinToString(""){"%02x".format(it)};assertArrayEquals(imageFile.readBytes(),File(ctx.cacheDir,"media-preview/$digest").readBytes())
   result {module.media("remove",JSONObject().put("id",imageId).toString(),it)};imageFile.delete()
   assertEquals("trashed",lifecycle(imageId,"trash",api("/resources/$imageId/summary").getString("revision")).getString("status"));val imagePurge=trashRow(imageId,"a7-original");assertEquals("purged",lifecycle(imageId,"purge",imagePurge.getString("revision")).getString("status"))
-  raw("/collections/$collection","DELETE");assertEquals(note,api("/resources/$note/summary").getString("id"))
+  api("/collections/$collection","DELETE");assertEquals(note,api("/resources/$note/summary").getString("id"))
+  val batch=JSONArray().put(JSONObject().put("operationId",UUID.randomUUID().toString()).put("resourceId",note).put("action","trash").put("revision",api("/resources/$note/summary").getString("revision"))).put(JSONObject().put("operationId",UUID.randomUUID().toString()).put("resourceId",source).put("action","trash").put("revision","stale"));val partial=JSONArray(raw("/resources/lifecycle","PUT",batch).getString("body"));assertEquals("trashed",partial.getJSONObject(0).getString("status"));assertEquals("failed",partial.getJSONObject(1).getString("status"));assertEquals(source,api("/resources/$source/summary").getString("id"));assertEquals("restored",lifecycle(note,"restore",trashRow(note,"A7%20renamed").getString("revision")).getString("status"))
   for(id in listOf(note,source)){assertEquals("trashed",lifecycle(id,"trash",api("/resources/$id/summary").getString("revision")).getString("status"));val row=trashRow(id,if(id==note)"A7%20renamed"else"A7%20source");assertEquals("purged",lifecycle(id,"purge",row.getString("revision")).getString("status"))}
  }
 }

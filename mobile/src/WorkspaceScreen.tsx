@@ -142,6 +142,7 @@ export default function WorkspaceScreen() {
                 : r.status === 401 || r.status === 403
                 ? 'Host approval revoked or denied. Pair again; drafts remain.'
                 : `Host request failed (${r.status}). Protected drafts retained.`,
+              typeof value?.code === 'string' ? value.code : undefined,
             );
           return value;
         }
@@ -720,7 +721,11 @@ export default function WorkspaceScreen() {
       setConnections(false);
     });
   const renderRecovery = (d: Summary) => (
-    <View style={s.row} key={d.scope + d.noteId + d.version}>
+    <View
+      collapsable={false}
+      style={s.row}
+      key={d.scope + d.noteId + d.version}
+    >
       <Text style={s.heading}>{d.title}</Text>
       <Text style={s.muted}>
         {d.scope === state.scope
@@ -728,7 +733,7 @@ export default function WorkspaceScreen() {
           : 'Separate retained workspace'}{' '}
         · {d.resolved ? 'Saved version chosen' : 'Pending draft'}
       </Text>
-      <View style={s.actions}>
+      <View collapsable={false} style={s.actions}>
         <Button
           label="Open recovered copy"
           disabled={state.busy || state.connection !== 'online'}
@@ -780,7 +785,7 @@ export default function WorkspaceScreen() {
           drawer && width < 840 ? 'no-hide-descendants' : 'auto'
         }
       >
-        <View style={s.header}>
+        <View collapsable={false} style={s.header}>
           {!hostView && !recovery ? (
             <Pressable
               ref={menuButton}
@@ -832,7 +837,7 @@ export default function WorkspaceScreen() {
                   trash: 'Trash',
                 }[state.browse.destination]}
           </Text>
-          <View style={s.headerActions}>
+          <View collapsable={false} style={s.headerActions}>
             {hostView ? (
               <Action
                 label="Done"
@@ -915,7 +920,7 @@ export default function WorkspaceScreen() {
           </View>
         </View>
         {state.error ? (
-          <View accessibilityRole="alert" style={s.error}>
+          <View collapsable={false} accessibilityRole="alert" style={s.error}>
             <Text style={s.errorText}>{state.error}</Text>
             <Button
               label={
@@ -974,9 +979,9 @@ export default function WorkspaceScreen() {
               remembered.
             </Text>
             {state.hosts.map(h => (
-              <View style={s.row} key={h.hostId}>
+              <View collapsable={false} style={s.row} key={h.hostId}>
                 <Text style={s.muted}>{h.address}</Text>
-                <View style={s.actions}>
+                <View collapsable={false} style={s.actions}>
                   <Button
                     label={
                       h.hostId === state.host?.hostId ? 'Reconnect' : 'Connect'
@@ -1064,7 +1069,7 @@ export default function WorkspaceScreen() {
             ) : null}
           </ScrollView>
         ) : null}
-        <View style={s.actions}>
+        <View collapsable={false} style={s.actions}>
           <MediaTools
             ref={media}
             model={model}
@@ -1142,12 +1147,12 @@ export default function WorkspaceScreen() {
               </Text>
             ) : null}
             {state.conflict ? (
-              <View style={s.recovery}>
+              <View collapsable={false} style={s.recovery}>
                 <Text style={s.muted}>
                   Your local version is retained. The saved original will not be
                   overwritten.
                 </Text>
-                <View style={s.actions}>
+                <View collapsable={false} style={s.actions}>
                   <Button
                     label="Open recovered copy"
                     disabled={state.busy || state.connection !== 'online'}
@@ -1230,7 +1235,7 @@ export default function WorkspaceScreen() {
               containerStyle={s.web}
             />
             {editing ? (
-              <View style={s.actions}>
+              <View collapsable={false} style={s.actions}>
                 <Action
                   label="Insert"
                   onPress={() => {

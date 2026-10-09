@@ -1,5 +1,5 @@
 import { Organization } from '../src/organization';
-import { type MobileWorkspace } from '../src/workspace';
+import { HostError, type MobileWorkspace } from '../src/workspace';
 const id = '00000000-0000-4000-8000-000000000001',
   op = '00000000-0000-4000-8000-000000000002';
 function setup() {
@@ -209,3 +209,51 @@ test('reviewing a new revision cannot discard an uncertain lifecycle identity', 
   await t.org.reviewLatest(resource, 'restore');
   expect(t.journal.size).toBe(0);
 });
+
+test('confirmed absent collection UUID after a name conflict permits a new name without losing input identity', async () => {
+  const t = setup();
+  t.model.organizationApi
+    .mockRejectedValueOnce(new HostError(409, 'Conflict', 'CONFLICT'))
+    .mockRejectedValueOnce(new HostError(404, 'Missing', 'NOT_FOUND'));
+  await expect(t.org.createCollection('Taken')).rejects.toThrow(
+    'Choose another name',
+  );
+  expect(t.journal.size).toBe(0);
+  t.model.operationId.mockResolvedValue('00000000-0000-4000-8000-000000000003');
+  t.model.organizationApi.mockResolvedValue({ id, name: 'Available' });
+  await t.org.createCollection('Available');
+  expect(t.model.organizationApi.mock.calls[2][0]).toContain(
+    '00000000-0000-4000-8000-000000000003',
+  );
+  expect(t.model.organizationApi.mock.calls[2][2].name).toBe('Available');
+});
+test.each(['busy', 'unknown', 'existing', 'lookup-failed'])(
+  'collection %s outcome cannot release an uncertain creation identity',
+  async kind => {
+    const t = setup();
+    t.model.organizationApi.mockRejectedValueOnce(
+      new HostError(
+        409,
+        'Conflict',
+        kind === 'busy'
+          ? 'WORKSPACE_BUSY'
+          : kind === 'unknown'
+          ? undefined
+          : 'CONFLICT',
+      ),
+    );
+    if (kind === 'existing')
+      t.model.organizationApi.mockResolvedValueOnce({ id: op });
+    if (kind === 'lookup-failed')
+      t.model.organizationApi.mockRejectedValueOnce(
+        new HostError(503, 'Offline'),
+      );
+    await expect(t.org.createCollection('Original')).rejects.toThrow(
+      'Conflict',
+    );
+    expect(t.journal.get('collection:create').body.name).toBe('Original');
+    expect(t.model.organizationApi).toHaveBeenCalledTimes(
+      kind === 'busy' || kind === 'unknown' ? 1 : 2,
+    );
+  },
+);

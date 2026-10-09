@@ -1,5 +1,5 @@
 import type { ResourceSummary, BrowseRow } from './browse';
-import { type MobileWorkspace } from './workspace';
+import { HostError, type MobileWorkspace } from './workspace';
 export type Collection = {
   id: string;
   name: string;
@@ -133,11 +133,34 @@ export class Organization {
         name,
         resourceIds: [],
       }));
-      const result = await this.api(
-        '/collections/creations/' + p.id,
-        'PUT',
-        p.body,
-      );
+      let result;
+      try {
+        result = await this.api(
+          '/collections/creations/' + p.id,
+          'PUT',
+          p.body,
+        );
+      } catch (error) {
+        if (
+          error instanceof HostError &&
+          error.status === 409 &&
+          error.code === 'CONFLICT'
+        ) {
+          // Name conflict is definitive only after this UUID is confirmed absent.
+          // Busy/transport failures and an existing UUID retain their exact payload.
+          try {
+            await this.api('/collections/' + p.id);
+          } catch (lookup) {
+            if (lookup instanceof HostError && lookup.status === 404) {
+              await this.acknowledge(p);
+              throw Error(
+                'A collection with this name already exists. Choose another name.',
+              );
+            }
+          }
+        }
+        throw error;
+      }
       await this.acknowledge(p);
       await this.model.organizationChanged();
       return result as Collection;

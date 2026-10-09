@@ -83,7 +83,7 @@ export function ChoiceSheet({
         accessibilityLabel="Dismiss picker"
       >
         <Pressable style={styles.sheet} onPress={() => {}}>
-          <View style={styles.bar}>
+          <View collapsable={false} style={styles.bar}>
             <Text accessibilityRole="header" style={styles.heading}>
               {title}
             </Text>
@@ -317,7 +317,7 @@ export default function BrowseScreen({
           onPress={() => browser.configure({ collection: undefined })}
         />
       ) : null}
-      <View style={styles.searchRow}>
+      <View collapsable={false} style={styles.searchRow}>
         <TextInput
           ref={input}
           maxLength={500}
@@ -348,7 +348,7 @@ export default function BrowseScreen({
         ) : null}
       </View>
       {b.config.type || b.config.mode === 'content' ? (
-        <View style={styles.tabs}>
+        <View collapsable={false} style={styles.tabs}>
           {b.config.type ? (
             <Action
               label={
@@ -383,7 +383,7 @@ export default function BrowseScreen({
         </Text>
       ) : null}
       {b.error ? (
-        <View style={styles.bar}>
+        <View collapsable={false} style={styles.bar}>
           <Text style={styles.error}>
             {b.error}
             {b.rows.length ? ' · previous results retained' : ''}
@@ -406,7 +406,7 @@ export default function BrowseScreen({
             }`}
       </Text>
       {selected.size ? (
-        <View style={styles.bar}>
+        <View collapsable={false} style={styles.bar}>
           <Action
             label={'Actions · ' + selected.size}
             onPress={() =>
@@ -439,7 +439,7 @@ export default function BrowseScreen({
         onScroll={e => browser.scroll(e.nativeEvent.contentOffset.y)}
         scrollEventThrottle={500}
         ListEmptyComponent={
-          <View style={styles.empty}>
+          <View collapsable={false} style={styles.empty}>
             <Text style={styles.meta}>
               {b.loading
                 ? 'Loading…'
@@ -461,7 +461,7 @@ export default function BrowseScreen({
               ? { label: 'Collection', icon: '▦', action: 'collection' }
               : presentation(item.resource!);
           return (
-            <View style={styles.row}>
+            <View collapsable={false} style={styles.row}>
               {selected.size && item.kind === 'resource' ? (
                 <Pressable
                   accessibilityRole="checkbox"
@@ -509,7 +509,7 @@ export default function BrowseScreen({
                 <Text accessibilityElementsHidden style={styles.icon}>
                   {p.icon}
                 </Text>
-                <View style={styles.rowText}>
+                <View collapsable={false} style={styles.rowText}>
                   <Text numberOfLines={2} style={styles.resourceTitle}>
                     {item.title}
                   </Text>
@@ -538,7 +538,7 @@ export default function BrowseScreen({
         }}
         ListFooterComponent={
           b.pages > 1 ? (
-            <View style={styles.bar}>
+            <View collapsable={false} style={styles.bar}>
               <Action
                 label="Previous"
                 disabled={b.config.page === 0 || b.loading}
@@ -636,9 +636,9 @@ export default function BrowseScreen({
           onRequestClose={() => setSheet(undefined)}
           animationType="fade"
         >
-          <View style={styles.scrim}>
-            <View style={styles.sheet}>
-              <View style={styles.bar}>
+          <View collapsable={false} style={styles.scrim}>
+            <View collapsable={false} style={styles.sheet}>
+              <View collapsable={false} style={styles.bar}>
                 <Text style={styles.heading}>Search scope</Text>
                 <Action label="Done" onPress={() => setSheet(undefined)} />
               </View>
@@ -663,7 +663,7 @@ export default function BrowseScreen({
                 }}
               />
               {scopeError ? (
-                <View style={styles.bar}>
+                <View collapsable={false} style={styles.bar}>
                   <Text style={styles.error}>{scopeError}</Text>
                   <Action
                     label="Retry scopes"
@@ -688,7 +688,7 @@ export default function BrowseScreen({
                   />
                 )}
               />
-              <View style={styles.bar}>
+              <View collapsable={false} style={styles.bar}>
                 <Action
                   label="Previous scope page"
                   disabled={!scopePage}

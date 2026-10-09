@@ -47,7 +47,7 @@ function Shortcut({
       <Text importantForAccessibility="no" style={s.icon}>
         {info.icon}
       </Text>
-      <View style={s.grow}>
+      <View collapsable={false} style={s.grow}>
         <Text numberOfLines={2} style={s.itemTitle}>
           {title}
         </Text>
@@ -79,14 +79,14 @@ export function HomeScreen(props: Props & { returnToNote?: () => void }) {
         <Action label="Return to note" onPress={props.returnToNote} />
       ) : null}
       {props.feed.error ? (
-        <View accessibilityRole="alert">
+        <View collapsable={false} accessibilityRole="alert">
           <Text style={s.error}>{props.feed.error}</Text>
           <Action label="Retry shortcuts" onPress={props.retry} />
         </View>
       ) : null}
       {(['recent', 'pinned'] as const).map(kind => (
-        <View key={kind}>
-          <View style={s.sectionHead}>
+        <View collapsable={false} key={kind}>
+          <View collapsable={false} style={s.sectionHead}>
             <Text accessibilityRole="header" style={s.sectionTitle}>
               {kind === 'recent' ? 'Recently opened' : 'Pinned'}
             </Text>
@@ -138,7 +138,7 @@ export function WorkspaceDrawer(
       style={[s.drawer, { width: Math.min(320, width - 48) }]}
       accessibilityViewIsModal
     >
-      <View style={s.sectionHead}>
+      <View collapsable={false} style={s.sectionHead}>
         <Text accessibilityRole="header" style={s.brand}>
           Vaultor
         </Text>
@@ -185,8 +185,8 @@ export function WorkspaceDrawer(
           onPress={() => props.select('library', true)}
         />
         {(['pinned', 'recent'] as const).map(kind => (
-          <View key={kind} style={s.drawerSection}>
-            <View style={s.sectionHead}>
+          <View collapsable={false} key={kind} style={s.drawerSection}>
+            <View collapsable={false} style={s.sectionHead}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ expanded: !collapsed[kind] }}
@@ -222,7 +222,7 @@ export function WorkspaceDrawer(
           </View>
         ))}
         {props.feed.error ? (
-          <View>
+          <View collapsable={false}>
             <Text style={s.error}>{props.feed.error}</Text>
             <Action label="Retry shortcuts" onPress={props.retry} />
           </View>
@@ -244,7 +244,7 @@ export function WorkspaceDrawer(
       animationType={props.reducedMotion ? 'none' : 'fade'}
       onRequestClose={props.close}
     >
-      <View style={s.overlay}>
+      <View collapsable={false} style={s.overlay}>
         <Pressable
           style={StyleSheet.absoluteFill}
           accessibilityRole="button"
