@@ -40,6 +40,10 @@ class MediaUiTest {
     device.findObject(By.text("Apply image changes")).click();assertTrue(device.wait(Until.hasObject(By.text("Save")),10000));device.findObject(By.text("Save")).click()
     assertTrue(device.wait(Until.hasObject(By.textContains("Saved")),20000));touchImage(device);assertTrue(device.wait(Until.hasObject(By.text("Image tools")),5000));assertEquals("44",device.findObject(By.desc("Image width percentage")).text);assertEquals("A4 caption",device.findObject(By.desc("Image caption")).text)
     device.findObject(By.text("Preview image")).click();assertTrue(device.wait(Until.hasObject(By.text("Close preview")),10000));assertTrue(device.wait(Until.hasObject(By.text("Fit")),15000));device.findObject(By.text("Close preview")).click();assertTrue(device.wait(Until.hasObject(By.text("Save")),5000))
+    touchImage(device);assertTrue(device.wait(Until.hasObject(By.text("Copy image")),5000));device.findObject(By.text("Copy image")).click();Thread.sleep(1500)
+    var copied:android.net.Uri?=null;instrumentation.runOnMainSync {copied=(ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).primaryClip?.getItemAt(0)?.uri}
+    assertNotNull(copied);assertEquals("content",copied!!.scheme);assertArrayEquals(file.readBytes(),ctx.contentResolver.openInputStream(copied!!)?.use {it.readBytes()})
+    device.findObject(By.text("Close image tools")).click()
     file.delete()
   }
   @Test fun cancelledPickersAndExplicitShareTarget() {
