@@ -233,3 +233,7 @@ GET resources/query adds scoped fileCoverage and supported saved PDF/UTF-8 file 
 ## Android A3 browsing adapter
 
 Android0.1.0-alpha.3 reuses the current protocol3 metadata/title, saved-content query, collections, mixed-pins, summary and recency endpoints without changing HTTP contracts. Its native bridge permits only allowlisted relative paths/parameters, resource UUIDs and pages of at most 100; JSON remains bounded to 1.5 MB. Title search is default; explicit saved-content search preserves collection filters and reports saved-only/file coverage. Mobile never enumerates all note bodies for browsing. Credentials/TLS stay native; unknown resource kinds refuse guessed opening actions. Android session/journey/cache policy and actual validation live in [ANDROID.md](../android/ANDROID.md).
+
+## Android A4 media adapter
+
+Android0.1.0-alpha.4 reuses authenticated protocol3 `PUT /api/resources/imports/{uuid}`, resource summary/raw/thumbnail and workspace-identity endpoints. Native code accepts allowlisted relative UUID paths only, pins host TLS, refuses redirects and checks host epoch/workspace generation. Uploads retain their original UUID after an uncertain response; resource bytes/credentials never enter saved note JSON. No new HTTP contract, database/archive schema or protocol version is introduced. Android-specific input, image/file size, pending-store and preview/cache limits are authoritative in [MEDIA.md](../android/MEDIA.md).

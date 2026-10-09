@@ -1,4 +1,6 @@
-import { Editor, Node } from '@tiptap/core';
+import { Editor, Node, Extension } from '@tiptap/core';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { closeHistory } from '@tiptap/pm/history';
 import StarterKit from '@tiptap/starter-kit';
 import {
   Table,
@@ -38,6 +40,30 @@ const ResourceLink = Node.create({
     node.attrs.label || 'Linked resource',
   ],
 });
+const anchors = new PluginKey('mediaAnchors');
+const MediaAnchors = Extension.create({
+  name: 'mediaAnchors',
+  addProseMirrorPlugins: () => [
+    new Plugin({
+      key: anchors,
+      state: {
+        init: () => new Map(),
+        apply(tr, previous) {
+          const next = new Map();
+          for (const [id, pos] of previous) {
+            const mapped = tr.mapping.mapResult(pos, 1);
+            if (!mapped.deleted) next.set(id, mapped.pos);
+          }
+          const add = tr.getMeta(anchors);
+          if (add) next.set(add.id, add.pos);
+          return next;
+        },
+      },
+    }),
+  ],
+});
+const views = new Map();
+const inserted = new Set();
 const Image = Node.create({
   name: 'image',
   group: 'block',
@@ -52,9 +78,110 @@ const Image = Node.create({
   renderHTML: ({ node }) => [
     'figure',
     { class: 'image-placement', contenteditable: 'false' },
-    ['div', {}, node.attrs.alt || 'Image placement — preview arrives in A4'],
+    ['div', {}, node.attrs.alt || 'Image'],
     ['figcaption', {}, node.attrs.caption || ''],
   ],
+  addNodeView:
+    () =>
+    ({ node, getPos, editor: e }) => {
+      const dom = document.createElement('figure');
+      dom.className = 'image-placement';
+      dom.contentEditable = 'false';
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'image-frame';
+      button.setAttribute('aria-label', 'Image tools');
+      const img = document.createElement('img');
+      img.alt = node.attrs.alt || 'Image';
+      const status = document.createElement('span');
+      status.textContent = 'Loading image…';
+      button.append(img, status);
+      const caption = document.createElement('figcaption');
+      dom.append(button, caption);
+      const token = crypto.randomUUID?.() || String(Math.random()).slice(2);
+      let current = node,
+        observer;
+      const apply = () => {
+        dom.style.width = current.attrs.width + '%';
+        dom.style.marginLeft =
+          current.attrs.alignment === 'left' ? '0' : 'auto';
+        dom.style.marginRight =
+          current.attrs.alignment === 'right' ? '0' : 'auto';
+        caption.textContent = current.attrs.caption;
+        img.alt = current.attrs.alt || 'Image';
+        button.setAttribute(
+          'aria-label',
+          'Image tools: ' +
+            (current.attrs.alt || current.attrs.caption || 'image'),
+        );
+      };
+      apply();
+      const fetch = () => {
+        if (!loading && !blocked)
+          send({
+            type: 'mediaThumbnail',
+            loadId,
+            resourceId: current.attrs.resourceId,
+            token,
+          });
+      };
+      button.onclick = () => {
+        const pos = getPos();
+        if (typeof pos !== 'number') return;
+        const anchor = crypto.randomUUID?.() || String(Math.random()).slice(2);
+        e.view.dispatch(
+          e.state.tr
+            .setMeta(anchors, { id: anchor, pos })
+            .setMeta('addToHistory', false),
+        );
+        send({ type: 'mediaSelect', loadId, anchor, attrs: current.attrs });
+      };
+      img.onerror = () => {
+        img.removeAttribute('src');
+        status.textContent = 'Image unavailable · open tools to Retry/Replace';
+        status.hidden = false;
+      };
+      views.set(token, {
+        ready(data) {
+          img.src = data;
+          status.hidden = true;
+        },
+        fail() {
+          status.textContent =
+            'Image unavailable · open tools to Retry/Replace';
+          status.hidden = false;
+        },
+        fetch,
+      });
+      if (typeof IntersectionObserver !== 'undefined') {
+        observer = new IntersectionObserver(
+          entries => {
+            if (entries.some(v => v.isIntersecting)) {
+              fetch();
+              observer.disconnect();
+            }
+          },
+          { rootMargin: '240px' },
+        );
+        observer.observe(dom);
+      } else setTimeout(fetch, 0);
+      return {
+        dom,
+        ignoreMutation: () => true,
+        update(next) {
+          if (next.type.name !== 'image') return false;
+          const changed = next.attrs.resourceId !== current.attrs.resourceId;
+          current = next;
+          apply();
+          if (changed) fetch();
+          return true;
+        },
+        destroy() {
+          observer?.disconnect();
+          views.delete(token);
+        },
+      };
+    },
 });
 const WorkspaceTable = Table.extend({
   addAttributes() {
@@ -89,6 +216,7 @@ const editor = new Editor({
     Highlight.configure({ multicolor: true }),
     ResourceLink,
     Image,
+    MediaAnchors,
   ],
   enableContentCheck: true,
   content: { type: 'doc', content: [{ type: 'paragraph' }] },
@@ -133,6 +261,55 @@ function reading() {
   }, 500);
 }
 editor.on('selectionUpdate', reading);
+editor.view.dom.addEventListener(
+  'paste',
+  event => {
+    const data = event.clipboardData;
+    if (
+      !loading &&
+      !blocked &&
+      editor.isEditable &&
+      data &&
+      [...data.items].some(v => v.type.startsWith('image/'))
+    ) {
+      event.preventDefault();
+      const anchor = crypto.randomUUID();
+      editor.view.dispatch(
+        editor.state.tr
+          .setMeta(anchors, { id: anchor, pos: editor.state.selection.from })
+          .setMeta('addToHistory', false),
+      );
+      const text = data.getData('text/plain');
+      if (text) editor.view.dispatch(editor.state.tr.insertText(text));
+      send({ type: 'mediaPick', loadId, anchor, kind: 'clipboard' });
+    }
+  },
+  true,
+);
+editor.view.dom.addEventListener(
+  'keydown',
+  event => {
+    if (
+      event.key === 'Enter' &&
+      !event.isComposing &&
+      editor.isEditable &&
+      editor.state.selection.$from.parent.textContent === '/image'
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      const from = editor.state.selection.$from.start();
+      editor.view.dispatch(editor.state.tr.delete(from, from + 6));
+      const anchor = crypto.randomUUID();
+      editor.view.dispatch(
+        editor.state.tr
+          .setMeta(anchors, { id: anchor, pos: from })
+          .setMeta('addToHistory', false),
+      );
+      send({ type: 'mediaPick', loadId, anchor, kind: 'photos' });
+    }
+  },
+  true,
+);
 window.addEventListener('scroll', reading, { passive: true });
 function validate(node, depth = 0) {
   if (!node || typeof node !== 'object' || depth > 80)
@@ -160,6 +337,7 @@ window.vaultorReceive = raw => {
       loading = true;
       blocked = false;
       loadId = m.loadId;
+      inserted.clear();
       validate(m.content);
       editor.schema.nodeFromJSON(m.content).check();
       editor.commands.setContent(m.content, {
@@ -179,6 +357,127 @@ window.vaultorReceive = raw => {
       }
       loading = false;
       send({ type: 'loaded', loadId, content: editor.getJSON() });
+    } else if (m.type === 'mediaThumbnail' && m.loadId === loadId) {
+      const view = views.get(m.token);
+      if (
+        m.data &&
+        /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(m.data) &&
+        m.data.length < 530000
+      )
+        view?.ready(m.data);
+      else view?.fail();
+    } else if (m.type === 'mediaRetry' && m.loadId === loadId) {
+      for (const view of views.values()) view.fetch();
+    } else if (
+      m.type === 'mediaAnchor' &&
+      !blocked &&
+      editor.isEditable &&
+      m.loadId === loadId
+    ) {
+      editor.view.dispatch(
+        editor.state.tr
+          .setMeta(anchors, { id: m.anchor, pos: editor.state.selection.from })
+          .setMeta('addToHistory', false),
+      );
+      send({ type: 'mediaAnchored', loadId, anchor: m.anchor });
+    } else if (
+      m.type === 'mediaInsert' &&
+      !blocked &&
+      editor.isEditable &&
+      m.loadId === loadId
+    ) {
+      const pos = anchors.getState(editor.state).get(m.anchor);
+      if (inserted.has(m.inputId)) {
+        send({
+          type: 'mediaInserted',
+          loadId,
+          inputId: m.inputId,
+          valid: true,
+        });
+        return;
+      }
+      if (typeof pos !== 'number') {
+        send({
+          type: 'mediaInserted',
+          loadId,
+          inputId: m.inputId,
+          valid: false,
+        });
+        return;
+      }
+      let node;
+      if (typeof m.text === 'string') node = editor.schema.text(m.text);
+      else if (/^[a-f0-9-]{36}$/i.test(m.resourceId || ''))
+        node = m.image
+          ? editor.schema.nodes.image.create({
+              resourceId: m.resourceId,
+              alt: '',
+              caption: '',
+              width: 100,
+              alignment: 'center',
+            })
+          : editor.schema.nodes.resourceLink.create({
+              resourceId: m.resourceId,
+              label: m.title,
+              type: 'file',
+            });
+      else return;
+      const tr = closeHistory(editor.state.tr).replaceRangeWith(pos, pos, node);
+      editor.view.dispatch(tr);
+      inserted.add(m.inputId);
+      send({ type: 'mediaInserted', loadId, inputId: m.inputId, valid: true });
+    } else if (
+      m.type === 'mediaEdit' &&
+      !blocked &&
+      editor.isEditable &&
+      m.loadId === loadId
+    ) {
+      const pos = anchors.getState(editor.state).get(m.anchor),
+        node = typeof pos === 'number' ? editor.state.doc.nodeAt(pos) : null;
+      if (node?.type.name !== 'image') {
+        if (m.inputId)
+          send({
+            type: 'mediaInserted',
+            loadId,
+            inputId: m.inputId,
+            valid: false,
+          });
+        return;
+      }
+      if (m.remove)
+        editor.view.dispatch(
+          closeHistory(editor.state.tr).delete(pos, pos + node.nodeSize),
+        );
+      else {
+        const a = m.attrs;
+        if (
+          !a ||
+          !/^[a-f0-9-]{36}$/i.test(a.resourceId) ||
+          !['left', 'center', 'right'].includes(a.alignment) ||
+          !Number.isInteger(a.width) ||
+          a.width < 20 ||
+          a.width > 100 ||
+          typeof a.alt !== 'string' ||
+          typeof a.caption !== 'string'
+        )
+          return;
+        editor.view.dispatch(
+          closeHistory(editor.state.tr).setNodeMarkup(pos, undefined, {
+            resourceId: a.resourceId,
+            alt: a.alt.slice(0, 2000),
+            caption: a.caption.slice(0, 4000),
+            width: a.width,
+            alignment: a.alignment,
+          }),
+        );
+      }
+      if (m.inputId)
+        send({
+          type: 'mediaInserted',
+          loadId,
+          inputId: m.inputId,
+          valid: true,
+        });
     } else if (m.type === 'editable' && !blocked) {
       editor.setEditable(m.value === true, false);
     } else if (m.type === 'blur') {

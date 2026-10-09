@@ -183,6 +183,119 @@ assert.equal(
 );
 send({
   type: 'load',
+  loadId: 'media',
+  content: { type: 'doc', content: [p('Source text')] },
+});
+send({ type: 'mediaAnchor', loadId: 'media', anchor: 'ordered' });
+send({
+  type: 'mediaInsert',
+  loadId: 'media',
+  anchor: 'ordered',
+  inputId: '00000000-0000-4000-8000-000000000008',
+  text: 'Accompanying text ',
+});
+send({
+  type: 'mediaInsert',
+  loadId: 'media',
+  anchor: 'ordered',
+  inputId: '00000000-0000-4000-8000-000000000009',
+  resourceId,
+  image: true,
+});
+assert.equal(messages.at(-1).type, 'mediaInserted');
+assert.equal(messages.at(-1).valid, true);
+const insertedDoc = messages.findLast(m => m.type === 'changed').content;
+assert.equal(
+  insertedDoc.content.filter(n => n.type === 'image').length,
+  1,
+  'Image insertion fits the block schema',
+);
+const beforeRetry = messages.filter(m => m.type === 'changed').length;
+send({
+  type: 'mediaInsert',
+  loadId: 'media',
+  anchor: 'ordered',
+  inputId: '00000000-0000-4000-8000-000000000009',
+  resourceId,
+  image: true,
+});
+assert.equal(
+  messages.filter(m => m.type === 'changed').length,
+  beforeRetry,
+  'Acknowledgement retry cannot duplicate a placement',
+);
+dom.window.document.querySelector('.image-frame').click();
+const selected = messages.at(-1);
+assert.equal(selected.type, 'mediaSelect');
+send({
+  type: 'mediaEdit',
+  loadId: 'media',
+  anchor: selected.anchor,
+  attrs: {
+    ...selected.attrs,
+    width: 40,
+    caption: 'Caption',
+    alt: 'Alternative',
+    alignment: 'right',
+  },
+});
+assert.equal(
+  messages
+    .findLast(m => m.type === 'changed')
+    .content.content.find(n => n.type === 'image').attrs.width,
+  40,
+);
+assert.equal(
+  dom.window.document.querySelector('figcaption').textContent,
+  'Caption',
+);
+send({ type: 'command', name: 'undo' });
+assert.equal(
+  messages
+    .findLast(m => m.type === 'changed')
+    .content.content.find(n => n.type === 'image').attrs.width,
+  100,
+  'Attribute update is one undoable transaction',
+);
+send({ type: 'mediaAnchor', loadId: 'media', anchor: 'second-placement' });
+send({
+  type: 'mediaInsert',
+  loadId: 'media',
+  anchor: 'second-placement',
+  inputId: '00000000-0000-4000-8000-000000000011',
+  resourceId,
+  image: true,
+});
+dom.window.document.querySelector('.image-frame').click();
+const removed = messages.at(-1);
+send({
+  type: 'mediaEdit',
+  loadId: 'media',
+  anchor: removed.anchor,
+  remove: true,
+});
+assert.equal(
+  messages
+    .findLast(m => m.type === 'changed')
+    .content.content.filter(n => n.type === 'image').length,
+  1,
+  'Removing one placement retains the other placement of the same resource',
+);
+send({
+  type: 'mediaInsert',
+  loadId: 'media',
+  anchor: removed.anchor,
+  inputId: '00000000-0000-4000-8000-000000000010',
+  resourceId,
+  image: true,
+});
+assert.equal(
+  messages.at(-1).valid,
+  false,
+  'A removed placement anchor cannot target another node',
+);
+send({
+  type: 'load',
   loadId: 'unsupported',
   content: { type: 'doc', content: [{ type: 'unknown' }] },
 });

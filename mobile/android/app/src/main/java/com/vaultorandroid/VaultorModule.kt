@@ -37,6 +37,23 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   @Volatile private var stream: HttpsURLConnection? = null
   private val requests = ConcurrentHashMap.newKeySet<HttpsURLConnection>()
   private var pending: JSONObject? = null
+  private val media by lazy { VaultorMedia(ctx,{bytes ->
+    val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply {init(Cipher.ENCRYPT_MODE,key())};cipher.iv+cipher.doFinal(bytes)
+  },{bytes ->
+    require(bytes.size>=29);val cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.DECRYPT_MODE,key(),GCMParameterSpec(128,bytes.copyOfRange(0,12)));cipher.doFinal(bytes.copyOfRange(12,bytes.size))
+  },{a,path,method ->
+    require(path.matches(Regex("/resources/(?:imports/)?[a-fA-F0-9-]{36}(?:/(?:raw|thumbnail))?")))
+    val p=selected(a.getString("hostId"),a.getString("epoch"));val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint"))
+    val con=URI(address(p.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection
+    con.sslSocketFactory=context(cert).socketFactory;con.connectTimeout=10000;con.readTimeout=30000;con.instanceFollowRedirects=false;con.requestMethod=method
+    con.setRequestProperty("Authorization","Bearer "+p.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");con
+  },{a ->
+    val p=selected(a.getString("hostId"),a.getString("epoch"));val scope=JSONArray(a.getString("scope"));require(scope.length()==3 && scope.getString(0)==a.getString("hostId"))
+    val identity=json(request(p,"/workspace/identity",token=a.getString("epoch")))
+    require(scope.getString(1)==identity.getString("id") && scope.getString(2)==identity.getString("generation")) {"Workspace changed. Media remains bound to its original source."}
+  }) }
+  @ReactMethod fun media(action:String,input:String,promise:Promise) {try {require(input.length<=12000);media.call(action,JSONObject(input),promise)}catch(_:Exception){promise.reject("MEDIA_INPUT","Invalid media request.")}}
+  @ReactMethod fun cancelMedia() {media.cancel()}
   private val random = SecureRandom()
   private val file get() = AtomicFile(File(ctx.noBackupFilesDir, "vaultor-state.bin"))
   private fun key(): SecretKey {
@@ -94,7 +111,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     val state=read();require(token==epoch && state.optString("selected")==hostId) {"Connection changed; request cancelled."}
     JSONObject(state.getJSONObject("profiles").getJSONObject(hostId).toString())
   }
-  private fun cancelRequests() {epoch=UUID.randomUUID().toString();stream?.disconnect();stream=null;requests.forEach {it.disconnect()}}
+  private fun cancelRequests() {epoch=UUID.randomUUID().toString();stream?.disconnect();stream=null;requests.forEach {it.disconnect()};media.cancel()}
   private fun address(input: String): String {
     val u = URI(input.trim())
     val host = u.host ?: error("Enter a private IPv4 HTTPS address.")

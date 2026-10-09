@@ -15,6 +15,12 @@ export function bridgeMessage(
   content?: Doc;
   resourceId?: string;
   position?: { anchor: number; head: number; scroll: number };
+  token?: string;
+  anchor?: string;
+  inputId?: string;
+  valid?: boolean;
+  kind?: string;
+  attrs?: import('./media').Placement;
 } | null {
   if (raw.length > 1500000) return null;
   try {
@@ -22,6 +28,31 @@ export function bridgeMessage(
     if (m.protocol !== 1 || typeof m.type !== 'string') return null;
     if (m.type === 'ready') return { type: 'ready' };
     if (m.loadId !== loadId) return null;
+    if (
+      m.type === 'mediaThumbnail' &&
+      typeof m.token === 'string' &&
+      m.token.length <= 100 &&
+      /^[a-f0-9-]{36}$/i.test(m.resourceId ?? '')
+    )
+      return { type: m.type, resourceId: m.resourceId, token: m.token };
+    if (
+      ['mediaAnchored', 'mediaPick', 'mediaSelect'].includes(m.type) &&
+      typeof m.anchor === 'string' &&
+      m.anchor.length <= 100
+    ) {
+      if (
+        m.type === 'mediaSelect' &&
+        !/^[a-f0-9-]{36}$/i.test(m.attrs?.resourceId ?? '')
+      )
+        return null;
+      return { type: m.type, anchor: m.anchor, kind: m.kind, attrs: m.attrs };
+    }
+    if (
+      m.type === 'mediaInserted' &&
+      /^[a-f0-9-]{36}$/i.test(m.inputId ?? '') &&
+      typeof m.valid === 'boolean'
+    )
+      return { type: m.type, inputId: m.inputId, valid: m.valid };
     if (
       m.type === 'open' &&
       typeof m.resourceId === 'string' &&

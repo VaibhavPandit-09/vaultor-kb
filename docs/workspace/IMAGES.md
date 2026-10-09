@@ -39,3 +39,7 @@ Focused editor/upload tests cover source ownership, mapped anchors, retry identi
 ## Discovery and usage — 0.6.0
 
 Images remain File resources. Images in the shared Type filter selects all matching saved image metadata before server paging; the existing-image picker now uses this category query rather than filtering an arbitrary mixed page. Rows load bounded static thumbnails, never all original image bytes. Image More and replacement tools expose Used in, distinguish saved sources from placements and explain placement-only replacement. See [REFERENCES.md](REFERENCES.md) for thumbnail limits, historical MIME metadata, saved-only counts and validated source navigation.
+
+## Android image adapter
+
+Android0.1.0-alpha.4 uses the same resource-backed image node and existing protocol3 host; original files remain File resources. Its encrypted pending-input queue, mapped transactions, native picker/clipboard/camera/share handling, preview limits and user-only Samsung gates are authoritative in [MEDIA.md](../android/MEDIA.md). No desktop schema, host protocol or archive change is introduced.

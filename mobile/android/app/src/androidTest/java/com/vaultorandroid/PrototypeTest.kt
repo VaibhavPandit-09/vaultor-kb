@@ -13,6 +13,7 @@ import org.json.JSONObject
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import org.junit.Assert.*
@@ -68,6 +69,7 @@ class PrototypeTest {
     val code=device.findObject(By.textStartsWith("Compare code: ")).text.substringAfter(": ")
     assertTrue(code.matches(Regex("[0-9]{6}")))
     Log.i("VaultorPrototypeTest","PAIR_CODE $code") // Public comparison code only; never enrollment secret.
+    device.findObject(By.scrollable(true))?.scroll(Direction.DOWN,0.8f)
     var opened=false
     for (attempt in 1..45) {
       device.findObject(By.text("I approved the matching code"))?.click()

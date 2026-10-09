@@ -73,3 +73,7 @@ Production frontend build, final TypeScript compilation and targeted ESLint pass
 ## Trash — 0.5.0
 
 Trashed roots cannot be exported as active notes. Linked graph snapshots exclude trashed destinations, retain their labels and report unavailable-reference warnings. Complete workspace ZIP format 3 instead includes Trash and its original binaries/organization; unfinished permanent cleanup must be completed first. Previously prepared immutable exports can still describe the earlier saved snapshot. See [RESOURCE-LIFECYCLE.md](RESOURCE-LIFECYCLE.md).
+
+## Android image placements
+
+Android A4 saves standard resource-backed image attributes, so existing host export snapshots consume the same nodes. Disposable checks produced PDF image objects, embedded PNGs and captions in Word, and original PNG/alt/caption references in Markdown-with-assets. This is artifact/content verification, not visual layout certification; Word currently does not emit the placement alt text as an accessibility description. Android0.1.0-alpha.4 does not add a separate export renderer or change snapshot semantics. See [MEDIA.md](../android/MEDIA.md).

@@ -1,6 +1,6 @@
 # Vaultor for Android — execution tracker
 
-Created 2026-10-08; reviewed 2026-10-09. **A1–A3 implemented and published; A4–A6 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
+Created 2026-10-08; reviewed 2026-10-09. **A1–A3 implemented and published; A4 implemented, final APK publication gate in progress; A5–A6 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
 
 ## Delivery and agreed boundaries
 
@@ -89,16 +89,18 @@ Status: **Implemented and published (2026-10-09 local)**. User authorized A3 onl
 
 ## A4 — Images, previews and Android input/output
 
-Status: **Not started**. Depends on A2 editing and A3 resource navigation.
+Status: **Implemented; final installed-release publication gate in progress (2026-10-09)**. User authorized A4 only. Release target Android0.1.0-alpha.4 / versionCode4; host0.7.1/protocol3 unchanged. Depends on A2 editing and A3 resource navigation.
 
-- [ ] Add photo/file picker and explicit camera capture with cancellation/permissions. Receive supported Android Share inputs; handle cold launch/host unavailable/source-note selection without inserting into the wrong note. Clipboard image support is capability-tested with a picker fallback; never promise Samsung formats from emulator evidence.
-- [ ] Reuse UUID import identities, mapped placement anchors and retained upload failures; preserve order/original bytes and 20 MiB/40 MP supported-image bounds. Pending bytes/progress stay outside note JSON; normal text saving continues.
-- [ ] Provide touch-accessible width/alignment/caption/alt/replace/remove controls, undo, and image fit/zoom. Removing a placement leaves its File resource; replacing affects only that placement.
-- [ ] Use authenticated lazy thumbnails/originals, cancellation and bounded disk/memory cache; broken media has Retry/Replace. Native file/content URIs and grants are temporary inputs, never saved resource links. Keep GIF/WebP behavior and original-media colors intact.
-- [ ] Provide image/PDF/file preview and user-chosen save/share destinations with safe filenames/MIME. Cover no-compatible-viewer and unavailable-resource failures. No unrestricted WebView external navigation.
-- [ ] Test picked/shared mixed media, denied/cancelled permissions, uncertain retry, interrupted process, moved/deleted anchors, host switch, undo, replacement and duplicate placements. Check saved image notes remain correct on desktop and in existing export snapshots.
+- [x] Add photo/file picker and explicit camera capture with cancellation/permissions. Receive supported Android Share inputs; handle cold launch/host unavailable/source-note selection without inserting into the wrong note. Clipboard image support is capability-tested with a picker fallback; never promise Samsung formats from emulator evidence.
+- [x] Reuse UUID import identities, mapped placement anchors and retained upload failures; preserve order/original bytes and 20 MiB/40 MP supported-image bounds. Pending bytes/progress stay outside note JSON; normal text saving continues.
+- [x] Provide touch-accessible width/alignment/caption/alt/replace/remove controls, undo, and image fit/zoom. Removing a placement leaves its File resource; replacing affects only that placement.
+- [x] Use authenticated lazy thumbnails/originals, cancellation and bounded disk/memory cache; broken media has Retry/Replace. Native file/content URIs and grants are temporary inputs, never saved resource links. Keep GIF/WebP behavior and original-media colors intact.
+- [x] Provide image/PDF/file preview and user-chosen save/share destinations with safe filenames/MIME. Cover no-compatible-viewer and unavailable-resource failures. No unrestricted WebView external navigation.
+- [x] Test picked/shared mixed media, denied/cancelled permissions, uncertain retry, interrupted process, moved/deleted anchors, host switch, undo, replacement and duplicate placements. Check saved image notes remain correct on desktop and in existing export snapshots.
 
 **Acceptance:** insert, resize, caption, save/reload and download original images without duplication or byte loss. Publish an image-capable APK with physical Samsung clipboard/camera/share checks clearly user-owned.
+
+Physical Samsung/One UI/camera/provider acceptance remains user-only. Exact adapter bounds and unverified platform cases are in [MEDIA.md](../android/MEDIA.md); no claim of full Samsung parity. Final APK identity and publication are recorded below.
 
 ## A5 — Organization, references and resource lifecycle
 
@@ -178,3 +180,13 @@ Published Android-only prerelease at **2026-10-08T23:00:44Z** (2026-10-09 local)
 Fresh tagged-source APK installed over the existing app on API36 and API37. Five native storage/policy tests passed on each exact staged install. Android17 restored its note and journey. Final pairing/editor/browsing/picker/inline-link/native-Back checks passed on both generations. On API36, the first final interaction run matched the destination link text still in the source WebView and pressed Back before navigation completed. The focused test now waits for the destination's native TextView heading; rebuilding the test APK and rerunning passed. This test-only follow-up does not change the shipped APK or move the source tag. Android17 retained its previously granted LAN permission; no new denial/retry result is claimed for A3.
 
 Publisher verified the clean pushed source/tag, original signer policy and staged assets, then downloaded and compared all three artifacts byte-for-byte before publication. GitHub confirms non-draft/prerelease status and matching asset sizes/digests. Desktop/Mac0.7.1 remains unchanged. Owned temporary host and both emulators were stopped; no personal workspace or phone access. Install the single APK over the existing app; do not uninstall or clear data. Samsung/One UI, TalkBack, real Wi-Fi and OEM lifecycle remain user-only/open. **A3 complete; A4–A6 remain unstarted.**
+
+## A4 implementation and candidate validation (2026-10-09)
+
+Implemented Android0.1.0-alpha.4/versionCode4: native encrypted pending inputs; stable UUID/source-bound uploads; mapped image placements and tools; authenticated lazy thumbnails; bounded image/PDF/text previews; Photos/Files/camera/clipboard/Share/SAF adapters. No host/API/schema/archive/protocol/desktop change. [MEDIA.md](../android/MEDIA.md) is authoritative for bounds and deferred behavior.
+
+TypeScript,40focused Jest tests and editor schema/refusal plus insertion/attributes/undo/duplicate acknowledgment/deleted-anchor/duplicate-placement checks passed. Scoped ESLint has zero errors/24 warnings (no-void, one shadow and existing inline style). Original-key release/application-test compilation and package/lock/Gradle/minimum36/target37/arm64+x86_64/16KiB checks passed. API36 and37 each passed five native storage/policy cases, two media cases and two real UI cases. Native cases verify encrypted bytes/catalog, restoration through a new native module, UUID retry after removing a simulated lost import acknowledgment, byte-identical originals, bounds and resource survival after pending-input removal. UI checks cover clipboard image insertion, width44/caption/alt editing, conditional Save, preview, picker cancellation and explicit shared file+text staging. API37 actual force-stop/relaunch retained an additional staged text input; the owned test input was explicitly removed afterward.
+
+Disposable host0.7.1 saved standard image JSON and incoming references; PDF/Word/Markdown-assets export operations completed. Artifact checks found PDF image objects, embedded PNGs/captions in Word and original PNG/alt/caption in Markdown assets. This is content/artifact validation, not visual layout certification. Existing Word alt-description omission is documented. A focused API36/37 visual session inspected image loading/tools; a label incorrectly remained over loaded images and was fixed. The image-tools sheet now sizes to content and indicates selected alignment. Extended API37 native PDF two-page rendering and first100KB text-preview checks passed in the four-case media/UI rerun. Camera launch/cancellation and the native Create document destination were exercised on API37; final installed-byte checks and narrow tools/save/copy results follow below.
+
+Failed integration runs exposed off-screen pairing verification controls and stale stopped-fixture TLS/pending input. Pairing now scrolls after content layout; the harness scrolls to verification controls. Only owned failed fixture inputs were removed; approvals/drafts were retained. One Kotlin test import and PdfDocument close mismatch were corrected. Failed runs are not passes. Physical S24/Samsung clipboard/camera/SAF/One UI8.5/9, TalkBack, real Wi-Fi/Mac transfers and OEM process/battery behavior remain open. A5/A6 remain unstarted; no phone access.

@@ -1,6 +1,6 @@
 # Android client readiness
 
-Reviewed 2026-10-09. A1–A3 are published; A3 implements native browsing, explicit search and active-note journeys. Offline synchronization remains deferred. Current mobile implementation and validation are authoritative in [ANDROID.md](../android/ANDROID.md). The current browser/Electron boundary is authoritative in [PLATFORM.md](PLATFORM.md). The completed shared-work results are tracked in [resource-lifecycle-plan.md](../plans/resource-lifecycle-plan.md). The authoritative six-sprint Android scope, Windows-only agent testing, APK milestones and physical-device acceptance boundary are in [android-plan.md](../plans/android-plan.md); A4–A6 remain unstarted.
+Reviewed 2026-10-09. A1–A3 are published; A3 implements native browsing, explicit search and active-note journeys. Offline synchronization remains deferred. Current mobile implementation and validation are authoritative in [ANDROID.md](../android/ANDROID.md). The current browser/Electron boundary is authoritative in [PLATFORM.md](PLATFORM.md). The completed shared-work results are tracked in [resource-lifecycle-plan.md](../plans/resource-lifecycle-plan.md). The authoritative six-sprint Android scope, Windows-only agent testing, APK milestones and physical-device acceptance boundary are in [android-plan.md](../plans/android-plan.md); A4 implements managed images/native file input-output; A5–A6 remain unstarted.
 
 ## Product boundary
 
@@ -68,4 +68,8 @@ The editor schema comes from BlockEditor/extensions, not arbitrary host JSON acc
 4. Prototype pair/connect, scoped title/content browsing, note read/edit/conditional save and image upload/preview on Small, then Atlas. Measure caches/startup; never copy Electron IPC or host paths.
 5. Test conflicts, shutdown/reconnect, generation changes, revoke/re-pair, rotation, Android Back/modal ownership and suspension recovery on emulators before expanding feature parity; user-only physical acceptance remains separately recorded.
 
-A1 implements the trust/editor/journal prototype; native and installed-release gates passed on Android16/17. [ANDROID.md](../android/ANDROID.md) records exact evidence, APK delivery and remaining prototype limits. The remaining items are future sprint scope, not authorization to start A4–A6. Offline synchronization, OCR, scheduled backups and Android hosting remain deferred. A 412px desktop check cannot certify Android IME, touch, network permissions or lifecycle behavior.
+A1 implements the trust/editor/journal prototype; native and installed-release gates passed on Android16/17. [ANDROID.md](../android/ANDROID.md) records exact evidence, APK delivery and remaining prototype limits. The remaining items are future sprint scope, not authorization to start A5–A6. Offline synchronization, OCR, scheduled backups and Android hosting remain deferred. A 412px desktop check cannot certify Android IME, touch, network permissions or lifecycle behavior.
+
+## A4 media adapter
+
+Android0.1.0-alpha.4 reuses protocol3 imports, references, thumbnails/raw resources and standard structured image nodes. Native encrypted pending inputs retain UUIDs across uncertain responses; mapped editor transactions and protected journal acknowledgments govern cleanup. Photos/Files/Camera/clipboard/Share require explicit source selection; previews never advance journeys. [MEDIA.md](../android/MEDIA.md) owns limits and actual platform caveats. Full organization and touch/theme/updater work remain A5/A6; desktop/Mac0.7.1 is unchanged.

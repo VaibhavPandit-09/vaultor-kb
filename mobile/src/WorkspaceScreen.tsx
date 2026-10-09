@@ -1,5 +1,6 @@
 import BrowseScreen, { Action, ChoiceSheet } from './BrowseScreen';
-import { presentation } from './browse';
+import MediaTools, { type MediaHandle } from './MediaTools';
+import ResourcePreview from './ResourcePreview';
 import React, {
   useEffect,
   useCallback,
@@ -9,7 +10,6 @@ import React, {
 } from 'react';
 import {
   ActivityIndicator,
-  Modal,
   Alert,
   AppState,
   BackHandler,
@@ -125,6 +125,8 @@ export default function WorkspaceScreen() {
   ).current;
   const state = useSyncExternalStore(model.subscribe, model.snapshot);
   const web = useRef<WebView<{}>>(null),
+    hostScroll = useRef<React.ElementRef<typeof ScrollView>>(null),
+    media = useRef<MediaHandle>(null),
     ready = useRef(false),
     current = useRef(state),
     keyboard = useRef(false);
@@ -140,12 +142,15 @@ export default function WorkspaceScreen() {
     (action: () => Promise<void>) => void model.perform(action),
     [model],
   );
-  const inject = (message: object) =>
-    web.current?.injectJavaScript(
-      `window.vaultorReceive(${JSON.stringify(
-        JSON.stringify({ protocol: 1, ...message }),
-      )});true;`,
-    );
+  const inject = useCallback(
+    (message: object) =>
+      web.current?.injectJavaScript(
+        `window.vaultorReceive(${JSON.stringify(
+          JSON.stringify({ protocol: 1, loadId, ...message }),
+        )});true;`,
+      ),
+    [loadId],
+  );
   const load = () => {
     if (ready.current && state.content) {
       inject({
@@ -167,6 +172,12 @@ export default function WorkspaceScreen() {
     if (state.host) setAddress(state.host.address);
   }, [state.host]);
   useEffect(() => {
+    if (code)
+      requestAnimationFrame(() =>
+        hostScroll.current?.scrollToEnd({ animated: true }),
+      );
+  }, [code]);
+  useEffect(() => {
     ready.current = false;
   }, [loadId]);
   useEffect(() => {
@@ -179,7 +190,13 @@ export default function WorkspaceScreen() {
           !state.unavailable &&
           state.connection !== 'revoked',
       });
-  }, [state.supported, state.conflict, state.unavailable, state.connection]);
+  }, [
+    state.supported,
+    state.conflict,
+    state.unavailable,
+    state.connection,
+    inject,
+  ]);
   useEffect(() => {
     let active = AppState.currentState === 'active',
       timer: ReturnType<typeof setTimeout> | undefined,
@@ -333,10 +350,13 @@ export default function WorkspaceScreen() {
         return true;
       }
       if (current.current.busy) return true;
-      if (current.current.recovery.length) {
+      if (
+        current.current.recovery.length ||
+        (media.current?.pending() ?? 0) > 0
+      ) {
         Alert.alert(
           'Protected drafts remain',
-          'Your pending edits remain on this device. Exit Vaultor?',
+          'Pending edits and media inputs remain on this device. Exit Vaultor?',
           [
             { text: 'Stay', style: 'cancel' },
             {
@@ -385,7 +405,7 @@ export default function WorkspaceScreen() {
       return screenBack();
     });
     return () => back.remove();
-  }, [connections, recovery, model, leave, run, trail]);
+  }, [connections, recovery, model, leave, run, trail, inject]);
   const switchHost = (id: string) =>
     run(async () => {
       try {
@@ -587,7 +607,14 @@ export default function WorkspaceScreen() {
           )}
         </ScrollView>
       ) : hostView ? (
-        <ScrollView contentContainerStyle={s.content}>
+        <ScrollView
+          ref={hostScroll}
+          contentContainerStyle={s.content}
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={() => {
+            if (code) hostScroll.current?.scrollToEnd({ animated: true });
+          }}
+        >
           <Text style={s.heading}>Connect to your workspace</Text>
           <Text style={s.muted}>
             Enable Sharing on your Windows or Mac host. Saved approvals are
@@ -684,6 +711,15 @@ export default function WorkspaceScreen() {
           ) : null}
         </ScrollView>
       ) : null}
+      <View style={s.actions}>
+        <MediaTools
+          ref={media}
+          model={model}
+          loadId={loadId}
+          visible={state.view === 'note' && !hostView && !recovery}
+          send={inject}
+        />
+      </View>
       <BrowseScreen
         model={model}
         visible={!hostView && !recovery && state.view === 'browse'}
@@ -805,6 +841,10 @@ export default function WorkspaceScreen() {
             onMessage={e => {
               const m = bridgeMessage(e.nativeEvent.data, loadId);
               if (!m) return;
+              if (m.type.startsWith('media')) {
+                media.current?.receive(m);
+                return;
+              }
               if (m.type === 'ready') {
                 ready.current = true;
                 load();
@@ -858,31 +898,7 @@ export default function WorkspaceScreen() {
           onChoose={index => run(() => model.history(Number(index)))}
         />
       ) : null}
-      {state.preview ? (
-        <Modal
-          transparent
-          animationType="fade"
-          onRequestClose={() => model.dismissPreview()}
-        >
-          <View style={s.previewScrim}>
-            <View style={s.previewPanel}>
-              <Text style={s.heading}>{state.preview.title}</Text>
-              <Text style={s.muted}>
-                {presentation(state.preview).label} ·{' '}
-                {state.preview.mimeType ?? 'Unknown format'}
-              </Text>
-              <Text style={s.muted}>
-                File content can be viewed in the desktop app. Your note remains
-                open.
-              </Text>
-              <Action
-                label="Close preview"
-                onPress={() => model.dismissPreview()}
-              />
-            </View>
-          </View>
-        </Modal>
-      ) : null}
+      {state.preview ? <ResourcePreview model={model} /> : null}
     </SafeAreaView>
   );
 }

@@ -64,10 +64,33 @@ try {
     title: 'A1 Editor fixture',
     content: paragraph,
   });
-  const linked=await api('/resources','POST',{title:'A3 Linked fixture',content:paragraph});
-  const linkContent=(id,label)=>({type:'doc',content:[...paragraph.content,{type:'paragraph',content:[{type:'resourceLink',attrs:{resourceId:id,label,type:'note'}}]}]});
-  await api('/resources/'+simple.id+'/note','PUT',{title:simple.title,content:linkContent(linked.id,linked.title)});
-  await api('/resources/'+linked.id+'/note','PUT',{title:linked.title,content:linkContent(simple.id,simple.title)});
+  const linked = await api('/resources', 'POST', {
+    title: 'A3 Linked fixture',
+    content: paragraph,
+  });
+  const linkContent = (id, label) => ({
+    type: 'doc',
+    content: [
+      ...paragraph.content,
+      {
+        type: 'paragraph',
+        content: [
+          {
+            type: 'resourceLink',
+            attrs: { resourceId: id, label, type: 'note' },
+          },
+        ],
+      },
+    ],
+  });
+  await api('/resources/' + simple.id + '/note', 'PUT', {
+    title: simple.title,
+    content: linkContent(linked.id, linked.title),
+  });
+  await api('/resources/' + linked.id + '/note', 'PUT', {
+    title: linked.title,
+    content: linkContent(simple.id, simple.title),
+  });
   await api('/resources', 'POST', {
     title: 'A1 Unsupported fixture',
     content: {
@@ -173,6 +196,101 @@ try {
         const n = await api('/resources/' + simple.id);
         console.log(
           JSON.stringify({ noteRevision: n.revision, content: n.content }),
+        );
+      }
+      if (command.verifyImageExports) {
+        const n = await api('/resources/' + simple.id);
+        const doc =
+          typeof n.content === 'string' ? JSON.parse(n.content) : n.content;
+        const images = [];
+        const walk = node => {
+          if (node.type === 'image') images.push(node.attrs);
+          for (const child of node.content ?? []) walk(child);
+        };
+        walk(doc);
+        if (
+          !images.some(
+            v =>
+              v.caption === 'A4 caption' &&
+              v.width === 44 &&
+              v.alt === 'Cyan rectangle',
+          )
+        )
+          throw Error('Saved mobile placement attributes differ');
+        for (const placement of images) {
+          if (
+            Object.keys(placement).sort().join(',') !==
+            'alignment,alt,caption,resourceId,width'
+          )
+            throw Error('Transient media attributes reached saved JSON');
+          const refs = await api(
+            '/resources/' +
+              placement.resourceId +
+              '/references?direction=incoming&page=0&size=100',
+          );
+          if (
+            !refs.items.some(
+              v =>
+                v.id === simple.id ||
+                v.resourceId === simple.id ||
+                v.sourceId === simple.id,
+            )
+          )
+            throw Error('Saved image backlink missing');
+        }
+        for (const format of ['pdf', 'docx', 'md-assets']) {
+          const operation = await api('/exports', 'POST', {
+            scope: 'notes',
+            noteId: simple.id,
+            format,
+          });
+          let ready;
+          for (let attempt = 0; attempt < 100; attempt++) {
+            ready = await api('/operations/' + operation.id);
+            if (ready.status === 'SUCCEEDED') break;
+            if (['FAILED', 'CANCELLED'].includes(ready.status))
+              throw Error('Image export failed');
+            await new Promise(r => setTimeout(r, 200));
+          }
+          if (ready.status !== 'SUCCEEDED')
+            throw Error('Image export timed out');
+          const response = await fetch(
+            owned.address + '/api/exports/' + operation.id + '/download',
+            {
+              headers: {
+                'X-Vaultor-Owner': owned.accessKey,
+                'X-Vaultor-Protocol': '3',
+              },
+            },
+          );
+          if (!response.ok) throw Error('Image export download refused');
+          const bytes = Buffer.from(await response.arrayBuffer());
+          if (
+            format === 'pdf'
+              ? !bytes.subarray(0, 4).equals(Buffer.from('%PDF'))
+              : !bytes.subarray(0, 2).equals(Buffer.from('PK'))
+          )
+            throw Error('Invalid exported image artifact');
+          await writeFile(
+            join(
+              root,
+              'a4-export-' + format + (format === 'pdf' ? '.pdf' : '.zip'),
+            ),
+            bytes,
+          );
+          console.log(
+            JSON.stringify({
+              imageExportVerified: format,
+              bytes: bytes.length,
+              warnings: ready.warnings ?? [],
+            }),
+          );
+        }
+        console.log(
+          JSON.stringify({
+            savedPlacements: images.length,
+            attributesAndReferencesVerified: true,
+          }),
         );
       }
       if (command.editNote) {
