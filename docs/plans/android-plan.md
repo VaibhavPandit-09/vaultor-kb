@@ -1,6 +1,6 @@
 # Vaultor for Android — execution tracker
 
-Created 2026-10-08; reviewed 2026-10-09. **A1–A5 implemented and published; A6 in progress; A7–A9 not started.** The user authorized A6 implementation on 2026-10-09; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
+Created 2026-10-08; reviewed 2026-10-09. **A1–A6 implemented and published; A7–A9 not started.** The user authorized A6 implementation on 2026-10-09; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
 
 ## Delivery and agreed boundaries
 
@@ -132,7 +132,7 @@ Status: **Implemented and published (2026-10-09), Android0.1.0-alpha.5.** Depend
 
 ## A6 — Effortless writing, autosave and contextual media
 
-Status: **Implemented; final release verification in progress (2026-10-09).** User authorized A6; A5's drawer-led interaction model is retained. No new editor engine unless demonstrated failures require a separately reviewed plan.
+Status: **Implemented and published (2026-10-09), Android0.1.0-alpha.6.1.** User authorized A6; A5's drawer-led interaction model is retained. No new editor engine unless demonstrated failures require a separately reviewed plan.
 
 - [x] Implement local-protection-first debounced conditional autosave using applicable existing settings, exact-version acknowledgments and coalesced requests. Preserve typing during saves and distinguish Saved to host / On this phone / Saving / protection failure. Reconcile uncertain outcomes before retry; conflicts retain both versions and stop unsafe writes.
 - [x] Remove ordinary Save only after that gate passes. Done ends editing, not a server-save promise. Deliberate navigation, backgrounding, host switching and epoch cancellation preserve protected edits; process-exit network flushing is best effort, not a durability guarantee.
@@ -298,3 +298,11 @@ Not newly certified: physical S24/Samsung Keyboard/CJK selection, One UI8.5/9, T
 A6 final-candidate correction: the first exact-source alpha.6 launch on Android17 crashed in React Native Fabric clipped-row mounting (index/count mismatch) while restoring browsing; the subsequent run passed, so it was treated as an intermittent real failure rather than waived. Disabling native FlatList clipping alone did not resolve a second reproduction. Browsing/main/editor wrappers now retain explicit native boundaries and drawer navigation waits for busy restoration to finish; bounded lists also disable native clipping while retaining virtualization, window sizes and server paging. The unpublished android/v0.1.0-alpha.6 tag remains immutable at1b19331; no assets were published. Corrected A6 delivery is0.1.0-alpha.6.1/versionCode7 under a new source tag. Final checks follow.
 
 Corrected candidate: TypeScript/scoped lint passed (zero errors/41warnings including browsing); Android17 install-over and the full focused writing/navigation/creation/renderer-reopen case passed with stable native boundaries and busy navigation gating. Final source/artifact checks remain a separate release gate.
+
+## A6 published APK and final verification
+
+Published Android-only prerelease at **2026-10-09T10:39:09Z**: [Vaultor Android0.1.0-alpha.6.1](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.6.1). Immutable tag **android/v0.1.0-alpha.6.1**, source **1ae12669f3149c54fd03ae6b42a056a3fa32cbbd**. APK **40266548bytes**, SHA-256 **e37566a0921f4dd96453394ec150772364bb01b0b93fdaf9ee84c812f59b603e**. Original public signer **af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567**; package com.vaultor.app/versionCode7/minimumAPI36/targetAPI37/protocol3. The failed alpha.6 source tag remains unchanged and unpublished.
+
+Fresh clean tagged-source release/application-test compilation, package/lock/Gradle/original-signature/API/arm64+x86_64/16KiB verification and bundled-editor checks passed. The exact staged APK installed over retained applications on Android16 and17. Each passed eight native storage/media cases, including encrypted sent receipts/creation IDs, exact acknowledgments, receipt size and authenticated workspace-settings loading, plus the focused read/Edit/real IME/Format/Undo/autosave/Back/drawer/filter/link/quick-capture/renderer-termination-and-reopen case. Approval/session retention passed. Corrected candidate and final APK hashes match; broader clipboard/Share/UI/offline/narrow-font evidence above is candidate evidence, not a repeated full-suite claim for the tagged APK. Native lifecycle checks are bounded emulator observations, not Samsung/OEM guarantees.
+
+Publisher verified clean pushed source/tag, original signer and manifest/checksum/APK, downloaded and compared all three assets before publication. GitHub confirms non-draft/prerelease status and matching public digests/sizes. Desktop/Mac0.7.1 remains unchanged. Install only the APK over the existing app; do not uninstall/clear data. No host update is required. A8 owns the in-app updater. Physical S24/Samsung Keyboard/One UI8.5–9, TalkBack, real Wi-Fi/Mac races and OEM lifecycle remain user-only/open. Owned disposable host/listener and both emulators stopped; no phone or personal workspace access. This follow-up is documentation-only and leaves source tags/assets immutable. **A6 complete; three sprints A7–A9 remain unstarted.**
