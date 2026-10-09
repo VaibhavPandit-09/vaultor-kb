@@ -1,6 +1,6 @@
 # Vaultor for Android
 
-Reviewed 2026-10-09. A1–A3 are published; A4 implementation adds managed images and native file input/output as Android0.1.0-alpha.4 (versionCode4). Actual publication evidence is recorded below after the final gate. [The tracker](../plans/android-plan.md) owns sprint scope. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
+Reviewed 2026-10-09. A1–A4 are published. Current Android0.1.0-alpha.4 (versionCode4) adds managed images and native file input/output. Exact publication evidence is in [the tracker](../plans/android-plan.md#a4-published-apk-and-final-verification). [The tracker](../plans/android-plan.md) owns sprint scope. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
 
 ## Prototype boundary
 
@@ -157,3 +157,7 @@ Disposable host0.7.1 saved standard image JSON and incoming references; PDF/Word
 Failed integration runs exposed off-screen pairing verification controls and stale stopped-fixture TLS/pending input. Pairing now scrolls after content layout; the harness scrolls to verification controls. Only owned failed fixture inputs were removed; approvals/drafts were retained. One Kotlin test import and PdfDocument close mismatch were corrected. Failed runs are not passes. Physical S24/Samsung clipboard/camera/SAF/One UI8.5/9, TalkBack, real Wi-Fi/Mac transfers and OEM process/battery behavior remain open. A5/A6 remain unstarted; no phone access.
 
 A4 final review: fixed editor IME remaining visible on image-tools opening, and guarded thumbnail delivery by current resource identity so late responses cannot repaint a replaced placement. Extended editor tests verify replacement/undo, stale-thumbnail refusal and duplicate-placement survival; TypeScript and fresh editor checks passed. These are A4 corrections, not A5/A6 work.
+
+## A4 final publication
+
+[Android0.1.0-alpha.4](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.4) published 2026-10-09T04:51:27Z, source aa9106878313decc202c14248f66a031bd7c70cb, APK 40,232,456bytes/SHA-256 0096f5552d026d7e0efa4df90cc18bc38f3d528a21d4b837203abe3c2efeba58. Fresh tagged-source package/signer/ABI/16KiB checks and nine storage/media/UI cases per Android16/17 emulator passed; approvals/sessions remained. Native clipboard copying, actual staged-input force-stop recovery, PDF/text previews, original-file SAF byte equality and narrow tools were checked. [The tracker](../plans/android-plan.md#a4-published-apk-and-final-verification) owns exact final evidence and limitations. Owned fixture hosts/emulators stopped; no phone access. A5/A6 remain unstarted.

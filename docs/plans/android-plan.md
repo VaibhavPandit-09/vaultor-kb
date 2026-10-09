@@ -1,6 +1,6 @@
 # Vaultor for Android — execution tracker
 
-Created 2026-10-08; reviewed 2026-10-09. **A1–A3 implemented and published; A4 implemented, final APK publication gate in progress; A5–A6 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
+Created 2026-10-08; reviewed 2026-10-09. **A1–A4 implemented and published; A5–A6 not started.** The user authorized A1 implementation on 2026-10-08; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
 
 ## Delivery and agreed boundaries
 
@@ -89,7 +89,7 @@ Status: **Implemented and published (2026-10-09 local)**. User authorized A3 onl
 
 ## A4 — Images, previews and Android input/output
 
-Status: **Implemented; final installed-release publication gate in progress (2026-10-09)**. User authorized A4 only. Release target Android0.1.0-alpha.4 / versionCode4; host0.7.1/protocol3 unchanged. Depends on A2 editing and A3 resource navigation.
+Status: **Implemented and published (2026-10-09)**. User authorized A4 only. Release milestone Android0.1.0-alpha.4 / versionCode4; host0.7.1/protocol3 unchanged. Depends on A2 editing and A3 resource navigation.
 
 - [x] Add photo/file picker and explicit camera capture with cancellation/permissions. Receive supported Android Share inputs; handle cold launch/host unavailable/source-note selection without inserting into the wrong note. Clipboard image support is capability-tested with a picker fallback; never promise Samsung formats from emulator evidence.
 - [x] Reuse UUID import identities, mapped placement anchors and retained upload failures; preserve order/original bytes and 20 MiB/40 MP supported-image bounds. Pending bytes/progress stay outside note JSON; normal text saving continues.
@@ -192,3 +192,15 @@ Disposable host0.7.1 saved standard image JSON and incoming references; PDF/Word
 Failed integration runs exposed off-screen pairing verification controls and stale stopped-fixture TLS/pending input. Pairing now scrolls after content layout; the harness scrolls to verification controls. Only owned failed fixture inputs were removed; approvals/drafts were retained. One Kotlin test import and PdfDocument close mismatch were corrected. Failed runs are not passes. Physical S24/Samsung clipboard/camera/SAF/One UI8.5/9, TalkBack, real Wi-Fi/Mac transfers and OEM process/battery behavior remain open. A5/A6 remain unstarted; no phone access.
 
 A4 final review: fixed editor IME remaining visible on image-tools opening, and guarded thumbnail delivery by current resource identity so late responses cannot repaint a replaced placement. Extended editor tests verify replacement/undo, stale-thumbnail refusal and duplicate-placement survival; TypeScript and fresh editor checks passed. These are A4 corrections, not A5/A6 work.
+
+## A4 published APK and final verification
+
+Published Android-only prerelease at **2026-10-09T04:51:27Z** (2026-10-09 local): [Vaultor Android0.1.0-alpha.4](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.4). Immutable tag **android/v0.1.0-alpha.4**, source **aa9106878313decc202c14248f66a031bd7c70cb**. APK **40,232,456bytes**, SHA-256 **0096f5552d026d7e0efa4df90cc18bc38f3d528a21d4b837203abe3c2efeba58**. Original public signer **af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567**; package com.vaultor.app/versionCode4/minimumAPI36/targetAPI37/protocol3.
+
+Fresh tagged-source release/application-test build and APK package/lock/Gradle/API/arm64+x86_64/16KiB alignment/original-signature checks passed. The exact staged hash matches the Android17 final installed candidate; the exact tagged APK installed over the retained Android16 app. All nine storage/media/UI checks passed on each: five storage/policy, two native media and two real interaction cases. Extended cases include two-page PDF rendering, bounded text and resource-backed clipboard copying with readable content-provider URI/dimensions/colors. Native MediaTest verifies byte-identical downloaded originals; Android17 Save original through Create document produced252bytes matching the current host asset snapshot exactly. The first comparison used an earlier export snapshot from before further fixture insertions; regenerating the current snapshot resolved that fixture mismatch, with no code change.
+
+Matching-code/editor/browsing/picker/inline-link/native-Back checks passed on both generations earlier in A4. Approvals, note/session and protected records survived install-over. Actual force-stop/relaunch retained one staged Share input without inserting it. Photos/Files cancellation and mixed file+text Share staging passed; camera launch/cancellation was exercised on Android17. Narrow900×2100/130% font and default1080×2400 tools were inspected; the final tools open without the editor IME and wrap/scroll as needed. Default size/font were restored. Editor replacement/undo/stale-thumbnail and duplicate-placement tests passed;40Jest tests, TypeScript and scoped lint zero errors/24warnings passed. No FPS, full heap, visual export-layout or physical OLED certification is claimed.
+
+Publisher verified clean pushed source/tag, original signer and all staged files, downloaded all three assets for byte comparisons, then published. GitHub confirms non-draft/prerelease status and matching APK/manifest/checksum sizes/digests. Desktop/Mac0.7.1 and protocol3 remain unchanged. Owned disposable hosts/listeners and both emulators were stopped; no personal workspace or phone access. Install only the APK over the existing app; do not uninstall/clear data. This publication ledger is documentation-only and does not alter the source tag or runtime.
+
+Physical Samsung/One UI8.5/9 camera capture, clipboard/share providers/cold URI grants, real Wi-Fi/Mac media transfers, TalkBack, external-viewer outcomes and OEM process/battery behavior remain user-only/open. Animated previews remain static first-frame; originals are preserved. Word alt-description omission and possible repeated Android Share delivery are documented in MEDIA.md. **A4 complete; two sprints A5–A6 remain unstarted.**
