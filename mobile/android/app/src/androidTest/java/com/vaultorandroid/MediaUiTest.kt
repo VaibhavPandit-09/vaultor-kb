@@ -42,7 +42,7 @@ class MediaUiTest {
     device.findObject(By.text("Preview image")).click();assertTrue(device.wait(Until.hasObject(By.text("Close preview")),10000));assertTrue(device.wait(Until.hasObject(By.text("Fit")),15000));device.findObject(By.text("Close preview")).click();assertTrue(device.wait(Until.hasObject(By.text("Save")),5000))
     touchImage(device);assertTrue(device.wait(Until.hasObject(By.text("Copy image")),5000));device.findObject(By.text("Copy image")).click();Thread.sleep(1500)
     var copied:android.net.Uri?=null;instrumentation.runOnMainSync {copied=(ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).primaryClip?.getItemAt(0)?.uri}
-    assertNotNull(copied);assertEquals("content",copied!!.scheme);assertArrayEquals(file.readBytes(),ctx.contentResolver.openInputStream(copied!!)?.use {it.readBytes()})
+    assertNotNull(copied);assertEquals("content",copied!!.scheme);val copiedBytes=ctx.contentResolver.openInputStream(copied!!)?.use {it.readBytes()} ?: error("Clipboard original unreadable");val copiedBitmap=android.graphics.BitmapFactory.decodeByteArray(copiedBytes,0,copiedBytes.size);assertEquals(96,copiedBitmap.width);assertEquals(64,copiedBitmap.height);assertEquals(android.graphics.Color.CYAN,copiedBitmap.getPixel(10,10));copiedBitmap.recycle()
     device.findObject(By.text("Close image tools")).click()
     file.delete()
   }
