@@ -1,6 +1,6 @@
 # Vaultor for Android — execution tracker
 
-Created 2026-10-08; reviewed 2026-10-09. **A1–A6 published; A7 in progress; A8–A9 not started.** The user authorized A7 implementation on 2026-10-09; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
+Created 2026-10-08; reviewed 2026-10-09. **A1–A7 published; A8–A9 not started.** The user authorized A7 implementation on 2026-10-09; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
 
 ## Delivery and agreed boundaries
 
@@ -145,14 +145,14 @@ Status: **Implemented and published (2026-10-09), Android0.1.0-alpha.6.1.** User
 
 ## A7 — Organization, references and resource lifecycle
 
-Status: **In progress (2026-10-09).** User authorized A7. Depends on published A6. Retains the original A5 organization scope within the new mobile patterns.
+Status: **Complete — published0.1.0-alpha.7.2 on2026-10-09.** Depends on published A6; final evidence is recorded below.
 
-- [ ] Add shared resource Actions: create/rename collections and resources as applicable, pins, tags, collection membership, immediate add-existing and retry-safe create-and-add. Validate current input; preserve failures and operation identity. Build on A6 note creation instead of duplicating it.
-- [ ] Implement metadata-only incoming/outgoing References and saved usage with counts/paging. Validate revision/occurrence before selection; fall back safely for edited/missing/unknown paths. Files remain temporary previews.
-- [ ] Implement Trash/Restore with same identities and revision/UUID checks. Distinguish delete original / remove placement / remove membership; explain saved usage without implying draft coverage is exhaustive.
-- [ ] Support explicit permanent-delete confirmation and durable cleanup Retry, never automatic purge. Safe partial results retain resource-specific feedback and unfinished selections. Use contextual bulk actions, not a permanent strip.
-- [ ] Handle foreign Trash/Restore in editors and journeys, recover drafts, retain unavailable steps and reconcile restored targets. Unknown resource kinds remain neutral with explicit unsupported feedback.
-- [ ] Test creation identity, membership retries, changed usage/conflicts, image ownership, restore/purge failures and generation notifications with disposable hosts. Check keyboard/Back dismissal and source focus in nested sheets.
+- [x] Add shared resource Actions: create/rename collections and resources as applicable, pins, tags, collection membership, immediate add-existing and retry-safe create-and-add. Validate current input; preserve failures and operation identity. Build on A6 note creation instead of duplicating it.
+- [x] Implement metadata-only incoming/outgoing References and saved usage with counts/paging. Validate revision/occurrence before selection; fall back safely for edited/missing/unknown paths. Files remain temporary previews.
+- [x] Implement Trash/Restore with same identities and revision/UUID checks. Distinguish delete original / remove placement / remove membership; explain saved usage without implying draft coverage is exhaustive.
+- [x] Support explicit permanent-delete confirmation and durable cleanup Retry, never automatic purge. Safe partial results retain resource-specific feedback and unfinished selections. Use contextual bulk actions, not a permanent strip.
+- [x] Handle foreign Trash/Restore in editors and journeys, recover drafts, retain unavailable steps and reconcile restored targets. Unknown resource kinds remain neutral with explicit unsupported feedback.
+- [x] Test creation identity, membership retries, changed usage/conflicts, image ownership, restore/purge failures and generation notifications with disposable hosts. Check keyboard/Back dismissal and source focus in nested sheets.
 
 **Acceptance:** mobile organization and lifecycle are discoverable without ambiguous deletion, duplicate creation or silent draft loss. Publish a lifecycle-capable APK and stop.
 
@@ -323,3 +323,11 @@ Original android/v0.1.0-alpha.7 and android/v0.1.0-alpha.7.1 tags remain immutab
 Final alpha.7.2 candidate Android16 gate passed: both native cases (including original-image bytes, confirmed collection deletion and mixed success/stale-failure lifecycle results), full organization UI, name-conflict correction/real focused Enter, plus a separate cold-start UI repeat. Scope lint zero errors/47warnings. Native input submission reads committed event text. Stable boundaries also cover the workspace/browsing/drawer shell after a further cold-start ViewManager failure. No failed attempts were waived; corrected Android17 and final clean-tag publication follow.
 
 Final candidate0.1.0-alpha.7.2/versionCode10 passed Android16/17 native organization/image/partial-result cases and both UI cases, including editable confirmed name-conflict recovery and focused Enter. Android16 cold-start UI repeated successfully. Current Android17 writing/IME/Format/Undo/autosave/Back/link/quick-capture/renderer-recovery regression passed using retained approval and an explicitly cleared fixture search. Native fixture retries only structured WORKSPACE_BUSY with identical body/revision/UUID; conflicts and unknown outcomes are not retried/discarded. Fresh compilation/original signer/API/ABI/16KiB checks pass; TypeScript73Jest/editor/scoped lint zero errors47warnings recorded above. Immutable clean-source publication is the remaining A7 gate.
+
+## A7 published APK and final verification
+
+Published [Android0.1.0-alpha.7.2](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.7.2) at **2026-10-09T16:11:32Z**. Immutable tag **android/v0.1.0-alpha.7.2**, source **482857ceb43df34a92592c1ab4c26192ad70c70e**. APK **40329080 bytes**, SHA-256 **c29b11c432cb7d4ddbf0ba355620e666683b2a3a9b52db3d7199fd1fbeee23d8**; original signer **af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567** / package com.vaultor.app / versionCode10 / minimumAPI36 / targetAPI37 / protocol3. Earlier alpha.7 and alpha.7.1 tags remain immutable/unpublished.
+
+Fresh clean tagged-source release/test compilation and package/lock/Gradle/original-signature/API/arm64+x86_64/16KiB verification passed. Tagged APK bytes match the final candidate installed and checked on both generations. Each passed two native organization/image/partial-result cases and both UI cases (including name-conflict correction and actual focused Enter); Android16 cold-start UI repeated. Current Android17 writing/IME/Format/Undo/autosave/Back/link/quick-capture/renderer-recovery passed. Exact final staged reinstall on Android17 retained approval/session and passed both native cases again. TypeScript73Jest/editor/scoped lint zero errors47warnings are recorded above. Earlier failures were corrected, not waived; tests distinguish structured WORKSPACE_BUSY Retry from conflicts/unknown outcomes.
+
+Publisher verified pushed clean source/tag, original signer and APK/manifest/checksum; downloaded/compared all three staged files before publication. GitHub confirms non-draft/prerelease and matching public digests/sizes. Owned host/listener and both emulators stopped; no phone/personal workspace access. Install only the APK over the existing app, without uninstalling/clearing data; no host/desktop update required. This follow-up is documentation-only and leaves source tags/assets immutable. **A7 complete; two sprints A8/A9 remain unstarted.** Samsung/One UI8.5–9/Keyboard/TalkBack/physical OLED/real Mac-Wi-Fi/OEM acceptance stays user-owned; no full offline sync or tablet parity claim.

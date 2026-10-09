@@ -1,6 +1,6 @@
 # Vaultor for Android
 
-Reviewed 2026-10-09. A1–A6 are published; A7 organization/lifecycle is implemented for Android0.1.0-alpha.7.2 (versionCode10), with its publication gate in [A7 notes](releases/0.1.0-alpha.7.2.md). A8–A9 remain unstarted. [The tracker](../plans/android-plan.md) owns sprint scope. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
+Reviewed 2026-10-09. A1–A7 are published; current Android0.1.0-alpha.7.2 (versionCode10) organization/lifecycle results are in [A7 notes](releases/0.1.0-alpha.7.2.md). A8–A9 remain unstarted. [The tracker](../plans/android-plan.md) owns sprint scope. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
 
 ## Prototype boundary
 
