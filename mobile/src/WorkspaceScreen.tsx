@@ -733,6 +733,7 @@ export default function WorkspaceScreen() {
       edges={['top', 'bottom']}
     >
       <View
+        collapsable={false}
         style={s.main}
         importantForAccessibility={
           drawer && width < 840 ? 'no-hide-descendants' : 'auto'
@@ -744,6 +745,8 @@ export default function WorkspaceScreen() {
               ref={menuButton}
               accessibilityRole="button"
               accessibilityLabel="Open navigation"
+              accessibilityState={{ disabled: state.busy }}
+              disabled={state.busy}
               onPress={() => {
                 Keyboard.dismiss();
                 inject({ type: 'blur' });
@@ -1048,6 +1051,7 @@ export default function WorkspaceScreen() {
         />
         {state.note ? (
           <View
+            collapsable={false}
             style={[
               s.workspace,
               (hostView || recovery || state.view !== 'note') && s.hidden,

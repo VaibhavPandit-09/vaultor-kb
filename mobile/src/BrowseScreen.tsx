@@ -101,6 +101,7 @@ export function ChoiceSheet({
             />
           ) : null}
           <FlatList
+            removeClippedSubviews={false}
             style={styles.choiceList}
             keyboardShouldPersistTaps="handled"
             data={choices.filter(c =>
@@ -273,7 +274,7 @@ export default function BrowseScreen({
     else onAction(() => model.routeResource(row.id));
   };
   return (
-    <View style={styles.root}>
+    <View collapsable={false} style={styles.root}>
       {state.note ? (
         <Action
           label="Return to note"
@@ -371,6 +372,7 @@ export default function BrowseScreen({
             }`}
       </Text>
       <FlatList
+        removeClippedSubviews={false}
         ref={list}
         data={b.rows}
         keyExtractor={r => r.kind + ':' + r.id}
@@ -592,6 +594,7 @@ export default function BrowseScreen({
                 </View>
               ) : null}
               <FlatList
+                removeClippedSubviews={false}
                 keyboardShouldPersistTaps="handled"
                 data={scopeChoices}
                 keyExtractor={c => c.value}

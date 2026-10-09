@@ -48,8 +48,8 @@ class PrototypeTest {
     val intent=context.packageManager.getLaunchIntentForPackage(context.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(intent)
     if(InstrumentationRegistry.getArguments().getString("reuseApproval")!="true") {
-    if(device.wait(Until.hasObject(By.desc("Open navigation")),6000)) {
-      for(attempt in 1..20) {device.findObject(By.desc("Open navigation"))?.click();if(device.wait(Until.hasObject(By.desc("Switch workspace or manage connections")),1000))break}
+    if(device.wait(Until.hasObject(By.desc("Open navigation").enabled(true)),6000)) {
+      for(attempt in 1..20) {device.findObject(By.desc("Open navigation").enabled(true))?.click();if(device.wait(Until.hasObject(By.desc("Switch workspace or manage connections")),1000))break}
       assertTrue(device.hasObject(By.desc("Switch workspace or manage connections")))
       for(attempt in 1..10) {device.findObject(By.desc("Switch workspace or manage connections"))?.click();if(device.wait(Until.hasObject(By.text("Connect to your workspace")),1000))break}
     }
@@ -82,8 +82,8 @@ class PrototypeTest {
     Log.i("VaultorPrototypeTest","APPROVAL_COMPLETE")
     }
     if(InstrumentationRegistry.getArguments().getString("reuseApproval")=="true" && !device.hasObject(By.text("Browse Library"))) {
-      assertTrue(device.wait(Until.hasObject(By.desc("Open navigation")),30000))
-      device.findObject(By.desc("Open navigation")).click()
+      assertTrue(device.wait(Until.hasObject(By.desc("Open navigation").enabled(true)),30000))
+      device.findObject(By.desc("Open navigation").enabled(true)).click()
       assertTrue(device.wait(Until.hasObject(By.desc("Library")),5000))
       device.findObject(By.desc("Library")).click()
     }
@@ -114,7 +114,7 @@ class PrototypeTest {
     assertTrue(device.wait(Until.hasObject(By.text("Edit")),5000))
     assertTrue(device.hasObject(By.text("A1 Editor fixture")))
     Log.i("VaultorPrototypeTest","EDITOR_OPENED_READ_EDIT_BACK")
-    device.findObject(By.desc("Open navigation")).click()
+    device.findObject(By.desc("Open navigation").enabled(true)).click()
     assertTrue(device.wait(Until.hasObject(By.desc("View all recent")),5000))
     device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"a6-drawer.png"))
     device.findObject(By.desc("View all recent")).click()
@@ -135,7 +135,7 @@ class PrototypeTest {
     assertTrue(device.wait(Until.hasObject(By.text("A1 Editor fixture")),10000))
     Log.i("VaultorPrototypeTest","LINK_AND_NATIVE_BACK")
     Log.i("VaultorPrototypeTest","BROWSE_BACK_RETAINED_EDITOR")
-    device.findObject(By.desc("Open navigation")).click()
+    device.findObject(By.desc("Open navigation").enabled(true)).click()
     assertTrue(device.wait(Until.hasObject(By.desc("Home")),5000))
     device.findObject(By.desc("Home")).click()
     assertTrue(device.wait(Until.hasObject(By.text("New note")),5000))
