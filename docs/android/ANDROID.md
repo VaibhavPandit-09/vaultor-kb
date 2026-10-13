@@ -1,6 +1,6 @@
 # Vaultor for Android
 
-Reviewed 2026-10-13. A1–A7 are published; current Android0.1.0-alpha.7.2 (versionCode10) organization/lifecycle results are in [A7 notes](releases/0.1.0-alpha.7.2.md). Former A8–A9 are superseded by [the 13-sprint workspace/companion plan](../plans/workspace-companion-plan.md); every new sprint is unstarted. [The original tracker](../plans/android-plan.md) retains published evidence. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
+Reviewed 2026-10-13. A1–A7 are published; current Android0.1.0-alpha.7.2 (versionCode10) organization/lifecycle results are in [A7 notes](releases/0.1.0-alpha.7.2.md). Former A8–A9 are superseded by [the 13-sprint workspace/companion plan](../plans/workspace-companion-plan.md); every new sprint is unstarted. [The original tracker](../plans/android-plan.md) retains published evidence. This guide owns the implemented mobile boundary, local setup and APK delivery. Android alpha.7.2 remains unchanged; Windows host0.8.0 adds compatible default-workspace hosting, while released Mac remains0.7.1 pending its0.8.0 native handoff.
 
 ## Prototype boundary
 

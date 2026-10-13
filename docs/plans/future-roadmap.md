@@ -14,7 +14,7 @@ Before implementation decide defaults for cadence, count/age/byte retention, des
 
 ## Multi-workspace and Android companion — promoted to planning
 
-[The replacement 13-sprint tracker](workspace-companion-plan.md) now owns multi-workspace hosting and clients, desktop independent copies, Android reading redesign, source-bound offline downloads, review inbox/sync, queued offline imports, connected full exports and offline partial exports. W1 host isolation is implemented with publication pending; W2–W3 and R1–R10 are unstarted. The old A8/A9 are superseded. Original Android A1–A7 remain shipped. Do not implement these capabilities from this parking document or treat planning as implementation authorization. General mobile document editing and two-way fork sync remain deferred.
+[The replacement 13-sprint tracker](workspace-companion-plan.md) now owns multi-workspace hosting and clients, desktop independent copies, Android reading redesign, source-bound offline downloads, review inbox/sync, queued offline imports, connected full exports and offline partial exports. W1 host isolation is published as Windows0.8.0 (Mac gate pending); W2–W3 and R1–R10 are unstarted. The old A8/A9 are superseded. Original Android A1–A7 remain shipped. Do not implement these capabilities from this parking document or treat planning as implementation authorization. General mobile document editing and two-way fork sync remain deferred.
 
 ## Later discovery and platform work
 

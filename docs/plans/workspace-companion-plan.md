@@ -1,6 +1,6 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created/reviewed 2026-10-13. **W1 in progress (authorized 2026-10-13); W2–W3 and R1–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created/reviewed 2026-10-13. **W1 complete/published Windows0.8.0 (2026-10-13); W2–W3 and R1–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
 
 ## Agreed product boundary
 
@@ -53,7 +53,7 @@ This table is sequential delivery, not permission to run dependency-independent 
 
 ## W1 — Isolated host workspace foundation
 
-Status: **Implemented — verification passed, publication pending (2026-10-13)**.
+Status: **Complete — Windows0.8.0 published 2026-10-13; Mac native gate pending**.
 
 - Write an ADR for workspace catalog, per-workspace storage/transactions, explicit request routing and bounded open contexts. Include scheduled jobs, SSE lifetime, file/extraction paths, operation registries, locks and graceful stop/backup scope. A workspace replacement must not quiesce unrelated workspaces unnecessarily.
 - Introduce persistent catalog and owner workspace list/create/rename with explicit limits. Adopt the existing workspace and retain its identity/data/approvals; restart-safe migration and rollback checkpoint precede schema/storage changes. Never move a live database with an active writer.
@@ -245,3 +245,7 @@ Implemented the ADR in [WORKSPACES.md](../architecture/WORKSPACES.md): eight bou
 Backend compilation and 19 focused cases passed (MultiWorkspace7, DesktopContract4, WorkspaceApi6, WorkspaceGate2), including actual CA-verified HTTPS grants/revocation and child streams, equal IDs/original bytes, concurrent requests, multipart/Trash, isolated export status/search/generation, corrupted/reopened catalog and child restart/limits. Corrected child lazy-association context and notification publication; corrected the old contract test expecting2 though production was already3. Initial test author error checked a nonexistent lifecycle success field and was corrected to the actual trashed status, not waived.
 
 Fresh UI/embedded JAR/runtime bundle and Windows package compiled. Both bundled and packaged disposable isolation/export/private-stop/restart checks passed. Packaged Vaultor.exe native first/relaunch, note save and PDF preview passed with installed Java absent from PATH. Original-key EXE/sidecar preflight passed; candidate245560929bytes/SHA2561d117c3cde5d0c5966011f46f7932164093a037c0d6ec40f37951352d8a69b9d. No new UI layout/Android/phone/Docker/broad API/Mac-native claims. New declared OpenAPI IDs are unique; two pre-existing operations lack IDs and were not expanded in this sprint. Local docs/whitespace checks pass. Final source/tag/GitHub asset verification follows. W2–W3 and R1–R10 remain unstarted.
+
+### W1 published release — 2026-10-13
+
+[Windows0.8.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.8.0) published at 2026-10-13T14:30:53Z; immutable tag/source `v0.8.0` / `8d2b9c72dbcdf3a9907a8b2c20d01f136c5d3352`. Original-key installer245560929bytes/SHA-256 `1d117c3cde5d0c5966011f46f7932164093a037c0d6ec40f37951352d8a69b9d`; signed sidecar398bytes. Downloaded pair verified before publication; public size/digests and non-draft/stable status checked after publication. Five UI assets identical across fresh UI/embedded browser/packaged native copies. Native unpacked executable and packaged bundle checks passed; no new installer install-over/uninstall test or native Mac check claimed. Owned disposable hosts stopped. Documentation-only publication follow-up; no source tag/runtime movement. In installed Windows: Updates → Check for updates → Update and restart. Mac remains0.7.1 until exact-tag native handoff; Android alpha.7.2 remains compatible with default workspace. W2 and all companion sprints unstarted.
