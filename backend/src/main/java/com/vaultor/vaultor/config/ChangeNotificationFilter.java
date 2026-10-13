@@ -17,6 +17,9 @@ public class ChangeNotificationFilter extends OncePerRequestFilter {
     public ChangeNotificationFilter(ChangeFeed feed){this.feed=feed;}
     @Override protected void doFilterInternal(HttpServletRequest req,HttpServletResponse res,FilterChain chain)throws ServletException,IOException {
         chain.doFilter(req,res);
+        publish(req,res,feed);
+    }
+    public static void publish(HttpServletRequest req,HttpServletResponse res,ChangeFeed feed) {
         if(Set.of("GET","HEAD","OPTIONS").contains(req.getMethod()) || res.getStatus()>=300)return;
         String path=req.getRequestURI();String kind=null;
         if(path.matches("/api/resources/[^/]+/open"))return;

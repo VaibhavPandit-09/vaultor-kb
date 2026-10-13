@@ -1,5 +1,7 @@
 # Desktop shell and connections
 
+W1 / 0.8.0 adds [isolated host workspaces](../architecture/WORKSPACES.md) inside the owned server. The existing app.db/files remain the default; workspaces/catalog.json and UUID-specific roots live beside host-access. Private stop drains all opened contexts before updater backup. Client selectors and independent-copy UI remain W2/W3; shipped Android remains on its separate tracker. Native platform/release status is authoritative in versioned release notes and MAC-HANDOFF, not older milestone summaries below.
+
 Reviewed 2026-10-08, one-click Windows updater integration. Electron 44.5.1 runs the bundled React UI against **This computer**, its owned Java server, or a remembered paired private-network host. Browser access uses owner handoff or paired HTTPS. Native file/tray/login, client pairing/discovery/trust, integrated chrome and saved-change propagation are implemented; personal installers/updates are implemented; see [UPDATES.md](UPDATES.md). Android remains deferred. Windows development launch/relaunch and actual window-control pointer hits are verified. On Mac, the 0.2.2 development app, owned-server and chrome smoke checks passed; release DMG, manual native controls and real two-device validation remain pending. For npm install/build errors and resolved smoke-harness issues, see [DESKTOP-SETUP-TROUBLESHOOTING.md](DESKTOP-SETUP-TROUBLESHOOTING.md).
 
 ## Development launch

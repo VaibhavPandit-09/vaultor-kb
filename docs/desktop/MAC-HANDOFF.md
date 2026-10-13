@@ -1,3 +1,11 @@
+# Mac release and verification handoff
+
+## W1 / 0.8.0 — pending native Mac verification (2026-10-13)
+
+After Windows publication, use immutable tag `v0.8.0`; do not build master or move that tag. Read `docs/desktop/releases/v0.8.0.md`, `docs/architecture/WORKSPACES.md` and RELEASE-PROCESS.md. Preserve the existing original private release key locally; do not publish/print it or create a new identity. On Apple Silicon with Java25/Node: `git checkout v0.8.0`, `npm --prefix frontend ci`, `npm --prefix desktop ci`; set BUILD_VERSION/VITE_BUILD_VERSION=0.8.0, then run desktop build, prepare-server, package:release. Run the focused backend MultiWorkspaceTest and DesktopContractTest, `node desktop/scripts/workspace-smoke.mjs` against the packaged resources/bundle, and existing owned native first/relaunch on the packaged executable (Vaultor.app/Contents/MacOS/Vaultor). Verify app signing/DMG mount/install-over in disposable storage and CA-verified two-device grant/revocation if available.
+
+Preflight original-key DMG/sidecar, then `npm --prefix desktop run publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.8.0.md` from the clean exact tag. Existing Windows bytes/source must remain unchanged. Verify downloaded Mac pair, update GitHub notes with actual native evidence, then maintain living docs in a documentation-only follow-up. Code corrections require a new version; never repair under v0.8.0. No agent phone access. Mac0.7.1 can continue serving its default workspace; Windows0.8.0 cannot update that remote host.
+
 # Completed release delivery — 0.7.1 reliable scale and compact workspaces
 
 Windows 0.7.1 and Mac arm64 0.7.1 are both verified and published from immutable v0.7.1 source `3e455cd05e6ad722e7a38e07d9b102dd25e39609`.
@@ -189,8 +197,7 @@ Windows build 10.0.26300.0, Node 24.18.1, npm 11.16.0, Electron 44.5.1. App 0.2.
 
 Post-D9 0.2.2 correction to verify on the real pair: stop the remote Mac host, then switch a clean Windows client to This computer without needing a manual keep-drafts override. Repeat with an unsaved note/title: require Keep drafts and switch and verify the original profile's recovery survives relaunch. Settings/storage failures and known active transfers must still block as documented. Fresh profiles have no automatic localhost:8080 entry; old independent server entries are retained and labeled separately. Build current 0.2.2 sources on Mac; the Windows 0.2.1 baseline above is historical actual validation, not a Mac package claim.
 
-## Mac 0.2.2 development results and remaining gate (2026-10-04)
-
+#
 Verified environment: macOS 27.0.1, Apple Silicon arm64, Node 22.16.0/npm 10.9.2, Temurin Java 25, Electron 44.5.1, Chrome 152.0.7977.83 and Safari 27.0.1; Xcode command-line tools are installed. A private IPv4 address was present, but no real LAN/two-device test was conducted and the address is deliberately not recorded here.
 
 Passed on this checkout: `npm --prefix desktop ci` (including native Electron executable installation), `npm --prefix desktop run build`, `npm --prefix desktop run prepare-server`, `npm --prefix desktop run check`, 14 focused desktop network/file/update tests and five focused `workspaceDeparture` tests. Backend tests are skipped by `prepare-server`; no full backend suite is claimed. The disposable 0.2.2 `package:dev` app at `desktop/packages/darwin-arm64-1791107186161/Electron.app` is arm64 and its ad-hoc Electron.app signature verified. The package occupies 629,944 KiB; this is a development Electron.app size, not a Vaultor release app or DMG size. Native owned-server smoke passed launch, edit/save, PDF preview and relaunch with Java removed from PATH. Native chrome smoke passed Connections layout, theme, credential-storage, default-sharing and window-control assertions. Dark/light/narrow frames in ignored `desktop/artifacts` were generated and reviewed. No user workspace was used.

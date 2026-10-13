@@ -26,9 +26,10 @@ class DesktopContractTest {
         var capabilities = controller.capabilities();
         assertEquals("test-build",capabilities.serverBuild());
         assertEquals(capabilities.build(),capabilities.serverBuild());
-        assertEquals(2,capabilities.apiProtocolVersion());
-        assertEquals(2,capabilities.minimumClientProtocolVersion());
+        assertEquals(3,capabilities.apiProtocolVersion());
+        assertEquals(3,capabilities.minimumClientProtocolVersion());
         assertTrue(capabilities.authentication());
+        assertTrue(capabilities.multiWorkspace());assertEquals("X-Vaultor-Workspace",capabilities.workspaceHeader());assertEquals(8,capabilities.workspaceLimit());
     }
     @Test void requestLogsAndResponsesKeepTheirBuildAndCorrelation() throws Exception {
         var filter = new RequestLoggingFilter(new BuildInformation("test-build"));

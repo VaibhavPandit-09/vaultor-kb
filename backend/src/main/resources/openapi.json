@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Vaultor API",
-    "version": "1.6.0",
-    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration."
+    "version": "1.7.0",
+    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration. 0.8.0 adds bounded isolated host workspaces with optional X-Vaultor-Workspace selection; missing scope always means the fixed legacy workspace. API protocol3/archive3 remain unchanged."
   },
   "servers": [
     {
@@ -248,7 +248,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/search": {
       "get": {
@@ -327,7 +339,19 @@
           }
         },
         "description": "At most 50 title-matching metadata summaries. Use listResources for pagination."
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}": {
       "get": {
@@ -423,7 +447,19 @@
           }
         },
         "deprecated": true
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/note": {
       "put": {
@@ -539,7 +575,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/open": {
       "post": {
@@ -609,7 +657,19 @@
           }
         },
         "description": "Records lastOpenedAt only. Does not change updatedAt, note content, tags, collections or favorites."
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/backlinks": {
       "get": {
@@ -688,7 +748,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/replace-links": {
       "post": {
@@ -728,7 +800,19 @@
           }
         },
         "deprecated": true
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/tags/{name}": {
       "post": {
@@ -880,7 +964,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/tags": {
       "get": {
@@ -1017,7 +1113,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/tags/{id}/color": {
       "put": {
@@ -1111,7 +1219,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/tags/{id}": {
       "delete": {
@@ -1180,7 +1300,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/file": {
       "post": {
@@ -1266,7 +1398,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/imports/preview": {
       "post": {
@@ -1352,7 +1496,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/raw": {
       "get": {
@@ -1429,7 +1585,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/download": {
       "get": {
@@ -1506,7 +1674,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/exports/{id}/download": {
       "get": {
@@ -1601,7 +1781,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/settings": {
       "get": {
@@ -1828,7 +2020,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/settings/workspace": {
       "get": {
@@ -2035,7 +2239,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/exports": {
       "post": {
@@ -2179,7 +2395,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/imports/{id}/commit": {
       "post": {
@@ -2282,7 +2510,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/operations/{id}": {
       "get": {
@@ -2358,7 +2598,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/operations/{id}/cancel": {
       "post": {
@@ -2434,7 +2686,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/export-formats": {
       "get": {
@@ -2504,7 +2768,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/health": {
       "get": {
@@ -2589,7 +2865,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/capabilities": {
       "get": {
@@ -2671,7 +2959,19 @@
           }
         },
         "security": []
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/diagnostics/events": {
       "get": {
@@ -2813,7 +3113,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/diagnostics/integrity": {
       "get": {
@@ -2895,7 +3207,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/openapi.json": {
       "get": {
@@ -2962,7 +3286,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/imports/{id}": {
       "put": {
@@ -3048,7 +3384,19 @@
             "description": "Upload limit exceeded"
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/favorite": {
       "put": {
@@ -3096,7 +3444,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/collections": {
       "get": {
@@ -3258,7 +3618,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/collections/{id}": {
       "put": {
@@ -3458,7 +3830,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/tags/browse": {
       "get": {
@@ -3544,7 +3928,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/tags/{id}/name": {
       "put": {
@@ -3623,7 +4019,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/organization/memberships": {
       "post": {
@@ -3691,7 +4099,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/collections/creations/{id}": {
       "put": {
@@ -3775,7 +4195,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/collections/{id}/favorite": {
       "put": {
@@ -3847,7 +4279,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/organization/selection": {
       "post": {
@@ -3922,7 +4366,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/organization/pins": {
       "get": {
@@ -4034,7 +4490,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/query": {
       "get": {
@@ -4223,7 +4691,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/summary": {
       "get": {
@@ -4298,7 +4778,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/diagnostics/search": {
       "get": {
@@ -4373,7 +4865,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/diagnostics/search/rebuild": {
       "post": {
@@ -4439,7 +4943,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/workspace/identity": {
       "get": {
@@ -4483,7 +4999,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/exports/notes/{id}/preview": {
       "get": {
@@ -4559,7 +5087,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/operations/activity": {
       "get": {
@@ -4589,7 +5129,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/access/host": {
       "get": {
@@ -6340,7 +6892,19 @@
             "description": "Too many active streams"
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/image-info": {
       "get": {
@@ -6408,7 +6972,19 @@
             "description": "Resource missing"
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/image-png": {
       "get": {
@@ -6440,7 +7016,19 @@
             "description": "Unsupported image or limits exceeded"
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/trash": {
       "get": {
@@ -6486,7 +7074,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/lifecycle": {
       "put": {
@@ -6536,7 +7136,19 @@
             "description": "Update client"
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/usage": {
       "get": {
@@ -6563,7 +7175,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/lifecycle-pending": {
       "get": {
@@ -6593,7 +7217,19 @@
             "description": "No pending operation"
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/title": {
       "patch": {
@@ -6656,7 +7292,19 @@
             "description": "Revision conflict"
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/references": {
       "get": {
@@ -6721,7 +7369,19 @@
             "description": "Resource missing"
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/resources/{id}/thumbnail": {
       "get": {
@@ -6756,7 +7416,19 @@
             "description": "Missing or trashed resource"
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/diagnostics/search/files": {
       "get": {
@@ -6794,7 +7466,19 @@
             }
           }
         }
-      }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     },
     "/diagnostics/search/files/retry": {
       "post": {
@@ -6817,6 +7501,219 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SearchStatus"
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    "/workspaces": {
+      "get": {
+        "operationId": "listWorkspaces",
+        "summary": "List authorized workspace ID/name summaries (at most eight)",
+        "responses": {
+          "200": {
+            "description": "Authorized summaries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workspaces/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "workspaceSummary",
+        "summary": "Authorized workspace identity, generation and default status",
+        "responses": {
+          "200": {
+            "description": "Successful workspace operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/workspaces/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "put": {
+        "operationId": "createWorkspace",
+        "summary": "Local owner only; create uses caller UUID and identical-name retry",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful workspace operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "renameWorkspace",
+        "summary": "Local owner only; create uses caller UUID and identical-name retry",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful workspace operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/workspaces/{id}/grants": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "put": {
+        "operationId": "setWorkspaceGrant",
+        "summary": "Local owner sets access for an approved device; false overrides inherited default access",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "deviceId",
+                  "allowed"
+                ],
+                "properties": {
+                  "deviceId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "allowed": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful workspace operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }

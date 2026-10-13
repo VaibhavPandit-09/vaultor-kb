@@ -76,23 +76,21 @@ public final class DesktopOwner implements AutoCloseable {
     }
     private void stop(boolean mayBlock) {
         if (!closing.compareAndSet(false, true)) return;
-        var gate=context.getBean(com.vaultor.vaultor.service.WorkspaceGate.class);
-        var operations=context.getBean(com.vaultor.vaultor.repository.TransferOperationRepository.class);
-        context.getBean(com.vaultor.vaultor.service.ChangeFeed.class).restarting();
-        gate.quiesce();long deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(15);
+        var registry=context.getBean(com.vaultor.vaultor.workspaces.WorkspaceRegistry.class);
+        registry.quiesce();long deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(15);
         try {
             while(System.nanoTime()<deadline) {
-                if(gate.requestsDrained()) {
-                    var count=new java.util.concurrent.FutureTask<Long>(() -> operations.countByStatusIn(java.util.List.of("QUEUED","RUNNING","CLEANUP")));
+                {
+                    var count=new java.util.concurrent.FutureTask<Boolean>(registry::drained);
                     Thread.ofPlatform().daemon().start(count);
-                    try { if(count.get(Math.max(1,Math.min(500,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(deadline-System.nanoTime()))),java.util.concurrent.TimeUnit.MILLISECONDS)==0) {context.close();close();return;} }
+                    try { if(count.get(Math.max(1,Math.min(500,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(deadline-System.nanoTime()))),java.util.concurrent.TimeUnit.MILLISECONDS)) {context.close();close();return;} }
                     catch(java.util.concurrent.TimeoutException timeout){count.cancel(true);}
                 }
                 Thread.sleep(100);
             }
         } catch(Exception ignored) { /* Preserve the host and unblock editing if safe stop fails. */ }
         if (!mayBlock) { Runtime.getRuntime().exit(0); return; }
-        gate.resume();closing.set(false);System.out.println("VAULTOR_OWNER_BLOCKED "+token);System.out.flush();
+        registry.resume();closing.set(false);System.out.println("VAULTOR_OWNER_BLOCKED "+token);System.out.flush();
     }
     public void close() { try { if (lock.isValid()) lock.release(); channel.close(); } catch (Exception ignored) {} }
 }

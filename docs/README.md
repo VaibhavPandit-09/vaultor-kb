@@ -6,6 +6,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Install and update on each platform](desktop/INSTALLATION-AND-UPDATES.md): exact Windows/Mac steps, browser/Docker/Ubuntu paths, available targets and recovery.
 - [Agent-owned release process](desktop/RELEASE-PROCESS.md): standing responsibility for versions, native builds, verified artifacts, tags and GitHub publication.
+- [0.8.0 workspace foundation](desktop/releases/v0.8.0.md): Windows-first host isolation, actual validation and same-tag Mac gate.
 - [0.7.1 scale and integration](desktop/releases/v0.7.1.md): responsive panes, status availability, bounded references and Android handoff.
 - [0.7.0 saved file-content search](desktop/releases/v0.7.0.md): bounded PDF/text indexing, coverage/retry, Windows release and exact Mac handoff.
 - [0.6.0 resource discovery](desktop/releases/v0.6.0.md): Windows release, image categories, bounded thumbnails, saved references and same-tag Mac handoff.
@@ -40,6 +41,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Architecture, development and host security
 
+- [Host workspaces](architecture/WORKSPACES.md): W1 isolated storage/contexts, fixed-default routing, grants, adoption checkpoint, limits and compatibility.
+
 - [Platform and connection boundary](architecture/PLATFORM.md): transport, cancellation, protocols and native/browser ownership.
 - [Saved changes across devices](architecture/MULTI-DEVICE.md): approved SSE, clean-note refresh and dirty-note conflicts.
 - [API guide](development/API.md): shared UI/agent contracts and diagnostics.
@@ -65,7 +68,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
-- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan, 13 unstarted sprints for workspace isolation/switching/transfers and beautiful offline reading, reviews, queued imports, exports and verified releases. One sprint per authorization.
+- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan, W1 host foundation followed by 12 unstarted sprints for workspace isolation/switching/transfers and beautiful offline reading, reviews, queued imports, exports and verified releases. One sprint per authorization.
 - [Original Android tracker](plans/android-plan.md): historical A1–A7 evidence; A8/A9 cancelled and superseded.
 
 - [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): All five sprints implemented on Windows; measured integration, platform limits and separate Android prototype gate recorded.

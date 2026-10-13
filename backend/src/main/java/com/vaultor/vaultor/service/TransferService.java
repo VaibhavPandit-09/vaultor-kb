@@ -73,7 +73,7 @@ public class TransferService {
             }
         }
     }
-    @PreDestroy public void shutdown() { worker.shutdown(); }
+    @PreDestroy public void shutdown() { worker.shutdown();try{if(!worker.awaitTermination(15,TimeUnit.SECONDS))worker.shutdownNow();}catch(InterruptedException e){worker.shutdownNow();Thread.currentThread().interrupt();} }
     private Path directory(String id) { return root.resolve(UUID.fromString(id).toString()); }
     public Operation dto(TransferOperation op) { return new Operation(op.getId(),op.getKind(),op.getStatus(),op.getPhase(),op.getProgress(),op.getMode(),op.getDetail(),op.getRequestId(),Map.of("resources",Optional.ofNullable(op.getResourceCount()).orElse(0),"files",Optional.ofNullable(op.getFileCount()).orElse(0),"tags",Optional.ofNullable(op.getTagCount()).orElse(0)),op.getOutputFilename(),op.getOutputMediaType(),readWarnings(op)); }
     private List<String> readWarnings(TransferOperation op) { List<String> result=new ArrayList<>();for(JsonNode n:mapper.readTree(op.getWarnings()==null?"[]":op.getWarnings()))result.add(n.asText());return result; }
@@ -109,6 +109,10 @@ public class TransferService {
             }
         }
     }
+    private void enqueue(TransferOperation op,Runnable work,boolean note){
+        var admitted=changeFeed.captureAuthorization();
+        worker.submit(()->{Runnable guarded=()->{admitted.run();work.run();};if(note)runNote(op,guarded);else run(op,guarded);});
+    }
     private void fail(TransferOperation op,Exception e) {
         op.setDetail(e.getMessage()==null?"Transfer failed":e.getMessage().substring(0,Math.min(1000,e.getMessage().length())));
         phase(op,"FAILED","failed",op.getProgress()); log.error("transfer failed operationId={}",op.getId(),e);
@@ -117,7 +121,7 @@ public class TransferService {
         if (!"workspace".equals(scope) || !"zip".equals(format)) throw new IllegalArgumentException("Note exports require noteId");
         exporters.require(scope,format); var op=create("export");
         op.setOutputFilename("workspace.zip");op.setOutputMediaType("application/zip");operations.save(op);
-        worker.submit(()->run(op,()->gate.exclusive(()->exportArchive(op)))); return dto(op);
+        enqueue(op,()->gate.exclusive(()->exportArchive(op)),false); return dto(op);
     }
     public NoteExportGraph.Preview previewNote(String noteId) {
         final NoteExportGraph.Preview[] result = new NoteExportGraph.Preview[1];
@@ -148,7 +152,7 @@ public class TransferService {
                 op.setOutputArtifact("artifact."+extension);op.setOutputFilename(safeFilename(note.title())+"."+extension);
                 op.setOutputMediaType(packaged?"application/zip":renderer.format().mediaType());
                 op.setResourceCount(graph.preview().notes());op.setFileCount(graph.preview().files());operations.save(op);
-                worker.submit(()->runNote(op,()-> {
+                enqueue(op,()-> {
                     try {
                         gate.exclusive(()->phase(op,"RUNNING","rendering",35));
                         renderer.writeNote(snapshot,Map.copyOf(binaries),dir.resolve("artifact."+extension),linked,references);
@@ -158,7 +162,7 @@ public class TransferService {
                         op.setWarnings(mapper.writeValueAsString(warnings.stream().limit(100).toList()));
                         gate.exclusive(()->phase(op,"SUCCEEDED","complete",100));
                     } catch(Exception e) {throw new IllegalStateException("Note export failed: "+e.getMessage(),e);}
-                }));
+                },true);
             } catch(Exception e) { fail(op,e); }
         });
         return dto(created[0]);
@@ -254,12 +258,12 @@ public class TransferService {
         if(op.getMode()!=null) { if(!mode.equals(op.getMode())) throw new IllegalArgumentException("Import already committed with another mode");return dto(op); }
         if(!op.getStatus().equals("PREVIEW")) throw new IllegalArgumentException("Import is not ready");
         op.setMode(mode);phase(op,"QUEUED","queued",0);
-        worker.submit(()->run(op,()-> {
+        enqueue(op,()-> {
             gate.exclusive(()->apply(op));
             // Reconcile again after the mutation gate opens, including interrupted cleanup.
             if(List.of("CLEANUP","SUCCEEDED").contains(operations.findById(op.getId()).orElseThrow().getStatus()))
                 changeFeed.committed("workspace",List.of(),op.getRequestId());
-        }));return dto(op);
+        },false);return dto(op);
     }
     public synchronized Operation cancel(String id) {
         var op=operations.findById(id).orElseThrow();

@@ -1,6 +1,6 @@
 # Android client readiness
 
-Reviewed 2026-10-13. A1–A7 are published through alpha.7.2. The [replacement workspace/companion tracker](../plans/workspace-companion-plan.md) supersedes A8/A9 and the editing-led roadmap: all 13 new sprints are unstarted. Current implementation is documented in [ANDROID.md](../android/ANDROID.md); current shared contracts below remain protocol3/archive3 until an authorized sprint changes them. Android will become an offline reader with separate reviews/import queues, not a local Java host or independently writable workspace. This planned direction is not shipped offline support. [PLATFORM.md](PLATFORM.md) owns the current client boundary.
+Reviewed 2026-10-13. A1–A7 are published through alpha.7.2. The [replacement workspace/companion tracker](../plans/workspace-companion-plan.md) supersedes A8/A9 and the editing-led roadmap: W1 host isolation is implemented with release verification; the remaining 12 sprints are unstarted. Android itself still uses the default workspace until W2. Current implementation is documented in [ANDROID.md](../android/ANDROID.md); current shared contracts below remain protocol3/archive3 until an authorized sprint changes them. Android will become an offline reader with separate reviews/import queues, not a local Java host or independently writable workspace. This planned direction is not shipped offline support. [PLATFORM.md](PLATFORM.md) owns the current client boundary.
 
 ## Product boundary
 

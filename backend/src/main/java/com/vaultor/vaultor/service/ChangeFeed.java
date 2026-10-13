@@ -19,11 +19,12 @@ public class ChangeFeed {
     private final Deque<Event> replay = new ArrayDeque<>();
     private final Set<Client> clients = new HashSet<>();
     private final HostAccess access;
+    private volatile java.util.function.Predicate<String> authorized;
     private final WorkspaceIdentityService identity;
     private final ThreadPoolExecutor delivery = new ThreadPoolExecutor(1,1,0,TimeUnit.SECONDS,new ArrayBlockingQueue<>(128),r->{var t=new Thread(r,"change-feed-delivery");t.setDaemon(true);return t;},new ThreadPoolExecutor.AbortPolicy());
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {var t=new Thread(r,"workspace-change-feed");t.setDaemon(true);return t;});
     public ChangeFeed(HostAccess access,WorkspaceIdentityService identity) {
-        this.access=access;this.identity=identity;
+        this.access=access;this.identity=identity;this.authorized=access::deviceActive;
         scheduler.scheduleWithFixedDelay(this::heartbeat, 5, 5, TimeUnit.SECONDS);
     }
     public void committed(String kind, List<String> ids, String requestId) {
@@ -59,7 +60,7 @@ public class ChangeFeed {
         try{delivery.execute(()->deliver(client,event));}catch(RejectedExecutionException e){clients.remove(client);client.emitter().complete();}
     }
     private void deliver(Client client,Event event) {
-        if(client.deviceId()!=null && !access.deviceActive(client.deviceId())){remove(client);return;}
+        if(client.deviceId()!=null && !authorized.test(client.deviceId())){remove(client);return;}
         try{client.emitter().send(SseEmitter.event().id(event.cursor()).name("change").data(event));}
         catch(Exception e){remove(client);}
     }
@@ -67,9 +68,18 @@ public class ChangeFeed {
     @org.springframework.context.event.EventListener public synchronized void revoked(HostAccess.DeviceRevoked event){for(var client:List.copyOf(clients))if(event.id().equals(client.deviceId()))remove(client);}
     private synchronized void heartbeat() {
         for(var client:List.copyOf(clients)) {
-            if(client.deviceId()!=null && !access.deviceActive(client.deviceId())){clients.remove(client);client.emitter().complete();continue;}
+            if(client.deviceId()!=null && !authorized.test(client.deviceId())){clients.remove(client);client.emitter().complete();continue;}
             try{delivery.execute(()->{try{client.emitter().send(SseEmitter.event().comment("keepalive"));}catch(Exception e){remove(client);}});}catch(RejectedExecutionException e){remove(client);}
         }
+    }
+    public void authorize(java.util.function.Predicate<String> check){authorized=check;}
+    public synchronized void disconnectDevice(String id){for(var c:List.copyOf(clients))if(id.equals(c.deviceId()))remove(c);}
+    /** Capture the admitting principal before leaving its request thread. Never read mutable client selection. */
+    public Runnable captureAuthorization(){
+        var attrs=org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        Object principal=attrs instanceof org.springframework.web.context.request.ServletRequestAttributes r?r.getRequest().getAttribute(com.vaultor.vaultor.host.HostAccessFilter.PRINCIPAL):null;
+        String device=principal instanceof HostAccess.Device d?d.id():null;
+        return ()->{if(device!=null && !authorized.test(device))throw new com.vaultor.vaultor.host.AccessFailure(403,"WORKSPACE_ACCESS_REVOKED","Workspace access was revoked before this operation started");};
     }
     public void restarting(){committed("host-restart",List.of(),"");scheduler.schedule(this::disconnect,200,TimeUnit.MILLISECONDS);}
     private synchronized void disconnect(){for(var client:List.copyOf(clients))client.emitter().complete();clients.clear();}

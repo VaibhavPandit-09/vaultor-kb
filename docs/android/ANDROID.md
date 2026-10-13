@@ -14,7 +14,7 @@ This is a narrow prototype, not desktop parity. A5 implements the drawer-led nav
 
 ## Planned companion transition — not shipped
 
-The new product direction removes Android document/organization/lifecycle editing after safely retaining legacy drafts, receipts and upload inputs. Android will read downloaded source-bound workspaces, capture separate review items, queue imports offline, and export partial content offline or full host-prepared ZIPs while connected. Multi-workspace hosting, complete offline storage, review synchronization and queued general imports are not implemented. Old A8/A9 references below describe the former implementation schedule; use the replacement tracker for all future execution. Current WRITING/MEDIA/ORGANIZATION describe shipped alpha.7.2 behavior, not future companion authorization.
+The new product direction removes Android document/organization/lifecycle editing after safely retaining legacy drafts, receipts and upload inputs. Android will read downloaded source-bound workspaces, capture separate review items, queue imports offline, and export partial content offline or full host-prepared ZIPs while connected. W1 adds host-side multi-workspace isolation; Android selectors await W2. Complete offline storage, review synchronization and queued general imports are not implemented. Old A8/A9 references below describe the former implementation schedule; use the replacement tracker for all future execution. Current WRITING/MEDIA/ORGANIZATION describe shipped alpha.7.2 behavior, not future companion authorization.
 
 ## A2 recovery, sessions and connection boundary
 

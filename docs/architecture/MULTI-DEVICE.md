@@ -1,5 +1,7 @@
 # Saved changes across devices
 
+W1 / 0.8.0: [WORKSPACES.md](WORKSPACES.md) owns explicit workspace routing/grants. Each workspace has an independent bounded feed, replay epoch and workers; client selectors remain W2. Omitted scope stays on the fixed default, and grant revocation affects only the selected workspace streams. The existing clean/dirty note reconciliation below remains unchanged.
+
 Reviewed 2026-10-04, desktop D7. Browser and desktop clients reconcile saved state from the selected host. This is saved-change notification, not collaborative typing or offline synchronization. Note JSON, archives and workspace ownership are unchanged. [HOST-ACCESS.md](../security/HOST-ACCESS.md) owns approval/trust; [SESSIONS.md](../workspace/SESSIONS.md) owns draft recovery.
 
 ## Feed and ownership

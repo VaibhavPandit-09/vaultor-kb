@@ -1,6 +1,7 @@
 package com.vaultor.vaultor.config;
 
-import com.vaultor.vaultor.service.WorkspaceGate;
+import com.vaultor.vaultor.host.*;
+import com.vaultor.vaultor.workspaces.*;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -9,19 +10,38 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.Ordered;
 import org.slf4j.MDC;
 import java.io.IOException;
+import java.util.*;
+import tools.jackson.databind.ObjectMapper;
 
-/** Authenticate before admission so unapproved requests cannot inspect maintenance state. */
+/** Authenticate before workspace authorization, context opening and maintenance admission. */
 @Component @Order(Ordered.HIGHEST_PRECEDENCE+2)
 public class WorkspaceRequestFilter extends OncePerRequestFilter {
-    private final WorkspaceGate gate;
-    public WorkspaceRequestFilter(WorkspaceGate gate){this.gate=gate;}
+    private final WorkspaceCatalog catalog;private final WorkspaceRegistry registry;private final ObjectMapper json;
+    public WorkspaceRequestFilter(WorkspaceCatalog catalog,WorkspaceRegistry registry,ObjectMapper json){this.catalog=catalog;this.registry=registry;this.json=json;}
     @Override protected void doFilterInternal(HttpServletRequest req,HttpServletResponse res,FilterChain chain) throws ServletException,IOException {
-        boolean guarded=req.getRequestURI().matches("/api/(resources|tags|settings|collections|organization|workspace)(/.*)?");
-        boolean transfer=!java.util.List.of("GET","HEAD","OPTIONS").contains(req.getMethod()) && req.getRequestURI().matches("/api/(imports|exports|operations)(/.*)?");
-        boolean entered=transfer?gate.enterTransferRequest():!guarded || gate.enterRequest();
+        String path=req.getRequestURI();
+        boolean scoped=path.matches("/api/(resources|tags|settings|collections|organization|workspace|imports|exports|operations|changes|diagnostics)(/.*)?") || Set.of("/api/health","/api/capabilities","/api/openapi.json","/api/export-formats").contains(path);
+        if(!scoped){chain.doFilter(req,res);return;}
+        String id=req.getHeader("X-Vaultor-Workspace");
+        if(id==null && "/api/capabilities".equals(path) && "PUBLIC".equals(req.getAttribute(HostAccessFilter.PRINCIPAL))){chain.doFilter(req,res);return;}
+        if(id==null)id=catalog.defaultId();
         try {
-            if(!entered){res.setStatus(409);res.setContentType("application/problem+json");res.getWriter().write("{\"status\":409,\"code\":\"WORKSPACE_BUSY\",\"detail\":\"Workspace maintenance is in progress. Retry shortly.\",\"requestId\":\""+MDC.get("requestId")+"\"}");}
-            else chain.doFilter(req,res);
-        } finally {if(guarded && entered)gate.leaveRequest();if(transfer && entered)gate.leaveTransferRequest();}
+            String device=WorkspaceController.device(req);catalog.require(id);
+            if(device!=null && !catalog.allowed(id,device))throw new AccessFailure(404,"WORKSPACE_UNAVAILABLE","Workspace is unavailable or not authorized");
+            var runtime=registry.open(id);
+            if(device!=null && !catalog.allowed(id,device))throw new AccessFailure(404,"WORKSPACE_UNAVAILABLE","Workspace is unavailable or not authorized");
+            res.setHeader("X-Vaultor-Workspace",id);
+            boolean guarded=path.matches("/api/(resources|tags|settings|collections|organization|workspace)(/.*)?");
+            boolean transfer=!List.of("GET","HEAD","OPTIONS").contains(req.getMethod()) && path.matches("/api/(imports|exports|operations)(/.*)?");
+            var gate=runtime.gate();boolean entered=transfer?gate.enterTransferRequest():!guarded || gate.enterRequest();
+            try {
+                if(!entered)throw new AccessFailure(409,"WORKSPACE_BUSY","Workspace maintenance is in progress. Retry shortly.");
+                if(runtime.dispatcher()==null)chain.doFilter(req,res);else {runtime.dispatcher().service(req,res);ChangeNotificationFilter.publish(req,res,runtime.feed());}
+            } finally {if(guarded && entered)gate.leaveRequest();if(transfer && entered)gate.leaveTransferRequest();}
+        } catch(AccessFailure failure){
+            if(res.isCommitted())throw failure;
+            res.setStatus(failure.status);res.setContentType("application/problem+json");res.getWriter().write(json.writeValueAsString(Map.of("status",failure.status,"code",failure.code,"detail",failure.getMessage(),"requestId",Optional.ofNullable(MDC.get("requestId")).orElse(""))));
+        } catch(ServletException|IOException failure){throw failure;}
+        catch(Exception failure){throw new ServletException("Workspace context unavailable; existing data was retained",failure);}
     }
 }
