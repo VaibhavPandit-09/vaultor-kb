@@ -52,7 +52,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 - [0.1.0-alpha.7.2 A7 organization](android/releases/0.1.0-alpha.7.2.md): Android-only lifecycle release and actual validation gates.
 
 - [Android implementation and APK delivery](android/ANDROID.md): isolated toolchain, native trust/drafts, prototype limits, signing, installation and actual validation.
-- [Android interaction design](android/DESIGN.md): implemented A5 navigation foundation and planned writing/autosave/contextual tools; current implementation remains in ANDROID.md.
+- [Android companion design](android/DESIGN.md): new reading/review/collection direction and legacy transition; current shipped editing remains documented in ANDROID.md.
 - [A5 navigation comparison](android/design/a5-navigation-comparison.html): interactive drawer/bottom-navigation layout study; simulated keyboard, not native evidence.
 - [Android media](android/MEDIA.md): managed images, native input/output, encrypted pending uploads and preview/cache limits.
 - [Android writing and autosave](android/WRITING.md): protected automatic saves, contextual tools and retry-safe quick creation.
@@ -65,7 +65,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
-- [Vaultor for Android](plans/android-plan.md): A1 prototype, A2 recovery, A3 browsing, A4 images and A5 navigation and A6 writing, with A7 organization/lifecycle and two remaining Android-first sprints A8–A9, Windows emulator testing, no agent phone access, signed APK milestones and S24 Ultra / One UI 8.5–9 user acceptance.
+- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan, 13 unstarted sprints for workspace isolation/switching/transfers and beautiful offline reading, reviews, queued imports, exports and verified releases. One sprint per authorization.
+- [Original Android tracker](plans/android-plan.md): historical A1–A7 evidence; A8/A9 cancelled and superseded.
 
 - [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): All five sprints implemented on Windows; measured integration, platform limits and separate Android prototype gate recorded.
 - [Deferred roadmap](plans/future-roadmap.md): scheduled backups explicitly parked for later, OCR/offline/platform follow-ups and scope boundaries.

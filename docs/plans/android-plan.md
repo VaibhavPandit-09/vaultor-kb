@@ -1,8 +1,8 @@
-# Vaultor for Android — execution tracker
+# Original Android execution tracker — historical A1–A7
 
-Created 2026-10-08; reviewed 2026-10-09. **A1–A7 published; A8–A9 not started.** The user authorized A7 implementation on 2026-10-09; phone access remains forbidden. This is the authoritative Android scope, testing and milestone tracker. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) owns shared contract readiness; existing workspace guides own resource/editor behavior.
+Created 2026-10-08; reviewed 2026-10-13. **Superseded for future execution** by [Multi-workspace Vaultor and Android companion](workspace-companion-plan.md). A1–A7 publication evidence below remains historical and valid; A8/A9 are cancelled, never started. The shipped alpha.7.2 still edits notes until the replacement reader sprint is implemented. Do not execute old remaining checklists.
 
-## Delivery and agreed boundaries
+## Historical delivery and former boundaries
 
 Deliver **nine sequential sprints total, one per authorized implementation call**, stopping after each for discussion. At each start inspect source/working tree, verify relevant contracts, mark that sprint in progress, and preserve unrelated work. At each finish update CODEBASE, this tracker and affected authoritative guides with actual checks, APK availability and limitations. Do not silently start the next sprint.
 
@@ -156,9 +156,9 @@ Status: **Complete — published0.1.0-alpha.7.2 on2026-10-09.** Depends on publi
 
 **Acceptance:** mobile organization and lifecycle are discoverable without ambiguous deletion, duplicate creation or silent draft loss. Publish a lifecycle-capable APK and stop.
 
-## A8 — Settings, discovery and verified updates
+## A8 — Cancelled: settings, discovery and verified updates
 
-Status: **Not started.** Depends on A7; baseline theme/accessibility correctness is already required in A5/A6.
+Status: **Cancelled/superseded 2026-10-13.** Relevant work moves to R9 of the replacement plan. Former dependency on A7; baseline theme/accessibility correctness is already required in A5/A6.
 
 - [ ] Implement compact mobile settings using flat rows/contextual controls: OS/Light/Dark/OLED, accents, reduced motion, Snappy/Smooth and applicable device/workspace preferences. Preserve scope, immediate feedback, retry and exact reset confirmation; do not embed desktop settings cards. Preserve media colors.
 - [ ] Add host discovery behind the workspace selector without making it required. Test permission denial, empty results, changed addresses, explicit trust changes and reconnect. Retain manual address and protected save-or-keep switching; no internet-hosting feature.
@@ -168,9 +168,9 @@ Status: **Not started.** Depends on A7; baseline theme/accessibility correctness
 
 **Acceptance:** host access, personal appearance and updates use the same mobile interaction language and preserve trust/data. Stop before final integration.
 
-## A9 — Motion, integration, performance and release handoff
+## A9 — Cancelled: motion, integration, performance and release handoff
 
-Status: **Not started.** Depends on A5–A8 gates and reviewed APK feedback.
+Status: **Cancelled/superseded 2026-10-13.** Reader integration moves to R10 of the replacement plan. Former scope below is historical, not executable authorization.
 
 - [ ] Finish coordinated Snappy/Smooth transitions across drawer, sheets, destinations, contextual tools and notifications. Reduced motion removes spatial effects; closed surfaces release focus immediately. No hover dependency, constant decoration, editor remounts or animation on typing/saves/refreshes.
 - [ ] Run a focused final release-APK matrix on Android16/17: Small/Atlas, keyboard/composition/selection, journeys, images, conflicts/recovery, host shutdown, permission/revocation, process/renderer death, rotation, font scaling, all themes/accents, accessibility and narrow layouts. Measure bounded cache/memory/startup/scroll behavior rather than claiming responsiveness from screenshots.

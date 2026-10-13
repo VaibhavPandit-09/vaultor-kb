@@ -1,6 +1,6 @@
 # Vaultor for Android
 
-Reviewed 2026-10-09. A1–A7 are published; current Android0.1.0-alpha.7.2 (versionCode10) organization/lifecycle results are in [A7 notes](releases/0.1.0-alpha.7.2.md). A8–A9 remain unstarted. [The tracker](../plans/android-plan.md) owns sprint scope. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
+Reviewed 2026-10-13. A1–A7 are published; current Android0.1.0-alpha.7.2 (versionCode10) organization/lifecycle results are in [A7 notes](releases/0.1.0-alpha.7.2.md). Former A8–A9 are superseded by [the 13-sprint workspace/companion plan](../plans/workspace-companion-plan.md); every new sprint is unstarted. [The original tracker](../plans/android-plan.md) retains published evidence. This guide owns the implemented mobile boundary, local setup and APK delivery. Desktop/Mac 0.7.1 remains unchanged.
 
 ## Prototype boundary
 
@@ -11,6 +11,10 @@ The mobile client implements manual private IPv4 HTTPS enrollment, matching-code
 The bundled `file:///android_asset/editor.html` has a restrictive CSP and bounded, typed bridge. Remote network loads and arbitrary navigation are disabled; native API operations are allowlisted. Image thumbnails use transient native-provided data URLs under the editor CSP. Current schema nodes/marks/attributes are retained. Unsupported JSON is kept and unsafe editing/saving is blocked. Image placements now use native authenticated thumbnails, mapped insertion anchors and touch-accessible tools. See [MEDIA.md](MEDIA.md) for insertion, encrypted pending inputs, preview/cache bounds and platform limitations. Saves require If-Match; failures retain the journal. An acknowledged save clears only its exact edit version. A conflicting draft blocks editing instead of overwriting either version; Recovery offers an explicit recovered copy or the saved version while retaining the former draft independently.
 
 This is a narrow prototype, not desktop parity. A5 implements the drawer-led navigation foundation described below. A6 adds writing/autosave; A7 adds organization/references/lifecycle; A8/A9 retain settings/discovery/updates and integration. [DESIGN.md](DESIGN.md) distinguishes the implemented foundation from the remaining planned interaction behavior. Quick note creation and automatic saving are implemented; A7 [organization/lifecycle](ORGANIZATION.md) is implemented; full theme/motion parity, discovery and in-app updates remain planned. [WRITING.md](WRITING.md) owns the writing/accessory/receipt/creation contract. A4 provides the bounded native binary/media adapter. Recovery-copy creation is implemented through the existing UUID import API. Authenticated change notifications and remembered-host switching are implemented. No offline synchronization or Android-hosted server. Full settings and integrated motion follow A8/A9; baseline visual/input correctness moves into A5/A6. Native paginated browsing is implemented.
+
+## Planned companion transition — not shipped
+
+The new product direction removes Android document/organization/lifecycle editing after safely retaining legacy drafts, receipts and upload inputs. Android will read downloaded source-bound workspaces, capture separate review items, queue imports offline, and export partial content offline or full host-prepared ZIPs while connected. Multi-workspace hosting, complete offline storage, review synchronization and queued general imports are not implemented. Old A8/A9 references below describe the former implementation schedule; use the replacement tracker for all future execution. Current WRITING/MEDIA/ORGANIZATION describe shipped alpha.7.2 behavior, not future companion authorization.
 
 ## A2 recovery, sessions and connection boundary
 

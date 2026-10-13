@@ -1,6 +1,6 @@
 # Android client readiness
 
-Reviewed 2026-10-09. A1–A4 are published; A3 implements native browsing, explicit search and active-note journeys. Offline synchronization remains deferred. Current mobile implementation and validation are authoritative in [ANDROID.md](../android/ANDROID.md). The current browser/Electron boundary is authoritative in [PLATFORM.md](PLATFORM.md). The completed shared-work results are tracked in [resource-lifecycle-plan.md](../plans/resource-lifecycle-plan.md). The authoritative nine-sprint Android scope, Windows-only agent testing, APK milestones and physical-device acceptance boundary are in [android-plan.md](../plans/android-plan.md); A4 publishes managed images/native file input-output; A5–A9 remain unstarted, with the Android-first redesign defined in [DESIGN.md](../android/DESIGN.md).
+Reviewed 2026-10-13. A1–A7 are published through alpha.7.2. The [replacement workspace/companion tracker](../plans/workspace-companion-plan.md) supersedes A8/A9 and the editing-led roadmap: all 13 new sprints are unstarted. Current implementation is documented in [ANDROID.md](../android/ANDROID.md); current shared contracts below remain protocol3/archive3 until an authorized sprint changes them. Android will become an offline reader with separate reviews/import queues, not a local Java host or independently writable workspace. This planned direction is not shipped offline support. [PLATFORM.md](PLATFORM.md) owns the current client boundary.
 
 ## Product boundary
 
@@ -8,7 +8,7 @@ Keep the Windows/Mac-hosted workspace authoritative and browser access available
 
 Resource actions and Trash/Restore now use protocol 3, metadata summaries and per-item revision/UUID identities; archives use format 3. 0.6.0 adds platform-neutral categories, paginated saved references and bounded authenticated thumbnails; 0.7.0 adds bounded saved PDF/UTF-8 extraction and scoped coverage. See [REFERENCES.md](../workspace/REFERENCES.md) for category acknowledgment and validated occurrence locators. Keep view selection, drafts and preview/cache state local to a client. Host identity/workspace generation scope caches and recovery. Unsupported content must remain intact and block unsafe editing rather than be stripped and saved.
 
-## Required design checks in current sprints
+## Current contract safety and future transition
 
 - Separate domain actions/capabilities from React UI and native adapters. Keep authenticated uploads/downloads/thumbnails cancellable and bounded; support progress/error/retry without browser-only handles in API responses.
 - Preserve atomic conditional saves, idempotent create/import/restore and explicit purge semantics. Handle connection epochs, cancelled requests, stale notifications and offline/conflicting drafts. A recovery journal is not offline synchronization.
@@ -16,7 +16,7 @@ Resource actions and Trash/Restore now use protocol 3, metadata summaries and pe
 - Support touch without hover dependence, accessible labels and narrow single-column surfaces. Keep desktop keyboard/focus behaviors. Reduced motion and Android system theme need adapter support later; responsive browser checks do not certify Android hardware.
 - Pairing/trust/storage remain platform implementations: approved device access, pinned host identity/TLS, protected credential storage, revocation and no tokens in URLs/logs/archives. Never disable TLS/Gatekeeper/firewall to make a mobile demo work.
 
-## Decisions before the Android prototype
+## Historical prototype decisions
 
 | Decision | Recommended starting direction | Evidence/gate needed |
 | --- | --- | --- |
@@ -60,7 +60,7 @@ Protocol/minimum client **3**, logical archive **3**, and updater protocol **1**
 
 The editor schema comes from BlockEditor/extensions, not arbitrary host JSON acceptance. Preserve doc/paragraph/text, headings, lists/tasks, blockquote, code, horizontal rules, tables/cells/headers, resourceLink, managed image and their supported marks/attributes. Validate the complete schema: unknown nodes/marks retain original JSON and block unsafe saving. Do not downconvert desktop documents to plain text. Image JSON contains resource IDs/placement attributes, never transient URLs, credentials or bytes.
 
-## Separately authorized Android prototype milestone
+## Historical Android prototype milestone
 
 1. Follow android-plan.md: user-owned S24 Ultra / One UI 8.5 acceptance, Android 16/17 emulator coverage, selected React Native toolchain, private APK signing identity and free GitHub APK distribution. No agent phone access or paid store/account.
 2. Implement an adapter for pinned LAN JSON/binary/SSE, protected credentials, system appearance/reduced motion, image picking/share and recovery. Manual address entry remains independent of discovery.

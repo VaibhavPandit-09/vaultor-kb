@@ -1,6 +1,6 @@
 # Deferred product roadmap
 
-Reviewed 2026-10-08. This is the authoritative parking place for future scope; items here are not implemented or automatically authorized. Active resource work is in [resource-lifecycle-plan.md](resource-lifecycle-plan.md); existing native/platform blockers remain in the desktop tracker.
+Reviewed 2026-10-13. This is the authoritative parking place for future scope; items here are not implemented or automatically authorized. Active resource work is in [resource-lifecycle-plan.md](resource-lifecycle-plan.md); existing native/platform blockers remain in the desktop tracker.
 
 ## Backups and recovery — explicitly deferred by the user
 
@@ -12,14 +12,14 @@ Future plan must cover scheduling while tray hosting, missed runs after sleep, b
 
 Before implementation decide defaults for cadence, count/age/byte retention, destination, notifications, inclusion of Trash and recovery journals, and behavior when the app is closed. A test restore to disposable storage must precede claims of reliability. Link final runtime instructions from CODEBASE once implemented.
 
-## Android client — next platform under consideration
+## Multi-workspace and Android companion — promoted to planning
 
-The user is approaching Android work; the six-sprint [Android execution plan](android-plan.md) is now recorded, with every sprint unstarted and implementation separately authorized. [ANDROID-READINESS.md](../architecture/ANDROID-READINESS.md) records contracts, decisions and the prototype gate. Preserve desktop/browser access and no mandatory payment. Do not interpret this as authorization for Play Store enrollment, APK publication, offline synchronization or unattended remote-host exposure.
+[The replacement 13-sprint tracker](workspace-companion-plan.md) now owns multi-workspace hosting and clients, desktop independent copies, Android reading redesign, source-bound offline downloads, review inbox/sync, queued offline imports, connected full exports and offline partial exports. All sprints are unstarted; the old A8/A9 are superseded. Original Android A1–A7 remain shipped. Do not implement these capabilities from this parking document or treat planning as implementation authorization. General mobile document editing and two-way fork sync remain deferred.
 
 ## Later discovery and platform work
 
 - OCR for screenshots/image-only PDFs after bounded PDF/text search, with local processing, coverage/cancellation and original-byte preservation. Office-document extraction, fuzzy search and other media indexing need separate evaluation.
-- Full offline browsing/edit synchronization is separate from draft recovery; it needs mutation queues, conflict/deletion semantics and storage budgets across devices.
+- Source-bound offline reading/reviews/import queues are now owned by the companion plan. General offline document-edit synchronization remains deferred; it is not implied by those narrower queues.
 - Ubuntu native delivery remains the existing D10 deferred sprint; Mac native installation/update and real multi-device checks remain tracked blockers, not silently removed from scope.
 - Thumbnail gallery/attachment maintenance may follow measured usage. Never automatically delete files merely because saved backlinks report no source: drafts, independent resources and another device's uploads can still depend on them.
 - Performance follow-ups are grounded in [SCALE-INTEGRATION.md](../development/SCALE-INTEGRATION.md): 23.28-second Atlas startup, high shared-view process-tree memory, the large renderer bundle, bounded tag discovery, and cold-cache/concurrent-client measurements. These require a separately authorized plan; no general speedup or leak fix is claimed.

@@ -1,6 +1,36 @@
-# Android interaction design
+# Android companion design direction
 
-Reviewed 2026-10-09. **A5 navigation, A6 writing and A7 organization/lifecycle are published (current alpha.7.2); A8–A9 remain planned.** Actual checks are recorded in the tracker. [ANDROID.md](ANDROID.md) describes current behavior; [the execution tracker](../plans/android-plan.md) owns implementation order, acceptance and actual evidence. This document owns the Android-specific design direction. [ORGANIZATION.md](ORGANIZATION.md) owns implemented A7 contextual actions and deletion/reference safety. Do not describe future preferences or motion recommendations as shipped behavior.
+Reviewed 2026-10-13. **Target design only; not implemented.** [The replacement execution plan](../plans/workspace-companion-plan.md) owns the 13 unstarted sprints and supersedes former A8/A9. [ANDROID.md](ANDROID.md) owns shipped alpha.7.2 behavior, which still includes editing. The historical A5–A7 design record below is retained as context, not authority to resume editing work.
+
+## Reader-first companion
+
+Android's purpose is to read, explore, flag concerns and collect material for a source workspace. Original document editing and workspace/resource administration stay on desktop/browser. Downloaded companions remain bound to their source; Android does not create independent writable workspaces. Offline comments and imports are separate durable records, never hidden document edits.
+
+Keep the drawer-led shell, reachable workspace selector and compact top bar; do not transplant desktop panes or stack permanent operational strips. Home emphasizes Resume reading and bounded recent/pinned material. Library/search/collections stay mixed and compact. Workspace identity and connected/downloaded state are visible in context, not an always-on diagnostic banner. Pending work is discoverable through an inbox, not repeated error popups.
+
+## Reading presentation
+
+Use deliberate typography, comfortable measure, adjustable reading size/spacing, heading outline and find within note. Preserve structured headings, lists, read-only tasks, tables/code and resource links. Reading selection means Copy or Flag for review; it never opens formatting tools. Unknown content stays identifiable and original JSON remains recoverable. Images open a clean full-screen viewer; PDFs support reading/page/zoom/position rather than requiring an external app for ordinary use. Preserve media pixels and accessible alternatives.
+
+OLED reader canvas stays true black, with quiet boundaries and near-black controls. OS/Light/Dark/OLED, accents, enlarged fonts and reduced motion are first-class. Smooth coordinates navigation/drawer/sheet/media transitions without animating background refresh, moving text under the reader or relying on hover. Native Back dismisses the top transient surface, then follows reading history/origin; there is no editing/IME layer in normal reading.
+
+## Review, collection and transfer interactions
+
+Select a passage or use resource More to create a review item. A short composer shows the target/quote and saves locally before claiming success. Resource-level reviews cover files and missing passage anchors. Show On this phone, Sending, Synced or Needs attention. Desktop/browser provide the Review inbox and explicit resolution; original note changes never imply automatic resolution.
+
+Import/Share stages bytes locally with an explicit source workspace/collection destination. Pending uploads survive leaving the LAN and are separate from already imported resources. Avoid implicit uploads to the next selected server. Capture tools may use text inputs and pickers; a reader-only original does not mean disabling all text entry.
+
+Full workspace ZIP export requires the connected source server. Partial export is available online/offline and discloses included resources, missing dependencies and freshness. Save/Share uses native consent and original files where available. Exports never acknowledge review/import queues.
+
+## Workspace and offline clarity
+
+Select server and authorized workspace separately; label independent desktop copies distinctly from Android source-bound companions. Download options explain scope, originals/dependencies, size and last successful refresh. Missing content offers Download when connected, not a blank reader. Local downloaded-only search never impersonates global host coverage. Updates cannot erase queued work; removal/revocation/replacement needs explicit attention and recovery paths.
+
+R1 must make legacy drafts/uncertain saves/uploads recoverable before removing editing machinery. All design claims require actual signed-APK emulator checks; S24 Ultra/One UI and physical OLED acceptance remain user-owned. No agent phone access. See the execution plan for per-sprint acceptance and release gates.
+
+## Historical A5–A7 design record — superseded for future direction
+
+The following describes the former design and its evidence. Writing, editing, organization and old A8/A9 recommendations are not the new companion scope.
 
 ## Purpose and principles
 
