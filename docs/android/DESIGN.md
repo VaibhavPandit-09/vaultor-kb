@@ -1,6 +1,6 @@
 # Android companion design direction
 
-Reviewed 2026-10-13. **Target design only; not implemented.** [The replacement execution plan](../plans/workspace-companion-plan.md) owns the 13 unstarted sprints and supersedes former A8/A9. [ANDROID.md](ANDROID.md) owns shipped alpha.7.2 behavior, which still includes editing. The historical A5–A7 design record below is retained as context, not authority to resume editing work.
+Reviewed 2026-10-14. R1 implements the compact reader foundation in alpha.9; [READER.md](READER.md) owns its actual boundary. W1–W3 are published; R1 delivery is in progress and R2–R10 remain unstarted under [the replacement tracker](../plans/workspace-companion-plan.md). The richer typography/offline/review design below remains target design. Historical A5–A7 editing records are context only.
 
 ## Reader-first companion
 

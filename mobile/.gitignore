@@ -87,3 +87,8 @@ android/app/src/main/assets/editor.js
 /ios/
 /Gemfile
 /.bundle/
+
+# R1 restricted reader assets are rebuilt from mobile/reader.
+android/app/src/main/assets/reader.html
+android/app/src/main/assets/reader.js
+android/app/src/main/assets/reader.css

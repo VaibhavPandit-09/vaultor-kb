@@ -1,5 +1,7 @@
 # Android writing and automatic saving
 
+> R1 (alpha.9) supersedes the Android editing/insertion/organization-write flows below. They document historical A4–A7 behavior and retained recovery formats; current read-only behavior is in [ANDROID.md](ANDROID.md) and [READER.md](READER.md). Native previews/copy/download of existing originals remain available.
+
 Reviewed 2026-10-09. A6 owns this implementation; [ANDROID.md](ANDROID.md) owns setup/security/release and [MEDIA.md](MEDIA.md) owns image/input bounds. No host contract or protocol change; desktop/Mac0.7.1 remains compatible.
 
 ## Reading and tools

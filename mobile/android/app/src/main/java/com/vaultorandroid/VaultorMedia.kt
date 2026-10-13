@@ -50,6 +50,7 @@ class VaultorMedia(private val ctx:ReactApplicationContext,
   private val cache=File(ctx.cacheDir,"media-preview").apply {mkdirs()}
   private val shares=File(ctx.cacheDir,"media-share").apply {mkdirs()}
   private val catalog=AtomicFile(File(root,"catalog.bin"))
+  private val exporting=java.util.concurrent.atomic.AtomicBoolean(false)
   private var pending:Promise?=null
   private var pendingAction=""
   private var camera:File?=null
@@ -82,19 +83,16 @@ class VaultorMedia(private val ctx:ReactApplicationContext,
     data.data?.let {list.add(it)}
     val distinct=list.distinct();require(distinct.size<=8) {"Choose at most eight files per batch."};return distinct
   }
-  private fun receive(intent:Intent) {if(intent.action !in listOf(Intent.ACTION_SEND,Intent.ACTION_SEND_MULTIPLE))return
-    val uris=try {inputs(intent)}catch(_:Exception){if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorMediaInputs","Share at most eight files. Choose a smaller batch.");return};val text=intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.take(100000)
-    worker.execute {try {uris.forEach {stage(it)};if(!text.isNullOrBlank())synchronized(lock){val r=records();require(r.length()<8);val id=UUID.randomUUID().toString();r.put(id,JSONObject().put("id",id).put("text",text).put("title","Shared text").put("bytes",0));persist(r)}}catch(_:Exception){if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorMediaInputs","Some shared inputs could not be read. Use the picker to retry.")};emit()}
-  }
+  private fun receive(intent:Intent) { /* Reader: incoming editor shares are not staged. R7 adds explicit imports. */ }
   override fun onNewIntent(intent:Intent) {receive(intent)}
   override fun onActivityResult(activity:Activity,requestCode:Int,resultCode:Int,data:Intent?) {
     if(requestCode!=4404)return
     val p=pending ?: return;pending=null;val action=pendingAction
-    if(resultCode!=Activity.RESULT_OK){camera?.delete();camera=null;outgoing=null;p.resolve("[]");return}
+    if(resultCode!=Activity.RESULT_OK){camera?.delete();camera=null;outgoing=null;exporting.set(false);p.resolve("[]");return}
     worker.execute {try {
       if(action=="save") {val target=data?.data ?: error("No save destination.");require(target.scheme=="content");val source=outgoing ?: error("Save source missing");ctx.contentResolver.openOutputStream(target,"wt")?.use {out->source.inputStream().use {it.copyTo(out)}} ?: error("Cannot write destination");outgoing=null;p.resolve("{\"requested\":true}")}
       else {val uris=if(action=="camera")listOf(FileProvider.getUriForFile(ctx,ctx.packageName+".media",camera ?: error("Camera output missing")))else inputs(data ?: Intent());val result=JSONArray();uris.forEach {result.put(stage(it))};camera?.delete();camera=null;p.resolve(result.toString());emit()}
-    }catch(e:Exception){camera?.delete();camera=null;outgoing=null;p.reject("MEDIA_INPUT",e.message ?: "Input failed. Retry with the file picker.")}}
+    }catch(e:Exception){camera?.delete();camera=null;outgoing=null;p.reject("MEDIA_INPUT",e.message ?: "Input failed. Retry with the file picker.")}finally{exporting.set(false)}}
   }
   fun cancel() {active.forEach {it.disconnect()};cache.listFiles()?.forEach {it.delete()};shares.listFiles()?.forEach {it.delete()}}
   private fun choose(action:String,p:Promise) {ctx.runOnUiQueueThread {try {
@@ -126,11 +124,27 @@ class VaultorMedia(private val ctx:ReactApplicationContext,
     val f=bytes(a,a.getString("resourceId"));val dest=File(shares,a.getString("resourceId")+"-"+safeName(a.optString("title","attachment")));f.copyTo(dest,true);dest.setLastModified(System.currentTimeMillis())
     while((shares.listFiles()?.sumOf {it.length()} ?: 0)>80L*1024*1024 || (shares.listFiles()?.size ?: 0)>16){val old=shares.listFiles()?.filter {it!=dest && it!=camera && it!=outgoing}?.minByOrNull {it.lastModified()} ?: break;old.delete()};return dest
   }
+  fun legacyInventory():JSONArray = synchronized(lock) {val r=records();JSONArray().also {out->r.keys().forEach {k->val v=r.getJSONObject(k);out.put(JSONObject().put("title",v.optString("title","Retained upload")).put("kind","Upload input").put("scope",v.optJSONObject("binding")?.optString("scope") ?: "Unbound").put("status",if(v.has("resourceId"))"Uploaded file retained; placement not replayed" else "Original bytes retained; upload frozen"))}}}
+  fun exportLegacy(data:JSONObject,promise:Promise) {if(!exporting.compareAndSet(false,true)){promise.reject("RECOVERY_EXPORT","An export is already in progress.");return};worker.execute {try {
+    require(pending==null) {"Finish the existing export first."}
+    val target=File(shares,"Vaultor-legacy-recovery.zip")
+    java.util.zip.ZipOutputStream(target.outputStream()).use {zip->
+      fun entry(name:String,bytes:ByteArray){zip.putNextEntry(java.util.zip.ZipEntry(name));zip.write(bytes);zip.closeEntry()}
+      fun text(node:JSONObject):String {val content=node.optJSONArray("content");val parts=StringBuilder(node.optString("text",""));if(content!=null)for(i in 0 until content.length())parts.append(text(content.getJSONObject(i))).append(if(content.getJSONObject(i).optString("type") in listOf("paragraph","heading","listItem"))"\n" else "");if(node.optString("type")=="image")parts.append("[Image: ").append(node.optJSONObject("attrs")?.optString("resourceId")).append("]");return parts.toString()}
+      entry("README.txt","Legacy Android recovery. Nothing was replayed. Review original JSON and request identities before recovering on desktop. Uncertain outcomes are not evidence of failure. Uploads with resourceId may already exist on their source host. No credentials are included.\n".toByteArray())
+      entry("recovery.json",data.toString(2).toByteArray())
+      data.optJSONObject("drafts")?.let {all->var index=0;all.keys().forEach {k->val d=all.getJSONObject(k);entry("notes/"+(++index)+".md",("# "+d.optString("title","Recovered note")+"\n\n"+(d.optJSONObject("content")?.let {text(it)} ?: "See recovery.json")).toByteArray())}}
+      synchronized(lock){val r=records();entry("uploads.json",r.toString(2).toByteArray());r.keys().forEach {id->require(id.matches(Regex("[a-fA-F0-9-]{36}")));val f=File(root,"$id.bin");if(f.exists())entry("uploads/$id/"+safeName(r.getJSONObject(id).optString("title","attachment")),unseal(f.readBytes()))}}
+    }
+    val activity=ctx.currentActivity;if(activity==null){exporting.set(false);promise.reject("RECOVERY_EXPORT","Open Vaultor to choose an export destination. Originals remain.");return@execute}
+    ctx.runOnUiQueueThread {try {require(pending==null);outgoing=target;pending=promise;pendingAction="save";activity.startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/zip").putExtra(Intent.EXTRA_TITLE,target.name),4404)}catch(_:Exception){if(pending===promise){pending=null;outgoing=null};exporting.set(false);promise.reject("RECOVERY_EXPORT","Choose a file destination after reopening Vaultor. Original records remain.")}}
+    }catch(_:Exception){exporting.set(false);promise.reject("RECOVERY_EXPORT","Recovery export failed. Original encrypted records and upload bytes remain; retry.")}}}
   fun call(action:String,a:JSONObject,p:Promise) {
+    if(action !in listOf("list","thumbnail","preview","share","open","copy","save")){p.reject("READ_ONLY","Android is a reader. Legacy uploads are frozen.");return}
     if(action in listOf("photos","files","camera")){choose(action,p);return}
     if(action=="clipboard"){ctx.runOnUiQueueThread {try {val clip=(ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager).primaryClip;val uris=(0 until (clip?.itemCount ?: 0)).mapNotNull {clip!!.getItemAt(it).uri};if(uris.isEmpty()){p.reject("MEDIA_CLIPBOARD","Clipboard has no accessible image. Use Photos or Files.");return@runOnUiQueueThread};worker.execute {try {val items=JSONArray();require(uris.size<=8) {"Choose at most eight clipboard files."};uris.forEach {items.put(stage(it))};p.resolve(items.toString());emit()}catch(e:Exception){p.reject("MEDIA_CLIPBOARD",e.message ?: "Clipboard cannot be read. Use Files.")}}}catch(_:Exception){p.reject("MEDIA_CLIPBOARD","Clipboard is unavailable. Use Files.")}};return}
     worker.execute {try {val result=when(action) {
-      "list" -> {if(!cold){cold=true;ctx.currentActivity?.intent?.let {receive(it)}};synchronized(lock){val r=records();JSONArray().also {out->r.keys().forEach {out.put(r.getJSONObject(it))}}}.toString()}
+      "list" -> {synchronized(lock){val r=records();JSONArray().also {out->r.keys().forEach {out.put(r.getJSONObject(it))}}}.toString()}
       "remove" -> synchronized(lock){val r=records();val id=a.getString("id");require(id.matches(Regex("[a-fA-F0-9-]{36}")));r.remove(id);persist(r);File(root,"$id.bin").delete();"{}"}
       "bind" -> synchronized(lock){val r=records();val item=r.getJSONObject(a.getString("id"));val binding=a.getJSONObject("binding");require(binding.getString("noteId").matches(Regex("[a-fA-F0-9-]{36}")) && binding.getString("scope").length<=512);if(item.has("binding"))require(item.getJSONObject("binding").getString("scope")==binding.getString("scope") && item.getJSONObject("binding").getString("noteId")==binding.getString("noteId"));item.put("binding",binding);persist(r);item.toString()}
       "upload" -> {

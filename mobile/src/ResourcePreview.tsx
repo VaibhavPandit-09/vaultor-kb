@@ -18,7 +18,7 @@ export default function ResourcePreview({
   onOrganize,
 }: {
   model: MobileWorkspace;
-  onOrganize: (resource: ResourceSummary) => void;
+  onOrganize?: (resource: ResourceSummary) => void;
 }) {
   const s = useThemeStyles(sheetStyles);
   const state = model.snapshot(),
@@ -95,7 +95,9 @@ export default function ResourcePreview({
             <Text numberOfLines={2} style={s.title}>
               {r.title}
             </Text>
-            <Action label="Resource actions" onPress={() => onOrganize(r)} />
+            {onOrganize ? (
+              <Action label="Resource actions" onPress={() => onOrganize(r)} />
+            ) : null}
             <Action
               label="Close preview"
               onPress={() => model.dismissPreview()}

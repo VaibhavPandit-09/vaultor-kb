@@ -1,5 +1,7 @@
 # Android images and file input/output
 
+> R1 (alpha.9) supersedes the Android editing/insertion/organization-write flows below. They document historical A4–A7 behavior and retained recovery formats; current read-only behavior is in [ANDROID.md](ANDROID.md) and [READER.md](READER.md). Native previews/copy/download of existing originals remain available.
+
 Reviewed 2026-10-09. Implemented in A4 / Android0.1.0-alpha.4, using host0.7.1 and protocol3. [ANDROID.md](ANDROID.md) owns setup/security/publication; [IMAGES.md](../workspace/IMAGES.md) owns portable image semantics. Android images remain File resources, not a new resource type.
 
 ## Inserting and editing

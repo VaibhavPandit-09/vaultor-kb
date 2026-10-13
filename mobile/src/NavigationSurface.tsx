@@ -110,7 +110,7 @@ export function HomeScreen(props: Props & { returnToNote?: () => void }) {
                 ? 'Loading…'
                 : kind === 'recent'
                 ? 'Notes and files you open will appear here.'
-                : 'Pin resources or collections to keep them close.'}
+                : 'Resources pinned on your desktop will appear here.'}
             </Text>
           ) : null}
         </View>
@@ -168,7 +168,6 @@ export function WorkspaceDrawer(
             ['home', '⌂', 'Home'],
             ['library', '▤', 'Library'],
             ['collections', '▦', 'Collections'],
-            ['trash', '♲', 'Trash'],
           ] as const
         ).map(([value, icon, label]) => (
           <Action
@@ -229,7 +228,7 @@ export function WorkspaceDrawer(
         ) : null}
       </ScrollView>
       <Action
-        label={`Recovery${
+        label={`Legacy recovery${
           props.recoveryCount ? ' · ' + props.recoveryCount : ''
         }`}
         onPress={props.recovery}

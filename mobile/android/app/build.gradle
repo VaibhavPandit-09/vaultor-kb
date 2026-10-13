@@ -5,8 +5,8 @@ apply plugin: "com.facebook.react"
 def vaultorEditor = tasks.register("buildVaultorEditor", Exec) {
     workingDir rootProject.file("..")
     commandLine "node", "scripts/build-editor.mjs"
-    inputs.files(rootProject.file("../editor/index.js"), rootProject.file("../editor/index.html"), rootProject.file("../scripts/build-editor.mjs"), rootProject.file("../package-lock.json"))
-    outputs.files(file("src/main/assets/editor.html"), file("src/main/assets/editor.js"))
+    inputs.files(rootProject.file("../reader/index.js"), rootProject.file("../reader/index.html"), rootProject.file("../reader/render.js"), rootProject.file("../reader/reader.css"), rootProject.file("../scripts/build-editor.mjs"), rootProject.file("../package-lock.json"))
+    outputs.files(file("src/main/assets/reader.html"), file("src/main/assets/reader.js"), file("src/main/assets/reader.css"))
 }
 tasks.configureEach { task ->
     if (task.name == "preBuild") task.dependsOn(vaultorEditor)
@@ -92,8 +92,8 @@ android {
         applicationId "com.vaultor.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 11
-        versionName "0.1.0-alpha.8"
+        versionCode 12
+        versionName "0.1.0-alpha.9"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {

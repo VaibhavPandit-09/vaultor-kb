@@ -12,8 +12,13 @@ import {
   type ResourceSummary,
 } from './browse';
 
-export type Host = { hostId: string; address: string; epoch: string; workspaceId?:string };
-export type WorkspaceChoice={id:string;name:string};
+export type Host = {
+  hostId: string;
+  address: string;
+  epoch: string;
+  workspaceId?: string;
+};
+export type WorkspaceChoice = { id: string; name: string };
 export type Position = { anchor: number; head: number; scroll: number };
 export type Draft = {
   scope: string;
@@ -59,8 +64,8 @@ type Bootstrap = {
 };
 export type WorkspaceState = {
   hosts: Omit<Host, 'epoch'>[];
-  workspaces?:WorkspaceChoice[];
-  multiWorkspace?:boolean;
+  workspaces?: WorkspaceChoice[];
+  multiWorkspace?: boolean;
   host?: Host;
   scope: string;
   notes: Note[];
@@ -94,7 +99,7 @@ export type WorkspaceState = {
 export interface Port {
   storage<T>(action: string, value?: object): Promise<T>;
   activate(id: string): Promise<Host>;
-  selectWorkspace?(host:Host,id:string,generation:string):Promise<Host>;
+  selectWorkspace?(host: Host, id: string, generation: string): Promise<Host>;
   api(
     host: Host,
     path: string,
@@ -135,52 +140,18 @@ export class MobileWorkspace {
     browseVersion: 0,
   };
   private listeners = new Set<() => void>();
-  private queue: Promise<unknown> = Promise.resolve();
   private epoch = 0;
   private navigation = 0;
-  private edits = 0;
   private journeyRequest = 0;
   private saveRequest?: Promise<void>;
-  private autosaveTimer?: ReturnType<typeof setTimeout>;
-  private autosaveEnabled = false;
-  private autosaveDelay = 500;
-  private creationRequest?: Promise<void>;
   constructor(private port: Port) {}
-  enableAutosave(enabled: boolean) {
-    this.autosaveEnabled = enabled;
-    if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
-    if (enabled) this.scheduleSave();
-  }
-  private scheduleSave() {
-    if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
-    if (
-      !this.autosaveEnabled ||
-      !this.state.supported ||
-      !this.state.draft ||
-      this.state.conflict ||
-      this.state.unavailable ||
-      this.state.connection !== 'online'
-    )
-      return;
-    const scope = this.state.scope,
-      noteId = this.state.note?.id;
-    this.autosaveTimer = setTimeout(() => {
-      if (
-        this.autosaveEnabled &&
-        this.state.supported &&
-        this.state.scope === scope &&
-        this.state.note?.id === noteId &&
-        !this.state.conflict &&
-        !this.state.unavailable
-      )
-        void this.save().catch(e => this.report(e));
-    }, this.autosaveDelay);
+  enableAutosave(_enabled: boolean) {
+    // Compatibility shim: no automatic or manual original-note writes.
   }
   async background() {
     this.enableAutosave(false);
     await this.protect();
-    // Protection is required; a network flush is only best effort.
-    void this.save().catch(e => this.report(e));
+    await this.session().catch(e => this.report(e));
   }
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -264,8 +235,8 @@ export class MobileWorkspace {
       this.valid(epoch);
       if (caps.apiProtocolVersion < 3 || caps.minimumClientProtocolVersion > 3)
         throw Error('Incompatible host. Update the required client or host.');
-      this.patch({multiWorkspace:caps.multiWorkspace===true});
-      if(caps.multiWorkspace===true)await this.refreshWorkspaces();
+      this.patch({ multiWorkspace: caps.multiWorkspace === true });
+      if (caps.multiWorkspace === true) await this.refreshWorkspaces();
       const identity = await this.port.api(host, '/workspace/identity');
       this.valid(epoch);
       const scope = scopeFor(
@@ -291,28 +262,21 @@ export class MobileWorkspace {
           preview: undefined,
         });
       }
-      this.patch({ scope, host:host.workspaceId===identity.id?host:{...host,workspaceId:identity.id},connection: 'online' });
-      try {
-        const settings = await this.port.api(host, '/settings/workspace');
-        this.valid(epoch);
-        if (Number.isFinite(settings.autosaveDelay))
-          this.autosaveDelay = Math.max(
-            0,
-            Math.min(1000, settings.autosaveDelay),
-          );
-      } catch {
-        this.valid(epoch); // Older/offline settings retain the bounded local default.
-      }
+      this.patch({
+        scope,
+        host:
+          host.workspaceId === identity.id
+            ? host
+            : { ...host, workspaceId: identity.id },
+        connection: 'online',
+      });
       if (restore && !this.state.note) {
         const session = await this.port.storage<Session | null>('getSession', {
           scope,
         });
         this.valid(epoch);
-        const b = await this.port.storage<Bootstrap>('bootstrap');
-        this.valid(epoch);
-        const id =
-          session?.noteId ??
-          b.drafts.find(d => d.scope === scope && !d.resolved)?.noteId;
+
+        const id = session?.noteId;
         if (id) await this.open(id, session?.position);
         this.valid(epoch);
         const journey = normalizeJourney(session?.journey);
@@ -338,7 +302,10 @@ export class MobileWorkspace {
     } catch (e) {
       if (epoch !== this.epoch) return;
       const revoked =
-        e instanceof HostError && (e.status === 401 || e.status === 403 || e.code==='WORKSPACE_UNAVAILABLE');
+        e instanceof HostError &&
+        (e.status === 401 ||
+          e.status === 403 ||
+          e.code === 'WORKSPACE_UNAVAILABLE');
       this.patch({
         connection: revoked ? 'revoked' : 'offline',
         error:
@@ -354,25 +321,34 @@ export class MobileWorkspace {
     const epoch = this.epoch;
     const b = await this.port.storage<Bootstrap>('bootstrap');
     const session = Object.values(b.sessions)
-      .filter(s => s.hostId === host.hostId && s.noteId && (!host.workspaceId || JSON.parse(s.scope)[1]===host.workspaceId))
+      .filter(
+        s =>
+          s.hostId === host.hostId &&
+          s.noteId &&
+          (!host.workspaceId || JSON.parse(s.scope)[1] === host.workspaceId),
+      )
       .sort((a, b) => (b.at ?? 0) - (a.at ?? 0))[0];
     if (!session?.noteId) return;
-    if(!host.workspaceId && new Set(Object.values(b.sessions).filter(v=>v.hostId===host.hostId).map(v=>JSON.parse(v.scope)[1])).size>1)return;
+    if (
+      !host.workspaceId &&
+      new Set(
+        Object.values(b.sessions)
+          .filter(v => v.hostId === host.hostId)
+          .map(v => JSON.parse(v.scope)[1]),
+      ).size > 1
+    )
+      return;
     const note = await this.port.storage<Note | null>('getCache', {
       scope: session.scope,
       noteId: session.noteId,
     });
     if (!note) return;
-    const draft = await this.port.storage<Draft | null>('getDraft', {
-      scope: session.scope,
-      noteId: session.noteId,
-    });
     this.valid(epoch);
     this.patch({
       scope: session.scope,
       note,
-      draft: draft?.resolved ? undefined : draft ?? undefined,
-      content: draft && !draft.resolved ? draft.content : contentOf(note),
+      draft: undefined,
+      content: contentOf(note),
       position: session.position,
       loadId: this.state.loadId + 1,
       status: 'Offline · last opened note retained',
@@ -390,168 +366,73 @@ export class MobileWorkspace {
           : 'note',
     });
   }
-  async open(id: string, position?: Position, strict = false) {
-    this.patch({ referenceSelection: undefined });
+  private async openReader(
+    id: string,
+    position?: Position,
+    strict = false,
+    reveal = true,
+  ) {
     const ticket = ++this.navigation,
-      epoch = this.epoch;
-    await this.saveRequest?.catch(() => {});
-    await this.protect();
-    this.valid(epoch);
-    if (ticket !== this.navigation) return;
-    const host = this.state.host;
+      epoch = this.epoch,
+      host = this.state.host,
+      scope = this.state.scope;
     if (!host) return;
-    const scope = this.state.scope;
     let note: Note;
     try {
       note = await this.port.api(host, '/resources/' + id);
     } catch (e) {
       if (
-        !strict &&
-        e instanceof HostError &&
-        (e.status === 404 || e.status === 410)
-      ) {
-        const cached = await this.port.storage<Note | null>('getCache', {
-          scope,
-          noteId: id,
-        });
-        const d = await this.port.storage<Draft | null>('getDraft', {
-          scope,
-          noteId: id,
-        });
-        this.valid(epoch);
-        if (ticket !== this.navigation) return;
-        if (cached || d) {
-          note = cached ?? {
-            id,
-            type: 'note',
-            title: d!.title,
-            revision: d!.revision,
-            content: d!.content,
-          };
-          const retained = d ?? {
-            scope,
-            noteId: id,
-            title: note.title,
-            revision: note.revision,
-            content: contentOf(note),
-            version: Date.now() + ':' + ++this.edits,
-          };
-          await this.port.storage('putDraft', retained);
-          this.valid(epoch);
-          if (ticket !== this.navigation) return;
-          this.patch({
-            note,
-            draft: retained,
-            content: retained.content,
-            position,
-            loadId: this.state.loadId + 1,
-            unavailable: true,
-            conflict: true,
-            supported: false,
-            status: 'Saved note unavailable · local version retained',
-            view: 'note',
-            journey: advance(
-              emptyJourney(),
-              { id, title: note.title, position, unavailable: true },
-              false,
-            ),
-          });
-          return;
-        }
-      }
-      throw e;
-    }
-    this.valid(epoch);
-    if (ticket !== this.navigation) return;
-    if (note.type !== 'note')
-      throw Error('This destination is not an editable note.');
-    if (strict && note.trashedAt)
-      throw new HostError(410, 'This note is in Trash.');
-    const d = await this.port.storage<Draft | null>('getDraft', {
-      scope,
-      noteId: id,
-    });
-    this.valid(epoch);
-    if (ticket !== this.navigation) return;
-    let draft =
-      d && !d.resolved
-        ? {
-            ...d,
-            title:
-              d.title === 'Recovered note' || !d.title ? note.title : d.title,
-          }
-        : undefined;
-    if (note.trashedAt && !draft) {
-      draft = {
+        strict ||
+        (e instanceof HostError && [401, 403, 404, 410].includes(e.status))
+      )
+        throw e;
+      const cached = await this.port.storage<Note | null>('getCache', {
         scope,
         noteId: id,
-        title: note.title,
-        revision: note.revision,
-        content: contentOf(note),
-        version: Date.now() + ':' + ++this.edits,
-      };
-      await this.port.storage('putDraft', draft);
-      this.valid(epoch);
-      if (ticket !== this.navigation) return;
+      });
+      if (!cached) throw e;
+      note = cached;
     }
+    this.valid(epoch);
+    if (ticket !== this.navigation) return;
+    if (note.type !== 'note' || note.trashedAt)
+      throw Error('Note unavailable. Legacy recovery remains separate.');
+    const content = contentOf(note);
     if (
-      draft?.sent &&
-      note.revision !== draft.sent.revision &&
-      note.title === draft.sent.title &&
-      JSON.stringify(contentOf(note)) === JSON.stringify(draft.sent.content)
-    ) {
-      if (draft.version === draft.sent.version) {
-        await this.port.storage('ackDraft', {
-          scope,
-          noteId: id,
-          version: draft.version,
-        });
-        draft = undefined;
-      } else {
-        draft = { ...draft, revision: note.revision, sent: undefined };
-        await this.port.storage('putDraft', draft);
-      }
-      this.valid(epoch);
-      if (ticket !== this.navigation) return;
+      strict &&
+      this.state.note?.id === id &&
+      this.state.note.revision === note.revision &&
+      this.state.note.title === note.title &&
+      JSON.stringify(this.state.content) === JSON.stringify(content)
+    )
+      return;
+    // Cache/storage failure cannot prevent a successfully loaded saved note from being read.
+    try {
+      await this.port.storage('putCache', { scope, noteId: id, note });
+    } catch (e) {
+      this.report(e);
     }
-    const conflict = Boolean(
-      note.trashedAt || (draft && draft.revision !== note.revision),
-    );
-    await this.port.storage('putCache', { scope, noteId: id, note });
     this.valid(epoch);
     if (ticket !== this.navigation) return;
     this.patch({
       note,
-      createdNoteId: undefined,
-      draft,
-      content: draft?.content ?? contentOf(note),
+      draft: undefined,
+      content,
       position,
       loadId: this.state.loadId + 1,
-      supported: false,
-      conflict,
-      unavailable: Boolean(note.trashedAt),
-      status: note.trashedAt
-        ? 'Note is in Trash · local version retained'
-        : conflict
-        ? 'Saved version changed · review recovery'
-        : draft
-        ? 'Recovered protected draft'
-        : 'Saved to host',
-      view: 'note',
+      supported: true,
+      conflict: false,
+      unavailable: false,
+      status: 'Saved version',
+      view: reveal ? 'note' : this.state.view,
       journey: strict
         ? this.state.journey
-        : advance(
-            emptyJourney(),
-            {
-              id,
-              title: note.title,
-              position,
-              unavailable: Boolean(note.trashedAt),
-            },
-            false,
-          ),
+        : advance(emptyJourney(), { id, title: note.title, position }, false),
     });
-    if (!strict) await this.session();
+    if (!strict) await this.session().catch(e => this.report(e));
+  }
+  async open(id: string, position?: Position, strict = false) {
+    return this.openReader(id, position, strict);
   }
   loaded() {
     this.patch({
@@ -563,7 +444,6 @@ export class MobileWorkspace {
         ? ''
         : this.state.error,
     });
-    this.scheduleSave();
   }
   unsupported() {
     this.patch({
@@ -571,37 +451,11 @@ export class MobileWorkspace {
       error: 'Unsupported content retained. Editing and saving are disabled.',
     });
   }
-  changed(content: Doc) {
-    const { note, host, scope } = this.state;
-    if (!note || !host || this.state.conflict || this.state.unavailable) return;
-    const draft: Draft = {
-      scope,
-      noteId: note.id,
-      title: note.title,
-      revision: this.state.draft?.revision ?? note.revision,
-      content,
-      version: Date.now() + ':' + ++this.edits,
-      sent: this.state.draft?.sent,
-    };
-    this.patch({ draft, content, status: 'Protecting draft…' });
-    this.queue = this.queue
-      .catch(() => {})
-      .then(() => this.port.storage('putDraft', draft))
-      .then(() => {
-        if (this.state.draft?.version === draft.version)
-          this.patch({ status: 'On this phone' });
-        this.scheduleSave();
-      })
-      .catch(e => {
-        this.patch({ status: 'Recovery write failed' });
-        this.report(e);
-        throw e;
-      });
-    void this.queue.catch(() => {});
+  changed(_content: Doc) {
+    return;
   }
   async protect() {
-    await this.queue.catch(() => {});
-    if (this.state.draft) await this.port.storage('putDraft', this.state.draft);
+    return;
   }
   reading(position: Position) {
     const journey = normalizeJourney(this.state.journey);
@@ -624,327 +478,22 @@ export class MobileWorkspace {
       });
   }
   async save() {
-    if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
-    if (this.saveRequest) return this.saveRequest;
-    this.saveRequest = this.saveOnce();
-    try {
-      await this.saveRequest;
-    } finally {
-      this.saveRequest = undefined;
-    }
-    this.scheduleSave();
-  }
-  private async saveOnce() {
-    let { draft } = this.state;
-    const { host, note, scope } = this.state;
-    if (!draft) return;
-    if (
-      !host ||
-      !note ||
-      !this.state.supported ||
-      this.state.conflict ||
-      this.state.unavailable
-    )
-      throw Error(
-        'Save is unavailable. Review recovery, or explicitly keep the protected draft and switch.',
-      );
-    const epoch = this.epoch;
-    await this.protect();
-    this.valid(epoch);
-    this.patch({ status: 'Saving…' });
-    try {
-      let saved: Note | undefined;
-      if (draft.sent) {
-        const remote: Note = await this.port.api(host, '/resources/' + note.id);
-        this.valid(epoch);
-        if (remote.trashedAt) throw new HostError(410, 'Note is in Trash.');
-        if (remote.revision !== draft.sent.revision) {
-          if (
-            remote.title !== draft.sent.title ||
-            JSON.stringify(contentOf(remote)) !==
-              JSON.stringify(draft.sent.content)
-          )
-            throw new HostError(
-              412,
-              'The host changed. Both versions retained.',
-            );
-          saved = remote;
-          draft = { ...draft, version: draft.sent.version };
-        }
-      }
-      if (!saved) {
-        const sent = {
-          version: draft.version,
-          revision: draft.revision,
-          title: draft.title,
-          content: draft.content,
-        };
-        if (this.state.draft)
-          this.patch({ draft: { ...this.state.draft, sent } });
-        await this.protect(); // Persist the exact request before the network can commit it.
-        this.valid(epoch);
-        saved = await this.port.api(
-          host,
-          '/resources/' + note.id + '/note',
-          'PUT',
-          { title: draft.title, content: draft.content },
-          `"${draft.revision}"`,
-        );
-      }
-      this.valid(epoch);
-      if (!saved)
-        throw Error('Host returned no save acknowledgment. Retry safely.');
-      await this.queue.catch(() => {});
-      await this.port.storage('ackDraft', {
-        scope,
-        noteId: note.id,
-        version: draft.version,
-      });
-      this.valid(epoch);
-      if (this.state.scope !== scope || this.state.note?.id !== note.id) return;
-      const latest = this.state.draft;
-      if (latest && latest.version !== draft.version) {
-        const rebased = {
-          ...latest,
-          revision: saved.revision,
-          sent: undefined,
-        };
-        this.patch({
-          note: saved,
-          draft: rebased,
-          status: 'On this phone',
-          connection: 'online',
-          error: '',
-        });
-        await this.protect();
-        this.valid(epoch);
-      } else
-        this.patch({
-          note: saved,
-          draft: undefined,
-          status: 'Saved to host',
-          connection: 'online',
-          error: '',
-        });
-      await this.port.storage('putCache', {
-        scope,
-        noteId: note.id,
-        note: saved,
-      });
-      await this.refreshRecovery();
-    } catch (e) {
-      if (epoch !== this.epoch) return;
-      if (this.state.scope !== scope || this.state.note?.id !== note.id) return;
-      if (e instanceof HostError && e.status === 412) {
-        this.patch({
-          conflict: true,
-          status: 'Saved version changed · draft retained',
-        });
-      } else if (
-        e instanceof HostError &&
-        (e.status === 404 || e.status === 410)
-      ) {
-        this.patch({
-          conflict: true,
-          unavailable: true,
-          status: 'Saved note unavailable · draft retained',
-        });
-      } else {
-        this.patch({
-          status: 'On this phone · host save needs retry',
-          connection:
-            e instanceof HostError && (e.status === 401 || e.status === 403)
-              ? 'revoked'
-              : 'offline',
-        });
-      }
-      throw e;
-    }
+    throw Error('Android is read-only. Export legacy recovery instead.');
   }
   async reconcile() {
-    if (this.saveRequest) return;
-    if (this.state.draft?.sent && !this.state.conflict) {
-      await this.save();
-      return;
-    }
-    const { host, note, scope } = this.state;
-    if (!host || !note) return;
-    const epoch = this.epoch,
-      ticket = this.navigation;
-    try {
-      const saved: Note = await this.port.api(host, '/resources/' + note.id);
-      this.valid(epoch);
-      if (ticket !== this.navigation) return;
-      if (saved.trashedAt) throw new HostError(410, 'Note is in Trash.');
-      if (saved.revision === note.revision) {
-        this.patch({ connection: 'online', unavailable: false });
-        return;
-      }
-      if (this.state.draft) {
-        this.patch({
-          conflict: true,
-          status: 'Changed on another device · draft retained',
-          unavailable: false,
-        });
-        return;
-      }
-      await this.port.storage('putCache', {
-        scope,
-        noteId: note.id,
-        note: saved,
-      });
-      this.valid(epoch);
-      if (ticket !== this.navigation) return;
-      if (this.state.draft) {
-        this.patch({
-          conflict: true,
-          status: 'Changed on another device · draft retained',
-        });
-        return;
-      }
-      this.patch({
-        note: saved,
-        journey: {
-          ...this.state.journey,
-          visits: this.state.journey.visits.map(v =>
-            v.id === saved.id ? { ...v, title: saved.title } : v,
-          ),
-        },
-        content: contentOf(saved),
-        loadId: this.state.loadId + 1,
-        connection: 'online',
-        status: 'Updated from host',
-        supported: false,
-        conflict: false,
-        unavailable: false,
-      });
-    } catch (e) {
-      if (epoch !== this.epoch) return;
-      if (e instanceof HostError && (e.status === 404 || e.status === 410)) {
-        if (!this.state.draft) this.changed(contentOf(note));
-        await this.protect();
-        this.patch({
-          unavailable: true,
-          conflict: true,
-          status: 'Saved note unavailable · local version retained',
-          journey: {
-            ...this.state.journey,
-            visits: this.state.journey.visits.map(v =>
-              v.id === note.id ? { ...v, unavailable: true } : v,
-            ),
-          },
-        });
-      } else {
-        this.patch({
-          connection:
-            e instanceof HostError && (e.status === 401 || e.status === 403)
-              ? 'revoked'
-              : 'offline',
-        });
-        throw e;
-      }
-    }
+    if (this.state.note)
+      await this.openReader(
+        this.state.note.id,
+        this.state.position,
+        true,
+        false,
+      );
   }
   async useSaved() {
-    const { host, note, draft, scope } = this.state;
-    if (!host || !note) return;
-    await this.protect();
-    const epoch = this.epoch;
-    const saved: Note = await this.port.api(host, '/resources/' + note.id);
-    this.valid(epoch);
-    if (saved.trashedAt)
-      throw Error(
-        'Note is in Trash. Restore it on the host or create a recovered copy.',
-      );
-    await this.port.storage('putCache', {
-      scope,
-      noteId: note.id,
-      note: saved,
-    });
-    this.valid(epoch);
-    if (draft)
-      await this.port.storage('keepSaved', {
-        scope,
-        noteId: note.id,
-        version: draft.version,
-      });
-    this.valid(epoch);
-    this.patch({
-      draft: undefined,
-      note: saved,
-      content: contentOf(saved),
-      conflict: false,
-      unavailable: false,
-      journey: {
-        ...this.state.journey,
-        visits: this.state.journey.visits.map(v =>
-          v.id === saved.id
-            ? { ...v, title: saved.title, unavailable: false }
-            : v,
-        ),
-      },
-      status: 'Saved version · former draft retained in Recovery',
-      loadId: this.state.loadId + 1,
-      supported: false,
-    });
-    await this.refreshRecovery();
+    throw Error('Legacy recovery stays separate from saved reading.');
   }
-  async recoveredCopy(summary: Summary) {
-    const { host, scope } = this.state;
-    if (!host) return;
-    await this.protect();
-    const draft = await this.port.storage<Draft | null>('getDraft', summary);
-    if (!draft) throw Error('Recovery record is no longer available.');
-    const epoch = this.epoch;
-    if (draft.copyScope && draft.copyScope !== scope)
-      throw Error(
-        'Retry this pending copy on its original destination before copying to another workspace.',
-      );
-    const copy = {
-      ...draft,
-      copyId: draft.copyId ?? (await this.port.uuid()),
-      copyScope: scope,
-    };
-    await this.port.storage('putDraft', copy);
-    this.valid(epoch);
-    if (
-      this.state.draft?.version === copy.version &&
-      this.state.draft.scope === copy.scope &&
-      this.state.draft.noteId === copy.noteId
-    ) {
-      this.patch({
-        draft: copy,
-        conflict: true,
-        status: 'Recovery copy pending · original draft retained',
-      });
-    }
-    // Retry this exact UUID/title/document; an uncertain result cannot duplicate the copy.
-    const saved: Note = await this.port.api(
-      host,
-      '/resources/imports/' + copy.copyId,
-      'PUT',
-      {
-        title: copy.title.slice(0, 460) + ' (recovered)',
-        content: copy.content,
-      },
-    );
-    this.valid(epoch);
-    await this.port.storage('ackDraft', {
-      scope: summary.scope,
-      noteId: summary.noteId,
-      version: copy.version,
-      recoveryKey: copy.recoveryKey,
-    });
-    this.valid(epoch);
-    if (
-      this.state.draft?.version === copy.version &&
-      this.state.draft.scope === copy.scope &&
-      this.state.draft.noteId === copy.noteId
-    )
-      this.patch({ draft: undefined });
-    await this.open(saved.id);
-    this.patch({ status: 'Recovered copy created' });
-    await this.refreshRecovery();
+  async recoveredCopy(_summary: Summary) {
+    throw Error('Export legacy recovery for desktop review.');
   }
   async pendingCreation() {
     return this.port.storage<Creation | null>('getCreation', {
@@ -957,6 +506,7 @@ export class MobileWorkspace {
     body?: unknown,
     revision?: string,
   ) {
+    if (method !== 'GET') throw Error('Android organization is read-only.');
     const { host, scope } = this.state,
       epoch = this.epoch;
     if (!host || !scope) throw Error('Connect to a workspace first.');
@@ -1037,45 +587,8 @@ export class MobileWorkspace {
   consumeReference() {
     this.patch({ referenceSelection: undefined });
   }
-  async createNote(title: string, collectionId?: string) {
-    if (this.creationRequest) return this.creationRequest;
-    this.creationRequest = this.createOnce(title, collectionId);
-    try {
-      await this.creationRequest;
-    } finally {
-      this.creationRequest = undefined;
-    }
-  }
-  private async createOnce(title: string, collectionId?: string) {
-    const { host, scope } = this.state;
-    if (!host || !scope) throw Error('Connect to a workspace first.');
-    const epoch = this.epoch;
-    await this.protect();
-    let pending = await this.pendingCreation();
-    this.valid(epoch);
-    if (!pending) {
-      title = title.trim();
-      if (!title || title.length > 500)
-        throw Error('Enter a title of 1–500 characters.');
-      pending = { scope, id: await this.port.uuid(), title, collectionId };
-      await this.port.storage('putCreation', pending);
-      this.valid(epoch);
-    }
-    const saved: Note = await this.port.api(
-      host,
-      '/resources/imports/' + pending.id,
-      'PUT',
-      {
-        title: pending.title,
-        collectionId: pending.collectionId,
-        content: { type: 'doc', content: [{ type: 'paragraph' }] },
-      },
-    );
-    this.valid(epoch);
-    await this.navigate(saved.id);
-    this.valid(epoch);
-    await this.port.storage('ackCreation', { scope, id: pending.id });
-    this.patch({ createdNoteId: saved.id });
+  async createNote(_title: string, _collectionId?: string) {
+    throw Error('Android note creation is retired.');
   }
   async leave() {
     await this.protect();
@@ -1096,35 +609,81 @@ export class MobileWorkspace {
     await this.session();
     await this.refreshRecovery();
   }
-  async refreshWorkspaces(){
-    const host=this.state.host,epoch=this.epoch;if(!host)return;
-    const value=await this.port.api(host,'/workspaces');this.valid(epoch);
-    if(!Array.isArray(value)||value.length>8||value.some(v=>typeof v.id!=='string'||!/^[-a-f0-9]{36}$/.test(v.id)||typeof v.name!=='string'))throw Error('Invalid workspace list.');
-    this.patch({workspaces:value});
+  async refreshWorkspaces() {
+    const host = this.state.host,
+      epoch = this.epoch;
+    if (!host) return;
+    const value = await this.port.api(host, '/workspaces');
+    this.valid(epoch);
+    if (
+      !Array.isArray(value) ||
+      value.length > 8 ||
+      value.some(
+        v =>
+          typeof v.id !== 'string' ||
+          !/^[-a-f0-9]{36}$/.test(v.id) ||
+          typeof v.name !== 'string',
+      )
+    )
+      throw Error('Invalid workspace list.');
+    this.patch({ workspaces: value });
   }
-  async switchWorkspace(id:string,keep=false){
-    const host=this.state.host,epoch=this.epoch;if(!host||!this.port.selectWorkspace)throw Error('Workspace selection unavailable.');
-    if(host.workspaceId===id)return;
-    const destination=await this.port.api(host,'/workspaces/'+id);this.valid(epoch);
-    await this.saveRequest?.catch(()=>{});await this.protect();if(this.state.draft&&!keep)await this.save();await this.protect();await this.session();this.valid(epoch);
-    const next=await this.port.selectWorkspace(host,id,destination.generation);this.valid(epoch);await this.adoptHost(next);
-  }
-  private async adoptHost(host:Host){
-    this.epoch++;this.navigation++;this.patch({host,scope:'',workspaces:[],journey:emptyJourney(),navigationRetry:undefined,browse:defaultBrowse(),view:'browse',preview:undefined,note:undefined,draft:undefined,content:undefined,notes:[],position:undefined,supported:false,conflict:false,unavailable:false,status:''});
-    await this.connect(true);
-  }
-  async switchHost(id: string, keep = false) {
+  async switchWorkspace(id: string, _keep = false) {
+    const host = this.state.host,
+      epoch = this.epoch;
+    if (!host || !this.port.selectWorkspace)
+      throw Error('Workspace selection unavailable.');
+    if (host.workspaceId === id) return;
+    const destination = await this.port.api(host, '/workspaces/' + id);
+    this.valid(epoch);
     await this.saveRequest?.catch(() => {});
     await this.protect();
-    if (this.state.draft && !keep) await this.save();
+    await this.protect();
+    await this.session();
+    this.valid(epoch);
+    const next = await this.port.selectWorkspace(
+      host,
+      id,
+      destination.generation,
+    );
+    this.valid(epoch);
+    await this.adoptHost(next);
+  }
+  private async adoptHost(host: Host) {
+    this.epoch++;
+    this.navigation++;
+    this.patch({
+      host,
+      scope: '',
+      workspaces: [],
+      journey: emptyJourney(),
+      navigationRetry: undefined,
+      browse: defaultBrowse(),
+      view: 'browse',
+      preview: undefined,
+      note: undefined,
+      draft: undefined,
+      content: undefined,
+      notes: [],
+      position: undefined,
+      supported: false,
+      conflict: false,
+      unavailable: false,
+      status: '',
+    });
+    await this.connect(true);
+  }
+  async switchHost(id: string, _keep = false) {
+    await this.saveRequest?.catch(() => {});
+    await this.protect();
+
     await this.protect();
     await this.session();
     const host = await this.port.activate(id);
     await this.adoptHost(host);
   }
-  async removeRecovery(summary: Summary) {
-    await this.port.storage('ackDraft', summary);
-    await this.refreshRecovery();
+  async removeRecovery(_summary: Summary) {
+    throw Error('Legacy records are retained. Export for desktop review.');
   }
   forgotten(id: string) {
     if (this.state.host?.hostId === id) {
@@ -1234,6 +793,8 @@ export class MobileWorkspace {
         ? 'browse'
         : this.state.noteOrigin;
     if (this.state.note?.id === id && intent !== 'history') {
+      this.navigation++;
+      this.journeyRequest++;
       if (intent === 'direct')
         this.patch({
           journey: advance(

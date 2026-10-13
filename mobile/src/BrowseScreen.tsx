@@ -133,7 +133,7 @@ export default function BrowseScreen({
   completedIds,
 }: {
   model: MobileWorkspace;
-  onOrganize: (target: Target) => void;
+  onOrganize?: (target: Target) => void;
   completedIds?: string[];
   visible: boolean;
   onAction: (action: () => Promise<void>) => void;
@@ -300,7 +300,7 @@ export default function BrowseScreen({
         destination: 'library',
         collection: { id: row.id, name: row.title },
       });
-    else if (b.config.destination === 'trash') onOrganize(targetFor(row));
+    else if (b.config.destination === 'trash') onOrganize?.(targetFor(row));
     else onAction(() => model.routeResource(row.id));
   };
   return (
@@ -410,7 +410,7 @@ export default function BrowseScreen({
           <Action
             label={'Actions · ' + selected.size}
             onPress={() =>
-              onOrganize({
+              onOrganize?.({
                 kind: 'bulk',
                 id: 'selection',
                 title: 'Selected resources',
@@ -480,17 +480,18 @@ export default function BrowseScreen({
                 accessibilityRole="button"
                 accessibilityLabel={`${item.title}, ${p.label}`}
                 accessibilityHint={
-                  item.kind === 'resource'
+                  onOrganize && item.kind === 'resource'
                     ? 'Long press to select resources'
                     : undefined
                 }
                 accessibilityActions={
-                  item.kind === 'resource'
+                  onOrganize && item.kind === 'resource'
                     ? [{ name: 'longpress', label: 'Select resource' }]
                     : undefined
                 }
                 onAccessibilityAction={e => {
                   if (
+                    onOrganize &&
                     e.nativeEvent.actionName === 'longpress' &&
                     item.kind === 'resource'
                   )
@@ -498,7 +499,7 @@ export default function BrowseScreen({
                 }}
                 disabled={b.loading && b.applied !== path}
                 onLongPress={() => {
-                  if (item.kind === 'resource') toggle(item.id);
+                  if (onOrganize && item.kind === 'resource') toggle(item.id);
                 }}
                 onPress={() =>
                   selected.size && item.kind === 'resource'
@@ -528,11 +529,13 @@ export default function BrowseScreen({
                   ) : null}
                 </View>
               </Pressable>
-              <Action
-                label="•••"
-                accessibilityLabel={'Actions for ' + item.title}
-                onPress={() => onOrganize(targetFor(item))}
-              />
+              {onOrganize ? (
+                <Action
+                  label="•••"
+                  accessibilityLabel={'Actions for ' + item.title}
+                  onPress={() => onOrganize(targetFor(item))}
+                />
+              ) : null}
             </View>
           );
         }}

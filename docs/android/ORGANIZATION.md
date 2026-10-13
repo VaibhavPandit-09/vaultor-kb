@@ -1,5 +1,7 @@
 # Android organization and resource lifecycle
 
+> R1 (alpha.9) supersedes the Android editing/insertion/organization-write flows below. They document historical A4–A7 behavior and retained recovery formats; current read-only behavior is in [ANDROID.md](ANDROID.md) and [READER.md](READER.md). Native previews/copy/download of existing originals remain available.
+
 A7 adds one contextual Actions sheet to browsing rows, note More and file previews. Long-press a resource to start selection; collection rows never enter resource selection. Selection clears when the query, page, type, mode, destination, collection or workspace changes. Successful lifecycle items leave the selection; unsuccessful items remain available for retry. No permanent bulk toolbar is shown. Native Back returns a nested sheet to Actions; callbacks within250ms are treated as one gesture to prevent dispatcher/key-up duplication from dismissing two levels. The first Back and explicit header controls remain immediate.
 
 ## Collections, metadata and membership

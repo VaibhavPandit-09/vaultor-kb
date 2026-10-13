@@ -52,7 +52,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     val identity=json(request(p,"/workspace/identity",token=a.getString("epoch")))
     require(scope.getString(1)==identity.getString("id") && scope.getString(2)==identity.getString("generation")) {"Workspace changed. Media remains bound to its original source."}
   }) }
-  @ReactMethod fun media(action:String,input:String,promise:Promise) {try {require(input.length<=12000);media.call(action,JSONObject(input),promise)}catch(_:Exception){promise.reject("MEDIA_INPUT","Invalid media request.")}}
+  @ReactMethod fun media(action:String,input:String,promise:Promise) {try {require(action in listOf("list","thumbnail","preview","share","open","copy","save")) {"Android reading cannot upload or alter placements. Export legacy recovery instead."};require(input.length<=12000);media.call(action,JSONObject(input),promise)}catch(_:Exception){promise.reject("MEDIA_INPUT","Invalid media request.")}}
   @ReactMethod fun cancelMedia() {media.cancel()}
   private val random = SecureRandom()
   private val file get() = AtomicFile(File(ctx.noBackupFilesDir, "vaultor-state.bin"))
@@ -218,16 +218,12 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     }
     request(profile,path,method,body,revision=revision).toString()
   }
-  @ReactMethod fun journal(value:String, promise:Promise)=run(promise) {
-    val state=read();val journal=JSONObject(value);require(journal.has("scope") && journal.has("noteId") && journal.has("version"));state.put("draft",journal);write(state);"{}"
-  }
+  @ReactMethod fun journal(value:String,promise:Promise) {promise.reject("READ_ONLY","Legacy drafts are frozen; export recovery instead.")}
   @ReactMethod fun draft(promise:Promise)=run(promise) {read().optJSONObject("draft")?.toString() ?: "null"}
-  @ReactMethod fun acknowledge(version:String,promise:Promise)=run(promise) {
-    val state=read();if(state.optJSONObject("draft")?.optString("version")==version) {state.remove("draft");write(state)};"{}"
-  }
+  @ReactMethod fun acknowledge(version:String,promise:Promise) {promise.reject("READ_ONLY","Legacy recovery cannot be acknowledged by the reader.")}
 
-  /** Scoped local state; public summaries never contain native host credentials. */
   @ReactMethod fun storage(action:String, input:String, promise:Promise)=run(promise) {
+    require(action in listOf("bootstrap","getDraft","getCreation","getOrganization","getSession","putSession","getCache","putCache")) {"Legacy recovery records are frozen. Export them for desktop review."}
     // A save receipt may contain the prior document alongside a newer local edit.
     require(input.length<=(if(action=="putDraft")3010000 else 1500000));val a=JSONObject(input);val state=read()
     val drafts=state.optJSONObject("drafts") ?: JSONObject().also {state.put("drafts",it)}
@@ -295,28 +291,23 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     }
     write(state);"{}"
   }
-  @ReactMethod fun uuid(promise:Promise)=run(promise) {JSONObject().put("id",UUID.randomUUID().toString()).toString()}
-  private val keyboardRequest=java.util.concurrent.atomic.AtomicLong()
-  /** User-triggered Edit only; cancellation prevents delayed IME focus after dismissal. */
-  @ReactMethod fun editorKeyboard(show:Boolean) {
-    val ticket=keyboardRequest.incrementAndGet()
-    if(!show)return
-    ctx.runOnUiQueueThread {
-      fun find(view:android.view.View):android.webkit.WebView? {
-        if(view is android.webkit.WebView)return view
-        if(view is android.view.ViewGroup)for(i in 0 until view.childCount){val found=find(view.getChildAt(i));if(found!=null)return found}
-        return null
-      }
-      val activity=ctx.currentActivity ?: return@runOnUiQueueThread
-      val web=find(activity.window.decorView) ?: return@runOnUiQueueThread
-      web.requestFocus()
-      web.postDelayed({
-        if(ticket==keyboardRequest.get() && web.isShown && activity.hasWindowFocus()) {
-          (ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).showSoftInput(web,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
-        }
-      },200)
-    }
+  /** Preserves the existing key/storage. Only selected recovery fields leave native storage. */
+  @ReactMethod fun legacyRecovery(action:String,promise:Promise) {
+    if(action=="export") {executor.execute {try {val state=synchronized(stateLock){read()};val data=JSONObject().put("format","vaultor-legacy-recovery-1");for(name in listOf("drafts","draft","creations","organizationPending"))state.opt(name)?.let {data.put(name,it)};media.exportLegacy(data,promise)}catch(_:Exception){promise.reject("RECOVERY_EXPORT","Recovery cannot be read; encrypted originals remain.")}};return}
+    run(promise) {
+    require(action in listOf("inventory","export"))
+    val state=read();val data=JSONObject().put("format","vaultor-legacy-recovery-1")
+    for(name in listOf("drafts","draft","creations","organizationPending"))state.opt(name)?.let {data.put(name,it)}
+    val items=JSONArray();var drafts=0;var creations=0;var operations=0
+    state.optJSONObject("drafts")?.let {all->all.keys().forEach {k->val d=all.getJSONObject(k);drafts++;items.put(JSONObject().put("title",d.optString("title","Recovered note")).put("kind","Draft").put("scope",d.optString("scope")).put("status",if(d.has("sent"))"Uncertain save — not replayed" else "Retained local edit"))}}
+    state.optJSONObject("creations")?.let {all->all.keys().forEach {k->val d=all.getJSONObject(k);creations++;items.put(JSONObject().put("title",d.optString("title","Pending creation")).put("kind","Creation").put("scope",k).put("status","Unknown outcome — not replayed"))}}
+    state.optJSONObject("organizationPending")?.let {all->all.keys().forEach {scope->val ops=all.getJSONObject(scope);ops.keys().forEach {k->operations++;items.put(JSONObject().put("title",k).put("kind","Organization operation").put("scope",scope).put("status","Unknown outcome — not replayed"))}}}
+    val inputs=media.legacyInventory();for(i in 0 until inputs.length())items.put(inputs.getJSONObject(i))
+    JSONObject().put("drafts",drafts).put("creations",creations).put("operations",operations).put("inputs",inputs.length()).put("items",items).toString()
   }
+  }
+  @ReactMethod fun uuid(promise:Promise)=run(promise) {JSONObject().put("id",UUID.randomUUID().toString()).toString()}
+  @ReactMethod fun editorKeyboard(show:Boolean) { /* No editable document/IME bridge in R1. */ }
   @ReactMethod fun isKeyboardVisible(promise:Promise) {
     ctx.runOnUiQueueThread {
       promise.resolve(ctx.currentActivity?.window?.decorView?.rootWindowInsets?.isVisible(android.view.WindowInsets.Type.ime())==true)
@@ -357,19 +348,13 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     if(method=="GET" && path.matches(Regex("/(collections/$id|resources/$id/(usage|lifecycle-pending))")))return true
     if(method=="GET" && path.matches(Regex("/resources/$id/references\\?direction=(incoming|outgoing)&page=[0-9]{1,6}&size=30")))return true
     if(method=="GET" && path.substringBefore("?") in listOf("/collections","/tags/browse","/resources","/resources/trash")) {try {validateBrowsePath(path);return true}catch(_:Exception){return false}}
-    if(method=="PUT" && path.matches(Regex("/collections/creations/$id")))return true
-    if(method=="PUT" && path.matches(Regex("/(collections/$id(?:/favorite)?|resources/$id/favorite|resources/lifecycle)")))return true
-    if(method=="PATCH" && path.matches(Regex("/resources/$id/title")) && revision!=null)return true
-    if(method=="DELETE" && path.matches(Regex("/collections/$id")))return true
-    if(method=="POST" && path in listOf("/organization/memberships","/tags"))return true
-    if(method in listOf("POST","DELETE") && path.matches(Regex("/resources/$id/tags/[^/?#]{1,1200}")))return true
     return false
   }
   @ReactMethod fun apiFor(hostId:String,token:String,path:String,method:String,body:String?,revision:String?,promise:Promise)=net(promise) {
     val validId="[a-fA-F0-9-]{36}"
+    require(method=="GET" || (method=="POST" && path.matches(Regex("/resources/$validId/open")) && body==null)) {"Android is read-only. Legacy writes are never replayed."}
     require(organizationPath(path,method,revision) || (method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path=="/settings/workspace" || path.matches(Regex("/workspaces(?:/[a-f0-9-]{36})?")) || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/$validId)")))) ||
-      (method=="GET" && path.matches(Regex("/resources/$validId/summary"))) || (method=="POST" && path.matches(Regex("/resources/$validId/open")) && body==null) ||
-      (method=="PUT" && ((path.matches(Regex("/resources/$validId/note")) && revision!=null) || path.matches(Regex("/resources/imports/$validId"))))) {"Unsupported mobile operation."}
+      (method=="GET" && path.matches(Regex("/resources/$validId/summary"))) || (method=="POST" && path.matches(Regex("/resources/$validId/open")) && body==null)) {"Unsupported mobile operation."}
     val p=selected(hostId,token)
     if(path=="/capabilities") {val h=json(request(p,"/access/host",token=token));require(h.getString("hostId")==hostId && h.getString("fingerprint")==p.getString("fingerprint"))}
     request(p,path,method,body,revision=revision,token=token,multipart=path.contains("/imports/")).toString()

@@ -55,14 +55,18 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
-- [Android organization and lifecycle](android/ORGANIZATION.md): contextual Actions, memberships, saved References, checked occurrences and durable Trash/Restore/purge.
+- [0.1.0-alpha.9 R1 reader](android/releases/0.1.0-alpha.9.md): read-only foundation, upgrade recovery and actual release checks.
+
+- [Android reader and legacy recovery](android/READER.md): current read-only renderer, preserved upgrade records and private recovery ZIP boundary.
+
+- [Android organization and lifecycle](android/ORGANIZATION.md): historical A7 Actions/lifecycle contracts; R1 retires original mutations.
 - [0.1.0-alpha.7.2 A7 organization](android/releases/0.1.0-alpha.7.2.md): Android-only lifecycle release and actual validation gates.
 
 - [Android implementation and APK delivery](android/ANDROID.md): isolated toolchain, native trust/drafts, prototype limits, signing, installation and actual validation.
-- [Android companion design](android/DESIGN.md): new reading/review/collection direction and legacy transition; current shipped editing remains documented in ANDROID.md.
+- [Android companion design](android/DESIGN.md): reading/review/collection direction, implemented R1 shell and historical editing transition.
 - [A5 navigation comparison](android/design/a5-navigation-comparison.html): interactive drawer/bottom-navigation layout study; simulated keyboard, not native evidence.
 - [Android media](android/MEDIA.md): managed images, native input/output, encrypted pending uploads and preview/cache limits.
-- [Android writing and autosave](android/WRITING.md): protected automatic saves, contextual tools and retry-safe quick creation.
+- [Android writing and autosave](android/WRITING.md): historical A6 save/creation contracts retained for legacy recovery.
 - [0.1.0-alpha.6.1 A6 writing](android/releases/0.1.0-alpha.6.1.md): protected autosave, contextual tools and retry-safe New note.
 - [0.1.0-alpha.5 A5 navigation](android/releases/0.1.0-alpha.5.md): drawer-led Home, reading/Edit separation and keyboard-aware navigation; Android-only APK milestone.
 - [0.1.0-alpha.4 A4 images](android/releases/0.1.0-alpha.4.md): image tools, clipboard/pickers/share, native previews and original-file handling; Android-only APK.
