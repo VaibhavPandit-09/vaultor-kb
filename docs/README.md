@@ -6,6 +6,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Install and update on each platform](desktop/INSTALLATION-AND-UPDATES.md): exact Windows/Mac steps, browser/Docker/Ubuntu paths, available targets and recovery.
 - [Agent-owned release process](desktop/RELEASE-PROCESS.md): standing responsibility for versions, native builds, verified artifacts, tags and GitHub publication.
+- [0.10.0 independent workspace transfers](desktop/releases/v0.10.0.md): import-as-new, snapshot forks, recovery and Windows/Mac availability.
 - [0.9.0 workspace switching](desktop/releases/v0.9.0.md): selectors, grants, sessions and Windows/Mac status.
 - [0.8.0 workspace foundation](desktop/releases/v0.8.0.md): Windows-first host isolation, actual validation and same-tag Mac gate.
 - [0.7.1 scale and integration](desktop/releases/v0.7.1.md): responsive panes, status availability, bounded references and Android handoff.
@@ -24,6 +25,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 - [Mac mini completion handoff](desktop/MAC-HANDOFF.md): exact remaining Mac release/native and real two-device checks.
 
 ## Workspace workflows — `workspace/`
+
+- [Workspace ZIP transfers and local copies](workspace/WORKSPACE-TRANSFERS.md): W3 staging, atomic publication, retries, copy semantics, bounds and recovery.
 
 - [Settings](workspace/SETTINGS.md): focused categories, global search, scoped controls/resets, saving and keyboard access.
 - [Interaction motion](workspace/MOTION.md): shared Smooth/Snappy transitions, selection, inert exits and reduced motion.

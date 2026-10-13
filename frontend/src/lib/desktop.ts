@@ -1,3 +1,4 @@
+import type {WorkspaceTransferReceipt,WorkspaceCopyJob} from './workspaceTransfers';
 import axios, { type AxiosAdapter } from 'axios';
 import { configureConnection, getPlatform, getConnection } from './platform';
 let pendingArchiveEpoch:number|undefined;
@@ -18,6 +19,11 @@ type NativePart = { name: string; fileId: string; filename: string; type: string
 type NativeSelection = { id: string; name: string; size: number; lastModified: number };
 export type WireRequest = { id: string; token: string; path: string; method: string; timeout: number; headers: Record<string, string>; body?: { kind: 'text'; value: string } | { kind: 'multipart'; parts: (Part | NativePart)[] } };
 export interface DesktopBridge {
+  copiesList?():Promise<Result<WorkspaceCopyJob[]>>;
+  copyPreview?(value:{id:string;name:string;token:string}):Promise<Result<WorkspaceTransferReceipt>>;
+  copyStatus?(value:{id:string}):Promise<Result<WorkspaceTransferReceipt>>;
+  copyCommit?(value:{id:string}):Promise<Result<WorkspaceTransferReceipt>>;
+  copyCancel?(value:{id:string}):Promise<Result<WorkspaceTransferReceipt>>;
   updatesStatus?():Promise<Result<UpdateStatus>>;
   updatesConfigure?(feed:string):Promise<Result<UpdateStatus>>;
   updatesCheck?():Promise<Result<UpdateStatus>>;

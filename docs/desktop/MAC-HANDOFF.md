@@ -1,3 +1,11 @@
+## W3 — exact v0.10.0 handoff (2026-10-14)
+
+Fetch origin tags and check out v0.10.0, never a later master. Use Node24/Java25, npm ci in frontend/desktop, BUILD_VERSION/VITE_BUILD_VERSION=0.10.0, desktop build → prepare-server → package:release. Preserve the privately transferred original release key; do not regenerate it. Verify Apple Silicon/ad-hoc codesign/DMG/original-key sidecar under RELEASE-PROCESS.md. No paid signing is promised.
+
+With disposable roots, run copy-smoke.mjs against packaged bundle, actual app launch/save/export/relaunch, and VAULTOR_TRANSFER_SMOKE=1 chrome-smoke.mjs against the app executable. Check imported ZIP preview remains absent from catalog, commit/open/refresh, independent source/destination IDs and edits, lost-response/restart Retry, pending-slot/cancel behavior, replacement-before.zip and generation change. Verify browser owner cookies/CSRF and Light/Dark/narrow dialog; actual remote Mac↔Windows snapshot copy/Wi-Fi remains a separate coordinated check. Never access the user's phone or personal workspace.
+
+Keep the exact tagged source clean while publishing; put temporary native evidence/notes outside tracked files, then record a docs-only followup without moving the source tag. From exact tag, add only missing verified Mac DMG/sidecar using publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.10.0.md. Preserve published Windows bytes/tag; differing retry must fail. A code correction requires a new version. Android remains alpha.8; do not start R1 here.
+
 ## W2 — exact v0.9.0 handoff (2026-10-13)
 
 Windows0.9.0 is published. Fetch tags; check out v0.9.0 (source 74f628b53d5516d4def9e796f03d30abccce8cd8), not master. Install frontend/desktop npm dependencies; use Java25/Node24. Set BUILD_VERSION/VITE_BUILD_VERSION=0.9.0; desktop build, prepare-server, package:release using privately held original release key. Never generate another key. Verify arm64/ad-hoc codesign, DMG/original-trust sidecar under RELEASE-PROCESS.md.

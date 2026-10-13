@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile,stat,writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { isAbsolute, resolve, sep } from 'node:path';
+import { WorkspaceCopies } from './workspace-copies.mjs';
 import { Profiles } from './profiles.mjs';
 import { DesktopTransport } from './transport.mjs';
 import { UI_ORIGIN, externalAddress, trustedSender } from './policy.mjs';
@@ -32,6 +33,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 else {
   let window, profiles, owned, files, hosting, credentials, discovery, connections, tray, updates, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false, updating=false, updateApplying=false, automaticInstall=false;
   const transport = new DesktopTransport(), candidates = new Map();
+  const copies=new WorkspaceCopies({directory:resolve(app.getPath('userData'),'workspace-copies'),owned:{start:()=>owned.start(),get address(){return owned.address;},get accessKey(){return owned.accessKey;}},source:()=>transport.active});
   const queue = task => { const next = writes.catch(() => {}).then(task); writes = next; return next; };
   const state = () => { const data = !startupError && profiles?.snapshot(); if (data) data.profiles = data.profiles.map(p => p.source === 'bundled' ? { ...p, address: owned?.address ?? p.address } : p); return { ...(data || { version: 1, profiles: [], active: null, clientId: '' }), sessionId: data?.clientId ?? '', token, desktopBuild: app.getVersion(), localServer: owned?.snapshot(), error: startupError, access: { mode: token ? (transport.active?.profile.kind === 'remote' ? 'paired' : 'loopback') : 'unselected', pairingAvailable: credentials?.available() ?? false, trustConfigured: Boolean(transport.active?.profile.fingerprint), credentialsStored: Boolean(transport.active?.credential || transport.active?.ownerKey) } }; };
   async function probe(id, issueTicket = true, workspaceId) {
@@ -130,7 +132,7 @@ else {
     });
     const updateBarrier=async()=>{
       const approval=await requestQuitBarrier();if(!approval.success)throw new Error(approval.error);
-      if(files.active.size||files.saves.size||files.dialogPending||transport.mutations.size)throw new Error('Finish current file/workspace operations before updating.');
+      if(files.active.size||files.saves.size||files.dialogPending||copies.active||transport.mutations.size)throw new Error('Finish current file/workspace operations before updating.');
       updating=true;window?.webContents.send('desktop:updates-state',{...updates.snapshot(),phase:'preparing'});
       discovery.withdraw();transport.cancelAll();
     };
@@ -189,7 +191,7 @@ else {
     handle('desktop:host-action',async action=>{
       if(action==='browser'){if(!owned.address)throw new Error('Start the local host first.');await openOwnerBrowser();return;}
       if(action==='start'){await owned.start();return;}
-      if(action==='stop'){const approved=await requestQuitBarrier(false);if(!approved.success)throw new Error(approved.error);if(files.active.size||files.saves.size||files.dialogPending||transport.mutations.size)throw new Error('Finish current file operations first.');await owned.stop();return;}
+      if(action==='stop'){const approved=await requestQuitBarrier(false);if(!approved.success)throw new Error(approved.error);if(files.active.size||files.saves.size||files.dialogPending||copies.active||transport.mutations.size)throw new Error('Finish current file operations first.');await owned.stop();return;}
       throw new Error('Invalid hosting action.');
     });
     for(const [channel,method] of [['pick-files','pick'],['read-file','read'],['begin-save','begin'],['save-chunk','chunk'],['finish-save','finish'],['cancel-save','cancel'],['file-action','download'],['release-file','release'],['cancel-file','cancelRequest']]) handle('desktop:'+channel,value=>files[method](value));
@@ -205,15 +207,20 @@ else {
     };
     handle('desktop:authorize-local',id=>queue(()=>authorizeLocal(profiles.get(id))));
     handle('desktop:add-profile', input => queue(async()=>{const profile=await profiles.add(input);try{await authorizeLocal(profile);return profile;}catch(e){await profiles.forget(profile.id);throw e;}}));
+    handle('desktop:copies-list',()=>copies.list());
+    handle('desktop:copy-preview',async value=>{transport.mutations.add('workspace-copy');try{return await copies.preview(value);}finally{transport.mutations.delete('workspace-copy');}});
+    handle('desktop:copy-status',value=>copies.status(value));
+    handle('desktop:copy-commit',value=>copies.commit(value));
+    handle('desktop:copy-cancel',value=>copies.cancel(value));
     handle('desktop:workspaces',async id=>{const stored=profiles.get(id);const profile=stored.source==='bundled'?{...stored,address:await owned.start()}:stored.kind==='remote'?await connections.resolve(stored):stored;delete profile.selectedWorkspaceId;const check=new DesktopTransport(),token=randomUUID();check.activate(profile,token,profile.source==='bundled'?owned.accessKey:profile.kind==='local'?credentials.get(id):undefined,profile.kind==='remote'?credentials.get(id):undefined);return probeReady(()=>check.request({token,id:randomUUID(),path:'/workspaces',method:'GET',headers:{},timeout:10000}));});
     handle('desktop:probe', value => typeof value==='string'?probe(value):probe(value?.id,true,value?.workspaceId));
     handle('desktop:activate', ticket => queue(async () => {
-      if (transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
+      if (copies.active||transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
       const candidate = candidates.get(ticket);
       if (!candidate || candidate.expires < Date.now()) throw new Error('Connection check expired. Retry.');
       const latest = await probe(candidate.profile.id,true,candidate.profile.selectedWorkspaceId);
       if (latest.identity.id !== candidate.identity.id || latest.identity.generation !== candidate.identity.generation) throw new Error('Workspace changed during connection. Retry.');
-      if (transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
+      if (copies.active||transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
       const actual = latest.profile.source === 'bundled' ? latest.profile : { ...profiles.get(latest.profile.id), address: latest.profile.address, selectedWorkspaceId: latest.profile.selectedWorkspaceId };
       const credential = actual.kind === 'remote' ? credentials.get(actual.id) : undefined;
       if (actual.kind === 'remote' && actual.address !== profiles.get(actual.id).address) await profiles.update(actual.id, { address: actual.address });
@@ -311,7 +318,7 @@ else {
   }
   async function finishQuit() {
     try {
-      if(files?.active.size||files?.saves.size||files?.dialogPending||transport.mutations.size) throw new Error('Finish current file operations before quitting.');
+      if(files?.active.size||files?.saves.size||files?.dialogPending||copies.active||transport.mutations.size) throw new Error('Finish current file operations before quitting.');
       let approval=await requestQuitBarrier();
       if(!approval.success && approval.canKeepDrafts && !smokeDirectory){const choice=dialog.showMessageBoxSync(window,{type:'warning',buttons:['Keep editing','Keep drafts and quit'],defaultId:0,cancelId:0,message:approval.error,detail:'Quit only after local recovery records have been written.'});if(choice===1) approval=await requestQuitBarrier(true);}
       if(!approval.success) throw new Error(approval.error);

@@ -1,0 +1,2 @@
+export type WorkspaceTransferReceipt={version:number;id:string;name:string;state:string;detail:string;sha256:string;operationId?:string;preview?:{notes:number;files:number;tags:number;warnings:string[]};origin?:{hostId:string;workspaceId:string;generation:string};copiedAt:string};
+export type WorkspaceCopyJob={id:string;name:string;sourceProfileId:string;workspaceId:string;state:string;error?:string};

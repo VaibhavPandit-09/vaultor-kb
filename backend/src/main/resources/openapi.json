@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Vaultor API",
-    "version": "1.8.0",
-    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration. 0.8.0 adds bounded isolated host workspaces with optional X-Vaultor-Workspace selection; missing scope always means the fixed legacy workspace. API protocol3/archive3 remain unchanged. 0.9.0 exposes owner grant inspection for client workspace selectors; scope and protocol remain unchanged."
+    "version": "1.9.0",
+    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration. 0.8.0 adds bounded isolated host workspaces with optional X-Vaultor-Workspace selection; missing scope always means the fixed legacy workspace. API protocol3/archive3 remain unchanged. 0.9.0 exposes owner grant inspection for client workspace selectors; scope and protocol remain unchanged. 0.10.0 adds owner-only staged import-as-new and native snapshot forks; protocol3/archive3 unchanged."
   },
   "servers": [
     {
@@ -2901,18 +2901,24 @@
                   "$ref": "#/components/schemas/Capabilities"
                 },
                 "example": {
-                  "build": "desktop-d1",
-                  "serverBuild": "desktop-d1",
-                  "apiProtocolVersion": 2,
-                  "minimumClientProtocolVersion": 2,
-                  "authentication": false,
+                  "build": "0.10.0-example",
+                  "serverBuild": "0.10.0-example",
+                  "apiProtocolVersion": 3,
+                  "minimumClientProtocolVersion": 3,
+                  "authentication": true,
                   "workspaceTransfer": [
                     "merge",
                     "replace"
                   ],
                   "exportFormats": "/api/export-formats",
                   "openapi": "/api/openapi.json",
-                  "diagnosticsRetention": "200 events / 24 hours / process lifetime"
+                  "diagnosticsRetention": "200 events / 24 hours / process lifetime",
+                  "changeFeed": true,
+                  "scopedSettings": true,
+                  "multiWorkspace": true,
+                  "workspaceHeader": "X-Vaultor-Workspace",
+                  "workspaceLimit": 8,
+                  "workspaceImports": true
                 }
               }
             }
@@ -7758,6 +7764,177 @@
           }
         }
       }
+    },
+    "/workspace-imports": {
+      "get": {
+        "operationId": "listWorkspaceImports",
+        "summary": "Local owner only; up to128 retained import receipts",
+        "security": [
+          {
+            "OwnerKey": []
+          },
+          {
+            "BrowserOwner": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private version1 receipt with id/name/sha256/state/operationId/preview/origin/copiedAt/detail"
+          },
+          "403": {
+            "description": "Local owner required"
+          },
+          "409": {
+            "description": "Pending import, identity/payload conflict, or host limit"
+          }
+        }
+      }
+    },
+    "/workspace-imports/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getWorkspaceImport",
+        "summary": "Local owner checks/reconciles the captured import identity",
+        "security": [
+          {
+            "OwnerKey": []
+          },
+          {
+            "BrowserOwner": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private version1 receipt with id/name/sha256/state/operationId/preview/origin/copiedAt/detail"
+          },
+          "403": {
+            "description": "Local owner required"
+          },
+          "409": {
+            "description": "Pending import, identity/payload conflict, or host limit"
+          }
+        }
+      },
+      "put": {
+        "operationId": "previewNewWorkspace",
+        "summary": "Local owner validates a ZIP privately; identical UUID/name/origin/bytes retry only",
+        "security": [
+          {
+            "OwnerKey": []
+          },
+          {
+            "BrowserOwner": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "file"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "origin": {
+                    "type": "string",
+                    "description": "Optional JSON {hostId,workspaceId,generation}; opaque IDs only, no addresses or credentials"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Private version1 receipt with id/name/sha256/state/operationId/preview/origin/copiedAt/detail"
+          },
+          "403": {
+            "description": "Local owner required"
+          },
+          "409": {
+            "description": "Pending import, identity/payload conflict, or host limit"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "cancelNewWorkspace",
+        "summary": "Cancel uncommitted staging; never delete a published workspace",
+        "security": [
+          {
+            "OwnerKey": []
+          },
+          {
+            "BrowserOwner": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private version1 receipt with id/name/sha256/state/operationId/preview/origin/copiedAt/detail"
+          },
+          "403": {
+            "description": "Local owner required"
+          },
+          "409": {
+            "description": "Pending import, identity/payload conflict, or host limit"
+          }
+        }
+      }
+    },
+    "/workspace-imports/{id}/commit": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "commitNewWorkspace",
+        "summary": "Idempotent asynchronous commit and atomic publication of one separate workspace",
+        "security": [
+          {
+            "OwnerKey": []
+          },
+          {
+            "BrowserOwner": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private version1 receipt with id/name/sha256/state/operationId/preview/origin/copiedAt/detail"
+          },
+          "403": {
+            "description": "Local owner required"
+          },
+          "409": {
+            "description": "Pending import, identity/payload conflict, or host limit"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8897,6 +9074,24 @@
           },
           "scopedSettings": {
             "type": "boolean"
+          },
+          "multiWorkspace": {
+            "type": "boolean"
+          },
+          "workspaceHeader": {
+            "type": "string",
+            "enum": [
+              "X-Vaultor-Workspace"
+            ]
+          },
+          "workspaceLimit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "workspaceImports": {
+            "type": "boolean",
+            "description": "Owner-only staged workspace ZIP import with atomic publication"
           }
         }
       },

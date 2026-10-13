@@ -17,6 +17,7 @@ public class WorkspaceCatalog {
     public final Path directory;
     private final Path store;
     private State state;
+    private final Map<String,String> reservations=new LinkedHashMap<>();
     public WorkspaceCatalog(HostAccess access,WorkspaceIdentityService identity,JdbcTemplate jdbc,ObjectMapper json) throws Exception {
         this.json=json;directory=access.directory.resolveSibling("workspaces");
         Files.createDirectories(directory);HostFiles.privatePath(directory,true);
@@ -59,7 +60,8 @@ public class WorkspaceCatalog {
     public synchronized Entry create(String id,String label) throws Exception {
         uuid(id);String n=name(label);var old=state.workspaces().stream().filter(e->e.id().equals(id)).findFirst();
         if(old.isPresent()){if(!old.get().name().equals(n))throw new AccessFailure(409,"WORKSPACE_ID_CONFLICT","This workspace ID already has another name");return old.get();}
-        if(state.workspaces().size()>=LIMIT)throw new AccessFailure(409,"WORKSPACE_LIMIT","This host supports at most eight workspaces");
+        if(reservations.containsKey(id))throw new AccessFailure(409,"WORKSPACE_IMPORT_PENDING","This identity belongs to a pending workspace import");
+        if(state.workspaces().size()+reservations.size()>=LIMIT)throw new AccessFailure(409,"WORKSPACE_LIMIT","This host supports at most eight workspaces");
         var next=new ArrayList<>(state.workspaces());var entry=new Entry(id,n);next.add(entry);persist(new State(1,state.defaultId(),List.copyOf(next),state.grants()));return entry;
     }
     public synchronized Entry rename(String id,String label) throws Exception {
@@ -68,5 +70,15 @@ public class WorkspaceCatalog {
     public synchronized void grant(String id,String device,boolean allow) throws Exception {
         require(id);uuid(device);var all=new LinkedHashMap<>(state.grants());var next=new LinkedHashMap<>(all.getOrDefault(id,Map.of()));next.put(device,allow);all.put(id,Map.copyOf(next));persist(new State(1,state.defaultId(),state.workspaces(),Map.copyOf(all)));
     }
+    public synchronized void reserve(String id,String label) {
+        uuid(id);String n=name(label);if(state.workspaces().stream().anyMatch(e->e.id().equals(id)))throw new AccessFailure(409,"WORKSPACE_ID_CONFLICT","Workspace already exists");
+        if(reservations.containsKey(id)){if(!reservations.get(id).equals(n))throw new AccessFailure(409,"WORKSPACE_ID_CONFLICT","Pending import has another name");return;}
+        if(state.workspaces().size()+reservations.size()>=LIMIT)throw new AccessFailure(409,"WORKSPACE_LIMIT","This host supports at most eight workspaces");reservations.put(id,n);
+    }
+    public synchronized Entry publish(String id,String label) throws Exception {
+        var published=state.workspaces().stream().filter(e->e.id().equals(id)).findFirst();if(published.isPresent()){reservations.remove(id);return published.get();}
+        String reserved=reservations.remove(id);try{return create(id,label);}catch(Exception e){if(reserved!=null)reservations.put(id,reserved);throw e;}
+    }
+    public synchronized void release(String id){reservations.remove(id);}
     public Path root(String id){require(id);return directory.resolve(id);}
 }

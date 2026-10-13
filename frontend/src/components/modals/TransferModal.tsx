@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import {WorkspaceSelectionContext} from '../../lib/workspaceSelection';
+import { useContext,useEffect, useRef, useState } from 'react';
 import AppModal from './AppModal';
 import api from '../../lib/api';
 import { saveApiFile } from '../../lib/platform';
@@ -8,10 +9,12 @@ type Preview = { operation: Operation; resources: number; files: number; notes: 
 export default function TransferModal({ mode, onClose, flush, onImported }: {
   mode: 'export' | 'import' | null; onClose: () => void; flush: () => Promise<void>; onImported: () => Promise<void>;
 }) {
+  const workspaceSelector=useContext(WorkspaceSelectionContext);
   const [operation, setOperation] = useState<Operation | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const [modify,setModify]=useState(false);
   const [mergeMode, setMergeMode] = useState('merge');
   const [confirmed, setConfirmed] = useState(false);
   const completed = useRef<string | null>(null);
@@ -45,10 +48,11 @@ export default function TransferModal({ mode, onClose, flush, onImported }: {
     const outcome = await saveApiFile('/exports/'+operation.id+'/download', 'workspace.zip');
     if(outcome==='cancelled') throw new Error('Save cancelled. The prepared ZIP is ready to download again.');
   }
-  return <AppModal open={mode !== null} onClose={() => { if(!working) {setOperation(null);setPreview(null);setError('');setConfirmed(false);onClose();} }} title={mode === 'export' ? 'Export workspace' : 'Import workspace'} description="Portable ZIP with notes, tags, settings, and files. No password required.">
+  return <AppModal open={mode !== null} onClose={() => { if(!working) {setOperation(null);setPreview(null);setError('');setConfirmed(false);setModify(false);onClose();} }} title={mode === 'export' ? 'Export workspace' : 'Import workspace'} description="Portable workspace ZIP. Device preferences and credentials are excluded.">
     <div className="space-y-4">
       {error && <p role="alert" className="text-red-500">{error}</p>}
-      {mode === 'import' && !working && <button className="library-button" onClick={()=>void run(async()=>{
+      {mode==='import'&&workspaceSelector?.imports&&!modify&&!working&&<><button className="library-button" onClick={()=>{onClose();window.dispatchEvent(new Event('vaultor:workspace-import'));}}>Import as a new workspace</button><p className="text-sm">Create from the host owner connection. Existing workspaces stay intact.</p><button className="library-button" onClick={()=>setModify(true)}>Modify current workspace…</button></>}
+      {mode === 'import' && (modify||!workspaceSelector?.imports) && !working && <button className="library-button" onClick={()=>void run(async()=>{
           const file=(await pickFiles('.zip'))[0]; if(!file) return;
           const body=new FormData();body.append('file',file);const {data}=await api.post<Preview>('/imports/preview',body);setPreview(data);setOperation(data.operation);setConfirmed(false);
         })}>Choose workspace ZIP</button>}

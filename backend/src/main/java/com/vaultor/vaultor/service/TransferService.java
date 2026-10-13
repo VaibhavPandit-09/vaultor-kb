@@ -191,16 +191,20 @@ public class TransferService {
     private void exportArchive(TransferOperation op) {
         try {
             Path dir=directory(op.getId());Files.createDirectories(dir);
+            Workspace snapshot=writeWorkspaceSnapshot(dir.resolve("workspace.zip"));
+            op.setResourceCount(snapshot.resources().size());op.setTagCount(snapshot.tags().size());op.setFileCount((int)snapshot.resources().stream().filter(r->"file".equals(r.type())).count());
+            phase(op,"SUCCEEDED","complete",100);
+        } catch(Exception e) { throw new IllegalStateException("Export failed: "+e.getMessage(),e); }
+    }
+    private Workspace writeWorkspaceSnapshot(Path destination) throws Exception {
             if(resources.findAll().stream().anyMatch(r->Boolean.TRUE.equals(r.getPurgePending())))throw new IllegalArgumentException("Finish pending permanent-deletion cleanup before exporting the complete workspace");
             Workspace snapshot=transaction.execute(status -> new Workspace(resources.findAll().stream().map(r->new ResourceData(
                 r.getId(),r.getType(),r.getTitle(),documents.parse(r.getContent()),r.getMimeType(),r.getSize(),r.getCreatedAt(),r.getUpdatedAt(),r.getLastOpenedAt(),r.getTags().stream().map(Tag::getId).toList(),"file".equals(r.getType())?"files/"+r.getId():null,r.getTrashedAt(),r.getTrashOrganization())).toList(),
                 tags.findAll().stream().map(t->new TagData(t.getId(),t.getName(),t.getColor())).toList(),settings.getSettings().workspace(),organization.snapshot()));
-            op.setResourceCount(snapshot.resources().size());op.setTagCount(snapshot.tags().size());op.setFileCount((int)snapshot.resources().stream().filter(r->"file".equals(r.type())).count());
             Map<String,Path> binaries=new LinkedHashMap<>();
             for(var r:snapshot.resources()) if(r.binary()!=null) binaries.put(r.binary(),files.getFile(resources.findById(r.id()).orElseThrow().getFilePath()));
-            exporters.require("workspace","zip").write(snapshot,binaries,dir.resolve("workspace.zip"));
-            phase(op,"SUCCEEDED","complete",100);
-        } catch(Exception e) { throw new IllegalStateException("Export failed: "+e.getMessage(),e); }
+            exporters.require("workspace","zip").write(snapshot,binaries,destination);
+        return snapshot;
     }
     public Preview preview(MultipartFile file) throws Exception {
         if(file.getSize()>maxArchive) throw new IllegalArgumentException("Archive exceeds "+maxArchive+" bytes");
@@ -276,6 +280,7 @@ public class TransferService {
     private void apply(TransferOperation op) {
         try {
             Workspace w=readWorkspace(op);validateWorkspace(w,directory(op.getId()));
+            if("replace".equals(op.getMode())&&resources.count()>0&&!Files.exists(directory(op.getId()).resolve("replacement-before.zip")))writeWorkspaceSnapshot(directory(op.getId()).resolve("replacement-before.zip"));
             Map<String,String> ids=new HashMap<>();Map<String,String> binaries=new HashMap<>();Map<String,String> verifiedMimes=new HashMap<>();
             for(var r:w.resources()) ids.put(r.id(),"replace".equals(op.getMode()) ? r.id() : UUID.randomUUID().toString());
             for(var r:w.resources()) if(r.binary()!=null) binaries.put(r.id(),UUID.randomUUID()+"_import");

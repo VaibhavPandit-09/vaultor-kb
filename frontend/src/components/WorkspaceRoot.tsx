@@ -1,3 +1,4 @@
+import WorkspaceTransfers from './WorkspaceTransfers';
 import { useContext,useEffect,useRef,useState,type ReactNode } from 'react';
 import { DesktopConnectionContext } from '../lib/desktopConnectionContext';
 import api from '../lib/api';
@@ -11,6 +12,7 @@ import { useRestoreFocusOnClose } from '../lib/useRestoreFocusOnClose';
 
 type Grant={deviceId:string;name:string;allowed:boolean};
 export default function WorkspaceRoot({children}:{children:ReactNode}){
+  const [transfers,setTransfers]=useState(false);
   const [ready,setReady]=useState(false),[supported,setSupported]=useState(false),[open,setOpen]=useState(false),[owner,setOwner]=useState(false);
   const [items,setItems]=useState<WorkspaceSummary[]>([]),[selected,setSelected]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[epoch,setEpoch]=useState(0);
   const [filter,setFilter]=useState(''),[name,setName]=useState(''),[manage,setManage]=useState<WorkspaceSummary>(),[grants,setGrants]=useState<Grant[]>([]),[pending,setPending]=useState<WorkspaceSummary>(),[keep,setKeep]=useState(false);
@@ -29,7 +31,7 @@ export default function WorkspaceRoot({children}:{children:ReactNode}){
   useEffect(()=>{let active=true;void (async()=>{
     try{
       const capabilities=await ensureCompatible();if(!active)return;
-      if(!capabilities.multiWorkspace){setReady(true);return;}setSupported(true);
+      if(!capabilities.multiWorkspace){setReady(true);return;}setSupported(true);setTransfers(capabilities.workspaceImports===true);
       const [rows,role]=await Promise.all([api.get('/workspaces'),api.get('/access/session')]);if(!active)return;
       const values=validateWorkspaceList(rows.data);setItems(values);
       try{const saved=sessionStorage.getItem(createKey);if(saved){const operation=JSON.parse(saved) as WorkspaceSummary;if(workspaceId(operation.id)&&typeof operation.name==='string'&&!values.some(v=>v.id===operation.id)){creation.current=operation;setName(operation.name);}else sessionStorage.removeItem(createKey);}}catch{/* Pending creation is never reconstructed from a display name. */}
@@ -41,14 +43,15 @@ export default function WorkspaceRoot({children}:{children:ReactNode}){
     }catch(e){if(active){setError(e instanceof Error?e.message:'Workspace unavailable.');setOpen(true);}}
   })();return()=>{active=false;};},[createKey]);
   function show(){focus.captureFocus();setOpen(true);setError('');void list().catch(e=>setError(e.message));}
-  function dismiss(){if(ready&&!running.current){if(manage){setManage(undefined);setGrants([]);setName(creation.current?.name??'');}else{setOpen(false);setPending(undefined);focus.restoreFocus();}}}
+  useEffect(()=>{const requested=()=>show();window.addEventListener('vaultor:workspace-import',requested);return()=>window.removeEventListener('vaultor:workspace-import',requested);});
+  function dismiss(){if(ready&&!running.current&&!busy){if(manage){setManage(undefined);setGrants([]);setName(creation.current?.name??'');}else{setOpen(false);setPending(undefined);focus.restoreFocus();}}}
   useEscapeLayer({id:'workspace-picker',active:open,priority:ESCAPE_PRIORITIES.modal,close:dismiss});
   useEffect(()=>{if(open)setTimeout(()=>panel.current?.querySelector<HTMLElement>('input,button')?.focus(),0);},[open,manage]);
-  async function choose(item:WorkspaceSummary,keepDrafts=false){
-    if(running.current)return;if(item.id===selected&&ready){setOpen(false);focus.restoreFocus();return;}running.current=true;setBusy(true);setError('');setPending(item);setKeep(false);
+  async function choose(item:WorkspaceSummary,keepDrafts=false,profileId=getConnection().profileId){
+    if(running.current)return;if(item.id===selected&&ready&&profileId===getConnection().profileId){setOpen(false);focus.restoreFocus();return;}running.current=true;setBusy(true);setError('');setPending(item);setKeep(false);
     try{
       const bridge=window.vaultorDesktop;let candidate:DesktopCandidate|undefined;
-      const before=bridge?((candidate=unwrap(await bridge.probe({id:getConnection().profileId,workspaceId:item.id}))).identity):await browserProbe(item.id);
+      const before=bridge?((candidate=unwrap(await bridge.probe({id:profileId,workspaceId:item.id}))).identity):await browserProbe(item.id);
       if(ready)await prepareConnectionSwitch(keepDrafts);
       if(bridge){const next=unwrap(await bridge.activate(candidate!.ticket));window.dispatchEvent(new CustomEvent('vaultor:desktop-workspace',{detail:next}));}
       else{
@@ -85,7 +88,7 @@ export default function WorkspaceRoot({children}:{children:ReactNode}){
     catch(e){setError((e as Error).message);}finally{release();running.current=false;setBusy(false);}
   }
   if(!supported&&ready)return children;
-  return <WorkspaceSelectionContext.Provider value={{name:items.find(v=>v.id===selected)?.name||'Workspace',server,open:show}}>
+  return <WorkspaceSelectionContext.Provider value={{name:items.find(v=>v.id===selected)?.name||'Workspace',server,imports:transfers&&owner,open:show}}>
     {ready?<div key={epoch} className="h-full" inert={open}>{children}</div>:<div className="p-6" role="status">Choose a workspace to continue.</div>}
     {open&&<div role="dialog" aria-modal="true" aria-label="Workspaces" className="fixed inset-0 z-[3100] flex items-center justify-center bg-black/50 p-4" onKeyDown={e=>{if(e.key!=='Tab')return;const controls=[...panel.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled)')??[]];const first=controls[0],last=controls.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}}>
       <section ref={panel} className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-border bg-background p-5 space-y-3">
@@ -96,6 +99,7 @@ export default function WorkspaceRoot({children}:{children:ReactNode}){
           {items.filter(v=>v.name.toLowerCase().includes(filter.toLowerCase())).map(item=><div key={item.id} className="flex items-center gap-2 border-b border-border py-2"><button className="flex-1 text-left min-w-0 rounded-lg p-2 hover:bg-card focus-visible:ring-2 focus-visible:ring-primary" disabled={busy} onClick={()=>void choose(item)} aria-current={item.id===selected?'true':undefined}><span className="block truncate">{item.name}</span><span className="text-xs text-[var(--text-secondary)]">{item.id===selected?'Current workspace':'Open workspace'}</span></button>{owner&&<button className="library-button" disabled={busy} onClick={()=>void edit(item)} aria-label={'Manage '+item.name}>Manage</button>}</div>)}
           <button className="library-button" disabled={busy} onClick={()=>void list().catch(e=>setError(e.message))}>Refresh</button>
           {owner&&(items.length<8||creation.current)&&<form className="flex gap-2 border-t border-border pt-3" onSubmit={e=>{e.preventDefault();void create();}}><input className="organization-input min-w-0 flex-1" aria-label="New workspace name" placeholder="New workspace name" value={name} disabled={busy||!!creation.current} onChange={e=>setName(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&e.nativeEvent.isComposing)e.preventDefault();}} maxLength={100}/><button className="library-button" disabled={busy||!name.trim()} type="submit">{creation.current?'Retry':'Create'}</button></form>}
+          <WorkspaceTransfers owner={owner} supported={transfers} workspaceName={items.find(v=>v.id===selected)?.name||'Workspace'} onBusy={setBusy} onReady={list} onOpen={(id,label,local)=>void choose({id,name:label},false,local?'this-computer':getConnection().profileId)}/>
         </>:<><form className="flex gap-2" onSubmit={e=>{e.preventDefault();void rename();}}><input className="organization-input min-w-0 flex-1" aria-label="Workspace name" maxLength={100} value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&e.nativeEvent.isComposing)e.preventDefault();}}/><button className="library-button" disabled={busy||!name.trim()}>Rename</button></form><h2 className="text-sm font-semibold">Device access</h2>{grants.length?grants.map(v=><label key={v.deviceId} className="flex gap-3 items-center border-b border-border py-2"><span className="flex-1 truncate">{v.name}</span><input type="checkbox" aria-label={'Allow '+v.name} checked={v.allowed} disabled={busy} onChange={()=>void grant(v)}/></label>):<p className="text-sm text-[var(--text-secondary)]">No paired devices.</p>}</>}
         {keep&&pending&&<button className="library-button" disabled={busy} onClick={()=>void choose(pending,true)}>Keep drafts and switch</button>}
       </section>

@@ -25,12 +25,18 @@ public class WorkspaceRegistry {
     private final HostAccess access;
     private final Map<String,Runtime> children=new LinkedHashMap<>();
     private boolean stopping;
+    private int hostWork;
     public WorkspaceRegistry(ConfigurableWebApplicationContext main,WorkspaceCatalog catalog,HostAccess access){this.main=main;this.catalog=catalog;this.access=access;main.getBean(ChangeFeed.class).authorize(id->access.deviceActive(id)&&catalog.allowed(catalog.defaultId(),id));}
     public synchronized Runtime open(String id) throws Exception {
         catalog.require(id);if(stopping)throw new AccessFailure(503,"HOST_STOPPING","Host is stopping; reconnect shortly");
         if(id.equals(catalog.defaultId()))return new Runtime(main,null);
         var existing=children.get(id);if(existing!=null)return existing;
-        Path root=catalog.root(id);
+        return prepare(id,catalog.root(id));
+    }
+    public synchronized Runtime prepare(String id,Path root) throws Exception {
+        if(stopping)throw new AccessFailure(503,"HOST_STOPPING","Host is stopping");
+        if(!id.matches("[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}"))throw new IllegalArgumentException("Invalid identity");
+        var existing=children.get(id);if(existing!=null)return existing;
         if(Files.isSymbolicLink(root) || Files.isSymbolicLink(root.resolve("files")) || Files.isSymbolicLink(root.resolve("app.db")) || Files.isSymbolicLink(root.resolve("operations")))throw new IllegalStateException("Invalid workspace storage directory");
         Files.createDirectories(root.resolve("files"));
         var context=new AnnotationConfigWebApplicationContext();context.setId("workspace-"+id);context.setServletContext(main.getServletContext());
@@ -49,9 +55,12 @@ public class WorkspaceRegistry {
             var runtime=new Runtime(context,dispatcher);children.put(id,runtime);return runtime;
         } catch(Exception failure){context.close();throw failure;}
     }
+    public synchronized void closePrepared(String id){var runtime=children.remove(id);if(runtime!=null)runtime.context().close();}
+    public synchronized void beginHostWork(){if(stopping)throw new AccessFailure(503,"HOST_STOPPING","Host is stopping");hostWork++;}
+    public synchronized void endHostWork(){hostWork--;}
     public synchronized void revoke(String id,String device){if(id.equals(catalog.defaultId()))main.getBean(ChangeFeed.class).disconnectDevice(device);else if(children.containsKey(id))children.get(id).feed().disconnectDevice(device);}
     public synchronized void quiesce(){stopping=true;main.getBean(WorkspaceGate.class).quiesce();main.getBean(ChangeFeed.class).restarting();for(var r:children.values()){r.gate().quiesce();r.feed().restarting();}}
-    public boolean drained(){var all=new ArrayList<ConfigurableWebApplicationContext>();synchronized(this){all.add(main);children.values().forEach(r->all.add(r.context()));}return all.stream().allMatch(c->c.getBean(WorkspaceGate.class).requestsDrained() && c.getBean(TransferOperationRepository.class).countByStatusIn(List.of("QUEUED","RUNNING","CLEANUP"))==0);}
+    public boolean drained(){var all=new ArrayList<ConfigurableWebApplicationContext>();synchronized(this){if(hostWork>0)return false;all.add(main);children.values().forEach(r->all.add(r.context()));}return all.stream().allMatch(c->c.getBean(WorkspaceGate.class).requestsDrained() && c.getBean(TransferOperationRepository.class).countByStatusIn(List.of("QUEUED","RUNNING","CLEANUP"))==0);}
     public synchronized void resume(){stopping=false;main.getBean(WorkspaceGate.class).resume();children.values().forEach(r->r.gate().resume());}
     @PreDestroy public synchronized void close(){stopping=true;for(var r:children.values()){r.gate().quiesce();r.context().close();}children.clear();}
 }

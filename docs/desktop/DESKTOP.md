@@ -162,3 +162,7 @@ Desktop connection handshakes retry only the approved WORKSPACE_BUSY response fo
 ## Workspace selection (0.9.0/W2)
 
 Sidebar workspace name opens selection; adjacent ellipsis opens server connections/hosting. Native selectedWorkspaceId persists per profile and scopes JSON, streams and files. Connections → Workspaces recovers from a revoked saved selection. Existing single application window is retained; browser tabs select independently. Sessions/drafts remain scoped and device appearance is locally cached. WORKSPACES.md owns checked activation/grants and limits.
+
+## Independent local copies (0.10.0/W3)
+
+Workspace selector → Make local copy on an external connection uses main-owned pinned/owner transport, private disk streaming and source generation recheck, then the owned server staged import. It is an independent fork with new workspace identity, not synchronization. Native journals contain IDs/status only and are outside portable archives. Switching/quit/update guards cover copy preparation and all host work. WORKSPACE-TRANSFERS.md owns limits/retry/cancel/recovery; no Android APK changes.

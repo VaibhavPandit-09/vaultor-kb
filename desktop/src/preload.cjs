@@ -1,5 +1,10 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('vaultorDesktop', Object.freeze({
+  copiesList:()=>ipcRenderer.invoke('desktop:copies-list'),
+  copyPreview:value=>ipcRenderer.invoke('desktop:copy-preview',value),
+  copyStatus:value=>ipcRenderer.invoke('desktop:copy-status',value),
+  copyCommit:value=>ipcRenderer.invoke('desktop:copy-commit',value),
+  copyCancel:value=>ipcRenderer.invoke('desktop:copy-cancel',value),
   bootstrap: () => ipcRenderer.invoke('desktop:bootstrap'),
   updatesStatus:()=>ipcRenderer.invoke('desktop:updates-status'),
   updatesConfigure:feed=>ipcRenderer.invoke('desktop:updates-configure',feed),

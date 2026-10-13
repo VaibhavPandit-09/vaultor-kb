@@ -65,6 +65,7 @@ public class HostAccessFilter extends OncePerRequestFilter {
                 byte[] body=req.getInputStream().readNBytes(16385);if(body.length>16384)throw new AccessFailure(413,"ACCESS_REQUEST_TOO_LARGE","Access requests are limited to 16 KiB.");
                 req=new HttpServletRequestWrapper(req){@Override public ServletInputStream getInputStream(){var in=new ByteArrayInputStream(body);return new ServletInputStream(){public int read(){return in.read();}public boolean isFinished(){return in.available()==0;}public boolean isReady(){return true;}public void setReadListener(ReadListener listener){throw new UnsupportedOperationException();}};}@Override public BufferedReader getReader(){return new BufferedReader(new InputStreamReader(getInputStream(),java.nio.charset.StandardCharsets.UTF_8));}};
             }
+            if(path.matches("/api/workspace-imports(?:/.*)?") && !owner)throw new AccessFailure(403,"OWNER_REQUIRED","Workspace imports require the local owner connection");
             chain.doFilter(req,res);
         } catch(AccessFailure failure){
             res.setStatus(failure.status);res.setContentType("application/problem+json");

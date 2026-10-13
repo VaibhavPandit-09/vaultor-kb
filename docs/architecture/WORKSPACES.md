@@ -1,6 +1,6 @@
 # Host workspaces and client selection
 
-Reviewed 2026-10-13. W1 implements server-side isolation; W2 adds desktop/browser/Android selection and owner grant management. Import-as-new and desktop copy UI remain W3. [The execution tracker](../plans/workspace-companion-plan.md) owns sequence and actual release evidence.
+Reviewed2026-10-14. W1 implements server-side isolation; W2 adds desktop/browser/Android selection and owner grant management. W3 adds import-as-new and independent desktop snapshot copies; WORKSPACE-TRANSFERS.md owns their workflow. [The execution tracker](../plans/workspace-companion-plan.md) owns sequence and actual release evidence.
 
 ## Architecture decision — W1
 
@@ -72,3 +72,7 @@ Device presentation is cached in vaultor-device-presentation-v1 in device-local 
 Android selects through the epoch-bound native bridge. It verifies pinned host/capabilities and destination identity/generation before atomically persisting selection and cancelling previous requests/media/SSE. Legacy unscoped bridge mutations are refused. Sessions/recovery/cache remain host/workspace/generation scoped; equal resource IDs are independent. Switching protects the source draft and saves by default; explicit Keep drafts retains its encrypted recovery record. Re-pairing the same host preserves explicit selection. Offline restore refuses an ambiguous collection of cached workspace scopes; complete offline workspace selection is not yet delivered. Android editing remains transitional until R1.
 
 Grant revocation must never trigger fallback to the default. Lists remain host-level so another authorized destination can be selected. Already cached files cannot be remotely recalled. Multi-window desktop selection and downloaded offline companions are not claimed.
+
+## W3 publication and staging
+
+WorkspaceImports privately reserves one unfinished import within the eight-workspace bound; reservation is reconstructed from durable receipts. Registry.prepare opens its isolated staging context without publishing/authorizing a catalog entry. READY/MOVED publication closes storage before atomic directory rename/catalog publication; published forks preserve resource IDs in their new identity. Registry host-work admission participates in private stop/drain. Workspace ZIP transfer/copy contracts,128 receipt bounds, original bytes, provenance, replacement checkpoints and future portable extension rules are authoritative in [WORKSPACE-TRANSFERS.md](../workspace/WORKSPACE-TRANSFERS.md). No datasource switch, Android mutation or protocol/archive migration.

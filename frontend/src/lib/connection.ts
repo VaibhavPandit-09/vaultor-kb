@@ -1,7 +1,7 @@
 import { getConnection, transport } from './platform';
 export const CLIENT_PROTOCOL = 3;
 export const CLIENT_BUILD = import.meta.env.VITE_BUILD_VERSION || 'desktop-d7';
-export type ServerCapabilities = { serverBuild: string; apiProtocolVersion: number; minimumClientProtocolVersion: number; authentication: boolean; multiWorkspace?:boolean };
+export type ServerCapabilities = { serverBuild: string; apiProtocolVersion: number; minimumClientProtocolVersion: number; authentication: boolean; multiWorkspace?:boolean; workspaceImports?:boolean };
 let accepted: { epoch: number; capabilities: ServerCapabilities } | undefined;
 let pending: { epoch: number; promise: Promise<ServerCapabilities> } | undefined;
 export function validateCapabilities(value: ServerCapabilities) {

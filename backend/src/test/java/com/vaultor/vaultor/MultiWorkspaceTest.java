@@ -119,6 +119,7 @@ class MultiWorkspaceTest {
             for(String path:List.of("/resources","/changes","/exports/"+UUID.randomUUID()+"/download","/operations/"+UUID.randomUUID())){
                 var denied=HttpRequest.newBuilder(URI.create(base+path)).header("Authorization","Bearer "+completed.get("credential")).header("X-Vaultor-Workspace",OTHER).GET().build();assertEquals(404,secure.send(denied,HttpResponse.BodyHandlers.ofString()).statusCode());
             }
+            var ownerOnly=HttpRequest.newBuilder(URI.create(base+"/workspace-imports")).header("Authorization","Bearer "+completed.get("credential")).GET().build();assertEquals(403,secure.send(ownerOnly,HttpResponse.BodyHandlers.ofString()).statusCode());
             var list=HttpRequest.newBuilder(URI.create(base+"/workspaces")).header("Authorization","Bearer "+completed.get("credential")).GET().build();assertEquals(1,json.readTree(secure.send(list,HttpResponse.BodyHandlers.ofString()).body()).size());
             ok("PUT","/owner/workspaces/"+OTHER+"/grants",null,Map.of("deviceId",device,"allowed",true));
             assertEquals(2,json.readTree(secure.send(list,HttpResponse.BodyHandlers.ofString()).body()).size());

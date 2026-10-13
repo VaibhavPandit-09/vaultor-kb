@@ -169,3 +169,5 @@ Focused disposable package check: `node desktop/scripts/workspace-smoke.mjs ABSO
 ## Multiple workspaces (W2)
 
 One owned host manages up to8 independent contexts; private stop/update backup covers all opened workspaces. Selection is per desktop profile/browser tab/Android profile, never a global datasource switch. Host owner grants remain host-level; restoring a revoked destination must use another authorized selection rather than omit scope. See WORKSPACES.md and0.9.0 release/Mac handoff for actual verification.
+
+W3 private host recovery includes workspace-imports receipts/staging and native workspace-copies journals. Do not delete them or downgrade while pending. Ordinary portable ZIP excludes these records. Replacement-before.zip is a checked pre-mutation workspace snapshot under the private operation directory, not a credential backup. See WORKSPACE-TRANSFERS.md for exact cancellation/publication/receipt bounds.

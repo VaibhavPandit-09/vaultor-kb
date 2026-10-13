@@ -1,6 +1,6 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created/reviewed 2026-10-13. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 and R1–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created/reviewed 2026-10-13. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 implementation complete, publication pending; R1–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
 
 ## Agreed product boundary
 
@@ -79,7 +79,7 @@ W2 actual results: desktop/browser/Android selectors, owner create/rename/effect
 
 ## W3 — Workspace import, export and desktop local copies
 
-Status: **Not started**.
+Status: **Implementation/validation complete — publication pending2026-10-14 (authorized2026-10-13)**.
 
 - Add import ZIP **as a new workspace** with preview, name/conflict handling, bounded archive validation, atomic commit and retry identity. Keep desktop replacement explicitly separate with generation change and recovery checkpoint.
 - Export one selected workspace from a consistent host snapshot; make active-resource/Trash and portable settings semantics explicit. Global host catalog/trust must never enter the ZIP. Do not copy raw running SQLite files over the network.
@@ -88,6 +88,8 @@ Status: **Not started**.
 - Prepare versioned transfer extension points for reviews and partial bundles; freeze exact archive compatibility only after W1/W3 design. Future reviewers must not interpret an ordinary archive as a private backup of credentials or pending queues.
 
 **Acceptance:** create/import/export/copy works without overwriting an existing workspace by default. Publish and document platform availability; Ubuntu installers remain out of scope.
+
+W3 actual results: private owner ZIP preview/commit/atomic publication, durable identical retries and slot reservation, interrupted dispatch/READY reconciliation, independent main-owned snapshot copies with source generation checks and cached offline retry, preserved IDs/originals/Trash and private provenance, replacement ZIP checkpoint. Frontend21/backend15/Node1 checks and compilation/scoped lint passed; packaged two-host copy/restart and actual executable save/PDF/relaunch/native/browser transfer interactions passed. Native Light/Dark/minimum-width frames inspected; browser functional checks passed. Windows0.10.0 original-key artifacts verified; publication pending. Mac exact-tag handoff prepared; physical Mac/Wi-Fi unverified. No Android changes/emulator rebuild/phone access. All disposable hosts stopped; R1 remains unstarted.
 
 ## R1 — Safe retirement of Android editing and new reader shell
 
