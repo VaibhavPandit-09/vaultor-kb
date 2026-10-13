@@ -1,6 +1,6 @@
 ## W3 — exact v0.10.0 handoff (2026-10-14)
 
-Fetch origin tags and check out v0.10.0, never a later master. Use Node24/Java25, npm ci in frontend/desktop, BUILD_VERSION/VITE_BUILD_VERSION=0.10.0, desktop build → prepare-server → package:release. Preserve the privately transferred original release key; do not regenerate it. Verify Apple Silicon/ad-hoc codesign/DMG/original-key sidecar under RELEASE-PROCESS.md. No paid signing is promised.
+Windows0.10.0 is published. Fetch origin tags and check out v0.10.0 (source b96006b0f43f46934f2d3cf5b41ac9078a0a8705), never a later master. Use Node24/Java25, npm ci in frontend/desktop, BUILD_VERSION/VITE_BUILD_VERSION=0.10.0, desktop build → prepare-server → package:release. Preserve the privately transferred original release key; do not regenerate it. Verify Apple Silicon/ad-hoc codesign/DMG/original-key sidecar under RELEASE-PROCESS.md. No paid signing is promised.
 
 With disposable roots, run copy-smoke.mjs against packaged bundle, actual app launch/save/export/relaunch, and VAULTOR_TRANSFER_SMOKE=1 chrome-smoke.mjs against the app executable. Check imported ZIP preview remains absent from catalog, commit/open/refresh, independent source/destination IDs and edits, lost-response/restart Retry, pending-slot/cancel behavior, replacement-before.zip and generation change. Verify browser owner cookies/CSRF and Light/Dark/narrow dialog; actual remote Mac↔Windows snapshot copy/Wi-Fi remains a separate coordinated check. Never access the user's phone or personal workspace.
 
