@@ -1,6 +1,6 @@
 # Install and update Vaultor on each device
 
-Reviewed 2026-10-08. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
+Reviewed 2026-10-13. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
 
 ## What you download
 
@@ -12,7 +12,7 @@ Use the [Vaultor GitHub Releases page](https://github.com/VaibhavPandit-09/vault
 | macOS Apple Silicon | `Vaultor-VERSION-mac-arm64.dmg` and the same filename plus `.vaultor.json` | Release DMG and native runtime verified (0.7.1); manual DMG replacement for updates |
 | macOS Intel | None | No supported desktop package |
 | Ubuntu/Linux | None | Desktop packaging is deferred; browser access and Docker server are available |
-| Android | None | Native app deferred; browser access available |
+| Android | Vaultor-Android-VERSION.apk from its separate Android prerelease | Install over the existing signed app; do not uninstall/clear data. See docs/android/ANDROID.md |
 
 For manual/offline import, keep each installer and its signed sidecar in the **same folder**, with their exact original names. Do not download source-code assets for installation. No Java or Docker is needed on a device running a packaged desktop app. Unsigned personal OS installers are separate from the app's Ed25519-signed update manifests: the latter verify update identity and bytes, but do not remove SmartScreen or Gatekeeper prompts.
 
@@ -107,3 +107,5 @@ Update the selected host to 0.6.0 to use file-category filtering, References and
 ## 0.7.0 saved-content search update
 
 Update the selected host to 0.7.0, then its clients, for saved PDF/UTF-8 file text and coverage. API/minimum client 3 and archive 3 stay unchanged. Use Search options → Include saved content; Titles only stays default. Pending files can be refreshed; Diagnostics explains unavailable/unsupported extraction. A Windows client update cannot add these host APIs to an older remote Mac host. Mac availability still requires the exact same-tag verified pair.
+
+Workspace switching (0.9.0 desktop/alpha.8 Android) is distinct from server switching. Use the sidebar workspace button on desktop/browser, or navigation → workspace/connections → Workspaces on this server on Android. Owner grant UI requires host0.9.0; Android workspace discovery works on0.8.0+. A Windows update cannot update a Mac host. Published platform status is in versioned release notes and MAC-HANDOFF.md.

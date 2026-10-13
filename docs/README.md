@@ -6,6 +6,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Install and update on each platform](desktop/INSTALLATION-AND-UPDATES.md): exact Windows/Mac steps, browser/Docker/Ubuntu paths, available targets and recovery.
 - [Agent-owned release process](desktop/RELEASE-PROCESS.md): standing responsibility for versions, native builds, verified artifacts, tags and GitHub publication.
+- [0.9.0 workspace switching](desktop/releases/v0.9.0.md): selectors, grants, sessions and Windows/Mac status.
 - [0.8.0 workspace foundation](desktop/releases/v0.8.0.md): Windows-first host isolation, actual validation and same-tag Mac gate.
 - [0.7.1 scale and integration](desktop/releases/v0.7.1.md): responsive panes, status availability, bounded references and Android handoff.
 - [0.7.0 saved file-content search](desktop/releases/v0.7.0.md): bounded PDF/text indexing, coverage/retry, Windows release and exact Mac handoff.
@@ -89,3 +90,5 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 - [Frontend template](history/frontend-template.md): archived scaffolding, not the current guide.
 
 Keep CODEBASE and this index at the docs root for agent discovery. Put topic guides in their relevant folder, link them here and repair relative links when moving files. Archive completed historical specifications rather than rewriting them as current behavior. App updates are owned by agents, not left as user build homework; see the release process above.
+
+- [Android alpha.8 workspace selection](android/releases/0.1.0-alpha.8.md): W2 switching, drafts and emulator evidence.

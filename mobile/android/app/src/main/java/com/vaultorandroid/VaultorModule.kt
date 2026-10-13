@@ -46,7 +46,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     val p=selected(a.getString("hostId"),a.getString("epoch"));val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint"))
     val con=URI(address(p.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection
     con.sslSocketFactory=context(cert).socketFactory;con.connectTimeout=10000;con.readTimeout=30000;con.instanceFollowRedirects=false;con.requestMethod=method
-    con.setRequestProperty("Authorization","Bearer "+p.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");con
+    con.setRequestProperty("Authorization","Bearer "+p.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");if(path!="/capabilities" && p.optString("selectedWorkspaceId").isNotEmpty())con.setRequestProperty("X-Vaultor-Workspace",p.getString("selectedWorkspaceId"));con
   },{a ->
     val p=selected(a.getString("hostId"),a.getString("epoch"));val scope=JSONArray(a.getString("scope"));require(scope.length()==3 && scope.getString(0)==a.getString("hostId"))
     val identity=json(request(p,"/workspace/identity",token=a.getString("epoch")))
@@ -140,6 +140,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     con.sslSocketFactory=context(cert).socketFactory
     con.connectTimeout=10000;con.readTimeout=15000;con.instanceFollowRedirects=false;con.requestMethod=method
     con.setRequestProperty("X-Vaultor-Protocol","3")
+    if(path!="/capabilities" && p.optString("selectedWorkspaceId").isNotEmpty())con.setRequestProperty("X-Vaultor-Workspace",p.getString("selectedWorkspaceId"))
     if(p.has("credential")) con.setRequestProperty("Authorization","Bearer "+p.getString("credential"))
     if(secret!=null) con.setRequestProperty("X-Vaultor-Pairing",secret)
     if(revision!=null) con.setRequestProperty("If-Match",revision)
@@ -199,7 +200,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     if(status.getString("state")!="APPROVED") return@net status.toString()
     val done=json(request(p,"/pairings/"+e.getString("id")+"/complete","POST","{}",e.getString("secret")))
     require(done.getString("credential").matches(Regex("[a-f0-9]{64}")));p.put("credential",done.getString("credential"))
-    synchronized(stateLock) {val state=read();val profiles=state.optJSONObject("profiles") ?: JSONObject();require(profiles.has(p.getString("hostId")) || profiles.length()<8) {"Remove a remembered host before pairing another."};profiles.put(p.getString("hostId"),p);state.put("profiles",profiles);state.put("selected",p.getString("hostId"));state.put("profile",p);write(state);cancelRequests()};pending=null
+    synchronized(stateLock) {val state=read();val profiles=state.optJSONObject("profiles") ?: JSONObject();require(profiles.has(p.getString("hostId")) || profiles.length()<8) {"Remove a remembered host before pairing another."};profiles.optJSONObject(p.getString("hostId"))?.optString("selectedWorkspaceId")?.takeIf {it.isNotEmpty()}?.let {p.put("selectedWorkspaceId",it)};profiles.put(p.getString("hostId"),p);state.put("profiles",profiles);state.put("selected",p.getString("hostId"));state.put("profile",p);write(state);cancelRequests()};pending=null
     JSONObject().put("state","APPROVED").toString()
   }
   @ReactMethod fun profile(promise: Promise)=run(promise) {
@@ -207,7 +208,8 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     JSONObject().put("address",p.getString("address")).put("hostId",p.getString("hostId")).toString()
   }
   @ReactMethod fun api(path:String, method:String, body:String?, revision:String?, promise:Promise)=run(promise) {
-    require((method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path=="/settings/workspace" || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/[a-fA-F0-9-]{36})")))) ||
+    require(method=="GET") {"Mutations require the epoch-bound apiFor bridge."}
+    require((method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path=="/settings/workspace" || path.matches(Regex("/workspaces(?:/[a-f0-9-]{36})?")) || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/[a-fA-F0-9-]{36})")))) ||
       (method=="PUT" && path.matches(Regex("/resources/[a-fA-F0-9-]{36}/note")) && revision!=null)) {"Unsupported mobile operation."}
     val profile=read().getJSONObject("profile")
     if(path=="/capabilities") {
@@ -235,7 +237,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     when(action) {
       "bootstrap" -> {
         val profiles=JSONArray();val p=state.optJSONObject("profiles") ?: JSONObject()
-        p.keys().forEach {id->val value=p.getJSONObject(id);profiles.put(JSONObject().put("hostId",id).put("address",value.getString("address")))}
+        p.keys().forEach {id->val value=p.getJSONObject(id);profiles.put(JSONObject().put("hostId",id).put("address",value.getString("address")).put("workspaceId",value.optString("selectedWorkspaceId")))}
         val list=JSONArray();drafts.keys().forEach {key->val d=drafts.getJSONObject(key);list.put(JSONObject().put("scope",d.getString("scope")).put("noteId",d.getString("noteId")).put("title",d.optString("title","Recovered note")).put("version",d.getString("version")).put("resolved",d.optBoolean("resolved")).put("recoveryKey",d.optString("recoveryKey")))}
         return@run JSONObject().put("profiles",profiles).put("selected",state.optString("selected")).put("epoch",epoch).put("drafts",list).put("sessions",sessions).toString()
       }
@@ -320,9 +322,22 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       promise.resolve(ctx.currentActivity?.window?.decorView?.rootWindowInsets?.isVisible(android.view.WindowInsets.Type.ime())==true)
     }
   }
-  @ReactMethod fun activate(hostId:String, promise:Promise)=run(promise) {
-    val state=read();val profiles=state.getJSONObject("profiles");require(profiles.has(hostId));cancelRequests();state.put("selected",hostId);write(state)
-    JSONObject().put("hostId",hostId).put("epoch",epoch).put("address",profiles.getJSONObject(hostId).getString("address")).toString()
+  private fun checkedDestination(p:JSONObject,token:String) {
+    val h=json(request(p,"/access/host",token=token));require(h.getString("hostId")==p.getString("hostId") && h.getString("fingerprint")==p.getString("fingerprint"))
+    val caps=json(request(p,"/capabilities",token=token));require(caps.getInt("apiProtocolVersion")>=3 && caps.getInt("minimumClientProtocolVersion")<=3)
+    val identity=json(request(p,"/workspace/identity",token=token));val selected=p.optString("selectedWorkspaceId");require(selected.isEmpty() || selected==identity.getString("id")) {"Destination workspace identity differs."}
+  }
+  @ReactMethod fun selectWorkspace(hostId:String,token:String,id:String,generation:String,promise:Promise)=net(promise) {
+    require(id.matches(Regex("[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}")))
+    val p=selected(hostId,token);p.put("selectedWorkspaceId",id);checkedDestination(p,token)
+    val identity=json(request(p,"/workspace/identity",token=token));require(identity.getString("generation")==generation) {"Destination was replaced. Retry."}
+    synchronized(stateLock){val state=read();require(token==epoch && state.optString("selected")==hostId);state.getJSONObject("profiles").put(hostId,p);state.put("profile",p);write(state);cancelRequests()}
+    JSONObject().put("hostId",hostId).put("epoch",epoch).put("address",p.getString("address")).put("workspaceId",id).toString()
+  }
+  @ReactMethod fun activate(hostId:String, promise:Promise)=net(promise) {
+    val captured=epoch;val p=synchronized(stateLock){JSONObject(read().getJSONObject("profiles").getJSONObject(hostId).toString())};checkedDestination(p,captured)
+    synchronized(stateLock){require(captured==epoch);val state=read();state.put("selected",hostId);state.put("profile",p);write(state);cancelRequests()}
+    JSONObject().put("hostId",hostId).put("epoch",epoch).put("address",p.getString("address")).put("workspaceId",p.optString("selectedWorkspaceId")).toString()
   }
   @ReactMethod fun signOut(hostId:String,promise:Promise)=run(promise) {
     val state=read();state.optJSONObject("profiles")?.remove(hostId)
@@ -352,7 +367,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   }
   @ReactMethod fun apiFor(hostId:String,token:String,path:String,method:String,body:String?,revision:String?,promise:Promise)=net(promise) {
     val validId="[a-fA-F0-9-]{36}"
-    require(organizationPath(path,method,revision) || (method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path=="/settings/workspace" || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/$validId)")))) ||
+    require(organizationPath(path,method,revision) || (method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path=="/settings/workspace" || path.matches(Regex("/workspaces(?:/[a-f0-9-]{36})?")) || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/$validId)")))) ||
       (method=="GET" && path.matches(Regex("/resources/$validId/summary"))) || (method=="POST" && path.matches(Regex("/resources/$validId/open")) && body==null) ||
       (method=="PUT" && ((path.matches(Regex("/resources/$validId/note")) && revision!=null) || path.matches(Regex("/resources/imports/$validId"))))) {"Unsupported mobile operation."}
     val p=selected(hostId,token)
@@ -395,7 +410,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     val p=selected(hostId,token);stream?.disconnect()
     val con=URI(address(p.getString("address"))+"/api/changes"+if(cursor.isEmpty())"" else "?cursor=$cursor").toURL().openConnection() as HttpsURLConnection
     con.sslSocketFactory=context(ca(p)).socketFactory;con.connectTimeout=10000;con.readTimeout=20000;con.instanceFollowRedirects=false
-    con.setRequestProperty("Authorization","Bearer "+p.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");con.setRequestProperty("Accept","text/event-stream");stream=con
+    con.setRequestProperty("Authorization","Bearer "+p.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");con.setRequestProperty("Accept","text/event-stream");if(p.optString("selectedWorkspaceId").isNotEmpty())con.setRequestProperty("X-Vaultor-Workspace",p.getString("selectedWorkspaceId"));stream=con
     streams.execute {
       var status=0
       fun emit(payload:JSONObject) {if(token==epoch && stream===con) ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorChanges",payload.put("epoch",token).put("hostId",hostId).toString())}

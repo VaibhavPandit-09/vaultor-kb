@@ -688,3 +688,27 @@ test('foreign Trash then Restore keeps a recovery draft and re-enables explicit 
   expect(x.model.state.journey.visits[0].unavailable).toBe(false);
   expect(x.model.state.recovery.length).toBeGreaterThan(0);
 });
+
+function scopedSetup(){
+ const x=setup(),raw=x.port.api;let current='workspace';
+ x.port.api=async(host,path,method,body,revision)=>{
+  if(path==='/capabilities')return {...await raw(host,path),multiWorkspace:true};
+  if(path==='/workspaces')return [{id:'11111111-1111-4111-8111-111111111111',name:'Second'}];
+  if(path==='/workspaces/11111111-1111-4111-8111-111111111111')return {id:'11111111-1111-4111-8111-111111111111',generation:'g2'};
+  if(path==='/workspace/identity')return {id:current,generation:current==='workspace'?'g1':'g2'};
+  if(current!=='workspace'&&path==='/resources/'+id)return {...x.server.a[id],title:'Same ID, second workspace',revision:'second'};
+  return raw(host,path,method,body,revision);
+ };
+ x.port.selectWorkspace=jest.fn(async(host,workspaceId,generation)=>{expect(generation).toBe('g2');current=workspaceId;return {...host,epoch:host.epoch+'next',workspaceId};});
+ return x;
+}
+test('workspace switch protects draft and restores separate scoped session with equal resource IDs',async()=>{
+ const x=scopedSetup();await x.model.initialize();await x.model.open(id);x.model.loaded();x.model.changed(doc('first draft'));x.model.reading({anchor:2,head:2,scroll:99});await x.model.switchWorkspace('11111111-1111-4111-8111-111111111111',true);
+ expect(Object.values(x.data.drafts)[0].content).toEqual(doc('first draft'));expect(Object.keys(x.data.sessions).some(s=>s.includes('workspace'))).toBe(true);expect(x.model.state.draft).toBeUndefined();await x.model.open(id);expect(x.model.state.note?.title).toBe('Same ID, second workspace');expect(x.model.state.position?.scroll).not.toBe(99);
+});
+test('failed workspace preflight retains original note, journey and draft',async()=>{
+ const x=scopedSetup();await x.model.initialize();await x.model.open(id);x.model.loaded();x.model.changed(doc('protected'));const original=x.port.api;x.port.api=async(h,p,...rest)=>{if(p.startsWith('/workspaces/'))throw new HostError(404,'Revoked');return original(h,p,...rest);};
+ await expect(x.model.switchWorkspace('11111111-1111-4111-8111-111111111111')).rejects.toThrow('Revoked');expect(x.port.selectWorkspace).not.toHaveBeenCalled();expect(x.model.state.note?.title).toBe('Original');expect(x.model.state.content).toEqual(doc('protected'));
+});
+
+test('identity refresh preserves the native host object and does not retrigger change subscriptions',async()=>{const x=scopedSetup();await x.model.initialize();const host=x.model.state.host;await x.model.connect();expect(x.model.state.host).toBe(host);});

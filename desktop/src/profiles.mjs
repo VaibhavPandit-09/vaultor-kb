@@ -26,6 +26,7 @@ export class Profiles {
   }
   validate(p) {
     if (!p || typeof p.id !== 'string' || !/^[\w-]{1,80}$/.test(p.id) || typeof p.name !== 'string' || !p.name.trim() || p.name.length > 100 || !['local', 'remote'].includes(p.kind)) throw new Error('Invalid connection profile.');
+    if(p.selectedWorkspaceId!==undefined && !/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(p.selectedWorkspaceId))throw new Error('Invalid workspace selection.');
     if (p.kind === 'remote') {
       networkAddress(p.address);
       if (typeof p.hostId !== 'string' || !/^[\w-]{1,80}$/.test(p.hostId) || typeof p.ca !== 'string' || p.ca.length > 16000 || trustFromDer(new X509Certificate(p.ca).raw).fingerprint !== p.fingerprint || p.source) throw new Error('Invalid paired host profile.');
@@ -57,9 +58,10 @@ export class Profiles {
     const previous = this.backup(); this.data.profiles.push(profile);
     try { await this.persist(); return profile; } catch (error) { this.data = previous; throw error; }
   }
-  async activate(id, workspaceId) {
+  async activate(id, workspaceId, selectedWorkspaceId) {
     const previous = this.backup(); this.get(id);
     this.data.active = id; this.data.profiles.find(p => p.id === id).workspaceId = workspaceId;
+    this.data.profiles.find(p => p.id === id).selectedWorkspaceId = selectedWorkspaceId;
     try { await this.persist(); } catch (error) { this.data = previous; throw error; }
   }
   async paired(input) {

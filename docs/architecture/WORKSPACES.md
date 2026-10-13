@@ -1,6 +1,6 @@
-# Host workspace foundation
+# Host workspaces and client selection
 
-Reviewed 2026-10-13. W1 implements server-side workspace isolation. Workspace selectors, import-as-new and desktop copy UI belong to W2/W3 and are not shipped here. [The execution tracker](../plans/workspace-companion-plan.md) owns sequence and actual release evidence.
+Reviewed 2026-10-13. W1 implements server-side isolation; W2 adds desktop/browser/Android selection and owner grant management. Import-as-new and desktop copy UI remain W3. [The execution tracker](../plans/workspace-companion-plan.md) owns sequence and actual release evidence.
 
 ## Architecture decision — W1
 
@@ -42,6 +42,7 @@ Host approval, pairing and owner controls remain host-level. Workspace catalog/l
 | GET /api/workspaces/{id} | Authorized `{id,name,generation,legacyDefault}` |
 | PUT /api/owner/workspaces/{id} | Owner creates/initializes with `{name}`; caller-generated UUID makes identical retries safe; differing name conflicts |
 | PATCH /api/owner/workspaces/{id} | Owner renames with `{name}`; workspace identity stays unchanged |
+| GET /api/owner/workspaces/{id}/grants | Owner lists paired client devices as `{deviceId,name,allowed}` using effective permission |
 | PUT /api/owner/workspaces/{id}/grants | Owner sets `{deviceId,allowed}` for an already approved device |
 
 Creating a workspace grants no paired device access. Existing and subsequent normal host approvals receive only the fixed default workspace unless explicitly denied there. Owner is always authorized. Explicit true/false grants survive restart; false overrides default inheritance. Granting access does not pair an unapproved device. Owner management requests retain existing 16KiB/rate/CSRF limits. No per-resource permission model is introduced.
@@ -52,8 +53,22 @@ Grant revocation closes the workspace's streams immediately. Delivery/heartbeat 
 
 Desktop's private stop channel quiesces all opened contexts, emits restart notices and waits for admitted requests/transfers across all workspaces before closing. Failed orderly stop resumes every gate. Child transfer shutdown waits a bounded time before interruption; interrupted transfers retain their existing restart/retry semantics. Abrupt process termination is never a guaranteed final flush.
 
-Existing clients continue to use the default workspace with existing save/revision rules. W1 does not provide workspace selection in renderer/native clients or new Android offline capabilities. W2 must carry explicit scope across JSON, streaming, binary, native files, windows/tabs and sessions before exposing selectors. Do not add a selector that only changes JSON requests.
+Existing clients continue to use the default workspace with existing save/revision rules. W2 clients carry explicit scope across JSON, streaming, binary, native files and sessions. Android full offline companions remain R3/R4; the existing clean cache is not a workspace download.
 
 ## Verification boundary
 
 Use disposable SQLite/file roots. Focused tests cover adoption, identity/corruption/restart, UUID retries/limits, concurrent requests with equal resource IDs, original-byte isolation, separate gates/search/transfer status, multipart upload, Trash, actual scoped SSE and approved HTTPS grant/revocation. A stale existing contract test expecting protocol2 was corrected to the already-shipped protocol3; production protocol was not advanced. Initial child lazy-association failure required the existing request entity-manager configuration; missing child notification filtering was corrected with selected-feed publication. Release notes/tracker record actual final counts and packaged results. No new visual layout or phone access is needed for W1.
+
+## Client selection — W2
+
+The sidebar workspace name opens a bounded searchable selector; the adjacent desktop ellipsis opens server connections/hosting. These are separate choices. Owners can create with a persisted caller UUID, rename, and explicitly change each paired device grant. Android lists only approved workspaces and offers no owner administration. Existing hosts without multiWorkspace retain their single-workspace experience.
+
+Desktop main owns selectedWorkspaceId per remembered server, independently of legacy workspaceId identity metadata. Probes use global capabilities, then explicitly scoped identity; activation rechecks destination before committing the profile, resetting native files/streams and rotating the transport token. A revoked saved selection can be changed through Connections → Workspaces without opening that workspace. The desktop currently enforces one application window; independent browser tabs use sessionStorage selection and do not redirect one another.
+
+Browser selection first probes the destination, runs the existing save/recovery/settings barrier, rechecks generation and commits the tab selection. Failed probes/save protection retain the mounted source and offer Retry/Keep drafts when safe. Scoped App remount restores that workspace's IndexedDB session (panes, journeys, Library context and reading positions), closing transient surfaces. Note/settings writes queued before switching retain their source epoch and are rejected after a switch. Browser JSON/blob requests and SSE use the same selected header. Workspace identity/grants are never guessed from a name.
+
+Device presentation is cached in vaultor-device-presentation-v1 in device-local browser storage, applied before settings load, and overlaid on the selected workspace settings document. Local patches still use the existing scoped API; workspace/keybinding patch boundaries remain unchanged. The cache is outside portable archives. Blocked local storage falls back to host preferences; browser tab selection requires working session storage to persist a switch.
+
+Android selects through the epoch-bound native bridge. It verifies pinned host/capabilities and destination identity/generation before atomically persisting selection and cancelling previous requests/media/SSE. Legacy unscoped bridge mutations are refused. Sessions/recovery/cache remain host/workspace/generation scoped; equal resource IDs are independent. Switching protects the source draft and saves by default; explicit Keep drafts retains its encrypted recovery record. Re-pairing the same host preserves explicit selection. Offline restore refuses an ambiguous collection of cached workspace scopes; complete offline workspace selection is not yet delivered. Android editing remains transitional until R1.
+
+Grant revocation must never trigger fallback to the default. Lists remain host-level so another authorized destination can be selected. Already cached files cannot be remotely recalled. Multi-window desktop selection and downloaded offline companions are not claimed.

@@ -124,7 +124,8 @@ export default function Dashboard() {
   const recoveryFocus = useRestoreFocusOnClose();
   const [tagsError, setTagsError] = useState('');
   const [recencyError, setRecencyError] = useState('');
-  const [recency] = useState(() => new RecencyRecorder((id, signal) => api.post('/resources/' + id + '/open', null, {signal, timeout: 8000, backgroundDiagnostic: true}), setRecencyError));
+  const [sourceEpoch]=useState(()=>getConnection().epoch);
+  const [recency] = useState(() => new RecencyRecorder((id, signal) => api.post('/resources/' + id + '/open', null, {signal, timeout: 8000, backgroundDiagnostic: true,connectionEpoch:sourceEpoch}), setRecencyError));
   useEffect(() => () => recency.reset(), [recency]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -163,7 +164,7 @@ export default function Dashboard() {
     async (id, value, version) => {
       const identity=identityRef.current;
       let saved:Resource;
-      try {saved=await recovery.write(id, value, version, async revision => (await api.put<Resource>('/resources/' + id + '/note', value, {headers:{'If-Match':'"'+revision+'"'},backgroundDiagnostic:true})).data);}
+      try {saved=await recovery.write(id, value, version, async revision => (await api.put<Resource>('/resources/' + id + '/note', value, {headers:{'If-Match':'"'+revision+'"'},backgroundDiagnostic:true,connectionEpoch:sourceEpoch})).data);}
       catch(error){const record=recovery.current(id);if(record)setRecoveryRecords(items=>[...items.filter(r=>r.key!==record.key),record]);throw error;}
       setRecoveryRecords(items=>items.filter(r=>r.key!==('draft:'+identity?.id+':'+identity?.generation+':'+recovery.tabId+':'+id)));
       if(identity===identityRef.current)setResourceDetails(previous=>previous[id]?{...previous,[id]:{...previous[id],revision:saved.revision,updatedAt:saved.updatedAt}}:previous);

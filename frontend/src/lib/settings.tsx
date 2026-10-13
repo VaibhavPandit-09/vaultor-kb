@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import api from './api';
+import {getConnection} from './platform';
 import { settingsDiff, combineSettingsPatches, type SettingsPatch } from './settingsPatch';
 import {
   DEFAULT_KEYBINDINGS,
@@ -126,13 +127,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const shortcutPlatform = getCurrentShortcutPlatform();
   const shortcutPlatformLabel = getShortcutPlatformLabel(shortcutPlatform);
   const [deviceId] = useState(() => getOrCreateDeviceId());
-  const [settingsDocument, setSettingsDocument] = useState<SettingsDocument>(createDefaultSettingsDocument());
+  const [settingsDocument, setSettingsDocument] = useState<SettingsDocument>(()=>{
+    const value=createDefaultSettingsDocument();
+    try{const saved=window.localStorage.getItem('vaultor-device-presentation-v1');if(saved)value.local[deviceId]=normalizeLocalSettings(JSON.parse(saved));}catch{/* Host preferences remain available when browser storage is blocked. */}
+    return value;
+  });
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'failed'>('saved');
   const requestVersionRef = useRef(0);
   const loadSequenceRef = useRef(0);
   const writeQueue = useRef<Promise<unknown>>(Promise.resolve());
   const documentRef = useRef(settingsDocument);
+  const sourceEpoch=useRef(getConnection().epoch).current;
   const desiredRef = useRef(settingsDocument);
   const failedPatch = useRef<SettingsPatch>({});
   const pendingWrites = useRef(0);
@@ -172,6 +178,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const persistSettingsDocument = useCallback(async (nextDocument: SettingsDocument) => {
     const patch = settingsDiff(desiredRef.current, nextDocument);
+    if(patch.local) {try{window.localStorage.setItem('vaultor-device-presentation-v1',JSON.stringify(normalizeLocalSettings(nextDocument.local[deviceId])));}catch{/* Settings persistence still reports host errors; storage can be unavailable. */}}
     desiredRef.current = nextDocument;
     const requestVersion = ++requestVersionRef.current;
     pendingWrites.current++;
@@ -181,7 +188,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       const request = writeQueue.current.catch(() => {}).then(async () => {
         // Failed leaves remain pending; a later edit/retry sends them alongside new leaves.
         const outgoing = combineSettingsPatches(failedPatch.current, patch);
-        try { const result = await api.patch('/settings', outgoing); failedPatch.current = {}; return result; }
+        try { const result = await api.patch('/settings', outgoing,{connectionEpoch:sourceEpoch}); failedPatch.current = {}; return result; }
         catch (error) { failedPatch.current = outgoing; throw error; }
       });
       writeQueue.current = request;
@@ -206,7 +213,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       pendingWrites.current--;
       if(!pendingWrites.current && deferredRefresh.current && !Object.keys(failedPatch.current).length){deferredRefresh.current=false;window.dispatchEvent(new Event('vaultor:settings-refresh'));}
     }
-  }, []);
+  }, [deviceId,sourceEpoch]);
 
   useEffect(() => {
     let active = true;
@@ -217,7 +224,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       try {
         const legacyLocalSettings = loadLegacyLocalSettings();
         const legacySidebarCollapsed = loadLegacySidebarCollapsed();
-        const { data } = await api.get('/settings');
+        const { data } = await api.get('/settings',{connectionEpoch:sourceEpoch});
 
         if (!active || sequence !== loadSequenceRef.current) return;
         if (loadVersion !== requestVersionRef.current || pendingWrites.current) {
@@ -231,6 +238,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
         if (requestVersionRef.current && Object.keys(failedPatch.current).length) return;
         const remoteDocument = normalizeSettingsDocument(data);
+        try{const cached=window.localStorage.getItem('vaultor-device-presentation-v1');if(cached)remoteDocument.local[deviceId]=normalizeLocalSettings(JSON.parse(cached));else window.localStorage.setItem('vaultor-device-presentation-v1',JSON.stringify(normalizeLocalSettings(remoteDocument.local[deviceId])));}catch{/* A disabled preference cache must not prevent workspace access. */}
         const migratedDocument = applyLegacySettingsMigration(remoteDocument, {
           deviceId,
           platform: shortcutPlatform,
@@ -262,7 +270,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       active = false;
       window.removeEventListener('vaultor:settings-refresh', loadSettings);
     };
-  }, [deviceId, persistSettingsDocument, shortcutPlatform]);
+  }, [deviceId, persistSettingsDocument, shortcutPlatform,sourceEpoch]);
 
   const updateDocument = useCallback((updater: (current: SettingsDocument) => SettingsDocument) => {
     const previous = documentRef.current;

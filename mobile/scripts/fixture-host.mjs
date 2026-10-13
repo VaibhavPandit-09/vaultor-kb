@@ -15,13 +15,14 @@ const owned = new OwnedServer({
     ),
   data: join(root, 'data'),
 });
-async function api(path, method = 'GET', body) {
+async function api(path, method = 'GET', body, workspace) {
   for (let n = 0; n < 100; n++) {
     const r = await fetch(owned.address + '/api' + path, {
       method,
       headers: {
         'X-Vaultor-Owner': owned.accessKey,
         'X-Vaultor-Protocol': '3',
+        ...(workspace ? {'X-Vaultor-Workspace':workspace}:{}),
         ...(body && !(body instanceof FormData)
           ? { 'Content-Type': 'application/json' }
           : {}),
@@ -109,7 +110,13 @@ try {
       ],
     },
   });
-  const descriptor = {
+  let secondWorkspace,sharedFile;
+  if(process.env.VAULTOR_WORKSPACE_FIXTURE==='1'){
+    secondWorkspace=randomUUID();await api('/owner/workspaces/'+secondWorkspace,'PUT',{name:'W2 Second workspace'});
+    const noteForm=new FormData();noteForm.set('title','W2 Same ID second note');noteForm.set('content',JSON.stringify(paragraph));await api('/resources/imports/'+simple.id,'PUT',noteForm,secondWorkspace);
+    sharedFile=randomUUID();for(const workspace of [undefined,secondWorkspace]){const form=new FormData();form.set('title','W2 scoped file');form.set('file',new Blob([workspace?'second-workspace-bytes':'default-workspace-bytes'],{type:'text/plain'}),'scope.txt');await api('/resources/imports/'+sharedFile,'PUT',form,workspace);}
+  }
+  const descriptor = {secondWorkspace,sharedFile,
     root,
     port: sharing.port,
     address: `https://127.0.0.1:${sharing.port}`,
@@ -187,11 +194,14 @@ try {
           p => p.code === command.approve && p.name === 'Vaultor Android',
         );
         if (!pending) throw Error('No matching disposable Android enrollment');
+        const beforeDevices=new Set((await api('/owner/devices')).map(d=>d.id));
         await api('/owner/pairings/' + pending.id + '/approve', 'POST', {
           code: command.approve,
         });
+        if(secondWorkspace){const device=(await api('/owner/devices')).find(d=>d.name==='Vaultor Android'&&!beforeDevices.has(d.id));if(!device)throw Error('Approved device missing');await api('/owner/workspaces/'+secondWorkspace+'/grants','PUT',{deviceId:device.id,allowed:true});}
         console.log('Matching disposable test code approved');
       }
+      if(command.grantWorkspaces && secondWorkspace){for(const device of await api('/owner/devices'))if(device.name==='Vaultor Android')await api('/owner/workspaces/'+secondWorkspace+'/grants','PUT',{deviceId:device.id,allowed:true});console.log('Disposable workspace grants refreshed');}
       if (command.readNote) {
         const n = await api('/resources/' + simple.id);
         console.log(

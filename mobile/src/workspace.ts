@@ -12,7 +12,8 @@ import {
   type ResourceSummary,
 } from './browse';
 
-export type Host = { hostId: string; address: string; epoch: string };
+export type Host = { hostId: string; address: string; epoch: string; workspaceId?:string };
+export type WorkspaceChoice={id:string;name:string};
 export type Position = { anchor: number; head: number; scroll: number };
 export type Draft = {
   scope: string;
@@ -58,6 +59,8 @@ type Bootstrap = {
 };
 export type WorkspaceState = {
   hosts: Omit<Host, 'epoch'>[];
+  workspaces?:WorkspaceChoice[];
+  multiWorkspace?:boolean;
   host?: Host;
   scope: string;
   notes: Note[];
@@ -91,6 +94,7 @@ export type WorkspaceState = {
 export interface Port {
   storage<T>(action: string, value?: object): Promise<T>;
   activate(id: string): Promise<Host>;
+  selectWorkspace?(host:Host,id:string,generation:string):Promise<Host>;
   api(
     host: Host,
     path: string,
@@ -260,6 +264,8 @@ export class MobileWorkspace {
       this.valid(epoch);
       if (caps.apiProtocolVersion < 3 || caps.minimumClientProtocolVersion > 3)
         throw Error('Incompatible host. Update the required client or host.');
+      this.patch({multiWorkspace:caps.multiWorkspace===true});
+      if(caps.multiWorkspace===true)await this.refreshWorkspaces();
       const identity = await this.port.api(host, '/workspace/identity');
       this.valid(epoch);
       const scope = scopeFor(
@@ -285,7 +291,7 @@ export class MobileWorkspace {
           preview: undefined,
         });
       }
-      this.patch({ scope, connection: 'online' });
+      this.patch({ scope, host:host.workspaceId===identity.id?host:{...host,workspaceId:identity.id},connection: 'online' });
       try {
         const settings = await this.port.api(host, '/settings/workspace');
         this.valid(epoch);
@@ -332,7 +338,7 @@ export class MobileWorkspace {
     } catch (e) {
       if (epoch !== this.epoch) return;
       const revoked =
-        e instanceof HostError && (e.status === 401 || e.status === 403);
+        e instanceof HostError && (e.status === 401 || e.status === 403 || e.code==='WORKSPACE_UNAVAILABLE');
       this.patch({
         connection: revoked ? 'revoked' : 'offline',
         error:
@@ -348,9 +354,10 @@ export class MobileWorkspace {
     const epoch = this.epoch;
     const b = await this.port.storage<Bootstrap>('bootstrap');
     const session = Object.values(b.sessions)
-      .filter(s => s.hostId === host.hostId && s.noteId)
+      .filter(s => s.hostId === host.hostId && s.noteId && (!host.workspaceId || JSON.parse(s.scope)[1]===host.workspaceId))
       .sort((a, b) => (b.at ?? 0) - (a.at ?? 0))[0];
     if (!session?.noteId) return;
+    if(!host.workspaceId && new Set(Object.values(b.sessions).filter(v=>v.hostId===host.hostId).map(v=>JSON.parse(v.scope)[1])).size>1)return;
     const note = await this.port.storage<Note | null>('getCache', {
       scope: session.scope,
       noteId: session.noteId,
@@ -1089,33 +1096,31 @@ export class MobileWorkspace {
     await this.session();
     await this.refreshRecovery();
   }
+  async refreshWorkspaces(){
+    const host=this.state.host,epoch=this.epoch;if(!host)return;
+    const value=await this.port.api(host,'/workspaces');this.valid(epoch);
+    if(!Array.isArray(value)||value.length>8||value.some(v=>typeof v.id!=='string'||!/^[-a-f0-9]{36}$/.test(v.id)||typeof v.name!=='string'))throw Error('Invalid workspace list.');
+    this.patch({workspaces:value});
+  }
+  async switchWorkspace(id:string,keep=false){
+    const host=this.state.host,epoch=this.epoch;if(!host||!this.port.selectWorkspace)throw Error('Workspace selection unavailable.');
+    if(host.workspaceId===id)return;
+    const destination=await this.port.api(host,'/workspaces/'+id);this.valid(epoch);
+    await this.saveRequest?.catch(()=>{});await this.protect();if(this.state.draft&&!keep)await this.save();await this.protect();await this.session();this.valid(epoch);
+    const next=await this.port.selectWorkspace(host,id,destination.generation);this.valid(epoch);await this.adoptHost(next);
+  }
+  private async adoptHost(host:Host){
+    this.epoch++;this.navigation++;this.patch({host,scope:'',workspaces:[],journey:emptyJourney(),navigationRetry:undefined,browse:defaultBrowse(),view:'browse',preview:undefined,note:undefined,draft:undefined,content:undefined,notes:[],position:undefined,supported:false,conflict:false,unavailable:false,status:''});
+    await this.connect(true);
+  }
   async switchHost(id: string, keep = false) {
     await this.saveRequest?.catch(() => {});
     await this.protect();
     if (this.state.draft && !keep) await this.save();
     await this.protect();
+    await this.session();
     const host = await this.port.activate(id);
-    this.epoch++;
-    this.navigation++;
-    this.patch({
-      host,
-      scope: '',
-      journey: emptyJourney(),
-      navigationRetry: undefined,
-      browse: defaultBrowse(),
-      view: 'browse',
-      preview: undefined,
-      note: undefined,
-      draft: undefined,
-      content: undefined,
-      notes: [],
-      position: undefined,
-      supported: false,
-      conflict: false,
-      unavailable: false,
-      status: '',
-    });
-    await this.connect(true);
+    await this.adoptHost(host);
   }
   async removeRecovery(summary: Summary) {
     await this.port.storage('ackDraft', summary);

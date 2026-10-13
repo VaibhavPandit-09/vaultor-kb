@@ -49,6 +49,7 @@ contextBridge.exposeInMainWorld('vaultorDesktop', Object.freeze({
   onResume: callback => { const listener=()=>callback();ipcRenderer.on('desktop:resume',listener);return()=>ipcRenderer.removeListener('desktop:resume',listener); },
   addProfile: profile => ipcRenderer.invoke('desktop:add-profile', profile),
   authorizeLocal:id=>ipcRenderer.invoke('desktop:authorize-local',id),
+  workspaces: id => ipcRenderer.invoke('desktop:workspaces',id),
   probe: id => ipcRenderer.invoke('desktop:probe', id),
   activate: ticket => ipcRenderer.invoke('desktop:activate', ticket),
   request: value => ipcRenderer.invoke('desktop:request', value),

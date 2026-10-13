@@ -34,9 +34,12 @@ else {
   const transport = new DesktopTransport(), candidates = new Map();
   const queue = task => { const next = writes.catch(() => {}).then(task); writes = next; return next; };
   const state = () => { const data = !startupError && profiles?.snapshot(); if (data) data.profiles = data.profiles.map(p => p.source === 'bundled' ? { ...p, address: owned?.address ?? p.address } : p); return { ...(data || { version: 1, profiles: [], active: null, clientId: '' }), sessionId: data?.clientId ?? '', token, desktopBuild: app.getVersion(), localServer: owned?.snapshot(), error: startupError, access: { mode: token ? (transport.active?.profile.kind === 'remote' ? 'paired' : 'loopback') : 'unselected', pairingAvailable: credentials?.available() ?? false, trustConfigured: Boolean(transport.active?.profile.fingerprint), credentialsStored: Boolean(transport.active?.credential || transport.active?.ownerKey) } }; };
-  async function probe(id, issueTicket = true) {
+  async function probe(id, issueTicket = true, workspaceId) {
+    if(workspaceId!==undefined && (typeof workspaceId!=='string' || !/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(workspaceId)))throw new Error('Invalid workspace identity.');
     const stored = profiles.get(id);
     const profile = stored.source === 'bundled' ? { ...stored, address: await owned.start() } : stored.kind === 'remote' ? await connections.resolve(stored) : stored;
+    const requested=workspaceId??stored.selectedWorkspaceId;
+    delete profile.selectedWorkspaceId;
     const probeTransport = new DesktopTransport();
     const temporary = randomUUID(); probeTransport.activate(profile, temporary, profile.source === 'bundled' ? owned.accessKey : profile.kind==='local'?credentials.get(profile.id):undefined, profile.kind === 'remote' ? credentials.get(profile.id) : undefined);
     const get = path => probeReady(() => probeTransport.request({ token: temporary, id: randomUUID(), path, method: 'GET', headers: { 'X-Request-ID': randomUUID() }, timeout: 10000 }));
@@ -44,7 +47,10 @@ else {
     if(capabilities.changeFeed!==true || capabilities.scopedSettings!==true)throw new Error('Update this server to the current Vaultor version before connecting. D7 settings and change-feed contracts are required.');
     if (!Number.isInteger(capabilities.apiProtocolVersion) || capabilities.apiProtocolVersion < 3 || !Number.isInteger(capabilities.minimumClientProtocolVersion) || capabilities.minimumClientProtocolVersion < 1 || capabilities.minimumClientProtocolVersion > capabilities.apiProtocolVersion || typeof capabilities.serverBuild !== 'string') throw new Error('Update this server: resource lifecycle protocol 3 is required.');
     if (capabilities.minimumClientProtocolVersion > 3) throw new Error('Update Vaultor Desktop to connect to this server.');
+    if(requested && capabilities.multiWorkspace!==true)throw new Error('This server does not support selecting workspaces. Update its host first.');
+    if(requested)profile.selectedWorkspaceId=requested;
     const identity = await get('/workspace/identity');
+    if(requested && identity.id!==requested)throw new Error('The destination workspace identity does not match.');
     if(profile.source==='bundled')await updates?.confirmStart();
     if (typeof identity.id !== 'string' || !identity.id || identity.id.length > 100 || typeof identity.generation !== 'string' || identity.generation.length > 100) throw new Error('Server workspace identity is invalid.');
     const ticket = issueTicket ? randomUUID() : undefined;
@@ -199,18 +205,19 @@ else {
     };
     handle('desktop:authorize-local',id=>queue(()=>authorizeLocal(profiles.get(id))));
     handle('desktop:add-profile', input => queue(async()=>{const profile=await profiles.add(input);try{await authorizeLocal(profile);return profile;}catch(e){await profiles.forget(profile.id);throw e;}}));
-    handle('desktop:probe', id => probe(id));
+    handle('desktop:workspaces',async id=>{const stored=profiles.get(id);const profile=stored.source==='bundled'?{...stored,address:await owned.start()}:stored.kind==='remote'?await connections.resolve(stored):stored;delete profile.selectedWorkspaceId;const check=new DesktopTransport(),token=randomUUID();check.activate(profile,token,profile.source==='bundled'?owned.accessKey:profile.kind==='local'?credentials.get(id):undefined,profile.kind==='remote'?credentials.get(id):undefined);return probeReady(()=>check.request({token,id:randomUUID(),path:'/workspaces',method:'GET',headers:{},timeout:10000}));});
+    handle('desktop:probe', value => typeof value==='string'?probe(value):probe(value?.id,true,value?.workspaceId));
     handle('desktop:activate', ticket => queue(async () => {
       if (transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
       const candidate = candidates.get(ticket);
       if (!candidate || candidate.expires < Date.now()) throw new Error('Connection check expired. Retry.');
-      const latest = await probe(candidate.profile.id);
+      const latest = await probe(candidate.profile.id,true,candidate.profile.selectedWorkspaceId);
       if (latest.identity.id !== candidate.identity.id || latest.identity.generation !== candidate.identity.generation) throw new Error('Workspace changed during connection. Retry.');
       if (transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
-      const actual = latest.profile.source === 'bundled' ? latest.profile : { ...profiles.get(latest.profile.id), address: latest.profile.address };
+      const actual = latest.profile.source === 'bundled' ? latest.profile : { ...profiles.get(latest.profile.id), address: latest.profile.address, selectedWorkspaceId: latest.profile.selectedWorkspaceId };
       const credential = actual.kind === 'remote' ? credentials.get(actual.id) : undefined;
       if (actual.kind === 'remote' && actual.address !== profiles.get(actual.id).address) await profiles.update(actual.id, { address: actual.address });
-      await profiles.activate(candidate.profile.id, candidate.identity.id);
+      await profiles.activate(candidate.profile.id, candidate.identity.id, candidate.profile.selectedWorkspaceId);
       await files.reset();
       token = randomUUID(); transport.activate(actual, token, actual.source === 'bundled' ? owned.accessKey : actual.kind==='local'?credentials.get(actual.id):undefined, credential); candidates.clear();
       return state();

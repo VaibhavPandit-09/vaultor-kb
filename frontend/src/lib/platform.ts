@@ -38,7 +38,7 @@ const browser: PlatformServices = {
   kind: 'browser', request: browserAdapter,
   async stream(path, signal, receive) {
     const controller=new AbortController();const combined=AbortSignal.any([signal,controller.signal]);
-    const response=await fetch('/api'+path,{signal:combined,credentials:'same-origin',headers:{Accept:'text/event-stream'},redirect:'error'});
+    const response=await fetch('/api'+path,{signal:combined,credentials:'same-origin',headers:{Accept:'text/event-stream',...(getConnection().workspaceId?{'X-Vaultor-Workspace':getConnection().workspaceId!}:{})},redirect:'error'});
     if(!response.ok || !response.headers.get('content-type')?.includes('text/event-stream')){await response.body?.cancel();throw new Error('Change notifications unavailable.');}
     const reader=response.body!.getReader();
     void (async()=>{let buffer='';const decoder=new TextDecoder();try{
@@ -96,7 +96,9 @@ export const connectionAdapter: AxiosAdapter = async config => {
   if (owner.aborted || caller?.aborted) cancel();
   owner.addEventListener('abort', cancel, { once: true }); caller?.addEventListener?.('abort', cancel);
   try {
-    const response = await platform.request({ ...config, baseURL: '/api', signal: signal.signal } as InternalAxiosRequestConfig);
+    const scopedHeaders=new axios.AxiosHeaders(config.headers);
+    if(platform.kind==='browser' && identity.workspaceId)scopedHeaders.set('X-Vaultor-Workspace',identity.workspaceId);
+    const response = await platform.request({ ...config, headers:scopedHeaders, baseURL: '/api', signal: signal.signal } as InternalAxiosRequestConfig);
     if (signal.signal.aborted || epoch !== requestEpoch) throw new axios.CanceledError('Connection request cancelled');
     if (config.validateStatus && !config.validateStatus(response.status)) throw new axios.AxiosError(`Request failed with status code ${response.status}`, response.status >= 500 ? 'ERR_BAD_RESPONSE' : 'ERR_BAD_REQUEST', config, response.request, response);
     return response;

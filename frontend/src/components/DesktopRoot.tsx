@@ -16,6 +16,7 @@ export default function DesktopRoot({ children }: { children: ReactNode }) {
   const [name, setName] = useState(''), [address, setAddress] = useState('http://127.0.0.1:8080'), [candidate, setCandidate] = useState<DesktopCandidate | null>(null), [keepAvailable, setKeepAvailable] = useState(false);
   const running = useRef(false), automatic = useRef(false);
   const [tab, setTab] = useState<'connections' | 'hosting'>('connections'), [filter, setFilter] = useState('');
+  const [workspaceChoices,setWorkspaceChoices]=useState<{profileId:string;items:{id:string;name:string}[]}>();
   const [hosting,setHosting]=useState<{startAtLogin:boolean;registered:boolean;enabledByOS:boolean;supported:boolean;error:string}>();
   const [local, setLocal] = useState<LocalServerStatus | null>(null);
   const focus = useRestoreFocusOnClose(), dialog = useRef<HTMLElement>(null);
@@ -58,18 +59,19 @@ export default function DesktopRoot({ children }: { children: ReactNode }) {
     try{unwrap(await bridge.hostAction(action));if(bridge.localStatus)setLocal(unwrap(await bridge.localStatus()));}
     catch(e){setError(e instanceof Error?e.message:'Host action failed. Retry.');}finally{running.current=false;setBusy(false);}
   }
+  useEffect(()=>{const changed=(event:Event)=>{const next=(event as CustomEvent<DesktopState>).detail;activateDesktop(next);store.dispatch(clearSelectedTags());store.dispatch(setCurrentResourceId(null));store.dispatch(setSearchQuery(''));store.dispatch(setTypeFilter('all'));setState(next);setConnected(true);setPicker(false);};window.addEventListener('vaultor:desktop-workspace',changed);return()=>window.removeEventListener('vaultor:desktop-workspace',changed);},[]);
   async function commit(value: DesktopCandidate, keep = false) {
     await prepareConnectionSwitch(keep);
     const next = unwrap(await bridge!.activate(value.ticket));
     activateDesktop(next); store.dispatch(clearSelectedTags()); store.dispatch(setCurrentResourceId(null)); store.dispatch(setSearchQuery('')); store.dispatch(setTypeFilter('all'));
     setState(next); setConnected(true); setPicker(false); setCandidate(null); setKeepAvailable(false); setOnline(true);
   }
-  async function connect(id: string, automaticAttempt = false) {
+  async function connect(id: string, automaticAttempt = false, workspaceId?:string) {
     if (running.current) return;
     running.current = true; setBusy(true); setError(''); setKeepAvailable(false);
     try {
-      const value = unwrap(await bridge!.probe(id)); setCandidate(value);
-      if (value.differentWorkspace) { setError('This address now serves a different workspace. Your old sessions and drafts remain separate. Choose Connect to continue.'); if (automaticAttempt) setPicker(true); return; }
+      const value = unwrap(await bridge!.probe(workspaceId?{id,workspaceId}:id)); setCandidate(value);
+      if (value.differentWorkspace && !workspaceId) { setError('This address now serves a different workspace. Your old sessions and drafts remain separate. Choose Connect to continue.'); if (automaticAttempt) setPicker(true); return; }
       await commit(value);
       return true;
     } catch (e) { setError(e instanceof Error ? e.message : 'Cannot connect. Retry.'); setKeepAvailable(e instanceof SwitchBlockedError && e.canKeepDrafts); }
@@ -84,7 +86,7 @@ export default function DesktopRoot({ children }: { children: ReactNode }) {
     if (!candidate || running.current) return;
     running.current = true; setBusy(true); setError('');
     try {
-      const refreshed = unwrap(await bridge!.probe(candidate.profile.id)); setCandidate(refreshed);
+      const refreshed = unwrap(await bridge!.probe(candidate.profile.selectedWorkspaceId?{id:candidate.profile.id,workspaceId:candidate.profile.selectedWorkspaceId}:candidate.profile.id)); setCandidate(refreshed);
       if (refreshed.identity.id !== candidate.identity.id || refreshed.identity.generation !== candidate.identity.generation) { setError('The destination workspace changed. Review it and choose Connect again.'); return; }
       await commit(refreshed, keep);
     } catch (e) { setError(e instanceof Error ? e.message : 'Connection failed. Retry.'); setKeepAvailable(e instanceof SwitchBlockedError && e.canKeepDrafts); }
@@ -103,7 +105,8 @@ export default function DesktopRoot({ children }: { children: ReactNode }) {
         <div className="desktop-connections-body">
         {error && <p role="alert" className="mb-3 text-sm text-red-400">{error}</p>}
         {!state && !error && <p role="status">Loading connections…</p>}
-        {tab === 'connections' && <><input aria-label="Find remembered server" placeholder="Find remembered server…" className="desktop-connection-search organization-input" value={filter} onChange={e => setFilter(e.target.value)}/><div className="space-y-2">{state?.profiles.filter(p => p.source === 'bundled' || p.name.toLowerCase().includes(filter.toLowerCase())).map(p => <div key={p.id} className="desktop-profile-card"><button disabled={busy || Boolean(state.error)} className="desktop-profile-open" onClick={() => void connect(p.id)}><span className="desktop-profile-icon">{p.source==='bundled'?<Monitor size={18}/>:<Server size={18}/>}</span><span className="desktop-profile-label"><span className="block truncate font-medium">{p.name}</span><span className="block truncate text-xs text-[var(--text-secondary)]">{p.source === 'bundled' ? 'Built-in server · starts automatically' : p.kind==='local' ? 'Independent server · '+p.address : p.address}</span></span><span className="desktop-profile-action">{busy ? 'Preparing…' : connected && p.id === state.active ? 'Reconnect' : 'Connect'}</span></button>{bridge.authorizeLocal && p.kind==='local' && p.source!=='bundled' && <button className="desktop-profile-secondary" disabled={busy} onClick={()=>{if(running.current)return;running.current=true;setBusy(true);void bridge.authorizeLocal!(p.id).then(unwrap).then(setState).catch(e=>setError(e.message)).finally(()=>{running.current=false;setBusy(false);});}}>Authorize…</button>}{bridge.forget && p.source !== 'bundled' && p.id !== state?.active && <button title="Forget connection; keep workspace and drafts" aria-label={'Forget ' + p.name} disabled={busy} className="desktop-profile-forget" onClick={() => { if (running.current) return; running.current = true; setBusy(true); void bridge.forget!(p.id).then(unwrap).then(setState).catch(e => setError(e.message)).finally(() => { running.current = false; setBusy(false); }); }}><X size={14}/></button>}</div>)}</div>
+        {tab === 'connections' && <><input aria-label="Find remembered server" placeholder="Find remembered server…" className="desktop-connection-search organization-input" value={filter} onChange={e => setFilter(e.target.value)}/><div className="space-y-2">{state?.profiles.filter(p => p.source === 'bundled' || p.name.toLowerCase().includes(filter.toLowerCase())).map(p => <div key={p.id} className="desktop-profile-card"><button disabled={busy || Boolean(state.error)} className="desktop-profile-open" onClick={() => void connect(p.id)}><span className="desktop-profile-icon">{p.source==='bundled'?<Monitor size={18}/>:<Server size={18}/>}</span><span className="desktop-profile-label"><span className="block truncate font-medium">{p.name}</span><span className="block truncate text-xs text-[var(--text-secondary)]">{p.source === 'bundled' ? 'Built-in server · starts automatically' : p.kind==='local' ? 'Independent server · '+p.address : p.address}</span></span><span className="desktop-profile-action">{busy ? 'Preparing…' : connected && p.id === state.active ? 'Reconnect' : 'Connect'}</span></button>{bridge.workspaces&&<button className="desktop-profile-secondary" disabled={busy} onClick={()=>{setError('');void bridge.workspaces!(p.id).then(unwrap).then(items=>setWorkspaceChoices({profileId:p.id,items})).catch(e=>setError(e.message));}}>Workspaces</button>}{bridge.authorizeLocal && p.kind==='local' && p.source!=='bundled' && <button className="desktop-profile-secondary" disabled={busy} onClick={()=>{if(running.current)return;running.current=true;setBusy(true);void bridge.authorizeLocal!(p.id).then(unwrap).then(setState).catch(e=>setError(e.message)).finally(()=>{running.current=false;setBusy(false);});}}>Authorize…</button>}{bridge.forget && p.source !== 'bundled' && p.id !== state?.active && <button title="Forget connection; keep workspace and drafts" aria-label={'Forget ' + p.name} disabled={busy} className="desktop-profile-forget" onClick={() => { if (running.current) return; running.current = true; setBusy(true); void bridge.forget!(p.id).then(unwrap).then(setState).catch(e => setError(e.message)).finally(() => { running.current = false; setBusy(false); }); }}><X size={14}/></button>}</div>)}</div>
+        {workspaceChoices&&<div className="border border-border rounded-lg p-3 space-y-2"><h2 className="text-sm font-semibold">Choose workspace</h2>{workspaceChoices.items.map(item=><button key={item.id} className="library-button w-full text-left" disabled={busy} onClick={()=>void connect(workspaceChoices.profileId,false,item.id)}>{item.name}</button>)}<button className="library-button" onClick={()=>setWorkspaceChoices(undefined)}>Close list</button></div>}
         {bridge.pairInspect && <div className="mt-4 border-t border-border pt-4"><NearbyConnections disabled={busy} onPaired={id => { void bridge.bootstrap().then(unwrap).then(value => { setState(value); void connect(id); }).catch(e => setError(e.message)); }}/></div>}</>}
         {tab === 'hosting' && bridge.sharing && <HostControls disabled={busy}/>}
 

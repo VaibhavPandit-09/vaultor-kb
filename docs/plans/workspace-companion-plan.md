@@ -1,6 +1,6 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created/reviewed 2026-10-13. **W1 complete/published Windows0.8.0 (2026-10-13); W2–W3 and R1–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created/reviewed 2026-10-13. **W1 complete/published Windows0.8.0 (2026-10-13); W2 implementation/validation complete, publication pending; W3 and R1–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
 
 ## Agreed product boundary
 
@@ -65,7 +65,7 @@ Status: **Complete — Windows0.8.0 published 2026-10-13; Mac native gate pendin
 
 ## W2 — Workspace switching and access on every client
 
-Status: **Not started**.
+Status: **Implementation/validation complete — publication pending (2026-10-13)**.
 
 - Distinguish server connection from workspace in selectors: server name plus workspace name, connected/offline status when relevant. Desktop/browser owner can create/rename workspaces and manage paired-device grants. Android discovers/selects authorized workspaces; no workspace administration UI.
 - One active workspace per window. Preserve each workspace's browsing query/scope/filters/sort, panes/journeys/reading positions and desktop drafts. Device appearance persists globally; workspace preferences stay scoped. Clear transient surfaces and stale bulk selection when switching.
@@ -74,6 +74,8 @@ Status: **Not started**.
 - Verify pairing grant migration, hidden workspace listing/bytes/SSE, revocation, unavailable source, switch during delayed requests, restart restoration and unchanged workspace identities.
 
 **Acceptance:** Windows/Mac/browser and Android share the workspace model without crossing data or credentials. Publish host/desktop and separately signed Android artifacts as required; unavailable platform checks are explicit.
+
+W2 actual results: desktop/browser/Android selectors, owner create/rename/effective grants, main/native JSON/files/SSE scope, checked activation, source-epoch queued writes, separate sessions and local appearance cache. Frontend22+desktop14/Node2/backend7/mobile37 focused checks passed; scoped lint frontend clean/mobile0errors22warnings. Windows packaged isolation/private-stop/restart/edit-save/PDF/relaunch and browser/native selector/refresh/narrow checks passed. Final Android APK native equal-ID note/file/stale/generation/persistence and selector UI passed on API36/API37 (16KiB). Native Mac/Wi-Fi/Samsung pending; exact v0.9.0 Mac handoff prepared. Android remains transitional editing untilR1. Release candidate0.9.0/alpha.8; no W3 work performed.
 
 ## W3 — Workspace import, export and desktop local copies
 

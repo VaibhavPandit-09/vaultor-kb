@@ -44,6 +44,10 @@ export async function observeTrust(address) {
   });
 }
 export async function connectionFetch(current, path, options = {}) {
+  // Main-owned selection applies equally to JSON, streams and original-file requests.
+  const scopeHeaders={...options.headers};for(const key of Object.keys(scopeHeaders))if(key.toLowerCase()==='x-vaultor-workspace')delete scopeHeaders[key];
+  if(current.profile.selectedWorkspaceId)scopeHeaders['X-Vaultor-Workspace']=current.profile.selectedWorkspaceId;
+  options={...options,headers:scopeHeaders};
   if (current.profile.kind !== 'remote') return fetch(loopbackAddress(current.profile.address) + '/api' + path, { ...options, redirect: 'error', headers: { ...options.headers, ...(current.ownerKey ? { 'X-Vaultor-Owner': current.ownerKey } : {}) } });
   const url = new URL(networkAddress(current.profile.address) + '/api' + path);
   const trust = trustFromDer(new X509Certificate(current.profile.ca).raw);

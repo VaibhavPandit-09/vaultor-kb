@@ -101,6 +101,7 @@ export default function WorkspaceScreen() {
       storage: (action, value = {}) =>
         parse(native.storage(action, JSON.stringify(value))),
       activate: id => parse<Host>(native.activate(id)),
+      selectWorkspace:(host,id,generation)=>parse<Host>(native.selectWorkspace(host.hostId,host.epoch,id,generation)),
       cancelBrowse: () => native.cancelBrowse(),
       uuid: async () => (await parse<{ id: string }>(native.uuid())).id,
       api: async (host, path, method = 'GET', body, revision, channel) => {
@@ -671,6 +672,10 @@ export default function WorkspaceScreen() {
         );
       }
     });
+  const switchWorkspace=(id:string,keep=false)=>run(async()=>{
+    try{await model.switchWorkspace(id,keep);setEditing(false);setFormatting(false);setOrganizationTarget(undefined);setCreating(false);setConnections(false);}
+    catch(e){model.report(e);if(!keep)Alert.alert('Workspace switch did not complete','Your current workspace and protected drafts are retained.',[{text:'Stay',style:'cancel'},{text:'Keep drafts and switch',onPress:()=>switchWorkspace(id,true)}]);}
+  });
   const copy = (d: Summary) =>
     Alert.alert(
       'Open recovered copy',
@@ -978,6 +983,12 @@ export default function WorkspaceScreen() {
               Enable Sharing on your Windows or Mac host. Saved approvals are
               remembered.
             </Text>
+            {state.host&&state.multiWorkspace?<View collapsable={false} style={s.row}>
+              <Text accessibilityRole="header" style={s.heading}>Workspaces on this server</Text>
+              <Text style={s.muted}>{state.host.address}</Text>
+              {(state.workspaces??[]).map(w=><Button key={w.id} label={w.name+(w.id===state.host?.workspaceId?' · Current':'')} disabled={state.busy} onPress={()=>switchWorkspace(w.id)}/>)}
+              <Button label="Refresh workspaces" disabled={state.busy} onPress={()=>run(()=>model.refreshWorkspaces())}/>
+            </View>:null}
             {state.hosts.map(h => (
               <View collapsable={false} style={s.row} key={h.hostId}>
                 <Text style={s.muted}>{h.address}</Text>

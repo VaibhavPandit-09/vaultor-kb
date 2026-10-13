@@ -11,6 +11,7 @@ export async function runChromeSmoke(window, directory, owned, updates) {
   const evaluate = code => window.webContents.executeJavaScript(code);
   const wait = async (code, label) => { for (let i = 0; i < 500; i++) { if (await evaluate(code).catch(() => false)) return; await new Promise(r => setTimeout(r, 100)); } throw new Error(label + ': ' + await evaluate('document.body.innerText')); };
   await wait("Boolean(document.querySelector('.library-view'))", 'Local workspace');
+  if(process.env.VAULTOR_WORKSPACE_SMOKE==='1'){const {runWorkspaceSmoke}=await import('./native-workspace-smoke.mjs');await runWorkspaceSmoke(window,directory,owned);return;}
   if (process.env.VAULTOR_UPDATE_SMOKE === '1') { const {runUpdateSmoke}=await import('./native-update-smoke.mjs');await runUpdateSmoke(window,directory,updates);return; }
   if (process.env.VAULTOR_MOTION_SMOKE === '1') { const { runMotionSmoke } = await import('./native-motion-smoke.mjs'); await runMotionSmoke(window,directory,owned);return; }
   if (process.env.VAULTOR_IMAGES_SMOKE === '1') { const { runImagesSmoke } = await import('./native-images-smoke.mjs'); await runImagesSmoke(window, directory, owned); return; }

@@ -22,7 +22,7 @@ it('retries failed leaves without sending another devices full settings',async()
   vi.mocked(api.get).mockImplementation(async()=>({data:doc}));vi.mocked(api.patch).mockRejectedValueOnce(new Error('Offline')).mockImplementation(async(_url,patch)=>({data:doc=mergeSettingsPatch(doc,patch as SettingsPatch)}));
   render(<SettingsProvider><Probe/></SettingsProvider>);await waitFor(()=>expect(api.get).toHaveBeenCalled());fireEvent.click(screen.getByText('Three'));
   await waitFor(()=>expect(screen.getByText(/:failed$/)).toBeTruthy());fireEvent.click(screen.getByText('Retry'));
-  await waitFor(()=>expect(screen.getByText(/:saved$/)).toBeTruthy());expect(api.patch).toHaveBeenLastCalledWith('/settings',{workspace:{maxOpenNotes:3}});expect(doc.local).toEqual({other:{theme:'light'}});
+  await waitFor(()=>expect(screen.getByText(/:saved$/)).toBeTruthy());expect(api.patch).toHaveBeenLastCalledWith('/settings',{workspace:{maxOpenNotes:3}},expect.objectContaining({connectionEpoch:expect.any(Number)}));expect(doc.local).toEqual({other:{theme:'light'}});
 });
 
 it('persists OLED, retains opacity, ignores OS changes and restores after reload',async()=>{
@@ -37,4 +37,10 @@ it('persists OLED, retains opacity, ignores OS changes and restores after reload
  fireEvent.click(screen.getByText('Cycle'));await waitFor(()=>expect(screen.getByText('os:dark:saved')).toBeTruthy());
  for(const theme of ['light','dark','oled','os']) {fireEvent.click(screen.getByText('Cycle'));await waitFor(()=>expect(screen.getByText(new RegExp('^'+theme+':.*:saved$'))).toBeTruthy());}
  expect(screen.getByTestId('transparency').textContent).toBe('0.85');
+});
+
+it('device appearance survives changing to a workspace with different host preferences',async()=>{
+ vi.mocked(api.get).mockResolvedValue({data:{local:{},workspace:{maxOpenNotes:2},keybindings:{}}});vi.mocked(api.patch).mockImplementation(async(_url,patch)=>({data:mergeSettingsPatch({local:{},workspace:{},keybindings:{}},patch as SettingsPatch)}));
+ const view=render(<SettingsProvider><Probe/></SettingsProvider>);await waitFor(()=>expect(screen.getByText(/:saved$/)).toBeTruthy());fireEvent.click(screen.getByText('OLED'));await waitFor(()=>expect(screen.getByText('oled:oled:saved')).toBeTruthy());view.unmount();
+ vi.mocked(api.get).mockResolvedValue({data:{local:{},workspace:{maxOpenNotes:4},keybindings:{}}});render(<SettingsProvider><Probe/></SettingsProvider>);expect(document.documentElement.dataset.theme).toBe('oled');await waitFor(()=>expect(screen.getByText('oled:oled:saved')).toBeTruthy());
 });

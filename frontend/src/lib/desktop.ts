@@ -3,7 +3,7 @@ import { configureConnection, getPlatform, getConnection } from './platform';
 let pendingArchiveEpoch:number|undefined;
 export function requestLocalArchiveImport(){const connection=getConnection();if(connection.profileId!=='this-computer')return;pendingArchiveEpoch=connection.epoch;window.dispatchEvent(new Event('vaultor:local-archive-import'));}
 export function consumeLocalArchiveImport(){const connection=getConnection(),requested=pendingArchiveEpoch===connection.epoch&&connection.profileId==='this-computer';pendingArchiveEpoch=undefined;return requested;}
-export type DesktopProfile = { id: string; name: string; address: string; kind: 'local' | 'remote'; source?: 'bundled'; workspaceId?: string; hostId?: string; fingerprint?: string };
+export type DesktopProfile = { id: string; name: string; address: string; kind: 'local' | 'remote'; source?: 'bundled'; selectedWorkspaceId?: string; workspaceId?: string; hostId?: string; fingerprint?: string };
 export type LocalServerStatus = { status: string; address: string | null; error: string; restartAttempts: number; dataDirectory: string; logError: string; logs: { timestamp: string; message: string }[] };
 export type DesktopState = { version: number; clientId: string; sessionId: string; profiles: DesktopProfile[]; active: string | null; token: string; desktopBuild?: string; localServer?: LocalServerStatus; error?: string; access?: { mode: 'loopback' | 'paired' | 'unselected'; pairingAvailable: boolean; trustConfigured: boolean; credentialsStored: boolean } };
 export type PairInspection = { id: string; name: string; address: string; hostId: string; fingerprint: string };
@@ -56,7 +56,8 @@ export interface DesktopBridge {
   localStatus?(): Promise<Result<LocalServerStatus>>;
   onLocalStatus?(callback: (value: LocalServerStatus) => void): () => void;
   addProfile(profile: { name: string; address: string }): Promise<Result<DesktopProfile>>;
-  probe(id: string): Promise<Result<DesktopCandidate>>;
+  workspaces?(id:string):Promise<Result<{id:string;name:string}[]>>;
+  probe(id: string | {id:string;workspaceId:string}): Promise<Result<DesktopCandidate>>;
   activate(ticket: string): Promise<Result<DesktopState>>;
   request(value: WireRequest): Promise<Result<{ status: number; headers: Record<string, string>; data: Uint8Array }>>;
   cancel(id: string): Promise<Result<void>>;

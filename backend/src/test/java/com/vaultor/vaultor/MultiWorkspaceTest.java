@@ -122,6 +122,8 @@ class MultiWorkspaceTest {
             var list=HttpRequest.newBuilder(URI.create(base+"/workspaces")).header("Authorization","Bearer "+completed.get("credential")).GET().build();assertEquals(1,json.readTree(secure.send(list,HttpResponse.BodyHandlers.ofString()).body()).size());
             ok("PUT","/owner/workspaces/"+OTHER+"/grants",null,Map.of("deviceId",device,"allowed",true));
             assertEquals(2,json.readTree(secure.send(list,HttpResponse.BodyHandlers.ofString()).body()).size());
+            var grants=ok("GET","/owner/workspaces/"+OTHER+"/grants",null,null);assertEquals(device,grants.get(0).path("deviceId").asText());assertTrue(grants.get(0).path("allowed").asBoolean());
+            var forbidden=HttpRequest.newBuilder(URI.create(base+"/owner/workspaces/"+OTHER+"/grants")).header("Authorization","Bearer "+completed.get("credential")).GET().build();assertEquals(403,secure.send(forbidden,HttpResponse.BodyHandlers.ofString()).statusCode());
             var content=HttpRequest.newBuilder(URI.create(base+"/resources/"+SAME)).header("Authorization","Bearer "+completed.get("credential")).header("X-Vaultor-Workspace",OTHER).GET().build();assertEquals("Second",json.readTree(secure.send(content,HttpResponse.BodyHandlers.ofString()).body()).path("title").asText());
             var stream=HttpRequest.newBuilder(URI.create(base+"/changes")).header("Authorization","Bearer "+completed.get("credential")).header("X-Vaultor-Workspace",OTHER).GET().build();
             try(var lines=new java.io.BufferedReader(new java.io.InputStreamReader(secure.send(stream,HttpResponse.BodyHandlers.ofInputStream()).body()))){

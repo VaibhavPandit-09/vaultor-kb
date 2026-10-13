@@ -3,10 +3,11 @@ import { reportError } from './diagnostics';
 import { connectionAdapter, getConnection } from './platform';
 import { ensureCompatible } from './connection';
 import { rememberMutation } from './changeFeed';
-declare module 'axios' { interface AxiosRequestConfig { backgroundDiagnostic?: boolean } }
+declare module 'axios' { interface AxiosRequestConfig { backgroundDiagnostic?: boolean; connectionEpoch?:number } }
 const api = axios.create({ baseURL: '/api', adapter: connectionAdapter });
 api.interceptors.request.use(async config => {
   const epoch = getConnection().epoch;
+  if(config.connectionEpoch!==undefined&&config.connectionEpoch!==epoch)throw new axios.CanceledError('Source workspace changed');
   await ensureCompatible();
   if (epoch !== getConnection().epoch) throw new axios.CanceledError('Connection changed');
   config.headers['X-Request-ID'] = crypto.randomUUID();

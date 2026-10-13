@@ -2,7 +2,7 @@
 
 ## Host access (D5)
 
-[HOST-ACCESS.md](../security/HOST-ACCESS.md) owns authorization and its examples. Public GET /api/capabilities and /api/access/host expose bounded build/trust information. Everything else requires the owner HTTP connector or an approved HTTPS device/browser session; X-Vaultor-Owner is main/private-local only, Authorization: Bearer is HTTPS client only, browser mutations require X-Vaultor-CSRF. Never strip If-Match, disable TLS checking, forward credentials to another origin or bypass approval to debug. OpenAPI 1.6.0 documents global security schemes, public exceptions and owner-only operations. HOST_ACCESS_PATH is excluded from archives and workspace replacement.
+[HOST-ACCESS.md](../security/HOST-ACCESS.md) owns authorization and its examples. Public GET /api/capabilities and /api/access/host expose bounded build/trust information. Everything else requires the owner HTTP connector or an approved HTTPS device/browser session; X-Vaultor-Owner is main/private-local only, Authorization: Bearer is HTTPS client only, browser mutations require X-Vaultor-CSRF. Never strip If-Match, disable TLS checking, forward credentials to another origin or bypass approval to debug. OpenAPI 1.8.0 documents global security schemes, public exceptions and owner-only operations. HOST_ACCESS_PATH is excluded from archives and workspace replacement.
 
 ## Client compatibility
 
@@ -245,3 +245,5 @@ Android0.1.0-alpha.7.2 consumes existing protocol3 collection creation/membershi
 ## W1 multi-workspace host routing — 0.8.0
 
 Protocol3 remains additive. [WORKSPACES.md](../architecture/WORKSPACES.md#http-contract) owns exact catalog/owner/grant routes and X-Vaultor-Workspace semantics. All resource, byte, search, settings, diagnostic, SSE and transfer operations bind to the authorized selected workspace; missing header always means the fixed adopted default. Existing Android/desktop clients stay compatible. New contexts never inherit another workspace datasource/services. Unknown/unauthorized scopes return404; workspace selectors arrive in W2. OpenAPI documents the optional header and management paths. No credentials/catalog grants enter portable archives.
+
+W2 adds owner-only GET /api/owner/workspaces/{id}/grants returning bounded paired client rows {deviceId,name,allowed}. This reports effective grants, including fixed-default inheritance. Client selection, epoch ownership and browser/native binary/SSE scope are authoritative in [WORKSPACES.md](../architecture/WORKSPACES.md). Protocol3/archive3 are unchanged.

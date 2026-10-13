@@ -158,3 +158,7 @@ The narrow `updatesApply` preload call takes no renderer paths or installer comm
 ## 0.7.1 connection readiness
 
 Desktop connection handshakes retry only the approved WORKSPACE_BUSY response for up to 30 seconds per read, avoiding manual reconnect clicks while startup FTS batches briefly own the workspace gate. Authentication/compatibility/transport errors remain explicit and are not retried as mutations. Maintenance beyond the budget remains actionable with Retry. Active transfer polling avoids borrowing the single SQLite connection during import commit; see API.md. No SQLite pool enlargement or concurrent database ownership is introduced.
+
+## Workspace selection (0.9.0/W2)
+
+Sidebar workspace name opens selection; adjacent ellipsis opens server connections/hosting. Native selectedWorkspaceId persists per profile and scopes JSON, streams and files. Connections → Workspaces recovers from a revoked saved selection. Existing single application window is retained; browser tabs select independently. Sessions/drafts remain scoped and device appearance is locally cached. WORKSPACES.md owns checked activation/grants and limits.

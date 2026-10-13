@@ -10,6 +10,15 @@ import api from './api';
 
 const browser = getPlatform();
 const caps = { serverBuild: 'test-server', apiProtocolVersion: 3, minimumClientProtocolVersion: 3, authentication: false };
+it('browser scope reaches metadata and binary requests; old queued mutations cannot reach the new workspace',async()=>{
+  const request=vi.fn<AxiosAdapter>(async config=>({config,status:200,statusText:'',headers:{},data:config.url==='/capabilities'?caps:new Blob(['scope'])}));
+  const selected='11111111-1111-4111-8111-111111111111';configureConnection({profileId:'browser',kind:'browser',workspaceId:selected},{...browser,request});
+  await api.get('/resources');await api.get('/resources/file/raw',{responseType:'blob'});
+  expect(request.mock.calls.every(([c])=>c.headers.get('X-Vaultor-Workspace')===selected)).toBe(true);
+  const source=(await import('./platform')).getConnection().epoch;
+  configureConnection({profileId:'browser',kind:'browser',workspaceId:'22222222-2222-4222-8222-222222222222'},{...browser,request});const count=request.mock.calls.length;
+  await expect(api.put('/resources/same/note',{title:'Old queued edit'},{connectionEpoch:source})).rejects.toSatisfy(axios.isCancel);expect(request.mock.calls).toHaveLength(count);
+});
 function services(request: AxiosAdapter): PlatformServices { return { ...browser, kind: 'desktop', request }; }
 function respond(data: unknown, status = 200): AxiosAdapter { return async config => ({ config, data, status, statusText: '', headers: { 'x-request-id': 'server-id' } }); }
 afterEach(() => { cleanup(); configureConnection({ profileId: 'browser', kind: 'browser' }, browser); vi.restoreAllMocks(); });

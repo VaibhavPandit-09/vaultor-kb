@@ -47,3 +47,7 @@ Offline-source switching (0.2.2): a client with no unsaved note/title drafts may
 ## Trash and restored originals — 0.5.0
 
 Trash is a remembered Library destination; dialogs/selections remain transient. Unavailable notes pause editing while retaining their journey visits and any local recovery content; direct actions preserve mounted panes rather than dropping their trail. Restoration can resolve visits again, without replacing retained/conflicting drafts. File previews dismiss on unavailability. See [RESOURCE-LIFECYCLE.md](RESOURCE-LIFECYCLE.md) for conditional identities and recovery.
+
+## Multiple workspaces (W2)
+
+Workspace selectors run the existing departure barrier and remount only after checked destination activation. Snapshots/recovery stay keyed by workspace identity/generation within the existing tab/profile store; query, collection, panes, journey and reading positions restore independently. Browser selection is per tab (sessionStorage); desktop selection is main-owned per server profile. Device appearance is cached outside workspace archives. See [WORKSPACES.md](../architecture/WORKSPACES.md) for native scope, revocation and limitations.
