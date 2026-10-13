@@ -1,6 +1,6 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created/reviewed 2026-10-13. **W1 complete/published Windows0.8.0 (2026-10-13); W2 implementation/validation complete, publication pending; W3 and R1–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created/reviewed 2026-10-13. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 and R1–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
 
 ## Agreed product boundary
 
@@ -14,7 +14,7 @@ Created/reviewed 2026-10-13. **W1 complete/published Windows0.8.0 (2026-10-13); 
 
 ## Verified starting point and architecture constraints
 
-Current shipped host/desktop is 0.7.1/protocol3/archive3; Android is 0.1.0-alpha.7.2/versionCode10. Verify again at every implementation start. Current server uses a single configured SQLite datasource/file root, one workspace identity/generation, singleton workspace gate, indexes, transfer operations and change stream. Existing identity scoping is not multi-workspace hosting. Android has protected draft/operation journals and a small clean cache, not a complete offline store or sync engine. Existing Android editing and A7 mutations are still shipped; this plan does not pretend they have been removed.
+At plan drafting the shipped host/desktop was0.7.1/protocol3/archive3 and Androidalpha.7.2/versionCode10. After W2, Windows is0.9.0 and Androidalpha.8/versionCode11; protocol3/archive3 unchanged. Verify again at every implementation start. Current server uses a single configured SQLite datasource/file root, one workspace identity/generation, singleton workspace gate, indexes, transfer operations and change stream. Existing identity scoping is not multi-workspace hosting. Android has protected draft/operation journals and a small clean cache, not a complete offline store or sync engine. Existing Android editing and A7 mutations are still shipped; this plan does not pretend they have been removed.
 
 Inspect WorkspaceIdentityService, WorkspaceGate, WorkspaceRequestFilter, TransferService, datasource configuration, host approval, native allowlists, SSE, desktop connections and mobile workspace/storage code before changing contracts. Do not swap a global active database when a client switches workspace: concurrent clients must target different workspaces safely. Choose and document a bounded workspace-context architecture in W1; physical database/file isolation per workspace is the preferred starting direction, subject to a concrete JPA/transaction/worker feasibility check. Avoid both one JVM per workspace as an assumed default and a speculative rewrite.
 
@@ -65,7 +65,7 @@ Status: **Complete — Windows0.8.0 published 2026-10-13; Mac native gate pendin
 
 ## W2 — Workspace switching and access on every client
 
-Status: **Implementation/validation complete — publication pending (2026-10-13)**.
+Status: **Complete — Windows0.9.0 and Android0.1.0-alpha.8 published2026-10-13; Mac native gate pending**.
 
 - Distinguish server connection from workspace in selectors: server name plus workspace name, connected/offline status when relevant. Desktop/browser owner can create/rename workspaces and manage paired-device grants. Android discovers/selects authorized workspaces; no workspace administration UI.
 - One active workspace per window. Preserve each workspace's browsing query/scope/filters/sort, panes/journeys/reading positions and desktop drafts. Device appearance persists globally; workspace preferences stay scoped. Clear transient surfaces and stale bulk selection when switching.
@@ -75,7 +75,7 @@ Status: **Implementation/validation complete — publication pending (2026-10-13
 
 **Acceptance:** Windows/Mac/browser and Android share the workspace model without crossing data or credentials. Publish host/desktop and separately signed Android artifacts as required; unavailable platform checks are explicit.
 
-W2 actual results: desktop/browser/Android selectors, owner create/rename/effective grants, main/native JSON/files/SSE scope, checked activation, source-epoch queued writes, separate sessions and local appearance cache. Frontend22+desktop14/Node2/backend7/mobile37 focused checks passed; scoped lint frontend clean/mobile0errors22warnings. Windows packaged isolation/private-stop/restart/edit-save/PDF/relaunch and browser/native selector/refresh/narrow checks passed. Final Android APK native equal-ID note/file/stale/generation/persistence and selector UI passed on API36/API37 (16KiB). Native Mac/Wi-Fi/Samsung pending; exact v0.9.0 Mac handoff prepared. Android remains transitional editing untilR1. Release candidate0.9.0/alpha.8; no W3 work performed.
+W2 actual results: desktop/browser/Android selectors, owner create/rename/effective grants, main/native JSON/files/SSE scope, checked activation, source-epoch queued writes, separate sessions and local appearance cache. Frontend22+desktop14/Node2/backend7/mobile37 focused checks passed; scoped lint frontend clean/mobile0errors22warnings. Windows packaged isolation/private-stop/restart/edit-save/PDF/relaunch and browser/native selector/refresh/narrow checks passed. Final Android APK native equal-ID note/file/stale/generation/persistence and selector UI passed on API36/API37 (16KiB). Native Mac/Wi-Fi/Samsung pending; exact v0.9.0 Mac handoff prepared. Android remains transitional editing untilR1. Published Windows0.9.0/Androidalpha.8 from immutable 74f628b53d5516d4def9e796f03d30abccce8cd8; original signing identities and downloaded asset hashes verified. Clean tagged Android rebuild byte-identical. All disposable hosts/emulators stopped. No W3 work performed.
 
 ## W3 — Workspace import, export and desktop local copies
 

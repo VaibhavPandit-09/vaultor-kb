@@ -1,6 +1,6 @@
 ## W2 — exact v0.9.0 handoff (2026-10-13)
 
-Fetch tags; check out v0.9.0, not master. Install frontend/desktop npm dependencies; use Java25/Node24. Set BUILD_VERSION/VITE_BUILD_VERSION=0.9.0; desktop build, prepare-server, package:release using privately held original release key. Never generate another key. Verify arm64/ad-hoc codesign, DMG/original-trust sidecar under RELEASE-PROCESS.md.
+Windows0.9.0 is published. Fetch tags; check out v0.9.0 (source 74f628b53d5516d4def9e796f03d30abccce8cd8), not master. Install frontend/desktop npm dependencies; use Java25/Node24. Set BUILD_VERSION/VITE_BUILD_VERSION=0.9.0; desktop build, prepare-server, package:release using privately held original release key. Never generate another key. Verify arm64/ad-hoc codesign, DMG/original-trust sidecar under RELEASE-PROCESS.md.
 
 Disposable data only: workspace-smoke.mjs on packaged bundle; actual app launch/edit/save/relaunch; sidebar selector/create/rename/grants; browser independent tabs/refresh; sessions/appearance; failed save/Keep drafts; revoked selection → Connections → Workspaces; equal-ID notes/files; scoped original previews/SSE; menu/tray/quit/update recovery and all-context shutdown. Real Mac↔Windows Wi-Fi/mDNS remains separate. Do not access user's phone.
 
