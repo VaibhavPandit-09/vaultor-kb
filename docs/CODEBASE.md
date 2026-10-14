@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-10-14. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-10-15. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -794,3 +794,11 @@ Preserved clean R4 state85256f7 on ai/codex-current, then fast-forwarded only th
 ### 2026-10-14 — R5 review domain and portable evidence
 
 Added per-workspace review table/indexes, UUID/body reconciliation, generation/conditional-status admission, server-derived provenance and reviews notifications. Full archive4 and scoped export review evidence preserve missing targets and remap merge references; existing archive1–3 imports remain, unsupported/downgraded review archives fail. Backend compilation and10 review tests (including pinned HTTPS grants/revocation, replacement and import-as-new),4 desktop compatibility cases and1 note graph case passed. No originals edited by triage. UI integration/native/release checks remain in progress on ai/codex-current; no ai/gemini-ui content consumed.
+
+### 2026-10-15 — R5 functional inbox and transfer visibility
+
+Minimal ReviewInbox/ReviewButton and lib/reviews.ts add bounded workspace/resource triage, current saved-evidence disclosure, local pending/conflict feedback, shared Escape/focus and explicit source epoch. Review invalidations do not reconcile/dirty editors. Import previews show review counts and replacement names review removal explicitly.10 focused frontend cases and native packaged/browser count/paging/status/original-revision/scoped-entry/Escape/theme/narrow checks passed; dark/light/narrow frames inspected. No global styling/layout/motion refactor; Dashboard/PreviewLayer/transfer preview hooks are documented integration points. Final compilation/lint/package/publication gate follows.
+
+R5 final scoped frontend verification:13 tests passed (reviews6, changeFeed4, workspace transfers3), TypeScript passed and scoped ESLint0errors/0warnings. Two archive/copy review cases reran after adding import-preview counts and passed. Native packaged/browser checks above use disposable data and no user phone. Final source/tag/installer publication remains pending.
+
+R5 final domain refinements: generation is persisted/indexed on every review, read/count/export queries exclude former/unscoped generations, and unscoped unpublished candidates migrate without guessed attachment or deletion. Scoped packages omit review quotes for excluded linked-note bodies.13 review cases plus1 graph case passed after these changes;4 compatibility cases passed earlier. Local long-title wrapping fixed the narrowly reproduced modal overflow. No global style refactor. Final installer/native file-preview/publication checks pending.

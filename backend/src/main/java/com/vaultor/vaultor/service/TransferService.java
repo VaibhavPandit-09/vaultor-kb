@@ -64,7 +64,7 @@ public class TransferService {
     }
     public record Manifest(int version,String createdAt,int resources,int tags,Map<String,String> checksums) {}
     public record Operation(String id,String kind,String status,String phase,int progress,String mode,String detail,String requestId,Map<String,Integer> counts,String filename,String mediaType,List<String> warnings) {}
-    public record Preview(Operation operation,int resources,int files,int notes,int tags,List<String> warnings) {}
+    public record Preview(Operation operation,int resources,int files,int notes,int tags,int reviews,List<String> warnings) {}
     @PostConstruct public void init() throws Exception {
         root=Path.of(storagePath).toAbsolutePath().normalize().resolveSibling("operations"); Files.createDirectories(root);
         for(var op:operations.findAll()) {
@@ -239,7 +239,7 @@ public class TransferService {
             op.setResourceCount(workspace.resources().size());op.setTagCount(workspace.tags().size());op.setFileCount((int)workspace.resources().stream().filter(r->"file".equals(r.type())).count());
             phase(op,"PREVIEW","review",0);
             int fileCount=(int)workspace.resources().stream().filter(r->r.type().equals("file")).count();
-            return new Preview(dto(op),workspace.resources().size(),fileCount,workspace.resources().size()-fileCount,workspace.tags().size(),warnings.stream().limit(100).toList());
+            return new Preview(dto(op),workspace.resources().size(),fileCount,workspace.resources().size()-fileCount,workspace.tags().size(),workspace.reviews()==null?0:workspace.reviews().size(),warnings.stream().limit(100).toList());
         } catch(Exception e) { fail(op,e); throw new IllegalArgumentException("Cannot import archive: "+e.getMessage(),e); }
     }
     private Workspace readWorkspace(TransferOperation op) throws IOException { return mapper.readValue(Files.readString(directory(op.getId()).resolve("workspace.json")),Workspace.class); }

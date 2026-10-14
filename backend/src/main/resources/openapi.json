@@ -9270,6 +9270,11 @@
             "items": {
               "type": "string"
             }
+          },
+          "reviews": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Portable review items; omitted by older hosts"
           }
         },
         "required": []
@@ -10057,6 +10062,14 @@
           "workspaceImports": {
             "type": "boolean",
             "description": "Owner-only staged workspace ZIP import with atomic publication"
+          },
+          "reviews": {
+            "type": "integer",
+            "description": "1 enables scoped review evidence/status"
+          },
+          "workspaceArchiveVersion": {
+            "type": "integer",
+            "description": "Current full archive writer version4; reader accepts1–4"
           }
         }
       },

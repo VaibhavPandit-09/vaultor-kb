@@ -26,9 +26,12 @@ public class ReviewService {
         this.jdbc=jdbc;this.resources=resources;this.identity=identity;this.json=json;this.changes=changes;
     }
     @PostConstruct void init() {
-        jdbc.execute("CREATE TABLE IF NOT EXISTS review_items (id TEXT PRIMARY KEY, resource_id TEXT NOT NULL, fingerprint TEXT NOT NULL, evidence TEXT NOT NULL, status TEXT NOT NULL, revision TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
-        jdbc.execute("CREATE INDEX IF NOT EXISTS review_target ON review_items(resource_id,status,created_at,id)");
-        jdbc.execute("CREATE INDEX IF NOT EXISTS review_status ON review_items(status,created_at,id)");
+        jdbc.execute("CREATE TABLE IF NOT EXISTS review_items (id TEXT PRIMARY KEY, resource_id TEXT NOT NULL, fingerprint TEXT NOT NULL, evidence TEXT NOT NULL, status TEXT NOT NULL, revision TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,generation TEXT NOT NULL)");
+        // Unpublished unscoped candidates cannot be assigned to the current generation by guesswork.
+        boolean scoped=jdbc.queryForList("PRAGMA table_info(review_items)").stream().anyMatch(c->"generation".equals(c.get("name")));
+        if(!scoped)jdbc.execute("ALTER TABLE review_items ADD COLUMN generation TEXT NOT NULL DEFAULT 'unscoped'");
+        jdbc.execute("CREATE INDEX IF NOT EXISTS review_target_scope ON review_items(generation,resource_id,status,created_at,id)");
+        jdbc.execute("CREATE INDEX IF NOT EXISTS review_status_scope ON review_items(generation,status,created_at,id)");
     }
     public record Locator(String kind,String path,Integer page) {}
     public record Input(String generation,String resourceId,String comment,String quote,String context,Locator locator,String baseRevision) {}
@@ -58,12 +61,13 @@ public class ReviewService {
     }
     private String hash(Input i) {try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(json.writeValueAsString(i).getBytes(StandardCharsets.UTF_8)));}catch(Exception e){throw new IllegalStateException(e);}}
     private Row row(String id) {
-        return jdbc.query("SELECT * FROM review_items WHERE id=?",(r,n)->new Row(r.getString("id"),r.getString("resource_id"),r.getString("fingerprint"),json.readValue(r.getString("evidence"),Evidence.class),r.getString("status"),r.getString("revision"),r.getString("created_at"),r.getString("updated_at")),id).stream().findFirst().orElseThrow(()->new AccessFailure(404,"REVIEW_NOT_FOUND","Review item not found"));
+        return jdbc.query("SELECT * FROM review_items WHERE id=? AND generation=?",(r,n)->new Row(r.getString("id"),r.getString("resource_id"),r.getString("fingerprint"),json.readValue(r.getString("evidence"),Evidence.class),r.getString("status"),r.getString("revision"),r.getString("created_at"),r.getString("updated_at")),id,identity.current().generation()).stream().findFirst().orElseThrow(()->new AccessFailure(404,"REVIEW_NOT_FOUND","Review item not found in this workspace generation"));
     }
     private void generation(String expected) {if(!identity.current().generation().equals(expected))throw new AccessFailure(409,"REVIEW_GENERATION_CHANGED","Workspace was replaced. Keep this evidence for its original source; do not send it to the replacement.");}
     @Transactional public Item create(String id,Input raw,String author) {
         id=uuid(id);Input i=normalize(raw);generation(i.generation());String fingerprint=hash(i);
         if(jdbc.queryForObject("SELECT COUNT(*) FROM review_items WHERE id=?",Integer.class,id)>0) {
+            if(!i.generation().equals(jdbc.queryForObject("SELECT generation FROM review_items WHERE id=?",String.class,id)))throw new AccessFailure(409,"REVIEW_GENERATION_CHANGED","Review identity belongs to a former workspace generation; retained evidence cannot be reassigned.");
             Row old=row(id);if(!old.fingerprint().equals(fingerprint))throw new AccessFailure(409,"REVIEW_ID_REUSED","Review identity already has different evidence");return dto(old);
         }
         Resource target=resources.findById(i.resourceId()).orElseThrow(()->new AccessFailure(404,"RESOURCE_NOT_FOUND","Target is unavailable. Keep the review evidence on its source device."));
@@ -73,7 +77,7 @@ public class ReviewService {
         if(jdbc.queryForObject("SELECT COUNT(*) FROM review_items",Integer.class)>=10000)throw new AccessFailure(409,"REVIEW_LIMIT","Workspace review limit reached (10000). Export/retain evidence before adding more.");
         String now=Instant.now().toString();String label=text(author,100,true);
         var portable=new Portable(id,i.resourceId(),target.getTitle(),target.getType(),i.comment(),i.quote(),i.context(),i.locator(),label,now,now,"open");
-        jdbc.update("INSERT INTO review_items VALUES (?,?,?,?,?,?,?,?)",id,i.resourceId(),fingerprint,json.writeValueAsString(new Evidence(portable,i.baseRevision())),"open",UUID.randomUUID().toString(),now,now);
+        jdbc.update("INSERT INTO review_items(id,resource_id,fingerprint,evidence,status,revision,created_at,updated_at,generation) VALUES (?,?,?,?,?,?,?,?,?)",id,i.resourceId(),fingerprint,json.writeValueAsString(new Evidence(portable,i.baseRevision())),"open",UUID.randomUUID().toString(),now,now,i.generation());
         changed(id,i.resourceId());return dto(row(id));
     }
     @Transactional(readOnly=true) public Item get(String id) {return dto(row(uuid(id)));}
@@ -90,7 +94,7 @@ public class ReviewService {
     @Transactional(readOnly=true) public Page list(String state,String target,int page,int size) {
         require(state!=null && Set.of("all","open","resolved","dismissed").contains(state),"Invalid status filter");require(page>=0 && page<=100000 && size>=1 && size<=100,"Review page size must be 1–100");
         if(target!=null)target=uuid(target);
-        String where=" WHERE 1=1";List<Object> args=new ArrayList<>();if(target!=null){where+=" AND resource_id=?";args.add(target);}
+        String where=" WHERE generation=?";List<Object> args=new ArrayList<>();args.add(identity.current().generation());if(target!=null){where+=" AND resource_id=?";args.add(target);}
         Map<String,Long> counts=new LinkedHashMap<>();for(String value:List.of("open","resolved","dismissed")){var a=new ArrayList<>(args);a.add(value);counts.put(value,jdbc.queryForObject("SELECT COUNT(*) FROM review_items"+where+" AND status=?",Long.class,a.toArray()));}
         if(!state.equals("all")){where+=" AND status=?";args.add(state);}
         long total=jdbc.queryForObject("SELECT COUNT(*) FROM review_items"+where,Long.class,args.toArray());args.add(size);args.add((long)page*size);
@@ -114,7 +118,7 @@ public class ReviewService {
     private String savedText(JsonNode node) {StringBuilder b=new StringBuilder();appendText(node,b,0);return b.toString();}
     private void appendText(JsonNode n,StringBuilder b,int depth) {if(depth>64 || b.length()>1048576)return;if(n.has("text"))b.append(n.path("text").asText());for(JsonNode c:n.path("content"))appendText(c,b,depth+1);if(Set.of("paragraph","heading").contains(n.path("type").asText()))b.append('\n');}
     @Transactional(readOnly=true) public List<Portable> snapshot(Set<String> selection) {
-        return jdbc.queryForList("SELECT id FROM review_items ORDER BY created_at,id",String.class).stream().map(this::row).filter(r->selection==null || selection.contains(r.target())).map(r->{var p=r.evidence().portable();return new Portable(r.id(),r.target(),p.targetTitle(),p.targetType(),p.comment(),p.quote(),p.context(),p.locator(),p.author(),r.created(),r.updated(),r.status());}).toList();
+        return jdbc.queryForList("SELECT id FROM review_items WHERE generation=? ORDER BY created_at,id",String.class,identity.current().generation()).stream().map(this::row).filter(r->selection==null || selection.contains(r.target())).map(r->{var p=r.evidence().portable();return new Portable(r.id(),r.target(),p.targetTitle(),p.targetType(),p.comment(),p.quote(),p.context(),p.locator(),p.author(),r.created(),r.updated(),r.status());}).toList();
     }
     public void validatePortable(List<Portable> items) {
         require(items!=null && items.size()<=10000,"Invalid review archive section");Set<String> ids=new HashSet<>();
@@ -124,6 +128,6 @@ public class ReviewService {
     public void restore(List<Portable> items,Map<String,String> ids,boolean replace) {
         if(replace)jdbc.update("DELETE FROM review_items");if(items==null)return;validatePortable(items);
         require(jdbc.queryForObject("SELECT COUNT(*) FROM review_items",Integer.class)+items.size()<=10000,"Merged reviews exceed 10000");
-        for(var p:items) {String id=replace?p.id():UUID.randomUUID().toString();String target=ids.computeIfAbsent(p.resourceId(),k->replace?k:UUID.randomUUID().toString());var portable=new Portable(id,target,p.targetTitle(),p.targetType(),p.comment(),text(p.quote(),4000,false),text(p.context(),4000,false),p.locator(),p.author(),p.createdAt(),p.updatedAt(),p.status());jdbc.update("INSERT INTO review_items VALUES (?,?,?,?,?,?,?,?)",id,target,"imported:"+UUID.randomUUID(),json.writeValueAsString(new Evidence(portable,"imported")),p.status(),UUID.randomUUID().toString(),p.createdAt(),p.updatedAt());}
+        for(var p:items) {String id=replace?p.id():UUID.randomUUID().toString();String target=ids.computeIfAbsent(p.resourceId(),k->replace?k:UUID.randomUUID().toString());var portable=new Portable(id,target,p.targetTitle(),p.targetType(),p.comment(),text(p.quote(),4000,false),text(p.context(),4000,false),p.locator(),p.author(),p.createdAt(),p.updatedAt(),p.status());jdbc.update("INSERT INTO review_items(id,resource_id,fingerprint,evidence,status,revision,created_at,updated_at,generation) VALUES (?,?,?,?,?,?,?,?,?)",id,target,"imported:"+UUID.randomUUID(),json.writeValueAsString(new Evidence(portable,"imported")),p.status(),UUID.randomUUID().toString(),p.createdAt(),p.updatedAt(),identity.current().generation());}
     }
 }
