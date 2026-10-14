@@ -6,6 +6,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Install and update on each platform](desktop/INSTALLATION-AND-UPDATES.md): exact Windows/Mac steps, browser/Docker/Ubuntu paths, available targets and recovery.
 - [Agent-owned release process](desktop/RELEASE-PROCESS.md): standing responsibility for versions, native builds, verified artifacts, tags and GitHub publication.
+- [0.11.0 companion checkpoint service](desktop/releases/v0.11.0.md): R3 host capability, actual Windows verification, compatible Android and exact Mac handoff.
 - [0.10.0 independent workspace transfers](desktop/releases/v0.10.0.md): import-as-new, snapshot forks, recovery and Windows/Mac availability.
 - [0.9.0 workspace switching](desktop/releases/v0.9.0.md): selectors, grants, sessions and Windows/Mac status.
 - [0.8.0 workspace foundation](desktop/releases/v0.8.0.md): Windows-first host isolation, actual validation and same-tag Mac gate.
@@ -45,6 +46,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Architecture, development and host security
 
+- [Companion checkpoints](architecture/COMPANIONS.md): R3 immutable reading datasets, selection/coverage, hashes/ranges, expiry/revocation and R4 client activation contract.
+
 - [Host workspaces](architecture/WORKSPACES.md): W1 isolated storage/contexts, fixed-default routing, grants, adoption checkpoint, limits and compatibility.
 
 - [Platform and connection boundary](architecture/PLATFORM.md): transport, cancellation, protocols and native/browser ownership.
@@ -78,7 +81,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
-- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan; W1–W3 and R1 shipped, R2 reading refinement shipped, R3–R10 remain separately authorized work. One sprint per authorization.
+- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan; W1–W3/R1–R2 shipped, R3 host checkpoints in progress, R4–R10 remain separately authorized work. One sprint per authorization.
 - [Original Android tracker](plans/android-plan.md): historical A1–A7 evidence; A8/A9 cancelled and superseded.
 
 - [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): All five sprints implemented on Windows; measured integration, platform limits and separate Android prototype gate recorded.

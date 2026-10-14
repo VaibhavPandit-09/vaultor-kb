@@ -6,8 +6,8 @@ import java.io.IOException;
 import java.util.*;
 
 /** Host secrets never belong in the database, workspace archive, or installation. */
-final class HostFiles {
-    static void privatePath(Path path, boolean directory) throws IOException {
+public final class HostFiles {
+    public static void privatePath(Path path, boolean directory) throws IOException {
         var posix=Files.getFileAttributeView(path, PosixFileAttributeView.class);
         if(posix!=null) posix.setPermissions(PosixFilePermissions.fromString(directory?"rwx------":"rw-------"));
         var acl=Files.getFileAttributeView(path,AclFileAttributeView.class);
@@ -16,7 +16,7 @@ final class HostFiles {
             acl.setAcl(List.of(AclEntry.newBuilder().setType(AclEntryType.ALLOW).setPrincipal(Files.getOwner(path)).setPermissions(permissions).build()));
         }
     }
-    static void write(Path path, byte[] data) throws IOException {
+    public static void write(Path path, byte[] data) throws IOException {
         Path temp=path.resolveSibling(path.getFileName()+"."+UUID.randomUUID()+".tmp");
         try {
             Files.createFile(temp); privatePath(temp,false);

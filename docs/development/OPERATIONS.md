@@ -1,5 +1,11 @@
 # Development, Docker and debugging
 
+## Host companion artifacts — R3
+
+Host0.11.0 prepares private reading checkpoints under each workspace's sibling companions directory. They are separate from originals, portable archives and client queues. [COMPANIONS.md](../architecture/COMPANIONS.md) owns limits, fixed expiry, request-triggered cleanup, cancellation, permissions and byte verification. Use its authorized DELETE checkpoint endpoint to release unused payloads; do not remove live original files or claim host artifacts are backups. Pending work participates in private host drain; restart fails interrupted preparation and retains verified READY checkpoints until expiry. No background deletion of user resources is introduced.
+
+For a disposable packaged check, run node desktop/scripts/companion-check.mjs with the packaged bundle path. It owns generated roots/host processes and checks coherent capture/manifest SHA/range resume/comparison/cancel/restart. It must never target personal application storage or print access keys. Android alpha.10 remains compatible; R4 adds the future offline client. Mac native delivery requires its same-tag handoff rather than cross-platform packaging claims.
+
 ## Desktop development (D5)
 
 Run npm --prefix desktop ci, npm --prefix desktop run build, npm --prefix desktop run prepare-server, then npm --prefix desktop start. This computer starts its own bundled Temurin/Spring child and separate application-data workspace; remembered existing loopback servers remain available. package:dev creates a portable development folder requiring neither installed Java nor Docker. Build tools still need Java 25/Node. Sharing is off by default; D5 host HTTPS/pairing services are implemented, with desktop/client pairing UX and D7 saved-change reconciliation implemented. Windows installers/one-click updates are shipped; Mac0.7.1 is verified. [DESKTOP.md](../desktop/DESKTOP.md) owns setup, ownership, paths, bounded logs, native files, tray/login lifecycle and transfer limits. Windows portable launch/editor/relaunch was verified on disposable data with no installed Java in its environment; Mac verification is pending.

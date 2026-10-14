@@ -46,6 +46,7 @@ public class WorkspaceRegistry {
             "spring.datasource.url","jdbc:sqlite:"+root.resolve("app.db"),"app.storage.path",root.resolve("files").toString(),
             "app.workspace.id",id,"spring.jmx.enabled","false")));
         context.addBeanFactoryPostProcessor(factory->factory.registerSingleton("hostAccess",access));
+        context.addBeanFactoryPostProcessor(factory->factory.registerSingleton("workspaceCatalog",catalog));
         context.register(com.vaultor.workspace.WorkspaceConfiguration.class);
         try {
             context.refresh();
@@ -60,7 +61,7 @@ public class WorkspaceRegistry {
     public synchronized void endHostWork(){hostWork--;}
     public synchronized void revoke(String id,String device){if(id.equals(catalog.defaultId()))main.getBean(ChangeFeed.class).disconnectDevice(device);else if(children.containsKey(id))children.get(id).feed().disconnectDevice(device);}
     public synchronized void quiesce(){stopping=true;main.getBean(WorkspaceGate.class).quiesce();main.getBean(ChangeFeed.class).restarting();for(var r:children.values()){r.gate().quiesce();r.feed().restarting();}}
-    public boolean drained(){var all=new ArrayList<ConfigurableWebApplicationContext>();synchronized(this){if(hostWork>0)return false;all.add(main);children.values().forEach(r->all.add(r.context()));}return all.stream().allMatch(c->c.getBean(WorkspaceGate.class).requestsDrained() && c.getBean(TransferOperationRepository.class).countByStatusIn(List.of("QUEUED","RUNNING","CLEANUP"))==0);}
+    public boolean drained(){var all=new ArrayList<ConfigurableWebApplicationContext>();synchronized(this){if(hostWork>0)return false;all.add(main);children.values().forEach(r->all.add(r.context()));}return all.stream().allMatch(c->c.getBean(WorkspaceGate.class).requestsDrained() && c.getBean(CompanionSnapshots.class).idle() && c.getBean(TransferOperationRepository.class).countByStatusIn(List.of("QUEUED","RUNNING","CLEANUP"))==0);}
     public synchronized void resume(){stopping=false;main.getBean(WorkspaceGate.class).resume();children.values().forEach(r->r.gate().resume());}
     @PreDestroy public synchronized void close(){stopping=true;for(var r:children.values()){r.gate().quiesce();r.context().close();}children.clear();}
 }

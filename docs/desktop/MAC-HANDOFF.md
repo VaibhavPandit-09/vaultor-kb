@@ -1,3 +1,14 @@
+## R3 — exact v0.11.0 handoff (2026-10-14)
+
+Windows0.11.0 supplies companion checkpoint schema1. Mac artifacts remain blocked on native access; do not describe the Windows release as Mac-ready. Android alpha.10 remains unchanged, with no full offline storage until R4. Fetch origin/tags, check out the immutable v0.11.0 tag, verify desktop/package and lock versions0.11.0 and clean source. Do not use later master or move the tag. Follow RELEASE-PROCESS.md with Node24/Java25 and the privately transferred original release key; never regenerate/publish the key or configure paid services/CI secrets.
+
+1. Run npm ci in frontend/desktop. In backend run ./mvnw -Dtest=CompanionSnapshotsTest,DesktopContractTest,MultiWorkspaceTest test, using their disposable roots only. No phone access, Docker or broad API run.
+2. Export BUILD_VERSION=0.11.0 and VITE_BUILD_VERSION=0.11.0. Run desktop build, prepare-server, then package:release natively on Apple Silicon. Verify ad-hoc codesign/DMG, pinned arm64 runtime and original-key sidecar. The app requires no installed Java/Docker.
+3. Run node desktop/scripts/companion-check.mjs against the packaged app's Contents/Resources/bundle. It owns a generated host/storage and verifies capability, estimate/paging/cyclic dependencies, manifest/payload SHA, five range reassemblies, immutable revisions/delta/cancel/private stop/restart. Keep data/logs private; never substitute a personal workspace.
+4. Run the actual packaged app with a disposable VAULTOR_OWNED_SMOKE_DIRECTORY and VAULTOR_SMOKE_MODE=first, then relaunch with the same directory and mode=relaunch. Check native launch/save/PDF/restart and safe owned-host exit. Do not alter the installed personal app. No Android offline/real Wi-Fi/OneUI claim follows from this.
+5. From the exact clean source tag, upload only the absent verified Mac DMG/sidecar with npm --prefix desktop run publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.11.0.md. Compare downloaded artifacts and public digests. Preserve existing Windows bytes and source tag; identical retries only. Any code correction needs a higher version, not replaced assets.
+6. Record native results/artifact hashes in a docs-only follow-up; update the release platform status/body after verification without moving the source tag. Stop R3; do not start R4 without authorization.
+
 ## W3 — exact v0.10.0 handoff (2026-10-14)
 
 Windows0.10.0 is published. Fetch origin tags and check out v0.10.0 (source b96006b0f43f46934f2d3cf5b41ac9078a0a8705), never a later master. Use Node24/Java25, npm ci in frontend/desktop, BUILD_VERSION/VITE_BUILD_VERSION=0.10.0, desktop build → prepare-server → package:release. Preserve the privately transferred original release key; do not regenerate it. Verify Apple Silicon/ad-hoc codesign/DMG/original-key sidecar under RELEASE-PROCESS.md. No paid signing is promised.

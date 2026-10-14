@@ -1,6 +1,6 @@
 # Vaultor for Android
 
-Reviewed 2026-10-14. R2 reading refinement is published as **0.1.0-alpha.10 / versionCode14**. [The workspace/companion tracker](../plans/workspace-companion-plan.md) is authoritative: W1–W3 shipped; R1 is complete; R2 is complete; R3–R10 remain unstarted and require separate authorization. R1 alpha.9.1/versionCode13 is the preceding release. Host protocol3, archive3 and workspace grants remain unchanged; this mobile-only update does not rebuild desktop.
+Reviewed 2026-10-14. R2 reading refinement is published as **0.1.0-alpha.10 / versionCode14**. [The workspace/companion tracker](../plans/workspace-companion-plan.md) is authoritative: W1–W3 shipped; R1 is complete; R2 is complete; R3 is the host-only checkpoint sprint; R4–R10 remain unstarted and require separate authorization. R1 alpha.9.1/versionCode13 is the preceding release. Host protocol3, archive3 and workspace grants remain unchanged; this mobile-only update does not rebuild desktop.
 
 ## Implemented reader boundary
 

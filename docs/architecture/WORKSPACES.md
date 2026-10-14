@@ -4,7 +4,7 @@ Reviewed2026-10-14. W1 implements server-side isolation; W2 adds desktop/browser
 
 ## Architecture decision — W1
 
-Use an independent Spring domain/JPA context per workspace inside the existing JVM/listener. The existing application context continues to serve the adopted default workspace. Additional contexts have their own SQLite datasource/entity manager/transaction manager, repositories, settings, files, FTS/file-index workers, image services, transfer operations, lifecycle receipts, maintenance gate and change feed. They share only the existing host approval service and servlet container/configuration. No mutable global active datasource, thread-local workspace routing, additional server port or JVM per workspace is introduced.
+Use an independent Spring domain/JPA context per workspace inside the existing JVM/listener. The existing application context continues to serve the adopted default workspace. Additional contexts have their own SQLite datasource/entity manager/transaction manager, repositories, settings, files, FTS/file-index workers, image services, transfer operations, lifecycle receipts, maintenance gate and change feed. They share host approval/catalog grants and servlet container/configuration. No mutable global active datasource, thread-local workspace routing, additional server port or JVM per workspace is introduced. R3 explicitly registers the shared catalog for companion grant rechecks; checkpoint workers/storage remain independent.
 
 `WorkspaceRegistry` opens contexts on demand and retains them until host shutdown. The catalog is limited to eight workspaces total, so at most seven additional contexts exist. This conservative bound prevents unbounded threads/connections/metadata; it is not evidence of eight-workspace performance. A context's services capture immutable dependencies, so a delayed transfer/search job cannot change storage when another client selects a workspace. Request JPA association loading and change notifications apply to the selected context; SSE excludes request entity-manager ownership.
 
@@ -54,6 +54,8 @@ Grant revocation closes the workspace's streams immediately. Delivery/heartbeat 
 Desktop's private stop channel quiesces all opened contexts, emits restart notices and waits for admitted requests/transfers across all workspaces before closing. Failed orderly stop resumes every gate. Child transfer shutdown waits a bounded time before interruption; interrupted transfers retain their existing restart/retry semantics. Abrupt process termination is never a guaranteed final flush.
 
 Existing clients continue to use the default workspace with existing save/revision rules. W2 clients carry explicit scope across JSON, streaming, binary, native files and sessions. Android full offline companions remain R3/R4; the existing clean cache is not a workspace download.
+
+R3 adds `/api/companions` to scoped dispatch and host request/worker drain. Its domain context writes private sibling `companions/` checkpoints, outside original files and portable archives. [COMPANIONS.md](COMPANIONS.md) owns generation/device binding, snapshot/byte consistency, scope/coverage, expiry and resume. Host0.11.0 publishes the capability; Android offline activation is R4, not implied by this host release.
 
 ## Verification boundary
 

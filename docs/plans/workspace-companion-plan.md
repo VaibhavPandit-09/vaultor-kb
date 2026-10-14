@@ -1,6 +1,6 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created 2026-10-13; reviewed 2026-10-14. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created 2026-10-13; reviewed 2026-10-14. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 in progress for host0.11.0; R4–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
 
 ## Agreed product boundary
 
@@ -121,7 +121,7 @@ Implementation and publication are complete. Device-only presentation, bounded s
 
 ## R3 — Host companion snapshots and refresh contracts
 
-Status: **Not started**.
+Status: **In progress — authorized 2026-10-14**. Target host/Windows0.11.0, additive protocol3 capability; Android alpha.10 remains unchanged. Implement immutable scoped reading checkpoints, bounded inventory/byte resume, explicit coverage and checkpoint comparison; publish Windows with exact same-tag Mac handoff. R4–R10 remain unstarted.
 
 - Implement authorized paginated metadata and snapshot inventory/checkpoints for complete workspace, selected collections and selected resources plus explicit dependency options. Estimate bytes/counts before download. Download policy can include originals or readable content only; disclose omitted media and link destinations.
 - Capture coherent saved documents, revisions, resource metadata, referenced files and scoped organization. Snapshot revision/hash manifests prevent mixes of old notes and new bytes. Streams are hints; cursor gaps require scoped reconciliation/full manifest, not trusting missed events.
