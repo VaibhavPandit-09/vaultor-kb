@@ -1,0 +1,11 @@
+# Codex product stream
+
+Reviewed2026-10-14. Work only on **ai/codex-current**; never incorporate ai/gemini-ui without explicit integration authorization. R4 remains completed/published; the workspace-companion tracker remains authoritative. No project restart.
+
+R5 is authorized: review records and inbox on desktop/browser; Android capture/sync remains R6. Functional changes will use separate review types/API/state and a dedicated component, with only narrow Dashboard hooks. Broad layout/theme/motion work belongs to the UI stream.
+
+The user requested latest Git instructions: master11b09aa (AGENTS, UI_PHILOSOPHY, macOS ignore) was fast-forwarded before feature edits. Read the design contract completely. No other branch is an implementation dependency.
+
+Review UI interaction boundary: workspace inbox lists paged review evidence/status with on-demand resource focus; focused resource offers a compact pending count opening the same component scoped to that resource. Opening evidence expands its existing row. Status changes retain evidence and show pending/conflict/retry on the affected row. Resource navigation uses existing navigation/save contracts. One scroll context per view; no new sticky chrome/global style refactor/custom motion system. Central Escape/focus restoration and existing theme/motion primitives apply.
+
+Integration risks: Dashboard sidebar/destination and resource-header insertion points may conflict with presentation restructuring. Preserve review query scope, generation, immutable creation UUID/body, If-Match status updates, target availability/evidence state and failure/stale-response behavior when relocating controls. Detailed API/state contracts will live in workspace/REVIEWS.md. Release ownership remains agent-owned; push this branch, never master.

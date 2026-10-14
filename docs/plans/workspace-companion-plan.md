@@ -1,6 +1,6 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created 2026-10-13; reviewed 2026-10-14. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 complete/published Androidalpha.11; R5–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created 2026-10-13; reviewed 2026-10-14. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 complete/published Androidalpha.11; R5 authorized/in progress on ai/codex-current; R6–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
 
 ## Agreed product boundary
 
@@ -150,7 +150,7 @@ R4 delivery: [Android alpha.11](https://github.com/VaibhavPandit-09/vaultor-kb/r
 
 ## R5 — Review items and desktop/browser Review inbox
 
-Status: **Not started**.
+Status: **Authorized / in progress (2026-10-14), branch ai/codex-current**. Continue the R4 baseline; target Windows0.12.0 host/UI capability with original signer and exact-tag Mac handoff. Android alpha.11 stays unchanged; R6 remains separately authorized. No ai/gemini-ui integration.
 
 - Add separate workspace-scoped review records: stable UUID, resource target, bounded comment, optional quote/context/locator/base revision, author/device label, created/updated times and revision-checked open/resolved/dismissed status. Escape user content; enforce limits and pagination. Original resource revisions/JSON remain unchanged.
 - Expose idempotent creation/status lookup and conditional status actions with change notifications. Retries with the same ID/body reconcile; differing payloads cannot silently overwrite. Multiple devices resolving one item produce explicit conflict/reconciliation.
