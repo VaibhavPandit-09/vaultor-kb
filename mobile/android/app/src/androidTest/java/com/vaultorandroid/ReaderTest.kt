@@ -25,6 +25,10 @@ class ReaderUpgradeTest {
  val media=VaultorModule::class.java.getDeclaredMethod("getMedia").apply{isAccessible=true}.invoke(module);val source=File(File(ctx.cacheDir,"media-share").apply{mkdirs()},"legacy-original.txt").apply{writeText("Original upload bytes retained")};val stage=VaultorMedia::class.java.getDeclaredMethod("stage",Uri::class.java).apply{isAccessible=true};stage.invoke(media,FileProvider.getUriForFile(ctx,ctx.packageName+".media",source));
  File(ctx.noBackupFilesDir,"r1-upgrade-unknown.txt").writeText("v2");File(ctx.noBackupFilesDir,"r1-upgrade-count.txt").writeText(JSONArray(result{module.media("list","{}",it)}).length().toString())
  }
+ @Test fun seedOversizedBrowsePosition(){
+  require(android.os.Build.HARDWARE=="ranchu");val ctx=BridgeReactContext(InstrumentationRegistry.getInstrumentation().targetContext);val module=VaultorModule(ctx);val b=JSONObject(result{module.storage("bootstrap","{}",it)});val host=b.getString("selected");val profiles=b.getJSONArray("profiles");val profile=(0 until profiles.length()).map{profiles.getJSONObject(it)}.first{it.getString("hostId")==host};require(profile.getString("address").startsWith("https://127.0.0.1:"));val sessions=b.getJSONObject("sessions");val session=sessions.keys().asSequence().map{sessions.getJSONObject(it)}.filter{it.getString("hostId")==host && JSONArray(it.getString("scope")).getString(1)==profile.getString("workspaceId")}.maxBy{it.optLong("at")};val browse=session.optJSONObject("browse") ?: JSONObject();browse.put("destination","library").put("query","").put("type","").put("mode","title").put("page",0).put("scroll",9999999);browse.remove("collection");session.put("browse",browse).put("view","browse");result{module.storage("putSession",session.toString(),it)}
+ }
+
  @Test fun upgradeRetainsAndFreezes(){
  val ctx=BridgeReactContext(InstrumentationRegistry.getInstrumentation().targetContext);val module=VaultorModule(ctx);val b=JSONObject(result{module.storage("bootstrap","{}",it)});val drafts=b.getJSONArray("drafts");assertTrue((0 until drafts.length()).count{drafts.getJSONObject(it).optString("version").startsWith("r1-upgrade-")}==3)
  val before=File(ctx.noBackupFilesDir,"vaultor-state.bin").readBytes();val inventory=JSONObject(result{module.legacyRecovery("inventory",it)});assertTrue(inventory.getInt("drafts")>=3);assertTrue(inventory.getInt("creations")>=1);assertTrue(inventory.getInt("operations")>=1);assertEquals(File(ctx.noBackupFilesDir,"r1-upgrade-count.txt").readText().toInt(),inventory.getInt("inputs"));assertArrayEquals(before,File(ctx.noBackupFilesDir,"vaultor-state.bin").readBytes())
@@ -52,4 +56,9 @@ class ReaderOfflineTest {
   assertTrue("Export unavailable without host",d.wait(Until.hasObject(By.desc("Export legacy recovery").enabled(true)),5000));d.findObject(By.desc("Export legacy recovery")).click()
   assertTrue(d.wait(Until.hasObject(By.pkg("com.google.android.documentsui")),10000));val save=d.wait(Until.findObject(By.res("com.google.android.documentsui","action_menu_save")),5000) ?: d.findObject(By.text(java.util.regex.Pattern.compile("(?i)^save$")));assertNotNull(save);save.click();d.wait(Until.findObject(By.text("Replace")),1000)?.click();assertTrue("Offline ZIP write failed",d.wait(Until.hasObject(By.text("Recovery ZIP saved.")),10000))
  }
+}
+
+@RunWith(AndroidJUnit4::class)
+class ReaderListRestoreTest {
+ @Test fun boundedRestoredList(){val i=InstrumentationRegistry.getInstrumentation();val d=UiDevice.getInstance(i);i.targetContext.startActivity(i.targetContext.packageManager.getLaunchIntentForPackage("com.vaultor.app")!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));assertTrue("Library not restored",d.wait(Until.hasObject(By.desc("Search resources")),30000));assertTrue("Restored result rows are blank",d.wait(Until.hasObject(By.descContains("A1 Editor fixture")),15000));d.takeScreenshot(File(i.targetContext.getExternalFilesDir(null),"r1-list-restored.png"));}
 }

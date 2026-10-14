@@ -342,3 +342,18 @@ export class MobileBrowser {
     }
   }
 }
+
+// Restore only inside the measured native scroll range, including shrunken result sets.
+export function boundedBrowseScroll(
+  scroll: number,
+  content: number,
+  viewport: number,
+) {
+  return Math.max(
+    0,
+    Math.min(
+      Number.isFinite(scroll) ? scroll : 0,
+      Math.max(0, content - viewport),
+    ),
+  );
+}

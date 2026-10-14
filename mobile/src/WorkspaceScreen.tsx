@@ -184,7 +184,13 @@ export default function WorkspaceScreen() {
   });
   useLayoutEffect(() => {
     quick.bind(state.scope);
-    if (state.host && !hosts && !recovery && (drawer || state.view === 'home'))
+    if (
+      state.host &&
+      state.scope &&
+      !hosts &&
+      !recovery &&
+      (drawer || state.view === 'home')
+    )
       void quick.refresh();
     else quick.suspend();
     return () => quick.suspend();
@@ -550,6 +556,7 @@ export default function WorkspaceScreen() {
           />
           {state.note ? (
             <View
+              collapsable={false}
               style={[s.content, state.view !== 'note' && s.hidden]}
               pointerEvents={state.view === 'note' ? 'auto' : 'none'}
               importantForAccessibility={

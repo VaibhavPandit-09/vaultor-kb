@@ -1,13 +1,13 @@
 # Android reader and legacy recovery
 
-Reviewed 2026-10-14. R1 alpha.9 implementation; see [ANDROID.md](ANDROID.md) for the authoritative delivery/transport/storage boundary and [tracker](../plans/workspace-companion-plan.md) for remaining work.
+Reviewed 2026-10-14. R1 alpha.9.1 implementation; see [ANDROID.md](ANDROID.md) for the authoritative delivery/transport/storage boundary and [tracker](../plans/workspace-companion-plan.md) for remaining work.
 
 ## Source map
 
 - mobile/src/WorkspaceScreen.tsx: compact reader shell, approved workspace switching, Home/drawer/search, centralized Back and recovery destination.
 - mobile/src/readerFeed.ts: normal events reconcile without reopening streams; closure resumes from the retained cursor, with bounded backoff and background cancellation.
 - mobile/src/ReaderView.tsx: bounded typed read-only bridge; no changed/command/save handler.
-- mobile/reader/render.js: schema-aware DOM construction. Stored JSON never becomes HTML/script/style; unknown nodes are visible placeholders. Rendering has 20,000-node/64-depth bounds.
+- mobile/reader/render.js: schema-aware DOM construction. Stored JSON never becomes HTML/script/style; unknown nodes are visible placeholders. Rendering uses a 20,000 structured-node traversal budget and 64-depth guard; stress/OOM recovery remains an R2/R10 verification item.
 - mobile/reader/index.js: load IDs, restored scroll, visible-image requests and link activation. No server transport/credentials.
 - mobile/src/workspace.ts: saved-note loading/cache/journey/session state; retired edit/create/recovered-copy paths refuse dispatch.
 - VaultorModule.kt: GET and recency-only API policy, encrypted recovery inventory/export. VaultorMedia.kt: authenticated previews, original media bytes and private legacy ZIP/SAF destination.
@@ -25,3 +25,5 @@ Reserve one compact topbar and give the rest to content; drawer and contextual s
 ## Remaining boundaries
 
 Explicit local reading preferences, outline/find and polished rich media are R2/R9 work. Current saved cache is not a downloaded workspace. Offline snapshots/reviews/import queues and exports have separate later gates. External text links remain readable text in R1 rather than arbitrary navigation. Unknown JSON can be retrieved in legacy recovery when locally retained; it is never stripped and saved back. Physical OLED, Samsung gestures and TalkBack on the user's phone remain user checks.
+
+Library restoration waits for native content and viewport measurements, clamps to the current scroll range, and ignores premature offset events. Queries/scope/filters remain unchanged; same-query refreshes retain rows. Oversized legacy positions must be covered by the native ReaderListRestoreTest before publication.

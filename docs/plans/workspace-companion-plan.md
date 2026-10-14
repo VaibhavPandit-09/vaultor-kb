@@ -93,7 +93,7 @@ W3 actual results: private owner ZIP preview/commit/atomic publication, durable 
 
 ## R1 — Safe retirement of Android editing and new reader shell
 
-Status: **Implemented — release verification in progress (2026-10-14)**. Android alpha.9/versionCode12, original signer and protocol3. Reader DOM/shell, native mutation retirement and private legacy ZIP recovery implemented.25 focused Jest/DOM/compilation/lint checks and installed upgrade/reader cases passed; final tagged-byte platform checks/publication remain the release gate. R2–R10 unstarted.
+Status: **Implemented — release verification in progress (2026-10-14)**. Android alpha.9.1/versionCode13, original signer and protocol3. Reader DOM/shell, native mutation retirement and private legacy ZIP recovery implemented.26 focused Jest/DOM/compilation/lint checks and installed upgrade/reader cases passed; final tagged-byte platform checks/publication remain the release gate. R2–R10 unstarted.
 
 - Inventory existing drafts, uncertain save receipts, creation/lifecycle identities and image-placement uploads before disabling any code. Preserve encrypted records through upgrade; do not clear app data or retire keys. Provide a dedicated Legacy recovery area with human-readable recovery export and original structured JSON/media where available.
 - Freeze automatic legacy note writes, creation and destructive retries. Reconcile uncertain requests using read-only status first. No replay merely on reconnect. If recovery to a host is offered, make it an explicit new recovered resource after target/identity review, never an overwrite; otherwise export for desktop recovery. Uploaded orphan files remain host resources; unfinished placement bytes remain separately recoverable.

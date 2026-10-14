@@ -2,6 +2,7 @@ import { targetFor, type Target } from './organization';
 import { useThemeStyles } from './ui';
 import React, {
   useEffect,
+  useCallback,
   useRef,
   useState,
   useSyncExternalStore,
@@ -19,6 +20,7 @@ import {
 import {
   MobileBrowser,
   browsePath,
+  boundedBrowseScroll,
   filters,
   presentation,
   type BrowseRow,
@@ -235,20 +237,36 @@ export default function BrowseScreen({
     b.config.query,
     sheet,
   ]);
+  const measured = useRef({ content: 0, viewport: 0 });
+  const restoreScroll = useCallback(() => {
+    const key = state.scope + '|' + path;
+    if (
+      !visible ||
+      b.applied !== path ||
+      !measured.current.viewport ||
+      !measured.current.content
+    )
+      return;
+    const offset = boundedBrowseScroll(
+      b.config.scroll,
+      measured.current.content,
+      measured.current.viewport,
+    );
+    if (restored.current === key && offset === b.config.scroll) return;
+    restored.current = key;
+    list.current?.scrollToOffset({ offset, animated: false });
+    if (offset !== b.config.scroll) browser.scroll(offset);
+  }, [visible, b.applied, b.config.scroll, state.scope, path, browser]);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => restoreScroll());
+    return () => cancelAnimationFrame(frame);
+  }, [restoreScroll]);
   useEffect(() => {
     if (!visible) {
       restored.current = '';
-      return;
+      measured.current = { content: 0, viewport: 0 };
     }
-    const key = state.scope + '|' + path;
-    if (b.applied === path && restored.current !== key) {
-      restored.current = key;
-      list.current?.scrollToOffset({
-        offset: b.config.scroll,
-        animated: false,
-      });
-    }
-  }, [visible, b.applied, path, b.config.scroll, state.scope]);
+  }, [visible]);
   useEffect(() => {
     if (sheet !== 'scope' || !visible || !active) return;
     const counter = scopeTicket,
@@ -427,6 +445,15 @@ export default function BrowseScreen({
         </View>
       ) : null}
       <FlatList
+        style={styles.list}
+        onLayout={e => {
+          measured.current.viewport = e.nativeEvent.layout.height;
+          restoreScroll();
+        }}
+        onContentSizeChange={(_width, height) => {
+          measured.current.content = height;
+          restoreScroll();
+        }}
         extraData={selected}
         removeClippedSubviews={false}
         ref={list}
@@ -436,7 +463,10 @@ export default function BrowseScreen({
         initialNumToRender={12}
         maxToRenderPerBatch={12}
         windowSize={5}
-        onScroll={e => browser.scroll(e.nativeEvent.contentOffset.y)}
+        onScroll={e => {
+          if (restored.current === state.scope + '|' + path)
+            browser.scroll(e.nativeEvent.contentOffset.y);
+        }}
         scrollEventThrottle={500}
         ListEmptyComponent={
           <View collapsable={false} style={styles.empty}>
@@ -711,6 +741,7 @@ export default function BrowseScreen({
   );
 }
 const sheetStyles = StyleSheet.create({
+  list: { flex: 1 },
   focused: { borderWidth: 2, borderColor: '#8db7ff' },
   choiceList: { flexGrow: 0 },
   searchInput: { flex: 1 },

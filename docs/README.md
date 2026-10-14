@@ -55,7 +55,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
-- [0.1.0-alpha.9 R1 reader](android/releases/0.1.0-alpha.9.md): read-only foundation, upgrade recovery and actual release checks.
+- [0.1.0-alpha.9.1 R1 reader](android/releases/0.1.0-alpha.9.1.md): read-only foundation, upgrade recovery and actual release checks.
 
 - [Android reader and legacy recovery](android/READER.md): current read-only renderer, preserved upgrade records and private recovery ZIP boundary.
 

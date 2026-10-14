@@ -1,3 +1,4 @@
+import { boundedBrowseScroll } from '../src/browse';
 import {
   MobileBrowser,
   browsePath,
@@ -172,4 +173,12 @@ test('Trash restores only title browsing without silently retained scope/type fi
   expect(b.type).toBe('');
   expect(b.collection).toBeUndefined();
   expect(browsePath(b)).toBe('/resources/trash?page=0&size=100&q=image');
+});
+
+test('restored scroll is bounded to actual measured results, including a sparse replacement page', () => {
+  expect(boundedBrowseScroll(9999999, 400, 1600)).toBe(0);
+  expect(boundedBrowseScroll(500, 2000, 1000)).toBe(500);
+  expect(boundedBrowseScroll(1800, 2000, 1000)).toBe(1000);
+  expect(boundedBrowseScroll(-30, 2000, 1000)).toBe(0);
+  expect(boundedBrowseScroll(NaN, 2000, 1000)).toBe(0);
 });
