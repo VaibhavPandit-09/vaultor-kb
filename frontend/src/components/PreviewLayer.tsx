@@ -3,6 +3,7 @@ import { resourceDescription, resourcePresentation } from '../lib/resourceKinds'
 import { ExternalLink, PanelRight, ScanText, X } from 'lucide-react';
 import ResourceCollections from './ResourceCollections';
 import PinButton from './PinButton';
+import {ReviewButton} from './ReviewInbox';
 import ResourceActions from './ResourceActions';
 import type { OrganizationItem } from '../lib/organization';
 import FilePreview from './FilePreview';
@@ -14,6 +15,7 @@ import { getGlassPanelStyle, getOverlayStyle } from '../lib/transparency';
 interface PreviewLayerProps {
   resource: Resource;
   onCollection: (item:OrganizationItem)=>void;
+  onReview?:(resource:Resource)=>void;
   mode: 'side' | 'modal';
   animationMode: 'snappy' | 'smooth';
   overrideActive: boolean;
@@ -27,6 +29,7 @@ interface PreviewLayerProps {
 export default function PreviewLayer({
   resource,
   onCollection,
+  onReview,
   mode,
   animationMode,
   overrideActive,
@@ -74,7 +77,7 @@ export default function PreviewLayer({
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-1.5">
-          <PinButton id={resource.id} name={resource.title} favorite={resource.favorite}/>
+          {onReview&&<ReviewButton resource={resource} onOpen={()=>onReview(resource)}/>}<PinButton id={resource.id} name={resource.title} favorite={resource.favorite}/>
           <ResourceActions resource={resource}/>
           <button
             onClick={onToggleMode}

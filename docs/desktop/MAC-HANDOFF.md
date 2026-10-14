@@ -1,3 +1,12 @@
+## R5 — exact v0.12.0 handoff (2026-10-15)
+
+Windows0.12.0 adds review evidence/triage and archive4; Mac native gate remains unavailable here. Fetch origin/tags and check out immutable **v0.12.0**, not master, ai/codex-current's later commits or ai/gemini-ui. Confirm desktop package/lock0.12.0 and clean source. Obtain the original release key privately; never regenerate/print/publish it or configure paid signing/CI secrets. Read RELEASE-PROCESS.md, desktop/releases/v0.12.0.md and workspace/REVIEWS.md.
+
+1. On Apple Silicon with Node24/Java25, npm ci in frontend and desktop. Run backend ./mvnw -Dtest=ReviewTest,DesktopContractTest,NoteExportGraphTests test (disposable roots only). Run frontend npm test -- src/lib/reviews.test.tsx src/lib/changeFeed.test.ts src/components/WorkspaceTransfers.test.tsx.
+2. Set BUILD_VERSION=0.12.0 and VITE_BUILD_VERSION=0.12.0; run desktop build, prepare-server and package:release natively. Check arm64 runtime, free ad-hoc codesign, DMG/mount/install-over in disposable app storage and original-key sidecar. No Java/Docker installation is required for the packaged app.
+3. Set VAULTOR_REVIEW_CHECK=1 and run node desktop/scripts/chrome-smoke.mjs /absolute/path/to/Vaultor.app/Contents/MacOS/Vaultor. Verify paged counts, triage without original changes, scoped note entry, Escape/focus and browser Light/Dark/narrow screens. Check native menu/app lifecycle separately; record actual results without claiming real LAN or phone testing. R6 Android capture is not part of this sprint.
+4. From the exact clean tag, preflight then publish only the missing verified Mac pair with publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.12.0.md. Preserve existing Windows bytes/tag. Differing retry bytes must fail; code fixes require a new version. Update public notes/docs with actual evidence in a docs-only follow-up, leaving the source tag immutable. No integration of ai/gemini-ui.
+
 ## R3 — exact v0.11.0 handoff (2026-10-14)
 
 Windows0.11.0 supplies companion checkpoint schema1. Mac artifacts remain blocked on native access; do not describe the Windows release as Mac-ready. Android alpha.10 remains unchanged, with no full offline storage until R4. Fetch origin/tags, check out the immutable v0.11.0 tag, verify desktop/package and lock versions0.11.0 and clean source. Do not use later master or move the tag. Follow RELEASE-PROCESS.md with Node24/Java25 and the privately transferred original release key; never regenerate/publish the key or configure paid services/CI secrets.

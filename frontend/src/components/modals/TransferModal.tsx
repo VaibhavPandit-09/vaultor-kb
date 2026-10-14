@@ -5,7 +5,7 @@ import api from '../../lib/api';
 import { saveApiFile } from '../../lib/platform';
 import { pickFiles } from '../../lib/filePicker';
 type Operation = { id: string; kind: string; status: string; phase: string; progress: number; detail?: string; requestId?: string };
-type Preview = { operation: Operation; resources: number; files: number; notes: number; tags: number; warnings: string[] };
+type Preview = { operation: Operation; resources: number; files: number; notes: number; tags: number; reviews?: number; warnings: string[] };
 export default function TransferModal({ mode, onClose, flush, onImported }: {
   mode: 'export' | 'import' | null; onClose: () => void; flush: () => Promise<void>; onImported: () => Promise<void>;
 }) {
@@ -57,10 +57,10 @@ export default function TransferModal({ mode, onClose, flush, onImported }: {
           const body=new FormData();body.append('file',file);const {data}=await api.post<Preview>('/imports/preview',body);setPreview(data);setOperation(data.operation);setConfirmed(false);
         })}>Choose workspace ZIP</button>}
       {preview && operation?.status === 'PREVIEW' && <>
-        <p>{preview.notes} notes · {preview.files} files · {preview.tags} tags</p>
+        <p>{preview.notes} notes · {preview.files} files · {preview.tags} tags · {preview.reviews??0} reviews</p>
         {preview.warnings.map((warning,index)=><p key={index} className="text-amber-600">{warning}</p>)}
         <label className="block">Import mode <select value={mergeMode} onChange={e=>{setMergeMode(e.target.value);setConfirmed(false);}} className="rounded border bg-background p-2"><option value="merge">Merge — add imported resources</option><option value="replace">Replace — remove current resources</option></select></label>
-        <p className="text-sm">{mergeMode==='merge'?'Creates new notes/files and keeps existing settings and tag colors.':'Replaces resources, tags and workspace settings. Your appearance preferences remain.'}</p>
+        <p className="text-sm">{mergeMode==='merge'?'Creates new notes/files and review copies; keeps existing settings and tag colors.':'Replaces resources, tags, reviews and workspace settings. Your appearance preferences remain.'}</p>
         {mergeMode==='replace' && <label className="block text-red-500"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)} /> I confirm replacement of the current workspace.</label>}
         <button disabled={pending || (mergeMode==='replace' && !confirmed)} className="rounded bg-primary p-3 text-white disabled:opacity-50" onClick={()=>void run(async()=>{const {data}=await api.post<Operation>('/imports/'+operation.id+'/commit',{mode:mergeMode,confirmation:confirmed?'replace':''});setOperation(data);})}>Apply import</button>
       </>}

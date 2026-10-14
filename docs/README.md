@@ -6,6 +6,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Install and update on each platform](desktop/INSTALLATION-AND-UPDATES.md): exact Windows/Mac steps, browser/Docker/Ubuntu paths, available targets and recovery.
 - [Agent-owned release process](desktop/RELEASE-PROCESS.md): standing responsibility for versions, native builds, verified artifacts, tags and GitHub publication.
+- [0.12.0 review evidence/inbox](desktop/releases/v0.12.0.md): R5 Windows verification/publication, archive compatibility and exact Mac handoff.
 - [0.11.0 companion checkpoint service](desktop/releases/v0.11.0.md): R3 host capability, actual Windows verification, compatible Android and exact Mac handoff.
 - [0.10.0 independent workspace transfers](desktop/releases/v0.10.0.md): import-as-new, snapshot forks, recovery and Windows/Mac availability.
 - [0.9.0 workspace switching](desktop/releases/v0.9.0.md): selectors, grants, sessions and Windows/Mac status.
@@ -47,6 +48,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 - [Integration handoff](workspace/INTEGRATION.md): focused validation and remaining verification limits.
 
 ## Architecture, development and host security
+
+- [UI philosophy](design/UI_PHILOSOPHY.md): authoritative design/interaction contract; broad transformation remains the independent UI stream.
 
 - [Companion checkpoints](architecture/COMPANIONS.md): R3 immutable reading datasets, selection/coverage, hashes/ranges, expiry/revocation and R4 client activation contract.
 
