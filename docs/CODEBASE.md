@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-10-14. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-10-15. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -363,6 +363,8 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 - Build reports a large JS chunk and an outdated Browserslist dataset; these do not prevent packaging. Chunk splitting remains performance work.
 
 ## Change checklist and maintenance history
+
+- 2026-10-15 — UI redesign audit/planning only on `ai/codex-ui-redesign`, based on clean `origin/master` at `11b09aa`; no active AI branch incorporated. Added [source audit and phased interaction proposal](plans/ui-redesign.md) with separate user review gates. No code, shipped behavior or architectural effect. Desktop frontend build/staging passed with existing Browserslist/chunk/dynamic-import warnings. Launched isolated Electron profile; native observation blocked by pending macOS Accessibility/Screen Recording permissions on two attempts. No visual/motion/resize certification, full suites, API mutation smoke, Docker checks or installers claimed; native baseline remains pending before UI implementation.
 
 - 2026-10-14 R4 implementation: source-bound native SQLite retained reading, hash/manifest verification before activation, resumable downloads, local paged metadata/note-text search, storage/network/battery policy and locked-source removal safety. Global appearance, independent quick-access/pins, long-code containment and coherent startup fix the reported Android issues. Android-only alpha.11/code15; host/desktop/protocol/archive unchanged. TypeScript/native original-key compilation,33 focused Jest cases, reader/media DOM/runtime and scoped lint0errors/41warnings passed. API36/37 installed-release source isolation, four isolated store cases per target, pinned download, offline notes/media, journeys, reboot restoration, themes/motion, legacy recovery and real access revocation passed; mid-payload process death/same-UUID resume passed on both during candidate validation. Native OLED/download/reader frames inspected. Exact artifact/tag/publication evidence is in android/releases/0.1.0-alpha.11.md; published at2026-10-14T16:52:51Z. Clean tagged rebuild f140b9de8f693d396dc2ba3f93a7e9bfd7b57dab/android/v0.1.0-alpha.11 matches installed/tested APK39,918,829bytes/SHA2562260d559695d53a87f638361d54aec0a7b21f49f9ce022c26bef16d4f0ded63f. Three release assets downloaded/compared; public status/digests confirmed. No Samsung/realWi-Fi/power-loss/OS-disk-full/full10k certification. R5–R10 unstarted.
 
