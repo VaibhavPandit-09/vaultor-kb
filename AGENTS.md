@@ -19,8 +19,48 @@ When debugging, prefer existing API diagnostics and narrowly targeted service/co
 
 For local owner or paired LAN API access, follow [docs/security/HOST-ACCESS.md](docs/security/HOST-ACCESS.md). Never bypass approval/TLS/revision checks or expose credentials in logs, renderer storage, URLs or portable archives.
 
+UI / Interaction Design Contract
+
+For any task that changes Vaultor's user interface, layout, styling, interaction behavior, animation, navigation, responsive behavior, visual hierarchy, density, scrolling behavior, panes, previews, theme behavior, or other presentation-layer behavior, you MUST read docs/design/UI_PHILOSOPHY.md completely before proposing or modifying code.
+
+Treat docs/design/UI_PHILOSOPHY.md as the authoritative design contract for Vaultor UI work, not as optional inspiration.
+
+Preserve Vaultor's existing visual identity while applying the document's rules for information density, vertical-space efficiency, progressive compression, spatial continuity, structural motion, surface hierarchy, scroll-driven transformation, pane and preview transitions, theme transitions, responsive adaptation, accessibility, reduced-motion behavior, and animation performance.
+
+Do not default to sticky headers, nested scroll containers, permanently floating toolbars, excessive cards, oversized spacing, duplicated compact/expanded headers, arbitrary fade/slide animations, bounce-heavy motion, or transition-all when a more coherent spatial transformation can solve the problem.
+
+For substantial UI work, do not jump directly from a vague request into implementation.
+
+Use this sequence:
+
+1. inspect the current implementation;
+2. audit the screen/workflow against docs/design/UI_PHILOSOPHY.md;
+3. define the interaction states and transformations;
+4. implement the agreed behavior;
+5. review the result against the design contract.
+
+Motion is part of the interaction architecture. Do not merely add animation on top of otherwise static layout decisions. Where appropriate, use motion to communicate continuity, compression, expansion, navigation, focus, hierarchy, and cause-and-effect.
+
+When the same conceptual UI object changes state, prefer visually transforming that object rather than abruptly replacing it with an unrelated duplicate.
+
+Respect prefers-reduced-motion. Application correctness must never depend on an animation finishing.
+
+Parallel AI development rule
+
+Vaultor may be developed by multiple AI agents in parallel on separate branches.
+
+An agent working on one branch MUST NOT merge, rebase onto, cherry-pick from, rewrite, or otherwise incorporate another AI agent's active development branch unless the user explicitly asks for integration work.
+
+Each agent should remain within its assigned scope, make small coherent commits, preserve documented product semantics, push its branch regularly, avoid unnecessary refactors outside its scope, and document any change that could make later integration difficult.
+
+During parallel development, optimize for clear intent and coherent commits rather than trying to keep the branches continuously synchronized.
+
+Final branch integration will be handled as a separate task.
+
 ## Agent-owned releases
 
 The user delegates installed-app release preparation and GitHub publication to implementation agents. For every change affecting a shipped app, follow [docs/desktop/RELEASE-PROCESS.md](docs/desktop/RELEASE-PROCESS.md): bump package/lock versions, build fresh UI and bundled server, perform focused/native checks, preserve the original signing identity, create verified platform installers/sidecars, commit/push/tag the intended source, stage GitHub assets and publish when the supported-platform gate is met. Return a usable release URL and update steps, not just instructions for the user to build. Documentation/test-only changes with no shipped behavior do not need new installers. Never claim unavailable Mac/Linux artifacts are ready; report precise blockers and handoffs. No private keys, credentials or workspace backups may enter GitHub, logs or portable archives. This is standing release authorization within the requested change, not permission to include unrelated work or change security/paid-service settings.
 
 Android-only changes follow [docs/android/ANDROID.md](docs/android/ANDROID.md) and the separately authorized Android tracker: preserve its original APK signer, increment versionCode, verify installed release APKs in Windows emulators, and publish an immutable Android-only prerelease. Do not bump/rebuild desktop for mobile-only changes. Agents must never access or USB/wireless ADB-pair the user's phone; every ADB operation targets an explicit emulator serial. Samsung acceptance is user-owned. Stop after each authorized sprint.
+
+

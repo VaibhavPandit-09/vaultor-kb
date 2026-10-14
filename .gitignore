@@ -36,3 +36,4 @@ app.db
 files/
 
 # Android project dependencies and private build output are covered by mobile/.gitignore
+*.DS_Store
