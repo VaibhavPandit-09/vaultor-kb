@@ -1,6 +1,7 @@
 import { defaultLibrary, type LibraryContext } from '../lib/sessionStore';
 import SearchCoverage from './SearchCoverage';
 import LibraryOrientation from './LibraryOrientation';
+import { useBrowsePagination } from '../lib/useBrowsePagination';
 import ResourceSearchOptions from './ResourceSearchOptions';
 import type {SearchMode} from '../lib/resourceSearch';
 import LibraryPopover from './LibraryPopover';
@@ -28,7 +29,7 @@ async function collectionDetails(id:string,signal:AbortSignal) {return (await ap
 export default function LibraryView({ section, visible, tags, onOpen, onReturn, hasNotes, collection = null, onCollection = () => {}, onTagsChange = () => {}, onImport, onOpenCreated, onSelectionChange, hasUnsavedChanges=false, initialContext=defaultLibrary, onContextChange }: { initialContext?: LibraryContext; onContextChange?: (value: LibraryContext) => void; onSelectionChange?:(items:Resource[])=>void; hasUnsavedChanges?:boolean; onImport?:()=>void; onOpenCreated?:(id:string)=>Promise<void>; collection?: OrganizationItem | null; onCollection?: (item: OrganizationItem | null) => void; onTagsChange?: (tags: string[]) => void; section: LibrarySection; visible: boolean; tags: string[]; onOpen: (id: string) => void | Promise<void>; onReturn: () => void; hasNotes: boolean }) {
   const organizationFocus=useRestoreFocusOnClose();
   const viewport = useRef<HTMLElement>(null);
-  const transformLibrary = section === 'library';
+  const transformLibrary = section === 'library' || section === 'recent';
   const [managingCollection,setManagingCollection]=useState(false);
   const [pickerIds,setPickerIds]=useState<string[]|null>(null),[adding,setAdding]=useState(false);
   const detail=useRetainedQuery(collection?.id??'',visible&&Boolean(collection),'collections',collectionDetails);
@@ -47,23 +48,18 @@ export default function LibraryView({ section, visible, tags, onOpen, onReturn, 
   if(previousScope!==scopeKey){setPreviousScope(scopeKey);setPage(0);}
   const criteria = { collection: collection?.id, q: search, searchMode, sort: section === 'recent' ? 'recent' as const : sort, tags, favorites: section === 'favorites' };
   const result = useResourcePage({ ...criteria, type, page, size: 100 }, visible);
-  // Retain only navigation bounds while changing pages, never another page's rows.
-  const paginationKey = JSON.stringify({...criteria,type});
-  const [pagination,setPagination] = useState({key:paginationKey,totalPages:0});
-  const totalPages = result.data?.totalPages ?? (pagination.key===paginationKey ? pagination.totalPages : 0);
-  if (result.data && (pagination.key!==paginationKey || pagination.totalPages!==result.data.totalPages)) setPagination({key:paginationKey,totalPages:result.data.totalPages});
+  const totalPages = useBrowsePagination(viewport, JSON.stringify({...criteria,type}), page, result.data?.totalPages, transformLibrary, visible);
   const items = useMemo(() => result.data?.items ?? [], [result.data]);
   const totalItems = result.data?.totalItems ?? 0, loading = result.loading;
   const retry = result.retry;
   const viewKey=JSON.stringify([page,search,searchMode,type,sort,scopeKey]);
-  useEffect(() => { if (transformLibrary && viewport.current) viewport.current.scrollTop = 0; }, [viewKey,transformLibrary]);
   const [previousView,setPreviousView]=useState(viewKey);
   if(previousView!==viewKey){setPreviousView(viewKey);setSelected([]);}
   useEffect(()=>{onSelectionChange?.(items.filter(item=>selected.includes(item.id)));},[items,selected,onSelectionChange]);
   const [selectionRows,setSelectionRows]=useState(items);
   if(selectionRows!==items){setSelectionRows(items);setSelected(previous=>previous.filter(id=>items.some(item=>item.id===id)));}
   const title = section === 'favorites' ? 'Pinned' : section === 'recent' ? 'Recently opened' : 'Library';
-  return <section ref={viewport} data-motion-surface="page" data-motion-key={section+':'+(collection?.id??'')} data-motion-list={!query && page===0} data-motion-ready={Boolean(result.data)&&!loading} className={transformLibrary ? "library-view library-transform" + (collection ? " collection-transform" : "") : "library-view"} aria-label={title}>
+  return <section ref={viewport} data-motion-surface="page" data-motion-key={section+':'+(collection?.id??'')} data-motion-list={!query && page===0} data-motion-ready={Boolean(result.data)&&!loading} className={transformLibrary ? "library-view library-transform" + (collection ? " collection-transform" : section==='recent' ? " recent-transform" : "") : "library-view"} aria-label={title}>
     <LibraryOrientation enabled={transformLibrary} active={visible} viewport={viewport} context={<>
     {detail.error&&<p role="alert">{detail.error}<button className="library-button" onClick={detail.retry}>Retry collection</button></p>}
     {searchMode==='content'&&Boolean(search)&&<SearchCoverage coverage={result.data?.fileCoverage} onRefresh={retry}/>}

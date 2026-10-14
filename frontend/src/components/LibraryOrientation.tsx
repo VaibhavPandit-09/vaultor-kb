@@ -1,7 +1,7 @@
 import { useRef, type ReactNode, type RefObject } from 'react';
 import { useLibraryCompression } from '../lib/useLibraryCompression';
 
-/** The same mounted controls change geometry; other browsing destinations opt out. */
+/** The same mounted controls change geometry; compact sidebar shortcuts opt out. */
 export default function LibraryOrientation({ enabled, active, viewport, children, context }: {
   enabled: boolean; active: boolean; viewport: RefObject<HTMLElement | null>; children: ReactNode; context: ReactNode;
 }) {

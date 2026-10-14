@@ -135,3 +135,12 @@ it('keeps a collection metadata failure and retry below the transforming control
  fireEvent.click(screen.getByRole('button',{name:'Retry collection'}));
  await waitFor(()=>expect(screen.queryByText('Collection unavailable')).toBeNull());
 });
+
+it('gives Recent the shared working pager while preserving its recency sort',async()=>{
+ const view=render(<LibraryView section="recent" visible tags={[]} hasNotes={false} onReturn={()=>{}} onOpen={()=>{}}/>);
+ await screen.findByText('Note 99');
+ expect(browseResources).toHaveBeenLastCalledWith(expect.objectContaining({sort:'recent',size:100}),expect.any(AbortSignal));
+ expect(view.container.querySelector('.recent-transform .library-orientation')?.contains(screen.getByRole('navigation',{name:'Result pages'}))).toBe(true);
+ fireEvent.click(screen.getByRole('button',{name:'Next'}));await screen.findByText('Note 100');
+ expect(browseResources).toHaveBeenLastCalledWith(expect.objectContaining({sort:'recent',page:1}),expect.any(AbortSignal));
+});

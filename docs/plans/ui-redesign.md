@@ -1,6 +1,6 @@
 # Desktop UI redesign: audit and proposed interaction plan
 
-Reviewed 2026-10-15. **Library reviewed by the user; Collection detail and pagination follow-up implemented for review.** The user authorized the next interaction on 2026-10-15 and asked that recordings be reserved for key animations. Note workspace and later interactions remain outside this slice.
+Reviewed 2026-10-15. **Phase1B browse transformations implemented for review.** The user continued after Library/Collection detail and authorized the remaining relevant pages on 2026-10-15. Recordings are reserved for key animations. Stop at the planned checkpoint before Note header; later major interactions remain separately reviewed.
 Design authority: [UI philosophy](../design/UI_PHILOSOPHY.md). Current behavior remains documented in [CODEBASE](../CODEBASE.md). This document records source findings and proposed transformations, not shipped behavior.
 
 ## Branch and evidence
@@ -44,7 +44,7 @@ Remaining gates: user's personal motion judgement, full size/theme Cartesian cov
 
 ## Phase 1B Collection detail and pagination follow-up — 2026-10-15
 
-The user confirmed that Library motion works, reported bottom-only pagination, and authorized the next part. Recordings are now reserved for key structural animations or a specific temporal defect; ordinary control/layout checks use targeted native observation. Apply the compression language to relevant pages in their own reviewed slices, not mechanically or in one broad rollout. This slice stops at Collection detail; Collections index/Recent/Pinned and Note workspace remain unchanged.
+The user confirmed that Library motion works, reported bottom-only pagination, and authorized the next part. Recordings are now reserved for key structural animations or a specific temporal defect; ordinary control/layout checks use targeted native observation. Apply the compression language to relevant pages in their own reviewed slices, not mechanically or in one broad rollout. This handoff stopped at Collection detail; the subsequent authorized browse extension is recorded below. Note workspace remained unchanged.
 
 ### Baseline and agreed transformation
 
@@ -65,6 +65,32 @@ Pagination moves once into the existing result-count/search-mode row for Library
 - No additional recording for routine pagination/control checks. Collection reuses the user-reviewed Library motion driver; native scrolling/reversal was exercised. Existing Library motion footage remains available above; screenshots establish geometry only, not independent live-feel approval.
 
 No resource/API/backend/schema/dependency or saving behavior change. Integration-sensitive files: LibraryView, BrowseLayout, compression driver and scoped global CSS. This remains an isolated branch review build, with no version/release/installers published. Stop for Collection transformation review before extending to remaining browse destinations or Note workspace.
+
+## Remaining Phase1B browse pages — 2026-10-15
+
+User authorized continuing the remaining relevant names/pages and the next planned work. Completed Collections, Recent and full Pinned as the remainder of Phase1B, retaining the plan's stop-before-Note checkpoint.
+
+Before code changes, inspected native Recent, empty Pinned, Collections and populated scrolling. Recent retains the current server `sort=recent` semantics (the fixture lists112 resources); this is no new recency filter. Original Pinned is an untransformed child beneath the Dashboard scroll section; Collections repeats count/group narration; all orientation controls scroll away and pagers sit beneath long pages.
+
+Extended the isolated fixture through ordinary owner-authorized public APIs:112 resource pins, one pinned collection and111 idempotently created Unicode-name empty collections, yielding112 collections/113 mixed pins and bounded100-row pages. No personal data or credentials were exposed. Collections size200 was correctly refused with400; corrected to100 before creation. This was fixture setup, not an API smoke suite.
+
+### Transformation and ownership
+
+- Collections and full Pinned use the existing `LibraryOrientation`/compression driver, and Recent opts into the same LibraryView geometry. Title widths adapt to their actual names, avoiding clipping/overlap with essential actions. Expanded title space contracts while search moves beside the title/actions when width permits; narrow panes retain the second search row. Pager stays once in the count row. Redundant group/count narration disappears visually, retaining accessible group labels.
+- Full Pinned now owns its single scroll element; removed Dashboard's old outer scroll wrapper. Compact sidebar pins keep their original12-item query/layout and do not opt into compression or paging.
+- Shared `useBrowsePagination` retains same-criteria page bounds during loading, resets changed criteria/pages to the first result, records visible scroll in a ref and restores same-query/page position in a layout effect. No React work or layout measurement on scroll frames. Existing focus/caret, resources, mixed entity keys, sort/filter, page-scoped selection and query cancellation contracts remain.
+- Dashboard retains Collections/Pinned roots while hidden, with requests and compression listeners disabled. Identity+generation keys discard context on workspace replacement/switching. Hidden roots leave accessibility/keyboard layout; transient creation/picker utilities close. State is in-memory only, with no archive/session-format change.
+- No extra entry morph, ghost row, second toolbar, new card, nested list scrollbar, note/pane/sidebar/preview/settings/theme redesign. The existing motion language is reused rather than introducing a different effect per page.
+
+### Actual validation and refinement
+
+20 focused tests pass across OrganizationViews, LibraryView, LibraryPopover and compression driver. Added bounded mixed/sidebar ownership, single header pager, Collections/Pinned query/page/hidden return and simulated hidden-scroll-loss checks, plus Recent's retained recency sort/page query. Existing focus/caret/list identity, stale results, filter/page selection, pointer/popover lock, reversal/reduced-motion and failure/retry cases pass. Scoped ESLint includes Dashboard and passes; its inspected baseline was also clean. Fresh desktop UI TypeScript/Vite/staging passes with existing Browserslist/chunk/dynamic-import warnings. No full suites/API smoke/Docker checks.
+
+Native Electron checks cover normal~1230px OLED, large OLED and961×484 narrow/short targeted Light Recent/Dark Pinned/OLED Collections geometry; Return to notes was checked with a fixture note open. Repeated larger deltas and small wheel steps, page arrows, focused Pinned search with continued typing, empty Files filter/clear, New collection/Escape, Unicode names and context return were exercised. Pinned's page2 survives navigation; Collections' working scroll state survives a direct pointer-opened collection and return. Sidebar and full-page pinned filters share an accessible name; the native check initially selected the sidebar filter, restored it to All types, then explicitly tested the full-page filter. macOS Reduce motion was temporarily enabled for all three browse pages and restored off.
+
+The initial native accessibility row-activation run appeared to lose source position. That activation itself scrolls the source row into view; direct pointer activation disambiguated the tool behavior. Explicit pre-paint restoration and a hidden-scroll-loss test now protect return context regardless of hidden layout behavior. Header actions were kept on one line so intermediate pane widths cannot wrap controls into search; long constant page labels retain full-name access through the existing title tooltip.
+
+No new routine recordings: these pages reuse the user-reviewed Library driver, with native scrolling/reversal checks rather than repeated capture setup. Existing Library footage remains above. No claim of live-agent playback/physical trackpad feel, full Cartesian theme/size matrix, new600px minimum certification or installed Windows/Mac release acceptance. Review build only; no versions/installers/releases published. **Next planned major interaction: Phase2A Note orientation/reading header; stop for this browse checkpoint before implementing it.**
 
 ## Audit of current surfaces
 
@@ -243,4 +269,4 @@ Audit documentation requires no installers. Any later shipped desktop behavior f
 
 ## Review decision
 
-Library was reviewed and the user authorized Collection detail plus accessible pagination. Those are implemented with evidence and limits above. Stop for Collection review before remaining browse destinations or Note workspace. Panes, sidebar, previews, settings and theme redesign remain separate later gates.
+Library/Collection review was followed by authorization for the remaining relevant pages. Phase1B browse transformations are implemented with evidence and limits above. Stop at the planned checkpoint before Phase2A Note header. Panes, sidebar, previews, settings and theme redesign remain separate later gates.
