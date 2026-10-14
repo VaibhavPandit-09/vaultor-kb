@@ -1,6 +1,6 @@
 # Android reader and legacy recovery
 
-Reviewed 2026-10-14. R2 alpha.10 reading refinement is in release verification; see [ANDROID.md](ANDROID.md) for delivery/transport/storage and [tracker](../plans/workspace-companion-plan.md) for remaining work.
+Reviewed 2026-10-14. R2 alpha.10 reading refinement is published; see [ANDROID.md](ANDROID.md) for delivery/transport/storage and [tracker](../plans/workspace-companion-plan.md) for remaining work.
 
 ## Source map
 
