@@ -28,7 +28,7 @@ async function collectionDetails(id:string,signal:AbortSignal) {return (await ap
 export default function LibraryView({ section, visible, tags, onOpen, onReturn, hasNotes, collection = null, onCollection = () => {}, onTagsChange = () => {}, onImport, onOpenCreated, onSelectionChange, hasUnsavedChanges=false, initialContext=defaultLibrary, onContextChange }: { initialContext?: LibraryContext; onContextChange?: (value: LibraryContext) => void; onSelectionChange?:(items:Resource[])=>void; hasUnsavedChanges?:boolean; onImport?:()=>void; onOpenCreated?:(id:string)=>Promise<void>; collection?: OrganizationItem | null; onCollection?: (item: OrganizationItem | null) => void; onTagsChange?: (tags: string[]) => void; section: LibrarySection; visible: boolean; tags: string[]; onOpen: (id: string) => void | Promise<void>; onReturn: () => void; hasNotes: boolean }) {
   const organizationFocus=useRestoreFocusOnClose();
   const viewport = useRef<HTMLElement>(null);
-  const transformLibrary = section === 'library' && !collection;
+  const transformLibrary = section === 'library';
   const [managingCollection,setManagingCollection]=useState(false);
   const [pickerIds,setPickerIds]=useState<string[]|null>(null),[adding,setAdding]=useState(false);
   const detail=useRetainedQuery(collection?.id??'',visible&&Boolean(collection),'collections',collectionDetails);
@@ -41,43 +41,49 @@ export default function LibraryView({ section, visible, tags, onOpen, onReturn, 
   const [page, setPage] = useState(0);
   useEffect(() => { onContextChange?.({query,searchMode,type,sort}); }, [query,searchMode,type,sort,onContextChange]);
   const tagKey = JSON.stringify(tags);
-  useEffect(() => { const timer = setTimeout(() => { setSearch(query); setPage(0); }, 200); return () => clearTimeout(timer); }, [query]);
+  useEffect(() => { if (query === search) return; const timer = setTimeout(() => { setSearch(query); setPage(0); }, 200); return () => clearTimeout(timer); }, [query,search]);
   const scopeKey=JSON.stringify([section,tagKey,collection?.id]);
   const [previousScope,setPreviousScope]=useState(scopeKey);
   if(previousScope!==scopeKey){setPreviousScope(scopeKey);setPage(0);}
   const criteria = { collection: collection?.id, q: search, searchMode, sort: section === 'recent' ? 'recent' as const : sort, tags, favorites: section === 'favorites' };
   const result = useResourcePage({ ...criteria, type, page, size: 100 }, visible);
+  // Retain only navigation bounds while changing pages, never another page's rows.
+  const paginationKey = JSON.stringify({...criteria,type});
+  const [pagination,setPagination] = useState({key:paginationKey,totalPages:0});
+  const totalPages = result.data?.totalPages ?? (pagination.key===paginationKey ? pagination.totalPages : 0);
+  if (result.data && (pagination.key!==paginationKey || pagination.totalPages!==result.data.totalPages)) setPagination({key:paginationKey,totalPages:result.data.totalPages});
   const items = useMemo(() => result.data?.items ?? [], [result.data]);
   const totalItems = result.data?.totalItems ?? 0, loading = result.loading;
   const retry = result.retry;
   const viewKey=JSON.stringify([page,search,searchMode,type,sort,scopeKey]);
+  useEffect(() => { if (transformLibrary && viewport.current) viewport.current.scrollTop = 0; }, [viewKey,transformLibrary]);
   const [previousView,setPreviousView]=useState(viewKey);
   if(previousView!==viewKey){setPreviousView(viewKey);setSelected([]);}
   useEffect(()=>{onSelectionChange?.(items.filter(item=>selected.includes(item.id)));},[items,selected,onSelectionChange]);
   const [selectionRows,setSelectionRows]=useState(items);
   if(selectionRows!==items){setSelectionRows(items);setSelected(previous=>previous.filter(id=>items.some(item=>item.id===id)));}
   const title = section === 'favorites' ? 'Pinned' : section === 'recent' ? 'Recently opened' : 'Library';
-  return <section ref={viewport} data-motion-surface="page" data-motion-key={section+':'+(collection?.id??'')} data-motion-list={!query && page===0} data-motion-ready={Boolean(result.data)&&!loading} className={transformLibrary ? "library-view library-transform" : "library-view"} aria-label={title}>
-    {collection&&<nav aria-label="Breadcrumb"><button className="text-sm text-[var(--text-secondary)] hover:underline" onClick={()=>onCollection(null)}>Library</button><span className="text-sm text-[var(--text-tertiary)]"> / {currentCollection?.name}</span></nav>}
+  return <section ref={viewport} data-motion-surface="page" data-motion-key={section+':'+(collection?.id??'')} data-motion-list={!query && page===0} data-motion-ready={Boolean(result.data)&&!loading} className={transformLibrary ? "library-view library-transform" + (collection ? " collection-transform" : "") : "library-view"} aria-label={title}>
     <LibraryOrientation enabled={transformLibrary} active={visible} viewport={viewport} context={<>
+    {detail.error&&<p role="alert">{detail.error}<button className="library-button" onClick={detail.retry}>Retry collection</button></p>}
     {searchMode==='content'&&Boolean(search)&&<SearchCoverage coverage={result.data?.fileCoverage} onRefresh={retry}/>}
     {(tags.length>0||type!=='all'||(sort!=='updated'&&section!=='recent'))&&<div className="flex gap-2 flex-wrap">{type!=='all'&&<button className="collection-chip" onClick={()=>setType('all')}>{filterLabel(type)} ×</button>}{tags.map(tag=><button className="collection-chip" key={tag} onClick={()=>onTagsChange(tags.filter(t=>t!==tag))}>{tag} ×</button>)}{sort!=='updated'&&section!=='recent'&&<button className="collection-chip" onClick={()=>setSort('updated')}>{sort==='title'?'Title A–Z':'Recently opened'} ×</button>}</div>}
     {items.length>0&&<label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]"><input type="checkbox" aria-label="Select visible resources" checked={items.every(item=>selected.includes(item.id))} onChange={e=>setSelected(e.target.checked?items.map(i=>i.id):[])}/>Select visible resources</label>}
     {selected.length>0&&<div className="flex flex-wrap items-center gap-2 text-sm"><span>{selected.length} selected</span><button className="library-button" onClick={()=>{organizationFocus.captureFocus();setManager('bulk');}}>Tags / manage</button><button className="library-button" onClick={()=>{organizationFocus.captureFocus();setPickerIds(selected);}}>Add to collection</button><button className="library-button text-red-500" onClick={()=>void requestResourceAction('trash',items.filter(item=>selected.includes(item.id)))}>Move to Trash…</button><button className="library-button" onClick={()=>setSelected([])}>Clear selection</button></div>}
     </>}>
+    {collection&&<nav className="collection-breadcrumb" aria-label="Breadcrumb"><button onClick={()=>onCollection(null)}>Library</button><span aria-hidden="true"> /</span></nav>}
     <BrowseHeading title={currentCollection?.name??title} kicker={currentCollection?'COLLECTION':'YOUR WORKSPACE'} actions={<>{currentCollection&&<><PinButton id={currentCollection.id} name={currentCollection.name} favorite={currentCollection.favorite} entity="collection"/><button className="library-button" onClick={()=>{organizationFocus.captureFocus();setAdding(true);}}>+ Add resource</button></>}{hasNotes&&<button className="library-button" onClick={onReturn}><ArrowLeft size={16}/>Return to notes</button>}
     <LibraryPopover label="More">{close=><><button className="library-button" onClick={()=>{close();organizationFocus.captureFocus();setManager('manage');}}>Collections &amp; tags</button>{currentCollection&&<button className="library-button" onClick={()=>{close();organizationFocus.captureFocus();setManagingCollection(true);}}>Rename / delete collection…</button>}<button className="library-button" onClick={()=>{retry();detail.retry();close();}}><RefreshCw size={16}/>Refresh</button></>}</LibraryPopover></>}/>
-    {detail.error&&<p role="alert">{detail.error}<button className="library-button" onClick={detail.retry}>Retry collection</button></p>}
     <div className="library-filters">
       <label className="library-search"><Search size={17}/><input aria-label="Search resources" placeholder={searchMode==='title'?'Search resource titles…':'Search titles and saved content…'} value={query} onChange={e=>setQuery(e.target.value)}/></label>
       <ResourceTypeFilter value={type} onChange={value=>{setType(value);setPage(0);}}/><LibraryPopover label="Search options">{()=> <><ResourceSearchOptions mode={searchMode} onMode={mode=>{setSearchMode(mode);setPage(0);}} collection={currentCollection} onCollection={onCollection}/><label className="text-sm">Sort<select className="organization-input w-full mt-1" aria-label="Sort resources" value={section==='recent'?'recent':sort} disabled={section==='recent'||(searchMode==='content'&&Boolean(search))} onChange={e=>{setSort(e.target.value as typeof sort);setPage(0);}}><option value="updated">Recently updated</option><option value="recent">Recently opened</option><option value="title">Title A–Z</option></select></label></>}</LibraryPopover>
     </div>
 
-    <div className="library-summary"><span>{loading?'Loading resources…':totalItems+' resources'}</span><span className="text-xs text-[var(--text-secondary)]">{searchMode==='title'?'Titles only':hasUnsavedChanges?'Saved content · unsaved edits excluded':'Titles + saved content'}</span></div>
+    <div className="library-summary"><span>{loading?'Loading resources…':totalItems+' resources'}</span><span className="text-xs text-[var(--text-secondary)]">{searchMode==='title'?'Titles only':hasUnsavedChanges?'Saved content · unsaved edits excluded':'Titles + saved content'}</span>{transformLibrary&&<BrowsePagination compact page={page} totalPages={totalPages} loading={loading} onPage={setPage}/>}</div>
     </LibraryOrientation>
     <BrowseGroup label="Resources" count={totalItems} loading={loading} error={result.error} retry={retry}>
       {items.map(resource=><BrowseResourceRow key={resource.id} resource={resource} onOpen={onOpen} recent={section==='recent'} contentMode={searchMode==='content'} selected={selected.includes(resource.id)} onSelect={checked=>setSelected(previous=>checked?[...previous,resource.id]:previous.filter(id=>id!==resource.id))} onCollections={id=>{organizationFocus.captureFocus();setPickerIds([id]);}}/>)}
-    </BrowseGroup><BrowsePagination page={page} totalPages={result.data?.totalPages??0} loading={loading} onPage={setPage}/>
+    </BrowseGroup>{!transformLibrary&&<BrowsePagination page={page} totalPages={totalPages} loading={loading} onPage={setPage}/>}
     {!loading && totalItems===0 && !result.error && <div className="browse-empty">{currentCollection?.count===0&&!search&&type==='all'&&!tags.length ? 'This collection is empty. Add a resource to get started.' : !search&&type==='all'&&!tags.length&&!currentCollection ? section === 'favorites' ? 'Pin resources to keep them here.' : section === 'recent' ? 'Recently opened resources will appear here.' : 'Your Library is empty. Create a note or import files from the sidebar.' : 'No resources match these filters.'}{type!=='all'&&<button className="library-button" onClick={()=>{setType('all');setPage(0);}}>Clear type filter</button>}{page>0&&<button className="library-button" onClick={()=>setPage(0)}>Back to first page</button>}</div>}
     {managingCollection&&currentCollection&&<CollectionManagement collection={currentCollection} onClose={()=>{setManagingCollection(false);organizationFocus.restoreFocus();}} onChanged={onCollection}/>}
     {pickerIds&&<CollectionPicker resourceIds={pickerIds} onClose={()=>{setPickerIds(null);organizationFocus.restoreFocus();}}/>}

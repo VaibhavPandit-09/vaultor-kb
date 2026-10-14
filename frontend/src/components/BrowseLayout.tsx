@@ -8,7 +8,7 @@ import ResourceThumbnail from './ResourceThumbnail';
 import SearchExcerpt from './SearchExcerpt';
 
 export function BrowseHeading({ title, kicker = 'YOUR WORKSPACE', actions }: { title: string; kicker?: string; actions?: ReactNode }) {
-  return <header className="library-heading"><div className="library-heading-title"><p>{kicker}</p><h1>{title}</h1></div><div className="library-heading-actions">{actions}</div></header>;
+  return <header className="library-heading"><div className="library-heading-title"><p>{kicker}</p><h1 title={title}>{title}</h1></div><div className="library-heading-actions">{actions}</div></header>;
 }
 export function BrowseGroup({ label, count, loading, error, retry, onViewAll, children }: { label: string; count: number; loading?: boolean; error?: string; retry?: () => void; onViewAll?: () => void; children: ReactNode }) {
   if (!count && !loading && !error) return null;
@@ -18,9 +18,9 @@ export function BrowseGroup({ label, count, loading, error, retry, onViewAll, ch
     {loading ? <p role="status" className="browse-feedback">Loading {label.toLowerCase()}…</p> : <div role="list" className="browse-rows">{children}</div>}
   </section>;
 }
-export function BrowsePagination({ page, totalPages, loading, onPage }: { page: number; totalPages: number; loading: boolean; onPage: (page: number) => void }) {
+export function BrowsePagination({ page, totalPages, loading, onPage, compact = false }: { page: number; totalPages: number; loading: boolean; onPage: (page: number) => void; compact?: boolean }) {
   if (totalPages <= 1 && page === 0) return null;
-  return <nav aria-label="Result pages" className="library-pagination"><span>Page {page + 1} of {Math.max(totalPages, page + 1)}</span><button className="library-button" disabled={loading || page === 0} onClick={() => onPage(page - 1)}><ChevronLeft size={15}/>Previous</button><button className="library-button" disabled={loading || page + 1 >= totalPages} onClick={() => onPage(page + 1)}>Next<ChevronRight size={15}/></button></nav>;
+  return <nav aria-label="Result pages" className={compact ? 'library-pagination library-pagination-compact' : 'library-pagination'}><span>Page {page + 1} of {Math.max(totalPages, page + 1)}</span><button className="library-button" aria-label="Previous" title={compact ? 'Previous page' : undefined} disabled={loading || page === 0} onClick={() => onPage(page - 1)}><ChevronLeft size={15}/>{!compact && 'Previous'}</button><button className="library-button" aria-label="Next" title={compact ? 'Next page' : undefined} disabled={loading || page + 1 >= totalPages} onClick={() => onPage(page + 1)}>{!compact && 'Next'}<ChevronRight size={15}/></button></nav>;
 }
 export function BrowseResourceRow({ resource, onOpen, onCollections, selected, onSelect, contentMode = false, recent = false }: { resource: Resource; onOpen: (id: string) => void; onCollections?: (id: string) => void; selected?: boolean; onSelect?: (checked: boolean) => void; contentMode?: boolean; recent?: boolean }) {
 

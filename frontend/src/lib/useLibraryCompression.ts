@@ -6,7 +6,11 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
   let frame = 0, releaseFrame = 0, pointerHeld = false, lastTime = 0;
   const target = () => Math.min(1, Math.max(0, viewport.scrollTop / 160));
   let progress = target();
-  const write = () => viewport.style.setProperty('--library-progress', String(progress));
+  const write = () => {
+    viewport.style.setProperty('--library-progress', String(progress));
+    // The second title line is already clipped before its ellipsis changes.
+    viewport.style.setProperty('--library-title-lines', progress > .96 ? '1' : '2');
+  };
   const locked = () => pointerHeld || Boolean(header.querySelector('[aria-haspopup][aria-expanded="true"]'));
   const step = (time: number) => {
     frame = 0;
@@ -60,6 +64,7 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
     window.removeEventListener('blur', release);
     reduced?.removeEventListener('change', schedule);
     viewport.style.removeProperty('--library-progress');
+    viewport.style.removeProperty('--library-title-lines');
     viewport.style.removeProperty('--library-actions-width');
   };
 }
