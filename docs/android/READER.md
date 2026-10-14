@@ -1,6 +1,6 @@
 # Android reader and legacy recovery
 
-Reviewed 2026-10-14. R1 alpha.9.1 implementation; see [ANDROID.md](ANDROID.md) for the authoritative delivery/transport/storage boundary and [tracker](../plans/workspace-companion-plan.md) for remaining work.
+Reviewed 2026-10-14. R1 alpha.9.1 published reader; see [ANDROID.md](ANDROID.md) for the authoritative delivery/transport/storage boundary and [tracker](../plans/workspace-companion-plan.md) for remaining work.
 
 ## Source map
 

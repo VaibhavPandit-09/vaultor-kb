@@ -1,6 +1,6 @@
 # Vaultor for Android
 
-Reviewed 2026-10-14. R1 reader retirement is in progress as **0.1.0-alpha.9.1 / versionCode13**. [The workspace/companion tracker](../plans/workspace-companion-plan.md) is authoritative: W1–W3 shipped; R1 is the only authorized current sprint; R2–R10 remain unstarted. Androidalpha.8/versionCode11 is the preceding released client. Host protocol3, archive3 and workspace grants remain unchanged; this mobile-only update does not rebuild desktop.
+Reviewed 2026-10-14. R1 reader retirement is published as **0.1.0-alpha.9.1 / versionCode13**. [The workspace/companion tracker](../plans/workspace-companion-plan.md) is authoritative: W1–W3 shipped; R1 is complete; R2–R10 remain unstarted and require separate authorization. Androidalpha.8/versionCode11 is the preceding released client. Host protocol3, archive3 and workspace grants remain unchanged; this mobile-only update does not rebuild desktop.
 
 ## Implemented reader boundary
 
@@ -41,7 +41,7 @@ npm --prefix mobile test -- --runInBand
 npm --prefix mobile run test:editor
 ```
 
-`mobile/android/local.properties` contains the local SDK path and is ignored. Gradle's preBuild task builds the editor from declared source/lock inputs: generated HTML/JS assets are intentionally ignored. `build-release.ps1` resolves Windows Store filesystem virtualization, isolates React Native plugin outputs from automatic IDE imports and uses in-process Kotlin compilation and a non-reused Gradle daemon. Do not stop unrelated IDE daemons or change editor settings to solve tool-path collisions. It privately reads the original Android signer, builds release/application-test APKs, and stages verified public artifacts under ignored `mobile/releases/<version>/`.
+`mobile/android/local.properties` contains the local SDK path and is ignored. Gradle's preBuild task builds the reader from declared source/lock inputs: generated HTML/JS assets are intentionally ignored. `build-release.ps1` resolves Windows Store filesystem virtualization, isolates React Native plugin outputs from automatic IDE imports and uses in-process Kotlin compilation and a non-reused Gradle daemon. Do not stop unrelated IDE daemons or change editor settings to solve tool-path collisions. It privately reads the original Android signer, builds release/application-test APKs, and stages verified public artifacts under ignored `mobile/releases/<version>/`.
 
 ```powershell
 . mobile/scripts/android-env.ps1
