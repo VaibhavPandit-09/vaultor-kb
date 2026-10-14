@@ -15,6 +15,7 @@ public class NoteExportGraph {
     private final ResourceRepository resources;
     private final DocumentService documents;
     private final FileStorageService files;
+    private final ReviewService reviews;
     @Value("${app.export.max-nodes:200}") private int maxNodes;
     @Value("${app.export.max-depth:20}") private int maxDepth;
     @Value("${app.export.max-total-bytes:157286400}") private long maxBytes;
@@ -63,7 +64,7 @@ public class NoteExportGraph {
                 selected.add(new TransferService.ResourceData(r.getId(),r.getType(),r.getTitle(),content,r.getMimeType(),r.getSize(),r.getCreatedAt(),r.getUpdatedAt(),null,List.of(),binary));
             }
             var fingerprint=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(version.toString().getBytes(StandardCharsets.UTF_8)));
-            return new Graph(new TransferService.Workspace(List.copyOf(selected),List.of(),null),Map.copyOf(binaries),new Preview(notes.size(),fileCount,List.copyOf(notes),List.copyOf(seen),warnings.stream().limit(100).toList(),fingerprint));
+            return new Graph(new TransferService.Workspace(List.copyOf(selected),List.of(),null,new OrganizationService.OrganizationData(List.of(),List.of()),reviews.snapshot(new HashSet<>(seen))),Map.copyOf(binaries),new Preview(notes.size(),fileCount,List.copyOf(notes),List.copyOf(seen),warnings.stream().limit(100).toList(),fingerprint));
         } catch(java.io.IOException | java.security.NoSuchAlgorithmException e) {throw new IllegalStateException("Cannot snapshot export graph",e);}
     }
     private void references(tools.jackson.databind.JsonNode n,Set<String> refs) {

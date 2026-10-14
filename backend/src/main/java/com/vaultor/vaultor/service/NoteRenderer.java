@@ -42,6 +42,7 @@ public class NoteRenderer {
                     for(var asset:new TreeMap<>(binaries).entrySet()) {zip.putNextEntry(new ZipEntry(asset.getKey()));Files.copy(asset.getValue(),zip);zip.closeEntry();}
                     zipText(zip,"README.txt","Open the note Markdown files with assets/ beside them. External images are not fetched.\n"+String.join("\n",context.warnings));
                     zipText(zip,"export.json",mapper.writeValueAsString(context.metadata()));
+                    zipText(zip,"reviews.json",mapper.writeValueAsString(snapshot.reviews()==null?List.of():snapshot.reviews()));
                 } else {
                     var note=notes.getFirst();String markdown="# "+context.mdText(note.title())+"\n\n"+context.md(note.content()).strip()+"\n";
                     Files.writeString(output,markdown+(references?context.referenceMarkdown():""));
@@ -84,6 +85,7 @@ public class NoteRenderer {
             default -> throw new IllegalArgumentException("Unsupported note format");
         }
         if(packaged && !format.startsWith("md"))try(var zip=new ZipOutputStream(Files.newOutputStream(output))) {
+            zipText(zip,"reviews.json",mapper.writeValueAsString(snapshot.reviews()==null?List.of():snapshot.reviews()));
             zip.putNextEntry(new ZipEntry("notes."+format));Files.copy(rendered,zip);zip.closeEntry();
             for(var asset:new TreeMap<>(binaries).entrySet()){zip.putNextEntry(new ZipEntry(asset.getKey()));Files.copy(asset.getValue(),zip);zip.closeEntry();}
             zipText(zip,"export.json",mapper.writeValueAsString(context.metadata()));

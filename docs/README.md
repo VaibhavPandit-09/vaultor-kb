@@ -27,6 +27,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Workspace workflows — `workspace/`
 
+- [Review evidence and triage](workspace/REVIEWS.md): R5 domain/API, source identity, conditional status, portability and minimal UI integration contract.
+
 - [Workspace ZIP transfers and local copies](workspace/WORKSPACE-TRANSFERS.md): W3 staging, atomic publication, retries, copy semantics, bounds and recovery.
 
 - [Settings](workspace/SETTINGS.md): focused categories, global search, scoped controls/resets, saving and keyboard access.

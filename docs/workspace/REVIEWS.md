@@ -1,0 +1,37 @@
+# Resource review evidence and triage
+
+Reviewed2026-10-14. R5 targets Windows0.12.0, capability **reviews:1**. API protocol3 stays compatible; workspace exports now use **archive4**, with import of1–3 retained. Android alpha.11 still reads normally; Android offline capture/sync remains R6. This topic owns review contracts; workspace-companion-plan.md owns execution/publication.
+
+## Domain and source identity
+
+Reviews are separate workspace-scoped records, not document nodes, notes, resource types or edits to originals. Additive SQLite review_items/index creation is idempotent in each isolated domain context. No resource FK/cascade: Trash and permanent deletion retain evidence/status/provenance indefinitely. No automatic purge or automatic resolution on original edits. Limit10,000 review items per workspace; new admission fails rather than evicting evidence. Target title/type are captured; live title resolves when available.
+
+Creation uses caller UUID with immutable generation/resourceId/comment/quote/context/locator/baseRevision. Same normalized UUID/body retries return the existing record with its current status, including after target deletion; different intent with that UUID returns409 REVIEW_ID_REUSED. The current workspace generation must match before retry/create/status; replacement returns409 REVIEW_GENERATION_CHANGED. Nothing redirects pending evidence to a similarly named/new-generation workspace. Missing creation targets return404 so the source can retain its pending item.
+
+Comment1–5000 nonblank characters, quote/context0–4000 each, base revision0–100. Locator is resource, note block (content-array indices separated by dots, ≤64 segments/300characters), or PDF page1–100000. Unsupported/invalid locators fail; no precise PDF rectangles are claimed. Text is evidence, never HTML. Author label derives from the authenticated host principal, not body input; display provenance confers no authorization. No credential/device verifier is stored.
+
+Status is open/resolved/dismissed. PATCH requires quoted **review** revision in If-Match plus current generation.428 means absent validator;412 REVIEW_CONFLICT means refresh and choose again. Status success changes only review revision/time; original revision/JSON remain unchanged. An uncertain status response is reconciled with GET; a stale retry cannot overwrite another device's decision.
+
+## API and notifications
+
+All routes inherit normal owner/paired TLS/CSRF/workspace-grant and maintenance admission. X-Vaultor-Workspace selects a fixed isolated context, never global mutable selection. GET /reviews?status=open|resolved|dismissed|all&resourceId=optionalUUID&page=0&size=50 returns matching items/total/pages, open/resolved/dismissed counts for the target scope before status filtering, and generation. Size1–100; page0–100000. Order: captured server createdAt descending then UUID. GET /reviews/{id} reconciles receipt/status. PUT /reviews/{id} creates immutable evidence. PATCH /reviews/{id}/status conditionally triages. See OpenAPI and API.md.
+
+ChangeFeed kind **reviews** carries review UUID and resource UUID after commit, never comments/documents. The existing frontend stream admits that kind and issues a dedicated vaultor:reviews-changed invalidation; it does not dirty editors or force document reconciliation. Same-client API success also invalidates counts/inbox. Reset/workspace events and metadata changes refresh availability.
+
+Attachment is resource, attached, changed, unverified or unavailable. A quote is attached only when the saved resource revision matches and quote/context occur in the supplied block (or saved text if no block). Changed content retains original evidence and avoids pretending the old quote is a live selection. Imported evidence is deliberately unverified/changed because portable archives omit private revisions. File page/context is resource-level evidence, not text-position verification.
+
+## Minimal functional UI and integration contract
+
+Sidebar **Review inbox** opens a single focused modal; note headers and file preview headers expose the same component scoped to that resource with a pending count. It uses the existing theme tokens/modal/Escape/focus primitives and one scroll surface. Status filter/counts and pagination stay bounded; same-query failures retain rows, query/source changes discard stale results. Evidence expands in its existing row; unavailable targets cannot navigate. Status pending/errors/conflicts are local; navigation uses the existing save/load/pane limit behavior. Closing restores trigger focus, while successful resource navigation retains destination focus. Hosts without reviews:1 receive an explanatory state. R5 provides triage, not a second Android capture interface.
+
+No global styling/motion or screen redesign is introduced. For later UI integration, preserve lib/reviews.ts contracts, generation/epoch ownership, immutable request identity, conditional status semantics and the shared ReviewInbox/ReviewButton capability when moving Dashboard/sidebar/header insertion points. ai/gemini-ui is not consumed.
+
+## Portability
+
+Full workspace archive4 includes a required reviews array in workspace.json under existing checksums/20MiB JSON and expanded limits. Unsupported future archives fail safely; format1–3 with nonempty review content is rejected rather than silently dropping it. Older hosts reject archive4. Imports preserve comment/quote/context/locator, display provenance, original created/updated timestamps and status, while issuing fresh private validators. Replacement restores archived review IDs and clears former workspace reviews atomically with originals/new generation. Merge remaps review IDs and resource targets; an import-as-new/fork retains IDs inside its new isolated namespace, with fresh workspace identity/generation and private validators; missing targets get independent missing identities so they cannot accidentally attach to unrelated existing resources. No old host/workspace/generation/credentials/revision validators are portable.
+
+Scoped note export packages (Markdown+assets and linked-resource ZIPs) include reviews.json for only the captured resource graph. They preserve target references/provenance; standalone MD/PDF/Word remains the original note presentation, with no implicit review text injected. These packages are evidence exports, not full workspace archives/import inputs. Android partial/workspace export UI remains R8.
+
+## Validation
+
+Actual focused/native/package results and remaining platform limits are recorded in desktop/releases/v0.12.0.md before publication. Use disposable workspaces only; no phone access or personal workspace mutation.

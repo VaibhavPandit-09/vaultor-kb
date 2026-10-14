@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class NoteExportGraphTests {
     @Test void enforcesEveryBoundAndIncludesTableAssetsWithoutFollowingBacklinks() throws Exception {
         var repository=mock(ResourceRepository.class);var files=mock(FileStorageService.class);
-        var graph=new NoteExportGraph(repository,new DocumentService(new ObjectMapper()),files);
+        var graph=new NoteExportGraph(repository,new DocumentService(new ObjectMapper()),files,mock(ReviewService.class));
         for(var e:Map.of("maxNodes",10,"maxDepth",5).entrySet())ReflectionTestUtils.setField(graph,e.getKey(),e.getValue());
         for(String name:List.of("maxBytes","maxAssets","maxArchive"))ReflectionTestUtils.setField(graph,name,10000L);
         var a=new Resource();a.setId("a");a.setType("note");a.setTitle("Root");a.setContent(NoteExportServiceTests.links("b"));
