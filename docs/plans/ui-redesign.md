@@ -1,6 +1,6 @@
 # Desktop UI redesign: audit and proposed interaction plan
 
-Reviewed 2026-10-15. **Planning only; implementation is not authorized yet.**
+Reviewed 2026-10-15. **Plan approved; implementation waits for completion of the native baseline gate.** The user authorized only Library-required Phase 0 foundations and Phase 1A after that gate. Collection detail and all later interactions remain outside the current implementation boundary.
 Design authority: [UI philosophy](../design/UI_PHILOSOPHY.md). Current behavior remains documented in [CODEBASE](../CODEBASE.md). This document records source findings and proposed transformations, not shipped behavior.
 
 ## Branch and evidence
@@ -11,6 +11,29 @@ Design authority: [UI philosophy](../design/UI_PHILOSOPHY.md). Current behavior 
 - `npm --prefix desktop run build` passed, compiling the frontend and staging ignored `desktop/ui`. Warnings: stale Browserslist data, large JavaScript chunk and ineffective dynamic import of the shared API module. No dependency changes.
 - Launched the real Electron development application with separate `/tmp/vaultor-ui-audit-20261015` user data and dynamic loopback networking. Native observation was attempted twice; Computer Use reported pending macOS Accessibility/Screen Recording permissions both times. **No desktop visual, pointer, resize or temporal motion verification is claimed.**
 - Findings below are implementation facts and design assessments from those facts. Actual perceived spacing, motion quality and platform hit testing remain a mandatory native review gate before implementing the first visual slice. No broad suites, API mutation smoke or Docker checks were run.
+
+## Native baseline follow-up — 2026-10-15 (partial)
+
+Computer Use now returns native accessibility state and screenshots for the real development Electron app at `vaultor://app/`. The prior observation permission blocker is resolved. The existing ignored UI build was used without modifying application code. The separate profile remains `/tmp/vaultor-ui-audit-20261015`.
+
+Seeded 112 disposable notes through ordinary owner-authorized loopback import endpoints, using the fixture's private owner key only inside the local process. No credentials were printed or placed in renderer state. This gives a 100-row first page, pagination and a long Unicode title. No user workspace was used.
+
+Verified observations:
+
+- Normal launch window: native capture 2640×1800 at Retina scale (1320×900 logical). Maximized capture: 3840×1934 (1920×967 logical). Native Window → Move & Resize → Top Left yields 1922×968 (961×484 logical), providing a narrower workspace and a short desktop window. This does **not** certify the 600px native minimum or the <=760px viewport adaptation.
+- Inspected Dark at normal and large sizes, and Light/Dark/OLED at quarter size. This is not the full Cartesian size/theme matrix.
+- Library initially shows title/kicker, full search/filter controls, count/mode summary, selection row and repeated Resources/count heading. At quarter size only approximately three resource rows fit below the orientation stack.
+- Native wheel actions with smaller deltas and direction reversal move the existing whole stack away; there is no visible retained working form in captured observations. Long resource titles truncate within rows rather than widening the list.
+- **Additional rendered issue:** after partial scrolling in the short window, More passes underneath the native window-control surface. The 40px top inset protects the initial heading, but does not continue protecting controls as they scroll through the top edge. This is stronger evidence than the original source-only concern.
+- Maximize/Restore works through both accessibility controls and a coordinate pointer hit. Theme footer pointer actions work and the control state reports Light/Dark/OLED correctly. Mod+K opens the actual palette and Escape returns. These checks do not certify every native pointer target.
+
+Unresolved baseline requirements:
+
+- Native edge drag attempts did not resize the window; a top-band double click did not change native geometry. Menu sizing works, but these failed gestures do not establish whether the app's drag regions or the computer-use gesture path is responsible. Native dragging, edge resizing, Minimize/restore and Close/tray need further verification.
+- The current Computer Use observation API exposes accessibility text and individual screenshots, not continuous video. QuickTime Player's File → New Screen Recording was initially disabled; direct system-recorder launches failed (launch error/timeout). After the user confirmed native recording is possible, QuickTime's command became enabled and a Screenshot toolbar was briefly accessible, but subsequent observation exposed only its thumbnail/Markup surface. No usable baseline recording was verified, and no real-time motion-quality certification is claimed from screenshots or source values.
+- Read-only inspection of System Settings confirms ChatGPT and Codex Computer Use Screen & System Audio Recording switches are on; no permission was changed. A user assistance request is pending to leave the native recording toolbar open for exact window selection. Do not substitute sampled screenshots for the requested continuous-motion review, and do not begin visible changes until this baseline gate is completed.
+
+No UI code, dependency, version, release or architecture changes in this follow-up. No new build/tests were required for these documentation and existing-runtime observations. The previous build result above remains the only build claimed.
 
 ## Audit of current surfaces
 
@@ -189,4 +212,4 @@ Audit documentation requires no installers. Any later shipped desktop behavior f
 
 ## Review decision
 
-Proposed first implementation boundary: minimal Phase 0 foundations required by **Library only**, followed by the Library proof of concept. Collection detail, notes, panes, sidebar, previews and theme remain separate review gates. Native baseline observation is still pending and must precede UI implementation. Stop here for plan review.
+Approved first implementation boundary: minimal Phase 0 foundations required by **Library only**, followed by the Library proof of concept. Collection detail, notes, panes, sidebar, previews and theme remain separate review gates. The native baseline is partially observed but its motion/drag requirements remain pending and must precede UI implementation. Do not start implementation while this gate is incomplete.
