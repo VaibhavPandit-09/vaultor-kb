@@ -1,6 +1,6 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created 2026-10-13; reviewed 2026-10-14. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 in progress for host0.11.0; R4–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created 2026-10-13; reviewed 2026-10-14. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
 
 ## Agreed product boundary
 
@@ -121,7 +121,7 @@ Implementation and publication are complete. Device-only presentation, bounded s
 
 ## R3 — Host companion snapshots and refresh contracts
 
-Status: **In progress — authorized 2026-10-14**. Target host/Windows0.11.0, additive protocol3 capability; Android alpha.10 remains unchanged. Implement immutable scoped reading checkpoints, bounded inventory/byte resume, explicit coverage and checkpoint comparison; publish Windows with exact same-tag Mac handoff. R4–R10 remain unstarted.
+Status: **Complete — published 2026-10-14**. Windows0.11.0 publishes companion snapshot schema1 at protocol3; Android alpha.10 remains unchanged. Immutable scoped checkpoints, paged metadata/coverage/comparison, hashes/range resume and access/generation checks verified. Original-key Windows pair published; native Mac gate/handoff remains explicit. R4–R10 remain unstarted.
 
 - Implement authorized paginated metadata and snapshot inventory/checkpoints for complete workspace, selected collections and selected resources plus explicit dependency options. Estimate bytes/counts before download. Download policy can include originals or readable content only; disclose omitted media and link destinations.
 - Capture coherent saved documents, revisions, resource metadata, referenced files and scoped organization. Snapshot revision/hash manifests prevent mixes of old notes and new bytes. Streams are hints; cursor gaps require scoped reconciliation/full manifest, not trusting missed events.
@@ -130,6 +130,8 @@ Status: **In progress — authorized 2026-10-14**. Target host/Windows0.11.0, ad
 - Validate concurrent edits/Trash/Restore during snapshot, missing assets, duplicate IDs across workspaces, grant loss, malicious inventory paths/sizes and interrupted byte streams.
 
 **Acceptance:** a companion client can obtain and verify a coherent resumable reading dataset. Publish the host capability before claiming Android offline support.
+
+R3 delivery: [Windows0.11.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.11.0), published2026-10-14T11:20:55Z, stable/non-draft and explicitly Windows-only/non-latest. Immutable source/tag8abd3fe6016475f9a37b7e199007ca729be88f50/v0.11.0. Installer245,639,499bytes/SHA256937c1677ac4dea369c0d09a421de118164d6153c732740000fabd966c1bff692 plus400-byte original-key sidecar; downloaded pair signature/exact bytes and public sizes/digests verified. Fresh UI/embedded server,24 focused cases (companion13, protocol4, multi-workspace7), frozen packaged checkpoint/whole-workspace/range/hash/restart and native first/save/PDF/relaunch checks passed. Read leases prevent search-index maintenance truncating admitted streams; optional storage failure returns503 without disabling originals. Explicit image-only scope and pre-parse note limits are covered. No new Android APK/schema/protocol/archive change. Mac native gate remains unavailable with exact same-tag MAC-HANDOFF.md; no phone/real-Wi-Fi or personal installer mutation. Owned disposable hosts exited. Documentation-only publication follow-up preserves source tag/bytes. **R3 complete; stop here. R4–R10 remain unstarted.**
 
 ## R4 — Durable offline companions and local search
 
