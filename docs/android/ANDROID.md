@@ -1,6 +1,6 @@
 # Vaultor for Android
 
-Reviewed 2026-10-14. R4 targets **0.1.0-alpha.11 / versionCode15**; [release evidence](releases/0.1.0-alpha.11.md) records current validation/publication. W1–W3/R1–R3 shipped; R4 is implemented; installed release gates passed and publication is pending; R5–R10 require separate authorization. [OFFLINE.md](OFFLINE.md) owns retained reading storage, local search, source locking and download policy. R2 alpha.10/code14 is the preceding APK. Host0.11.0+ companionSnapshots:1 is required for downloads; protocol3/archive3 and workspace grants remain unchanged. This mobile-only update does not rebuild desktop.
+Reviewed 2026-10-14. R4 shipped **0.1.0-alpha.11 / versionCode15**; [release evidence](releases/0.1.0-alpha.11.md) records current validation/publication. W1–W3/R1–R3 shipped; R4 is complete/published; R5–R10 require separate authorization. [OFFLINE.md](OFFLINE.md) owns retained reading storage, local search, source locking and download policy. R2 alpha.10/code14 is the preceding APK. Host0.11.0+ companionSnapshots:1 is required for downloads; protocol3/archive3 and workspace grants remain unchanged. This mobile-only update does not rebuild desktop.
 
 ## Implemented reader boundary
 
