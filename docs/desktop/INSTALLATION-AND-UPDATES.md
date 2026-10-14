@@ -1,6 +1,6 @@
 # Install and update Vaultor on each device
 
-Reviewed 2026-10-14. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
+Reviewed 2026-10-15. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
 
 ## What you download
 
@@ -16,9 +16,9 @@ Use the [Vaultor GitHub Releases page](https://github.com/VaibhavPandit-09/vault
 
 For manual/offline import, keep each installer and its signed sidecar in the **same folder**, with their exact original names. Do not download source-code assets for installation. No Java or Docker is needed on a device running a packaged desktop app. Unsigned personal OS installers are separate from the app's Ed25519-signed update manifests: the latter verify update identity and bytes, but do not remove SmartScreen or Gatekeeper prompts.
 
-**[Windows0.11.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.11.0)** (2026-10-14) is published with companion checkpoint schema1. From installed Windows0.4.1+, use Updates → Check for updates → **Update and restart**; its complete signed Windows pair is discoverable even though the partial platform release is not globally latest. From older/development builds, save and Quit Vaultor through the tray/menu, then install the current EXE. [Release notes](releases/v0.11.0.md) record actual checks and platform limits. Android alpha.10 is unchanged; offline downloads are R4, not enabled by updating this host alone.
+**[Windows0.12.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.12.0)** (2026-10-15) is published with review evidence/inbox and the existing companion checkpoint service. From installed Windows0.4.1+, use Updates → Check for updates → **Update and restart**; its signed Windows pair is discoverable even though the Windows-only release is not globally latest. From older/development builds, save and Quit Vaultor through the tray/menu, then install the current EXE. [Release notes](releases/v0.12.0.md) record actual checks and platform limits. Android alpha.11 remains the current APK with R4 downloads; Android review capture/sync is R6, not enabled by updating this host alone.
 
-macOS Apple Silicon's latest verified published package remains **[0.7.1](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.7.1)**; download its DMG and drag Vaultor.app into Applications. Mac0.11.0 is not yet available: [the exact-tag Mac AI handoff](MAC-HANDOFF.md) owns native build/check/publication. A Windows update does not update a remote Mac host. API/minimum client3/3, archive3, original trust and updater protocol1 remain unchanged; future offline clients must require the new host capability explicitly. Manual signed-pair import remains available for backup-aware transitions/offline updates.
+macOS Apple Silicon's latest verified published package remains **[0.7.1](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.7.1)**; download its DMG and drag Vaultor.app into Applications. Mac0.12.0 is not yet available: [the exact-tag Mac AI handoff](MAC-HANDOFF.md) owns native build/check/publication. A Windows update does not update a remote Mac host. API/minimum client3/3, original trust and updater protocol1 remain unchanged. Current full archive writer4 includes reviews and reads1–3; older hosts reject4. Optional reviews:1 requires host/client0.12.0; Android alpha.11 remains compatible for reading/downloads. Manual signed-pair import remains available for backup-aware transitions/offline updates.
 
 ## First installation — Windows
 

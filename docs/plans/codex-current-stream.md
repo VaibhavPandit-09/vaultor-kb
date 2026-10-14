@@ -1,8 +1,8 @@
 # Codex product stream
 
-Reviewed2026-10-14. Work only on **ai/codex-current**; never incorporate ai/gemini-ui without explicit integration authorization. R4 remains completed/published; the workspace-companion tracker remains authoritative. No project restart.
+Reviewed2026-10-15. Work only on **ai/codex-current**; never incorporate ai/gemini-ui without explicit integration authorization. R4 remains completed/published; the workspace-companion tracker remains authoritative. No project restart.
 
-R5 is authorized: review records and inbox on desktop/browser; Android capture/sync remains R6. Functional changes will use separate review types/API/state and a dedicated component, with only narrow Dashboard hooks. Broad layout/theme/motion work belongs to the UI stream.
+R5 is complete/published Windows0.12.0: review records and inbox on desktop/browser; Android capture/sync remains R6. Functional changes will use separate review types/API/state and a dedicated component, with only narrow Dashboard hooks. Broad layout/theme/motion work belongs to the UI stream.
 
 The user requested latest Git instructions: master11b09aa (AGENTS, UI_PHILOSOPHY, macOS ignore) was fast-forwarded before feature edits. Read the design contract completely. No other branch is an implementation dependency.
 
@@ -12,4 +12,8 @@ Integration risks: Dashboard sidebar/destination and resource-header insertion p
 
 ## R5 checkpoints
 
-a2166f9 records branch continuity/authorization; c01e7b6 implements review domain/API/portability. Current UI work keeps separate ReviewInbox/ReviewButton and lib/reviews.ts with narrow Dashboard/PreviewLayer hooks. Transfer previews add optional reviews counts and explicit replacement wording; these capabilities must survive the UI transformation. See workspace/REVIEWS.md for complete contracts and desktop/releases/v0.12.0.md for actual validation/release status. No other active AI branch has been consumed.
+a2166f9 records branch continuity/authorization; c01e7b6 implements review domain/API/portability. d7df3aa adds functional inbox/entry points;1b987fe isolates generations/export scope;4e2f713 caps long titles and is immutable v0.12.0 source. Current UI implementation keeps separate ReviewInbox/ReviewButton and lib/reviews.ts with narrow Dashboard/PreviewLayer hooks. Transfer previews add optional reviews counts and explicit replacement wording; these capabilities must survive the UI transformation. See workspace/REVIEWS.md for complete contracts and desktop/releases/v0.12.0.md for actual validation/release status. No other active AI branch has been consumed.
+
+R5 release published at2026-10-14T20:50:06Z (2026-10-15 IST), Windows-only; exact source/version, verified artifact digests and Mac handoff are in the release ledger. Work remains on ai/codex-current; master and ai/gemini-ui were not modified. Stop after R5; next separately authorized sprint is R6 Android review capture/sync.
+
+Shared-file integration also includes desktop package/lock version0.12.0, the native diagnostic helper packaging entry, CODEBASE/index/tracker and release notes. Preserve immutable published tags/signatures and choose a new higher release version after integration. Adapt native UI selectors to the redesigned presentation while retaining source isolation, pagination, triage/original preservation, focus and preview assertions.

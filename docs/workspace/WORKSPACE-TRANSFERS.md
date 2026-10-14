@@ -1,6 +1,6 @@
 # Workspace ZIP transfers and independent desktop copies
 
-Reviewed2026-10-14; implemented in0.10.0/W3. [WORKSPACES.md](../architecture/WORKSPACES.md) owns host isolation/selection; this document owns whole-workspace transfers. Individual note exports remain in NOTE-EXPORTS.md.
+Reviewed2026-10-15; implemented in0.10.0/W3. [WORKSPACES.md](../architecture/WORKSPACES.md) owns host isolation/selection; this document owns whole-workspace transfers. Individual note exports remain in NOTE-EXPORTS.md.
 
 ## User flows
 

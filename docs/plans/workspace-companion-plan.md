@@ -1,6 +1,6 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created 2026-10-13; reviewed 2026-10-14. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 complete/published Androidalpha.11; R5 authorized/in progress on ai/codex-current; R6–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created 2026-10-13; reviewed 2026-10-15. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 complete/published Androidalpha.11; R5 complete/published Windows0.12.0 on ai/codex-current (Mac gate pending); R6–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
 
 ## Agreed product boundary
 
@@ -150,7 +150,7 @@ R4 delivery: [Android alpha.11](https://github.com/VaibhavPandit-09/vaultor-kb/r
 
 ## R5 — Review items and desktop/browser Review inbox
 
-Status: **Authorized / in progress (2026-10-14), branch ai/codex-current**. Continue the R4 baseline; target Windows0.12.0 host/UI capability with original signer and exact-tag Mac handoff. Android alpha.11 stays unchanged; R6 remains separately authorized. No ai/gemini-ui integration.
+Status: **Complete — Windows0.12.0 published2026-10-15, branch ai/codex-current; Mac native gate pending**. Preserves the R4 baseline, original signing identity and exact-tag Mac handoff. Android alpha.11 stays unchanged; R6–R10 remain separately authorized. No ai/gemini-ui integration.
 
 - Add separate workspace-scoped review records: stable UUID, resource target, bounded comment, optional quote/context/locator/base revision, author/device label, created/updated times and revision-checked open/resolved/dismissed status. Escape user content; enforce limits and pagination. Original resource revisions/JSON remain unchanged.
 - Expose idempotent creation/status lookup and conditional status actions with change notifications. Retries with the same ID/body reconcile; differing payloads cannot silently overwrite. Multiple devices resolving one item produce explicit conflict/reconciliation.
@@ -159,6 +159,8 @@ Status: **Authorized / in progress (2026-10-14), branch ai/codex-current**. Cont
 - Test duplicate/unknown creation, stale status updates, target edits/deletion/replacement, author safety, export/import/copy and per-workspace authorization.
 
 **Acceptance:** desktop/browser can triage and resolve concerns without changing note content as a side effect. Publish the host/UI capability with explicit archive/client compatibility.
+
+R5 delivery: [Windows0.12.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.12.0), immutable source/tag4e2f71394547bf87422ac751793f56013bd7d043/v0.12.0, published2026-10-14T20:50:06Z (2026-10-15 IST). Original-key EXE245,671,099bytes/SHA2566db136acdc5f31110fdc593c24f20db3d15f61403201e73ea30bb1c4a0b79bd6 and400-byte sidecar; pair downloaded/compared, public stable/non-draft metadata/digests verified.13 review tests,4 compatibility cases,1 graph case and13 frontend cases passed; TypeScript/backend compilation and scoped lint0errors/0warnings passed. Final packaged native/browser54 mixed reviews, status/paging, unchanged originals, note/file entry, preview dismissal, long-title containment, owner handoff/Escape and themes/narrow layout passed. All five UI assets match fresh/embedded/packaged copies. No original-resource schema/protocol/Android bump; additive scoped review table and archive4 with imports1–3. Minimum functional presentation; Dashboard/PreviewLayer/transfer hooks documented for later UI integration. Mac same-tag handoff remains; no phone/realWi-Fi/install-over/full10k claims. **Stop after R5; R6–R10 unstarted.**
 
 ## R6 — Android offline review capture and synchronization
 
