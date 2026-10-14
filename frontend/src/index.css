@@ -744,6 +744,54 @@ button:focus-visible, [role='option']:focus-visible { outline:2px solid var(--ac
 /* Bounded static previews and flat reference rows share theme/motion tokens. */
 .resource-thumbnail{position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:2.5rem;height:2.5rem;color:var(--text-secondary);border-radius:.5rem;overflow:hidden}.resource-thumbnail img{width:100%;height:100%;object-fit:contain}.resource-thumbnail button{position:absolute;right:0;bottom:0;background:var(--surface-2);border:1px solid var(--border-subtle);border-radius:50%;width:1.25rem;height:1.25rem}.reference-view{display:flex;flex-direction:column;gap:.75rem}.reference-row{padding:.75rem 0;border-bottom:1px solid var(--border-subtle)}.reference-row>small{color:var(--text-secondary)}.reference-row summary{font-size:.8rem;color:var(--text-secondary);cursor:pointer;padding:.5rem 0}.reference-occurrence{display:flex;gap:.5rem;flex-wrap:wrap;text-align:left;width:100%;padding:.4rem .5rem;font-size:.8rem;border-radius:.4rem}.reference-occurrence span{color:var(--text-secondary)}.reference-occurrence:hover{background:var(--surface-hover)}
 .workspace-main { container-type:inline-size; }
+/* Library proof of concept only. The original title/search/actions migrate
+   within one surface; sticky positioning retains that surface's coordinate
+   space, never a second compact header or a new list scroll container. */
+.library-transform {
+ --library-progress:0; --library-loss:84px; --library-safe-top:16px;
+ --library-inset:clamp(16px,3vw,32px); --library-actions-width:56px;
+ gap:12px; padding:0 var(--library-inset) calc(24px + var(--library-loss) * var(--library-progress));
+ overflow-anchor:none; scroll-padding-top:200px;
+}
+.desktop-shell .library-transform { --library-safe-top:40px; padding-top:0; }
+.desktop-shell .library-transform::before { content:none; }
+.library-orientation {
+ position:sticky; top:0; z-index:20; flex-shrink:0;
+ margin-inline:calc(-1 * var(--library-inset));
+ background:var(--background); color:var(--text-primary);
+}
+.library-orientation-layout { position:relative; height:calc(var(--library-safe-top) + 152px - var(--library-loss) * var(--library-progress)); }
+.library-orientation .library-heading { position:absolute; top:var(--library-safe-top); left:var(--library-inset); right:var(--library-inset); align-items:flex-start; }
+.library-orientation .library-heading-title { flex:0 1 140px; }
+.library-orientation .library-heading-title p { height:calc(17px * (1 - var(--library-progress))); opacity:calc(1 - var(--library-progress)); overflow:hidden; white-space:nowrap; }
+.library-orientation .library-heading h1 { font-size:calc(28px - 10px * var(--library-progress)); line-height:1.25; }
+.library-orientation .library-heading-actions { gap:6px; padding-top:calc(16px * (1 - var(--library-progress))); }
+.library-orientation .library-filters {
+ position:absolute; top:calc(var(--library-safe-top) + 68px * (1 - var(--library-progress)));
+ left:calc(var(--library-inset) + 140px * var(--library-progress));
+ right:calc(var(--library-inset) + (var(--library-actions-width) + 12px) * var(--library-progress));
+ flex-wrap:nowrap; gap:8px;
+}
+.library-orientation .library-search { min-width:100px; padding:9px 10px; }
+.library-orientation .library-filters > button { flex-shrink:0; }
+.library-orientation .library-summary { position:absolute; top:calc(var(--library-safe-top) + 124px - 76px * var(--library-progress)); left:var(--library-inset); right:var(--library-inset); gap:12px; font-size:12px; }
+.library-working-context { display:flex; flex-direction:column; gap:8px; padding:0 var(--library-inset) 10px; }
+.library-working-context:empty { padding-bottom:0; }
+.library-working-context > label { font-size:12px; }
+.library-working-context > div { font-size:12px; }
+.library-working-context .library-button { padding:6px 8px; font-size:12px; }
+.library-transform > .browse-group > .browse-group-heading { display:none; }
+.desktop-shell .library-orientation-layout::before { content:''; position:absolute; top:0; left:0; right:170px; height:30px; -webkit-app-region:drag; }
+.library-orientation :is(button,input,label,select) { -webkit-app-region:no-drag; }
+@container (max-width:940px) {
+ .library-transform { --library-loss:44px; }
+ .library-orientation .library-heading-title { flex-basis:180px; }
+ .library-orientation .library-filters { left:var(--library-inset); right:var(--library-inset); top:calc(var(--library-safe-top) + 68px - 32px * var(--library-progress)); }
+ .library-orientation .library-summary { top:calc(var(--library-safe-top) + 124px - 44px * var(--library-progress)); }
+}
+.desktop-shell .workspace-main[data-narrow='true'] .library-transform { --library-safe-top:12px; }
+.desktop-shell .workspace-main[data-narrow='true'] .library-orientation-layout::before { content:none; }
+@media (prefers-reduced-motion:reduce) { .library-orientation *, .library-orientation { transition:none !important; animation:none !important; } }
 .workspace-view:not([hidden]) { flex:1; min-height:0; height:0; }
 .workspace-compact-controls { display:none; align-items:center; gap:12px; padding:8px 12px; flex-shrink:0; border-bottom:1px solid var(--border); }
 .workspace-pane-switcher { display:flex; flex:1; align-items:center; gap:8px; min-width:0; color:var(--text-secondary); font-size:13px; }

@@ -79,3 +79,17 @@ it('starts from restored title/content mode and query without restoring bulk sel
  expect((view.getByRole('textbox',{name:'Search resources'}) as HTMLInputElement).value).toBe('saved query');
  expect(view.queryByText('selected')).toBeNull();
 });
+
+it('attaches compression to the mounted Library scroll owner without replacing search or results', async () => {
+ const view=render(<LibraryView section="library" visible tags={[]} hasNotes onReturn={()=>{}} onOpen={()=>{}}/>);
+ await screen.findByText('Note 0');
+ const viewport=view.container.querySelector<HTMLElement>('.library-transform')!;
+ const input=screen.getByRole('textbox',{name:'Search resources'}) as HTMLInputElement;
+ const row=screen.getAllByRole('listitem')[0];
+ input.focus(); input.value='research'; input.setSelectionRange(1,3);
+ viewport.scrollTop=160; fireEvent.scroll(viewport);
+ await waitFor(()=>expect(Number(viewport.style.getPropertyValue('--library-progress'))).toBeGreaterThan(.9));
+ expect(screen.getByRole('textbox',{name:'Search resources'})).toBe(input);
+ expect(document.activeElement).toBe(input); expect(input.selectionStart).toBe(1);
+ expect(screen.getAllByRole('listitem')[0]).toBe(row); expect(browseResources).toHaveBeenCalledTimes(1);
+});
