@@ -1,6 +1,6 @@
 {
   "name": "VaultorAndroid",
-  "version": "0.1.0-alpha.9.1",
+  "version": "0.1.0-alpha.10",
   "private": true,
   "scripts": {
     "android": "react-native run-android",

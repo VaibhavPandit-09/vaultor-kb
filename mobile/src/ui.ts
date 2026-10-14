@@ -1,8 +1,19 @@
-import { useMemo } from 'react';
-import { StyleSheet, useColorScheme } from 'react-native';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { NativeModules, StyleSheet, useColorScheme } from 'react-native';
+import {
+  defaultReading,
+  normalizeReading,
+  type ReadingPreferences,
+} from './reading';
 
-// Shared mobile surfaces. Explicit device preference controls arrive in A8;
-// until then follow OS appearance, with true-black dark content canvases.
+// Device-local reader appearance. Never stored in workspace exports.
 export const colors = {
   dark: {
     canvas: '#000',
@@ -33,8 +44,97 @@ export const colors = {
     error: '#a52d2d',
   },
 };
+const ReadingContext = createContext({
+  preferences: defaultReading,
+  update: (_: Partial<ReadingPreferences>) => {},
+  error: '',
+  retry: () => {},
+});
+export function ReadingProvider({ children }: { children: React.ReactNode }) {
+  const [preferences, setPreferences] = useState(defaultReading),
+    [error, setError] = useState('');
+  const current = useRef(preferences),
+    edit = useRef(0);
+  const persist = (value: ReadingPreferences) => {
+    const ticket = ++edit.current;
+    void NativeModules.VaultorNative.readerPreferences(
+      'put',
+      JSON.stringify(value),
+    )
+      .then(() => {
+        if (edit.current === ticket) setError('');
+      })
+      .catch(() => {
+        if (edit.current === ticket)
+          setError('Reading preferences could not be saved. Retry.');
+      });
+  };
+  useEffect(() => {
+    const ticket = edit.current;
+    void NativeModules.VaultorNative.readerPreferences('get', '{}')
+      .then((raw: string) => {
+        if (edit.current === ticket) {
+          const value = normalizeReading(JSON.parse(raw));
+          current.current = value;
+          setPreferences(value);
+        }
+      })
+      .catch(() => setError('Reading preferences unavailable. Retry saving.'));
+  }, []);
+  const update = (patch: Partial<ReadingPreferences>) => {
+    const value = normalizeReading({ ...current.current, ...patch });
+    current.current = value;
+    setPreferences(value);
+    persist(value);
+  };
+  return React.createElement(
+    ReadingContext.Provider,
+    {
+      value: {
+        preferences,
+        update,
+        error,
+        retry: () => persist(current.current),
+      },
+    },
+    children,
+  );
+}
+export const useReading = () => useContext(ReadingContext);
+export function useAppearance() {
+  const { preferences } = useReading(),
+    os = useColorScheme();
+  return preferences.theme === 'os'
+    ? os === 'light'
+      ? 'light'
+      : 'dark'
+    : preferences.theme;
+}
 export function usePalette() {
-  return colors[useColorScheme() === 'light' ? 'light' : 'dark'];
+  const theme = useAppearance(),
+    { preferences } = useReading(),
+    light = theme === 'light';
+  const accents = {
+    blue: light ? '#245bb5' : '#8db7ff',
+    violet: light ? '#7138bb' : '#c2a4ff',
+    mint: light ? '#116951' : '#79dbba',
+    amber: light ? '#875400' : '#efc47b',
+  };
+  const accent = accents[preferences.accent];
+  return useMemo(
+    () => ({
+      ...colors[light ? 'light' : 'dark'],
+      canvas:
+        theme === 'dark'
+          ? '#101114'
+          : theme === 'oled'
+          ? '#000'
+          : colors[light ? 'light' : 'dark'].canvas,
+      selected: theme === 'oled' ? '#141414' : light ? '#e8effb' : '#1a1b20',
+      accent,
+    }),
+    [theme, light, accent],
+  );
 }
 export function useThemeStyles<T extends Record<string, any>>(styles: T): T {
   const p = usePalette();

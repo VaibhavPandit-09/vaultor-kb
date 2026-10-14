@@ -1,3 +1,4 @@
+import { noteImages } from './reading';
 import { type Doc, type Note, scopeFor } from './bridge';
 import {
   advance,
@@ -19,7 +20,14 @@ export type Host = {
   workspaceId?: string;
 };
 export type WorkspaceChoice = { id: string; name: string };
-export type Position = { anchor: number; head: number; scroll: number };
+export type Position = {
+  anchor: number;
+  head: number;
+  scroll: number;
+  path?: string;
+  offset?: number;
+  revision?: string;
+};
 export type Draft = {
   scope: string;
   noteId: string;
@@ -87,6 +95,7 @@ export type WorkspaceState = {
   view: 'home' | 'browse' | 'note';
   noteOrigin: 'home' | 'browse';
   preview?: ResourceSummary;
+  previewGallery?: string[];
   browseVersion: number;
   createdNoteId?: string;
   referenceSelection?: { path: string; targetId: string; revision: string };
@@ -400,6 +409,7 @@ export class MobileWorkspace {
     const content = contentOf(note);
     if (
       strict &&
+      !reveal &&
       this.state.note?.id === id &&
       this.state.note.revision === note.revision &&
       this.state.note.title === note.title &&
@@ -438,7 +448,7 @@ export class MobileWorkspace {
     this.patch({
       supported: true,
       error: [
-        'Editor stopped. Protected drafts remain. Reopen the editor.',
+        'Reader stopped. Refresh the saved note; recovery is unchanged.',
         'Unsupported content retained. Editing and saving are disabled.',
       ].includes(this.state.error)
         ? ''
@@ -741,23 +751,47 @@ export class MobileWorkspace {
     else await this.showBrowser();
   }
   async showHome() {
+    this.navigation++;
+    this.journeyRequest++;
     await this.protect();
     this.patch({ view: 'home', preview: undefined });
     await this.session();
   }
   async showBrowser() {
+    this.navigation++;
+    this.journeyRequest++;
     await this.protect();
     this.patch({ view: 'browse', preview: undefined });
     await this.session();
   }
   async returnToNote() {
     if (this.state.note) {
+      this.navigation++;
+      this.journeyRequest++;
       this.patch({ view: 'note' });
       await this.session();
     }
   }
   dismissPreview() {
-    this.patch({ preview: undefined });
+    this.patch({ preview: undefined, previewGallery: undefined });
+  }
+  async previewGalleryItem(id: string) {
+    const gallery = this.state.previewGallery;
+    if (!gallery?.includes(id)) return;
+    const host = this.state.host,
+      epoch = this.epoch;
+    if (!host) return;
+    const ticket = ++this.journeyRequest;
+    const resource: ResourceSummary = await this.port.api(
+      host,
+      '/resources/' + id + '/summary',
+    );
+    this.valid(epoch);
+    if (ticket !== this.journeyRequest || this.state.previewGallery !== gallery)
+      return;
+    if (resource.type !== 'file' || !resource.mimeType?.startsWith('image/'))
+      throw Error('Image no longer available. The source note is unchanged.');
+    this.patch({ preview: resource });
   }
   async routeResource(id: string, linked = false) {
     this.navigation++; // Supersede loads before waiting for destination metadata.
@@ -774,7 +808,13 @@ export class MobileWorkspace {
     if (resource.type === 'note')
       await this.navigate(id, linked ? 'linked' : 'direct');
     else if (resource.type === 'file') {
-      this.patch({ preview: resource });
+      this.patch({
+        preview: resource,
+        previewGallery:
+          linked && resource.mimeType?.startsWith('image/')
+            ? noteImages(this.state.content)
+            : undefined,
+      });
       void this.port
         .api(host, '/resources/' + id + '/open', 'POST')
         .catch(() => {});

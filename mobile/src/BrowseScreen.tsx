@@ -58,7 +58,11 @@ export function Action({
         disabled && styles.disabled,
       ]}
     >
-      <Text style={[styles.actionText, active && styles.accent]}>{label}</Text>
+      <View pointerEvents="none" collapsable={false}>
+        <Text style={[styles.actionText, active && styles.accent]}>
+          {label}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -68,60 +72,65 @@ export function ChoiceSheet({
   close,
   onChoose,
   searchable = choices.length > 8,
+  animation = 'fade',
 }: {
   title: string;
   choices: { value: string; label: string }[];
   close: () => void;
   onChoose: (value: string) => void;
   searchable?: boolean;
+  animation?: 'none' | 'fade';
 }) {
   const styles = useThemeStyles(sheetStyles);
   const [q, setQ] = useState('');
-  return (
-    <Modal transparent animationType="fade" onRequestClose={close}>
-      <Pressable
-        style={styles.scrim}
-        onPress={close}
-        accessibilityLabel="Dismiss picker"
-      >
-        <Pressable style={styles.sheet} onPress={() => {}}>
-          <View collapsable={false} style={styles.bar}>
-            <Text accessibilityRole="header" style={styles.heading}>
-              {title}
-            </Text>
-            <Action label="Done" onPress={close} />
-          </View>
-          {searchable ? (
-            <TextInput
-              autoFocus
-              accessibilityLabel={'Search ' + title}
-              value={q}
-              onChangeText={setQ}
-              placeholder="Find an option"
-              placeholderTextColor="#858585"
-              style={styles.input}
-            />
-          ) : null}
-          <FlatList
-            removeClippedSubviews={false}
-            style={styles.choiceList}
-            keyboardShouldPersistTaps="handled"
-            data={choices.filter(c =>
-              c.label.toLowerCase().includes(q.toLowerCase()),
-            )}
-            keyExtractor={c => c.value}
-            renderItem={({ item }) => (
-              <Action
-                label={item.label}
-                onPress={() => {
-                  close();
-                  onChoose(item.value);
-                }}
-              />
-            )}
+  const content = (
+    <Pressable
+      style={styles.scrim}
+      onPress={close}
+      accessibilityLabel="Dismiss picker"
+    >
+      <Pressable style={styles.sheet} onPress={() => {}}>
+        <View collapsable={false} style={styles.bar}>
+          <Text accessibilityRole="header" style={styles.heading}>
+            {title}
+          </Text>
+          <Action label="Done" onPress={close} />
+        </View>
+        {searchable ? (
+          <TextInput
+            autoFocus
+            accessibilityLabel={'Search ' + title}
+            value={q}
+            onChangeText={setQ}
+            placeholder="Find an option"
+            placeholderTextColor="#858585"
+            style={styles.input}
           />
-        </Pressable>
+        ) : null}
+        <FlatList
+          removeClippedSubviews={false}
+          style={styles.choiceList}
+          keyboardShouldPersistTaps="handled"
+          data={choices.filter(c =>
+            c.label.toLowerCase().includes(q.toLowerCase()),
+          )}
+          keyExtractor={c => c.value}
+          renderItem={({ item }) => (
+            <Action
+              label={item.label}
+              onPress={() => {
+                close();
+                onChoose(item.value);
+              }}
+            />
+          )}
+        />
       </Pressable>
+    </Pressable>
+  );
+  return (
+    <Modal transparent animationType={animation} onRequestClose={close}>
+      {content}
     </Modal>
   );
 }

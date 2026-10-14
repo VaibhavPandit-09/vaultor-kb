@@ -1,6 +1,16 @@
 # Android images and file input/output
 
-> R1 (alpha.9) supersedes the Android editing/insertion/organization-write flows below. They document historical A4–A7 behavior and retained recovery formats; current read-only behavior is in [ANDROID.md](ANDROID.md) and [READER.md](READER.md). Native previews/copy/download of existing originals remain available.
+> R1 (alpha.9.1) supersedes the Android editing/insertion/organization-write flows below. They document historical A4–A7 behavior and retained recovery formats; current read-only behavior is in [ANDROID.md](ANDROID.md) and [READER.md](READER.md). Native previews/copy/download of existing originals remain available.
+
+## Current R2 viewing boundary
+
+Reviewed2026-10-14. Alpha.10 is in verification. Image placements open a full-screen temporary viewer, never editing tools. Fit, Actual size (bounded to4× fit),1–4× zoom, drag pan, pinch and double-tap keep original pixels/colors. Images remain sampled static previews up to2048pixels per edge/40MP/20MiB input; reduced resolution is disclosed. Original Save/Share/Copy/Open with use original bytes. A note gallery keeps the first128unique image resource IDs in document order; swipe at Fit or Previous/Next opens only another source-note image. Gallery metadata is fetched per selected resource, not by loading every original at once. File previews never add a note-history visit.
+
+PDFs render one page at a time inside the app: Previous/Next, editable page number, Fit/Actual size/zoom/pan and remembered position. Preview input remains20MiB; rendering uses at most2560×4000pixels, preserves aspect ratio and paints white paper without theme inversion. Page count is bounded100,000. Password-protected/malformed/large files explain the limit and offer Retry/Open with/Save original. Unsupported formats offer explicit external opening. Text preview remains100KB; general original-file transport remains64MiB.
+
+One restricted local media WebView displays only native-produced file URIs. Its fixed internal scroll viewport keeps fit/zoom independent of oversized content; browser zoom is disabled to avoid competing gestures. Its CSP denies connections and arbitrary navigation/scripts; no credentials or document HTML enter it. UI request tickets discard stale replies; host/epoch/workspace/generation remain captured natively. Per-resource page/zoom/pan persists in encrypted device metadata, keyed by full source scope and resource ID, at most100entries; previews stay closed after restart. Failed storage never alters originals. Scope/epoch changes reset viewing ownership. Position/cache are evictable reading metadata, not offline downloads; R4 owns guaranteed offline bytes. Retry remains local. More groups original-file Save/Share/Open with/Copy. Native destination writes must complete before Saved feedback; cancellation is not success.
+
+## Historical A4 editing and input contracts
 
 Reviewed 2026-10-09. Implemented in A4 / Android0.1.0-alpha.4, using host0.7.1 and protocol3. [ANDROID.md](ANDROID.md) owns setup/security/publication; [IMAGES.md](../workspace/IMAGES.md) owns portable image semantics. Android images remain File resources, not a new resource type.
 

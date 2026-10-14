@@ -30,7 +30,7 @@ import { QuickAccess, type RootDestination } from './navigation';
 import { HomeScreen, WorkspaceDrawer } from './NavigationSurface';
 import BrowseScreen, { Action, ChoiceSheet } from './BrowseScreen';
 import ResourcePreview from './ResourcePreview';
-import ReaderView from './ReaderView';
+import ReaderView, { type ReaderPanel } from './ReaderView';
 import { useThemeStyles } from './ui';
 const native = NativeModules.VaultorNative;
 const parse = async <T,>(p: Promise<string>): Promise<T> => JSON.parse(await p);
@@ -88,6 +88,7 @@ export default function WorkspaceScreen() {
       ),
     ).current,
     feed = useSyncExternalStore(quick.subscribe, quick.snapshot);
+  const previewBack = useRef<() => boolean>(() => false);
   const exportLock = useRef(false);
   const [exporting, setExporting] = useState(false),
     [recoveryStatus, setRecoveryStatus] = useState('');
@@ -97,6 +98,7 @@ export default function WorkspaceScreen() {
     [recovery, setRecovery] = useState(false),
     [more, setMore] = useState(false),
     [trail, setTrail] = useState(false),
+    [readerPanel, setReaderPanel] = useState<ReaderPanel>(),
     [searchRequest, setSearchRequest] = useState(0),
     [address, setAddress] = useState('https://'),
     [code, setCode] = useState(''),
@@ -124,7 +126,13 @@ export default function WorkspaceScreen() {
   }, []);
   const closeTransient = () => {
     if (state.preview) {
+      if (previewBack.current()) return true;
       model.dismissPreview();
+      return true;
+    }
+    if (readerPanel) {
+      setReaderPanel(undefined);
+      Keyboard.dismiss();
       return true;
     }
     if (trail) {
@@ -174,6 +182,11 @@ export default function WorkspaceScreen() {
       .catch(e => model.report(e))
       .finally(() => setInitialized(true));
     void AccessibilityInfo.isReduceMotionEnabled().then(setReduced);
+    const motion = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      setReduced,
+    );
+    return () => motion.remove();
   }, [model]);
   useEffect(() => {
     const event = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -250,6 +263,9 @@ export default function WorkspaceScreen() {
       run(() => model.showBrowser());
     }
   };
+  useEffect(() => {
+    setReaderPanel(undefined);
+  }, [state.loadId, state.scope]);
   const open = (id: string, collection?: string) => {
     closeDrawer();
     if (collection) {
@@ -289,7 +305,19 @@ export default function WorkspaceScreen() {
       }[state.browse.destination];
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-      <View style={s.header} collapsable={false}>
+      <View
+        style={s.header}
+        collapsable={false}
+        importantForAccessibility={
+          more ||
+          trail ||
+          readerPanel === 'appearance' ||
+          readerPanel === 'outline' ||
+          state.preview
+            ? 'no-hide-descendants'
+            : 'auto'
+        }
+      >
         <Pressable
           ref={menu}
           disabled={!initialized || state.busy}
@@ -535,7 +563,13 @@ export default function WorkspaceScreen() {
           </Text>
         </ScrollView>
       ) : (
-        <View style={s.content} collapsable={false}>
+        <View
+          style={s.content}
+          collapsable={false}
+          importantForAccessibility={
+            more || trail || state.preview ? 'no-hide-descendants' : 'auto'
+          }
+        >
           {state.view === 'home' ? (
             <HomeScreen
               feed={feed}
@@ -566,7 +600,12 @@ export default function WorkspaceScreen() {
               {state.connection !== 'online' ? (
                 <Text style={s.offline}>Offline · last saved reading copy</Text>
               ) : null}
-              <ReaderView model={model} />
+              <ReaderView
+                model={model}
+                panel={readerPanel}
+                closePanel={() => setReaderPanel(undefined)}
+                reduced={reduced}
+              />
             </View>
           ) : null}
         </View>
@@ -598,47 +637,76 @@ export default function WorkspaceScreen() {
           reducedMotion={reduced}
         />
       ) : null}
-      {more ? (
-        <ChoiceSheet
-          title="Reading options"
-          close={() => setMore(false)}
-          choices={[
-            { value: 'journey', label: 'Reading journey' },
-            { value: 'refresh', label: 'Refresh saved note' },
-            { value: 'recovery', label: 'Legacy recovery' },
-          ]}
-          onChoose={v => {
-            if (v === 'journey') setTrail(true);
-            else if (v === 'recovery') recoveryOpen();
-            else run(() => model.reconcile());
+      <View
+        collapsable={false}
+        style={s.overlayHost}
+        pointerEvents={more || trail || state.preview ? 'box-none' : 'none'}
+      >
+        {more ? (
+          <ChoiceSheet
+            title="Reading options"
+            animation="none"
+            close={() => setMore(false)}
+            choices={[
+              { value: 'outline', label: 'Note outline' },
+              { value: 'find', label: 'Find within note' },
+              { value: 'appearance', label: 'Reading appearance' },
+              { value: 'journey', label: 'Reading journey' },
+              { value: 'refresh', label: 'Refresh saved note' },
+              { value: 'recovery', label: 'Legacy recovery' },
+            ]}
+            onChoose={v => {
+              if (v === 'outline' || v === 'find' || v === 'appearance')
+                setReaderPanel(v);
+              else if (v === 'journey') setTrail(true);
+              else if (v === 'recovery') recoveryOpen();
+              else run(() => model.reconcile());
+            }}
+          />
+        ) : null}
+        {trail ? (
+          <ChoiceSheet
+            title="Reading journey"
+            animation="none"
+            close={() => setTrail(false)}
+            choices={state.journey.visits.map((v, i) => ({
+              value: String(i),
+              label:
+                i +
+                1 +
+                '. ' +
+                v.title +
+                (i === state.journey.cursor ? ' · Current' : '') +
+                (v.unavailable ? ' · Unavailable' : ''),
+            }))}
+            onChoose={v => run(() => model.history(Number(v)))}
+          />
+        ) : null}
+        <ResourcePreview
+          model={model}
+          registerBack={fn => {
+            previewBack.current = fn;
           }}
         />
-      ) : null}
-      {trail ? (
-        <ChoiceSheet
-          title="Reading journey"
-          close={() => setTrail(false)}
-          choices={state.journey.visits.map((v, i) => ({
-            value: String(i),
-            label:
-              i +
-              1 +
-              '. ' +
-              v.title +
-              (i === state.journey.cursor ? ' · Current' : ''),
-          }))}
-          onChoose={v => run(() => model.history(Number(v)))}
-        />
-      ) : null}
-      <ResourcePreview model={model} />
+      </View>
     </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
   content: { flex: 1 },
+  overlayHost: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
   hidden: { display: 'none' },
   header: {
+    zIndex: 1,
+    backgroundColor: '#000',
     height: 58,
     flexDirection: 'row',
     alignItems: 'center',

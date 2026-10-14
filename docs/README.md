@@ -55,6 +55,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [0.1.0-alpha.10 R2 reading](android/releases/0.1.0-alpha.10.md): typography, outline/find, source-bound journeys, image/PDF viewing and actual verification/publication gates.
+
 - [0.1.0-alpha.9.1 R1 reader](android/releases/0.1.0-alpha.9.1.md): read-only foundation, upgrade recovery and actual release checks.
 
 - [Android reader and legacy recovery](android/READER.md): current read-only renderer, preserved upgrade records and private recovery ZIP boundary.
@@ -76,7 +78,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
-- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan, W1 host foundation followed by 12 unstarted sprints for workspace isolation/switching/transfers and beautiful offline reading, reviews, queued imports, exports and verified releases. One sprint per authorization.
+- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan; W1–W3 and R1 shipped, R2 reading refinement in release verification, R3–R10 remain separately authorized work. One sprint per authorization.
 - [Original Android tracker](plans/android-plan.md): historical A1–A7 evidence; A8/A9 cancelled and superseded.
 
 - [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): All five sprints implemented on Windows; measured integration, platform limits and separate Android prototype gate recorded.

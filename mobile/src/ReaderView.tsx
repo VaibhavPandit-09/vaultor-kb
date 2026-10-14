@@ -1,134 +1,454 @@
-import React, { useRef, useEffect } from 'react';
+import React, {
+  useRef,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
   NativeModules,
-  useColorScheme,
   useWindowDimensions,
+  View,
+  Text,
+  TextInput,
+  Alert,
+  AppState,
+  StyleSheet,
+  Keyboard,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { MobileWorkspace } from './workspace';
-export default function ReaderView({ model }: { model: MobileWorkspace }) {
+import { Action, ChoiceSheet } from './BrowseScreen';
+import ReadingControls from './ReadingControls';
+import { useAppearance, useReading, usePalette, useThemeStyles } from './ui';
+import { externalAddress } from './reading';
+export type ReaderPanel = 'outline' | 'find' | 'appearance' | undefined;
+export default function ReaderView({
+  model,
+  panel,
+  closePanel,
+  reduced,
+}: {
+  model: MobileWorkspace;
+  panel: ReaderPanel;
+  closePanel: () => void;
+  reduced: boolean;
+}) {
   const state = model.snapshot(),
     web = useRef<WebView<{}>>(null),
     ready = useRef(false),
-    scheme = useColorScheme(),
+    alive = useRef(true),
+    theme = useAppearance(),
+    { preferences } = useReading(),
+    palette = usePalette(),
+    s = useThemeStyles(styles),
     { fontScale } = useWindowDimensions();
+  const [headings, setHeadings] = useState<
+      { id: string; title: string; level: number }[]
+    >([]),
+    [query, setQuery] = useState(''),
+    [matches, setMatches] = useState({ count: 0, current: 0, limited: false });
+  const wasVisible = useRef(false);
+  const visible = state.view === 'note' && !state.preview;
   const current = useRef(state);
   current.current = state;
-  const send = (m: object) =>
-    web.current?.injectJavaScript(
-      'window.vaultorReceive(' + JSON.stringify(JSON.stringify(m)) + ');true;',
-    );
-  const load = () =>
-    send({
-      type: 'load',
-      loadId: String(state.loadId),
-      content: state.content,
-      scroll: state.position?.scroll,
-      theme: scheme,
-    });
-  useEffect(() => {
-    if (ready.current)
+  const send = useCallback(
+    (m: object) =>
+      web.current?.injectJavaScript(
+        'window.vaultorReceive(' +
+          JSON.stringify(JSON.stringify(m)) +
+          ');true;',
+      ),
+    [],
+  );
+  const options = useMemo(
+    () => ({ ...preferences, theme, accent: palette.accent, reduced }),
+    [preferences, theme, palette.accent, reduced],
+  );
+  const latestOptions = useRef(options);
+  latestOptions.current = options;
+  const load = useCallback(
+    () =>
       send({
         type: 'load',
         loadId: String(current.current.loadId),
         content: current.current.content,
+        noteId: current.current.note?.id,
+        revision: current.current.note?.revision,
         scroll: current.current.position?.scroll,
-        theme: scheme,
+        position: current.current.position,
+        ...latestOptions.current,
+      }),
+    [send],
+  );
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      ready.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    setHeadings([]);
+    setQuery('');
+    setMatches({ count: 0, current: 0, limited: false });
+    if (ready.current) load();
+  }, [state.loadId, load]);
+  useEffect(() => {
+    if (ready.current) send({ type: 'preferences', ...options });
+  }, [options, send]);
+  useEffect(() => {
+    const event = AppState.addEventListener('change', v => {
+      if (v !== 'active')
+        send({ type: 'flush', loadId: String(current.current.loadId) });
+    });
+    return () => event.remove();
+  }, [send]);
+  useEffect(() => {
+    if (!ready.current) return;
+    const timer = setTimeout(
+      () =>
+        send({
+          type: 'find',
+          loadId: String(current.current.loadId),
+          query: panel === 'find' ? query : '',
+        }),
+      120,
+    );
+    return () => clearTimeout(timer);
+  }, [query, panel, state.loadId, send]);
+  useEffect(() => {
+    const ref = state.referenceSelection;
+    if (ref && ref.revision === state.note?.revision && ready.current) {
+      send({ type: 'occurrence', loadId: String(state.loadId), ...ref });
+      model.consumeReference();
+    }
+  }, [
+    state.referenceSelection,
+    state.loadId,
+    state.note?.revision,
+    model,
+    send,
+  ]);
+  useEffect(() => {
+    if (visible && !wasVisible.current && ready.current)
+      send({
+        type: 'restore',
+        loadId: String(current.current.loadId),
+        position: current.current.position,
+        revision: current.current.note?.revision,
       });
-  }, [state.loadId, scheme]);
+    wasVisible.current = visible;
+  }, [visible, send]);
+  const close = () => {
+    Keyboard.dismiss();
+    closePanel();
+  };
   return (
-    <WebView<{}>
-      ref={web}
-      source={{ uri: 'file:///android_asset/reader.html' }}
-      originWhitelist={['file://']}
-      textZoom={Math.round(fontScale * 100)}
-      javaScriptEnabled
-      domStorageEnabled={false}
-      allowFileAccess
-      allowFileAccessFromFileURLs={false}
-      allowUniversalAccessFromFileURLs={false}
-      mixedContentMode="never"
-      setSupportMultipleWindows={false}
-      onShouldStartLoadWithRequest={r =>
-        r.url === 'file:///android_asset/reader.html' || r.url === 'about:blank'
-      }
-      style={{
-        flex: 1,
-        backgroundColor: scheme === 'light' ? '#fafafa' : '#000',
-      }}
-      onMessage={e => {
-        let m;
-        try {
-          if (e.nativeEvent.data.length > 1500) return;
-          m = JSON.parse(e.nativeEvent.data);
-        } catch {
-          return;
-        }
-        if (m.protocol !== 1) return;
-        if (m.type === 'ready') {
-          ready.current = true;
-          load();
-          return;
-        }
-        const s = current.current;
-        if (m.loadId !== String(s.loadId)) return;
-        if (m.type === 'open' && /^[a-f0-9-]{36}$/i.test(m.resourceId || ''))
-          void model.perform(() => model.routeResource(m.resourceId, true));
-        else if (
-          m.type === 'position' &&
-          Number.isFinite(m.scroll) &&
-          m.scroll >= 0
-        )
-          model.reading({
-            anchor: 0,
-            head: 0,
-            scroll: Math.min(m.scroll, 10000000),
-          });
-        else if (
-          m.type === 'thumbnail' &&
-          /^[a-f0-9-]{36}$/i.test(m.resourceId || '') &&
-          typeof m.token === 'string' &&
-          m.token.length < 100 &&
-          s.host
-        ) {
-          const key = s.loadId,
-            host = s.host;
-          void NativeModules.VaultorNative.media(
-            'thumbnail',
-            JSON.stringify({
-              ...host,
-              scope: s.scope,
-              resourceId: m.resourceId,
-            }),
-          )
-            .then((raw: string) => {
-              if (
-                current.current.loadId === key &&
-                current.current.host === host
+    <View style={s.root} collapsable={false}>
+      <View collapsable={false} style={panel === 'find' ? s.find : s.hidden}>
+        {panel === 'find' ? (
+          <>
+            <TextInput
+              autoFocus
+              style={s.input}
+              accessibilityLabel="Find within note"
+              placeholder="Find in note"
+              placeholderTextColor={palette.muted}
+              value={query}
+              maxLength={200}
+              onChangeText={setQuery}
+              onSubmitEditing={() => {
+                Keyboard.dismiss();
+                send({
+                  type: 'findStep',
+                  loadId: String(state.loadId),
+                  delta: 1,
+                });
+              }}
+            />
+            <Text accessibilityLiveRegion="polite" style={s.muted}>
+              {matches.count
+                ? matches.current +
+                  '/' +
+                  matches.count +
+                  (matches.limited ? '+' : '')
+                : '0'}
+            </Text>
+            <Action
+              label="↑"
+              accessibilityLabel="Previous match"
+              disabled={!matches.count}
+              onPress={() =>
+                send({
+                  type: 'findStep',
+                  loadId: String(state.loadId),
+                  delta: -1,
+                })
+              }
+            />
+            <Action
+              label="↓"
+              accessibilityLabel="Next match"
+              disabled={!matches.count}
+              onPress={() =>
+                send({
+                  type: 'findStep',
+                  loadId: String(state.loadId),
+                  delta: 1,
+                })
+              }
+            />
+            <Action label="×" accessibilityLabel="Close find" onPress={close} />
+          </>
+        ) : null}
+      </View>
+      <View collapsable={false} style={s.webSlot}>
+        <WebView<{}>
+          importantForAccessibility={
+            panel === 'outline' || panel === 'appearance'
+              ? 'no-hide-descendants'
+              : 'auto'
+          }
+          ref={web}
+          source={{ uri: 'file:///android_asset/reader.html' }}
+          originWhitelist={['file://']}
+          textZoom={Math.round(fontScale * 100)}
+          javaScriptEnabled
+          domStorageEnabled={false}
+          allowFileAccess
+          allowFileAccessFromFileURLs={false}
+          allowUniversalAccessFromFileURLs={false}
+          mixedContentMode="never"
+          setSupportMultipleWindows={false}
+          onShouldStartLoadWithRequest={r =>
+            r.url === 'file:///android_asset/reader.html' ||
+            r.url === 'about:blank'
+          }
+          style={{ flex: 1, backgroundColor: palette.canvas }}
+          onMessage={e => {
+            const actual = model.snapshot();
+            if (
+              !alive.current ||
+              actual.scope !== current.current.scope ||
+              !actual.note
+            )
+              return;
+            current.current = actual;
+            let m;
+            try {
+              if (e.nativeEvent.data.length > 65536) return;
+              m = JSON.parse(e.nativeEvent.data);
+            } catch {
+              return;
+            }
+            if (m.protocol !== 1) return;
+            if (m.type === 'ready') {
+              ready.current = true;
+              load();
+              return;
+            }
+            const st = current.current;
+            if (m.loadId !== String(st.loadId)) return;
+            if (m.type === 'loaded') {
+              if (Array.isArray(m.headings))
+                setHeadings(
+                  m.headings
+                    .slice(0, 256)
+                    .filter(
+                      (h: any) =>
+                        /^heading-\d+$/.test(h.id) &&
+                        typeof h.title === 'string',
+                    ),
+                );
+              model.loaded();
+            } else if (m.type === 'findResult')
+              setMatches({
+                count: Math.max(0, Math.min(500, Number(m.count) || 0)),
+                current: Number(m.current) || 0,
+                limited: !!m.limited,
+              });
+            else if (
+              m.type === 'open' &&
+              st.view === 'note' &&
+              !st.preview &&
+              /^[a-f0-9-]{36}$/i.test(m.resourceId || '')
+            ) {
+              send({ type: 'flush', loadId: String(st.loadId) });
+              const open = () =>
+                void model.perform(() =>
+                  model.routeResource(m.resourceId, true),
+                );
+              if (st.connection === 'online') open();
+              else
+                Alert.alert(
+                  'Linked content is not downloaded',
+                  'Connect to its source server to open it. Your current reading position is retained.',
+                  [
+                    { text: 'Keep reading', style: 'cancel' },
+                    {
+                      text: 'Connect and open',
+                      onPress: () =>
+                        void model.perform(async () => {
+                          await model.connect(false);
+                          if (model.state.connection !== 'online')
+                            throw Error(
+                              'Server unavailable. Keep reading and retry when connected.',
+                            );
+                          await model.routeResource(m.resourceId, true);
+                        }),
+                    },
+                  ],
+                );
+            } else if (
+              m.type === 'external' &&
+              st.view === 'note' &&
+              !st.preview
+            ) {
+              const url = externalAddress(m.url);
+              if (url)
+                Alert.alert('Open external link?', url, [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Open browser',
+                    onPress: () =>
+                      void NativeModules.VaultorNative.openExternal(url).catch(
+                        (err: Error) => model.report(err),
+                      ),
+                  },
+                ]);
+            } else if (
+              m.type === 'position' &&
+              st.view === 'note' &&
+              !st.preview &&
+              m.revision === st.note?.revision &&
+              Number.isFinite(m.scroll) &&
+              m.scroll >= 0
+            )
+              model.reading({
+                anchor: 0,
+                head: 0,
+                scroll: Math.min(m.scroll, 10000000),
+                path:
+                  typeof m.path === 'string' && /^\/\d+(?:\/\d+)*$/.test(m.path)
+                    ? m.path
+                    : undefined,
+                offset: Number.isFinite(m.offset)
+                  ? Math.max(-100000, Math.min(100000, m.offset))
+                  : undefined,
+                revision: m.revision,
+              });
+            else if (
+              m.type === 'thumbnail' &&
+              /^[a-f0-9-]{36}$/i.test(m.resourceId || '') &&
+              typeof m.token === 'string' &&
+              m.token.length < 100 &&
+              st.host
+            ) {
+              const key = st.loadId,
+                host = st.host;
+              void NativeModules.VaultorNative.media(
+                'thumbnail',
+                JSON.stringify({
+                  ...host,
+                  scope: st.scope,
+                  resourceId: m.resourceId,
+                }),
               )
-                send({
-                  type: 'thumbnail',
-                  loadId: String(key),
-                  token: m.token,
-                  data: JSON.parse(raw).data,
+                .then((raw: string) => {
+                  if (
+                    current.current.loadId === key &&
+                    current.current.host === host
+                  )
+                    send({
+                      type: 'thumbnail',
+                      loadId: String(key),
+                      token: m.token,
+                      data: JSON.parse(raw).data,
+                    });
+                })
+                .catch(() => {
+                  if (current.current.loadId === key)
+                    send({
+                      type: 'thumbnail',
+                      loadId: String(key),
+                      token: m.token,
+                    });
                 });
-            })
-            .catch(() => {
-              if (current.current.loadId === key)
-                send({
-                  type: 'thumbnail',
-                  loadId: String(key),
-                  token: m.token,
-                });
-            });
+            }
+          }}
+          onRenderProcessGone={() => {
+            ready.current = false;
+            model.report(
+              Error(
+                'Reader stopped. Refresh the saved note; recovery is unchanged.',
+              ),
+            );
+            web.current?.reload();
+          }}
+        />
+      </View>
+      <View
+        collapsable={false}
+        style={s.overlayHost}
+        pointerEvents={
+          panel === 'outline' || panel === 'appearance' ? 'box-none' : 'none'
         }
-      }}
-      onRenderProcessGone={() => {
-        ready.current = false;
-        model.report(
-          Error('Reader stopped. Reopen the note; recovery is unchanged.'),
-        );
-      }}
-    />
+      >
+        {panel === 'outline' ? (
+          <ChoiceSheet
+            animation="none"
+            title="Note outline"
+            close={close}
+            choices={
+              headings.length
+                ? headings.map(h => ({
+                    value: h.id,
+                    label:
+                      '  '.repeat(Math.max(0, Math.min(5, h.level - 1))) +
+                      h.title,
+                  }))
+                : [{ value: '', label: 'No headings in this note' }]
+            }
+            onChoose={id => {
+              if (id)
+                send({ type: 'heading', loadId: String(state.loadId), id });
+              close();
+            }}
+          />
+        ) : null}
+        {panel === 'appearance' ? <ReadingControls close={close} /> : null}
+      </View>
+    </View>
   );
 }
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  overlayHost: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  hidden: { display: 'none' },
+  webSlot: { flex: 1 },
+  find: {
+    paddingHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderColor: '#333',
+    backgroundColor: '#000',
+    flexWrap: 'wrap',
+  },
+  input: {
+    flex: 1,
+    minWidth: 100,
+    minHeight: 48,
+    color: '#e8e8e8',
+    fontSize: 16,
+  },
+  muted: { color: '#b3b3b3' },
+});

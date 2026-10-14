@@ -265,3 +265,84 @@ test('remote refresh updates hidden saved content without leaving browsing', asy
   expect(x.model.state.view).toBe('browse');
   expect(x.model.state.content).toEqual(doc('remote saved update'));
 });
+
+test('history between two visits of the same note restores their distinct positions', async () => {
+  const x = setup();
+  await x.model.initialize();
+  await x.model.navigate(id);
+  x.model.reading({
+    anchor: 0,
+    head: 0,
+    scroll: 120,
+    path: '/0',
+    offset: 12,
+    revision: 'r1',
+  });
+  await x.model.navigate(other, 'linked');
+  await x.model.navigate(id, 'linked');
+  x.model.reading({ anchor: 0, head: 0, scroll: 800 });
+  const last = x.model.state.loadId;
+  await x.model.history(0);
+  expect(x.model.state.position?.scroll).toBe(120);
+  expect(x.model.state.position?.path).toBe('/0');
+  expect(x.model.state.loadId).toBeGreaterThan(last);
+  expect(x.writes.filter(p => p.includes('/note'))).toEqual([]);
+});
+
+test('image gallery is source-bound, leaves the journey alone and retains its current file on failure', async () => {
+  const x = setup(),
+    a = '00000000-0000-4000-8000-000000000003',
+    b = '00000000-0000-4000-8000-000000000004';
+  x.notes[id].content = {
+    type: 'doc',
+    content: [
+      { type: 'image', attrs: { resourceId: a } },
+      { type: 'image', attrs: { resourceId: b } },
+    ],
+  } as any;
+  x.notes[a] = {
+    id: a,
+    type: 'file',
+    title: 'First image',
+    mimeType: 'image/png',
+  } as any;
+  x.notes[b] = {
+    id: b,
+    type: 'file',
+    title: 'Second image',
+    mimeType: 'image/png',
+  } as any;
+  await x.model.initialize();
+  await x.model.navigate(id);
+  await x.model.routeResource(a, true);
+  expect(x.model.state.previewGallery).toEqual([a, b]);
+  const journey = x.model.state.journey;
+  await x.model.previewGalleryItem(b);
+  expect(x.model.state.preview?.id).toBe(b);
+  expect(x.model.state.journey).toBe(journey);
+  x.setOffline(true);
+  await expect(x.model.previewGalleryItem(a)).rejects.toThrow('Offline');
+  expect(x.model.state.preview?.id).toBe(b);
+  expect(x.model.state.note?.id).toBe(id);
+  x.model.dismissPreview();
+  expect(x.model.state.previewGallery).toBeUndefined();
+});
+
+test('leaving for Library supersedes a pending linked-note load', async () => {
+  const x = setup();
+  await x.model.initialize();
+  await x.model.navigate(id);
+  let finish!: () => void;
+  x.setHold(
+    new Promise(r => {
+      finish = r;
+    }),
+  );
+  const pending = x.model.navigate(other, 'linked');
+  await x.model.showBrowser();
+  finish();
+  await pending;
+  expect(x.model.state.view).toBe('browse');
+  expect(x.model.state.note?.id).toBe(id);
+  expect(x.model.state.journey.visits).toHaveLength(1);
+});

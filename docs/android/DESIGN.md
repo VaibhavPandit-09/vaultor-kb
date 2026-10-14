@@ -1,6 +1,6 @@
 # Android companion design direction
 
-Reviewed 2026-10-14. R1 implements the compact reader foundation in alpha.9; [READER.md](READER.md) owns its actual boundary. W1–W3 are published; R1 delivery is in progress and R2–R10 remain unstarted under [the replacement tracker](../plans/workspace-companion-plan.md). The richer typography/offline/review design below remains target design. Historical A5–A7 editing records are context only.
+Reviewed 2026-10-14. R1 shipped the compact reader foundation in alpha.9.1; R2 alpha.10 adds reading appearance, outline/find and full-screen media; [READER.md](READER.md) owns its actual boundary. W1–W3 are published; R2 delivery is in progress and R3–R10 remain unstarted under [the replacement tracker](../plans/workspace-companion-plan.md). The richer typography/offline/review design below remains target design. Historical A5–A7 editing records are context only.
 
 ## Reader-first companion
 

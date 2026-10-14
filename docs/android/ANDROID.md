@@ -1,6 +1,6 @@
 # Vaultor for Android
 
-Reviewed 2026-10-14. R1 reader retirement is published as **0.1.0-alpha.9.1 / versionCode13**. [The workspace/companion tracker](../plans/workspace-companion-plan.md) is authoritative: W1–W3 shipped; R1 is complete; R2–R10 remain unstarted and require separate authorization. Androidalpha.8/versionCode11 is the preceding released client. Host protocol3, archive3 and workspace grants remain unchanged; this mobile-only update does not rebuild desktop.
+Reviewed 2026-10-14. R2 reading refinement is in release verification as **0.1.0-alpha.10 / versionCode14**. [The workspace/companion tracker](../plans/workspace-companion-plan.md) is authoritative: W1–W3 shipped; R1 is complete; R2 is in release verification; R3–R10 remain unstarted and require separate authorization. R1 alpha.9.1/versionCode13 is the preceding release. Host protocol3, archive3 and workspace grants remain unchanged; this mobile-only update does not rebuild desktop.
 
 ## Implemented reader boundary
 
@@ -20,7 +20,7 @@ The native bridge remains the write enforcement boundary even if old JS code cal
 
 ## Android interaction and design
 
-The note body gets the reading area: a 58dp topbar reserves only navigation/title/contextual More. Drawer navigation is on demand; no permanent editing toolbar or desktop panes. Home offers resume and mixed quick access, while Library uses one virtualized page. More contains reading journey, Refresh saved note and Legacy recovery. System Back dismisses previews/pickers/drawer/recovery/connection surfaces first, then keyboard, journey/origin and browsing scope. OS Light/Dark follows existing mobile semantic colors; dark content is true black. Explicit theme/accent controls follow R9. Text selection/copy uses the WebView's native selection. No claim of Samsung/physical OLED verification is made.
+The note body gets the reading area: a 58dp topbar reserves only navigation/title/contextual More. Drawer navigation is on demand; no permanent editing toolbar or desktop panes. Home offers resume and mixed quick access, while Library uses one virtualized page. More contains reading journey, Refresh saved note and Legacy recovery. System Back dismisses previews/pickers/drawer/recovery/connection surfaces first, then keyboard, journey/origin and browsing scope. OS Light/Dark follows current system appearance; explicit OLED provides true-black content and Dark uses neutral #101114. R2 provides device-local theme/accent controls; R9 owns broader settings/update polish. Text selection/copy uses the WebView's native selection. No claim of Samsung/physical OLED verification is made.
 
 ## Windows development
 
@@ -171,3 +171,9 @@ Publisher verified clean pushed source/tag, original signer and manifest/checksu
 ## W2 workspace selection — alpha.8
 
 0.1.0-alpha.8/versionCode11 adds approved workspace selection on multiWorkspace hosts (0.8.0 foundation; use 0.9.0 for owner grant UI). Open navigation → workspace/connections → Workspaces on this server. The host address and workspace name remain separate. Selection preflights TLS, host identity, capabilities and generation before native persistence/epoch rotation; JSON, original-file media and SSE share scope. Switching saves/protects existing edits and keeps each workspace session/recovery separate. Android has no owner create/rename/grant controls. Editing retirement and full offline companions remain later R sprints. See [WORKSPACES.md](../architecture/WORKSPACES.md).
+
+## R2 native verification helper
+
+R2 adds device-local OS/Light/Dark/OLED, accents, reading size/spacing/measure, outline/find, confirmed external links, revision-checked positions and full-screen image/PDF viewing. READER.md and MEDIA.md own exact behavior and bounds; R9 owns broader settings/update polish. No original write permission or host change is introduced.
+
+build-release.ps1 runs TypeScript before original-key compilation/signing and verifies the staged APK. test-reading.ps1 accepts only emulator-5554/5556 and the disposable HTTPS reader fixture; -Install installs the staged release/test APK without clearing data, -Stage all runs services, native reading/media, journeys, cold restore, OS/reduced motion and legacy recovery in order, stopping on failure. Reader/media assets are rebuilt by the compatibility-named build:editor script; no editor engine is emitted. Match the disposable fixture pairing code through normal host approval first. Never target a phone or personal workspace.

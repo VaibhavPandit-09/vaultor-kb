@@ -34,7 +34,25 @@ export function normalizeJourney(value: unknown): Journey {
         [v.position.anchor, v.position.head, v.position.scroll].every(
           n => Number.isFinite(n) && n >= 0 && n <= 10000000,
         )
-          ? { ...v.position }
+          ? {
+              anchor: v.position.anchor,
+              head: v.position.head,
+              scroll: v.position.scroll,
+              path:
+                typeof v.position.path === 'string' &&
+                /^\/\d+(?:\/\d+)*$/.test(v.position.path)
+                  ? v.position.path
+                  : undefined,
+              offset:
+                typeof v.position.offset === 'number' &&
+                Number.isFinite(v.position.offset)
+                  ? Math.max(-100000, Math.min(100000, v.position.offset))
+                  : undefined,
+              revision:
+                typeof v.position.revision === 'string'
+                  ? v.position.revision.slice(0, 200)
+                  : undefined,
+            }
           : undefined,
     })),
     cursor: j.cursor,

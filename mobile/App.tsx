@@ -1,9 +1,10 @@
 import React from 'react';
-import { KeyboardAvoidingView, StatusBar, StyleSheet, useColorScheme } from 'react-native';
+import { KeyboardAvoidingView, StatusBar, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ReadingProvider, useAppearance } from './src/ui';
 import WorkspaceScreen from './src/WorkspaceScreen';
-export default function App() {
-  const light = useColorScheme() === 'light';
+function Shell() {
+  const light = useAppearance() === 'light';
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={light ? 'dark-content' : 'light-content'} />
@@ -11,6 +12,13 @@ export default function App() {
         <WorkspaceScreen />
       </KeyboardAvoidingView>
     </SafeAreaProvider>
+  );
+}
+export default function App() {
+  return (
+    <ReadingProvider>
+      <Shell />
+    </ReadingProvider>
   );
 }
 const styles = StyleSheet.create({ workspace: { flex: 1 } });

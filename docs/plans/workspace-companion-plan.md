@@ -1,6 +1,6 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created 2026-10-13; reviewed 2026-10-14. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created 2026-10-13; reviewed 2026-10-14. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 in release verification; R3–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
 
 ## Agreed product boundary
 
@@ -106,7 +106,9 @@ Status: **Complete — published (2026-10-14)**. Android alpha.9.1/versionCode13
 
 ## R2 — Beautiful reading, links and media
 
-Status: **Not started**.
+Status: **In progress — authorized 2026-10-14**. R2 targets Android alpha.10/versionCode14. Implement reading controls/outline/find, source-bound links/history and full-screen image/PDF viewing; original mutations remain refused. Original-key APK, focused checks and installed API36/37 acceptance are required before publication. R3–R10 remain unstarted.
+
+Implementation is complete; release verification is in progress. Device-only presentation, bounded safe DOM/outline/find, revision anchors, distinct journey visits, native full-screen image/PDF controls and scoped media positions are implemented. TypeScript/native compilation,22 focused Jest cases, DOM/runtime checks and scoped lint0errors/32warnings passed. API36 installed services/reading/media/journeys/cold restore/OS+motion/legacy upgrade passed. API37 normal approved pairing and all six installed cases passed; the fixed-viewport candidate also passed all six on API36, including selection/copy/pinch/swipe. Final tagged-byte publication gates remain pending. [Alpha.10 release notes](../android/releases/0.1.0-alpha.10.md) record exact evidence and limitations. R3–R10 have not started.
 
 - Create intentional phone typography: adjustable reading size/line spacing/comfortable measure, heading hierarchy, lists/tasks, quotes, tables and code. Preserve document meaning/marks; tasks are read-only. Tables/code can scroll horizontally without trapping page scroll or system Back. No nested-card note layout.
 - Heading outline, find within note, text selection/copy and selectable link labels; accessible links and external-link confirmation/opening. Default title search, explicit content mode and scope persist. Relevant saved search occurrences locate the passage only when revision/locator checks pass.

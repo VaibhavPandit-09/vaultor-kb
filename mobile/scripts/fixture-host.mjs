@@ -22,7 +22,7 @@ async function api(path, method = 'GET', body, workspace) {
       headers: {
         'X-Vaultor-Owner': owned.accessKey,
         'X-Vaultor-Protocol': '3',
-        ...(workspace ? {'X-Vaultor-Workspace':workspace}:{}),
+        ...(workspace ? { 'X-Vaultor-Workspace': workspace } : {}),
         ...(body && !(body instanceof FormData)
           ? { 'Content-Type': 'application/json' }
           : {}),
@@ -110,13 +110,203 @@ try {
       ],
     },
   });
-  let secondWorkspace,sharedFile;
-  if(process.env.VAULTOR_WORKSPACE_FIXTURE==='1'){
-    secondWorkspace=randomUUID();await api('/owner/workspaces/'+secondWorkspace,'PUT',{name:'W2 Second workspace'});
-    const noteForm=new FormData();noteForm.set('title','W2 Same ID second note');noteForm.set('content',JSON.stringify(paragraph));await api('/resources/imports/'+simple.id,'PUT',noteForm,secondWorkspace);
-    sharedFile=randomUUID();for(const workspace of [undefined,secondWorkspace]){const form=new FormData();form.set('title','W2 scoped file');form.set('file',new Blob([workspace?'second-workspace-bytes':'default-workspace-bytes'],{type:'text/plain'}),'scope.txt');await api('/resources/imports/'+sharedFile,'PUT',form,workspace);}
+  let secondWorkspace, sharedFile;
+  if (process.env.VAULTOR_WORKSPACE_FIXTURE === '1') {
+    secondWorkspace = randomUUID();
+    await api('/owner/workspaces/' + secondWorkspace, 'PUT', {
+      name: 'W2 Second workspace',
+    });
+    const noteForm = new FormData();
+    noteForm.set('title', 'W2 Same ID second note');
+    noteForm.set('content', JSON.stringify(paragraph));
+    await api(
+      '/resources/imports/' + simple.id,
+      'PUT',
+      noteForm,
+      secondWorkspace,
+    );
+    sharedFile = randomUUID();
+    for (const workspace of [undefined, secondWorkspace]) {
+      const form = new FormData();
+      form.set('title', 'W2 scoped file');
+      form.set(
+        'file',
+        new Blob(
+          [workspace ? 'second-workspace-bytes' : 'default-workspace-bytes'],
+          { type: 'text/plain' },
+        ),
+        'scope.txt',
+      );
+      await api('/resources/imports/' + sharedFile, 'PUT', form, workspace);
+    }
   }
-  const descriptor = {secondWorkspace,sharedFile,
+  let readerFixture;
+  if (process.env.VAULTOR_READER_FIXTURE === '1') {
+    const upload = async (name, mime) => {
+      const id = randomUUID(),
+        form = new FormData();
+      form.set('title', name);
+      form.set(
+        'file',
+        new Blob(
+          [
+            await readFile(
+              new URL('../cache/reader-fixture/' + name, import.meta.url),
+            ),
+          ],
+          { type: mime },
+        ),
+        name,
+      );
+      return await api('/resources/imports/' + id, 'PUT', form);
+    };
+    const image1 = await upload('image-1.png', 'image/png'),
+      image2 = await upload('image-2.png', 'image/png'),
+      pdf = await upload('reading.pdf', 'application/pdf'),
+      locked = await upload('locked.pdf', 'application/pdf');
+    const text = t => ({ type: 'text', text: t }),
+      para = t => ({ type: 'paragraph', content: [text(t)] }),
+      heading = t => ({
+        type: 'heading',
+        attrs: { level: 2 },
+        content: [text(t)],
+      }),
+      resource = r => ({
+        type: 'paragraph',
+        content: [
+          {
+            type: 'resourceLink',
+            attrs: { resourceId: r.id, label: r.title, type: r.type },
+          },
+        ],
+      });
+    const rich = {
+      type: 'doc',
+      content: [
+        heading('A quieter place to read'),
+        para(
+          'A phone reader should give the words room to breathe. Select any text to copy it; originals are unchanged.',
+        ),
+        {
+          type: 'paragraph',
+          content: [
+            text('Find a phrase across '),
+            { ...text('bold marks'), marks: [{ type: 'bold' }] },
+            text(' without editing the document.'),
+          ],
+        },
+        {
+          type: 'blockquote',
+          content: [
+            para('The best interface disappears while you are reading.'),
+          ],
+        },
+        {
+          type: 'taskList',
+          content: [
+            {
+              type: 'taskItem',
+              attrs: { checked: true },
+              content: [para('A completed read-only task')],
+            },
+            {
+              type: 'taskItem',
+              attrs: { checked: false },
+              content: [para('An unchecked read-only task')],
+            },
+          ],
+        },
+        heading('Original images'),
+        ...[image1, image2].map((r, i) => ({
+          type: 'image',
+          attrs: {
+            resourceId: r.id,
+            alt: 'Grid image ' + (i + 1),
+            caption: 'Original colors and pixels ' + (i + 1),
+            width: 100,
+            alignment: 'center',
+          },
+        })),
+        heading('Wide tables and code'),
+        {
+          type: 'table',
+          content: [
+            {
+              type: 'tableRow',
+              content: Array.from({ length: 8 }, (_, i) => ({
+                type: 'tableHeader',
+                content: [para('Column ' + (i + 1))],
+              })),
+            },
+            ...Array.from({ length: 5 }, (_, row) => ({
+              type: 'tableRow',
+              content: Array.from({ length: 8 }, (_, i) => ({
+                type: 'tableCell',
+                content: [para('Value ' + row + ' / ' + i)],
+              })),
+            })),
+          ],
+        },
+        {
+          type: 'codeBlock',
+          attrs: { language: 'typescript' },
+          content: [
+            text(
+              'const reading = { mode: "read only", originalBytes: "preserved", sourceWorkspace: "explicit", comfortableMeasure: true };\n'.repeat(
+                8,
+              ),
+            ),
+          ],
+        },
+        heading('Documents'),
+        resource(pdf),
+        resource(locked),
+        {
+          type: 'paragraph',
+          content: [
+            {
+              ...text('Visit example.com'),
+              marks: [
+                {
+                  type: 'link',
+                  attrs: { href: 'https://example.com/reading' },
+                },
+              ],
+            },
+          ],
+        },
+        resource(linked),
+        heading('A long passage'),
+        ...Array.from({ length: 35 }, (_, i) =>
+          para(
+            'Paragraph ' +
+              (i + 1) +
+              '. Keep your place across journeys, app backgrounding and device rotation. We read saved documents without changing their meaning.',
+          ),
+        ),
+        heading('The end'),
+        para(
+          'Find this final sentence and return to the beginning using the outline.',
+        ),
+      ],
+    };
+    const note = await api('/resources', 'POST', {
+      title: 'R2 Rich reading',
+      content: rich,
+    });
+    readerFixture = {
+      noteId: note.id,
+      image1: image1.id,
+      image2: image2.id,
+      pdf: pdf.id,
+      locked: locked.id,
+      revision: note.revision,
+    };
+  }
+  const descriptor = {
+    secondWorkspace,
+    sharedFile,
+    readerFixture,
     root,
     port: sharing.port,
     address: `https://127.0.0.1:${sharing.port}`,
@@ -194,14 +384,34 @@ try {
           p => p.code === command.approve && p.name === 'Vaultor Android',
         );
         if (!pending) throw Error('No matching disposable Android enrollment');
-        const beforeDevices=new Set((await api('/owner/devices')).map(d=>d.id));
+        const beforeDevices = new Set(
+          (await api('/owner/devices')).map(d => d.id),
+        );
         await api('/owner/pairings/' + pending.id + '/approve', 'POST', {
           code: command.approve,
         });
-        if(secondWorkspace){const device=(await api('/owner/devices')).find(d=>d.name==='Vaultor Android'&&!beforeDevices.has(d.id));if(!device)throw Error('Approved device missing');await api('/owner/workspaces/'+secondWorkspace+'/grants','PUT',{deviceId:device.id,allowed:true});}
+        if (secondWorkspace) {
+          const device = (await api('/owner/devices')).find(
+            d => d.name === 'Vaultor Android' && !beforeDevices.has(d.id),
+          );
+          if (!device) throw Error('Approved device missing');
+          await api('/owner/workspaces/' + secondWorkspace + '/grants', 'PUT', {
+            deviceId: device.id,
+            allowed: true,
+          });
+        }
         console.log('Matching disposable test code approved');
       }
-      if(command.grantWorkspaces && secondWorkspace){for(const device of await api('/owner/devices'))if(device.name==='Vaultor Android')await api('/owner/workspaces/'+secondWorkspace+'/grants','PUT',{deviceId:device.id,allowed:true});console.log('Disposable workspace grants refreshed');}
+      if (command.grantWorkspaces && secondWorkspace) {
+        for (const device of await api('/owner/devices'))
+          if (device.name === 'Vaultor Android')
+            await api(
+              '/owner/workspaces/' + secondWorkspace + '/grants',
+              'PUT',
+              { deviceId: device.id, allowed: true },
+            );
+        console.log('Disposable workspace grants refreshed');
+      }
       if (command.readNote) {
         const n = await api('/resources/' + simple.id);
         console.log(

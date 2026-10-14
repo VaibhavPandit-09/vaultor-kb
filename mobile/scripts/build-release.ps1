@@ -1,5 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $mobileRoot = Split-Path $PSScriptRoot
+& npm.cmd --prefix $mobileRoot run check
+if ($LASTEXITCODE -ne 0) { throw 'Android TypeScript compilation failed; no release APK was prepared.' }
 $devRoot = Join-Path $env:LOCALAPPDATA VaultorAndroidDev
 # Windows Store tools may live in the app's filesystem-virtualized physical cache.
 $physicalTools = Get-ChildItem (Join-Path $env:LOCALAPPDATA Packages) -Directory -Filter '*Codex*' -ErrorAction SilentlyContinue | ForEach-Object { Join-Path $_.FullName 'LocalCache/Local/VaultorAndroidDev' } | Where-Object { Test-Path (Join-Path $_ 'java/jdk-17.0.20.1+1/bin/java.exe') } | Select-Object -First 1

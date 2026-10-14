@@ -54,6 +54,35 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   }) }
   @ReactMethod fun media(action:String,input:String,promise:Promise) {try {require(action in listOf("list","thumbnail","preview","share","open","copy","save")) {"Android reading cannot upload or alter placements. Export legacy recovery instead."};require(input.length<=12000);media.call(action,JSONObject(input),promise)}catch(_:Exception){promise.reject("MEDIA_INPUT","Invalid media request.")}}
   @ReactMethod fun cancelMedia() {media.cancel()}
+  /** Device presentation only. Does not acknowledge or export legacy recovery records. */
+  @ReactMethod fun readerPreferences(action:String,input:String,promise:Promise)=run(promise) {
+    val prefs=ctx.getSharedPreferences("reader-presentation-v1",android.content.Context.MODE_PRIVATE)
+    when(action){
+      "get" -> prefs.getString("preferences","{}") ?: "{}"
+      "put" -> {require(input.length<=2000);val a=JSONObject(input)
+        val theme=a.optString("theme","os");val accent=a.optString("accent","blue");require(theme in listOf("os","light","dark","oled") && accent in listOf("blue","violet","mint","amber"))
+        val v=JSONObject().put("theme",theme).put("accent",accent).put("size",a.optDouble("size",18.0).also{require(it.isFinite())}.coerceIn(14.0,28.0)).put("spacing",a.optDouble("spacing",1.75).also{require(it.isFinite())}.coerceIn(1.4,2.2)).put("measure",a.optInt("measure",660).coerceIn(320,800)).put("motion",if(a.optString("motion")=="snappy")"snappy" else "smooth")
+        require(prefs.edit().putString("preferences",v.toString()).commit()) {"Cannot persist reading preferences."};v.toString()
+      }
+      else -> error("Unsupported reading preference action.")
+    }
+  }
+  @ReactMethod fun readerMediaPosition(action:String,input:String,promise:Promise)=run(promise) {
+    require(input.length<=2000);val a=JSONObject(input);val scope=a.getString("scope");require(scope.length in 1..512);val id=a.getString("resourceId");require(id.matches(Regex("[a-fA-F0-9-]{36}")))
+    val state=read();val all=state.optJSONObject("readerMedia") ?: JSONObject();val entry=scope+"\n"+id
+    when(action){
+      "get" -> all.optJSONObject(entry)?.toString() ?: "{}"
+      "put" -> {val v=JSONObject().put("page",a.optInt("page",0).coerceIn(0,100000)).put("zoom",a.optDouble("zoom",1.0).also{require(it.isFinite())}.coerceIn(1.0,4.0)).put("x",a.optDouble("x",0.0).also{require(it.isFinite())}.coerceIn(0.0,10000000.0)).put("y",a.optDouble("y",0.0).also{require(it.isFinite())}.coerceIn(0.0,10000000.0)).put("at",System.currentTimeMillis());all.put(entry,v)
+        while(all.length()>100){all.remove(all.keys().asSequence().minBy{all.getJSONObject(it).optLong("at")})};state.put("readerMedia",all);write(state);v.toString()
+      }
+      else -> error("Unsupported reading position action.")
+    }
+  }
+  @ReactMethod fun openExternal(input:String,promise:Promise) {
+    try {require(input.length<=2048 && !input.any{it.isWhitespace() || it.code<32});val uri=URI(input);require(uri.scheme in listOf("http","https") && !uri.host.isNullOrEmpty() && uri.rawUserInfo==null)
+      ctx.runOnUiQueueThread {try {val activity=ctx.currentActivity ?: error("Open Vaultor first.");activity.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse(uri.toASCIIString())).addCategory(android.content.Intent.CATEGORY_BROWSABLE));promise.resolve("{}")}catch(_:Exception){promise.reject("EXTERNAL_LINK","No browser is available. Copy the link instead.")}}
+    }catch(_:Exception){promise.reject("EXTERNAL_LINK","Only HTTP or HTTPS links without embedded credentials can be opened.")}
+  }
   private val random = SecureRandom()
   private val file get() = AtomicFile(File(ctx.noBackupFilesDir, "vaultor-state.bin"))
   private fun key(): SecretKey {
@@ -97,14 +126,14 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       // No payloads, credentials, addresses or platform stack traces in bridge errors.
       promise.reject("VAULTOR_FAILURE", when(e) {
         is SSLException -> "Host TLS verification failed. Verify its address and identity."
-        is java.io.IOException -> "Host unavailable or local storage failed. Retain your draft and retry."
-        else -> e.message?.take(180) ?: "Operation failed; retry without discarding your draft."
+        is java.io.IOException -> "Host unavailable or local reading storage failed. Recovery remains; retry."
+        else -> e.message?.take(180) ?: "Operation failed; retry. Retained recovery is unchanged."
       })
     }
   } } }
   private fun net(promise: Promise, action: () -> String) { network.execute {
     try { promise.resolve(action()) } catch(e:Exception) {
-      promise.reject("VAULTOR_NETWORK",if(e is SSLException) "Host TLS verification failed. Verify its identity." else "Host unavailable, access refused or request cancelled. Local drafts are retained.")
+      promise.reject("VAULTOR_NETWORK",if(e is SSLException) "Host TLS verification failed. Verify its identity." else "Host unavailable, access refused or request cancelled. Reading copies and recovery remain.")
     }
   } }
   private fun selected(hostId:String, token:String):JSONObject = synchronized(stateLock) {
