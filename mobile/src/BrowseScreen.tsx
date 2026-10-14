@@ -332,6 +332,12 @@ export default function BrowseScreen({
   };
   return (
     <View collapsable={false} style={styles.root}>
+      {state.downloaded ? (
+        <Text style={styles.meta}>
+          Downloaded only · titles and saved note text · file text unavailable
+          offline
+        </Text>
+      ) : null}
       {state.note ? (
         <Action
           label="Return to note"

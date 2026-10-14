@@ -39,9 +39,11 @@ type PreviewData = {
 export default function ResourcePreview({
   model,
   registerBack,
+  download,
 }: {
   model: MobileWorkspace;
   registerBack: (fn: () => boolean) => void;
+  download?: () => void;
 }) {
   const state = model.snapshot(),
     r = state.preview;
@@ -50,15 +52,18 @@ export default function ResourcePreview({
       key={state.host?.epoch + '\n' + state.scope + '\n' + r.id}
       model={model}
       registerBack={registerBack}
+      download={download}
     />
   ) : null;
 }
 function Preview({
   model,
   registerBack,
+  download,
 }: {
   model: MobileWorkspace;
   registerBack: (fn: () => boolean) => void;
+  download?: () => void;
 }) {
   const s = useThemeStyles(styles),
     state = model.snapshot(),
@@ -80,6 +85,7 @@ function Preview({
   const input = {
     ...state.host,
     scope: state.scope,
+    offline: !!state.downloaded,
     resourceId: r.id,
     title: r.title,
     mime: r.mimeType ?? 'application/octet-stream',
@@ -492,6 +498,9 @@ function Preview({
             title="Original file"
             close={() => setActions(false)}
             choices={[
+              ...(download
+                ? [{ value: 'offline', label: 'Download for offline' }]
+                : []),
               { value: 'save', label: 'Save original' },
               { value: 'share', label: 'Share original' },
               { value: 'open', label: 'Open with' },
@@ -499,7 +508,10 @@ function Preview({
                 ? [{ value: 'copy', label: 'Copy image' }]
                 : []),
             ]}
-            onChoose={action}
+            onChoose={value => {
+              if (value === 'offline') download?.();
+              else action(value);
+            }}
           />
         ) : null}
       </SafeAreaView>

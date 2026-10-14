@@ -31,12 +31,50 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   override fun getName() = "VaultorNative"
   private val executor = Executors.newSingleThreadExecutor()
   private val network = Executors.newSingleThreadExecutor()
+  private val shortcuts = Executors.newSingleThreadExecutor()
   private val streams = Executors.newSingleThreadExecutor()
-  companion object {private val stateLock = Any()}
-  @Volatile private var epoch = UUID.randomUUID().toString()
+  companion object {private val stateLock = Any();@Volatile private var connectionEpoch = UUID.randomUUID().toString()}
+  private var epoch:String
+    get()=connectionEpoch
+    set(value){connectionEpoch=value}
   @Volatile private var stream: HttpsURLConnection? = null
   private val requests = ConcurrentHashMap.newKeySet<HttpsURLConnection>()
   private var pending: JSONObject? = null
+  private fun companionScope(a:JSONObject) {
+    val p=selected(a.getString("hostId"),a.getString("epoch"));val s=JSONArray(a.getString("scope"))
+    require(s.length()==3 && s.getString(0)==a.getString("hostId") && (p.optString("selectedWorkspaceId").isEmpty() || s.getString(1)==p.getString("selectedWorkspaceId"))) {"Reading source changed."}
+  }
+  private val companions:VaultorCompanions by lazy {VaultorCompanions(ctx,{a,path,method ->
+    companionScope(a)
+    require(path in listOf("/capabilities","/workspace/identity","/companions/estimate") || path.matches(Regex("/companions/[a-f0-9-]{36}(?:/(?:inventory|coverage)(?:\\?page=[0-9]+&size=[0-9]+)?|/payloads/(?:[a-f0-9-]{36}\\.(?:json|bin)|manifest\\.json|organization\\.json))?")))
+    require(method in listOf("GET","PUT","POST","DELETE"))
+    val p=selected(a.getString("hostId"),a.getString("epoch"));val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint"))
+    val c=URI(address(p.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection
+    c.sslSocketFactory=context(cert).socketFactory;c.connectTimeout=10000;c.readTimeout=30000;c.instanceFollowRedirects=false;c.requestMethod=method
+    c.setRequestProperty("Authorization","Bearer "+p.getString("credential"));c.setRequestProperty("X-Vaultor-Protocol","3")
+    c.setRequestProperty("X-Vaultor-Workspace",JSONArray(a.getString("scope")).getString(1));c
+  },{a->require(a.getString("epoch")==epoch) {"Connection changed. Download paused for its original source."}},{scope->if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorCompanionReady",JSONObject().put("scope",scope).put("locked",companions.isLocked(scope)).toString())})}
+  @ReactMethod fun companion(action:String,input:String,promise:Promise)=run(promise) {
+    require(input.length<=12000);val a=JSONObject(input)
+    when(action) {
+      "list" -> companions.list().toString()
+      "policy" -> companions.policy().toString()
+      "policyPut" -> companions.policy(a).toString()
+      "available" -> {selected(a.getString("hostId"),a.getString("epoch"));val value=companions.available(a.getString("hostId"),a.optString("workspaceId"));(value?.put("locked",false) ?: companions.blocked(a.getString("hostId"),a.optString("workspaceId")))?.toString() ?: "null"}
+      "read" -> {companionScope(a);companions.query(a.getString("scope"),a.getString("path")).toString()}
+      "start" -> {companionScope(a);companions.start(a).toString()}
+      "pause" -> companions.pause().toString()
+      "remove" -> companions.remove(a.getString("id")).toString()
+      "activate" -> {
+        val scope=a.getString("scope");val parts=JSONArray(scope);val host=parts.getString(0);val workspace=parts.getString(1)
+        require(companions.available(host,workspace)?.getString("scope")==scope) {"Downloaded source is locked or unavailable."}
+        val p=synchronized(stateLock) {val state=read();val p=state.getJSONObject("profiles").getJSONObject(host);p.put("selectedWorkspaceId",workspace);state.put("selected",host);state.put("profile",p);write(state);cancelRequests();JSONObject(p.toString())}
+        JSONObject().put("hostId",host).put("epoch",epoch).put("address",p.getString("address")).put("workspaceId",workspace).toString()
+      }
+      else -> error("Unsupported companion action.")
+    }
+  }
+  @ReactMethod fun companionEstimate(input:String,promise:Promise)=net(promise) {require(input.length<=12000);companions.estimate(JSONObject(input)).toString()}
   private val media by lazy { VaultorMedia(ctx,{bytes ->
     val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply {init(Cipher.ENCRYPT_MODE,key())};cipher.iv+cipher.doFinal(bytes)
   },{bytes ->
@@ -48,10 +86,11 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     con.sslSocketFactory=context(cert).socketFactory;con.connectTimeout=10000;con.readTimeout=30000;con.instanceFollowRedirects=false;con.requestMethod=method
     con.setRequestProperty("Authorization","Bearer "+p.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");if(path!="/capabilities" && p.optString("selectedWorkspaceId").isNotEmpty())con.setRequestProperty("X-Vaultor-Workspace",p.getString("selectedWorkspaceId"));con
   },{a ->
+    if(a.optBoolean("offline")) {companionScope(a);return@VaultorMedia}
     val p=selected(a.getString("hostId"),a.getString("epoch"));val scope=JSONArray(a.getString("scope"));require(scope.length()==3 && scope.getString(0)==a.getString("hostId"))
     val identity=json(request(p,"/workspace/identity",token=a.getString("epoch")))
     require(scope.getString(1)==identity.getString("id") && scope.getString(2)==identity.getString("generation")) {"Workspace changed. Media remains bound to its original source."}
-  }) }
+  },{a,id -> if(a.optBoolean("offline")){companionScope(a);companions.file(a.getString("scope"),id)}else null}) }
   @ReactMethod fun media(action:String,input:String,promise:Promise) {try {require(action in listOf("list","thumbnail","preview","share","open","copy","save")) {"Android reading cannot upload or alter placements. Export legacy recovery instead."};require(input.length<=12000);media.call(action,JSONObject(input),promise)}catch(_:Exception){promise.reject("MEDIA_INPUT","Invalid media request.")}}
   @ReactMethod fun cancelMedia() {media.cancel()}
   /** Device presentation only. Does not acknowledge or export legacy recovery records. */
@@ -131,7 +170,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       })
     }
   } } }
-  private fun net(promise: Promise, action: () -> String) { network.execute {
+  private fun net(promise: Promise, worker:java.util.concurrent.ExecutorService=network, action: () -> String) { worker.execute {
     try { promise.resolve(action()) } catch(e:Exception) {
       promise.reject("VAULTOR_NETWORK",if(e is SSLException) "Host TLS verification failed. Verify its identity." else "Host unavailable, access refused or request cancelled. Reading copies and recovery remain.")
     }
@@ -161,9 +200,14 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   }
   private fun ca(p: JSONObject): X509Certificate = CertificateFactory.getInstance("X.509")
     .generateCertificate(Base64.decode(p.getString("ca"),Base64.NO_WRAP).inputStream()) as X509Certificate
-  private val browseSequence=java.util.concurrent.atomic.AtomicLong()
-  @Volatile private var browseConnection:HttpsURLConnection?=null
-  private fun request(p: JSONObject, path: String, method: String="GET", body: String?=null, secret: String?=null, revision: String?=null, token:String?=null, multipart:Boolean=false,browse:Long?=null): JSONObject {
+  private class ReadLane {val sequence=java.util.concurrent.atomic.AtomicLong();@Volatile var connection:HttpsURLConnection?=null}
+  private val browseLane=ReadLane()
+  private val quickLane=ReadLane()
+  private val browseSequence=browseLane.sequence
+  private var browseConnection:HttpsURLConnection?
+    get()=browseLane.connection
+    set(value){browseLane.connection=value}
+  private fun request(p: JSONObject, path: String, method: String="GET", body: String?=null, secret: String?=null, revision: String?=null, token:String?=null, multipart:Boolean=false,browse:Long?=null,lane:ReadLane=browseLane): JSONObject {
     val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint")) { "Host identity changed; explicit pairing is required." }
     val con=URI(address(p.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection
     con.sslSocketFactory=context(cert).socketFactory
@@ -174,7 +218,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     if(secret!=null) con.setRequestProperty("X-Vaultor-Pairing",secret)
     if(revision!=null) con.setRequestProperty("If-Match",revision)
     try {
-      if(browse!=null) {require(browse==browseSequence.get());browseConnection=con}
+      if(browse!=null) {require(browse==lane.sequence.get());lane.connection=con}
       if(token!=null) {requests.add(con);require(token==epoch) {"Connection changed."}}
       if(body!=null) {
         require(body.toByteArray().size <= 1500000);con.doOutput=true
@@ -186,13 +230,14 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
         con.outputStream.use { it.write(bytes) }
       }
       val status=con.responseCode
+      if(token!=null && status in listOf(401,403))try {companions.observe(p.getString("hostId"),p.optString("selectedWorkspaceId"),revoked=true)}catch(_:Exception){}
       require(status !in 300..399) { "Host redirects are refused." }
       val stream=if(status in 200..299) con.inputStream else con.errorStream
       val bytes=stream?.use { it.readNBytes(1500001) } ?: ByteArray(0)
       require(bytes.size<=1500000) { "Response exceeds the mobile document limit." }
-      if(browse!=null) require(browse==browseSequence.get()) {"Obsolete browsing response."}
+      if(browse!=null) require(browse==lane.sequence.get()) {"Obsolete browsing response."}
       return JSONObject().put("status",status).put("body",String(bytes,Charsets.UTF_8))
-    } finally {requests.remove(con);if(browseConnection===con)browseConnection=null;con.disconnect()}
+    } finally {requests.remove(con);if(lane.connection===con)lane.connection=null;con.disconnect()}
   }
   private fun json(response: JSONObject): JSONObject {
     require(response.getInt("status") in 200..299) { "Host refused this request (${response.getInt("status")})." }
@@ -376,7 +421,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     val id="[a-fA-F0-9-]{36}"
     if(method=="GET" && path.matches(Regex("/(collections/$id|resources/$id/(usage|lifecycle-pending))")))return true
     if(method=="GET" && path.matches(Regex("/resources/$id/references\\?direction=(incoming|outgoing)&page=[0-9]{1,6}&size=30")))return true
-    if(method=="GET" && path.substringBefore("?") in listOf("/collections","/tags/browse","/resources","/resources/trash")) {try {validateBrowsePath(path);return true}catch(_:Exception){return false}}
+    if(method=="GET" && path.substringBefore("?") in listOf("/collections","/tags/browse","/resources","/resources/trash","/organization/pins")) {try {validateBrowsePath(path);return true}catch(_:Exception){return false}}
     return false
   }
   @ReactMethod fun apiFor(hostId:String,token:String,path:String,method:String,body:String?,revision:String?,promise:Promise)=net(promise) {
@@ -386,7 +431,11 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       (method=="GET" && path.matches(Regex("/resources/$validId/summary"))) || (method=="POST" && path.matches(Regex("/resources/$validId/open")) && body==null)) {"Unsupported mobile operation."}
     val p=selected(hostId,token)
     if(path=="/capabilities") {val h=json(request(p,"/access/host",token=token));require(h.getString("hostId")==hostId && h.getString("fingerprint")==p.getString("fingerprint"))}
-    request(p,path,method,body,revision=revision,token=token,multipart=path.contains("/imports/")).toString()
+    val result=request(p,path,method,body,revision=revision,token=token,multipart=path.contains("/imports/"))
+    if(result.getInt("status") in listOf(401,403)) try {companions.observe(hostId,p.optString("selectedWorkspaceId"),revoked=true)}catch(_:Exception){}
+    if(result.getInt("status")==404 && JSONObject(result.getString("body")).optString("code")=="WORKSPACE_UNAVAILABLE")try {companions.observe(hostId,p.optString("selectedWorkspaceId"),revoked=true)}catch(_:Exception){}
+    if(path=="/workspace/identity" && result.getInt("status")==200){val identity=JSONObject(result.getString("body"));try {companions.observe(hostId,identity.getString("id"),identity.getString("generation"))}catch(_:Exception){}}
+    result.toString()
   }
 
   private fun validateBrowsePath(path:String) {
@@ -411,6 +460,11 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     }
   }
   @ReactMethod fun cancelBrowse() {browseSequence.incrementAndGet();browseConnection?.disconnect();browseConnection=null}
+  @ReactMethod fun cancelQuick() {quickLane.sequence.incrementAndGet();quickLane.connection?.disconnect();quickLane.connection=null}
+  @ReactMethod fun quickApiFor(hostId:String,token:String,path:String,promise:Promise) {
+    val ticket=quickLane.sequence.incrementAndGet();quickLane.connection?.disconnect()
+    net(promise,shortcuts) {validateBrowsePath(path);val uri=URI(path);require(uri.path in listOf("/resources","/organization/pins") && uri.rawQuery.split('&').contains("size=12"));require(ticket==quickLane.sequence.get());val p=selected(hostId,token);request(p,path,token=token,browse=ticket,lane=quickLane).toString()}
+  }
   @ReactMethod fun browseApiFor(hostId:String,token:String,path:String,promise:Promise) {
     val ticket=browseSequence.incrementAndGet();browseConnection?.disconnect()
     net(promise) {validateBrowsePath(path);require(ticket==browseSequence.get());val p=selected(hostId,token);request(p,path,token=token,browse=ticket).toString()}

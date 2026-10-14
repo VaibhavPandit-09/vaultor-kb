@@ -312,6 +312,12 @@ try {
     address: `https://127.0.0.1:${sharing.port}`,
     noteId: simple.id,
   };
+  if(process.env.VAULTOR_COMPANION_FIXTURE==='1') {
+    const id=randomUUID(), form=new FormData();
+    form.set('title','R4 interruption original.txt');
+    form.set('file',new Blob([Buffer.alloc(32*1024*1024,65)],{type:'text/plain'}),'r4-interruption.txt');
+    descriptor.largeReadingFile=(await api('/resources/imports/'+id,'PUT',form)).id;
+  }
   await mkdir(new URL('../cache/', import.meta.url), { recursive: true });
   await writeFile(
     new URL('../cache/fixture.json', import.meta.url),
@@ -323,6 +329,25 @@ try {
     try {
       const command = JSON.parse(line);
       if (command.stop) break;
+      if (command.largeReadingFile) {
+        const id = randomUUID(),
+          form = new FormData();
+        form.set('title', 'R4 interruption original.txt');
+        form.set(
+          'file',
+          new Blob([Buffer.alloc(32 * 1024 * 1024, 65)], {
+            type: 'text/plain',
+          }),
+          'r4-interruption.txt',
+        );
+        const resource = await api('/resources/imports/' + id, 'PUT', form);
+        descriptor.largeReadingFile = resource.id;
+        await writeFile(
+          new URL('../cache/fixture.json', import.meta.url),
+          JSON.stringify(descriptor),
+        );
+        console.log('Disposable 32 MiB interruption original: ' + resource.id);
+      }
       if (command.dataset) {
         if (!['small', 'atlas'].includes(command.dataset))
           throw Error('Only marked Small/Atlas baselines allowed');

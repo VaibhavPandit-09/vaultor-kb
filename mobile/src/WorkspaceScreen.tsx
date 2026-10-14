@@ -1,5 +1,6 @@
 import { ReaderFeed } from './readerFeed';
 import React, {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -31,15 +32,21 @@ import { HomeScreen, WorkspaceDrawer } from './NavigationSurface';
 import BrowseScreen, { Action, ChoiceSheet } from './BrowseScreen';
 import ResourcePreview from './ResourcePreview';
 import ReaderView, { type ReaderPanel } from './ReaderView';
+import ReadingControls from './ReadingControls';
+import OfflineControls from './OfflineControls';
 import { useThemeStyles } from './ui';
 const native = NativeModules.VaultorNative;
 const parse = async <T,>(p: Promise<string>): Promise<T> => JSON.parse(await p);
-async function permission() {
+async function permission(interactive = true) {
   if (
     Number(Platform.Version) >= 37 &&
-    (await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.ACCESS_LOCAL_NETWORK,
-    )) !== 'granted'
+    !(interactive
+      ? (await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_LOCAL_NETWORK,
+        )) === 'granted'
+      : await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.ACCESS_LOCAL_NETWORK,
+        ))
   )
     throw Error('Allow local-network access, then retry.');
 }
@@ -54,9 +61,15 @@ export default function WorkspaceScreen() {
         parse<Host>(native.selectWorkspace(h.hostId, h.epoch, id, g)),
       uuid: async () => (await parse<{ id: string }>(native.uuid())).id,
       cancelBrowse: () => native.cancelBrowse(),
+      cancelQuick: () => native.cancelQuick(),
+      networkPermission: () => permission(false),
+      companion: (action, value) =>
+        parse(native.companion(action, JSON.stringify(value))),
       api: async (h, path, method = 'GET', body, revision, channel) => {
         const r = await parse<{ status: number; body: string }>(
-          channel === 'browse'
+          channel === 'quick'
+            ? native.quickApiFor(h.hostId, h.epoch, path)
+            : channel === 'browse'
             ? native.browseApiFor(h.hostId, h.epoch, path)
             : native.apiFor(
                 h.hostId,
@@ -83,17 +96,62 @@ export default function WorkspaceScreen() {
   latest.current = state;
   const quick = useRef(
       new QuickAccess(
-        p => model.browseApi(p),
-        () => model.cancelBrowse(),
+        p => model.quickApi(p),
+        () => model.cancelQuick(),
       ),
     ).current,
     feed = useSyncExternalStore(quick.subscribe, quick.snapshot);
   const previewBack = useRef<() => boolean>(() => false);
   const exportLock = useRef(false);
+  const refreshDownloadAt = useRef(0);
+  const refreshDownloads = useCallback(async () => {
+    const st = model.snapshot();
+    if (
+      st.connection !== 'online' ||
+      !st.host ||
+      !st.scope ||
+      Date.now() - refreshDownloadAt.current < 60000
+    )
+      return;
+    refreshDownloadAt.current = Date.now();
+    try {
+      const policy = await parse<{ autoRefresh: boolean }>(
+        native.companion('policy', '{}'),
+      );
+      if (!policy.autoRefresh) return;
+      const jobs = await parse<any[]>(native.companion('list', '{}'));
+      if (jobs.some(j => j.scope === st.scope && j.status !== 'ready')) return;
+      const active = jobs.find(
+        j =>
+          j.scope === st.scope &&
+          j.active === j.id &&
+          j.status === 'ready' &&
+          j.locked !== '1',
+      );
+      if (active && model.snapshot().scope === st.scope)
+        await native.companion(
+          'start',
+          JSON.stringify({
+            ...st.host,
+            scope: st.scope,
+            selection: JSON.parse(active.selection),
+          }),
+        );
+    } catch (e) {
+      model.report(e);
+    }
+  }, [model]);
   const [exporting, setExporting] = useState(false),
     [recoveryStatus, setRecoveryStatus] = useState('');
   const [initialized, setInitialized] = useState(false);
   const [drawer, setDrawer] = useState(false),
+    [appearance, setAppearance] = useState(false),
+    [downloads, setDownloads] = useState(false),
+    [downloadTarget, setDownloadTarget] = useState<{
+      id: string;
+      title: string;
+      scope: string;
+    }>(),
     [hosts, setHosts] = useState(false),
     [recovery, setRecovery] = useState(false),
     [more, setMore] = useState(false),
@@ -125,6 +183,14 @@ export default function WorkspaceScreen() {
     };
   }, []);
   const closeTransient = () => {
+    if (downloads) {
+      setDownloads(false);
+      return true;
+    }
+    if (appearance) {
+      setAppearance(false);
+      return true;
+    }
     if (state.preview) {
       if (previewBack.current()) return true;
       model.dismissPreview();
@@ -176,9 +242,8 @@ export default function WorkspaceScreen() {
     } else BackHandler.exitApp();
   };
   useEffect(() => {
-    void permission()
-      .catch(e => model.report(e))
-      .then(() => model.initialize())
+    void model
+      .initialize()
       .catch(e => model.report(e))
       .finally(() => setInitialized(true));
     void AccessibilityInfo.isReduceMotionEnabled().then(setReduced);
@@ -198,6 +263,7 @@ export default function WorkspaceScreen() {
   useLayoutEffect(() => {
     quick.bind(state.scope);
     if (
+      initialized &&
       state.host &&
       state.scope &&
       !hosts &&
@@ -207,10 +273,47 @@ export default function WorkspaceScreen() {
       void quick.refresh();
     else quick.suspend();
     return () => quick.suspend();
-  }, [quick, state.scope, state.host, hosts, recovery, drawer, state.view]);
+  }, [
+    quick,
+    initialized,
+    state.scope,
+    state.host,
+    hosts,
+    recovery,
+    drawer,
+    state.view,
+    state.browseVersion,
+  ]);
+  useEffect(() => {
+    const completed = new NativeEventEmitter(native).addListener(
+      'VaultorCompanionReady',
+      (...args) => {
+        try {
+          const raw = args[0];
+          if (typeof raw !== 'string') return;
+          const value = JSON.parse(raw);
+          if (value.locked === true && typeof value.scope === 'string') {
+            model.lockCompanion(value.scope);
+            return;
+          }
+          if (typeof value.scope === 'string')
+            void model
+              .refreshDownloaded(value.scope)
+              .catch(e => model.report(e));
+        } catch {}
+      },
+    );
+    return () => completed.remove();
+  }, [model]);
   useEffect(() => {
     const h = state.host;
     if (!initialized || !h) return;
+    if (state.localOnly) {
+      const listener = AppState.addEventListener('change', value => {
+        if (value !== 'active') void model.background();
+      });
+      return () => listener.remove();
+    }
     const feed = new ReaderFeed({
       start: cursor => native.startChanges(h.hostId, h.epoch, cursor),
       stop: () => native.stopChanges(),
@@ -218,9 +321,12 @@ export default function WorkspaceScreen() {
         await model.connect(false);
         if (model.state.connection !== 'online')
           throw Error('Host unavailable. Reading copies and recovery remain.');
+        await refreshDownloads();
       },
       reconcile: () => model.changedFeed(),
-      error: e => model.report(e),
+      error: e => {
+        if (!model.snapshot().downloaded) model.report(e);
+      },
     });
     const events = new NativeEventEmitter(native).addListener(
       'VaultorChanges',
@@ -240,14 +346,23 @@ export default function WorkspaceScreen() {
         void model.background();
       } else if (latest.current.view === 'home') void quick.refresh();
     });
-    if (latest.current.connection === 'online') feed.start();
-    else feed.foreground(true);
+    if (latest.current.connection === 'online') {
+      feed.start();
+      void refreshDownloads();
+    } else feed.foreground(true);
     return () => {
       events.remove();
       app.remove();
       feed.dispose();
     };
-  }, [model, quick, initialized, state.host]);
+  }, [
+    model,
+    quick,
+    initialized,
+    state.host,
+    state.localOnly,
+    refreshDownloads,
+  ]);
   const select = (destination: RootDestination, search = false) => {
     closeDrawer();
     if (destination === 'trash') return;
@@ -343,6 +458,11 @@ export default function WorkspaceScreen() {
           />
         ) : null}
       </View>
+      {state.offlineWarning ? (
+        <Text accessibilityRole="alert" style={s.error}>
+          {state.offlineWarning}
+        </Text>
+      ) : null}
       {state.error ? (
         <View style={s.notice} accessibilityRole="alert">
           <Text style={s.error}>{state.error}</Text>
@@ -363,8 +483,13 @@ export default function WorkspaceScreen() {
           ) : null}
         </View>
       ) : null}
-      {hostView ? (
+      {!initialized ? (
+        <View key="starting" style={s.content}>
+          <Text style={s.secondary}>Opening workspace…</Text>
+        </View>
+      ) : hostView ? (
         <ScrollView
+          key="connections"
           contentContainerStyle={s.page}
           keyboardShouldPersistTaps="handled"
         >
@@ -480,9 +605,17 @@ export default function WorkspaceScreen() {
               recoveryOpen();
             }}
           />
+          <Action
+            label="Appearance & reading"
+            onPress={() => setAppearance(true)}
+          />
+          <Action
+            label="Offline downloads"
+            onPress={() => setDownloads(true)}
+          />
         </ScrollView>
       ) : recovery ? (
-        <ScrollView contentContainerStyle={s.page}>
+        <ScrollView key="recovery" contentContainerStyle={s.page}>
           <Text style={s.secondary}>
             Earlier Android edits and uploads are retained separately. Nothing
             here is automatically sent to a host.
@@ -564,6 +697,7 @@ export default function WorkspaceScreen() {
         </ScrollView>
       ) : (
         <View
+          key="workspace-body"
           style={s.content}
           collapsable={false}
           importantForAccessibility={
@@ -622,6 +756,15 @@ export default function WorkspaceScreen() {
             setHosts(true);
           }}
           recovery={recoveryOpen}
+          appearance={() => {
+            closeDrawer();
+            setAppearance(true);
+          }}
+          downloads={() => {
+            closeDrawer();
+            setDownloadTarget(undefined);
+            setDownloads(true);
+          }}
           host={
             state.workspaces?.find(w => w.id === state.host?.workspaceId)
               ?.name ?? state.host?.address
@@ -635,6 +778,21 @@ export default function WorkspaceScreen() {
           }
           recoveryCount={state.recovery.length}
           reducedMotion={reduced}
+        />
+      ) : null}
+      {appearance ? (
+        <ReadingControls close={() => setAppearance(false)} />
+      ) : null}
+      {downloads ? (
+        <OfflineControls
+          model={model}
+          reduced={reduced}
+          resource={downloadTarget}
+          close={() => setDownloads(false)}
+          recovery={() => {
+            setDownloads(false);
+            recoveryOpen();
+          }}
         />
       ) : null}
       <View
@@ -651,11 +809,17 @@ export default function WorkspaceScreen() {
               { value: 'outline', label: 'Note outline' },
               { value: 'find', label: 'Find within note' },
               { value: 'appearance', label: 'Reading appearance' },
+              { value: 'downloads', label: 'Download for offline' },
               { value: 'journey', label: 'Reading journey' },
               { value: 'refresh', label: 'Refresh saved note' },
               { value: 'recovery', label: 'Legacy recovery' },
             ]}
             onChoose={v => {
+              if (v === 'downloads') {
+                setDownloadTarget(undefined);
+                setDownloads(true);
+                return;
+              }
               if (v === 'outline' || v === 'find' || v === 'appearance')
                 setReaderPanel(v);
               else if (v === 'journey') setTrail(true);
@@ -684,6 +848,17 @@ export default function WorkspaceScreen() {
         ) : null}
         <ResourcePreview
           model={model}
+          download={() => {
+            const r = model.snapshot().preview;
+            if (r)
+              setDownloadTarget({
+                id: r.id,
+                title: r.title,
+                scope: model.snapshot().scope,
+              });
+            model.dismissPreview();
+            setDownloads(true);
+          }}
           registerBack={fn => {
             previewBack.current = fn;
           }}

@@ -30,7 +30,8 @@ import javax.net.ssl.HttpsURLConnection
 class VaultorMedia(private val ctx:ReactApplicationContext,
   private val seal:(ByteArray)->ByteArray, private val unseal:(ByteArray)->ByteArray,
   private val connection:(JSONObject,String,String)->HttpsURLConnection,
-  private val valid:(JSONObject)->Unit) : BaseActivityEventListener() {
+  private val valid:(JSONObject)->Unit,
+  private val retained:(JSONObject,String)->File? = {_,_->null}) : BaseActivityEventListener() {
   companion object {
     const val IMAGE_LIMIT=20*1024*1024
     const val FILE_LIMIT=64*1024*1024
@@ -106,6 +107,15 @@ class VaultorMedia(private val ctx:ReactApplicationContext,
   }catch(_:Exception){p.reject("MEDIA_PICKER","No compatible picker/camera is available. Use Files instead.")}}}
   private fun bytes(a:JSONObject,id:String,variant:String="raw"):File {
     require(id.matches(Regex("[a-fA-F0-9-]{36}")));valid(a)
+    if(a.optBoolean("offline")) {
+      val original=retained(a,id) ?: error("Original not downloaded. Connect and refresh this companion.")
+      if(variant=="raw")return original
+      image(original.readBytes())
+      val options=BitmapFactory.Options().apply {inJustDecodeBounds=true};BitmapFactory.decodeFile(original.path,options)
+      var sample=1;while(maxOf(options.outWidth,options.outHeight)/sample>512)sample*=2
+      val bitmap=BitmapFactory.decodeFile(original.path,BitmapFactory.Options().apply {inSampleSize=sample}) ?: error("Image cannot be decoded.")
+      val dest=File(cache,"offline-$id.png");dest.outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,90,it)};bitmap.recycle();return dest
+    }
     val key=MessageDigest.getInstance("SHA-256").digest((a.getString("scope")+id+variant).toByteArray()).joinToString(""){"%02x".format(it)}
     val f=File(cache,key);if(f.exists()){f.setLastModified(System.currentTimeMillis());return f}
     val con=connection(a,"/resources/$id/$variant","GET");active.add(con)

@@ -25,8 +25,8 @@ export function backIntent(s: {
   return 'exit';
 }
 
-// One sequential metadata request stream: the native browsing channel cancels
-// preceding requests. Cache belongs to the selected host/workspace/generation.
+// Sequential metadata requests on their own cancellable native lane. Library
+// requests are independent. Cache belongs to host/workspace/generation.
 export class QuickAccess {
   private ticket = 0;
   private scope = '';

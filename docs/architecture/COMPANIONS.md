@@ -1,10 +1,10 @@
 # Companion checkpoints — schema 1
 
-Reviewed2026-10-14. R3/host0.11.0 adds a reading-dataset service. Android alpha.10 does **not** yet download offline workspaces; R4 owns native storage and activation. This is neither a portable workspace ZIP nor bidirectional synchronization. Protocol3/archive3 and original-resource APIs stay unchanged.
+Reviewed2026-10-14. R3/host0.11.0 adds a reading-dataset service. Android alpha.11 R4 consumes this capability; [OFFLINE.md](../android/OFFLINE.md) owns native retained storage, activation and local-search bounds. This is neither a portable workspace ZIP nor bidirectional synchronization. Protocol3/archive3 and original-resource APIs stay unchanged.
 
 ## Identity and authorization
 
-`GET /api/capabilities` advertises `companionSnapshots:1`. Every `/api/companions` request retains ordinary owner/paired HTTPS/CSRF checks and explicit `X-Vaultor-Workspace` routing. Missing workspace header means the fixed default, never another client's selection. Snapshot receipts bind workspace, generation, initiating device (owner is separate) and normalized selection. Another approved device cannot read that receipt. Current grant/device approval is checked before dispatch and again during preparation/byte delivery. Replacement returns409 `COMPANION_GENERATION_CHANGED`; grant loss refuses access, never redirects to default. Downloaded bytes cannot be remotely erased; R4 must lock on verified revocation and keep unsynced work separately.
+`GET /api/capabilities` advertises `companionSnapshots:1`. Every `/api/companions` request retains ordinary owner/paired HTTPS/CSRF checks and explicit `X-Vaultor-Workspace` routing. Missing workspace header means the fixed default, never another client's selection. Snapshot receipts bind workspace, generation, initiating device (owner is separate) and normalized selection. Another approved device cannot read that receipt. Current grant/device approval is checked before dispatch and again during preparation/byte delivery. Replacement returns409 `COMPANION_GENERATION_CHANGED`; grant loss refuses access, never redirects to default. Downloaded bytes cannot be remotely erased; R4 locks on verified revocation and keep unsynced work separately.
 
 ## Selection and request sequence
 

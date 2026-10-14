@@ -58,6 +58,9 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [Offline reading companions](android/OFFLINE.md): R4 private storage, verified activation/resume, local search, coverage, policies and source locks.
+- [Android alpha.11](android/releases/0.1.0-alpha.11.md): R4 installed APK validation and publication ledger.
+
 - [0.1.0-alpha.10 R2 reading](android/releases/0.1.0-alpha.10.md): typography, outline/find, source-bound journeys, image/PDF viewing and actual verification/publication gates.
 
 - [0.1.0-alpha.9.1 R1 reader](android/releases/0.1.0-alpha.9.1.md): read-only foundation, upgrade recovery and actual release checks.
@@ -81,7 +84,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
-- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan; W1–W3/R1–R2 shipped, R3 Windows host checkpoints shipped (Mac gate pending), R4–R10 remain separately authorized work. One sprint per authorization.
+- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan; W1–W3/R1–R2 shipped, R3 Windows host checkpoints shipped (Mac gate pending), R4 is in candidate verification; R5–R10 remain separately authorized work. One sprint per authorization.
 - [Original Android tracker](plans/android-plan.md): historical A1–A7 evidence; A8/A9 cancelled and superseded.
 
 - [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): All five sprints implemented on Windows; measured integration, platform limits and separate Android prototype gate recorded.

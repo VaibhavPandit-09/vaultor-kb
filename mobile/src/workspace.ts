@@ -53,6 +53,7 @@ export type Creation = {
   collectionId?: string;
 };
 export type Session = {
+  localOnly?: boolean;
   scope: string;
   hostId: string;
   noteId?: string;
@@ -71,6 +72,7 @@ type Bootstrap = {
   sessions: Record<string, Session>;
 };
 export type WorkspaceState = {
+  offlineWarning?: string;
   hosts: Omit<Host, 'epoch'>[];
   workspaces?: WorkspaceChoice[];
   multiWorkspace?: boolean;
@@ -82,6 +84,8 @@ export type WorkspaceState = {
   recovery: Summary[];
   position?: Position;
   connection: 'connecting' | 'online' | 'offline' | 'revoked';
+  downloaded?: boolean;
+  localOnly?: boolean;
   status: string;
   error: string;
   supported: boolean;
@@ -115,10 +119,13 @@ export interface Port {
     method?: string,
     body?: unknown,
     revision?: string,
-    channel?: 'browse',
+    channel?: 'browse' | 'quick',
   ): Promise<any>;
   uuid(): Promise<string>;
   cancelBrowse?(): void;
+  cancelQuick?(): void;
+  networkPermission?(): Promise<void>;
+  companion?<T>(action: string, value: object): Promise<T>;
 }
 export class HostError extends Error {
   constructor(public status: number, message: string, public code?: string) {
@@ -209,6 +216,22 @@ export class MobileWorkspace {
     const host = b.profiles.find(p => p.hostId === b.selected);
     if (!host) return;
     this.patch({ host: { ...host, epoch: b.epoch } });
+    const downloaded = await this.availableCompanion({
+      ...host,
+      epoch: b.epoch,
+    });
+    if (this.state.offlineWarning) {
+      await this.connect(true);
+      return;
+    }
+    if (
+      downloaded &&
+      (downloaded.locked || b.sessions[downloaded.scope]?.localOnly)
+    ) {
+      this.patch({ localOnly: true });
+      await this.restoreOffline({ ...host, epoch: b.epoch });
+      return;
+    }
     await this.connect(true);
   }
   async adopted() {
@@ -240,6 +263,7 @@ export class MobileWorkspace {
       error: '',
     });
     try {
+      await this.port.networkPermission?.();
       const caps = await this.port.api(host, '/capabilities');
       this.valid(epoch);
       if (caps.apiProtocolVersion < 3 || caps.minimumClientProtocolVersion > 3)
@@ -278,6 +302,8 @@ export class MobileWorkspace {
             ? host
             : { ...host, workspaceId: identity.id },
         connection: 'online',
+        downloaded: false,
+        localOnly: false,
       });
       if (restore && !this.state.note) {
         const session = await this.port.storage<Session | null>('getSession', {
@@ -317,8 +343,19 @@ export class MobileWorkspace {
           e.code === 'WORKSPACE_UNAVAILABLE');
       this.patch({
         connection: revoked ? 'revoked' : 'offline',
+        ...(revoked
+          ? {
+              note: undefined,
+              content: undefined,
+              preview: undefined,
+              downloaded: false,
+              view: 'home' as const,
+            }
+          : {}),
         error:
-          e instanceof Error
+          !revoked && this.state.downloaded
+            ? ''
+            : e instanceof Error
             ? e.message
             : 'Host unavailable. Protected drafts retained.',
       });
@@ -329,6 +366,52 @@ export class MobileWorkspace {
   private async restoreOffline(host: Host) {
     const epoch = this.epoch;
     const b = await this.port.storage<Bootstrap>('bootstrap');
+    const downloaded = await this.availableCompanion(host);
+    if (downloaded?.locked === true) {
+      this.patch({
+        connection: this.state.offlineWarning ? 'offline' : 'revoked',
+        downloaded: false,
+        note: undefined,
+        content: undefined,
+        preview: undefined,
+        view: 'home',
+        error: this.state.offlineWarning
+          ? ''
+          : 'Downloaded source is locked after an access or generation change. Reconnect to verify access; recovery remains separate.',
+      });
+      return;
+    }
+    if (downloaded) {
+      this.valid(epoch);
+      const session = b.sessions[downloaded.scope];
+      this.patch({
+        scope: downloaded.scope,
+        downloaded: true,
+        connection: 'offline',
+        browse: normalizeBrowse(session?.browse),
+        journey: normalizeJourney(session?.journey),
+        status: 'Downloaded reading copy · titles and saved note text only',
+        error: '',
+        view: 'home',
+      });
+      if (session?.noteId) {
+        try {
+          await this.open(session.noteId, session.position);
+          this.valid(epoch);
+          this.patch({
+            journey: normalizeJourney(session.journey),
+            view: session.view ?? 'note',
+          });
+        } catch {
+          this.patch({
+            status:
+              'Previous note is not in this download. Browse downloaded resources.',
+            view: 'home',
+          });
+        }
+      }
+      return;
+    }
     const session = Object.values(b.sessions)
       .filter(
         s =>
@@ -388,7 +471,7 @@ export class MobileWorkspace {
     if (!host) return;
     let note: Note;
     try {
-      note = await this.port.api(host, '/resources/' + id);
+      note = await this.readApi('/resources/' + id);
     } catch (e) {
       if (
         strict ||
@@ -418,7 +501,8 @@ export class MobileWorkspace {
       return;
     // Cache/storage failure cannot prevent a successfully loaded saved note from being read.
     try {
-      await this.port.storage('putCache', { scope, noteId: id, note });
+      if (!this.state.downloaded)
+        await this.port.storage('putCache', { scope, noteId: id, note });
     } catch (e) {
       this.report(e);
     }
@@ -485,6 +569,7 @@ export class MobileWorkspace {
         browse: this.state.browse,
         view: this.state.view,
         noteOrigin: this.state.noteOrigin,
+        localOnly: !!this.state.localOnly,
       });
   }
   async save() {
@@ -664,6 +749,8 @@ export class MobileWorkspace {
     this.navigation++;
     this.patch({
       host,
+      downloaded: false,
+      localOnly: false,
       scope: '',
       workspaces: [],
       journey: emptyJourney(),
@@ -723,7 +810,124 @@ export class MobileWorkspace {
       this.patch({ browseVersion: this.state.browseVersion + 1 });
     }
   }
+  quickApi(path: string) {
+    // Independent from the cancellable Library channel. Native requests remain
+    // scoped/epoch-bound; QuickAccess ignores superseded results itself.
+    if (!this.state.host) return Promise.reject(Error('Choose a workspace.'));
+    if (this.state.downloaded) return this.readApi(path);
+    return this.port.api(
+      this.state.host,
+      path,
+      'GET',
+      undefined,
+      undefined,
+      'quick',
+    );
+  }
+  cancelQuick() {
+    this.port.cancelQuick?.();
+  }
+  private async availableCompanion(host: Host) {
+    try {
+      const value = await this.port.companion?.<{
+        scope: string;
+        locked?: boolean;
+      } | null>('available', host);
+      this.patch({ offlineWarning: undefined });
+      return value;
+    } catch {
+      this.patch({
+        offlineWarning:
+          'Offline storage is unavailable. Connected reading and legacy recovery remain separate. Retry from Offline downloads; do not clear app data.',
+      });
+      return { scope: this.state.scope, locked: true };
+    }
+  }
+  async openCompanion(scope: string) {
+    if (!this.port.companion) throw Error('Offline storage is unavailable.');
+    await this.background();
+    const host = await this.port.companion<Host>('activate', { scope });
+    this.epoch++;
+    this.navigation++;
+    this.journeyRequest++;
+    this.patch({
+      host,
+      scope,
+      workspaces: undefined,
+      multiWorkspace: false,
+      note: undefined,
+      content: undefined,
+      preview: undefined,
+      journey: emptyJourney(),
+      downloaded: true,
+      localOnly: true,
+      connection: 'offline',
+      view: 'home',
+    });
+    await this.restoreOffline(host);
+    await this.session();
+  }
+  removedCompanion(scope: string) {
+    if (this.state.downloaded && this.state.scope === scope) {
+      this.navigation++;
+      this.journeyRequest++;
+      this.patch({
+        downloaded: false,
+        note: undefined,
+        content: undefined,
+        preview: undefined,
+        journey: emptyJourney(),
+        view: 'home',
+        scope: '',
+        status:
+          'Reading download removed. Connect or choose another downloaded workspace.',
+      });
+    }
+  }
+  async refreshDownloaded(scope: string) {
+    if (!this.state.downloaded || this.state.scope !== scope) return;
+    this.patch({ browseVersion: this.state.browseVersion + 1 });
+    const note = this.state.note;
+    if (note) {
+      try {
+        await this.openReader(note.id, this.state.position, true, false);
+        await this.session();
+      } catch {
+        if (this.state.downloaded && this.state.scope === scope)
+          this.patch({
+            error:
+              'Download refreshed. The currently displayed note is an older reading copy or is unavailable in this selection. Reopen it or choose another resource.',
+          });
+      }
+    }
+  }
+  lockCompanion(scope: string) {
+    if (this.state.scope !== scope) return;
+    this.navigation++;
+    this.journeyRequest++;
+    this.patch({
+      connection: 'revoked',
+      downloaded: false,
+      note: undefined,
+      content: undefined,
+      preview: undefined,
+      view: 'home',
+      error:
+        'Access or workspace generation changed. This reading companion is locked; recovery remains separate.',
+    });
+  }
+  private readApi(path: string) {
+    if (!this.state.host) return Promise.reject(Error('Choose a workspace.'));
+    if (this.state.downloaded && this.port.companion)
+      return this.port.companion<any>('read', {
+        ...this.state.host,
+        scope: this.state.scope,
+        path,
+      });
+    return this.port.api(this.state.host, path);
+  }
   browseApi(path: string) {
+    if (this.state.downloaded) return this.readApi(path);
     if (!this.state.host || this.state.connection !== 'online')
       return Promise.reject(
         Error(
@@ -782,8 +986,7 @@ export class MobileWorkspace {
       epoch = this.epoch;
     if (!host) return;
     const ticket = ++this.journeyRequest;
-    const resource: ResourceSummary = await this.port.api(
-      host,
+    const resource: ResourceSummary = await this.readApi(
       '/resources/' + id + '/summary',
     );
     this.valid(epoch);
@@ -799,8 +1002,7 @@ export class MobileWorkspace {
       epoch = this.epoch,
       request = ++this.journeyRequest;
     if (!host) return;
-    const resource: ResourceSummary = await this.port.api(
-      host,
+    const resource: ResourceSummary = await this.readApi(
       '/resources/' + id + '/summary',
     );
     this.valid(epoch);
@@ -815,9 +1017,10 @@ export class MobileWorkspace {
             ? noteImages(this.state.content)
             : undefined,
       });
-      void this.port
-        .api(host, '/resources/' + id + '/open', 'POST')
-        .catch(() => {});
+      if (!this.state.downloaded && this.state.connection === 'online')
+        void this.port
+          .api(host, '/resources/' + id + '/open', 'POST')
+          .catch(() => {});
     } else
       throw Error('Unsupported resource type: ' + (resource.type || 'unknown'));
   }
@@ -883,7 +1086,7 @@ export class MobileWorkspace {
       this.patch({ navigationRetry: undefined });
       await this.session();
       const host = this.state.host;
-      if (host)
+      if (host && !this.state.downloaded && this.state.connection === 'online')
         void this.port
           .api(host, '/resources/' + id + '/open', 'POST')
           .catch(() => {});

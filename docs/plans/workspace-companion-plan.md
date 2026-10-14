@@ -1,6 +1,6 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created 2026-10-13; reviewed 2026-10-14. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created 2026-10-13; reviewed 2026-10-14. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 implemented/installed gates passed, publication pending; R5–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
 
 ## Agreed product boundary
 
@@ -135,7 +135,7 @@ R3 delivery: [Windows0.11.0](https://github.com/VaibhavPandit-09/vaultor-kb/rele
 
 ## R4 — Durable offline companions and local search
 
-Status: **Not started**.
+Status: **Implemented — installed API36/37 gates passed; publication pending (2026-10-14)**. Android alpha.11/versionCode15, original signer; no desktop rebuild. Includes globally discoverable R2 appearance, long-code containment and independent quick-access requests. [OFFLINE.md](../android/OFFLINE.md) owns storage/search/security bounds; [release ledger](../android/releases/0.1.0-alpha.11.md) records actual evidence. R5–R10 remain unstarted.
 
 - Implement app-private durable database/file store with crash-safe migrations, verified checkpoint activation and bounded memory. Credentials stay AndroidKeyStore-protected and separate; document local-content threat model/encryption and key-loss behavior before first download. Android private storage is not a claim of encrypted portable archives.
 - Offer Download for offline for workspace/collection/resources, size/coverage/progress, last successful refresh and manual Refresh. Resume partial downloads without marking incomplete datasets complete. Reconnecting can refresh opted-in content, but should not start a large first download silently. Respect explicit metered/battery settings.

@@ -279,7 +279,7 @@ export default function ReaderView({
                 void model.perform(() =>
                   model.routeResource(m.resourceId, true),
                 );
-              if (st.connection === 'online') open();
+              if (st.connection === 'online' || st.downloaded) open();
               else
                 Alert.alert(
                   'Linked content is not downloaded',
@@ -352,6 +352,7 @@ export default function ReaderView({
                 JSON.stringify({
                   ...host,
                   scope: st.scope,
+                  offline: !!st.downloaded,
                   resourceId: m.resourceId,
                 }),
               )

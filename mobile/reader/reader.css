@@ -150,6 +150,8 @@ figcaption {
   touch-action: pan-x pan-y;
 }
 pre {
+  width: max-content;
+  min-width: 100%;
   margin: 0;
   padding: 18px;
   background: var(--raised);
@@ -164,6 +166,10 @@ code {
 }
 p code,
 li code {
+  overflow-wrap: anywhere;
+  white-space: break-spaces;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
   background: var(--raised);
   padding: 2px 4px;
   border-radius: 4px;

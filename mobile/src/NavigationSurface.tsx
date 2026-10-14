@@ -124,6 +124,8 @@ export function WorkspaceDrawer(
     close(): void;
     hosts(): void;
     recovery(): void;
+    appearance(): void;
+    downloads(): void;
     host?: string;
     recoveryCount: number;
     reducedMotion: boolean;
@@ -183,6 +185,8 @@ export function WorkspaceDrawer(
           accessibilityLabel="Search workspace"
           onPress={() => props.select('library', true)}
         />
+        <Action label="Appearance & reading" onPress={props.appearance} />
+        <Action label="Offline downloads" onPress={props.downloads} />
         {(['pinned', 'recent'] as const).map(kind => (
           <View collapsable={false} key={kind} style={s.drawerSection}>
             <View collapsable={false} style={s.sectionHead}>
