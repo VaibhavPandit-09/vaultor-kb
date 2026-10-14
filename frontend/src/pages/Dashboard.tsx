@@ -15,6 +15,7 @@ import { NoteRecovery } from '../lib/noteRecovery';
 import { restoreSession } from '../lib/restoreSession';
 import JourneyBar from '../components/JourneyBar';
 import { DesktopConnectionButton } from '../components/DesktopChrome';
+import NoteOrientation from '../components/NoteOrientation';
 import JourneyViewport from '../components/JourneyViewport';
 import { PaneNavigation, ResourceUnavailableError, type OpenIntent } from '../lib/paneNavigation';
 import { SharedNoteDocuments } from '../lib/sharedNoteDocuments';
@@ -1434,7 +1435,8 @@ export default function Dashboard() {
                     <div className="pointer-events-none absolute bottom-3 left-0 top-3 w-px bg-border/60" />
                   )}
 
-                  <div className="border-b border-border/60 px-4 pb-3 pt-4">
+                  <JourneyViewport visitId={note.history[note.cursor].visitId} initialPosition={paneNavigation.position(note.history[note.cursor].visitId)} direction={note.transition} animationMode={localSettings.animationMode} onPosition={position => paneNavigation.recordPosition(note.paneId, note.history[note.cursor].visitId, position)}>
+                  <NoteOrientation key={note.history[note.cursor].visitId} tagCount={note.resource?.tags?.length ?? 0} identity={
                     <div className="flex flex-wrap items-center gap-2">
                     <div className="min-w-0 flex-[1_1_10rem]">
                     {titleEditState?.noteId === note.id && titleEditState.paneId === note.paneId ? (
@@ -1472,7 +1474,8 @@ export default function Dashboard() {
                       <button
                         disabled={Boolean(note.resource?.trashedAt)}
                         onClick={() => startTitleEditing(note.id, note.title, note.paneId)}
-                        className={`w-full break-words rounded-lg px-2 py-1 text-left text-lg font-semibold transition-colors ${
+                        title={note.title}
+                        className={`note-title w-full break-words rounded-lg px-2 py-1 text-left text-lg font-semibold transition-colors ${
                           note.paneId === activePaneId
                             ? 'text-foreground hover:bg-background/80'
                             : 'text-slate-500 hover:bg-background/60 hover:text-foreground'
@@ -1490,7 +1493,8 @@ export default function Dashboard() {
                     </div>
                     </div>
 
-                    {note.resource?.trashedAt?<p role="status" className="text-sm text-[var(--text-secondary)]">This note is unavailable. Editing is paused; its content is retained. <button className="library-button" onClick={()=>showLibrary('trash')}>Open Trash</button><button className="library-button" onClick={()=>setRecoveryOpen(true)}>Recovery copies</button></p>:<ResourceCollections id={note.id} onOpen={openCollection}/> }
+                  } status={note.resource?.trashedAt ? <p role="status" className="text-sm text-[var(--text-secondary)]">This note is unavailable. Editing is paused; its content is retained. <button className="library-button" onClick={()=>showLibrary('trash')}>Open Trash</button><button className="library-button" onClick={()=>setRecoveryOpen(true)}>Recovery copies</button></p> : undefined}>
+                    {!note.resource?.trashedAt && <ResourceCollections id={note.id} onOpen={openCollection}/>}
                     {note.paneId === activePaneId && note.resource?.type === 'note' && !note.resource.trashedAt && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {(note.resource.tags ?? []).slice(0, 4).map((tag) => (
@@ -1505,6 +1509,7 @@ export default function Dashboard() {
                         ))}
                         <div ref={tagPickerOpenNoteId === note.id ? tagPickerRef : undefined} className="relative">
                           <button
+                            aria-haspopup="dialog" aria-expanded={tagPickerOpenNoteId === note.id}
                             onClick={() => {
                               if (tagPickerOpenNoteId === note.id) {
                                 closeTagPicker();
@@ -1622,8 +1627,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                     )}
-                  </div>
-                  <JourneyViewport visitId={note.history[note.cursor].visitId} initialPosition={paneNavigation.position(note.history[note.cursor].visitId)} direction={note.transition} animationMode={localSettings.animationMode} onPosition={position => paneNavigation.recordPosition(note.paneId, note.history[note.cursor].visitId, position)}>
+                  </NoteOrientation>
                     {note.resource?.type === 'note' ? (
                       <ErrorBoundary region="note editor"><BlockEditor
                         key={note.id}

@@ -91,6 +91,7 @@ it('attaches compression to the mounted Library scroll owner without replacing s
  const row=screen.getAllByRole('listitem')[0];
  const queries=vi.mocked(browseResources).mock.calls.length;
  input.focus(); input.setSelectionRange(1,3);
+ Object.defineProperties(viewport,{scrollHeight:{value:1000,configurable:true},clientHeight:{value:500,configurable:true}});
  viewport.scrollTop=160; fireEvent.scroll(viewport);
  await waitFor(()=>expect(Number(viewport.style.getPropertyValue('--library-progress'))).toBeGreaterThan(.9));
  expect(screen.getByRole('textbox',{name:'Search resources'})).toBe(input);

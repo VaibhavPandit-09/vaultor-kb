@@ -21,7 +21,7 @@ export default function JourneyViewport({ visitId, initialPosition, onPosition, 
   // Each visit restores its captured position once; scroll/typing updates must not rewind it.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visitId]);
-  return <div ref={element} className="journey-viewport min-h-0 flex-1 overflow-y-auto px-4" data-motion={direction} data-speed={animationMode}
+  return <div ref={element} className="journey-viewport note-transform min-h-0 flex-1 overflow-y-auto px-4" data-motion={direction} data-speed={animationMode}
     onWheel={() => { interacted.current = true; }} onPointerDown={() => { interacted.current = true; }} onKeyDown={() => { interacted.current = true; }}
     onScroll={event => onPosition({ scrollTop: event.currentTarget.scrollTop, scrollLeft: event.currentTarget.scrollLeft })}>{children}</div>;
 }

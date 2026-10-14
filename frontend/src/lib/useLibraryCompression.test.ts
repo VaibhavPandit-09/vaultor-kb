@@ -14,6 +14,7 @@ beforeEach(() => {
  vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
  vi.stubGlobal('matchMedia', () => ({ get matches() { return reduced; }, addEventListener() {}, removeEventListener() {} }));
  viewport = document.createElement('main'); header = document.createElement('div'); viewport.append(header); document.body.append(viewport);
+ Object.defineProperties(viewport, { scrollHeight: { value: 1000, configurable: true }, clientHeight: { value: 500, configurable: true } });
  stop = attachLibraryCompression(viewport, header); settle();
 });
 afterEach(() => { stop(); document.body.replaceChildren(); vi.unstubAllGlobals(); });
@@ -41,4 +42,35 @@ it('applies reduced geometry without a spatial sweep and removes all scheduled w
  reduced = true; viewport.scrollTop = 80; viewport.dispatchEvent(new Event('scroll')); tick(); expect(progress()).toBe(1); expect(frames.size).toBe(0);
  viewport.scrollTop = 0; viewport.dispatchEvent(new Event('scroll')); tick(); expect(progress()).toBe(0);
  stop(); expect(frames.size).toBe(0); expect(viewport.style.getPropertyValue('--library-progress')).toBe('');
+});
+
+it('completes a short final page, and keeps non-scrolling results expanded', () => {
+ stop(); Object.defineProperty(viewport, 'scrollHeight', { value: 548, configurable: true });
+ stop = attachLibraryCompression(viewport, header);
+ viewport.scrollTop = 24; viewport.dispatchEvent(new Event('scroll')); settle(); expect(progress()).toBe(.5);
+ viewport.scrollTop = 48; viewport.dispatchEvent(new Event('scroll')); settle(); expect(progress()).toBe(1);
+ stop(); Object.defineProperty(viewport, 'scrollHeight', { value: 500, configurable: true });
+ viewport.scrollTop = 0; stop = attachLibraryCompression(viewport, header); settle(); expect(progress()).toBe(0);
+});
+it('pins rename geometry through focused typing, then catches up after blur', () => {
+ stop(); const input = document.createElement('input'); header.append(input);
+ stop = attachLibraryCompression(viewport, header, { pinHeaderFocus: true });
+ input.focus(); input.value = 'IME title'; input.setSelectionRange(2, 2);
+ viewport.scrollTop = 160; viewport.dispatchEvent(new Event('scroll')); settle(); expect(progress()).toBe(0);
+ expect(input.selectionStart).toBe(2);
+ input.blur(); settle(); expect(progress()).toBe(1);
+});
+it('recalculates travel after results shrink and after the viewport grows', () => {
+ viewport.scrollTop = 80; viewport.dispatchEvent(new Event('scroll')); settle(); expect(progress()).toBe(.5);
+ Object.defineProperty(viewport, 'scrollHeight', { value: 580, configurable: true });
+ viewport.dispatchEvent(new Event('scroll')); settle(); expect(progress()).toBe(1);
+ Object.defineProperty(viewport, 'clientHeight', { value: 580, configurable: true });
+ viewport.scrollTop = 0; viewport.dispatchEvent(new Event('scroll')); settle(); expect(progress()).toBe(0);
+});
+
+it('keeps reduced-motion density stable around its switching boundary', () => {
+ reduced = true;
+ const scroll = (top: number) => { viewport.scrollTop=top; viewport.dispatchEvent(new Event('scroll')); settle(); };
+ scroll(64); expect(progress()).toBe(1); scroll(48); expect(progress()).toBe(1);
+ scroll(16); expect(progress()).toBe(0); scroll(48); expect(progress()).toBe(0);
 });
