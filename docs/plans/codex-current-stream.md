@@ -1,5 +1,7 @@
 # Codex product stream
 
+Integration preparation is complete; see [R5 integration handoff](R5-INTEGRATION-HANDOFF.md) for the read-only comparison with master, conflict inventory and preservation gates. R6 is explicitly paused at the authorization boundary; no R6 implementation has begun.
+
 Reviewed2026-10-15. Work only on **ai/codex-current**; never incorporate ai/gemini-ui without explicit integration authorization. R4 remains completed/published; the workspace-companion tracker remains authoritative. No project restart.
 
 R5 is complete/published Windows0.12.0: review records and inbox on desktop/browser; Android capture/sync remains R6. Functional changes will use separate review types/API/state and a dedicated component, with only narrow Dashboard hooks. Broad layout/theme/motion work belongs to the UI stream.

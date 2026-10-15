@@ -89,6 +89,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
+- [R5 integration handoff](plans/R5-INTEGRATION-HANDOFF.md): exact source boundary, API/schema/portability contracts, master overlap, tests and preservation requirements; no integration or R6 work.
+
 - [Codex product stream](plans/codex-current-stream.md): branch isolation, R5 functional ownership and later UI-integration boundaries.
 
 - [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan; W1–W3/R1–R2 shipped, R3 Windows host checkpoints shipped (Mac gate pending), R4 Android alpha.11 and R5 Windows0.12.0 shipped; R6–R10 remain separately authorized work. One sprint per authorization.
