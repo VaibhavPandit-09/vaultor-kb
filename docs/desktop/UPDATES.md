@@ -1,6 +1,6 @@
 # Personal installers and updates
 
-Reviewed 2026-10-08. Windows x64 uses a per-user NSIS installer. On Apple Silicon, the 0.2.2 development app and disposable native smoke checks have been verified; release DMG generation/installation and the live two-device gate remain pending. The matching private release key is required to produce the signed update manifest and is not present on the Mac. No publisher certificate, notarization, subscription, hosted feed or publishing is required. Android and Ubuntu packaging are outside D8.
+Reviewed 2026-10-15. Windows x64 uses a per-user NSIS installer with original-key-verified in-app updates. Windows0.12.0 is published; macOS Apple Silicon0.13.0 is the published spatial UI build without R5. Integration candidate0.14.0 combines both streams; its local Windows artifacts are unpublished and Mac native delivery remains gated. Historical0.12.0 requires its exact-tag Mac handoff. The original private release key is required for native publication and is never regenerated or published. No paid publisher certificate/notarization/subscription/hosted feed is configured. Android has its separate original-signer APK process; Ubuntu packaging remains deferred.
 
 For device-by-device installation and updating, read [INSTALLATION-AND-UPDATES.md](INSTALLATION-AND-UPDATES.md). Agents own packaging/publication after app changes through [RELEASE-PROCESS.md](RELEASE-PROCESS.md); this document owns the updater integrity, backup and recovery contracts.
 

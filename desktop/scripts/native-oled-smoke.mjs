@@ -29,7 +29,12 @@ export async function runOledSmoke(window, directory, owned) {
   let device;
   for(let i=0;i<60;i++){const settings=await request('/settings');device=Object.entries(settings.local).find(([,local])=>local.theme==='oled')?.[0];if(device)break;await new Promise(r=>setTimeout(r,100));}
   assert.ok(device);
-  await request('/settings','PATCH',{local:{[device]:{uiTransparency:0.6,accentColor:'purple',animationMode:'smooth'}}});
+  // Presentation is device-cached on current master. Exercise its UI instead of
+  // patching host settings that the renderer deliberately does not adopt.
+  await evaluate("document.querySelector('button[title=\"Settings\"]').click()");await wait("Boolean(document.querySelector('.settings-window'))");
+  await evaluate("document.querySelector('[aria-label=\"Purple\"]').click();[...document.querySelectorAll('[aria-label=\"Animation feel\"] button')].find(b=>b.textContent==='Smooth').click()");
+  await evaluate("(()=>{const input=document.querySelector('input[type=range][aria-label=\"UI transparency\"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'60');input.dispatchEvent(new Event('input',{bubbles:true}));})()");
+  await wait("getComputedStyle(document.documentElement).getPropertyValue('--ui-opacity').trim()==='0.6'&&document.querySelector('.settings-save-status')?.textContent==='Saved'");key('Escape');await wait("!document.querySelector('.settings-window')");
   const linked=await request('/resources','POST',{title:'Linked note',type:'note',content:{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'A linked destination.'}]}]}});
   const paragraph = text => ({type:'paragraph',content:[{type:'text',text}]});
   const cell = text => ({type:'tableCell',content:[paragraph(text)]});
@@ -38,7 +43,7 @@ export async function runOledSmoke(window, directory, owned) {
   const uploaded=await request('/resources/file','POST',file);
   await request('/resources/'+note.id+'/open','POST');await request('/resources/'+note.id+'/favorite','PUT',{favorite:true});
   await request('/resources/'+uploaded.id+'/favorite','PUT',{favorite:true});
-  await window.webContents.reload();await wait("document.documentElement.dataset.theme==='oled' && document.querySelectorAll('.library-row').length===3");
+  await window.webContents.reload();await wait("document.documentElement.dataset.theme==='oled' && document.querySelectorAll('.library-view[aria-label=\"Library\"] .library-row').length===3");
   const black = async selectors => {
     for(const selector of selectors) { const color=`getComputedStyle(document.querySelector(${JSON.stringify(selector)})).backgroundColor`;await wait(color+"==='rgb(0, 0, 0)'");assert.equal(await evaluate(color),'rgb(0, 0, 0)',selector+' must be true black'); }
   };
@@ -71,7 +76,7 @@ export async function runOledSmoke(window, directory, owned) {
   assert.ok(await evaluate("(()=>{const c=document.querySelector('.desktop-window-controls').getBoundingClientRect();return [...document.querySelectorAll('[data-preview-resource] button')].every(b=>{const r=b.getBoundingClientRect();return r.top>=c.bottom||r.right<=c.left;});})()"),'Preview buttons clear native controls');
   await capture('oled-preview.png');await click('[data-preview-resource] button','Floating');await wait("Boolean(document.querySelector('button[title=\"Switch to side preview\"]'))");
   assert.equal(await evaluate("getComputedStyle(document.querySelector('[data-preview-resource]')).backgroundColor"),'rgba(10, 10, 10, 0.6)');await capture('oled-preview-floating.png');key('Escape');await wait("!document.querySelector('[data-preview-resource]')");
-  await evaluate("document.querySelector('.desktop-connection-button').click()");await wait("Boolean(document.querySelector('.desktop-connections-dialog'))");await capture('oled-connections.png');
+  await evaluate("document.querySelector('button[aria-label=\"Connections and hosting\"]').click()");await wait("Boolean(document.querySelector('.desktop-connections-dialog'))");await capture('oled-connections.png');
   await click('.desktop-connections-dialog button','Hosting');await capture('oled-hosting.png');await evaluate("document.querySelector('button[aria-label=\"Return to workspace\"]').click()");
   // Reduced-motion and long title at a narrow window remain bounded.
   window.setSize(700,820);await window.webContents.debugger.attach('1.3');
@@ -84,5 +89,11 @@ export async function runOledSmoke(window, directory, owned) {
   await cycle('os');await wait("document.documentElement.dataset.theme==='dark'");
   assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--glass-opacity').trim()"),'');
   for(let i=0;i<60;i++){if((await request('/settings')).local[device].theme==='os')break;if(i===59)throw new Error('Final theme save did not settle');await new Promise(r=>setTimeout(r,100));}
+  await wait("!document.documentElement.hasAttribute('data-theme-reveal')");
+  await evaluate("window.__integrationNote=document.querySelector('.ProseMirror');[...document.querySelectorAll('.sidebar-create-actions button')].find(b=>b.textContent.trim()==='New note').click()");
+  await wait("document.querySelectorAll('.ProseMirror').length===2");
+  assert.ok(await evaluate("window.__integrationNote.isConnected"));await new Promise(r=>setTimeout(r,350));await capture('oled-panes.png');
+  await evaluate("document.querySelector('[data-note-pane]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))");
+  await new Promise(r=>setTimeout(r,350));assert.ok(await evaluate("window.__integrationNote.isConnected&&document.querySelectorAll('.workspace-pane-slot[data-focused=\"true\"]').length===1"));
   console.log('Disposable OLED native check passed; physical OLED hardware is not certified.');
 }

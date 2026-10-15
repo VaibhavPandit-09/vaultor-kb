@@ -67,7 +67,7 @@ it('two mounted note views retain shared edits through React updates and route l
   const link = dom[0].querySelector('button')!;
   fireEvent.click(link, { ctrlKey: true });
   expect(opened).toHaveBeenCalledWith({ resourceId: 'target', sourcePaneId: 'left', destination: 'new', intent: 'link' });
-  expect(link.getAttribute('aria-label')).toBe('Open Target');
+  expect(link.getAttribute('aria-label')).toBe('Open Note · Target');
 });
 it('restores a different visit selection in the same editor and clamps stale positions', () => {
   const shared = new SharedNoteDocuments(), noop = () => {};

@@ -53,7 +53,7 @@ export default function WorkspaceTransfers({owner,supported,workspaceName,onBusy
    <div className="flex flex-wrap gap-2">{owner&&supported&&<button className="library-button" disabled={working||!name.trim()} onClick={()=>void prepare('import')}>Import ZIP as new workspace</button>}{canCopy&&<button className="library-button" disabled={working||!name.trim()} onClick={()=>void prepare('copy')}>Make local copy</button>}</div></>}
   {working&&<p role="status" className="text-sm">Preparing workspace… Your source remains intact.</p>}
   {intent&&<><p className="font-medium truncate">{intent.name}</p><p className="text-sm text-[var(--text-secondary)]">{intent.kind==='copy'?'Destination: This computer. Independent copy; no synchronization.':'Creates a separate workspace. Existing workspaces stay intact.'}</p>
-   {receipt?.preview&&<p className="text-sm">{receipt.preview.notes} notes · {receipt.preview.files} files · {receipt.preview.tags} tags</p>}
+   {receipt?.preview&&<p className="text-sm">{receipt.preview.notes} notes · {receipt.preview.files} files · {receipt.preview.tags} tags · {receipt.preview.reviews??0} reviews</p>}
    {receipt&&<p role="status" className="text-sm">{receipt.detail}</p>}
    {receipt?.preview?.warnings.length? <details><summary>Archive details</summary>{receipt.preview.warnings.map((w,i)=><p key={i} className="text-sm">{w}</p>)}</details>:null}
    <div className="flex flex-wrap gap-2">{receipt?.state==='PREVIEW'&&<button className="library-button" disabled={working} onClick={()=>void commit()}>Create separate workspace</button>}

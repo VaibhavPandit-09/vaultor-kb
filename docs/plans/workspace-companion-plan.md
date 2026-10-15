@@ -1,6 +1,6 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created 2026-10-13; reviewed 2026-10-14. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 complete/published Androidalpha.11; R5–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created 2026-10-13; reviewed 2026-10-15. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 complete/published Androidalpha.11; R5 complete/published Windows0.12.0 on ai/codex-current (Mac gate pending); R6–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
 
 ## Agreed product boundary
 
@@ -150,7 +150,7 @@ R4 delivery: [Android alpha.11](https://github.com/VaibhavPandit-09/vaultor-kb/r
 
 ## R5 — Review items and desktop/browser Review inbox
 
-Status: **Not started**.
+Status: **Complete — Windows0.12.0 published2026-10-15, branch ai/codex-current; Mac native gate pending**. Preserves the R4 baseline, original signing identity and exact-tag Mac handoff. Android alpha.11 stays unchanged; R6–R10 remain separately authorized. No ai/gemini-ui integration.
 
 - Add separate workspace-scoped review records: stable UUID, resource target, bounded comment, optional quote/context/locator/base revision, author/device label, created/updated times and revision-checked open/resolved/dismissed status. Escape user content; enforce limits and pagination. Original resource revisions/JSON remain unchanged.
 - Expose idempotent creation/status lookup and conditional status actions with change notifications. Retries with the same ID/body reconcile; differing payloads cannot silently overwrite. Multiple devices resolving one item produce explicit conflict/reconciliation.
@@ -159,6 +159,8 @@ Status: **Not started**.
 - Test duplicate/unknown creation, stale status updates, target edits/deletion/replacement, author safety, export/import/copy and per-workspace authorization.
 
 **Acceptance:** desktop/browser can triage and resolve concerns without changing note content as a side effect. Publish the host/UI capability with explicit archive/client compatibility.
+
+R5 delivery: [Windows0.12.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.12.0), immutable source/tag4e2f71394547bf87422ac751793f56013bd7d043/v0.12.0, published2026-10-14T20:50:06Z (2026-10-15 IST). Original-key EXE245,671,099bytes/SHA2566db136acdc5f31110fdc593c24f20db3d15f61403201e73ea30bb1c4a0b79bd6 and400-byte sidecar; pair downloaded/compared, public stable/non-draft metadata/digests verified.13 review tests,4 compatibility cases,1 graph case and13 frontend cases passed; TypeScript/backend compilation and scoped lint0errors/0warnings passed. Final packaged native/browser54 mixed reviews, status/paging, unchanged originals, note/file entry, preview dismissal, long-title containment, owner handoff/Escape and themes/narrow layout passed. All five UI assets match fresh/embedded/packaged copies. No original-resource schema/protocol/Android bump; additive scoped review table and archive4 with imports1–3. Minimum functional presentation; Dashboard/PreviewLayer/transfer hooks documented for later UI integration. Mac same-tag handoff remains; no phone/realWi-Fi/install-over/full10k claims. **Stop after R5; R6–R10 unstarted.**
 
 ## R6 — Android offline review capture and synchronization
 
@@ -275,3 +277,8 @@ APK39,795,043bytes/SHA256d98566c924cf7adff9353f5319a47c7734ee8043cc75ecfa2bb4705
 Implemented flat reading appearance, outline/literal find, safe confirmed external links, revision/block restoration, distinct link cycles and full-screen bounded image/PDF exploration with encrypted scoped viewing positions. Original mutations/recovery replay remain refused. Fixed native label hit targets and an Android17 viewport-expansion/pinch defect; added runtime regression and fail-fast native helper. TypeScript/native original-key compilation,22 focused Jest cases, reader/media DOM/runtime and scoped lint0errors/32warnings passed. Final candidate passed six native cases on each API36/API37, including real selection/Copy, pinch/swipe, PDF pages/limits/password errors, journey/Back, background/cold restore, all themes/OS/reduced motion and retained upgrade recovery. Clean tagged rebuild is byte-identical to both installed/tested candidates; installed API36 base APK also checksum-compared. OLED/Light/Dark/image/landscape frames inspected; API36 retains130% font. Failed harness attempts are not passes.
 
 No host/desktop/API/schema/protocol/archive change or phone access. Owned emulators/disposable host stopped; personal app untouched. Physical OLED/Samsung/OneUI/TalkBack/realLAN and large-workspace/OOM certification remain explicit later/user checks. [Release notes](../android/releases/0.1.0-alpha.10.md) provide installation and limits. Documentation-only publication follow-up does not move the source tag. **Stop after R2; R3–R10 remain unstarted.**
+
+
+## 2026-10-15 — R5 integration with current desktop redesign
+
+The authorized integration branch combines master cf953fe presentation and ai/codex-current68dcca8 R5 semantics from common base11b09aa. Desktop0.14.0 is an unpublished integration candidate; historical Windows0.12.0/Mac0.13.0 releases stay immutable. Domain/archive4 and redesigned UI/focus/native validation are recorded in [R5/redesign integration](R5-REDESIGN-INTEGRATION.md). Android alpha.11 is unchanged. Stop after the integration branch push; R6–R10 remain unstarted.

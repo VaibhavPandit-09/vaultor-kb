@@ -8,6 +8,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Install and update on each platform](desktop/INSTALLATION-AND-UPDATES.md): exact Windows/Mac steps, browser/Docker/Ubuntu paths, available targets and recovery.
 - [Agent-owned release process](desktop/RELEASE-PROCESS.md): standing responsibility for versions, native builds, verified artifacts, tags and GitHub publication.
+- [0.12.0 review evidence/inbox](desktop/releases/v0.12.0.md): R5 Windows verification/publication, archive compatibility and exact Mac handoff.
 - [0.11.0 companion checkpoint service](desktop/releases/v0.11.0.md): R3 host capability, actual Windows verification, compatible Android and exact Mac handoff.
 - [0.10.0 independent workspace transfers](desktop/releases/v0.10.0.md): import-as-new, snapshot forks, recovery and Windows/Mac availability.
 - [0.9.0 workspace switching](desktop/releases/v0.9.0.md): selectors, grants, sessions and Windows/Mac status.
@@ -29,6 +30,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Workspace workflows — `workspace/`
 
+- [Review evidence and triage](workspace/REVIEWS.md): R5 domain/API, source identity, conditional status, portability and minimal UI integration contract.
+
 - [Workspace ZIP transfers and local copies](workspace/WORKSPACE-TRANSFERS.md): W3 staging, atomic publication, retries, copy semantics, bounds and recovery.
 
 - [Settings](workspace/SETTINGS.md): focused categories, global search, scoped controls/resets, saving and keyboard access.
@@ -47,6 +50,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 - [Integration handoff](workspace/INTEGRATION.md): focused validation and remaining verification limits.
 
 ## Architecture, development and host security
+
+- [UI philosophy](design/UI_PHILOSOPHY.md): authoritative design/interaction contract; broad transformation remains the independent UI stream.
 
 - [Companion checkpoints](architecture/COMPANIONS.md): R3 immutable reading datasets, selection/coverage, hashes/ranges, expiry/revocation and R4 client activation contract.
 
@@ -84,11 +89,17 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 - [0.1.0-alpha.2 A2 recovery](android/releases/0.1.0-alpha.2.md): scoped drafts/sessions, remembered hosts and explicit conflict recovery; Android-only APK.
 - [0.1.0-alpha.1 A1 prototype](android/releases/0.1.0-alpha.1.md): published Android-only APK scope and emulator evidence; user-only S24 checklist.
 
+- [R5/redesign integration](plans/R5-REDESIGN-INTEGRATION.md): branch boundaries, semantic resolutions, validation and unreleased0.14.0 candidate.
+
 ## Active execution trackers — `plans/`
 
 - [Desktop UI redesign audit and proposal](plans/ui-redesign.md): isolated redesign stream, native baseline, implemented Library/browse/Note/pane/navigation/preview/command-palette/settings/utility/theme review candidates, interaction specifications and remaining motion/native review gates.
 
-- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan; W1–W3/R1–R2 shipped, R3 Windows host checkpoints shipped (Mac gate pending), R4 Android alpha.11 shipped; R5–R10 remain separately authorized work. One sprint per authorization.
+- [R5 integration handoff](plans/R5-INTEGRATION-HANDOFF.md): exact source boundary, API/schema/portability contracts, master overlap, tests and preservation requirements; no integration or R6 work.
+
+- [Codex product stream](plans/codex-current-stream.md): branch isolation, R5 functional ownership and later UI-integration boundaries.
+
+- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan; W1–W3/R1–R2 shipped, R3 Windows host checkpoints shipped (Mac gate pending), R4 Android alpha.11 and R5 Windows0.12.0 shipped; R6–R10 remain separately authorized work. One sprint per authorization.
 - [Original Android tracker](plans/android-plan.md): historical A1–A7 evidence; A8/A9 cancelled and superseded.
 
 - [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): All five sprints implemented on Windows; measured integration, platform limits and separate Android prototype gate recorded.

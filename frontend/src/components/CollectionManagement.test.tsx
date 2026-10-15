@@ -5,7 +5,7 @@ import CollectionManagement from './CollectionManagement';
 import {EscapeManagerProvider} from '../lib/escape/EscapeManagerProvider';
 import api from '../lib/api';
 vi.mock('../lib/api',()=>({default:{put:vi.fn(),delete:vi.fn()}}));
-vi.mock('../lib/settings',()=>({useSettings:()=>({settings:{local:{uiTransparency:0}}})}));
+vi.mock('../lib/settings',()=>({useOptionalSettings:()=>null,useSettings:()=>({settings:{local:{uiTransparency:0}}})}));
 afterEach(()=>{cleanup();vi.resetAllMocks();});
 it('submits rename, retains failures, and lets Escape close the dialog',async()=>{
  vi.mocked(api.put).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({data:{id:'one',name:'Renamed'}});

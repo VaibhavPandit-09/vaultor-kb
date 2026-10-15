@@ -1,4 +1,6 @@
 import ResourceReferences from '../components/ResourceReferences';
+import ReviewInbox, {ReviewButton} from '../components/ReviewInbox';
+import {reviewsChanged} from '../lib/reviews';
 import {useNarrowWorkspace} from '../lib/useNarrowWorkspace';
 import {revealReference} from '../lib/referenceNavigation';
 import ResourceActions from '../components/ResourceActions';
@@ -57,6 +59,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Palette,
+  MessageSquare,
 } from 'lucide-react';
 import api from '../lib/api';
 import { getConnection, getPlatform, saveApiFile, openApiFile } from '../lib/platform';
@@ -145,6 +148,7 @@ export default function Dashboard() {
   const [sharedDocuments] = useState(() => new SharedNoteDocuments());
   const previewSourcePane = useRef<string | null>(null);
   const [referenceTarget,setReferenceTarget]=useState<Resource|null>(null);
+  const [reviewTarget,setReviewTarget]=useState<Pick<Resource,'id'|'title'|'revision'>|null|undefined>(undefined);
   const [loadingResourceIds, setLoadingResourceIds] = useState<string[]>([]);
 
   const [tagSearch, setTagSearch] = useState('');
@@ -1013,7 +1017,7 @@ export default function Dashboard() {
   useEffect(()=>{
     if(!sessionReady)return;let stopped=false;
     const check=async()=>{const version=++identityCheckVersion.current;try {const identity=(await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;if(!stopped&&version===identityCheckVersion.current&&identityRef.current&&!sameWorkspace(identity,identityRef.current)) {
-      workspaceEpoch.current++;resourceLoadVersions.current.clear();setReferenceTarget(null);dispatch(setCurrentResourceId(null));
+      workspaceEpoch.current++;resourceLoadVersions.current.clear();setReferenceTarget(null);setReviewTarget(undefined);dispatch(setCurrentResourceId(null));
       setCommandPaletteOpen(false);setFileImport(null);setTagPickerOpenNoteId(null);setLifecycleTargets(null);setRecoveryOpen(false);setTransferMode(null);
       saves.clear();paneNavigation.reset();setResourceDetails({});setPreviewResourceId(null);setPreviewResourceType(null);setNoteExport(null);setTitleEditState(null);setLibraryVisible(true);setCollection(null);setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
       identityRef.current=identity;recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));setSessionMessage('The workspace was replaced. Previous drafts are available as separate recovery copies.');notifyResourceChange({kind:'workspace'});
@@ -1030,6 +1034,7 @@ export default function Dashboard() {
   remoteReconcile.current = events => {
     const broad=events.some(e=>e.kind==='reset'||e.kind==='workspace'||(e.generation && e.generation!==identityRef.current?.generation));
     if(broad)window.dispatchEvent(new Event('vaultor:identity-check'));
+    if(broad || events.some(e=>e.kind==='reviews'))reviewsChanged();
     if(broad || events.some(e=>e.kind==='settings'))window.dispatchEvent(new Event('vaultor:settings-refresh'));
     if(broad || events.some(e=>e.kind==='organization'))notifyResourceChange({kind:'organization',entity:'all'});
     if(broad || events.some(e=>e.kind==='tags'))notifyResourceChange({kind:'organization',entity:'tag'});
@@ -1164,6 +1169,7 @@ export default function Dashboard() {
     <div className="flex h-full flex-col overflow-hidden">
       <div className="sidebar-primary px-3 py-3 space-y-1">
         <div className="flex items-center gap-1"><button className="sidebar-nav" onClick={openCommandPalette}><Search size={16} />Search workspace<span className="ml-auto text-xs opacity-60">{resolvedShortcuts.commandPalette.replace('Mod', isMac ? '⌘' : 'Ctrl').replaceAll('+', ' ')}</span></button><SidebarCustomization preferences={sidebarPreferences} onChange={updateSidebarPreferences} status={settingsSaveStatus} onRetry={retrySettingsSave}/><button className="browse-icon-button sidebar-pin-toggle" aria-label={isFloatingSidebarMode ? (floatingSidebarPinned ? 'Unpin navigation' : 'Pin navigation') : 'Collapse sidebar'} aria-pressed={isFloatingSidebarMode ? floatingSidebarPinned : undefined} onClick={toggleSidebar}>{isFloatingSidebarMode && !floatingSidebarPinned ? <PanelLeftOpen size={16}/> : <PanelLeftClose size={16}/>}</button></div>
+        <button className="sidebar-nav" onClick={()=>setReviewTarget(null)}><MessageSquare size={16}/>Review inbox</button>
         {([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }, { id: 'trash', label: 'Trash', Icon: Trash2 }] as const).map(({ id, label, Icon }) => <button key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</button>)}
         {openNotes.length > 0 && <button className="sidebar-nav" onClick={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }}><FileText size={16} />Open notes<span className="ml-auto text-xs opacity-60">{openNotes.length}</span></button>}
       </div>
@@ -1305,6 +1311,7 @@ export default function Dashboard() {
         <button onClick={() => { void saves.flushAll().catch(() => {}); }}>Retry saves</button>
         <button onClick={() => setNotice(null)}>Dismiss</button>
       </div>}
+      {reviewTarget!==undefined&&<ReviewInbox key={getConnection().epoch} resource={reviewTarget} onClose={()=>setReviewTarget(undefined)} onOpen={async id=>{await openResourceById(id,{throwOnFailure:true});const issue=paneNavigation.snapshot().issue;if(issue)throw new Error(issue.message);return ()=>{const state=paneNavigation.snapshot();if(state.panes.some(p=>p.id===id&&p.paneId===state.activePaneId))paneNavigation.activate(state.activePaneId!,true);else document.querySelector<HTMLElement>('.preview-shell button')?.focus({preventScroll:true});};}}/>}
       {referenceTarget&&<ResourceReferences resource={referenceTarget} localNotes={openNotes.filter((p,index,all)=>all.findIndex(other=>other.id===p.id)===index).flatMap(p=>{const draft=saves.latest(p.id)??recovery.current(p.id)?.value;return draft?[{id:p.id,title:draft.title,content:parseNoteContent(draft.content as Resource['content'])}]:[];})} onClose={()=>setReferenceTarget(null)}/>}
       {lifecycleTargets&&<ResourceLifecycleDialog resources={lifecycleTargets} action="trash" onBusy={setDeletePending} onClose={()=>setLifecycleTargets(null)}/>}
 
@@ -1431,7 +1438,7 @@ export default function Dashboard() {
                     </div>
                     <div className="ml-auto flex shrink-0 items-center gap-2">
                     <button type="button" disabled={Boolean(note.resource?.trashedAt)} title="Export note" aria-label={`Export ${note.title}`} className="rounded-lg p-2 text-slate-400 hover:bg-background hover:text-primary" onClick={() => setNoteExport({ id: note.id, title: note.title })}><DownloadCloud size={16} /></button>
-                    <PinButton id={note.id} name={note.title} favorite={note.resource?.favorite}/>{note.resource&&!note.resource.trashedAt&&<ResourceActions resource={note.resource}/>}
+                    <ReviewButton resource={note} onOpen={setReviewTarget}/><PinButton id={note.id} name={note.title} favorite={note.resource?.favorite}/>{note.resource&&!note.resource.trashedAt&&<ResourceActions resource={note.resource}/>}
                     <SaveIndicator status={saves.status(note.id)} onRetry={() => void saves.flush(note.id).catch(() => {})} />
                     </div>
                     </div>
@@ -1635,6 +1642,7 @@ export default function Dashboard() {
         <ErrorBoundary region="file preview"><PreviewLayer
           resource={previewResource}
           onCollection={openCollection}
+          onReview={setReviewTarget}
           mode={effectivePreviewMode}
           animationMode={localSettings.animationMode}
           overrideActive={previewOverrideMode !== null}

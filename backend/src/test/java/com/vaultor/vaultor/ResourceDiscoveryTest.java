@@ -67,7 +67,7 @@ class ResourceDiscoveryTest {
   var matches=browse.list(0,100,title,"file",List.of(),false,"title",null,"image");assertEquals(2,matches.totalItems());for(var match:matches.items()){assertEquals(1,refs.list(match.id(),"incoming",0,30).totalItems());assertArrayEquals(original,Files.readAllBytes(files.getFile(resources.findById(match.id()).orElseThrow().getFilePath())));}
   var replace=transfers.preview(new MockMultipartFile("file","discovery.zip","application/zip",archive));transfers.commit(replace.operation().id(),"replace");awaitTransfer(replace.operation().id());assertEquals(1,browse.list(0,100,title,"file",List.of(),false,"title",null,"image").totalItems());assertEquals(source.getId(),refs.list(target.getId(),"incoming",0,30).items().getFirst().id());
  }
- void awaitTransfer(String id)throws Exception {for(int i=0;i<400;i++){var op=transfers.get(id);if(op.status().equals("SUCCEEDED"))return;if(op.status().equals("FAILED"))fail(op.detail());Thread.sleep(25);}fail("Transfer timeout");}
+ void awaitTransfer(String id)throws Exception {for(int i=0;i<400;i++){TransferService.Operation op;try{op=transfers.get(id);}catch(org.springframework.web.server.ResponseStatusException busy){if(busy.getStatusCode().value()!=409||!"Workspace maintenance is in progress. Retry shortly.".equals(busy.getReason()))throw busy;Thread.sleep(25);continue;}if(op.status().equals("SUCCEEDED"))return;if(op.status().equals("FAILED"))fail(op.detail());Thread.sleep(25);}fail("Transfer timeout");}
  @Test void referencePagesRetainCompleteCountsAndTwentyOccurrencesPerSelectedSource() {
   var target=service.createNote("Paged target",empty);
   String link="{\"type\":\"resourceLink\",\"attrs\":{\"resourceId\":\""+target.getId()+"\",\"type\":\"note\",\"label\":\"Repeat\"}}";

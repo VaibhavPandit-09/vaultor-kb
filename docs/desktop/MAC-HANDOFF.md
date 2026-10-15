@@ -1,6 +1,19 @@
+## Integrated0.14.0 candidate — native Mac gate pending
+
+The integration/r5-redesign branch combines current master presentation with R5/archive4. Windows candidate packaging/native verification does not certify a Mac build. Publication/master integration are deferred at the requested branch-push boundary. A later Mac build must use the reviewed immutable integrated source with package/lock0.14.0 and the original release identity; repeat native Review plus redesigned surface checks and fresh UI/server/DMG verification. Never present either historical partial release below as proof of an integrated Mac candidate. See [integration record](../plans/R5-REDESIGN-INTEGRATION.md).
+
 ## UI stream — Mac0.13.0 published2026-10-15
 
 The accepted spatial UI stream is integrated on master and published for Mac arm64 from immutablev0.13.0/source3615aa2131edf34cd480f16801d7eac6fac98f5f. [0.13.0 release notes](releases/v0.13.0.md) own artifact hashes, original-key/codesign/DMG/native results and remaining limits. Normal Mac replacement remains manual. No Windows0.13.0 package or integration with ai/codex-current Review Inbox/archive4 is claimed. Windows requires deliberate later integration/versioning and native build access; do not rebuild this baseline as an integrated Windows upgrade. Historical exact-tag handoffs below remain immutable and are not claims that their old Mac pairs were published.
+
+## R5 — exact v0.12.0 handoff (2026-10-15)
+
+Windows0.12.0 adds review evidence/triage and archive4; Mac native gate remains unavailable here. Fetch origin/tags and check out immutable **v0.12.0**, not master, ai/codex-current's later commits or ai/gemini-ui. Confirm desktop package/lock0.12.0 and clean source. Obtain the original release key privately; never regenerate/print/publish it or configure paid signing/CI secrets. Read RELEASE-PROCESS.md, desktop/releases/v0.12.0.md and workspace/REVIEWS.md.
+
+1. On Apple Silicon with Node24/Java25, npm ci in frontend and desktop. Run backend ./mvnw -Dtest=ReviewTest,DesktopContractTest,NoteExportGraphTests test (disposable roots only). Run frontend npm test -- src/lib/reviews.test.tsx src/lib/changeFeed.test.ts src/components/WorkspaceTransfers.test.tsx.
+2. Set BUILD_VERSION=0.12.0 and VITE_BUILD_VERSION=0.12.0; run desktop build, prepare-server and package:release natively. Check arm64 runtime, free ad-hoc codesign, DMG/mount/install-over in disposable app storage and original-key sidecar. No Java/Docker installation is required for the packaged app.
+3. Set VAULTOR_REVIEW_CHECK=1 and run node desktop/scripts/chrome-smoke.mjs /absolute/path/to/Vaultor.app/Contents/MacOS/Vaultor. Verify paged counts, triage without original changes, scoped note entry, Escape/focus and browser Light/Dark/narrow screens. Check native menu/app lifecycle separately; record actual results without claiming real LAN or phone testing. R6 Android capture is not part of this sprint.
+4. From the exact clean tag, preflight then publish only the missing verified Mac pair with publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.12.0.md. Preserve existing Windows bytes/tag. Differing retry bytes must fail; code fixes require a new version. Update public notes/docs with actual evidence in a docs-only follow-up, leaving the source tag immutable. No integration of ai/gemini-ui.
 
 ## R3 — exact v0.11.0 handoff (2026-10-14)
 

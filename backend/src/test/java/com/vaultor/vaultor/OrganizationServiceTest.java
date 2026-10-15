@@ -33,7 +33,7 @@ class OrganizationServiceTest {
     @Autowired JdbcTemplate jdbc;
     private void await(String id, String expected) throws Exception {
         long until=System.nanoTime()+20_000_000_000L;
-        while(System.nanoTime()<until) {var op=transfers.get(id);if(Set.of("SUCCEEDED","FAILED").contains(op.status())) {assertEquals(expected,op.status(),op.detail());return;}Thread.sleep(25);}
+        while(System.nanoTime()<until) {TransferService.Operation op;try{op=transfers.get(id);}catch(org.springframework.web.server.ResponseStatusException busy){if(busy.getStatusCode().value()!=409||!"Workspace maintenance is in progress. Retry shortly.".equals(busy.getReason()))throw busy;Thread.sleep(25);continue;}if(Set.of("SUCCEEDED","FAILED").contains(op.status())) {assertEquals(expected,op.status(),op.detail());return;}Thread.sleep(25);}
         fail("Transfer timeout");
     }
     @Test void organizationIsAtomicPortableAndNonDestructive() throws Exception {

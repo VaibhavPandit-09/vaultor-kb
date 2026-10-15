@@ -7,7 +7,7 @@ export function rememberMutation(requestId: string) {
 }
 export function validChange(value: unknown): value is RemoteChange {
   const v = value as RemoteChange;
-  return !!v && typeof v.cursor === 'string' && /^[a-f0-9-]{36}:\d{1,18}$/.test(v.cursor) && ['reset','resources','tags','settings','organization','workspace','operation','host-restart'].includes(v.kind) && Array.isArray(v.ids) && v.ids.length <= 100 && v.ids.every(id => typeof id === 'string' && id.length <= 80) && typeof v.requestId === 'string';
+  return !!v && typeof v.cursor === 'string' && /^[a-f0-9-]{36}:\d{1,18}$/.test(v.cursor) && ['reset','resources','tags','settings','organization','workspace','reviews','operation','host-restart'].includes(v.kind) && Array.isArray(v.ids) && v.ids.length <= 100 && v.ids.every(id => typeof id === 'string' && id.length <= 80) && typeof v.requestId === 'string';
 }
 /** A single connection-owned stream; bounded coalescing, backoff and focus reconciliation. */
 export function watchChanges(receive: (events: RemoteChange[]) => void, signal: AbortSignal) {

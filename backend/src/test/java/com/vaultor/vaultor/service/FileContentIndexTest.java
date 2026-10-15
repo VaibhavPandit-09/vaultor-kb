@@ -58,5 +58,5 @@ class FileContentIndexTest {
   Path path=files.getFile(r.getFilePath());byte[] original=Files.readAllBytes(path);Files.delete(path);index.retry(r.getId());drain();assertEquals("failed",index.jobs(0,100).items().stream().filter(e->e.id().equals(r.getId())).findFirst().orElseThrow().state());assertEquals(0,search.search(word,0,100,null,List.of(),null,false).totalItems());
   Files.write(path,original);index.retry(r.getId());drain();assertEquals(1,search.search(word,0,100,null,List.of(),null,false).totalItems());assertArrayEquals(original,Files.readAllBytes(path));
  }
- void await(String id)throws Exception{for(int i=0;i<400;i++){var op=transfers.get(id);if(op.status().equals("SUCCEEDED"))return;if(op.status().equals("FAILED"))fail(op.detail());Thread.sleep(25);}fail("Transfer timeout");}
+ void await(String id)throws Exception{for(int i=0;i<400;i++){TransferService.Operation op;try{op=transfers.get(id);}catch(org.springframework.web.server.ResponseStatusException busy){if(busy.getStatusCode().value()!=409||!"Workspace maintenance is in progress. Retry shortly.".equals(busy.getReason()))throw busy;Thread.sleep(25);continue;}if(op.status().equals("SUCCEEDED"))return;if(op.status().equals("FAILED"))fail(op.detail());Thread.sleep(25);}fail("Transfer timeout");}
 }

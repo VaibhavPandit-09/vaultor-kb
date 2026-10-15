@@ -20,6 +20,8 @@ For manual/offline import, keep each installer and its signed sidecar in the **s
 
 **[Mac arm640.13.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.13.0)** is published with the spatial UI redesign. Fully quit Vaultor, open its DMG and drag Vaultor.app into Applications; preserve app data. [Release notes](releases/v0.13.0.md) record verification and limits. This Mac build uses0.11.0 host contracts (protocol3/archive3), without the separate Windows0.12.0 Review Inbox/archive4 feature stream. Do not downgrade a0.12.0 host/data directory to this build or import archive4 into it. Both platform releases are explicitly partial; a Windows update does not update a remote Mac host. Manual signed-pair import remains available for backup-aware/offline transitions. Android alpha.11 remains separate.
 
+Integration branch `integration/r5-redesign` reserves0.14.0 for the combined redesign and R5/archive4 product. Local Windows candidate artifacts are validation outputs, not a published update. Published platform availability above remains unchanged; see [integration record](../plans/R5-REDESIGN-INTEGRATION.md).
+
 ## First installation — Windows
 
 1. Download the Windows `.exe` from a published release. Use Windows x64; ARM Windows is not a verified target.

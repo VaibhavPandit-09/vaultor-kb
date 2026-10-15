@@ -77,3 +77,7 @@ Trashed roots cannot be exported as active notes. Linked graph snapshots exclude
 ## Android image placements
 
 Android A4 saves standard resource-backed image attributes, so existing host export snapshots consume the same nodes. Disposable checks produced PDF image objects, embedded PNGs and captions in Word, and original PNG/alt/caption references in Markdown-with-assets. This is artifact/content verification, not visual layout certification; Word currently does not emit the placement alt text as an accessibility description. Android0.1.0-alpha.4 does not add a separate export renderer or change snapshot semantics. See [MEDIA.md](../android/MEDIA.md).
+
+## Review evidence in packages (R5/0.12.0)
+
+Markdown+assets and linked-resource ZIPs include reviews.json for only the captured resource graph, preserving portable status/provenance/quotes without credentials/private validators. Standalone note documents do not inject review text. This evidence package is not an importable full workspace archive. See [REVIEWS.md](REVIEWS.md).

@@ -20,7 +20,7 @@ public class WorkspaceRequestFilter extends OncePerRequestFilter {
     public WorkspaceRequestFilter(WorkspaceCatalog catalog,WorkspaceRegistry registry,ObjectMapper json){this.catalog=catalog;this.registry=registry;this.json=json;}
     @Override protected void doFilterInternal(HttpServletRequest req,HttpServletResponse res,FilterChain chain) throws ServletException,IOException {
         String path=req.getRequestURI();
-        boolean scoped=path.matches("/api/(resources|tags|settings|collections|organization|workspace|imports|exports|operations|companions|changes|diagnostics)(/.*)?") || Set.of("/api/health","/api/capabilities","/api/openapi.json","/api/export-formats").contains(path);
+        boolean scoped=path.matches("/api/(resources|tags|settings|collections|organization|reviews|workspace|imports|exports|operations|companions|changes|diagnostics)(/.*)?") || Set.of("/api/health","/api/capabilities","/api/openapi.json","/api/export-formats").contains(path);
         if(!scoped){chain.doFilter(req,res);return;}
         String id=req.getHeader("X-Vaultor-Workspace");
         if(id==null && "/api/capabilities".equals(path) && "PUBLIC".equals(req.getAttribute(HostAccessFilter.PRINCIPAL))){chain.doFilter(req,res);return;}
@@ -31,7 +31,7 @@ public class WorkspaceRequestFilter extends OncePerRequestFilter {
             var runtime=registry.open(id);
             if(device!=null && !catalog.allowed(id,device))throw new AccessFailure(404,"WORKSPACE_UNAVAILABLE","Workspace is unavailable or not authorized");
             res.setHeader("X-Vaultor-Workspace",id);
-            boolean guarded=path.matches("/api/(resources|tags|settings|collections|organization|workspace)(/.*)?");
+            boolean guarded=path.matches("/api/(resources|tags|settings|collections|organization|reviews|workspace)(/.*)?");
             boolean transfer=path.matches("/api/companions(/.*)?") || !List.of("GET","HEAD","OPTIONS").contains(req.getMethod()) && path.matches("/api/(imports|exports|operations|companions)(/.*)?");
             var gate=runtime.gate();boolean entered=transfer?gate.enterTransferRequest():!guarded || gate.enterRequest();
             try {

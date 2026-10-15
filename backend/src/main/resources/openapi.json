@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Vaultor API",
-    "version": "1.10.0",
-    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration. 0.8.0 adds bounded isolated host workspaces with optional X-Vaultor-Workspace selection; missing scope always means the fixed legacy workspace. API protocol3/archive3 remain unchanged. 0.9.0 exposes owner grant inspection for client workspace selectors; scope and protocol remain unchanged. 0.10.0 adds owner-only staged import-as-new and native snapshot forks; protocol3/archive3 unchanged. 0.11.0 adds companion checkpoint schema1: immutable hashed inventory/payloads and bounded range resume; protocol3/archive3 unchanged. Android offline storage follows separately."
+    "version": "1.11.0",
+    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration. 0.8.0 adds bounded isolated host workspaces with optional X-Vaultor-Workspace selection; missing scope always means the fixed legacy workspace. API protocol3/archive3 remain unchanged. 0.9.0 exposes owner grant inspection for client workspace selectors; scope and protocol remain unchanged. 0.10.0 adds owner-only staged import-as-new and native snapshot forks; protocol3/archive3 unchanged. 0.11.0 adds companion checkpoint schema1: immutable hashed inventory/payloads and bounded range resume; protocol3/archive3 unchanged. Android offline storage follows separately. 0.12.0 adds workspace-scoped review evidence/status (reviews:1). API protocol3 remains compatible; workspace archive4 includes portable reviews and rejects unsupported versions. Android alpha.11 remains compatible; capture/sync follows in R6."
   },
   "servers": [
     {
@@ -8655,6 +8655,251 @@
           }
         }
       }
+    },
+    "/reviews": {
+      "get": {
+        "operationId": "listReviews",
+        "summary": "Bounded workspace review inbox; optional resource scope",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "open",
+                "resolved",
+                "dismissed",
+                "all"
+              ],
+              "default": "open"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid evidence/filter"
+          },
+          "401": {
+            "description": "Approval required"
+          },
+          "404": {
+            "description": "Missing item/workspace/target or unavailable grant"
+          },
+          "409": {
+            "description": "Workspace maintenance/generation changed, UUID reused or bound reached"
+          }
+        }
+      }
+    },
+    "/reviews/{id}": {
+      "get": {
+        "operationId": "getReview",
+        "summary": "Reconcile a stable review UUID, including changed status",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid evidence/filter"
+          },
+          "401": {
+            "description": "Approval required"
+          },
+          "404": {
+            "description": "Missing item/workspace/target or unavailable grant"
+          },
+          "409": {
+            "description": "Workspace maintenance/generation changed, UUID reused or bound reached"
+          }
+        }
+      },
+      "put": {
+        "operationId": "createReviewOnce",
+        "summary": "Create immutable review evidence; identical UUID/body retries reconcile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid evidence/filter"
+          },
+          "401": {
+            "description": "Approval required"
+          },
+          "404": {
+            "description": "Missing item/workspace/target or unavailable grant"
+          },
+          "409": {
+            "description": "Workspace maintenance/generation changed, UUID reused or bound reached"
+          }
+        }
+      }
+    },
+    "/reviews/{id}/status": {
+      "patch": {
+        "operationId": "changeReviewStatus",
+        "summary": "Conditionally resolve/dismiss/reopen; does not edit the original",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Quoted ReviewItem.revision"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "generation",
+                  "status"
+                ],
+                "properties": {
+                  "generation": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "enum": [
+                      "open",
+                      "resolved",
+                      "dismissed"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid evidence/filter"
+          },
+          "401": {
+            "description": "Approval required"
+          },
+          "404": {
+            "description": "Missing item/workspace/target or unavailable grant"
+          },
+          "409": {
+            "description": "Workspace maintenance/generation changed, UUID reused or bound reached"
+          },
+          "412": {
+            "description": "Review conflict; refresh and choose status again"
+          },
+          "428": {
+            "description": "If-Match required"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9025,6 +9270,11 @@
             "items": {
               "type": "string"
             }
+          },
+          "reviews": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Portable review items; omitted by older hosts"
           }
         },
         "required": []
@@ -9812,6 +10062,14 @@
           "workspaceImports": {
             "type": "boolean",
             "description": "Owner-only staged workspace ZIP import with atomic publication"
+          },
+          "reviews": {
+            "type": "integer",
+            "description": "1 enables scoped review evidence/status"
+          },
+          "workspaceArchiveVersion": {
+            "type": "integer",
+            "description": "Current full archive writer version4; reader accepts1–4"
           }
         }
       },
@@ -10421,6 +10679,183 @@
               "readable",
               "originals"
             ]
+          }
+        }
+      },
+      "ReviewLocator": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "resource",
+              "block",
+              "page"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Note content-array indices joined with dots, maximum64 segments"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000,
+            "description": "PDF page; not a precise rectangle"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "ReviewInput": {
+        "type": "object",
+        "required": [
+          "generation",
+          "resourceId",
+          "comment"
+        ],
+        "properties": {
+          "generation": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "comment": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "quote": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "context": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "locator": {
+            "$ref": "#/components/schemas/ReviewLocator"
+          },
+          "baseRevision": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Opaque original-resource revision at capture"
+          }
+        }
+      },
+      "ReviewItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetTitle": {
+            "type": "string"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "quote": {
+            "type": "string"
+          },
+          "context": {
+            "type": "string"
+          },
+          "locator": {
+            "$ref": "#/components/schemas/ReviewLocator"
+          },
+          "author": {
+            "type": "string",
+            "description": "Server-derived approved device display label; not an authorization identifier"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "resolved",
+              "dismissed"
+            ]
+          },
+          "revision": {
+            "type": "string",
+            "description": "Review validator distinct from original resource revision"
+          },
+          "availability": {
+            "enum": [
+              "available",
+              "missing",
+              "trashed",
+              "deleting"
+            ]
+          },
+          "attachment": {
+            "enum": [
+              "resource",
+              "attached",
+              "changed",
+              "unverified",
+              "unavailable"
+            ]
+          }
+        }
+      },
+      "ReviewPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewItem"
+            },
+            "maxItems": 100
+          },
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "open": {
+                "type": "integer"
+              },
+              "resolved": {
+                "type": "integer"
+              },
+              "dismissed": {
+                "type": "integer"
+              }
+            }
+          },
+          "generation": {
+            "type": "string"
           }
         }
       }
