@@ -23,7 +23,7 @@ export default function NoteOrientation({ identity, children, status, tagCount }
       button.setAttribute('aria-expanded', String(!folded));
     };
     const measure = () => {
-      viewport.style.setProperty('--note-organization-height', `${content.scrollHeight}px`);
+      viewport.style.setProperty('--note-organization-height', `${content.firstElementChild?.scrollHeight ?? 0}px`);
     };
     measure();
     const observer = new ResizeObserver(measure);

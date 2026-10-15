@@ -29,3 +29,15 @@ it('folds organization into reachable disclosure without remounting title, caret
   fireEvent.click(disclosure); expect(band.inert).toBe(false);
   result.unmount(); expect(driver.stop).toHaveBeenCalled();
 });
+
+it('remeasures intrinsic organization content after narrowing and widening without retaining wrapper height', () => {
+ let resize = () => {};
+ vi.stubGlobal('ResizeObserver', class { constructor(callback: () => void) { resize=callback; } observe() {} disconnect() {} });
+ const result=render(<main><NoteOrientation tagCount={0} identity={<button>Title</button>}><button>Add to collection</button></NoteOrientation></main>);
+ const viewport=result.container.firstElementChild as HTMLElement;
+ const band=result.container.querySelector<HTMLElement>('.note-organization')!;
+ let height=100; Object.defineProperty(band.firstElementChild,'scrollHeight',{get:()=>height});
+ Object.defineProperty(band,'scrollHeight',{value:100});
+ act(()=>resize()); expect(viewport.style.getPropertyValue('--note-organization-height')).toBe('100px');
+ height=40; act(()=>resize()); expect(viewport.style.getPropertyValue('--note-organization-height')).toBe('40px');
+});

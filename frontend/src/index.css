@@ -832,15 +832,11 @@ button:focus-visible, [role='option']:focus-visible { outline:2px solid var(--ac
 .desktop-shell .workspace-main[data-narrow='true'] .journey-bar { padding-right:12px; }
 @container (max-width:850px) {
  .workspace-main[data-pane-count='2'] > .workspace-compact-controls { display:flex; }
- .workspace-pane-layout > [data-focused='false'] { display:none; }
- .workspace-pane-layout { padding:8px; gap:0; }
- .workspace-pane-layout > [data-focused='true'] { flex:1; width:100%; }
  .desktop-shell .workspace-main[data-pane-count='2'] .journey-bar { padding-right:12px; }
 }
 @container (max-width:1200px) {
  .workspace-main[data-pane-count='3'] > .workspace-compact-controls { display:flex; }
- .workspace-main[data-pane-count='3'] .workspace-pane-layout > [data-focused='false'] { display:none; }
- .desktop-shell .workspace-main[data-pane-count='3'] .journey-bar { padding-right:12px; }
+ .workspace-main[data-pane-count='3'] .desktop-shell .workspace-main[data-pane-count='3'] .journey-bar { padding-right:12px; }
 }
 
 /* Note orientation uses the existing journey viewport as its only scroll owner. */
@@ -873,3 +869,12 @@ button:focus-visible, [role='option']:focus-visible { outline:2px solid var(--ac
 }
 
 .note-orientation[data-organization-open='closed'] .note-organization { height:0; opacity:0; }
+
+/* Real allocation changes preserve editor scale and let neighbors yield space. */
+.workspace-pane-layout { position:relative; z-index:1; display:flex; justify-content:center; height:100%; min-width:0; overflow:hidden; padding:12px 16px; }
+.workspace-pane-slot { flex:0 0 auto; min-width:0; height:100%; overflow:hidden; width:var(--pane-width); margin-inline:var(--pane-gap); transition:width var(--pane-duration) var(--motion-ease), margin-left var(--pane-duration) var(--motion-ease), margin-right var(--pane-duration) var(--motion-ease); }
+.workspace-pane-slot[hidden] { display:none; }
+.workspace-pane-ghost { background:var(--card); border-radius:1.35rem; pointer-events:none; }
+@media (prefers-reduced-motion:reduce) { .workspace-pane-slot { transition:none; } }
+
+.workspace-pane-layout[data-empty='true'] { pointer-events:none; }

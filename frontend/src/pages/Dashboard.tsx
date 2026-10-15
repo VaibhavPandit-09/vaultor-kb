@@ -15,6 +15,7 @@ import { NoteRecovery } from '../lib/noteRecovery';
 import { restoreSession } from '../lib/restoreSession';
 import JourneyBar from '../components/JourneyBar';
 import { DesktopConnectionButton } from '../components/DesktopChrome';
+import WorkspacePaneLayout from '../components/WorkspacePaneLayout';
 import NoteOrientation from '../components/NoteOrientation';
 import JourneyViewport from '../components/JourneyViewport';
 import { PaneNavigation, ResourceUnavailableError, type OpenIntent } from '../lib/paneNavigation';
@@ -884,12 +885,11 @@ export default function Dashboard() {
     });
   }, [handleAddTag, tagAddPending, tagPickerOpenNoteId]);
 
-  const handleRemoveTag = async (tagName: string) => {
-    if (!activeResource) return;
+  const handleRemoveTag = async (noteId: string, tagName: string) => {
     try {
-      await api.delete(`/resources/${activeResource.id}/tags/${encodeURIComponent(tagName.trim())}`);
-      void fetchResourceDetails(activeResource.id);
-      organizationChanged('tag',[activeResource.id]);
+      await api.delete(`/resources/${noteId}/tags/${encodeURIComponent(tagName.trim())}`);
+      void fetchResourceDetails(noteId);
+      organizationChanged('tag',[noteId]);
     } catch (error) {
       console.error(error);
     }
@@ -1415,9 +1415,8 @@ export default function Dashboard() {
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
             {activeNoteId&&resourceDetails[activeNoteId]&&<button className="library-button" onClick={()=>setReferenceTarget(resourceDetails[activeNoteId])}>References</button>}
           </JourneyBar>}
-          <div className="min-h-0 flex-1">
-          {openWorkspaceNotes.length > 0 ? (
-            <div className={`workspace-pane-layout ${getWorkspaceLayoutClass(openWorkspaceNotes.length)}`}>
+          <div className="min-h-0 flex-1 relative">
+            <WorkspacePaneLayout paneIds={openWorkspaceNotes.map(note => note.paneId)} focusedId={activePaneId} animationMode={localSettings.animationMode}>
               {openWorkspaceNotes.map((note, index) => (
                 <div
                   key={note.paneId}
@@ -1425,11 +1424,7 @@ export default function Dashboard() {
                   data-pane-id={note.paneId}
                   data-focused={note.paneId === activePaneId}
                   onPointerDownCapture={() => { if (note.paneId !== activePaneId) activateOpenNote(note.paneId); }}
-                  className={getWorkspacePaneClass({
-                    noteCount: openWorkspaceNotes.length,
-                    isActive: note.paneId === activePaneId,
-                    animationMode: localSettings.animationMode,
-                  })}
+                  className="workspace-note-pane relative flex h-full min-w-0 w-full flex-col overflow-hidden rounded-[1.35rem] bg-card shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
                 >
                   {index > 0 && (
                     <div className="pointer-events-none absolute bottom-3 left-0 top-3 w-px bg-border/60" />
@@ -1495,7 +1490,7 @@ export default function Dashboard() {
 
                   } status={note.resource?.trashedAt ? <p role="status" className="text-sm text-[var(--text-secondary)]">This note is unavailable. Editing is paused; its content is retained. <button className="library-button" onClick={()=>showLibrary('trash')}>Open Trash</button><button className="library-button" onClick={()=>setRecoveryOpen(true)}>Recovery copies</button></p> : undefined}>
                     {!note.resource?.trashedAt && <ResourceCollections id={note.id} onOpen={openCollection}/>}
-                    {note.paneId === activePaneId && note.resource?.type === 'note' && !note.resource.trashedAt && (
+                    {note.resource?.type === 'note' && !note.resource.trashedAt && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {(note.resource.tags ?? []).slice(0, 4).map((tag) => (
                           <span
@@ -1504,14 +1499,14 @@ export default function Dashboard() {
                             style={getTagPillStyle(tag.color, resolvedTheme)}
                           >
                             {tag.name}
-                            <button onClick={() => handleRemoveTag(tag.name)} className="ml-1.5 text-inherit opacity-60 hover:opacity-100"><X size={10} /></button>
+                            <button onClick={() => handleRemoveTag(note.id, tag.name)} className="ml-1.5 text-inherit opacity-60 hover:opacity-100"><X size={10} /></button>
                           </span>
                         ))}
-                        <div ref={tagPickerOpenNoteId === note.id ? tagPickerRef : undefined} className="relative">
+                        <div ref={tagPickerOpenNoteId === note.id && note.paneId === activePaneId ? tagPickerRef : undefined} className="relative">
                           <button
-                            aria-haspopup="dialog" aria-expanded={tagPickerOpenNoteId === note.id}
+                            aria-haspopup="dialog" aria-expanded={tagPickerOpenNoteId === note.id && note.paneId === activePaneId}
                             onClick={() => {
-                              if (tagPickerOpenNoteId === note.id) {
+                              if (tagPickerOpenNoteId === note.id && note.paneId === activePaneId) {
                                 closeTagPicker();
                                 return;
                               }
@@ -1525,7 +1520,7 @@ export default function Dashboard() {
                             <TagIcon size={13} /> Add Tag
                           </button>
 
-                          {tagPickerOpenNoteId === note.id && tagPickerPosition && createPortal(
+                          {tagPickerOpenNoteId === note.id && note.paneId === activePaneId && tagPickerPosition && createPortal(
                             <div
                               ref={tagPickerMenuRef}
                               className="rounded-2xl border border-[var(--border-subtle)] p-2 shadow-[0_18px_36px_rgba(15,23,42,0.14)]"
@@ -1661,11 +1656,9 @@ export default function Dashboard() {
                   </JourneyViewport>
                 </div>
               ))}
-
-
-            </div>
-          ) : activeResourceLoading ? (
-            <div className="flex-1 p-8">
+            </WorkspacePaneLayout>
+          {openWorkspaceNotes.length === 0 && (activeResourceLoading ? (
+            <div className="absolute inset-0 p-8">
               <div className="mx-auto max-w-4xl space-y-4">
                 <div className="h-24 animate-pulse rounded-2xl bg-card" />
                 <div className="h-24 animate-pulse rounded-2xl bg-card" />
@@ -1673,7 +1666,7 @@ export default function Dashboard() {
               </div>
             </div>
           ) : (
-            <div className="flex h-full flex-col items-center justify-center px-6 pt-6 text-slate-400">
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-6 pt-6 text-slate-400">
               <Database size={64} className="mb-6 opacity-20" />
               <h2 className="mb-2 text-2xl font-semibold text-slate-500">Welcome to Vaultor</h2>
               <p className="mb-6 text-sm opacity-80">Open the command palette with {isMac ? 'Cmd+K' : 'Ctrl+K'} to jump anywhere fast.</p>
@@ -1682,7 +1675,7 @@ export default function Dashboard() {
                 <button onClick={requestFileUpload} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-card"><Upload size={16} /> Import files</button>
               </div>
             </div>
-          )}
+          ))}
           </div>
           </div>
           </div>
@@ -1929,44 +1922,4 @@ function upsertResourceInList(resources: Resource[], nextResource: Resource) {
   const nextResources = [...resources];
   nextResources[existingIndex] = nextResource;
   return nextResources;
-}
-
-function getWorkspaceLayoutClass(noteCount: number) {
-  if (noteCount <= 1) {
-    return 'flex h-full w-full justify-center overflow-hidden px-6 py-3';
-  }
-
-  return noteCount === 2
-    ? 'flex h-full min-w-0 gap-6 overflow-hidden px-4 py-3'
-    : 'flex h-full min-w-0 gap-4 overflow-hidden px-4 py-3';
-}
-
-function getWorkspacePaneClass({
-  noteCount,
-  isActive,
-  animationMode,
-}: {
-  noteCount: number;
-  isActive: boolean;
-  animationMode: 'snappy' | 'smooth';
-}) {
-  const smoothMode = animationMode === 'smooth';
-  const visualClass = smoothMode
-    ? (isActive ? 'bg-card opacity-100 scale-100' : 'bg-card/70 opacity-[0.86] scale-[0.98]')
-    : 'bg-card opacity-100 scale-100';
-  const motionClass = smoothMode
-    ? 'transform-gpu transition-[opacity,transform,background-color,border-color,flex] duration-[170ms] ease-[cubic-bezier(0.22,1,0.36,1)]'
-    : 'transition-none';
-  const shellClass = 'rounded-[1.35rem] shadow-[0_1px_2px_rgba(15,23,42,0.04)]';
-
-  if (noteCount <= 1) {
-    return `relative flex min-w-0 w-full max-w-4xl flex-col overflow-hidden ${shellClass} ${visualClass}`;
-  }
-
-  if (noteCount === 2) {
-    return `relative flex min-w-0 flex-1 flex-col overflow-hidden ${shellClass} ${motionClass} ${visualClass}`;
-  }
-
-  const widthClass = isActive ? 'flex-[1.2]' : 'flex-[0.9]';
-  return `relative flex min-w-0 ${widthClass} flex-col overflow-hidden ${shellClass} ${motionClass} ${visualClass}`;
 }
