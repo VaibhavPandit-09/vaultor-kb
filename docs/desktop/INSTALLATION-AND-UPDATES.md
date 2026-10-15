@@ -1,6 +1,6 @@
 # Install and update Vaultor on each device
 
-Reviewed 2026-10-15. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
+Reviewed 2026-10-16. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
 
 ## What you download
 
@@ -16,7 +16,7 @@ Use the [Vaultor GitHub Releases page](https://github.com/VaibhavPandit-09/vault
 
 For manual/offline import, keep each installer and its signed sidecar in the **same folder**, with their exact original names. Do not download source-code assets for installation. No Java or Docker is needed on a device running a packaged desktop app. Unsigned personal OS installers are separate from the app's Ed25519-signed update manifests: the latter verify update identity and bytes, but do not remove SmartScreen or Gatekeeper prompts.
 
-**[Windows0.14.0 release record](releases/v0.14.0.md)** covers the integrated redesign and R5 Review Inbox/archive4, fresh Windows packaging and installed checks. Publication is pending the final release gate. Until published, Windows0.12.0 remains the available prior feature release. Installed Windows0.4.1+: Updates → Check for updates → **Update and restart** once0.14.0 is published. Signed Windows pairs remain discoverable independently of the global latest flag. There is no Windows0.13.0 package.
+**[Windows0.14.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.14.0)** is published with the integrated desktop redesign and R5 Review Inbox/archive4. [Release notes](releases/v0.14.0.md) record fresh packaging, installed checks and verified hashes. Installed Windows0.4.1+: Updates → Check for updates → **Update and restart**. Signed Windows pairs remain discoverable independently of the global latest flag. Windows0.12.0 remains available as a historical release; there is no Windows0.13.0 package.
 
 **[Mac arm640.13.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.13.0)** is published with the spatial UI redesign. Fully quit Vaultor, open its DMG and drag Vaultor.app into Applications; preserve app data. [Release notes](releases/v0.13.0.md) record verification and limits. This Mac build uses0.11.0 host contracts (protocol3/archive3), without the separate Windows0.12.0 Review Inbox/archive4 feature stream. Do not downgrade a0.12.0 host/data directory to this build or import archive4 into it. Both platform releases are explicitly partial; a Windows update does not update a remote Mac host. Manual signed-pair import remains available for backup-aware/offline transitions. Android alpha.11 remains separate.
 

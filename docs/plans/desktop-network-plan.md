@@ -1,6 +1,6 @@
 # Desktop application and private-network hosting
 
-Current integrated Windows milestone: approved master6e5c553 combines the desktop redesign and R5 Reviews/archive4. [0.14.0 release ledger](../desktop/releases/v0.14.0.md) owns fresh build/install-over/native validation and publication status; the exact-tag Mac gate remains in MAC-HANDOFF.md. This is release completion only; R6 and D10 remain unstarted.
+Current integrated Windows milestone: published0.14.0/v0.14.0 from294b66e combines the approved master6e5c553 desktop redesign and R5 Reviews/archive4. [Release ledger](../desktop/releases/v0.14.0.md) owns fresh build/install-over/native validation, verified public artifacts and publication status; the exact-tag Mac gate remains in MAC-HANDOFF.md. This is release completion only; R6 and D10 remain unstarted.
 
 Created/reviewed: 2026-10-04. Status: D1–D8 implemented on Windows; current Mac 0.2.2 development build/native smoke partially verified; release DMG/manual Mac OS validation and the D9 real two-device gate remain pending in MAC-HANDOFF.md. D9 Windows implementation/validation complete; D10 deferred.
 
