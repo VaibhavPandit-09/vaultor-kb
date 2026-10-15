@@ -17,11 +17,12 @@ export function createThemeTransitionController(doc:Document=document){
    if('transitionProperty' in animation&&/^(color|background-color|border(-top|-right|-bottom|-left)?-color|outline-color|text-decoration-color|column-rule-color|box-shadow|text-shadow|fill|stroke)$/.test(String(animation.transitionProperty)))try{animation.finish();}catch{/* A canceled CSS transition needs no completion. */}
   }
  };
+ const clearVisual=()=>{delete root.dataset.themeReveal;root.style.removeProperty('--theme-reveal-x');root.style.removeProperty('--theme-reveal-y');};
  const interrupt=()=>{
   const current=active;if(!current)return;
   current.commit();active=undefined;clearTimeout(current.timer);current.cleanup();current.animation?.cancel();
   try{current.transition?.skipTransition();}catch{/* The transition may already have finished. */}
-  delete root.dataset.themeReveal;
+  clearVisual();
  };
  function apply(theme:Theme,origin?:ThemeOrigin){
   if(last===theme&&(active||root.dataset.theme===theme))return;
@@ -32,7 +33,7 @@ export function createThemeTransitionController(doc:Document=document){
   const radius=Math.hypot(Math.max(x,window.innerWidth-x),Math.max(y,window.innerHeight-y));
   let committed=false;
   const current={theme,commit:()=>{commit(theme);committed=true;},cleanup:()=>{},timer:0,transition:undefined as ViewTransition|undefined,animation:undefined as Animation|undefined};
-  active=current;root.dataset.themeReveal='';
+  active=current;root.style.setProperty('--theme-reveal-x',`${x}px`);root.style.setProperty('--theme-reveal-y',`${y}px`);root.dataset.themeReveal='';
   const changed=new MutationObserver(()=>{if(active===current)interrupt();});
   changed.observe(root,{attributes:true,attributeFilter:['data-animation']});
   const events=['pointerdown','keydown','scroll','visibilitychange','fullscreenchange'] as const;
@@ -45,15 +46,15 @@ export function createThemeTransitionController(doc:Document=document){
    void current.transition.ready.then(()=>{
     if(active!==current)return;
     clearTimeout(current.timer);
-    // A feathered wave keeps the transformation readable without tinting actual media.
+    // CSS owns the mask so it recomputes as the typed radius animates. A mask in
+    // the keyframes resolves var() once and stays transparent until the final snap.
     const feather=48;
-    const mask=`radial-gradient(circle at ${x}px ${y}px, #000 max(0px, calc(var(--theme-reveal-radius) - ${feather}px)), transparent var(--theme-reveal-radius))`;
     current.animation=root.animate([
-     {'--theme-reveal-radius':'0px',maskImage:mask},
-     {'--theme-reveal-radius':`${radius+feather}px`,maskImage:mask},
+     {'--theme-reveal-radius':'0px'},
+     {'--theme-reveal-radius':`${radius+feather}px`},
     ],{duration:motionProfile().theme,easing:'cubic-bezier(.25,.1,.25,1)',fill:'both',pseudoElement:'::view-transition-new(root)'});
    }).catch(()=>{if(active===current)interrupt();});
-   void current.transition.finished.catch(()=>{}).finally(()=>{if(active===current){if(!committed)current.commit();active=undefined;clearTimeout(current.timer);current.cleanup();delete root.dataset.themeReveal;}});
+   void current.transition.finished.catch(()=>{}).finally(()=>{if(active===current){if(!committed)current.commit();active=undefined;clearTimeout(current.timer);current.cleanup();clearVisual();}});
   }catch{interrupt();}
  }
  return {apply,dispose:interrupt};

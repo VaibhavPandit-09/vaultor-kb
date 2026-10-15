@@ -6,7 +6,7 @@ function setup(){document.documentElement.dataset.animation='smooth';vi.stubGlob
 const flush=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
 afterEach(()=>{dispose?.();dispose=undefined;running.splice(0).forEach(a=>a.finish());document.body.innerHTML='';delete document.documentElement.dataset.animation;delete (Element.prototype as unknown as {animate?:unknown}).animate;vi.unstubAllGlobals();});
 it('uses bounded expressive durations, quick Snappy and no motion under reduced motion',()=>{
- expect(motionProfile('smooth',false)).toEqual({panel:280,menu:220,page:200,exit:180,stagger:24,lift:2,theme:620});expect(motionProfile('snappy',false).panel).toBeLessThan(100);expect(Object.values(motionProfile('smooth',true)).every(value=>value===0)).toBe(true);
+ expect(motionProfile('smooth',false)).toEqual({panel:280,menu:220,page:200,exit:180,stagger:24,lift:2,theme:1100});expect(motionProfile('snappy',false).panel).toBeLessThan(100);expect(Object.values(motionProfile('smooth',true)).every(value=>value===0)).toBe(true);
 });
 it('keeps anchored portal transforms and does not scale page destinations',()=>{
  setup();const element=document.createElement('div');element.style.transform='translateY(-100%)';document.body.append(element);enterSurface(element,'menu');const frames=vi.mocked(element.animate).mock.calls[0][0] as Keyframe[];expect(frames[0].transform).toContain('translateY(-100%)');enterSurface(element,'page');expect(vi.mocked(element.animate).mock.calls[1][0]).toEqual([{opacity:.4},{opacity:1}]);
