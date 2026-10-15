@@ -1,5 +1,4 @@
 import { motionProfile } from './motion';
-
 export type ThemeOrigin={x:number;y:number};
 type Theme='light'|'dark'|'oled';
 export function themeOriginAt(element?:HTMLElement|null):ThemeOrigin|undefined {
@@ -46,7 +45,13 @@ export function createThemeTransitionController(doc:Document=document){
    void current.transition.ready.then(()=>{
     if(active!==current)return;
     clearTimeout(current.timer);
-    current.animation=root.animate([{clipPath:`circle(0px at ${x}px ${y}px)`},{clipPath:`circle(${radius}px at ${x}px ${y}px)`}],{duration:motionProfile().theme,easing:'cubic-bezier(.2,.7,.2,1)',fill:'both',pseudoElement:'::view-transition-new(root)'});
+    // A feathered wave keeps the transformation readable without tinting actual media.
+    const feather=48;
+    const mask=`radial-gradient(circle at ${x}px ${y}px, #000 max(0px, calc(var(--theme-reveal-radius) - ${feather}px)), transparent var(--theme-reveal-radius))`;
+    current.animation=root.animate([
+     {'--theme-reveal-radius':'0px',maskImage:mask},
+     {'--theme-reveal-radius':`${radius+feather}px`,maskImage:mask},
+    ],{duration:motionProfile().theme,easing:'cubic-bezier(.25,.1,.25,1)',fill:'both',pseudoElement:'::view-transition-new(root)'});
    }).catch(()=>{if(active===current)interrupt();});
    void current.transition.finished.catch(()=>{}).finally(()=>{if(active===current){if(!committed)current.commit();active=undefined;clearTimeout(current.timer);current.cleanup();delete root.dataset.themeReveal;}});
   }catch{interrupt();}

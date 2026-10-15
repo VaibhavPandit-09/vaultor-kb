@@ -987,3 +987,10 @@ button:focus-visible, [role='option']:focus-visible { outline:2px solid var(--ac
 :root[data-theme-reveal]::view-transition-old(window-controls) { display:none; }
 :root[data-theme-reveal]::view-transition-new(window-controls) { animation:none; }
 @media(prefers-reduced-motion:reduce) { :root[data-theme-reveal]::view-transition { display:none; } }
+
+/* Typed radius lets the snapshot mask expand continuously with a soft leading edge. */
+@property --theme-reveal-radius {
+  syntax:"<length>";
+  inherits:false;
+  initial-value:0px;
+}

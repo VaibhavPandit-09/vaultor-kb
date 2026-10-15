@@ -234,6 +234,12 @@ Validation and tuning:
 
 Presentation architecture only: no API/backend/schema/dependency/device persistence/archive/session-format change. Review build, no versions/installers/tag/publication. Stop at the theme-motion review gate.
 
+### Theme reveal revision and verification correction
+
+The user found the initial effect too fast/simple. Candidate revision uses620ms Smooth/280ms Snappy, a more even easing and48px feathered radial mask through a typed CSS custom radius. No extra content scale, hue effect or media filtering.19 focused controller/motion checks, scoped lint and fresh desktop TypeScript/Vite/staging passed with existing warnings.
+
+Saved native recording: `/Users/vaibhavpandit/Desktop/Screen Recording 2026-10-15 at 6.30.52 PM.mov`,200.277s,3932×2026,60fps. Consecutive20fps samples around129.6s showed whole-palette jumps instead of the intended sweep. This recording is diagnostic evidence, not successful revised motion. Investigation established that the keyboard Reload used earlier did not load fresh assets. Actual native menu Reload loaded temporary diagnostics and confirmed `transition.ready`; diagnostics then removed, fresh clean build loaded through native Reload. Earlier Phase5B native endpoint/PDF checks remain valid observations of existing behavior, but are not certification of the new controller. A short clean-build recording has been requested and remains pending. Do not infer mask quality or capture-time native media behavior from tests/stills.
+
 ## What remains after Phase5B
 
 1. **Finish this key-animation review:** capture/review both origins, rapid interruption, native PDF/chrome during the sweep and Smooth/Snappy feel; tune from actual Electron motion. This phase is not temporally accepted yet.
