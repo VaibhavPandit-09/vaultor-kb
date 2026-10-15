@@ -61,4 +61,4 @@ Implementation candidate adds presentation-only primitives and device-local hapt
 
 ## A1 ledger — 2026-10-16
 
-User authorized the next slice. Shell/source navigation and resource resume presentation are authoritative in [SHELL-NAVIGATION.md](../android/SHELL-NAVIGATION.md). Alpha.13/code17 is the shell/source review candidate; stop at A1 review before A2. Review capture/outbox/sync remains unimplemented. Actual validation belongs in the alpha.13 ledger.
+User authorized the next slice. Shell/source navigation and resource resume presentation are authoritative in [SHELL-NAVIGATION.md](../android/SHELL-NAVIGATION.md). Published alpha.13/code17 from immutable25dad991 is the shell/source review candidate; stop at A1 review before A2. Review capture/outbox/sync remains unimplemented. Actual validation belongs in the alpha.13 ledger.

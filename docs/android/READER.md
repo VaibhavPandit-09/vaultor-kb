@@ -36,3 +36,7 @@ Back dismisses previews/pickers/find/drawer before history/origin. Files never a
 Full-screen image/PDF behavior, limits, scoped positions and original-file output are authoritative in [MEDIA.md](MEDIA.md). Unknown content is retained, never stripped/autosaved. Larger stress/OOM verification remainsR10; physical Samsung/OneUI/OLED/TalkBack acceptance is user-owned.
 
 R4 mounts the initial content only after restoration finishes, using distinct startup/connection/recovery/workspace keys; mounted browsing/reading remains stable afterward. Library restoration waits for native content/viewport measurements, bounds offsets and ignores premature events. Query/scope/filters and cached rows survive refreshes. ReaderListRestoreTest covers oversized legacy positions fromR1. R2 native acceptance and actual release bytes are recorded in [alpha.10 notes](releases/0.1.0-alpha.10.md).
+
+## A1 shell/source review — 2026-10-16
+
+[Shell/source navigation](SHELL-NAVIGATION.md) owns alpha.13/code17 orientation, source overlays, identified Home resume and utility surfaces. Native WebView/document identity was checked through source inspection, outline/Back, Home/resume and rotation in connected/downloaded runtime checks; [alpha.13 ledger](releases/0.1.0-alpha.13.md) owns exact candidate/final evidence. Continuous reader-edge/chrome/media/predictive motion remains A2, physical acceptance user-owned. Original immutable rendering and source admission contracts above remain authoritative.

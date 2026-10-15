@@ -880,4 +880,8 @@ Documentation-only handoff compares ai/codex-current with fetched master cf953fe
 
 ### 2026-10-16 — R6 A1 shell/source review candidate
 
-Shell/source overlays retain the reader; Home resource resume, single-list secondary orientation, persistent drawer disclosure and shared utility surface refine hierarchy without a host/domain/desktop change. TypeScript,11 focused Jest cases and scoped lint0errors/18warnings passed. API36 candidate and API37 final native reader/source/download/Back/rotation gates passed; exact-source publication and final API36 orientation-label install verification follow in the alpha.13 ledger. Physical acceptance remains user-owned.
+Shell/source overlays retain the reader; Home resource resume, single-list secondary orientation, persistent drawer disclosure and shared utility surface refine hierarchy without a host/domain/desktop change. TypeScript,11 focused Jest cases and scoped lint0errors/18warnings passed. Final API36 five-case and API37 seven-execution focused native reader/source/download/Back/rotation/reduced-motion gates passed. Clean pushed25dad991 reproduced exact installed bytes on both generations; immutable android/v0.1.0-alpha.13 is published, staged assets and anonymous APK download verified. The alpha.13 ledger owns exact evidence. Physical acceptance remains user-owned.
+
+### 2026-10-16 — A1 publication record
+
+Documentation-only publication follow-up records Android alpha.13/code17 from immutable25dad991, exact-source rebuild/installed hashes, API36/API37 gates and public asset verification. No architectural effect or product-code change in this follow-up. Physical haptic/motion/accessibility acceptance remains user-owned; stop at A1 before A2.
