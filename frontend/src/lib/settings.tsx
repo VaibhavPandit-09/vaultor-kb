@@ -1,9 +1,11 @@
+import {createThemeTransitionController,themeOriginAt,type ThemeOrigin} from './themeTransition';
 import { normalizeSidebarSections, type SidebarSections } from './sidebarPreferences';
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -69,14 +71,14 @@ type SettingsContextValue = {
   shortcutPlatformLabel: string;
   resolvedShortcuts: ShortcutBindingMap;
   updateWorkspaceSetting: <K extends keyof WorkspaceSettings>(key: K, value: WorkspaceSettings[K]) => void;
-  updateLocalSetting: <K extends keyof LocalSettings>(key: K, value: LocalSettings[K]) => void;
+  updateLocalSetting: <K extends keyof LocalSettings>(key: K, value: LocalSettings[K],origin?:ThemeOrigin) => void;
   setCustomShortcut: (action: ShortcutAction, shortcut: string) => string | null;
   resetShortcut: (action: ShortcutAction) => void;
   validateShortcut: (action: ShortcutAction, shortcut: string) => string | null;
   resetWorkspaceSettings: () => void;
   resetLocalSettings: () => void;
   resetAllSettings: () => void;
-  toggleTheme: () => void;
+  toggleTheme: (event?:{currentTarget?:EventTarget|null}) => void;
 };
 
 const DEVICE_ID_STORAGE_KEY = 'vaultor_device_id';
@@ -116,6 +118,9 @@ const accentMap: Record<LocalSettings['accentColor'], string> = {
 const SettingsContext = createContext<SettingsContextValue | undefined>(undefined);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
+  const [themeTransition]=useState(()=>createThemeTransitionController());
+  const themeOrigin=useRef<ThemeOrigin|undefined>(undefined);
+  useEffect(()=>()=>themeTransition.dispose(),[themeTransition]);
   const [osDark, setOsDark] = useState(() => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true);
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-color-scheme: dark)');
@@ -159,23 +164,23 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     documentRef.current = settingsDocument;
   }, [settingsDocument]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = window.document.documentElement;
-    root.dataset.theme = resolvedTheme;
-    root.style.colorScheme = resolvedTheme === 'light' ? 'light' : 'dark';
     root.dataset.density = currentLocalSettings.density;
     root.dataset.animation = currentLocalSettings.animationMode;
-    root.classList.toggle('dark', resolvedTheme !== 'light');
-    root.classList.toggle('light', resolvedTheme === 'light');
     root.style.setProperty('--accent', accentMap[currentLocalSettings.accentColor]);
     root.style.setProperty('--primary', accentMap[currentLocalSettings.accentColor]);
     root.style.setProperty('--ui-opacity', String(currentLocalSettings.uiTransparency));
+    const origin=themeOrigin.current;themeOrigin.current=undefined;
+    themeTransition.apply(resolvedTheme,origin);
   }, [
     currentLocalSettings.accentColor,
     currentLocalSettings.animationMode,
     currentLocalSettings.density,
     currentLocalSettings.uiTransparency,
+    currentLocalSettings.theme,
     resolvedTheme,
+    themeTransition,
   ]);
 
   const persistSettingsDocument = useCallback(async (nextDocument: SettingsDocument) => {
@@ -292,7 +297,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }));
   }, [updateDocument]);
 
-  const updateLocalSetting = useCallback(<K extends keyof LocalSettings>(key: K, value: LocalSettings[K]) => {
+  const updateLocalSetting = useCallback(<K extends keyof LocalSettings>(key: K, value: LocalSettings[K],origin?:ThemeOrigin) => {
+    if(key==='theme')themeOrigin.current=origin;
     updateDocument((current) => ({
       ...current,
       local: {
@@ -380,8 +386,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }));
   }, [deviceId, updateDocument]);
 
-  const toggleTheme = useCallback(() => {
-    updateLocalSetting('theme', currentLocalSettings.theme === 'os' ? 'light' : currentLocalSettings.theme === 'light' ? 'dark' : currentLocalSettings.theme === 'dark' ? 'oled' : 'os');
+  const toggleTheme = useCallback((event?:{currentTarget?:EventTarget|null}) => {
+    updateLocalSetting('theme', currentLocalSettings.theme === 'os' ? 'light' : currentLocalSettings.theme === 'light' ? 'dark' : currentLocalSettings.theme === 'dark' ? 'oled' : 'os',themeOriginAt(event?.currentTarget instanceof HTMLElement?event.currentTarget:undefined));
   }, [currentLocalSettings.theme, updateLocalSetting]);
 
   const retrySave = useCallback(() => { void persistSettingsDocument(documentRef.current); }, [persistSettingsDocument]);

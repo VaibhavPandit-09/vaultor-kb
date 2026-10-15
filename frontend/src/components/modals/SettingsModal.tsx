@@ -1,3 +1,4 @@
+import {themeOriginAt} from '../../lib/themeTransition';
 import { MotionComparison, MotionIndicator, CategoryMotion } from '../MotionFeedback';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { Check, Command, Layers3, MoreHorizontal, Palette, PanelsTopLeft, Search, X } from 'lucide-react';
@@ -93,7 +94,7 @@ function SettingsWindow({ onClose }: { onClose: () => void }) {
   };
   const groups: Array<{ id: Category; label: string; scope: string; settings: Setting[] }> = [
     { id: 'appearance', label: 'Appearance', scope: 'This device', settings: [
-      { id: 'theme', label: 'Theme', description: 'OS follows your system appearance.', keywords: 'light dark oled black system', control: <Choices label="Theme" value={settings.local.theme} options={['os', 'light', 'dark', 'oled'].map(value => ({ value, label: value === 'os' ? 'OS' : value === 'oled' ? 'OLED' : capitalize(value) }))} onChange={value => updateLocalSetting('theme', value as typeof settings.local.theme)} /> },
+      { id: 'theme', label: 'Theme', description: 'OS follows your system appearance.', keywords: 'light dark oled black system', control: <Choices label="Theme" value={settings.local.theme} options={['os', 'light', 'dark', 'oled'].map(value => ({ value, label: value === 'os' ? 'OS' : value === 'oled' ? 'OLED' : capitalize(value) }))} onChange={(value,trigger) => updateLocalSetting('theme', value as typeof settings.local.theme,themeOriginAt(trigger))} /> },
       { id: 'accent', label: 'Accent color', description: 'Your highlight for actions, links and focus.', keywords: 'blue purple green orange red teal pink cyan color colour', control: <div role="radiogroup" aria-label="Accent color" className="settings-swatches" onKeyDown={event => {
         if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
         event.preventDefault(); const names = Object.keys(accents) as Array<keyof typeof accents>; const current = names.indexOf(settings.local.accentColor);
@@ -166,13 +167,13 @@ function focusable(root: HTMLElement | null) {
     return true;
   });
 }
-function Choices({ label, value, options, onChange }: { label: string; value: string; options: Array<{ value: string; label: string }>; onChange: (value: string) => void }) {
+function Choices({ label, value, options, onChange }: { label: string; value: string; options: Array<{ value: string; label: string }>; onChange: (value: string,trigger?:HTMLElement) => void }) {
   return <div role="radiogroup" aria-label={label} className="settings-choices" onKeyDown={event => {
     if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault(); const current = options.findIndex(option => option.value === value);
     const index = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : (current + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : -1) + options.length) % options.length;
-    onChange(options[index].value); event.currentTarget.querySelectorAll<HTMLButtonElement>('button')[index]?.focus();
-  }}><MotionIndicator axis="horizontal" value={value}/>{options.map(option => <button type="button" role="radio" aria-checked={value === option.value} tabIndex={value === option.value ? 0 : -1} key={option.value} onClick={() => onChange(option.value)}>{option.label}</button>)}</div>;
+    const trigger=event.currentTarget.querySelectorAll<HTMLButtonElement>('button')[index];onChange(options[index].value,trigger);trigger?.focus();
+  }}><MotionIndicator axis="horizontal" value={value}/>{options.map(option => <button type="button" role="radio" aria-checked={value === option.value} tabIndex={value === option.value ? 0 : -1} key={option.value} onClick={event => onChange(option.value,event.currentTarget)}>{option.label}</button>)}</div>;
 }
 function NumberRange({ label, value, min, max, step, unit, onChange }: { label: string; value: number; min: number; max: number; step: number; unit: string; onChange: (value: number) => void }) {
   const errorId=useId();

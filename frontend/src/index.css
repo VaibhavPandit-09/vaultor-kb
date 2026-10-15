@@ -972,3 +972,18 @@ button:focus-visible, [role='option']:focus-visible { outline:2px solid var(--ac
 .app-modal-footer > p { min-width:0; flex:1; font-size:12px; }
 .app-modal-window :is(button,input,select,textarea,summary,a):focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
 .app-modal-window { -webkit-app-region:no-drag; }
+
+/* One coordinated theme reveal; native controls remain an immediate independent group. */
+:root[data-theme-reveal]::view-transition { pointer-events:none; }
+:root[data-theme-reveal]::view-transition-group(root),
+:root[data-theme-reveal]::view-transition-group(window-controls) { animation:none; }
+:root[data-theme-reveal]::view-transition-image-pair(root) { isolation:auto; }
+:root[data-theme-reveal]::view-transition-old(root),
+:root[data-theme-reveal]::view-transition-new(root) { animation:none; mix-blend-mode:normal; }
+:root[data-theme-reveal]::view-transition-old(root) { z-index:1; }
+:root[data-theme-reveal]::view-transition-new(root) { z-index:2; }
+.desktop-window-controls { view-transition-name:window-controls; }
+:root[data-theme-reveal]::view-transition-group(window-controls) { z-index:3; }
+:root[data-theme-reveal]::view-transition-old(window-controls) { display:none; }
+:root[data-theme-reveal]::view-transition-new(window-controls) { animation:none; }
+@media(prefers-reduced-motion:reduce) { :root[data-theme-reveal]::view-transition { display:none; } }
