@@ -56,3 +56,25 @@ it('keeps query when choosing content/scope, isolates scoped empty results, and 
  fireEvent.keyDown(screen.getByLabelText('Include saved content'),{key:'Escape'});expect(close).not.toHaveBeenCalled();expect(screen.getByText('In Topic')).toBeTruthy();fireEvent.change(input,{target:{value:''}});await screen.findByText('Scoped note');expect(screen.queryByText('Meeting')).toBeNull();
  rerender(<EscapeManagerProvider><CommandPaletteModal open={false} onClose={close} context={context}/></EscapeManagerProvider>);rerender(<EscapeManagerProvider><CommandPaletteModal open onClose={close} context={context}/></EscapeManagerProvider>);await screen.findByText('Meeting');expect(screen.getByText('Titles only')).toBeTruthy();expect(screen.getByText('Entire workspace')).toBeTruthy();
 });
+
+it('retains the same query anchor and selection across nested stages while bounding errors to the body',async()=>{
+ vi.mocked(context.renameResource).mockRejectedValue(new Error('offline'));
+ mount();await screen.findByText('Meeting');const input=screen.getByRole('combobox') as HTMLInputElement;
+ fireEvent.change(input,{target:{value:'Meet'}});await waitFor(()=>expect(screen.getAllByRole('option')).toHaveLength(1));
+ fireEvent.click(screen.getByText('Actions for Meeting'));await screen.findByText('Rename');expect(screen.getByRole('combobox')).toBe(input);
+ fireEvent.click(screen.getByText('Rename'));await screen.findByText('Rename note');expect(screen.getByRole('combobox')).toBe(input);
+ fireEvent.change(input,{target:{value:'Retained title'}});input.setSelectionRange(2,7);fireEvent.keyDown(input,{key:'Enter'});await screen.findByRole('alert');
+ expect(input.value).toBe('Retained title');expect(input.selectionStart).toBe(2);expect(input.selectionEnd).toBe(7);expect(screen.getByRole('alert').closest('.palette-stage')).toBeTruthy();
+ fireEvent.keyDown(input,{key:'Escape'});await screen.findByText('Actions · Meeting');fireEvent.keyDown(input,{key:'Escape'});await screen.findByText('Search workspace');expect(input.value).toBe('Meet');await waitFor(()=>expect(screen.getByRole('option',{selected:true}).textContent).toContain('Meeting'));
+});
+
+it('wraps only the native Tab boundaries and leaves input-to-Actions navigation untouched',async()=>{
+ mount();await screen.findByText('Meeting');
+ const original=HTMLElement.prototype.getClientRects;HTMLElement.prototype.getClientRects=function(){return [{width:10,height:10}] as unknown as DOMRectList;};
+ try {
+  const commands=screen.getByRole('button',{name:'Commands'}),options=screen.getByRole('button',{name:'Search options'}),input=screen.getByRole('combobox');
+  commands.focus();expect(fireEvent.keyDown(commands,{key:'Tab',shiftKey:true})).toBe(false);expect(document.activeElement).toBe(options);
+  expect(fireEvent.keyDown(options,{key:'Tab'})).toBe(false);expect(document.activeElement).toBe(commands);
+  input.focus();expect(fireEvent.keyDown(input,{key:'Tab'})).toBe(true);
+ } finally {HTMLElement.prototype.getClientRects=original;}
+});

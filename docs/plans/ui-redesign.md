@@ -1,6 +1,6 @@
 # Desktop UI redesign: audit and proposed interaction plan
 
-Reviewed 2026-10-15. **Pane-depth revision, OLED glass and Phase4A previews implemented as review candidates.** The user rejected focus-width emphasis and requested bigger/brighter selected panes, smaller/dimmer/translucent peers, OLED slider support and the next phase. This supersedes the old unscaled focus proposal and authorizes Phase4A. One combined key recording was saved and reviewed; personal motion acceptance remains pending. Stop before Phase4B command palette.
+Reviewed 2026-10-15. **Browse-title accent and Phase4B command palette implemented as review candidates.** The user requested the Note-style accent blend on all shrinking browse titles and immediate next-phase work. This supersedes the preview checkpoint and authorizes Phase4B. One combined key recording was saved and inspected; personal motion acceptance remains pending. Stop before Phase5A settings/dialog polish.
 Design authority: [UI philosophy](../design/UI_PHILOSOPHY.md). Current behavior remains documented in [CODEBASE](../CODEBASE.md). This document records source findings and proposed transformations, not shipped behavior.
 
 ## Branch and evidence
@@ -179,6 +179,33 @@ Validation:
 
 Review candidate only; no backend/API/schema/dependency/archive/session-format changes, version bump/installers/tag/publication. Pane presentation deliberately changes scale per the user's instruction; preview pixels remain unscaled. Stop before Phase4B command palette.
 
+## Browse accent and Phase4B — 2026-10-15
+
+The user requested accent on the shrinking page identities shown in Collections, following Note behavior, and authorized the next phase. Interpreted consistently as the same mounted page title in Library, Collection detail, Collections, Recent and Pinned; search/control borders and ordinary dropdown menus do not become accent-filled surfaces.
+
+Audit/specification: native/source baseline showed the palette's12vh top margin, title/input/scope narration stack and results-only48vh cap without a total shell bound. Preserve one query anchor and captured target; allocate one body within actual viewport height. Empty search/results/Actions/nested inputs are stages of the same surface. Forward/back gets a small directional cue, body height reverses, query typing gets no stage entrance, and reduced motion is immediate. Scope, saved-only/coverage warnings, errors and actions stay accessible. Existing search/ranking/action/save/Escape semantics remain authoritative.
+
+Implementation:
+
+- Browse h1 color mixes its existing foreground into the live primary accent using the same `--library-progress` already driving geometry. Driver smoothing, available-overflow bounds, short-list endpoints, pointer/popup holds and reduced-motion behavior are unchanged. No new timer, duplicated title or React scroll state.
+- One palette shell has a bounded total height and stable46px header/48px query row; CommandStage measures intrinsic body content, caps allocation480px and flex-shrinks to available space. Scope/coverage/errors/results own one scrollbar. Footer stays reachable; DOM input→Actions order remains native. Pending search retains previous allocation instead of shrinking to a loading row between keystrokes.
+- Actions/nested steps stay inside the same mounted body/input ancestor chain. Shared utility timing supplies an8px forward/back cue; query/result updates do not replay it. Obsolete stage cues cancel on reversal/unmount and shared preference/reduced changes. Root title/scope information compacts into one row; unrelated search-mode narration is absent in Actions/Commands. Header identity remains accessible with full title tooltip. Inline native Tab-boundary wrapping excludes separate portal ownership. No command/ranking/network/save/navigation rewrite.
+
+Validation and evidence:
+
+-19 distinct focused tests pass:9 palette tests including existing deduplication/explicit targets/scope/IME/failure/retry/Tab/Escape and new stable input/failed selection/boundary checks;1 stage allocation/reversal/cancellation check;9 shared-motion checks including no command overshoot/reduced cancellation. The new restoration test initially asserted during the existing150ms debounce; waiting for restored results corrected the harness, with no runtime debounce change. Scoped lint and desktop TypeScript/Vite/staging passed; existing Browserslist/chunk/shared-API import warnings remain. Diff checks passed. No full suite/API smoke/Docker.
+- Native Electron in the isolated disposable profile: baseline palette observed before loading the build; OLED large1920×967, all five browse-title compression/reversal paths, small/large scroll increments, long-title Actions→Rename→Back without committing a rename, repeated stage reversal, Mod+K/arrows/Tab/Shift+Tab/Enter/Escape, nested search-options dismissal, short961×526 Light/Dark/OLED shell bounds, saved-file coverage with retained query, no matches and reduced-motion palette/browse states checked. Inline query→Actions navigation passed. Basic Tab wrapping has focused test coverage; exhaustive native portal cycling/assistive technology, actual failed action injection, full size/accent/opacity combinations,600px minimum and prolonged performance/physical trackpad remain unclaimed.
+- Kept the existing shared220ms utility timing after native review; compacting scope rows and retaining pending-search allocation are the structural tuning in this slice. No further timing changes after recording review. Restored OLED (the actual opening theme this turn), large window and system Reduce motion off; closed palette, cleared the temporary Collections query, returned Library to the top. No workspace content mutation.
+- Evidence directory: `/Users/vaibhavpandit/.codex/visualizations/2026/10/15/vaultor-command/`. Baseline palette; compressed browse identities; long-title Actions/Rename; short Light/Dark/OLED, coverage and reduced-motion stills. User-saved selected-window capture `~/Desktop/Screen Recording 2026-10-15 at 3.40.54 PM.mov` (actual narrow no-break space before PM),153.657s/60fps/4064×2158. `palette-accent-motion.mp4` is a24s normal-speed60fps excerpt (source20–36s palette,54–62s title reversal). Overview and consecutive transition frames inspected; these support temporal review without claiming continuous agent playback or personal physical feel acceptance.
+
+Presentation-only; no API/backend/schema/dependency/save/session/archive contract change. Review build, no version bump/installers/tag/publication. Stop before Phase5A.
+
+## What remains after Phase4B
+
+1. **Phase5A — Settings, dialogs and utility polish:** density/alignment, bounded bodies, pending/error/cancel visibility, focus containment/restoration and nested confirmations. Preserve import/export/recovery contracts; test disposable data.
+2. **Phase5B — Global theme transition:** coordinated reveal from the actual theme control, immediate correct theme state, interruption/reduced-motion fallback, stable native chrome and PDF/media. Explicit theme-motion review remains required.
+3. **Final acceptance/validation and delivery:** personal motion judgment; outstanding native cases recorded per slice (including600px minimum, three-pane depth, portals/IME/save failures, full theme/accent/size matrix and sustained performance); supported Windows/Mac build/install checks, original signing/version/package/publication gates under the release process. Current branch candidates are not installed releases and do not integrate other active AI branches.
+
 ## Audit of current surfaces
 
 Paths below are relative to the repository. Dimensions are declared CSS values, not measured desktop pixels; density and wrapping can change the result.
@@ -356,4 +383,4 @@ Audit documentation requires no installers. Any later shipped desktop behavior f
 
 ## Review decision
 
-Library/Collection review was followed by authorization for the remaining relevant pages. Phase1B browse transformations are implemented with evidence and limits above. Stop at the planned checkpoint before Phase2A Note header. Panes, sidebar, previews, settings and theme redesign remain separate later gates.
+Successive user requests authorized browse, Note, pane, navigation and preview candidates, followed by the current browse-accent and Phase4B command-palette slice. Their implementation evidence and unverified cases are recorded above. Phase5A settings/dialog polish is next; Phase5B theme transition and final acceptance/platform release gates remain afterward. Stop at this command-palette review checkpoint before Phase5A.

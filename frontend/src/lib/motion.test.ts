@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach,expect,it,vi} from 'vitest';
-import {enterSurface,exitSurface,installMotion,motionProfile} from './motion';
+import {enterCommandStage,enterSurface,exitSurface,installMotion,motionProfile} from './motion';
 let dispose:(()=>void)|undefined;const running:Array<{cancel:ReturnType<typeof vi.fn>;finish:()=>void}>=[];
 function setup(){document.documentElement.dataset.animation='smooth';vi.stubGlobal('matchMedia',vi.fn(()=>({matches:false,addEventListener:vi.fn(),removeEventListener:vi.fn()})));Object.defineProperty(Element.prototype,'animate',{configurable:true,value:vi.fn(()=>{let finish!:()=>void;const finished=new Promise<void>(r=>finish=r);const cancel=vi.fn(finish);running.push({cancel,finish});return {finished,cancel};})});}
 const flush=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
@@ -30,4 +30,13 @@ it('defers hidden cached pages until visible without replacing their rows',async
 it('leaves geometry-owned preview media unscaled and never clones its iframe on close',()=>{
  setup();const preview=document.createElement('div');preview.dataset.motionSurface='geometry';preview.setAttribute('role','dialog');preview.innerHTML='<iframe title="PDF"></iframe>';
  enterSurface(preview);expect(preview.animate).not.toHaveBeenCalled();exitSurface(preview,{top:0,left:0,width:600,height:500} as DOMRect);expect(document.querySelector('[data-motion-ghost]')).toBeNull();
+});
+
+it('keeps command entrance free of overshoot and cancels stage motion when reduced motion changes',async()=>{
+ setup();dispose=installMotion();const shell=document.createElement('div');enterSurface(shell,'command');
+ expect(vi.mocked(shell.animate).mock.calls[0][0]).toHaveLength(2);
+ const content=document.createElement('div');enterCommandStage(content,-1);const stage=running.at(-1)!;
+ expect((vi.mocked(content.animate).mock.calls.at(-1)![0] as Keyframe[])[0].transform).toBe('translateX(-8px)');
+ document.documentElement.dataset.animation='snappy';await flush();expect(stage.cancel).toHaveBeenCalled();
+ vi.mocked(window.matchMedia).mockReturnValue({matches:true} as MediaQueryList);const calls=vi.mocked(content.animate).mock.calls.length;enterCommandStage(content,1);expect(content.animate).toHaveBeenCalledTimes(calls);
 });

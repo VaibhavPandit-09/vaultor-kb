@@ -1,5 +1,5 @@
 /** Shared, finite motion. Never owns focus, editor state or network work. */
-export type MotionKind = 'panel' | 'menu' | 'page' | 'category' | 'notice' | 'side' | 'geometry';
+export type MotionKind = 'panel' | 'menu' | 'page' | 'category' | 'notice' | 'side' | 'geometry' | 'command';
 export function motionProfile(mode = document.documentElement.dataset.animation, reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false) {
   return reduced ? { panel: 0, menu: 0, page: 0, exit: 0, stagger: 0, lift: 0 } : mode === 'smooth'
     ? { panel: 280, menu: 220, page: 200, exit: 180, stagger: 24, lift: 2 }
@@ -16,15 +16,21 @@ export function enterSurface(element: HTMLElement, type = kind(element), delay =
   if (type === 'geometry') return;
   if (element.closest('[hidden], [inert], [aria-hidden="true"]')) return;
   surfaceAnimations.get(element)?.cancel();
-  const profile = motionProfile(), duration = type === 'menu' ? profile.menu : type === 'page' || type === 'category' ? profile.page : profile.panel;
+  const profile = motionProfile(), duration = type === 'menu' || type === 'command' ? profile.menu : type === 'page' || type === 'category' ? profile.page : profile.panel;
   ghosts.get(owner(element))?.remove(); ghosts.delete(owner(element));
   if (!duration || !element.animate) return;
   const base = getComputedStyle(element).transform; const transform = (extra: string) => (base === 'none' ? '' : base + ' ') + extra;
-  const frames: Keyframe[] = type === 'page' || type === 'category' ? [{ opacity: .4 }, { opacity: 1 }] : [
+  const frames: Keyframe[] = type === 'command' ? [{opacity:0,transform:transform('translateY(6px) scale(.99)')},{opacity:1,transform:base}] : type === 'page' || type === 'category' ? [{ opacity: .4 }, { opacity: 1 }] : [
     { opacity: 0, transform: transform(type === 'side' ? 'translateX(16px)' : type === 'menu' ? 'translateY(6px) scale(.985)' : 'translateY(12px) scale(.985)') },
     { opacity: 1, transform: transform(type==='side'?'translateX(-1px)':'translateY(-1px) scale(1.002)'), offset: .72 }, { opacity: 1, transform: base },
   ];
   const animation=track(element.animate(frames, { duration, delay, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' }));surfaceAnimations.set(element,animation);return animation;
+}
+/** A deeper/back command stage moves within its existing query-anchored shell. */
+export function enterCommandStage(element: HTMLElement, direction: number) {
+  const duration=motionProfile().menu;
+  if(!duration||!element.animate)return;
+  return track(element.animate([{opacity:.65,transform:`translateX(${direction*8}px)`},{opacity:1,transform:'none'}],{duration,easing:'cubic-bezier(.2,.7,.2,1)'}));
 }
 /** Removed surfaces leave a short visual copy only. No handlers, focus or semantics survive. */
 export function exitSurface(element: HTMLElement, rect: DOMRect) {
