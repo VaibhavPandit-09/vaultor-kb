@@ -39,6 +39,21 @@ Use this sequence:
 4. implement the agreed behavior;
 5. review the result against the design contract.
 
+
+Android UI, motion, and haptics
+For any Android-facing UI, interaction, animation, reader, review/capture, offline-state, navigation, theme, or haptic work, you MUST read both:
+`docs/design/UI_PHILOSOPHY.md`
+`docs/design/ANDROID_UI_PHILOSOPHY.md`
+Treat `ANDROID_UI_PHILOSOPHY.md` as the Android-specific extension of the Vaultor design contract.
+Android must share Vaultor's interaction language without mechanically copying desktop layouts.
+Haptics are a first-class part of Android interaction design. Design motion and tactile feedback together. Use a centralized semantic haptics layer, prefer platform/system action-oriented feedback for standard interactions, use richer device-supported effects only where meaningful, provide capability fallbacks, respect system haptic preferences, and never scatter raw vibrator calls across screens.
+Do not equate "fully use haptics" with vibrating on every tap. Frequent interactions must remain subtle; meaningful state changes may use stronger or richer feedback; passive/background events should usually remain silent.
+Significant haptic interactions are not considered polished until verified on real Android hardware. Emulator-only validation cannot certify haptic quality.
+For Android UI work, static screenshots cannot certify motion quality. Inspect important transitions in motion on an Android runtime and verify meaningful touch/haptic interactions on real hardware.
+AI branch and integration workflow
+Read `docs/development/AI_DEVELOPMENT_WORKFLOW.md` before integrating divergent AI branches or starting a new major roadmap milestone.
+Do not let an old feature branch overwrite newer presentation architecture merely because Git can merge it automatically. Integration must preserve feature semantics while adapting presentation to the current product baseline.
+
 Motion is part of the interaction architecture. Do not merely add animation on top of otherwise static layout decisions. Where appropriate, use motion to communicate continuity, compression, expansion, navigation, focus, hierarchy, and cause-and-effect.
 
 When the same conceptual UI object changes state, prefer visually transforming that object rather than abruptly replacing it with an unrelated duplicate.
