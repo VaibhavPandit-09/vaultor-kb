@@ -7,7 +7,7 @@ import { RESOURCE_ACTION_EVENT,type ActionRequest,supportedResourceActions } fro
 import type { Resource } from '../types';
 import ResourceLifecycleDialog from './ResourceLifecycleDialog';
 vi.mock('../lib/api',()=>({default:{get:vi.fn(),put:vi.fn()}}));
-vi.mock('./modals/AppModal',()=>({default:({children,title}:{children:ReactNode;title:string})=><div role="dialog"><h1>{title}</h1>{children}</div>}));
+vi.mock('./modals/AppModal',()=>({default:({children,title,footer}:{children:ReactNode;title:string;footer?:ReactNode})=><div role="dialog"><h1>{title}</h1>{children}{footer}</div>}));
 const first={id:'one',title:'One',type:'note',revision:'revision-one'} as Resource;
 const second={id:'two',title:'Two',type:'file',revision:'revision-two'} as Resource;
 let failSave=false;

@@ -38,10 +38,13 @@ export default function FileImportModal({ session, onClose, onResource }: { sess
     } finally { running.current = false; setPending(false); }
   }
   const complete = rows.every(row => row.status === 'done');
-  return <AppModal open title={session.target ? 'Insert file into note' : 'Import files'} description={session.target ? 'Your command is replaced only after a successful import. Cancel keeps the note unchanged.' : 'Choose how to import each file. Existing notes are never overwritten.'} widthClassName="max-w-2xl" onClose={() => { if (!running.current) onClose(); }}>
+  return <AppModal open title={session.target ? 'Insert file into note' : 'Import files'} description={session.target ? 'Your command is replaced only after a successful import. Cancel keeps the note unchanged.' : 'Choose how to import each file. Existing notes are never overwritten.'} widthClassName="max-w-2xl" footer={<div className="flex justify-end gap-2">
+        <button disabled={pending} className="rounded-lg border border-border px-3 py-2" onClick={onClose}>{complete ? 'Done' : 'Cancel'}</button>
+        {!complete && <button disabled={pending} className="rounded-lg bg-primary px-3 py-2 text-white disabled:opacity-50" onClick={() => void apply()}>{pending ? 'Importing…' : rows.some(row => row.status === 'failed') ? 'Retry failed files' : 'Import'}</button>}
+      </div>} onClose={() => { if (!running.current) onClose(); }}>
     <div className="space-y-4">
-      {session.collection&&<p className="rounded-lg border border-border p-3 text-sm">Import destination: <strong>{session.collection.name}</strong>. Every successful import will join this collection.</p>}
-      {rows.map(row => <div key={row.id} className="rounded-xl border border-border p-3 space-y-2">
+      {session.collection&&<p className="text-sm">Import destination: <strong>{session.collection.name}</strong>. Every successful import will join this collection.</p>}
+      {rows.map(row => <div key={row.id} className="border-b border-border py-3 space-y-2 last:border-0 first:pt-0">
         <p className="break-all font-medium">{row.file.name}</p>
         {!session.target && <div className="flex flex-wrap items-center gap-2">
           <label className="text-sm">Import as <select aria-label={`Import ${row.file.name} as`} disabled={pending || row.started || row.status === 'done'} value={row.asNote ? 'note' : 'file'} onChange={e => update(row.id, { asNote: e.target.value === 'note', error: undefined, status: 'ready' })} className="rounded border border-border bg-background p-2">
@@ -55,10 +58,7 @@ export default function FileImportModal({ session, onClose, onResource }: { sess
         {row.error && <p role="alert" className="text-sm text-red-500">{row.error}</p>}
         <p role="status" className="text-xs text-[var(--text-secondary)]">{row.status === 'done' ? 'Imported' : row.status === 'pending' ? 'Importing…' : row.status === 'failed' ? 'Failed — retry below' : 'Ready for review'}</p>
       </div>)}
-      <div className="flex justify-end gap-2">
-        <button disabled={pending} className="rounded-lg border border-border px-3 py-2" onClick={onClose}>{complete ? 'Done' : 'Cancel'}</button>
-        {!complete && <button disabled={pending} className="rounded-lg bg-primary px-3 py-2 text-white disabled:opacity-50" onClick={() => void apply()}>{pending ? 'Importing…' : rows.some(row => row.status === 'failed') ? 'Retry failed files' : 'Import'}</button>}
-      </div>
+
     </div>
   </AppModal>;
 }

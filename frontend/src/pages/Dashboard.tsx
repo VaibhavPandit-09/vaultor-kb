@@ -99,7 +99,7 @@ import {
   toggleSelectedTag,
 } from '../state/store';
 import { useAppDispatch, useAppSelector } from '../state/hooks';
-import { ESCAPE_PRIORITIES, useEscapeLayer } from '../lib/escape/escape';
+import { ESCAPE_PRIORITIES, focusWithoutScroll, useEscapeLayer } from '../lib/escape/escape';
 import { useSettings } from '../lib/settings';
 import { generateTagColor, getTagColorInputValue, getTagPillStyle } from '../lib/tagColors';
 import { getGlassPanelStyle } from '../lib/transparency';
@@ -197,6 +197,8 @@ export default function Dashboard() {
 
   const [fileImport, setFileImport] = useState<ImportSession | null>(null);
   const importBusy = useRef(false);
+  const importReturnFocus=useRef<HTMLElement|null>(null),importButton=useRef<HTMLButtonElement>(null);
+  const restoreImportFocus=useCallback(()=>{requestAnimationFrame(()=>{const source=importReturnFocus.current;const destination=source?.isConnected&&source.getClientRects().length&&!source.closest('[hidden],[inert]')?source:importButton.current;if(destination?.getClientRects().length&&!destination.closest('[hidden],[inert]'))focusWithoutScroll(destination);});},[]);
   const latestNoteContentRef = useRef<string | null>(null);
   const commandPalettePreviewRef = useRef<PreviewSnapshot | null>(null);
   const titleEditDismissRef = useRef<'save' | 'cancel' | null>(null);
@@ -583,19 +585,19 @@ export default function Dashboard() {
     try {
       const accept = mode === 'markdown' ? '.md,.markdown,.txt' : mode === 'csv' ? '.csv,.tsv,.txt' : '';
       const files = await pickFiles(accept, !target);
-      if (!files.length) { target?.dispose(); importBusy.current = false; if (target && !target.editor.isDestroyed) target.editor.commands.focus(undefined, { scrollIntoView: false }); return; }
+      if (!files.length) { target?.dispose(); importBusy.current = false; if (target && !target.editor.isDestroyed) target.editor.commands.focus(undefined, { scrollIntoView: false }); else restoreImportFocus(); return; }
       setFileImport({...await prepareImport(files, target, mode),collection:!target&&libraryVisible&&collection?{id:collection.id,name:collection.name}:undefined});
-    } catch (error) { target?.dispose(); importBusy.current = false; reportError('file.import.prepare', error); }
+    } catch (error) { target?.dispose(); importBusy.current = false; if(target&&!target.editor.isDestroyed)target.editor.commands.focus(undefined,{scrollIntoView:false});else restoreImportFocus(); reportError('file.import.prepare', error); }
     finally { setUploadPending(false); }
-  }, [libraryVisible,collection]);
-  const requestFileUpload = useCallback(() => { flushSync(() => setCommandPaletteOpen(false)); void beginImport(); }, [beginImport]);
+  }, [libraryVisible,collection,restoreImportFocus]);
+  const requestFileUpload = useCallback((event?:{currentTarget?:EventTarget|null}) => { importReturnFocus.current=event?.currentTarget instanceof HTMLElement?event.currentTarget:document.activeElement instanceof HTMLElement?document.activeElement:null; flushSync(() => setCommandPaletteOpen(false)); void beginImport(); }, [beginImport]);
   const handleRequestMdUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'markdown'); }, [beginImport]);
   const handleRequestCsvUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'csv'); }, [beginImport]);
   const handleRequestLinkUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'link'); }, [beginImport]);
   useEffect(() => () => { fileImport?.target?.dispose(); }, [fileImport]);
   const closeFileImport = () => {
     const target = fileImport?.target; target?.dispose(); setFileImport(null); importBusy.current = false;
-    if (target && !target.editor.isDestroyed && target.editor.isInitialized) target.editor.commands.focus(undefined, { scrollIntoView: false });
+    if (target && !target.editor.isDestroyed && target.editor.isInitialized) target.editor.commands.focus(undefined, { scrollIntoView: false }); else restoreImportFocus();
   };
 
   useEffect(() => {
@@ -1175,6 +1177,7 @@ export default function Dashboard() {
           New note
         </button><LibraryPopover label="Create options" trigger={<ChevronDown size={14}/>} className="sidebar-create-menu">{close=><button className="library-button" onClick={()=>{close();collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>}</LibraryPopover>
         <button
+          ref={importButton}
           onClick={requestFileUpload}
           disabled={uploadPending}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-1.5 text-xs font-medium transition-all hover:bg-[var(--surface-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-slate-800"

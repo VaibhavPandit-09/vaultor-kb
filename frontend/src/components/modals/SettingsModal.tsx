@@ -175,6 +175,7 @@ function Choices({ label, value, options, onChange }: { label: string; value: st
   }}><MotionIndicator axis="horizontal" value={value}/>{options.map(option => <button type="button" role="radio" aria-checked={value === option.value} tabIndex={value === option.value ? 0 : -1} key={option.value} onClick={() => onChange(option.value)}>{option.label}</button>)}</div>;
 }
 function NumberRange({ label, value, min, max, step, unit, onChange }: { label: string; value: number; min: number; max: number; step: number; unit: string; onChange: (value: number) => void }) {
+  const errorId=useId();
   const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState('');
   const commit = () => {
@@ -182,5 +183,5 @@ function NumberRange({ label, value, min, max, step, unit, onChange }: { label: 
     if (draft === '' || !Number.isFinite(number) || number < min || number > max || Math.abs((number - min) / step - Math.round((number - min) / step)) > 0.001) { setError(`Use ${min}–${max} ${unit}, in steps of ${step}.`); return; }
     onChange(number); setDraft(null); setError('');
   };
-  return <div className="settings-range"><div><input type="range" aria-label={label} value={value} min={min} max={max} step={step} onChange={event => { setDraft(null); setError(''); onChange(Number(event.target.value)); }} /><label><input type="number" aria-label={`${label} value`} aria-invalid={Boolean(error)} value={draft ?? String(value)} min={min} max={max} step={step} onChange={event => { setDraft(event.target.value); setError(''); }} onBlur={() => { if (draft !== null) commit(); }} onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing && draft !== null) { event.preventDefault(); commit(); } }} /><span>{unit}</span></label></div>{error && <p role="alert" className="settings-error">{error}</p>}</div>;
+  return <div className="settings-range"><div><input type="range" aria-label={label} value={value} min={min} max={max} step={step} onChange={event => { setDraft(null); setError(''); onChange(Number(event.target.value)); }} /><label><input type="number" aria-label={`${label} value`} aria-invalid={Boolean(error)} aria-describedby={error?errorId:undefined} value={draft ?? String(value)} min={min} max={max} step={step} onChange={event => { setDraft(event.target.value); setError(''); }} onBlur={() => { if (draft !== null) commit(); }} onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing && draft !== null) { event.preventDefault(); commit(); } }} /><span>{unit}</span></label></div>{error && <p id={errorId} role="alert" className="settings-error">{error}</p>}</div>;
 }

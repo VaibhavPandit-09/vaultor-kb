@@ -36,7 +36,7 @@ Rebuild clears the index then rebuilds batches of 100 IDs, taking the shared wor
 
 Focused tests cover palette deduplication, normal Tab, explicit targeting, safe snippets, Escape, failed rename/retry; service tests cover ranking/prefix/literal input, attribute exclusion, filters, CRUD/import/rollback, rebuild with concurrent mutation and archive search after merge/replace/rollback. The isolated palette fixture was visually checked in light/dark themes, including highlighted snippets and selected-result contrast. It was removed afterward. This is not a full integrated Dashboard or assistive-technology pass. No routine live API smoke or Docker verification was performed.
 
-OCR, office-document extractors, fuzzy matching, synonym expansion and full scale integration remain future work. Rebuilding temporarily makes full-text search unavailable; ordinary browsing remains usable between gated batches. The palette has basic inline Tab-boundary wrapping; portaled pickers and shared dialogs still require a complete focus-containment review.
+OCR, office-document extractors, fuzzy matching, synonym expansion and full scale integration remain future work. Rebuilding temporarily makes full-text search unavailable; ordinary browsing remains usable between gated batches. The palette has basic inline Tab-boundary wrapping. AppModal pickers now share deepest-dialog and registered-portal focus containment/restoration; exhaustive assistive-technology/native portal cycling remains pending.
 
 ## Shared type presentation (0.3.1)
 

@@ -63,7 +63,7 @@ it('keeps numeric edits valid and changes workspace controls with workspace-only
   fireEvent.click(screen.getByRole('switch', { name: 'Focus mode' })); await saved();
   const number = screen.getByRole('spinbutton', { name: 'Autosave delay value' });
   fireEvent.change(number, { target: { value: '1100' } }); fireEvent.keyDown(number, { key: 'Enter' });
-  expect(screen.getByRole('alert').textContent).toContain('0–1000'); expect(doc.workspace?.autosaveDelay ?? 0).toBe(0);
+  expect(screen.getByRole('alert').textContent).toContain('0–1000'); expect(number.getAttribute('aria-describedby')).toBe(screen.getByRole('alert').id); expect(doc.workspace?.autosaveDelay ?? 0).toBe(0);
   fireEvent.change(number, { target: { value: '500' } }); fireEvent.keyDown(number, { key: 'Enter', isComposing: true });
   expect(doc.workspace?.autosaveDelay ?? 0).toBe(0);
   fireEvent.keyDown(number, { key: 'Enter' }); await saved();

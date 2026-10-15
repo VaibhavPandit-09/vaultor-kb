@@ -1,6 +1,7 @@
-import { useId, type ReactNode } from 'react';
+import { useId, useRef, type ReactNode } from 'react';
+import { DialogFocusContext, useDialogFocus } from '../../lib/dialogFocus';
 import { X } from 'lucide-react';
-import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
+import { ESCAPE_PRIORITIES, PopoverPriorityContext, useEscapeLayer } from '../../lib/escape/escape';
 import { useOptionalSettings } from '../../lib/settings';
 import { getGlassPanelStyle, getOverlayStyle } from '../../lib/transparency';
 
@@ -18,8 +19,9 @@ interface AppModalProps {
   restoreFocusOnEscape?: boolean;
 }
 
-export default function AppModal({
-  open,
+export default function AppModal(props:AppModalProps) { return props.open ? <ModalWindow {...props}/> : null; }
+
+function ModalWindow({
   title,
   description,
   onClose,
@@ -29,39 +31,40 @@ export default function AppModal({
   escapeLayer = 'modal',
   restoreFocusOnEscape = true,
 }: AppModalProps) {
-  const modalId = useId();
+  const modalId = useId(),root=useRef<HTMLDivElement>(null);
+  const {scope,onKeyDown}=useDialogFocus(root,restoreFocusOnEscape);
+  const priority=(escapeLayer==='commandPalette'?ESCAPE_PRIORITIES.commandPalette:ESCAPE_PRIORITIES.modal)+scope.depth*10;
   const context = useOptionalSettings();
   const transparency = context?.settings.local.uiTransparency ?? 1;
 
   useEscapeLayer({
     id: `app-modal-${modalId}`,
-    active: open,
-    priority: escapeLayer === 'commandPalette' ? ESCAPE_PRIORITIES.commandPalette : ESCAPE_PRIORITIES.modal,
+    active: true,
+    priority,
     close: onClose,
-    restoreFocusOnEscape,
+    restoreFocusOnEscape:false,
   });
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={getOverlayStyle(transparency, 0.38)} onClick={onClose}>
+    <div className="app-modal-overlay" style={{...getOverlayStyle(transparency, 0.38),zIndex:90+scope.depth*10}} onClick={onClose}>
       <div
-        data-motion-surface="panel" data-motion-key={'dialog:'+title} role="dialog" aria-modal="true" aria-labelledby={modalId}
-        className={`max-h-[90vh] overflow-y-auto w-full ${widthClassName} rounded-[28px] border border-[color:var(--border-strong)] bg-[var(--surface-1)]/80 shadow-[0_24px_60px_rgba(15,23,42,0.18)]`}
+        ref={root} tabIndex={-1} onKeyDown={onKeyDown} data-motion-surface="command" data-motion-key={'dialog:'+title} role="dialog" aria-modal="true" aria-labelledby={modalId} aria-describedby={description?modalId+'-description':undefined}
+        className={`app-modal-window w-full ${widthClassName}`}
         style={getGlassPanelStyle(transparency, 16)}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border-subtle)] px-6 py-5">
-          <div>
-            <h3 id={modalId} className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">{title}</h3>
-            {description && <p className="mt-1 text-sm text-[var(--text-secondary)]">{description}</p>}
+        <header className="app-modal-header">
+          <div className="min-w-0">
+            <h3 id={modalId} title={title} className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">{title}</h3>
           </div>
-          <button onClick={onClose} className="rounded-xl p-1.5 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--text-primary)]" aria-label="Close modal">
+          <button type="button" onClick={onClose} className="rounded-xl p-1.5 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--text-primary)]" aria-label="Close modal">
             <X size={18} />
           </button>
-        </div>
-        <div className="px-6 py-5">{children}</div>
-        {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-[color:var(--border-subtle)] px-6 py-5">{footer}</div>}
+        </header>
+        <DialogFocusContext value={scope}><PopoverPriorityContext value={priority+1}>
+        <div className="app-modal-body">{description&&<p id={modalId+'-description'} className="app-modal-description">{description}</p>}{children}</div>
+        {footer && <footer className="app-modal-footer">{footer}</footer>}
+        </PopoverPriorityContext></DialogFocusContext>
       </div>
     </div>
   );

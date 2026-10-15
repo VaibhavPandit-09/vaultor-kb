@@ -5,7 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import FileImportModal from './FileImportModal';
 import { prepareImport } from '../../lib/fileImports';
 import api from '../../lib/api';
-vi.mock('./AppModal', () => ({ default: ({ children }: { children: ReactNode }) => <div>{children}</div> }));
+vi.mock('./AppModal', () => ({ default: ({ children,footer }: { children: ReactNode;footer?:ReactNode }) => <div>{children}{footer}</div> }));
 vi.mock('../../lib/api', () => ({ default: { put: vi.fn() } }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 function file(name: string, text: string) {
