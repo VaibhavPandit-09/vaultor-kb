@@ -3,8 +3,8 @@ import { motionProfile } from '../lib/motion';
 import { capturePaneReadingAnchors } from '../lib/paneReadingAnchor';
 
 /** Presentation slots yield real width. Navigation alone owns live editors. */
-export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode, children }: {
- paneIds: string[]; focusedId: string | null; animationMode: 'smooth' | 'snappy'; children: ReactNode;
+export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode, transparency = 1, children }: {
+ paneIds: string[]; focusedId: string | null; animationMode: 'smooth' | 'snappy'; transparency?: number; children: ReactNode;
 }) {
  const root = useRef<HTMLDivElement>(null), held = useRef(false), pointerHeld = useRef(false), pointerDown = useRef<(() => void) | null>(null);
  const restoreAnchor = useRef<((skip?: HTMLElement | null) => void) | null>(null), releaseFrames = useRef<number[]>([]), settleAfter = useRef(0), anchorUntil = useRef(0), ignoredViewport = useRef<HTMLElement | null>(null);
@@ -63,7 +63,8 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
    // targets can update underneath without moving the target before click.
    element.querySelectorAll<HTMLElement>('.workspace-pane-slot').forEach(slot => {
     const bounds = slot.getBoundingClientRect(), style = getComputedStyle(slot);
-    slot.style.transition = 'none'; slot.style.width = `${bounds.width}px`;
+    slot.style.transition = 'none'; slot.style.width = `${slot.offsetWidth || parseFloat(style.width) || bounds.width}px`;
+    slot.style.transform = style.transform; slot.style.opacity = style.opacity; slot.style.filter = style.filter;
     slot.style.marginLeft = style.marginLeft; slot.style.marginRight = style.marginRight;
    });
   };
@@ -82,6 +83,7 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
      element.querySelectorAll<HTMLElement>('.workspace-pane-slot').forEach(slot => {
       slot.style.removeProperty('transition'); slot.style.removeProperty('width');
       slot.style.removeProperty('margin-left'); slot.style.removeProperty('margin-right');
+      slot.style.removeProperty('transform'); slot.style.removeProperty('opacity'); slot.style.removeProperty('filter');
      });
     }));
    })];
@@ -107,11 +109,10 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
   };
  }, []);
  const focus = paneIds.includes(focusedId ?? '') ? focusedId : paneIds[0];
- return <div ref={root} onPointerDownCapture={() => pointerDown.current?.()} className="workspace-pane-layout" data-empty={paneIds.length === 0} data-speed={animationMode} style={{ '--pane-duration': `${duration}ms` } as CSSProperties}>
+ return <div ref={root} onPointerDownCapture={() => pointerDown.current?.()} className="workspace-pane-layout" data-empty={paneIds.length === 0} data-speed={animationMode} data-multiple={!compact && paneIds.length > 1} style={{ '--pane-duration': `${duration}ms`, '--pane-alpha': Math.max(.6, Math.min(1, transparency)), '--pane-base-alpha': Math.max(.6, Math.min(1, transparency)) } as CSSProperties}>
   {slots.map(id => {
    const live = paneIds.includes(id), active = id === focus;
-   const weight = paneIds.length === 2 ? 1.16 : 1.2;
-   const target = !live || (!entered.includes(id) && !reduced) ? 0 : compact || paneIds.length === 1 ? Math.min(available, paneIds.length === 1 ? 896 : available) : available * (active ? weight : 1) / (weight + paneIds.length - 1);
+   const target = !live || (!entered.includes(id) && !reduced) ? 0 : compact || paneIds.length === 1 ? Math.min(available, paneIds.length === 1 ? 896 : available) : available / paneIds.length;
    const gap = live && entered.includes(id) && !compact && paneIds.length > 1 ? 8 : 0;
    return <div key={id} className={`workspace-pane-slot${live ? '' : ' workspace-pane-ghost'}`} data-slot-id={id} data-focused={active} hidden={live && compact && !active} inert={!live || (compact && !active)} aria-hidden={!live || (compact && !active) ? true : undefined}
     style={{ '--pane-width': `${target}px`, '--pane-gap': `${gap}px` } as CSSProperties}>

@@ -6,7 +6,7 @@ import api from './api';
 import {mergeSettingsPatch,type SettingsPatch} from './settingsPatch';
 vi.mock('./api',()=>({default:{get:vi.fn(),patch:vi.fn()}}));
 afterEach(()=>{cleanup();vi.restoreAllMocks();localStorage.clear();vi.unstubAllGlobals();});
-function Probe(){const s=useSettings();return <><span>{s.settings.local.theme}:{s.resolvedTheme}:{s.saveStatus}</span><button onClick={()=>s.updateLocalSetting('theme','dark')}>Dark</button><button onClick={()=>s.updateWorkspaceSetting('maxOpenNotes',3)}>Three</button><button onClick={()=>s.retrySave()}>Retry</button><button onClick={()=>s.updateLocalSetting('theme','oled')}>OLED</button><button onClick={()=>s.toggleTheme()}>Cycle</button><span data-testid="transparency">{s.settings.local.uiTransparency}</span></>;}
+function Probe(){const s=useSettings();return <><span>{s.settings.local.theme}:{s.resolvedTheme}:{s.saveStatus}</span><button onClick={()=>s.updateLocalSetting('theme','dark')}>Dark</button><button onClick={()=>s.updateWorkspaceSetting('maxOpenNotes',3)}>Three</button><button onClick={()=>s.retrySave()}>Retry</button><button onClick={()=>s.updateLocalSetting('theme','oled')}>OLED</button><button onClick={()=>s.toggleTheme()}>Cycle</button><button onClick={()=>s.updateLocalSetting('uiTransparency',.65)}>Opacity65</button><span data-testid="transparency">{s.settings.local.uiTransparency}</span></>;}
 it('defaults to OS, reacts to OS changes and keeps an explicit choice',async()=>{
   let listener!:()=>void;const media={matches:false,addEventListener:vi.fn((_name,fn)=>{listener=fn;}),removeEventListener:vi.fn()};
   vi.stubGlobal('matchMedia',()=>media);
@@ -43,4 +43,13 @@ it('device appearance survives changing to a workspace with different host prefe
  vi.mocked(api.get).mockResolvedValue({data:{local:{},workspace:{maxOpenNotes:2},keybindings:{}}});vi.mocked(api.patch).mockImplementation(async(_url,patch)=>({data:mergeSettingsPatch({local:{},workspace:{},keybindings:{}},patch as SettingsPatch)}));
  const view=render(<SettingsProvider><Probe/></SettingsProvider>);await waitFor(()=>expect(screen.getByText(/:saved$/)).toBeTruthy());fireEvent.click(screen.getByText('OLED'));await waitFor(()=>expect(screen.getByText('oled:oled:saved')).toBeTruthy());view.unmount();
  vi.mocked(api.get).mockResolvedValue({data:{local:{},workspace:{maxOpenNotes:4},keybindings:{}}});render(<SettingsProvider><Probe/></SettingsProvider>);expect(document.documentElement.dataset.theme).toBe('oled');await waitFor(()=>expect(screen.getByText('oled:oled:saved')).toBeTruthy());
+});
+
+it('applies the live opacity token in OLED and retains it through appearance changes',async()=>{
+ vi.stubGlobal('matchMedia',()=>({matches:false,addEventListener:vi.fn(),removeEventListener:vi.fn()}));
+ let doc:SettingsPatch={local:{},workspace:{},keybindings:{}};vi.mocked(api.get).mockImplementation(async()=>({data:doc}));vi.mocked(api.patch).mockImplementation(async(_url,patch)=>({data:doc=mergeSettingsPatch(doc,patch as SettingsPatch)}));
+ render(<SettingsProvider><Probe/></SettingsProvider>);await waitFor(()=>expect(screen.getByText(/:saved$/)).toBeTruthy());
+ fireEvent.click(screen.getByText('OLED'));fireEvent.click(screen.getByText('Opacity65'));
+ await waitFor(()=>expect(screen.getByText('oled:oled:saved')).toBeTruthy());expect(document.documentElement.style.getPropertyValue('--ui-opacity')).toBe('0.65');
+ fireEvent.click(screen.getByText('Dark'));await waitFor(()=>expect(screen.getByText('dark:dark:saved')).toBeTruthy());expect(document.documentElement.style.getPropertyValue('--ui-opacity')).toBe('0.65');
 });

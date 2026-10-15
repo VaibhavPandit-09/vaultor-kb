@@ -77,6 +77,7 @@ import { useRestoreFocusOnClose } from '../lib/useRestoreFocusOnClose';
 import { useAnchoredPortalPosition } from '../lib/useAnchoredPortalPosition';
 import BlockEditor, { type NoteSelection } from '../components/editor/BlockEditor';
 import PreviewLayer from '../components/PreviewLayer';
+import PreviewShell from '../components/PreviewShell';
 import type { Editor, Range } from '@tiptap/core';
 import FileImportModal from '../components/modals/FileImportModal';
 import { prepareImport, type ImportSession } from '../lib/fileImports';
@@ -101,7 +102,7 @@ import { useAppDispatch, useAppSelector } from '../state/hooks';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../lib/escape/escape';
 import { useSettings } from '../lib/settings';
 import { generateTagColor, getTagColorInputValue, getTagPillStyle } from '../lib/tagColors';
-import { getGlassPanelStyle, getOverlayStyle } from '../lib/transparency';
+import { getGlassPanelStyle } from '../lib/transparency';
 
 
 
@@ -216,7 +217,6 @@ export default function Dashboard() {
   const previewFocus = useRestoreFocusOnClose();
   const workspaceSettings = settings.workspace;
   const localSettings = settings.local;
-  const smoothAnimations = localSettings.animationMode === 'smooth';
   const uiTransparency = localSettings.uiTransparency;
   const { position: tagPickerPosition } = useAnchoredPortalPosition(Boolean(tagPickerOpenNoteId), tagPickerRef, { width: 288, minWidth: 288, offset: 8 });
   const effectivePreviewMode = previewOverrideMode ?? localSettings.previewMode;
@@ -1360,7 +1360,7 @@ export default function Dashboard() {
             {activeNoteId&&resourceDetails[activeNoteId]&&<button className="library-button" onClick={()=>setReferenceTarget(resourceDetails[activeNoteId])}>References</button>}
           </JourneyBar>}
           <div className="min-h-0 flex-1 relative">
-            <WorkspacePaneLayout paneIds={openWorkspaceNotes.map(note => note.paneId)} focusedId={activePaneId} animationMode={localSettings.animationMode}>
+            <WorkspacePaneLayout transparency={uiTransparency} paneIds={openWorkspaceNotes.map(note => note.paneId)} focusedId={activePaneId} animationMode={localSettings.animationMode}>
               {openWorkspaceNotes.map((note, index) => (
                 <div
                   key={note.paneId}
@@ -1642,27 +1642,8 @@ export default function Dashboard() {
           onDownload={handleFileDownload}
         /></ErrorBoundary>
       )}
-      {previewResourceLoading && (
-        effectivePreviewMode === 'modal' ? (
-          <div className={`fixed inset-0 z-[74] flex items-center justify-center p-4 ${
-            smoothAnimations ? 'transition-opacity duration-[170ms] ease-out' : 'transition-none'
-          }`} style={getOverlayStyle(uiTransparency, 0.28)}>
-            <div className={`flex h-[80vh] w-full max-w-6xl items-center justify-center rounded-[1.75rem] ${
-              smoothAnimations ? 'shadow-2xl transition-[transform,opacity] duration-[170ms] ease-out' : 'shadow-xl transition-none'
-            }`} style={getGlassPanelStyle(uiTransparency, 18)}>
-              <div className="text-sm text-slate-400">Loading preview...</div>
-            </div>
-          </div>
-        ) : (
-          <div className="pointer-events-none fixed inset-y-0 right-0 z-[74] flex w-full justify-end">
-            <div className={`pointer-events-auto flex h-full w-full max-w-[min(40%,44rem)] items-center justify-center ${
-              smoothAnimations ? 'shadow-2xl transition-[transform,opacity] duration-[170ms] ease-out' : 'shadow-xl transition-none'
-            }`} style={getGlassPanelStyle(uiTransparency, 16)}>
-              <div className="text-sm text-slate-400">Loading preview...</div>
-            </div>
-          </div>
-        )
-      )}
+      {previewResourceLoading && <PreviewShell mode={effectivePreviewMode} transparency={uiTransparency} label="Loading preview" loading onClose={()=>dismissPreview()}><div className="m-auto text-sm text-[var(--text-secondary)]" role="status">Loading preview…</div></PreviewShell>}
+
     </div>
   );
 }

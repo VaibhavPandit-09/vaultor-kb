@@ -80,3 +80,12 @@ it('freezes geometry before a child capture handler activates its pane, includin
  const slot=result.container.querySelector<HTMLElement>('[data-slot-id="b"]')!;slot.getBoundingClientRect=()=>({width:450} as DOMRect);
  fireEvent.pointerDown(result.getByText('Activate'));expect(captured).toBe('450px');
 });
+
+it('uses equal layout widths for focus depth and freezes unscaled widths and visual transform through a click',()=>{
+ const result=render(view(['a','b']));const a=result.container.querySelector<HTMLElement>('[data-slot-id="a"]')!,b=result.container.querySelector<HTMLElement>('[data-slot-id="b"]')!;
+ const width=a.style.getPropertyValue('--pane-width');expect(b.style.getPropertyValue('--pane-width')).toBe(width);
+ result.rerender(view(['a','b'],'b'));expect(a.style.getPropertyValue('--pane-width')).toBe(width);expect(b.style.getPropertyValue('--pane-width')).toBe(width);
+ Object.defineProperty(a,'offsetWidth',{value:600});a.getBoundingClientRect=()=>({width:579} as DOMRect);a.style.transform='matrix(.965,0,0,.965,0,4)';
+ fireEvent.pointerDown(a);expect(a.style.width).toBe('600px');expect(a.style.transform).toContain('.965');
+ fireEvent.pointerUp(document);tick();tick();expect(a.style.transform).toBe('');
+});

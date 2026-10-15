@@ -1,5 +1,5 @@
 /** Shared, finite motion. Never owns focus, editor state or network work. */
-export type MotionKind = 'panel' | 'menu' | 'page' | 'category' | 'notice' | 'side';
+export type MotionKind = 'panel' | 'menu' | 'page' | 'category' | 'notice' | 'side' | 'geometry';
 export function motionProfile(mode = document.documentElement.dataset.animation, reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false) {
   return reduced ? { panel: 0, menu: 0, page: 0, exit: 0, stagger: 0, lift: 0 } : mode === 'smooth'
     ? { panel: 280, menu: 220, page: 200, exit: 180, stagger: 24, lift: 2 }
@@ -13,6 +13,7 @@ function track(animation: Animation) { animations.add(animation); void animation
 function kind(element: HTMLElement): MotionKind { return (element.dataset.motionSurface as MotionKind) || (element.matches('.library-popover,.journey-popover,.settings-options,.image-more') ? 'menu' : element.matches('[role="alert"]') ? 'notice' : 'panel'); }
 function owner(element: HTMLElement) { return element.dataset.motionKey || element.getAttribute('aria-label') || element.getAttribute('aria-labelledby') || element.className; }
 export function enterSurface(element: HTMLElement, type = kind(element), delay = 0) {
+  if (type === 'geometry') return;
   if (element.closest('[hidden], [inert], [aria-hidden="true"]')) return;
   surfaceAnimations.get(element)?.cancel();
   const profile = motionProfile(), duration = type === 'menu' ? profile.menu : type === 'page' || type === 'category' ? profile.page : profile.panel;
@@ -27,6 +28,7 @@ export function enterSurface(element: HTMLElement, type = kind(element), delay =
 }
 /** Removed surfaces leave a short visual copy only. No handlers, focus or semantics survive. */
 export function exitSurface(element: HTMLElement, rect: DOMRect) {
+  if (kind(element) === 'geometry') return;
   const profile = motionProfile(); if (!profile.exit || !element.animate || !rect.width || !rect.height || kind(element) === 'page' || kind(element) === 'category') return;
   const id = owner(element); ghosts.get(id)?.remove();
   const ghost = element.cloneNode(true) as HTMLElement;

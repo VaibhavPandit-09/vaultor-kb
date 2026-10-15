@@ -27,3 +27,7 @@ it('interrupted preference changes cancel animations without replacing mounted e
 it('defers hidden cached pages until visible without replacing their rows',async()=>{
  setup();dispose=installMotion();const wrapper=document.createElement('div');wrapper.hidden=true;const page=document.createElement('section');page.dataset.motionSurface='page';page.dataset.motionKey='library';page.dataset.motionList='true';page.dataset.motionReady='true';page.innerHTML='<div class="library-row">Cached</div>';wrapper.append(page);document.body.append(wrapper);await flush();expect(vi.mocked(page.animate)).not.toHaveBeenCalled();const row=page.firstChild;wrapper.hidden=false;await flush();expect(vi.mocked(page.animate)).toHaveBeenCalledTimes(2);expect(page.firstChild).toBe(row);
 });
+it('leaves geometry-owned preview media unscaled and never clones its iframe on close',()=>{
+ setup();const preview=document.createElement('div');preview.dataset.motionSurface='geometry';preview.setAttribute('role','dialog');preview.innerHTML='<iframe title="PDF"></iframe>';
+ enterSurface(preview);expect(preview.animate).not.toHaveBeenCalled();exitSurface(preview,{top:0,left:0,width:600,height:500} as DOMRect);expect(document.querySelector('[data-motion-ghost]')).toBeNull();
+});

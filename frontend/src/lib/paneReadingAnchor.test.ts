@@ -18,3 +18,12 @@ it('lets header compression move the reading edge without creating scroll feedba
  let headerHeight=100,top=110;viewport.getBoundingClientRect=()=>({top:0} as DOMRect);header.getBoundingClientRect=()=>({height:headerHeight} as DOMRect);block.getBoundingClientRect=()=>({top,bottom:top+80} as DOMRect);
  const restore=capturePaneReadingAnchors(root);headerHeight=60;top=70;restore();expect(viewport.scrollTop).toBe(0);root.remove();
 });
+
+it('normalizes visual depth scale so focus changes do not become reading-position drift',()=>{
+ const root=document.createElement('div');root.innerHTML='<div class="journey-viewport"><div class="note-orientation"></div><div class="ProseMirror"><p>Reading</p></div></div>';document.body.append(root);
+ const viewport=root.firstElementChild as HTMLElement,header=viewport.firstElementChild as HTMLElement,block=root.querySelector('p')!;
+ Object.defineProperties(viewport,{clientHeight:{value:400},clientWidth:{value:500}});
+ let scale=.965,offset=20;viewport.getBoundingClientRect=()=>({top:10,height:400*scale} as DOMRect);header.getBoundingClientRect=()=>({height:60*scale} as DOMRect);block.getBoundingClientRect=()=>({top:10+(60+offset)*scale,bottom:200} as DOMRect);
+ const restore=capturePaneReadingAnchors(root);scale=1;restore();expect(viewport.scrollTop).toBe(0);
+ offset=40;restore();expect(viewport.scrollTop).toBeCloseTo(20);root.remove();
+});

@@ -53,23 +53,24 @@ export async function runOledSmoke(window, directory, owned) {
   await capture('oled-filter.png');key('Escape');await wait("!document.querySelector('.library-popover')");
   assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"),'Filter resource type');
   await evaluate("document.querySelector('#sidebar-recent .sidebar-shortcut-open').click()");await wait("Boolean(document.querySelector('.tiptap pre'))");
-  await black(['.journey-bar','[data-note-pane]']);
+  await black(['.journey-bar']);
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.workspace-pane-slot[data-focused=\"true\"] [data-note-pane]')).backgroundColor"),'rgba(0, 0, 0, 0.6)');
   await capture('oled-note.png');
   await click('.tiptap button','JavaScript');await wait("Boolean(document.querySelector('input[placeholder=\"Search...\"]'))");await capture('oled-code-menu.png');key('Escape');
   await click('.tiptap button','JavaScript');
   // Normal focus allows palette actions without a mouse.
   await evaluate("document.querySelector('.sidebar-nav').click()");await wait("Boolean(document.querySelector('[aria-label=\"Search and commands\"]'))");
-  assert.equal(await evaluate("getComputedStyle(document.querySelector('[aria-label=\"Search and commands\"]')).backgroundColor"),'rgb(10, 10, 10)');
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('[aria-label=\"Search and commands\"]')).backgroundColor"),'rgba(10, 10, 10, 0.6)');
   await capture('oled-palette.png');key('Escape');await wait("!document.querySelector('[aria-label=\"Search and commands\"]')");
   await evaluate("document.querySelector('button[title=\"Settings\"]').click()");await wait("Boolean(document.querySelector('[role=dialog]'))");
   await evaluate("[...document.querySelectorAll('[role=dialog] button')].find(b=>b.textContent.trim()==='Appearance').click()");await capture('oled-settings.png');
-  assert.ok(await evaluate("document.body.innerText.includes('OLED keeps surfaces opaque')"));key('Escape');await wait("!document.querySelector('[role=dialog]')");
+  assert.ok(await evaluate("document.body.innerText.includes('including OLED')"));key('Escape');await wait("!document.querySelector('[role=dialog]')");
   await evaluate("document.querySelector('button[aria-label^=\"Export OLED\"]').click()");await wait("Boolean(document.querySelector('[role=dialog]'))");await capture('oled-export.png');key('Escape');
   await click('#sidebar-pinned .sidebar-shortcut-open','Reference.txt');await wait("Boolean(document.querySelector('[data-preview-resource]'))");
-  assert.equal(await evaluate("getComputedStyle(document.querySelector('[data-preview-resource] > .pointer-events-auto')).backgroundColor"),'rgb(10, 10, 10)');
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('[data-preview-resource]')).backgroundColor"),'rgba(10, 10, 10, 0.6)');
   assert.ok(await evaluate("(()=>{const c=document.querySelector('.desktop-window-controls').getBoundingClientRect();return [...document.querySelectorAll('[data-preview-resource] button')].every(b=>{const r=b.getBoundingClientRect();return r.top>=c.bottom||r.right<=c.left;});})()"),'Preview buttons clear native controls');
   await capture('oled-preview.png');await click('[data-preview-resource] button','Floating');await wait("Boolean(document.querySelector('button[title=\"Switch to side preview\"]'))");
-  assert.equal(await evaluate("getComputedStyle(document.querySelector('[data-preview-resource]')).backgroundColor"),'rgb(10, 10, 10)');await capture('oled-preview-floating.png');key('Escape');await wait("!document.querySelector('[data-preview-resource]')");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('[data-preview-resource]')).backgroundColor"),'rgba(10, 10, 10, 0.6)');await capture('oled-preview-floating.png');key('Escape');await wait("!document.querySelector('[data-preview-resource]')");
   await evaluate("document.querySelector('.desktop-connection-button').click()");await wait("Boolean(document.querySelector('.desktop-connections-dialog'))");await capture('oled-connections.png');
   await click('.desktop-connections-dialog button','Hosting');await capture('oled-hosting.png');await evaluate("document.querySelector('button[aria-label=\"Return to workspace\"]').click()");
   // Reduced-motion and long title at a narrow window remain bounded.
@@ -78,6 +79,7 @@ export async function runOledSmoke(window, directory, owned) {
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.journey-trail')).animationName"),'none');
   await capture('oled-narrow.png');assert.ok(await evaluate("document.querySelector('.app-root').scrollWidth<=innerWidth"));
   await window.webContents.debugger.detach();window.setSize(1320,900);
+  assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--ui-opacity').trim()"),'0.6');
   const saved=await request('/settings');assert.equal(saved.local[device].uiTransparency,0.6);assert.equal(saved.local[device].theme,'oled');
   await cycle('os');await wait("document.documentElement.dataset.theme==='dark'");
   assert.equal(await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--glass-opacity').trim()"),'');

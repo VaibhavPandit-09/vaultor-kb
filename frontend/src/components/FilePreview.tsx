@@ -139,7 +139,7 @@ function PDFViewer({ resource }: { resource: Resource }) {
   const { blobUrl, error } = useBlobUrl(resource.id, 'application/pdf', resource.title);
   if (error) return <FallbackViewer message={error} />;
   if (!blobUrl) return <LoadingSpinner />;
-  return <iframe src={`${blobUrl}#toolbar=0`} className="h-full min-h-[calc(100vh-9rem)] w-full bg-white" title="PDF Preview" />;
+  return <iframe src={`${blobUrl}#toolbar=0`} className="h-full min-h-0 w-full bg-white" title="PDF Preview" />;
 }
 
 function ImageViewer({ resource }: { resource: Resource }) {

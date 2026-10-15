@@ -23,6 +23,8 @@ export interface EscapeManagerValue {
   getLastMeaningfulFocus: () => HTMLElement | null;
 }
 
+export const PopoverPriorityContext = createContext<number>(ESCAPE_PRIORITIES.popover);
+
 export const EscapeManagerContext = createContext<EscapeManagerValue | null>(null);
 
 interface UseEscapeLayerOptions {

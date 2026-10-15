@@ -169,10 +169,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     root.classList.toggle('light', resolvedTheme === 'light');
     root.style.setProperty('--accent', accentMap[currentLocalSettings.accentColor]);
     root.style.setProperty('--primary', accentMap[currentLocalSettings.accentColor]);
+    root.style.setProperty('--ui-opacity', String(currentLocalSettings.uiTransparency));
   }, [
     currentLocalSettings.accentColor,
     currentLocalSettings.animationMode,
     currentLocalSettings.density,
+    currentLocalSettings.uiTransparency,
     resolvedTheme,
   ]);
 

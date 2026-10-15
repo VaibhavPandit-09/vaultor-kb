@@ -1,6 +1,6 @@
 # Settings
 
-Reviewed 2026-10-08. Settings is a focused window over the current workspace. Sprint 1 of the 0.4.0 update replaces nested cards with flat rows; managed images and expressive Smooth motion complete the coordinated 0.4.0 update. These controls ship in 0.4.0; installed older versions retain their previous UI until updating.
+Reviewed 2026-10-15. Settings is a focused window over the current workspace. Sprint 1 of the 0.4.0 update replaces nested cards with flat rows; managed images and expressive Smooth motion complete the coordinated 0.4.0 update. These controls ship in 0.4.0; installed older versions retain their previous UI until updating.
 
 ## Navigation and controls
 
@@ -18,7 +18,7 @@ Settings options contains confirmed resets: device preferences, workspace behavi
 
 ## Surfaces and accessibility
 
-Settings uses one canvas rather than nested cards. OLED's canvas is opaque #000000; control/selection/menu/confirmation surfaces provide neutral separation. Other themes retain their saved glass preference. See [APPEARANCE.md](APPEARANCE.md). Appearance includes an explicit Snappy/Smooth Try it comparison. Category/selection feedback follows the shared [motion boundary](MOTION.md); global-search typing does not replay row entrances.
+Settings uses one canvas rather than nested cards. OLED uses a black canvas and neutral control/selection/menu/confirmation colors; its glass panel honors the saved opacity/blur just like other themes. See [APPEARANCE.md](APPEARANCE.md). Appearance includes an explicit Snappy/Smooth Try it comparison. Category/selection feedback follows the shared [motion boundary](MOTION.md); global-search typing does not replay row entrances.
 
 Focus stays within settings or its reset confirmation, with visible indicators. Initial focus goes to search. Escape is owned by the shared manager: confirmation, recording and options close before the window. Click/Escape dismissal restores the invoking input/editor/control, including React Strict Mode. Confirmation background is inert. No positive tabindex values are used.
 

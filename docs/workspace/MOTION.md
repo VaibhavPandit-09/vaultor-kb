@@ -1,6 +1,6 @@
 # Interaction motion
 
-Reviewed 2026-10-08. Settings → Appearance → Animation feel selects Snappy or Smooth on this device. The interactive Try it comparison is explicit, finite and does not change the preference. There are no decorative loops or cursor-following effects.
+Reviewed 2026-10-15. Settings → Appearance → Animation feel selects Snappy or Smooth on this device. The interactive Try it comparison is explicit, finite and does not change the preference. There are no decorative loops or cursor-following effects.
 
 ## Shared behavior
 
@@ -21,3 +21,9 @@ Sidebar disclosure uses a 0fr/1fr grid transition with content retained for cach
 OS reduced motion disables translation, scale, overshoot, stagger and CSS animation/transition durations, including the comparison. Preference changes cancel running animations and remove visual clones. Focus/state changes remain immediate.
 
 Focused tests cover durations, anchored portal transforms, no page scaling, six-row bounds, query/refresh suppression, editor identity, interruption and inert exits/focus. `VAULTOR_MOTION_SMOKE=1` uses an isolated owned desktop workspace through the chrome helper and includes settings/theme, real clipboard image/reload and motion integration. Actual packaged checks and visual review results are recorded in CODEBASE, the tracker and versioned release notes; Mac/physical OLED/touch results are not inferred from Windows screenshots.
+
+## Current redesign review candidates
+
+Pane focus uses an explicit user-requested depth transformation: equal logical widths avoid focus-driven text reflow, while inactive peers recede through modest scale/translation, dimming and translucency. Pointer/menu holds include visual transforms; reading-anchor compensation converts visual distances back to scroll coordinates. Reduced motion removes scale/translation. Open/close retains save-authorized real allocation and mounted editor ownership.
+
+PreviewShell owns real geometry across Side/Floating with one viewer ancestor chain. `data-motion-surface="geometry"` bypasses generic entry scaling and exit clones; iframe/image pixels are not transformed to fake resize. Mode changes retain viewer DOM, zoom/scroll, native URL ownership and file-action state. Shared panel timing and CSS retargeting apply; pointer/menu holds protect moving controls and reduced motion uses immediate final bounds. Preview-owned utility menus inherit priority above the preview, so Escape closes them first. [Review evidence and remaining cases](../plans/ui-redesign.md).
