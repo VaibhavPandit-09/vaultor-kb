@@ -1,3 +1,6 @@
+import ContextSheet from './ContextSheet';
+import { sourcePresentation, activatedSource } from './sourcePresentation';
+import { haptic } from './haptics';
 import { ReaderFeed } from './readerFeed';
 import React, {
   useCallback,
@@ -51,7 +54,7 @@ async function permission(interactive = true) {
     throw Error('Allow local-network access, then retry.');
 }
 export default function WorkspaceScreen() {
-  const { reduced } = useReading();
+  const { reduced, preferences } = useReading();
   const s = useThemeStyles(styles),
     menu = useRef<React.ElementRef<typeof Pressable>>(null);
   const model = useRef(
@@ -163,6 +166,87 @@ export default function WorkspaceScreen() {
     [code, setCode] = useState(''),
     [inventory, setInventory] = useState<any>(),
     [recoveryError, setRecoveryError] = useState('');
+  const source = sourcePresentation(state);
+  const sourceRoot = useRef<React.ElementRef<typeof View>>(null),
+    sourceToken = useRef(0);
+  const [sourceError, setSourceError] = useState('');
+  const [manageConnections, setManageConnections] = useState(false);
+  const [sourceJobs, setSourceJobs] = useState<any[]>([]);
+  const downloadedName = sourceJobs.find(j => j.scope === state.scope)?.name;
+  if (state.downloaded && downloadedName) source.workspace = downloadedName;
+  useEffect(() => {
+    let alive = true;
+    if (hosts) setSourceError('');
+    void parse<any[]>(native.companion('list', '{}'))
+      .then(jobs => {
+        if (alive)
+          setSourceJobs(
+            jobs.filter(j => j.active === j.id && j.status === 'ready'),
+          );
+      })
+      .catch(() => {
+        if (alive)
+          setSourceError(
+            'Downloads could not be read. Retry from Offline downloads.',
+          );
+      });
+    return () => {
+      alive = false;
+    };
+  }, [hosts, state.host?.hostId, state.scope]);
+  useEffect(
+    () => () => {
+      sourceToken.current++;
+    },
+    [],
+  );
+  const activateSource = (
+    action: () => Promise<void>,
+    target: Parameters<typeof activatedSource>[1],
+  ) => {
+    if (model.snapshot().busy) return;
+    const token = ++sourceToken.current;
+    setSourceError('');
+    void model.perform(async () => {
+      try {
+        await action();
+        const next = model.snapshot();
+        if (!activatedSource(next, target))
+          throw Error(
+            next.error ||
+              'This source is not available yet. Retry or choose a downloaded source.',
+          );
+        if (token !== sourceToken.current) return;
+        setHosts(false);
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            if (
+              token !== sourceToken.current ||
+              model.snapshot().scope !== next.scope
+            )
+              return;
+            const tag = findNodeHandle(menu.current);
+            if (tag) {
+              AccessibilityInfo.setAccessibilityFocus(tag);
+              haptic('selection', tag, preferences.haptics !== 'off');
+            }
+          }),
+        );
+      } catch (e) {
+        if (token !== sourceToken.current) return;
+        setSourceError((e as Error).message);
+        requestAnimationFrame(() => {
+          if (token !== sourceToken.current) return;
+          const tag = findNodeHandle(sourceRoot.current);
+          if (tag) haptic('reject', tag, preferences.haptics !== 'off');
+        });
+      }
+    });
+  };
+  const closeSources = () => {
+    sourceToken.current++;
+    setHosts(false);
+  };
   const run = (f: () => Promise<void>) => void model.perform(f);
   const closeDrawer = () => {
     setDrawer(false);
@@ -218,7 +302,7 @@ export default function WorkspaceScreen() {
       return true;
     }
     if (hosts) {
-      setHosts(false);
+      closeSources();
       return true;
     }
     return false;
@@ -395,7 +479,7 @@ export default function WorkspaceScreen() {
       .then(setInventory)
       .catch((e: Error) => setRecoveryError(e.message));
   };
-  const hostView = hosts || (!state.host && !recovery);
+  const hostView = !state.host && !recovery;
   const title = hostView
     ? 'Workspaces'
     : recovery
@@ -412,117 +496,156 @@ export default function WorkspaceScreen() {
         collections: 'Collections',
         trash: 'Library',
       }[state.browse.destination];
-  return (
-    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-      <View
-        style={s.header}
-        collapsable={false}
-        importantForAccessibility={
-          more ||
-          trail ||
-          readerPanel === 'appearance' ||
-          readerPanel === 'outline' ||
-          state.preview
-            ? 'no-hide-descendants'
-            : 'auto'
-        }
-      >
-        <Pressable
-          ref={menu}
-          disabled={!initialized || state.busy}
-          accessibilityState={{ disabled: !initialized || state.busy }}
-          accessibilityRole="button"
-          accessibilityLabel={hostView || recovery ? 'Back' : 'Open navigation'}
-          style={s.icon}
-          onPress={() => (hostView || recovery ? back() : setDrawer(true))}
-        >
-          <Text style={s.glyph}>{hostView || recovery ? '‹' : '☰'}</Text>
-        </Pressable>
-        {state.view === 'note' && !hostView && !recovery ? (
-          <Action label="‹" accessibilityLabel="Back" onPress={back} />
-        ) : null}
-        <Text numberOfLines={1} accessibilityRole="header" style={s.title}>
-          {title}
-        </Text>
-        {!hostView && !recovery && state.view === 'note' ? (
-          <Action
-            label="•••"
-            accessibilityLabel="Reading options"
-            onPress={() => setMore(true)}
-          />
+  const sourceContent = (
+    <ScrollView
+      key="connections"
+      contentContainerStyle={s.page}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View ref={sourceRoot} collapsable={false}>
+        <Text style={s.section}>{source.workspace}</Text>
+        <Text style={s.secondary}>{source.host}</Text>
+        <Text style={s.secondary}>{source.availability}</Text>
+        {sourceError || state.error ? (
+          <Text accessibilityRole="alert" style={s.error}>
+            {sourceError || state.error}
+          </Text>
         ) : null}
       </View>
-      {state.offlineWarning ? (
-        <Text accessibilityRole="alert" style={s.error}>
-          {state.offlineWarning}
+      {hostView ? (
+        <Text style={s.secondary}>
+          Connect to read your workspace. Approvals stay on this device.
         </Text>
-      ) : null}
-      {state.error ? (
-        <View style={s.notice} accessibilityRole="alert">
-          <Text style={s.error}>{state.error}</Text>
-          <Action
-            label="Retry connection"
-            onPress={() =>
-              run(async () => {
+      ) : (
+        <Action
+          label={
+            state.connection === 'online' && !state.localOnly
+              ? 'Refresh connection'
+              : 'Reconnect to host'
+          }
+          disabled={state.busy}
+          onPress={() =>
+            activateSource(
+              async () => {
                 await permission();
                 await model.connect(false);
+              },
+              {
+                hostId: state.host!.hostId,
+                workspaceId: state.host!.workspaceId,
+              },
+            )
+          }
+        />
+      )}
+
+      {state.multiWorkspace ? (
+        <>
+          <Text style={s.section}>On this server</Text>
+          {state.workspaces?.map(w => (
+            <Action
+              disabled={state.busy}
+              key={w.id}
+              label={
+                w.name + (w.id === state.host?.workspaceId ? ' · Current' : '')
+              }
+              onPress={() =>
+                activateSource(
+                  async () => {
+                    if (w.id === state.host?.workspaceId) {
+                      await permission();
+                      await model.connect(false);
+                    } else await model.switchWorkspace(w.id, true);
+                  },
+                  { hostId: state.host!.hostId, workspaceId: w.id },
+                )
+              }
+            />
+          ))}
+        </>
+      ) : null}
+      <Text accessibilityRole="header" style={s.section}>
+        Downloaded sources
+      </Text>
+      {!sourceJobs.length ? (
+        <Text style={s.secondary}>
+          No verified reading downloads on this device.
+        </Text>
+      ) : null}
+      {sourceJobs.map(job => (
+        <View key={job.id} style={s.row}>
+          <Text style={s.section}>{job.name}</Text>
+          <Text style={s.secondary}>
+            {(() => {
+              try {
+                const id = JSON.parse(job.scope)[0];
+                return (
+                  state.hosts.find(h => h.hostId === id)?.address ||
+                  'Retained host'
+                );
+              } catch {
+                return 'Retained source';
+              }
+            })()}
+          </Text>
+          <Text style={s.secondary}>
+            {job.locked === '1'
+              ? 'Locked · approval required'
+              : 'Verified download · ' +
+                new Date(Number(job.at)).toLocaleDateString()}
+          </Text>
+          <Action
+            label={'Read downloaded · ' + job.name}
+            accessibilityLabel={
+              'Read downloaded ' +
+              job.name +
+              ' from ' +
+              (() => {
+                try {
+                  return (
+                    state.hosts.find(h => h.hostId === JSON.parse(job.scope)[0])
+                      ?.address || 'retained host'
+                  );
+                } catch {
+                  return 'retained source';
+                }
+              })()
+            }
+            disabled={state.busy || job.locked === '1'}
+            onPress={() =>
+              activateSource(() => model.openCompanion(job.scope), {
+                scope: job.scope,
               })
             }
           />
-          {state.navigationRetry ? (
-            <Action
-              label="Retry opening"
-              onPress={() => run(() => model.retryNavigation())}
-            />
-          ) : null}
         </View>
-      ) : null}
-      {!initialized ? (
-        <View key="starting" style={s.content}>
-          <Text style={s.secondary}>Opening workspace…</Text>
-        </View>
-      ) : hostView ? (
-        <ScrollView
-          key="connections"
-          contentContainerStyle={s.page}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={s.secondary}>
-            Connect to read your workspace. Approvals stay on this device.
-          </Text>
-          {state.multiWorkspace ? (
-            <>
-              <Text style={s.section}>On this server</Text>
-              {state.workspaces?.map(w => (
-                <Action
-                  key={w.id}
-                  label={
-                    w.name +
-                    (w.id === state.host?.workspaceId ? ' · Current' : '')
-                  }
-                  onPress={() =>
-                    run(async () => {
-                      await model.switchWorkspace(w.id, true);
-                      setHosts(false);
-                    })
-                  }
-                />
-              ))}
-            </>
-          ) : null}
+      ))}
+      <Action
+        label={
+          manageConnections || hostView ? 'Connections' : 'Manage connections'
+        }
+        onPress={() => setManageConnections(v => !v)}
+      />
+      {manageConnections || hostView ? (
+        <>
           {state.hosts.map(h => (
             <View key={h.hostId} style={s.row}>
               <Text style={s.secondary}>{h.address}</Text>
               <Action
+                disabled={state.busy}
                 label={
                   h.hostId === state.host?.hostId ? 'Reconnect' : 'Connect'
                 }
                 onPress={() =>
-                  run(async () => {
-                    await permission();
-                    await model.switchHost(h.hostId, true);
-                    setHosts(false);
-                  })
+                  activateSource(
+                    async () => {
+                      await permission();
+                      if (h.hostId === state.host?.hostId)
+                        await model.connect(false);
+                      else await model.switchHost(h.hostId, true);
+                    },
+                    { hostId: h.hostId, workspaceId: h.workspaceId },
+                  )
                 }
               />
               <Action
@@ -548,6 +671,9 @@ export default function WorkspaceScreen() {
               />
             </View>
           ))}
+          <Text accessibilityRole="header" style={s.section}>
+            Add a host
+          </Text>
           <TextInput
             style={s.input}
             accessibilityLabel="Host HTTPS address"
@@ -586,120 +712,132 @@ export default function WorkspaceScreen() {
                       throw Error('Waiting for matching-code approval.');
                     await model.adopted();
                     setCode('');
-                    setHosts(false);
+                    if (model.snapshot().connection === 'online')
+                      closeSources();
                   })
                 }
               />
             </>
           ) : null}
-          <Action
-            label="Legacy recovery"
-            onPress={() => {
-              setHosts(false);
-              recoveryOpen();
-            }}
-          />
-          <Action
-            label="Appearance & reading"
-            onPress={() => setAppearance(true)}
-          />
-          <Action
-            label="Offline downloads"
-            onPress={() => setDownloads(true)}
-          />
-        </ScrollView>
-      ) : recovery ? (
-        <ScrollView key="recovery" contentContainerStyle={s.page}>
-          <Text style={s.secondary}>
-            Earlier Android edits and uploads are retained separately. Nothing
-            here is automatically sent to a host.
+        </>
+      ) : null}
+      <Action
+        label="Legacy recovery"
+        onPress={() => {
+          setHosts(false);
+          recoveryOpen();
+        }}
+      />
+      <Action
+        label="Appearance & reading"
+        onPress={() => setAppearance(true)}
+      />
+      <Action label="Offline downloads" onPress={() => setDownloads(true)} />
+    </ScrollView>
+  );
+  return (
+    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
+      <View
+        style={s.header}
+        collapsable={false}
+        importantForAccessibility={
+          hosts ||
+          drawer ||
+          recovery ||
+          more ||
+          trail ||
+          readerPanel === 'appearance' ||
+          readerPanel === 'outline' ||
+          state.preview
+            ? 'no-hide-descendants'
+            : 'auto'
+        }
+      >
+        <Pressable
+          ref={menu}
+          disabled={!initialized || state.busy}
+          accessibilityState={{ disabled: !initialized || state.busy }}
+          accessibilityRole="button"
+          accessibilityLabel={hostView || recovery ? 'Back' : 'Open navigation'}
+          style={s.icon}
+          onPress={() => (hostView || recovery ? back() : setDrawer(true))}
+        >
+          <Text style={s.glyph}>{hostView || recovery ? '‹' : '☰'}</Text>
+        </Pressable>
+        {state.view === 'note' && !hostView && !recovery ? (
+          <Action label="‹" accessibilityLabel="Back" onPress={back} />
+        ) : null}
+        <Pressable
+          style={s.orientation}
+          disabled={state.busy || hostView || recovery}
+          accessibilityRole="button"
+          accessibilityLabel={`${title}. ${source.workspace}. ${source.availability}. Choose source`}
+          onPress={() => setHosts(true)}
+        >
+          <Text numberOfLines={1} accessibilityRole="header" style={s.title}>
+            {title}
           </Text>
-          {recoveryError ? (
-            <Text accessibilityRole="alert" style={s.error}>
-              {recoveryError}
-            </Text>
-          ) : null}
-          <Action
-            label="Export legacy recovery"
-            disabled={exporting}
-            onPress={() => {
-              if (exportLock.current) return;
-              exportLock.current = true;
-              setExporting(true);
-              setRecoveryError('');
-              setRecoveryStatus('Preparing recovery…');
-              void parse<{ requested?: boolean }>(
-                native.legacyRecovery('export'),
-              )
-                .then(r =>
-                  setRecoveryStatus(
-                    r.requested
-                      ? 'Recovery ZIP saved.'
-                      : 'Export cancelled. Retained records are unchanged.',
-                  ),
-                )
-                .catch((e: Error) => {
-                  setRecoveryStatus('');
-                  setRecoveryError(e.message);
-                })
-                .finally(() => {
-                  exportLock.current = false;
-                  setExporting(false);
-                });
-            }}
-          />
-          {recoveryStatus ? (
-            <Text accessibilityLiveRegion="polite" style={s.secondary}>
-              {recoveryStatus}
-            </Text>
-          ) : null}
-          {inventory ? (
-            <>
-              <Text style={s.section}>
-                {inventory.drafts} drafts · {inventory.creations} creations ·{' '}
-                {inventory.operations} operations · {inventory.inputs} upload
-                inputs
-              </Text>
-              {inventory.items?.length > 50 ? (
-                <Text style={s.secondary}>
-                  Showing 50 retained items. Export includes every record.
-                </Text>
-              ) : null}
-              {inventory.items?.slice(0, 50).map((item: any, i: number) => (
-                <View key={i} style={s.row}>
-                  <Text selectable style={s.section}>
-                    {item.title}
-                  </Text>
-                  <Text selectable style={s.secondary}>
-                    {item.kind} ·{' '}
-                    {item.scope === state.scope
-                      ? 'Current workspace'
-                      : 'Retained source'}{' '}
-                    · {item.status}
-                  </Text>
-                </View>
-              ))}
-            </>
-          ) : (
-            <Text style={s.secondary}>Reading recovery inventory…</Text>
-          )}
-          <Text style={s.secondary}>
-            Exports a private ZIP with readable notes, original JSON, request
-            identities and retained upload bytes. Save or share it for desktop
-            review. Export does not delete records or overwrite originals.
+          <Text numberOfLines={1} style={s.source}>
+            {source.availability} · {source.workspace} ⌄
           </Text>
-        </ScrollView>
+        </Pressable>
+        {!hostView && !recovery && state.view === 'note' ? (
+          <Action
+            label="•••"
+            accessibilityLabel="Reading options"
+            onPress={() => setMore(true)}
+          />
+        ) : null}
+      </View>
+      {state.offlineWarning ? (
+        <Text accessibilityRole="alert" style={s.error}>
+          {state.offlineWarning}
+        </Text>
+      ) : null}
+      {state.error &&
+      !hosts &&
+      !hostView &&
+      (state.connection === 'online' || state.navigationRetry) ? (
+        <View style={s.notice} accessibilityRole="alert">
+          <Text style={s.error}>{state.error}</Text>
+          <Action
+            label="Retry connection"
+            onPress={() =>
+              run(async () => {
+                await permission();
+                await model.connect(false);
+              })
+            }
+          />
+          {state.navigationRetry ? (
+            <Action
+              label="Retry opening"
+              onPress={() => run(() => model.retryNavigation())}
+            />
+          ) : null}
+        </View>
+      ) : null}
+      {!initialized ? (
+        <View key="starting" style={s.content}>
+          <Text style={s.secondary}>Opening workspace…</Text>
+        </View>
+      ) : hostView ? (
+        sourceContent
       ) : (
         <View
           key="workspace-body"
           style={s.content}
           collapsable={false}
           importantForAccessibility={
-            more || trail || state.preview ? 'no-hide-descendants' : 'auto'
+            more || trail || state.preview || hosts || drawer || recovery
+              ? 'no-hide-descendants'
+              : 'auto'
           }
         >
           {state.view === 'home' ? (
             <HomeScreen
+              source={source}
+              resume={state.note}
               feed={feed}
               select={select}
               open={open}
@@ -712,7 +850,7 @@ export default function WorkspaceScreen() {
           <BrowseScreen
             model={model}
             visible={state.view === 'browse'}
-            suspended={drawer}
+            suspended={drawer || hosts || recovery}
             searchRequest={searchRequest}
             onAction={run}
           />
@@ -725,9 +863,6 @@ export default function WorkspaceScreen() {
                 state.view === 'note' ? 'auto' : 'no-hide-descendants'
               }
             >
-              {state.connection !== 'online' ? (
-                <Text style={s.offline}>Offline · last saved reading copy</Text>
-              ) : null}
               <ReaderView
                 model={model}
                 panel={readerPanel}
@@ -738,8 +873,98 @@ export default function WorkspaceScreen() {
           ) : null}
         </View>
       )}
-      {drawer ? (
+      {recovery ? (
+        <ContextSheet title="Legacy recovery" close={() => setRecovery(false)}>
+          <ScrollView key="recovery" contentContainerStyle={s.page}>
+            <Text style={s.secondary}>
+              Earlier Android edits and uploads are retained separately. Nothing
+              here is automatically sent to a host.
+            </Text>
+            {recoveryError ? (
+              <Text accessibilityRole="alert" style={s.error}>
+                {recoveryError}
+              </Text>
+            ) : null}
+            <Action
+              label="Export legacy recovery"
+              disabled={exporting}
+              onPress={() => {
+                if (exportLock.current) return;
+                exportLock.current = true;
+                setExporting(true);
+                setRecoveryError('');
+                setRecoveryStatus('Preparing recovery…');
+                void parse<{ requested?: boolean }>(
+                  native.legacyRecovery('export'),
+                )
+                  .then(r =>
+                    setRecoveryStatus(
+                      r.requested
+                        ? 'Recovery ZIP saved.'
+                        : 'Export cancelled. Retained records are unchanged.',
+                    ),
+                  )
+                  .catch((e: Error) => {
+                    setRecoveryStatus('');
+                    setRecoveryError(e.message);
+                  })
+                  .finally(() => {
+                    exportLock.current = false;
+                    setExporting(false);
+                  });
+              }}
+            />
+            {recoveryStatus ? (
+              <Text accessibilityLiveRegion="polite" style={s.secondary}>
+                {recoveryStatus}
+              </Text>
+            ) : null}
+            {inventory ? (
+              <>
+                <Text style={s.section}>
+                  {inventory.drafts} drafts · {inventory.creations} creations ·{' '}
+                  {inventory.operations} operations · {inventory.inputs} upload
+                  inputs
+                </Text>
+                {inventory.items?.length > 50 ? (
+                  <Text style={s.secondary}>
+                    Showing 50 retained items. Export includes every record.
+                  </Text>
+                ) : null}
+                {inventory.items?.slice(0, 50).map((item: any, i: number) => (
+                  <View key={i} style={s.row}>
+                    <Text selectable style={s.section}>
+                      {item.title}
+                    </Text>
+                    <Text selectable style={s.secondary}>
+                      {item.kind} ·{' '}
+                      {item.scope === state.scope
+                        ? 'Current workspace'
+                        : 'Retained source'}{' '}
+                      · {item.status}
+                    </Text>
+                  </View>
+                ))}
+              </>
+            ) : (
+              <Text style={s.secondary}>Reading recovery inventory…</Text>
+            )}
+            <Text style={s.secondary}>
+              Exports a private ZIP with readable notes, original JSON, request
+              identities and retained upload bytes. Save or share it for desktop
+              review. Export does not delete records or overwrite originals.
+            </Text>
+          </ScrollView>
+        </ContextSheet>
+      ) : null}
+      {hosts && !hostView && initialized && !recovery ? (
+        <ContextSheet title="Sources" close={closeSources}>
+          {sourceContent}
+        </ContextSheet>
+      ) : null}
+      {initialized && state.host ? (
         <WorkspaceDrawer
+          visible={drawer}
           feed={feed}
           select={select}
           open={open}
@@ -876,14 +1101,16 @@ const styles = StyleSheet.create({
   header: {
     zIndex: 1,
     backgroundColor: '#000',
-    height: 58,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: '#252525',
   },
-  title: { flex: 1, fontSize: 19, fontWeight: '600', color: '#e8e8e8' },
+  orientation: { flex: 1, minHeight: 48, justifyContent: 'center' },
+  source: { color: '#858585', fontSize: 12 },
+  title: { fontSize: 19, fontWeight: '600', color: '#e8e8e8' },
   icon: {
     width: 48,
     height: 48,
@@ -891,7 +1118,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   glyph: { fontSize: 25, color: '#e8e8e8' },
-  page: { padding: 24, gap: 16 },
+  page: { padding: 12, gap: 8 },
   secondary: { color: '#b3b3b3', fontSize: 15, lineHeight: 23 },
   section: { color: '#e8e8e8', fontSize: 16, fontWeight: '600' },
   row: {

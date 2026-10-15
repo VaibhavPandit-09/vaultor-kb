@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  NativeModules,
+  AccessibilityInfo,
+  findNodeHandle,
   Modal,
   Pressable,
   ScrollView,
@@ -10,7 +14,11 @@ import {
 } from 'react-native';
 import { Action } from './BrowseScreen';
 import { presentation } from './browse';
-import { useThemeStyles } from './ui';
+import { useAppearance, useReading, useThemeStyles } from './ui';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { motionDuration, settleEasing } from './motion';
+import type { Note } from './bridge';
+import type { sourcePresentation } from './sourcePresentation';
 import type { QuickAccess, RootDestination } from './navigation';
 
 type Props = {
@@ -56,7 +64,13 @@ function Shortcut({
     </Pressable>
   );
 }
-export function HomeScreen(props: Props & { returnToNote?: () => void }) {
+export function HomeScreen(
+  props: Props & {
+    returnToNote?: () => void;
+    resume?: Note;
+    source: ReturnType<typeof sourcePresentation>;
+  },
+) {
   const s = useThemeStyles(sheet);
   return (
     <ScrollView
@@ -64,9 +78,11 @@ export function HomeScreen(props: Props & { returnToNote?: () => void }) {
       keyboardShouldPersistTaps="handled"
     >
       <Text accessibilityRole="header" style={s.hero}>
-        Your space.
+        Home
       </Text>
-      <Text style={s.secondary}>Pick up where you left off.</Text>
+      <Text style={s.secondary}>
+        {props.source.workspace} · {props.source.availability}
+      </Text>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Search workspace"
@@ -76,7 +92,20 @@ export function HomeScreen(props: Props & { returnToNote?: () => void }) {
         <Text style={s.secondary}>⌕ Search your workspace</Text>
       </Pressable>
       {props.returnToNote ? (
-        <Action label="Return to note" onPress={props.returnToNote} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={'Resume reading ' + props.resume?.title}
+          onPress={props.returnToNote}
+          style={s.resume}
+        >
+          <Text style={s.meta}>Resume reading</Text>
+          <Text numberOfLines={2} style={s.resumeTitle}>
+            {props.resume?.title}
+          </Text>
+          <Text style={s.meta}>
+            {props.source.workspace} · saved reading position ›
+          </Text>
+        </Pressable>
       ) : null}
       {props.feed.error ? (
         <View collapsable={false} accessibilityRole="alert">
@@ -121,6 +150,7 @@ export function HomeScreen(props: Props & { returnToNote?: () => void }) {
 }
 export function WorkspaceDrawer(
   props: Props & {
+    visible: boolean;
     close(): void;
     hosts(): void;
     recovery(): void;
@@ -134,14 +164,64 @@ export function WorkspaceDrawer(
 ) {
   const s = useThemeStyles(sheet),
     { width } = useWindowDimensions();
+  const { preferences } = useReading();
+  const light = useAppearance() === 'light';
+  const edge = useRef(new Animated.Value(0)).current;
+  const root = useRef<React.ElementRef<typeof View>>(null),
+    heading = useRef<React.ElementRef<typeof Text>>(null);
+  useEffect(() => {
+    if (!props.visible) {
+      edge.setValue(0);
+      return;
+    }
+    const animation = Animated.timing(edge, {
+      toValue: 1,
+      duration: motionDuration(
+        'navigation',
+        preferences.motion,
+        props.reducedMotion,
+      ),
+      easing: settleEasing,
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [edge, props.visible, props.reducedMotion, preferences.motion]);
+  useEffect(() => {
+    if (props.visible)
+      NativeModules.VaultorPresentation?.systemBars(
+        light,
+        findNodeHandle(root.current) ?? 0,
+      );
+  }, [props.visible, light]);
   const [collapsed, setCollapsed] = useState({ recent: false, pinned: false });
   const panel = (
-    <View
-      style={[s.drawer, { width: Math.min(320, width - 48) }]}
+    <Animated.View
+      ref={root}
+      collapsable={false}
+      style={[
+        s.drawer,
+        {
+          width: Math.min(360, width - 48),
+          transform: [
+            {
+              translateX: edge.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-Math.min(360, width - 48), 0],
+              }),
+            },
+          ],
+        },
+      ]}
       accessibilityViewIsModal
     >
       <View collapsable={false} style={s.sectionHead}>
-        <Text accessibilityRole="header" style={s.brand}>
+        <Text
+          accessibilityRole="header"
+          ref={heading}
+          accessible
+          style={s.brand}
+        >
           Vaultor
         </Text>
         <Action
@@ -237,17 +317,29 @@ export function WorkspaceDrawer(
         }`}
         onPress={props.recovery}
       />
-    </View>
+    </Animated.View>
   );
-  // A wide split-screen/window can retain a sidebar without squeezing phone content.
-  if (width >= 840) return panel;
   return (
     <Modal
+      visible={props.visible}
       transparent
-      animationType={props.reducedMotion ? 'none' : 'fade'}
+      statusBarTranslucent
+      navigationBarTranslucent
+      animationType="none"
+      onShow={() => {
+        NativeModules.VaultorPresentation?.systemBars(
+          light,
+          findNodeHandle(root.current) ?? 0,
+        );
+        const tag = findNodeHandle(heading.current);
+        if (tag) AccessibilityInfo.setAccessibilityFocus(tag);
+      }}
       onRequestClose={props.close}
     >
-      <View collapsable={false} style={s.overlay}>
+      <SafeAreaView
+        edges={['top', 'bottom', 'left', 'right']}
+        style={s.overlay}
+      >
         <Pressable
           style={StyleSheet.absoluteFill}
           accessibilityRole="button"
@@ -255,14 +347,22 @@ export function WorkspaceDrawer(
           onPress={props.close}
         />
         {panel}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
 const sheet = StyleSheet.create({
   grow: { flex: 1 },
-  home: { padding: 20, gap: 14 },
-  hero: { color: '#e8e8e8', fontSize: 30, fontWeight: '600', marginTop: 12 },
+  home: { padding: 16, gap: 10 },
+  resume: {
+    paddingVertical: 12,
+    gap: 6,
+    minHeight: 72,
+    borderBottomWidth: 1,
+    borderColor: '#252525',
+  },
+  resumeTitle: { color: '#e8e8e8', fontSize: 20, fontWeight: '600' },
+  hero: { color: '#e8e8e8', fontSize: 25, fontWeight: '600', marginTop: 4 },
   secondary: { color: '#b3b3b3', fontSize: 15 },
   meta: { color: '#858585', fontSize: 12 },
   search: {
@@ -272,7 +372,7 @@ const sheet = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     paddingHorizontal: 16,
-    marginVertical: 10,
+    marginVertical: 4,
   },
   sectionHead: {
     flexDirection: 'row',
@@ -301,7 +401,7 @@ const sheet = StyleSheet.create({
     borderRightWidth: 1,
     borderColor: '#333',
     padding: 16,
-    paddingTop: 36,
+    paddingTop: 8,
     flexShrink: 0,
   },
   brand: { fontSize: 23, color: '#e8e8e8', fontWeight: '600' },
@@ -310,7 +410,7 @@ const sheet = StyleSheet.create({
     backgroundColor: '#141414',
     borderRadius: 12,
     gap: 6,
-    marginVertical: 16,
+    marginVertical: 8,
   },
   drawerContent: { gap: 4 },
   drawerSection: { marginTop: 16 },

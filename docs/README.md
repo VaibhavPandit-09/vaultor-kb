@@ -128,3 +128,6 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 Keep CODEBASE and this index at the docs root for agent discovery. Put topic guides in their relevant folder, link them here and repair relative links when moving files. Archive completed historical specifications rather than rewriting them as current behavior. App updates are owned by agents, not left as user build homework; see the release process above.
 
 - [Android alpha.8 workspace selection](android/releases/0.1.0-alpha.8.md): W2 switching, drafts and emulator evidence.
+
+- [Android shell/source navigation](android/SHELL-NAVIGATION.md) — A1 hierarchy, mounted reader, source activation and interaction review gates.
+- [Android alpha.13 release evidence](android/releases/0.1.0-alpha.13.md) — A1 review candidate and actual checks.
