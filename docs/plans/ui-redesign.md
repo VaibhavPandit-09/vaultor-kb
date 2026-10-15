@@ -1,6 +1,6 @@
 # Desktop UI redesign: audit and proposed interaction plan
 
-Reviewed 2026-10-15. **Phase5B corrected global theme reveal implemented; user confirmed visible motion and requested slower timing.** The user explicitly authorized this phase after Phase5A. Native continuity and recorded wave progression checked; final1100ms Smooth/500ms Snappy tuning loaded for personal review. Final acceptance/platform release gates remain.
+Reviewed 2026-10-15. **User accepted the redesign and requested master integration/branch deletion.** The user explicitly authorized this phase after Phase5A. Native continuity and recorded wave progression checked; final1100ms Smooth/500ms Snappy tuning accepted in the finish request. Master fast-forward integration and Mac0.13.0 release preparation authorized; [delivery ledger](../desktop/releases/v0.13.0.md). Other active branches remain separate.
 Design authority: [UI philosophy](../design/UI_PHILOSOPHY.md). Current behavior remains documented in [CODEBASE](../CODEBASE.md). This document records source findings and proposed transformations, not shipped behavior.
 
 ## Branch and evidence
@@ -431,3 +431,7 @@ Audit documentation requires no installers. Any later shipped desktop behavior f
 ## Review decision
 
 Successive user requests authorized browse, Note, pane, navigation, preview, command-palette and the current Phase5A settings/dialog/utility candidates. Their evidence and unverified cases are recorded above. Phase5B is implemented with corrected wave progression verified in footage and by the user; final slower timing awaits personal judgment; final acceptance/platform release gates remain afterward. Stop at this theme review checkpoint.
+
+## Acceptance and integration — 2026-10-15
+
+The user said “its done, finish everything up, get the master branch updated and delete this branch finally.” Master fast-forwards through all16 redesign commits endingc8ec4a5, preserving their history. No merge/rebase/cherry-pick from another AI branch. Local/remote ai/codex-ui-redesign deletion follows verification that master contains it. Release0.13.0 is Mac arm64 only under the standing release workflow; Windows access is absent. The independently released Windows0.12.0 Review Inbox/archive4 feature stream is not on master and is not integrated by this request. [Release notes](../desktop/releases/v0.13.0.md) own artifact and compatibility gates. Personal motion judgment accepted; enumerated broader validation limits remain explicit rather than being inferred from acceptance.

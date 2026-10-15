@@ -4,6 +4,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Desktop installation, connections and releases — `desktop/`
 
+- [0.13.0 spatial desktop UI](desktop/releases/v0.13.0.md): accepted redesign integration, Mac delivery gates and separate Windows feature-stream limits.
+
 - [Install and update on each platform](desktop/INSTALLATION-AND-UPDATES.md): exact Windows/Mac steps, browser/Docker/Ubuntu paths, available targets and recovery.
 - [Agent-owned release process](desktop/RELEASE-PROCESS.md): standing responsibility for versions, native builds, verified artifacts, tags and GitHub publication.
 - [0.11.0 companion checkpoint service](desktop/releases/v0.11.0.md): R3 host capability, actual Windows verification, compatible Android and exact Mac handoff.
