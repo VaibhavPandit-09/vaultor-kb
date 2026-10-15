@@ -250,7 +250,7 @@ Final timing changed to1100ms Smooth/500ms Snappy, retaining the same48px feathe
 
 ## What remains after Phase5B
 
-1. **Personal timing acceptance:** the user confirmed corrected visible motion; final1100ms Smooth/500ms Snappy timing awaits personal judgment. No further capture is required for this small duration adjustment.
+1. **Accepted:** the user confirmed corrected visible motion and accepted the final slower1100ms Smooth/500ms Snappy timing in the finish request. No further capture is required for this small duration adjustment.
 2. **Final acceptance/validation and delivery:** personal motion judgment; outstanding native cases recorded per slice (600px minimum, three-pane depth, portals/IME/save/recovery failures, full theme/accent/size matrix and sustained performance); supported Windows/Mac build/install checks, original signing/version/package/publication gates under the release process. Current candidates are not installed releases and do not integrate other active AI branches. No further feature phase is planned in this stream.
 
 ## Audit of current surfaces
@@ -430,8 +430,10 @@ Audit documentation requires no installers. Any later shipped desktop behavior f
 
 ## Review decision
 
-Successive user requests authorized browse, Note, pane, navigation, preview, command-palette and the current Phase5A settings/dialog/utility candidates. Their evidence and unverified cases are recorded above. Phase5B is implemented with corrected wave progression verified in footage and by the user; final slower timing awaits personal judgment; final acceptance/platform release gates remain afterward. Stop at this theme review checkpoint.
+Successive user requests authorized browse, Note, pane, navigation, preview, command-palette and the current Phase5A settings/dialog/utility candidates. Their evidence and unverified cases are recorded above. Phase5B is implemented with corrected wave progression verified in footage and by the user; final slower timing accepted in the finish request; final acceptance/platform release gates remain afterward. Stop at this theme review checkpoint.
 
 ## Acceptance and integration — 2026-10-15
 
 The user said “its done, finish everything up, get the master branch updated and delete this branch finally.” Master fast-forwards through all16 redesign commits endingc8ec4a5, preserving their history. No merge/rebase/cherry-pick from another AI branch. Local/remote ai/codex-ui-redesign deletion follows verification that master contains it. Release0.13.0 is Mac arm64 only under the standing release workflow; Windows access is absent. The independently released Windows0.12.0 Review Inbox/archive4 feature stream is not on master and is not integrated by this request. [Release notes](../desktop/releases/v0.13.0.md) own artifact and compatibility gates. Personal motion judgment accepted; enumerated broader validation limits remain explicit rather than being inferred from acceptance.
+
+Mac0.13.0 published from immutable3615aa2/v0.13.0; final documentation records actual delivery.61 focused UI checks, fresh UI/server compilation, packaged native first/relaunch/save/PDF/tray,5 embedded-asset comparisons, DMG readonly mount/codesign, original-key sidecar and downloaded pair/public metadata verification passed. Full native/platform matrix remains unclaimed. Master is pushed; redesign branch cleanup preserves all commits and release tag. Separate Windows feature integration/release remains a later task.

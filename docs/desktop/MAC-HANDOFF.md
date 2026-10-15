@@ -1,3 +1,7 @@
+## UI stream — Mac0.13.0 published2026-10-15
+
+The accepted spatial UI stream is integrated on master and published for Mac arm64 from immutablev0.13.0/source3615aa2131edf34cd480f16801d7eac6fac98f5f. [0.13.0 release notes](releases/v0.13.0.md) own artifact hashes, original-key/codesign/DMG/native results and remaining limits. Normal Mac replacement remains manual. No Windows0.13.0 package or integration with ai/codex-current Review Inbox/archive4 is claimed. Windows requires deliberate later integration/versioning and native build access; do not rebuild this baseline as an integrated Windows upgrade. Historical exact-tag handoffs below remain immutable and are not claims that their old Mac pairs were published.
+
 ## R3 — exact v0.11.0 handoff (2026-10-14)
 
 Windows0.11.0 supplies companion checkpoint schema1. Mac artifacts remain blocked on native access; do not describe the Windows release as Mac-ready. Android alpha.10 remains unchanged, with no full offline storage until R4. Fetch origin/tags, check out the immutable v0.11.0 tag, verify desktop/package and lock versions0.11.0 and clean source. Do not use later master or move the tag. Follow RELEASE-PROCESS.md with Node24/Java25 and the privately transferred original release key; never regenerate/publish the key or configure paid services/CI secrets.

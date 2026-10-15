@@ -1,6 +1,6 @@
 # Install and update Vaultor on each device
 
-Reviewed 2026-10-14. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
+Reviewed 2026-10-15. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
 
 ## What you download
 
@@ -9,16 +9,16 @@ Use the [Vaultor GitHub Releases page](https://github.com/VaibhavPandit-09/vault
 | Device | Required files for in-app updating | Current support |
 | --- | --- | --- |
 | Windows x64 | None to select from 0.4.1+: Update and restart fetches both internally. First/transition install: EXE. Offline import: EXE + signed sidecar. | Silent in-app update/restart and installer tested |
-| macOS Apple Silicon | `Vaultor-VERSION-mac-arm64.dmg` and the same filename plus `.vaultor.json` | Release DMG and native runtime verified (0.7.1); manual DMG replacement for updates |
+| macOS Apple Silicon | `Vaultor-VERSION-mac-arm64.dmg` and the same filename plus `.vaultor.json` | Release DMG and native runtime verified (0.13.0); manual DMG replacement for updates |
 | macOS Intel | None | No supported desktop package |
 | Ubuntu/Linux | None | Desktop packaging is deferred; browser access and Docker server are available |
 | Android | Vaultor-Android-VERSION.apk from its separate Android prerelease | Install over the existing signed app; do not uninstall/clear data. See docs/android/ANDROID.md |
 
 For manual/offline import, keep each installer and its signed sidecar in the **same folder**, with their exact original names. Do not download source-code assets for installation. No Java or Docker is needed on a device running a packaged desktop app. Unsigned personal OS installers are separate from the app's Ed25519-signed update manifests: the latter verify update identity and bytes, but do not remove SmartScreen or Gatekeeper prompts.
 
-**[Windows0.11.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.11.0)** (2026-10-14) is published with companion checkpoint schema1. From installed Windows0.4.1+, use Updates → Check for updates → **Update and restart**; its complete signed Windows pair is discoverable even though the partial platform release is not globally latest. From older/development builds, save and Quit Vaultor through the tray/menu, then install the current EXE. [Release notes](releases/v0.11.0.md) record actual checks and platform limits. Android alpha.10 is unchanged; offline downloads are R4, not enabled by updating this host alone.
+**[Windows0.12.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.12.0)** is the current Windows-only feature release, with Review Inbox/archive4. Installed Windows0.4.1+: Updates → Check for updates → **Update and restart**. Its signed Windows pair remains discoverable independently of the global latest flag. There is no Windows0.13.0 package; integration with the separate UI stream and native Windows validation remain pending.
 
-macOS Apple Silicon's latest verified published package remains **[0.7.1](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.7.1)**; download its DMG and drag Vaultor.app into Applications. Mac0.11.0 is not yet available: [the exact-tag Mac AI handoff](MAC-HANDOFF.md) owns native build/check/publication. A Windows update does not update a remote Mac host. API/minimum client3/3, archive3, original trust and updater protocol1 remain unchanged; future offline clients must require the new host capability explicitly. Manual signed-pair import remains available for backup-aware transitions/offline updates.
+**[Mac arm640.13.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.13.0)** is published with the spatial UI redesign. Fully quit Vaultor, open its DMG and drag Vaultor.app into Applications; preserve app data. [Release notes](releases/v0.13.0.md) record verification and limits. This Mac build uses0.11.0 host contracts (protocol3/archive3), without the separate Windows0.12.0 Review Inbox/archive4 feature stream. Do not downgrade a0.12.0 host/data directory to this build or import archive4 into it. Both platform releases are explicitly partial; a Windows update does not update a remote Mac host. Manual signed-pair import remains available for backup-aware/offline transitions. Android alpha.11 remains separate.
 
 ## First installation — Windows
 
