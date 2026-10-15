@@ -17,6 +17,7 @@ import JourneyBar from '../components/JourneyBar';
 import { DesktopConnectionButton } from '../components/DesktopChrome';
 import WorkspacePaneLayout from '../components/WorkspacePaneLayout';
 import NoteOrientation from '../components/NoteOrientation';
+import SidebarFrame from '../components/SidebarFrame';
 import JourneyViewport from '../components/JourneyViewport';
 import { PaneNavigation, ResourceUnavailableError, type OpenIntent } from '../lib/paneNavigation';
 import { SharedNoteDocuments } from '../lib/sharedNoteDocuments';
@@ -53,6 +54,8 @@ import {
   Command,
   Tag as TagIcon,
   Settings2,
+  PanelLeftClose,
+  PanelLeftOpen,
   Palette,
 } from 'lucide-react';
 import api from '../lib/api';
@@ -195,7 +198,6 @@ export default function Dashboard() {
   const importBusy = useRef(false);
   const latestNoteContentRef = useRef<string | null>(null);
   const commandPalettePreviewRef = useRef<PreviewSnapshot | null>(null);
-  const floatingSidebarHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleEditDismissRef = useRef<'save' | 'cancel' | null>(null);
   const tagPickerRef = useRef<HTMLDivElement>(null);
   const tagPickerMenuRef = useRef<HTMLDivElement>(null);
@@ -206,7 +208,7 @@ export default function Dashboard() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleEditNoteId = titleEditState?.noteId ?? null;
 
-  const { settings, resolvedTheme, workspaceLoaded, resolvedShortcuts, toggleTheme, updateLocalSetting, flushSettings, saveStatus: settingsSaveStatus, retrySave: retrySettingsSave } = useSettings();
+  const { settings, resolvedTheme, workspaceLoaded, resolvedShortcuts, toggleTheme, updateLocalSetting, updateWorkspaceSetting, flushSettings, saveStatus: settingsSaveStatus, retrySave: retrySettingsSave } = useSettings();
   const collectionCreationFocus=useRestoreFocusOnClose();
   const commandPaletteFocus = useRestoreFocusOnClose();
   const shortcutsModalFocus = useRestoreFocusOnClose();
@@ -221,9 +223,9 @@ export default function Dashboard() {
   const narrowWorkspace = useNarrowWorkspace();
   const isFloatingSidebarMode = narrowWorkspace || localSettings.sidebarMode === 'floating';
   const sidebarCollapsed = localSettings.sidebarCollapsed;
-  const fixedSidebarHidden = workspaceSettings.focusMode || (isFloatingSidebarMode ? true : sidebarCollapsed);
+  const sidebarVisible = !workspaceSettings.focusMode && (isFloatingSidebarMode ? floatingSidebarPinned || floatingSidebarHovered : !sidebarCollapsed);
   const floatingSidebarVisible = !workspaceSettings.focusMode && isFloatingSidebarMode && (floatingSidebarPinned || floatingSidebarHovered);
-  const sidebarCollapsedForContext = isFloatingSidebarMode ? !floatingSidebarVisible : sidebarCollapsed;
+  const sidebarCollapsedForContext = !sidebarVisible;
   const selectedResource = useMemo(() => {
     if (!currentResourceId) {
       return null;
@@ -286,40 +288,13 @@ export default function Dashboard() {
     close: closeTagPicker,
   });
 
-  const clearFloatingSidebarHideTimeout = useCallback(() => {
-    if (floatingSidebarHideTimeoutRef.current) {
-      clearTimeout(floatingSidebarHideTimeoutRef.current);
-      floatingSidebarHideTimeoutRef.current = null;
-    }
-  }, []);
-
-  const showFloatingSidebar = useCallback(() => {
-    clearFloatingSidebarHideTimeout();
-    setFloatingSidebarHovered(true);
-  }, [clearFloatingSidebarHideTimeout]);
-
-  const scheduleFloatingSidebarHide = useCallback(() => {
-    clearFloatingSidebarHideTimeout();
-    if (floatingSidebarPinned) {
-      return;
-    }
-
-    floatingSidebarHideTimeoutRef.current = setTimeout(() => {
-      setFloatingSidebarHovered(false);
-    }, 180);
-  }, [clearFloatingSidebarHideTimeout, floatingSidebarPinned]);
-
   useEffect(() => {
-    clearFloatingSidebarHideTimeout();
     setFloatingSidebarHovered(false);
     setFloatingSidebarPinned(false);
-  }, [clearFloatingSidebarHideTimeout, localSettings.sidebarMode]);
-
+  }, [isFloatingSidebarMode]);
   useEffect(() => {
-    return () => {
-      clearFloatingSidebarHideTimeout();
-    };
-  }, [clearFloatingSidebarHideTimeout]);
+    if (workspaceSettings.focusMode) { setFloatingSidebarHovered(false); setFloatingSidebarPinned(false); }
+  }, [workspaceSettings.focusMode]);
 
   useEffect(() => {
     if (!titleEditNoteId) {
@@ -384,7 +359,7 @@ export default function Dashboard() {
     setTagPickerSelectedIndex(0);
   }, [tagInputValue, tagPickerOpenNoteId]);
 
-  const tagsEnabled = (localSettings.sidebarSections.tags.visible && !localSettings.sidebarSections.tags.collapsed) || Boolean(tagPickerOpenNoteId);
+  const tagsEnabled = (sidebarVisible && localSettings.sidebarSections.tags.visible && !localSettings.sidebarSections.tags.collapsed) || Boolean(tagPickerOpenNoteId);
   const tagGeneration = useRef(0);
   const tagRequest = useRef<AbortController | null>(null);
   const fetchTags = useCallback(async () => {
@@ -474,8 +449,13 @@ export default function Dashboard() {
   }, [dispatch, markOpened, paneNavigation]);
 
   const toggleSidebar = useCallback(() => {
+    if (workspaceSettings.focusMode) {
+      updateWorkspaceSetting('focusMode', false);
+      if (isFloatingSidebarMode) { setFloatingSidebarPinned(true); setFloatingSidebarHovered(true); }
+      else updateLocalSetting('sidebarCollapsed', false);
+      return;
+    }
     if (isFloatingSidebarMode) {
-      clearFloatingSidebarHideTimeout();
       setFloatingSidebarPinned((current) => {
         const next = !current;
         setFloatingSidebarHovered(next);
@@ -485,8 +465,8 @@ export default function Dashboard() {
     }
 
     updateLocalSetting('sidebarCollapsed', !sidebarCollapsed);
-  }, [clearFloatingSidebarHideTimeout, isFloatingSidebarMode, sidebarCollapsed, updateLocalSetting]);
-  useEscapeLayer({id:'floating-sidebar',active:floatingSidebarVisible,priority:ESCAPE_PRIORITIES.popover,close:()=>{clearFloatingSidebarHideTimeout();setFloatingSidebarPinned(false);setFloatingSidebarHovered(false);document.querySelector<HTMLButtonElement>('[aria-label="Toggle sidebar"]')?.focus();}});
+  }, [isFloatingSidebarMode, sidebarCollapsed, updateLocalSetting, updateWorkspaceSetting, workspaceSettings.focusMode]);
+  useEscapeLayer({id:'floating-sidebar',active:floatingSidebarVisible,priority:ESCAPE_PRIORITIES.popover,close:()=>{setFloatingSidebarPinned(false);setFloatingSidebarHovered(false);document.getElementById('sidebar-trigger')?.focus();}});
 
   const restoreCommandPalettePreview = useCallback((snapshot: PreviewSnapshot | null) => {
     if (!snapshot?.resourceId || !snapshot.resourceType) {
@@ -1180,8 +1160,8 @@ export default function Dashboard() {
   const openCollection = (item:OrganizationItem) => {showLibrary('library');dispatch(clearSelectedTags());setCollection(item);};
   const sidebarContent = (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="px-3 py-3 space-y-1">
-        <div className="flex items-center gap-1"><button className="sidebar-nav" onClick={openCommandPalette}><Search size={16} />Search workspace<span className="ml-auto text-xs opacity-60">{resolvedShortcuts.commandPalette.replace('Mod', isMac ? '⌘' : 'Ctrl').replaceAll('+', ' ')}</span></button><SidebarCustomization preferences={sidebarPreferences} onChange={updateSidebarPreferences} status={settingsSaveStatus} onRetry={retrySettingsSave}/></div>
+      <div className="sidebar-primary px-3 py-3 space-y-1">
+        <div className="flex items-center gap-1"><button className="sidebar-nav" onClick={openCommandPalette}><Search size={16} />Search workspace<span className="ml-auto text-xs opacity-60">{resolvedShortcuts.commandPalette.replace('Mod', isMac ? '⌘' : 'Ctrl').replaceAll('+', ' ')}</span></button><SidebarCustomization preferences={sidebarPreferences} onChange={updateSidebarPreferences} status={settingsSaveStatus} onRetry={retrySettingsSave}/><button className="browse-icon-button sidebar-pin-toggle" aria-label={isFloatingSidebarMode ? (floatingSidebarPinned ? 'Unpin navigation' : 'Pin navigation') : 'Collapse sidebar'} aria-pressed={isFloatingSidebarMode ? floatingSidebarPinned : undefined} onClick={toggleSidebar}>{isFloatingSidebarMode && !floatingSidebarPinned ? <PanelLeftOpen size={16}/> : <PanelLeftClose size={16}/>}</button></div>
         {([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }, { id: 'trash', label: 'Trash', Icon: Trash2 }] as const).map(({ id, label, Icon }) => <button key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</button>)}
         {openNotes.length > 0 && <button className="sidebar-nav" onClick={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }}><FileText size={16} />Open notes<span className="ml-auto text-xs opacity-60">{openNotes.length}</span></button>}
       </div>
@@ -1223,12 +1203,10 @@ export default function Dashboard() {
 
       <div className="border-t border-border" />
 
-      <div className="flex-1 overflow-y-auto py-2" style={{overflowAnchor:'none'}}>
-        <SidebarSection name="pinned" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('favorites')}><PinnedList compact filterType={sidebarPreferences.pinned.type} activeId={!libraryVisible?currentResourceId??undefined:undefined} visible={sidebarPreferences.pinned.visible&&!sidebarPreferences.pinned.collapsed} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></SidebarSection>
-        <SidebarSection name="recent" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('recent')}><SidebarRecent type={sidebarPreferences.recent.type} enabled={sidebarPreferences.recent.visible&&!sidebarPreferences.recent.collapsed} activeId={!libraryVisible?currentResourceId??undefined:undefined} onOpen={id=>void openResourceById(id)} onDelete={(id,event)=>void handleDeleteResource(id,event)} onResources={setResources}/>{recencyError&&<button className="sidebar-nav text-xs" onClick={()=>recency.retry()}>{recencyError} Retry</button>}</SidebarSection>
-      </div>
-      <div className="border-t border-border" />
-      <SidebarSection name="tags" preferences={sidebarPreferences} onChange={updateSidebarPreferences}><div className="flex max-h-40 flex-col px-3 py-2">
+      <div className="sidebar-secondary min-h-0 flex-1 overflow-y-auto py-2" style={{overflowAnchor:'none'}}>
+        <SidebarSection name="pinned" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('favorites')}><PinnedList compact filterType={sidebarPreferences.pinned.type} activeId={!libraryVisible?currentResourceId??undefined:undefined} visible={sidebarVisible&&sidebarPreferences.pinned.visible&&!sidebarPreferences.pinned.collapsed} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></SidebarSection>
+        <SidebarSection name="recent" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('recent')}><SidebarRecent type={sidebarPreferences.recent.type} enabled={sidebarVisible&&sidebarPreferences.recent.visible&&!sidebarPreferences.recent.collapsed} activeId={!libraryVisible?currentResourceId??undefined:undefined} onOpen={id=>void openResourceById(id)} onDelete={(id,event)=>void handleDeleteResource(id,event)} onResources={setResources}/>{recencyError&&<button className="sidebar-nav text-xs" onClick={()=>recency.retry()}>{recencyError} Retry</button>}</SidebarSection>
+      <SidebarSection name="tags" preferences={sidebarPreferences} onChange={updateSidebarPreferences}><div className="flex flex-col px-3 py-2">
         {tags.length > 3 && (
           <input
             type="text"
@@ -1238,7 +1216,7 @@ export default function Dashboard() {
             onChange={(event) => setTagSearch(event.target.value)}
           />
         )}
-        <div className="flex flex-wrap gap-1.5 overflow-y-auto">
+        <div className="flex flex-wrap gap-1.5">
           {filteredTags.map((tag) => (
             <span
               key={tag.id}
@@ -1271,6 +1249,7 @@ export default function Dashboard() {
           {filteredTags.length === 0 && <span className="text-[10px] text-slate-400">No tags</span>}
         </div>
       </div></SidebarSection>
+      </div>
 
       <DesktopConnectionButton/>
       <div className="flex items-center justify-between border-t border-border bg-background/80 p-2">
@@ -1358,52 +1337,17 @@ export default function Dashboard() {
       </AppModal>
 
       <div className="relative flex min-h-0 flex-1">
-        {!isFloatingSidebarMode && (
-          <aside
-            className={`border-r border-border bg-[var(--sidebar)] ${
-              smoothAnimations
-                ? 'transition-[width,opacity,border-color] duration-[170ms] ease-out'
-                : 'transition-none'
-            } ${fixedSidebarHidden ? 'w-0 border-r-0 opacity-0' : 'w-72 opacity-100'}`}
-          >
-            <div className={`h-full ${fixedSidebarHidden ? 'pointer-events-none' : ''}`}>
-              {sidebarContent}
-            </div>
-          </aside>
-        )}
+        <SidebarFrame floating={isFloatingSidebarMode} open={sidebarVisible} focusMode={workspaceSettings.focusMode} pinned={floatingSidebarPinned} surfaceStyle={isFloatingSidebarMode ? getGlassPanelStyle(uiTransparency, 16, 'canvas') : undefined}
+          onReveal={() => setFloatingSidebarHovered(true)} onHide={() => setFloatingSidebarHovered(false)} onToggle={toggleSidebar}>
+          <div className="h-full" onClick={event => {
+            if (narrowWorkspace && (event.target as HTMLElement).closest('.sidebar-nav,.sidebar-shortcut-open')) {
+              setFloatingSidebarPinned(false); setFloatingSidebarHovered(false);
+            }
+          }}>{sidebarContent}</div>
+        </SidebarFrame>
 
-        {isFloatingSidebarMode && !workspaceSettings.focusMode && (
-          <>
-            <div
-              className="absolute inset-y-0 left-0 z-20 w-1.5"
-              onMouseEnter={showFloatingSidebar}
-            />
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-30 flex items-start pl-2 pt-2 pb-2">
-              <div
-                inert={!floatingSidebarVisible}
-                className={`pointer-events-auto h-full w-72 overflow-hidden rounded-2xl ${
-                  smoothAnimations
-                    ? 'shadow-xl transition-[transform,opacity] duration-[170ms] ease-out'
-                    : 'shadow-lg transition-none'
-                } ${
-                  floatingSidebarVisible
-                    ? 'translate-x-0 opacity-100'
-                    : '-translate-x-[calc(100%+0.75rem)] opacity-0'
-                }`}
-                style={getGlassPanelStyle(uiTransparency, 16, 'canvas')}
-                onMouseEnter={showFloatingSidebar}
-                onMouseLeave={scheduleFloatingSidebarHide}
-                onClick={event=>{if(narrowWorkspace && (event.target as HTMLElement).closest('.sidebar-nav,.sidebar-shortcut-open')){clearFloatingSidebarHideTimeout();setFloatingSidebarPinned(false);setFloatingSidebarHovered(false);}}}
-              >
-                {sidebarContent}
-              </div>
-            </div>
-          </>
-        )}
-
-        <main className="workspace-main min-w-0 flex-1 relative flex flex-col" data-pane-count={openWorkspaceNotes.length} data-narrow={narrowWorkspace}>
+        <main className="workspace-main min-w-0 flex-1 relative flex flex-col" data-pane-count={openWorkspaceNotes.length} data-narrow={narrowWorkspace} data-navigation-hidden={!sidebarVisible || isFloatingSidebarMode}>
           <div className="workspace-compact-controls">
-            {narrowWorkspace && !workspaceSettings.focusMode && <button className="library-button" aria-label="Toggle sidebar" aria-expanded={floatingSidebarVisible} onClick={toggleSidebar}>Menu</button>}
             {!libraryVisible && openWorkspaceNotes.length>1 && <label className="workspace-pane-switcher">Pane <select aria-label="Focused pane" value={activePaneId ?? ''} onChange={event=>activateOpenNote(event.target.value)}>{openWorkspaceNotes.map((note,index)=><option key={note.paneId} value={note.paneId}>{index+1} · {note.resource?.title ?? 'Untitled note'}</option>)}</select></label>}
           </div>
           <div className="workspace-view h-full" hidden={!libraryVisible}>
@@ -1470,6 +1414,7 @@ export default function Dashboard() {
                         disabled={Boolean(note.resource?.trashedAt)}
                         onClick={() => startTitleEditing(note.id, note.title, note.paneId)}
                         title={note.title}
+                        data-active={note.paneId === activePaneId}
                         className={`note-title w-full break-words rounded-lg px-2 py-1 text-left text-lg font-semibold transition-colors ${
                           note.paneId === activePaneId
                             ? 'text-foreground hover:bg-background/80'

@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { SidebarVisibility } from '../lib/sidebarVisibility';
 import { createPortal } from 'react-dom';
 import { useAnchoredPortalPosition } from '../lib/useAnchoredPortalPosition';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../lib/escape/escape';
 export default function LibraryPopover({label,children,trigger,className,priority=ESCAPE_PRIORITIES.popover}:{label:string;trigger?:ReactNode;className?:string;priority?:number;children:(close:()=>void)=>ReactNode}) {
- const [open,setOpen]=useState(false);const anchor=useRef<HTMLButtonElement>(null),panel=useRef<HTMLDivElement>(null);
+ const available=useContext(SidebarVisibility);
+ const [requested,setOpen]=useState(false);const open=requested&&available;
+ useEffect(()=>{if(!available)setOpen(false);},[available]);
+ const anchor=useRef<HTMLButtonElement>(null),panel=useRef<HTMLDivElement>(null);
  const {position}=useAnchoredPortalPosition(open,anchor,{width:280,align:'end'});
  const close=()=>{setOpen(false);anchor.current?.focus();};
  useEscapeLayer({active:open,priority,close,restoreFocusOnEscape:false});
