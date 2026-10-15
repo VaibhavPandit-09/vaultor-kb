@@ -67,6 +67,10 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [Android interaction foundations](android/INTERACTION-FOUNDATIONS.md): A0 motion, semantic haptics, coordinated theme/bar foundation and physical review boundary.
+- [R6 Android redesign phases](plans/android-r6-plan.md): approved audit, A0–A5 interaction gates and preserved Review contracts.
+- [Android alpha.12](android/releases/0.1.0-alpha.12.md): A0 review candidate, installed validation and release ledger.
+
 - [Offline reading companions](android/OFFLINE.md): R4 private storage, verified activation/resume, local search, coverage, policies and source locks.
 - [Android alpha.11](android/releases/0.1.0-alpha.11.md): R4 installed APK validation and publication ledger.
 

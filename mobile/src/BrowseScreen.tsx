@@ -16,6 +16,7 @@ import {
   Text,
   TextInput,
   View,
+  type GestureResponderEvent,
 } from 'react-native';
 import {
   MobileBrowser,
@@ -34,7 +35,7 @@ export function Action({
   accessibilityLabel,
 }: {
   label: string;
-  onPress: () => void;
+  onPress: (event: GestureResponderEvent) => void;
   active?: boolean;
   disabled?: boolean;
   accessibilityLabel?: string;

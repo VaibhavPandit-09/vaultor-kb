@@ -5,6 +5,7 @@ export type ReadingPreferences = {
   spacing: number;
   measure: number;
   motion: 'snappy' | 'smooth';
+  haptics: 'system' | 'off';
 };
 export const defaultReading: ReadingPreferences = {
   theme: 'os',
@@ -13,6 +14,7 @@ export const defaultReading: ReadingPreferences = {
   spacing: 1.75,
   measure: 660,
   motion: 'smooth',
+  haptics: 'system',
 };
 export function normalizeReading(value: unknown): ReadingPreferences {
   const v = value as Partial<ReadingPreferences> | undefined;
@@ -31,6 +33,7 @@ export function normalizeReading(value: unknown): ReadingPreferences {
     spacing: number(v?.spacing, 1.4, 2.2, 1.75),
     measure: Math.round(number(v?.measure, 320, 800, 660)),
     motion: v?.motion === 'snappy' ? 'snappy' : 'smooth',
+    haptics: v?.haptics === 'off' ? 'off' : 'system',
   };
 }
 export function externalAddress(value: unknown): string | undefined {

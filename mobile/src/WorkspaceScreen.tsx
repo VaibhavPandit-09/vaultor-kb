@@ -34,7 +34,7 @@ import ResourcePreview from './ResourcePreview';
 import ReaderView, { type ReaderPanel } from './ReaderView';
 import ReadingControls from './ReadingControls';
 import OfflineControls from './OfflineControls';
-import { useThemeStyles } from './ui';
+import { useReading, useThemeStyles } from './ui';
 const native = NativeModules.VaultorNative;
 const parse = async <T,>(p: Promise<string>): Promise<T> => JSON.parse(await p);
 async function permission(interactive = true) {
@@ -51,6 +51,7 @@ async function permission(interactive = true) {
     throw Error('Allow local-network access, then retry.');
 }
 export default function WorkspaceScreen() {
+  const { reduced } = useReading();
   const s = useThemeStyles(styles),
     menu = useRef<React.ElementRef<typeof Pressable>>(null);
   const model = useRef(
@@ -161,8 +162,7 @@ export default function WorkspaceScreen() {
     [address, setAddress] = useState('https://'),
     [code, setCode] = useState(''),
     [inventory, setInventory] = useState<any>(),
-    [recoveryError, setRecoveryError] = useState(''),
-    [reduced, setReduced] = useState(false);
+    [recoveryError, setRecoveryError] = useState('');
   const run = (f: () => Promise<void>) => void model.perform(f);
   const closeDrawer = () => {
     setDrawer(false);
@@ -246,12 +246,6 @@ export default function WorkspaceScreen() {
       .initialize()
       .catch(e => model.report(e))
       .finally(() => setInitialized(true));
-    void AccessibilityInfo.isReduceMotionEnabled().then(setReduced);
-    const motion = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      setReduced,
-    );
-    return () => motion.remove();
   }, [model]);
   useEffect(() => {
     const event = BackHandler.addEventListener('hardwareBackPress', () => {

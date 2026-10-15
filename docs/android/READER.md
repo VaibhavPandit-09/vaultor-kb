@@ -21,6 +21,8 @@ Removed hosts, old generations, missing originals and absent network do not eras
 
 ## Reading presentation and controls
 
+A0 alpha.12 uses the existing Reading appearance surface to prove shared sheet motion, native coordinated theme reveal, semantic touch-feedback preferences/previews and main/modal system-bar handling. One ReadingProvider reduced-motion source now serves shell and reader. Real reader DOM/position stays mounted; no capture or editing bridge is added. [Interaction foundations](INTERACTION-FOUNDATIONS.md) owns these additions and their physical review boundary; the existing reader behavior below remains otherwise unchanged.
+
 One compact topbar gives space to content. Reading options exposes Outline, Find within note, Reading appearance and Journey; no permanent editing toolbar/nested-card note layout. Headings, lists, quotes, marks, tables/code and read-only tasks preserve meaning. Tables/code scroll horizontally within blocks; pages stay vertical. Code backgrounds span the full scrollable line width, and inline code wraps with its decoration. Text/link labels use native WebView selection/copy.
 
 Outline lists256headings maximum without recording visits. Find accepts200characters, literal case-insensitive matching across inline marks within blocks, max500matches, Previous/Next. CSS Highlights preserves document text nodes/selection. It searches saved note content only. Search snippets are not guessed into locators; explicit reference occurrences jump only with matching source revision, valid structured path and target ID. Drift leaves reading intact.

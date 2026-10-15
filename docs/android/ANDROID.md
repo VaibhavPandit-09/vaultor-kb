@@ -1,5 +1,7 @@
 # Vaultor for Android
 
+Current A0 interaction review candidate: **0.1.0-alpha.12 / versionCode16**, reviewed2026-10-16. [Interaction foundations](INTERACTION-FOUNDATIONS.md) owns motion/haptics/theme/bar behavior; [alpha.12 ledger](releases/0.1.0-alpha.12.md) owns actual installed/release status. It preserves the R4 reading/download boundary below. A1–A5 and R6 capture/sync remain unimplemented; physical haptic acceptance is user-owned. Native VIBRATE permission is used solely for capability-checked rich touch effects; no original-write or network permission expansion occurs.
+
 Reviewed 2026-10-14. R4 shipped **0.1.0-alpha.11 / versionCode15**; [release evidence](releases/0.1.0-alpha.11.md) records current validation/publication. W1–W3/R1–R3 shipped; R4 is complete/published; R5–R10 require separate authorization. [OFFLINE.md](OFFLINE.md) owns retained reading storage, local search, source locking and download policy. R2 alpha.10/code14 is the preceding APK. Host0.11.0+ companionSnapshots:1 is required for downloads; protocol3/archive3 and workspace grants remain unchanged. This mobile-only update does not rebuild desktop.
 
 Host0.12.0 adds optional reviews:1 and full workspace archive4. Android alpha.11 reading/companion downloads stay compatible and unchanged; Android review capture/synchronization remains separately authorized R6. No Android rebuild is required for R5.
