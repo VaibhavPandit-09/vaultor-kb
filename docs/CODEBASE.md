@@ -915,3 +915,7 @@ Includes the3 focused capture source/locator Jest cases in release source alongs
 ### 2026-10-16 — A3 keyboard Back handoff
 
 ContextSheet guards the visible keyboard and bounded250ms post-hide Back handoff after Android16 forwarded the consumed key-up to the modal. First Back hides actual software IME; second Back dismisses capture while preserving WebView and protected draft, verified on API36. TypeScript/release compilation pass; exact-source dual-emulator publication gates follow in alpha.15 ledger. No host/domain/desktop change; physical acceptance remains pending.
+
+### 2026-10-16 — A3 installed release gates
+
+Documentation-only validation record, no architectural effect: final API36 and API37 exact installed APKs each passed12 focused executions, including actual software IME/landscape/two-stage Back, source/file/quote/original equality, reduced motion, storage invariants/failure recovery and seed→force-stop→same-UUID resume. Both pulled APKs match SHA25612967c1d7e7eeb2658ad1cc77e1f84d7d805cc03e0bed86dd398ded308e17b81; clean pushed-source build reproduces bytes. ContextSheet lint passes. Original signer retained; host and emulators stopped. Publication follows in alpha.15 ledger; A4 and physical acceptance remain pending.
