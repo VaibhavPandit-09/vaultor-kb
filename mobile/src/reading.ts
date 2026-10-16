@@ -6,6 +6,7 @@ export type ReadingPreferences = {
   measure: number;
   motion: 'snappy' | 'smooth';
   haptics: 'system' | 'off';
+  richHaptics: 'clear' | 'platform' | 'expressive';
 };
 export const defaultReading: ReadingPreferences = {
   theme: 'os',
@@ -15,6 +16,7 @@ export const defaultReading: ReadingPreferences = {
   measure: 660,
   motion: 'smooth',
   haptics: 'system',
+  richHaptics: 'clear',
 };
 export function normalizeReading(value: unknown): ReadingPreferences {
   const v = value as Partial<ReadingPreferences> | undefined;
@@ -34,6 +36,10 @@ export function normalizeReading(value: unknown): ReadingPreferences {
     measure: Math.round(number(v?.measure, 320, 800, 660)),
     motion: v?.motion === 'snappy' ? 'snappy' : 'smooth',
     haptics: v?.haptics === 'off' ? 'off' : 'system',
+    richHaptics:
+      v?.richHaptics === 'platform' || v?.richHaptics === 'expressive'
+        ? v.richHaptics
+        : 'clear',
   };
 }
 export function externalAddress(value: unknown): string | undefined {

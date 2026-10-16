@@ -18,6 +18,7 @@ import { Action } from './BrowseScreen';
 import { useAppearance, useReading, useThemeStyles } from './ui';
 import MotionSheet from './MotionSheet';
 import FeedbackPreview from './FeedbackPreview';
+import DevelopmentFeedbackPanel from './DevelopmentFeedbackPanel';
 import { haptic } from './haptics';
 function ReadingNumber({
   label,
@@ -222,6 +223,30 @@ export default function ReadingControls({ close }: { close: () => void }) {
                   background changes stay silent.
                 </Text>
                 <FeedbackPreview />
+                <Text style={s.label}>Capture tactile profile</Text>
+                <View style={s.choices}>
+                  {(['clear', 'platform', 'expressive'] as const).map(
+                    richHaptics => (
+                      <Action
+                        key={richHaptics}
+                        label={
+                          richHaptics === 'clear'
+                            ? 'Clear clicks'
+                            : richHaptics === 'platform'
+                            ? 'Platform fallback'
+                            : 'Expressive if supported'
+                        }
+                        active={p.richHaptics === richHaptics}
+                        onPress={() => update({ richHaptics })}
+                      />
+                    ),
+                  )}
+                </View>
+                <Text style={s.muted}>
+                  Use Platform fallback if custom capture feedback is weak on
+                  this device. System and app touch settings always apply.
+                </Text>
+                <DevelopmentFeedbackPanel />
                 {error ? (
                   <View>
                     <Text accessibilityRole="alert" style={s.error}>

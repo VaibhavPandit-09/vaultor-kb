@@ -100,7 +100,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       "get" -> prefs.getString("preferences","{}") ?: "{}"
       "put" -> {require(input.length<=2000);val a=JSONObject(input)
         val theme=a.optString("theme","os");val accent=a.optString("accent","blue");require(theme in listOf("os","light","dark","oled") && accent in listOf("blue","violet","mint","amber"))
-        val v=JSONObject().put("theme",theme).put("accent",accent).put("size",a.optDouble("size",18.0).also{require(it.isFinite())}.coerceIn(14.0,28.0)).put("spacing",a.optDouble("spacing",1.75).also{require(it.isFinite())}.coerceIn(1.4,2.2)).put("measure",a.optInt("measure",660).coerceIn(320,800)).put("motion",if(a.optString("motion")=="snappy")"snappy" else "smooth").put("haptics",if(a.optString("haptics")=="off")"off" else "system")
+        val v=JSONObject().put("theme",theme).put("accent",accent).put("size",a.optDouble("size",18.0).also{require(it.isFinite())}.coerceIn(14.0,28.0)).put("spacing",a.optDouble("spacing",1.75).also{require(it.isFinite())}.coerceIn(1.4,2.2)).put("measure",a.optInt("measure",660).coerceIn(320,800)).put("motion",if(a.optString("motion")=="snappy")"snappy" else "smooth").put("haptics",if(a.optString("haptics")=="off")"off" else "system").put("richHaptics",a.optString("richHaptics","clear").takeIf{it in setOf("clear","platform","expressive")}?:"clear")
         require(prefs.edit().putString("preferences",v.toString()).commit()) {"Cannot persist reading preferences."};v.toString()
       }
       else -> error("Unsupported reading preference action.")
@@ -522,3 +522,4 @@ class VaultorPackage:ReactPackage {
   override fun createNativeModules(ctx:ReactApplicationContext)=listOf<NativeModule>(VaultorModule(ctx),VaultorPresentation(ctx))
   override fun createViewManagers(ctx:ReactApplicationContext)=emptyList<ViewManager<*,*>>()
 }
+

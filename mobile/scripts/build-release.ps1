@@ -1,3 +1,4 @@
+param([switch]$Diagnostics)
 $ErrorActionPreference = 'Stop'
 $mobileRoot = Split-Path $PSScriptRoot
 & npm.cmd --prefix $mobileRoot run check
@@ -23,7 +24,8 @@ try {
             Copy-Item -LiteralPath $_.FullName -Destination $destination -Force
         }
     $gradle = Join-Path $devRoot 'gradle/gradle-9.4.1/bin/gradle.bat'
-    & $gradle --no-daemon -p (Join-Path $mobileRoot android) --project-cache-dir (Join-Path $devRoot project-cache) "-Pkotlin.compiler.execution.strategy=in-process" "-Porg.gradle.java.installations.auto-detect=false" "-Porg.gradle.java.installations.auto-download=false" "-Porg.gradle.java.installations.paths=$env:JAVA_HOME" assembleRelease assembleReleaseAndroidTest --console=plain
+    $diagnosticFlag = if ($Diagnostics) { 'true' } else { 'false' }
+    & $gradle --no-daemon -p (Join-Path $mobileRoot android) --project-cache-dir (Join-Path $devRoot project-cache) "-PvaultorDiagnostics=$diagnosticFlag" "-Pkotlin.compiler.execution.strategy=in-process" "-Porg.gradle.java.installations.auto-detect=false" "-Porg.gradle.java.installations.auto-download=false" "-Porg.gradle.java.installations.paths=$env:JAVA_HOME" assembleRelease assembleReleaseAndroidTest --console=plain
     if ($LASTEXITCODE -ne 0) { throw 'Android release compilation failed' }
     & node (Join-Path $PSScriptRoot verify-apk.mjs)
     if ($LASTEXITCODE -ne 0) { throw 'APK verification failed' }

@@ -1,5 +1,4 @@
 package com.vaultorandroid
-
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.*
 import org.junit.Test
@@ -8,16 +7,19 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PresentationTest {
   @Test fun semanticRoutingAndCapabilities() {
-    val r = VaultorPresentation.Companion
-    for (event in VaultorPresentation.events) {
-      assertEquals(VaultorPresentation.Route.SILENT, r.route(event, "capture", false, true, true, true))
-      assertEquals(VaultorPresentation.Route.SYSTEM, r.route(event, "", true, true, true, true))
+    val h=VaultorHaptics.Companion
+    for(event in h.events){
+      assertEquals("silent",h.route(event,"capture","clear",false,true,true,true,true))
+      assertEquals("system",h.route(event,"","clear",true,true,true,true,true))
     }
-    assertEquals(VaultorPresentation.Route.ENVELOPE, r.route("complete", "capture", true, true, true, true))
-    assertEquals(VaultorPresentation.Route.PRIMITIVES, r.route("selection", "anchor", true, true, false, true))
-    assertEquals(VaultorPresentation.Route.SYSTEM, r.route("complete", "capture", true, true, false, false))
-    assertEquals(VaultorPresentation.Route.SYSTEM, r.route("complete", "capture", true, false, true, true))
-    assertEquals(VaultorPresentation.Route.SYSTEM, r.route("micro", "capture", true, true, true, true))
-    assertEquals(VaultorPresentation.Route.SILENT, r.route("unknown", "", true, true, true, true))
+    assertEquals("primitives",h.route("selection","anchor","clear",true,true,true,true,true))
+    assertEquals("envelope",h.route("complete","capture","expressive",true,true,true,true,true))
+    assertEquals("primitives",h.route("complete","capture","expressive",true,true,false,true,true))
+    assertEquals("predefined",h.route("complete","capture","clear",true,true,false,false,true))
+    assertEquals("system",h.route("complete","capture","clear",true,true,false,false,false))
+    assertEquals("system",h.route("complete","capture","platform",true,true,true,true,true))
+    assertEquals("system",h.route("complete","capture","clear",true,false,true,true,true))
+    assertEquals("silent",h.route("unknown","","clear",true,true,true,true,true))
+    assertEquals(5,h.events.map{h.constant(it)}.toSet().size)
   }
 }
