@@ -91,7 +91,7 @@ class CaptureExperienceTest {
       repeat(50){if(!ime())Thread.sleep(100)};assertTrue("Software IME must actually be visible",ime());field.text="A3 keyboard and rotation"
       d.setOrientationLeft();Thread.sleep(800);d.takeScreenshot(java.io.File(i.targetContext.getExternalFilesDir(null),"a3-ime-landscape.png"));d.dumpWindowHierarchy(java.io.File(i.targetContext.getExternalFilesDir(null),"a3-ime-landscape.xml"));assertTrue(d.wait(Until.hasObject(By.text("Review capture")),5000))
       d.pressBack();repeat(30){if(ime())Thread.sleep(100)};assertFalse("Back must dismiss IME first",ime());assertTrue(d.hasObject(By.text("Review capture")))
-      tap("Done");assertSame("Rotation/IME must retain the reader",retained,web());assertTrue(captures().toString().contains("A3 keyboard and rotation"))
+      Thread.sleep(300);d.pressBack();assertTrue(d.wait(Until.hasObject(By.desc("Reading options")),5000));assertSame("Rotation/IME must retain the reader",retained,web());assertTrue(captures().toString().contains("A3 keyboard and rotation"))
     } finally {d.setOrientationNatural();if(setting=="null")d.executeShellCommand("settings delete secure show_ime_with_hard_keyboard")else d.executeShellCommand("settings put secure show_ime_with_hard_keyboard $setting")}
   }
   @Test fun pdfPageCapturesRenderedFile(){

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import {
   AccessibilityInfo,
   findNodeHandle,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   NativeModules,
@@ -35,6 +36,32 @@ export default function ContextSheet({
   const root = useRef<React.ElementRef<typeof View>>(null),
     heading = useRef<React.ElementRef<typeof Text>>(null);
   const light = useAppearance() === 'light';
+  const active = useRef(true);
+  const ime = useRef({ visible: false, hiddenAt: -Infinity });
+  useEffect(() => {
+    active.current = true;
+    const shown = Keyboard.addListener('keyboardDidShow', () => {
+      ime.current.visible = true;
+    });
+    const hidden = Keyboard.addListener('keyboardDidHide', () => {
+      ime.current = { visible: false, hiddenAt: Date.now() };
+    });
+    return () => {
+      active.current = false;
+      shown.remove();
+      hidden.remove();
+    };
+  }, []);
+  const requestClose = () => {
+    // API 36 can forward the same Back key-up after the IME consumed it.
+    // Consume only that bounded handoff; Done and scrim dismiss directly.
+    if (ime.current.visible || Keyboard.isVisible()) {
+      Keyboard.dismiss();
+      return;
+    }
+    if (Date.now() - ime.current.hiddenAt < 250) return;
+    if (active.current) close();
+  };
   const bars = useCallback(
     () =>
       NativeModules.VaultorPresentation?.systemBars(
@@ -52,7 +79,7 @@ export default function ContextSheet({
       statusBarTranslucent
       navigationBarTranslucent
       animationType="none"
-      onRequestClose={close}
+      onRequestClose={requestClose}
       onShow={() => {
         bars();
         const tag = findNodeHandle(heading.current);
@@ -119,3 +146,4 @@ const styles = StyleSheet.create({
   },
   title: { color: '#e8e8e8', fontSize: 20, fontWeight: '600', flexShrink: 1 },
 });
+

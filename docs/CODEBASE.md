@@ -911,3 +911,7 @@ Source-bound composer, independent encrypted protected draft/local queue, retain
 ### 2026-10-16 — A3 focused source tests recorded
 
 Includes the3 focused capture source/locator Jest cases in release source alongside native/DOM checks. All3 passed; no architectural effect or shipped behavior change in this test/documentation follow-up. Final installed/API36 and publication gates remain in alpha.15 ledger.
+
+### 2026-10-16 — A3 keyboard Back handoff
+
+ContextSheet guards the visible keyboard and bounded250ms post-hide Back handoff after Android16 forwarded the consumed key-up to the modal. First Back hides actual software IME; second Back dismisses capture while preserving WebView and protected draft, verified on API36. TypeScript/release compilation pass; exact-source dual-emulator publication gates follow in alpha.15 ledger. No host/domain/desktop change; physical acceptance remains pending.
