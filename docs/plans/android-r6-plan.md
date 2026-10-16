@@ -71,3 +71,5 @@ User authorized A2 with “start next”. [Reader context](../android/READER-CON
 ## A3 ledger — 2026-10-16
 
 “Continue next” authorizes A3 after published alpha.14. [Review capture](../android/REVIEW-CAPTURE.md) owns interaction/local persistence; [alpha.15 ledger](../android/releases/0.1.0-alpha.15.md) owns actual checks. Protected drafts and durable local queue are independent of downloads/legacy recovery. No upload/status transport is enabled; stop at A3 before A4. Physical acceptance remains user-owned.
+
+Published A3 alpha.15/code19 from immutable7d64708/android/v0.1.0-alpha.15 at2026-10-16T07:14:53Z. Both exact installed emulator artifacts passed12 focused executions and match the clean-source signed APK. Three staged assets independently downloaded and compared before publication; alpha.15 ledger owns failures and physical limitations. Stop at A3 review before A4.

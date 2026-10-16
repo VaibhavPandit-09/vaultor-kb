@@ -299,3 +299,5 @@ User approved the source audit/phased redesign and started A0 from verified mast
 ## 2026-10-16 — R6 A3 local capture authorization
 
 “Continue next” authorizes A3 after alpha.14. [Review capture](../android/REVIEW-CAPTURE.md) and [alpha.15 ledger](../android/releases/0.1.0-alpha.15.md) own behavior/evidence. No original write or upload/status transport is enabled. Stop at A3 review before A4.
+
+A3 alpha.15/code19 is published from immutable7d64708/android/v0.1.0-alpha.15 at2026-10-16T07:14:53Z. Both exact installed emulator generations passed12 focused executions; clean source and downloaded staged assets match. A4 upload/status/reconciliation remains unstarted. Stop for A3 review; physical acceptance remains user-owned.

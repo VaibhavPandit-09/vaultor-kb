@@ -919,3 +919,7 @@ ContextSheet guards the visible keyboard and bounded250ms post-hide Back handoff
 ### 2026-10-16 — A3 installed release gates
 
 Documentation-only validation record, no architectural effect: final API36 and API37 exact installed APKs each passed12 focused executions, including actual software IME/landscape/two-stage Back, source/file/quote/original equality, reduced motion, storage invariants/failure recovery and seed→force-stop→same-UUID resume. Both pulled APKs match SHA25612967c1d7e7eeb2658ad1cc77e1f84d7d805cc03e0bed86dd398ded308e17b81; clean pushed-source build reproduces bytes. ContextSheet lint passes. Original signer retained; host and emulators stopped. Publication follows in alpha.15 ledger; A4 and physical acceptance remain pending.
+
+### 2026-10-16 — A3 publication record
+
+Documentation-only follow-up, no architectural effect: alpha.15/code19 is published from immutable7d64708/android/v0.1.0-alpha.15 at2026-10-16T07:14:53Z. Both exact installed emulator generations passed12 focused executions and reproduce clean-source signed bytes. Bulk staged verification downloads stalled; sequential independent downloads of all3 assets passed exact byte comparison before manual publication of the verified draft. Original signer/source/assets retained, owned host/emulators stopped. Public verification and full limitations are in alpha.15 ledger. Stop at A3; no A4 transport or desktop/original change. Physical haptic/OneUI/TalkBack acceptance remains user-owned.
