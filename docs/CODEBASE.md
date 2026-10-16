@@ -952,3 +952,11 @@ Development probes now respect the selected UI Off value immediately, before nat
 ### 2026-10-16 — Distinct destructive fallback
 
 Standard H5 still prefers Android LONG_PRESS. If declined, its fallback is supported THUD.9 or explicit silence, never the H3 completion preset. Capability display and pure routing checks cover this rare diagnostic-only product level. TypeScript passes; exact0b5cae0b candidate API36 proof5 and invariant/reader14 executions passed before this isolated fallback refinement. Final revised engine/device gates follow. No source/persistence/original/A4 effect.
+
+### 2026-10-16 — Acceptance delivery transfer and guide correction
+
+Publisher verifies each staged asset through an independent download instead of the bulk transfer that stalled during alpha.15; exact-byte/clean-source/tag/signer/immutable-asset gates are unchanged. Node syntax passes; actual alpha.16 publication gate follows. Current shell/reader/foundation guides now identify A3 local capture and the rejected A0–A3/S24 approval gate consistently. No APK architecture or product-code change in this delivery/documentation follow-up. API36 exact final b3cf7b04 passed22 executions (19 focused, QHD, protected-draft seed/force-stop/restore) and pulled installed bytes match. API37 is in progress.
+
+### 2026-10-16 — Positive haptic runtime preconditions
+
+API37's first19-case run passed18 but source-positive feedback emitted no event with the emulator's persisted app Off preference. The corrected positive case enables System through real settings and explicit system feedback; its scroll helper now reaches that control. A separate real capture case observes new foreground/visible H2 anchor and H3 completion reports after UI lock/durable receipt and verifies unchanged original content; that case passed on API37. This is wiring evidence, not phone perceptibility. Failed policy/setup attempts are excluded; final rerun follows. Test-only changes, no architectural/APK behavior effect; source and capture policy correctly remain silent when Off.

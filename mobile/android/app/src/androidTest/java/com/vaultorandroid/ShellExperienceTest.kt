@@ -20,7 +20,8 @@ class ShellExperienceTest {
   private val i get() = InstrumentationRegistry.getInstrumentation()
   private val d get() = UiDevice.getInstance(i)
   private fun tap(label: String) {
-    val control = d.wait(Until.findObject(By.desc(label).enabled(true)), 15000)
+    var control = d.wait(Until.findObject(By.desc(label).enabled(true)), 3000)
+    if(control==null)control=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.desc(label).enabled(true)))
     assertNotNull("Missing control: $label", control)
     control!!.click(); Thread.sleep(300)
   }
@@ -45,6 +46,11 @@ class ShellExperienceTest {
     require(address.startsWith("https://127.0.0.1:"))
     i.targetContext.startActivity(i.targetContext.packageManager.getLaunchIntentForPackage("com.vaultor.app")!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     assertTrue(d.wait(Until.hasObject(By.desc("Open navigation")),30000))
+    val saved=org.json.JSONObject(i.targetContext.getSharedPreferences("reader-presentation-v1",android.content.Context.MODE_PRIVATE).getString("preferences","{}")?:"{}")
+    android.util.Log.i("TestRunner","Positive source feedback precondition: saved app haptics="+saved.optString("haptics","system"))
+    // Explicit positive-feedback case, independently of prior Off-policy tests.
+    tap("Open navigation");tap("Appearance & reading");tap("System");tap("Done")
+    d.executeShellCommand("settings put system haptic_feedback_enabled 1")
     d.findObject(By.descContains("Choose source")).click()
     val label="Read downloaded R4 offline fixture from "+address
     var row=d.wait(Until.findObject(By.desc(label)),2000)

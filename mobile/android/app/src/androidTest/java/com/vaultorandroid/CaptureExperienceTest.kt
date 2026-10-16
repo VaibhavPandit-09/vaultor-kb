@@ -55,6 +55,21 @@ class CaptureExperienceTest {
     assertTrue(d.wait(Until.hasObject(By.text("Protected draft on this phone · "+comment.length+"/5000")),10000))
     val item=captures().getJSONObject(0);assertEquals(comment,item.getJSONObject("body").getString("comment"));java.io.File(i.targetContext.noBackupFilesDir,"a3-draft-fixture.json").writeText(item.toString())
   }
+  @Test fun actualCaptureFeedbackKeyframes(){
+    reader();val retained=web();val original=saved();tap("Reading options");tap("Reading appearance");tap("System");tap("Done");d.executeShellCommand("settings put system haptic_feedback_enabled 1")
+    val context=(i.targetContext.applicationContext as MainApplication).reactHost.currentReactContext as ReactApplicationContext
+    val presentation=context.getNativeModule("VaultorPresentation") as VaultorPresentation
+    val field=VaultorPresentation::class.java.getDeclaredField("lastFeedback").apply{isAccessible=true}
+    fun report():JSONObject {var value=JSONObject();i.runOnMainSync{value=field.get(presentation) as JSONObject};return value}
+    fun awaitEvent(event:String,profile:String,previous:JSONObject):JSONObject {
+      repeat(40){val value=report();if(value!==previous && value.optString("event")==event && value.optString("profile")==profile){assertTrue(value.toString(),value.optString("status") in setOf("requested","rejected"));return value};Thread.sleep(50)}
+      throw AssertionError("Missing visible foreground $event/$profile: "+report())
+    }
+    val previous=report();tap("Reading options");tap("Add review item");assertTrue(d.wait(Until.hasObject(By.text("Evidence locked to this source")),5000));val anchor=awaitEvent("selection","anchor",previous)
+    val comment="Actual motion feedback proof";d.wait(Until.findObject(By.desc("Review comment")),5000).text=comment
+    assertTrue(d.wait(Until.hasObject(By.text("Protected draft on this phone · "+comment.length+"/5000")),10000));tap("Save on this phone");assertTrue(d.wait(Until.hasObject(By.text("Saved on this phone")),5000));awaitEvent("complete","capture",anchor)
+    assertEquals("queued",captures().getJSONObject(0).getString("state"));tap("Done");assertSame(retained,web());assertEquals(original,saved())
+  }
   @Test fun restoreProtectedDraftAfterDeath(){
     val fixture=JSONObject(java.io.File(i.targetContext.noBackupFilesDir,"a3-draft-fixture.json").readText());val comment=fixture.getJSONObject("body").getString("comment")
     launch();tap("Open navigation");tap("Captures on this phone")
