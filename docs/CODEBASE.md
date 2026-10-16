@@ -944,3 +944,7 @@ Native onShow/ready/measured gates now own sheet/drawer entrances. Review prepar
 ### 2026-10-16 — Capture temporal review corrections
 
 Temporal20fps capture review found the busy label shifting evidence during save. Progress now uses the existing status slot, evidence travel reserves its space, and interrupted anchor motion resolves its visual locked endpoint. Source settle targets the accessible source control; haptic admission checks real visible bounds as well as window focus. Initial explicit capture failures get rejection only after their visible error surface is ready. API36 prior candidate checks passed4 capture/theme/large-text/IME cases,9 invariant/diagnostic cases and5 reader/shell cases; one source test lacked its required fixtureAddress and is being rerun with the explicit disposable source. Focused TypeScript passes; final candidate checks pending. No storage/source-routing/transport/original or A4 change.
+
+### 2026-10-16 — Diagnostic Off preference handoff
+
+Development probes now respect the selected UI Off value immediately, before native preference protection finishes, while displaying selected versus persisted app state separately. Native Off/system/foreground/visible-bound checks remain authoritative; no settings bypass. Source activation instrumentation now requires a new report rather than a possibly stale earlier selection event. TypeScript passes; previous explicit downloaded-source test passed on API36. Final development candidate checks follow; no architectural/domain/A4 effect.

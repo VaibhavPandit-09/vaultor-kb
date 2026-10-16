@@ -49,14 +49,16 @@ class ShellExperienceTest {
     val label="Read downloaded R4 offline fixture from "+address
     var row=d.wait(Until.findObject(By.desc(label)),2000)
     if(row==null) row=d.findObject(By.scrollable(true)).scrollUntil(Direction.DOWN,Until.findObject(By.desc(label)))
-    assertNotNull("Exact downloaded source absent",row);row!!.click()
-    assertTrue(d.wait(Until.gone(By.text("Sources")),10000))
-    assertTrue(d.wait(Until.hasObject(By.descContains("Downloaded · offline")),10000))
     val context=(i.targetContext.applicationContext as MainApplication).reactHost.currentReactContext as com.facebook.react.bridge.ReactApplicationContext
     val presentation=context.getNativeModule("VaultorPresentation") as VaultorPresentation
     val feedback=VaultorPresentation::class.java.getDeclaredField("lastFeedback").apply{isAccessible=true}
+    lateinit var previous:org.json.JSONObject;i.runOnMainSync{previous=feedback.get(presentation) as org.json.JSONObject}
+    assertNotNull("Exact downloaded source absent",row);row!!.click()
+    assertTrue(d.wait(Until.gone(By.text("Sources")),10000))
+    assertTrue(d.wait(Until.hasObject(By.descContains("Downloaded · offline")),10000))
     var report=org.json.JSONObject()
-    repeat(20){i.runOnMainSync{report=feedback.get(presentation) as org.json.JSONObject};if(report.optString("event")!="selection" || report.optString("profile")!="")Thread.sleep(100)}
+    repeat(20){i.runOnMainSync{report=feedback.get(presentation) as org.json.JSONObject};if(report===previous || report.optString("event")!="selection" || report.optString("profile")!="")Thread.sleep(100)}
+    assertNotSame("Source must emit its own new confirmation, not reuse prior Fit feedback",previous,report)
     assertEquals("selection",report.optString("event"));assertEquals("",report.optString("profile"))
     assertTrue("Source confirmation must reach the focused visible engine: $report",report.optString("status") in setOf("requested","rejected"))
     d.takeScreenshot(File(i.targetContext.getExternalFilesDir(null),"a1-downloaded.png"))

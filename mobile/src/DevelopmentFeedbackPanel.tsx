@@ -79,15 +79,24 @@ export default function DevelopmentFeedbackPanel() {
       const tag = findNodeHandle(root.current);
       if (!available || !tag) return;
       const row = vocabulary[index];
+      const locallyOff =
+        selected !== 'inspect' && preferences.haptics === 'off';
       try {
         const report = JSON.parse(
           await NativeModules.VaultorPresentation.hapticDiagnostics(
             row[1],
             row[2],
-            selected,
+            locallyOff ? 'inspect' : selected,
             tag,
           ),
         );
+        if (locallyOff)
+          Object.assign(report, {
+            status: 'suppressed',
+            mechanism: 'silent',
+            reason: 'App Off selected; no playback request sent',
+            androidAccepted: false,
+          });
         if (alive.current) {
           setReports(v => ({ ...v, [index]: { ...v[index], ...report } }));
           setFailure('');
@@ -97,7 +106,7 @@ export default function DevelopmentFeedbackPanel() {
           setFailure('Diagnostic inspection failed. No feedback guarantee.');
       }
     },
-    [available],
+    [available, preferences.haptics],
   );
   const refresh = useCallback(() => {
     vocabulary.forEach((_, index) => {
@@ -175,8 +184,10 @@ export default function DevelopmentFeedbackPanel() {
                     : report?.systemSetting === 0
                     ? 'disabled'
                     : 'unknown (system API decides)'}{' '}
-                  · App: {report?.appEnabled ? 'enabled' : 'disabled'} · Focus:{' '}
-                  {report?.windowFocused ? 'yes' : 'no'}
+                  · App selection:{' '}
+                  {preferences.haptics === 'off' ? 'disabled' : 'enabled'};
+                  persisted: {report?.appEnabled ? 'enabled' : 'disabled'} ·
+                  Focus: {report?.windowFocused ? 'yes' : 'no'}
                 </Text>
                 <Text style={text}>
                   Auto mechanism:{' '}
