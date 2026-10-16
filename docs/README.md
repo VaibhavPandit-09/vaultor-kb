@@ -137,3 +137,5 @@ Keep CODEBASE and this index at the docs root for agent discovery. Put topic gui
 
 - [Android Review capture](android/REVIEW-CAPTURE.md) — A3 source-bound protected capture/local queue; upload/status stays A4.
 - [Android alpha.15](android/releases/0.1.0-alpha.15.md) — actual A3 installed/publication evidence.
+
+- [Android motion/haptic remediation](android/MOTION-HAPTIC-REMEDIATION.md) — shipped A0–A3 inventory, rejected S24 acceptance, candidate changes and real-device script; A4 blocked.

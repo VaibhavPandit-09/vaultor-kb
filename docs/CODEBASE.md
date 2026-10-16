@@ -923,3 +923,7 @@ Documentation-only validation record, no architectural effect: final API36 and A
 ### 2026-10-16 — A3 publication record
 
 Documentation-only follow-up, no architectural effect: alpha.15/code19 is published from immutable7d64708/android/v0.1.0-alpha.15 at2026-10-16T07:14:53Z. Both exact installed emulator generations passed12 focused executions and reproduce clean-source signed bytes. Bulk staged verification downloads stalled; sequential independent downloads of all3 assets passed exact byte comparison before manual publication of the verified draft. Original signer/source/assets retained, owned host/emulators stopped. Public verification and full limitations are in alpha.15 ledger. Stop at A3; no A4 transport or desktop/original change. Physical haptic/OneUI/TalkBack acceptance remains user-owned.
+
+### 2026-10-16 — A0–A3 real-device rejection and remediation audit
+
+User tested alpha.15 on Samsung Galaxy S24 Ultra and rejected haptic/motion perceptibility. A0–A3 are not interaction-approved; A4 is blocked pending explicit approval. MOTION-HAPTIC-REMEDIATION.md inventories every reachable shipped animation/haptic path, actual gating/fallbacks, missing movement and plausible suppression causes. Audit is source/documentation-only, no new runtime or physical certification and no architectural effect. Remediation is authorized; candidate must stop for user-owned real-device acceptance.
