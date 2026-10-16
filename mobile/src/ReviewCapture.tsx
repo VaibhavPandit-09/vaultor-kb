@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
+  Keyboard,
   findNodeHandle,
   NativeModules,
   ScrollView,
@@ -56,6 +57,7 @@ export default function ReviewCapture({
     pendingCompletion = useRef(false),
     pendingReject = useRef(false),
     root = useRef<React.ElementRef<typeof View>>(null);
+  const receiptRoot = useRef<React.ElementRef<typeof View>>(null);
   const commentHeight = useRef(new Animated.Value(140)).current;
   const anchorProgress = useRef(new Animated.Value(seed ? 0 : 1)).current;
   const receiptProgress = useRef(new Animated.Value(0)).current;
@@ -108,27 +110,47 @@ export default function ReviewCapture({
     if (item?.state !== 'queued' || !pendingCompletion.current) return;
     pendingCompletion.current = false;
     const duration = motionDuration('structure', preferences.motion, reduced);
-    const animation = Animated.parallel([
-      Animated.timing(commentHeight, {
-        toValue: 72,
-        duration,
-        easing: settleEasing,
-        useNativeDriver: false,
-      }),
-      Animated.timing(receiptProgress, {
-        toValue: 1,
-        duration,
-        easing: settleEasing,
-        useNativeDriver: false,
-      }),
-    ]);
+    let geometryDone = false,
+      delivered = false;
+    let feedbackFrame: number | undefined;
+    const complete = () => {
+      if (!geometryDone || delivered || Keyboard.isVisible() || !alive.current)
+        return;
+      delivered = true;
+      feedbackFrame = requestAnimationFrame(() => {
+        const tag = findNodeHandle(receiptRoot.current);
+        if (alive.current && tag)
+          haptic('complete', tag, preferences.haptics !== 'off', 'capture');
+      });
+    };
+    const keyboard = Keyboard.addListener('keyboardDidHide', complete);
+    const animation = Animated.parallel(
+      [
+        Animated.timing(commentHeight, {
+          toValue: 72,
+          duration,
+          easing: settleEasing,
+          useNativeDriver: false,
+        }),
+        Animated.timing(receiptProgress, {
+          toValue: 1,
+          duration,
+          easing: settleEasing,
+          useNativeDriver: false,
+        }),
+      ],
+      { stopTogether: false },
+    );
     animation.start(({ finished }) => {
-      const tag = findNodeHandle(root.current);
-      if (finished && alive.current && tag)
-        haptic('complete', tag, preferences.haptics !== 'off', 'capture');
+      if (finished) {
+        geometryDone = true;
+        complete();
+      }
     });
     return () => {
       animation.stop();
+      keyboard.remove();
+      if (feedbackFrame !== undefined) cancelAnimationFrame(feedbackFrame);
       commentHeight.setValue(72);
       receiptProgress.setValue(1);
     };
@@ -233,6 +255,7 @@ export default function ReviewCapture({
         pendingCompletion.current = true;
         accept(next);
         if (!alive.current) return;
+        Keyboard.dismiss();
       })
       .catch((e: Error) => {
         if (alive.current) {
@@ -378,6 +401,8 @@ export default function ReviewCapture({
                 </Animated.View>
                 {item.state === 'queued' ? (
                   <Animated.View
+                    ref={receiptRoot}
+                    collapsable={false}
                     style={{
                       height: receiptProgress.interpolate({
                         inputRange: [0, 1],

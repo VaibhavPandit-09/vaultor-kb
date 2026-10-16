@@ -56,6 +56,9 @@ class CaptureExperienceTest {
     val item=captures().getJSONObject(0);assertEquals(comment,item.getJSONObject("body").getString("comment"));java.io.File(i.targetContext.noBackupFilesDir,"a3-draft-fixture.json").writeText(item.toString())
   }
   @Test fun actualCaptureFeedbackKeyframes(){
+    val keyboardSetting=d.executeShellCommand("settings get secure show_ime_with_hard_keyboard").trim()
+    try{
+    d.executeShellCommand("settings put secure show_ime_with_hard_keyboard 1")
     reader();val retained=web();val original=saved();tap("Reading options");tap("Reading appearance");tap("System");tap("Done");d.executeShellCommand("settings put system haptic_feedback_enabled 1")
     val context=(i.targetContext.applicationContext as MainApplication).reactHost.currentReactContext as ReactApplicationContext
     val presentation=context.getNativeModule("VaultorPresentation") as VaultorPresentation
@@ -66,9 +69,21 @@ class CaptureExperienceTest {
       throw AssertionError("Missing visible foreground $event/$profile: "+report())
     }
     val previous=report();tap("Reading options");tap("Add review item");assertTrue(d.wait(Until.hasObject(By.text("Evidence locked to this source")),5000));val anchor=awaitEvent("selection","anchor",previous)
-    val comment="Actual motion feedback proof";d.wait(Until.findObject(By.desc("Review comment")),5000).text=comment
+    val comment="Actual motion feedback proof";val input=d.wait(Until.findObject(By.desc("Review comment")),5000);input.click();repeat(40){if(!ime())Thread.sleep(50)};assertTrue("Proof must use the real software keyboard",ime());input.text=comment
     assertTrue(d.wait(Until.hasObject(By.text("Protected draft on this phone · "+comment.length+"/5000")),10000));tap("Save on this phone");assertTrue(d.wait(Until.hasObject(By.text("Saved on this phone")),5000));awaitEvent("complete","capture",anchor)
+    repeat(30){if(ime())Thread.sleep(50)};assertFalse("Save must release editing/IME before its completion cue",ime());d.takeScreenshot(java.io.File(i.targetContext.getExternalFilesDir(null),"remediation-ime-save.png"))
     assertEquals("queued",captures().getJSONObject(0).getString("state"));tap("Done");assertSame(retained,web());assertEquals(original,saved())
+    }finally{if(keyboardSetting=="null")d.executeShellCommand("settings delete secure show_ime_with_hard_keyboard")else d.executeShellCommand("settings put secure show_ime_with_hard_keyboard $keyboardSetting")}
+  }
+  @Test fun savedReceiptSurvivesExpansionInterruption(){
+    reader();val retained=web();val original=saved();tap("Reading options");tap("Add review item");val field=d.wait(Until.findObject(By.desc("Review comment")),5000);field.text="Interrupted local confirmation";assertTrue(d.wait(Until.hasObject(By.text("Protected draft on this phone · "+"Interrupted local confirmation".length+"/5000")),10000))
+    fun inject(rect:android.graphics.Rect){val time=android.os.SystemClock.uptimeMillis();for(action in listOf(android.view.MotionEvent.ACTION_DOWN,android.view.MotionEvent.ACTION_UP)){val event=android.view.MotionEvent.obtain(time,android.os.SystemClock.uptimeMillis(),action,rect.centerX().toFloat(),rect.centerY().toFloat(),0);event.source=android.view.InputDevice.SOURCE_TOUCHSCREEN;assertTrue(i.uiAutomation.injectInputEvent(event,true));event.recycle();Thread.sleep(5)}}
+    inject(d.findObject(By.desc("Save on this phone")).visibleBounds)
+    val expand=android.graphics.Rect();var editHeight=0;var density=1f
+    repeat(100){if(expand.isEmpty){i.runOnMainSync{fun visit(v:View){if(v.contentDescription?.toString()=="Expand saved comment")v.getGlobalVisibleRect(expand);if(v.contentDescription?.toString()=="Review comment"){editHeight=v.height;density=v.resources.displayMetrics.density};if(v is ViewGroup)for(n in 0 until v.childCount)visit(v.getChildAt(n))};WindowInspector.getGlobalWindowViews().forEach(::visit)};if(expand.isEmpty)Thread.sleep(5)}}
+    assertFalse("Saved disclosure must exist during contraction",expand.isEmpty);assertTrue("Interruption must arrive before the comment finishes contracting",editHeight/density>80);inject(expand);Thread.sleep(700)
+    var expanded=false;var complete=false;i.runOnMainSync{fun visit(v:View){if(v.contentDescription?.toString()=="Review comment")expanded=v.height/v.resources.displayMetrics.density>=220;if(v is android.widget.TextView && v.text.toString().startsWith("On this phone · pending sync")){val parent=v.parent as View;complete=parent.parent is View && (parent.parent as View).height>=parent.height};if(v is ViewGroup)for(n in 0 until v.childCount)visit(v.getChildAt(n))};WindowInspector.getGlobalWindowViews().forEach(::visit)}
+    assertTrue("Comment expansion must win interruption",expanded);assertTrue("Receipt must finish independently rather than remain clipped",complete);assertEquals("queued",captures().getJSONObject(0).getString("state"));tap("Done");assertSame(retained,web());assertEquals(original,saved())
   }
   @Test fun restoreProtectedDraftAfterDeath(){
     val fixture=JSONObject(java.io.File(i.targetContext.noBackupFilesDir,"a3-draft-fixture.json").readText());val comment=fixture.getJSONObject("body").getString("comment")

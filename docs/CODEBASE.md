@@ -960,3 +960,7 @@ Publisher verifies each staged asset through an independent download instead of 
 ### 2026-10-16 — Positive haptic runtime preconditions
 
 API37's first19-case run passed18 but source-positive feedback emitted no event with the emulator's persisted app Off preference. The corrected positive case enables System through real settings and explicit system feedback; its scroll helper now reaches that control. A separate real capture case observes new foreground/visible H2 anchor and H3 completion reports after UI lock/durable receipt and verifies unchanged original content; that case passed on API37. This is wiring evidence, not phone perceptibility. Failed policy/setup attempts are excluded; final rerun follows. Test-only changes, no architectural/APK behavior effect; source and capture policy correctly remain silent when Off.
+
+### 2026-10-16 — Real-keyboard save completion and interruption
+
+Explicit local queue success releases the software IME; H3 awaits both the saved geometry endpoint and hidden keyboard, targeting the visible receipt. Comment disclosure interruption cannot stop/clip the independent receipt animation. New focused native cases exercise actual software-keyboard H2/H3 delivery and immediate expansion during contraction, with original/queued-body checks. TypeScript/build and targeted device validation follow. No persistence/transport/source/original or A4 change; no physical feel approval is claimed.
