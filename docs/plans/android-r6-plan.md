@@ -77,3 +77,7 @@ Published A3 alpha.15/code19 from immutable7d64708/android/v0.1.0-alpha.15 at202
 ## 2026-10-16 — A0–A3 remediation gate
 
 User rejected alpha.15 on real S24 Ultra: haptics and structural motion were not perceptible. A0–A3 are not approved. A4 is blocked until explicit approval of the revised development acceptance APK. MOTION-HAPTIC-REMEDIATION.md owns inventory, remediation, actual checks and physical script. This pass changes presentation/diagnostics only, with local persistence/source/original boundaries preserved.
+
+### 2026-10-16 — Remediation candidate published; A4 blocked
+
+[Development acceptance alpha.16/code20](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.16) published at12:00:42Z from 9197816856d823b4f1efd35098e6d2985ced295c. Installed original-signer APK bytes, clean-source reproduction, three staged downloads and anonymous public APK checksum verified. [Audit and exact S24 script](../android/MOTION-HAPTIC-REMEDIATION.md) and [release ledger](../android/releases/0.1.0-alpha.16.md) own evidence. A0–A3 remain unapproved on real hardware; stop here. A4 requires explicit S24 approval.

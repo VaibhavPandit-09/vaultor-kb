@@ -305,3 +305,7 @@ A3 alpha.15/code19 is published from immutable7d64708/android/v0.1.0-alpha.15 at
 ## 2026-10-16 — Real-device interaction rejection
 
 S24 Ultra rejection reopens A0–A3 motion/haptic acceptance. Remediation is authorized, A4 is blocked pending explicit approval; no upload/status work may start. See Android MOTION-HAPTIC-REMEDIATION.md for complete shipped-path inventory and candidate script.
+
+### 2026-10-16 — Remediation candidate published; A4 blocked
+
+[Development acceptance alpha.16/code20](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.16) published at12:00:42Z from 9197816856d823b4f1efd35098e6d2985ced295c. Installed original-signer APK bytes, clean-source reproduction, three staged downloads and anonymous public APK checksum verified. [Audit and exact S24 script](../android/MOTION-HAPTIC-REMEDIATION.md) and [release ledger](../android/releases/0.1.0-alpha.16.md) own evidence. A0–A3 remain unapproved on real hardware; stop here. A4 requires explicit S24 approval.
