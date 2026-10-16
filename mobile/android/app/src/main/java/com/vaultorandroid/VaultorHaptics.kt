@@ -19,6 +19,7 @@ class VaultorHaptics(private val ctx:ReactApplicationContext, private val vibrat
     fun constant(event:String)=when(event){"micro"->H.CLOCK_TICK;"selection"->H.GESTURE_END;"reject"->H.REJECT;"destructive"->H.LONG_PRESS;else->H.CONFIRM}
     fun label(event:String)=when(event){"micro"->"CLOCK_TICK";"selection"->"GESTURE_END";"reject"->"REJECT";"destructive"->"LONG_PRESS";else->"CONFIRM"}
     fun effect(event:String)=when(event){"micro"->VibrationEffect.EFFECT_TICK;"reject"->VibrationEffect.EFFECT_DOUBLE_CLICK;"complete","destructive"->VibrationEffect.EFFECT_HEAVY_CLICK;else->VibrationEffect.EFFECT_CLICK}
+    fun fallback(event:String,enabled:Boolean,thud:Boolean,preset:Boolean)=if(!enabled)"silent" else if(event=="destructive"){if(thud)"thud" else "silent"}else if(preset)"predefined" else "silent"
     fun route(event:String,rich:String,policy:String,allowed:Boolean,actuator:Boolean,envelope:Boolean,click:Boolean,preset:Boolean):String {
       if(!allowed || event !in events)return "silent"
       val spatial=(event=="selection" && rich=="anchor") || (event=="complete" && rich=="capture")
@@ -45,6 +46,7 @@ class VaultorHaptics(private val ctx:ReactApplicationContext, private val vibrat
       .put("legacyEnvelopeUsable",envelope() && vibrator.envelopeEffectInfo.minControlPointDurationMillis<=20)
       .put("clickPrimitive",vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK))
       .put("tickPrimitive",vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_TICK))
+      .put("thudPrimitive",vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_THUD))
       .put("clickEffect",supported(VibrationEffect.EFFECT_CLICK)).put("heavyEffect",supported(VibrationEffect.EFFECT_HEAVY_CLICK))
       .put("doubleEffect",supported(VibrationEffect.EFFECT_DOUBLE_CLICK)).put("tickEffect",supported(VibrationEffect.EFFECT_TICK))
   }
@@ -53,7 +55,7 @@ class VaultorHaptics(private val ctx:ReactApplicationContext, private val vibrat
     val selected=route(event,rich,report.getString("richPolicy"),report.getBoolean("appEnabled") && report.getInt("systemSetting")!=0,report.getBoolean("actuator"),report.getBoolean("envelopeUsable"),report.getBoolean("clickPrimitive"),supported(if(rich=="capture")VibrationEffect.EFFECT_DOUBLE_CLICK else effect(event)))
     return report.put("plannedRoute",if(report.getInt("systemSetting")==-1 && selected!="silent")"system" else selected)
       .put("platformConstant",label(event)).put("preset",effect(event))
-      .put("fallback",if(rich.isEmpty())"supported short preset if Android declines; otherwise silent" else "supported CLICK → supported preset → system → silent")
+      .put("fallback",if(event=="destructive")"supported THUD .9 if Android declines; otherwise silent (never duplicate completion preset)" else if(rich.isEmpty())"supported short preset if Android declines; otherwise silent" else "supported CLICK → supported preset → system → silent")
   }
   fun play(event:String,rich:String,v:View?,mode:String="auto"):JSONObject {
     val report=snapshot(v).put("event",event).put("profile",rich).put("requestedMode",mode)
@@ -105,7 +107,10 @@ class VaultorHaptics(private val ctx:ReactApplicationContext, private val vibrat
         "predefined"->{vibrator.vibrate(VibrationEffect.createPredefined(preset),attrs);report.put("mechanism","supported predefined effect $preset")}
         else->{if(!system()){
           // Never bypass settings. Use an explicitly supported short preset only.
-          if(report.getInt("systemSetting")==1 && supported(preset)){
+          val fallback=fallback(event,report.getInt("systemSetting")==1,report.getBoolean("thudPrimitive"),supported(preset))
+          if(fallback=="thud"){
+            vibrator.vibrate(VibrationEffect.startComposition().addPrimitive(VibrationEffect.Composition.PRIMITIVE_THUD,.9f).compose(),attrs);selected="primitives";report.put("mechanism","supported THUD .9").put("fallback","system declined → distinct deliberate THUD")
+          }else if(fallback=="predefined"){
             vibrator.vibrate(VibrationEffect.createPredefined(preset),attrs);selected="predefined";report.put("mechanism","supported predefined effect $preset").put("fallback","system declined → supported preset")
           }else return report.put("status","rejected").put("reason","Android declined system feedback; no supported permitted fallback")
         }}

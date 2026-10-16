@@ -948,3 +948,7 @@ Temporal20fps capture review found the busy label shifting evidence during save.
 ### 2026-10-16 — Diagnostic Off preference handoff
 
 Development probes now respect the selected UI Off value immediately, before native preference protection finishes, while displaying selected versus persisted app state separately. Native Off/system/foreground/visible-bound checks remain authoritative; no settings bypass. Source activation instrumentation now requires a new report rather than a possibly stale earlier selection event. TypeScript passes; previous explicit downloaded-source test passed on API36. Final development candidate checks follow; no architectural/domain/A4 effect.
+
+### 2026-10-16 — Distinct destructive fallback
+
+Standard H5 still prefers Android LONG_PRESS. If declined, its fallback is supported THUD.9 or explicit silence, never the H3 completion preset. Capability display and pure routing checks cover this rare diagnostic-only product level. TypeScript passes; exact0b5cae0b candidate API36 proof5 and invariant/reader14 executions passed before this isolated fallback refinement. Final revised engine/device gates follow. No source/persistence/original/A4 effect.

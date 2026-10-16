@@ -21,5 +21,10 @@ class PresentationTest {
     assertEquals("system",h.route("complete","capture","clear",true,false,true,true,true))
     assertEquals("silent",h.route("unknown","","clear",true,true,true,true,true))
     assertEquals(5,h.events.map{h.constant(it)}.toSet().size)
+    assertEquals("thud",h.fallback("destructive",true,true,true))
+    assertEquals("silent",h.fallback("destructive",true,false,true))
+    assertEquals("predefined",h.fallback("complete",true,true,true))
+    assertEquals("silent",h.fallback("reject",false,true,true))
+    assertEquals("silent",h.fallback("selection",true,false,false))
   }
 }

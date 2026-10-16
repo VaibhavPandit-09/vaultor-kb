@@ -194,7 +194,8 @@ export default function DevelopmentFeedbackPanel() {
                   {report?.plannedRoute ?? report?.route ?? 'inspecting'} ·
                   platform constant {report?.platformConstant ?? 'see result'}.
                   CLICK primitive {String(report?.clickPrimitive)}; tick{' '}
-                  {String(report?.tickPrimitive)}; envelope supported/usable{' '}
+                  {String(report?.tickPrimitive)}; deliberate THUD{' '}
+                  {String(report?.thudPrimitive)}; envelope supported/usable{' '}
                   {String(report?.envelopeSupported)}/
                   {String(report?.envelopeUsable)}; actuator{' '}
                   {String(report?.actuator)}. Presets tick/click/heavy/double:{' '}
