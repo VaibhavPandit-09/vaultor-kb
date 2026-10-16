@@ -893,3 +893,8 @@ Documentation-only publication follow-up records Android alpha.13/code17 from im
 ### 2026-10-16 — A2 reader-context candidate
 
 Stable reading-edge/contextual control/media presentation and platform Back validation replace decorative visit fading without changing original resources or host contracts. TypeScript, reader/media DOM geometry/settle/cancellation checks and5 focused reading/journey cases passed; installed API36/API37 reader/media/Back/theme and disconnected/reduced-motion checks passed as detailed in the alpha.14 ledger; exact-source publication follows. No Review capture/outbox/status implementation.
+
+
+### 2026-10-16 — A2 publication record
+
+Documentation-only publication follow-up records Android alpha.14/code18 from immutable02e39fac/android/v0.1.0-alpha.14 at2026-10-16T04:03:47Z. Clean-source original-key rebuild reproduces both installed APK hashes; staged assets and anonymous full public APK verified. Focused API36/API37 reader/media/Back/theme, disconnected reader/Copy/media and reduced-motion checks are detailed in the alpha.14 ledger, including corrected failures and physical limitations. No architectural effect or product-code change in this follow-up. Stop at A2 review before A3; physical haptic/OneUI/IME/TalkBack acceptance remains user-owned.

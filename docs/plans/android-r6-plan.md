@@ -28,7 +28,7 @@ Approved direction 2026-10-16. Branch `ai/codex-r6-android` starts at verified m
 | A4 — Queue/sync/status | Source-grouped inbox, single native owner, exact receipt reconciliation, desktop status, recovery | Lost acknowledgment→one correct desktop review→explicit resolution→Android update |
 | A5 — Polish/real device | Haptic/motion tuning, bars/themes/insets/accessibility/performance, upgrade/publication | User-owned physical acceptance and documented installed gates |
 
-A0 implementation is authoritative in [Interaction foundations](../android/INTERACTION-FOUNDATIONS.md). A1 is implemented as the alpha.13 shell/source review candidate following “continue next”; A2 is authorized/in progress; A3–A5 remain unstarted. A0 physical haptic acceptance remains pending. No R7 import or R8 export feature expansion; broader discovery/update settings remain R9.
+A0 implementation is authoritative in [Interaction foundations](../android/INTERACTION-FOUNDATIONS.md). A1 is implemented as the alpha.13 shell/source review candidate following “continue next”; A2 is published as the alpha.14 reader-context review candidate; A3–A5 remain unstarted. A0 physical haptic acceptance remains pending. No R7 import or R8 export feature expansion; broader discovery/update settings remain R9.
 
 ## Preserved R6 contracts
 
@@ -65,4 +65,4 @@ User authorized the next slice. Shell/source navigation and resource resume pres
 
 ## A2 ledger — 2026-10-16
 
-User authorized A2 with “start next”. [Reader context](../android/READER-CONTEXT.md) owns its state/motion/haptic contract. Alpha.14/code18 passed focused installed emulator gates and awaits exact-source publication; source identity, immutable originals and Review boundaries remain intact. Stop at A2 review before A3; physical acceptance remains user-owned.
+User authorized A2 with “start next”. [Reader context](../android/READER-CONTEXT.md) owns its state/motion/haptic contract. Alpha.14/code18 is published from immutable02e39fac/android/v0.1.0-alpha.14 after focused installed emulator gates, exact-source/installed-byte comparison and staged/public verification; source identity, immutable originals and Review boundaries remain intact. Stop at A2 review before A3; physical acceptance remains user-owned.
