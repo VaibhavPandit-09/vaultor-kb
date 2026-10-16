@@ -15,13 +15,17 @@ import {
   NativeModules,
   AppState,
   Keyboard,
+  findNodeHandle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import { Action, ChoiceSheet } from './BrowseScreen';
+import { Action } from './BrowseScreen';
 import type { MobileWorkspace } from './workspace';
 import { mediaPosition, type MediaPosition } from './reading';
-import { useThemeStyles } from './ui';
+import ContextSheet from './ContextSheet';
+import { haptic } from './haptics';
+import { motionDuration } from './motion';
+import { useAppearance, useReading, useThemeStyles } from './ui';
 const native = NativeModules.VaultorNative;
 type PreviewData = {
   uri?: string;
@@ -48,12 +52,21 @@ export default function ResourcePreview({
   const state = model.snapshot(),
     r = state.preview;
   return r ? (
-    <Preview
-      key={state.host?.epoch + '\n' + state.scope + '\n' + r.id}
-      model={model}
-      registerBack={registerBack}
-      download={download}
-    />
+    <Modal
+      key={state.host?.epoch + '\n' + state.scope}
+      animationType="none"
+      hardwareAccelerated
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={() => model.dismissPreview()}
+    >
+      <Preview
+        key={r.id}
+        model={model}
+        registerBack={registerBack}
+        download={download}
+      />
+    </Modal>
   ) : null;
 }
 function Preview({
@@ -65,6 +78,23 @@ function Preview({
   registerBack: (fn: () => boolean) => void;
   download?: () => void;
 }) {
+  const { preferences, reduced } = useReading();
+  const light = useAppearance() === 'light';
+  const root = useRef<React.ElementRef<typeof View>>(null),
+    fitToken = useRef(0),
+    pendingFit = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    NativeModules.VaultorPresentation?.systemBars(
+      light,
+      findNodeHandle(root.current) ?? 0,
+    );
+  }, [light]);
+  useEffect(
+    () => () => {
+      fitToken.current++;
+    },
+    [],
+  );
   const s = useThemeStyles(styles),
     state = model.snapshot(),
     r = state.preview!,
@@ -81,7 +111,9 @@ function Preview({
     [retry, setRetry] = useState(0),
     [position, setPosition] = useState<MediaPosition>(mediaPosition()),
     [initialized, setInitialized] = useState(false),
-    [pageText, setPageText] = useState('1');
+    [pageText, setPageText] = useState('1'),
+    [pageError, setPageError] = useState(''),
+    [renderedPage, setRenderedPage] = useState<number>();
   const input = {
     ...state.host,
     scope: state.scope,
@@ -155,7 +187,8 @@ function Preview({
   }, [captured, persist]);
   useEffect(() => {
     if (!initialized) return;
-    let active = true;
+    let active = true,
+      waitsForImage = false;
     const request = ++ticket.current;
     setBusy(true);
     setError('');
@@ -171,6 +204,7 @@ function Preview({
       .then((raw: string) => {
         if (active && request === ticket.current) {
           const next: PreviewData = JSON.parse(raw);
+          waitsForImage = !!next.uri;
           setData(next);
           if (next.page !== undefined && next.page !== current.current.page) {
             const p = { ...current.current, page: next.page };
@@ -188,7 +222,7 @@ function Preview({
           );
       })
       .finally(() => {
-        if (active) setBusy(false);
+        if (active && !waitsForImage) setBusy(false);
       });
     return () => {
       active = false;
@@ -198,6 +232,9 @@ function Preview({
   useEffect(() => {
     const sub = AppState.addEventListener('change', v => {
       if (v !== 'active') {
+        fitToken.current++;
+        pendingFit.current = undefined;
+        send({ type: 'cancel' });
         send({ type: 'flush' });
         persist();
       }
@@ -219,7 +256,24 @@ function Preview({
     model.dismissPreview();
   };
   const zoom = (value: number, actual = false) => {
-    send({ type: 'zoom', zoom: value, actual });
+    const meaningful =
+      !actual &&
+      value === 1 &&
+      (current.current.zoom !== 1 ||
+        current.current.x !== 0 ||
+        current.current.y !== 0);
+    if (!webReady.current || !data.uri) return;
+    const command = String(++fitToken.current);
+    pendingFit.current = meaningful ? command : undefined;
+    if (value === 1) setActions(false);
+    send({
+      type: 'zoom',
+      zoom: value,
+      actual,
+      command,
+      feedback: meaningful,
+      duration: motionDuration('structure', preferences.motion, reduced),
+    });
   };
   const page = (value: number) => {
     if (busy || !data.pages) return;
@@ -233,6 +287,20 @@ function Preview({
     current.current = p;
     setPosition(p);
     persist();
+  };
+  const goToPage = (text: string, tag?: number) => {
+    const value = Number(text);
+    if (Number.isInteger(value) && value >= 1 && value <= (data.pages || 0)) {
+      setPageError('');
+      setActions(false);
+      page(value - 1);
+    } else {
+      setPageError(`Choose a page from 1 to ${data.pages}.`);
+      if (tag)
+        requestAnimationFrame(() =>
+          haptic('reject', tag, preferences.haptics !== 'off'),
+        );
+    }
   };
   const gallery = state.previewGallery ?? [],
     index = gallery.indexOf(r.id);
@@ -281,27 +349,24 @@ function Preview({
       .finally(() => setBusy(false));
   };
   return (
-    <Modal
-      animationType="none"
-      hardwareAccelerated
-      onRequestClose={() => (actions ? setActions(false) : close())}
+    <SafeAreaView
+      ref={root}
+      collapsable={false}
+      style={s.root}
+      edges={['top', 'bottom', 'left', 'right']}
     >
-      <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-        <View style={s.header}>
-          <Action
-            label="‹"
-            accessibilityLabel="Close preview"
-            onPress={close}
-          />
-          <Text accessibilityRole="header" numberOfLines={1} style={s.title}>
-            {r.title}
-          </Text>
-          <Action
-            label="•••"
-            accessibilityLabel="Preview options"
-            onPress={() => setActions(true)}
-          />
-        </View>
+      <View style={s.header}>
+        <Action label="‹" accessibilityLabel="Close preview" onPress={close} />
+        <Text accessibilityRole="header" numberOfLines={1} style={s.title}>
+          {r.title}
+        </Text>
+        <Action
+          label="•••"
+          accessibilityLabel="Preview options"
+          onPress={() => setActions(true)}
+        />
+      </View>
+      <View style={s.feedback} pointerEvents="box-none">
         {busy ? (
           <Text accessibilityLiveRegion="polite" style={s.notice}>
             Preparing view…
@@ -329,175 +394,212 @@ function Preview({
             {status}
           </Text>
         ) : null}
-        <View style={s.canvas}>
-          {data.uri ? (
-            <WebView<{}>
-              ref={web}
-              source={{ uri: 'file:///android_asset/media.html' }}
-              originWhitelist={['file://']}
-              allowFileAccess
-              javaScriptEnabled
-              domStorageEnabled={false}
-              allowFileAccessFromFileURLs={false}
-              allowUniversalAccessFromFileURLs={false}
-              mixedContentMode="never"
-              setSupportMultipleWindows={false}
-              setBuiltInZoomControls={false}
-              onShouldStartLoadWithRequest={q =>
-                q.url === 'file:///android_asset/media.html' ||
-                q.url === 'about:blank'
-              }
-              style={s.canvas}
-              onMessage={e => {
-                const actual = model.snapshot();
-                if (
-                  actual.scope !== captured.scope ||
-                  actual.host?.epoch !== captured.epoch ||
-                  actual.preview?.id !== captured.resourceId
-                )
-                  return;
-                let m;
-                try {
-                  if (e.nativeEvent.data.length > 1000) return;
-                  m = JSON.parse(e.nativeEvent.data);
-                } catch {
-                  return;
-                }
-                if (m.type === 'ready') {
-                  webReady.current = true;
-                  load();
-                  return;
-                }
-                if (m.ticket !== String(ticket.current)) return;
-                if (m.type === 'position') {
-                  const p = mediaPosition({ ...current.current, ...m });
-                  current.current = p;
-                  setPosition(p);
-                  clearTimeout(saveTimer.current);
-                  saveTimer.current = setTimeout(persist, 300);
-                } else if (
-                  m.type === 'swipe' &&
-                  r.mimeType?.startsWith('image/')
-                )
-                  nextImage(m.delta < 0 ? -1 : 1);
-                else if (m.type === 'error')
-                  setError('Preview image could not be loaded. Retry preview.');
-              }}
-              onRenderProcessGone={() => {
-                webReady.current = false;
-                setError(
-                  'Viewer stopped. Retry preview; the original is unchanged.',
-                );
-                web.current?.reload();
-              }}
-            />
-          ) : data.text ? (
-            <ScrollView contentContainerStyle={s.textBody}>
-              <Text selectable style={s.text}>
-                {data.text}
-                {data.limited
-                  ? '\nFirst 100 KB. Save original for the complete file.'
-                  : ''}
-              </Text>
-            </ScrollView>
-          ) : data.external ? (
-            <View style={s.textBody}>
-              <Text style={s.muted}>
-                This format does not have an in-app reader. Open with another
-                app or save the original.
-              </Text>
-              <Action
-                label="Open with"
-                disabled={busy}
-                onPress={() => action('open')}
-              />
-            </View>
-          ) : null}
-        </View>
+      </View>
+      <View style={s.canvas}>
         {data.uri ? (
-          <View style={s.tools}>
-            <Action label="Fit" onPress={() => zoom(1)} />
-            <Action label="Actual size" onPress={() => zoom(1, true)} />
-            <Action
-              label="−"
-              accessibilityLabel="Zoom out"
-              onPress={() => zoom(Math.max(1, position.zoom - 0.5))}
-            />
-            <Text style={s.muted}>{Math.round(position.zoom * 100)}%</Text>
-            <Action
-              label="+"
-              accessibilityLabel="Zoom in"
-              onPress={() => zoom(Math.min(4, position.zoom + 0.5))}
-            />
-          </View>
-        ) : null}
-        {data.pages ? (
-          <View style={s.tools}>
-            <Action
-              label="‹"
-              accessibilityLabel="Previous page"
-              disabled={busy || position.page === 0}
-              onPress={() => page(position.page - 1)}
-            />
-            <Text style={s.muted}>Page</Text>
-            <TextInput
-              key={pageText}
-              accessibilityLabel="PDF page number"
-              keyboardType="number-pad"
-              selectTextOnFocus
-              defaultValue={pageText}
-              style={s.page}
-              onSubmitEditing={e => {
-                const n = Number(e.nativeEvent.text);
-                if (Number.isInteger(n) && n >= 1 && n <= data.pages!)
-                  page(n - 1);
-              }}
-            />
-            <Text style={s.muted}>of {data.pages}</Text>
-            <Action
-              label="›"
-              accessibilityLabel="Next page"
-              disabled={busy || position.page + 1 >= data.pages}
-              onPress={() => page(position.page + 1)}
-            />
-          </View>
-        ) : gallery.length > 1 ? (
-          <View style={s.tools}>
-            <Action
-              label="‹"
-              accessibilityLabel="Previous image"
-              disabled={busy || index <= 0}
-              onPress={() => nextImage(-1)}
-            />
+          <WebView<{}>
+            ref={web}
+            source={{ uri: 'file:///android_asset/media.html' }}
+            originWhitelist={['file://']}
+            allowFileAccess
+            javaScriptEnabled
+            domStorageEnabled={false}
+            allowFileAccessFromFileURLs={false}
+            allowUniversalAccessFromFileURLs={false}
+            mixedContentMode="never"
+            setSupportMultipleWindows={false}
+            setBuiltInZoomControls={false}
+            onShouldStartLoadWithRequest={q =>
+              q.url === 'file:///android_asset/media.html' ||
+              q.url === 'about:blank'
+            }
+            style={s.canvas}
+            onMessage={e => {
+              const actual = model.snapshot();
+              if (
+                actual.scope !== captured.scope ||
+                actual.host?.epoch !== captured.epoch ||
+                actual.preview?.id !== captured.resourceId
+              )
+                return;
+              let m;
+              try {
+                if (e.nativeEvent.data.length > 1000) return;
+                m = JSON.parse(e.nativeEvent.data);
+              } catch {
+                return;
+              }
+              if (m.type === 'ready') {
+                webReady.current = true;
+                load();
+                return;
+              }
+              if (m.ticket !== String(ticket.current)) return;
+              if (m.type === 'loaded') {
+                setBusy(false);
+                setRenderedPage(data.page ?? current.current.page);
+              } else if (
+                m.type === 'settled' &&
+                m.feedback === true &&
+                m.command === String(fitToken.current) &&
+                m.command === pendingFit.current
+              ) {
+                pendingFit.current = undefined;
+                const tag = findNodeHandle(root.current);
+                if (tag)
+                  haptic('selection', tag, preferences.haptics !== 'off');
+              } else if (m.type === 'position') {
+                const p = mediaPosition({ ...current.current, ...m });
+                current.current = p;
+                setPosition(p);
+                clearTimeout(saveTimer.current);
+                saveTimer.current = setTimeout(persist, 300);
+              } else if (m.type === 'swipe' && r.mimeType?.startsWith('image/'))
+                nextImage(m.delta < 0 ? -1 : 1);
+              else if (m.type === 'error') {
+                setBusy(false);
+                setError('Preview image could not be loaded. Retry preview.');
+              }
+            }}
+            onRenderProcessGone={() => {
+              webReady.current = false;
+              setError(
+                'Viewer stopped. Retry preview; the original is unchanged.',
+              );
+              web.current?.reload();
+            }}
+          />
+        ) : data.text ? (
+          <ScrollView contentContainerStyle={s.textBody}>
+            <Text selectable style={s.text}>
+              {data.text}
+              {data.limited
+                ? '\nFirst 100 KB. Save original for the complete file.'
+                : ''}
+            </Text>
+          </ScrollView>
+        ) : data.external ? (
+          <View style={s.textBody}>
             <Text style={s.muted}>
-              {index + 1} / {gallery.length} images in note
+              This format does not have an in-app reader. Open with another app
+              or save the original.
             </Text>
             <Action
-              label="›"
-              accessibilityLabel="Next image"
-              disabled={busy || index + 1 >= gallery.length}
-              onPress={() => nextImage(1)}
+              label="Open with"
+              disabled={busy}
+              onPress={() => action('open')}
             />
           </View>
         ) : null}
-        {data.static ? (
-          <Text style={s.caption}>
-            Static preview · {data.width} × {data.height}
-            {data.originalWidth !== data.width
-              ? ' · reduced from ' +
-                data.originalWidth +
-                ' × ' +
-                data.originalHeight
-              : ''}
-            . Original unchanged.
+      </View>
+      {data.pages ? (
+        <View style={s.tools}>
+          <Action
+            label="‹"
+            accessibilityLabel="Previous page"
+            disabled={busy || position.page === 0}
+            onPress={() => page(position.page - 1)}
+          />
+          <Action
+            label={`Page ${(renderedPage ?? position.page) + 1} of ${
+              data.pages
+            }`}
+            accessibilityLabel="PDF page controls"
+            onPress={() => setActions(true)}
+          />
+          <Action
+            label="›"
+            accessibilityLabel="Next page"
+            disabled={busy || position.page + 1 >= data.pages}
+            onPress={() => page(position.page + 1)}
+          />
+        </View>
+      ) : gallery.length > 1 ? (
+        <View style={s.tools}>
+          <Action
+            label="‹"
+            accessibilityLabel="Previous image"
+            disabled={busy || index <= 0}
+            onPress={() => nextImage(-1)}
+          />
+          <Text style={s.muted}>
+            {index + 1} / {gallery.length} images in note
           </Text>
-        ) : null}
-        {actions ? (
-          <ChoiceSheet
-            animation="none"
-            title="Original file"
-            close={() => setActions(false)}
-            choices={[
+          <Action
+            label="›"
+            accessibilityLabel="Next image"
+            disabled={busy || index + 1 >= gallery.length}
+            onPress={() => nextImage(1)}
+          />
+        </View>
+      ) : null}
+      {actions ? (
+        <ContextSheet title="Preview controls" close={() => setActions(false)}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={s.controlBody}
+          >
+            {data.uri ? (
+              <View style={s.tools}>
+                <Action label="Fit" onPress={() => zoom(1)} />
+                <Action label="Actual size" onPress={() => zoom(1, true)} />
+                <Action
+                  label="−"
+                  accessibilityLabel="Zoom out"
+                  onPress={() => zoom(Math.max(1, position.zoom - 0.5))}
+                />
+                <Text style={s.muted}>{Math.round(position.zoom * 100)}%</Text>
+                <Action
+                  label="+"
+                  accessibilityLabel="Zoom in"
+                  onPress={() => zoom(Math.min(4, position.zoom + 0.5))}
+                />
+              </View>
+            ) : null}
+            {data.pages ? (
+              <View style={s.tools}>
+                <Text style={s.muted}>Page</Text>
+                <TextInput
+                  accessibilityLabel="PDF page number"
+                  keyboardType="number-pad"
+                  selectTextOnFocus
+                  value={pageText}
+                  onChangeText={setPageText}
+                  style={s.page}
+                  onSubmitEditing={e =>
+                    goToPage(e.nativeEvent.text, Number(e.nativeEvent.target))
+                  }
+                />
+                <Text style={s.muted}>of {data.pages}</Text>
+                <Action
+                  label="Go"
+                  accessibilityLabel="Go to PDF page"
+                  disabled={busy}
+                  onPress={e =>
+                    goToPage(pageText, Number(e.nativeEvent.target))
+                  }
+                />
+                {pageError ? (
+                  <Text accessibilityRole="alert" style={s.error}>
+                    {pageError}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+            {data.static ? (
+              <Text style={s.caption}>
+                Static preview · {data.width} × {data.height}
+                {data.originalWidth !== data.width
+                  ? ' · reduced from ' +
+                    data.originalWidth +
+                    ' × ' +
+                    data.originalHeight
+                  : ''}
+                . Original unchanged.
+              </Text>
+            ) : null}
+            <Text style={s.muted}>Original file</Text>
+            {[
               ...(download
                 ? [{ value: 'offline', label: 'Download for offline' }]
                 : []),
@@ -507,22 +609,31 @@ function Preview({
               ...(r.mimeType?.startsWith('image/')
                 ? [{ value: 'copy', label: 'Copy image' }]
                 : []),
-            ]}
-            onChoose={value => {
-              if (value === 'offline') download?.();
-              else action(value);
-            }}
-          />
-        ) : null}
-      </SafeAreaView>
-    </Modal>
+            ].map(item => (
+              <Action
+                key={item.value}
+                label={item.label}
+                disabled={busy}
+                onPress={() => {
+                  setActions(false);
+                  if (item.value === 'offline') download?.();
+                  else action(item.value);
+                }}
+              />
+            ))}
+          </ScrollView>
+        </ContextSheet>
+      ) : null}
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
   canvas: { flex: 1, backgroundColor: '#000' },
+  feedback: { position: 'absolute', top: 56, left: 8, right: 8, zIndex: 3 },
+  controlBody: { gap: 8, paddingBottom: 12 },
   header: {
-    minHeight: 58,
+    minHeight: 48,
     paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',

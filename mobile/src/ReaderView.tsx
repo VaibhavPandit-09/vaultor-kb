@@ -15,12 +15,16 @@ import {
   AppState,
   StyleSheet,
   Keyboard,
+  findNodeHandle,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { MobileWorkspace } from './workspace';
 import { Action, ChoiceSheet } from './BrowseScreen';
 import ReadingControls from './ReadingControls';
 import { useAppearance, useReading, usePalette, useThemeStyles } from './ui';
+import { haptic } from './haptics';
 import { externalAddress } from './reading';
 export type ReaderPanel = 'outline' | 'find' | 'appearance' | undefined;
 export default function ReaderView({
@@ -28,11 +32,13 @@ export default function ReaderView({
   panel,
   closePanel,
   reduced,
+  onScroll,
 }: {
   model: MobileWorkspace;
   panel: ReaderPanel;
   closePanel: () => void;
   reduced: boolean;
+  onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
 }) {
   const state = model.snapshot(),
     web = useRef<WebView<{}>>(null),
@@ -48,6 +54,10 @@ export default function ReaderView({
     >([]),
     [query, setQuery] = useState(''),
     [matches, setMatches] = useState({ count: 0, current: 0, limited: false });
+  const feedbackEnabled = useRef(preferences.haptics !== 'off');
+  feedbackEnabled.current = preferences.haptics !== 'off';
+  const findInput = useRef<React.ElementRef<typeof TextInput>>(null);
+  const [controlsBottom, setControlsBottom] = useState(0);
   const wasVisible = useRef(false);
   const visible = state.view === 'note' && !state.preview;
   const current = useRef(state);
@@ -61,6 +71,43 @@ export default function ReaderView({
       ),
     [],
   );
+  useEffect(() => {
+    if (!ready.current) return;
+    send({
+      type: 'context',
+      loadId: String(current.current.loadId),
+      bottom: panel === 'find' ? controlsBottom : 0,
+    });
+  }, [panel, controlsBottom, send]);
+  const focusSequence = useRef(0);
+  useEffect(() => {
+    if (panel !== 'find') return;
+    let cancelled = false;
+    const token =
+      String(current.current.loadId) + ':' + ++focusSequence.current;
+    const frame = requestAnimationFrame(() => {
+      const tag = findNodeHandle(findInput.current);
+      if (!tag) return;
+      const focus = NativeModules.VaultorPresentation?.focusInput?.(tag, token);
+      if (!focus) {
+        findInput.current?.focus();
+        return;
+      }
+      void focus
+        .then((focused: boolean) => {
+          if (focused && !cancelled)
+            requestAnimationFrame(() => {
+              if (!cancelled) haptic('micro', tag, feedbackEnabled.current);
+            });
+        })
+        .catch(() => {});
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+      NativeModules.VaultorPresentation?.cancelInputFocus?.(token);
+    };
+  }, [panel]);
   const options = useMemo(
     () => ({ ...preferences, theme, accent: palette.accent, reduced }),
     [preferences, theme, palette.accent, reduced],
@@ -146,11 +193,15 @@ export default function ReaderView({
   };
   return (
     <View style={s.root} collapsable={false}>
-      <View collapsable={false} style={panel === 'find' ? s.find : s.hidden}>
+      <View
+        collapsable={false}
+        style={panel === 'find' ? s.find : s.hidden}
+        onLayout={e => setControlsBottom(e.nativeEvent.layout.height)}
+      >
         {panel === 'find' ? (
           <>
             <TextInput
-              autoFocus
+              ref={findInput}
               style={s.input}
               accessibilityLabel="Find within note"
               placeholder="Find in note"
@@ -211,6 +262,9 @@ export default function ReaderView({
               : 'auto'
           }
           ref={web}
+          onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+            if (visible) onScroll(e);
+          }}
           source={{ uri: 'file:///android_asset/reader.html' }}
           originWhitelist={['file://']}
           textZoom={Math.round(fontScale * 100)}
@@ -436,6 +490,11 @@ const styles = StyleSheet.create({
   hidden: { display: 'none' },
   webSlot: { flex: 1 },
   find: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
     paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',

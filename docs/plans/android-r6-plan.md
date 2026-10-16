@@ -1,6 +1,6 @@
 # R6 Android redesign and Review capture
 
-Approved direction 2026-10-16. Branch `ai/codex-r6-android` starts at verified master `fb053862df386c1fefe9d9db2a7924eb63979b22`, matching fetched origin/master. No old R5 branch is incorporated. The initial audit was source/document inspection, not a new runtime certification. User's “start” authorized A0; “continue next” subsequently authorized A1. Stop at A1 review before A2. [Workspace/companion roadmap](workspace-companion-plan.md) owns milestone scope, [Reviews](../workspace/REVIEWS.md) owns R5 API/domain semantics, and both UI philosophy documents remain authoritative.
+Approved direction 2026-10-16. Branch `ai/codex-r6-android` starts at verified master `fb053862df386c1fefe9d9db2a7924eb63979b22`, matching fetched origin/master. No old R5 branch is incorporated. The initial audit was source/document inspection, not a new runtime certification. User's “start” authorized A0; “continue next” subsequently authorized A1. “Start next” subsequently authorizes A2; stop at A2 review before A3. [Workspace/companion roadmap](workspace-companion-plan.md) owns milestone scope, [Reviews](../workspace/REVIEWS.md) owns R5 API/domain semantics, and both UI philosophy documents remain authoritative.
 
 ## Audited baseline
 
@@ -28,7 +28,7 @@ Approved direction 2026-10-16. Branch `ai/codex-r6-android` starts at verified m
 | A4 — Queue/sync/status | Source-grouped inbox, single native owner, exact receipt reconciliation, desktop status, recovery | Lost acknowledgment→one correct desktop review→explicit resolution→Android update |
 | A5 — Polish/real device | Haptic/motion tuning, bars/themes/insets/accessibility/performance, upgrade/publication | User-owned physical acceptance and documented installed gates |
 
-A0 implementation is authoritative in [Interaction foundations](../android/INTERACTION-FOUNDATIONS.md). A1 is implemented as the alpha.13 shell/source review candidate following “continue next”; A2–A5 remain unstarted. A0 physical haptic acceptance remains pending. No R7 import or R8 export feature expansion; broader discovery/update settings remain R9.
+A0 implementation is authoritative in [Interaction foundations](../android/INTERACTION-FOUNDATIONS.md). A1 is implemented as the alpha.13 shell/source review candidate following “continue next”; A2 is authorized/in progress; A3–A5 remain unstarted. A0 physical haptic acceptance remains pending. No R7 import or R8 export feature expansion; broader discovery/update settings remain R9.
 
 ## Preserved R6 contracts
 
@@ -62,3 +62,7 @@ Implementation candidate adds presentation-only primitives and device-local hapt
 ## A1 ledger — 2026-10-16
 
 User authorized the next slice. Shell/source navigation and resource resume presentation are authoritative in [SHELL-NAVIGATION.md](../android/SHELL-NAVIGATION.md). Published alpha.13/code17 from immutable25dad991 is the shell/source review candidate; stop at A1 review before A2. Review capture/outbox/sync remains unimplemented. Actual validation belongs in the alpha.13 ledger.
+
+## A2 ledger — 2026-10-16
+
+User authorized A2 with “start next”. [Reader context](../android/READER-CONTEXT.md) owns its state/motion/haptic contract. Alpha.14/code18 passed focused installed emulator gates and awaits exact-source publication; source identity, immutable originals and Review boundaries remain intact. Stop at A2 review before A3; physical acceptance remains user-owned.

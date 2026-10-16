@@ -1,9 +1,13 @@
+/* global globalThis, CSS, Highlight, NodeFilter, IntersectionObserver, performance */
 import { renderDocument } from './render.js';
 let loadId = '',
   sequence = 0,
   restoring = false,
   restoreVersion = 0,
   positionTimer,
+  lastPosition,
+  interacting = false,
+  lastScrollAt = -1000,
   ranges = [],
   current = -1;
 const observers = [],
@@ -37,7 +41,8 @@ function preferences(m) {
   html.dataset.motion =
     m.reduced || m.motion === 'snappy' ? 'snappy' : 'smooth';
 }
-function reportPosition() {
+function capturePosition() {
+  if (!root.firstElementChild) return;
   const blocks = [
     ...root.querySelectorAll('p,h1,h2,h3,h4,h5,h6,figure,pre,table'),
   ].filter(n => n.dataset.path);
@@ -46,13 +51,55 @@ function reportPosition() {
       const r = n.getBoundingClientRect();
       return r.top <= 32 && r.bottom > 32;
     }) || blocks.find(n => n.getBoundingClientRect().top >= 0);
-  send({
-    type: 'position',
+  return {
     scroll: window.scrollY,
     path: block?.dataset.path,
     offset: block ? -block.getBoundingClientRect().top : 0,
     revision: root.dataset.revision,
-  });
+  };
+}
+function reportPosition() {
+  const p = capturePosition();
+  if (p) {
+    lastPosition = p;
+    send({ type: 'position', ...p });
+  }
+}
+function restoreEdge(p) {
+  const anchor =
+    p?.revision === root.dataset.revision
+      ? [...root.querySelectorAll('[data-path]')].find(
+          n => n.dataset.path === p.path,
+        )
+      : undefined;
+  window.scrollTo(
+    0,
+    anchor
+      ? window.scrollY +
+          anchor.getBoundingClientRect().top +
+          (Number(p.offset) || 0)
+      : Math.max(0, Number(p?.scroll) || 0),
+  );
+}
+function preserveGeometry(change, p = capturePosition()) {
+  change();
+  // The current restoration already owns the reading edge and load completion.
+  if (!p || restoring || interacting || performance.now() - lastScrollAt < 120)
+    return;
+  const ticket = loadId,
+    version = ++restoreVersion;
+  restoring = true;
+  let frames = 0;
+  const settle = () => {
+    if (ticket !== loadId || version !== restoreVersion) return;
+    restoreEdge(p);
+    if (++frames < 3) requestAnimationFrame(settle);
+    else {
+      restoring = false;
+      reportPosition();
+    }
+  };
+  settle();
 }
 function goTo(top) {
   window.scrollTo({ top: Math.max(0, top), behavior: 'instant' });
@@ -136,7 +183,8 @@ window.vaultorReceive = raw => {
     images.clear();
     preferences(m);
     restoring = true;
-    const newVisit = root.dataset.noteId !== m.noteId;
+    if (root.dataset.noteId !== m.noteId)
+      document.documentElement.style.setProperty('--controls-bottom', '96px');
     root.dataset.noteId = m.noteId || '';
     root.dataset.revision = m.revision || '';
     const meta = renderDocument(
@@ -159,11 +207,6 @@ window.vaultorReceive = raw => {
         observer.observe(button);
       },
     );
-    if (newVisit && m.motion === 'smooth' && !m.reduced) {
-      const article = root.firstElementChild;
-      article?.classList.add('enter');
-      setTimeout(() => article?.classList.remove('enter'), 220);
-    }
     let attempts = 0;
     const ticket = loadId,
       restoreTicket = ++restoreVersion,
@@ -187,13 +230,14 @@ window.vaultorReceive = raw => {
       if (++attempts < 4) requestAnimationFrame(restore);
       else {
         restoring = false;
-        send({ type: 'loaded', ...meta });
+        reportPosition();
       }
     };
+    send({ type: 'loaded', ...meta });
     requestAnimationFrame(restore);
     find('');
   } else if (m.type === 'preferences') {
-    preferences(m);
+    preserveGeometry(() => preferences(m));
   } else if (m.loadId === loadId) {
     if (m.type === 'restore') {
       restoring = true;
@@ -231,10 +275,36 @@ window.vaultorReceive = raw => {
       ) {
         const img = document.createElement('img');
         img.alt = item.alt;
+        const ticket = loadId;
+        img.onload = () => {
+          if (ticket === loadId && item.button.isConnected)
+            preserveGeometry(() => item.button.replaceChildren(img));
+        };
+        img.onerror = () => {
+          if (ticket === loadId && item.button.isConnected)
+            preserveGeometry(() => {
+              item.button.textContent =
+                'Image unavailable · Tap to retry or open';
+            });
+        };
         img.src = m.data;
-        item.button.replaceChildren(img);
       } else
-        item.button.textContent = 'Image unavailable · Tap to retry or open';
+        preserveGeometry(() => {
+          item.button.textContent = 'Image unavailable · Tap to retry or open';
+        });
+    } else if (m.type === 'context') {
+      document.documentElement.style.setProperty(
+        '--controls-bottom',
+        Math.max(
+          96,
+          parseFloat(
+            document.documentElement.style.getPropertyValue(
+              '--controls-bottom',
+            ),
+          ) || 0,
+          Math.min(400, Number(m.bottom) + 24 || 96),
+        ) + 'px',
+      );
     } else if (m.type === 'heading') {
       const h = document.getElementById(m.id);
       if (h && /^heading-\d+$/.test(m.id)) {
@@ -264,6 +334,7 @@ window.addEventListener(
   'scroll',
   () => {
     if (restoring) return;
+    lastScrollAt = performance.now();
     clearTimeout(positionTimer);
     const ticket = loadId;
     positionTimer = setTimeout(() => {
@@ -272,6 +343,9 @@ window.addEventListener(
   },
   { passive: true },
 );
+window.addEventListener('resize', () => {
+  if (!restoring && lastPosition) preserveGeometry(() => {}, lastPosition);
+});
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && !restoring) reportPosition();
 });
@@ -281,6 +355,22 @@ for (const event of ['pointerdown', 'wheel', 'touchstart'])
     () => {
       restoreVersion++;
       restoring = false;
+      if (event === 'wheel') lastScrollAt = performance.now();
+      else interacting = true;
+    },
+    { passive: true },
+  );
+for (const event of [
+  'pointerup',
+  'pointercancel',
+  'touchend',
+  'touchcancel',
+  'blur',
+])
+  window.addEventListener(
+    event,
+    () => {
+      interacting = false;
     },
     { passive: true },
   );

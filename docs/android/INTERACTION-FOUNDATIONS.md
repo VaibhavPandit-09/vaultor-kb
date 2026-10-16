@@ -1,6 +1,6 @@
 # Android interaction foundations
 
-Reviewed 2026-10-16. A0 is the first implementation slice of the approved [R6 Android plan](../plans/android-r6-plan.md). Android alpha.12/versionCode16 is its review candidate; release evidence belongs in [the release ledger](releases/0.1.0-alpha.12.md). A1 shell/source work follows in [SHELL-NAVIGATION.md](SHELL-NAVIGATION.md). A2–A5 and Review capture/sync are not implemented. The [Android design contract](../design/ANDROID_UI_PHILOSOPHY.md) owns product principles.
+Reviewed 2026-10-16. A0 is the first implementation slice of the approved [R6 Android plan](../plans/android-r6-plan.md). Android alpha.12/versionCode16 is its review candidate; release evidence belongs in [the release ledger](releases/0.1.0-alpha.12.md). A1 shell/source work follows in [SHELL-NAVIGATION.md](SHELL-NAVIGATION.md). A2 reader/media work follows in [READER-CONTEXT.md](READER-CONTEXT.md). A3–A5 and Review capture/sync are not implemented. The [Android design contract](../design/ANDROID_UI_PHILOSOPHY.md) owns product principles.
 
 ## Small shared foundation
 

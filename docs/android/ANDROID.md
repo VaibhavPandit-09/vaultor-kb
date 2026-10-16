@@ -1,4 +1,6 @@
-Current A1 shell review candidate: **0.1.0-alpha.13 / versionCode17**, reviewed2026-10-16. [Shell/source navigation](SHELL-NAVIGATION.md) owns current hierarchy, source selection and retained-reader behavior; [alpha.13 ledger](releases/0.1.0-alpha.13.md) records actual checks/publication. A0 physical haptic acceptance and A2–A5 remain pending. Android-only presentation; no desktop rebuild or Review sync.
+Current A2 reader-context candidate: **0.1.0-alpha.14 / versionCode18**, reviewed2026-10-16. [Reader context](READER-CONTEXT.md) owns stable reading-edge motion, contextual Find/media controls and platform Back semantics; [alpha.14 ledger](releases/0.1.0-alpha.14.md) owns actual checks. A3–A5/Review capture and physical haptic acceptance remain pending. Android-only presentation; original resource/transport/desktop boundaries remain unchanged.
+
+Preceding A1 shell review candidate: **0.1.0-alpha.13 / versionCode17**, reviewed2026-10-16. [Shell/source navigation](SHELL-NAVIGATION.md) owns current hierarchy, source selection and retained-reader behavior; [alpha.13 ledger](releases/0.1.0-alpha.13.md) records actual checks/publication. A0 physical haptic acceptance and A2–A5 remain pending. Android-only presentation; no desktop rebuild or Review sync.
 
 # Vaultor for Android
 

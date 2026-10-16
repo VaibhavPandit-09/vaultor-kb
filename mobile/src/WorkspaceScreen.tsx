@@ -11,6 +11,7 @@ import React, {
   useSyncExternalStore,
 } from 'react';
 import {
+  Animated,
   Alert,
   AppState,
   BackHandler,
@@ -166,6 +167,12 @@ export default function WorkspaceScreen() {
     [code, setCode] = useState(''),
     [inventory, setInventory] = useState<any>(),
     [recoveryError, setRecoveryError] = useState('');
+  const readerScroll = useRef(new Animated.Value(0)).current;
+  const [captionHeight, setCaptionHeight] = useState(14);
+  useEffect(() => {
+    readerScroll.setValue(Math.max(0, model.snapshot().position?.scroll || 0));
+  }, [model, readerScroll, state.loadId]);
+  const reading = state.view === 'note' && !!state.note;
   const source = sourcePresentation(state);
   const sourceRoot = useRef<React.ElementRef<typeof View>>(null),
     sourceToken = useRef(0);
@@ -738,7 +745,7 @@ export default function WorkspaceScreen() {
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
       <View
-        style={s.header}
+        style={[s.header, reading && s.readerHeader]}
         collapsable={false}
         importantForAccessibility={
           hosts ||
@@ -774,12 +781,46 @@ export default function WorkspaceScreen() {
           accessibilityLabel={`${title}. ${source.workspace}. ${source.availability}. Choose source`}
           onPress={() => setHosts(true)}
         >
-          <Text numberOfLines={1} accessibilityRole="header" style={s.title}>
+          <Animated.Text
+            numberOfLines={1}
+            accessibilityRole="header"
+            style={[
+              s.title,
+              reading &&
+                state.connection === 'online' &&
+                !reduced && {
+                  transform: [
+                    {
+                      translateY: readerScroll.interpolate({
+                        inputRange: [0, 80],
+                        outputRange: [0, captionHeight / 2],
+                        extrapolate: 'clamp',
+                      }),
+                    },
+                  ],
+                },
+            ]}
+          >
             {title}
-          </Text>
-          <Text numberOfLines={1} style={s.source}>
+          </Animated.Text>
+          <Animated.Text
+            onLayout={e => setCaptionHeight(e.nativeEvent.layout.height)}
+            numberOfLines={1}
+            style={[
+              s.source,
+              reading &&
+                state.connection === 'online' &&
+                !reduced && {
+                  opacity: readerScroll.interpolate({
+                    inputRange: [0, 80],
+                    outputRange: [1, 0],
+                    extrapolate: 'clamp',
+                  }),
+                },
+            ]}
+          >
             {source.availability} · {source.workspace} ⌄
-          </Text>
+          </Animated.Text>
         </Pressable>
         {!hostView && !recovery && state.view === 'note' ? (
           <Action
@@ -868,6 +909,9 @@ export default function WorkspaceScreen() {
                 panel={readerPanel}
                 closePanel={() => setReaderPanel(undefined)}
                 reduced={reduced}
+                onScroll={e =>
+                  readerScroll.setValue(e.nativeEvent.contentOffset.y)
+                }
               />
             </View>
           ) : null}
@@ -1098,6 +1142,7 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   hidden: { display: 'none' },
+  readerHeader: { minHeight: 48 },
   header: {
     zIndex: 1,
     backgroundColor: '#000',

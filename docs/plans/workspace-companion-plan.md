@@ -1,6 +1,6 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created 2026-10-13; reviewed 2026-10-16. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 complete/published Androidalpha.11; R5 complete/published Windows0.12.0 on ai/codex-current (Mac gate pending); R6 A1 Android shell/source candidate in review; A0 physical review pending; R6 capture/sync and R7–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created 2026-10-13; reviewed 2026-10-16. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 complete/published Androidalpha.11; R5 complete/published Windows0.12.0 on ai/codex-current (Mac gate pending); R6 A2 Android reader-context candidate in progress; A0 physical review pending; R6 capture/sync and R7–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
 
 ## Agreed product boundary
 
@@ -164,7 +164,7 @@ R5 delivery: [Windows0.12.0](https://github.com/VaibhavPandit-09/vaultor-kb/rele
 
 ## R6 — Android offline review capture and synchronization
 
-Status: **A0 published; A1 shell/source review candidate implemented; physical acceptance and capture/sync remain pending.** User approved the audit and phased plan, then authorized A0. See [R6 Android phases](android-r6-plan.md); A1 was subsequently authorized by “continue next”; stop at its review gate before A2.
+Status: **A0 published; A1 published; A2 reader-context candidate authorized/in progress; physical acceptance and capture/sync remain pending.** User approved the audit and phased plan, then authorized A0. See [R6 Android phases](android-r6-plan.md); A1 was subsequently authorized by “continue next”; stop at its review gate before A2.
 
 - Selection offers Flag for review; resource More offers Add review item. Capture comment, source resource/revision, original quote/context and optional validated locator. The reader remains immutable. Preview the target and allow local editing/removal before sending; editing an already synced comment requires an explicit conditional API, otherwise add a follow-up.
 - Persist before showing success; distinguish On this phone, Sending, Synced and Needs attention. Pending review inbox is usable offline across companions. Resource-level reviews cover notes/PDFs/images; no unsupported precision promises.
@@ -290,3 +290,7 @@ User approved the source audit/phased redesign and started A0 from verified mast
 ## 2026-10-16 — R6 A1 shell/source review candidate
 
 “Continue next” authorized A1 after the A0 publication. Published Android alpha.13/code17 from immutable25dad991/android/v0.1.0-alpha.13 at2026-10-15T23:26:54Z retains the reader while Sources/navigation/recovery are inspected, unifies verified downloads and connected workspace choice, gives Home an identified resume action, reclaims list orientation space and standardizes utility sheets. [Shell navigation](../android/SHELL-NAVIGATION.md) owns behavior and interaction contracts; [alpha.13 ledger](../android/releases/0.1.0-alpha.13.md) owns actual checks/publication. TypeScript,11 focused Jest cases, scoped lint0errors/18warnings, original-key compilation/package checks, final API36 five-case/API37 seven-execution native gates, exact-source/installed-byte comparison and staged/public artifact verification passed. A0/A1 physical acceptance remains pending. **Stop at A1 review; A2–A5 and Review capture/sync remain unimplemented.**
+
+## 2026-10-16 — R6 A2 reader-context authorization
+
+“Start next” authorizes A2 on the existing master-based ai/codex-r6-android branch. [Reader context](../android/READER-CONTEXT.md) owns its interaction contract; [alpha.14 ledger](../android/releases/0.1.0-alpha.14.md) owns actual gates. Stop at A2 review before A3. Review capture/sync and physical acceptance remain pending.

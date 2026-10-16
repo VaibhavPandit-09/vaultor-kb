@@ -17,10 +17,12 @@ import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsetsController
+import android.view.ViewTreeObserver
 import android.view.animation.PathInterpolator
 import com.facebook.react.bridge.*
 import com.facebook.react.common.LifecycleState
 import com.facebook.react.uimanager.UIManagerHelper
+import com.facebook.react.views.textinput.ReactEditText
 import org.json.JSONObject
 import kotlin.math.hypot
 import kotlin.math.max
@@ -35,6 +37,8 @@ class VaultorPresentation(private val ctx: ReactApplicationContext) : ReactConte
   private var animator: ValueAnimator? = null
   private val overlays = mutableListOf<Reveal>()
   private val timeout = Runnable { clearTheme() }
+  private var focusToken = ""
+  private var finishFocus: ((Boolean) -> Unit)? = null
   init { ctx.addLifecycleEventListener(this) }
 
   enum class Route { SILENT, SYSTEM, ENVELOPE, PRIMITIVES }
@@ -61,6 +65,44 @@ class VaultorPresentation(private val ctx: ReactApplicationContext) : ReactConte
   private fun enabled(v: View?) = foreground(v) && v!!.isHapticFeedbackEnabled &&
     Settings.System.getInt(ctx.contentResolver, Settings.System.HAPTIC_FEEDBACK_ENABLED, 0) == 1 &&
     JSONObject(ctx.getSharedPreferences("reader-presentation-v1", Context.MODE_PRIVATE).getString("preferences", "{}") ?: "{}").optString("haptics", "system") != "off"
+
+  // Reader input stays on the activity window. A closing modal must release
+  // window ownership before RN's native EditText requests the IME.
+  @ReactMethod fun focusInput(tag: Double, token: String, promise: Promise) { main.post {
+    finishFocus?.invoke(false)
+    val decor = ctx.currentActivity?.window?.decorView
+    if (decor == null || ctx.lifecycleState != LifecycleState.RESUMED || token.length !in 1..80) {
+      promise.resolve(false); return@post
+    }
+    focusToken = token
+    val observer = decor.viewTreeObserver
+    var windowListener: ViewTreeObserver.OnWindowFocusChangeListener? = null
+    var layoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
+    val expiry = Runnable { if (focusToken == token) finishFocus?.invoke(false) }
+    val finish: (Boolean) -> Unit = { focused ->
+      if (focusToken == token) {
+        focusToken = ""; finishFocus = null; main.removeCallbacks(expiry)
+        if (observer.isAlive) {
+          windowListener?.let { observer.removeOnWindowFocusChangeListener(it) }
+          layoutListener?.let { observer.removeOnGlobalLayoutListener(it) }
+        }
+        promise.resolve(focused)
+      }
+    }
+    finishFocus = finish
+    val attempt = {
+      val input = view(tag) as? ReactEditText
+      if (input != null && input.rootView === decor && foreground(input) && input.width > 0 && input.height > 0) {
+        input.requestFocusFromJS(); finish(input.hasFocus())
+      }
+    }
+    windowListener = ViewTreeObserver.OnWindowFocusChangeListener { if (it) attempt() }
+    layoutListener = ViewTreeObserver.OnGlobalLayoutListener { attempt() }
+    observer.addOnWindowFocusChangeListener(windowListener)
+    observer.addOnGlobalLayoutListener(layoutListener)
+    main.postDelayed(expiry, 250); attempt()
+  } }
+  @ReactMethod fun cancelInputFocus(token: String) { main.post { if (focusToken == token) finishFocus?.invoke(false) } }
 
   @ReactMethod fun feedback(event: String, rich: String, tag: Double, token: String, promise: Promise) {
     main.post {
@@ -182,7 +224,7 @@ class VaultorPresentation(private val ctx: ReactApplicationContext) : ReactConte
     promise.resolve(null)
   } }
   override fun onHostResume() {}
-  override fun onHostPause() { main.post { clearTheme(); vibrator.cancel() } }
-  override fun onHostDestroy() { main.post { clearTheme(); vibrator.cancel() } }
-  override fun invalidate() { ctx.removeLifecycleEventListener(this); main.post { clearTheme() }; super.invalidate() }
+  override fun onHostPause() { main.post { finishFocus?.invoke(false); clearTheme(); vibrator.cancel() } }
+  override fun onHostDestroy() { main.post { finishFocus?.invoke(false); clearTheme(); vibrator.cancel() } }
+  override fun invalidate() { ctx.removeLifecycleEventListener(this); main.post { finishFocus?.invoke(false); clearTheme() }; super.invalidate() }
 }

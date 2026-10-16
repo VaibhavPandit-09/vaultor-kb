@@ -131,3 +131,6 @@ Keep CODEBASE and this index at the docs root for agent discovery. Put topic gui
 
 - [Android shell/source navigation](android/SHELL-NAVIGATION.md) — A1 hierarchy, mounted reader, source activation and interaction review gates.
 - [Android alpha.13 release evidence](android/releases/0.1.0-alpha.13.md) — A1 review candidate and actual checks.
+
+- [Android reader context](android/READER-CONTEXT.md) — A2 stable reading edge, contextual controls, media and platform Back.
+- [Android alpha.14 release evidence](android/releases/0.1.0-alpha.14.md) — A2 review candidate and actual installed checks.

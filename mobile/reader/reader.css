@@ -34,7 +34,7 @@ body {
 }
 body {
   font: var(--size) / var(--spacing) system-ui, sans-serif;
-  padding: 12px clamp(20px, 5vw, 40px) 96px;
+  padding: 12px clamp(20px, 5vw, 40px) var(--controls-bottom, 96px);
   overflow-wrap: anywhere;
   -webkit-text-size-adjust: 100%;
 }
@@ -214,19 +214,6 @@ mark {
 }
 ::selection {
   background: color-mix(in srgb, var(--accent) 30%, transparent);
-}
-@media (prefers-reduced-motion: no-preference) {
-  :root[data-motion='smooth'] article.enter {
-    animation: arrive 200ms ease-out;
-  }
-  @keyframes arrive {
-    from {
-      opacity: 0.35;
-    }
-    to {
-      opacity: 1;
-    }
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   * {
