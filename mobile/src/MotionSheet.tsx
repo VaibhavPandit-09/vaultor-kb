@@ -14,13 +14,17 @@ import { useReading } from './ui';
 export default function MotionSheet({
   children,
   style,
+  onSettled,
 }: {
   children: React.ReactNode;
   style: StyleProp<ViewStyle>;
+  onSettled?: () => void;
 }) {
   const { preferences, reduced } = useReading();
   const progress = useRef(new Animated.Value(0)).current;
   const [height, setHeight] = useState(0);
+  const settled = useRef(onSettled);
+  settled.current = onSettled;
   useEffect(() => {
     if (!height) return;
     progress.stopAnimation();
@@ -30,8 +34,14 @@ export default function MotionSheet({
       easing: settleEasing,
       useNativeDriver: true,
     });
-    animation.start();
-    return () => animation.stop();
+    let active = true;
+    animation.start(({ finished }) => {
+      if (finished && active) settled.current?.();
+    });
+    return () => {
+      active = false;
+      animation.stop();
+    };
   }, [preferences.motion, reduced, progress, height]);
   return (
     <View

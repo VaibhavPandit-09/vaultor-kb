@@ -92,8 +92,8 @@ android {
         applicationId "com.vaultor.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 18
-        versionName "0.1.0-alpha.14"
+        versionCode 19
+        versionName "0.1.0-alpha.15"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {

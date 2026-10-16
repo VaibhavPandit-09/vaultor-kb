@@ -19,6 +19,81 @@ const send = m => {
     JSON.stringify({ protocol: 1, loadId, ...m }),
   );
 };
+let selectionFrame,
+  selectedEvidence = '';
+const selectionNodes = new WeakMap();
+let selectionNodeSequence = 0;
+const selectionNode = node => {
+  if (!selectionNodes.has(node))
+    selectionNodes.set(node, ++selectionNodeSequence);
+  return selectionNodes.get(node);
+};
+document.addEventListener('selectionchange', () => {
+  cancelAnimationFrame(selectionFrame);
+  selectionFrame = requestAnimationFrame(() => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) {
+      selectedEvidence = '';
+      send({ type: 'selection', evidence: null });
+      return;
+    }
+    const range = selection.getRangeAt(0);
+    if (
+      !root.contains(range.startContainer) ||
+      !root.contains(range.endContainer)
+    )
+      return;
+    const quote = selection.toString();
+    const identity = [
+      selectionNode(range.startContainer),
+      range.startOffset,
+      selectionNode(range.endContainer),
+      range.endOffset,
+    ].join(':');
+    if (identity === selectedEvidence) return;
+    selectedEvidence = identity;
+    if (quote.length > 4000) {
+      send({
+        type: 'selection',
+        evidence: {
+          error:
+            'Select at most 4000 characters. Evidence is never silently shortened.',
+          quote: '',
+          context: '',
+          revision: root.dataset.revision,
+        },
+      });
+      return;
+    }
+    const block = node =>
+      (node.nodeType === 1 ? node : node.parentElement)?.closest(
+        'p[data-path],h1[data-path],h2[data-path],h3[data-path],h4[data-path],h5[data-path],h6[data-path],pre[data-path]',
+      );
+    const start = block(range.startContainer),
+      end = block(range.endContainer);
+    let context = '',
+      path;
+    if (start && start === end) {
+      path = start.dataset.path;
+      const before = range.cloneRange();
+      before.selectNodeContents(start);
+      before.setEnd(range.startContainer, range.startOffset);
+      const at = before.toString().length;
+      if (start.textContent.slice(at, at + quote.length) === quote) {
+        let from = Math.max(0, at - Math.min(200, 4000 - quote.length)),
+          to = from + 4000;
+        // Context may be an excerpt, but never half a UTF-16 surrogate pair.
+        if (/[\uDC00-\uDFFF]/.test(start.textContent[from] || '')) from++;
+        if (/[\uD800-\uDBFF]/.test(start.textContent[to - 1] || '')) to--;
+        context = start.textContent.slice(from, to);
+      }
+    }
+    send({
+      type: 'selection',
+      evidence: { quote, context, path, revision: root.dataset.revision },
+    });
+  });
+});
 function preferences(m) {
   const html = document.documentElement;
   html.dataset.theme = ['light', 'dark', 'oled'].includes(m.theme)
@@ -177,6 +252,7 @@ window.vaultorReceive = raw => {
     return;
   }
   if (m.type === 'load') {
+    selectedEvidence = '';
     clearTimeout(positionTimer);
     observers.splice(0).forEach(o => o.disconnect());
     loadId = m.loadId;

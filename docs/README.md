@@ -134,3 +134,6 @@ Keep CODEBASE and this index at the docs root for agent discovery. Put topic gui
 
 - [Android reader context](android/READER-CONTEXT.md) — A2 stable reading edge, contextual controls, media and platform Back.
 - [Android alpha.14 release evidence](android/releases/0.1.0-alpha.14.md) — A2 review candidate and actual installed checks.
+
+- [Android Review capture](android/REVIEW-CAPTURE.md) — A3 source-bound protected capture/local queue; upload/status stays A4.
+- [Android alpha.15](android/releases/0.1.0-alpha.15.md) — actual A3 installed/publication evidence.

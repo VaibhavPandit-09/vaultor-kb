@@ -1,3 +1,5 @@
+Current A3 candidate adds [source-bound Review capture](REVIEW-CAPTURE.md) over the retained read-only reader; native Copy remains and original JSON is unchanged. Upload/status is A4.
+
 # Android reader and legacy recovery
 
 Reviewed 2026-10-16. A2 alpha.14/code18 is the current reader-context review candidate; [READER-CONTEXT.md](READER-CONTEXT.md) owns the interaction specification. R2 alpha.10 is the earlier reading refinement; see [ANDROID.md](ANDROID.md) for delivery/transport/storage and [tracker](../plans/workspace-companion-plan.md) for remaining work.

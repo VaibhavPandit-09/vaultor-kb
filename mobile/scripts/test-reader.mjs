@@ -183,6 +183,61 @@ assert.equal(messages.at(-1).count, 1);
 receive({ type: 'find', loadId: 'old', query: 'no matches' });
 assert.equal(messages.at(-1).count, 1);
 const element = w.document.querySelector('strong');
+const evidenceRange = w.document.createRange();
+evidenceRange.setStart(element.previousSibling, 0);
+evidenceRange.setEnd(element.firstChild, element.firstChild.length);
+w.getSelection().removeAllRanges();
+w.getSelection().addRange(evidenceRange);
+w.document.dispatchEvent(new w.Event('selectionchange'));
+await new Promise(r => setTimeout(r, 40));
+const evidence = messages.filter(m => m.type === 'selection').at(-1).evidence;
+assert.equal(evidence.quote, 'phrase across bold marks');
+assert.equal(evidence.path, '/1');
+assert.ok(evidence.context.includes(evidence.quote));
+const duplicate = element.parentElement.cloneNode(true);
+duplicate.dataset.path = '/2';
+element.parentElement.parentElement.append(duplicate);
+const repeatedRange = w.document.createRange();
+repeatedRange.setStart(duplicate.firstChild, 0);
+repeatedRange.setEnd(
+  duplicate.querySelector('strong').firstChild,
+  duplicate.querySelector('strong').firstChild.length,
+);
+w.getSelection().removeAllRanges();
+w.getSelection().addRange(repeatedRange);
+w.document.dispatchEvent(new w.Event('selectionchange'));
+await new Promise(r => setTimeout(r, 40));
+assert.equal(
+  messages.filter(m => m.type === 'selection').at(-1).evidence.path,
+  '/2',
+);
+duplicate.remove();
+const unicodeBlock = w.document.createElement('p');
+unicodeBlock.dataset.path = '/3';
+unicodeBlock.textContent = 'x'.repeat(3999) + '😀';
+element.parentElement.parentElement.append(unicodeBlock);
+const unicodeRange = w.document.createRange();
+unicodeRange.setStart(unicodeBlock.firstChild, 0);
+unicodeRange.setEnd(unicodeBlock.firstChild, 1);
+w.getSelection().removeAllRanges();
+w.getSelection().addRange(unicodeRange);
+w.document.dispatchEvent(new w.Event('selectionchange'));
+await new Promise(r => setTimeout(r, 40));
+assert.equal(
+  messages.filter(m => m.type === 'selection').at(-1).evidence.context.length,
+  3999,
+);
+unicodeBlock.remove();
+w.getSelection().removeAllRanges();
+w.document.dispatchEvent(new w.Event('selectionchange'));
+await new Promise(r => setTimeout(r, 40));
+assert.equal(
+  messages.filter(m => m.type === 'selection').at(-1).evidence,
+  null,
+);
+console.log(
+  'Review evidence: cross-mark range, block path and cleared selection passed',
+);
 receive({
   type: 'preferences',
   theme: 'light',

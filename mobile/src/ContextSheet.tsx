@@ -23,10 +23,12 @@ export default function ContextSheet({
   title,
   close,
   children,
+  onSettled,
 }: {
   title: string;
   close(): void;
   children: React.ReactNode;
+  onSettled?: (tag: number) => void;
 }) {
   const s = useThemeStyles(styles),
     insets = useSafeAreaInsets();
@@ -65,7 +67,13 @@ export default function ContextSheet({
             accessibilityLabel={'Dismiss ' + title}
             onPress={close}
           />
-          <MotionSheet style={s.sheet}>
+          <MotionSheet
+            style={s.sheet}
+            onSettled={() => {
+              const tag = findNodeHandle(root.current);
+              if (tag) onSettled?.(tag);
+            }}
+          >
             <View
               ref={root}
               collapsable={false}

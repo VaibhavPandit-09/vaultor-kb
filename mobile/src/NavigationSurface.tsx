@@ -156,6 +156,7 @@ export function WorkspaceDrawer(
     recovery(): void;
     appearance(): void;
     downloads(): void;
+    captures(): void;
     host?: string;
     recoveryCount: number;
     reducedMotion: boolean;
@@ -267,6 +268,7 @@ export function WorkspaceDrawer(
         />
         <Action label="Appearance & reading" onPress={props.appearance} />
         <Action label="Offline downloads" onPress={props.downloads} />
+        <Action label="Captures on this phone" onPress={props.captures} />
         {(['pinned', 'recent'] as const).map(kind => (
           <View collapsable={false} key={kind} style={s.drawerSection}>
             <View collapsable={false} style={s.sectionHead}>

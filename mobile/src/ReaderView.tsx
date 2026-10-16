@@ -26,6 +26,7 @@ import ReadingControls from './ReadingControls';
 import { useAppearance, useReading, usePalette, useThemeStyles } from './ui';
 import { haptic } from './haptics';
 import { externalAddress } from './reading';
+import type { Evidence } from './reviews';
 export type ReaderPanel = 'outline' | 'find' | 'appearance' | undefined;
 export default function ReaderView({
   model,
@@ -33,12 +34,14 @@ export default function ReaderView({
   closePanel,
   reduced,
   onScroll,
+  capture,
 }: {
   model: MobileWorkspace;
   panel: ReaderPanel;
   closePanel: () => void;
   reduced: boolean;
   onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  capture: (evidence: Evidence) => void;
 }) {
   const state = model.snapshot(),
     web = useRef<WebView<{}>>(null),
@@ -58,6 +61,7 @@ export default function ReaderView({
   feedbackEnabled.current = preferences.haptics !== 'off';
   const findInput = useRef<React.ElementRef<typeof TextInput>>(null);
   const [controlsBottom, setControlsBottom] = useState(0);
+  const [selection, setSelection] = useState<Evidence>();
   const wasVisible = useRef(false);
   const visible = state.view === 'note' && !state.preview;
   const current = useRef(state);
@@ -136,6 +140,7 @@ export default function ReaderView({
     };
   }, []);
   useEffect(() => {
+    setSelection(undefined);
     setHeadings([]);
     setQuery('');
     setMatches({ count: 0, current: 0, limited: false });
@@ -316,6 +321,22 @@ export default function ReaderView({
                     ),
                 );
               model.loaded();
+            } else if (m.type === 'selection' && visible) {
+              const evidence = m.evidence;
+              if (!evidence) setSelection(undefined);
+              else if (
+                typeof evidence.quote === 'string' &&
+                typeof evidence.context === 'string' &&
+                evidence.quote.length <= 4000 &&
+                evidence.context.length <= 4000 &&
+                evidence.revision === st.note?.revision
+              )
+                setSelection({
+                  ...evidence,
+                  resourceId: st.note?.id,
+                  scope: st.scope,
+                  loadId: st.loadId,
+                });
             } else if (m.type === 'findResult')
               setMatches({
                 count: Math.max(0, Math.min(500, Number(m.count) || 0)),
@@ -443,6 +464,11 @@ export default function ReaderView({
           }}
         />
       </View>
+      {selection && visible && !panel ? (
+        <View style={s.capture}>
+          <Action label="Flag for review" onPress={() => capture(selection)} />
+        </View>
+      ) : null}
       <View
         collapsable={false}
         style={s.overlayHost}
@@ -478,6 +504,16 @@ export default function ReaderView({
   );
 }
 const styles = StyleSheet.create({
+  capture: {
+    position: 'absolute',
+    bottom: 0,
+    right: 8,
+    zIndex: 3,
+    backgroundColor: '#0a0a0a',
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 10,
+  },
   root: { flex: 1 },
   overlayHost: {
     position: 'absolute',

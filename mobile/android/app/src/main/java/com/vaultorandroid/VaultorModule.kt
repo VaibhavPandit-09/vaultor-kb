@@ -123,6 +123,23 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     }catch(_:Exception){promise.reject("EXTERNAL_LINK","Only HTTP or HTTPS links without embedded credentials can be opened.")}
   }
   private val random = SecureRandom()
+  private val reviews by lazy { VaultorReviews(File(ctx.noBackupFilesDir,"vaultor-reviews.bin"),::key) }
+  @ReactMethod fun reviewCapture(action:String,input:String,promise:Promise)=run(promise) {
+    try {
+    require(input.length<=24000);val a=JSONObject(input)
+    if(action=="begin") {
+      companionScope(a)
+      val p=selected(a.getString("hostId"),a.getString("epoch"))
+      if(a.optBoolean("offline")) {
+        require(!companions.isLocked(a.getString("scope"))) {"Downloaded source is locked."}
+        companions.query(a.getString("scope"),"/resources/"+a.getString("resourceId"))
+      }
+      a.put("address",p.getString("address"))
+    }
+    reviews.execute(action,a)
+    } catch(_:java.io.IOException) {error("Capture storage is unavailable. Last protected evidence remains; free space and retry.")}
+      catch(_:java.security.GeneralSecurityException) {error("Protected capture storage cannot be unlocked. Bytes are retained; do not clear app data.")}
+  }
   private val file get() = AtomicFile(File(ctx.noBackupFilesDir, "vaultor-state.bin"))
   private fun key(): SecretKey {
     val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }

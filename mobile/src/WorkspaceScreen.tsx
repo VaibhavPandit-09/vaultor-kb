@@ -1,4 +1,6 @@
 import ContextSheet from './ContextSheet';
+import ReviewCapture from './ReviewCapture';
+import { captureSeed, type CaptureSeed, type Evidence } from './reviews';
 import { sourcePresentation, activatedSource } from './sourcePresentation';
 import { haptic } from './haptics';
 import { ReaderFeed } from './readerFeed';
@@ -107,6 +109,18 @@ export default function WorkspaceScreen() {
     ).current,
     feed = useSyncExternalStore(quick.subscribe, quick.snapshot);
   const previewBack = useRef<() => boolean>(() => false);
+  const [captureRequest, setCaptureRequest] = useState<{
+    seed?: CaptureSeed;
+  }>();
+  const capture = (evidence?: Evidence, page?: number) => {
+    try {
+      setCaptureRequest({
+        seed: captureSeed(model.snapshot(), evidence, page),
+      });
+    } catch (e) {
+      Alert.alert('Capture unavailable', (e as Error).message);
+    }
+  };
   const exportLock = useRef(false);
   const refreshDownloadAt = useRef(0);
   const refreshDownloads = useCallback(async () => {
@@ -274,6 +288,7 @@ export default function WorkspaceScreen() {
     };
   }, []);
   const closeTransient = () => {
+    if (captureRequest) return true; // Native capture modal owns protected dismissal.
     if (downloads) {
       setDownloads(false);
       return true;
@@ -912,6 +927,7 @@ export default function WorkspaceScreen() {
                 onScroll={e =>
                   readerScroll.setValue(e.nativeEvent.contentOffset.y)
                 }
+                capture={evidence => capture(evidence)}
               />
             </View>
           ) : null}
@@ -1040,6 +1056,10 @@ export default function WorkspaceScreen() {
               : ''
           }
           recoveryCount={state.recovery.length}
+          captures={() => {
+            closeDrawer();
+            setCaptureRequest({});
+          }}
           reducedMotion={reduced}
         />
       ) : null}
@@ -1070,6 +1090,7 @@ export default function WorkspaceScreen() {
             close={() => setMore(false)}
             choices={[
               { value: 'outline', label: 'Note outline' },
+              { value: 'capture', label: 'Add review item' },
               { value: 'find', label: 'Find within note' },
               { value: 'appearance', label: 'Reading appearance' },
               { value: 'downloads', label: 'Download for offline' },
@@ -1078,6 +1099,10 @@ export default function WorkspaceScreen() {
               { value: 'recovery', label: 'Legacy recovery' },
             ]}
             onChoose={v => {
+              if (v === 'capture') {
+                capture();
+                return;
+              }
               if (v === 'downloads') {
                 setDownloadTarget(undefined);
                 setDownloads(true);
@@ -1110,6 +1135,7 @@ export default function WorkspaceScreen() {
           />
         ) : null}
         <ResourcePreview
+          capture={page => capture(undefined, page)}
           model={model}
           download={() => {
             const r = model.snapshot().preview;
@@ -1127,6 +1153,12 @@ export default function WorkspaceScreen() {
           }}
         />
       </View>
+      {captureRequest ? (
+        <ReviewCapture
+          seed={captureRequest.seed}
+          close={() => setCaptureRequest(undefined)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

@@ -1,0 +1,468 @@
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Animated,
+  findNodeHandle,
+  NativeModules,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import ContextSheet from './ContextSheet';
+import { Action } from './Action';
+import { usePalette, useReading, useThemeStyles } from './ui';
+import { haptic } from './haptics';
+import { motionDuration, settleEasing } from './motion';
+import { locatorLabel, type CaptureSeed, type CaptureItem } from './reviews';
+const call = async (action: string, value: object = {}): Promise<any> =>
+  JSON.parse(
+    await NativeModules.VaultorNative.reviewCapture(
+      action,
+      JSON.stringify(value),
+    ),
+  );
+
+export default function ReviewCapture({
+  seed,
+  close,
+}: {
+  seed?: CaptureSeed;
+  close(): void;
+}) {
+  const s = useThemeStyles(styles),
+    { height } = useWindowDimensions(),
+    palette = usePalette(),
+    { preferences, reduced } = useReading();
+  const [item, setItem] = useState<CaptureItem>(),
+    [items, setItems] = useState<CaptureItem[]>([]),
+    [comment, setComment] = useState(''),
+    [error, setError] = useState(''),
+    [busy, setBusy] = useState(true),
+    [prepared, setPrepared] = useState(false),
+    [protecting, setProtecting] = useState(false);
+  const [details, setDetails] = useState(false);
+  const [settled, setSettled] = useState<{ id?: string; tag: number }>({
+    tag: 0,
+  });
+  const current = useRef<CaptureItem | undefined>(undefined),
+    initial = useRef<Promise<any> | undefined>(undefined),
+    chain = useRef<Promise<void>>(Promise.resolve()),
+    alive = useRef(true),
+    locked = useRef(false),
+    anchored = useRef(false),
+    pendingCompletion = useRef(false),
+    pendingReject = useRef(false),
+    preparingRoot = useRef<React.ElementRef<typeof View>>(null),
+    root = useRef<React.ElementRef<typeof View>>(null);
+  const commentHeight = useRef(new Animated.Value(140)).current;
+  useLayoutEffect(() => {
+    if (!error || !pendingReject.current) return;
+    pendingReject.current = false;
+    const frame = requestAnimationFrame(() => {
+      const tag = findNodeHandle(root.current);
+      if (alive.current && tag)
+        haptic('reject', tag, preferences.haptics !== 'off');
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [error, preferences.haptics]);
+  useLayoutEffect(() => {
+    if (
+      !seed ||
+      !item?.id ||
+      settled.id !== item.id ||
+      !settled.tag ||
+      anchored.current
+    )
+      return;
+    anchored.current = true;
+    const frame = requestAnimationFrame(() => {
+      if (alive.current)
+        haptic(
+          'selection',
+          settled.tag,
+          preferences.haptics !== 'off',
+          'anchor',
+        );
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [seed, item?.id, settled, preferences.haptics]);
+  useLayoutEffect(() => {
+    if (item?.state !== 'queued' || !pendingCompletion.current) return;
+    pendingCompletion.current = false;
+    const animation = Animated.timing(commentHeight, {
+      toValue: 64,
+      duration: motionDuration('structure', preferences.motion, reduced),
+      easing: settleEasing,
+      useNativeDriver: false,
+    });
+    animation.start();
+    const frame = requestAnimationFrame(() => {
+      const tag = findNodeHandle(root.current);
+      if (alive.current && tag)
+        haptic('complete', tag, preferences.haptics !== 'off', 'capture');
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      animation.stop();
+      commentHeight.setValue(64);
+    };
+  }, [
+    item?.state,
+    commentHeight,
+    preferences.motion,
+    preferences.haptics,
+    reduced,
+  ]);
+  const accept = (value: CaptureItem) => {
+    current.current = value;
+    if (alive.current) setItem(value);
+  };
+  useEffect(() => {
+    alive.current = true;
+    initial.current ??= seed ? call('begin', seed) : call('list');
+    const request = initial.current.then(value => {
+      if (alive.current) {
+        if (seed) accept(value);
+        else setItems(value);
+      }
+    });
+    void request
+      .catch((e: Error) => {
+        if (alive.current) setError(e.message);
+      })
+      .finally(() => {
+        if (alive.current) {
+          setBusy(false);
+          setPrepared(true);
+        }
+      });
+    return () => {
+      alive.current = false;
+    };
+  }, [seed]);
+  const protect = (value: string) => {
+    if (locked.current || current.current?.state !== 'draft') return;
+    setComment(value);
+    setProtecting(true);
+    setError('');
+    chain.current = chain.current
+      .catch(() => {})
+      .then(async () => {
+        const actual = current.current!;
+        const next = await call('put', {
+          id: actual.id,
+          version: actual.version,
+          comment: value,
+        });
+        accept(next);
+      });
+    const pending = chain.current;
+    void pending
+      .then(() => {
+        if (alive.current && chain.current === pending) setProtecting(false);
+      })
+      .catch((e: Error) => {
+        if (alive.current) {
+          setError(e.message);
+          setProtecting(false);
+        }
+      });
+  };
+  const dismiss = () => {
+    if (locked.current) return;
+    locked.current = true;
+    setBusy(true);
+    void chain.current.then(close).catch((e: Error) => {
+      setError(
+        e.message + ' Keep this composer open and retry protecting the draft.',
+      );
+      locked.current = false;
+      setBusy(false);
+      Alert.alert(
+        'Latest changes are not protected',
+        'The last protected draft stays on this phone. Newer text is not confirmed saved.',
+        [
+          { text: 'Keep editing', style: 'cancel' },
+          { text: 'Keep protected draft and close', onPress: close },
+        ],
+      );
+    });
+  };
+  const queue = () => {
+    if (locked.current || !current.current || !comment.trim()) return;
+    locked.current = true;
+    setBusy(true);
+    setError('');
+    void chain.current
+      .then(async () => {
+        const actual = current.current!;
+        const next = await call('queue', {
+          id: actual.id,
+          version: actual.version,
+        });
+        pendingCompletion.current = true;
+        accept(next);
+        if (!alive.current) return;
+      })
+      .catch((e: Error) => {
+        if (alive.current) {
+          pendingReject.current = true;
+          setError(e.message);
+        }
+      })
+      .finally(() => {
+        locked.current = false;
+        if (alive.current) setBusy(false);
+      });
+  };
+  const discard = () =>
+    Alert.alert(
+      'Discard protected draft?',
+      'Only this local draft will be removed. The original resource remains unchanged.',
+      [
+        { text: 'Keep draft', style: 'cancel' },
+        {
+          text: 'Discard draft',
+          style: 'destructive',
+          onPress: () => {
+            if (locked.current) return;
+            locked.current = true;
+            setBusy(true);
+            void chain.current
+              .catch(() => {})
+              .then(async () => {
+                const actual = current.current!;
+                await call('discard', {
+                  id: actual.id,
+                  version: actual.version,
+                });
+                close();
+              })
+              .catch((e: Error) => {
+                setError(e.message);
+                setBusy(false);
+                locked.current = false;
+              });
+          },
+        },
+      ],
+    );
+  if (!prepared)
+    return (
+      <Modal
+        transparent
+        statusBarTranslucent
+        navigationBarTranslucent
+        animationType="none"
+        onShow={() => {
+          const tag = findNodeHandle(preparingRoot.current);
+          if (tag) NativeModules.VaultorPresentation?.systemBars(false, tag);
+        }}
+        onRequestClose={dismiss}
+      >
+        <SafeAreaView style={s.preparing}>
+          <View ref={preparingRoot} collapsable={false} style={s.preparingBody}>
+            <Text style={{ color: '#fff' }}>Protecting capture…</Text>
+            <View style={s.preparingAction}>
+              <Action label="Keep reading" onPress={dismiss} />
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
+    );
+  return (
+    <ContextSheet
+      key={item?.id ?? (error ? 'initial-error' : 'list')}
+      title={seed || item ? 'Review capture' : 'Captures on this phone'}
+      close={dismiss}
+      onSettled={tag => setSettled({ id: item?.id, tag })}
+    >
+      <ScrollView
+        style={
+          busy || item || items.length
+            ? { height: Math.min(600, height * 0.65), flexShrink: 1 }
+            : undefined
+        }
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={s.body}
+      >
+        <View ref={root} collapsable={false}>
+          {error ? (
+            <Text accessibilityRole="alert" style={s.error}>
+              {error}
+            </Text>
+          ) : null}
+          {busy ? <Text style={s.muted}>Protecting capture…</Text> : null}
+          {item ? (
+            <>
+              <Text accessibilityRole="header" style={s.title}>
+                {item.source.targetTitle}
+              </Text>
+              <Text style={s.muted}>
+                {item.source.workspaceName} · {item.source.address}
+              </Text>
+              <Text selectable style={s.muted}>
+                {locatorLabel(item.body.locator)} · saved revision{' '}
+                {item.body.baseRevision || 'unavailable'}
+              </Text>
+              {item.body.quote ? (
+                <Text
+                  selectable
+                  numberOfLines={details ? undefined : 4}
+                  style={s.evidence}
+                >
+                  {item.body.quote}
+                </Text>
+              ) : (
+                <Text style={s.muted}>No passage selected.</Text>
+              )}
+              <Action
+                label={
+                  details
+                    ? 'Hide evidence details'
+                    : 'Show evidence and source details'
+                }
+                onPress={() => setDetails(v => !v)}
+              />
+              {details &&
+              item.body.context &&
+              item.body.context !== item.body.quote ? (
+                <Text selectable style={s.muted}>
+                  Context: {item.body.context}
+                </Text>
+              ) : null}
+              <Animated.View style={{ height: commentHeight }}>
+                <TextInput
+                  accessibilityLabel="Review comment"
+                  style={s.input}
+                  placeholder="What needs review?"
+                  placeholderTextColor={palette.muted}
+                  multiline
+                  disableFullscreenUI
+                  maxLength={5000}
+                  value={comment}
+                  editable={!busy && item.state === 'draft'}
+                  onChangeText={protect}
+                />
+              </Animated.View>
+              <Text accessibilityLiveRegion="polite" style={s.muted}>
+                {item.state === 'queued'
+                  ? 'On this phone · pending sync. Upload will be available in a later update.'
+                  : protecting
+                  ? 'Protecting draft…'
+                  : error
+                  ? 'Last protected draft retained; current changes need retry.'
+                  : 'Protected draft on this phone · ' +
+                    comment.length +
+                    '/5000'}
+              </Text>
+              {item.state === 'draft' ? (
+                <View style={s.actions}>
+                  <Action
+                    label="Save on this phone"
+                    disabled={busy || !comment.trim()}
+                    onPress={queue}
+                  />
+                  <Action
+                    label="Discard draft"
+                    disabled={busy}
+                    onPress={discard}
+                  />
+                  {error ? (
+                    <Action
+                      label="Retry protecting draft"
+                      disabled={busy}
+                      onPress={() => protect(comment)}
+                    />
+                  ) : null}
+                </View>
+              ) : (
+                <Action
+                  label="Expand saved comment"
+                  onPress={() => commentHeight.setValue(240)}
+                />
+              )}
+              {details ? (
+                <Text style={s.muted}>
+                  {item.source.targetType} · {item.body.resourceId}. Source
+                  identity: {item.source.workspaceId} / {item.source.generation}
+                  . Original content is unchanged.
+                </Text>
+              ) : null}
+            </>
+          ) : !busy ? (
+            items.length ? (
+              items.map(v => (
+                <View key={v.id} style={s.row}>
+                  <Action
+                    label={
+                      v.source.targetTitle +
+                      ' · ' +
+                      (v.state === 'draft'
+                        ? 'Protected draft'
+                        : 'On this phone')
+                    }
+                    onPress={() => {
+                      accept(v);
+                      setComment(v.body.comment);
+                      commentHeight.setValue(140);
+                    }}
+                  />
+                  <Text numberOfLines={2} style={s.muted}>
+                    {v.body.comment || 'Empty protected draft'} · {v.createdAt}
+                  </Text>
+                  <Text style={s.muted}>
+                    {v.source.workspaceName} · {v.source.address} ·{' '}
+                    {locatorLabel(v.body.locator)}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={s.muted}>
+                No captures yet. Flag a passage or add a review item from a
+                resource.
+              </Text>
+            )
+          ) : null}
+        </View>
+      </ScrollView>
+    </ContextSheet>
+  );
+}
+const styles = StyleSheet.create({
+  preparing: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    backgroundColor: '#000a',
+  },
+  preparingBody: { alignItems: 'center', gap: 8, padding: 16 },
+  preparingAction: { backgroundColor: '#0a0a0a', borderRadius: 10 },
+  body: { paddingBottom: 12, gap: 8 },
+  title: { color: '#e8e8e8', fontSize: 18, fontWeight: '600' },
+  muted: { color: '#b3b3b3', fontSize: 13, marginVertical: 4 },
+  error: { color: '#ffb4b4', padding: 8 },
+  evidence: {
+    color: '#e8e8e8',
+    borderLeftWidth: 2,
+    borderColor: '#8db7ff',
+    padding: 10,
+  },
+  input: {
+    flex: 1,
+    color: '#e8e8e8',
+    fontSize: 16,
+    textAlignVertical: 'top',
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 8,
+  },
+  actions: { flexDirection: 'row', flexWrap: 'wrap' },
+  row: { paddingVertical: 6, borderBottomWidth: 1, borderColor: '#333' },
+});

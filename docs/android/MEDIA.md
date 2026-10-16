@@ -1,3 +1,5 @@
+Current A3 candidate adds [source-bound Review capture](REVIEW-CAPTURE.md): whole-file Add review item and an explicit current rendered PDF-page action are distinct. Pending/error pages cannot become page evidence. The viewer remains mounted; no original bytes change.
+
 # Android images and file input/output
 
 > R1 (alpha.9.1) supersedes the Android editing/insertion/organization-write flows below. They document historical A4–A7 behavior and retained recovery formats; current read-only behavior is in [ANDROID.md](ANDROID.md) and [READER.md](READER.md). Native previews/copy/download of existing originals remain available.

@@ -44,10 +44,12 @@ export default function ResourcePreview({
   model,
   registerBack,
   download,
+  capture,
 }: {
   model: MobileWorkspace;
   registerBack: (fn: () => boolean) => void;
   download?: () => void;
+  capture: (page?: number) => void;
 }) {
   const state = model.snapshot(),
     r = state.preview;
@@ -65,6 +67,7 @@ export default function ResourcePreview({
         model={model}
         registerBack={registerBack}
         download={download}
+        capture={capture}
       />
     </Modal>
   ) : null;
@@ -73,10 +76,12 @@ function Preview({
   model,
   registerBack,
   download,
+  capture,
 }: {
   model: MobileWorkspace;
   registerBack: (fn: () => boolean) => void;
   download?: () => void;
+  capture: (page?: number) => void;
 }) {
   const { preferences, reduced } = useReading();
   const light = useAppearance() === 'light';
@@ -539,6 +544,27 @@ function Preview({
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={s.controlBody}
           >
+            <Action
+              label="Add review item"
+              onPress={() => {
+                setActions(false);
+                capture();
+              }}
+            />
+            {r.mimeType === 'application/pdf' ? (
+              <Action
+                label={
+                  renderedPage === undefined
+                    ? 'Review PDF page'
+                    : `Review PDF page ${renderedPage + 1}`
+                }
+                disabled={busy || !!error || renderedPage === undefined}
+                onPress={() => {
+                  setActions(false);
+                  capture(renderedPage! + 1);
+                }}
+              />
+            ) : null}
             {data.uri ? (
               <View style={s.tools}>
                 <Action label="Fit" onPress={() => zoom(1)} />
