@@ -65,12 +65,13 @@ class ReaderContinuityTest {
     d.unfreezeRotation()
   }
   @Test fun readingEdgeAndFind() {
-    openReader();val retained=web();val originalHeight=retained.height;val originalTop=IntArray(2);i.runOnMainSync {retained.getLocationOnScreen(originalTop)}
+    openReader();val retained=web();js("window.scrollTo(0,0);true");Thread.sleep(400);val originalHeight=retained.height;val originalTop=IntArray(2);i.runOnMainSync {retained.getLocationOnScreen(originalTop)}
     val bounds=d.findObject(By.clazz("android.webkit.WebView")).visibleBounds;d.swipe(bounds.centerX(),bounds.centerY(),bounds.centerX(),bounds.centerY()-40,8);Thread.sleep(300)
     js("window.a2Node=[...document.querySelectorAll('p')].find(p=>p.textContent.startsWith('Paragraph 18.'));window.scrollTo(0,window.scrollY+a2Node.getBoundingClientRect().top-20);true")
     waitJs("Math.abs(a2Node.getBoundingClientRect().top-20)<3");Thread.sleep(400);val before=js("a2Node.getBoundingClientRect().top").toDouble();assertEquals(20.0,before,3.0);val viewport=retained.height
     val workingTop=IntArray(2);i.runOnMainSync {retained.getLocationOnScreen(workingTop)}
-    assertEquals(originalHeight,viewport);assertArrayEquals(originalTop,workingTop)
+    assertTrue("Reader chrome must visibly reclaim space",viewport-originalHeight>=12)
+    assertEquals("Viewport gains exactly the chrome's reclaimed space",viewport-originalHeight,originalTop[1]-workingTop[1])
     options("Reading appearance")
     val size=js("parseFloat(document.documentElement.style.getPropertyValue('--size'))",retained).toDouble()
     val change=if(size>=27) "Decrease Text size" else "Increase Text size"

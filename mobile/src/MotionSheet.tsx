@@ -15,39 +15,57 @@ export default function MotionSheet({
   children,
   style,
   onSettled,
+  presented = true,
 }: {
   children: React.ReactNode;
   style: StyleProp<ViewStyle>;
   onSettled?: () => void;
+  presented?: boolean;
 }) {
   const { preferences, reduced } = useReading();
   const progress = useRef(new Animated.Value(0)).current;
   const [height, setHeight] = useState(0);
+  const bounds = useRef<React.ElementRef<typeof View>>(null);
+  const started = useRef(false),
+    completed = useRef(false);
   const settled = useRef(onSettled);
   settled.current = onSettled;
   useEffect(() => {
-    if (!height) return;
+    if (presented && !started.current)
+      bounds.current?.measure((_x, _y, _width, measured) => {
+        if (!started.current && measured > 0) setHeight(measured);
+      });
+  }, [presented]);
+  useEffect(() => {
+    if (!height || !presented || completed.current) return;
+    started.current = true;
     progress.stopAnimation();
     const animation = Animated.timing(progress, {
       toValue: 1,
-      duration: motionDuration('utility', preferences.motion, reduced),
+      duration: motionDuration('navigation', preferences.motion, reduced),
       easing: settleEasing,
       useNativeDriver: true,
     });
     let active = true;
     animation.start(({ finished }) => {
-      if (finished && active) settled.current?.();
+      if (finished && active) {
+        completed.current = true;
+        settled.current?.();
+      }
     });
     return () => {
       active = false;
       animation.stop();
     };
-  }, [preferences.motion, reduced, progress, height]);
+  }, [preferences.motion, reduced, progress, height, presented]);
   return (
     <View
+      ref={bounds}
+      collapsable={false}
       style={styles.bounds}
       onLayout={event => {
-        setHeight(event.nativeEvent.layout.height);
+        if (presented && !started.current)
+          setHeight(event.nativeEvent.layout.height);
       }}
     >
       <Animated.View

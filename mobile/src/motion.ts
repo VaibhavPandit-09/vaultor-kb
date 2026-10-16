@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 
 export type MotionKind =
   | 'micro'
+  | 'anchor'
   | 'utility'
   | 'structure'
   | 'navigation'
@@ -10,17 +11,19 @@ export type MotionKind =
 const durations = {
   smooth: {
     micro: 120,
-    utility: 220,
+    anchor: 200,
+    utility: 300,
     structure: 300,
     navigation: 360,
     theme: 420,
   },
   snappy: {
     micro: 80,
-    utility: 120,
-    structure: 160,
-    navigation: 180,
-    theme: 200,
+    anchor: 180,
+    utility: 220,
+    structure: 240,
+    navigation: 280,
+    theme: 320,
   },
 };
 export function motionDuration(
@@ -30,7 +33,8 @@ export function motionDuration(
 ) {
   return reduced ? 0 : durations[mode][kind];
 }
-export const settleEasing = Easing.bezier(0.2, 0, 0, 1);
+// Preserve enough mid-travel contrast before the soft settle. No overshoot.
+export const settleEasing = Easing.bezier(0.2, 0, 0.2, 1);
 
 // Start conservatively until Android's preference is known. One source for RN
 // presentation and the restricted reader; a failed query keeps motion reduced.

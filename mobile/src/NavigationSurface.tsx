@@ -168,10 +168,11 @@ export function WorkspaceDrawer(
   const { preferences } = useReading();
   const light = useAppearance() === 'light';
   const edge = useRef(new Animated.Value(0)).current;
+  const [shown, setShown] = useState(false);
   const root = useRef<React.ElementRef<typeof View>>(null),
     heading = useRef<React.ElementRef<typeof Text>>(null);
   useEffect(() => {
-    if (!props.visible) {
+    if (!props.visible || !shown) {
       edge.setValue(0);
       return;
     }
@@ -187,7 +188,7 @@ export function WorkspaceDrawer(
     });
     animation.start();
     return () => animation.stop();
-  }, [edge, props.visible, props.reducedMotion, preferences.motion]);
+  }, [edge, props.visible, props.reducedMotion, preferences.motion, shown]);
   useEffect(() => {
     if (props.visible)
       NativeModules.VaultorPresentation?.systemBars(
@@ -329,6 +330,7 @@ export function WorkspaceDrawer(
       navigationBarTranslucent
       animationType="none"
       onShow={() => {
+        setShown(true);
         NativeModules.VaultorPresentation?.systemBars(
           light,
           findNodeHandle(root.current) ?? 0,

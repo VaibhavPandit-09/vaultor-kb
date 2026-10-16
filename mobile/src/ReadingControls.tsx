@@ -59,6 +59,7 @@ export default function ReadingControls({ close }: { close: () => void }) {
   const root = useRef<React.ElementRef<typeof View>>(null),
     insets = useSafeAreaInsets(),
     light = useAppearance() === 'light';
+  const [shown, setShown] = useState(false);
   useEffect(() => {
     NativeModules.VaultorPresentation?.systemBars(
       light,
@@ -110,10 +111,11 @@ export default function ReadingControls({ close }: { close: () => void }) {
       navigationBarTranslucent
       animationType="none"
       onRequestClose={close}
+      onShow={() => setShown(true)}
     >
       <KeyboardAvoidingView behavior="height" style={s.full}>
         <SafeAreaView edges={['top', 'left', 'right']} style={s.scrim}>
-          <MotionSheet style={s.sheet}>
+          <MotionSheet style={s.sheet} presented={shown}>
             <View
               ref={root}
               collapsable={false}

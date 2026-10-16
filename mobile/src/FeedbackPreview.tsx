@@ -40,7 +40,7 @@ export default function FeedbackPreview() {
     );
     Animated.timing(progress, {
       toValue: 1,
-      duration: motionDuration('micro', preferences.motion, reduced),
+      duration: motionDuration('utility', preferences.motion, reduced),
       easing: settleEasing,
       useNativeDriver: true,
     }).start(({ finished }) => {
@@ -56,26 +56,37 @@ export default function FeedbackPreview() {
   };
   return (
     <View ref={root} collapsable={false}>
-      <Animated.View
+      <View
         style={{
-          opacity: progress,
-          transform: [
-            {
-              translateY: progress.interpolate({
-                inputRange: [0, 1],
-                outputRange: [4, 0],
-              }),
-            },
-          ],
+          width: 160,
+          height: 32,
+          borderBottomWidth: 1,
+          borderColor: palette.border,
         }}
       >
-        <Text
-          accessibilityLiveRegion="polite"
-          style={{ color: palette.secondary }}
-        >
-          {label}
-        </Text>
-      </Animated.View>
+        <Animated.View
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: 4,
+            backgroundColor: palette.accent,
+            transform: [
+              {
+                translateX: progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 128],
+                }),
+              },
+            ],
+          }}
+        />
+      </View>
+      <Text
+        accessibilityLiveRegion="polite"
+        style={{ color: palette.secondary }}
+      >
+        {label}
+      </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         <Action label="Preview selection" onPress={() => preview('anchor')} />
         <Action label="Preview completion" onPress={() => preview('capture')} />

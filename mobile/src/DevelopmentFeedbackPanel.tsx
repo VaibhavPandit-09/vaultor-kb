@@ -89,7 +89,7 @@ export default function DevelopmentFeedbackPanel() {
           ),
         );
         if (alive.current) {
-          setReports(v => ({ ...v, [index]: report }));
+          setReports(v => ({ ...v, [index]: { ...v[index], ...report } }));
           setFailure('');
         }
       } catch {
@@ -186,7 +186,9 @@ export default function DevelopmentFeedbackPanel() {
                   {String(report?.tickPrimitive)}; envelope supported/usable{' '}
                   {String(report?.envelopeSupported)}/
                   {String(report?.envelopeUsable)}; actuator{' '}
-                  {String(report?.actuator)}.
+                  {String(report?.actuator)}. Presets tick/click/heavy/double:{' '}
+                  {String(report?.tickEffect)}/{String(report?.clickEffect)}/
+                  {String(report?.heavyEffect)}/{String(report?.doubleEffect)}.
                 </Text>
                 <Text style={text}>
                   Fallback: {report?.fallback ?? 'inspecting'}

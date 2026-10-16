@@ -30,6 +30,7 @@ import {
   View,
   AccessibilityInfo,
   findNodeHandle,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MobileWorkspace, HostError, type Host } from './workspace';
@@ -41,6 +42,7 @@ import ReaderView, { type ReaderPanel } from './ReaderView';
 import ReadingControls from './ReadingControls';
 import OfflineControls from './OfflineControls';
 import { useReading, useThemeStyles } from './ui';
+import { motionDuration, settleEasing } from './motion';
 const native = NativeModules.VaultorNative;
 const parse = async <T,>(p: Promise<string>): Promise<T> => JSON.parse(await p);
 async function permission(interactive = true) {
@@ -182,6 +184,9 @@ export default function WorkspaceScreen() {
     [inventory, setInventory] = useState<any>(),
     [recoveryError, setRecoveryError] = useState('');
   const readerScroll = useRef(new Animated.Value(0)).current;
+  const sourceLanding = useRef(new Animated.Value(1)).current;
+  const sourceOrientation = useRef<React.ElementRef<typeof View>>(null);
+  const { fontScale } = useWindowDimensions();
   const [captionHeight, setCaptionHeight] = useState(14);
   useEffect(() => {
     readerScroll.setValue(Math.max(0, model.snapshot().position?.scroll || 0));
@@ -239,20 +244,40 @@ export default function WorkspaceScreen() {
           );
         if (token !== sourceToken.current) return;
         setHosts(false);
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => {
-            if (
-              token !== sourceToken.current ||
-              model.snapshot().scope !== next.scope
-            )
-              return;
-            const tag = findNodeHandle(menu.current);
-            if (tag) {
-              AccessibilityInfo.setAccessibilityFocus(tag);
-              haptic('selection', tag, preferences.haptics !== 'off');
-            }
-          }),
-        );
+        requestAnimationFrame(() => {
+          const tag = findNodeHandle(sourceOrientation.current);
+          if (!tag) return;
+          void NativeModules.VaultorPresentation.awaitWindow(tag)
+            .then((focused: boolean) => {
+              if (
+                !focused ||
+                token !== sourceToken.current ||
+                model.snapshot().scope !== next.scope
+              )
+                return;
+              sourceLanding.setValue(0);
+              Animated.timing(sourceLanding, {
+                toValue: 1,
+                duration: motionDuration(
+                  'utility',
+                  preferences.motion,
+                  reduced,
+                ),
+                easing: settleEasing,
+                useNativeDriver: true,
+              }).start(({ finished }) => {
+                if (
+                  finished &&
+                  token === sourceToken.current &&
+                  model.snapshot().scope === next.scope
+                ) {
+                  AccessibilityInfo.setAccessibilityFocus(tag);
+                  haptic('selection', tag, preferences.haptics !== 'off');
+                }
+              });
+            })
+            .catch(() => {});
+        });
       } catch (e) {
         if (token !== sourceToken.current) return;
         setSourceError((e as Error).message);
@@ -759,8 +784,24 @@ export default function WorkspaceScreen() {
   );
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-      <View
-        style={[s.header, reading && s.readerHeader]}
+      <Animated.View
+        style={[
+          s.header,
+          reading && s.readerHeader,
+          reading &&
+            !reduced && {
+              height: readerScroll.interpolate({
+                inputRange: [0, 112],
+                outputRange: [
+                  Math.max(80, 48 + captionHeight + 12),
+                  state.connection === 'online'
+                    ? Math.max(48, 32 * fontScale)
+                    : Math.max(56, 44 * fontScale),
+                ],
+                extrapolate: 'clamp',
+              }),
+            },
+        ]}
         collapsable={false}
         importantForAccessibility={
           hosts ||
@@ -789,54 +830,72 @@ export default function WorkspaceScreen() {
         {state.view === 'note' && !hostView && !recovery ? (
           <Action label="‹" accessibilityLabel="Back" onPress={back} />
         ) : null}
-        <Pressable
-          style={s.orientation}
-          disabled={state.busy || hostView || recovery}
-          accessibilityRole="button"
-          accessibilityLabel={`${title}. ${source.workspace}. ${source.availability}. Choose source`}
-          onPress={() => setHosts(true)}
+        <Animated.View
+          ref={sourceOrientation}
+          collapsable={false}
+          style={[
+            s.orientation,
+            {
+              transform: [
+                {
+                  translateX: sourceLanding.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [24, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
         >
-          <Animated.Text
-            numberOfLines={1}
-            accessibilityRole="header"
-            style={[
-              s.title,
-              reading &&
-                state.connection === 'online' &&
-                !reduced && {
-                  transform: [
-                    {
-                      translateY: readerScroll.interpolate({
-                        inputRange: [0, 80],
-                        outputRange: [0, captionHeight / 2],
+          <Pressable
+            style={s.orientationPress}
+            disabled={state.busy || hostView || recovery}
+            accessibilityRole="button"
+            accessibilityLabel={`${title}. ${source.workspace}. ${source.availability}. Choose source`}
+            onPress={() => setHosts(true)}
+          >
+            <Animated.Text
+              numberOfLines={1}
+              accessibilityRole="header"
+              style={[s.title]}
+            >
+              {title}
+            </Animated.Text>
+            <Animated.View
+              style={
+                reading && state.connection === 'online' && !reduced
+                  ? {
+                      height: readerScroll.interpolate({
+                        inputRange: [0, 112],
+                        outputRange: [captionHeight, 0],
+                        extrapolate: 'clamp',
+                      }),
+                      overflow: 'hidden',
+                    }
+                  : undefined
+              }
+            >
+              <Animated.Text
+                onLayout={e => setCaptionHeight(e.nativeEvent.layout.height)}
+                numberOfLines={1}
+                style={[
+                  s.source,
+                  reading &&
+                    state.connection === 'online' &&
+                    !reduced && {
+                      opacity: readerScroll.interpolate({
+                        inputRange: [0, 112],
+                        outputRange: [1, 0],
                         extrapolate: 'clamp',
                       }),
                     },
-                  ],
-                },
-            ]}
-          >
-            {title}
-          </Animated.Text>
-          <Animated.Text
-            onLayout={e => setCaptionHeight(e.nativeEvent.layout.height)}
-            numberOfLines={1}
-            style={[
-              s.source,
-              reading &&
-                state.connection === 'online' &&
-                !reduced && {
-                  opacity: readerScroll.interpolate({
-                    inputRange: [0, 80],
-                    outputRange: [1, 0],
-                    extrapolate: 'clamp',
-                  }),
-                },
-            ]}
-          >
-            {source.availability} · {source.workspace} ⌄
-          </Animated.Text>
-        </Pressable>
+                ]}
+              >
+                {source.availability} · {source.workspace} ⌄
+              </Animated.Text>
+            </Animated.View>
+          </Pressable>
+        </Animated.View>
         {!hostView && !recovery && state.view === 'note' ? (
           <Action
             label="•••"
@@ -844,7 +903,7 @@ export default function WorkspaceScreen() {
             onPress={() => setMore(true)}
           />
         ) : null}
-      </View>
+      </Animated.View>
       {state.offlineWarning ? (
         <Text accessibilityRole="alert" style={s.error}>
           {state.offlineWarning}
@@ -1186,6 +1245,7 @@ const styles = StyleSheet.create({
     borderColor: '#252525',
   },
   orientation: { flex: 1, minHeight: 48, justifyContent: 'center' },
+  orientationPress: { minHeight: 48, justifyContent: 'center' },
   source: { color: '#858585', fontSize: 12 },
   title: { fontSize: 19, fontWeight: '600', color: '#e8e8e8' },
   icon: {

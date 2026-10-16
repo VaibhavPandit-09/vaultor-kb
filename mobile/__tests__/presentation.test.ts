@@ -51,7 +51,7 @@ test('capture failure/timeout cannot block a choice; reduced motion does not cap
     commit = jest.fn();
   port.prepareTheme.mockImplementationOnce(() => new Promise(() => {}));
   const pending = transition.change(10, 420, commit);
-  await jest.advanceTimersByTimeAsync(120);
+  await jest.advanceTimersByTimeAsync(200);
   await pending;
   expect(commit).toHaveBeenCalledTimes(1);
   await transition.change(10, 0, commit);
@@ -90,6 +90,8 @@ test('motion and haptic preferences migrate conservatively without changing exis
     haptics: 'system',
   });
   expect(normalizeReading({ haptics: 'off' }).haptics).toBe('off');
+  expect(normalizeReading({ richHaptics: 'platform' }).richHaptics).toBe('platform');
+  expect(normalizeReading({ richHaptics: 'invalid' }).richHaptics).toBe('clear');
   expect(motionDuration('structure', 'smooth', true)).toBe(0);
   expect(motionDuration('utility', 'snappy', false)).toBeLessThan(
     motionDuration('utility', 'smooth', false),

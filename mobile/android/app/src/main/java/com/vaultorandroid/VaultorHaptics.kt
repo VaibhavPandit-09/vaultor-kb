@@ -16,6 +16,7 @@ class VaultorHaptics(private val ctx:ReactApplicationContext, private val vibrat
   companion object {
     val events=setOf("micro","selection","complete","reject","destructive")
     fun constant(event:String)=when(event){"micro"->H.CLOCK_TICK;"selection"->H.GESTURE_END;"reject"->H.REJECT;"destructive"->H.LONG_PRESS;else->H.CONFIRM}
+    fun label(event:String)=when(event){"micro"->"CLOCK_TICK";"selection"->"GESTURE_END";"reject"->"REJECT";"destructive"->"LONG_PRESS";else->"CONFIRM"}
     fun effect(event:String)=when(event){"micro"->VibrationEffect.EFFECT_TICK;"reject"->VibrationEffect.EFFECT_DOUBLE_CLICK;"complete","destructive"->VibrationEffect.EFFECT_HEAVY_CLICK;else->VibrationEffect.EFFECT_CLICK}
     fun route(event:String,rich:String,policy:String,allowed:Boolean,actuator:Boolean,envelope:Boolean,click:Boolean,preset:Boolean):String {
       if(!allowed || event !in events)return "silent"
@@ -40,6 +41,7 @@ class VaultorHaptics(private val ctx:ReactApplicationContext, private val vibrat
       .put("shown",v?.isShown==true).put("windowFocused",v?.hasWindowFocus()==true).put("viewEnabled",v?.isHapticFeedbackEnabled==true)
       .put("actuator",vibrator.hasVibrator()).put("amplitudeControl",vibrator.hasAmplitudeControl())
       .put("envelopeSupported",vibrator.areEnvelopeEffectsSupported()).put("envelopeUsable",envelope())
+      .put("legacyEnvelopeUsable",envelope() && vibrator.envelopeEffectInfo.minControlPointDurationMillis<=20)
       .put("clickPrimitive",vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK))
       .put("tickPrimitive",vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_TICK))
       .put("clickEffect",supported(VibrationEffect.EFFECT_CLICK)).put("heavyEffect",supported(VibrationEffect.EFFECT_HEAVY_CLICK))
@@ -49,7 +51,7 @@ class VaultorHaptics(private val ctx:ReactApplicationContext, private val vibrat
     val report=snapshot(v)
     val selected=route(event,rich,report.getString("richPolicy"),report.getBoolean("appEnabled") && report.getInt("systemSetting")!=0,report.getBoolean("actuator"),report.getBoolean("envelopeUsable"),report.getBoolean("clickPrimitive"),supported(if(rich=="capture")VibrationEffect.EFFECT_DOUBLE_CLICK else effect(event)))
     return report.put("plannedRoute",if(report.getInt("systemSetting")==-1 && selected!="silent")"system" else selected)
-      .put("platformConstant",constant(event)).put("preset",effect(event))
+      .put("platformConstant",label(event)).put("preset",effect(event))
       .put("fallback",if(rich.isEmpty())"supported short preset if Android declines; otherwise silent" else "supported CLICK → supported preset → system → silent")
   }
   fun play(event:String,rich:String,v:View?,mode:String="auto"):JSONObject {
@@ -73,13 +75,13 @@ class VaultorHaptics(private val ctx:ReactApplicationContext, private val vibrat
       "envelope"->if(report.getBoolean("envelopeUsable"))"envelope" else auto
       "primitives"->if(report.getBoolean("clickPrimitive"))"primitives" else auto
       "predefined"->if(supported(preset))"predefined" else auto
-      "legacy"->if(report.getBoolean("envelopeUsable"))"legacy-envelope" else if(report.getBoolean("tickPrimitive") && report.getBoolean("clickPrimitive"))"legacy-primitives" else "system"
+      "legacy"->if(report.getBoolean("legacyEnvelopeUsable"))"legacy-envelope" else if(report.getBoolean("tickPrimitive") && report.getBoolean("clickPrimitive"))"legacy-primitives" else "system"
       else->auto
     }
     report.put("fallback",if(mode!="auto" && mode!=selected)"$mode unavailable → $selected" else if(selected=="system" && rich.isNotEmpty())"platform semantic fallback" else "none")
     val attrs=VibrationAttributes.Builder().setUsage(VibrationAttributes.USAGE_TOUCH).build()
     fun system():Boolean {
-      report.put("mechanism","View.performHapticFeedback(${constant(event)})").put("androidAccepted",v!!.performHapticFeedback(constant(event)))
+      report.put("mechanism","View.performHapticFeedback(${label(event)})").put("androidAccepted",v!!.performHapticFeedback(constant(event)))
       return report.getBoolean("androidAccepted")
     }
     try {

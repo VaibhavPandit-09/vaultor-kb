@@ -4,7 +4,6 @@ import {
   Animated,
   findNodeHandle,
   NativeModules,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,7 +11,6 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import ContextSheet from './ContextSheet';
 import { Action } from './Action';
 import { usePalette, useReading, useThemeStyles } from './ui';
@@ -57,9 +55,12 @@ export default function ReviewCapture({
     anchored = useRef(false),
     pendingCompletion = useRef(false),
     pendingReject = useRef(false),
-    preparingRoot = useRef<React.ElementRef<typeof View>>(null),
     root = useRef<React.ElementRef<typeof View>>(null);
   const commentHeight = useRef(new Animated.Value(140)).current;
+  const anchorProgress = useRef(new Animated.Value(seed ? 0 : 1)).current;
+  const receiptProgress = useRef(new Animated.Value(0)).current;
+  const [receiptHeight, setReceiptHeight] = useState(76);
+  const [evidenceLocked, setEvidenceLocked] = useState(!seed);
   useLayoutEffect(() => {
     if (!error || !pendingReject.current) return;
     pendingReject.current = false;
@@ -80,40 +81,63 @@ export default function ReviewCapture({
     )
       return;
     anchored.current = true;
-    const frame = requestAnimationFrame(() => {
-      if (alive.current)
-        haptic(
-          'selection',
-          settled.tag,
-          preferences.haptics !== 'off',
-          'anchor',
-        );
+    const animation = Animated.timing(anchorProgress, {
+      toValue: 1,
+      duration: motionDuration('anchor', preferences.motion, reduced),
+      easing: settleEasing,
+      useNativeDriver: true,
     });
-    return () => cancelAnimationFrame(frame);
-  }, [seed, item?.id, settled, preferences.haptics]);
+    animation.start(({ finished }) => {
+      if (!finished || !alive.current || current.current?.state !== 'draft')
+        return;
+      setEvidenceLocked(true);
+      haptic('selection', settled.tag, preferences.haptics !== 'off', 'anchor');
+    });
+    return () => {
+      animation.stop();
+      anchorProgress.setValue(1);
+    };
+  }, [
+    seed,
+    item?.id,
+    settled,
+    preferences.haptics,
+    preferences.motion,
+    reduced,
+    anchorProgress,
+  ]);
   useLayoutEffect(() => {
     if (item?.state !== 'queued' || !pendingCompletion.current) return;
     pendingCompletion.current = false;
-    const animation = Animated.timing(commentHeight, {
-      toValue: 64,
-      duration: motionDuration('structure', preferences.motion, reduced),
-      easing: settleEasing,
-      useNativeDriver: false,
-    });
-    animation.start();
-    const frame = requestAnimationFrame(() => {
+    const duration = motionDuration('structure', preferences.motion, reduced);
+    const animation = Animated.parallel([
+      Animated.timing(commentHeight, {
+        toValue: 72,
+        duration,
+        easing: settleEasing,
+        useNativeDriver: false,
+      }),
+      Animated.timing(receiptProgress, {
+        toValue: 1,
+        duration,
+        easing: settleEasing,
+        useNativeDriver: false,
+      }),
+    ]);
+    animation.start(({ finished }) => {
       const tag = findNodeHandle(root.current);
-      if (alive.current && tag)
+      if (finished && alive.current && tag)
         haptic('complete', tag, preferences.haptics !== 'off', 'capture');
     });
     return () => {
-      cancelAnimationFrame(frame);
       animation.stop();
-      commentHeight.setValue(64);
+      commentHeight.setValue(72);
+      receiptProgress.setValue(1);
     };
   }, [
     item?.state,
     commentHeight,
+    receiptProgress,
     preferences.motion,
     preferences.haptics,
     reduced,
@@ -252,197 +276,235 @@ export default function ReviewCapture({
         },
       ],
     );
-  if (!prepared)
-    return (
-      <Modal
-        transparent
-        statusBarTranslucent
-        navigationBarTranslucent
-        animationType="none"
-        onShow={() => {
-          const tag = findNodeHandle(preparingRoot.current);
-          if (tag) NativeModules.VaultorPresentation?.systemBars(false, tag);
-        }}
-        onRequestClose={dismiss}
-      >
-        <SafeAreaView style={s.preparing}>
-          <View ref={preparingRoot} collapsable={false} style={s.preparingBody}>
-            <Text style={{ color: '#fff' }}>Protecting capture…</Text>
-            <View style={s.preparingAction}>
-              <Action label="Keep reading" onPress={dismiss} />
-            </View>
-          </View>
-        </SafeAreaView>
-      </Modal>
-    );
   return (
     <ContextSheet
-      key={item?.id ?? (error ? 'initial-error' : 'list')}
+      ready={prepared}
       title={seed || item ? 'Review capture' : 'Captures on this phone'}
       close={dismiss}
       onSettled={tag => setSettled({ id: item?.id, tag })}
     >
-      <ScrollView
-        style={
-          busy || item || items.length
-            ? { height: Math.min(600, height * 0.65), flexShrink: 1 }
-            : undefined
-        }
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={s.body}
-      >
-        <View ref={root} collapsable={false}>
-          {error ? (
-            <Text accessibilityRole="alert" style={s.error}>
-              {error}
-            </Text>
-          ) : null}
-          {busy ? <Text style={s.muted}>Protecting capture…</Text> : null}
-          {item ? (
-            <>
-              <Text accessibilityRole="header" style={s.title}>
-                {item.source.targetTitle}
+      {!prepared ? (
+        <Text style={s.muted}>Protecting capture...</Text>
+      ) : (
+        <ScrollView
+          style={
+            busy || item || items.length
+              ? { height: Math.min(600, height * 0.65), flexShrink: 1 }
+              : undefined
+          }
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={s.body}
+        >
+          <View ref={root} collapsable={false}>
+            {error ? (
+              <Text accessibilityRole="alert" style={s.error}>
+                {error}
               </Text>
-              <Text style={s.muted}>
-                {item.source.workspaceName} · {item.source.address}
-              </Text>
-              <Text selectable style={s.muted}>
-                {locatorLabel(item.body.locator)} · saved revision{' '}
-                {item.body.baseRevision || 'unavailable'}
-              </Text>
-              {item.body.quote ? (
-                <Text
-                  selectable
-                  numberOfLines={details ? undefined : 4}
-                  style={s.evidence}
+            ) : null}
+            {busy ? <Text style={s.muted}>Protecting capture…</Text> : null}
+            {item ? (
+              <>
+                <Animated.View
+                  style={{
+                    transform: [
+                      {
+                        translateY: anchorProgress.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [24, 0],
+                        }),
+                      },
+                    ],
+                    marginBottom: 12,
+                  }}
                 >
-                  {item.body.quote}
-                </Text>
-              ) : (
-                <Text style={s.muted}>No passage selected.</Text>
-              )}
-              <Action
-                label={
-                  details
-                    ? 'Hide evidence details'
-                    : 'Show evidence and source details'
-                }
-                onPress={() => setDetails(v => !v)}
-              />
-              {details &&
-              item.body.context &&
-              item.body.context !== item.body.quote ? (
-                <Text selectable style={s.muted}>
-                  Context: {item.body.context}
-                </Text>
-              ) : null}
-              <Animated.View style={{ height: commentHeight }}>
-                <TextInput
-                  accessibilityLabel="Review comment"
-                  style={s.input}
-                  placeholder="What needs review?"
-                  placeholderTextColor={palette.muted}
-                  multiline
-                  disableFullscreenUI
-                  maxLength={5000}
-                  value={comment}
-                  editable={!busy && item.state === 'draft'}
-                  onChangeText={protect}
-                />
-              </Animated.View>
-              <Text accessibilityLiveRegion="polite" style={s.muted}>
-                {item.state === 'queued'
-                  ? 'On this phone · pending sync. Upload will be available in a later update.'
-                  : protecting
-                  ? 'Protecting draft…'
-                  : error
-                  ? 'Last protected draft retained; current changes need retry.'
-                  : 'Protected draft on this phone · ' +
-                    comment.length +
-                    '/5000'}
-              </Text>
-              {item.state === 'draft' ? (
-                <View style={s.actions}>
-                  <Action
-                    label="Save on this phone"
-                    disabled={busy || !comment.trim()}
-                    onPress={queue}
-                  />
-                  <Action
-                    label="Discard draft"
-                    disabled={busy}
-                    onPress={discard}
-                  />
-                  {error ? (
-                    <Action
-                      label="Retry protecting draft"
-                      disabled={busy}
-                      onPress={() => protect(comment)}
-                    />
-                  ) : null}
-                </View>
-              ) : (
-                <Action
-                  label="Expand saved comment"
-                  onPress={() => commentHeight.setValue(240)}
-                />
-              )}
-              {details ? (
-                <Text style={s.muted}>
-                  {item.source.targetType} · {item.body.resourceId}. Source
-                  identity: {item.source.workspaceId} / {item.source.generation}
-                  . Original content is unchanged.
-                </Text>
-              ) : null}
-            </>
-          ) : !busy ? (
-            items.length ? (
-              items.map(v => (
-                <View key={v.id} style={s.row}>
-                  <Action
-                    label={
-                      v.source.targetTitle +
-                      ' · ' +
-                      (v.state === 'draft'
-                        ? 'Protected draft'
-                        : 'On this phone')
-                    }
-                    onPress={() => {
-                      accept(v);
-                      setComment(v.body.comment);
-                      commentHeight.setValue(140);
-                    }}
-                  />
-                  <Text numberOfLines={2} style={s.muted}>
-                    {v.body.comment || 'Empty protected draft'} · {v.createdAt}
+                  <Text accessibilityLiveRegion="polite" style={s.muted}>
+                    {evidenceLocked || item.state === 'queued'
+                      ? 'Evidence locked to this source'
+                      : 'Anchoring source evidence...'}
+                  </Text>
+                  <Text accessibilityRole="header" style={s.title}>
+                    {item.source.targetTitle}
                   </Text>
                   <Text style={s.muted}>
-                    {v.source.workspaceName} · {v.source.address} ·{' '}
-                    {locatorLabel(v.body.locator)}
+                    {item.source.workspaceName} · {item.source.address}
                   </Text>
-                </View>
-              ))
-            ) : (
-              <Text style={s.muted}>
-                No captures yet. Flag a passage or add a review item from a
-                resource.
-              </Text>
-            )
-          ) : null}
-        </View>
-      </ScrollView>
+                  <Text selectable style={s.muted}>
+                    {locatorLabel(item.body.locator)} · saved revision{' '}
+                    {item.body.baseRevision || 'unavailable'}
+                  </Text>
+                  {item.body.quote ? (
+                    <Text
+                      selectable
+                      numberOfLines={details ? undefined : 4}
+                      style={s.evidence}
+                    >
+                      {item.body.quote}
+                    </Text>
+                  ) : (
+                    <Text style={s.muted}>No passage selected.</Text>
+                  )}
+                  <Action
+                    label={
+                      details
+                        ? 'Hide evidence details'
+                        : 'Show evidence and source details'
+                    }
+                    onPress={() => setDetails(v => !v)}
+                  />
+                  {details &&
+                  item.body.context &&
+                  item.body.context !== item.body.quote ? (
+                    <Text selectable style={s.muted}>
+                      Context: {item.body.context}
+                    </Text>
+                  ) : null}
+                </Animated.View>
+                <Animated.View style={{ height: commentHeight }}>
+                  <TextInput
+                    accessibilityLabel="Review comment"
+                    style={s.input}
+                    placeholder="What needs review?"
+                    placeholderTextColor={palette.muted}
+                    multiline
+                    disableFullscreenUI
+                    maxLength={5000}
+                    value={comment}
+                    editable={!busy && item.state === 'draft'}
+                    onChangeText={protect}
+                  />
+                </Animated.View>
+                {item.state === 'queued' ? (
+                  <Animated.View
+                    style={{
+                      height: receiptProgress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, receiptHeight],
+                      }),
+                      overflow: 'hidden',
+                      borderLeftWidth: 4,
+                      borderColor: palette.accent,
+                      paddingHorizontal: 10,
+                    }}
+                  >
+                    <View
+                      onLayout={event =>
+                        setReceiptHeight(event.nativeEvent.layout.height + 8)
+                      }
+                      style={{
+                        position: 'absolute',
+                        left: 10,
+                        right: 10,
+                        top: 0,
+                      }}
+                    >
+                      <Text accessibilityRole="header" style={s.title}>
+                        Saved on this phone
+                      </Text>
+                      <Text accessibilityLiveRegion="polite" style={s.muted}>
+                        On this phone · pending sync. Upload will be available
+                        in a later update.
+                      </Text>
+                    </View>
+                  </Animated.View>
+                ) : (
+                  <Text accessibilityLiveRegion="polite" style={s.muted}>
+                    {protecting
+                      ? 'Protecting draft…'
+                      : error
+                      ? 'Last protected draft retained; current changes need retry.'
+                      : 'Protected draft on this phone · ' +
+                        comment.length +
+                        '/5000'}
+                  </Text>
+                )}
+                {item.state === 'draft' ? (
+                  <View style={s.actions}>
+                    <Action
+                      label="Save on this phone"
+                      disabled={busy || !comment.trim()}
+                      onPress={queue}
+                    />
+                    <Action
+                      label="Discard draft"
+                      disabled={busy}
+                      onPress={discard}
+                    />
+                    {error ? (
+                      <Action
+                        label="Retry protecting draft"
+                        disabled={busy}
+                        onPress={() => protect(comment)}
+                      />
+                    ) : null}
+                  </View>
+                ) : (
+                  <Action
+                    label="Expand saved comment"
+                    onPress={() =>
+                      Animated.timing(commentHeight, {
+                        toValue: 240,
+                        duration: motionDuration(
+                          'structure',
+                          preferences.motion,
+                          reduced,
+                        ),
+                        easing: settleEasing,
+                        useNativeDriver: false,
+                      }).start()
+                    }
+                  />
+                )}
+                {details ? (
+                  <Text style={s.muted}>
+                    {item.source.targetType} · {item.body.resourceId}. Source
+                    identity: {item.source.workspaceId} /{' '}
+                    {item.source.generation}. Original content is unchanged.
+                  </Text>
+                ) : null}
+              </>
+            ) : !busy ? (
+              items.length ? (
+                items.map(v => (
+                  <View key={v.id} style={s.row}>
+                    <Action
+                      label={
+                        v.source.targetTitle +
+                        ' · ' +
+                        (v.state === 'draft'
+                          ? 'Protected draft'
+                          : 'On this phone')
+                      }
+                      onPress={() => {
+                        accept(v);
+                        setComment(v.body.comment);
+                        commentHeight.setValue(140);
+                        receiptProgress.setValue(v.state === 'queued' ? 1 : 0);
+                      }}
+                    />
+                    <Text numberOfLines={2} style={s.muted}>
+                      {v.body.comment || 'Empty protected draft'} ·{' '}
+                      {v.createdAt}
+                    </Text>
+                    <Text style={s.muted}>
+                      {v.source.workspaceName} · {v.source.address} ·{' '}
+                      {locatorLabel(v.body.locator)}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={s.muted}>
+                  No captures yet. Flag a passage or add a review item from a
+                  resource.
+                </Text>
+              )
+            ) : null}
+          </View>
+        </ScrollView>
+      )}
     </ContextSheet>
   );
 }
 const styles = StyleSheet.create({
-  preparing: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    backgroundColor: '#000a',
-  },
-  preparingBody: { alignItems: 'center', gap: 8, padding: 16 },
-  preparingAction: { backgroundColor: '#0a0a0a', borderRadius: 10 },
   body: { paddingBottom: 12, gap: 8 },
   title: { color: '#e8e8e8', fontSize: 18, fontWeight: '600' },
   muted: { color: '#b3b3b3', fontSize: 13, marginVertical: 4 },

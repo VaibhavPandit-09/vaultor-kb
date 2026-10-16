@@ -66,6 +66,25 @@ class CaptureExperienceTest {
     reader();val w=web();val point=JSONObject(js("(()=>{const p=document.querySelector('article p');p.scrollIntoView({block:'center'});const r=p.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()"));Thread.sleep(400);val at=IntArray(2);var density=1f;i.runOnMainSync{w.getLocationOnScreen(at);density=w.resources.displayMetrics.density};val x=at[0]+(point.getDouble("x")*density).toInt();val y=at[1]+(point.getDouble("y")*density).toInt();d.swipe(x,y,x,y,150)
     val copy=d.wait(Until.findObject(By.text(java.util.regex.Pattern.compile("(?i)^copy$"))),5000);assertNotNull("Native Copy must remain",copy);val selected=JSONArray("["+js("String(getSelection())")+"]").getString(0);assertTrue(selected.isNotBlank());copy!!.click();var copied="";for(n in 0..19){i.runOnMainSync{copied=(i.targetContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).primaryClip?.getItemAt(0)?.text?.toString()?:""};if(copied==selected)break;Thread.sleep(100)};assertEquals(selected,copied)
   }
+  @Test fun themesAndLargeFontReceipt(){
+    val scale=d.executeShellCommand("settings get system font_scale").trim()
+    reader();val context=(i.targetContext.applicationContext as MainApplication).reactHost.currentReactContext as ReactApplicationContext
+    val native=VaultorModule(context);val preferences=result{native.readerPreferences("get","{}",it)}
+    try{
+      d.executeShellCommand("settings put system font_scale 1.3");Thread.sleep(1000)
+      for(theme in listOf("Light","Dark","OLED")){
+        reader();val retained=web();val original=saved();tap("Reading options");tap("Reading appearance");tap(theme);Thread.sleep(550);tap("Done")
+        tap("Reading options");tap("Add review item");assertTrue(d.wait(Until.hasObject(By.text("Evidence locked to this source")),5000))
+        val field=d.wait(Until.findObject(By.desc("Review comment")),10000);field.text="Remediation $theme large text"
+        assertTrue(d.wait(Until.hasObject(By.text("Protected draft on this phone · "+"Remediation $theme large text".length+"/5000")),10000));tap("Save on this phone")
+        var receipt=d.wait(Until.findObject(By.textStartsWith("On this phone · pending sync")),5000)
+        if(receipt==null)receipt=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.textStartsWith("On this phone · pending sync")))
+        assertNotNull(receipt);Thread.sleep(450)
+        var complete=false;i.runOnMainSync{fun visit(v:View){if(v is android.widget.TextView && v.text.toString().startsWith("On this phone · pending sync")){complete=v.layout!=null && v.height>=v.layout.getLineBottom(v.lineCount-1)};if(v is ViewGroup)for(n in 0 until v.childCount)visit(v.getChildAt(n))};WindowInspector.getGlobalWindowViews().forEach(::visit)}
+        assertTrue("Saved receipt must measure all large-text lines",complete);d.takeScreenshot(java.io.File(i.targetContext.getExternalFilesDir(null),"remediation-$theme-large.png"));tap("Done");assertSame(retained,web());assertEquals(original,saved())
+      }
+    }finally{result{native.readerPreferences("put",preferences,it)};if(scale=="null")d.executeShellCommand("settings delete system font_scale")else d.executeShellCommand("settings put system font_scale $scale")}
+  }
   private fun ime():Boolean {var shown=false;i.runOnMainSync{shown=WindowInspector.getGlobalWindowViews().any{it.rootWindowInsets?.isVisible(android.view.WindowInsets.Type.ime())==true}};return shown}
   @Test fun failedProtectionCanKeepOrDiscard(){
     val blocked=java.io.File(i.targetContext.noBackupFilesDir,"vaultor-reviews.bin.new");val guard=java.io.File(blocked,"a3-fault")

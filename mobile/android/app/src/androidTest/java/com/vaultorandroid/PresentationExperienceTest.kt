@@ -72,7 +72,12 @@ class PresentationExperienceTest {
     assertTrue(tag > 0)
     assertEquals("true", result { module.prepareTheme(tag.toDouble(), "capture-test", it) })
     val overlayField = VaultorPresentation::class.java.getDeclaredField("overlays").apply { isAccessible = true }
-    i.runOnMainSync { assertEquals(2, (overlayField.get(module) as List<*>).size) }
+    i.runOnMainSync {
+      val overlays=overlayField.get(module) as List<*>
+      assertEquals(2,overlays.size)
+      val bytes=overlays.sumOf{overlay-> val bitmap=overlay!!.javaClass.getDeclaredField("bitmap").apply{isAccessible=true}.get(overlay) as android.graphics.Bitmap;bitmap.allocationByteCount.toLong()}
+      assertTrue("Theme snapshots must remain bounded at QHD",bytes<=32L*1024*1024)
+    }
     result { module.revealTheme("capture-test", 200.0, it) }
     Thread.sleep(350)
     i.runOnMainSync { assertTrue((overlayField.get(module) as List<*>).isEmpty()) }
@@ -84,7 +89,7 @@ class PresentationExperienceTest {
       assertEquals("silent", result { module.feedback("selection", "anchor", tag.toDouble(), "system-off-test", it) })
       d.executeShellCommand("settings put system haptic_feedback_enabled 1")
       val played = result { module.feedback("selection", "anchor", tag.toDouble(), "system-on-test", it) }
-      assertTrue("Foreground semantic feedback suppressed", played in listOf("system", "envelope", "primitives"))
+      assertTrue("Foreground semantic feedback suppressed", played in listOf("system", "envelope", "primitives", "predefined"))
       assertEquals("silent", result { module.feedback("selection", "anchor", tag.toDouble(), "system-on-test", it) })
     } finally {
       if (previous == "null") d.executeShellCommand("settings delete system haptic_feedback_enabled")

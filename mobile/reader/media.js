@@ -119,7 +119,7 @@ window.vaultorMediaReceive = raw => {
           },
           { transform: 'none', transformOrigin: 'top left' },
         ],
-        { duration, easing: 'cubic-bezier(.2,0,0,1)' },
+        { duration, easing: 'cubic-bezier(.2,0,.2,1)' },
       );
       motion.finished.then(settle).catch(() => {});
     } else settle();

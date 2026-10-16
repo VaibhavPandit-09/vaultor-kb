@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   findNodeHandle,
@@ -25,11 +25,13 @@ export default function ContextSheet({
   close,
   children,
   onSettled,
+  ready = true,
 }: {
   title: string;
   close(): void;
   children: React.ReactNode;
   onSettled?: (tag: number) => void;
+  ready?: boolean;
 }) {
   const s = useThemeStyles(styles),
     insets = useSafeAreaInsets();
@@ -37,6 +39,7 @@ export default function ContextSheet({
     heading = useRef<React.ElementRef<typeof Text>>(null);
   const light = useAppearance() === 'light';
   const active = useRef(true);
+  const [shown, setShown] = useState(false);
   const ime = useRef({ visible: false, hiddenAt: -Infinity });
   useEffect(() => {
     active.current = true;
@@ -81,6 +84,7 @@ export default function ContextSheet({
       animationType="none"
       onRequestClose={requestClose}
       onShow={() => {
+        setShown(true);
         bars();
         const tag = findNodeHandle(heading.current);
         if (tag) AccessibilityInfo.setAccessibilityFocus(tag);
@@ -95,6 +99,7 @@ export default function ContextSheet({
             onPress={close}
           />
           <MotionSheet
+            presented={shown && ready}
             style={s.sheet}
             onSettled={() => {
               const tag = findNodeHandle(root.current);
@@ -146,4 +151,3 @@ const styles = StyleSheet.create({
   },
   title: { color: '#e8e8e8', fontSize: 20, fontWeight: '600', flexShrink: 1 },
 });
-

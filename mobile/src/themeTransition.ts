@@ -22,7 +22,7 @@ export class ThemeTransition {
         captured = await Promise.race([
           this.port.prepareTheme(tag, token),
           new Promise<boolean>(resolve => {
-            timer = setTimeout(() => resolve(false), 120);
+            timer = setTimeout(() => resolve(false), 200);
           }),
         ]);
       } catch {
