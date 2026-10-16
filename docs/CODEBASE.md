@@ -906,3 +906,8 @@ Documentation-only publication follow-up records Android alpha.14/code18 from im
 ### 2026-10-16 — A3 local Review capture candidate
 
 Source-bound composer, independent encrypted protected draft/local queue, retained native Copy and reader/media identity implement the authorized A3 slice. TypeScript, reader/media/evidence DOM checks,3 focused Jest cases and scoped lint0errors/34warnings passed. API37 exact installed candidate passed12 focused executions including storage-failure recovery, real IME/rotation, reduced motion, source/file/quote correctness and force-stop recovery; API36 final/publication gates follow in the ledger; no upload, desktop status or original mutation is introduced. Physical haptic/OneUI/accessibility acceptance remains pending.
+
+
+### 2026-10-16 — A3 focused source tests recorded
+
+Includes the3 focused capture source/locator Jest cases in release source alongside native/DOM checks. All3 passed; no architectural effect or shipped behavior change in this test/documentation follow-up. Final installed/API36 and publication gates remain in alpha.15 ledger.
