@@ -1,6 +1,6 @@
 # Android shell and source navigation
 
-Reviewed 2026-10-16. A1 of the [R6 phases](../plans/android-r6-plan.md), authorized by “continue next”, follows A0 on the same branch. Alpha.13/code17 is the review candidate. A2–A5 and Review capture/sync remain separate gates. Physical haptic acceptance is still pending.
+Reviewed2026-10-16. Alpha.13/code17 established the A1 shell; A2/A3 subsequently added reader/local capture. The user's S24 rejection reopens A0–A3 interaction acceptance. Alpha.16/code20 is a development [remediation](MOTION-HAPTIC-REMEDIATION.md) candidate; [R6 phases](../plans/android-r6-plan.md) owns scope. Physical approval is pending and A4 remains blocked.
 
 ## Hierarchy and ownership
 
@@ -30,4 +30,4 @@ All transitions preserve visual/semantic feedback with haptics Off. System prefe
 
 ## Review boundary
 
-The release ledger records actual checks and remaining limits. This slice changes presentation only: native allowlists, transport/protocol, host/database/resource schema, original note JSON/revisions/files and desktop remain unchanged. R6 capture, durable outbox, idempotent upload and desktop status remain unimplemented. Stop at A1 review before A2.
+Release ledgers record actual checks/limits. Shell refinements preserve native allowlists, transport/protocol, host/database/resource schema, original JSON/revisions/files and desktop. [A3](REVIEW-CAPTURE.md) implements protected local capture/queue; idempotent upload and desktop status remain blocked A4 work. Stop for S24 interaction approval.

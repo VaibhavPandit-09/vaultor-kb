@@ -964,3 +964,7 @@ API37's first19-case run passed18 but source-positive feedback emitted no event 
 ### 2026-10-16 — Real-keyboard save completion and interruption
 
 Explicit local queue success releases the software IME; H3 awaits both the saved geometry endpoint and hidden keyboard, targeting the visible receipt. Comment disclosure interruption cannot stop/clip the independent receipt animation. New focused native cases exercise actual software-keyboard H2/H3 delivery and immediate expansion during contraction, with original/queued-body checks. TypeScript/build and targeted device validation follow. No persistence/transport/source/original or A4 change; no physical feel approval is claimed.
+
+### 2026-10-16 — Remediation candidate handoff gates
+
+Final f0e1e991 development APK passed13 affected executions on API36 and10 on API37, including actual software-IME H2/H3, visible receipt completion, early expansion interruption, reduced motion, source/PDF/original equality and journal invariants. Both pulled installed files match40,009,029bytes/SHA256f0e1e991c1b296420b690bb89650ba01515c9356e2e7ff695b5016ca71b6cd3d. Earlier broad22/API36 and corrected23/API37 checks include themes/large text/gesture Back/force-stop recovery/QHD budget as detailed in alpha.16 ledger. TypeScript/13 focused Jest/DOM checks and scoped lint0errors/45warnings passed. Final source/tag publication follows; no physical acceptance is claimed. A4 remains blocked. Delivery-only publisher sequential downloads preserve byte/signer/immutable gates; Node syntax passes.

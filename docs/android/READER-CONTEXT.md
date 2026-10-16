@@ -1,6 +1,6 @@
 # Android reader context and motion
 
-Reviewed 2026-10-16. A2 follows the published A1 shell on `ai/codex-r6-android`, authorized by “start next”. Alpha.14/code18 is its review candidate. [R6 phases](../plans/android-r6-plan.md) owns scope; [reader](READER.md), [media](MEDIA.md) and [A0 foundations](INTERACTION-FOUNDATIONS.md) retain their source/security/device-policy contracts. Stop at A2 review before capture work. Physical haptic/motion acceptance remains user-owned.
+Reviewed2026-10-16. Alpha.14/code18 was the A2 reader baseline. The user's S24 rejection of A0–A3 reopens interaction acceptance; alpha.16/code20 is a development remediation candidate, not approved work. [Remediation](MOTION-HAPTIC-REMEDIATION.md) owns audit/script; [R6 phases](../plans/android-r6-plan.md) owns scope; [reader](READER.md), [media](MEDIA.md) and [foundations](INTERACTION-FOUNDATIONS.md) retain source/security/device-policy contracts. A3 local capture exists; A4 stays blocked until explicit physical approval.
 
 ## Reading edge and orientation
 
@@ -34,4 +34,4 @@ Every interaction remains fully visible and usable with app/system haptics disab
 
 ## Review boundary
 
-The release ledger records actual candidate/final checks and failures. No new review/outbox/status UI, original write, transport/host/schema/protocol/archive or desktop change. Real-device haptic timing, OEM gesture behavior, TalkBack and sustained performance remain open until the user validates them. A2 uses platform predictive progress; it does not claim a custom live destination preview or tablet/DeX parity.
+Release ledgers record actual checks/failures. Reader refinements do not alter original resources, transport/host/schema/protocol/archive or desktop. [A3 local capture](REVIEW-CAPTURE.md) uses the retained reader; upload/status remains A4 and blocked. Haptic timing, OEM gestures, TalkBack and sustained performance remain open pending physical approval. Platform predictive progress does not imply a custom destination preview or tablet/DeX parity.
