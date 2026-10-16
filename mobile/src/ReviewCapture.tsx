@@ -62,7 +62,7 @@ export default function ReviewCapture({
   const [receiptHeight, setReceiptHeight] = useState(76);
   const [evidenceLocked, setEvidenceLocked] = useState(!seed);
   useLayoutEffect(() => {
-    if (!error || !pendingReject.current) return;
+    if (!error || !prepared || !settled.tag || !pendingReject.current) return;
     pendingReject.current = false;
     const frame = requestAnimationFrame(() => {
       const tag = findNodeHandle(root.current);
@@ -70,16 +70,14 @@ export default function ReviewCapture({
         haptic('reject', tag, preferences.haptics !== 'off');
     });
     return () => cancelAnimationFrame(frame);
-  }, [error, preferences.haptics]);
+  }, [error, prepared, settled.tag, preferences.haptics]);
   useLayoutEffect(() => {
-    if (
-      !seed ||
-      !item?.id ||
-      settled.id !== item.id ||
-      !settled.tag ||
-      anchored.current
-    )
+    if (!seed || !item?.id || settled.id !== item.id || !settled.tag) return;
+    if (anchored.current) {
+      anchorProgress.setValue(1);
+      setEvidenceLocked(true);
       return;
+    }
     anchored.current = true;
     const animation = Animated.timing(anchorProgress, {
       toValue: 1,
@@ -157,7 +155,10 @@ export default function ReviewCapture({
     });
     void request
       .catch((e: Error) => {
-        if (alive.current) setError(e.message);
+        if (alive.current) {
+          pendingReject.current = !!seed;
+          setError(e.message);
+        }
       })
       .finally(() => {
         if (alive.current) {
@@ -301,7 +302,9 @@ export default function ReviewCapture({
                 {error}
               </Text>
             ) : null}
-            {busy ? <Text style={s.muted}>Protecting capture…</Text> : null}
+            {busy && !item ? (
+              <Text style={s.muted}>Protecting capture…</Text>
+            ) : null}
             {item ? (
               <>
                 <Animated.View
@@ -314,7 +317,7 @@ export default function ReviewCapture({
                         }),
                       },
                     ],
-                    marginBottom: 12,
+                    marginBottom: 24,
                   }}
                 >
                   <Text accessibilityLiveRegion="polite" style={s.muted}>
@@ -408,7 +411,7 @@ export default function ReviewCapture({
                   </Animated.View>
                 ) : (
                   <Text accessibilityLiveRegion="polite" style={s.muted}>
-                    {protecting
+                    {busy || protecting
                       ? 'Protecting draft…'
                       : error
                       ? 'Last protected draft retained; current changes need retry.'

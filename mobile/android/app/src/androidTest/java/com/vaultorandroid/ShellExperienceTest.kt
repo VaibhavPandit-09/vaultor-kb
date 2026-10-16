@@ -52,6 +52,13 @@ class ShellExperienceTest {
     assertNotNull("Exact downloaded source absent",row);row!!.click()
     assertTrue(d.wait(Until.gone(By.text("Sources")),10000))
     assertTrue(d.wait(Until.hasObject(By.descContains("Downloaded · offline")),10000))
+    val context=(i.targetContext.applicationContext as MainApplication).reactHost.currentReactContext as com.facebook.react.bridge.ReactApplicationContext
+    val presentation=context.getNativeModule("VaultorPresentation") as VaultorPresentation
+    val feedback=VaultorPresentation::class.java.getDeclaredField("lastFeedback").apply{isAccessible=true}
+    var report=org.json.JSONObject()
+    repeat(20){i.runOnMainSync{report=feedback.get(presentation) as org.json.JSONObject};if(report.optString("event")!="selection" || report.optString("profile")!="")Thread.sleep(100)}
+    assertEquals("selection",report.optString("event"));assertEquals("",report.optString("profile"))
+    assertTrue("Source confirmation must reach the focused visible engine: $report",report.optString("status") in setOf("requested","rejected"))
     d.takeScreenshot(File(i.targetContext.getExternalFilesDir(null),"a1-downloaded.png"))
   }
   @Test fun readerSourceAndDrawerContinuity() {

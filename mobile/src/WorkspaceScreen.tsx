@@ -831,7 +831,6 @@ export default function WorkspaceScreen() {
           <Action label="‹" accessibilityLabel="Back" onPress={back} />
         ) : null}
         <Animated.View
-          ref={sourceOrientation}
           collapsable={false}
           style={[
             s.orientation,
@@ -848,6 +847,7 @@ export default function WorkspaceScreen() {
           ]}
         >
           <Pressable
+            ref={sourceOrientation}
             style={s.orientationPress}
             disabled={state.busy || hostView || recovery}
             accessibilityRole="button"

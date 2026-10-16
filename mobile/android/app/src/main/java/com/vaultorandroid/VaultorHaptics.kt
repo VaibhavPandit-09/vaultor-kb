@@ -1,6 +1,7 @@
 package com.vaultorandroid
 
 import android.content.Context
+import android.graphics.Rect
 import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -38,7 +39,7 @@ class VaultorHaptics(private val ctx:ReactApplicationContext, private val vibrat
     return JSONObject().put("systemSetting",Settings.System.getInt(ctx.contentResolver,Settings.System.HAPTIC_FEEDBACK_ENABLED,-1))
       .put("appEnabled",prefs.optString("haptics","system")!="off").put("richPolicy",prefs.optString("richHaptics","clear"))
       .put("resumed",ctx.lifecycleState==LifecycleState.RESUMED).put("attached",v?.isAttachedToWindow==true)
-      .put("shown",v?.isShown==true).put("windowFocused",v?.hasWindowFocus()==true).put("viewEnabled",v?.isHapticFeedbackEnabled==true)
+      .put("shown",v?.isShown==true && v.getGlobalVisibleRect(Rect())).put("windowFocused",v?.hasWindowFocus()==true).put("viewEnabled",v?.isHapticFeedbackEnabled==true)
       .put("actuator",vibrator.hasVibrator()).put("amplitudeControl",vibrator.hasAmplitudeControl())
       .put("envelopeSupported",vibrator.areEnvelopeEffectsSupported()).put("envelopeUsable",envelope())
       .put("legacyEnvelopeUsable",envelope() && vibrator.envelopeEffectInfo.minControlPointDurationMillis<=20)
