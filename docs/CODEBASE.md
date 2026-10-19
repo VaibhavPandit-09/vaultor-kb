@@ -421,8 +421,9 @@ Original-signer app/test builds pass after documented local Windows path and
 test-import corrections. API36 install-over restores the protected UUID seeded
 on alpha.17 and passes genuine keyboard-visible/hidden new-record trace trials;
 both runtime generations pass4native trace/routing cases and genuine two-trial
-UI comparisons. Both pulled installed APKs match staged bytes. Failures,
-test-only corrections and final-source checks belong in the alpha.18 ledger.
+UI comparisons. Both pulled installed APKs match staged bytes; a clean-working-tree
+build from pushed c6fc16ea reproduces them. Failures and test-only corrections
+belong in the alpha.18 ledger.
 No physical claim or public publication; stop before navigation and A4.
 
 - 2026-10-16 — Published Android alpha.12 A0 review candidate at2026-10-15T22:25:32Z from immutable439dab1/android/v0.1.0-alpha.12 on ai/codex-r6-android. Fresh tagged-source original-key build reproduced the tested APK byte-for-byte (39,929,705bytes/SHA256178892661b1f206e2928bc8a1365c1db1a0ccdd4218a4213d04a2012e731a7d5); pulled installed API36/API37 base APK hashes match. All three staged GitHub assets downloaded/compared before publication; public status/sizes/digests and anonymous full APK download verified afterward. Both emulators stopped; no phone access. Documentation-only publication follow-up, no additional architecture/runtime/version change or tag movement. Physical haptic/motion acceptance remains pending; stop before A1. [Release and update/review steps](android/releases/0.1.0-alpha.12.md).
