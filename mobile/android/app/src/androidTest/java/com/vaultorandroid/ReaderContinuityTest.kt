@@ -77,7 +77,9 @@ class ReaderContinuityTest {
     val feedback=VaultorPresentation::class.java.getDeclaredField("lastFeedback").apply{isAccessible=true}
     fun report():Any? {var value:Any?=null;i.runOnMainSync{value=feedback.get(presentation)};return value}
     val beforeSilent=report()
-    options("Reading appearance");tap("Violet")
+    d.executeShellCommand("settings put system haptic_feedback_enabled 1")
+    options("Reading appearance");tap("System");tap("Violet")
+    assertEquals("Silence proof needs app feedback enabled","system",JSONObject(i.targetContext.getSharedPreferences("reader-presentation-v1",android.content.Context.MODE_PRIVATE).getString("preferences","{}")?:"{}").optString("haptics"))
     assertSame("Routine accent choice must stay silent",beforeSilent,report())
     val size=js("parseFloat(document.documentElement.style.getPropertyValue('--size'))",retained).toDouble()
     val change=if(size>=27) "Decrease Text size" else "Increase Text size"

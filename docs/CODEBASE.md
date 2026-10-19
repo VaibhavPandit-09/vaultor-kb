@@ -984,3 +984,7 @@ React Native exposes a small semantic facade; existing VaultorHaptics.kt remains
 ### 2026-10-19 — Silent reader native assertion setup
 
 Corrected the native reader test setup insertion after compilation exposed missing beforeSilent/report declarations; the product source compiled, but the test APK gate failed. Added actual native lastFeedback identity checks around accent choice and Find focus/search. Test-only correction with no architectural/shipped behavior effect; corrected build/runtime gates follow.
+
+### 2026-10-19 — Positive policy for silence proof
+
+Native reader silence assertions explicitly enable system touch feedback and select persisted app System before accent/Find checks. This prevents inherited Off policy from yielding a vacuous pass. Test-only refinement, no architectural/product change; corrected native build and installed runtime gates underway.
