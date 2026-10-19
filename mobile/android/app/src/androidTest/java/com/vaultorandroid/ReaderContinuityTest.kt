@@ -72,7 +72,13 @@ class ReaderContinuityTest {
     val workingTop=IntArray(2);i.runOnMainSync {retained.getLocationOnScreen(workingTop)}
     assertTrue("Reader chrome must visibly reclaim space",viewport-originalHeight>=12)
     assertEquals("Viewport gains exactly the chrome's reclaimed space",viewport-originalHeight,originalTop[1]-workingTop[1])
-    options("Reading appearance")
+    val context=(i.targetContext.applicationContext as MainApplication).reactHost.currentReactContext as ReactApplicationContext
+    val presentation=context.getNativeModule("VaultorPresentation") as VaultorPresentation
+    val feedback=VaultorPresentation::class.java.getDeclaredField("lastFeedback").apply{isAccessible=true}
+    fun report():Any? {var value:Any?=null;i.runOnMainSync{value=feedback.get(presentation)};return value}
+    val beforeSilent=report()
+    options("Reading appearance");tap("Violet")
+    assertSame("Routine accent choice must stay silent",beforeSilent,report())
     val size=js("parseFloat(document.documentElement.style.getPropertyValue('--size'))",retained).toDouble()
     val change=if(size>=27) "Decrease Text size" else "Increase Text size"
     tap(change);Thread.sleep(300);tap("Done")

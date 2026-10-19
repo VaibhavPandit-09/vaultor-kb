@@ -980,3 +980,7 @@ Audited actual alpha.16 RN/native boundaries, every reachable haptic caller and 
 ### 2026-10-19 — Restrained hybrid interaction boundary
 
 React Native exposes a small semantic facade; existing VaultorHaptics.kt remains the thin native effect renderer, and VaultorPresentation rejects unknown/mismatched product patterns. REVIEW_CAPTURED names the existing clear completion composition; rich anchor remains diagnostic-only. Find/accent interaction feedback removed; standard H2 evidence/source/Fit snaps and visible H4 rejection remain. Utility sheets use300/220ms while contextual capture retains360/280ms; receipt owns its independent completion callback. Updated Android design contract/AGENTS and current guides. Pinned RN parallel source corrected the initial aggregate-failure suspicion: no demonstrated interruption defect claimed. TypeScript,14 focused Jest and reader/media DOM runtime checks pass; release/native checks underway. No original/source/persistence/transport/desktop/A4 change.
+
+### 2026-10-19 — Silent reader native assertion setup
+
+Corrected the native reader test setup insertion after compilation exposed missing beforeSilent/report declarations; the product source compiled, but the test APK gate failed. Added actual native lastFeedback identity checks around accent choice and Find focus/search. Test-only correction with no architectural/shipped behavior effect; corrected build/runtime gates follow.
