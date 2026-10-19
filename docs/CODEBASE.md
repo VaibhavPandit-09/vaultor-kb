@@ -988,3 +988,7 @@ Corrected the native reader test setup insertion after compilation exposed missi
 ### 2026-10-19 — Positive policy for silence proof
 
 Native reader silence assertions explicitly enable system touch feedback and select persisted app System before accent/Find checks. This prevents inherited Off policy from yielding a vacuous pass. Test-only refinement, no architectural/product change; corrected native build and installed runtime gates underway.
+
+### 2026-10-19 — Installed hybrid candidate and test setup corrections
+
+Original-signer development alpha.17/code21 APK built; TypeScript/14Jest/DOM checks passed, scoped lint0errors/48warnings. API36 cold retry passed18 distinct checks so far, including actual IME H2/H3 and interrupted comment expansion feedback, all3themes/1.3font/capture/rotation/reduced/PDF/original identity, diagnostic routing and4journal cases. Initial emulator stalled before a completed test and was cold-restarted; no pass claimed. Broad16-case batch passed14: new accent assertion could not scroll back up after enabling System; later media setup had no Search resources. Bidirectional helper and fresh-launch reruns follow. Updated remaining native presentation probes to standard empty-pattern selection under the restricted product boundary. Test-only corrections, no architectural/product change. Runtime movie and20fps entry/save sequences inspected for geometry/IME; subjective S24 acceptance remains pending; A4 blocked.

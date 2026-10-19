@@ -27,6 +27,7 @@ class ReaderContinuityTest {
   private fun tap(label:String) {
     var node=d.wait(Until.findObject(By.desc(label).enabled(true)),3000)
     if(node==null) node=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.desc(label).enabled(true)))
+    if(node==null) node=d.findObject(By.scrollable(true))?.scrollUntil(Direction.UP,Until.findObject(By.desc(label).enabled(true)))
     assertNotNull("Missing action: $label",node); node!!.click(); Thread.sleep(250)
   }
   private fun web():WebView {

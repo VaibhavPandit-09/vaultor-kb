@@ -86,11 +86,11 @@ class PresentationExperienceTest {
     val previous = d.executeShellCommand("settings get system haptic_feedback_enabled").trim()
     try {
       d.executeShellCommand("settings put system haptic_feedback_enabled 0")
-      assertEquals("silent", result { module.feedback("selection", "anchor", tag.toDouble(), "system-off-test", it) })
+      assertEquals("silent", result { module.feedback("selection", "", tag.toDouble(), "system-off-test", it) })
       d.executeShellCommand("settings put system haptic_feedback_enabled 1")
-      val played = result { module.feedback("selection", "anchor", tag.toDouble(), "system-on-test", it) }
+      val played = result { module.feedback("selection", "", tag.toDouble(), "system-on-test", it) }
       assertTrue("Foreground semantic feedback suppressed", played in listOf("system", "envelope", "primitives", "predefined"))
-      assertEquals("silent", result { module.feedback("selection", "anchor", tag.toDouble(), "system-on-test", it) })
+      assertEquals("silent", result { module.feedback("selection", "", tag.toDouble(), "system-on-test", it) })
     } finally {
       if (previous == "null") d.executeShellCommand("settings delete system haptic_feedback_enabled")
       else d.executeShellCommand("settings put system haptic_feedback_enabled $previous")
