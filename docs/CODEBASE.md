@@ -86,6 +86,15 @@ Authorized by “continue next” after alpha.14, Android alpha.15/code19 adds c
 
 The user rejected alpha.15 interaction work on the S24 Ultra: haptics and structural movement were not perceptible. Alpha.17/code21 refines the explicitly development-only acceptance candidate; alpha.16 remains its immutable comparison baseline. VaultorHaptics reports actual suppression/capability/request results, distinct platform semantics and selectable clear/platform/expressive rich profiles. Build-time native diagnostics default off and reject ordinary builds. Context surfaces start after native show/measurement; capture stays in one window with separate evidence lock and durable receipt geometry keyframes. Reader header now reclaims viewport space; Find reveals its edge; source confirmation waits for activity focus/settle. Theme snapshots scale within32MiB for QHD dual windows. MOTION-HAPTIC-REMEDIATION.md owns the complete shipped inventory, revised candidate and exact device script. Local protected draft/queue/source/original contracts remain unchanged. Runtime checks are not tactile/visual approval. A4 must not start without explicit S24 approval.
 
+Android prototype diagnostic continuation: alpha.18/code22 is a local development
+acceptance candidate on ai/codex-android-ux-prototypes, based exactly on immutable
+alpha.17. [HAPTIC-CAPTURE-TRACE.md](android/HAPTIC-CAPTURE-TRACE.md) owns one-shot,
+128-record memory-only genuine capture tracing and sanitized clipboard export.
+Native allowlists and the default-false diagnostics build gate protect data;
+manual probes cannot play during measurement. Existing semantic effects,
+admission, persistence, source routing and navigation are unchanged. No public
+release, navigation implementation or A4 is authorized by this slice.
+
 ## Repository and source map
 
 Paths in the following tables are repository-relative.
@@ -400,6 +409,21 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 - Build reports a large JS chunk and an outdated Browserslist dataset; these do not prevent packaging. Chunk splitting remains performance work.
 
 ## Change checklist and maintenance history
+
+### 2026-10-19 — Genuine capture diagnostic slice
+
+Isolated alpha.17-based prototype worktree adds gated JS/native milestone tracing
+through real capture/receipt/IME/semantic admission/playback, bounded memory and
+sanitized explicit copy. No domain/security/source/navigation architecture or
+effect/intensity/policy change; this is diagnostic infrastructure only.
+TypeScript/12 focused Jest checks and scoped lint0errors/19warnings passed.
+Original-signer app/test builds pass after documented local Windows path and
+test-import corrections. API36 install-over restores the protected UUID seeded
+on alpha.17 and passes genuine keyboard-visible/hidden new-record trace trials;
+both runtime generations pass4native trace/routing cases and genuine two-trial
+UI comparisons. Both pulled installed APKs match staged bytes. Failures,
+test-only corrections and final-source checks belong in the alpha.18 ledger.
+No physical claim or public publication; stop before navigation and A4.
 
 - 2026-10-16 — Published Android alpha.12 A0 review candidate at2026-10-15T22:25:32Z from immutable439dab1/android/v0.1.0-alpha.12 on ai/codex-r6-android. Fresh tagged-source original-key build reproduced the tested APK byte-for-byte (39,929,705bytes/SHA256178892661b1f206e2928bc8a1365c1db1a0ccdd4218a4213d04a2012e731a7d5); pulled installed API36/API37 base APK hashes match. All three staged GitHub assets downloaded/compared before publication; public status/sizes/digests and anonymous full APK download verified afterward. Both emulators stopped; no phone access. Documentation-only publication follow-up, no additional architecture/runtime/version change or tag movement. Physical haptic/motion acceptance remains pending; stop before A1. [Release and update/review steps](android/releases/0.1.0-alpha.12.md).
 

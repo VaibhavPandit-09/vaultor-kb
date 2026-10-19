@@ -67,6 +67,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [Genuine Review capture haptic trace](android/HAPTIC-CAPTURE-TRACE.md): development-only bounded diagnostics, sanitized copy, Samsung keyboard A/B procedure and interpretation.
+
 - [Android interaction foundations](android/INTERACTION-FOUNDATIONS.md): A0 motion, semantic haptics, coordinated theme/bar foundation and physical review boundary.
 - [R6 Android redesign phases](plans/android-r6-plan.md): approved audit, A0–A5 interaction gates and preserved Review contracts.
 - [Android alpha.12](android/releases/0.1.0-alpha.12.md): A0 review candidate, installed validation and release ledger.

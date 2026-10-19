@@ -16,6 +16,11 @@ import ContextSheet from './ContextSheet';
 import { Action } from './Action';
 import { usePalette, useReading, useThemeStyles } from './ui';
 import { VaultorHaptics } from './haptics';
+import {
+  claimCaptureTrace,
+  recordTrace,
+  type CaptureTrace,
+} from './captureTrace';
 import { motionDuration, settleEasing } from './motion';
 import { locatorLabel, type CaptureSeed, type CaptureItem } from './reviews';
 const call = async (action: string, value: object = {}): Promise<any> =>
@@ -63,13 +68,15 @@ export default function ReviewCapture({
   const receiptProgress = useRef(new Animated.Value(0)).current;
   const [receiptHeight, setReceiptHeight] = useState(76);
   const [evidenceLocked, setEvidenceLocked] = useState(!seed);
+  const trace = useRef<CaptureTrace | undefined>(undefined);
+  const traceClaimed = useRef(false);
   useLayoutEffect(() => {
     if (!error || !prepared || !settled.tag || !pendingReject.current) return;
     pendingReject.current = false;
     const frame = requestAnimationFrame(() => {
       const tag = findNodeHandle(root.current);
       if (alive.current && tag)
-        VaultorHaptics.reject(tag, preferences.haptics !== 'off');
+        VaultorHaptics.reject(tag, preferences.haptics !== 'off', trace.current);
     });
     return () => cancelAnimationFrame(frame);
   }, [error, prepared, settled.tag, preferences.haptics]);
@@ -81,6 +88,7 @@ export default function ReviewCapture({
       return;
     }
     anchored.current = true;
+    recordTrace(trace.current, 'anchor_started', { reduced });
     const animation = Animated.timing(anchorProgress, {
       toValue: 1,
       duration: motionDuration('anchor', preferences.motion, reduced),
@@ -88,10 +96,22 @@ export default function ReviewCapture({
       useNativeDriver: true,
     });
     animation.start(({ finished }) => {
+      recordTrace(
+        trace.current,
+        finished ? 'anchor_finished' : 'anchor_cancelled',
+        {
+          finished,
+          alive: alive.current,
+        },
+      );
       if (!finished || !alive.current || current.current?.state !== 'draft')
         return;
       setEvidenceLocked(true);
-      VaultorHaptics.selectionSnap(settled.tag, preferences.haptics !== 'off');
+      VaultorHaptics.selectionSnap(
+        settled.tag,
+        preferences.haptics !== 'off',
+        trace.current,
+      );
     });
     return () => {
       animation.stop();
@@ -114,20 +134,41 @@ export default function ReviewCapture({
       delivered = false;
     let feedbackFrame: number | undefined;
     const complete = () => {
+      recordTrace(trace.current, 'completion_check', {
+        geometryDone,
+        keyboardVisible: Keyboard.isVisible(),
+        alive: alive.current,
+      });
       if (!geometryDone || delivered || Keyboard.isVisible() || !alive.current)
         return;
       delivered = true;
       feedbackFrame = requestAnimationFrame(() => {
         const tag = findNodeHandle(receiptRoot.current);
+        recordTrace(trace.current, 'completion_check', {
+          geometryDone,
+          keyboardVisible: Keyboard.isVisible(),
+          alive: alive.current,
+          viewPresent: !!tag,
+        });
         if (alive.current && tag)
           VaultorHaptics.playAuthoredPattern(
             'REVIEW_CAPTURED',
             tag,
             preferences.haptics !== 'off',
+            trace.current,
           );
       });
     };
-    const keyboard = Keyboard.addListener('keyboardDidHide', complete);
+    const keyboard = Keyboard.addListener('keyboardDidHide', () => {
+      recordTrace(trace.current, 'keyboard_hidden', {
+        keyboardVisible: Keyboard.isVisible(),
+      });
+      complete();
+    });
+    recordTrace(trace.current, 'receipt_started', {
+      keyboardVisible: Keyboard.isVisible(),
+      reduced,
+    });
     const contraction = Animated.timing(commentHeight, {
       toValue: 72,
       duration,
@@ -143,6 +184,14 @@ export default function ReviewCapture({
     contraction.start();
     // The receipt owns completion. Expanding the same comment cannot cancel it.
     receipt.start(({ finished }) => {
+      recordTrace(
+        trace.current,
+        finished ? 'receipt_finished' : 'receipt_cancelled',
+        {
+          finished,
+          keyboardVisible: Keyboard.isVisible(),
+        },
+      );
       if (finished) {
         geometryDone = true;
         complete();
@@ -170,15 +219,21 @@ export default function ReviewCapture({
   };
   useEffect(() => {
     alive.current = true;
+    if (seed && !traceClaimed.current) {
+      traceClaimed.current = true;
+      trace.current = claimCaptureTrace();
+    }
     initial.current ??= seed ? call('begin', seed) : call('list');
     const request = initial.current.then(value => {
       if (alive.current) {
         if (seed) accept(value);
         else setItems(value);
       }
+      if (seed) recordTrace(trace.current, 'draft_ready');
     });
     void request
       .catch((e: Error) => {
+        if (seed) recordTrace(trace.current, 'draft_failed');
         if (alive.current) {
           pendingReject.current = !!seed;
           setError(e.message);
@@ -191,6 +246,9 @@ export default function ReviewCapture({
         }
       });
     return () => {
+      recordTrace(trace.current, 'composer_closed', {
+        keyboardVisible: Keyboard.isVisible(),
+      });
       alive.current = false;
     };
   }, [seed]);
@@ -244,6 +302,9 @@ export default function ReviewCapture({
   };
   const queue = () => {
     if (locked.current || !current.current || !comment.trim()) return;
+    recordTrace(trace.current, 'save_accepted', {
+      keyboardVisible: Keyboard.isVisible(),
+    });
     locked.current = true;
     setBusy(true);
     setError('');
@@ -254,12 +315,16 @@ export default function ReviewCapture({
           id: actual.id,
           version: actual.version,
         });
+        recordTrace(trace.current, 'durable_save', {
+          keyboardVisible: Keyboard.isVisible(),
+        });
         pendingCompletion.current = true;
         accept(next);
         if (!alive.current) return;
         Keyboard.dismiss();
       })
       .catch((e: Error) => {
+        recordTrace(trace.current, 'save_failed');
         if (alive.current) {
           pendingReject.current = true;
           setError(e.message);
@@ -308,7 +373,10 @@ export default function ReviewCapture({
       motion="navigation"
       title={seed || item ? 'Review capture' : 'Captures on this phone'}
       close={dismiss}
-      onSettled={tag => setSettled({ id: item?.id, tag })}
+      onSettled={tag => {
+        recordTrace(trace.current, 'sheet_settled', { viewPresent: !!tag });
+        setSettled({ id: item?.id, tag });
+      }}
     >
       {!prepared ? (
         <Text style={s.muted}>Protecting capture...</Text>

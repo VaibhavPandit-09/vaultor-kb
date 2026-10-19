@@ -45,6 +45,7 @@ class VaultorPresentation(private val ctx: ReactApplicationContext) : ReactConte
   init { ctx.addLifecycleEventListener(this) }
 
   private val haptics = VaultorHaptics(ctx, vibrator)
+  private val captureFeedbackTrace = CaptureFeedbackTrace(BuildConfig.VAULTOR_DIAGNOSTICS)
   private var lastFeedback = JSONObject()
   override fun getConstants():Map<String,Any> = mapOf("developmentDiagnostics" to BuildConfig.VAULTOR_DIAGNOSTICS)
   private fun view(tag: Double): View? = try {
@@ -105,18 +106,51 @@ class VaultorPresentation(private val ctx: ReactApplicationContext) : ReactConte
     expiry=Runnable{finish(false)};main.postDelayed(expiry,400)
   } }
 
-  @ReactMethod fun feedback(event:String,rich:String,tag:Double,token:String,promise:Promise) { main.post {
+  @ReactMethod fun captureTrace(action:String,promise:Promise) { main.post {
+    if(!BuildConfig.VAULTOR_DIAGNOSTICS){promise.reject("DEVELOPMENT_ONLY","Diagnostics absent from ordinary production builds.");return@post}
+    when(action) {
+      "arm"->promise.resolve(captureFeedbackTrace.arm())
+      "read"->promise.resolve(captureFeedbackTrace.snapshot())
+      "clear"->promise.resolve(captureFeedbackTrace.clear())
+      "copy"->{
+        val value=captureFeedbackTrace.seal()
+        (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
+          .setPrimaryClip(android.content.ClipData.newPlainText("Vaultor capture feedback trace",value))
+        promise.resolve(value)
+      }
+      else->promise.reject("TRACE_ACTION","Unknown trace action.")
+    }
+  } }
+  @ReactMethod fun captureTraceRecord(id:String,stage:String,facts:String,jsMs:Double,promise:Promise) { main.post {
+    if(!BuildConfig.VAULTOR_DIAGNOSTICS){promise.reject("DEVELOPMENT_ONLY","Diagnostics absent from ordinary production builds.");return@post}
+    try { if(facts.length<=1024)captureFeedbackTrace.record(id,stage,JSONObject(facts),jsMs);promise.resolve(null) }
+    catch(_:Exception){promise.resolve(null)}
+  } }
+  @ReactMethod fun feedback(event:String,rich:String,tag:Double,token:String,promise:Promise) =
+    feedbackRequest(event,rich,tag,token,"",promise)
+  @ReactMethod fun feedbackTraced(event:String,rich:String,tag:Double,token:String,traceId:String,promise:Promise) {
+    if(!BuildConfig.VAULTOR_DIAGNOSTICS){promise.reject("DEVELOPMENT_ONLY","Diagnostics absent from ordinary production builds.");return}
+    feedbackRequest(event,rich,tag,token,traceId,promise)
+  }
+  private fun feedbackRequest(event:String,rich:String,tag:Double,token:String,traceId:String,promise:Promise) { main.post {
+    fun trace(stage:String,facts:JSONObject) {
+      try { captureFeedbackTrace.record(traceId,stage,facts) } catch(_:Exception) { /* Never change playback for diagnostics. */ }
+    }
+    val facts=JSONObject().put("event",event).put("pattern",rich)
+    trace("bridge_received",facts)
     try {
-      require(token.length in 1..80)
-      require(VaultorHaptics.validProductEvent(event,rich))
-      if(!feedbackTokens.add(token)){promise.resolve("silent");return@post}
+      if(token.length !in 1..80){trace("bridge_rejected",facts.put("reason","invalid_token"));promise.resolve("silent");return@post}
+      if(!VaultorHaptics.validProductEvent(event,rich)){trace("bridge_rejected",facts.put("reason","invalid_event"));promise.resolve("silent");return@post}
+      if(!feedbackTokens.add(token)){trace("bridge_rejected",facts.put("reason","duplicate_token"));promise.resolve("silent");return@post}
       if(feedbackTokens.size>64)feedbackTokens.remove(feedbackTokens.first())
-      lastFeedback=haptics.play(event,rich,view(tag))
+      lastFeedback=haptics.play(event,rich,view(tag),observe=if(BuildConfig.VAULTOR_DIAGNOSTICS && traceId.isNotEmpty())::trace else null)
+      trace("native_result",lastFeedback)
       promise.resolve(if(lastFeedback.optString("status")=="requested")lastFeedback.optString("route","system") else "silent")
-    }catch(_:Exception){promise.resolve("silent")}
+    }catch(_:Exception){trace("bridge_rejected",facts.put("reason","bridge_exception"));promise.resolve("silent")}
   } }
   @ReactMethod fun hapticDiagnostics(event:String,rich:String,mode:String,tag:Double,promise:Promise) { main.post {
     if(!BuildConfig.VAULTOR_DIAGNOSTICS){promise.reject("DEVELOPMENT_ONLY","Diagnostics absent from ordinary production builds.");return@post}
+    if(mode!="inspect" && captureFeedbackTrace.measuring){promise.reject("TRACE_ACTIVE","Manual playback disabled while real capture trace is armed; copy or clear trace first.");return@post}
     try {
       require(mode in setOf("inspect","auto","system","envelope","primitives","predefined","legacy"))
       val report=if(mode=="inspect")haptics.describe(event,rich,view(tag)).put("lastFeedback",lastFeedback) else haptics.play(event,rich,view(tag),mode)
@@ -213,7 +247,7 @@ class VaultorPresentation(private val ctx: ReactApplicationContext) : ReactConte
     promise.resolve(null)
   } }
   override fun onHostResume() {}
-  override fun onHostPause() { main.post { finishFocus?.invoke(false); clearTheme(); vibrator.cancel() } }
-  override fun onHostDestroy() { main.post { finishFocus?.invoke(false); clearTheme(); vibrator.cancel() } }
+  override fun onHostPause() { main.post { captureFeedbackTrace.lifecycle("host_paused");finishFocus?.invoke(false); clearTheme(); vibrator.cancel() } }
+  override fun onHostDestroy() { main.post { captureFeedbackTrace.lifecycle("host_destroyed");finishFocus?.invoke(false); clearTheme(); vibrator.cancel() } }
   override fun invalidate() { ctx.removeLifecycleEventListener(this); main.post { finishFocus?.invoke(false); clearTheme() }; super.invalidate() }
 }

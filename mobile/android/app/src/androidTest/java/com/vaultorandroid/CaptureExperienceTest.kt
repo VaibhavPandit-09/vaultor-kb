@@ -75,6 +75,55 @@ class CaptureExperienceTest {
     assertEquals("queued",captures().getJSONObject(0).getString("state"));tap("Done");assertSame(retained,web());assertEquals(original,saved())
     }finally{if(keyboardSetting=="null")d.executeShellCommand("settings delete secure show_ime_with_hard_keyboard")else d.executeShellCommand("settings put secure show_ime_with_hard_keyboard $keyboardSetting")}
   }
+  @Test fun genuineCaptureTraceKeyboardComparison(){
+    val previousKeyboard=d.executeShellCommand("settings get secure show_ime_with_hard_keyboard").trim()
+    try {
+      d.executeShellCommand("settings put secure show_ime_with_hard_keyboard 1")
+      d.executeShellCommand("settings put system haptic_feedback_enabled 1")
+      reader()
+      val context=(i.targetContext.applicationContext as MainApplication).reactHost.currentReactContext as ReactApplicationContext
+      val presentation=context.getNativeModule("VaultorPresentation") as VaultorPresentation
+      val identities=mutableSetOf<String>()
+      for(hideFirst in listOf(false,true)){
+        reader();val original=saved();val before=captures().length()
+        tap("Reading options");tap("Reading appearance");tap("System")
+        tap("Developer haptic diagnostics")
+        if(!d.wait(Until.hasObject(By.desc("Close haptic diagnostics")),2000)){
+          // A row reached by scrolling can receive a synthetic click during
+          // scroll settling. Prove disclosure, then use a real touch sequence.
+          val toggle=d.findObject(By.desc("Developer haptic diagnostics"));assertNotNull(toggle)
+          val at=toggle.visibleBounds;d.swipe(at.centerX(),at.centerY(),at.centerX(),at.centerY(),12)
+        }
+        assertTrue("Diagnostics must be disclosed before arming",d.wait(Until.hasObject(By.desc("Close haptic diagnostics")),5000))
+        tap("Arm next Review capture trace");tap("Done")
+        tap("Reading options");tap("Add review item")
+        assertTrue("Evidence must settle before this keyboard comparison",d.wait(Until.hasObject(By.text("Evidence locked to this source")),10000))
+        val input=d.wait(Until.findObject(By.desc("Review comment")),10000);assertNotNull(input)
+        input.click();repeat(40){if(!ime())Thread.sleep(50)};assertTrue("Real IME required",ime())
+        val comment="Private trace fixture "+java.util.UUID.randomUUID();input.text=comment
+        assertTrue(d.wait(Until.hasObject(By.text("Protected draft on this phone · "+comment.length+"/5000")),10000))
+        if(hideFirst){d.pressBack();repeat(40){if(ime())Thread.sleep(50)};assertFalse(ime())}
+        else assertTrue(ime())
+        tap("Save on this phone");assertTrue(d.wait(Until.hasObject(By.text("Saved on this phone")),10000));Thread.sleep(1000)
+        val raw=result{presentation.captureTrace("read",it)};val trace=JSONObject(raw);val records=trace.getJSONArray("records")
+        assertTrue(identities.add(trace.getString("id")))
+        val rows=(0 until records.length()).map{records.getJSONObject(it)}
+        for(stage in listOf("capture_accepted","draft_ready","sheet_settled","anchor_finished","save_accepted","durable_save","receipt_finished","js_emit","bridge_received","native_admission","mechanism_selected","platform_request","platform_result"))
+          assertTrue("Missing $stage: $raw",rows.any{it.getString("stage")==stage})
+        assertEquals(!hideFirst,rows.first{it.getString("stage")=="save_accepted"}.getBoolean("keyboardVisible"))
+        assertEquals(1,rows.count{it.getString("stage")=="bridge_received" && it.optString("event")=="complete"})
+        assertFalse(raw.contains(comment));assertFalse(raw.contains("R2 Rich reading"));assertFalse(raw.contains("https://"))
+        assertEquals(before+1,captures().length());assertEquals("queued",captures().getJSONObject(0).getString("state"))
+        val copy=result{presentation.captureTrace("copy",it)};assertTrue(JSONObject(copy).getBoolean("sealed"))
+        var clipboard="";i.runOnMainSync{clipboard=(i.targetContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).primaryClip?.getItemAt(0)?.text?.toString()?:""}
+        assertEquals(copy,clipboard)
+        java.io.File(i.targetContext.getExternalFilesDir(null),if(hideFirst)"trace-keyboard-hidden.json" else "trace-keyboard-visible.json").writeText(copy)
+        tap("Done");assertEquals(original,saved())
+      }
+    } finally {
+      if(previousKeyboard=="null")d.executeShellCommand("settings delete secure show_ime_with_hard_keyboard")else d.executeShellCommand("settings put secure show_ime_with_hard_keyboard $previousKeyboard")
+    }
+  }
   @Test fun savedReceiptSurvivesExpansionInterruption(){
     reader();val retained=web();val original=saved();tap("Reading options");tap("Reading appearance");tap("System");tap("Done");d.executeShellCommand("settings put system haptic_feedback_enabled 1")
     val context=(i.targetContext.applicationContext as MainApplication).reactHost.currentReactContext as ReactApplicationContext

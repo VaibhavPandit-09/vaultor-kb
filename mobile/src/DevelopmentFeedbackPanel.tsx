@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Action } from './Action';
 import { usePalette, useReading } from './ui';
+import { traceCommand } from './captureTrace';
 
 const vocabulary = [
   [
@@ -80,6 +81,27 @@ export default function DevelopmentFeedbackPanel() {
     [mode, setMode] = useState<string>('auto');
   const [reports, setReports] = useState<Record<string, any>>({});
   const [failure, setFailure] = useState('');
+  const [traceReport, setTraceReport] = useState('');
+  const [traceNotice, setTraceNotice] = useState('');
+  const traceAction = async (action: 'arm' | 'read' | 'copy' | 'clear') => {
+    try {
+      const report = await traceCommand(action);
+      if (!alive.current) return;
+      setTraceReport(JSON.stringify(report, null, 2));
+      setTraceNotice(
+        action === 'arm'
+          ? 'Armed for the next new Review capture. Close settings and capture normally. Manual playback is disabled until copy or clear.'
+          : action === 'copy'
+          ? 'Sanitized trace copied and frozen. Paste it with your tactile observations before arming the next trial.'
+          : action === 'clear'
+          ? 'Trace cleared from memory.'
+          : 'Trace refreshed; no playback requested.',
+      );
+    } catch {
+      if (alive.current)
+        setTraceNotice('Trace action failed. No playback requested.');
+    }
+  };
   const query = useCallback(
     async (index: number, selected: string) => {
       const tag = findNodeHandle(root.current);
@@ -145,6 +167,37 @@ export default function DevelopmentFeedbackPanel() {
       />
       {open ? (
         <>
+          <Text style={text}>
+            Real Review capture trace · memory only · no resource or source
+            data. Arm once for each new trial. These controls never play
+            haptics.
+          </Text>
+          <Action
+            label="Arm next Review capture trace"
+            onPress={() => void traceAction('arm')}
+          />
+          <Action
+            label="Read capture trace"
+            onPress={() => void traceAction('read')}
+          />
+          <Action
+            label="Copy sanitized capture trace"
+            onPress={() => void traceAction('copy')}
+          />
+          <Action
+            label="Clear capture trace"
+            onPress={() => void traceAction('clear')}
+          />
+          {traceNotice ? (
+            <Text accessibilityLiveRegion="polite" style={text}>
+              {traceNotice}
+            </Text>
+          ) : null}
+          {traceReport ? (
+            <Text selectable style={text}>
+              {traceReport}
+            </Text>
+          ) : null}
           <Text style={text}>
             Manual tuning only; most product interactions are silent. Android
             acceptance is not proof of sensation. No setting is bypassed.
