@@ -131,7 +131,9 @@ Keep CODEBASE and this index at the docs root for agent discovery. Put topic gui
 
 - [Android alpha.8 workspace selection](android/releases/0.1.0-alpha.8.md): W2 switching, drafts and emulator evidence.
 
-- [Android shell/source navigation](android/SHELL-NAVIGATION.md) — A1 hierarchy, mounted reader, source activation and interaction review gates.
+- [Android navigation Prototype 1](android/NAVIGATION-PROTOTYPE.md) — reader-first folio, source-grouped local Review, structural motion and S24 approval script.
+- [Android alpha.19 development ledger](android/releases/0.1.0-alpha.19.md) — signed build and actual emulator checks; no public release.
+- [Android shell/source navigation](android/SHELL-NAVIGATION.md) — current prototype ownership, mounted reader, source activation and review boundaries.
 - [Android alpha.13 release evidence](android/releases/0.1.0-alpha.13.md) — A1 review candidate and actual checks.
 
 - [Android reader context](android/READER-CONTEXT.md) — A2 stable reading edge, contextual controls, media and platform Back.

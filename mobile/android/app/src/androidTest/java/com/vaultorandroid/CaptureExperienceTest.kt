@@ -30,12 +30,12 @@ class CaptureExperienceTest {
     val resource=if(available!="null" && !JSONObject(available).optBoolean("locked")) {a.put("scope",JSONObject(available).getString("scope")).put("path","/resources/"+id);JSONObject(result{m.companion("read",a.toString(),it)})}else {val r=JSONObject(result{m.apiFor(host,epoch,"/resources/"+id,"GET",null,null,it)});assertEquals(200,r.getInt("status"));JSONObject(r.getString("body"))}
     return JSONObject().put("revision",resource.getString("revision")).put("content",resource.get("content")).toString()
   }
-  private fun launch(){i.targetContext.startActivity(i.targetContext.packageManager.getLaunchIntentForPackage("com.vaultor.app")!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));assertTrue(d.wait(Until.hasObject(By.desc("Open navigation").enabled(true)),30000))}
+  private fun launch(){i.targetContext.startActivity(i.targetContext.packageManager.getLaunchIntentForPackage("com.vaultor.app")!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));assertTrue(d.wait(Until.hasObject(By.descContains("Choose source").enabled(true)),30000))}
   private fun reader(){
     launch()
     if(d.hasObject(By.desc("Review comment")))tap("Done")
     if(!d.hasObject(By.desc("Reading options")) || !d.hasObject(By.text("R2 Rich reading"))) {
-      tap("Open navigation");tap("Library");d.wait(Until.findObject(By.desc("Search resources")),10000).text=""
+      if(d.hasObject(By.desc("Browse navigation")))tap("Browse navigation");tap("Library");d.wait(Until.findObject(By.desc("Search resources")),10000).text=""
       assertTrue("Fixture Library must finish loading",d.wait(Until.hasObject(By.desc("R2 Rich reading, Note")),30000));tap("R2 Rich reading, Note")
     }
     repeat(100){try{if(js("!!document.querySelector('article p')")=="true")return}catch(_:IllegalStateException){};Thread.sleep(100)};fail("Reader not ready")

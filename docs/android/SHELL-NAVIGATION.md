@@ -1,33 +1,51 @@
 # Android shell and source navigation
 
-Reviewed2026-10-19. Alpha.13/code17 established the A1 shell; A2/A3 subsequently added reader/local capture. The user's S24 rejection reopens A0–A3 interaction acceptance. Alpha.17/code21 is a development [remediation](MOTION-HAPTIC-REMEDIATION.md) candidate; [R6 phases](../plans/android-r6-plan.md) owns scope. Physical approval is pending and A4 remains blocked.
+Reviewed 2026-10-19. Current prototype: **alpha.19/code23**, user-authorized Model D
+reader-first hybrid. [Navigation prototype](NAVIGATION-PROTOTYPE.md) owns its exact
+information architecture, geometric states, timing, accessibility, state preservation
+and physical-device script. [Alpha.19 ledger](releases/0.1.0-alpha.19.md) owns actual
+validation. A1 alpha.13 established the earlier drawer shell, superseded here; its
+historical evidence remains in its release ledger. No final Android design approval,
+public release, Prototype 2/3 or A4 synchronization.
 
-## Hierarchy and ownership
+## Source ownership and preserved behavior
 
-The compact shell combines destination/resource title with availability first and workspace, keeping offline mode visible before long names truncate. Its source control opens Sources over the existing workspace. The reader WebView, document and position remain mounted while inspecting sources, navigation or legacy recovery. Only an actual source activation invokes existing native/model epoch and session boundaries. Names are display metadata, never routing keys. Download names are used only for the exact full scope, including generation.
+Home/Library/Review occupy the browsing folio. Sources is a distinct context action,
+not a fourth destination. The same folio contracts into the reading controls; there
+is no old drawer or shell topbar. Full workspace/availability labels remain accessible,
+with all source details available by opening Sources. Identity strings and names are
+display metadata, never routing keys. Download names match the full generation scope.
 
-Sources shows the current workspace and host separately, approved server workspaces, verified active downloads in one scroll context. Remembered hosts and manual pairing sit behind Manage connections; the current host has an explicit reconnect/refresh action. Locked copies stay labeled and disabled. Manual HTTPS pairing retains matching-code approval and API37 permission handling. Offline downloads remains the authoritative setup/policy/removal surface. Reconnection failures stay in Sources; navigation failures retain Retry opening. The header distinguishes Connected, Connecting, Downloaded/offline, cached reading copy, host unavailable and approval required. Offline storage failure remains an explicit warning.
+Sources retains current workspace and host, approved server workspaces and verified
+active downloads in one scroll context. Remembered hosts and manual pairing sit behind
+Manage connections. Reconnect/refresh, disabled locked copies, matching-code approval,
+API37 network permission, failure-local retry, Offline downloads and legacy recovery
+retain their established contracts. Inspection never activates a source. Only explicit
+selection invokes existing native/model epoch and session checks. Source-specific
+navigation, downloaded content, reader progress and protected records remain isolated.
 
-Home replaces the generic return button with the actual note title, source and saved-position resume action. Compact cardless Recent/Pinned sections retain bounded requests. Library keeps one FlatList; resume, collection ancestry, filter chips, coverage, errors and counts now scroll in its measured header. Search and a selected-filter summary remain reachable above the list. This reclaims secondary chrome naturally without changing list height on each frame or duplicating orientation. Continuous title migration/reader-edge compression belongs to A2; A1 does not claim it. Rows are denser while retaining minimum48dp actions and two-line resource names. Existing scope/query cancellation, measured scroll restoration, paging and bounded metadata queries remain authoritative.
+Sources opens/retracts over the mounted content using ContextSheet/MotionSheet. Manual
+close returns focus to the context control. Actual activation commits independently of
+motion and retains the existing 24dp orientation/H2 after activity focus; refused
+activation stays local with existing H4 feedback. Background refresh remains silent.
+No effect, intensity, admission or semantic usage policy changes.
 
-The drawer component retains disclosure state across dismissal. Its bounded modal enters from the navigation edge using A0 native-driver motion tokens at all widths, replacing the incorrect wide-window inline placement. Safe areas include top, bottom and sides. Closing immediately releases the window. No tablet/DeX parity or predictive-progress animation is claimed.
+Review reads the device journal grouped by full host/workspace/generation without
+activating a source. Existing local drafts/queued captures open by journal ID through
+the current protected composer, including forgotten/unavailable source records.
+No original write, upload, replay, acknowledgment or source substitution is introduced.
 
-ContextSheet supplies one modal window, measured MotionSheet, inset/IME handling, palette-aware bars and heading focus. Choice/type/sort/scope/reading-options/journey and Sources/recovery reuse it; Appearance retains its A0 surface and Offline downloads remains unchanged until its later phase. Each caller owns one scrolling body. Navigation/Back stays centralized; modal Back dismisses its own surface before workspace Back. Focus enters the heading; source activation and drawer closure target navigation. Full TalkBack trigger restoration across chained menus remains a physical accessibility review item.
+## Shared surfaces and review boundary
 
-## Interaction contract
+ContextSheet supplies a modal window, measured MotionSheet, inset/IME handling,
+palette-aware bars and heading focus. Sources alone opts into reversible exit;
+its window has bounded cleanup even when animation is interrupted. Existing utility,
+Find, media, appearance, capture and offline surfaces retain their ownership and
+centralized Back behavior. Full TalkBack and Samsung gesture/keyboard feel remain
+physical-device checks. Automated checks cannot approve motion or tactile quality.
 
-All transitions preserve visual/semantic feedback with haptics Off. System preferences and native foreground/view checks still apply. Standard source selection uses the platform H2 semantic route, rejection H4; no advanced effect is requested here, so lower-capability devices use the same action-oriented feedback and devices without an actuator stay visually complete. No background reconnect/download/refresh feedback. Animation completion never decides activation or routing.
-
-| Interaction / start → end | Movement and mounted identity | Preserved state | Feedback/keyframe | Reduced motion / disabled haptics | Emulator gate | User-owned real-device gate | R6 semantic risk |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Workspace → drawer → destination | Same edge surface translates into place; workspace stays mounted; close releases immediately | Reader/document/position, query, drawer disclosures | H0 throughout; no rich fallback needed | Immediate endpoints / identical visible state | Reopen disclosures, Home/Library/reader, Back, landscape | Gesture feel, bars/cutouts, focus and thumb reach | Navigation must never change a future capture source |
-| Reader/Home → Sources → same context | Bottom surface claims space over retained reader; no resource reload merely for inspection | DOM identity, reading position, journey and query | H0 open/close | Immediate sheet / no semantic loss | Compare native WebView identity and DOM sentinel before/after Back | Sheet motion, TalkBack heading/trigger, keyboard/insets | Inspection must not substitute another workspace |
-| Source A → verified B | Source window closes after native activation; shell reflects B; A's session protected by existing model | Source-bound sessions/downloads; future queue must remain independently scoped | Source orientation travels24dp after verified activation and actual native activity focus; H2 at the visible endpoint, platform semantic fallback | Commit remains immediate / source label still changes | Two-workspace same-ID isolation, swallowed-failure refusal, exact download scope | Confirm one crisp tick agrees with visible identity; system/app Off | False success, obsolete callback or names used as keys could misroute capture |
-| Explicit activation → refusal | Same Sources surface remains; local error appears | Download/recovery data and source admission checks | One H4 on first error frame; platform rejection fallback | Same local error / no vibration | Locked source disabled; failed connection remains actionable | Short rejection without buzzing; readable explanation | Never bypass approval/generation or treat timeout as sync rejection |
-| Home → resume reader → return | Actual resource title leads back to mounted reader | Reading position, immutable document and journey | H0 | No unnecessary entrance / identical behavior | Native mounted identity through Home/resume and rotation | Reading edge and source clarity | Resume must not create a new source identity |
-| Expanded list context → working list → upward return | One header scrolls out/back within the same FlatList; search/filter summary stay reachable | Same-query rows, bounded offset, query, type/scope and coverage | H0 for scroll/page/filter in this baseline | Ordinary direct scrolling / unchanged | Search/filter, short/long lists, Back restoration, font/landscape | Scroll comfort, density, large-text touch accuracy | Foreign counts, wrong scope or lost locator context |
-| Workspace → utility/recovery sheet → context | Same measured bottom-surface primitive; workspace remains mounted | Reader/query; legacy export data remains separate | H0; no destructive or save-success signal | Immediate endpoints / unchanged | Back, nested picker ownership, IME and rotation | TalkBack, system gestures/bars, important motion | Legacy recovery must never replay or acknowledge a Review |
-
-## Review boundary
-
-Release ledgers record actual checks/limits. Shell refinements preserve native allowlists, transport/protocol, host/database/resource schema, original JSON/revisions/files and desktop. [A3](REVIEW-CAPTURE.md) implements protected local capture/queue; idempotent upload and desktop status remain blocked A4 work. Stop for S24 interaction approval.
+[Review capture](REVIEW-CAPTURE.md) owns protected local record semantics;
+[interaction foundations](INTERACTION-FOUNDATIONS.md) owns semantic haptic/native
+policy. The user reports perceptible alpha.18 S24 haptics. Exact individual H2/H3
+physical trace evidence remains user-owned and does not block this prototype.
+Stop for S24 visual approval before the next prototype or A4.

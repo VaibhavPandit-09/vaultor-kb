@@ -22,7 +22,6 @@ import {
   NativeEventEmitter,
   PermissionsAndroid,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -35,7 +34,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MobileWorkspace, HostError, type Host } from './workspace';
 import { QuickAccess, type RootDestination } from './navigation';
-import { HomeScreen, WorkspaceDrawer } from './NavigationSurface';
+import { HomeScreen } from './NavigationSurface';
+import NavigationFolio from './NavigationFolio';
+import ReviewDestination from './ReviewDestination';
+import { BrowseMemory, navigationLayout } from './navigationPresentation';
 import BrowseScreen, { Action, ChoiceSheet } from './BrowseScreen';
 import ResourcePreview from './ResourcePreview';
 import ReaderView, { type ReaderPanel } from './ReaderView';
@@ -60,8 +62,7 @@ async function permission(interactive = true) {
 }
 export default function WorkspaceScreen() {
   const { reduced, preferences } = useReading();
-  const s = useThemeStyles(styles),
-    menu = useRef<React.ElementRef<typeof Pressable>>(null);
+  const s = useThemeStyles(styles);
   const model = useRef(
     new MobileWorkspace({
       storage: (a, v = {}) => parse(native.storage(a, JSON.stringify(v))),
@@ -113,6 +114,7 @@ export default function WorkspaceScreen() {
   const previewBack = useRef<() => boolean>(() => false);
   const [captureRequest, setCaptureRequest] = useState<{
     seed?: CaptureSeed;
+    initialId?: string;
   }>();
   const capture = (evidence?: Evidence, page?: number) => {
     try {
@@ -165,7 +167,11 @@ export default function WorkspaceScreen() {
   const [exporting, setExporting] = useState(false),
     [recoveryStatus, setRecoveryStatus] = useState('');
   const [initialized, setInitialized] = useState(false);
-  const [drawer, setDrawer] = useState(false),
+  const [reviewing, setReviewing] = useState(false),
+    [reviewRevision, setReviewRevision] = useState(0),
+    [utilities, setUtilities] = useState(false),
+    [sourceClosing, setSourceClosing] = useState(false),
+    [navigationDisclosed, setNavigationDisclosed] = useState(false),
     [appearance, setAppearance] = useState(false),
     [downloads, setDownloads] = useState(false),
     [downloadTarget, setDownloadTarget] = useState<{
@@ -183,18 +189,17 @@ export default function WorkspaceScreen() {
     [code, setCode] = useState(''),
     [inventory, setInventory] = useState<any>(),
     [recoveryError, setRecoveryError] = useState('');
-  const readerScroll = useRef(new Animated.Value(0)).current;
   const sourceLanding = useRef(new Animated.Value(1)).current;
+  const browseMemory = useRef(new BrowseMemory()).current;
   const sourceOrientation = useRef<React.ElementRef<typeof View>>(null);
-  const { fontScale } = useWindowDimensions();
-  const [captionHeight, setCaptionHeight] = useState(14);
-  useEffect(() => {
-    readerScroll.setValue(Math.max(0, model.snapshot().position?.scroll || 0));
-  }, [model, readerScroll, state.loadId]);
-  const reading = state.view === 'note' && !!state.note;
+  const { width, height, fontScale } = useWindowDimensions();
+  const { rail } = navigationLayout(width, height, fontScale);
+  const reading = state.view === 'note' && !!state.note && !reviewing;
+  useEffect(() => setNavigationDisclosed(false), [reading]);
   const source = sourcePresentation(state);
   const sourceRoot = useRef<React.ElementRef<typeof View>>(null),
     sourceToken = useRef(0);
+  const sourceConfirmation = useRef<(() => void) | undefined>(undefined);
   const [sourceError, setSourceError] = useState('');
   const [manageConnections, setManageConnections] = useState(false);
   const [sourceJobs, setSourceJobs] = useState<any[]>([]);
@@ -243,44 +248,48 @@ export default function WorkspaceScreen() {
               'This source is not available yet. Retry or choose a downloaded source.',
           );
         if (token !== sourceToken.current) return;
-        setHosts(false);
-        requestAnimationFrame(() => {
-          const tag = findNodeHandle(sourceOrientation.current);
-          if (!tag) return;
-          void NativeModules.VaultorPresentation.awaitWindow(tag)
-            .then((focused: boolean) => {
-              if (
-                !focused ||
-                token !== sourceToken.current ||
-                model.snapshot().scope !== next.scope
-              )
-                return;
-              sourceLanding.setValue(0);
-              Animated.timing(sourceLanding, {
-                toValue: 1,
-                duration: motionDuration(
-                  'utility',
-                  preferences.motion,
-                  reduced,
-                ),
-                easing: settleEasing,
-                useNativeDriver: true,
-              }).start(({ finished }) => {
+        const confirm = () =>
+          requestAnimationFrame(() => {
+            const tag = findNodeHandle(sourceOrientation.current);
+            if (!tag) return;
+            void NativeModules.VaultorPresentation.awaitWindow(tag)
+              .then((focused: boolean) => {
                 if (
-                  finished &&
-                  token === sourceToken.current &&
-                  model.snapshot().scope === next.scope
-                ) {
-                  AccessibilityInfo.setAccessibilityFocus(tag);
-                  VaultorHaptics.selectionSnap(
-                    tag,
-                    preferences.haptics !== 'off',
-                  );
-                }
-              });
-            })
-            .catch(() => {});
-        });
+                  !focused ||
+                  token !== sourceToken.current ||
+                  model.snapshot().scope !== next.scope
+                )
+                  return;
+                sourceLanding.setValue(0);
+                Animated.timing(sourceLanding, {
+                  toValue: 1,
+                  duration: motionDuration(
+                    'utility',
+                    preferences.motion,
+                    reduced,
+                  ),
+                  easing: settleEasing,
+                  useNativeDriver: true,
+                }).start(({ finished }) => {
+                  if (
+                    finished &&
+                    token === sourceToken.current &&
+                    model.snapshot().scope === next.scope
+                  ) {
+                    AccessibilityInfo.setAccessibilityFocus(tag);
+                    VaultorHaptics.selectionSnap(
+                      tag,
+                      preferences.haptics !== 'off',
+                    );
+                  }
+                });
+              })
+              .catch(() => {});
+          });
+        if (hosts) {
+          sourceConfirmation.current = confirm;
+          setSourceClosing(true);
+        } else confirm();
       } catch (e) {
         if (token !== sourceToken.current) return;
         setSourceError((e as Error).message);
@@ -294,13 +303,15 @@ export default function WorkspaceScreen() {
   };
   const closeSources = () => {
     sourceToken.current++;
-    setHosts(false);
+    sourceConfirmation.current = undefined;
+    setSourceClosing(true);
   };
   const run = (f: () => Promise<void>) => void model.perform(f);
-  const closeDrawer = () => {
-    setDrawer(false);
-    const handle = findNodeHandle(menu.current);
-    if (handle) AccessibilityInfo.setAccessibilityFocus(handle);
+  const closeUtilities = () => setUtilities(false);
+  const openSources = () => {
+    if (!state.host) setReviewing(false);
+    setSourceClosing(false);
+    setHosts(true);
   };
   const keyboard = useRef(false);
   useEffect(() => {
@@ -343,8 +354,8 @@ export default function WorkspaceScreen() {
       setMore(false);
       return true;
     }
-    if (drawer) {
-      closeDrawer();
+    if (utilities) {
+      closeUtilities();
       return true;
     }
     if (recovery) {
@@ -355,12 +366,20 @@ export default function WorkspaceScreen() {
       closeSources();
       return true;
     }
+    if (navigationDisclosed) {
+      setNavigationDisclosed(false);
+      return true;
+    }
     return false;
   };
   const back = () => {
     if (closeTransient()) return;
     if (keyboard.current) {
       Keyboard.dismiss();
+      return;
+    }
+    if (reviewing) {
+      setReviewing(false);
       return;
     }
     if (state.view === 'note') {
@@ -396,7 +415,8 @@ export default function WorkspaceScreen() {
       state.scope &&
       !hosts &&
       !recovery &&
-      (drawer || state.view === 'home')
+      !reviewing &&
+      state.view === 'home'
     )
       void quick.refresh();
     else quick.suspend();
@@ -408,7 +428,7 @@ export default function WorkspaceScreen() {
     state.host,
     hosts,
     recovery,
-    drawer,
+    reviewing,
     state.view,
     state.browseVersion,
   ]);
@@ -492,16 +512,14 @@ export default function WorkspaceScreen() {
     refreshDownloads,
   ]);
   const select = (destination: RootDestination, search = false) => {
-    closeDrawer();
+    closeUtilities();
     if (destination === 'trash') return;
+    setReviewing(false);
     if (destination === 'home') run(() => model.showHome());
     else {
-      model.updateBrowse({
-        ...state.browse,
-        destination,
-        collection: undefined,
-        page: 0,
-      });
+      model.updateBrowse(
+        browseMemory.select(state.scope, state.browse, destination),
+      );
       if (search) setSearchRequest(v => v + 1);
       run(() => model.showBrowser());
     }
@@ -510,7 +528,7 @@ export default function WorkspaceScreen() {
     setReaderPanel(undefined);
   }, [state.loadId, state.scope]);
   const open = (id: string, collection?: string) => {
-    closeDrawer();
+    closeUtilities();
     if (collection) {
       model.updateBrowse({
         ...state.browse,
@@ -522,7 +540,7 @@ export default function WorkspaceScreen() {
     } else run(() => model.routeResource(id));
   };
   const recoveryOpen = () => {
-    closeDrawer();
+    closeUtilities();
     setRecovery(true);
     setRecoveryError('');
     void parse(native.legacyRecovery('inventory'))
@@ -530,22 +548,6 @@ export default function WorkspaceScreen() {
       .catch((e: Error) => setRecoveryError(e.message));
   };
   const hostView = !state.host && !recovery;
-  const title = hostView
-    ? 'Workspaces'
-    : recovery
-    ? 'Legacy recovery'
-    : state.view === 'note'
-    ? state.note?.title
-    : state.view === 'home'
-    ? 'Vaultor'
-    : state.browse.collection?.name ??
-      {
-        library: 'Library',
-        recent: 'Recent',
-        pinned: 'Pinned',
-        collections: 'Collections',
-        trash: 'Library',
-      }[state.browse.destination];
   const sourceContent = (
     <ScrollView
       key="connections"
@@ -786,215 +788,136 @@ export default function WorkspaceScreen() {
     </ScrollView>
   );
   return (
-    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-      <Animated.View
-        style={[
-          s.header,
-          reading && s.readerHeader,
-          reading &&
-            !reduced && {
-              height: readerScroll.interpolate({
-                inputRange: [0, 112],
-                outputRange: [
-                  Math.max(80, 48 + captionHeight + 12),
-                  state.connection === 'online'
-                    ? Math.max(48, 32 * fontScale)
-                    : Math.max(56, 44 * fontScale),
-                ],
-                extrapolate: 'clamp',
-              }),
-            },
-        ]}
-        collapsable={false}
-        importantForAccessibility={
-          hosts ||
-          drawer ||
-          recovery ||
-          more ||
-          trail ||
-          readerPanel === 'appearance' ||
-          readerPanel === 'outline' ||
-          state.preview
-            ? 'no-hide-descendants'
-            : 'auto'
-        }
-      >
-        <Pressable
-          ref={menu}
-          disabled={!initialized || state.busy}
-          accessibilityState={{ disabled: !initialized || state.busy }}
-          accessibilityRole="button"
-          accessibilityLabel={hostView || recovery ? 'Back' : 'Open navigation'}
-          style={s.icon}
-          onPress={() => (hostView || recovery ? back() : setDrawer(true))}
-        >
-          <Text style={s.glyph}>{hostView || recovery ? '‹' : '☰'}</Text>
-        </Pressable>
-        {state.view === 'note' && !hostView && !recovery ? (
-          <Action label="‹" accessibilityLabel="Back" onPress={back} />
-        ) : null}
-        <Animated.View
-          collapsable={false}
-          style={[
-            s.orientation,
-            {
-              transform: [
-                {
-                  translateX: sourceLanding.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [24, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Pressable
-            ref={sourceOrientation}
-            style={s.orientationPress}
-            disabled={state.busy || hostView || recovery}
-            accessibilityRole="button"
-            accessibilityLabel={`${title}. ${source.workspace}. ${source.availability}. Choose source`}
-            onPress={() => setHosts(true)}
-          >
-            <Animated.Text
-              numberOfLines={1}
-              accessibilityRole="header"
-              style={[s.title]}
-            >
-              {title}
-            </Animated.Text>
-            <Animated.View
-              style={
-                reading && state.connection === 'online' && !reduced
-                  ? {
-                      height: readerScroll.interpolate({
-                        inputRange: [0, 112],
-                        outputRange: [captionHeight, 0],
-                        extrapolate: 'clamp',
-                      }),
-                      overflow: 'hidden',
-                    }
-                  : undefined
-              }
-            >
-              <Animated.Text
-                onLayout={e => setCaptionHeight(e.nativeEvent.layout.height)}
-                numberOfLines={1}
-                style={[
-                  s.source,
-                  reading &&
-                    state.connection === 'online' &&
-                    !reduced && {
-                      opacity: readerScroll.interpolate({
-                        inputRange: [0, 112],
-                        outputRange: [1, 0],
-                        extrapolate: 'clamp',
-                      }),
-                    },
-                ]}
-              >
-                {source.availability} · {source.workspace} ⌄
-              </Animated.Text>
-            </Animated.View>
-          </Pressable>
-        </Animated.View>
-        {!hostView && !recovery && state.view === 'note' ? (
-          <Action
-            label="•••"
-            accessibilityLabel="Reading options"
-            onPress={() => setMore(true)}
-          />
-        ) : null}
-      </Animated.View>
-      {state.offlineWarning ? (
-        <Text accessibilityRole="alert" style={s.error}>
-          {state.offlineWarning}
-        </Text>
-      ) : null}
-      {state.error &&
-      !hosts &&
-      !hostView &&
-      (state.connection === 'online' || state.navigationRetry) ? (
-        <View style={s.notice} accessibilityRole="alert">
-          <Text style={s.error}>{state.error}</Text>
-          <Action
-            label="Retry connection"
-            onPress={() =>
-              run(async () => {
-                await permission();
-                await model.connect(false);
-              })
-            }
-          />
-          {state.navigationRetry ? (
-            <Action
-              label="Retry opening"
-              onPress={() => run(() => model.retryNavigation())}
-            />
+    <SafeAreaView style={s.root} edges={['top', 'bottom', 'left', 'right']}>
+      <View style={[s.shell, rail && s.wideShell]}>
+        <View style={s.content}>
+          {state.offlineWarning ? (
+            <Text accessibilityRole="alert" style={s.error}>
+              {state.offlineWarning}
+            </Text>
           ) : null}
-        </View>
-      ) : null}
-      {!initialized ? (
-        <View key="starting" style={s.content}>
-          <Text style={s.secondary}>Opening workspace…</Text>
-        </View>
-      ) : hostView ? (
-        sourceContent
-      ) : (
-        <View
-          key="workspace-body"
-          style={s.content}
-          collapsable={false}
-          importantForAccessibility={
-            more || trail || state.preview || hosts || drawer || recovery
-              ? 'no-hide-descendants'
-              : 'auto'
-          }
-        >
-          {state.view === 'home' ? (
-            <HomeScreen
-              source={source}
-              resume={state.note}
-              feed={feed}
-              select={select}
-              open={open}
-              retry={() => void quick.refresh()}
-              returnToNote={
-                state.note ? () => run(() => model.returnToNote()) : undefined
-              }
-            />
-          ) : null}
-          <BrowseScreen
-            model={model}
-            visible={state.view === 'browse'}
-            suspended={drawer || hosts || recovery}
-            searchRequest={searchRequest}
-            onAction={run}
-          />
-          {state.note ? (
-            <View
-              collapsable={false}
-              style={[s.content, state.view !== 'note' && s.hidden]}
-              pointerEvents={state.view === 'note' ? 'auto' : 'none'}
-              importantForAccessibility={
-                state.view === 'note' ? 'auto' : 'no-hide-descendants'
-              }
-            >
-              <ReaderView
-                model={model}
-                panel={readerPanel}
-                closePanel={() => setReaderPanel(undefined)}
-                reduced={reduced}
-                onScroll={e =>
-                  readerScroll.setValue(e.nativeEvent.contentOffset.y)
+          {state.error &&
+          !hosts &&
+          !hostView &&
+          (state.connection === 'online' || state.navigationRetry) ? (
+            <View style={s.notice} accessibilityRole="alert">
+              <Text style={s.error}>{state.error}</Text>
+              <Action
+                label="Retry connection"
+                onPress={() =>
+                  run(async () => {
+                    await permission();
+                    await model.connect(false);
+                  })
                 }
-                capture={evidence => capture(evidence)}
               />
+              {state.navigationRetry ? (
+                <Action
+                  label="Retry opening"
+                  onPress={() => run(() => model.retryNavigation())}
+                />
+              ) : null}
             </View>
           ) : null}
+          {!initialized ? (
+            <View key="starting" style={s.content}>
+              <Text style={s.secondary}>Opening workspace…</Text>
+            </View>
+          ) : hostView ? (
+            <View style={[s.content, reviewing && s.hidden]}>
+              {sourceContent}
+            </View>
+          ) : (
+            <View
+              key="workspace-body"
+              style={[s.content, reviewing && s.hidden]}
+              collapsable={false}
+              importantForAccessibility={
+                reviewing ||
+                more ||
+                utilities ||
+                trail ||
+                state.preview ||
+                hosts ||
+                recovery
+                  ? 'no-hide-descendants'
+                  : 'auto'
+              }
+            >
+              {state.view === 'home' ? (
+                <HomeScreen
+                  source={source}
+                  resume={state.note}
+                  feed={feed}
+                  select={select}
+                  open={open}
+                  retry={() => void quick.refresh()}
+                  returnToNote={
+                    state.note
+                      ? () => run(() => model.returnToNote())
+                      : undefined
+                  }
+                />
+              ) : null}
+              <BrowseScreen
+                model={model}
+                visible={state.view === 'browse'}
+                suspended={reviewing || utilities || hosts || recovery}
+                searchRequest={searchRequest}
+                onAction={run}
+              />
+              {state.note ? (
+                <View
+                  collapsable={false}
+                  style={[s.content, state.view !== 'note' && s.hidden]}
+                  pointerEvents={state.view === 'note' ? 'auto' : 'none'}
+                  importantForAccessibility={
+                    state.view === 'note' ? 'auto' : 'no-hide-descendants'
+                  }
+                >
+                  <ReaderView
+                    model={model}
+                    panel={readerPanel}
+                    closePanel={() => setReaderPanel(undefined)}
+                    reduced={reduced}
+                    onScroll={() => {}}
+                    capture={evidence => capture(evidence)}
+                  />
+                </View>
+              ) : null}
+            </View>
+          )}
+          {reviewing ? (
+            <ReviewDestination
+              revision={reviewRevision}
+              open={initialId => setCaptureRequest({ initialId })}
+            />
+          ) : null}
         </View>
-      )}
+        <NavigationFolio
+          reading={reading}
+          current={
+            reviewing ? 'review' : state.view === 'home' ? 'home' : 'library'
+          }
+          title={state.note?.title || 'Reader'}
+          workspace={source.workspace}
+          availability={source.availability}
+          disabled={!initialized || state.busy}
+          sourceRef={sourceOrientation}
+          landing={sourceLanding}
+          disclosed={navigationDisclosed}
+          disclose={() => setNavigationDisclosed(v => !v)}
+          select={destination => {
+            if (destination === 'review') {
+              Keyboard.dismiss();
+              setReviewing(true);
+            } else select(destination);
+          }}
+          sources={openSources}
+          more={() => (reading ? setMore(true) : setUtilities(true))}
+          back={back}
+        />
+      </View>
       {recovery ? (
         <ContextSheet title="Legacy recovery" close={() => setRecovery(false)}>
           <ScrollView key="recovery" contentContainerStyle={s.page}>
@@ -1080,50 +1003,86 @@ export default function WorkspaceScreen() {
         </ContextSheet>
       ) : null}
       {hosts && !hostView && initialized && !recovery ? (
-        <ContextSheet title="Sources" close={closeSources}>
+        <ContextSheet
+          title="Sources"
+          close={closeSources}
+          motion="navigation"
+          dismissing={sourceClosing}
+          onDismissed={() => {
+            setHosts(false);
+            setSourceClosing(false);
+            const confirm = sourceConfirmation.current;
+            sourceConfirmation.current = undefined;
+            confirm?.();
+            const tag = findNodeHandle(sourceOrientation.current);
+            if (tag) AccessibilityInfo.setAccessibilityFocus(tag);
+          }}
+        >
           {sourceContent}
         </ContextSheet>
       ) : null}
-      {initialized && state.host ? (
-        <WorkspaceDrawer
-          visible={drawer}
-          feed={feed}
-          select={select}
-          open={open}
-          retry={() => void quick.refresh()}
-          close={closeDrawer}
-          hosts={() => {
-            closeDrawer();
-            setHosts(true);
-          }}
-          recovery={recoveryOpen}
-          appearance={() => {
-            closeDrawer();
-            setAppearance(true);
-          }}
-          downloads={() => {
-            closeDrawer();
-            setDownloadTarget(undefined);
-            setDownloads(true);
-          }}
-          host={
-            state.workspaces?.find(w => w.id === state.host?.workspaceId)
-              ?.name ?? state.host?.address
-          }
-          current={
-            state.view === 'home'
-              ? 'home'
-              : state.view === 'browse'
-              ? state.browse.destination
-              : ''
-          }
-          recoveryCount={state.recovery.length}
-          captures={() => {
-            closeDrawer();
-            setCaptureRequest({});
-          }}
-          reducedMotion={reduced}
-        />
+      {utilities ? (
+        <ContextSheet title="Vaultor options" close={closeUtilities}>
+          <ScrollView contentContainerStyle={s.page}>
+            {state.host ? (
+              <>
+                <Action
+                  label="Search workspace"
+                  onPress={() => select('library', true)}
+                />
+                <Action
+                  label="Collections"
+                  onPress={() => select('collections')}
+                />
+                <Action label="Recent" onPress={() => select('recent')} />
+                <Action label="Pinned" onPress={() => select('pinned')} />
+                <Action
+                  label="All resources"
+                  onPress={() => {
+                    model.updateBrowse({
+                      ...state.browse,
+                      destination: 'library',
+                      collection: undefined,
+                      query: '',
+                      page: 0,
+                    });
+                    select('library');
+                  }}
+                />
+              </>
+            ) : null}
+            <Action
+              label="Sources"
+              onPress={() => {
+                closeUtilities();
+                openSources();
+              }}
+            />
+            <Action
+              label="Appearance & reading"
+              onPress={() => {
+                closeUtilities();
+                setAppearance(true);
+              }}
+            />
+            <Action
+              label="Offline downloads"
+              onPress={() => {
+                closeUtilities();
+                setDownloadTarget(undefined);
+                setDownloads(true);
+              }}
+            />
+            <Action
+              label="Captures on this phone"
+              onPress={() => {
+                closeUtilities();
+                setReviewing(true);
+              }}
+            />
+            <Action label="Legacy recovery" onPress={recoveryOpen} />
+          </ScrollView>
+        </ContextSheet>
       ) : null}
       {appearance ? (
         <ReadingControls close={() => setAppearance(false)} />
@@ -1158,6 +1117,7 @@ export default function WorkspaceScreen() {
               { value: 'downloads', label: 'Download for offline' },
               { value: 'journey', label: 'Reading journey' },
               { value: 'refresh', label: 'Refresh saved note' },
+              { value: 'utilities', label: 'Vaultor options' },
               { value: 'recovery', label: 'Legacy recovery' },
             ]}
             onChoose={v => {
@@ -1173,6 +1133,7 @@ export default function WorkspaceScreen() {
               if (v === 'outline' || v === 'find' || v === 'appearance')
                 setReaderPanel(v);
               else if (v === 'journey') setTrail(true);
+              else if (v === 'utilities') setUtilities(true);
               else if (v === 'recovery') recoveryOpen();
               else run(() => model.reconcile());
             }}
@@ -1218,7 +1179,11 @@ export default function WorkspaceScreen() {
       {captureRequest ? (
         <ReviewCapture
           seed={captureRequest.seed}
-          close={() => setCaptureRequest(undefined)}
+          initialId={captureRequest.initialId}
+          close={() => {
+            setCaptureRequest(undefined);
+            setReviewRevision(v => v + 1);
+          }}
         />
       ) : null}
     </SafeAreaView>
@@ -1226,6 +1191,8 @@ export default function WorkspaceScreen() {
 }
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
+  shell: { flex: 1, flexDirection: 'column' },
+  wideShell: { flexDirection: 'row-reverse' },
   content: { flex: 1 },
   overlayHost: {
     position: 'absolute',
@@ -1236,28 +1203,6 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   hidden: { display: 'none' },
-  readerHeader: { minHeight: 48 },
-  header: {
-    zIndex: 1,
-    backgroundColor: '#000',
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#252525',
-  },
-  orientation: { flex: 1, minHeight: 48, justifyContent: 'center' },
-  orientationPress: { minHeight: 48, justifyContent: 'center' },
-  source: { color: '#858585', fontSize: 12 },
-  title: { fontSize: 19, fontWeight: '600', color: '#e8e8e8' },
-  icon: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  glyph: { fontSize: 25, color: '#e8e8e8' },
   page: { padding: 12, gap: 8 },
   secondary: { color: '#b3b3b3', fontSize: 15, lineHeight: 23 },
   section: { color: '#e8e8e8', fontSize: 16, fontWeight: '600' },

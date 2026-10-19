@@ -115,6 +115,16 @@ physical actuator output. Diagnostic records can perturb scheduling slightly.
 Missing keyboard events, visibility or completion remain findings to investigate,
 not repaired by the trace. Haptics must remain rare and admission remains strict.
 
+## Device feedback and follow-up
+
+On 2026-10-19 the user reported alpha.18 ordinary-use haptics are perceptible on
+Samsung S24 Ultra / One UI9. This is positive physical feedback, not an agent-made
+claim of individual H2/H3 measurements. No Samsung trace JSON was supplied here.
+Existing emulator A/B traces show H2/H3 requests; native API submission does not
+establish physical actuator output. Preserve effects, intensity and restrained
+policy. A missing H3 remains a targeted optional trace follow-up and does not block
+the separately authorized [navigation prototype](NAVIGATION-PROTOTYPE.md).
+
 ## Validation
 
 Implementation: mobile/src/captureTrace.ts, ReviewCapture.tsx, haptics.ts and

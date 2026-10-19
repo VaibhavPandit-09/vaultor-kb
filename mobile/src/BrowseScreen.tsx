@@ -276,6 +276,16 @@ export default function BrowseScreen({
   };
   return (
     <View collapsable={false} style={styles.root}>
+      <Text accessibilityRole="header" style={styles.destinationHeading}>
+        {b.config.collection?.name ||
+          {
+            library: 'Library',
+            recent: 'Recent',
+            pinned: 'Pinned',
+            collections: 'Collections',
+            trash: 'Library',
+          }[b.config.destination]}
+      </Text>
       <View collapsable={false} style={styles.searchRow}>
         <TextInput
           ref={input}
@@ -704,6 +714,12 @@ const sheetStyles = StyleSheet.create({
   focused: { borderWidth: 2, borderColor: '#8db7ff' },
   choiceList: { flexGrow: 0 },
   searchInput: { flex: 1 },
+  destinationHeading: {
+    color: '#e8e8e8',
+    fontSize: 24,
+    fontWeight: '600',
+    paddingVertical: 8,
+  },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   root: { flex: 1, paddingHorizontal: 16, gap: 10 },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },

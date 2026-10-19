@@ -9,20 +9,24 @@ import {
 import { motionDuration, settleEasing } from './motion';
 import { useReading } from './ui';
 
-/** The existing bottom surface claims its final space. Closing still releases
- * focus/Back immediately; no animation owns application correctness. */
+/** The measured surface claims its final space. Sources may opt into a reversible
+ * exit with bounded window cleanup; other callers retain immediate dismissal. */
 export default function MotionSheet({
   children,
   style,
   onSettled,
   presented = true,
   kind = 'utility',
+  dismissing = false,
+  onDismissed,
 }: {
   children: React.ReactNode;
   style: StyleProp<ViewStyle>;
   onSettled?: () => void;
   presented?: boolean;
   kind?: 'utility' | 'navigation';
+  dismissing?: boolean;
+  onDismissed?: () => void;
 }) {
   const { preferences, reduced } = useReading();
   const progress = useRef(new Animated.Value(0)).current;
@@ -32,6 +36,35 @@ export default function MotionSheet({
     completed = useRef(false);
   const settled = useRef(onSettled);
   settled.current = onSettled;
+  const dismissed = useRef(onDismissed);
+  dismissed.current = onDismissed;
+  useEffect(() => {
+    if (!dismissing) return;
+    progress.stopAnimation();
+    let active = true;
+    const finish = () => {
+      if (!active) return;
+      active = false;
+      dismissed.current?.();
+    };
+    const duration = motionDuration(kind, preferences.motion, reduced);
+    const animation = Animated.timing(progress, {
+      toValue: 0,
+      duration,
+      easing: settleEasing,
+      useNativeDriver: true,
+    });
+    // Window cleanup cannot depend on an animation completion callback.
+    const fallback = setTimeout(finish, duration + 80);
+    animation.start(({ finished }) => {
+      if (finished) finish();
+    });
+    return () => {
+      active = false;
+      clearTimeout(fallback);
+      animation.stop();
+    };
+  }, [dismissing, kind, preferences.motion, reduced, progress]);
   useEffect(() => {
     if (presented && !started.current)
       bounds.current?.measure((_x, _y, _width, measured) => {
@@ -39,7 +72,7 @@ export default function MotionSheet({
       });
   }, [presented]);
   useEffect(() => {
-    if (!height || !presented || completed.current) return;
+    if (!height || !presented || completed.current || dismissing) return;
     started.current = true;
     progress.stopAnimation();
     const animation = Animated.timing(progress, {
@@ -59,7 +92,15 @@ export default function MotionSheet({
       active = false;
       animation.stop();
     };
-  }, [preferences.motion, reduced, progress, height, presented, kind]);
+  }, [
+    preferences.motion,
+    reduced,
+    progress,
+    height,
+    presented,
+    kind,
+    dismissing,
+  ]);
   return (
     <View
       ref={bounds}

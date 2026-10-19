@@ -27,6 +27,8 @@ export default function ContextSheet({
   onSettled,
   ready = true,
   motion = 'utility',
+  dismissing = false,
+  onDismissed,
 }: {
   title: string;
   close(): void;
@@ -34,6 +36,8 @@ export default function ContextSheet({
   onSettled?: (tag: number) => void;
   ready?: boolean;
   motion?: 'utility' | 'navigation';
+  dismissing?: boolean;
+  onDismissed?: () => void;
 }) {
   const s = useThemeStyles(styles),
     insets = useSafeAreaInsets();
@@ -102,6 +106,8 @@ export default function ContextSheet({
           />
           <MotionSheet
             kind={motion}
+            dismissing={dismissing}
+            onDismissed={onDismissed}
             presented={shown && ready}
             style={s.sheet}
             onSettled={() => {
@@ -113,6 +119,10 @@ export default function ContextSheet({
               ref={root}
               collapsable={false}
               accessibilityViewIsModal
+              pointerEvents={dismissing ? 'none' : 'auto'}
+              importantForAccessibility={
+                dismissing ? 'no-hide-descendants' : 'auto'
+              }
               style={[s.body, { paddingBottom: Math.max(12, insets.bottom) }]}
             >
               <View style={s.heading}>

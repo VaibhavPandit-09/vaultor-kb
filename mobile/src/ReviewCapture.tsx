@@ -33,9 +33,11 @@ const call = async (action: string, value: object = {}): Promise<any> =>
 
 export default function ReviewCapture({
   seed,
+  initialId,
   close,
 }: {
   seed?: CaptureSeed;
+  initialId?: string;
   close(): void;
 }) {
   const s = useThemeStyles(styles),
@@ -76,7 +78,11 @@ export default function ReviewCapture({
     const frame = requestAnimationFrame(() => {
       const tag = findNodeHandle(root.current);
       if (alive.current && tag)
-        VaultorHaptics.reject(tag, preferences.haptics !== 'off', trace.current);
+        VaultorHaptics.reject(
+          tag,
+          preferences.haptics !== 'off',
+          trace.current,
+        );
     });
     return () => cancelAnimationFrame(frame);
   }, [error, prepared, settled.tag, preferences.haptics]);
@@ -227,7 +233,18 @@ export default function ReviewCapture({
     const request = initial.current.then(value => {
       if (alive.current) {
         if (seed) accept(value);
-        else setItems(value);
+        else if (initialId) {
+          const existing = (value as CaptureItem[]).find(
+            v => v.id === initialId,
+          );
+          if (!existing)
+            throw Error(
+              'This local record is no longer available. Return to Review and retry.',
+            );
+          accept(existing);
+          setComment(existing.body.comment);
+          receiptProgress.setValue(existing.state === 'queued' ? 1 : 0);
+        } else setItems(value);
       }
       if (seed) recordTrace(trace.current, 'draft_ready');
     });
@@ -251,7 +268,7 @@ export default function ReviewCapture({
       });
       alive.current = false;
     };
-  }, [seed]);
+  }, [seed, initialId, receiptProgress]);
   const protect = (value: string) => {
     if (locked.current || current.current?.state !== 'draft') return;
     setComment(value);

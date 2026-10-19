@@ -86,14 +86,21 @@ Authorized by “continue next” after alpha.14, Android alpha.15/code19 adds c
 
 The user rejected alpha.15 interaction work on the S24 Ultra: haptics and structural movement were not perceptible. Alpha.17/code21 refines the explicitly development-only acceptance candidate; alpha.16 remains its immutable comparison baseline. VaultorHaptics reports actual suppression/capability/request results, distinct platform semantics and selectable clear/platform/expressive rich profiles. Build-time native diagnostics default off and reject ordinary builds. Context surfaces start after native show/measurement; capture stays in one window with separate evidence lock and durable receipt geometry keyframes. Reader header now reclaims viewport space; Find reveals its edge; source confirmation waits for activity focus/settle. Theme snapshots scale within32MiB for QHD dual windows. MOTION-HAPTIC-REMEDIATION.md owns the complete shipped inventory, revised candidate and exact device script. Local protected draft/queue/source/original contracts remain unchanged. Runtime checks are not tactile/visual approval. A4 must not start without explicit S24 approval.
 
-Android prototype diagnostic continuation: alpha.18/code22 is a local development
+Android prototype continuation: alpha.19/code23 is the local Prototype 1
 acceptance candidate on ai/codex-android-ux-prototypes, based exactly on immutable
-alpha.17. [HAPTIC-CAPTURE-TRACE.md](android/HAPTIC-CAPTURE-TRACE.md) owns one-shot,
-128-record memory-only genuine capture tracing and sanitized clipboard export.
-Native allowlists and the default-false diagnostics build gate protect data;
-manual probes cannot play during measurement. Existing semantic effects,
-admission, persistence, source routing and navigation are unchanged. No public
-release, navigation implementation or A4 is authorized by this slice.
+alpha.17 through alpha.18. [Navigation prototype](android/NAVIGATION-PROTOTYPE.md)
+owns Home/Library/device-wide source-grouped Review, the distinct Sources context
+action, one contracting browsing/reader folio and window-width rail adaptation.
+WorkspaceScreen retains the reader under Review and source inspection; existing
+per-source durable sessions remain authoritative. A bounded presentation-only
+BrowseMemory restores utility destination configurations without a storage change.
+The drawer and duplicate shell topbar are removed. Existing reader/composer/domain,
+native source admission, journal identity, transport and sync contracts are unchanged.
+[Capture trace](android/HAPTIC-CAPTURE-TRACE.md) remains development-gated, bounded,
+memory-only and sanitized. The user reports perceptible alpha.18 S24 haptics;
+no Samsung JSON establishes H2/H3 individually. Existing effects/admission/policy
+remain unchanged, with targeted trace follow-up optional and navigation unblocked.
+No public release or subjective UI approval; Prototype 2/3 and A4 remain unauthorized.
 
 ## Repository and source map
 
@@ -409,6 +416,20 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 - Build reports a large JS chunk and an outdated Browserslist dataset; these do not prevent packaging. Chunk splitting remains performance work.
 
 ## Change checklist and maintenance history
+
+### 2026-10-19 — Reader-first navigation Prototype 1
+
+Alpha.19/code23 adds a single adaptive browsing/reader navigation folio, distinct
+Sources context action and device-wide source-grouped protected Review destination.
+The reader remains mounted; direct/utility browsing preserves source-scoped state.
+No new persistence/domain/security/transport/haptic effect or synchronization contract.
+TypeScript and nine focused navigation/source/evidence Jest cases pass. Original-key
+application/test build passes. Three focused native cases pass on each API36/API37
+emulator, including interrupted navigation, source confirmation, narrow/wide/large-text/
+reduced endpoints and protected capture/original retention. Both pulled installed APKs
+match staged bytes. Runtime and signed-artifact outcomes, including failures
+and corrections, are recorded in the [alpha.19 ledger](android/releases/0.1.0-alpha.19.md).
+Stops for user-owned S24 visual approval; no public release, Prototype 2/3 or A4.
 
 ### 2026-10-19 — Genuine capture diagnostic slice
 
