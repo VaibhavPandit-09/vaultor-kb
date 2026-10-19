@@ -26,12 +26,14 @@ export default function ContextSheet({
   children,
   onSettled,
   ready = true,
+  motion = 'utility',
 }: {
   title: string;
   close(): void;
   children: React.ReactNode;
   onSettled?: (tag: number) => void;
   ready?: boolean;
+  motion?: 'utility' | 'navigation';
 }) {
   const s = useThemeStyles(styles),
     insets = useSafeAreaInsets();
@@ -99,6 +101,7 @@ export default function ContextSheet({
             onPress={close}
           />
           <MotionSheet
+            kind={motion}
             presented={shown && ready}
             style={s.sheet}
             onSettled={() => {

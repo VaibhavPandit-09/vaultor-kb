@@ -35,8 +35,10 @@ class FeedbackDiagnosticTest {
     fun probe(event:String,rich:String,mode:String):JSONObject{val response=result{module.hapticDiagnostics(event,rich,mode,tag.toDouble(),it)};assertFalse(response.second);return JSONObject(response.first)}
     try{
       result{native.readerPreferences("put",enabled.toString(),it)};d.executeShellCommand("settings put system haptic_feedback_enabled 1")
+      assertEquals("silent",result{module.feedback("complete","capture",tag.toDouble(),"forbidden-old-product-pattern",it)}.first)
+      assertEquals("silent",result{module.feedback("selection","REVIEW_CAPTURED",tag.toDouble(),"mismatched-product-pattern",it)}.first)
       for(event in VaultorHaptics.events){val report=probe(event,"","system");assertTrue(report.toString(),report.getString("status") in setOf("requested","rejected"));assertTrue(report.has("mechanism"));assertEquals(1,report.getInt("systemSetting"))}
-      for(rich in listOf("anchor","capture"))for(mode in listOf("auto","system","primitives","predefined","envelope","legacy")){val report=probe(if(rich=="anchor")"selection" else "complete",rich,mode);assertTrue(report.toString(),report.getString("status") in setOf("requested","rejected"));assertTrue(report.has("fallback"))}
+      for(rich in listOf("anchor","capture","REVIEW_CAPTURED"))for(mode in listOf("auto","system","primitives","predefined","envelope","legacy")){val report=probe(if(rich=="anchor")"selection" else "complete",rich,mode);assertTrue(report.toString(),report.getString("status") in setOf("requested","rejected"));assertTrue(report.has("fallback"))}
       result{native.readerPreferences("put",JSONObject(enabled.toString()).put("haptics","off").toString(),it)};assertEquals("application haptics off",probe("complete","capture","auto").getString("reason"))
       result{native.readerPreferences("put",enabled.toString(),it)};d.executeShellCommand("settings put system haptic_feedback_enabled 0");assertEquals("Android touch haptics off",probe("selection","anchor","auto").getString("reason"))
     }finally{result{native.readerPreferences("put",original,it)};if(system=="null")d.executeShellCommand("settings delete system haptic_feedback_enabled")else d.executeShellCommand("settings put system haptic_feedback_enabled $system")}

@@ -25,7 +25,6 @@ import type { MobileWorkspace } from './workspace';
 import { Action, ChoiceSheet } from './BrowseScreen';
 import ReadingControls from './ReadingControls';
 import { useAppearance, useReading, usePalette, useThemeStyles } from './ui';
-import { haptic } from './haptics';
 import { motionDuration, settleEasing } from './motion';
 import { externalAddress } from './reading';
 import type { Evidence } from './reviews';
@@ -59,31 +58,11 @@ export default function ReaderView({
     >([]),
     [query, setQuery] = useState(''),
     [matches, setMatches] = useState({ count: 0, current: 0, limited: false });
-  const feedbackEnabled = useRef(preferences.haptics !== 'off');
-  feedbackEnabled.current = preferences.haptics !== 'off';
   const findInput = useRef<React.ElementRef<typeof TextInput>>(null);
   const findProgress = useRef(new Animated.Value(0)).current;
-  const findFocused = useRef(false),
-    findSettled = useRef(false),
-    findFeedback = useRef(false);
-  const finishFind = useCallback(() => {
-    const tag = findNodeHandle(findInput.current);
-    if (
-      tag &&
-      findFocused.current &&
-      findSettled.current &&
-      !findFeedback.current
-    ) {
-      findFeedback.current = true;
-      haptic('micro', tag, feedbackEnabled.current);
-    }
-  }, []);
   const [controlsBottom, setControlsBottom] = useState(0);
   useEffect(() => {
     if (panel !== 'find') {
-      findFocused.current = false;
-      findSettled.current = false;
-      findFeedback.current = false;
       findProgress.setValue(0);
       return;
     }
@@ -94,21 +73,9 @@ export default function ReaderView({
       easing: settleEasing,
       useNativeDriver: true,
     });
-    animation.start(({ finished }) => {
-      if (finished) {
-        findSettled.current = true;
-        finishFind();
-      }
-    });
+    animation.start();
     return () => animation.stop();
-  }, [
-    panel,
-    controlsBottom,
-    preferences.motion,
-    reduced,
-    findProgress,
-    finishFind,
-  ]);
+  }, [panel, controlsBottom, preferences.motion, reduced, findProgress]);
   const [selection, setSelection] = useState<Evidence>();
   const wasVisible = useRef(false);
   const visible = state.view === 'note' && !state.preview;
@@ -134,7 +101,6 @@ export default function ReaderView({
   const focusSequence = useRef(0);
   useEffect(() => {
     if (panel !== 'find') return;
-    let cancelled = false;
     const token =
       String(current.current.loadId) + ':' + ++focusSequence.current;
     const frame = requestAnimationFrame(() => {
@@ -145,24 +111,13 @@ export default function ReaderView({
         findInput.current?.focus();
         return;
       }
-      void focus
-        .then((focused: boolean) => {
-          if (focused && !cancelled)
-            requestAnimationFrame(() => {
-              if (!cancelled) {
-                findFocused.current = true;
-                finishFind();
-              }
-            });
-        })
-        .catch(() => {});
+      void focus.catch(() => {});
     });
     return () => {
-      cancelled = true;
       cancelAnimationFrame(frame);
       NativeModules.VaultorPresentation?.cancelInputFocus?.(token);
     };
-  }, [panel, finishFind]);
+  }, [panel]);
   const options = useMemo(
     () => ({ ...preferences, theme, accent: palette.accent, reduced }),
     [preferences, theme, palette.accent, reduced],
@@ -274,10 +229,6 @@ export default function ReaderView({
           <>
             <TextInput
               ref={findInput}
-              onFocus={() => {
-                findFocused.current = true;
-                finishFind();
-              }}
               style={s.input}
               accessibilityLabel="Find within note"
               placeholder="Find in note"

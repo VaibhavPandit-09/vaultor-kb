@@ -2,7 +2,7 @@ import ContextSheet from './ContextSheet';
 import ReviewCapture from './ReviewCapture';
 import { captureSeed, type CaptureSeed, type Evidence } from './reviews';
 import { sourcePresentation, activatedSource } from './sourcePresentation';
-import { haptic } from './haptics';
+import { VaultorHaptics } from './haptics';
 import { ReaderFeed } from './readerFeed';
 import React, {
   useCallback,
@@ -272,7 +272,10 @@ export default function WorkspaceScreen() {
                   model.snapshot().scope === next.scope
                 ) {
                   AccessibilityInfo.setAccessibilityFocus(tag);
-                  haptic('selection', tag, preferences.haptics !== 'off');
+                  VaultorHaptics.selectionSnap(
+                    tag,
+                    preferences.haptics !== 'off',
+                  );
                 }
               });
             })
@@ -284,7 +287,7 @@ export default function WorkspaceScreen() {
         requestAnimationFrame(() => {
           if (token !== sourceToken.current) return;
           const tag = findNodeHandle(sourceRoot.current);
-          if (tag) haptic('reject', tag, preferences.haptics !== 'off');
+          if (tag) VaultorHaptics.reject(tag, preferences.haptics !== 'off');
         });
       }
     });

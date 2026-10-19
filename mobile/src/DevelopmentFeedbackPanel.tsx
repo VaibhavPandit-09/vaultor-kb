@@ -41,16 +41,22 @@ const vocabulary = [
     'Rare confirmed destruction; deliberate hold signature. Diagnostic only.',
   ],
   [
-    'Rich evidence anchor',
+    'Alpha.16 rich evidence anchor',
     'selection',
     'anchor',
     'Source evidence settles; supported full CLICK.',
   ],
   [
-    'Rich local capture',
+    'Alpha.16 rich local capture',
     'complete',
     'capture',
     'Durable saved geometry settles; separated rising CLICK pair.',
+  ],
+  [
+    'REVIEW_CAPTURED',
+    'complete',
+    'REVIEW_CAPTURED',
+    'Only after durable local save and visible receipt settle; short light-to-firm pair. Same clear native composition as alpha.16, now explicitly reserved.',
   ],
 ] as const;
 const modes = [
@@ -140,9 +146,9 @@ export default function DevelopmentFeedbackPanel() {
       {open ? (
         <>
           <Text style={text}>
-            Manual isolated probes. Android acceptance is not proof of
-            sensation. No setting is bypassed. Reduced motion:{' '}
-            {reduced ? 'on' : 'off'}.
+            Manual tuning only; most product interactions are silent. Android
+            acceptance is not proof of sensation. No setting is bypassed.
+            Reduced motion: {reduced ? 'on' : 'off'}.
           </Text>
           <Text style={text}>
             Route override for comparison (custom routes apply to rich controls

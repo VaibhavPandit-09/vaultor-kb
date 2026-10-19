@@ -1,6 +1,6 @@
 # Android shell and source navigation
 
-Reviewed2026-10-16. Alpha.13/code17 established the A1 shell; A2/A3 subsequently added reader/local capture. The user's S24 rejection reopens A0–A3 interaction acceptance. Alpha.16/code20 is a development [remediation](MOTION-HAPTIC-REMEDIATION.md) candidate; [R6 phases](../plans/android-r6-plan.md) owns scope. Physical approval is pending and A4 remains blocked.
+Reviewed2026-10-19. Alpha.13/code17 established the A1 shell; A2/A3 subsequently added reader/local capture. The user's S24 rejection reopens A0–A3 interaction acceptance. Alpha.17/code21 is a development [remediation](MOTION-HAPTIC-REMEDIATION.md) candidate; [R6 phases](../plans/android-r6-plan.md) owns scope. Physical approval is pending and A4 remains blocked.
 
 ## Hierarchy and ownership
 

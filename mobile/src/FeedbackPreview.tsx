@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, AppState, findNodeHandle, Text, View } from 'react-native';
 import { Action } from './BrowseScreen';
-import { haptic, type RichHaptic } from './haptics';
+import { VaultorHaptics } from './haptics';
 import { motionDuration, settleEasing } from './motion';
 import { useReading, usePalette } from './ui';
 
@@ -29,7 +29,7 @@ export default function FeedbackPreview() {
       event.remove();
     };
   }, [preferences.haptics, preferences.motion, reduced, progress]);
-  const preview = (rich: RichHaptic) => {
+  const preview = (rich: 'anchor' | 'capture') => {
     const key = ++ticket.current;
     progress.stopAnimation();
     progress.setValue(0);
@@ -46,12 +46,13 @@ export default function FeedbackPreview() {
     }).start(({ finished }) => {
       const tag = findNodeHandle(root.current);
       if (finished && key === ticket.current && tag)
-        haptic(
-          rich === 'anchor' ? 'selection' : 'complete',
-          tag,
-          preferences.haptics !== 'off',
-          rich,
-        );
+        rich === 'anchor'
+          ? VaultorHaptics.selectionSnap(tag, preferences.haptics !== 'off')
+          : VaultorHaptics.playAuthoredPattern(
+              'REVIEW_CAPTURED',
+              tag,
+              preferences.haptics !== 'off',
+            );
     });
   };
   return (

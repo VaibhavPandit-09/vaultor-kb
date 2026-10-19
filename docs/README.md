@@ -139,3 +139,5 @@ Keep CODEBASE and this index at the docs root for agent discovery. Put topic gui
 - [Android alpha.15](android/releases/0.1.0-alpha.15.md) — actual A3 installed/publication evidence.
 
 - [Android motion/haptic remediation](android/MOTION-HAPTIC-REMEDIATION.md) — shipped A0–A3 inventory, rejected S24 acceptance, candidate changes and real-device script; A4 blocked.
+
+- [Android alpha.17 hybrid/restraint acceptance ledger](android/releases/0.1.0-alpha.17.md) — current candidate evidence and alpha.16 comparison; A4 blocked.

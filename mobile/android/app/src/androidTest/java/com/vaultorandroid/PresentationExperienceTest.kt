@@ -81,7 +81,7 @@ class PresentationExperienceTest {
     result { module.revealTheme("capture-test", 200.0, it) }
     Thread.sleep(350)
     i.runOnMainSync { assertTrue((overlayField.get(module) as List<*>).isEmpty()) }
-    assertEquals("silent", result { module.feedback("complete", "capture", tag.toDouble(), "off-test", it) })
+    assertEquals("silent", result { module.feedback("complete", "REVIEW_CAPTURED", tag.toDouble(), "off-test", it) })
     tap("System"); waitPreference("haptics", "system")
     val previous = d.executeShellCommand("settings get system haptic_feedback_enabled").trim()
     try {

@@ -16,11 +16,13 @@ export default function MotionSheet({
   style,
   onSettled,
   presented = true,
+  kind = 'utility',
 }: {
   children: React.ReactNode;
   style: StyleProp<ViewStyle>;
   onSettled?: () => void;
   presented?: boolean;
+  kind?: 'utility' | 'navigation';
 }) {
   const { preferences, reduced } = useReading();
   const progress = useRef(new Animated.Value(0)).current;
@@ -42,7 +44,7 @@ export default function MotionSheet({
     progress.stopAnimation();
     const animation = Animated.timing(progress, {
       toValue: 1,
-      duration: motionDuration('navigation', preferences.motion, reduced),
+      duration: motionDuration(kind, preferences.motion, reduced),
       easing: settleEasing,
       useNativeDriver: true,
     });
@@ -57,7 +59,7 @@ export default function MotionSheet({
       active = false;
       animation.stop();
     };
-  }, [preferences.motion, reduced, progress, height, presented]);
+  }, [preferences.motion, reduced, progress, height, presented, kind]);
   return (
     <View
       ref={bounds}

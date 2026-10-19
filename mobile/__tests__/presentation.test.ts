@@ -1,6 +1,6 @@
 import { ThemeTransition } from '../src/themeTransition';
 import { motionDuration } from '../src/motion';
-import { haptic } from '../src/haptics';
+import { VaultorHaptics as h } from '../src/haptics';
 import { normalizeReading } from '../src/reading';
 import { AppState, NativeModules } from 'react-native';
 
@@ -70,16 +70,16 @@ test('closing a surface cancels a scheduled reveal without reverting the committ
 });
 test('haptics off/background have no bridge side effects; explicit events carry semantic profiles and unique identities', () => {
   const send = NativeModules.VaultorPresentation.feedback;
-  haptic('complete', 10, false, 'capture');
+  h.playAuthoredPattern('REVIEW_CAPTURED', 10, false);
   AppState.currentState = 'background';
-  haptic('complete', 10, true, 'capture');
+  h.playAuthoredPattern('REVIEW_CAPTURED', 10, true);
   expect(send).not.toHaveBeenCalled();
   AppState.currentState = 'active';
-  haptic('selection', 10, true, 'anchor');
-  haptic('complete', 10, true, 'capture');
+  h.selectionSnap(10, true);
+  h.playAuthoredPattern('REVIEW_CAPTURED', 10, true);
   expect(send.mock.calls.map((call: unknown[]) => call.slice(0, 3))).toEqual([
-    ['selection', 'anchor', 10],
-    ['complete', 'capture', 10],
+    ['selection', '', 10],
+    ['complete', 'REVIEW_CAPTURED', 10],
   ]);
   expect(send.mock.calls[0][3]).not.toBe(send.mock.calls[1][3]);
 });
@@ -90,10 +90,34 @@ test('motion and haptic preferences migrate conservatively without changing exis
     haptics: 'system',
   });
   expect(normalizeReading({ haptics: 'off' }).haptics).toBe('off');
-  expect(normalizeReading({ richHaptics: 'platform' }).richHaptics).toBe('platform');
-  expect(normalizeReading({ richHaptics: 'invalid' }).richHaptics).toBe('clear');
+  expect(normalizeReading({ richHaptics: 'platform' }).richHaptics).toBe(
+    'platform',
+  );
+  expect(normalizeReading({ richHaptics: 'invalid' }).richHaptics).toBe(
+    'clear',
+  );
   expect(motionDuration('structure', 'smooth', true)).toBe(0);
   expect(motionDuration('utility', 'snappy', false)).toBeLessThan(
     motionDuration('utility', 'smooth', false),
   );
+});
+
+test('small vocabulary forwards meaning only; invalid view/pattern cannot request feedback', () => {
+  const send = NativeModules.VaultorPresentation.feedback;
+  h.microConfirm(10, true);
+  h.actionComplete(10, true);
+  h.reject(10, true);
+  h.destructiveConfirm(10, true);
+  expect(send.mock.calls.map((call: unknown[]) => call.slice(0, 3))).toEqual([
+    ['micro', '', 10],
+    ['complete', '', 10],
+    ['reject', '', 10],
+    ['destructive', '', 10],
+  ]);
+  send.mockClear();
+  h.selectionSnap(NaN, true);
+  h.selectionSnap(0, true);
+  h.selectionSnap(1.2, true);
+  h.playAuthoredPattern('unknown' as never, 10, true);
+  expect(send).not.toHaveBeenCalled();
 });

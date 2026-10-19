@@ -15,7 +15,7 @@ import {
 import ContextSheet from './ContextSheet';
 import { Action } from './Action';
 import { usePalette, useReading, useThemeStyles } from './ui';
-import { haptic } from './haptics';
+import { VaultorHaptics } from './haptics';
 import { motionDuration, settleEasing } from './motion';
 import { locatorLabel, type CaptureSeed, type CaptureItem } from './reviews';
 const call = async (action: string, value: object = {}): Promise<any> =>
@@ -69,7 +69,7 @@ export default function ReviewCapture({
     const frame = requestAnimationFrame(() => {
       const tag = findNodeHandle(root.current);
       if (alive.current && tag)
-        haptic('reject', tag, preferences.haptics !== 'off');
+        VaultorHaptics.reject(tag, preferences.haptics !== 'off');
     });
     return () => cancelAnimationFrame(frame);
   }, [error, prepared, settled.tag, preferences.haptics]);
@@ -91,7 +91,7 @@ export default function ReviewCapture({
       if (!finished || !alive.current || current.current?.state !== 'draft')
         return;
       setEvidenceLocked(true);
-      haptic('selection', settled.tag, preferences.haptics !== 'off', 'anchor');
+      VaultorHaptics.selectionSnap(settled.tag, preferences.haptics !== 'off');
     });
     return () => {
       animation.stop();
@@ -120,35 +120,37 @@ export default function ReviewCapture({
       feedbackFrame = requestAnimationFrame(() => {
         const tag = findNodeHandle(receiptRoot.current);
         if (alive.current && tag)
-          haptic('complete', tag, preferences.haptics !== 'off', 'capture');
+          VaultorHaptics.playAuthoredPattern(
+            'REVIEW_CAPTURED',
+            tag,
+            preferences.haptics !== 'off',
+          );
       });
     };
     const keyboard = Keyboard.addListener('keyboardDidHide', complete);
-    const animation = Animated.parallel(
-      [
-        Animated.timing(commentHeight, {
-          toValue: 72,
-          duration,
-          easing: settleEasing,
-          useNativeDriver: false,
-        }),
-        Animated.timing(receiptProgress, {
-          toValue: 1,
-          duration,
-          easing: settleEasing,
-          useNativeDriver: false,
-        }),
-      ],
-      { stopTogether: false },
-    );
-    animation.start(({ finished }) => {
+    const contraction = Animated.timing(commentHeight, {
+      toValue: 72,
+      duration,
+      easing: settleEasing,
+      useNativeDriver: false,
+    });
+    const receipt = Animated.timing(receiptProgress, {
+      toValue: 1,
+      duration,
+      easing: settleEasing,
+      useNativeDriver: false,
+    });
+    contraction.start();
+    // The receipt owns completion. Expanding the same comment cannot cancel it.
+    receipt.start(({ finished }) => {
       if (finished) {
         geometryDone = true;
         complete();
       }
     });
     return () => {
-      animation.stop();
+      contraction.stop();
+      receipt.stop();
       keyboard.remove();
       if (feedbackFrame !== undefined) cancelAnimationFrame(feedbackFrame);
       commentHeight.setValue(72);
@@ -303,6 +305,7 @@ export default function ReviewCapture({
   return (
     <ContextSheet
       ready={prepared}
+      motion="navigation"
       title={seed || item ? 'Review capture' : 'Captures on this phone'}
       close={dismiss}
       onSettled={tag => setSettled({ id: item?.id, tag })}

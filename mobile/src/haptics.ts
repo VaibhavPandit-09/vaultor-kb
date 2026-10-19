@@ -1,27 +1,43 @@
 import { NativeModules, AppState } from 'react-native';
-export type HapticEvent =
+type HapticEvent =
   | 'micro'
   | 'selection'
   | 'complete'
   | 'reject'
   | 'destructive';
-export type RichHaptic = 'anchor' | 'capture';
+export type AuthoredPattern = 'REVIEW_CAPTURED';
 let sequence = 0;
 const session = String(Date.now());
-// Call only at a committed interaction/keyframe, never on animation frames.
-// Native repeats preference/visibility checks and owns device capabilities.
-export function haptic(
-  event: HapticEvent,
-  tag: number,
-  enabled: boolean,
-  rich?: RichHaptic,
-) {
-  if (!enabled || AppState.currentState !== 'active' || !Number.isFinite(tag))
+// Product code requests meaning only. Kotlin owns every device/effect decision.
+function send(event: HapticEvent, tag: number, enabled: boolean, pattern = '') {
+  if (
+    !enabled ||
+    AppState.currentState !== 'active' ||
+    !Number.isSafeInteger(tag) ||
+    tag < 1
+  )
     return;
   void NativeModules.VaultorPresentation?.feedback(
     event,
-    rich ?? '',
+    pattern,
     tag,
     session + ':' + ++sequence,
   ).catch(() => {});
 }
+export const VaultorHaptics = {
+  microConfirm: (tag: number, enabled: boolean) => send('micro', tag, enabled),
+  selectionSnap: (tag: number, enabled: boolean) =>
+    send('selection', tag, enabled),
+  actionComplete: (tag: number, enabled: boolean) =>
+    send('complete', tag, enabled),
+  reject: (tag: number, enabled: boolean) => send('reject', tag, enabled),
+  destructiveConfirm: (tag: number, enabled: boolean) =>
+    send('destructive', tag, enabled),
+  playAuthoredPattern: (
+    pattern: AuthoredPattern,
+    tag: number,
+    enabled: boolean,
+  ) => {
+    if (pattern === 'REVIEW_CAPTURED') send('complete', tag, enabled, pattern);
+  },
+};

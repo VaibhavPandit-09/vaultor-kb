@@ -23,7 +23,7 @@ import { Action } from './BrowseScreen';
 import type { MobileWorkspace } from './workspace';
 import { mediaPosition, type MediaPosition } from './reading';
 import ContextSheet from './ContextSheet';
-import { haptic } from './haptics';
+import { VaultorHaptics } from './haptics';
 import { motionDuration } from './motion';
 import { useAppearance, useReading, useThemeStyles } from './ui';
 const native = NativeModules.VaultorNative;
@@ -303,7 +303,7 @@ function Preview({
       setPageError(`Choose a page from 1 to ${data.pages}.`);
       if (tag)
         requestAnimationFrame(() =>
-          haptic('reject', tag, preferences.haptics !== 'off'),
+          VaultorHaptics.reject(tag, preferences.haptics !== 'off'),
         );
     }
   };
@@ -452,7 +452,10 @@ function Preview({
                 pendingFit.current = undefined;
                 const tag = findNodeHandle(root.current);
                 if (tag)
-                  haptic('selection', tag, preferences.haptics !== 'off');
+                  VaultorHaptics.selectionSnap(
+                    tag,
+                    preferences.haptics !== 'off',
+                  );
               } else if (m.type === 'position') {
                 const p = mediaPosition({ ...current.current, ...m });
                 current.current = p;

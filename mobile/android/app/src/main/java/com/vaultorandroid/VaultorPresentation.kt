@@ -108,6 +108,7 @@ class VaultorPresentation(private val ctx: ReactApplicationContext) : ReactConte
   @ReactMethod fun feedback(event:String,rich:String,tag:Double,token:String,promise:Promise) { main.post {
     try {
       require(token.length in 1..80)
+      require(VaultorHaptics.validProductEvent(event,rich))
       if(!feedbackTokens.add(token)){promise.resolve("silent");return@post}
       if(feedbackTokens.size>64)feedbackTokens.remove(feedbackTokens.first())
       lastFeedback=haptics.play(event,rich,view(tag))

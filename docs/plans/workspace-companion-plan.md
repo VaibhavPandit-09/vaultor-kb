@@ -309,3 +309,7 @@ S24 Ultra rejection reopens A0–A3 motion/haptic acceptance. Remediation is aut
 ### 2026-10-16 — Remediation candidate published; A4 blocked
 
 [Development acceptance alpha.16/code20](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.16) published at12:00:42Z from 9197816856d823b4f1efd35098e6d2985ced295c. Installed original-signer APK bytes, clean-source reproduction, three staged downloads and anonymous public APK checksum verified. [Audit and exact S24 script](../android/MOTION-HAPTIC-REMEDIATION.md) and [release ledger](../android/releases/0.1.0-alpha.16.md) own evidence. A0–A3 remain unapproved on real hardware; stop here. A4 requires explicit S24 approval.
+
+### 2026-10-19 — Alpha.17 hybrid/refinement authorization
+
+User authorizes architectural/interaction audit then minimum A0–A3 refinement and development acceptance alpha.17/code21. React Native remains primary UI/motion; existing thin Kotlin haptics renderer owns native effects. Motion-first/restraint policy removes routine Find/accent and product rich-anchor feedback; REVIEW_CAPTURED is the sole authored product event. No Compose rewrite/sound/A4. Audit, precise delta and separated alpha.16→17 S24 motion/haptic checklist are in [remediation](../android/MOTION-HAPTIC-REMEDIATION.md). Build/native/publication evidence follows in alpha.17 ledger; stop for explicit approval.

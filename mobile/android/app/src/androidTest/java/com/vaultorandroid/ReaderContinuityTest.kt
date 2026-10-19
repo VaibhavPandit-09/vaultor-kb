@@ -82,6 +82,7 @@ class ReaderContinuityTest {
     assertNotNull("Find must acquire focus after the modal closes",field)
     field.text="Paragraph 18";assertTrue("Find must return an actual match",d.wait(Until.hasObject(By.text("1/1")),5000));d.pressEnter();Thread.sleep(700)
     assertNotNull(d.findObject(By.desc("Close find")));assertEquals("Find must not consume the viewport after IME closes",viewport,retained.height)
+    assertSame("Find focus and search must stay silent",beforeSilent,report())
     assertSame(retained,web());tap("Close find")
     assertEquals("true",js("a2Node.isConnected"));assertEquals("0",js("document.querySelectorAll('[contenteditable],input').length"))
     d.takeScreenshot(File(i.targetContext.getExternalFilesDir(null),"a2-reader.png"))

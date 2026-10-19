@@ -19,7 +19,6 @@ import { useAppearance, useReading, useThemeStyles } from './ui';
 import MotionSheet from './MotionSheet';
 import FeedbackPreview from './FeedbackPreview';
 import DevelopmentFeedbackPanel from './DevelopmentFeedbackPanel';
-import { haptic } from './haptics';
 function ReadingNumber({
   label,
   value,
@@ -168,13 +167,8 @@ export default function ReadingControls({ close }: { close: () => void }) {
                         key={accent}
                         label={accent[0].toUpperCase() + accent.slice(1)}
                         active={p.accent === accent}
-                        onPress={event => {
-                          if (accent === p.accent) return;
-                          update({ accent });
-                          const tag = Number(event.nativeEvent.target);
-                          requestAnimationFrame(() =>
-                            haptic('micro', tag, p.haptics !== 'off'),
-                          );
+                        onPress={() => {
+                          if (accent !== p.accent) update({ accent });
                         }}
                       />
                     ),
