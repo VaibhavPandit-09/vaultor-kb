@@ -108,3 +108,46 @@ Install the **development acceptance APK** over the current app; do not uninstal
 
 Send the candidate version, perceived ratings, actual route/status, which visual movement you observed, any early/late tactile event, and explicit approve/reject. A successful emulator run is not approval. **A4 stays blocked until explicit S24 approval.**
 
+
+## Alpha.17 architectural and interaction audit — 2026-10-19, before implementation
+
+Baseline is published alpha.16/source9197816 plus documentation4d597b9 on ai/codex-r6-android; clean working tree. This is a refinement within A0–A3, not A4 authorization. Prior exhaustive alpha.15 and revised alpha.16 inventories above remain historical evidence; this section owns the alpha.17 delta. No new S24 observation is assumed.
+
+### Hybrid boundary found in source
+
+React Native haptics.ts forwards semantic event/profile/tag/token through VaultorPresentation.feedback. Screens contain no primitives, amplitudes, waveforms or device-brand/API branches. VaultorPresentation resolves native views, deduplicates tokens and owns lifecycle; VaultorHaptics.kt owns standard constants, native capabilities, primitives/envelopes/presets, system/app/foreground admission and fallbacks. This already satisfies most of the requested hybrid architecture. Remaining problems: generic event+optional rich string permits mismatches; rich anchor is unnecessarily authored; the one important authored completion lacks a product name. Development diagnostics already compare native routes and legacy alpha.15 effects behind a default-false native build gate. No Compose migration/new scene architecture is justified.
+
+### A0–A3 usage classification and intended minimum delta
+
+| Interaction / exact component | Alpha.16 | Alpha.17 policy |
+| --- | --- | --- |
+| Navigation, resource opening, list/search results, Library filters, scrolling, typing, passive chrome, theme, background refresh/reconnect, normal PDF/gallery paging, reopening saved capture | H0 | Group A; retain intentional silence |
+| ReaderView Find focus/settle | H1 | Group A; remove routine focus haptic, preserve motion/focus |
+| ReadingControls accent selection | H1 | Group A; remove routine settings haptic |
+| WorkspaceScreen verified explicit source lock | H2 after activity focus/orientation settle | Group B; retain, source identity materially changes |
+| ResourcePreview explicit zoom→Fit endpoint | H2, already-Fit H0 | Group B; retain meaningful geometry snap |
+| ReviewCapture evidence lock | authored rich anchor/H2 | Group B; standard semantic selectionSnap only at lock, no custom anchor in product |
+| ReviewCapture durable local receipt | complete/capture authored pair | Group C; one named REVIEW_CAPTURED pattern at durable receipt endpoint and hidden IME |
+| Explicit source/capture/PDF validation rejection | H4 on visible failure | Exceptional Group B rejection; retain short system REJECT, never background alarms |
+| FeedbackPreview/DevelopmentFeedbackPanel | manual H1–H5 and rich probes | Explicit tuning only; not production usage policy. Keep old anchor/capture comparisons for alpha.16, add named REVIEW_CAPTURED |
+| H5 destruction | diagnostics only | No new production caller; rare genuinely destructive future confirmation only |
+
+### Motion audit: actual objects and geometry
+
+All timing Smooth/Snappy, cubic-bezier(.2,0,.2,1), no spring. Reduced motion gives immediate state. Normal-speed perception still requires S24 comparison; code and emulator observations cannot establish it.
+
+| Path / component | Moving object, start→end, geometry and relationship | Alpha.16 timing/displacement | Minimum alpha.17 decision |
+| --- | --- | --- | --- |
+| WorkspaceDrawer | Same drawer from left edge to measured width, underlying reader retained |360/280ms, full width, native driver/onShow gate | Retain obvious structural entry; no route slides or haptic |
+| Sources / ContextSheet | Bottom surface claims measured height over retained source |360/280ms, full height, native driver/show+measurement | Distinguish compact utility300/220 from capture360/280; no blanket slowdown |
+| Library / BrowseScreen | Single FlatList header scrolls with results; options use ContextSheet | Header follows actual scroll; no timed header morph | Retain efficient single scroll and identity; audit does not justify another sticky/duplicated header |
+| Reader / WorkspaceScreen | Same source/title band compresses80→48 online or56+ offline, returns with scroll |0–112dp scroll progress, true viewport gain; JS layout required | Retain deliberate subtle reading compression; source identity/DOM/position stay |
+| Find / ReaderView | Same bottom control rises by its measured height; real native focus |300/220ms native transform, no reader resize | Retain visible edge origin; remove H1; focus independent of motion |
+| Media controls / ResourcePreview | Same viewer stays mounted under measured utility surface; Fit moves original pixels | Surface360/280, Fit300/240ms WAAPI | Utility300/220; retain Fit geometry and H2 at endpoint |
+| Capture entry/composer / ReviewCapture | Same native window from preparation to composer; retained passage/file beneath | Full measured height360/280ms, no duplicate modal | Retain obvious context entry; explicit navigation timing unlike utility sheets |
+| Evidence lock / ReviewCapture | Same source/evidence group translates24→0 after entry; reserved travel space |200/180ms native transform, locked label at end | Retain subtle visual lock; standard H2 at endpoint |
+| Local receipt / ReviewCapture | Same comment140→72, saved band0→measured text height, queued UUID retained |300/240ms JS layout; actual geometry, not opacity | Keep geometry; make completion depend on receipt's own endpoint rather than aggregate comment animation, so early comment expansion cannot suppress tactile completion |
+| Saved comment expansion | Same read-only comment72→240, receipt retained |300/240ms JS layout | Retain; no haptic and no repeated persistence |
+| Theme / VaultorPresentation | Old actual native pixels reveal new palette from selected control, geometry fixed |420/320ms native animator,32MiB downsampled dual-window bound | Retain; no theme haptic; no evidence RN needs screen rewrite |
+
+The receipt parallel callback currently receives an aggregate finished result: cancelling comment contraction by expansion can suppress completion even when the independent saved band reaches its endpoint. Existing interruption test checks geometry but not feedback. Fix the ownership and test the actual report under that interruption. Scope remains presentation-only: protected journal, UUID/provenance/source routing, original body, reader, desktop and transport remain unchanged. No sound; no REVIEW_SYNCED_FOREGROUND implementation; A4 blocked.

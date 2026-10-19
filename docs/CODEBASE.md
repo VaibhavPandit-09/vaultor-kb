@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-10-16. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-10-19. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -972,3 +972,7 @@ Final f0e1e991 development APK passed13 affected executions on API36 and10 on AP
 ### 2026-10-16 — Published remediation acceptance candidate
 
 Published Android-only development alpha.16/code20 at12:00:42Z from immutable 9197816856d823b4f1efd35098e6d2985ced295c / android/v0.1.0-alpha.16. Clean tagged-source reproduction matches both installed emulator APKs. Three staged assets independently downloaded/byte-compared; anonymous public APK reconstruction verified40,009,029bytes and SHA256f0e1e991c1b296420b690bb89650ba01515c9356e2e7ff695b5016ca71b6cd3d. [Release](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.16). This publication record has no architectural or shipped behavior effect; no artifacts/tag rebuilt or moved. Original signer retained, real S24 approval pending, A4 blocked. Stop for user acceptance.
+
+### 2026-10-19 — Hybrid interaction audit before alpha.17
+
+Audited actual alpha.16 RN/native boundaries, every reachable haptic caller and important motion geometry before edits. Existing VaultorHaptics already owns device effects; minimum planned delta names the authored Review completion, removes routine Find/accent and rich anchor usage, distinguishes utility/capture timing and fixes receipt completion ownership under interruption. Full inventory is in android/MOTION-HAPTIC-REMEDIATION.md. Source/doc inspection only so far; no new build/runtime or physical approval. A4 blocked.
