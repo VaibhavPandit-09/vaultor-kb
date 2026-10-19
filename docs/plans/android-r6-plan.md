@@ -85,3 +85,5 @@ User rejected alpha.15 on real S24 Ultra: haptics and structural motion were not
 ### 2026-10-19 — Alpha.17 hybrid/refinement authorization
 
 User authorizes architectural/interaction audit then minimum A0–A3 refinement and development acceptance alpha.17/code21. React Native remains primary UI/motion; existing thin Kotlin haptics renderer owns native effects. Motion-first/restraint policy removes routine Find/accent and product rich-anchor feedback; REVIEW_CAPTURED is the sole authored product event. No Compose rewrite/sound/A4. Audit, precise delta and separated alpha.16→17 S24 motion/haptic checklist are in [remediation](../android/MOTION-HAPTIC-REMEDIATION.md). Build/native/publication evidence follows in alpha.17 ledger; stop for explicit approval.
+
+Alpha.17 installed gates:22 distinct API36 and15 API37 checks passed, including actual IME/named completion and original/reader retention; setup failures/limits are recorded in the alpha.17 ledger. No S24 subjective approval. A4 remains blocked; publication gates follow.

@@ -65,7 +65,7 @@ All require enabled system and app haptics. Ordinary scrolling/typing/navigation
 4. Standard H1 uses deliberate CLOCK_TICK, H2 GESTURE_END, H3 CONFIRM, H4 REJECT, H5 LONG_PRESS (rare diagnostic deliberate hold signature, no new destructive action). Respect system/app settings. Return actual admission/playback results. Rich anchor uses a supported crisp CLICK; rich completion uses two supported CLICKs with perceptually separate spacing/strength, or a supported predefined effect/system fallback. Envelope remains a manually comparable optional supported route, not presumed superior. A device-local rich policy permits platform fallback when custom feedback is weak; no brand checks or legacy buzzy waveform.
 5. Build-gated development diagnostics expose H1–H5, both rich profiles, platform fallback and supported custom routes; display real capabilities/settings/admission/selected mechanism and requested-vs-accepted results. Default production build has the gate false and native diagnostic methods refuse entry. Candidate is explicitly a development acceptance APK, original signer/package retained for install-over; no USB/ADB phone access.
 
-## Revised candidate inventory and synchronization
+## Alpha.16 revised candidate inventory and synchronization
 
 All revised timing is Smooth/Snappy, cubic-bezier(.2,0,.2,1), no spring/overshoot. Reduced motion gives immediate clear endpoints; haptics Off retains all geometry/state and sends no tactile request. Native known system Off always suppresses; missing system preference delegates only to Android's feedback API. Native admission now also checks real visible bounds. Native standard playback false is reported and may use a known-supported short preset; custom API submission is explicitly not an actuator acknowledgement.
 
@@ -89,7 +89,7 @@ Standard mappings now CLOCK_TICK/GESTURE_END/CONFIRM/REJECT/LONG_PRESS (H1–H5)
 
 Home/Library/resource route changes, ordinary PDF/gallery navigation and dismissal remain direct/H0; no false shared-element identity or whole-document slide was added. Full-screen download management retains its existing platform fade. Those are explicit limits, not claimed structural-motion demonstrations. Main proof is contextual capture and retained source/evidence/receipt geometry.
 
-## Acceptance status
+## Alpha.16 acceptance status
 
 Audit and candidate implementation are complete for handoff; subjective approval is **not** complete. [Alpha.16 ledger](releases/0.1.0-alpha.16.md) owns actual build/device/artifact results, including corrected failures. The final affected capture/storage paths passed on both emulator generations, including real software-IME H2/H3 reports and immediate expansion during contraction. These verify wiring, geometry and semantics only. A4 remains blocked pending explicit S24 approval.
 
@@ -185,7 +185,7 @@ Repeat main capture with gesture navigation in portrait/landscape, actual softwa
 | Diagnostics Trigger H1…H5, separately with pauses | H1 light detectable tick; H2 crisp snap; H3 short firm confirmation; H4 distinct rejection; H5 rare deliberate confirmation/THUD fallback | Isolated manual tap probes only; not promises of broad production usage. Note actual native route/fallback/settings |
 | Diagnostics Trigger REVIEW_CAPTURED, then Alpha.16 rich local capture with identical auto policy | One short light→firm completion pair if CLICK composition supported, coherent preset/platform fallback otherwise | Same underlying clear pattern is expected, not a claimed stronger/new effect. Compare route/feel, not label novelty |
 | Compare REVIEW_CAPTURED auto/system/primitives/predefined/envelope/legacy | Native-supported candidate/legacy routes only; report which is detectable/pleasant | Unsupported route reports fallback. Legacy is weak alpha.15 reference; Alpha.16 row with auto is the16 clear reference. Haptics Off suppresses all |
-| Newly captured evidence finishes settling | Standard H2 selectionSnap, subtler platform snap rather than alpha.16 custom full CLICK | Exactly at evidence lock endpoint, not Flag tap/entry/keyboard. Reopen saved Review is H0 |
+| Newly captured evidence finishes settling | Standard H2 selectionSnap, platform-selected snap rather than alpha.16 custom full CLICK; actual strength is device-controlled | Exactly at evidence lock endpoint, not Flag tap/entry/keyboard. Reopen saved Review is H0 |
 | Save on this phone succeeds | H3 / REVIEW_CAPTURED, one reserved short completion | Only after native durable local save, saved band's endpoint and hidden keyboard. No repeat on Expand/Done/reopen; early expansion still permits the one receipt cue |
 | Explicit successful source activation / zoom→Fit | Standard H2 meaningful selection/geometry snap | At visible orientation/Fit endpoint; failed/cancelled/no-op gets no success |
 | Invalid PDF page or explicit blocked/failed save/source action | H4 short distinct rejection, no long buzz | When error is visibly evident; passive/autosave/background changes stay silent |
@@ -195,3 +195,5 @@ Repeat main capture with gesture navigation in portrait/landscape, actual softwa
 App Touch feedback Off: every product/diagnostic probe silent; visuals remain. Restore System then disable Android touch feedback: same silence. Restore and enable reduced motion: valid semantic H2/H3 still occur once at immediate endpoints, not requiring an animation duration. H5 has no destructive product action here; diagnostic controls do not delete anything.
 
 Return version/code, settings, observed movement, any continuity/reading-position issue, and haptic ratings0 absent/1 weak/2 clear/3 excessive for each level/route; mark early/on-time/late relative to the specified visual endpoint. Separate MOTION approve/reject from HAPTIC approve/reject and compare to16 where actually measured. Native requested/accepted and emulator PASS do not certify sensation. **A4 is blocked until explicit S24 motion/haptic approval. Stop after published candidate.**
+
+Alpha.17 runtime gates:22 distinct checks passed on API36 and15 on API37; ledger records failed setups, cold-restoration precondition flake and corrected/warm reruns separately. Capture video/20fps entry/save sequences inspected. No S24 perceptual/tactile approval; A4 remains blocked.
