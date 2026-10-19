@@ -2,6 +2,7 @@ import { targetFor, type Target } from './organization';
 import { useThemeStyles } from './ui';
 import { Action } from './Action';
 import ContextSheet from './ContextSheet';
+import { counted, rowMetadata } from './browsePresentation';
 import React, {
   useEffect,
   useCallback,
@@ -33,10 +34,12 @@ export function ChoiceSheet({
   choices,
   close,
   onChoose,
+  description,
   searchable = choices.length > 8,
   animation: _animation,
 }: {
   title: string;
+  description?: string;
   choices: { value: string; label: string }[];
   close: () => void;
   onChoose: (value: string) => void;
@@ -47,6 +50,7 @@ export function ChoiceSheet({
   const [q, setQ] = useState('');
   return (
     <ContextSheet title={title} close={close}>
+      {description ? <Text style={styles.meta}>{description}</Text> : null}
       {searchable ? (
         <TextInput
           accessibilityLabel={'Search ' + title}
@@ -276,16 +280,6 @@ export default function BrowseScreen({
   };
   return (
     <View collapsable={false} style={styles.root}>
-      <Text accessibilityRole="header" style={styles.destinationHeading}>
-        {b.config.collection?.name ||
-          {
-            library: 'Library',
-            recent: 'Recent',
-            pinned: 'Pinned',
-            collections: 'Collections',
-            trash: 'Library',
-          }[b.config.destination]}
-      </Text>
       <View collapsable={false} style={styles.searchRow}>
         <TextInput
           ref={input}
@@ -347,18 +341,30 @@ export default function BrowseScreen({
         style={styles.list}
         ListHeaderComponent={
           <View style={styles.orientation}>
-            {state.downloaded ? (
+            <View style={styles.summary}>
               <Text style={styles.meta}>
-                Downloaded only · titles and saved note text · file text
-                unavailable offline
+                {b.loading
+                  ? 'Refreshing…'
+                  : counted(
+                      b.total,
+                      b.config.destination === 'collections'
+                        ? 'collection'
+                        : 'resource',
+                    )}
               </Text>
-            ) : null}
-            {state.note ? (
-              <Action
-                label={'Resume · ' + state.note.title}
-                onPress={() => onAction(() => model.returnToNote())}
-              />
-            ) : null}
+              {state.note ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={'Resume · ' + state.note.title}
+                  onPress={() => onAction(() => model.returnToNote())}
+                  style={styles.resume}
+                >
+                  <Text numberOfLines={1} style={styles.resumeText}>
+                    Resume · {state.note.title} ›
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
             {b.config.collection ? (
               <Action
                 label="‹ Library"
@@ -391,7 +397,9 @@ export default function BrowseScreen({
             ) : null}
             {b.config.mode === 'content' ? (
               <Text style={styles.meta}>
-                Saved content only · open drafts are excluded.{' '}
+                {state.downloaded
+                  ? 'Downloaded note text · file text unavailable offline.'
+                  : 'Saved content only · open drafts are excluded.'}{' '}
                 {b.coverage
                   ? `File coverage: ${b.coverage.indexed}/${b.coverage.files}${
                       b.coverage.complete ? '' : ' · incomplete'
@@ -415,15 +423,6 @@ export default function BrowseScreen({
                 />
               </View>
             ) : null}
-            <Text style={styles.meta}>
-              {b.loading
-                ? 'Refreshing…'
-                : `${b.total} ${
-                    b.config.destination === 'collections'
-                      ? 'collections'
-                      : 'resources'
-                  }`}
-            </Text>
           </View>
         }
         onLayout={e => {
@@ -470,6 +469,7 @@ export default function BrowseScreen({
             item.kind === 'collection'
               ? { label: 'Collection', icon: '▦', action: 'collection' }
               : presentation(item.resource!);
+          const metadata = rowMetadata(item, b.config.collection?.id);
           return (
             <View collapsable={false} style={styles.row}>
               {selected.size && item.kind === 'resource' ? (
@@ -489,6 +489,7 @@ export default function BrowseScreen({
                 style={styles.rowMain}
                 accessibilityRole="button"
                 accessibilityLabel={`${item.title}, ${p.label}`}
+                accessibilityValue={metadata ? { text: metadata } : undefined}
                 accessibilityHint={
                   onOrganize && item.kind === 'resource'
                     ? 'Long press to select resources'
@@ -524,14 +525,11 @@ export default function BrowseScreen({
                   <Text numberOfLines={2} style={styles.resourceTitle}>
                     {item.title}
                   </Text>
-                  <Text style={styles.meta}>
-                    {p.label}
-                    {item.kind === 'collection'
-                      ? ` · ${item.count} resources`
-                      : item.resource?.collections?.length
-                      ? ` · ${item.resource.collections.length} collections`
-                      : ''}
-                  </Text>
+                  {metadata ? (
+                    <Text numberOfLines={1} style={styles.meta}>
+                      {metadata}
+                    </Text>
+                  ) : null}
                   {item.snippet ? (
                     <Text numberOfLines={3} style={styles.snippet}>
                       {item.snippet.text}
@@ -572,6 +570,11 @@ export default function BrowseScreen({
       {sheet === 'options' ? (
         <ChoiceSheet
           title="Search options"
+          description={
+            state.downloaded
+              ? 'Title search covers downloaded resources. Saved content searches retained note text; file text is unavailable offline.'
+              : 'Saved content searches saved versions; open drafts are excluded.'
+          }
           searchable={false}
           close={() => setSheet(undefined)}
           choices={[
@@ -710,7 +713,22 @@ export default function BrowseScreen({
 }
 const sheetStyles = StyleSheet.create({
   list: { flex: 1 },
-  orientation: { gap: 4, paddingTop: 4, paddingBottom: 8 },
+  summary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    minHeight: 48,
+  },
+  resume: {
+    flexShrink: 1,
+    minHeight: 48,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingLeft: 8,
+  },
+  resumeText: { color: '#b3b3b3', fontSize: 12 },
+  orientation: { gap: 2, paddingBottom: 2 },
   focused: { borderWidth: 2, borderColor: '#8db7ff' },
   choiceList: { flexGrow: 0 },
   searchInput: { flex: 1 },
@@ -721,7 +739,7 @@ const sheetStyles = StyleSheet.create({
     paddingVertical: 8,
   },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  root: { flex: 1, paddingHorizontal: 16, gap: 10 },
+  root: { flex: 1, paddingHorizontal: 16, gap: 4 },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   title: {
     flexDirection: 'row',
@@ -762,18 +780,19 @@ const sheetStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderColor: '#202020',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: '#252525',
   },
   rowMain: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 12,
-    gap: 14,
+    alignItems: 'center',
+    minHeight: 56,
+    paddingVertical: 10,
+    gap: 10,
   },
-  icon: { fontSize: 24, color: '#8db7ff', width: 28 },
-  rowText: { flex: 1, gap: 4 },
+  icon: { fontSize: 21, color: '#8db7ff', width: 24 },
+  rowText: { flex: 1, gap: 2 },
   resourceTitle: { fontSize: 16, fontWeight: '500', color: '#e8e8e8' },
   snippet: { color: '#b3b3b3', fontSize: 13, lineHeight: 19 },
   empty: { paddingVertical: 28, gap: 12 },

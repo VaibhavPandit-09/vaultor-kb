@@ -1,9 +1,9 @@
 # Android shell and source navigation
 
-Reviewed 2026-10-19. Current prototype: **alpha.19/code23**, user-authorized Model D
+Reviewed 2026-10-19. Current prototype: **alpha.20/code24**, user-authorized Model D
 reader-first hybrid. [Navigation prototype](NAVIGATION-PROTOTYPE.md) owns its exact
 information architecture, geometric states, timing, accessibility, state preservation
-and physical-device script. [Alpha.19 ledger](releases/0.1.0-alpha.19.md) owns actual
+and physical-device script. [Alpha.20 ledger](releases/0.1.0-alpha.20.md) owns actual
 validation. A1 alpha.13 established the earlier drawer shell, superseded here; its
 historical evidence remains in its release ledger. No final Android design approval,
 public release, Prototype 2/3 or A4 synchronization.
@@ -11,7 +11,9 @@ public release, Prototype 2/3 or A4 synchronization.
 ## Source ownership and preserved behavior
 
 Home/Library/Review occupy the browsing folio. Sources is a distinct context action,
-not a fourth destination. The same folio contracts into the reading controls; there
+not a fourth destination. It sits beside the Home/Library heading, and in focused
+reader controls; global Review reaches Sources through Vaultor options and never
+shows active-source scope. The same folio contracts into the reading controls; there
 is no old drawer or shell topbar. Full workspace/availability labels remain accessible,
 with all source details available by opening Sources. Identity strings and names are
 display metadata, never routing keys. Download names match the full generation scope.

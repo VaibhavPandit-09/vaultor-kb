@@ -4,7 +4,6 @@ import { Action } from './BrowseScreen';
 import { presentation } from './browse';
 import { useThemeStyles } from './ui';
 import type { Note } from './bridge';
-import type { sourcePresentation } from './sourcePresentation';
 import type { QuickAccess, RootDestination } from './navigation';
 
 type Props = {
@@ -54,7 +53,6 @@ export function HomeScreen(
   props: Props & {
     returnToNote?: () => void;
     resume?: Note;
-    source: ReturnType<typeof sourcePresentation>;
   },
 ) {
   const s = useThemeStyles(sheet);
@@ -63,12 +61,6 @@ export function HomeScreen(
       contentContainerStyle={s.home}
       keyboardShouldPersistTaps="handled"
     >
-      <Text accessibilityRole="header" style={s.hero}>
-        Home
-      </Text>
-      <Text style={s.secondary}>
-        {props.source.workspace} · {props.source.availability}
-      </Text>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Search workspace"
@@ -88,9 +80,7 @@ export function HomeScreen(
           <Text numberOfLines={2} style={s.resumeTitle}>
             {props.resume?.title}
           </Text>
-          <Text style={s.meta}>
-            {props.source.workspace} · saved reading position ›
-          </Text>
+          <Text style={s.meta}>Saved reading position ›</Text>
         </Pressable>
       ) : null}
       {props.feed.error ? (
@@ -136,7 +126,7 @@ export function HomeScreen(
 }
 const sheet = StyleSheet.create({
   grow: { flex: 1 },
-  home: { padding: 16, gap: 10 },
+  home: { padding: 16, paddingTop: 4, gap: 10 },
   resume: {
     paddingVertical: 12,
     gap: 6,

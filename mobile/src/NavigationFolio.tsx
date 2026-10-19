@@ -7,20 +7,52 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePalette, useReading } from './ui';
 import { motionDuration, settleEasing } from './motion';
 import { navigationLayout } from './navigationPresentation';
+import SourceContext from './SourceContext';
 
 export type PrimaryDestination = 'home' | 'library' | 'review';
 const destinations = [
-  { id: 'home', label: 'Home', icon: '⌂' },
-  { id: 'library', label: 'Library', icon: '▤' },
-  { id: 'review', label: 'Review', icon: '◈' },
+  { id: 'home', label: 'Home' },
+  { id: 'library', label: 'Library' },
+  { id: 'review', label: 'Review' },
 ] as const;
 
-/** A single folio edge changes allocation as the reading object takes focus.
- * Bounded layout animation deliberately reclaims document space. No document
- * position, navigation commit or source activation depends on its completion. */
+/** Same line weight and box, independent of the system's symbol font. */
+function DestinationIcon({
+  kind,
+  color,
+}: {
+  kind: PrimaryDestination;
+  color: string;
+}) {
+  const stroke = { borderColor: color };
+  return (
+    <View style={s.icon} importantForAccessibility="no-hide-descendants">
+      {kind === 'home' ? (
+        <>
+          <View style={[s.house, stroke]} />
+          <View style={[s.roofLeft, { backgroundColor: color }]} />
+          <View style={[s.roofRight, { backgroundColor: color }]} />
+        </>
+      ) : kind === 'library' ? (
+        <>
+          <View style={[s.book, stroke]} />
+          <View style={[s.spine, { backgroundColor: color }]} />
+        </>
+      ) : (
+        <>
+          <View style={[s.review, stroke]} />
+          <View style={[s.line, { backgroundColor: color }]} />
+          <View style={[s.line, s.shortLine, { backgroundColor: color }]} />
+        </>
+      )}
+    </View>
+  );
+}
+
 export default function NavigationFolio({
   reading,
   current,
@@ -52,25 +84,31 @@ export default function NavigationFolio({
   disclosed: boolean;
   disclose(): void;
 }) {
-  const palette = usePalette(),
+  const p = usePalette(),
     { reduced, preferences } = useReading();
-  const { width, height, fontScale } = useWindowDimensions();
-  const { rail, stacked } = navigationLayout(width, height, fontScale);
+  const window = useWindowDimensions(),
+    insets = useSafeAreaInsets();
+  const width = window.width - insets.left - insets.right;
+  const { rail } = navigationLayout(
+    width,
+    window.height - insets.top - insets.bottom,
+    window.fontScale,
+  );
   const focused = reading && !disclosed;
-  const focus = useRef(new Animated.Value(reading ? 1 : 0)).current;
+  const focus = useRef(new Animated.Value(reading ? 2 : 0)).current;
   const selected = useRef(
     new Animated.Value(destinations.findIndex(d => d.id === current)),
   ).current;
   useEffect(() => {
     const animation = Animated.timing(focus, {
-      toValue: focused ? 1 : 0,
+      toValue: focused ? 2 : reading ? 1 : 0,
       duration: motionDuration('navigation', preferences.motion, reduced),
       easing: settleEasing,
       useNativeDriver: false,
     });
     animation.start();
     return () => animation.stop();
-  }, [focus, focused, preferences.motion, reduced]);
+  }, [focus, focused, reading, preferences.motion, reduced]);
   useEffect(() => {
     const animation = Animated.timing(selected, {
       toValue: destinations.findIndex(d => d.id === current),
@@ -80,51 +118,66 @@ export default function NavigationFolio({
     });
     animation.start();
     return () => animation.stop();
-  }, [current, selected, preferences.motion, reduced]);
+  }, [selected, current, preferences.motion, reduced]);
   const blend = (a: number, b: number) =>
-    focus.interpolate({ inputRange: [0, 1], outputRange: [a, b] });
-  const rowHeight = Math.max(58, 38 * fontScale + 16);
-  const tabsWidth = Math.min(width * 0.51, 228);
-  const tabs = (
+    focus.interpolate({ inputRange: [0, 1, 2], outputRange: [a, a, b] });
+  const browsingHeight = Math.max(58, 30 + 18 * window.fontScale);
+  const readingHeight = Math.max(52, 12 + 32 * window.fontScale);
+  const stripWidth = focus.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [width, width - 48, width - 48],
+  });
+  const tabClip = focus.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [width, width - 48, 0],
+  });
+  const foldSpace = focus.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [0, 48, 0],
+  });
+  const markerLeft = Animated.subtract(
+    Animated.multiply(
+      Animated.divide(stripWidth, 3),
+      Animated.add(selected, 0.5),
+    ),
+    14,
+  );
+  const railTabsHeight = browsingHeight * 3;
+  return (
     <Animated.View
-      pointerEvents={focused ? 'none' : 'auto'}
-      importantForAccessibility={focused ? 'no-hide-descendants' : 'auto'}
+      testID="navigation-folio"
       style={[
-        s.tabs,
+        s.folio,
+        { backgroundColor: p.surface, borderColor: p.divider },
         rail
           ? {
-              height: blend(190 * Math.max(1, fontScale), 0),
-              flexDirection: 'column',
+              width: blend(144, 128),
+              borderRightWidth: StyleSheet.hairlineWidth,
             }
-          : stacked
-          ? { height: blend(rowHeight, 0), width: '100%' }
-          : { width: blend(tabsWidth, 0), height: rowHeight },
+          : {
+              height: blend(browsingHeight, readingHeight),
+              flexDirection: 'row',
+              borderTopWidth: StyleSheet.hairlineWidth,
+            },
       ]}
     >
-      <View
+      <Animated.View
+        pointerEvents={focused ? 'none' : 'auto'}
+        importantForAccessibility={focused ? 'no-hide-descendants' : 'auto'}
         style={[
-          s.tabs,
-          rail
-            ? { height: 190 * Math.max(1, fontScale), flexDirection: 'column' }
-            : { width: stacked ? '100%' : tabsWidth, height: rowHeight },
+          s.clip,
+          rail ? { height: blend(railTabsHeight, 0) } : { width: tabClip },
         ]}
       >
-        {destinations.map(d => (
-          <Animated.View
-            key={d.id}
-            style={
-              rail
-                ? { flex: 1 }
-                : {
-                    width: selected.interpolate({
-                      inputRange: [0, 1, 2],
-                      outputRange: destinations.map(v =>
-                        v.id === d.id ? '46%' : '27%',
-                      ),
-                    }),
-                  }
-            }
-          >
+        <Animated.View
+          style={[
+            s.tabs,
+            rail
+              ? { height: railTabsHeight, flexDirection: 'column' }
+              : { width: stripWidth, height: browsingHeight },
+          ]}
+        >
+          {destinations.map(d => (
             <Pressable
               key={d.id}
               accessibilityRole="tab"
@@ -137,197 +190,218 @@ export default function NavigationFolio({
               onPress={() => select(d.id)}
               style={({ pressed }) => [
                 s.tab,
-                { backgroundColor: pressed ? palette.pressed : 'transparent' },
+                { backgroundColor: pressed ? p.pressed : 'transparent' },
               ]}
             >
-              <Text
-                importantForAccessibility="no"
-                style={{
-                  fontSize: 20,
-                  color: current === d.id ? palette.accent : palette.secondary,
-                }}
-              >
-                {d.icon}
-              </Text>
+              <DestinationIcon
+                kind={d.id}
+                color={current === d.id ? p.accent : p.secondary}
+              />
               <Text
                 numberOfLines={1}
-                style={{
-                  fontSize: 12,
-                  fontWeight: current === d.id ? '700' : '400',
-                  color: current === d.id ? palette.text : palette.secondary,
-                }}
+                style={[
+                  s.label,
+                  {
+                    color: current === d.id ? p.text : p.secondary,
+                    fontWeight: current === d.id ? '600' : '400',
+                  },
+                ]}
               >
                 {d.label}
               </Text>
-              {rail
-                ? current === d.id && (
-                    <View
-                      style={[s.railMark, { backgroundColor: palette.accent }]}
-                    />
-                  )
-                : null}
             </Pressable>
-          </Animated.View>
-        ))}
-        {!rail && (
+          ))}
           <Animated.View
             pointerEvents="none"
             style={[
-              s.mark,
-              {
-                backgroundColor: palette.accent,
-                left: selected.interpolate({
-                  inputRange: [0, 1, 2],
-                  outputRange: ['0%', '27%', '54%'],
-                }),
-              },
+              s.marker,
+              { backgroundColor: p.accent },
+              rail
+                ? {
+                    left: 0,
+                    width: 2,
+                    height: 24,
+                    top: selected.interpolate({
+                      inputRange: [0, 1, 2],
+                      outputRange: [
+                        browsingHeight / 2 - 12,
+                        browsingHeight * 1.5 - 12,
+                        browsingHeight * 2.5 - 12,
+                      ],
+                    }),
+                  }
+                : {
+                    width: 28,
+                    height: 2,
+                    bottom: 3,
+                    left: markerLeft,
+                  },
             ]}
           />
-        )}
-      </View>
-    </Animated.View>
-  );
-  const controls = (
-    <View
-      style={[s.controls, rail && s.railControls, { minHeight: rowHeight }]}
-    >
+        </Animated.View>
+      </Animated.View>
       <Animated.View
-        style={{
-          overflow: 'hidden',
-          width: blend(0, 48),
-          height: rail ? blend(0, rowHeight) : undefined,
-        }}
         pointerEvents={focused ? 'auto' : 'none'}
         importantForAccessibility={focused ? 'auto' : 'no-hide-descendants'}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          onPress={back}
-          style={[s.button, { minHeight: rowHeight }]}
-        >
-          <Text style={{ color: palette.text, fontSize: 28 }}>‹</Text>
-        </Pressable>
-      </Animated.View>
-      <Animated.View
         style={[
-          s.context,
-          rail && { flex: 0, width: '100%' },
-          {
-            transform: [
-              {
-                translateX: landing.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [24, 0],
-                }),
-              },
-            ],
-          },
+          s.clip,
+          rail
+            ? { height: blend(0, readingHeight * 3 + 72) }
+            : { width: blend(0, width) },
         ]}
       >
-        <Pressable
-          ref={sourceRef}
-          collapsable={false}
-          disabled={disabled}
-          accessibilityRole="button"
-          accessibilityLabel={`${
-            reading ? title + '. ' : ''
-          }${workspace}. ${availability}. Choose source`}
-          accessibilityHint="Opens Sources without changing the current workspace"
-          onPress={sources}
-          style={({ pressed }) => [
-            s.source,
-            {
-              minHeight: rowHeight,
-              backgroundColor: pressed ? palette.pressed : 'transparent',
-            },
+        <View
+          style={[
+            s.reader,
+            rail
+              ? {
+                  width: 128,
+                  height: readingHeight * 3 + 72,
+                  alignItems: 'stretch',
+                }
+              : {
+                  width,
+                  height: readingHeight,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                },
           ]}
         >
-          <Text
-            numberOfLines={1}
-            style={{ fontSize: 13, fontWeight: '600', color: palette.text }}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            onPress={back}
+            style={s.button}
           >
-            {focused ? title : 'Sources ⌃'}
-          </Text>
-          <Text
-            numberOfLines={1}
-            style={{ fontSize: 11, color: palette.secondary }}
+            <Text style={[s.back, { color: p.text }]}>‹</Text>
+          </Pressable>
+          <SourceContext
+            title={title}
+            workspace={workspace}
+            availability={availability}
+            disabled={disabled}
+            open={sources}
+            sourceRef={reading ? sourceRef : undefined}
+            landing={landing}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Browse navigation"
+            accessibilityState={{ expanded: false }}
+            onPress={disclose}
+            style={s.button}
           >
-            {workspace}
-          </Text>
-          <Text
-            numberOfLines={1}
-            style={{ fontSize: 10, color: palette.muted }}
+            <Text style={[s.disclosure, { color: p.secondary }]}>⌃</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Reading options"
+            onPress={more}
+            style={s.button}
           >
-            {availability}
-          </Text>
-        </Pressable>
+            <Text style={[s.more, { color: p.secondary }]}>•••</Text>
+          </Pressable>
+        </View>
       </Animated.View>
       {reading && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={focused ? 'Browse navigation' : 'Focus reading'}
-          accessibilityState={{ expanded: !focused }}
-          onPress={disclose}
-          style={[s.button, { minHeight: rowHeight }]}
+        <Animated.View
+          pointerEvents={focused ? 'none' : 'auto'}
+          importantForAccessibility={focused ? 'no-hide-descendants' : 'auto'}
+          style={[s.clip, rail ? { height: foldSpace } : { width: foldSpace }]}
         >
-          <Text style={{ color: palette.accent, fontSize: 22 }}>
-            {focused ? '⌃' : '⌄'}
-          </Text>
-        </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Focus reading"
+            accessibilityState={{ expanded: true }}
+            onPress={disclose}
+            style={[s.button, { height: browsingHeight }]}
+          >
+            <Text
+              style={[
+                s.disclosure,
+                { color: p.secondary, opacity: disclosed ? 1 : 0 },
+              ]}
+            >
+              ⌄
+            </Text>
+          </Pressable>
+        </Animated.View>
       )}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={reading ? 'Reading options' : 'Vaultor options'}
-        onPress={more}
-        style={[s.button, { minHeight: rowHeight }]}
-      >
-        <Text style={{ color: palette.text, fontSize: 19 }}>•••</Text>
-      </Pressable>
-    </View>
-  );
-  return (
-    <Animated.View
-      testID="navigation-folio"
-      style={[
-        s.folio,
-        { backgroundColor: palette.surface, borderColor: palette.divider },
-        rail
-          ? {
-              width: blend(184, 144),
-              borderRightWidth: StyleSheet.hairlineWidth,
-              flexDirection: 'column',
-            }
-          : {
-              height: blend(
-                (stacked ? rowHeight * 2 : rowHeight) + 8,
-                rowHeight,
-              ),
-              borderTopWidth: StyleSheet.hairlineWidth,
-              flexDirection: stacked ? 'column' : 'row',
-            },
-      ]}
-    >
-      {tabs}
-      {controls}
     </Animated.View>
   );
 }
 const s = StyleSheet.create({
-  folio: { overflow: 'hidden', alignItems: 'stretch' },
-  tabs: { overflow: 'hidden', flexDirection: 'row', position: 'relative' },
+  folio: { overflow: 'hidden' },
+  clip: { overflow: 'hidden' },
+  tabs: { flexDirection: 'row' },
   tab: {
     flex: 1,
     minHeight: 48,
+    minWidth: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
+    gap: 3,
+    paddingVertical: 5,
   },
-  mark: { position: 'absolute', bottom: 0, width: '46%', height: 2 },
-  railMark: { position: 'absolute', left: 0, top: 12, bottom: 12, width: 3 },
-  controls: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  railControls: { flex: 0, flexDirection: 'column', alignItems: 'stretch' },
-  context: { flex: 1, minWidth: 0 },
-  source: { justifyContent: 'center', paddingHorizontal: 10, gap: 3 },
-  button: { width: 48, alignItems: 'center', justifyContent: 'center' },
+  label: { fontSize: 12 },
+  marker: { position: 'absolute', borderRadius: 1 },
+  reader: { minHeight: 52 },
+  button: {
+    width: 48,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  back: { fontSize: 28 },
+  disclosure: { fontSize: 21 },
+  more: { fontSize: 18 },
+  icon: { width: 22, height: 22 },
+  house: {
+    position: 'absolute',
+    left: 5,
+    top: 10,
+    width: 12,
+    height: 10,
+    borderWidth: 1.7,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 1,
+    borderBottomRightRadius: 1,
+  },
+  roofLeft: {
+    position: 'absolute',
+    left: 2,
+    top: 7,
+    width: 11,
+    height: 1.7,
+    transform: [{ rotate: '-42deg' }],
+  },
+  roofRight: {
+    position: 'absolute',
+    right: 2,
+    top: 7,
+    width: 11,
+    height: 1.7,
+    transform: [{ rotate: '42deg' }],
+  },
+  book: {
+    position: 'absolute',
+    left: 3,
+    top: 3,
+    width: 16,
+    height: 17,
+    borderWidth: 1.7,
+    borderRadius: 2,
+  },
+  spine: { position: 'absolute', left: 7, top: 4, width: 1.7, height: 15 },
+  review: {
+    position: 'absolute',
+    left: 3,
+    top: 3,
+    width: 16,
+    height: 17,
+    borderWidth: 1.7,
+    borderRadius: 3,
+  },
+  line: { position: 'absolute', left: 7, top: 8, width: 8, height: 1.7 },
+  shortLine: { top: 13, width: 5 },
 });

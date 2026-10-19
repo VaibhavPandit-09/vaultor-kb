@@ -65,19 +65,18 @@ class NavigationExperienceTest {
     js(retained,"window.__prototypeIdentity='retained';window.scrollTo(0,300);true")
     Thread.sleep(300)
     val scroll=js(retained,"window.scrollY")
-    val focused=d.findObject(By.descContains("Choose source")).visibleBounds.width()
+    val browseToggle=d.findObject(By.desc("Browse navigation")).visibleCenter
     frame("reader")
     tap("Browse navigation")
-    val expanded=d.findObject(By.descContains("Choose source")).visibleBounds.width()
-    assertTrue("Context must physically expand in reading: $focused / $expanded",focused>expanded)
+    assertFalse("Disclosed navigation must not duplicate source context",d.hasObject(By.descContains("Choose source")))
     frame("disclosed")
-    // Reverse an in-flight transition, then settle without replacing the reader.
-    val toggle=d.findObject(By.desc("Focus reading")).visibleCenter
-    // Reuse screen geometry: accessibility lookup would wait for UI idle and
-    // accidentally turn the second touch into a completed-transition test.
-    d.click(toggle.x,toggle.y); Thread.sleep(60)
-    d.click(toggle.x,toggle.y); Thread.sleep(450)
-    assertTrue(d.hasObject(By.desc("Focus reading")))
+    // Reverse disclosure through the central Back owner before animation settles.
+    // Accessibility lookup would wait for UI idle, so reuse the settled geometry.
+    d.pressBack(); Thread.sleep(450)
+    d.click(browseToggle.x,browseToggle.y); Thread.sleep(60)
+    d.pressBack(); Thread.sleep(450)
+    assertTrue(d.hasObject(By.desc("Browse navigation")))
+    tap("Browse navigation")
     assertSame(retained,web())
     d.pressBack(); Thread.sleep(450)
     assertTrue("Back first contracts disclosed navigation",d.hasObject(By.desc("Browse navigation")))
@@ -87,6 +86,7 @@ class NavigationExperienceTest {
     tap("Review")
     assertTrue(d.wait(Until.hasObject(By.text("Protected on this phone · all sources")),5000))
     assertSame(retained,web()); frame("review")
+    assertFalse("Device-wide Review must not present active-source scope",d.hasObject(By.descContains("Choose source")))
     val after=JSONObject(call("bootstrap"))
     assertEquals(source.getString("selected"),after.getString("selected"))
     assertEquals(source.getString("epoch"),after.getString("epoch"))
@@ -135,6 +135,36 @@ class NavigationExperienceTest {
     assertNotSame("Source confirmation must survive the sheet's window release",previous,report)
     assertEquals("selection",report.optString("event"))
   }
+  @Test fun libraryThemesAndGestureBack() {
+    i.targetContext.startActivity(i.targetContext.packageManager.getLaunchIntentForPackage("com.vaultor.app")!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    assertTrue(d.wait(Until.hasObject(By.descContains("Choose source")),30000))
+    if(d.hasObject(By.desc("Browse navigation"))) tap("Browse navigation")
+    tap("Home")
+    for(theme in listOf("Light","Dark","OLED")) {
+      tap("Vaultor options"); tap("Appearance & reading"); tap(theme); tap("Done")
+      tap("Library")
+      val input=d.wait(Until.findObject(By.desc("Search resources")),10000)
+      input.text=""; Thread.sleep(700)
+      if(d.hasObject(By.pkg("com.google.android.inputmethod.latin"))) d.pressBack()
+      frame("library-${theme.lowercase()}")
+      assertFalse("Old repetitive count must be absent",d.hasObject(By.textContains("1 collections")))
+      assertTrue(d.hasObject(By.descContains("Choose source")))
+      tap("Filters")
+      assertTrue(d.wait(Until.hasObject(By.textContains("offline")),5000))
+      d.pressBack(); Thread.sleep(400)
+      tap("Home")
+    }
+    tap("Resume reading R2 Rich reading")
+    assertTrue(d.wait(Until.hasObject(By.desc("Browse navigation")),10000))
+    val retained=web()
+    // Genuine edge gesture: opening Sources then Back must return to the reader.
+    d.findObject(By.descContains("Choose source")).click()
+    assertTrue(d.wait(Until.hasObject(By.text("Sources")),5000))
+    d.swipe(1,d.displayHeight/2,d.displayWidth/2,d.displayHeight/2,24)
+    assertTrue("Gesture Back must close Sources",d.wait(Until.gone(By.text("Sources")),5000))
+    assertSame(retained,web())
+    frame("gesture-return")
+  }
   @Test fun adaptiveAndReducedEndpoints() {
     val oldFont=d.executeShellCommand("settings get system font_scale").trim()
     val oldMotion=d.executeShellCommand("settings get global transition_animation_scale").trim()
@@ -154,21 +184,26 @@ class NavigationExperienceTest {
       val narrowHome=d.findObject(By.desc("Home")).visibleBounds
       val narrowReview=d.findObject(By.desc("Review")).visibleBounds
       val narrowSource=d.findObject(By.descContains("Choose source")).visibleBounds
-      assertTrue("Narrow window must stack without undersized targets",narrowSource.top>=narrowHome.bottom && narrowReview.width()>=126 && narrowReview.height()>=126)
+      assertTrue("Three narrow destinations must share one row with usable targets",narrowSource.bottom<narrowHome.top && narrowReview.width()>=126 && narrowReview.height()>=126 && narrowReview.top==narrowHome.top)
       frame("narrow")
       d.executeShellCommand("wm size 2400x1800"); d.executeShellCommand("wm density 240")
       Thread.sleep(1800); launch()
       val home=d.findObject(By.desc("Home")).visibleBounds
       val source=d.findObject(By.descContains("Choose source")).visibleBounds
-      assertTrue("Wide layout must be a left rail",home.right<400 && source.left<400 && source.top>home.bottom)
+      assertTrue("Wide layout must be a left rail",home.right<400 && source.left>home.right)
       frame("wide")
+      d.executeShellCommand("wm size 1800x840"); d.executeShellCommand("wm density 420")
+      Thread.sleep(1800); launch()
+      val landscape=d.findObject(By.desc("Home")).visibleBounds
+      assertTrue("Short phone landscape retains bottom navigation",landscape.top>d.displayHeight/2)
+      frame("landscape")
       d.executeShellCommand("wm size reset"); d.executeShellCommand("wm density reset")
       d.executeShellCommand("settings put system font_scale 2.0")
       Thread.sleep(1800); launch()
       val largeHome=d.findObject(By.desc("Home")).visibleBounds
       val largeSource=d.findObject(By.descContains("Choose source")).visibleBounds
       frame("large-text")
-      assertTrue("Large-text compact navigation must stack: $largeSource / $largeHome",largeSource.top>=largeHome.bottom)
+      assertTrue("Large-text source must remain above three destinations: $largeSource / $largeHome",largeSource.bottom<largeHome.top)
       d.executeShellCommand("settings put global transition_animation_scale 0")
       Thread.sleep(500)
       tap("Resume reading R2 Rich reading")

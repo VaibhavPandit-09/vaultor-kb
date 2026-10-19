@@ -4,11 +4,13 @@ Reviewed2026-10-19. Alpha.14/code18 was the A2 reader baseline. The user's S24 r
 
 ## Reading edge and orientation
 
-Alpha.19 Prototype 1 replaces the earlier scroll-compressing topbar with a single
-browsing/reader navigation folio. Destination slots retract and the same source/context
-action expands into reading controls; no duplicate topbar remains. Offline identity
-stays available rather than hiding with scroll. [Navigation prototype](NAVIGATION-PROTOTYPE.md)
-owns current edge geometry, reversibility, large-text/rail adaptation and acceptance.
+Alpha.20 refines Prototype 1’s single browsing/reader navigation folio. Three
+balanced destination slots retract as reader controls take the released width;
+no duplicate topbar remains. Source identity lives beside the browsing heading
+and in focused reader context, with full Sources inspection from either action.
+Offline identity stays available rather than hiding with scroll.
+[Navigation prototype](NAVIGATION-PROTOTYPE.md) owns current edge geometry,
+reversibility, text scaling, rail adaptation and acceptance.
 Reader content/anchor, Find, media and native admission below retain their contracts.
 No Prototype 2 Library-to-document transformation has been implemented.
 

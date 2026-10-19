@@ -1,8 +1,8 @@
 Current published development acceptance candidate: **0.1.0-alpha.16 / versionCode20**, original signer/package. **A0–A3 were rejected on the real S24 Ultra; A4 is blocked until explicit approval.** [Motion/haptic audit and exact device script](MOTION-HAPTIC-REMEDIATION.md), [candidate ledger](releases/0.1.0-alpha.16.md). Build-release.ps1 -Diagnostics alone enables the native-gated developer panel; ordinary builds default it off. Install the development APK over the existing app without clearing data. [Published Android-only prerelease](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.16) at2026-10-16T12:00:42Z from immutable 9197816856d823b4f1efd35098e6d2985ced295c; installed, staged and anonymous public APK bytes match. See the ledger for evidence.
 
-Current local development candidate: **alpha.19/code23**, Prototype 1 reader-first
+Current local development candidate: **alpha.20/code24**, Prototype 1 reader-first
 navigation, on `ai/codex-android-ux-prototypes`. [Prototype specification and S24 steps](NAVIGATION-PROTOTYPE.md)
-and [validation ledger](releases/0.1.0-alpha.19.md) own the current shell. Home/Library/Review
+and [validation ledger](releases/0.1.0-alpha.20.md) own the current shell. Home/Library/Review
 and distinct Sources replace the historical drawer/topbar described in older release
 sections below. No public release or subjective design approval. Existing min36/target37,
 React Native/native architecture, signer and domain contracts remain. Stop before

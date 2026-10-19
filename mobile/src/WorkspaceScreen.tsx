@@ -31,11 +31,15 @@ import {
   findNodeHandle,
   useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { MobileWorkspace, HostError, type Host } from './workspace';
 import { QuickAccess, type RootDestination } from './navigation';
 import { HomeScreen } from './NavigationSurface';
 import NavigationFolio from './NavigationFolio';
+import SourceContext from './SourceContext';
 import ReviewDestination from './ReviewDestination';
 import { BrowseMemory, navigationLayout } from './navigationPresentation';
 import BrowseScreen, { Action, ChoiceSheet } from './BrowseScreen';
@@ -193,7 +197,12 @@ export default function WorkspaceScreen() {
   const browseMemory = useRef(new BrowseMemory()).current;
   const sourceOrientation = useRef<React.ElementRef<typeof View>>(null);
   const { width, height, fontScale } = useWindowDimensions();
-  const { rail } = navigationLayout(width, height, fontScale);
+  const insets = useSafeAreaInsets();
+  const { rail } = navigationLayout(
+    width - insets.left - insets.right,
+    height - insets.top - insets.bottom,
+    fontScale,
+  );
   const reading = state.view === 'note' && !!state.note && !reviewing;
   useEffect(() => setNavigationDisclosed(false), [reading]);
   const source = sourcePresentation(state);
@@ -309,6 +318,7 @@ export default function WorkspaceScreen() {
   const run = (f: () => Promise<void>) => void model.perform(f);
   const closeUtilities = () => setUtilities(false);
   const openSources = () => {
+    setNavigationDisclosed(false);
     if (!state.host) setReviewing(false);
     setSourceClosing(false);
     setHosts(true);
@@ -548,6 +558,20 @@ export default function WorkspaceScreen() {
       .catch((e: Error) => setRecoveryError(e.message));
   };
   const hostView = !state.host && !recovery;
+  const heading = reviewing
+    ? 'Review'
+    : hostView
+    ? 'Sources'
+    : state.view === 'home'
+    ? 'Home'
+    : state.browse.collection?.name ||
+      {
+        library: 'Library',
+        recent: 'Recent',
+        pinned: 'Pinned',
+        collections: 'Collections',
+        trash: 'Library',
+      }[state.browse.destination];
   const sourceContent = (
     <ScrollView
       key="connections"
@@ -791,6 +815,35 @@ export default function WorkspaceScreen() {
     <SafeAreaView style={s.root} edges={['top', 'bottom', 'left', 'right']}>
       <View style={[s.shell, rail && s.wideShell]}>
         <View style={s.content}>
+          {!reading ? (
+            <View style={s.screenHeading}>
+              <Text
+                accessibilityRole="header"
+                numberOfLines={1}
+                style={[
+                  s.screenTitle,
+                  (reviewing || hostView) && s.headingGrow,
+                ]}
+              >
+                {heading}
+              </Text>
+              {!reviewing && !hostView ? (
+                <SourceContext
+                  workspace={source.workspace}
+                  availability={source.availability}
+                  disabled={!initialized || state.busy}
+                  open={openSources}
+                  sourceRef={sourceOrientation}
+                  landing={sourceLanding}
+                />
+              ) : null}
+              <Action
+                label="•••"
+                accessibilityLabel="Vaultor options"
+                onPress={() => setUtilities(true)}
+              />
+            </View>
+          ) : null}
           {state.offlineWarning ? (
             <Text accessibilityRole="alert" style={s.error}>
               {state.offlineWarning}
@@ -846,7 +899,6 @@ export default function WorkspaceScreen() {
             >
               {state.view === 'home' ? (
                 <HomeScreen
-                  source={source}
                   resume={state.note}
                   feed={feed}
                   select={select}
@@ -1194,6 +1246,21 @@ const styles = StyleSheet.create({
   shell: { flex: 1, flexDirection: 'column' },
   wideShell: { flexDirection: 'row-reverse' },
   content: { flex: 1 },
+  screenHeading: {
+    minHeight: 56,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#e8e8e8',
+    flexShrink: 1,
+    maxWidth: '42%',
+  },
+  headingGrow: { flex: 1, maxWidth: '100%' },
   overlayHost: {
     position: 'absolute',
     top: 0,

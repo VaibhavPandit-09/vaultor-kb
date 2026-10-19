@@ -34,8 +34,6 @@ export function navigationLayout(
 ) {
   return {
     rail: width >= 840 && height >= 480 && width / fontScale >= 720,
-    // Preserve real hit space for destinations, source, disclosure and More.
-    stacked: width < 360 || width / fontScale < 300,
   };
 }
 

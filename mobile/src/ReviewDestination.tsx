@@ -52,9 +52,6 @@ export default function ReviewDestination({
       contentContainerStyle={s.page}
       ListHeaderComponent={
         <View style={s.intro}>
-          <Text accessibilityRole="header" style={s.title}>
-            Review
-          </Text>
           <Text style={s.secondary}>Protected on this phone · all sources</Text>
           <Text style={s.secondary}>
             Drafts and queued captures stay here even when their source is
@@ -121,7 +118,7 @@ export default function ReviewDestination({
   );
 }
 const styles = StyleSheet.create({
-  page: { padding: 20, paddingBottom: 28 },
+  page: { padding: 20, paddingTop: 4, paddingBottom: 28 },
   intro: { gap: 8, paddingBottom: 12 },
   title: { fontSize: 28, fontWeight: '600', color: '#e8e8e8' },
   name: { fontSize: 16, fontWeight: '600', color: '#e8e8e8' },

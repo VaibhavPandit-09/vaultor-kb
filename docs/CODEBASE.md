@@ -86,8 +86,8 @@ Authorized by “continue next” after alpha.14, Android alpha.15/code19 adds c
 
 The user rejected alpha.15 interaction work on the S24 Ultra: haptics and structural movement were not perceptible. Alpha.17/code21 refines the explicitly development-only acceptance candidate; alpha.16 remains its immutable comparison baseline. VaultorHaptics reports actual suppression/capability/request results, distinct platform semantics and selectable clear/platform/expressive rich profiles. Build-time native diagnostics default off and reject ordinary builds. Context surfaces start after native show/measurement; capture stays in one window with separate evidence lock and durable receipt geometry keyframes. Reader header now reclaims viewport space; Find reveals its edge; source confirmation waits for activity focus/settle. Theme snapshots scale within32MiB for QHD dual windows. MOTION-HAPTIC-REMEDIATION.md owns the complete shipped inventory, revised candidate and exact device script. Local protected draft/queue/source/original contracts remain unchanged. Runtime checks are not tactile/visual approval. A4 must not start without explicit S24 approval.
 
-Android prototype continuation: alpha.19/code23 is the local Prototype 1
-acceptance candidate on ai/codex-android-ux-prototypes, based exactly on immutable
+Android prototype continuation: alpha.20/code24 is the local Prototype 1
+refinement candidate on ai/codex-android-ux-prototypes, based exactly on immutable
 alpha.17 through alpha.18. [Navigation prototype](android/NAVIGATION-PROTOTYPE.md)
 owns Home/Library/device-wide source-grouped Review, the distinct Sources context
 action, one contracting browsing/reader folio and window-width rail adaptation.
@@ -100,7 +100,13 @@ native source admission, journal identity, transport and sync contracts are unch
 memory-only and sanitized. The user reports perceptible alpha.18 S24 haptics;
 no Samsung JSON establishes H2/H3 individually. Existing effects/admission/policy
 remain unchanged, with targeted trace follow-up optional and navigation unblocked.
-No public release or subjective UI approval; Prototype 2/3 and A4 remain unauthorized.
+The user provisionally approved alpha.19’s navigation concept but rejected its visual
+execution. Alpha.20 refines three equal destination slots and traveling selection
+mark, moves Sources beside Home/Library headings and into focused reader context,
+and removes active-source scope from global Review. Library shares count/Resume
+and uses concise named membership metadata. Existing virtualized browsing/state and
+protected journal semantics remain unchanged. No public release or subjective visual
+approval; Prototype 2/3 and A4 remain unauthorized.
 
 ## Repository and source map
 
@@ -416,6 +422,19 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 - Build reports a large JS chunk and an outdated Browserslist dataset; these do not prevent packaging. Chunk splitting remains performance work.
 
 ## Change checklist and maintenance history
+
+### 2026-10-19 — Prototype 1 refinement after S24 feedback
+
+Alpha.20/code24 refines the provisionally approved navigation concept: three equal
+Home/Library/Review targets, contextual heading/reader Sources, no global Review
+active-source scope, compact Library count/Resume and meaningful membership metadata.
+No domain, persistence, security, effect, sync or framework change. TypeScript,
+eleven focused Jest cases and original-signer release/test compilation pass; scoped
+ESLint has zero errors. Four focused native cases pass on each API36/API37 emulator;
+recorded motion, themes, font scaling, gestures and inset/compact/rail endpoints were
+inspected. Pulled installed APKs match staged bytes. Actual failures/corrections and artifact
+verification belong to the [alpha.20 ledger](android/releases/0.1.0-alpha.20.md).
+S24 visual execution remains unapproved; stop before Prototype 2/3 or A4.
 
 ### 2026-10-19 — Reader-first navigation Prototype 1
 

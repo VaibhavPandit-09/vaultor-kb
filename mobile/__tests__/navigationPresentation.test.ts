@@ -11,7 +11,10 @@ test('Library state survives utility destinations and remains isolated by full s
   const library = {
     ...defaultBrowse(),
     query: 'offline',
-    collection: { id: '00000000-0000-4000-8000-000000000001', name: 'Collection' },
+    collection: {
+      id: '00000000-0000-4000-8000-000000000001',
+      name: 'Collection',
+    },
     page: 2,
     scroll: 540,
   };
@@ -30,10 +33,9 @@ test('Library state survives utility destinations and remains isolated by full s
 test('adaptive navigation responds to available dimensions and font scaling', () => {
   expect(navigationLayout(412, 890, 1)).toEqual({
     rail: false,
-    stacked: false,
   });
-  expect(navigationLayout(412, 890, 2)).toEqual({ rail: false, stacked: true });
-  expect(navigationLayout(320, 640, 1).stacked).toBe(true);
+  expect(navigationLayout(412, 890, 2)).toEqual({ rail: false });
+  expect(navigationLayout(320, 640, 1).rail).toBe(false);
   expect(navigationLayout(900, 412, 1).rail).toBe(false);
   expect(navigationLayout(1000, 800, 1).rail).toBe(true);
   expect(navigationLayout(1000, 800, 1.5).rail).toBe(false);
