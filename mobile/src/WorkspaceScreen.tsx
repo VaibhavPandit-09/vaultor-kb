@@ -54,6 +54,9 @@ import ResourcePreview from './ResourcePreview';
 import ReaderView, { type ReaderPanel } from './ReaderView';
 import ReadingControls from './ReadingControls';
 import OfflineControls from './OfflineControls';
+import PendingImports from './PendingImports';
+import {useImportQueue} from './useImportQueue';
+import {importPending} from './imports';
 import { useReading, useThemeStyles } from './ui';
 import { motionDuration, settleEasing } from './motion';
 const native = NativeModules.VaultorNative;
@@ -76,6 +79,9 @@ export default function WorkspaceScreen() {
   const s = useThemeStyles(styles);
   const reviewSync = useReviewSync();
   const reconnectReviews = reviewSync.reconnect;
+  const imports=useImportQueue();
+  const [importsOpen,setImportsOpen]=useState(false);
+  useEffect(()=>{if(imports.incoming)setImportsOpen(true);},[imports.incoming]);
   const model = useRef(
     new MobileWorkspace({
       storage: (a, v = {}) => parse(native.storage(a, JSON.stringify(v))),
@@ -357,6 +363,7 @@ export default function WorkspaceScreen() {
     };
   }, []);
   const closeTransient = () => {
+    if(importsOpen){setImportsOpen(false);return true;}
     if (captureRequest) return true; // Native capture modal owns protected dismissal.
     if (downloads) {
       setDownloads(false);
@@ -551,13 +558,14 @@ export default function WorkspaceScreen() {
     reviewSync.refresh,
   ]);
   useEffect(() => {
-    if (initialized && state.connection === 'online') reconnectReviews();
+    if (initialized && state.connection === 'online') {reconnectReviews();void imports.sync();}
   }, [
     initialized,
     state.connection,
     state.host?.hostId,
     state.host?.epoch,
     reconnectReviews,
+    imports.sync,
   ]);
   const select = (destination: RootDestination, search = false) => {
     closeUtilities();
@@ -617,6 +625,7 @@ export default function WorkspaceScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View ref={sourceRoot} collapsable={false}>
+        {!state.host?<Action label={`Pending imports${imports.items.length?' · '+importPending(imports.items):''}`} onPress={()=>setImportsOpen(true)}/>:null}
         <Text style={s.section}>{source.workspace}</Text>
         <Text style={s.secondary}>{source.host}</Text>
         <Text style={s.secondary}>{source.availability}</Text>
@@ -973,6 +982,7 @@ export default function WorkspaceScreen() {
                   accessibilityLabel="Settings"
                   onPress={() => setUtilities(true)}
                 />
+                {state.view==='browse'&&!reviewing&&!hostView?<Action label="Import" onPress={()=>setImportsOpen(true)}/>:null}
               </View>
             }
             {state.offlineWarning ? (
@@ -1040,6 +1050,7 @@ export default function WorkspaceScreen() {
                 {state.view === 'home' ||
                 (state.view === 'note' && state.noteOrigin === 'home') ? (
                   <HomeScreen
+                    imports={{count:importPending(imports.items),open:()=>setImportsOpen(true)}}
                     resume={state.note}
                     feed={feed}
                     select={select}
@@ -1272,6 +1283,7 @@ export default function WorkspaceScreen() {
       {utilities ? (
         <ContextSheet title="Settings & tools" close={closeUtilities}>
           <ScrollView contentContainerStyle={s.page}>
+            <Action label="Pending imports" onPress={()=>{closeUtilities();setImportsOpen(true);}}/>
             {state.host ? (
               <>
                 <Action
@@ -1343,6 +1355,7 @@ export default function WorkspaceScreen() {
       {appearance ? (
         <ReadingControls close={() => setAppearance(false)} />
       ) : null}
+      {importsOpen?<PendingImports items={imports.items} error={imports.error} busy={imports.busy} model={model} label={source.workspace+' · '+source.host} close={()=>setImportsOpen(false)} chooseSource={()=>{setImportsOpen(false);openSources();}} refresh={imports.refresh} sync={imports.sync}/>:null}
       {downloads ? (
         <OfflineControls
           model={model}

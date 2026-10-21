@@ -4,7 +4,7 @@ type Request={id:string;deviceId:string;input:{filename:string;sha256:string;nam
 /** Host owner authorizes only the exact staged archive; devices never receive owner authority. */
 export default function CollectedZipApprovals(){
  const [rows,setRows]=useState<Request[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false);
- async function refresh(){try{setRows((await api.get<Request[]>('/owner/collected-zips',{backgroundDiagnostic:true})).data);setError('');}catch(e){setError((e as Error).message);}}
+ async function refresh(){try{const rows=(await api.get<Request[]>('/owner/collected-zips',{backgroundDiagnostic:true})).data;if(!Array.isArray(rows))throw Error('Host ZIP requests could not be read. Existing transfers remain available.');setRows(rows);setError('');}catch(e){setError((e as Error).message);}}
  useEffect(()=>{void refresh();},[]);
  async function act(id:string,action:string){setBusy(true);try{await api.post('/owner/collected-zips/'+id+'/'+action,undefined,{backgroundDiagnostic:true,timeout:120000});await refresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
  return <section aria-label="Collected workspace ZIP approvals" className="space-y-2"><div className="flex items-center justify-between gap-2"><h3 className="text-sm font-medium">Collected workspace ZIPs</h3><button className="library-button" disabled={busy} onClick={()=>void refresh()}>Refresh requests</button></div>

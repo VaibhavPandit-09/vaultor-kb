@@ -397,6 +397,8 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 
 ### 2026-10-22 — R7 host import foundation and private collection queue
 
+The separate native staging/delivery/Home utility implementation is now committed as an internal engineering slice, including cold/warm intents, bounded chunk encryption, original recovery and exact fingerprint validation. Native main/test compilation passes; two new queue Jest cases and four affected owner/transfer frontend tests pass. The41-case backend checkpoint exposed two archive-version expectations; affected ReviewTest15 passes after format5/future6 correction. Consolidated APK build remains blocked by Windows generated-object path length; moving R7 build work to a shorter isolated checkout is required. No installed acceptance or public release claimed.
+
 Implementation in progress: added bounded host conversion, transactionally generation-bound resource/receipt creation, retained original provenance and archive5 transfer support, explicit host-owner ZIP request/inspection/authorization, and separate Android encrypted staging/delivery with Home/Library access. R6 source/Review/download/read-only contracts remain. Host/frontend compilation, nine new focused host cases, Android TypeScript and104existing Jest tests pass; native compile found/corrected three new Kotlin errors, with revised/native/runtime/upgrade/release gates still pending. See android/IMPORTS.md for limitations and ongoing validation. No artifact/publication/master merge or physical acceptance claimed.
 
 ### 2026-10-22 — One-time R7–R10 roadmap reconciliation

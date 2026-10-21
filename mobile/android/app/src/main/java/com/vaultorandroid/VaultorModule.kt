@@ -94,6 +94,68 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   },{a,id -> if(a.optBoolean("offline")){companionScope(a);companions.file(a.getString("scope"),id)}else null}) }
   @ReactMethod fun media(action:String,input:String,promise:Promise) {try {require(action in listOf("list","thumbnail","preview","share","open","copy","save")) {"Android reading cannot upload or alter placements. Export legacy recovery instead."};require(input.length<=12000);media.call(action,JSONObject(input),promise)}catch(_:Exception){promise.reject("MEDIA_INPUT","Invalid media request.")}}
   @ReactMethod fun cancelMedia() {media.cancel()}
+  private val imports by lazy {VaultorImports.get(ctx).also {store->store.changed={if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorImportsChanged","changed")}}}
+  private var importOutput:String?=null
+  private var importPicker=false
+  init {ctx.addActivityEventListener(object:BaseActivityEventListener(){
+    override fun onActivityResult(activity:android.app.Activity,requestCode:Int,resultCode:Int,data:android.content.Intent?){
+      if(requestCode==7407){importPicker=false;if(resultCode==android.app.Activity.RESULT_OK&&data!=null)imports.picker(data)}
+      if(requestCode==7408){val id=importOutput;importOutput=null;if(resultCode==android.app.Activity.RESULT_OK&&id!=null&&data?.data!=null){val uri=data.data!!;imports.worker.execute {try{require(uri.scheme=="content");val row=imports.item(id);imports.original(row){};ctx.contentResolver.openOutputStream(uri,"wt")?.use {out->imports.original(row){out.write(it)}} ?: error("Destination unavailable");imports.changed?.invoke()}catch(_:Exception){imports.changed?.invoke()}}}}
+    }
+  })}
+  @ReactMethod fun collectedImports(action:String,input:String,promise:Promise) {
+    try{imports}catch(_:Exception){promise.reject("IMPORT_STORAGE","Import storage cannot be unlocked. Existing bytes are retained; do not clear app data.");return}
+    if(action in listOf("pickFiles","pickPhotos","recover")) {ctx.runOnUiQueueThread {try{
+      require(!importPicker&&importOutput==null){"Finish the open picker first"};val activity=ctx.currentActivity ?: error("Open Vaultor first")
+      if(action=="recover"){val row=imports.item(JSONObject(input).getString("id"));imports.original(row){};importOutput=row.getString("id");activity.startActivityForResult(android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT).addCategory(android.content.Intent.CATEGORY_OPENABLE).setType(row.getString("mime")).putExtra(android.content.Intent.EXTRA_TITLE,row.getString("filename")),7408)}
+      else {importPicker=true;val intent=if(action=="pickPhotos")android.content.Intent(android.provider.MediaStore.ACTION_PICK_IMAGES).setType("image/*").putExtra(android.provider.MediaStore.EXTRA_PICK_IMAGES_MAX,8) else android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT).addCategory(android.content.Intent.CATEGORY_OPENABLE).setType("*/*").putExtra(android.content.Intent.EXTRA_ALLOW_MULTIPLE,true);activity.startActivityForResult(intent,7407)}
+      promise.resolve("{}")
+    }catch(e:Exception){importPicker=false;importOutput=null;promise.reject("IMPORT_PICKER",e.message ?: "No compatible picker available")}};return}
+    if(action=="sync") {imports.worker.execute {try{promise.resolve(importDelivery.sync(JSONObject(input).optBoolean("force")).toString())}catch(_:Exception){promise.reject("IMPORT_SYNC","Import delivery unavailable; originals retained")}};return}
+    run(promise){require(input.length<=12000);val a=JSONObject(input);when(action){
+      "list"->JSONArray(imports.rows()).toString()
+      "policy"->imports.policy().toString()
+      "policyPut"->imports.policy(a).toString()
+      "confirm"->{companionScope(a);val parts=JSONArray(a.getString("scope"));require(!companions.isLocked(a.getString("scope"))){"Original source is locked"};val source=JSONObject().put("hostId",parts.getString(0)).put("workspaceId",parts.getString(1)).put("generation",parts.getString(2)).put("label",a.optString("label").take(200));imports.confirm(a.getString("id"),source,a.getString("mode"),a.optString("collectionId").takeIf {it.isNotEmpty()&&it!="null"},a.optString("workspaceName"),a.optBoolean("metered")).toString()}
+      "retry"->imports.retry(a.getString("id"),a.optBoolean("metered")).toString()
+      "stop"->imports.stop(a.getString("id")).toString()
+      "remove"->imports.remove(a.getString("id")).toString()
+      else->error("Unsupported import action")
+    }}
+  }
+  private fun importProfile(source:JSONObject):JSONObject=synchronized(stateLock){val p=read().optJSONObject("profiles")?.optJSONObject(source.getString("hostId")) ?: throw VaultorImportDelivery.Refusal("APPROVAL_REQUIRED");JSONObject(p.toString()).put("selectedWorkspaceId",source.getString("workspaceId"))}
+  private fun importRequest(row:JSONObject,path:String,upload:Boolean=false):JSONObject {
+    require(path in listOf("/access/host","/workspace/identity","/capabilities","/companions/import-capabilities")||path.matches(Regex("/(?:resources/collected-imports|collected-zips)/[a-f0-9-]{36}")))
+    val source=row.getJSONObject("source");val profile=importProfile(source)
+    fun approval(){val current=importProfile(source);require(listOf("credential","fingerprint","address").all {current.optString(it)==profile.optString(it)}){"Original source approval changed"}}
+    approval()
+    if(android.os.Build.VERSION.SDK_INT>=37&&ctx.checkSelfPermission(android.Manifest.permission.ACCESS_LOCAL_NETWORK)!=android.content.pm.PackageManager.PERMISSION_GRANTED)throw VaultorImportDelivery.Refusal("APPROVAL_REQUIRED")
+    val cert=ca(profile);require(fingerprint(cert)==profile.getString("fingerprint"));val con=URI(address(profile.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection
+    con.sslSocketFactory=context(cert).socketFactory;con.connectTimeout=10000;con.readTimeout=30000;con.instanceFollowRedirects=false;con.requestMethod=if(upload)"PUT" else "GET"
+    con.setRequestProperty("Authorization","Bearer "+profile.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");con.setRequestProperty("X-Vaultor-Workspace",source.getString("workspaceId"))
+    try {
+      if(upload){val intent=row.getJSONObject("intent").toString();val boundary="vaultor-import-"+UUID.randomUUID();val filename=row.getString("filename");val mime=row.getString("mime")
+        val prefix=("--$boundary\r\nContent-Disposition: form-data; name=\"intent\"\r\n\r\n$intent\r\n--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"$filename\"\r\nContent-Type: $mime\r\n\r\n").toByteArray();val suffix="\r\n--$boundary--\r\n".toByteArray()
+        con.doOutput=true;con.setRequestProperty("Content-Type","multipart/form-data; boundary=$boundary");con.setFixedLengthStreamingMode(prefix.size+row.getLong("bytes")+suffix.size)
+        con.outputStream.use {out->out.write(prefix);imports.original(row){bytes->approval();if(imports.item(row.getString("id")).optString("state")=="stoppedUncertain")error("Attempts stopped; reconcile before removal");out.write(bytes)};out.write(suffix)}
+      }
+      val status=con.responseCode;require(status !in 300..399){"Host redirects refused"};val bytes=(if(status in 200..299)con.inputStream else con.errorStream)?.use {it.readNBytes(1500001)} ?: byteArrayOf();require(bytes.size<=1500000);approval()
+      if(status in listOf(401,403))try{companions.observe(source.getString("hostId"),source.getString("workspaceId"),revoked=true)}catch(_:Exception){}
+      return JSONObject().put("status",status).put("body",String(bytes,Charsets.UTF_8))
+    }finally{con.disconnect()}
+  }
+  private val importDelivery by lazy {VaultorImportDelivery(imports,object:VaultorImportDelivery.Port {
+    override fun admit(row:JSONObject){
+      val cm=ctx.getSystemService(android.net.ConnectivityManager::class.java)
+      if(cm.isActiveNetworkMetered&&!imports.policy().getBoolean("metered")&&!row.optBoolean("metered"))throw VaultorImportDelivery.Refusal("METERED_PAUSED",true)
+      fun get(path:String):JSONObject{val r=importRequest(row,path);if(r.getInt("status") !in 200..299)throw VaultorImportDelivery.Refusal(if(r.getInt("status") in listOf(401,403,404))"APPROVAL_REQUIRED" else "HOST_UNAVAILABLE",r.getInt("status")>=500);return JSONObject(r.getString("body"))}
+      val source=row.getJSONObject("source");val profile=importProfile(source);val host=get("/access/host");require(host.getString("hostId")==source.getString("hostId")&&host.getString("fingerprint")==profile.getString("fingerprint")){"Host identity changed"}
+      val identity=get("/workspace/identity");if(identity.getString("id")!=source.getString("workspaceId")||identity.getString("generation")!=source.getString("generation")){try{companions.observe(source.getString("hostId"),source.getString("workspaceId"),identity.getString("generation"))}catch(_:Exception){};throw VaultorImportDelivery.Refusal("IMPORT_GENERATION_CHANGED")}
+      val capabilities=get("/companions/import-capabilities");if(capabilities.optInt("version")!=1)throw VaultorImportDelivery.Refusal("IMPORT_FORMAT_UNSUPPORTED")
+      if(row.getLong("bytes")>capabilities.getLong("maxBytes"))throw VaultorImportDelivery.Refusal("IMPORT_LIMIT")
+    }
+    override fun request(row:JSONObject,path:String,upload:Boolean)=importRequest(row,path,upload)
+  })}
   /** Device presentation only. Does not acknowledge or export legacy recovery records. */
   @ReactMethod fun readerPreferences(action:String,input:String,promise:Promise)=run(promise) {
     val prefs=ctx.getSharedPreferences("reader-presentation-v1",android.content.Context.MODE_PRIVATE)

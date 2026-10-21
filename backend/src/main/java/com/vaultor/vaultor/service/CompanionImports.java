@@ -79,19 +79,13 @@ public class CompanionImports {
         String text;try{text=encoding.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes,skip,bytes.length-skip)).toString().replaceFirst("^\\uFEFF","").replace("\r\n","\n").replace('\r','\n');}catch(CharacterCodingException e){throw new AccessFailure(400,"IMPORT_ENCODING_UNSUPPORTED","Use UTF-8 or BOM-marked UTF-16, or import as an original file");}
         require(text.indexOf('\0')<0,400,"IMPORT_ENCODING_UNSUPPORTED","Binary text cannot become a note");
         if(mode.equals("markdown")){var converted=ImportMarkdown.parse(text);String content=json.writeValueAsString(Map.of("type","doc","content",converted.blocks()));require(content.getBytes(StandardCharsets.UTF_8).length<=1048576,413,"IMPORT_CONVERSION_LIMIT","Converted structured note exceeds 1 MiB; keep original instead");return new Converted(content,converted.warnings());}
-        List<Map<String,Object>> blocks=new ArrayList<>();List<String> warnings=new ArrayList<>();boolean markdown=false,fenced=false;StringBuilder code=new StringBuilder();
+        List<Map<String,Object>> blocks=new ArrayList<>();
         for(String line:text.split("\n",-1)){
             require(blocks.size()<10000,413,"IMPORT_CONVERSION_LIMIT","Converted note has too many blocks");
-            if(markdown&&line.startsWith("```")){if(fenced){blocks.add(Map.of("type","codeBlock","content",List.of(Map.of("type","text","text",code.toString()))));code.setLength(0);}fenced=!fenced;continue;}
-            if(fenced){if(!code.isEmpty())code.append('\n');code.append(line);continue;}
-            var heading=java.util.regex.Pattern.compile("^(#{1,6}) (.*)$").matcher(line);
-            Map<String,Object> block=new LinkedHashMap<>();block.put("type",markdown&&heading.matches()?"heading":"paragraph");String visible=line;
-            if("heading".equals(block.get("type"))){block.put("attrs",Map.of("level",heading.group(1).length()));visible=heading.group(2);}
-            if(!visible.isEmpty())block.put("content",List.of(Map.of("type","text","text",visible)));blocks.add(block);
+            Map<String,Object> block=new LinkedHashMap<>();block.put("type","paragraph");
+            if(!line.isEmpty())block.put("content",List.of(Map.of("type","text","text",line)));blocks.add(block);
         }
-        if(fenced){warnings.add("Unclosed code fence preserved as code");blocks.add(Map.of("type","codeBlock","content",code.isEmpty()?List.of():List.of(Map.of("type","text","text",code.toString()))));}
-        if(markdown)warnings.add("Headings and fenced code are formatted. Other Markdown, links and image references are retained as literal text; no external assets are fetched.");
-        String content=json.writeValueAsString(Map.of("type","doc","content",blocks));require(content.getBytes(StandardCharsets.UTF_8).length<=1048576,413,"IMPORT_CONVERSION_LIMIT","Converted structured note exceeds 1 MiB; keep original instead");return new Converted(content,List.copyOf(warnings));
+        String content=json.writeValueAsString(Map.of("type","doc","content",blocks));require(content.getBytes(StandardCharsets.UTF_8).length<=1048576,413,"IMPORT_CONVERSION_LIMIT","Converted structured note exceeds 1 MiB; keep original instead");return new Converted(content,List.of());
     }
     private record NamedFile(MultipartFile original,String name) implements MultipartFile {
         public String getName(){return "file";}public String getOriginalFilename(){return name;}public String getContentType(){return original.getContentType();}public boolean isEmpty(){return original.isEmpty();}public long getSize(){return original.getSize();}public byte[] getBytes()throws IOException{return original.getBytes();}public InputStream getInputStream()throws IOException{return original.getInputStream();}public void transferTo(File target)throws IOException{original.transferTo(target);}
