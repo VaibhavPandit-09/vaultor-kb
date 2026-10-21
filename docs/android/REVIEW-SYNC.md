@@ -1,6 +1,6 @@
 # Android Review delivery and desktop status
 
-Reviewed 2026-10-21. R6 A4 implementation on ai/codex-android-ux-prototypes.
+Reviewed 2026-10-21. R6 A4 implementation incorporated into integration/r6-android from ai/codex-android-ux-prototypes. [Integration verification](../plans/R6-INTEGRATION.md) owns fresh host/mobile results.
 [REVIEWS](../workspace/REVIEWS.md) owns the unchanged R5 domain/API contract;
 [Review capture](REVIEW-CAPTURE.md) owns evidence and protected local drafts.
 [Consolidated candidate](R6-COMPLETION.md) owns authorization and acceptance.

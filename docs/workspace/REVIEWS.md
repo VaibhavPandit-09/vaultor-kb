@@ -1,6 +1,6 @@
 # Resource review evidence and triage
 
-Reviewed2026-10-15. R5 shipped Windows0.12.0, capability **reviews:1**. API protocol3 stays compatible; workspace exports now use **archive4**, with import of1–3 retained. Android remains compatible; R6 A3 local capture is documented in [REVIEW-CAPTURE.md](../android/REVIEW-CAPTURE.md), with upload/status still A4. This topic owns review contracts; workspace-companion-plan.md owns execution/publication.
+Reviewed2026-10-21. R5 shipped Windows0.12.0, capability **reviews:1**. API protocol3 stays compatible; workspace exports now use **archive4**, with import of1–3 retained. Android remains compatible; R6 A3 local capture is documented in [REVIEW-CAPTURE.md](../android/REVIEW-CAPTURE.md), with native delivery and desktop status reconciliation in [REVIEW-SYNC.md](../android/REVIEW-SYNC.md). Host protocol3/reviews:1/archive4 contracts remain unchanged by R6 integration. This topic owns review contracts; workspace-companion-plan.md owns execution/publication.
 
 ## Domain and source identity
 

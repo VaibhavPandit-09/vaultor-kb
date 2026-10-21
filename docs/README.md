@@ -67,6 +67,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [R6 integration and verification](plans/R6-INTEGRATION.md): exact fetched branches, original R6 delta, conflict resolutions, fresh regression evidence and the stop before master.
+
 - [Android Review delivery/status](android/REVIEW-SYNC.md): A4 native ownership, exact-source retries, durable receipts and desktop triage.
 - [Android alpha.22 R6 milestone candidate](android/releases/0.1.0-alpha.22.md): one-step Review completion, automatic foreground delivery, A5 ledger and S24 script; local only.
 - [Android alpha.21 consolidated development candidate](android/releases/0.1.0-alpha.21.md): local APK identity, installed-byte verification and S24 gate; no public release.
@@ -127,6 +129,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Historical context — `history/`
 
+- [R6 implementation checkpoints](history/R6-IMPLEMENTATION-CHECKPOINTS.md): archived A0–A5 guide narrative and dated review gates, superseded by unified CODEBASE and integration evidence.
+
 - [Modernization tracker](history/modernization-plan.md): archived implementation checklist and validation.
 - [v2 specification](history/vaultor-v2-spec.md): former product intent; some claims differ from current implementation.
 - [v1 specification](history/vaultor-v1-spec.md): earlier model and delivery notes.
@@ -150,4 +154,4 @@ Keep CODEBASE and this index at the docs root for agent discovery. Put topic gui
 
 - [Android motion/haptic remediation](android/MOTION-HAPTIC-REMEDIATION.md) — shipped A0–A3 inventory, rejected S24 acceptance, candidate changes and real-device script; A4 blocked.
 
-- [Android alpha.17 hybrid/restraint acceptance ledger](android/releases/0.1.0-alpha.17.md) — current candidate evidence and alpha.16 comparison; A4 blocked.
+- [Android alpha.17 hybrid/restraint acceptance ledger](android/releases/0.1.0-alpha.17.md) — historical candidate evidence and alpha.16 comparison; later A4 continuation is recorded in R6 completion.

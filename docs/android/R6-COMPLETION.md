@@ -6,7 +6,11 @@ resource-origin reader motion; Batch2 implements the existing A4 queue/status
 contracts. One consolidated development acceptance APK is intended. No public
 release, R7, master integration, new UI framework or haptic-engine expansion.
 
-## Alpha.22 completion sprint (current)
+## Integration handoff (current)
+
+The completed candidate is incorporated into `integration/r6-android` from verified master. [Integration audit and verification](../plans/R6-INTEGRATION.md) owns fetched source identities, original-branch accounting, current checks and the proposed master merge. This is not a release or master merge. The dated implementation evidence below remains historical; physical acceptance is still user-owned.
+
+## Alpha.22 completion sprint
 
 [Alpha.22 ledger](releases/0.1.0-alpha.22.md) owns current verification, artifact and the single S24 acceptance script.
 
@@ -29,7 +33,7 @@ Prototype branch starts this work at c0731e05243ba526fc817d4d8254fe01fb0f4c7d.
 Fetched master fb053862df386c1fefe9d9db2a7924eb63979b22 is its ancestor.
 Original R6 tip6308fd6 has one absent documentation-only publication commit;
 its A0–A3 product implementation is present through immutable alpha.17/1586743.
-No later R6 functionality is omitted. No merge/cherry-pick/rebase is performed.
+No later R6 functionality is omitted at that implementation checkpoint. That audit performed no integration; the integration handoff above records the later merge and explicit publication-record cherry-pick.
 
 User authorization supersedes old stop-before-Prototype2/A4 gates. Technical
 verification continues across meaningful slices, with physical acceptance at the

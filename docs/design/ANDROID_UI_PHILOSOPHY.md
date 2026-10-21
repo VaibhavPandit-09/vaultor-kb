@@ -179,7 +179,7 @@ The confirmation UI itself must still communicate the consequence visually.
 
 ## 5. Rich haptics
 
-Rich/custom haptics reinforce a meaningful spatial or completed interaction; they must never compensate for weak motion. Start with one authored product pattern: REVIEW_CAPTURED, a short completion after durable local persistence and the visible saved/queued transformation. Evidence locking uses subtle standard H2. REVIEW_SYNCED_FOREGROUND is only a possible later pattern for explicitly awaited synchronization, not permission to implement A4. Do not create speculative patterns.
+Rich/custom haptics reinforce a meaningful spatial or completed interaction; they must never compensate for weak motion. Start with one authored product pattern: REVIEW_CAPTURED, a short completion after durable local persistence and the visible saved/queued transformation. Evidence locking uses subtle standard H2. REVIEW_SYNCED_FOREGROUND remains only a possible later pattern for explicitly awaited synchronization. Implemented R6 A4 automatic delivery/status stays H0; no new sync haptic is introduced. Do not create speculative patterns.
 
 Classify every caller:
 

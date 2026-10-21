@@ -169,11 +169,12 @@ R5 delivery: [Windows0.12.0](https://github.com/VaibhavPandit-09/vaultor-kb/rele
 
 ## R6 — Android offline review capture and synchronization
 
-Status: **A0–A4 implemented in consolidated alpha.21/code25; A5 S24 acceptance pending.**
+Status: **A0–A5 engineering implemented in alpha.22/code26 and incorporated into integration/r6-android; physical A5 acceptance pending.**
+[Integration verification](R6-INTEGRATION.md) owns source accounting, fresh checks and the stop before master/publication.
 The2026-10-21 continuation authorizes Batch1 usability/resource motion and A4 without
 intermediate prototype stops. [R6 Android phases](android-r6-plan.md) preserves the
 original phase scope; [completion ledger](../android/R6-COMPLETION.md) owns current
-checks and remaining hardware gates. No R7/master integration/publication authorized.
+checks and remaining hardware gates. R7, master merge and publication remain unauthorized.
 
 - Selection offers Flag for review; resource More offers Add review item. Capture comment, source resource/revision, original quote/context and optional validated locator. The reader remains immutable. Preview the target and allow local editing/removal before sending; editing an already synced comment requires an explicit conditional API, otherwise add a follow-up.
 - Persist before showing success; distinguish On this phone, Sending, Synced and Needs attention. Pending review inbox is usable offline across companions. Resource-level reviews cover notes/PDFs/images; no unsupported precision promises.

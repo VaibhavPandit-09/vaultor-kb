@@ -1,11 +1,11 @@
 # Vaultor for Android — current development
 
 Current consolidated candidate: **alpha.22/code26** on
-`ai/codex-android-ux-prototypes`. [R6 completion](R6-COMPLETION.md) owns Batch1
+`integration/r6-android`, integrated from `ai/codex-android-ux-prototypes`. [R6 completion](R6-COMPLETION.md) owns Batch1
 quick Sources/management, contextual Aa, resource-reader motion and A4 verification.
 [Alpha.22 ledger and S24 acceptance](releases/0.1.0-alpha.22.md) owns current completed checks and physical limits. [Review delivery/status](REVIEW-SYNC.md) owns the native queue contract. Existing
 min36/target37, application identity and signer remain. This candidate is local,
-not a public release. Stop for S24 acceptance after delivery; no R7/master merge.
+not a public release. [Integration verification](../plans/R6-INTEGRATION.md) owns fresh cross-platform evidence and the stop before master. Physical acceptance remains user-owned; no R7 or publication.
 Alpha.18 ordinary haptics are perceptible per user feedback; no broad remediation.
 
 ## Historical releases and preceding gates
@@ -205,5 +205,3 @@ Publisher verified clean pushed source/tag, original signer and manifest/checksu
 R2 adds device-local OS/Light/Dark/OLED, accents, reading size/spacing/measure, outline/find, confirmed external links, revision-checked positions and full-screen image/PDF viewing. READER.md and MEDIA.md own exact behavior and bounds; R9 owns broader settings/update polish. No original write permission or host change is introduced.
 
 build-release.ps1 runs TypeScript before original-key compilation/signing and verifies the staged APK. test-reading.ps1 accepts only emulator-5554/5556 and the disposable HTTPS reader fixture; -Install installs the staged release/test APK without clearing data, -Stage all runs services, native reading/media, journeys, cold restore, OS/reduced motion and legacy recovery in order, stopping on failure. Reader/media assets are rebuilt by the compatibility-named build:editor script; no editor engine is emitted. Match the disposable fixture pairing code through normal host approval first. Never target a phone or personal workspace.
-
-

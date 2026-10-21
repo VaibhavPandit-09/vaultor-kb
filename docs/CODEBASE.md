@@ -34,7 +34,7 @@ Implementation proceeds one sprint per explicit authorization. Maintain this gui
 
 ### R3 host companion checkpoints
 
-Host0.11.0 advertises companionSnapshots:1 at unchanged protocol3/archive3. [COMPANIONS.md](architecture/COMPANIONS.md) owns the source-bound dataset/API contract. CompanionSnapshots/CompanionController implement generation/device-bound durable receipts, bounded selection estimates, coherent private immutable note/file/organization captures, paged inventory/coverage and checkpoint comparison, hashed payloads and single-range byte resume. Whole manifest bytes are downloadable and SHA-verifiable. This is not archive ZIP export, a write queue or Android offline storage; Android R4 consumes it through the native retained store described below; R5 host triage is complete and R6–R10 remain unstarted.
+Host0.11.0 advertises companionSnapshots:1 at unchanged protocol3/archive3. [COMPANIONS.md](architecture/COMPANIONS.md) owns the source-bound dataset/API contract. CompanionSnapshots/CompanionController implement generation/device-bound durable receipts, bounded selection estimates, coherent private immutable note/file/organization captures, paged inventory/coverage and checkpoint comparison, hashed payloads and single-range byte resume. Whole manifest bytes are downloadable and SHA-verifiable. This is not archive ZIP export, a write queue or Android offline storage; Android R4 consumes it through the native retained store described below; R5 host triage is complete; R6 A0–A5 engineering is integrated below, with physical acceptance pending; R7–R10 remain unstarted.
 
 One worker per workspace captures under its exclusive WorkspaceGate/SQLite transaction. Existing resource/organization/Trash/Restore/import requests cannot mix metadata and bytes. Other workspaces are independent. Companions routes participate in workspace authorization and private stop/drain, without retaining a request EntityManager/SQLite connection during network writes. The shared host catalog is explicitly registered in child contexts for grant rechecks. HostFiles' atomic private-file helper is public for domain artifact use; no keys/credentials are stored in checkpoints.
 
@@ -44,7 +44,7 @@ Limits: four active checkpoints/128 receipts; one-hour fixed byte lifetime/seven
 
 Mobile-only releases follow [ANDROID.md](android/ANDROID.md), original APK signer, monotonic versionCode and immutable android/v tags. Never rebuild desktop for Android-only changes or access/pair the user's phone; explicit emulator serials only. R1 replaced the editing-led prototype with mobile/reader DOM rendering (no editable Tiptap bundle), compact topbar/drawer/Home and existing mixed browsing/workspace selection/temporary previews. R2 alpha.10/versionCode14 adds device-local reading controls, outline/find, revision-checked positions and full-screen media. Original-resource API writes remain refused; recency POST remains admitted; original note/organization/lifecycle/image-placement writes remain retired.
 
-[READER.md](android/READER.md) owns current rendering/recovery details. Legacy encrypted drafts, uncertain receipts, creation/lifecycle identities and pending media bytes remain intact. Dedicated Legacy recovery exports readable Markdown, original structured JSON and retained media to a private ZIP through Android SAF, without credentials or overwriting host content. Reconnect/background/switching never replay writes or acknowledge recovery. The legacy saved cache (12 notes/8MiB) remains separate from R4 retained downloads. R5 host review triage is complete; A3 adds local capture below, while Android review upload/status, imports and exports await A4/R7–R8. [DESIGN.md](android/DESIGN.md) preserves historical A5–A7 design and the target companion direction. R2 implements reading refinements; its actual publication checks are in android/releases/0.1.0-alpha.10.md. API36/37 Windows emulators are agent-owned; Samsung S24 Ultra/OneUI8.5–9 acceptance is user-owned.
+[READER.md](android/READER.md) owns current rendering/recovery details. Legacy encrypted drafts, uncertain receipts, creation/lifecycle identities and pending media bytes remain intact. Dedicated Legacy recovery exports readable Markdown, original structured JSON and retained media to a private ZIP through Android SAF, without credentials or overwriting host content. Reconnect/background/switching never replay writes or acknowledge recovery. The legacy saved cache (12 notes/8MiB) remains separate from R4 retained downloads. R5 host review triage is complete; A3 adds local capture below, while Android Review delivery/status is implemented in R6 A4; imports and exports remain R7–R8. [DESIGN.md](android/DESIGN.md) preserves historical A5–A7 design and the target companion direction. R2 implements reading refinements; its actual publication checks are in android/releases/0.1.0-alpha.10.md. API36/37 Windows emulators are agent-owned; Samsung S24 Ultra/OneUI8.5–9 acceptance is user-owned.
 
 ### R2 reader presentation and media
 
@@ -54,7 +54,7 @@ ReaderView/WorkspaceScreen own typed load/source tickets, native sheet/Back owne
 
 ResourcePreview uses a native full-screen window and restricted local media WebView (reader/media.*), authenticated source-bound originals, Fit/Actual size/zoom1–4, pan/pinch and source-note image gallery (128unique IDs). Media has a fixed scroll viewport and browser zoom is disabled; enlarged pixels never redefine their own fit viewport on Android17. PDF rendering is page-at-a-time,20MiB input/100,000pages/max2560×4000pixels with preserved aspect/white paper; password/unsupported failures remain actionable. Images sample to2048edge,20MiB/40MP; original Save/Share/Copy/Open with retain bytes/colors. Encrypted readerMedia metadata retains page/zoom/pan for100source-scoped resources; previews do not reopen on restart. Text preview100KB and transport64MiB remain. This is evictable reading metadata, not offline downloads. No HTTP/schema/protocol/archive/desktop change. See READER.md and MEDIA.md for authoritative bounds.
 
-build-release.ps1 now requires TypeScript before signing. test-reading.ps1 accepts only explicit emulator-5554/5556 and a disposable loopback fixture; ordered native cases fail fast. Exact release-byte verification and publication evidence belong in android/releases/0.1.0-alpha.10.md. R3 is the host checkpoint sprint; R4 is complete/published Android alpha.11; R5 host triage is complete/published Windows0.12.0; R6–R10 remain unstarted.
+build-release.ps1 now requires TypeScript before signing. test-reading.ps1 accepts only explicit emulator-5554/5556 and a disposable loopback fixture; ordered native cases fail fast. Exact release-byte verification and publication evidence belong in android/releases/0.1.0-alpha.10.md. R3 is the host checkpoint sprint; R4 is published Android alpha.11; R5 is included in Windows0.14.0; R6 A0–A5 engineering is integrated, with physical acceptance pending; R7–R10 remain unstarted.
 
 ### R4 Android retained reading
 
@@ -62,82 +62,21 @@ Android alpha.11/versionCode15 adds VaultorCompanions (private SQLite schema3 + 
 
 ### R5 review evidence and triage
 
-The historical [R5 integration handoff](plans/R5-INTEGRATION-HANDOFF.md) records the source contracts. [R5/redesign integration](plans/R5-REDESIGN-INTEGRATION.md) records the approved integration from master cf953fe and R5 68dcca8, common base 11b09aa, landed on master6e5c553/post-r5-ui-integration. [Windows0.14.0 release notes](desktop/releases/v0.14.0.md) own fresh packaging, installed verification, hashes and publication status. Integrated Mac delivery remains gated; R6 A0 proceeds separately as documented below.
+The historical [R5 integration handoff](plans/R5-INTEGRATION-HANDOFF.md) records the source contracts. [R5/redesign integration](plans/R5-REDESIGN-INTEGRATION.md) records the approved integration from master cf953fe and R5 68dcca8, common base 11b09aa, landed on master6e5c553/post-r5-ui-integration. [Windows0.14.0 release notes](desktop/releases/v0.14.0.md) own fresh packaging, installed verification, hashes and publication status. Integrated Mac delivery remains gated; R6 Android engineering is integrated below.
 
 ReviewService/ReviewController add isolated review_items storage, idempotent UUID evidence, generation admission, conditional review-status revisions and reviews change invalidation. Original documents/revisions remain separate. ReviewInbox/ReviewButton adapt workspace/resource triage into the current redesigned SidebarFrame, NoteOrientation and PreviewShell action rows. AppModal/dialogFocus own containment and trigger restoration; successful guarded navigation closes the inbox before handing focus to the destination. Review status failures remain local, with background diagnostics instead of the unrelated Retry saves banner. Zero-count entries use an accessible compact icon; positive counts stay visible. Existing geometry, compression, motion and theme primitives remain authoritative. [REVIEWS.md](workspace/REVIEWS.md) owns bounds, missing/changed evidence and integration contracts. Full workspace exports use archive4 with reviews, importing1–3; scoped note packages include reviews.json, with standalone document presentation unchanged. Protocol3/Android alpha.11 remain compatible; Android capture/sync remains R6. R5 Windows0.12.0 is published; native Mac gate remains pending.
 
-### R6 A0 Android interaction foundation — review candidate
+### Unified R6 Android implementation — integration candidate
 
-The approved [Android R6 phases](plans/android-r6-plan.md) begin with A0 on ai/codex-r6-android from verified master fb05386; references above to unstarted R6 capture/sync remain domain boundaries. Android alpha.12/code16 adds small motion tokens/MotionSheet, a presentation-only native VaultorPresentation module, capability-aware semantic haptics, device-local System/Off and explicit feedback previews, coordinated control-origin theme reveal and main/modal system-bar styles. ReadingProvider owns a single conservative OS reduced-motion source used by the shell/reader. Native effects enforce foreground/view/system/app policy, prefer action feedback and use supported envelopes/primitives only for named rich profiles. Bounded memory-only old-palette overlays retain actual reader/DOM/control ownership and fail open on interruption/timeout/allocation; no animation owns correctness. Reading appearance is the first foundation surface; A1 follows below; A2–A5, Review capture/outbox/sync and physical haptic acceptance remain pending. Host/API/resource/archive/protocol/desktop are unchanged. [INTERACTION-FOUNDATIONS.md](android/INTERACTION-FOUNDATIONS.md) owns exact policy/limits, and [alpha.12 ledger](android/releases/0.1.0-alpha.12.md) owns actual validation/publication. A0 physical review remains pending.
+The integration branch combines verified master fb05386 (desktop0.14.0/R5) with completed Android alpha.22/code26 through 4d07984. [R6 integration audit](plans/R6-INTEGRATION.md) owns exact provenance, conflicts, fresh verification and the proposed master merge. This is not a publication or master merge. A0–A5 engineering is present; S24 subjective motion/haptics, spoken TalkBack and OEM lifecycle acceptance remain user-owned. [R6 completion](android/R6-COMPLETION.md) and the immutable historical release ledgers retain milestone evidence. Earlier A4 stop gates describe their dated snapshots and are superseded by the authorized continuation. The complete preceding guide narrative is retained in [historical R6 implementation checkpoints](history/R6-IMPLEMENTATION-CHECKPOINTS.md).
 
-### R6 A1 Android shell/source navigation — review candidate
+React Native owns product UI and most motion; thin Kotlin owns protected storage/transport, presentation and semantic haptic capability/policy. Shared motion tokens, coordinated theme snapshots/system bars, conservative OS reduced motion, retained WebView/native visibility ownership and contextual sheet/IME/Back coordination remain. Navigation uses a compact source chooser separate from source management, contextual reader Aa/settings and measured resource-origin aperture/reverse motion. Missing origins use a bounded fallback; source/resize/background/interruption cancels stale motion. Correctness never waits for animation. Ordinary navigation, Find, accent and automatic sync remain silent; standard H2 marks meaningful evidence/source locks and REVIEW_CAPTURED is the sole authored product completion. See [Android design contract](design/ANDROID_UI_PHILOSOPHY.md), [navigation](android/NAVIGATION-PROTOTYPE.md), [reader context](android/READER-CONTEXT.md) and [foundations](android/INTERACTION-FOUNDATIONS.md).
 
-Authorized by “continue next”, Android alpha.13/code17 retains the workspace/reader while Sources, drawer and legacy recovery are inspected. Source identity and availability share compact orientation; connected workspaces/hosts and verified downloads share one source surface. Native identity/scope and online/local admission are checked before explicit H2 confirmation; failures stay local with H4, and background events stay silent. Home resumes the actual resource; Library secondary controls move into the single measured FlatList header; drawer disclosure state survives dismissal, with native edge entry and safe areas at all widths. ContextSheet standardizes utility/modal ownership, bars and IME without a scene manager. [SHELL-NAVIGATION.md](android/SHELL-NAVIGATION.md) owns exact behavior/compromises. Existing read-only API/transport/native epoch/session/download boundaries, resource JSON and desktop are unchanged. Review outbox/capture/status and reader-edge/predictive motion are not introduced. [Alpha.13 ledger](android/releases/0.1.0-alpha.13.md) records actual checks and open physical acceptance. Stop at A1 review before A2.
+[Review capture](android/REVIEW-CAPTURE.md) freezes exact host/workspace/generation/resource/revision, bounded quote/context and validated block/one-based PDF locator over retained content. Separate encrypted format1 AtomicFile journals protect up to256items/8MiB independently of evictable cache/downloads. Flag opens an unfinished draft; typing protects it; Keep draft/Back never publishes. One Create Review requires R5's nonblank comment, waits for protection, and atomically queues the same UUID and immutable body. Failed writes retain prior evidence.
 
-### R6 A2 reader context — review candidate
+[Review synchronization](android/REVIEW-SYNC.md) has one native owner: exact captured-source pinned-TLS/grant/generation/capability admission, durable sending claim before PUT, exact full-body retries after unknown outcomes, validated persisted receipts, and post-GET generation checks for acknowledged status. Background events never retarget or activate a source. Queue commit, resume/reconnection and bounded foreground scheduling drive delivery; desktop Open/Resolved/Dismissed remains separate from local durability. Prior receipts and protected evidence survive revocation/replacement/network failure; verified access refusal locks retained sources. No original resource writes, Android status-write UI, guaranteed suspended delivery, new host schema/API/protocol/archive or desktop presentation change.
 
-Authorized by “start next”, Android alpha.14/code18 keeps a minimum48dp reading edge while the same native title/source compact with connected scrolling; offline context remains visible. Contextual Find overlays the bottom without consuming document height. Typography, decoded thumbnails and true resize use bounded revision-aware anchor retention, yielding to touch/recent scroll/new loads; readiness is independent of restoration. Media controls move into the shared surface over a retained viewport, gallery keeps its native window, explicit Fit uses one-image transform and current-ticket H2 settle, and PDF Go validates locally while displayed page identity follows actual render acknowledgment. A bounded cancellable native window-focus handoff admits Find input after modal release; Find entry uses H1 after focus; ordinary navigation/background/predictive gestures remain silent. Platform Back owns progress/cancellation and commits through existing navigation/modal ownership; no speculative destination preview. [READER-CONTEXT.md](android/READER-CONTEXT.md) owns details and risks. Original JSON/files, API/transport/host/schema/archive/protocol/desktop and review boundaries are unchanged. Actual installed/physical limits belong in the alpha.14 ledger; stop before A3.
-
-### R6 A3 Android local Review capture — candidate
-
-Authorized by “continue next” after alpha.14, Android alpha.15/code19 adds contextual source-bound capture over retained reader/media surfaces. Native Copy remains; full bounded quote/context and validated block path or confirmed one-based PDF page freeze with source/resource/revision. VaultorReviews uses a separate encrypted AtomicFile journal (format1/256items/8MiB), atomic protection/version checks and same-UUID immutable local queue commit; corruption/failure retains prior evidence. Captures on this phone recovers protected drafts and inspects queued evidence independently of active source/download retention. ContextSheet/MotionSheet expose a cancellable settle keyframe for H2 anchor; durable queued confirmation uses H3 capture with capability/system/app fallbacks. No upload/status/SSE/original-write/API/schema/archive/desktop change. A4 owns delivery/reconciliation; queued is explicitly local. [REVIEW-CAPTURE.md](android/REVIEW-CAPTURE.md) owns bounds/state/motion/haptics and integration-sensitive files; alpha.15 ledger owns actual validation. Stop at A3 review before A4; physical acceptance remains user-owned.
-
-### A0–A3 real-device remediation — A4 blocked
-
-The user rejected alpha.15 interaction work on the S24 Ultra: haptics and structural movement were not perceptible. Alpha.17/code21 refines the explicitly development-only acceptance candidate; alpha.16 remains its immutable comparison baseline. VaultorHaptics reports actual suppression/capability/request results, distinct platform semantics and selectable clear/platform/expressive rich profiles. Build-time native diagnostics default off and reject ordinary builds. Context surfaces start after native show/measurement; capture stays in one window with separate evidence lock and durable receipt geometry keyframes. Reader header now reclaims viewport space; Find reveals its edge; source confirmation waits for activity focus/settle. Theme snapshots scale within32MiB for QHD dual windows. MOTION-HAPTIC-REMEDIATION.md owns the complete shipped inventory, revised candidate and exact device script. Local protected draft/queue/source/original contracts remain unchanged. Runtime checks are not tactile/visual approval. A4 must not start without explicit S24 approval.
-
-Android prototype continuation: alpha.20/code24 is the local Prototype 1
-refinement candidate on ai/codex-android-ux-prototypes, based exactly on immutable
-alpha.17 through alpha.18. [Navigation prototype](android/NAVIGATION-PROTOTYPE.md)
-owns Home/Library/device-wide source-grouped Review, the distinct Sources context
-action, one contracting browsing/reader folio and window-width rail adaptation.
-WorkspaceScreen retains the reader under Review and source inspection; existing
-per-source durable sessions remain authoritative. A bounded presentation-only
-BrowseMemory restores utility destination configurations without a storage change.
-The drawer and duplicate shell topbar are removed. Existing reader/composer/domain,
-native source admission, journal identity, transport and sync contracts are unchanged.
-[Capture trace](android/HAPTIC-CAPTURE-TRACE.md) remains development-gated, bounded,
-memory-only and sanitized. The user reports perceptible alpha.18 S24 haptics;
-no Samsung JSON establishes H2/H3 individually. Existing effects/admission/policy
-remain unchanged, with targeted trace follow-up optional and navigation unblocked.
-The user provisionally approved alpha.19’s navigation concept but rejected its visual
-execution. Alpha.20 refines three equal destination slots and traveling selection
-mark, moves Sources beside Home/Library headings and into focused reader context,
-and removes active-source scope from global Review. Library shares count/Resume
-and uses concise named membership metadata. Existing virtualized browsing/state and
-protected journal semantics remain unchanged. No public release or subjective visual
-approval of visual execution remains user-owned. On2026-10-21 the user accepted
-the navigation foundation and authorized consolidated Batch1 source/settings/resource
-motion plus A4 completion. [Current completion scope](android/R6-COMPLETION.md) owns
-checkpoints and exact branch audit. Quick Sources now separates selection from full
-management; reader Aa exposes existing theme/size/spacing and advanced preferences.
-The native journal, source checks and haptic engine are unchanged in Batch1.
-ResourceTouch measures row/title identity and ReaderAperture reveals a fixed-size
-retained reader over mounted browsing context; fresh valid origin geometry owns
-reverse motion, with immediate model navigation and bounded fallback. Reader load
-acknowledgment prevents old pixels under a new title.
-
-### Current R6 A4 delivery/status
-
-VaultorReviewSync owns single-dispatch exact-UUID/body retries from the independent
-protected capture journal. Additive delivery metadata and bounded server receipts
-preserve source/evidence/draft contracts; no migration, host/API/domain or original
-resource change. Native pinned transport admits captured host/workspace/generation
-and grant, independently of active source, with scoped capability and post-GET
-identity checks. Sending claims precede dispatch; durable receipts precede synced.
-Review-only events refresh status without reloading the reader. Foreground/resume/
-queue catch-up and Sync now expose queued/sending/unknown/error/synced plus read-only
-desktop triage. An admitted native batch may finish while the process survives backgrounding; there is no background scheduler or force-stop guarantee. [REVIEW-SYNC](android/REVIEW-SYNC.md)
-owns routing, retries, statuses, limits and diagnostics. No new haptic effect/policy.
-
-Create Review is the sole explicit completion action: R5 requires a nonblank comment.
-Flag opens a protected unfinished draft; typing/dismissal never publish it. Completion
-waits for protection, queues the same UUID/body and triggers automatic native delivery.
-ReviewSyncRunner coalesces one follow-up during an in-flight batch. Foreground/resume/
-verified reconnection and bounded periodic retries repeat all admission checks;
-immutable conflicts remain blocked. Receipt refresh uses native events/resume instead
-of2s encrypted-journal polling. Settled sheet focus respects the IME; dismissal restores
-a scoped reader/Review-row accessibility target.
+com.vaultor.app, original signer, min36/target37 and alpha.22/code26 remain. Desktop stays0.14.0; host protocol3/reviews:1 and archive4 remain. Latest published Android is alpha.17; alpha.18–22 are local development candidates. Preserve historical artifact hashes; integration builds are local verification artifacts. No version bump, new tag, installer publication or R7 is authorized here.
 
 ## Repository and source map
 
@@ -453,6 +392,10 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 - Build reports a large JS chunk and an outdated Browserslist dataset; these do not prevent packaging. Chunk splitting remains performance work.
 
 ## Change checklist and maintenance history
+
+### 2026-10-21 — Unified R6 integration and verification
+
+Merged UX4d07984 onto verified master fb05386 in isolated integration/r6-android (merge27af9f7); explicitly cherry-picked the sole original-only publication commit6308fd6 as19f93a9, resolving its one Android status-document conflict. Preserved desktop0.14.0/R5, Android A0–A5 engineering, source identity, protected journals and release history. Reconciled current guides/index/install compatibility and archived the complete preceding R6 guide narrative. Only a test assertion changes beyond approved product source: companion manifest access uses existing bounded maintenance-busy retry; no new architectural/product behavior effect. Fresh frontend321, desktop43, backend53 distinct selected cases, mobile104Jest/TypeScript/reader runtime, lint0errors/149warnings, fresh UI/server and original-signer APK/test builds pass. API36/37 pass38/44 native cases, plus2deliberate-death/recovery checkpoints each, including production pinned-HTTPS delivery/offline/restart/status/grant/revocation and unchanged originals. Both installed APK hashes match. Initial failures/corrections and exact install-over scope are in [R6 integration](plans/R6-INTEGRATION.md). No master merge, version bump, new release/tag or Samsung certification; physical/TalkBack/OEM/Mac gates remain explicit.
 
 ### 2026-10-21 — Alpha.22 R6 milestone readiness
 

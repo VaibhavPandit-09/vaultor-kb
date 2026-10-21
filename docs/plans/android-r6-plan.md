@@ -2,7 +2,11 @@
 
 Approved direction 2026-10-16. Branch `ai/codex-r6-android` starts at verified master `fb053862df386c1fefe9d9db2a7924eb63979b22`, matching fetched origin/master. No old R5 branch is incorporated. The initial audit was source/document inspection, not a new runtime certification. User's “start” authorized A0; “continue next” subsequently authorized A1. “Start next” subsequently authorized A2; “continue next” now authorizes A3. The2026-10-21 consolidated continuation authorizes A4 on ai/codex-android-ux-prototypes; [R6 completion](../android/R6-COMPLETION.md) owns current gates. [Workspace/companion roadmap](workspace-companion-plan.md) owns milestone scope, [Reviews](../workspace/REVIEWS.md) owns R5 API/domain semantics, and both UI philosophy documents remain authoritative.
 
-## Audited baseline
+## Current integration status — 2026-10-21
+
+A0–A5 engineering is incorporated into integration/r6-android with desktop0.14.0/R5 intact. [Integration report](R6-INTEGRATION.md) owns exact branch ranges, conflict resolutions and fresh checks. Alpha.22/code26 remains a local original-signer candidate; S24/TalkBack/OEM acceptance remains pending. The audit and dated stop gates below are historical, not a renewed A4 prohibition. Stop before master/release/R7.
+
+## Audited baseline (before A0)
 
 - Drawer-led shell, mixed bounded lists and retained reader are worth preserving; fixed58dp topbar and stacked list controls lack progressive compression.
 - Home introduction/resume is generic; connected hosts/workspaces and downloaded sources are split across surfaces.
