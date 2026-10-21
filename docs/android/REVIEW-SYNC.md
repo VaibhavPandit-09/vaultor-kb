@@ -17,7 +17,9 @@ The existing apiFor read-only boundary is unchanged. No host/backend change.
 Each source is admitted against the approved pinned-TLS host, explicit captured
 workspace header, current generation, server grant and reviews:1 capability.
 Dispatch does not activate a source or use the focused workspace. Approval is
-checked before and after each native request. GET receipts lack generation, so
+checked before and after each native request. Verified access refusal/replacement
+feeds the existing scoped R4 companion lock observer, including inactive sources;
+protected Review evidence remains independent. GET receipts lack generation, so
 reconciliation also checks workspace identity after the receipt. PUT itself
 retains the frozen generation and baseRevision. No fallback source or retargeting.
 

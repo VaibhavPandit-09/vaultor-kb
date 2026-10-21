@@ -55,6 +55,14 @@ class ReviewSyncExperienceTest {
     assertTrue("Matching disposable owner approval required",approved)
     val host=enrollment.getString("hostId");val active=JSONObject(result{m.activate(host,it)})
     val a=JSONObject().put("hostId",host).put("address",address).put("workspaceId",args.getString("workspaceId")).put("generation",args.getString("generation")).put("noteId",args.getString("noteId")).put("revision",args.getString("revision")).put("secondId",args.getString("secondId")).put("secondGeneration",args.getString("secondGeneration"))
+    // Owner approval and the separate fixture workspace grant are distinct commits.
+    var granted=false
+    repeat(20){if(!granted){
+      val response=JSONObject(result{m.apiFor(host,active.getString("epoch"),"/workspaces","GET",null,null,it)})
+      if(response.getInt("status")==200){val rows=JSONArray(response.getString("body"));granted=(0 until rows.length()).any{rows.getJSONObject(it).getString("id")==a.getString("secondId")}}
+      if(!granted)Thread.sleep(500)
+    }}
+    assertTrue("The separately authorized fixture workspace grant must settle",granted)
     result{m.selectWorkspace(host,active.getString("epoch"),a.getString("secondId"),a.getString("secondGeneration"),it)}
     val before=bootstrap(m);val frozen=queue(a,"R6 lost receipt across process restart")
     val real=port(m);val lost=object:VaultorReviewSync.Port {
@@ -80,6 +88,14 @@ class ReviewSyncExperienceTest {
     assertEquals("Queue dispatch must not activate its captured workspace",a.getString("secondId"),selected.getString("workspaceId"))
     val wrong=source(a).put("workspaceId",a.getString("secondId")).put("generation",a.getString("secondGeneration"))
     assertEquals("Equal resource IDs must not misdirect Review identity",404,m.reviewRequest(wrong,"/reviews/"+a.getString("id")).getInt("status"))
+  }
+  @Test fun recoverAfterFreshApprovalWithoutChangingFrozenIntent() {
+    val m=VaultorModule(ctx);val a=meta();val before=bootstrap(m)
+    result{m.selectWorkspace(a.getString("hostId"),before.getString("epoch"),a.getString("secondId"),a.getString("secondGeneration"),it)}
+    val routed=bootstrap(m);VaultorReviewSync(store(),port(m)).sync(true)
+    val item=store().snapshot().first{it.getString("id")==a.getString("id")}
+    assertEquals("synced",item.getJSONObject("delivery").getString("state"));assertEquals(a.getJSONObject("body").toString(),item.getJSONObject("body").toString())
+    assertEquals(routed.getString("epoch"),bootstrap(m).getString("epoch"))
   }
   @Test fun reflectDesktopResolutionWithoutBodyMutation() {
     val a=meta();VaultorReviewSync(store(),port(VaultorModule(ctx))).sync(refresh=true)

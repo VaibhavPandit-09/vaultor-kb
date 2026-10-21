@@ -139,6 +139,7 @@ export default function ReadingControls({
           Keyboard.dismiss();
           return;
         }
+        if (Date.now() - hiddenAt.current < 250) return;
         close();
       }}
       onShow={() => setShown(true)}

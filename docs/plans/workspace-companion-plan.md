@@ -1,6 +1,11 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created 2026-10-13; reviewed 2026-10-16. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 complete/published Androidalpha.11; R5 complete/published Windows0.12.0 on ai/codex-current (Mac gate pending); R6 A0–A3 alpha.17 hybrid/restraint development candidate; local Review capture implemented, physical motion/haptic approval pending, A4 sync/status blocked; R7–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created 2026-10-13; reviewed 2026-10-21. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 complete/published Androidalpha.11; R5 complete/published Windows0.12.0 on ai/codex-current (Mac gate pending); R6 A0–A4 implemented in alpha.21 consolidated development candidate on ai/codex-android-ux-prototypes; physical A5 acceptance pending; R7–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+
+The2026-10-21 user authorization consolidates Batch1 source/settings/resource motion
+and Batch2 A4 delivery/status. [R6 completion](../android/R6-COMPLETION.md) owns
+current checks and acceptance; earlier per-prototype/A4 stop gates below are historical.
+No R7 or master integration is authorized. Android remains a companion.
 
 ## Agreed product boundary
 
@@ -164,7 +169,11 @@ R5 delivery: [Windows0.12.0](https://github.com/VaibhavPandit-09/vaultor-kb/rele
 
 ## R6 — Android offline review capture and synchronization
 
-Status: **A0 published; A1 published; A2 published alpha.14; A3 local capture authorized/in progress; physical acceptance and A4 sync/status remain pending.** User approved the audit and phased plan, then authorized A0. See [R6 Android phases](android-r6-plan.md); A1 was subsequently authorized by “continue next”, then A2 by “start next”; stop at A2 review before A3.
+Status: **A0–A4 implemented in consolidated alpha.21/code25; A5 S24 acceptance pending.**
+The2026-10-21 continuation authorizes Batch1 usability/resource motion and A4 without
+intermediate prototype stops. [R6 Android phases](android-r6-plan.md) preserves the
+original phase scope; [completion ledger](../android/R6-COMPLETION.md) owns current
+checks and remaining hardware gates. No R7/master integration/publication authorized.
 
 - Selection offers Flag for review; resource More offers Add review item. Capture comment, source resource/revision, original quote/context and optional validated locator. The reader remains immutable. Preview the target and allow local editing/removal before sending; editing an already synced comment requires an explicit conditional API, otherwise add a follow-up.
 - Persist before showing success; distinguish On this phone, Sending, Synced and Needs attention. Pending review inbox is usable offline across companions. Resource-level reviews cover notes/PDFs/images; no unsupported precision promises.

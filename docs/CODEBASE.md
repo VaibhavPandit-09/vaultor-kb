@@ -445,6 +445,20 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 
 ## Change checklist and maintenance history
 
+### 2026-10-21 — Consolidated runtime acceptance candidate
+
+Covered browsing pixels now hide after the reveal without unmounting or changing
+list geometry; source controls retain exclusive visible ownership. Single-source
+context has no switch chevron. Uninspected saved connections stay in management.
+Appearance consumes the bounded IME Back handoff. A4 native requests feed verified
+refusal/replacement into the existing scoped R4 lock observer. No domain or haptic
+change. TypeScript/focused JS and14 backend cases pass. Final API36/37 each pass16
+native sync/journal/companion/policy/revocation cases; actual UI/source/Aa/motion,
+themes/large-text/adaptive/gesture/IME gates pass as detailed in R6-COMPLETION.md.
+Both pulled installed APKs equal staged alpha.21/code25 (original signer/package,
+min36/target37, arm64/x86_64). Recorded intermediate geometry was inspected; S24
+subjective quality/TalkBack/OEM lifecycle remain user-owned. No public publication.
+
 ### 2026-10-21 — A4 native Review delivery and status
 
 Implemented native-only captured-source transport, durable claims/receipts, frozen

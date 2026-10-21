@@ -69,16 +69,7 @@ export function sourceChoices(
       workspaceId: w.id,
     });
   }
-  for (const [index, h] of state.hosts.entries()) {
-    if (h.hostId === state.host?.hostId) continue;
-    rows.push({
-      key: `host:${h.hostId}`,
-      name: `Saved connection ${index + 1}`,
-      status: 'Connect to inspect sources',
-      hostId: h.hostId,
-      workspaceId: h.workspaceId,
-    });
-  }
+  // Remembered connections belong to management until their sources are inspected.
   return rows.map(row => {
     if (rows.filter(other => other.name === row.name).length < 2) return row;
     const host = state.hosts.find(h => h.hostId === row.hostId);

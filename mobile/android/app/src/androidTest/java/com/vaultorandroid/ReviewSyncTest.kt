@@ -101,6 +101,20 @@ class ReviewSyncTest {
     try{VaultorReviewSync(store,server).sync(true);fail("Claim persistence must fail before PUT")}catch(_:Exception){}finally{guard.delete();fault.delete()}
     assertEquals(before,server.puts);assertEquals("queued",store.snapshot().first{it.getString("id")==next.getString("id")}.getString("state"))
   }
+  @Test fun generationReplacementDuringGetCannotReplaceKnownReceipt()=fixture {store,reopen,_->
+    queue(store);val server=Host();VaultorReviewSync(store,server).sync(true)
+    server.rows.values.first().put("status","resolved").put("revision","replacement-r2")
+    val race=object:VaultorReviewSync.Port {
+      override fun request(source:JSONObject,path:String,method:String,body:String?):JSONObject {
+        val result=server.request(source,path,method,body)
+        if(path.startsWith("/reviews/"))server.generation="replacement"
+        return result
+      }
+    }
+    VaultorReviewSync(reopen(),race).sync(true)
+    val d=reopen().snapshot().first().getJSONObject("delivery")
+    assertEquals("synced",d.getString("state"));assertEquals("REVIEW_GENERATION_CHANGED",d.getString("reason"));assertEquals("open",d.getJSONObject("receipt").getString("status"));assertEquals(1,server.puts)
+  }
   @Test fun receiptPersistenceFailureRetainsClaimAndExactIdentity()=fixture {store,reopen,file->
     val frozen=queue(store);val server=Host();val fault=File(file.path+".new");val guard=File(fault,"guard")
     val failReceipt=object:VaultorReviewSync.Port {

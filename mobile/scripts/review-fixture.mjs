@@ -1,6 +1,6 @@
 // Disposable R6 host only. Never writes owner credentials or personal workspace data.
 import { OwnedServer } from '../../desktop/src/owned-server.mjs';
-import { mkdtemp, writeFile, readFile } from 'node:fs/promises';
+import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -64,6 +64,12 @@ try {
   await api('/resources/imports/' + note.id, 'PUT', form, secondId);
   const second = await api('/workspace/identity', 'GET', undefined, secondId);
   let saved = await api('/resources/' + note.id);
+  const otherOriginal = await api(
+    '/resources/' + note.id,
+    'GET',
+    undefined,
+    secondId,
+  );
   const descriptor = {
     address: `https://127.0.0.1:${sharing.port}`,
     port: sharing.port,
@@ -173,6 +179,18 @@ try {
       }
       if (command.verify) {
         const current = await api('/resources/' + note.id);
+        const otherCurrent = await api(
+          '/resources/' + note.id,
+          'GET',
+          undefined,
+          secondId,
+        );
+        if (
+          otherCurrent.revision !== otherOriginal.revision ||
+          JSON.stringify(otherCurrent.content) !==
+            JSON.stringify(otherOriginal.content)
+        )
+          throw Error('Other workspace original changed');
         const reviews = await api('/reviews?status=all&page=0&size=100');
         const other = await api(
           '/reviews?status=all&page=0&size=100',

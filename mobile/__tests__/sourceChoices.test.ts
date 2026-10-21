@@ -21,7 +21,7 @@ test('current identity and retained generations stay distinct without a duplicat
   });
   expect(rows[1]).toMatchObject({ scope: jobs[1].scope, locked: true });
 });
-test('malformed inventories never become selectable routes; another host remains independent', () => {
+test('malformed inventories and uninspected saved connections do not crowd quick switching', () => {
   const rows = sourceChoices(
     {
       ...state,
@@ -36,10 +36,6 @@ test('malformed inventories never become selectable routes; another host remains
     [{ scope: '[]' }, { scope: 'broken' }],
     'Reading',
   );
-  expect(rows).toHaveLength(2);
-  expect(rows[1]).toMatchObject({
-    hostId: 'other',
-    name: 'Saved connection 1',
-  });
+  expect(rows).toHaveLength(1);
   expect(JSON.stringify(rows)).not.toContain('private.example');
 });

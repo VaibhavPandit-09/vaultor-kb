@@ -49,6 +49,7 @@ class NavigationExperienceTest {
     assertTrue(latch.await(10,TimeUnit.SECONDS)); assertFalse(failed); return value
   }
   private fun frame(name: String) { d.takeScreenshot(File(i.targetContext.getExternalFilesDir(null), "p1-$name.png")) }
+  @org.junit.After fun captureEndpoint(){frame("last");d.dumpWindowHierarchy(File(i.targetContext.getExternalFilesDir(null),"p1-last.xml"))}
   @Test fun folioReviewSourceAndReaderContinuity() {
     i.targetContext.startActivity(i.targetContext.packageManager.getLaunchIntentForPackage("com.vaultor.app")!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     assertTrue(d.wait(Until.hasObject(By.descContains("Choose source").enabled(true)),30000))
@@ -152,7 +153,7 @@ class NavigationExperienceTest {
       assertFalse("Old repetitive count must be absent",d.hasObject(By.textContains("1 collections")))
       assertTrue(d.hasObject(By.descContains("Choose source")))
       tap("Filters")
-      assertTrue(d.wait(Until.hasObject(By.textContains("offline")),5000))
+      assertTrue(d.wait(Until.hasObject(By.textContains("Scope")),5000))
       d.pressBack(); Thread.sleep(400)
       tap("Home")
     }
@@ -213,6 +214,7 @@ class NavigationExperienceTest {
       tap("Browse navigation"); assertTrue(d.hasObject(By.desc("Review")))
       tap("Focus reading"); assertFalse(d.hasObject(By.desc("Review")))
       d.findObject(By.descContains("Choose source")).click()
+      frame("reduced-source");d.dumpWindowHierarchy(File(i.targetContext.getExternalFilesDir(null),"reduced-source.xml"))
       assertTrue(d.wait(Until.hasObject(By.text("Sources")),5000)); tap("Done")
       assertTrue(d.wait(Until.gone(By.text("Sources")),3000)); frame("reduced")
     } finally {

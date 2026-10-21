@@ -168,6 +168,14 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       catch(_:javax.net.ssl.SSLException){throw VaultorReviewSync.Failure("TLS_VERIFICATION_FAILED")}
       catch(_:java.security.GeneralSecurityException){throw VaultorReviewSync.Failure("TLS_VERIFICATION_FAILED")}
       currentApproval()
+      // Preserve R4 locks even when an inactive source is checked by the outbox.
+      val status=result.getInt("status");val workspace=source.getString("workspaceId")
+      if(status in listOf(401,403))try {companions.observe(hostId,workspace,revoked=true)}catch(_:Exception){}
+      if(status==404 && JSONObject(result.optString("body","{}")).optString("code")=="WORKSPACE_UNAVAILABLE")try {companions.observe(hostId,workspace,revoked=true)}catch(_:Exception){}
+      if(path=="/workspace/identity" && status==200) {
+        val identity=JSONObject(result.getString("body"))
+        if(identity.optString("id")==workspace)try {companions.observe(hostId,workspace,identity.getString("generation"))}catch(_:Exception){}
+      }
       if(path=="/access/host" && result.optInt("status")==200 && JSONObject(result.getString("body")).optString("fingerprint")!=p.getString("fingerprint"))throw VaultorReviewSync.Failure("HOST_IDENTITY_CHANGED")
       return result
   }

@@ -916,7 +916,11 @@ export default function WorkspaceScreen() {
           >
             {
               <View
-                style={s.screenHeading}
+                style={[
+                  s.screenHeading,
+                  reading && !resourceMotion.moving && s.obscured,
+                ]}
+                collapsable={false}
                 pointerEvents={
                   reading || resourceMotion.pending ? 'none' : 'auto'
                 }
@@ -942,6 +946,7 @@ export default function WorkspaceScreen() {
                     availability={source.availability}
                     disabled={!initialized || state.busy}
                     open={openSources}
+                    switchable={choices.length > 1}
                     sourceRef={
                       !reading && !resourceMotion.pending
                         ? sourceOrientation
@@ -999,7 +1004,11 @@ export default function WorkspaceScreen() {
                 pointerEvents={
                   reading || resourceMotion.pending ? 'none' : 'auto'
                 }
-                style={[s.content, reviewing && s.hidden]}
+                style={[
+                  s.content,
+                  reviewing && s.hidden,
+                  reading && !resourceMotion.moving && s.obscured,
+                ]}
                 collapsable={false}
                 importantForAccessibility={
                   reading ||
@@ -1437,6 +1446,7 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   hidden: { display: 'none' },
+  obscured: { opacity: 0 },
   page: { padding: 12, gap: 8 },
   secondary: { color: '#b3b3b3', fontSize: 15, lineHeight: 23 },
   section: { color: '#e8e8e8', fontSize: 16, fontWeight: '600' },

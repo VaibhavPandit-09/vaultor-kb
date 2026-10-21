@@ -1,6 +1,6 @@
 # Android reader context and motion
 
-Reviewed2026-10-19. Alpha.14/code18 was the A2 reader baseline. The user's S24 rejection of A0–A3 reopens interaction acceptance; alpha.17/code21 refines the development remediation candidate, not approved work. [Remediation](MOTION-HAPTIC-REMEDIATION.md) owns audit/script; [R6 phases](../plans/android-r6-plan.md) owns scope; [reader](READER.md), [media](MEDIA.md) and [foundations](INTERACTION-FOUNDATIONS.md) retain source/security/device-policy contracts. A3 local capture exists; A4 stays blocked until explicit physical approval.
+Reviewed2026-10-21. Alpha.14/code18 was the A2 reader baseline. The user's S24 rejection of A0–A3 reopens interaction acceptance; alpha.17/code21 refines the development remediation candidate, not approved work. [Remediation](MOTION-HAPTIC-REMEDIATION.md) owns audit/script; [R6 phases](../plans/android-r6-plan.md) owns scope; [reader](READER.md), [media](MEDIA.md) and [foundations](INTERACTION-FOUNDATIONS.md) retain source/security/device-policy contracts. A3 capture and A4 delivery/status exist in the [consolidated continuation](R6-COMPLETION.md); earlier stop gates are historical. S24 acceptance remains pending.
 
 ## Reading edge and orientation
 
