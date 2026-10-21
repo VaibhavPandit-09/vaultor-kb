@@ -1066,10 +1066,17 @@ export default function WorkspaceScreen() {
             )}
             {state.note || resourceMotion.pending ? (
               <View
+                collapsable={false}
                 style={[
                   StyleSheet.absoluteFill,
+                  {
+                    zIndex:
+                      resourceMotion.visible && !reviewing && !hostView
+                        ? 2
+                        : -1,
+                  },
                   (!resourceMotion.visible || reviewing || hostView) &&
-                    s.hidden,
+                    s.obscured,
                 ]}
                 importantForAccessibility={
                   !reading ||

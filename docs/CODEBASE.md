@@ -458,7 +458,9 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 
 Native regression exposed retained reader pixels covering Library after a Settings/
 Pinned round trip. Browsing now has bounded presentation cleanup independent of
-animation callbacks, and hidden reader ancestry relinquishes accessibility ownership.
+animation callbacks. A non-collapsible native retained-reader owner hides through
+opacity/z-order without removing its measured geometry, and relinquishes accessibility
+ownership. The old flattened display-none ancestor left native WebView pixels visible.
 Two focused lifecycle cases simulate lost callbacks and interrupted return; both pass.
 No new motion or document/list remount is introduced. Full installed reruns follow.
 
