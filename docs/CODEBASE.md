@@ -395,7 +395,7 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 
 ### 2026-10-22 — R6 master merge and production milestone qualification
 
-Authorized finalization merges validated21ac91a into master as5b0b639 with identical tree and preserved history. Preparing alpha.23/code27, original package/signer and diagnostics disabled, following the existing Android prerelease policy. Backend transfer-status test retries only maintenance409; native production diagnostics rejection gains focused coverage. No new product/architecture or desktop dependency/API/schema change. Mobile TypeScript/104Jest/reader checks pass; final backend/frontend/Electron and signed install-over/host-mobile qualification follow in [alpha.23](android/releases/0.1.0-alpha.23.md). Physical/Mac limitations remain explicit; no R7 work.
+Authorized finalization merges validated21ac91a into master as5b0b639 with identical tree and preserved history. Preparing alpha.23/code27, original package/signer and diagnostics disabled, following the existing Android prerelease policy. Backend transfer-status test retries only maintenance409; native production diagnostics rejection gains focused coverage. No new product/architecture or desktop dependency/API/schema change. Fresh backend19/frontend321/Electron/mobile104Jest/TypeScript/reader checks and44production native cases per API36/37 pass, including actual alpha.22→23 retention and pinned-HTTPS automatic delivery/status. Exact qualification and the final publication record are in [alpha.23](android/releases/0.1.0-alpha.23.md). Physical/Mac limitations remain explicit; no R7 work.
 
 ### 2026-10-21 — Unified R6 integration and verification
 

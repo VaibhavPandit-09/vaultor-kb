@@ -13,24 +13,39 @@ const owned = new OwnedServer({
   data: join(root, 'data'),
 });
 async function api(path, method = 'GET', body, workspace, revision) {
-  const r = await fetch(owned.address + '/api' + path, {
-    method,
-    headers: {
-      'X-Vaultor-Owner': owned.accessKey,
-      'X-Vaultor-Protocol': '3',
-      ...(workspace ? { 'X-Vaultor-Workspace': workspace } : {}),
-      ...(revision ? { 'If-Match': '"' + revision + '"' } : {}),
-      ...(body && !(body instanceof FormData)
-        ? { 'Content-Type': 'application/json' }
-        : {}),
-    },
-    body:
-      body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
-  });
-  if (!r.ok)
-    throw Error('Disposable review fixture request failed: ' + r.status);
-  const text = await r.text();
-  return text ? JSON.parse(text) : null;
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const r = await fetch(owned.address + '/api' + path, {
+      method,
+      headers: {
+        'X-Vaultor-Owner': owned.accessKey,
+        'X-Vaultor-Protocol': '3',
+        ...(workspace ? { 'X-Vaultor-Workspace': workspace } : {}),
+        ...(revision ? { 'If-Match': '"' + revision + '"' } : {}),
+        ...(body && !(body instanceof FormData)
+          ? { 'Content-Type': 'application/json' }
+          : {}),
+      },
+      body:
+        body instanceof FormData
+          ? body
+          : body
+          ? JSON.stringify(body)
+          : undefined,
+    });
+    // Only explicit pre-mutation maintenance admission is retryable.
+    if (
+      r.status === 409 &&
+      (await r.clone().json()).code === 'WORKSPACE_BUSY'
+    ) {
+      await new Promise(resolve => setTimeout(resolve, 25));
+      continue;
+    }
+    if (!r.ok)
+      throw Error('Disposable review fixture request failed: ' + r.status);
+    const text = await r.text();
+    return text ? JSON.parse(text) : null;
+  }
+  throw Error('Disposable review fixture maintenance did not settle');
 }
 try {
   await owned.start();

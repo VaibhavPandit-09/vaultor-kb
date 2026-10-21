@@ -8,7 +8,16 @@ import {join} from 'node:path';
 export async function runReviewCheck(window,directory,owned) {
   const evaluate=(code,target=window)=>target.webContents.executeJavaScript(code);
   const wait=async(code,target=window)=>{for(let n=0;n<200;n++){if(await evaluate(code,target).catch(()=>false))return;await new Promise(r=>setTimeout(r,100));}throw Error('Review UI did not settle: '+code);};
-  const owner=async(path,method='GET',body)=>{const r=await fetch(owned.address+'/api'+path,{method,headers:{'X-Vaultor-Owner':owned.accessKey,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});assert.equal(r.status,200,path+' '+await r.clone().text());return r.json();};
+  // Explicit pre-mutation maintenance refusals are retryable; never retry other outcomes.
+  const owner=async(path,method='GET',body)=>{
+    for(let n=0;n<100;n++) {
+      const r=await fetch(owned.address+'/api'+path,{method,headers:{'X-Vaultor-Owner':owned.accessKey,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
+      const value=await r.json();
+      if(r.status===409&&value.code==='WORKSPACE_BUSY'){await new Promise(resolve=>setTimeout(resolve,25));continue;}
+      assert.equal(r.status,200,path+' '+JSON.stringify(value));return value;
+    }
+    throw Error('Disposable Review fixture maintenance did not settle: '+path);
+  };
   const capture=async(name,target=window)=>{await new Promise(r=>setTimeout(r,250));await writeFile(join(directory,name),(await target.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true})).toPNG());};
   assert.equal((await owner('/capabilities')).reviews,1);
   const identity=await owner('/workspace/identity');
