@@ -169,16 +169,13 @@ R5 delivery: [Windows0.12.0](https://github.com/VaibhavPandit-09/vaultor-kb/rele
 
 ## R6 — Android offline review capture and synchronization
 
-Status: **A0–A5 engineering implemented in alpha.22/code26 and incorporated into integration/r6-android; physical A5 acceptance pending.**
-[Integration verification](R6-INTEGRATION.md) owns source accounting, fresh checks and the stop before master/publication.
-The2026-10-21 continuation authorizes Batch1 usability/resource motion and A4 without
-intermediate prototype stops. [R6 Android phases](android-r6-plan.md) preserves the
-original phase scope; [completion ledger](../android/R6-COMPLETION.md) owns current
-checks and remaining hardware gates. R7, master merge and publication remain unauthorized.
+Status: **Complete as a development milestone — Android alpha.23/code27 published from master on2026-10-22.**
 
-- Selection offers Flag for review; resource More offers Add review item. Capture comment, source resource/revision, original quote/context and optional validated locator. The reader remains immutable. Preview the target and allow local editing/removal before sending; editing an already synced comment requires an explicit conditional API, otherwise add a follow-up.
+[Release ledger](../android/releases/0.1.0-alpha.23.md) owns final production source/artifact/install-over and host-mobile evidence. [R7 handoff](R7-HANDOFF.md) owns the clean next-session baseline. Physical motion/haptics, TalkBack, OEM lifecycle/performance and Mac verification remain explicit nonblocking follow-ups. R7 implementation remains separately authorized.
+
+- Selection offers Flag for review; resource More offers Add review item. Capture comment, source resource/revision, original quote/context and optional validated locator. The reader remains immutable. Protected drafts remain editable/discardable before Create Review; completion freezes the queued UUID/body/source. Queued, sending, uncertain and synced evidence cannot be edited, discarded or retargeted. Android has no status-write/edit-synced-comment surface.
 - Persist before showing success; distinguish On this phone, Sending, Synced and Needs attention. Pending review inbox is usable offline across companions. Resource-level reviews cover notes/PDFs/images; no unsupported precision promises.
-- Sync only with matching approved host/workspace/generation, using stable UUID/body and exact acknowledgments. Resume foreground reliably with Sync now; background scheduling is best-effort. Single queue owner prevents duplicate foreground/background workers. Device clocks are display hints, not conflict ordering.
+- Sync only with matching approved host/workspace/generation, using stable UUID/body and exact acknowledgments. Queue commit, resume/reconnection and bounded foreground opportunities drive delivery automatically; Sync now is optional and suspended execution is best-effort. Single queue owner prevents duplicate foreground/background workers. Device clocks are display hints, not conflict ordering.
 - Download status resolution updates; never auto-resolve on local reading/editing. Source changes retain evidence; source missing/revocation/replacement keeps the item recoverable. No redirects to an identically named workspace. Pending comments remain independent of evicted content.
 - Validate process death at every receipt transition, host acknowledgment lost, two devices/status conflict, mixed batch failures, offline target edits, changed locators, storage failure and accessibility/Back.
 

@@ -1,9 +1,9 @@
 # Android Review delivery and desktop status
 
-Reviewed 2026-10-21. R6 A4 implementation incorporated into integration/r6-android from ai/codex-android-ux-prototypes. [Integration verification](../plans/R6-INTEGRATION.md) owns fresh host/mobile results.
+Reviewed 2026-10-22. R6 A4 is incorporated into master and published as Android alpha.23/code27. [Alpha.23 release ledger](releases/0.1.0-alpha.23.md) owns final production artifact/host-mobile results; [integration verification](../plans/R6-INTEGRATION.md) retains the earlier matrix.
 [REVIEWS](../workspace/REVIEWS.md) owns the unchanged R5 domain/API contract;
 [Review capture](REVIEW-CAPTURE.md) owns evidence and protected local drafts.
-[Consolidated candidate](R6-COMPLETION.md) owns authorization and acceptance.
+[R6 completion](R6-COMPLETION.md) owns authorization and acceptance.
 
 ## Native delivery ownership
 

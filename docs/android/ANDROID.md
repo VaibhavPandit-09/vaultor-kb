@@ -1,12 +1,8 @@
-# Vaultor for Android — current development
+# Vaultor for Android — completed R6 milestone
 
-Current consolidated candidate: **alpha.22/code26** on
-`integration/r6-android`, integrated from `ai/codex-android-ux-prototypes`. [R6 completion](R6-COMPLETION.md) owns Batch1
-quick Sources/management, contextual Aa, resource-reader motion and A4 verification.
-[Alpha.22 ledger and S24 acceptance](releases/0.1.0-alpha.22.md) owns current completed checks and physical limits. [Review delivery/status](REVIEW-SYNC.md) owns the native queue contract. Existing
-min36/target37, application identity and signer remain. This candidate is local,
-not a public release. [Integration verification](../plans/R6-INTEGRATION.md) owns fresh cross-platform evidence and the stop before master. Physical acceptance remains user-owned; no R7 or publication.
-Alpha.18 ordinary haptics are perceptible per user feedback; no broad remediation.
+R6 is complete as a development milestone. [Android alpha.23/code27](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.23) is published as a production prerelease from master source **7b5baf5f0b732a85e2d152296de69c405bfd4c67**, immutable tag **android/v0.1.0-alpha.23**. Master merge5b0b639 preserves integration21ac91a and complete Android product history. Physical/TalkBack/OEM/Mac acceptance remains unclaimed and nonblocking. [R7 handoff](../plans/R7-HANDOFF.md) owns the next-session baseline; no R7 feature was implemented.
+
+Install **Vaultor-Android-0.1.0-alpha.23.apk** over the existing alpha installation; never uninstall or clear data. Requires Android16/API36+, targets37, original com.vaultor.app identity and signer. Published Windows0.14.0 is the recommended compatible Review host. [Release ledger](releases/0.1.0-alpha.23.md) owns exact artifact/validation evidence.
 
 ## Historical releases and preceding gates
 

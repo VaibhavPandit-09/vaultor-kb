@@ -1,5 +1,7 @@
 # R6 Android integration and verification
 
+Historical integration-stage report. On2026-10-22 the user separately authorized master merge and publication; [R6 alpha.23 release](../android/releases/0.1.0-alpha.23.md) and [R7 handoff](R7-HANDOFF.md) record closure. Original stop-before-master boundaries below describe that earlier task.
+
 Audited 2026-10-21. Integration only; no release, tag, master merge or R7 authorization.
 
 ## Source audit

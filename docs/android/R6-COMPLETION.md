@@ -1,4 +1,8 @@
-# Consolidated R6 completion candidate
+# R6 completed development milestone
+
+R6 is complete as a development milestone. [Android alpha.23/code27](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.23) is published as a production prerelease from master source **7b5baf5f0b732a85e2d152296de69c405bfd4c67**, immutable tag **android/v0.1.0-alpha.23**. Master merge5b0b639 preserves integration21ac91a and complete Android product history. Physical/TalkBack/OEM/Mac acceptance remains unclaimed and nonblocking. [R7 handoff](../plans/R7-HANDOFF.md) owns the next-session baseline; no R7 feature was implemented.
+
+## Historical implementation checkpoints
 
 Authorized 2026-10-21 after S24 alpha.20 testing. The reader-first hybrid remains
 the accepted foundation. Batch1 covers quick Sources/management, direct Aa and
@@ -6,7 +10,7 @@ resource-origin reader motion; Batch2 implements the existing A4 queue/status
 contracts. One consolidated development acceptance APK is intended. No public
 release, R7, master integration, new UI framework or haptic-engine expansion.
 
-## Integration handoff (current)
+## Integration handoff (2026-10-21 checkpoint)
 
 The completed candidate is incorporated into `integration/r6-android` from verified master. [Integration audit and verification](../plans/R6-INTEGRATION.md) owns fetched source identities, original-branch accounting, current checks and the proposed master merge. This is not a release or master merge. The dated implementation evidence below remains historical; physical acceptance is still user-owned.
 

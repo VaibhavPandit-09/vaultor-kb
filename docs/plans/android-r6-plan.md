@@ -2,9 +2,9 @@
 
 Approved direction 2026-10-16. Branch `ai/codex-r6-android` starts at verified master `fb053862df386c1fefe9d9db2a7924eb63979b22`, matching fetched origin/master. No old R5 branch is incorporated. The initial audit was source/document inspection, not a new runtime certification. User's “start” authorized A0; “continue next” subsequently authorized A1. “Start next” subsequently authorized A2; “continue next” now authorizes A3. The2026-10-21 consolidated continuation authorizes A4 on ai/codex-android-ux-prototypes; [R6 completion](../android/R6-COMPLETION.md) owns current gates. [Workspace/companion roadmap](workspace-companion-plan.md) owns milestone scope, [Reviews](../workspace/REVIEWS.md) owns R5 API/domain semantics, and both UI philosophy documents remain authoritative.
 
-## Current integration status — 2026-10-21
+## R6 milestone closed — 2026-10-22
 
-A0–A5 engineering is incorporated into integration/r6-android with desktop0.14.0/R5 intact. [Integration report](R6-INTEGRATION.md) owns exact branch ranges, conflict resolutions and fresh checks. Alpha.22/code26 remains a local original-signer candidate; S24/TalkBack/OEM acceptance remains pending. The audit and dated stop gates below are historical, not a renewed A4 prohibition. Stop before master/release/R7.
+[Android alpha.23/code27](../android/releases/0.1.0-alpha.23.md) is published from master after merge5b0b639 and production install-over/pinned-HTTPS qualification on APIs36/37. A0–A5 engineering is complete as a development milestone; physical/TalkBack/OEM acceptance remains future work. [R7 handoff](R7-HANDOFF.md) owns the next-session baseline. Dated audit/gates below are historical. No R7 implementation occurred.
 
 ## Audited baseline (before A0)
 

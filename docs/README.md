@@ -67,7 +67,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
-- [Android alpha.23 R6 milestone](android/releases/0.1.0-alpha.23.md): production prerelease qualification, compatibility, install-over and physical limits.
+- [Android alpha.23 R6 milestone](android/releases/0.1.0-alpha.23.md): published production prerelease, compatibility, install-over and physical limits.
 
 - [R6 integration and verification](plans/R6-INTEGRATION.md): exact fetched branches, original R6 delta, conflict resolutions, fresh regression evidence and the stop before master.
 
@@ -109,6 +109,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 - [R5/redesign integration](plans/R5-REDESIGN-INTEGRATION.md): branch boundaries, semantic resolutions, validation and unreleased0.14.0 candidate.
 
 ## Active execution trackers — `plans/`
+
+- [R7 fresh-chat handoff](plans/R7-HANDOFF.md): authoritative R6 master/release, compatibility, remaining acceptance and defined R7 scope.
 
 - [Desktop UI redesign audit and proposal](plans/ui-redesign.md): isolated redesign stream, native baseline, implemented Library/browse/Note/pane/navigation/preview/command-palette/settings/utility/theme review candidates, interaction specifications and remaining motion/native review gates.
 
