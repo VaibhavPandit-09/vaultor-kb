@@ -99,7 +99,7 @@ class NavigationExperienceTest {
       var row=d.findObject(By.descStartsWith(label))
       if(row==null)row=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.descStartsWith(label)))
       assertNotNull(row); row!!.click()
-      assertTrue(d.wait(Until.hasObject(By.text("Review capture")),5000)); tap("Done")
+      assertTrue(d.wait(Until.hasObject(By.text("Review capture")),5000)); tap(if(item.getString("state")=="draft")"Keep draft" else "Done")
       val unchanged=JSONArray(call("list"));val retained=(0 until unchanged.length()).map{unchanged.getJSONObject(it)}.first{it.getString("id")==item.getString("id")};assertEquals(item.getJSONObject("body").toString(),retained.getJSONObject("body").toString());assertEquals(item.getJSONObject("source").toString(),retained.getJSONObject("source").toString())
     }
     tap("Library")

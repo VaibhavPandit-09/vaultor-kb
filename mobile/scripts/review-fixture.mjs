@@ -1,6 +1,6 @@
 // Disposable R6 host only. Never writes owner credentials or personal workspace data.
 import { OwnedServer } from '../../desktop/src/owned-server.mjs';
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -70,6 +70,173 @@ try {
     undefined,
     secondId,
   );
+  const linked = note;
+  let readerFixture;
+  if (process.env.VAULTOR_READER_FIXTURE === '1') {
+    const upload = async (name, mime) => {
+      const id = randomUUID(),
+        form = new FormData();
+      form.set('title', name);
+      form.set(
+        'file',
+        new Blob(
+          [
+            await readFile(
+              new URL('../cache/reader-fixture/' + name, import.meta.url),
+            ),
+          ],
+          { type: mime },
+        ),
+        name,
+      );
+      return await api('/resources/imports/' + id, 'PUT', form);
+    };
+    const image1 = await upload('image-1.png', 'image/png'),
+      image2 = await upload('image-2.png', 'image/png'),
+      pdf = await upload('reading.pdf', 'application/pdf'),
+      locked = await upload('locked.pdf', 'application/pdf');
+    const text = t => ({ type: 'text', text: t }),
+      para = t => ({ type: 'paragraph', content: [text(t)] }),
+      heading = t => ({
+        type: 'heading',
+        attrs: { level: 2 },
+        content: [text(t)],
+      }),
+      resource = r => ({
+        type: 'paragraph',
+        content: [
+          {
+            type: 'resourceLink',
+            attrs: { resourceId: r.id, label: r.title, type: r.type },
+          },
+        ],
+      });
+    const rich = {
+      type: 'doc',
+      content: [
+        heading('A quieter place to read'),
+        para(
+          'A phone reader should give the words room to breathe. Select any text to copy it; originals are unchanged.',
+        ),
+        {
+          type: 'paragraph',
+          content: [
+            text('Find a phrase across '),
+            { ...text('bold marks'), marks: [{ type: 'bold' }] },
+            text(' without editing the document.'),
+          ],
+        },
+        {
+          type: 'blockquote',
+          content: [
+            para('The best interface disappears while you are reading.'),
+          ],
+        },
+        {
+          type: 'taskList',
+          content: [
+            {
+              type: 'taskItem',
+              attrs: { checked: true },
+              content: [para('A completed read-only task')],
+            },
+            {
+              type: 'taskItem',
+              attrs: { checked: false },
+              content: [para('An unchecked read-only task')],
+            },
+          ],
+        },
+        heading('Original images'),
+        ...[image1, image2].map((r, i) => ({
+          type: 'image',
+          attrs: {
+            resourceId: r.id,
+            alt: 'Grid image ' + (i + 1),
+            caption: 'Original colors and pixels ' + (i + 1),
+            width: 100,
+            alignment: 'center',
+          },
+        })),
+        heading('Wide tables and code'),
+        {
+          type: 'table',
+          content: [
+            {
+              type: 'tableRow',
+              content: Array.from({ length: 8 }, (_, i) => ({
+                type: 'tableHeader',
+                content: [para('Column ' + (i + 1))],
+              })),
+            },
+            ...Array.from({ length: 5 }, (_, row) => ({
+              type: 'tableRow',
+              content: Array.from({ length: 8 }, (_, i) => ({
+                type: 'tableCell',
+                content: [para('Value ' + row + ' / ' + i)],
+              })),
+            })),
+          ],
+        },
+        {
+          type: 'codeBlock',
+          attrs: { language: 'typescript' },
+          content: [
+            text(
+              'const reading = { mode: "read only", originalBytes: "preserved", sourceWorkspace: "explicit", comfortableMeasure: true };\n'.repeat(
+                8,
+              ),
+            ),
+          ],
+        },
+        heading('Documents'),
+        resource(pdf),
+        resource(locked),
+        {
+          type: 'paragraph',
+          content: [
+            {
+              ...text('Visit example.com'),
+              marks: [
+                {
+                  type: 'link',
+                  attrs: { href: 'https://example.com/reading' },
+                },
+              ],
+            },
+          ],
+        },
+        resource(linked),
+        heading('A long passage'),
+        ...Array.from({ length: 35 }, (_, i) =>
+          para(
+            'Paragraph ' +
+              (i + 1) +
+              '. Keep your place across journeys, app backgrounding and device rotation. We read saved documents without changing their meaning.',
+          ),
+        ),
+        heading('The end'),
+        para(
+          'Find this final sentence and return to the beginning using the outline.',
+        ),
+      ],
+    };
+    const note = await api('/resources', 'POST', {
+      title: 'R2 Rich reading',
+      content: rich,
+    });
+    readerFixture = {
+      noteId: note.id,
+      image1: image1.id,
+      image2: image2.id,
+      pdf: pdf.id,
+      locked: locked.id,
+      revision: note.revision,
+    };
+  }
+  const readerSaved = readerFixture
+    ? await api('/resources/' + readerFixture.noteId)
+    : undefined;
   const descriptor = {
     address: `https://127.0.0.1:${sharing.port}`,
     port: sharing.port,
@@ -79,6 +246,7 @@ try {
     noteId: note.id,
     revision: saved.revision,
     root,
+    readerFixture,
   };
   await writeFile(
     new URL('../cache/r6-review-fixture.json', import.meta.url),
@@ -178,6 +346,15 @@ try {
         );
       }
       if (command.verify) {
+        if (readerSaved) {
+          const currentReader = await api('/resources/' + readerSaved.id);
+          if (
+            currentReader.revision !== readerSaved.revision ||
+            JSON.stringify(currentReader.content) !==
+              JSON.stringify(readerSaved.content)
+          )
+            throw Error('Reader original changed');
+        }
         const current = await api('/resources/' + note.id);
         const otherCurrent = await api(
           '/resources/' + note.id,

@@ -293,12 +293,15 @@ export default function ReviewCapture({
       if (eventTimer) clearTimeout(eventTimer);
       eventTimer = setTimeout(refresh, 250);
     });
-    const timer = setInterval(refresh, 2000);
+    const resumed = AppState.addEventListener('change', state => {
+      if (state === 'active') refresh();
+    });
+    refresh();
     return () => {
       live = false;
       event.remove();
       if (eventTimer) clearTimeout(eventTimer);
-      clearInterval(timer);
+      resumed.remove();
     };
   }, [item?.id, item?.state]);
   const protect = (value: string) => {
@@ -422,6 +425,15 @@ export default function ReviewCapture({
       motion="navigation"
       title={seed || item ? 'Review capture' : 'Captures on this phone'}
       close={dismiss}
+      primaryAction={
+        (seed || initialId || item) && item?.state !== 'queued'
+          ? {
+              label: 'Create Review',
+              onPress: queue,
+              disabled: busy || !item || !comment.trim(),
+            }
+          : undefined
+      }
       onSettled={tag => {
         recordTrace(trace.current, 'sheet_settled', { viewPresent: !!tag });
         setSettled({ id: item?.id, tag });
@@ -510,6 +522,7 @@ export default function ReviewCapture({
                     accessibilityLabel="Review comment"
                     style={s.input}
                     placeholder="What needs review?"
+                    accessibilityHint="Required. Create Review completes this draft and queues it for automatic delivery."
                     placeholderTextColor={palette.muted}
                     multiline
                     disableFullscreenUI
@@ -545,8 +558,12 @@ export default function ReviewCapture({
                         top: 0,
                       }}
                     >
-                      <Text accessibilityRole="header" style={s.title}>
-                        Saved on this phone
+                      <Text
+                        accessibilityRole="header"
+                        accessibilityLiveRegion="polite"
+                        style={s.title}
+                      >
+                        Review created
                       </Text>
                       <Text accessibilityLiveRegion="polite" style={s.muted}>
                         {item ? deliveryLabel(item) : 'Queued on this phone'}
@@ -559,22 +576,29 @@ export default function ReviewCapture({
                     </View>
                   </Animated.View>
                 ) : (
-                  <Text accessibilityLiveRegion="polite" style={s.muted}>
+                  <Text
+                    accessibilityLiveRegion={error ? 'polite' : 'none'}
+                    style={s.muted}
+                  >
                     {busy || protecting
                       ? 'Protecting draft…'
                       : error
                       ? 'Last protected draft retained; current changes need retry.'
-                      : 'Protected draft on this phone · ' +
+                      : 'Draft protected on this phone · ' +
                         comment.length +
                         '/5000'}
                   </Text>
                 )}
                 {item.state === 'draft' ? (
                   <View style={s.actions}>
+                    <Text style={s.muted}>
+                      Not created yet. Create Review queues it safely and syncs
+                      automatically when possible.
+                    </Text>
                     <Action
-                      label="Save on this phone"
-                      disabled={busy || !comment.trim()}
-                      onPress={queue}
+                      label="Keep draft"
+                      disabled={busy}
+                      onPress={dismiss}
                     />
                     <Action
                       label="Discard draft"

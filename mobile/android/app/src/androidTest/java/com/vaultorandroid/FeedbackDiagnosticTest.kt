@@ -22,7 +22,7 @@ class FeedbackDiagnosticTest {
   private fun result(call:(PromiseImpl)->Unit):Pair<String,Boolean>{val done=CountDownLatch(1);var raw="";var failed=false;call(PromiseImpl(Callback{raw=it[0].toString();done.countDown()},Callback{failed=true;done.countDown()}));assertTrue(done.await(10,TimeUnit.SECONDS));return raw to failed}
   private fun tap(label:String){var node=d.wait(Until.findObject(By.desc(label)),5000);if(node==null)node=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.desc(label)));assertNotNull(label,node);node!!.click();Thread.sleep(300)}
   @Test fun developmentGateAndSemanticProbes(){
-    i.targetContext.startActivity(i.targetContext.packageManager.getLaunchIntentForPackage(i.targetContext.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));assertTrue(d.wait(Until.hasObject(By.desc("Open navigation")),10000));tap("Open navigation");tap("Appearance & reading")
+    i.targetContext.startActivity(i.targetContext.packageManager.getLaunchIntentForPackage(i.targetContext.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));assertTrue(d.wait(Until.hasObject(By.desc("Settings")),10000));tap("Settings");tap("Appearance & reading")
     val ctx=(i.targetContext.applicationContext as MainApplication).reactHost.currentReactContext as ReactApplicationContext
     val module=ctx.getNativeModule("VaultorPresentation") as VaultorPresentation
     assertEquals(BuildConfig.VAULTOR_DIAGNOSTICS,module.constants["developmentDiagnostics"])

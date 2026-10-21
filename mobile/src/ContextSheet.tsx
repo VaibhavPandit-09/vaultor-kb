@@ -29,6 +29,7 @@ export default function ContextSheet({
   motion = 'utility',
   dismissing = false,
   onDismissed,
+  primaryAction,
 }: {
   title: string;
   close(): void;
@@ -38,6 +39,7 @@ export default function ContextSheet({
   motion?: 'utility' | 'navigation';
   dismissing?: boolean;
   onDismissed?: () => void;
+  primaryAction?: { label: string; disabled?: boolean; onPress(): void };
 }) {
   const s = useThemeStyles(styles),
     insets = useSafeAreaInsets();
@@ -92,16 +94,14 @@ export default function ContextSheet({
       onShow={() => {
         setShown(true);
         bars();
-        const tag = findNodeHandle(heading.current);
-        if (tag) AccessibilityInfo.setAccessibilityFocus(tag);
       }}
     >
       <KeyboardAvoidingView behavior="height" style={s.full}>
         <SafeAreaView edges={['top', 'left', 'right']} style={s.scrim}>
           <Pressable
             style={StyleSheet.absoluteFill}
-            accessibilityRole="button"
-            accessibilityLabel={'Dismiss ' + title}
+            accessible={false}
+            importantForAccessibility="no"
             onPress={close}
           />
           <MotionSheet
@@ -113,6 +113,9 @@ export default function ContextSheet({
             onSettled={() => {
               const tag = findNodeHandle(root.current);
               if (tag) onSettled?.(tag);
+              const headingTag = findNodeHandle(heading.current);
+              if (active.current && headingTag && !Keyboard.isVisible())
+                AccessibilityInfo.setAccessibilityFocus(headingTag);
             }}
           >
             <View
@@ -134,7 +137,11 @@ export default function ContextSheet({
                 >
                   {title}
                 </Text>
-                <Action label="Done" onPress={close} />
+                {primaryAction ? (
+                  <Action {...primaryAction} />
+                ) : (
+                  <Action label="Done" onPress={close} />
+                )}
               </View>
               {children}
             </View>

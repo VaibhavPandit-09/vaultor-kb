@@ -28,7 +28,7 @@ Approved direction 2026-10-16. Branch `ai/codex-r6-android` starts at verified m
 | A4 — Queue/sync/status | Source-grouped inbox, single native owner, exact receipt reconciliation, desktop status, recovery | Lost acknowledgment→one correct desktop review→explicit resolution→Android update |
 | A5 — Polish/real device | Haptic/motion tuning, bars/themes/insets/accessibility/performance, upgrade/publication | User-owned physical acceptance and documented installed gates |
 
-A0 implementation is authoritative in [Interaction foundations](../android/INTERACTION-FOUNDATIONS.md). A1 is implemented as the alpha.13 shell/source review candidate following “continue next”; A2 is published as the alpha.14 reader-context review candidate; A3 local capture and A4 native delivery/status are implemented in the consolidated continuation; A5 physical acceptance remains pending. A0 physical haptic acceptance remains pending. No R7 import or R8 export feature expansion; broader discovery/update settings remain R9.
+A0 implementation is authoritative in [Interaction foundations](../android/INTERACTION-FOUNDATIONS.md). A1 is implemented as the alpha.13 shell/source review candidate following “continue next”; A2 is published as the alpha.14 reader-context review candidate; A3 local capture and A4 native delivery/status are implemented in the consolidated continuation; A5 engineering is authorized in alpha.22; physical acceptance remains pending. A0 physical haptic acceptance remains pending. No R7 import or R8 export feature expansion; broader discovery/update settings remain R9.
 
 ## Preserved R6 contracts
 

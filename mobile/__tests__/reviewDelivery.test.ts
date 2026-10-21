@@ -10,7 +10,7 @@ test('delivery and desktop triage remain separate; uncertain sends never claim f
     ...capture,
     delivery: { state: 'unknown', uncertain: true, reason: 'HOST_UNAVAILABLE' },
   } as CaptureItem;
-  expect(deliveryLabel(unknown)).toBe('Delivery unconfirmed');
+  expect(deliveryLabel(unknown)).toBe('Queued · delivery unconfirmed');
   expect(deliveryExplanation(unknown)).toContain('same frozen identity');
   const synced = {
     ...capture,

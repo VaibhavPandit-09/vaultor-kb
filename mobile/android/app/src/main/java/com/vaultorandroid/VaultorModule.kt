@@ -184,10 +184,10 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   }, changed={reviewsChanged()}) }
   @ReactMethod fun reviewSync(action:String,input:String,promise:Promise) {
     if(action=="state") {promise.resolve(JSONObject().put("busy",reviewScheduled.get()).toString());return}
-    if(action !in listOf("now","catchUp","refresh") || input.length>256) {promise.reject("REVIEW_SYNC","Unsupported review synchronization request.");return}
+    if(action !in listOf("now","catchUp","refresh","opportunity") || input.length>256) {promise.reject("REVIEW_SYNC","Unsupported review synchronization request.");return}
     if(!reviewScheduled.compareAndSet(false,true)){promise.resolve("{\"busy\":true}");return}
     reviewWorker.execute {
-      try {promise.resolve(reviewSync.sync(action=="now",action=="refresh").toString())}
+      try {promise.resolve(reviewSync.sync(action=="now",action=="refresh",action=="opportunity").toString())}
       catch(_:Exception){promise.reject("REVIEW_SYNC","Review delivery could not be protected. Evidence is retained; retry without clearing app data.")}
       finally {reviewScheduled.set(false);reviewsChanged("done")}
     }

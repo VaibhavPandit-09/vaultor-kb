@@ -1,6 +1,6 @@
 import type { CaptureItem } from './reviews';
 export function deliveryLabel(item: CaptureItem) {
-  if (item.state === 'draft') return 'Protected draft';
+  if (item.state === 'draft') return 'Draft';
   const d = item.delivery;
   if (d?.state === 'synced')
     return `Synced · ${
@@ -10,14 +10,14 @@ export function deliveryLabel(item: CaptureItem) {
         ? 'Dismissed'
         : 'Open on desktop'
     }${d.reason ? ' · last known' : ''}`;
-  if (d?.state === 'sending') return 'Sending';
-  if (d?.state === 'unknown') return 'Delivery unconfirmed';
+  if (d?.state === 'sending') return 'Syncing';
+  if (d?.state === 'unknown') return 'Queued · delivery unconfirmed';
   if (d?.state === 'error') return 'Needs attention';
   return d?.reason ? 'Queued · source unavailable' : 'Queued on this phone';
 }
 const reasons: Record<string, string> = {
   APPROVAL_REQUIRED:
-    'Approve this source in Source management, then Sync now. Evidence stays protected.',
+    'Approve this source in Source management. Automatic delivery resumes after verified reconnection; evidence stays protected.',
   NETWORK_PERMISSION_REQUIRED:
     'Allow local-network access with Sync now to reach the source.',
   TLS_VERIFICATION_FAILED:

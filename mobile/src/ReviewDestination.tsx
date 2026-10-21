@@ -25,7 +25,7 @@ export default function ReviewDestination({
   syncError,
   sync,
 }: {
-  open(id: string): void;
+  open(id: string, returnTag?: number): void;
   revision: number;
   syncing: boolean;
   syncError: string;
@@ -127,14 +127,15 @@ export default function ReviewDestination({
       )}
       renderItem={({ item }) => (
         <Pressable
+          accessible
           accessibilityRole="button"
-          accessibilityLabel={`${item.source.targetTitle}. ${deliveryLabel(
-            item,
-          )}`}
-          onPress={() => open(item.id)}
+          accessibilityLabel={`${item.source.targetTitle}. ${(
+            item.body.comment || item.body.quote
+          ).slice(0, 160)}. ${deliveryLabel(item)}`}
+          onPress={event => open(item.id, Number(event.nativeEvent.target))}
           style={({ pressed }) => [s.row, pressed && s.pressed]}
         >
-          <View style={s.grow}>
+          <View pointerEvents="none" style={s.grow}>
             <Text style={s.name}>
               {item.source.targetTitle || 'Retained resource'}
             </Text>

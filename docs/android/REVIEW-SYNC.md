@@ -33,16 +33,20 @@ known receipts, with an explanation. Original note content/revision is untouched
 
 ## Scheduling and presentation
 
-Mount/resume, a newly queued capture and a30s active-app timer perform catch-up.
-Review stream events invalidate only delivery/status, never the retained document.
-Normal batches select up to32 pending and32 acknowledged rows, oldest checked
-first; explicit Sync now covers the bounded journal. Retry backoff is2s to5min.
-Nonretryable admission/conflict errors require explicit retry after correction.
-Android37 local-network permission is requested by manual Sync now when needed.
+Mount/resume and verified online reconnection request a foreground opportunity.
+Queue commit requests immediate catch-up; an in-flight batch retains one coalesced
+follow-up. A30s active-app timer performs ordinary catch-up. Review events invalidate
+status without reloading retained content. Batches select up to32 pending and32
+acknowledged rows; manual Sync now covers the bounded journal. Network backoff is2s
+to5min. Foreground/reconnection opportunities bypass recoverable backoff and repeat
+all native admission checks. Recoverable permission/approval/host failures are
+periodically rechecked at60s. Generation/UUID/immutable evidence conflicts remain
+blocked for investigation. Android37 local-network permission may still require
+explicit grant through the existing connection flow or manual Sync now.
 There is no guaranteed background scheduler. A process may stop at any point;
 the next foreground session recovers from durable state.
 
-Device-wide source-grouped Review shows protected draft, queued, sending,
+Device-wide source-grouped Review shows Draft, Queued, Syncing,
 delivery unconfirmed, needs attention, or synced plus desktop Open/Resolved/
 Dismissed. It never silently activates a source. Synced receipts can be last known
 when the host is unavailable. Attachment/target availability is secondary to the

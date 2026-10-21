@@ -6,6 +6,21 @@ resource-origin reader motion; Batch2 implements the existing A4 queue/status
 contracts. One consolidated development acceptance APK is intended. No public
 release, R7, master integration, new UI framework or haptic-engine expansion.
 
+## Alpha.22 completion sprint (current)
+
+Alpha.21 UI is accepted as the foundation. This sprint corrects Review completion
+and finishes A5 engineering without a redesign. R5 rejects blank comments: Flag
+opens a protected draft; one Create Review durably queues it and initiates native
+delivery. Keep draft/Back never publishes. Automatic scheduling retains an in-flight
+follow-up, recovers on foreground/verified reconnection and periodically rechecks
+recoverable admission. Permanent immutable conflicts remain Needs attention.
+No guaranteed suspended/force-stopped delivery, new authority or haptic changes.
+
+A5 covers retained lifecycle/source/Review integrity, accessibility focus/semantics,
+IME/Back, reduced motion/font/insets, evidenced performance and install-over readiness.
+Actual alpha.22 checks belong in its release ledger. S24 subjective quality, spoken
+TalkBack and OEM lifecycle remain pending user acceptance.
+
 ## Baseline and checkpoints
 
 Prototype branch starts this work at c0731e05243ba526fc817d4d8254fe01fb0f4c7d.

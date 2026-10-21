@@ -30,7 +30,7 @@ Implementation proceeds one sprint per explicit authorization. Maintain this gui
 
 ## Planned multi-workspace and Android companion direction
 
-[workspace-companion-plan.md](plans/workspace-companion-plan.md) owns the new 13-sprint sequence: W1–W3 shared hosting/switching/transfers, then R1–R10 reader retirement/design, snapshots/offline storage, reviews, queued imports, exports, settings/updates and integration. W1 is implemented and published as Windows0.8.0 (Mac gate pending); W2 is implemented/published Windows0.9.0/Androidalpha.8 (Mac gate pending); W3 is implemented/published Windows0.10.0 (Mac native gate pending); R1 is complete/published Android alpha.9.1; R2 is complete/published Android alpha.10; R3 is complete/published Windows0.11.0 (Mac native gate pending); R4 is complete/published Android alpha.11; R5 is complete/published Windows0.12.0 on ai/codex-current (Mac gate pending); R6 A0–A4 are implemented on the consolidated alpha.21 development candidate below; physical A5 acceptance and R7–R10 remain pending. The former Android A8/A9 are superseded; published A1–A7 describe the historical editing-led implementation, superseded on Android by R1. Android is a source-bound offline reader; Android local Review capture is implemented in the A3 candidate below; native Review delivery/status is implemented in A4; queued imports remain planned. This is not an independently writable local workspace. Full workspace ZIP export is connected-only/host-prepared; partial exports may work offline. Desktop can fork a remote workspace as a separate local copy. W1 implements host-side catalog, isolated contexts, explicit routing and grants while retaining fixed-default protocol3 clients; W2 adds native/browser selectors, owner grants and scoped JSON/files/SSE/session restoration. Archive3 remains unchanged; R1 retires Android editing through a native read-only boundary; alpha.9.1 is published. See WORKSPACES.md for current guarantees rather than interpreting later companion features as shipped.
+[workspace-companion-plan.md](plans/workspace-companion-plan.md) owns the new 13-sprint sequence: W1–W3 shared hosting/switching/transfers, then R1–R10 reader retirement/design, snapshots/offline storage, reviews, queued imports, exports, settings/updates and integration. W1 is implemented and published as Windows0.8.0 (Mac gate pending); W2 is implemented/published Windows0.9.0/Androidalpha.8 (Mac gate pending); W3 is implemented/published Windows0.10.0 (Mac native gate pending); R1 is complete/published Android alpha.9.1; R2 is complete/published Android alpha.10; R3 is complete/published Windows0.11.0 (Mac native gate pending); R4 is complete/published Android alpha.11; R5 is complete/published Windows0.12.0 on ai/codex-current (Mac gate pending); R6 A0–A4 are implemented on the consolidated alpha.22 development candidate below; physical A5 acceptance and R7–R10 remain pending. The former Android A8/A9 are superseded; published A1–A7 describe the historical editing-led implementation, superseded on Android by R1. Android is a source-bound offline reader; Android local Review capture is implemented in the A3 candidate below; native Review delivery/status is implemented in A4; queued imports remain planned. This is not an independently writable local workspace. Full workspace ZIP export is connected-only/host-prepared; partial exports may work offline. Desktop can fork a remote workspace as a separate local copy. W1 implements host-side catalog, isolated contexts, explicit routing and grants while retaining fixed-default protocol3 clients; W2 adds native/browser selectors, owner grants and scoped JSON/files/SSE/session restoration. Archive3 remains unchanged; R1 retires Android editing through a native read-only boundary; alpha.9.1 is published. See WORKSPACES.md for current guarantees rather than interpreting later companion features as shipped.
 
 ### R3 host companion checkpoints
 
@@ -129,6 +129,15 @@ Review-only events refresh status without reloading the reader. Foreground/resum
 queue catch-up and Sync now expose queued/sending/unknown/error/synced plus read-only
 desktop triage. Background execution is best effort. [REVIEW-SYNC](android/REVIEW-SYNC.md)
 owns routing, retries, statuses, limits and diagnostics. No new haptic effect/policy.
+
+Create Review is the sole explicit completion action: R5 requires a nonblank comment.
+Flag opens a protected unfinished draft; typing/dismissal never publish it. Completion
+waits for protection, queues the same UUID/body and triggers automatic native delivery.
+ReviewSyncRunner coalesces one follow-up during an in-flight batch. Foreground/resume/
+verified reconnection and bounded periodic retries repeat all admission checks;
+immutable conflicts remain blocked. Receipt refresh uses native events/resume instead
+of2s encrypted-journal polling. Settled sheet focus respects the IME; dismissal restores
+a scoped reader/Review-row accessibility target.
 
 ## Repository and source map
 
@@ -444,6 +453,17 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 - Build reports a large JS chunk and an outdated Browserslist dataset; these do not prevent packaging. Chunk splitting remains performance work.
 
 ## Change checklist and maintenance history
+
+### 2026-10-21 — R6 completion engineering checkpoint
+
+Replaced ambiguous draft Done/separate Save with Create Review and Keep draft.
+Preserved R5 comment/UUID/frozen-payload contracts. Coalesced foreground sync and
+recoverable admission retry retain all security checks. Improved capture semantics/
+focus and removed2s journal polling. TypeScript,102Jest and reader runtime checks pass;
+signed alpha.22/code26/native-test compilation pass. Installed gates are underway;
+no physical approval or public release claimed. Full-tree lint includes generated
+assets; scoped source lint is verified separately.
+
 
 ### 2026-10-21 — Consolidated runtime acceptance candidate
 

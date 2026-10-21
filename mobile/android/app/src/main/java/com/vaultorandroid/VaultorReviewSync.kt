@@ -51,15 +51,17 @@ class VaultorReviewSync(private val journal:VaultorReviews, private val port:Por
     }
     return safe
   }
-  fun sync(force:Boolean=false,refresh:Boolean=false):JSONObject {
+  fun sync(force:Boolean=false,refresh:Boolean=false,opportunity:Boolean=false):JSONObject {
     if(!owner.compareAndSet(false,true))return JSONObject().put("busy",true)
     try {
       val now=clock();val records=journal.snapshot().filter {it.getString("state")=="queued"}
+      val recoverableAdmission=setOf("APPROVAL_REQUIRED","NETWORK_PERMISSION_REQUIRED","SOURCE_UNAVAILABLE","WORKSPACE_UNAVAILABLE","REVIEWS_UNSUPPORTED","TLS_VERIFICATION_FAILED","HOST_IDENTITY_CHANGED")
       fun due(item:JSONObject):Boolean {
         val d=item.optJSONObject("delivery") ?: return true
         if(force)return true
-        if(d.optString("reason").isNotEmpty() && !d.optBoolean("retryable"))return false
-        return d.optLong("nextAttemptAt")<=now
+        val reason=d.optString("reason")
+        if(reason.isNotEmpty() && !d.optBoolean("retryable") && reason !in recoverableAdmission)return false
+        return opportunity || d.optLong("nextAttemptAt")<=now
       }
       val pending=records.filter {it.optJSONObject("delivery")?.optString("state")!="synced" && due(it)}.sortedBy {it.optJSONObject("delivery")?.optLong("checkedAt") ?: 0L}.take(if(force)256 else 32)
       val synced=records.filter {it.optJSONObject("delivery")?.optString("state")=="synced" && (refresh || due(it))}.sortedBy {it.optJSONObject("delivery")?.optLong("checkedAt") ?: 0L}.take(if(force)256 else 32)
@@ -97,7 +99,7 @@ class VaultorReviewSync(private val journal:VaultorReviews, private val port:Por
           val uncertain=!wasSynced && (dispatched || d.optBoolean("attempted"))
           d.put("state",if(wasSynced)"synced" else if(retryable)if(uncertain)"unknown" else "queued" else "error")
             .put("reason",failure?.reason ?: "HOST_UNAVAILABLE").put("uncertain",uncertain).put("retryable",retryable).put("checkedAt",now)
-            .put("nextAttemptAt",if(retryable)now+minOf(300000L,2000L*(1L shl minOf(7,d.optInt("attempts")))) else 0L)
+            .put("nextAttemptAt",if(retryable)now+minOf(300000L,2000L*(1L shl minOf(7,d.optInt("attempts")))) else if(failure?.reason in recoverableAdmission)now+60000 else 0L)
           journal.delivery(id,d);changed();attention++
         }
       }

@@ -149,8 +149,8 @@ class ReviewSyncExperienceTest {
     tap("R6 Review fixture, Note");assertTrue(d.wait(Until.hasObject(By.desc("Reading options")),10000))
     tap("Reading options");tap("Add review item")
     val field=d.wait(Until.findObject(By.desc("Review comment")),10000);field.text="R6 actual production bridge capture"
-    assertTrue(d.wait(Until.hasObject(By.text("Protected draft on this phone · 35/5000")),10000))
-    tap("Save on this phone");assertTrue(d.wait(Until.hasObject(By.text("Saved on this phone")),10000));tap("Done")
+    assertTrue(d.wait(Until.hasObject(By.text("Draft protected on this phone · 35/5000")),10000))
+    tap("Create Review");assertTrue(d.wait(Until.hasObject(By.text("Review created")),10000));tap("Done")
     tap("Browse navigation");tap("Review")
     assertTrue(d.wait(Until.hasObject(By.text("Protected on this phone · all sources")),5000))
     d.wait(Until.gone(By.desc("Syncing…")),120000);tap("Sync now")

@@ -75,6 +75,7 @@ export default function WorkspaceScreen() {
   const { reduced, preferences } = useReading();
   const s = useThemeStyles(styles);
   const reviewSync = useReviewSync();
+  const reconnectReviews = reviewSync.reconnect;
   const model = useRef(
     new MobileWorkspace({
       storage: (a, v = {}) => parse(native.storage(a, JSON.stringify(v))),
@@ -127,9 +128,12 @@ export default function WorkspaceScreen() {
   const [captureRequest, setCaptureRequest] = useState<{
     seed?: CaptureSeed;
     initialId?: string;
+    returnTag?: number;
   }>();
+  const captureFocusTicket = useRef(0);
   const capture = (evidence?: Evidence, page?: number) => {
     try {
+      captureFocusTicket.current++;
       setCaptureRequest({
         seed: captureSeed(model.snapshot(), evidence, page),
       });
@@ -545,6 +549,15 @@ export default function WorkspaceScreen() {
     state.localOnly,
     refreshDownloads,
     reviewSync.refresh,
+  ]);
+  useEffect(() => {
+    if (initialized && state.connection === 'online') reconnectReviews();
+  }, [
+    initialized,
+    state.connection,
+    state.host?.hostId,
+    state.host?.epoch,
+    reconnectReviews,
   ]);
   const select = (destination: RootDestination, search = false) => {
     closeUtilities();
@@ -1103,7 +1116,10 @@ export default function WorkspaceScreen() {
                 syncing={reviewSync.busy}
                 syncError={reviewSync.error}
                 sync={reviewSync.sync}
-                open={initialId => setCaptureRequest({ initialId })}
+                open={(initialId, returnTag) => {
+                  captureFocusTicket.current++;
+                  setCaptureRequest({ initialId, returnTag });
+                }}
               />
             ) : null}
           </View>
@@ -1409,8 +1425,26 @@ export default function WorkspaceScreen() {
           seed={captureRequest.seed}
           initialId={captureRequest.initialId}
           close={() => {
+            const ticket = ++captureFocusTicket.current;
+            const tag =
+              captureRequest.returnTag ||
+              findNodeHandle(sourceOrientation.current);
+            const scope = captureRequest.seed?.scope;
             setCaptureRequest(undefined);
             setReviewRevision(v => v + 1);
+            if (tag)
+              requestAnimationFrame(() => {
+                void NativeModules.VaultorPresentation.awaitWindow(tag)
+                  .then((focused: boolean) => {
+                    if (
+                      focused &&
+                      ticket === captureFocusTicket.current &&
+                      (!scope || model.snapshot().scope === scope)
+                    )
+                      AccessibilityInfo.setAccessibilityFocus(tag);
+                  })
+                  .catch(() => {});
+              });
           }}
         />
       ) : null}

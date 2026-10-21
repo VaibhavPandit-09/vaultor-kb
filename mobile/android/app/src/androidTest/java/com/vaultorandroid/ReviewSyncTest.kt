@@ -101,6 +101,26 @@ class ReviewSyncTest {
     try{VaultorReviewSync(store,server).sync(true);fail("Claim persistence must fail before PUT")}catch(_:Exception){}finally{guard.delete();fault.delete()}
     assertEquals(before,server.puts);assertEquals("queued",store.snapshot().first{it.getString("id")==next.getString("id")}.getString("state"))
   }
+  @Test fun foregroundOpportunityRecoversBackoffAndRestoredApprovalWithoutManualRetry()=fixture {store,reopen,_->
+    var now=10000L;val server=Host();server.available=false;val first=queue(store)
+    VaultorReviewSync(store,server,{now}).sync()
+    server.available=true;VaultorReviewSync(reopen(),server,{now}).sync();assertEquals(0,server.puts)
+    VaultorReviewSync(reopen(),server,{now}).sync(opportunity=true);assertEquals(1,server.puts)
+    assertEquals(first.getJSONObject("body").toString(),store.snapshot().first().getJSONObject("body").toString())
+    val second=queue(store);server.revoked=true;VaultorReviewSync(store,server,{now}).sync(opportunity=true)
+    assertEquals("APPROVAL_REQUIRED",store.snapshot().first{it.getString("id")==second.getString("id")}.getJSONObject("delivery").getString("reason"))
+    server.revoked=false;VaultorReviewSync(reopen(),server,{now}).sync();assertEquals(1,server.puts)
+    now+=60001;VaultorReviewSync(reopen(),server,{now}).sync();assertEquals(2,server.puts)
+    assertTrue(store.snapshot().all{it.getJSONObject("delivery").getString("state")=="synced"})
+  }
+  @Test fun automaticOpportunitiesNeverPublishDraftsOrRetryDifferentImmutableIntent()=fixture {store,_,_->
+    val draft=org.json.JSONObject(store.execute("begin",seed()));store.execute("put",JSONObject().put("id",draft.getString("id")).put("version",0).put("comment","Unfinished protected comment"))
+    val server=Host();VaultorReviewSync(store,server).sync(opportunity=true);assertEquals(0,server.puts)
+    val frozen=queue(store);server.conflict=true;VaultorReviewSync(store,server).sync();assertEquals(1,server.puts)
+    server.conflict=false;VaultorReviewSync(store,server).sync(opportunity=true);assertEquals(1,server.puts)
+    assertEquals("draft",store.snapshot().first{it.getString("id")==draft.getString("id")}.getString("state"))
+    assertEquals(frozen.getJSONObject("body").toString(),store.snapshot().first{it.getString("id")==frozen.getString("id")}.getJSONObject("body").toString())
+  }
   @Test fun generationReplacementDuringGetCannotReplaceKnownReceipt()=fixture {store,reopen,_->
     queue(store);val server=Host();VaultorReviewSync(store,server).sync(true)
     server.rows.values.first().put("status","resolved").put("revision","replacement-r2")

@@ -1,6 +1,6 @@
 # Vaultor for Android — current development
 
-Current consolidated candidate: **alpha.21/code25** on
+Current consolidated candidate: **alpha.22/code26** on
 `ai/codex-android-ux-prototypes`. [R6 completion](R6-COMPLETION.md) owns Batch1
 quick Sources/management, contextual Aa, resource-reader motion and A4 verification.
 [Review delivery/status](REVIEW-SYNC.md) owns the native queue contract. Existing
