@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Action } from './BrowseScreen';
 import { presentation } from './browse';
+import { ResourceTouch } from './ResourceMotion';
 import { useThemeStyles } from './ui';
 import type { Note } from './bridge';
 import type { QuickAccess, RootDestination } from './navigation';
@@ -29,7 +30,11 @@ function Shortcut({
     ? { icon: '▦', label: 'Collection' }
     : presentation(resource ?? { type: '' });
   return (
-    <Pressable
+    <ResourceTouch
+      title={title || 'Resource'}
+      resourceId={
+        !collection && resource?.type === 'note' ? resource.id : undefined
+      }
       accessibilityRole="button"
       accessibilityLabel={`${title}, ${info.label}`}
       onPress={() =>
@@ -37,16 +42,20 @@ function Shortcut({
       }
       style={({ pressed }) => [s.shortcut, pressed && s.pressed]}
     >
-      <Text importantForAccessibility="no" style={s.icon}>
-        {info.icon}
-      </Text>
-      <View collapsable={false} style={s.grow}>
-        <Text numberOfLines={2} style={s.itemTitle}>
-          {title}
-        </Text>
-        <Text style={s.meta}>{info.label}</Text>
-      </View>
-    </Pressable>
+      {titleRef => (
+        <>
+          <Text importantForAccessibility="no" style={s.icon}>
+            {info.icon}
+          </Text>
+          <View collapsable={false} style={s.grow}>
+            <Text ref={titleRef} numberOfLines={2} style={s.itemTitle}>
+              {title}
+            </Text>
+            <Text style={s.meta}>{info.label}</Text>
+          </View>
+        </>
+      )}
+    </ResourceTouch>
   );
 }
 export function HomeScreen(
@@ -70,18 +79,24 @@ export function HomeScreen(
         <Text style={s.secondary}>⌕ Search your workspace</Text>
       </Pressable>
       {props.returnToNote ? (
-        <Pressable
+        <ResourceTouch
+          title={props.resume?.title || 'Reader'}
+          resourceId={props.resume?.id}
           accessibilityRole="button"
           accessibilityLabel={'Resume reading ' + props.resume?.title}
           onPress={props.returnToNote}
           style={s.resume}
         >
-          <Text style={s.meta}>Resume reading</Text>
-          <Text numberOfLines={2} style={s.resumeTitle}>
-            {props.resume?.title}
-          </Text>
-          <Text style={s.meta}>Saved reading position ›</Text>
-        </Pressable>
+          {titleRef => (
+            <>
+              <Text style={s.meta}>Resume reading</Text>
+              <Text ref={titleRef} numberOfLines={2} style={s.resumeTitle}>
+                {props.resume?.title}
+              </Text>
+              <Text style={s.meta}>Saved reading position ›</Text>
+            </>
+          )}
+        </ResourceTouch>
       ) : null}
       {props.feed.error ? (
         <View collapsable={false} accessibilityRole="alert">

@@ -3,6 +3,7 @@ import { useThemeStyles } from './ui';
 import { Action } from './Action';
 import ContextSheet from './ContextSheet';
 import { counted, rowMetadata } from './browsePresentation';
+import { ResourceTouch } from './ResourceMotion';
 import React, {
   useEffect,
   useCallback,
@@ -85,6 +86,7 @@ export function ChoiceSheet({
 export default function BrowseScreen({
   model,
   visible,
+  retained = false,
   onAction,
   searchRequest = 0,
   suspended = false,
@@ -95,6 +97,7 @@ export default function BrowseScreen({
   onOrganize?: (target: Target) => void;
   completedIds?: string[];
   visible: boolean;
+  retained?: boolean;
   onAction: (action: () => Promise<void>) => void;
   searchRequest?: number;
   suspended?: boolean;
@@ -263,7 +266,7 @@ export default function BrowseScreen({
     active,
     state.scope,
   ]);
-  if (!visible) return null;
+  if (!visible && !retained) return null;
   const choices = filters.concat(
     b.config.destination === 'pinned'
       ? [{ value: 'collection', label: 'Collections' }]
@@ -353,16 +356,24 @@ export default function BrowseScreen({
                     )}
               </Text>
               {state.note ? (
-                <Pressable
+                <ResourceTouch
+                  resourceId={state.note.id}
+                  title={state.note.title}
                   accessibilityRole="button"
                   accessibilityLabel={'Resume · ' + state.note.title}
                   onPress={() => onAction(() => model.returnToNote())}
                   style={styles.resume}
                 >
-                  <Text numberOfLines={1} style={styles.resumeText}>
-                    Resume · {state.note.title} ›
-                  </Text>
-                </Pressable>
+                  {titleRef => (
+                    <Text
+                      ref={titleRef}
+                      numberOfLines={1}
+                      style={styles.resumeText}
+                    >
+                      Resume · {state.note?.title} ›
+                    </Text>
+                  )}
+                </ResourceTouch>
               ) : null}
             </View>
             {b.config.collection ? (
@@ -485,7 +496,11 @@ export default function BrowseScreen({
                   </Text>
                 </Pressable>
               ) : null}
-              <Pressable
+              <ResourceTouch
+                title={item.title}
+                resourceId={
+                  item.resource?.type === 'note' ? item.id : undefined
+                }
                 style={styles.rowMain}
                 accessibilityRole="button"
                 accessibilityLabel={`${item.title}, ${p.label}`}
@@ -518,25 +533,33 @@ export default function BrowseScreen({
                     : activate(item)
                 }
               >
-                <Text accessibilityElementsHidden style={styles.icon}>
-                  {p.icon}
-                </Text>
-                <View collapsable={false} style={styles.rowText}>
-                  <Text numberOfLines={2} style={styles.resourceTitle}>
-                    {item.title}
-                  </Text>
-                  {metadata ? (
-                    <Text numberOfLines={1} style={styles.meta}>
-                      {metadata}
+                {titleRef => (
+                  <>
+                    <Text accessibilityElementsHidden style={styles.icon}>
+                      {p.icon}
                     </Text>
-                  ) : null}
-                  {item.snippet ? (
-                    <Text numberOfLines={3} style={styles.snippet}>
-                      {item.snippet.text}
-                    </Text>
-                  ) : null}
-                </View>
-              </Pressable>
+                    <View collapsable={false} style={styles.rowText}>
+                      <Text
+                        ref={titleRef}
+                        numberOfLines={2}
+                        style={styles.resourceTitle}
+                      >
+                        {item.title}
+                      </Text>
+                      {metadata ? (
+                        <Text numberOfLines={1} style={styles.meta}>
+                          {metadata}
+                        </Text>
+                      ) : null}
+                      {item.snippet ? (
+                        <Text numberOfLines={3} style={styles.snippet}>
+                          {item.snippet.text}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </>
+                )}
+              </ResourceTouch>
               {onOrganize ? (
                 <Action
                   label="•••"

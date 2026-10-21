@@ -17,7 +17,7 @@ test('current identity and retained generations stay distinct without a duplicat
   expect(rows).toHaveLength(2);
   expect(rows[0]).toMatchObject({
     current: true,
-    status: 'Offline · downloaded',
+    status: expect.stringContaining('Offline · downloaded'),
   });
   expect(rows[1]).toMatchObject({ scope: jobs[1].scope, locked: true });
 });

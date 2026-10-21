@@ -200,6 +200,7 @@ export default function ReaderView({
       });
     wasVisible.current = visible;
   }, [visible, send]);
+  const [painted, setPainted] = useState(-1);
   const close = () => {
     Keyboard.dismiss();
     closePanel();
@@ -308,7 +309,11 @@ export default function ReaderView({
             r.url === 'file:///android_asset/reader.html' ||
             r.url === 'about:blank'
           }
-          style={{ flex: 1, backgroundColor: palette.canvas }}
+          style={{
+            flex: 1,
+            backgroundColor: palette.canvas,
+            opacity: painted === state.loadId ? 1 : 0,
+          }}
           onMessage={e => {
             const actual = model.snapshot();
             if (
@@ -334,6 +339,7 @@ export default function ReaderView({
             const st = current.current;
             if (m.loadId !== String(st.loadId)) return;
             if (m.type === 'loaded') {
+              setPainted(st.loadId);
               if (Array.isArray(m.headings))
                 setHeadings(
                   m.headings

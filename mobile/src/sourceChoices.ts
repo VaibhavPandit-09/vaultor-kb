@@ -79,5 +79,18 @@ export function sourceChoices(
       workspaceId: h.workspaceId,
     });
   }
-  return rows;
+  return rows.map(row => {
+    if (rows.filter(other => other.name === row.name).length < 2) return row;
+    const host = state.hosts.find(h => h.hostId === row.hostId);
+    let generation = '';
+    try {
+      generation = JSON.parse(row.scope || state.scope)[2]?.slice(0, 8) || '';
+    } catch {}
+    return {
+      ...row,
+      status: [row.status, host?.address || 'Retained host', generation]
+        .filter(Boolean)
+        .join(' · '),
+    };
+  });
 }

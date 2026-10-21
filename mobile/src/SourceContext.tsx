@@ -12,6 +12,7 @@ export default function SourceContext({
   sourceRef,
   landing,
   switchable = true,
+  titleMoving = false,
 }: {
   workspace: string;
   availability: string;
@@ -21,6 +22,7 @@ export default function SourceContext({
   sourceRef?: React.RefObject<React.ElementRef<typeof View> | null>;
   landing: Animated.Value;
   switchable?: boolean;
+  titleMoving?: boolean;
 }) {
   const p = usePalette();
   const status =
@@ -65,7 +67,10 @@ export default function SourceContext({
             numberOfLines={1}
             style={[
               title ? s.readerTitle : s.name,
-              { color: title ? p.text : p.secondary },
+              {
+                color: title ? p.text : p.secondary,
+                opacity: titleMoving && title ? 0 : 1,
+              },
             ]}
           >
             {title || workspace}

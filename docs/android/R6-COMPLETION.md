@@ -56,5 +56,22 @@ status-write surface or note editing authority.
 ## Validation
 
 Source/settings slice: TypeScript and focused source/reading Jest checks pass.
-Android motion/runtime verification follows with Batch1 before A4 implementation.
+Batch1 TypeScript and13 focused geometry/source/reading/navigation Jest cases pass.
+Scoped lint has zero errors (32 warnings). Original-signer release and native-test
+compilation pass. API36 ReaderMotionExperienceTest passes after correcting a
+management test assumption and the moving title endpoint (40.983s final); actual
+intermediate native aperture bounds, retained WebView/DOM and scroll, list query,
+Aa updates and Settings handoff are asserted. Existing capture/queue/original
+preservation passes (8.43s). Recorded45s/8fps temporal samples were inspected, not
+just endpoints. The first recording revealed a chasing/duplicate title endpoint;
+fixed reader hierarchy geometry and temporary title ownership remove that defect.
+Approval removal is present in its separate management section. No subjective S24
+approval is claimed. API37 and theme/large-text/IME/reduced gates follow on the
+consolidated A4 candidate.
 No physical approval or new APK is claimed at this intermediate source checkpoint.
+
+Aperture geometry follows the small existing folio allocation change; real window,
+IME or source changes cancel stale origins. Missing origins use a16–20dp bounded
+reveal. Hidden reading/browsing trees remain mounted with exclusive touch/accessibility
+ownership. Reader pixels wait for their own load acknowledgment before appearing,
+preventing old-document pixels under a new title. No document text/bitmap scaling.

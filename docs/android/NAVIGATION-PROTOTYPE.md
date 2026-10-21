@@ -1,5 +1,10 @@
 # Prototype 1 — reader-first navigation
 
+The2026-10-21 [consolidated R6 continuation](R6-COMPLETION.md) supersedes this
+alpha.20 source/settings placement and its stop-before-Prototype2/A4 gate. The
+three-destination reader-first foundation remains; Batch1 implements resource
+origin motion and separates quick Sources from management.
+
 Reviewed 2026-10-19. This is the **alpha.20/code24 development prototype** on
 `ai/codex-android-ux-prototypes`, refining alpha.19. The original prototype base
 remains immutable alpha.17, `1586743a6d15e55be824aa62a5a1c4019ac98cbe`.

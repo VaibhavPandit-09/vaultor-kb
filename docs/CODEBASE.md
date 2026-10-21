@@ -111,7 +111,11 @@ the navigation foundation and authorized consolidated Batch1 source/settings/res
 motion plus A4 completion. [Current completion scope](android/R6-COMPLETION.md) owns
 checkpoints and exact branch audit. Quick Sources now separates selection from full
 management; reader Aa exposes existing theme/size/spacing and advanced preferences.
-The native journal, source checks and haptic engine are unchanged in this first slice.
+The native journal, source checks and haptic engine are unchanged in Batch1.
+ResourceTouch measures row/title identity and ReaderAperture reveals a fixed-size
+retained reader over mounted browsing context; fresh valid origin geometry owns
+reverse motion, with immediate model navigation and bounded fallback. Reader load
+acknowledgment prevents old pixels under a new title.
 
 ## Repository and source map
 
@@ -427,6 +431,16 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 - Build reports a large JS chunk and an outdated Browserslist dataset; these do not prevent packaging. Chunk splitting remains performance work.
 
 ## Change checklist and maintenance history
+
+### 2026-10-21 — Resource-origin reader motion
+
+Added measured row/title→reader aperture and validated reverse geometry, retained
+browsing/reader trees, load-bound pixel admission and scope/window/background
+cancellation. No document scaling or completion-owned navigation. Batch1 TypeScript,
+13 focused Jest cases, original-signer build and API36 motion/settings/state plus
+capture-original-retention checks pass. Temporal recording exposed and corrected
+a moving title endpoint; physical approval is not inferred. Full outcomes and
+remaining API37/final candidate gates: R6-COMPLETION.md. No domain/transport change.
 
 ### 2026-10-21 — Consolidated R6 source/settings slice
 

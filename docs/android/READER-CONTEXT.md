@@ -12,7 +12,9 @@ Offline identity stays available rather than hiding with scroll.
 [Navigation prototype](NAVIGATION-PROTOTYPE.md) owns current edge geometry,
 reversibility, text scaling, rail adaptation and acceptance.
 Reader content/anchor, Find, media and native admission below retain their contracts.
-No Prototype 2 Library-to-document transformation has been implemented.
+The2026-10-21 [R6 continuation](R6-COMPLETION.md) adds measured resource/title
+aperture motion and retained browsing context; that document owns its current
+geometry and validation. Reader/DOM position and original data contracts remain.
 
 Find is a contextual bottom overlay that rises by its own measured height at shared utility timing, retaining the same WebView. A token-bound native activity-window focus handoff waits for window/layout ownership, bounded250ms and cancelled on close/background, before requesting the React Native input IME. It never blocks opening the control or navigation. Only the actual system IME/rotation may resize the viewport; opening/closing Find itself does not take layout space from the document. Measured bounded bottom clearance keeps final text reachable. Clearance does not shrink during the same visit, avoiding a bottom clamp when controls close; a new resource starts with the normal96CSSpx tail. Find remains literal saved-content search,200characters/500matches, cross-mark CSS Highlights. Closing retains the current match position. There is no editable note UI.
 

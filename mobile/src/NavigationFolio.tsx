@@ -64,6 +64,7 @@ export default function NavigationFolio({
   sources,
   more,
   appearance,
+  titleMoving = false,
   back,
   sourceRef,
   landing,
@@ -80,6 +81,7 @@ export default function NavigationFolio({
   sources(): void;
   more(): void;
   appearance(): void;
+  titleMoving?: boolean;
   back(): void;
   sourceRef: React.RefObject<React.ElementRef<typeof View> | null>;
   landing: Animated.Value;
@@ -248,7 +250,7 @@ export default function NavigationFolio({
         style={[
           s.clip,
           rail
-            ? { height: blend(0, readingHeight * 3 + 72) }
+            ? { height: blend(0, readingHeight * 3 + 120) }
             : { width: blend(0, width) },
         ]}
       >
@@ -258,7 +260,7 @@ export default function NavigationFolio({
             rail
               ? {
                   width: 128,
-                  height: readingHeight * 3 + 72,
+                  height: readingHeight * 3 + 120,
                   alignItems: 'stretch',
                 }
               : {
@@ -279,6 +281,7 @@ export default function NavigationFolio({
           </Pressable>
           <SourceContext
             title={title}
+            titleMoving={titleMoving}
             workspace={workspace}
             availability={availability}
             disabled={disabled}

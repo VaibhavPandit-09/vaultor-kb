@@ -40,6 +40,11 @@ import { QuickAccess, type RootDestination } from './navigation';
 import { HomeScreen } from './NavigationSurface';
 import NavigationFolio from './NavigationFolio';
 import SourceContext from './SourceContext';
+import {
+  ResourceMotionProvider,
+  ReaderAperture,
+  useResourceMotion,
+} from './ResourceMotion';
 import { sourceChoices } from './sourceChoices';
 import ReviewDestination from './ReviewDestination';
 import { BrowseMemory, navigationLayout } from './navigationPresentation';
@@ -206,6 +211,13 @@ export default function WorkspaceScreen() {
   );
   const reading = state.view === 'note' && !!state.note && !reviewing;
   useEffect(() => setNavigationDisclosed(false), [reading]);
+  const resourceMotion = useResourceMotion(
+    state.scope,
+    reading,
+    state.note?.id,
+    state.busy,
+    rail,
+  );
   const source = sourcePresentation(state);
   const sourceRoot = useRef<React.ElementRef<typeof View>>(null),
     sourceToken = useRef(0);
@@ -385,6 +397,13 @@ export default function WorkspaceScreen() {
     return false;
   };
   const back = () => {
+    if (resourceMotion.pending) {
+      resourceMotion.reset();
+      run(() =>
+        state.view === 'home' ? model.showHome() : model.showBrowser(),
+      );
+      return;
+    }
     if (closeTransient()) return;
     if (keyboard.current) {
       Keyboard.dismiss();
@@ -720,27 +739,6 @@ export default function WorkspaceScreen() {
                   )
                 }
               />
-              <Action
-                label="Forget approval"
-                onPress={() =>
-                  Alert.alert(
-                    'Forget this host?',
-                    'Legacy recovery is retained. Revoke the device on the host separately.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Forget',
-                        onPress: () =>
-                          run(async () => {
-                            await native.signOut(h.hostId);
-                            model.forgotten(h.hostId);
-                            await model.refreshRecovery();
-                          }),
-                      },
-                    ],
-                  )
-                }
-              />
             </View>
           ))}
           <Text accessibilityRole="header" style={s.section}>
@@ -791,6 +789,39 @@ export default function WorkspaceScreen() {
               />
             </>
           ) : null}
+          <Text accessibilityRole="header" style={s.section}>
+            Trust & removal
+          </Text>
+          <Text style={s.secondary}>
+            Forget approval only when you intend to disconnect this host.
+            Protected Reviews and legacy recovery are retained.
+          </Text>
+          {state.hosts.map(h => (
+            <View key={h.hostId} style={s.row}>
+              <Text style={s.secondary}>{h.address}</Text>
+              <Action
+                label="Forget approval"
+                onPress={() =>
+                  Alert.alert(
+                    'Forget this host?',
+                    'Protected Reviews and legacy recovery are retained. Revoke the device on the host separately.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Forget',
+                        onPress: () =>
+                          run(async () => {
+                            await native.signOut(h.hostId);
+                            model.forgotten(h.hostId);
+                            await model.refreshRecovery();
+                          }),
+                      },
+                    ],
+                  )
+                }
+              />
+            </View>
+          ))}
         </>
       ) : null}
       <Action
@@ -872,163 +903,224 @@ export default function WorkspaceScreen() {
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom', 'left', 'right']}>
       <View style={[s.shell, rail && s.wideShell]}>
-        <View style={s.content}>
-          {!reading ? (
-            <View style={s.screenHeading}>
-              <Text
-                accessibilityRole="header"
-                numberOfLines={1}
-                style={[
-                  s.screenTitle,
-                  (reviewing || hostView) && s.headingGrow,
-                ]}
-              >
-                {heading}
-              </Text>
-              {!reviewing && !hostView ? (
-                <SourceContext
-                  workspace={source.workspace}
-                  availability={source.availability}
-                  disabled={!initialized || state.busy}
-                  open={openSources}
-                  sourceRef={sourceOrientation}
-                  landing={sourceLanding}
-                />
-              ) : null}
-              <Action
-                label="⚙"
-                accessibilityLabel="Settings"
-                onPress={() => setUtilities(true)}
-              />
-            </View>
-          ) : null}
-          {state.offlineWarning ? (
-            <Text accessibilityRole="alert" style={s.error}>
-              {state.offlineWarning}
-            </Text>
-          ) : null}
-          {state.error &&
-          !hosts &&
-          !hostView &&
-          (state.connection === 'online' || state.navigationRetry) ? (
-            <View style={s.notice} accessibilityRole="alert">
-              <Text style={s.error}>{state.error}</Text>
-              <Action
-                label="Retry connection"
-                onPress={() =>
-                  run(async () => {
-                    await permission();
-                    await model.connect(false);
-                  })
+        <ResourceMotionProvider value={resourceMotion.context}>
+          <View
+            ref={resourceMotion.viewportRef}
+            collapsable={false}
+            onLayout={resourceMotion.measureViewport}
+            style={[s.content, { zIndex: 1 }]}
+          >
+            {
+              <View
+                style={s.screenHeading}
+                pointerEvents={
+                  reading || resourceMotion.pending ? 'none' : 'auto'
                 }
-              />
-              {state.navigationRetry ? (
-                <Action
-                  label="Retry opening"
-                  onPress={() => run(() => model.retryNavigation())}
-                />
-              ) : null}
-            </View>
-          ) : null}
-          {!initialized ? (
-            <View key="starting" style={s.content}>
-              <Text style={s.secondary}>Opening workspace…</Text>
-            </View>
-          ) : hostView ? (
-            <View style={[s.content, reviewing && s.hidden]}>
-              {sourceContent}
-            </View>
-          ) : (
-            <View
-              key="workspace-body"
-              style={[s.content, reviewing && s.hidden]}
-              collapsable={false}
-              importantForAccessibility={
-                reviewing ||
-                more ||
-                utilities ||
-                trail ||
-                state.preview ||
-                hosts ||
-                recovery
-                  ? 'no-hide-descendants'
-                  : 'auto'
-              }
-            >
-              {state.view === 'home' ? (
-                <HomeScreen
-                  resume={state.note}
-                  feed={feed}
-                  select={select}
-                  open={open}
-                  retry={() => void quick.refresh()}
-                  returnToNote={
-                    state.note
-                      ? () => run(() => model.returnToNote())
-                      : undefined
-                  }
-                />
-              ) : null}
-              <BrowseScreen
-                model={model}
-                visible={state.view === 'browse'}
-                suspended={reviewing || utilities || hosts || recovery}
-                searchRequest={searchRequest}
-                onAction={run}
-              />
-              {state.note ? (
-                <View
-                  collapsable={false}
-                  style={[s.content, state.view !== 'note' && s.hidden]}
-                  pointerEvents={state.view === 'note' ? 'auto' : 'none'}
-                  importantForAccessibility={
-                    state.view === 'note' ? 'auto' : 'no-hide-descendants'
-                  }
+                importantForAccessibility={
+                  reading || resourceMotion.pending
+                    ? 'no-hide-descendants'
+                    : 'auto'
+                }
+              >
+                <Text
+                  accessibilityRole="header"
+                  numberOfLines={1}
+                  style={[
+                    s.screenTitle,
+                    (reviewing || hostView) && s.headingGrow,
+                  ]}
                 >
-                  <ReaderView
-                    model={model}
-                    settings={() => setUtilities(true)}
-                    panel={readerPanel}
-                    closePanel={() => setReaderPanel(undefined)}
-                    reduced={reduced}
-                    onScroll={() => {}}
-                    capture={evidence => capture(evidence)}
+                  {heading}
+                </Text>
+                {!reviewing && !hostView ? (
+                  <SourceContext
+                    workspace={source.workspace}
+                    availability={source.availability}
+                    disabled={!initialized || state.busy}
+                    open={openSources}
+                    sourceRef={
+                      !reading && !resourceMotion.pending
+                        ? sourceOrientation
+                        : undefined
+                    }
+                    landing={sourceLanding}
                   />
-                </View>
-              ) : null}
-            </View>
-          )}
-          {reviewing ? (
-            <ReviewDestination
-              revision={reviewRevision}
-              open={initialId => setCaptureRequest({ initialId })}
-            />
-          ) : null}
-        </View>
-        <NavigationFolio
-          reading={reading}
-          current={
-            reviewing ? 'review' : state.view === 'home' ? 'home' : 'library'
-          }
-          appearance={() => setReaderPanel('appearance')}
-          title={state.note?.title || 'Reader'}
-          workspace={source.workspace}
-          availability={source.availability}
-          disabled={!initialized || state.busy}
-          sourceRef={sourceOrientation}
-          landing={sourceLanding}
-          disclosed={navigationDisclosed}
-          disclose={() => setNavigationDisclosed(v => !v)}
-          select={destination => {
-            if (destination === 'review') {
-              Keyboard.dismiss();
-              setReviewing(true);
-            } else select(destination);
-          }}
-          sources={openSources}
-          more={() => (reading ? setMore(true) : setUtilities(true))}
-          back={back}
-        />
+                ) : null}
+                <Action
+                  label="⚙"
+                  accessibilityLabel="Settings"
+                  onPress={() => setUtilities(true)}
+                />
+              </View>
+            }
+            {state.offlineWarning ? (
+              <Text accessibilityRole="alert" style={s.error}>
+                {state.offlineWarning}
+              </Text>
+            ) : null}
+            {state.error &&
+            !hosts &&
+            !hostView &&
+            (state.connection === 'online' || state.navigationRetry) ? (
+              <View style={s.notice} accessibilityRole="alert">
+                <Text style={s.error}>{state.error}</Text>
+                <Action
+                  label="Retry connection"
+                  onPress={() =>
+                    run(async () => {
+                      await permission();
+                      await model.connect(false);
+                    })
+                  }
+                />
+                {state.navigationRetry ? (
+                  <Action
+                    label="Retry opening"
+                    onPress={() => run(() => model.retryNavigation())}
+                  />
+                ) : null}
+              </View>
+            ) : null}
+            {!initialized ? (
+              <View key="starting" style={s.content}>
+                <Text style={s.secondary}>Opening workspace…</Text>
+              </View>
+            ) : hostView ? (
+              <View style={[s.content, reviewing && s.hidden]}>
+                {sourceContent}
+              </View>
+            ) : (
+              <View
+                key="workspace-body"
+                pointerEvents={
+                  reading || resourceMotion.pending ? 'none' : 'auto'
+                }
+                style={[s.content, reviewing && s.hidden]}
+                collapsable={false}
+                importantForAccessibility={
+                  reading ||
+                  resourceMotion.pending ||
+                  reviewing ||
+                  more ||
+                  utilities ||
+                  trail ||
+                  state.preview ||
+                  hosts ||
+                  recovery
+                    ? 'no-hide-descendants'
+                    : 'auto'
+                }
+              >
+                {state.view === 'home' ||
+                (state.view === 'note' && state.noteOrigin === 'home') ? (
+                  <HomeScreen
+                    resume={state.note}
+                    feed={feed}
+                    select={select}
+                    open={open}
+                    retry={() => void quick.refresh()}
+                    returnToNote={
+                      state.note
+                        ? () => run(() => model.returnToNote())
+                        : undefined
+                    }
+                  />
+                ) : null}
+                <BrowseScreen
+                  model={model}
+                  visible={state.view === 'browse'}
+                  retained={
+                    state.view === 'note' && state.noteOrigin === 'browse'
+                  }
+                  suspended={reviewing || utilities || hosts || recovery}
+                  searchRequest={searchRequest}
+                  onAction={run}
+                />
+              </View>
+            )}
+            {state.note || resourceMotion.pending ? (
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  (!resourceMotion.visible || reviewing || hostView) &&
+                    s.hidden,
+                ]}
+                importantForAccessibility={
+                  more || utilities || hosts || recovery || state.preview
+                    ? 'no-hide-descendants'
+                    : 'auto'
+                }
+                pointerEvents={reading ? 'box-none' : 'none'}
+              >
+                <ReaderAperture motion={resourceMotion} reading={reading}>
+                  {state.note ? (
+                    <View
+                      collapsable={false}
+                      style={[s.content, resourceMotion.pending && s.hidden]}
+                      pointerEvents={state.view === 'note' ? 'auto' : 'none'}
+                      importantForAccessibility={
+                        state.view === 'note' ? 'auto' : 'no-hide-descendants'
+                      }
+                    >
+                      <ReaderView
+                        model={model}
+                        settings={() => setUtilities(true)}
+                        panel={readerPanel}
+                        closePanel={() => setReaderPanel(undefined)}
+                        reduced={reduced}
+                        onScroll={() => {}}
+                        capture={evidence => capture(evidence)}
+                      />
+                    </View>
+                  ) : null}
+                  {resourceMotion.pending ? (
+                    <View style={s.page}>
+                      <Text style={s.section}>
+                        {resourceMotion.presentation?.origin.title}
+                      </Text>
+                      <Text style={s.secondary}>Opening resource…</Text>
+                    </View>
+                  ) : null}
+                </ReaderAperture>
+              </View>
+            ) : null}
+            {reviewing ? (
+              <ReviewDestination
+                revision={reviewRevision}
+                open={initialId => setCaptureRequest({ initialId })}
+              />
+            ) : null}
+          </View>
+          <NavigationFolio
+            reading={reading || resourceMotion.pending}
+            current={
+              reviewing ? 'review' : state.view === 'home' ? 'home' : 'library'
+            }
+            titleMoving={resourceMotion.titleMoving}
+            appearance={() => setReaderPanel('appearance')}
+            title={
+              (resourceMotion.pending
+                ? resourceMotion.presentation?.origin.title
+                : state.note?.title) || 'Reader'
+            }
+            workspace={source.workspace}
+            availability={source.availability}
+            disabled={!initialized || state.busy}
+            sourceRef={sourceOrientation}
+            landing={sourceLanding}
+            disclosed={navigationDisclosed}
+            disclose={() => setNavigationDisclosed(v => !v)}
+            select={destination => {
+              if (destination === 'review') {
+                Keyboard.dismiss();
+                setReviewing(true);
+              } else select(destination);
+            }}
+            sources={openSources}
+            more={() => (reading ? setMore(true) : setUtilities(true))}
+            back={back}
+          />
+        </ResourceMotionProvider>
       </View>
       {recovery ? (
         <ContextSheet title="Legacy recovery" close={() => setRecovery(false)}>
