@@ -72,6 +72,15 @@ class ReviewTest {
         assertEquals(400,assertThrows(AccessFailure.class,()->reviews.create(UUID.randomUUID().toString(),new ReviewService.Input(in.generation(),in.resourceId(),"x".repeat(5001),"","",null,""),"Test")).status);
         assertEquals(400,assertThrows(AccessFailure.class,()->reviews.create(UUID.randomUUID().toString(),new ReviewService.Input(in.generation(),in.resourceId(),"Check","","",new ReviewService.Locator("page",null,0),""),"Test")).status);
     }
+    @Test void incompleteCommentsCannotBecomeCompletedReviews() {
+        var note=notes.createNote("Draft boundary",doc("Original text"));var generation=identity.current().generation();
+        for(String comment:Arrays.asList(null,""," \n\t")) {
+            var failure=assertThrows(AccessFailure.class,()->reviews.create(UUID.randomUUID().toString(),new ReviewService.Input(generation,note.getId(),comment,"Original text","",new ReviewService.Locator("resource",null,null),note.getRevision()),"Phone"));
+            assertEquals(400,failure.status);
+        }
+        assertEquals(0,reviews.list("all",note.getId(),0,100).totalItems());
+        assertEquals(note.getRevision(),resources.findById(note.getId()).orElseThrow().getRevision());
+    }
     @Test void fileReviewsKeepPageEvidenceSeparateFromOriginals() throws Exception {
         String id=UUID.randomUUID().toString();var file=fileImports.create(id,"Review.pdf",null,new MockMultipartFile("file","Review.pdf","application/pdf","%PDF-1.4\nDiscretionary fixture".getBytes(java.nio.charset.StandardCharsets.UTF_8)),null);
         var item=reviews.create(UUID.randomUUID().toString(),new ReviewService.Input(identity.current().generation(),id,"Check page three","","PDF context",new ReviewService.Locator("page",null,3),file.getRevision()),"Phone");assertEquals("file",item.targetType());assertEquals(3,item.locator().page());assertEquals("resource",item.attachment());reviews.status(item.id(),"resolved",etag(item),identity.current().generation());assertEquals(file.getRevision(),resources.findById(id).orElseThrow().getRevision());

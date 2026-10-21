@@ -67,6 +67,19 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [R6 integration and verification](plans/R6-INTEGRATION.md): exact fetched branches, original R6 delta, conflict resolutions, fresh regression evidence and the stop before master.
+
+- [Android Review delivery/status](android/REVIEW-SYNC.md): A4 native ownership, exact-source retries, durable receipts and desktop triage.
+- [Android alpha.22 R6 milestone candidate](android/releases/0.1.0-alpha.22.md): one-step Review completion, automatic foreground delivery, A5 ledger and S24 script; local only.
+- [Android alpha.21 consolidated development candidate](android/releases/0.1.0-alpha.21.md): local APK identity, installed-byte verification and S24 gate; no public release.
+- [Consolidated R6 completion](android/R6-COMPLETION.md): authorized Batch1 usability/motion then A4, branch audit, state boundaries and validation checkpoints.
+
+- [Genuine Review capture haptic trace](android/HAPTIC-CAPTURE-TRACE.md): development-only bounded diagnostics, sanitized copy, Samsung keyboard A/B procedure and interpretation.
+
+- [Android interaction foundations](android/INTERACTION-FOUNDATIONS.md): A0 motion, semantic haptics, coordinated theme/bar foundation and physical review boundary.
+- [R6 Android redesign phases](plans/android-r6-plan.md): approved audit, A0–A5 interaction gates and preserved Review contracts.
+- [Android alpha.12](android/releases/0.1.0-alpha.12.md): A0 review candidate, installed validation and release ledger.
+
 - [Offline reading companions](android/OFFLINE.md): R4 private storage, verified activation/resume, local search, coverage, policies and source locks.
 - [Android alpha.11](android/releases/0.1.0-alpha.11.md): R4 installed APK validation and publication ledger.
 
@@ -116,6 +129,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Historical context — `history/`
 
+- [R6 implementation checkpoints](history/R6-IMPLEMENTATION-CHECKPOINTS.md): archived A0–A5 guide narrative and dated review gates, superseded by unified CODEBASE and integration evidence.
+
 - [Modernization tracker](history/modernization-plan.md): archived implementation checklist and validation.
 - [v2 specification](history/vaultor-v2-spec.md): former product intent; some claims differ from current implementation.
 - [v1 specification](history/vaultor-v1-spec.md): earlier model and delivery notes.
@@ -124,3 +139,19 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 Keep CODEBASE and this index at the docs root for agent discovery. Put topic guides in their relevant folder, link them here and repair relative links when moving files. Archive completed historical specifications rather than rewriting them as current behavior. App updates are owned by agents, not left as user build homework; see the release process above.
 
 - [Android alpha.8 workspace selection](android/releases/0.1.0-alpha.8.md): W2 switching, drafts and emulator evidence.
+
+- [Android navigation Prototype 1](android/NAVIGATION-PROTOTYPE.md) — reader-first folio, source-grouped local Review, structural motion and S24 approval script.
+- [Android alpha.20 refinement ledger](android/releases/0.1.0-alpha.20.md) — contextual Sources, balanced three-destination navigation and Library polish; S24 visual gate pending.
+- [Android alpha.19 development ledger](android/releases/0.1.0-alpha.19.md) — signed build and actual emulator checks; no public release.
+- [Android shell/source navigation](android/SHELL-NAVIGATION.md) — current prototype ownership, mounted reader, source activation and review boundaries.
+- [Android alpha.13 release evidence](android/releases/0.1.0-alpha.13.md) — A1 review candidate and actual checks.
+
+- [Android reader context](android/READER-CONTEXT.md) — A2 stable reading edge, contextual controls, media and platform Back.
+- [Android alpha.14 release evidence](android/releases/0.1.0-alpha.14.md) — A2 review candidate and actual installed checks.
+
+- [Android Review capture](android/REVIEW-CAPTURE.md) — source-bound protected capture/local queue.
+- [Android alpha.15](android/releases/0.1.0-alpha.15.md) — actual A3 installed/publication evidence.
+
+- [Android motion/haptic remediation](android/MOTION-HAPTIC-REMEDIATION.md) — shipped A0–A3 inventory, rejected S24 acceptance, candidate changes and real-device script; A4 blocked.
+
+- [Android alpha.17 hybrid/restraint acceptance ledger](android/releases/0.1.0-alpha.17.md) — historical candidate evidence and alpha.16 comparison; later A4 continuation is recorded in R6 completion.

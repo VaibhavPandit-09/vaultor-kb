@@ -1,10 +1,18 @@
-import React from 'react';
-import { KeyboardAvoidingView, StatusBar, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import {
+  KeyboardAvoidingView,
+  NativeModules,
+  StatusBar,
+  StyleSheet,
+} from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ReadingProvider, useAppearance } from './src/ui';
 import WorkspaceScreen from './src/WorkspaceScreen';
 function Shell() {
   const light = useAppearance() === 'light';
+  useEffect(() => {
+    NativeModules.VaultorPresentation?.systemBars(light, 0);
+  }, [light]);
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={light ? 'dark-content' : 'light-content'} />

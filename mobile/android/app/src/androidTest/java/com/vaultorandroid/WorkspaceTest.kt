@@ -25,6 +25,19 @@ class WorkspaceTest {
  private fun refused(action:(PromiseImpl)->Unit){val latch=CountDownLatch(1);var rejected=false;action(PromiseImpl(Callback {latch.countDown()},Callback {rejected=true;latch.countDown()}));assertTrue(latch.await(30,TimeUnit.SECONDS));assertTrue(rejected)}
  @Test fun pairedWorkspaceIsolationAndSelector(){
   val instrumentation=InstrumentationRegistry.getInstrumentation();val ctx=BridgeReactContext(instrumentation.targetContext);val module=VaultorModule(ctx);val args=InstrumentationRegistry.getArguments();val address=args.getString("fixtureAddress")!!;require(address.startsWith("https://127.0.0.1:"));val note=args.getString("noteId")!!;val file=args.getString("fileId")!!;val target=args.getString("workspaceId")!!
+  require(android.os.Build.HARDWARE=="ranchu")
+  var profiles=JSONObject(result {module.storage("bootstrap","{}",it)}).getJSONArray("profiles")
+  Log.i("VaultorWorkspaceTest","Remembered fixture profiles: "+profiles.length())
+  args.getString("stoppedFixtureAddress")?.let { stopped ->
+    require(stopped.startsWith("https://127.0.0.1:") && stopped!=address)
+    if(profiles.length()>=8 && args.getString("reuseApproval")!="true") {
+      val old=(0 until profiles.length()).map{profiles.getJSONObject(it)}.firstOrNull{it.getString("address")==stopped}
+      require(old!=null){"Explicit stopped fixture approval not found"}
+      result {module.signOut(old!!.getString("hostId"),it)}
+      profiles=JSONObject(result {module.storage("bootstrap","{}",it)}).getJSONArray("profiles")
+    }
+  }
+  assertTrue("Remove one stopped disposable fixture approval through Sources before enrollment", profiles.length()<8 || args.getString("reuseApproval")=="true")
   val reuse=args.getString("reuseApproval")=="true";val enrollment=if(reuse)JSONObject().put("hostId",JSONObject(result {module.storage("bootstrap","{}",it)}).getString("selected"))else JSONObject(result {module.beginPairing(address,it)});if(!reuse)Log.i("VaultorWorkspaceTest","Comparison code: "+enrollment.getString("code"))
   var approved=reuse;for(n in 0..119){if(reuse)break;val status=JSONObject(result {module.completePairing(it)});if(status.optString("state")=="APPROVED"){approved=true;break};Thread.sleep(2000)};assertTrue("Matching-code approval required",approved)
   val host=enrollment.getString("hostId");var epoch=JSONObject(result {module.activate(host,it)}).getString("epoch")
@@ -49,7 +62,14 @@ class WorkspaceSelectorTest {
   assertTrue("Navigation button missing",device.wait(Until.hasObject(By.desc("Open navigation").enabled(true)),30000));
   for(n in 0..10){device.findObject(By.desc("Open navigation"))?.click();if(device.wait(Until.hasObject(By.desc("Switch workspace or manage connections")),1000))break}
   assertTrue("Connection entry missing",device.hasObject(By.desc("Switch workspace or manage connections")));device.findObject(By.desc("Switch workspace or manage connections")).click();
-  assertTrue("Workspace choice missing",device.wait(Until.hasObject(By.text("W2 Second workspace")),15000));device.takeScreenshot(java.io.File(instrumentation.targetContext.getExternalFilesDir(null),"w2-workspaces.png"));device.findObject(By.text("W2 Second workspace")).click();
+  if(device.wait(Until.hasObject(By.desc("Reconnect to host")),1000)) {
+    device.findObject(By.desc("Reconnect to host")).click();assertTrue(device.wait(Until.hasObject(By.desc("Open navigation").enabled(true)),15000));
+    device.findObject(By.descContains("Choose source")).click();
+  }
+  assertTrue("Workspace choice missing",device.wait(Until.hasObject(By.descStartsWith("W2 Second workspace")),15000));device.takeScreenshot(java.io.File(instrumentation.targetContext.getExternalFilesDir(null),"w2-workspaces.png"));device.findObject(By.descStartsWith("W2 Second workspace")).click();
   assertTrue("Switch did not dismiss selector",device.wait(Until.hasObject(By.desc("Open navigation").enabled(true)),15000));
+  device.findObject(By.descContains("Choose source")).click();assertTrue(device.wait(Until.hasObject(By.text("My workspace")),5000));device.findObject(By.desc("My workspace")).click();
+  assertTrue("Return source did not dismiss selector",device.wait(Until.hasObject(By.desc("Open navigation").enabled(true)),15000));
+
  }
 }

@@ -1,0 +1,41 @@
+import { sourceChoices } from '../src/sourceChoices';
+import type { WorkspaceState } from '../src/workspace';
+const scope = JSON.stringify(['h', 'w', 'g1']);
+const state = {
+  scope,
+  host: { hostId: 'h', workspaceId: 'w' },
+  hosts: [],
+  connection: 'offline',
+  downloaded: true,
+} as unknown as WorkspaceState;
+test('current identity and retained generations stay distinct without a duplicate current download', () => {
+  const jobs = [
+    { scope, name: 'Reading' },
+    { scope: JSON.stringify(['h', 'w', 'g2']), name: 'Reading', locked: '1' },
+  ];
+  const rows = sourceChoices(state, jobs, 'Reading');
+  expect(rows).toHaveLength(2);
+  expect(rows[0]).toMatchObject({
+    current: true,
+    status: expect.stringContaining('Offline · downloaded'),
+  });
+  expect(rows[1]).toMatchObject({ scope: jobs[1].scope, locked: true });
+});
+test('malformed inventories and uninspected saved connections do not crowd quick switching', () => {
+  const rows = sourceChoices(
+    {
+      ...state,
+      hosts: [
+        {
+          hostId: 'other',
+          workspaceId: 'w',
+          address: 'https://private.example',
+        },
+      ],
+    },
+    [{ scope: '[]' }, { scope: 'broken' }],
+    'Reading',
+  );
+  expect(rows).toHaveLength(1);
+  expect(JSON.stringify(rows)).not.toContain('private.example');
+});

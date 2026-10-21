@@ -86,7 +86,9 @@ if (!info.includes("'arm64-v8a'") || !info.includes("'x86_64'"))
   throw Error('Phone and emulator ABIs are required.');
 const bytes = await readFile(apk),
   sha = createHash('sha256').update(bytes).digest('hex');
-const name = `Vaultor-Android-${pkg.version}.apk`,
+const manifestTree = run(process.platform === 'win32' ? 'aapt.exe' : 'aapt', ['dump', 'xmltree', apk, 'AndroidManifest.xml']);
+const developmentDiagnostics = /com\.vaultor\.DEVELOPMENT_DIAGNOSTICS[^\n]*\n[^\n]*android:value[^\n]*0xffffffff/.test(manifestTree);
+const name = `Vaultor-Android-${pkg.version}${developmentDiagnostics ? '-development' : ''}.apk`,
   out = join(root, 'releases', pkg.version);
 await mkdir(out, { recursive: true });
 await copyFile(apk, join(out, name));
@@ -105,6 +107,7 @@ const manifest = {
   sha256: sha,
   size: bytes.length,
   apk: name,
+  developmentDiagnostics,
 };
 await writeFile(
   join(out, 'android-release.json'),

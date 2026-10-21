@@ -6,7 +6,14 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { NativeModules, StyleSheet, useColorScheme } from 'react-native';
+import {
+  AppState,
+  NativeModules,
+  StyleSheet,
+  useColorScheme,
+} from 'react-native';
+import { motionDuration, useReducedMotion } from './motion';
+import { ThemeTransition } from './themeTransition';
 import {
   defaultReading,
   normalizeReading,
@@ -49,8 +56,23 @@ const ReadingContext = createContext({
   update: (_: Partial<ReadingPreferences>) => {},
   error: '',
   retry: () => {},
+  reduced: true,
+  chooseTheme: (_: ReadingPreferences['theme'], _tag: number) =>
+    Promise.resolve(),
 });
 export function ReadingProvider({ children }: { children: React.ReactNode }) {
+  const reduced = useReducedMotion();
+  const transition = useRef(
+    new ThemeTransition({
+      prepareTheme: (tag, token) =>
+        NativeModules.VaultorPresentation?.prepareTheme(tag, token) ??
+        Promise.resolve(false),
+      revealTheme: (token, duration) =>
+        NativeModules.VaultorPresentation?.revealTheme(token, duration) ??
+        Promise.resolve(),
+      cancelTheme: () => NativeModules.VaultorPresentation?.cancelTheme(),
+    }),
+  ).current;
   const [preferences, setPreferences] = useState(defaultReading),
     [error, setError] = useState('');
   const current = useRef(preferences),
@@ -81,12 +103,40 @@ export function ReadingProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => setError('Reading preferences unavailable. Retry saving.'));
   }, []);
-  const update = (patch: Partial<ReadingPreferences>) => {
+  const apply = (patch: Partial<ReadingPreferences>) => {
     const value = normalizeReading({ ...current.current, ...patch });
     current.current = value;
     setPreferences(value);
     persist(value);
   };
+  const update = (patch: Partial<ReadingPreferences>) => {
+    transition.cancel();
+    apply(patch);
+  };
+  const chooseTheme = (theme: ReadingPreferences['theme'], tag: number) => {
+    if (theme === current.current.theme) {
+      transition.cancel();
+      return Promise.resolve();
+    }
+    return transition.change(
+      tag,
+      motionDuration('theme', current.current.motion, reduced),
+      () => apply({ theme }),
+    );
+  };
+  const os = useColorScheme();
+  useEffect(() => {
+    transition.cancel();
+  }, [os, reduced, transition]);
+  useEffect(() => {
+    const event = AppState.addEventListener('change', value => {
+      if (value !== 'active') transition.cancel();
+    });
+    return () => {
+      event.remove();
+      transition.cancel();
+    };
+  }, [transition]);
   return React.createElement(
     ReadingContext.Provider,
     {
@@ -95,6 +145,8 @@ export function ReadingProvider({ children }: { children: React.ReactNode }) {
         update,
         error,
         retry: () => persist(current.current),
+        reduced,
+        chooseTheme,
       },
     },
     children,

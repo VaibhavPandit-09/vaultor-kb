@@ -1,6 +1,11 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-Created 2026-10-13; reviewed 2026-10-15. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 complete/published Androidalpha.11; R5 complete/published Windows0.12.0 on ai/codex-current (Mac gate pending); R6–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+Created 2026-10-13; reviewed 2026-10-21. **W1 complete/published Windows0.8.0 (2026-10-13); W2 complete/published Windows0.9.0 and Androidalpha.8; W3 complete/published Windows0.10.0; R1 complete/published Androidalpha.9.1; R2 complete/published Androidalpha.10; R3 complete/published Windows0.11.0 (Mac native gate pending); R4 complete/published Androidalpha.11; R5 complete/published Windows0.12.0 on ai/codex-current (Mac gate pending); R6 A0–A4 implemented in alpha.21 consolidated development candidate on ai/codex-android-ux-prototypes; physical A5 acceptance pending; R7–R10 unstarted.** This is the authoritative replacement execution tracker for shared multi-workspace support and Android's reading companion. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **one sprint per explicitly authorized implementation call**, then stop for discussion.
+
+The2026-10-21 user authorization consolidates Batch1 source/settings/resource motion
+and Batch2 A4 delivery/status. [R6 completion](../android/R6-COMPLETION.md) owns
+current checks and acceptance; earlier per-prototype/A4 stop gates below are historical.
+No R7 or master integration is authorized. Android remains a companion.
 
 ## Agreed product boundary
 
@@ -164,7 +169,12 @@ R5 delivery: [Windows0.12.0](https://github.com/VaibhavPandit-09/vaultor-kb/rele
 
 ## R6 — Android offline review capture and synchronization
 
-Status: **Not started**.
+Status: **A0–A5 engineering implemented in alpha.22/code26 and incorporated into integration/r6-android; physical A5 acceptance pending.**
+[Integration verification](R6-INTEGRATION.md) owns source accounting, fresh checks and the stop before master/publication.
+The2026-10-21 continuation authorizes Batch1 usability/resource motion and A4 without
+intermediate prototype stops. [R6 Android phases](android-r6-plan.md) preserves the
+original phase scope; [completion ledger](../android/R6-COMPLETION.md) owns current
+checks and remaining hardware gates. R7, master merge and publication remain unauthorized.
 
 - Selection offers Flag for review; resource More offers Add review item. Capture comment, source resource/revision, original quote/context and optional validated locator. The reader remains immutable. Preview the target and allow local editing/removal before sending; editing an already synced comment requires an explicit conditional API, otherwise add a follow-up.
 - Persist before showing success; distinguish On this phone, Sending, Synced and Needs attention. Pending review inbox is usable offline across companions. Resource-level reviews cover notes/PDFs/images; no unsupported precision promises.
@@ -282,3 +292,40 @@ No host/desktop/API/schema/protocol/archive change or phone access. Owned emulat
 ## 2026-10-15 — R5 integration with current desktop redesign
 
 The authorized integration branch combines master cf953fe presentation and ai/codex-current68dcca8 R5 semantics from common base11b09aa. Desktop0.14.0 is an unpublished integration candidate; historical Windows0.12.0/Mac0.13.0 releases stay immutable. Domain/archive4 and redesigned UI/focus/native validation are recorded in [R5/redesign integration](R5-REDESIGN-INTEGRATION.md). Android alpha.11 is unchanged. Stop after the integration branch push; R6–R10 remain unstarted.
+
+## 2026-10-16 — R6 A0 Android foundation review release
+
+User approved the source audit/phased redesign and started A0 from verified master fb05386 on ai/codex-r6-android. [Android alpha.12](../android/releases/0.1.0-alpha.12.md), versionCode16, is published as an Android-only A0 review candidate from immutable439dab1/android/v0.1.0-alpha.12 at2026-10-15T22:25:32Z. Shared motion/reduced-motion, semantic capability-aware haptics, System/Off previews and coordinated theme/bar/appearance-sheet foundation preserve original resources and host contracts. TypeScript,12 focused Jest cases, reader/media DOM checks, scoped lint0errors/25warnings, original-key release/instrumentation compilation and three focused native cases per API36/API37 passed. Exact tagged rebuild matches both pulled installed APKs; staged/public assets and anonymous APK download verified. Recordings/frames inspected with explicit temporal/native-reader limitations. Both emulators stopped; physical haptic/OneUI/OLED/TalkBack acceptance remains user-owned. Documentation-only publication follow-up does not move the tag. **Stop at A0 review; A1–A5 and R6 capture/sync remain unstarted.**
+
+## 2026-10-16 — R6 A1 shell/source review candidate
+
+“Continue next” authorized A1 after the A0 publication. Published Android alpha.13/code17 from immutable25dad991/android/v0.1.0-alpha.13 at2026-10-15T23:26:54Z retains the reader while Sources/navigation/recovery are inspected, unifies verified downloads and connected workspace choice, gives Home an identified resume action, reclaims list orientation space and standardizes utility sheets. [Shell navigation](../android/SHELL-NAVIGATION.md) owns behavior and interaction contracts; [alpha.13 ledger](../android/releases/0.1.0-alpha.13.md) owns actual checks/publication. TypeScript,11 focused Jest cases, scoped lint0errors/18warnings, original-key compilation/package checks, final API36 five-case/API37 seven-execution native gates, exact-source/installed-byte comparison and staged/public artifact verification passed. A0/A1 physical acceptance remains pending. **Stop at A1 review; A2–A5 and Review capture/sync remain unimplemented.**
+
+## 2026-10-16 — R6 A2 reader-context authorization
+
+“Start next” authorized A2 on the existing master-based ai/codex-r6-android branch. Android alpha.14/code18 is published from immutable02e39fac/android/v0.1.0-alpha.14 at2026-10-16T04:03:47Z after installed API36/API37 reader/media/Back/theme, disconnected/reduced-motion, exact-source/installed-byte and staged/public artifact gates. [Reader context](../android/READER-CONTEXT.md) owns its interaction contract; [alpha.14 ledger](../android/releases/0.1.0-alpha.14.md) owns actual gates. Stop at A2 review before A3. Review capture/sync and physical acceptance remain pending.
+
+
+## 2026-10-16 — R6 A3 local capture authorization
+
+“Continue next” authorizes A3 after alpha.14. [Review capture](../android/REVIEW-CAPTURE.md) and [alpha.15 ledger](../android/releases/0.1.0-alpha.15.md) own behavior/evidence. No original write or upload/status transport is enabled. Stop at A3 review before A4.
+
+A3 alpha.15/code19 is published from immutable7d64708/android/v0.1.0-alpha.15 at2026-10-16T07:14:53Z. Both exact installed emulator generations passed12 focused executions; clean source and downloaded staged assets match. A4 upload/status/reconciliation remains unstarted. Stop for A3 review; physical acceptance remains user-owned.
+
+## 2026-10-16 — Real-device interaction rejection
+
+S24 Ultra rejection reopens A0–A3 motion/haptic acceptance. Remediation is authorized, A4 is blocked pending explicit approval; no upload/status work may start. See Android MOTION-HAPTIC-REMEDIATION.md for complete shipped-path inventory and candidate script.
+
+### 2026-10-16 — Remediation candidate published; A4 blocked
+
+[Development acceptance alpha.16/code20](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.16) published at12:00:42Z from 9197816856d823b4f1efd35098e6d2985ced295c. Installed original-signer APK bytes, clean-source reproduction, three staged downloads and anonymous public APK checksum verified. [Audit and exact S24 script](../android/MOTION-HAPTIC-REMEDIATION.md) and [release ledger](../android/releases/0.1.0-alpha.16.md) own evidence. A0–A3 remain unapproved on real hardware; stop here. A4 requires explicit S24 approval.
+
+### 2026-10-19 — Alpha.17 hybrid/refinement authorization
+
+User authorizes architectural/interaction audit then minimum A0–A3 refinement and development acceptance alpha.17/code21. React Native remains primary UI/motion; existing thin Kotlin haptics renderer owns native effects. Motion-first/restraint policy removes routine Find/accent and product rich-anchor feedback; REVIEW_CAPTURED is the sole authored product event. No Compose rewrite/sound/A4. Audit, precise delta and separated alpha.16→17 S24 motion/haptic checklist are in [remediation](../android/MOTION-HAPTIC-REMEDIATION.md). Build/native/publication evidence follows in alpha.17 ledger; stop for explicit approval.
+
+Alpha.17 installed gates:22 distinct API36 and15 API37 checks passed, including actual IME/named completion and original/reader retention; setup failures/limits are recorded in the alpha.17 ledger. No S24 subjective approval. A4 remains blocked; publication gates follow.
+
+### 2026-10-19 — Published alpha.17; stop for S24 comparison
+
+[Development acceptance alpha.17/code21](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.17), immutable 1586743a6d15e55be824aa62a5a1c4019ac98cbe, published07:36:23Z. Clean source, both installed original-signer APKs,3staged asset downloads and anonymous public APK full checksum match.22/API36 and15/API37 distinct focused checks passed; failed setups/cold precondition flake remain explicit in the ledger. [Exact alpha.16 comparison script](https://github.com/VaibhavPandit-09/vaultor-kb/blob/1586743a6d15e55be824aa62a5a1c4019ac98cbe/docs/android/MOTION-HAPTIC-REMEDIATION.md#alpha17-candidate-specification-and-s24-comparison-procedure) separates motion and tactile judgments. No real-device approval is claimed. **A4 remains blocked; stop here.**

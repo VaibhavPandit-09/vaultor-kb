@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   View,
@@ -6,9 +6,20 @@ import {
   ScrollView,
   TextInput,
   StyleSheet,
+  KeyboardAvoidingView,
+  NativeModules,
+  findNodeHandle,
+  Keyboard,
 } from 'react-native';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Action } from './BrowseScreen';
-import { useReading, useThemeStyles } from './ui';
+import { useAppearance, useReading, useThemeStyles } from './ui';
+import MotionSheet from './MotionSheet';
+import FeedbackPreview from './FeedbackPreview';
+import DevelopmentFeedbackPanel from './DevelopmentFeedbackPanel';
 function ReadingNumber({
   label,
   value,
@@ -42,9 +53,44 @@ function ReadingNumber({
     />
   );
 }
-export default function ReadingControls({ close }: { close: () => void }) {
+export default function ReadingControls({
+  close,
+  compact = false,
+  settings,
+}: {
+  close: () => void;
+  compact?: boolean;
+  settings?: () => void;
+}) {
   const s = useThemeStyles(styles),
-    { preferences: p, update, error, retry } = useReading();
+    { preferences: p, update, error, retry, chooseTheme } = useReading();
+  const root = useRef<React.ElementRef<typeof View>>(null),
+    insets = useSafeAreaInsets(),
+    light = useAppearance() === 'light';
+  const [shown, setShown] = useState(false),
+    [advanced, setAdvanced] = useState(!compact);
+  const ime = useRef(false),
+    hiddenAt = useRef(-Infinity);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => {
+      ime.current = true;
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      ime.current = false;
+      hiddenAt.current = Date.now();
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  useEffect(() => {
+    NativeModules.VaultorPresentation?.systemBars(
+      light,
+      findNodeHandle(root.current) ?? 0,
+    );
+  }, [light]);
+  useEffect(() => () => NativeModules.VaultorPresentation?.cancelTheme(), []);
   const number = (
     label: string,
     value: number,
@@ -83,102 +129,201 @@ export default function ReadingControls({ close }: { close: () => void }) {
     </View>
   );
   return (
-    <Modal transparent animationType="none" onRequestClose={close}>
-      <View style={s.scrim}>
-        <View style={s.sheet} accessibilityViewIsModal>
-          <View style={s.heading}>
-            <Text accessibilityRole="header" style={s.title}>
-              Reading appearance
-            </Text>
-            <Action label="Done" onPress={close} />
-          </View>
-          <ScrollView
-            contentContainerStyle={s.body}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text style={s.muted}>This device · originals stay unchanged</Text>
-            <Text style={s.label}>Theme</Text>
-            <View style={s.choices}>
-              {(['os', 'light', 'dark', 'oled'] as const).map(theme => (
-                <Action
-                  key={theme}
-                  label={
-                    theme === 'os'
-                      ? 'OS'
-                      : theme === 'oled'
-                      ? 'OLED'
-                      : theme[0].toUpperCase() + theme.slice(1)
-                  }
-                  active={p.theme === theme}
-                  onPress={() => update({ theme })}
-                />
-              ))}
-            </View>
-            <Text style={s.label}>Accent</Text>
-            <View style={s.choices}>
-              {(['blue', 'violet', 'mint', 'amber'] as const).map(accent => (
-                <Action
-                  key={accent}
-                  label={accent[0].toUpperCase() + accent.slice(1)}
-                  active={p.accent === accent}
-                  onPress={() => update({ accent })}
-                />
-              ))}
-            </View>
-            {number('Text size', p.size, 14, 28, 1, size => update({ size }))}
-            {number('Line spacing', p.spacing, 1.4, 2.2, 0.1, spacing =>
-              update({ spacing }),
-            )}
-            {number('Reading width', p.measure, 320, 800, 40, measure =>
-              update({ measure }),
-            )}
-            <Text style={s.muted}>
-              Size also respects the system font scale. Width is a maximum;
-              small windows fit automatically.
-            </Text>
-            <Text style={s.label}>Transitions</Text>
-            <View style={s.choices}>
-              {(['snappy', 'smooth'] as const).map(motion => (
-                <Action
-                  key={motion}
-                  label={motion === 'smooth' ? 'Smooth' : 'Snappy'}
-                  active={p.motion === motion}
-                  onPress={() => update({ motion })}
-                />
-              ))}
-            </View>
-            <Text style={s.muted}>Reduced motion always takes priority.</Text>
-            {error ? (
-              <View>
-                <Text accessibilityRole="alert" style={s.error}>
-                  {error}
+    <Modal
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      animationType="none"
+      onRequestClose={() => {
+        if (ime.current || Keyboard.isVisible()) {
+          Keyboard.dismiss();
+          return;
+        }
+        if (Date.now() - hiddenAt.current < 250) return;
+        close();
+      }}
+      onShow={() => setShown(true)}
+    >
+      <KeyboardAvoidingView behavior="height" style={s.full}>
+        <SafeAreaView edges={['top', 'left', 'right']} style={s.scrim}>
+          <MotionSheet style={s.sheet} presented={shown}>
+            <View
+              ref={root}
+              collapsable={false}
+              style={s.sheetContent}
+              accessibilityViewIsModal
+            >
+              <View style={s.heading}>
+                <Text accessibilityRole="header" style={s.title}>
+                  Reading appearance
                 </Text>
-                <Action label="Retry saving preferences" onPress={retry} />
+                <Action label="Done" onPress={close} />
               </View>
-            ) : null}
-            <Action
-              label="Reset reading appearance"
-              onPress={() =>
-                update({
-                  theme: 'os',
-                  accent: 'blue',
-                  size: 18,
-                  spacing: 1.75,
-                  measure: 660,
-                  motion: 'smooth',
-                })
-              }
-            />
-          </ScrollView>
-        </View>
-      </View>
+              <ScrollView
+                contentContainerStyle={[
+                  s.body,
+                  { paddingBottom: Math.max(20, insets.bottom + 12) },
+                ]}
+                keyboardShouldPersistTaps="handled"
+              >
+                <Text style={s.muted}>
+                  This device · originals stay unchanged
+                </Text>
+                <Text style={s.label}>Theme</Text>
+                <View style={s.choices}>
+                  {(['os', 'light', 'dark', 'oled'] as const).map(theme => (
+                    <Action
+                      key={theme}
+                      label={
+                        theme === 'os'
+                          ? 'OS'
+                          : theme === 'oled'
+                          ? 'OLED'
+                          : theme[0].toUpperCase() + theme.slice(1)
+                      }
+                      active={p.theme === theme}
+                      onPress={event => {
+                        void chooseTheme(
+                          theme,
+                          Number(event.nativeEvent.target),
+                        );
+                      }}
+                    />
+                  ))}
+                </View>
+                {number('Text size', p.size, 14, 28, 1, size =>
+                  update({ size }),
+                )}
+                {number('Line spacing', p.spacing, 1.4, 2.2, 0.1, spacing =>
+                  update({ spacing }),
+                )}
+                {error ? (
+                  <View>
+                    <Text accessibilityRole="alert" style={s.error}>
+                      {error}
+                    </Text>
+                    <Action label="Retry saving preferences" onPress={retry} />
+                  </View>
+                ) : null}
+                {!advanced ? (
+                  <Action
+                    label="More reading settings"
+                    onPress={() => setAdvanced(true)}
+                  />
+                ) : null}
+                {settings ? (
+                  <Action label="Settings" onPress={settings} />
+                ) : null}
+                {advanced ? (
+                  <>
+                    <Text style={s.label}>Accent</Text>
+                    <View style={s.choices}>
+                      {(['blue', 'violet', 'mint', 'amber'] as const).map(
+                        accent => (
+                          <Action
+                            key={accent}
+                            label={accent[0].toUpperCase() + accent.slice(1)}
+                            active={p.accent === accent}
+                            onPress={() => {
+                              if (accent !== p.accent) update({ accent });
+                            }}
+                          />
+                        ),
+                      )}
+                    </View>
+                    {number('Reading width', p.measure, 320, 800, 40, measure =>
+                      update({ measure }),
+                    )}
+                    <Text style={s.muted}>
+                      Size also respects the system font scale. Width is a
+                      maximum; small windows fit automatically.
+                    </Text>
+                    <Text style={s.label}>Transitions</Text>
+                    <View style={s.choices}>
+                      {(['snappy', 'smooth'] as const).map(motion => (
+                        <Action
+                          key={motion}
+                          label={motion === 'smooth' ? 'Smooth' : 'Snappy'}
+                          active={p.motion === motion}
+                          onPress={() => update({ motion })}
+                        />
+                      ))}
+                    </View>
+                    <Text style={s.muted}>
+                      Reduced motion always takes priority.
+                    </Text>
+                    <Text style={s.label}>Touch feedback</Text>
+                    <View style={s.choices}>
+                      <Action
+                        label="System"
+                        active={p.haptics === 'system'}
+                        onPress={() => update({ haptics: 'system' })}
+                      />
+                      <Action
+                        label="Off"
+                        active={p.haptics === 'off'}
+                        onPress={() => update({ haptics: 'off' })}
+                      />
+                    </View>
+                    <Text style={s.muted}>
+                      Follows Android touch-feedback settings. Ordinary reading
+                      and background changes stay silent.
+                    </Text>
+                    <FeedbackPreview />
+                    <Text style={s.label}>Capture tactile profile</Text>
+                    <View style={s.choices}>
+                      {(['clear', 'platform', 'expressive'] as const).map(
+                        richHaptics => (
+                          <Action
+                            key={richHaptics}
+                            label={
+                              richHaptics === 'clear'
+                                ? 'Clear clicks'
+                                : richHaptics === 'platform'
+                                ? 'Platform fallback'
+                                : 'Expressive if supported'
+                            }
+                            active={p.richHaptics === richHaptics}
+                            onPress={() => update({ richHaptics })}
+                          />
+                        ),
+                      )}
+                    </View>
+                    <Text style={s.muted}>
+                      Use Platform fallback if custom capture feedback is weak
+                      on this device. System and app touch settings always
+                      apply.
+                    </Text>
+                    <DevelopmentFeedbackPanel />
+                    <Action
+                      label="Reset reading appearance"
+                      onPress={() =>
+                        update({
+                          theme: 'os',
+                          accent: 'blue',
+                          size: 18,
+                          spacing: 1.75,
+                          measure: 660,
+                          motion: 'smooth',
+                          haptics: 'system',
+                        })
+                      }
+                    />
+                  </>
+                ) : null}
+              </ScrollView>
+            </View>
+          </MotionSheet>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 const styles = StyleSheet.create({
+  full: { flex: 1 },
+  sheetContent: { flexShrink: 1 },
   scrim: { flex: 1, backgroundColor: '#0008', justifyContent: 'flex-end' },
   sheet: {
-    maxHeight: '90%',
     backgroundColor: '#000',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

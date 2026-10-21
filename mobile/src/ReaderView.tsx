@@ -12,27 +12,39 @@ import {
   Text,
   TextInput,
   Alert,
+  Animated,
   AppState,
   StyleSheet,
   Keyboard,
+  findNodeHandle,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { MobileWorkspace } from './workspace';
 import { Action, ChoiceSheet } from './BrowseScreen';
 import ReadingControls from './ReadingControls';
 import { useAppearance, useReading, usePalette, useThemeStyles } from './ui';
+import { motionDuration, settleEasing } from './motion';
 import { externalAddress } from './reading';
+import type { Evidence } from './reviews';
 export type ReaderPanel = 'outline' | 'find' | 'appearance' | undefined;
 export default function ReaderView({
   model,
   panel,
   closePanel,
   reduced,
+  onScroll,
+  capture,
+  settings,
 }: {
   model: MobileWorkspace;
   panel: ReaderPanel;
   closePanel: () => void;
   reduced: boolean;
+  onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  capture: (evidence: Evidence) => void;
+  settings: () => void;
 }) {
   const state = model.snapshot(),
     web = useRef<WebView<{}>>(null),
@@ -48,6 +60,25 @@ export default function ReaderView({
     >([]),
     [query, setQuery] = useState(''),
     [matches, setMatches] = useState({ count: 0, current: 0, limited: false });
+  const findInput = useRef<React.ElementRef<typeof TextInput>>(null);
+  const findProgress = useRef(new Animated.Value(0)).current;
+  const [controlsBottom, setControlsBottom] = useState(0);
+  useEffect(() => {
+    if (panel !== 'find') {
+      findProgress.setValue(0);
+      return;
+    }
+    if (!controlsBottom) return;
+    const animation = Animated.timing(findProgress, {
+      toValue: 1,
+      duration: motionDuration('utility', preferences.motion, reduced),
+      easing: settleEasing,
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [panel, controlsBottom, preferences.motion, reduced, findProgress]);
+  const [selection, setSelection] = useState<Evidence>();
   const wasVisible = useRef(false);
   const visible = state.view === 'note' && !state.preview;
   const current = useRef(state);
@@ -61,6 +92,34 @@ export default function ReaderView({
       ),
     [],
   );
+  useEffect(() => {
+    if (!ready.current) return;
+    send({
+      type: 'context',
+      loadId: String(current.current.loadId),
+      bottom: panel === 'find' ? controlsBottom : 0,
+    });
+  }, [panel, controlsBottom, send]);
+  const focusSequence = useRef(0);
+  useEffect(() => {
+    if (panel !== 'find') return;
+    const token =
+      String(current.current.loadId) + ':' + ++focusSequence.current;
+    const frame = requestAnimationFrame(() => {
+      const tag = findNodeHandle(findInput.current);
+      if (!tag) return;
+      const focus = NativeModules.VaultorPresentation?.focusInput?.(tag, token);
+      if (!focus) {
+        findInput.current?.focus();
+        return;
+      }
+      void focus.catch(() => {});
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      NativeModules.VaultorPresentation?.cancelInputFocus?.(token);
+    };
+  }, [panel]);
   const options = useMemo(
     () => ({ ...preferences, theme, accent: palette.accent, reduced }),
     [preferences, theme, palette.accent, reduced],
@@ -89,6 +148,7 @@ export default function ReaderView({
     };
   }, []);
   useEffect(() => {
+    setSelection(undefined);
     setHeadings([]);
     setQuery('');
     setMatches({ count: 0, current: 0, limited: false });
@@ -140,17 +200,38 @@ export default function ReaderView({
       });
     wasVisible.current = visible;
   }, [visible, send]);
+  const [painted, setPainted] = useState(-1);
   const close = () => {
     Keyboard.dismiss();
     closePanel();
   };
   return (
     <View style={s.root} collapsable={false}>
-      <View collapsable={false} style={panel === 'find' ? s.find : s.hidden}>
+      <Animated.View
+        collapsable={false}
+        style={
+          panel === 'find'
+            ? [
+                s.find,
+                {
+                  transform: [
+                    {
+                      translateY: findProgress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [controlsBottom || 64, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]
+            : s.hidden
+        }
+        onLayout={e => setControlsBottom(e.nativeEvent.layout.height)}
+      >
         {panel === 'find' ? (
           <>
             <TextInput
-              autoFocus
+              ref={findInput}
               style={s.input}
               accessibilityLabel="Find within note"
               placeholder="Find in note"
@@ -202,7 +283,7 @@ export default function ReaderView({
             <Action label="×" accessibilityLabel="Close find" onPress={close} />
           </>
         ) : null}
-      </View>
+      </Animated.View>
       <View collapsable={false} style={s.webSlot}>
         <WebView<{}>
           importantForAccessibility={
@@ -211,6 +292,9 @@ export default function ReaderView({
               : 'auto'
           }
           ref={web}
+          onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+            if (visible) onScroll(e);
+          }}
           source={{ uri: 'file:///android_asset/reader.html' }}
           originWhitelist={['file://']}
           textZoom={Math.round(fontScale * 100)}
@@ -225,7 +309,11 @@ export default function ReaderView({
             r.url === 'file:///android_asset/reader.html' ||
             r.url === 'about:blank'
           }
-          style={{ flex: 1, backgroundColor: palette.canvas }}
+          style={{
+            flex: 1,
+            backgroundColor: palette.canvas,
+            opacity: painted === state.loadId ? 1 : 0,
+          }}
           onMessage={e => {
             const actual = model.snapshot();
             if (
@@ -251,6 +339,7 @@ export default function ReaderView({
             const st = current.current;
             if (m.loadId !== String(st.loadId)) return;
             if (m.type === 'loaded') {
+              setPainted(st.loadId);
               if (Array.isArray(m.headings))
                 setHeadings(
                   m.headings
@@ -262,6 +351,22 @@ export default function ReaderView({
                     ),
                 );
               model.loaded();
+            } else if (m.type === 'selection' && visible) {
+              const evidence = m.evidence;
+              if (!evidence) setSelection(undefined);
+              else if (
+                typeof evidence.quote === 'string' &&
+                typeof evidence.context === 'string' &&
+                evidence.quote.length <= 4000 &&
+                evidence.context.length <= 4000 &&
+                evidence.revision === st.note?.revision
+              )
+                setSelection({
+                  ...evidence,
+                  resourceId: st.note?.id,
+                  scope: st.scope,
+                  loadId: st.loadId,
+                });
             } else if (m.type === 'findResult')
               setMatches({
                 count: Math.max(0, Math.min(500, Number(m.count) || 0)),
@@ -389,6 +494,11 @@ export default function ReaderView({
           }}
         />
       </View>
+      {selection && visible && !panel ? (
+        <View style={s.capture}>
+          <Action label="Flag for review" onPress={() => capture(selection)} />
+        </View>
+      ) : null}
       <View
         collapsable={false}
         style={s.overlayHost}
@@ -418,12 +528,31 @@ export default function ReaderView({
             }}
           />
         ) : null}
-        {panel === 'appearance' ? <ReadingControls close={close} /> : null}
+        {panel === 'appearance' ? (
+          <ReadingControls
+            compact
+            close={close}
+            settings={() => {
+              close();
+              settings();
+            }}
+          />
+        ) : null}
       </View>
     </View>
   );
 }
 const styles = StyleSheet.create({
+  capture: {
+    position: 'absolute',
+    bottom: 0,
+    right: 8,
+    zIndex: 3,
+    backgroundColor: '#0a0a0a',
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 10,
+  },
   root: { flex: 1 },
   overlayHost: {
     position: 'absolute',
@@ -436,6 +565,11 @@ const styles = StyleSheet.create({
   hidden: { display: 'none' },
   webSlot: { flex: 1 },
   find: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
     paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
