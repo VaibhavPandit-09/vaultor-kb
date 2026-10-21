@@ -54,8 +54,10 @@ public class TransferService {
     private final Map<String,Operation> activeStatus = new ConcurrentHashMap<>();
     private Path root;
     public record TagData(String id,String name,String color) {}
+    public record ImportOriginal(String filename,String mime,String sha256,long bytes,String binary) {}
     public record ResourceData(String id,String type,String title,JsonNode content,String mimeType,Long size,
-        LocalDateTime createdAt,LocalDateTime updatedAt,LocalDateTime lastOpenedAt,List<String> tags,String binary,LocalDateTime trashedAt,String trashOrganization) {
+        LocalDateTime createdAt,LocalDateTime updatedAt,LocalDateTime lastOpenedAt,List<String> tags,String binary,LocalDateTime trashedAt,String trashOrganization,ImportOriginal importOriginal) {
+        public ResourceData(String id,String type,String title,JsonNode content,String mimeType,Long size,LocalDateTime createdAt,LocalDateTime updatedAt,LocalDateTime lastOpenedAt,List<String> tags,String binary,LocalDateTime trashedAt,String trashOrganization) {this(id,type,title,content,mimeType,size,createdAt,updatedAt,lastOpenedAt,tags,binary,trashedAt,trashOrganization,null);}
         public ResourceData(String id,String type,String title,JsonNode content,String mimeType,Long size,LocalDateTime createdAt,LocalDateTime updatedAt,LocalDateTime lastOpenedAt,List<String> tags,String binary) {this(id,type,title,content,mimeType,size,createdAt,updatedAt,lastOpenedAt,tags,binary,null,null);}
     }
     public record Workspace(List<ResourceData> resources,List<TagData> tags,SettingsService.WorkspaceSettings settings,OrganizationService.OrganizationData organization,List<ReviewService.Portable> reviews) {
@@ -201,10 +203,11 @@ public class TransferService {
     private Workspace writeWorkspaceSnapshot(Path destination) throws Exception {
             if(resources.findAll().stream().anyMatch(r->Boolean.TRUE.equals(r.getPurgePending())))throw new IllegalArgumentException("Finish pending permanent-deletion cleanup before exporting the complete workspace");
             Workspace snapshot=transaction.execute(status -> new Workspace(resources.findAll().stream().map(r->new ResourceData(
-                r.getId(),r.getType(),r.getTitle(),documents.parse(r.getContent()),r.getMimeType(),r.getSize(),r.getCreatedAt(),r.getUpdatedAt(),r.getLastOpenedAt(),r.getTags().stream().map(Tag::getId).toList(),"file".equals(r.getType())?"files/"+r.getId():null,r.getTrashedAt(),r.getTrashOrganization())).toList(),
+                r.getId(),r.getType(),r.getTitle(),documents.parse(r.getContent()),r.getMimeType(),r.getSize(),r.getCreatedAt(),r.getUpdatedAt(),r.getLastOpenedAt(),r.getTags().stream().map(Tag::getId).toList(),"file".equals(r.getType())?"files/"+r.getId():null,r.getTrashedAt(),r.getTrashOrganization(),r.getImportOriginalPath()==null?null:new ImportOriginal(r.getImportOriginalName(),r.getImportOriginalMime(),r.getImportOriginalHash(),r.getImportOriginalSize(),"originals/"+r.getId()))).toList(),
                 tags.findAll().stream().map(t->new TagData(t.getId(),t.getName(),t.getColor())).toList(),settings.getSettings().workspace(),organization.snapshot(),reviews.snapshot(null)));
             Map<String,Path> binaries=new LinkedHashMap<>();
             for(var r:snapshot.resources()) if(r.binary()!=null) binaries.put(r.binary(),files.getFile(resources.findById(r.id()).orElseThrow().getFilePath()));
+            for(var r:snapshot.resources()) if(r.importOriginal()!=null) binaries.put(r.importOriginal().binary(),files.getFile(resources.findById(r.id()).orElseThrow().getImportOriginalPath()));
             exporters.require("workspace","zip").write(snapshot,binaries,destination);
         return snapshot;
     }
@@ -217,19 +220,20 @@ public class TransferService {
                 ZipEntry entry;
                 while((entry=zip.getNextEntry())!=null) {
                     String name=entry.getName();
-                    if(++count>maxEntries || entry.isDirectory() || !names.add(name) || !(name.equals("manifest.json") || name.equals("workspace.json") || name.matches("files/[a-zA-Z0-9-]+"))) throw new IllegalArgumentException("Invalid, duplicate or excessive ZIP entries");
+                    if(++count>maxEntries || entry.isDirectory() || !names.add(name) || !(name.equals("manifest.json") || name.equals("workspace.json") || name.matches("(?:files|originals)/[a-zA-Z0-9-]+"))) throw new IllegalArgumentException("Invalid, duplicate or excessive ZIP entries");
                     Path target=dir.resolve(name).normalize();if(!target.startsWith(dir)) throw new IllegalArgumentException("Invalid archive path");Files.createDirectories(target.getParent());
                     try(var out=Files.newOutputStream(target)) { byte[] buffer=new byte[8192];int read;long entrySize=0;while((read=zip.read(buffer))!=-1) { total+=read;entrySize+=read;if(total>maxExpanded) throw new IllegalArgumentException("Expanded archive exceeds "+maxExpanded+" bytes");if(name.endsWith(".json") && entrySize>20*1024*1024) throw new IllegalArgumentException("JSON entry exceeds 20 MiB");out.write(buffer,0,read); } }
                 }
             }
             var manifest=mapper.readValue(Files.readString(dir.resolve("manifest.json")),Manifest.class);
-            if((manifest.version()<1 || manifest.version()>4) || manifest.checksums()==null) throw new IllegalArgumentException("Unsupported archive format");
+            if((manifest.version()<1 || manifest.version()>5) || manifest.checksums()==null) throw new IllegalArgumentException("Unsupported archive format");
             Set<String> expected=new HashSet<>(manifest.checksums().keySet());expected.add("manifest.json");if(!expected.equals(names)) throw new IllegalArgumentException("Archive entries do not match manifest");
             for(var item:manifest.checksums().entrySet()) {
                 if(!names.contains(item.getKey())) throw new IllegalArgumentException("Missing archive entry");
                 try(var in=Files.newInputStream(dir.resolve(item.getKey()))) { if(!hash(in).equals(item.getValue())) throw new IllegalArgumentException("Checksum mismatch: "+item.getKey()); }
             }
             Workspace workspace=readWorkspace(op); if(manifest.version()>=4 && workspace.reviews()==null)throw new IllegalArgumentException("Review section missing"); if(manifest.version()<4 && workspace.reviews()!=null && !workspace.reviews().isEmpty())throw new IllegalArgumentException("Reviews require archive format4"); if(manifest.version()>=2 && workspace.organization()==null) throw new IllegalArgumentException("Organization section missing"); validateWorkspace(workspace,dir);
+            if(manifest.version()<5 && (workspace.resources().stream().anyMatch(r->r.importOriginal()!=null)||names.stream().anyMatch(n->n.startsWith("originals/"))))throw new IllegalArgumentException("Import originals require archive format5");
             if(workspace.resources().size()!=manifest.resources() || workspace.tags().size()!=manifest.tags()) throw new IllegalArgumentException("Manifest counts do not match");
             List<String> warnings=new ArrayList<>();
             if(workspace.organization()!=null) warnings.add("Organization: "+workspace.organization().collections().size()+" collections; "+workspace.organization().favorites().size()+" favorite resources. Merge matches collections by name and preserves existing collection favorites.");
@@ -254,6 +258,10 @@ public class TransferService {
             else if("file".equals(r.type())) {
                 if(!("files/"+r.id()).equals(r.binary()) || !Files.isRegularFile(dir.resolve(r.binary())) || r.size()==null || Files.size(dir.resolve(r.binary()))!=r.size()) throw new IllegalArgumentException("File missing or size mismatch");
             } else throw new IllegalArgumentException("Unknown resource type");
+            var original=r.importOriginal();if(original!=null){
+                if(!"note".equals(r.type())||original.filename()==null||original.filename().isBlank()||original.filename().length()>180||original.filename().chars().anyMatch(c->c<32||"/\\".indexOf(c)>=0)||original.mime()==null||!original.mime().matches("[a-z0-9.+-]+/[a-z0-9.+-]+")||original.sha256()==null||!original.sha256().matches("[a-f0-9]{64}")||!("originals/"+r.id()).equals(original.binary())||original.bytes()<0||original.bytes()>CompanionImports.MAX_TEXT||!Files.isRegularFile(dir.resolve(original.binary()))||Files.size(dir.resolve(original.binary()))!=original.bytes())throw new IllegalArgumentException("Invalid converted-import provenance");
+                try(var input=Files.newInputStream(dir.resolve(original.binary()))){if(!hash(input).equals(original.sha256()))throw new IllegalArgumentException("Import original checksum mismatch");}
+            }
             if(r.trashOrganization()!=null) {var labels=mapper.readTree(r.trashOrganization());if(!labels.isArray()||labels.size()>200||r.trashOrganization().length()>40000)throw new IllegalArgumentException("Invalid Trash organization metadata");for(var label:labels)if(!label.isTextual()||label.asText().length()>130)throw new IllegalArgumentException("Invalid Trash organization label");}
         }
         if(w.organization()!=null) OrganizationService.validate(w.organization(),ids);
@@ -284,15 +292,17 @@ public class TransferService {
         try {
             Workspace w=readWorkspace(op);validateWorkspace(w,directory(op.getId()));
             if("replace".equals(op.getMode())&&resources.count()>0&&!Files.exists(directory(op.getId()).resolve("replacement-before.zip")))writeWorkspaceSnapshot(directory(op.getId()).resolve("replacement-before.zip"));
-            Map<String,String> ids=new HashMap<>();Map<String,String> binaries=new HashMap<>();Map<String,String> verifiedMimes=new HashMap<>();
+            Map<String,String> ids=new HashMap<>();Map<String,String> binaries=new HashMap<>();Map<String,String> verifiedMimes=new HashMap<>();Map<String,String> originals=new HashMap<>();
             for(var r:w.resources()) ids.put(r.id(),"replace".equals(op.getMode()) ? r.id() : UUID.randomUUID().toString());
             for(var r:w.resources()) if(r.binary()!=null) binaries.put(r.id(),UUID.randomUUID()+"_import");
-            op.setJournal(mapper.writeValueAsString(binaries.values()));operations.save(op);
+            for(var r:w.resources())if(r.importOriginal()!=null)originals.put(r.id(),UUID.randomUUID()+"_original");
+            List<String> stagedNames=new ArrayList<>(binaries.values());stagedNames.addAll(originals.values());op.setJournal(mapper.writeValueAsString(stagedNames));operations.save(op);
             Files.createDirectories(Path.of(storagePath));
             for(var r:w.resources()) if(r.binary()!=null) {
                 Files.copy(directory(op.getId()).resolve(r.binary()),files.getFile(binaries.get(r.id())));
                 verifiedMimes.put(r.id(),FileMime.detect(files.getFile(binaries.get(r.id())),r.mimeType()));
             }
+            for(var r:w.resources())if(r.importOriginal()!=null)Files.copy(directory(op.getId()).resolve(r.importOriginal().binary()),files.getFile(originals.get(r.id())));
             synchronized(this) {
                 if(cancellationRequests.remove(op.getId())) { discardStagedFiles(op); phase(op,"CANCELLED","cancelled",0); return; }
                 phase(op,"RUNNING","committing",60);
@@ -302,7 +312,7 @@ public class TransferService {
                 if("replace".equals(op.getMode())) {
                     lifecycleRequests.deleteAll();lifecycleRequests.flush();
                     workspaceIdentity.replaced();
-                    resources.findAll().forEach(r->{if(r.getFilePath()!=null) oldFiles.add(r.getFilePath());});
+                    resources.findAll().forEach(r->{if(r.getFilePath()!=null) oldFiles.add(r.getFilePath());if(r.getImportOriginalPath()!=null)oldFiles.add(r.getImportOriginalPath());});
                     organization.clear();
                     relationships.deleteAll();resources.deleteAll();resources.flush();tags.deleteAll();tags.flush();
                     var existing=settings.getSettings();settings.updateSettings(new SettingsService.SettingsDocument(w.settings(),existing.local(),existing.keybindings()));
@@ -315,6 +325,7 @@ public class TransferService {
                 for(var r:w.resources()) {
                     var entity=new Resource();entity.setId(ids.get(r.id()));entity.setType(r.type());entity.setTitle(r.title());entity.setContent(r.content()==null?null:documents.remap(r.content(),ids).toString());entity.setFilePath(binaries.get(r.id()));entity.setMimeType(verifiedMimes.getOrDefault(r.id(),r.mimeType()));entity.setSize(r.size());entity.setCreatedAt(r.createdAt());entity.setUpdatedAt(r.updatedAt());entity.setLastOpenedAt(r.lastOpenedAt());
                     entity.setTrashedAt(r.trashedAt());entity.setTrashOrganization(r.trashOrganization());
+                    if(r.importOriginal()!=null){var original=r.importOriginal();entity.setImportOriginalPath(originals.get(r.id()));entity.setImportOriginalName(original.filename());entity.setImportOriginalMime(original.mime());entity.setImportOriginalHash(original.sha256());entity.setImportOriginalSize(original.bytes());}
                     entity.setTags(new HashSet<>(r.tags().stream().map(mappedTags::get).toList()));resources.save(entity);
                     if("note".equals(r.type())) linkService.updateLinksForNote(entity.getId(),entity.getContent());
                 }
@@ -334,7 +345,7 @@ public class TransferService {
     }
     private void discardStagedFiles(TransferOperation op) {
         try {
-            var live=new HashSet<String>();resources.findAll().forEach(r->{if(r.getFilePath()!=null) live.add(r.getFilePath());});
+            var live=new HashSet<String>();resources.findAll().forEach(r->{if(r.getFilePath()!=null) live.add(r.getFilePath());if(r.getImportOriginalPath()!=null)live.add(r.getImportOriginalPath());});
             for(JsonNode item:mapper.readTree(op.getJournal())) if(!live.contains(item.asText())) files.deleteFile(item.asText());
             op.setJournal("[]");operations.save(op);
         } catch(Exception e) { log.error("staged file cleanup failed operationId={}",op.getId(),e); }

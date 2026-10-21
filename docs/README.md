@@ -67,6 +67,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [Collected imports](android/IMPORTS.md): R7 implementation in progress; host receipts/provenance/archive5, owner-approved ZIPs and separate protected Android queue.
+
 - [Android alpha.23 R6 milestone](android/releases/0.1.0-alpha.23.md): published production prerelease, compatibility, install-over and physical limits.
 
 - [R6 integration and verification](plans/R6-INTEGRATION.md): exact fetched branches, original R6 delta, conflict resolutions, fresh regression evidence and the stop before master.
