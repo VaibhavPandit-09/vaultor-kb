@@ -20,7 +20,7 @@ No guaranteed suspended/force-stopped delivery, new authority or haptic changes.
 
 A5 covers retained lifecycle/source/Review integrity, accessibility focus/semantics,
 IME/Back, reduced motion/font/insets, evidenced performance and install-over readiness.
-Actual alpha.22 checks belong in its release ledger. S24 subjective quality, spoken
+Completed engineering checks and the original-signer alpha.22/code26 handoff belong in its release ledger. S24 subjective quality, spoken
 TalkBack and OEM lifecycle remain pending user acceptance.
 
 ## Baseline and checkpoints
@@ -105,55 +105,13 @@ resolution/dismissal, different body under same UUID and nondefault workspace gr
 while default grant is revoked. Host originals stay equal; same resource IDs do
 not misdirect records. Final expanded native/API37/UI gates are recorded below.
 
-## S24 Ultra consolidated acceptance procedure
+## Current S24 acceptance procedure
 
-Install the alpha.21/code25 development APK over alpha.20. Do not uninstall/clear
-storage. Use an approved host with reviews:1 (R5 or newer), disposable notes and
-known source/workspace identities. Existing protected captures may now deliver to
-their approved original source when reachable; they are never automatically deleted.
-
-1. Home/Library: confirm the three destinations, compact named source context and
-   Settings. Open Sources; selection/status should be concise. Source management
-   retains pairing/reconnect, downloads, recovery and separately confirmed trust
-   removal. With only one source, no prominent switch chevron. Raw address is only
-   needed for ambiguity/technical management. Change A→B→A and verify each source's
-   query/filter/list/reader context, including a retained offline source and lock.
-2. Open a visible note row in Library, then Back. The row's surface opens into the
-   reader viewport and its title travels into the reading hierarchy; the document
-   remains at final text size. Back closes toward a fresh valid origin. List position,
-   search/filter and subsequent reading progress remain. Repeat from Home/Recent,
-   slow/offline loading, rapid Back/open, scrolling origin out of view, rotation and
-   background/resume. Missing origin should use a quiet bounded reveal, never a
-   stale flight or stretched text. Assess actual movement, not endpoint screenshots.
-3. In the middle of a long note, use Aa. Change text size/spacing/theme immediately;
-   verify position, source and content. More reading settings and Settings remain
-   reachable. Open an input, use Back to hide Samsung Keyboard, then Back to dismiss.
-   Repeat Light/Dark/OLED, larger system text, gesture navigation, split/landscape
-   windows and reduced motion. Check system bars, bottom gesture space and targets.
-4. Disconnect the host/network after retaining a note. Select evidence, capture a
-   new Review and Save on this phone. Confirm protected saved/queued receipt. Force
-   stop and reopen; the same UUID/evidence remains in device-wide Review. Switch to
-   another source; it must remain discoverable without activating its original.
-5. Reconnect the approved original source. Foreground catch-up or Sync now should
-   reach Synced · Open on desktop. Allow Android17 local-network permission when
-   requested. Desktop must show exactly one Review and unchanged original note.
-   Repeated Sync now/reopen must not duplicate it. Resolve/dismiss on desktop;
-   Android should reflect it through the active stream, foreground refresh or Sync
-   now. The saved quote/comment/source remains frozen even if desktop edits the note.
-6. With disposable data, revoke a workspace grant or device approval, or make the
-   host unavailable. Pending evidence stays protected with an actionable reason;
-   prior acknowledged receipt stays last known. Restore approval and Sync now.
-   Replacing a generation must block old-generation delivery, not redirect it. Do
-   not replace personal data to test this. Native fault tests cover loss, duplicate
-   delivery, process death and conflicts without requiring destructive phone tests.
-7. Existing ordinary haptics should retain their restrained behavior. Sync/status
-   refresh is silent. Assess actual motion, Samsung Keyboard and TalkBack focus on
-   hardware. Report any abrupt return, shifted anchor, blocked Back or unreadable
-   status. Emulator checks do not provide subjective approval.
-
-A5 hardware polish/accessibility/performance acceptance remains open until this
-candidate is reviewed. No R6 domain capability is deliberately deferred to R7;
-R7 imports/R8 exports and broader settings/update work remain separately authorized.
+Use the single [alpha.22 milestone script](releases/0.1.0-alpha.22.md#one-s24-ultra-acceptance-script).
+It supersedes the alpha.21 Save-on-this-phone procedure. Completed Reviews now
+queue and attempt automatic delivery from one Create Review action. Keep draft
+preserves unfinished comments. Final spoken TalkBack, OEM lifecycle/performance
+and subjective motion/tactile quality remain user-owned.
 
 ## Consolidated verification — 2026-10-21
 

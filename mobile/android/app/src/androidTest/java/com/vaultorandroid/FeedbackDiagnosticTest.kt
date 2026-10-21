@@ -22,12 +22,18 @@ class FeedbackDiagnosticTest {
   private fun result(call:(PromiseImpl)->Unit):Pair<String,Boolean>{val done=CountDownLatch(1);var raw="";var failed=false;call(PromiseImpl(Callback{raw=it[0].toString();done.countDown()},Callback{failed=true;done.countDown()}));assertTrue(done.await(10,TimeUnit.SECONDS));return raw to failed}
   private fun tap(label:String){var node=d.wait(Until.findObject(By.desc(label)),5000);if(node==null)node=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.desc(label)));assertNotNull(label,node);node!!.click();Thread.sleep(300)}
   @Test fun developmentGateAndSemanticProbes(){
-    i.targetContext.startActivity(i.targetContext.packageManager.getLaunchIntentForPackage(i.targetContext.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));assertTrue(d.wait(Until.hasObject(By.desc("Settings")),10000));tap("Settings");tap("Appearance & reading")
+    i.targetContext.startActivity(i.targetContext.packageManager.getLaunchIntentForPackage(i.targetContext.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));assertTrue(d.wait(Until.hasObject(By.descContains("Choose source")),30000));if(d.hasObject(By.desc("Reading options")))tap("Reading options");tap("Settings");tap("Appearance & reading")
     val ctx=(i.targetContext.applicationContext as MainApplication).reactHost.currentReactContext as ReactApplicationContext
     val module=ctx.getNativeModule("VaultorPresentation") as VaultorPresentation
     assertEquals(BuildConfig.VAULTOR_DIAGNOSTICS,module.constants["developmentDiagnostics"])
     if(!BuildConfig.VAULTOR_DIAGNOSTICS){assertTrue(result{module.hapticDiagnostics("micro","","inspect",0.0,it)}.second);assertFalse(d.hasObject(By.desc("Developer haptic diagnostics")));tap("Done");return}
-    tap("Developer haptic diagnostics");tap("Trigger H1 Micro confirmation")
+    tap("Developer haptic diagnostics")
+    if(!d.wait(Until.hasObject(By.desc("Close haptic diagnostics")),2000)) {
+      val toggle=d.findObject(By.desc("Developer haptic diagnostics"));assertNotNull(toggle)
+      val at=toggle.visibleBounds;d.swipe(at.centerX(),at.centerY(),at.centerX(),at.centerY(),12)
+    }
+    assertTrue("Diagnostic disclosure must settle before probes",d.wait(Until.hasObject(By.desc("Close haptic diagnostics")),5000))
+    tap("Trigger H1 Micro confirmation")
     assertTrue(d.wait(Until.hasObject(By.textContains("Result:")),5000))
     var tag=0;i.runOnMainSync{fun find(v:View){if(v.contentDescription?.toString()=="Trigger H1 Micro confirmation")tag=v.id;if(v is ViewGroup)for(n in 0 until v.childCount)find(v.getChildAt(n))};WindowInspector.getGlobalWindowViews().forEach(::find)};assertTrue(tag>0)
     val native=VaultorModule(ctx);val original=result{native.readerPreferences("get","{}",it)}.first;val enabled=JSONObject(original).put("haptics","system").put("richHaptics","clear")

@@ -1,0 +1,5 @@
+# Generated outputs; reader/render.js and all product source remain linted.
+cache/
+releases/
+android/**/build/**
+android/app/src/main/assets/reader.js
