@@ -3,6 +3,12 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { NativeModules } from 'react-native';
 import { ReadingProvider, useAppearance, useReading } from '../src/ui';
 jest.mock('react-native', () => ({
+  Easing: { bezier: jest.fn() },
+  AccessibilityInfo: {
+    isReduceMotionEnabled: async () => false,
+    addEventListener: () => ({ remove() {} }),
+  },
+  AppState: { addEventListener: () => ({ remove() {} }) },
   StyleSheet: { flatten: (v: any) => v },
   useColorScheme: () => 'light',
   NativeModules: { VaultorNative: { readerPreferences: jest.fn() } },

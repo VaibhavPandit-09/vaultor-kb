@@ -121,7 +121,10 @@ for (const name of names) {
 }
 // Download every staged artifact, compare exact bytes, then make it usable.
 const check = await mkdtemp(join(tmpdir(), 'vaultor-apk-staged-'));
-run('gh', ['release', 'download', tag, '--repo', repo, '--dir', check]);
+// Bulk concurrent downloads stalled on this host; preserve the exact-byte
+// publication gate with independently transferred assets.
+for (const name of names)
+  run('gh', ['release', 'download', tag, '--repo', repo, '--pattern', name, '--dir', check]);
 for (const name of names)
   if (
     hash(await readFile(join(check, name))) !==

@@ -33,7 +33,8 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   private val network = Executors.newSingleThreadExecutor()
   private val shortcuts = Executors.newSingleThreadExecutor()
   private val streams = Executors.newSingleThreadExecutor()
-  companion object {private val stateLock = Any();@Volatile private var connectionEpoch = UUID.randomUUID().toString()}
+  private val reviewWorker = Executors.newSingleThreadExecutor()
+  companion object {private val reviewScheduled=java.util.concurrent.atomic.AtomicBoolean(false);private val stateLock = Any();@Volatile private var connectionEpoch = UUID.randomUUID().toString()}
   private var epoch:String
     get()=connectionEpoch
     set(value){connectionEpoch=value}
@@ -100,7 +101,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       "get" -> prefs.getString("preferences","{}") ?: "{}"
       "put" -> {require(input.length<=2000);val a=JSONObject(input)
         val theme=a.optString("theme","os");val accent=a.optString("accent","blue");require(theme in listOf("os","light","dark","oled") && accent in listOf("blue","violet","mint","amber"))
-        val v=JSONObject().put("theme",theme).put("accent",accent).put("size",a.optDouble("size",18.0).also{require(it.isFinite())}.coerceIn(14.0,28.0)).put("spacing",a.optDouble("spacing",1.75).also{require(it.isFinite())}.coerceIn(1.4,2.2)).put("measure",a.optInt("measure",660).coerceIn(320,800)).put("motion",if(a.optString("motion")=="snappy")"snappy" else "smooth")
+        val v=JSONObject().put("theme",theme).put("accent",accent).put("size",a.optDouble("size",18.0).also{require(it.isFinite())}.coerceIn(14.0,28.0)).put("spacing",a.optDouble("spacing",1.75).also{require(it.isFinite())}.coerceIn(1.4,2.2)).put("measure",a.optInt("measure",660).coerceIn(320,800)).put("motion",if(a.optString("motion")=="snappy")"snappy" else "smooth").put("haptics",if(a.optString("haptics")=="off")"off" else "system").put("richHaptics",a.optString("richHaptics","clear").takeIf{it in setOf("clear","platform","expressive")}?:"clear")
         require(prefs.edit().putString("preferences",v.toString()).commit()) {"Cannot persist reading preferences."};v.toString()
       }
       else -> error("Unsupported reading preference action.")
@@ -123,6 +124,74 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     }catch(_:Exception){promise.reject("EXTERNAL_LINK","Only HTTP or HTTPS links without embedded credentials can be opened.")}
   }
   private val random = SecureRandom()
+  private val reviews by lazy { VaultorReviews(File(ctx.noBackupFilesDir,"vaultor-reviews.bin"),::key) }
+  @ReactMethod fun reviewCapture(action:String,input:String,promise:Promise)=run(promise) {
+    try {
+    require(input.length<=24000);val a=JSONObject(input)
+    if(action=="begin") {
+      companionScope(a)
+      val p=selected(a.getString("hostId"),a.getString("epoch"))
+      if(a.optBoolean("offline")) {
+        require(!companions.isLocked(a.getString("scope"))) {"Downloaded source is locked."}
+        companions.query(a.getString("scope"),"/resources/"+a.getString("resourceId"))
+      }
+      a.put("address",p.getString("address"))
+    }
+    val result=reviews.execute(action,a)
+    if(action=="queue")reviewsChanged("queued")
+    else if(action=="discard")reviewsChanged()
+    result
+    } catch(_:java.io.IOException) {error("Capture storage is unavailable. Last protected evidence remains; free space and retry.")}
+      catch(_:java.security.GeneralSecurityException) {error("Protected capture storage cannot be unlocked. Bytes are retained; do not clear app data.")}
+  }
+  @Volatile private var reviewEventAt=0L
+  private fun reviewsChanged(kind:String="changed") {
+    val now=android.os.SystemClock.elapsedRealtime();if(kind=="changed" && now-reviewEventAt<150)return;reviewEventAt=now
+    if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorReviewsChanged",kind)
+  }
+  // Native-only transport seam for focused fault injection; not a React bridge method.
+  internal fun reviewRequest(source:JSONObject,path:String,method:String="GET",body:String?=null):JSONObject {
+      require(method=="GET" && (path in listOf("/access/host","/workspace/identity","/capabilities") || path.matches(Regex("/reviews/[a-f0-9-]{36}"))) || method=="PUT" && path.matches(Regex("/reviews/[a-f0-9-]{36}")))
+      if(android.os.Build.VERSION.SDK_INT>=37 && ctx.checkSelfPermission(android.Manifest.permission.ACCESS_LOCAL_NETWORK)!=android.content.pm.PackageManager.PERMISSION_GRANTED)throw VaultorReviewSync.Failure("NETWORK_PERMISSION_REQUIRED")
+      val hostId=source.getString("hostId")
+      val p=synchronized(stateLock) {
+        val stored=read().optJSONObject("profiles")?.optJSONObject(hostId) ?: throw VaultorReviewSync.Failure("APPROVAL_REQUIRED")
+        JSONObject(stored.toString()).put("selectedWorkspaceId",source.getString("workspaceId"))
+      }
+      fun currentApproval()=synchronized(stateLock) {
+        val current=read().optJSONObject("profiles")?.optJSONObject(hostId) ?: throw VaultorReviewSync.Failure("APPROVAL_REQUIRED")
+        if(current.optString("credential")!=p.optString("credential") || current.optString("fingerprint")!=p.optString("fingerprint") || current.optString("address")!=p.optString("address"))throw VaultorReviewSync.Failure("APPROVAL_REQUIRED")
+      }
+      currentApproval()
+      // A captured, approved profile and explicit workspace header; never selected()/activate().
+      val result=try {this@VaultorModule.request(p,path,method,body,scopeCapabilities=true)}
+      catch(_:javax.net.ssl.SSLException){throw VaultorReviewSync.Failure("TLS_VERIFICATION_FAILED")}
+      catch(_:java.security.GeneralSecurityException){throw VaultorReviewSync.Failure("TLS_VERIFICATION_FAILED")}
+      currentApproval()
+      // Preserve R4 locks even when an inactive source is checked by the outbox.
+      val status=result.getInt("status");val workspace=source.getString("workspaceId")
+      if(status in listOf(401,403))try {companions.observe(hostId,workspace,revoked=true)}catch(_:Exception){}
+      if(status==404 && JSONObject(result.optString("body","{}")).optString("code")=="WORKSPACE_UNAVAILABLE")try {companions.observe(hostId,workspace,revoked=true)}catch(_:Exception){}
+      if(path=="/workspace/identity" && status==200) {
+        val identity=JSONObject(result.getString("body"))
+        if(identity.optString("id")==workspace)try {companions.observe(hostId,workspace,identity.getString("generation"))}catch(_:Exception){}
+      }
+      if(path=="/access/host" && result.optInt("status")==200 && JSONObject(result.getString("body")).optString("fingerprint")!=p.getString("fingerprint"))throw VaultorReviewSync.Failure("HOST_IDENTITY_CHANGED")
+      return result
+  }
+  private val reviewSync by lazy { VaultorReviewSync(reviews,object:VaultorReviewSync.Port {
+    override fun request(source:JSONObject,path:String,method:String,body:String?)=reviewRequest(source,path,method,body)
+  }, changed={reviewsChanged()}) }
+  @ReactMethod fun reviewSync(action:String,input:String,promise:Promise) {
+    if(action=="state") {promise.resolve(JSONObject().put("busy",reviewScheduled.get()).toString());return}
+    if(action !in listOf("now","catchUp","refresh","opportunity") || input.length>256) {promise.reject("REVIEW_SYNC","Unsupported review synchronization request.");return}
+    if(!reviewScheduled.compareAndSet(false,true)){promise.resolve("{\"busy\":true}");return}
+    reviewWorker.execute {
+      try {promise.resolve(reviewSync.sync(action=="now",action=="refresh",action=="opportunity").toString())}
+      catch(_:Exception){promise.reject("REVIEW_SYNC","Review delivery could not be protected. Evidence is retained; retry without clearing app data.")}
+      finally {reviewScheduled.set(false);reviewsChanged("done")}
+    }
+  }
   private val file get() = AtomicFile(File(ctx.noBackupFilesDir, "vaultor-state.bin"))
   private fun key(): SecretKey {
     val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -207,13 +276,13 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   private var browseConnection:HttpsURLConnection?
     get()=browseLane.connection
     set(value){browseLane.connection=value}
-  private fun request(p: JSONObject, path: String, method: String="GET", body: String?=null, secret: String?=null, revision: String?=null, token:String?=null, multipart:Boolean=false,browse:Long?=null,lane:ReadLane=browseLane): JSONObject {
+  private fun request(p: JSONObject, path: String, method: String="GET", body: String?=null, secret: String?=null, revision: String?=null, token:String?=null, multipart:Boolean=false,browse:Long?=null,lane:ReadLane=browseLane,scopeCapabilities:Boolean=false): JSONObject {
     val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint")) { "Host identity changed; explicit pairing is required." }
     val con=URI(address(p.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection
     con.sslSocketFactory=context(cert).socketFactory
     con.connectTimeout=10000;con.readTimeout=15000;con.instanceFollowRedirects=false;con.requestMethod=method
     con.setRequestProperty("X-Vaultor-Protocol","3")
-    if(path!="/capabilities" && p.optString("selectedWorkspaceId").isNotEmpty())con.setRequestProperty("X-Vaultor-Workspace",p.getString("selectedWorkspaceId"))
+    if((path!="/capabilities" || scopeCapabilities) && p.optString("selectedWorkspaceId").isNotEmpty())con.setRequestProperty("X-Vaultor-Workspace",p.getString("selectedWorkspaceId"))
     if(p.has("credential")) con.setRequestProperty("Authorization","Bearer "+p.getString("credential"))
     if(secret!=null) con.setRequestProperty("X-Vaultor-Pairing",secret)
     if(revision!=null) con.setRequestProperty("If-Match",revision)
@@ -502,6 +571,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
 }
 
 class VaultorPackage:ReactPackage {
-  override fun createNativeModules(ctx:ReactApplicationContext)=listOf<NativeModule>(VaultorModule(ctx))
+  override fun createNativeModules(ctx:ReactApplicationContext)=listOf<NativeModule>(VaultorModule(ctx),VaultorPresentation(ctx))
   override fun createViewManagers(ctx:ReactApplicationContext)=emptyList<ViewManager<*,*>>()
 }
+

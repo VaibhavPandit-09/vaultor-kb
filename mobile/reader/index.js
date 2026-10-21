@@ -1,9 +1,13 @@
+/* global globalThis, CSS, Highlight, NodeFilter, IntersectionObserver, performance */
 import { renderDocument } from './render.js';
 let loadId = '',
   sequence = 0,
   restoring = false,
   restoreVersion = 0,
   positionTimer,
+  lastPosition,
+  interacting = false,
+  lastScrollAt = -1000,
   ranges = [],
   current = -1;
 const observers = [],
@@ -15,6 +19,81 @@ const send = m => {
     JSON.stringify({ protocol: 1, loadId, ...m }),
   );
 };
+let selectionFrame,
+  selectedEvidence = '';
+const selectionNodes = new WeakMap();
+let selectionNodeSequence = 0;
+const selectionNode = node => {
+  if (!selectionNodes.has(node))
+    selectionNodes.set(node, ++selectionNodeSequence);
+  return selectionNodes.get(node);
+};
+document.addEventListener('selectionchange', () => {
+  cancelAnimationFrame(selectionFrame);
+  selectionFrame = requestAnimationFrame(() => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) {
+      selectedEvidence = '';
+      send({ type: 'selection', evidence: null });
+      return;
+    }
+    const range = selection.getRangeAt(0);
+    if (
+      !root.contains(range.startContainer) ||
+      !root.contains(range.endContainer)
+    )
+      return;
+    const quote = selection.toString();
+    const identity = [
+      selectionNode(range.startContainer),
+      range.startOffset,
+      selectionNode(range.endContainer),
+      range.endOffset,
+    ].join(':');
+    if (identity === selectedEvidence) return;
+    selectedEvidence = identity;
+    if (quote.length > 4000) {
+      send({
+        type: 'selection',
+        evidence: {
+          error:
+            'Select at most 4000 characters. Evidence is never silently shortened.',
+          quote: '',
+          context: '',
+          revision: root.dataset.revision,
+        },
+      });
+      return;
+    }
+    const block = node =>
+      (node.nodeType === 1 ? node : node.parentElement)?.closest(
+        'p[data-path],h1[data-path],h2[data-path],h3[data-path],h4[data-path],h5[data-path],h6[data-path],pre[data-path]',
+      );
+    const start = block(range.startContainer),
+      end = block(range.endContainer);
+    let context = '',
+      path;
+    if (start && start === end) {
+      path = start.dataset.path;
+      const before = range.cloneRange();
+      before.selectNodeContents(start);
+      before.setEnd(range.startContainer, range.startOffset);
+      const at = before.toString().length;
+      if (start.textContent.slice(at, at + quote.length) === quote) {
+        let from = Math.max(0, at - Math.min(200, 4000 - quote.length)),
+          to = from + 4000;
+        // Context may be an excerpt, but never half a UTF-16 surrogate pair.
+        if (/[\uDC00-\uDFFF]/.test(start.textContent[from] || '')) from++;
+        if (/[\uD800-\uDBFF]/.test(start.textContent[to - 1] || '')) to--;
+        context = start.textContent.slice(from, to);
+      }
+    }
+    send({
+      type: 'selection',
+      evidence: { quote, context, path, revision: root.dataset.revision },
+    });
+  });
+});
 function preferences(m) {
   const html = document.documentElement;
   html.dataset.theme = ['light', 'dark', 'oled'].includes(m.theme)
@@ -37,7 +116,8 @@ function preferences(m) {
   html.dataset.motion =
     m.reduced || m.motion === 'snappy' ? 'snappy' : 'smooth';
 }
-function reportPosition() {
+function capturePosition() {
+  if (!root.firstElementChild) return;
   const blocks = [
     ...root.querySelectorAll('p,h1,h2,h3,h4,h5,h6,figure,pre,table'),
   ].filter(n => n.dataset.path);
@@ -46,13 +126,55 @@ function reportPosition() {
       const r = n.getBoundingClientRect();
       return r.top <= 32 && r.bottom > 32;
     }) || blocks.find(n => n.getBoundingClientRect().top >= 0);
-  send({
-    type: 'position',
+  return {
     scroll: window.scrollY,
     path: block?.dataset.path,
     offset: block ? -block.getBoundingClientRect().top : 0,
     revision: root.dataset.revision,
-  });
+  };
+}
+function reportPosition() {
+  const p = capturePosition();
+  if (p) {
+    lastPosition = p;
+    send({ type: 'position', ...p });
+  }
+}
+function restoreEdge(p) {
+  const anchor =
+    p?.revision === root.dataset.revision
+      ? [...root.querySelectorAll('[data-path]')].find(
+          n => n.dataset.path === p.path,
+        )
+      : undefined;
+  window.scrollTo(
+    0,
+    anchor
+      ? window.scrollY +
+          anchor.getBoundingClientRect().top +
+          (Number(p.offset) || 0)
+      : Math.max(0, Number(p?.scroll) || 0),
+  );
+}
+function preserveGeometry(change, p = capturePosition()) {
+  change();
+  // The current restoration already owns the reading edge and load completion.
+  if (!p || restoring || interacting || performance.now() - lastScrollAt < 120)
+    return;
+  const ticket = loadId,
+    version = ++restoreVersion;
+  restoring = true;
+  let frames = 0;
+  const settle = () => {
+    if (ticket !== loadId || version !== restoreVersion) return;
+    restoreEdge(p);
+    if (++frames < 3) requestAnimationFrame(settle);
+    else {
+      restoring = false;
+      reportPosition();
+    }
+  };
+  settle();
 }
 function goTo(top) {
   window.scrollTo({ top: Math.max(0, top), behavior: 'instant' });
@@ -130,13 +252,15 @@ window.vaultorReceive = raw => {
     return;
   }
   if (m.type === 'load') {
+    selectedEvidence = '';
     clearTimeout(positionTimer);
     observers.splice(0).forEach(o => o.disconnect());
     loadId = m.loadId;
     images.clear();
     preferences(m);
     restoring = true;
-    const newVisit = root.dataset.noteId !== m.noteId;
+    if (root.dataset.noteId !== m.noteId)
+      document.documentElement.style.setProperty('--controls-bottom', '96px');
     root.dataset.noteId = m.noteId || '';
     root.dataset.revision = m.revision || '';
     const meta = renderDocument(
@@ -159,11 +283,6 @@ window.vaultorReceive = raw => {
         observer.observe(button);
       },
     );
-    if (newVisit && m.motion === 'smooth' && !m.reduced) {
-      const article = root.firstElementChild;
-      article?.classList.add('enter');
-      setTimeout(() => article?.classList.remove('enter'), 220);
-    }
     let attempts = 0;
     const ticket = loadId,
       restoreTicket = ++restoreVersion,
@@ -187,13 +306,14 @@ window.vaultorReceive = raw => {
       if (++attempts < 4) requestAnimationFrame(restore);
       else {
         restoring = false;
-        send({ type: 'loaded', ...meta });
+        reportPosition();
       }
     };
+    send({ type: 'loaded', ...meta });
     requestAnimationFrame(restore);
     find('');
   } else if (m.type === 'preferences') {
-    preferences(m);
+    preserveGeometry(() => preferences(m));
   } else if (m.loadId === loadId) {
     if (m.type === 'restore') {
       restoring = true;
@@ -231,10 +351,36 @@ window.vaultorReceive = raw => {
       ) {
         const img = document.createElement('img');
         img.alt = item.alt;
+        const ticket = loadId;
+        img.onload = () => {
+          if (ticket === loadId && item.button.isConnected)
+            preserveGeometry(() => item.button.replaceChildren(img));
+        };
+        img.onerror = () => {
+          if (ticket === loadId && item.button.isConnected)
+            preserveGeometry(() => {
+              item.button.textContent =
+                'Image unavailable · Tap to retry or open';
+            });
+        };
         img.src = m.data;
-        item.button.replaceChildren(img);
       } else
-        item.button.textContent = 'Image unavailable · Tap to retry or open';
+        preserveGeometry(() => {
+          item.button.textContent = 'Image unavailable · Tap to retry or open';
+        });
+    } else if (m.type === 'context') {
+      document.documentElement.style.setProperty(
+        '--controls-bottom',
+        Math.max(
+          96,
+          parseFloat(
+            document.documentElement.style.getPropertyValue(
+              '--controls-bottom',
+            ),
+          ) || 0,
+          Math.min(400, Number(m.bottom) + 24 || 96),
+        ) + 'px',
+      );
     } else if (m.type === 'heading') {
       const h = document.getElementById(m.id);
       if (h && /^heading-\d+$/.test(m.id)) {
@@ -264,6 +410,7 @@ window.addEventListener(
   'scroll',
   () => {
     if (restoring) return;
+    lastScrollAt = performance.now();
     clearTimeout(positionTimer);
     const ticket = loadId;
     positionTimer = setTimeout(() => {
@@ -272,6 +419,9 @@ window.addEventListener(
   },
   { passive: true },
 );
+window.addEventListener('resize', () => {
+  if (!restoring && lastPosition) preserveGeometry(() => {}, lastPosition);
+});
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && !restoring) reportPosition();
 });
@@ -281,6 +431,22 @@ for (const event of ['pointerdown', 'wheel', 'touchstart'])
     () => {
       restoreVersion++;
       restoring = false;
+      if (event === 'wheel') lastScrollAt = performance.now();
+      else interacting = true;
+    },
+    { passive: true },
+  );
+for (const event of [
+  'pointerup',
+  'pointercancel',
+  'touchend',
+  'touchcancel',
+  'blur',
+])
+  window.addEventListener(
+    event,
+    () => {
+      interacting = false;
     },
     { passive: true },
   );

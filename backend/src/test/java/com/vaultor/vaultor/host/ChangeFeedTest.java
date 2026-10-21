@@ -62,7 +62,7 @@ class ChangeFeedTest extends HostAccessTest {
                 }
                 assertEquals(204,call(lan,"PUT","/api/resources/"+id+"/favorite",Map.of("favorite",true),bearer).statusCode());var pinned=stream.next("resources");
                 String cursor=pinned.path("cursor").asText();
-                assertEquals(204,call(local,"DELETE","/api/resources/"+id,null,owner()).statusCode());stream.next("resources");
+                assertEquals(204,call(local,"PUT","/api/resources/"+id+"/favorite",Map.of("favorite",false),owner()).statusCode());stream.next("resources");
                 try(var replay=new Stream(lan,bearer,cursor)){assertEquals(id,replay.next("resources").path("ids").get(0).asText());}
                 for(int i=0;i<1001;i++)feed.committed("resources",List.of(id),"bounded");
                 try(var gap=new Stream(local,owner(),cursor)){assertEquals("reset",gap.next("reset").path("kind").asText());}
@@ -72,6 +72,6 @@ class ChangeFeedTest extends HostAccessTest {
         }
     }
     void awaitTransfer(TransferService transfers,String id)throws Exception {
-        for(int i=0;i<200;i++){var op=transfers.get(id);if(List.of("SUCCEEDED","FAILED").contains(op.status())){assertEquals("SUCCEEDED",op.status(),op.detail());return;}Thread.sleep(25);}fail("Transfer timed out");
+        for(int i=0;i<200;i++){try{var op=transfers.get(id);if(List.of("SUCCEEDED","FAILED").contains(op.status())){assertEquals("SUCCEEDED",op.status(),op.detail());return;}}catch(org.springframework.web.server.ResponseStatusException e){if(e.getStatusCode().value()!=409)throw e;}Thread.sleep(25);}fail("Transfer timed out");
     }
 }

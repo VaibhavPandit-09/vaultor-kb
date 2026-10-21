@@ -12,6 +12,7 @@ export class ReaderFeed {
       stop(): void;
       reconnect(): Promise<void>;
       reconcile(): Promise<void>;
+      reviews?(): void;
       error(e: unknown): void;
     },
   ) {}
@@ -50,6 +51,7 @@ export class ReaderFeed {
       typeof m.cursor !== 'string' ||
       m.cursor.length > 128 ||
       ![
+        'reviews',
         'reset',
         'resources',
         'workspace',
@@ -63,6 +65,10 @@ export class ReaderFeed {
       return;
     this.cursor = m.cursor;
     this.retry = 1000;
+    if (m.kind === 'reviews') {
+      this.port.reviews?.();
+      return;
+    }
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       if (this.active && !this.disposed)

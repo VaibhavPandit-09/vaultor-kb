@@ -1,5 +1,9 @@
 import { targetFor, type Target } from './organization';
 import { useThemeStyles } from './ui';
+import { Action } from './Action';
+import ContextSheet from './ContextSheet';
+import { counted, rowMetadata } from './browsePresentation';
+import { ResourceTouch } from './ResourceMotion';
 import React, {
   useEffect,
   useCallback,
@@ -10,7 +14,6 @@ import React, {
 import {
   AppState,
   FlatList,
-  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -26,55 +29,18 @@ import {
   type BrowseRow,
 } from './browse';
 import type { MobileWorkspace } from './workspace';
-export function Action({
-  label,
-  onPress,
-  active = false,
-  disabled = false,
-  accessibilityLabel,
-}: {
-  label: string;
-  onPress: () => void;
-  active?: boolean;
-  disabled?: boolean;
-  accessibilityLabel?: string;
-}) {
-  const styles = useThemeStyles(sheetStyles);
-  const [focused, setFocused] = useState(false);
-  return (
-    <Pressable
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ selected: active, disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.action,
-        active && styles.active,
-        focused && styles.focused,
-        pressed && styles.pressed,
-        disabled && styles.disabled,
-      ]}
-    >
-      <View pointerEvents="none" collapsable={false}>
-        <Text style={[styles.actionText, active && styles.accent]}>
-          {label}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
+export { Action } from './Action';
 export function ChoiceSheet({
   title,
   choices,
   close,
   onChoose,
+  description,
   searchable = choices.length > 8,
-  animation = 'fade',
+  animation: _animation,
 }: {
   title: string;
+  description?: string;
   choices: { value: string; label: string }[];
   close: () => void;
   onChoose: (value: string) => void;
@@ -83,60 +49,44 @@ export function ChoiceSheet({
 }) {
   const styles = useThemeStyles(sheetStyles);
   const [q, setQ] = useState('');
-  const content = (
-    <Pressable
-      style={styles.scrim}
-      onPress={close}
-      accessibilityLabel="Dismiss picker"
-    >
-      <Pressable style={styles.sheet} onPress={() => {}}>
-        <View collapsable={false} style={styles.bar}>
-          <Text accessibilityRole="header" style={styles.heading}>
-            {title}
-          </Text>
-          <Action label="Done" onPress={close} />
-        </View>
-        {searchable ? (
-          <TextInput
-            autoFocus
-            accessibilityLabel={'Search ' + title}
-            value={q}
-            onChangeText={setQ}
-            placeholder="Find an option"
-            placeholderTextColor="#858585"
-            style={styles.input}
-          />
-        ) : null}
-        <FlatList
-          removeClippedSubviews={false}
-          style={styles.choiceList}
-          keyboardShouldPersistTaps="handled"
-          data={choices.filter(c =>
-            c.label.toLowerCase().includes(q.toLowerCase()),
-          )}
-          keyExtractor={c => c.value}
-          renderItem={({ item }) => (
-            <Action
-              label={item.label}
-              onPress={() => {
-                close();
-                onChoose(item.value);
-              }}
-            />
-          )}
-        />
-      </Pressable>
-    </Pressable>
-  );
   return (
-    <Modal transparent animationType={animation} onRequestClose={close}>
-      {content}
-    </Modal>
+    <ContextSheet title={title} close={close}>
+      {description ? <Text style={styles.meta}>{description}</Text> : null}
+      {searchable ? (
+        <TextInput
+          accessibilityLabel={'Search ' + title}
+          value={q}
+          onChangeText={setQ}
+          placeholder="Find an option"
+          placeholderTextColor="#858585"
+          style={styles.input}
+        />
+      ) : null}
+      <FlatList
+        removeClippedSubviews={false}
+        style={styles.choiceList}
+        keyboardShouldPersistTaps="handled"
+        data={choices.filter(c =>
+          c.label.toLowerCase().includes(q.toLowerCase()),
+        )}
+        keyExtractor={c => c.value}
+        renderItem={({ item }) => (
+          <Action
+            label={item.label}
+            onPress={() => {
+              close();
+              onChoose(item.value);
+            }}
+          />
+        )}
+      />
+    </ContextSheet>
   );
 }
 export default function BrowseScreen({
   model,
   visible,
+  retained = false,
   onAction,
   searchRequest = 0,
   suspended = false,
@@ -147,6 +97,7 @@ export default function BrowseScreen({
   onOrganize?: (target: Target) => void;
   completedIds?: string[];
   visible: boolean;
+  retained?: boolean;
   onAction: (action: () => Promise<void>) => void;
   searchRequest?: number;
   suspended?: boolean;
@@ -315,7 +266,7 @@ export default function BrowseScreen({
     active,
     state.scope,
   ]);
-  if (!visible) return null;
+  if (!visible && !retained) return null;
   const choices = filters.concat(
     b.config.destination === 'pinned'
       ? [{ value: 'collection', label: 'Collections' }]
@@ -332,24 +283,6 @@ export default function BrowseScreen({
   };
   return (
     <View collapsable={false} style={styles.root}>
-      {state.downloaded ? (
-        <Text style={styles.meta}>
-          Downloaded only · titles and saved note text · file text unavailable
-          offline
-        </Text>
-      ) : null}
-      {state.note ? (
-        <Action
-          label="Return to note"
-          onPress={() => onAction(() => model.returnToNote())}
-        />
-      ) : null}
-      {b.config.collection ? (
-        <Action
-          label="‹ Library"
-          onPress={() => browser.configure({ collection: undefined })}
-        />
-      ) : null}
       <View collapsable={false} style={styles.searchRow}>
         <TextInput
           ref={input}
@@ -370,7 +303,13 @@ export default function BrowseScreen({
         />
         {b.config.destination !== 'trash' ? (
           <Action
-            label="Filters"
+            label={
+              b.config.type ||
+              b.config.mode === 'content' ||
+              b.config.collection
+                ? 'Filters •'
+                : 'Filters'
+            }
             active={Boolean(
               b.config.type ||
                 b.config.mode === 'content' ||
@@ -380,64 +319,6 @@ export default function BrowseScreen({
           />
         ) : null}
       </View>
-      {b.config.type || b.config.mode === 'content' ? (
-        <View collapsable={false} style={styles.tabs}>
-          {b.config.type ? (
-            <Action
-              label={
-                (choices.find(c => c.value === b.config.type)?.label ??
-                  b.config.type) + ' ×'
-              }
-              accessibilityLabel="Clear type filter"
-              active
-              onPress={() => browser.configure({ type: '' })}
-            />
-          ) : null}
-          {b.config.mode === 'content' ? (
-            <Action
-              label="Saved content ×"
-              accessibilityLabel="Search titles only"
-              active
-              onPress={() => browser.configure({ mode: 'title' })}
-            />
-          ) : null}
-        </View>
-      ) : null}
-      {b.config.mode === 'content' ? (
-        <Text style={styles.meta}>
-          Saved content only · open drafts are excluded.{' '}
-          {b.coverage
-            ? `File coverage: ${b.coverage.indexed}/${b.coverage.files}${
-                b.coverage.complete ? '' : ' · incomplete'
-              }`
-            : ''}
-          {b.config.destination === 'pinned' ? ' · pinned resources' : ''}
-          {b.config.destination === 'recent' ? ' · relevance order' : ''}
-        </Text>
-      ) : null}
-      {b.error ? (
-        <View collapsable={false} style={styles.bar}>
-          <Text style={styles.error}>
-            {b.error}
-            {b.rows.length ? ' · previous results retained' : ''}
-          </Text>
-          <Action
-            label="Retry"
-            onPress={() => {
-              void browser.refresh();
-            }}
-          />
-        </View>
-      ) : null}
-      <Text style={styles.meta}>
-        {b.loading
-          ? 'Refreshing…'
-          : `${b.total} ${
-              b.config.destination === 'collections'
-                ? 'collections'
-                : 'resources'
-            }`}
-      </Text>
       {selected.size ? (
         <View collapsable={false} style={styles.bar}>
           <Action
@@ -461,6 +342,100 @@ export default function BrowseScreen({
       ) : null}
       <FlatList
         style={styles.list}
+        ListHeaderComponent={
+          <View style={styles.orientation}>
+            <View style={styles.summary}>
+              <Text style={styles.meta}>
+                {b.loading
+                  ? 'Refreshing…'
+                  : counted(
+                      b.total,
+                      b.config.destination === 'collections'
+                        ? 'collection'
+                        : 'resource',
+                    )}
+              </Text>
+              {state.note ? (
+                <ResourceTouch
+                  resourceId={state.note.id}
+                  title={state.note.title}
+                  accessibilityRole="button"
+                  accessibilityLabel={'Resume · ' + state.note.title}
+                  onPress={() => onAction(() => model.returnToNote())}
+                  style={styles.resume}
+                >
+                  {titleRef => (
+                    <Text
+                      ref={titleRef}
+                      numberOfLines={1}
+                      style={styles.resumeText}
+                    >
+                      Resume · {state.note?.title} ›
+                    </Text>
+                  )}
+                </ResourceTouch>
+              ) : null}
+            </View>
+            {b.config.collection ? (
+              <Action
+                label="‹ Library"
+                onPress={() => browser.configure({ collection: undefined })}
+              />
+            ) : null}
+
+            {b.config.type || b.config.mode === 'content' ? (
+              <View collapsable={false} style={styles.tabs}>
+                {b.config.type ? (
+                  <Action
+                    label={
+                      (choices.find(c => c.value === b.config.type)?.label ??
+                        b.config.type) + ' ×'
+                    }
+                    accessibilityLabel="Clear type filter"
+                    active
+                    onPress={() => browser.configure({ type: '' })}
+                  />
+                ) : null}
+                {b.config.mode === 'content' ? (
+                  <Action
+                    label="Saved content ×"
+                    accessibilityLabel="Search titles only"
+                    active
+                    onPress={() => browser.configure({ mode: 'title' })}
+                  />
+                ) : null}
+              </View>
+            ) : null}
+            {b.config.mode === 'content' ? (
+              <Text style={styles.meta}>
+                {state.downloaded
+                  ? 'Downloaded note text · file text unavailable offline.'
+                  : 'Saved content only · open drafts are excluded.'}{' '}
+                {b.coverage
+                  ? `File coverage: ${b.coverage.indexed}/${b.coverage.files}${
+                      b.coverage.complete ? '' : ' · incomplete'
+                    }`
+                  : ''}
+                {b.config.destination === 'pinned' ? ' · pinned resources' : ''}
+                {b.config.destination === 'recent' ? ' · relevance order' : ''}
+              </Text>
+            ) : null}
+            {b.error ? (
+              <View collapsable={false} style={styles.bar}>
+                <Text style={styles.error}>
+                  {b.error}
+                  {b.rows.length ? ' · previous results retained' : ''}
+                </Text>
+                <Action
+                  label="Retry"
+                  onPress={() => {
+                    void browser.refresh();
+                  }}
+                />
+              </View>
+            ) : null}
+          </View>
+        }
         onLayout={e => {
           measured.current.viewport = e.nativeEvent.layout.height;
           restoreScroll();
@@ -505,6 +480,7 @@ export default function BrowseScreen({
             item.kind === 'collection'
               ? { label: 'Collection', icon: '▦', action: 'collection' }
               : presentation(item.resource!);
+          const metadata = rowMetadata(item, b.config.collection?.id);
           return (
             <View collapsable={false} style={styles.row}>
               {selected.size && item.kind === 'resource' ? (
@@ -520,10 +496,15 @@ export default function BrowseScreen({
                   </Text>
                 </Pressable>
               ) : null}
-              <Pressable
+              <ResourceTouch
+                title={item.title}
+                resourceId={
+                  item.resource?.type === 'note' ? item.id : undefined
+                }
                 style={styles.rowMain}
                 accessibilityRole="button"
                 accessibilityLabel={`${item.title}, ${p.label}`}
+                accessibilityValue={metadata ? { text: metadata } : undefined}
                 accessibilityHint={
                   onOrganize && item.kind === 'resource'
                     ? 'Long press to select resources'
@@ -552,28 +533,33 @@ export default function BrowseScreen({
                     : activate(item)
                 }
               >
-                <Text accessibilityElementsHidden style={styles.icon}>
-                  {p.icon}
-                </Text>
-                <View collapsable={false} style={styles.rowText}>
-                  <Text numberOfLines={2} style={styles.resourceTitle}>
-                    {item.title}
-                  </Text>
-                  <Text style={styles.meta}>
-                    {p.label}
-                    {item.kind === 'collection'
-                      ? ` · ${item.count} resources`
-                      : item.resource?.collections?.length
-                      ? ` · ${item.resource.collections.length} collections`
-                      : ''}
-                  </Text>
-                  {item.snippet ? (
-                    <Text numberOfLines={3} style={styles.snippet}>
-                      {item.snippet.text}
+                {titleRef => (
+                  <>
+                    <Text accessibilityElementsHidden style={styles.icon}>
+                      {p.icon}
                     </Text>
-                  ) : null}
-                </View>
-              </Pressable>
+                    <View collapsable={false} style={styles.rowText}>
+                      <Text
+                        ref={titleRef}
+                        numberOfLines={2}
+                        style={styles.resourceTitle}
+                      >
+                        {item.title}
+                      </Text>
+                      {metadata ? (
+                        <Text numberOfLines={1} style={styles.meta}>
+                          {metadata}
+                        </Text>
+                      ) : null}
+                      {item.snippet ? (
+                        <Text numberOfLines={3} style={styles.snippet}>
+                          {item.snippet.text}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </>
+                )}
+              </ResourceTouch>
               {onOrganize ? (
                 <Action
                   label="•••"
@@ -607,6 +593,11 @@ export default function BrowseScreen({
       {sheet === 'options' ? (
         <ChoiceSheet
           title="Search options"
+          description={
+            state.downloaded
+              ? 'Title search covers downloaded resources. Saved content searches retained note text; file text is unavailable offline.'
+              : 'Saved content searches saved versions; open drafts are excluded.'
+          }
           searchable={false}
           close={() => setSheet(undefined)}
           choices={[
@@ -679,89 +670,99 @@ export default function BrowseScreen({
         />
       ) : null}
       {sheet === 'scope' ? (
-        <Modal
-          transparent
-          onRequestClose={() => setSheet(undefined)}
-          animationType="fade"
-        >
-          <View collapsable={false} style={styles.scrim}>
-            <View collapsable={false} style={styles.sheet}>
-              <View collapsable={false} style={styles.bar}>
-                <Text style={styles.heading}>Search scope</Text>
-                <Action label="Done" onPress={() => setSheet(undefined)} />
-              </View>
+        <ContextSheet title="Search scope" close={() => setSheet(undefined)}>
+          <Action
+            label="Entire workspace"
+            onPress={() => {
+              browser.configure({ collection: undefined });
+              setSheet(undefined);
+            }}
+          />
+          <TextInput
+            maxLength={500}
+            autoFocus
+            style={styles.input}
+            placeholder="Find a collection"
+            placeholderTextColor="#858585"
+            accessibilityLabel="Find collection scope"
+            value={scopeQuery}
+            onChangeText={q => {
+              setScopeQuery(q);
+              setScopePage(0);
+            }}
+          />
+          {scopeError ? (
+            <View collapsable={false} style={styles.bar}>
+              <Text style={styles.error}>{scopeError}</Text>
               <Action
-                label="Entire workspace"
+                label="Retry scopes"
+                onPress={() => setScopeRetry(scopeRetry + 1)}
+              />
+            </View>
+          ) : null}
+          <FlatList
+            removeClippedSubviews={false}
+            keyboardShouldPersistTaps="handled"
+            data={scopeChoices}
+            keyExtractor={c => c.value}
+            renderItem={({ item }) => (
+              <Action
+                label={item.label}
                 onPress={() => {
-                  browser.configure({ collection: undefined });
+                  browser.configure({
+                    collection: { id: item.value, name: item.label },
+                  });
                   setSheet(undefined);
                 }}
               />
-              <TextInput
-                maxLength={500}
-                autoFocus
-                style={styles.input}
-                placeholder="Find a collection"
-                placeholderTextColor="#858585"
-                accessibilityLabel="Find collection scope"
-                value={scopeQuery}
-                onChangeText={q => {
-                  setScopeQuery(q);
-                  setScopePage(0);
-                }}
-              />
-              {scopeError ? (
-                <View collapsable={false} style={styles.bar}>
-                  <Text style={styles.error}>{scopeError}</Text>
-                  <Action
-                    label="Retry scopes"
-                    onPress={() => setScopeRetry(scopeRetry + 1)}
-                  />
-                </View>
-              ) : null}
-              <FlatList
-                removeClippedSubviews={false}
-                keyboardShouldPersistTaps="handled"
-                data={scopeChoices}
-                keyExtractor={c => c.value}
-                renderItem={({ item }) => (
-                  <Action
-                    label={item.label}
-                    onPress={() => {
-                      browser.configure({
-                        collection: { id: item.value, name: item.label },
-                      });
-                      setSheet(undefined);
-                    }}
-                  />
-                )}
-              />
-              <View collapsable={false} style={styles.bar}>
-                <Action
-                  label="Previous scope page"
-                  disabled={!scopePage}
-                  onPress={() => setScopePage(scopePage - 1)}
-                />
-                <Action
-                  label="Next scope page"
-                  disabled={!scopeMore}
-                  onPress={() => setScopePage(scopePage + 1)}
-                />
-              </View>
-            </View>
+            )}
+          />
+          <View collapsable={false} style={styles.bar}>
+            <Action
+              label="Previous scope page"
+              disabled={!scopePage}
+              onPress={() => setScopePage(scopePage - 1)}
+            />
+            <Action
+              label="Next scope page"
+              disabled={!scopeMore}
+              onPress={() => setScopePage(scopePage + 1)}
+            />
           </View>
-        </Modal>
+        </ContextSheet>
       ) : null}
     </View>
   );
 }
 const sheetStyles = StyleSheet.create({
   list: { flex: 1 },
+  summary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    minHeight: 48,
+  },
+  resume: {
+    flexShrink: 1,
+    minHeight: 48,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingLeft: 8,
+  },
+  resumeText: { color: '#b3b3b3', fontSize: 12 },
+  orientation: { gap: 2, paddingBottom: 2 },
   focused: { borderWidth: 2, borderColor: '#8db7ff' },
   choiceList: { flexGrow: 0 },
   searchInput: { flex: 1 },
+  destinationHeading: {
+    color: '#e8e8e8',
+    fontSize: 24,
+    fontWeight: '600',
+    paddingVertical: 8,
+  },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  root: { flex: 1, paddingHorizontal: 16, gap: 10 },
+  root: { flex: 1, paddingHorizontal: 16, gap: 4 },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   title: {
     flexDirection: 'row',
@@ -802,18 +803,19 @@ const sheetStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderColor: '#202020',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: '#252525',
   },
   rowMain: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 16,
-    gap: 14,
+    alignItems: 'center',
+    minHeight: 56,
+    paddingVertical: 10,
+    gap: 10,
   },
-  icon: { fontSize: 24, color: '#8db7ff', width: 28 },
-  rowText: { flex: 1, gap: 4 },
+  icon: { fontSize: 21, color: '#8db7ff', width: 24 },
+  rowText: { flex: 1, gap: 2 },
   resourceTitle: { fontSize: 16, fontWeight: '500', color: '#e8e8e8' },
   snippet: { color: '#b3b3b3', fontSize: 13, lineHeight: 19 },
   empty: { paddingVertical: 28, gap: 12 },

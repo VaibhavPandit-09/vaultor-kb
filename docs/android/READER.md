@@ -1,6 +1,8 @@
+Current A3 candidate adds [source-bound Review capture](REVIEW-CAPTURE.md) over the retained read-only reader; native Copy remains and original JSON is unchanged. Upload/status is A4.
+
 # Android reader and legacy recovery
 
-Reviewed 2026-10-14. R2 alpha.10 reading refinement is published; see [ANDROID.md](ANDROID.md) for delivery/transport/storage and [tracker](../plans/workspace-companion-plan.md) for remaining work.
+Reviewed 2026-10-16. A2 alpha.14/code18 is the current reader-context review candidate; [READER-CONTEXT.md](READER-CONTEXT.md) owns the interaction specification. R2 alpha.10 is the earlier reading refinement; see [ANDROID.md](ANDROID.md) for delivery/transport/storage and [tracker](../plans/workspace-companion-plan.md) for remaining work.
 
 ## Source map
 
@@ -21,11 +23,13 @@ Removed hosts, old generations, missing originals and absent network do not eras
 
 ## Reading presentation and controls
 
-One compact topbar gives space to content. Reading options exposes Outline, Find within note, Reading appearance and Journey; no permanent editing toolbar/nested-card note layout. Headings, lists, quotes, marks, tables/code and read-only tasks preserve meaning. Tables/code scroll horizontally within blocks; pages stay vertical. Code backgrounds span the full scrollable line width, and inline code wraps with its decoration. Text/link labels use native WebView selection/copy.
+A0 alpha.12 uses the existing Reading appearance surface to prove shared sheet motion, native coordinated theme reveal, semantic touch-feedback preferences/previews and main/modal system-bar handling. One ReadingProvider reduced-motion source now serves shell and reader. Real reader DOM/position stays mounted; no capture or editing bridge is added. [Interaction foundations](INTERACTION-FOUNDATIONS.md) owns these additions and their physical review boundary; the existing reader behavior below remains otherwise unchanged.
+
+A minimum48dp reading topbar keeps the WebView edge stable while the same connected title/source objects compact with scroll. Offline context stays visible. Find overlays the bottom instead of consuming document height; actual IME/rotation remains a true viewport change. Reading options exposes Outline, Find within note, Reading appearance and Journey; no permanent editing toolbar/nested-card note layout. Headings, lists, quotes, marks, tables/code and read-only tasks preserve meaning. Tables/code scroll horizontally within blocks; pages stay vertical. Code backgrounds span the full scrollable line width, and inline code wraps with its decoration. Text/link labels use native WebView selection/copy.
 
 Outline lists256headings maximum without recording visits. Find accepts200characters, literal case-insensitive matching across inline marks within blocks, max500matches, Previous/Next. CSS Highlights preserves document text nodes/selection. It searches saved note content only. Search snippets are not guessed into locators; explicit reference occurrences jump only with matching source revision, valid structured path and target ID. Drift leaves reading intact.
 
-Reading appearance is also reachable from navigation and Workspaces without opening a note. It is device-local: OS(default), Light, Dark, OLED; Blue/Violet/Mint/Amber; text14–28px, spacing1.4–2.2, measure320–800CSSpx, Snappy/Smooth. System font scaling is additional. OS follows Light/Dark; OLED is opaque black, Dark neutral#101114. Changes update tokens without replacing DOM. Separate native SharedPreferences remain outside archives/recovery; failures retain values with Retry. Smooth fades only new note visits for200ms; preferences/find/refresh do not animate text. OS reduced motion overrides it.
+Reading appearance is also reachable from navigation and Workspaces without opening a note. It is device-local: OS(default), Light, Dark, OLED; Blue/Violet/Mint/Amber; text14–28px, spacing1.4–2.2, measure320–800CSSpx, Snappy/Smooth. System font scaling is additional. OS follows Light/Dark; OLED is opaque black, Dark neutral#101114. Changes update tokens without replacing DOM. Separate native SharedPreferences remain outside archives/recovery; failures retain values with Retry. A2 removes decorative new-visit fading. Typography and decoded thumbnail geometry retain revision-bound reading anchors with bounded restoration; active touch/recent scroll and newer loads win. Readiness does not depend on deferred restoration. Smooth/Snappy timing serves contextual surfaces and explicit media Fit; reduced motion retains immediate valid endpoints.
 
 Selectable resource anchors have focus/accessibility labels. Links replace the reader; direct opens start a trail. Cycles/branches retain distinct visits bounded200. Earlier visits of the same resource restore their own positions. Positions contain scroll, structured block path/offset and source revision; anchors restore only with matching revision, otherwise bounded scroll. User gestures cancel delayed restoration. Navigation failures keep source/trail; explicit Library navigation supersedes pending linked requests. Hidden readers cannot journal clamped positions. Backgrounding flushes position without modifying JSON/recovery.
 
@@ -34,3 +38,7 @@ Back dismisses previews/pickers/find/drawer before history/origin. Files never a
 Full-screen image/PDF behavior, limits, scoped positions and original-file output are authoritative in [MEDIA.md](MEDIA.md). Unknown content is retained, never stripped/autosaved. Larger stress/OOM verification remainsR10; physical Samsung/OneUI/OLED/TalkBack acceptance is user-owned.
 
 R4 mounts the initial content only after restoration finishes, using distinct startup/connection/recovery/workspace keys; mounted browsing/reading remains stable afterward. Library restoration waits for native content/viewport measurements, bounds offsets and ignores premature events. Query/scope/filters and cached rows survive refreshes. ReaderListRestoreTest covers oversized legacy positions fromR1. R2 native acceptance and actual release bytes are recorded in [alpha.10 notes](releases/0.1.0-alpha.10.md).
+
+## A1 shell/source review — 2026-10-16
+
+[Shell/source navigation](SHELL-NAVIGATION.md) owns alpha.13/code17 orientation, source overlays, identified Home resume and utility surfaces. Native WebView/document identity was checked through source inspection, outline/Back, Home/resume and rotation in connected/downloaded runtime checks; [alpha.13 ledger](releases/0.1.0-alpha.13.md) owns exact candidate/final evidence. Continuous reader-edge/chrome/media/predictive motion remains A2, physical acceptance user-owned. Original immutable rendering and source admission contracts above remain authoritative.

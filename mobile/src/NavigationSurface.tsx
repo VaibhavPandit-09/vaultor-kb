@@ -1,16 +1,10 @@
-import React, { useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import React from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Action } from './BrowseScreen';
 import { presentation } from './browse';
+import { ResourceTouch } from './ResourceMotion';
 import { useThemeStyles } from './ui';
+import type { Note } from './bridge';
 import type { QuickAccess, RootDestination } from './navigation';
 
 type Props = {
@@ -36,7 +30,11 @@ function Shortcut({
     ? { icon: '▦', label: 'Collection' }
     : presentation(resource ?? { type: '' });
   return (
-    <Pressable
+    <ResourceTouch
+      title={title || 'Resource'}
+      resourceId={
+        !collection && resource?.type === 'note' ? resource.id : undefined
+      }
       accessibilityRole="button"
       accessibilityLabel={`${title}, ${info.label}`}
       onPress={() =>
@@ -44,29 +42,34 @@ function Shortcut({
       }
       style={({ pressed }) => [s.shortcut, pressed && s.pressed]}
     >
-      <Text importantForAccessibility="no" style={s.icon}>
-        {info.icon}
-      </Text>
-      <View collapsable={false} style={s.grow}>
-        <Text numberOfLines={2} style={s.itemTitle}>
-          {title}
-        </Text>
-        <Text style={s.meta}>{info.label}</Text>
-      </View>
-    </Pressable>
+      {titleRef => (
+        <>
+          <Text importantForAccessibility="no" style={s.icon}>
+            {info.icon}
+          </Text>
+          <View collapsable={false} style={s.grow}>
+            <Text ref={titleRef} numberOfLines={2} style={s.itemTitle}>
+              {title}
+            </Text>
+            <Text style={s.meta}>{info.label}</Text>
+          </View>
+        </>
+      )}
+    </ResourceTouch>
   );
 }
-export function HomeScreen(props: Props & { returnToNote?: () => void }) {
+export function HomeScreen(
+  props: Props & {
+    returnToNote?: () => void;
+    resume?: Note;
+  },
+) {
   const s = useThemeStyles(sheet);
   return (
     <ScrollView
       contentContainerStyle={s.home}
       keyboardShouldPersistTaps="handled"
     >
-      <Text accessibilityRole="header" style={s.hero}>
-        Your space.
-      </Text>
-      <Text style={s.secondary}>Pick up where you left off.</Text>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Search workspace"
@@ -76,7 +79,24 @@ export function HomeScreen(props: Props & { returnToNote?: () => void }) {
         <Text style={s.secondary}>⌕ Search your workspace</Text>
       </Pressable>
       {props.returnToNote ? (
-        <Action label="Return to note" onPress={props.returnToNote} />
+        <ResourceTouch
+          title={props.resume?.title || 'Reader'}
+          resourceId={props.resume?.id}
+          accessibilityRole="button"
+          accessibilityLabel={'Resume reading ' + props.resume?.title}
+          onPress={props.returnToNote}
+          style={s.resume}
+        >
+          {titleRef => (
+            <>
+              <Text style={s.meta}>Resume reading</Text>
+              <Text ref={titleRef} numberOfLines={2} style={s.resumeTitle}>
+                {props.resume?.title}
+              </Text>
+              <Text style={s.meta}>Saved reading position ›</Text>
+            </>
+          )}
+        </ResourceTouch>
       ) : null}
       {props.feed.error ? (
         <View collapsable={false} accessibilityRole="alert">
@@ -119,150 +139,18 @@ export function HomeScreen(props: Props & { returnToNote?: () => void }) {
     </ScrollView>
   );
 }
-export function WorkspaceDrawer(
-  props: Props & {
-    close(): void;
-    hosts(): void;
-    recovery(): void;
-    appearance(): void;
-    downloads(): void;
-    host?: string;
-    recoveryCount: number;
-    reducedMotion: boolean;
-    current: string;
-  },
-) {
-  const s = useThemeStyles(sheet),
-    { width } = useWindowDimensions();
-  const [collapsed, setCollapsed] = useState({ recent: false, pinned: false });
-  const panel = (
-    <View
-      style={[s.drawer, { width: Math.min(320, width - 48) }]}
-      accessibilityViewIsModal
-    >
-      <View collapsable={false} style={s.sectionHead}>
-        <Text accessibilityRole="header" style={s.brand}>
-          Vaultor
-        </Text>
-        <Action
-          label="×"
-          accessibilityLabel="Close navigation"
-          onPress={props.close}
-        />
-      </View>
-      <Pressable
-        style={s.host}
-        accessibilityRole="button"
-        accessibilityLabel="Switch workspace or manage connections"
-        onPress={props.hosts}
-      >
-        <Text style={s.itemTitle}>Workspace</Text>
-        <Text numberOfLines={1} style={s.meta}>
-          {props.host ?? 'Choose a host'} ›
-        </Text>
-      </Pressable>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={s.drawerContent}
-      >
-        {(
-          [
-            ['home', '⌂', 'Home'],
-            ['library', '▤', 'Library'],
-            ['collections', '▦', 'Collections'],
-          ] as const
-        ).map(([value, icon, label]) => (
-          <Action
-            key={value}
-            label={`${icon}  ${label}`}
-            accessibilityLabel={label}
-            active={props.current === value}
-            onPress={() => props.select(value)}
-          />
-        ))}
-        <Action
-          label="⌕  Search"
-          accessibilityLabel="Search workspace"
-          onPress={() => props.select('library', true)}
-        />
-        <Action label="Appearance & reading" onPress={props.appearance} />
-        <Action label="Offline downloads" onPress={props.downloads} />
-        {(['pinned', 'recent'] as const).map(kind => (
-          <View collapsable={false} key={kind} style={s.drawerSection}>
-            <View collapsable={false} style={s.sectionHead}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ expanded: !collapsed[kind] }}
-                accessibilityLabel={`${
-                  collapsed[kind] ? 'Expand' : 'Collapse'
-                } ${kind}`}
-                style={s.disclosure}
-                onPress={() => setCollapsed(c => ({ ...c, [kind]: !c[kind] }))}
-              >
-                <Text style={s.secondary}>
-                  {collapsed[kind] ? '›' : '⌄'}{' '}
-                  {kind === 'pinned' ? 'Pinned' : 'Recent'}
-                </Text>
-              </Pressable>
-              <Action
-                label="View all"
-                accessibilityLabel={`View all ${kind}`}
-                onPress={() => props.select(kind)}
-              />
-            </View>
-            {!collapsed[kind]
-              ? props.feed[kind]
-                  .slice(0, 4)
-                  .map(item => (
-                    <Shortcut
-                      key={item.id}
-                      item={item}
-                      pinned={kind === 'pinned'}
-                      open={props.open}
-                    />
-                  ))
-              : null}
-          </View>
-        ))}
-        {props.feed.error ? (
-          <View collapsable={false}>
-            <Text style={s.error}>{props.feed.error}</Text>
-            <Action label="Retry shortcuts" onPress={props.retry} />
-          </View>
-        ) : null}
-      </ScrollView>
-      <Action
-        label={`Legacy recovery${
-          props.recoveryCount ? ' · ' + props.recoveryCount : ''
-        }`}
-        onPress={props.recovery}
-      />
-    </View>
-  );
-  // A wide split-screen/window can retain a sidebar without squeezing phone content.
-  if (width >= 840) return panel;
-  return (
-    <Modal
-      transparent
-      animationType={props.reducedMotion ? 'none' : 'fade'}
-      onRequestClose={props.close}
-    >
-      <View collapsable={false} style={s.overlay}>
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          accessibilityRole="button"
-          accessibilityLabel="Dismiss navigation"
-          onPress={props.close}
-        />
-        {panel}
-      </View>
-    </Modal>
-  );
-}
 const sheet = StyleSheet.create({
   grow: { flex: 1 },
-  home: { padding: 20, gap: 14 },
-  hero: { color: '#e8e8e8', fontSize: 30, fontWeight: '600', marginTop: 12 },
+  home: { padding: 16, paddingTop: 4, gap: 10 },
+  resume: {
+    paddingVertical: 12,
+    gap: 6,
+    minHeight: 72,
+    borderBottomWidth: 1,
+    borderColor: '#252525',
+  },
+  resumeTitle: { color: '#e8e8e8', fontSize: 20, fontWeight: '600' },
+  hero: { color: '#e8e8e8', fontSize: 25, fontWeight: '600', marginTop: 4 },
   secondary: { color: '#b3b3b3', fontSize: 15 },
   meta: { color: '#858585', fontSize: 12 },
   search: {
@@ -272,7 +160,7 @@ const sheet = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     paddingHorizontal: 16,
-    marginVertical: 10,
+    marginVertical: 4,
   },
   sectionHead: {
     flexDirection: 'row',
@@ -295,25 +183,4 @@ const sheet = StyleSheet.create({
   pressed: { backgroundColor: '#1e1e1e' },
   empty: { color: '#858585', fontSize: 14, paddingVertical: 16 },
   error: { color: '#ffb4b4', fontSize: 13 },
-  overlay: { flex: 1, backgroundColor: '#0009', flexDirection: 'row' },
-  drawer: {
-    backgroundColor: '#0a0a0a',
-    borderRightWidth: 1,
-    borderColor: '#333',
-    padding: 16,
-    paddingTop: 36,
-    flexShrink: 0,
-  },
-  brand: { fontSize: 23, color: '#e8e8e8', fontWeight: '600' },
-  host: {
-    padding: 14,
-    backgroundColor: '#141414',
-    borderRadius: 12,
-    gap: 6,
-    marginVertical: 16,
-  },
-  drawerContent: { gap: 4 },
-  drawerSection: { marginTop: 16 },
-  disclosure: { minHeight: 48, justifyContent: 'center', flex: 1 },
-  footer: { color: '#858585', fontSize: 11, paddingVertical: 8 },
 });

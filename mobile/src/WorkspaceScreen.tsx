@@ -1,3 +1,8 @@
+import ContextSheet from './ContextSheet';
+import ReviewCapture from './ReviewCapture';
+import { captureSeed, type CaptureSeed, type Evidence } from './reviews';
+import { sourcePresentation, activatedSource } from './sourcePresentation';
+import { VaultorHaptics } from './haptics';
 import { ReaderFeed } from './readerFeed';
 import React, {
   useCallback,
@@ -8,6 +13,7 @@ import React, {
   useSyncExternalStore,
 } from 'react';
 import {
+  Animated,
   Alert,
   AppState,
   BackHandler,
@@ -16,7 +22,6 @@ import {
   NativeEventEmitter,
   PermissionsAndroid,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,17 +29,33 @@ import {
   View,
   AccessibilityInfo,
   findNodeHandle,
+  useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { MobileWorkspace, HostError, type Host } from './workspace';
 import { QuickAccess, type RootDestination } from './navigation';
-import { HomeScreen, WorkspaceDrawer } from './NavigationSurface';
+import { HomeScreen } from './NavigationSurface';
+import NavigationFolio from './NavigationFolio';
+import SourceContext from './SourceContext';
+import {
+  ResourceMotionProvider,
+  ReaderAperture,
+  useResourceMotion,
+} from './ResourceMotion';
+import { sourceChoices } from './sourceChoices';
+import ReviewDestination from './ReviewDestination';
+import { useReviewSync } from './useReviewSync';
+import { BrowseMemory, navigationLayout } from './navigationPresentation';
 import BrowseScreen, { Action, ChoiceSheet } from './BrowseScreen';
 import ResourcePreview from './ResourcePreview';
 import ReaderView, { type ReaderPanel } from './ReaderView';
 import ReadingControls from './ReadingControls';
 import OfflineControls from './OfflineControls';
-import { useThemeStyles } from './ui';
+import { useReading, useThemeStyles } from './ui';
+import { motionDuration, settleEasing } from './motion';
 const native = NativeModules.VaultorNative;
 const parse = async <T,>(p: Promise<string>): Promise<T> => JSON.parse(await p);
 async function permission(interactive = true) {
@@ -51,8 +72,10 @@ async function permission(interactive = true) {
     throw Error('Allow local-network access, then retry.');
 }
 export default function WorkspaceScreen() {
-  const s = useThemeStyles(styles),
-    menu = useRef<React.ElementRef<typeof Pressable>>(null);
+  const { reduced, preferences } = useReading();
+  const s = useThemeStyles(styles);
+  const reviewSync = useReviewSync();
+  const reconnectReviews = reviewSync.reconnect;
   const model = useRef(
     new MobileWorkspace({
       storage: (a, v = {}) => parse(native.storage(a, JSON.stringify(v))),
@@ -102,6 +125,22 @@ export default function WorkspaceScreen() {
     ).current,
     feed = useSyncExternalStore(quick.subscribe, quick.snapshot);
   const previewBack = useRef<() => boolean>(() => false);
+  const [captureRequest, setCaptureRequest] = useState<{
+    seed?: CaptureSeed;
+    initialId?: string;
+    returnTag?: number;
+  }>();
+  const captureFocusTicket = useRef(0);
+  const capture = (evidence?: Evidence, page?: number) => {
+    try {
+      captureFocusTicket.current++;
+      setCaptureRequest({
+        seed: captureSeed(model.snapshot(), evidence, page),
+      });
+    } catch (e) {
+      Alert.alert('Capture unavailable', (e as Error).message);
+    }
+  };
   const exportLock = useRef(false);
   const refreshDownloadAt = useRef(0);
   const refreshDownloads = useCallback(async () => {
@@ -144,7 +183,11 @@ export default function WorkspaceScreen() {
   const [exporting, setExporting] = useState(false),
     [recoveryStatus, setRecoveryStatus] = useState('');
   const [initialized, setInitialized] = useState(false);
-  const [drawer, setDrawer] = useState(false),
+  const [reviewing, setReviewing] = useState(false),
+    [reviewRevision, setReviewRevision] = useState(0),
+    [utilities, setUtilities] = useState(false),
+    [sourceClosing, setSourceClosing] = useState(false),
+    [navigationDisclosed, setNavigationDisclosed] = useState(false),
     [appearance, setAppearance] = useState(false),
     [downloads, setDownloads] = useState(false),
     [downloadTarget, setDownloadTarget] = useState<{
@@ -161,13 +204,144 @@ export default function WorkspaceScreen() {
     [address, setAddress] = useState('https://'),
     [code, setCode] = useState(''),
     [inventory, setInventory] = useState<any>(),
-    [recoveryError, setRecoveryError] = useState(''),
-    [reduced, setReduced] = useState(false);
+    [recoveryError, setRecoveryError] = useState('');
+  const sourceLanding = useRef(new Animated.Value(1)).current;
+  const browseMemory = useRef(new BrowseMemory()).current;
+  const sourceOrientation = useRef<React.ElementRef<typeof View>>(null);
+  const { width, height, fontScale } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const { rail } = navigationLayout(
+    width - insets.left - insets.right,
+    height - insets.top - insets.bottom,
+    fontScale,
+  );
+  const reading = state.view === 'note' && !!state.note && !reviewing;
+  useEffect(() => setNavigationDisclosed(false), [reading]);
+  const resourceMotion = useResourceMotion(
+    state.scope,
+    reading,
+    state.note?.id,
+    state.busy,
+    rail,
+  );
+  const source = sourcePresentation(state);
+  const sourceRoot = useRef<React.ElementRef<typeof View>>(null),
+    sourceToken = useRef(0);
+  const sourceConfirmation = useRef<(() => void) | undefined>(undefined);
+  const [sourceError, setSourceError] = useState('');
+  const [manageConnections, setManageConnections] = useState(false);
+  const [sourceJobs, setSourceJobs] = useState<any[]>([]);
+  const downloadedName = sourceJobs.find(j => j.scope === state.scope)?.name;
+  if (state.downloaded && downloadedName) source.workspace = downloadedName;
+  useEffect(() => {
+    let alive = true;
+    if (hosts) setSourceError('');
+    void parse<any[]>(native.companion('list', '{}'))
+      .then(jobs => {
+        if (alive)
+          setSourceJobs(
+            jobs.filter(j => j.active === j.id && j.status === 'ready'),
+          );
+      })
+      .catch(() => {
+        if (alive)
+          setSourceError(
+            'Downloads could not be read. Retry from Offline downloads.',
+          );
+      });
+    return () => {
+      alive = false;
+    };
+  }, [hosts, state.host?.hostId, state.scope]);
+  useEffect(
+    () => () => {
+      sourceToken.current++;
+    },
+    [],
+  );
+  const activateSource = (
+    action: () => Promise<void>,
+    target: Parameters<typeof activatedSource>[1],
+  ) => {
+    if (model.snapshot().busy) return;
+    const token = ++sourceToken.current;
+    setSourceError('');
+    void model.perform(async () => {
+      try {
+        await action();
+        const next = model.snapshot();
+        if (!activatedSource(next, target))
+          throw Error(
+            next.error ||
+              'This source is not available yet. Retry or choose a downloaded source.',
+          );
+        if (token !== sourceToken.current) return;
+        const confirm = () =>
+          requestAnimationFrame(() => {
+            const tag = findNodeHandle(sourceOrientation.current);
+            if (!tag) return;
+            void NativeModules.VaultorPresentation.awaitWindow(tag)
+              .then((focused: boolean) => {
+                if (
+                  !focused ||
+                  token !== sourceToken.current ||
+                  model.snapshot().scope !== next.scope
+                )
+                  return;
+                sourceLanding.setValue(0);
+                Animated.timing(sourceLanding, {
+                  toValue: 1,
+                  duration: motionDuration(
+                    'utility',
+                    preferences.motion,
+                    reduced,
+                  ),
+                  easing: settleEasing,
+                  useNativeDriver: true,
+                }).start(({ finished }) => {
+                  if (
+                    finished &&
+                    token === sourceToken.current &&
+                    model.snapshot().scope === next.scope
+                  ) {
+                    AccessibilityInfo.setAccessibilityFocus(tag);
+                    VaultorHaptics.selectionSnap(
+                      tag,
+                      preferences.haptics !== 'off',
+                    );
+                  }
+                });
+              })
+              .catch(() => {});
+          });
+        if (hosts) {
+          sourceConfirmation.current = confirm;
+          setSourceClosing(true);
+        } else confirm();
+      } catch (e) {
+        if (token !== sourceToken.current) return;
+        setSourceError((e as Error).message);
+        requestAnimationFrame(() => {
+          if (token !== sourceToken.current) return;
+          const tag = findNodeHandle(sourceRoot.current);
+          if (tag) VaultorHaptics.reject(tag, preferences.haptics !== 'off');
+        });
+      }
+    });
+  };
+  const closeSources = () => {
+    sourceToken.current++;
+    sourceConfirmation.current = undefined;
+    setSourceClosing(true);
+  };
   const run = (f: () => Promise<void>) => void model.perform(f);
-  const closeDrawer = () => {
-    setDrawer(false);
-    const handle = findNodeHandle(menu.current);
-    if (handle) AccessibilityInfo.setAccessibilityFocus(handle);
+  const closeUtilities = () => setUtilities(false);
+  const openSources = () => {
+    setNavigationDisclosed(false);
+    if (!state.host) setReviewing(false);
+    setSourceClosing(false);
+    setManageConnections(false);
+    setHosts(true);
   };
   const keyboard = useRef(false);
   useEffect(() => {
@@ -183,6 +357,7 @@ export default function WorkspaceScreen() {
     };
   }, []);
   const closeTransient = () => {
+    if (captureRequest) return true; // Native capture modal owns protected dismissal.
     if (downloads) {
       setDownloads(false);
       return true;
@@ -209,8 +384,8 @@ export default function WorkspaceScreen() {
       setMore(false);
       return true;
     }
-    if (drawer) {
-      closeDrawer();
+    if (utilities) {
+      closeUtilities();
       return true;
     }
     if (recovery) {
@@ -218,15 +393,30 @@ export default function WorkspaceScreen() {
       return true;
     }
     if (hosts) {
-      setHosts(false);
+      closeSources();
+      return true;
+    }
+    if (navigationDisclosed) {
+      setNavigationDisclosed(false);
       return true;
     }
     return false;
   };
   const back = () => {
+    if (resourceMotion.pending) {
+      resourceMotion.reset();
+      run(() =>
+        state.view === 'home' ? model.showHome() : model.showBrowser(),
+      );
+      return;
+    }
     if (closeTransient()) return;
     if (keyboard.current) {
       Keyboard.dismiss();
+      return;
+    }
+    if (reviewing) {
+      setReviewing(false);
       return;
     }
     if (state.view === 'note') {
@@ -246,12 +436,6 @@ export default function WorkspaceScreen() {
       .initialize()
       .catch(e => model.report(e))
       .finally(() => setInitialized(true));
-    void AccessibilityInfo.isReduceMotionEnabled().then(setReduced);
-    const motion = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      setReduced,
-    );
-    return () => motion.remove();
   }, [model]);
   useEffect(() => {
     const event = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -268,7 +452,8 @@ export default function WorkspaceScreen() {
       state.scope &&
       !hosts &&
       !recovery &&
-      (drawer || state.view === 'home')
+      !reviewing &&
+      state.view === 'home'
     )
       void quick.refresh();
     else quick.suspend();
@@ -280,7 +465,7 @@ export default function WorkspaceScreen() {
     state.host,
     hosts,
     recovery,
-    drawer,
+    reviewing,
     state.view,
     state.browseVersion,
   ]);
@@ -324,6 +509,7 @@ export default function WorkspaceScreen() {
         await refreshDownloads();
       },
       reconcile: () => model.changedFeed(),
+      reviews: reviewSync.refresh,
       error: e => {
         if (!model.snapshot().downloaded) model.report(e);
       },
@@ -362,18 +548,26 @@ export default function WorkspaceScreen() {
     state.host,
     state.localOnly,
     refreshDownloads,
+    reviewSync.refresh,
+  ]);
+  useEffect(() => {
+    if (initialized && state.connection === 'online') reconnectReviews();
+  }, [
+    initialized,
+    state.connection,
+    state.host?.hostId,
+    state.host?.epoch,
+    reconnectReviews,
   ]);
   const select = (destination: RootDestination, search = false) => {
-    closeDrawer();
+    closeUtilities();
     if (destination === 'trash') return;
+    setReviewing(false);
     if (destination === 'home') run(() => model.showHome());
     else {
-      model.updateBrowse({
-        ...state.browse,
-        destination,
-        collection: undefined,
-        page: 0,
-      });
+      model.updateBrowse(
+        browseMemory.select(state.scope, state.browse, destination),
+      );
       if (search) setSearchRequest(v => v + 1);
       run(() => model.showBrowser());
     }
@@ -382,7 +576,7 @@ export default function WorkspaceScreen() {
     setReaderPanel(undefined);
   }, [state.loadId, state.scope]);
   const open = (id: string, collection?: string) => {
-    closeDrawer();
+    closeUtilities();
     if (collection) {
       model.updateBrowse({
         ...state.browse,
@@ -394,23 +588,21 @@ export default function WorkspaceScreen() {
     } else run(() => model.routeResource(id));
   };
   const recoveryOpen = () => {
-    closeDrawer();
+    closeUtilities();
     setRecovery(true);
     setRecoveryError('');
     void parse(native.legacyRecovery('inventory'))
       .then(setInventory)
       .catch((e: Error) => setRecoveryError(e.message));
   };
-  const hostView = hosts || (!state.host && !recovery);
-  const title = hostView
-    ? 'Workspaces'
-    : recovery
-    ? 'Legacy recovery'
-    : state.view === 'note'
-    ? state.note?.title
+  const hostView = !state.host && !recovery;
+  const heading = reviewing
+    ? 'Review'
+    : hostView
+    ? 'Sources'
     : state.view === 'home'
-    ? 'Vaultor'
-    : state.browse.collection?.name ??
+    ? 'Home'
+    : state.browse.collection?.name ||
       {
         library: 'Library',
         recent: 'Recent',
@@ -418,142 +610,157 @@ export default function WorkspaceScreen() {
         collections: 'Collections',
         trash: 'Library',
       }[state.browse.destination];
-  return (
-    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-      <View
-        style={s.header}
-        collapsable={false}
-        importantForAccessibility={
-          more ||
-          trail ||
-          readerPanel === 'appearance' ||
-          readerPanel === 'outline' ||
-          state.preview
-            ? 'no-hide-descendants'
-            : 'auto'
-        }
-      >
-        <Pressable
-          ref={menu}
-          disabled={!initialized || state.busy}
-          accessibilityState={{ disabled: !initialized || state.busy }}
-          accessibilityRole="button"
-          accessibilityLabel={hostView || recovery ? 'Back' : 'Open navigation'}
-          style={s.icon}
-          onPress={() => (hostView || recovery ? back() : setDrawer(true))}
-        >
-          <Text style={s.glyph}>{hostView || recovery ? '‹' : '☰'}</Text>
-        </Pressable>
-        {state.view === 'note' && !hostView && !recovery ? (
-          <Action label="‹" accessibilityLabel="Back" onPress={back} />
-        ) : null}
-        <Text numberOfLines={1} accessibilityRole="header" style={s.title}>
-          {title}
-        </Text>
-        {!hostView && !recovery && state.view === 'note' ? (
-          <Action
-            label="•••"
-            accessibilityLabel="Reading options"
-            onPress={() => setMore(true)}
-          />
+  const sourceContent = (
+    <ScrollView
+      key="connections"
+      contentContainerStyle={s.page}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View ref={sourceRoot} collapsable={false}>
+        <Text style={s.section}>{source.workspace}</Text>
+        <Text style={s.secondary}>{source.host}</Text>
+        <Text style={s.secondary}>{source.availability}</Text>
+        {sourceError || state.error ? (
+          <Text accessibilityRole="alert" style={s.error}>
+            {sourceError || state.error}
+          </Text>
         ) : null}
       </View>
-      {state.offlineWarning ? (
-        <Text accessibilityRole="alert" style={s.error}>
-          {state.offlineWarning}
+      {hostView ? (
+        <Text style={s.secondary}>
+          Connect to read your workspace. Approvals stay on this device.
         </Text>
-      ) : null}
-      {state.error ? (
-        <View style={s.notice} accessibilityRole="alert">
-          <Text style={s.error}>{state.error}</Text>
-          <Action
-            label="Retry connection"
-            onPress={() =>
-              run(async () => {
+      ) : (
+        <Action
+          label={
+            state.connection === 'online' && !state.localOnly
+              ? 'Refresh connection'
+              : 'Reconnect to host'
+          }
+          disabled={state.busy}
+          onPress={() =>
+            activateSource(
+              async () => {
                 await permission();
                 await model.connect(false);
+              },
+              {
+                hostId: state.host!.hostId,
+                workspaceId: state.host!.workspaceId,
+              },
+            )
+          }
+        />
+      )}
+
+      {state.multiWorkspace ? (
+        <>
+          <Text style={s.section}>On this server</Text>
+          {state.workspaces?.map(w => (
+            <Action
+              disabled={state.busy}
+              key={w.id}
+              label={
+                w.name + (w.id === state.host?.workspaceId ? ' · Current' : '')
+              }
+              onPress={() =>
+                activateSource(
+                  async () => {
+                    if (w.id === state.host?.workspaceId) {
+                      await permission();
+                      await model.connect(false);
+                    } else await model.switchWorkspace(w.id, true);
+                  },
+                  { hostId: state.host!.hostId, workspaceId: w.id },
+                )
+              }
+            />
+          ))}
+        </>
+      ) : null}
+      <Text accessibilityRole="header" style={s.section}>
+        Downloaded sources
+      </Text>
+      {!sourceJobs.length ? (
+        <Text style={s.secondary}>
+          No verified reading downloads on this device.
+        </Text>
+      ) : null}
+      {sourceJobs.map(job => (
+        <View key={job.id} style={s.row}>
+          <Text style={s.section}>{job.name}</Text>
+          <Text style={s.secondary}>
+            {(() => {
+              try {
+                const id = JSON.parse(job.scope)[0];
+                return (
+                  state.hosts.find(h => h.hostId === id)?.address ||
+                  'Retained host'
+                );
+              } catch {
+                return 'Retained source';
+              }
+            })()}
+          </Text>
+          <Text style={s.secondary}>
+            {job.locked === '1'
+              ? 'Locked · approval required'
+              : 'Verified download · ' +
+                new Date(Number(job.at)).toLocaleDateString()}
+          </Text>
+          <Action
+            label={'Read downloaded · ' + job.name}
+            accessibilityLabel={
+              'Read downloaded ' +
+              job.name +
+              ' from ' +
+              (() => {
+                try {
+                  return (
+                    state.hosts.find(h => h.hostId === JSON.parse(job.scope)[0])
+                      ?.address || 'retained host'
+                  );
+                } catch {
+                  return 'retained source';
+                }
+              })()
+            }
+            disabled={state.busy || job.locked === '1'}
+            onPress={() =>
+              activateSource(() => model.openCompanion(job.scope), {
+                scope: job.scope,
               })
             }
           />
-          {state.navigationRetry ? (
-            <Action
-              label="Retry opening"
-              onPress={() => run(() => model.retryNavigation())}
-            />
-          ) : null}
         </View>
-      ) : null}
-      {!initialized ? (
-        <View key="starting" style={s.content}>
-          <Text style={s.secondary}>Opening workspace…</Text>
-        </View>
-      ) : hostView ? (
-        <ScrollView
-          key="connections"
-          contentContainerStyle={s.page}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={s.secondary}>
-            Connect to read your workspace. Approvals stay on this device.
-          </Text>
-          {state.multiWorkspace ? (
-            <>
-              <Text style={s.section}>On this server</Text>
-              {state.workspaces?.map(w => (
-                <Action
-                  key={w.id}
-                  label={
-                    w.name +
-                    (w.id === state.host?.workspaceId ? ' · Current' : '')
-                  }
-                  onPress={() =>
-                    run(async () => {
-                      await model.switchWorkspace(w.id, true);
-                      setHosts(false);
-                    })
-                  }
-                />
-              ))}
-            </>
-          ) : null}
+      ))}
+      {manageConnections || hostView ? (
+        <>
           {state.hosts.map(h => (
             <View key={h.hostId} style={s.row}>
               <Text style={s.secondary}>{h.address}</Text>
               <Action
+                disabled={state.busy}
                 label={
                   h.hostId === state.host?.hostId ? 'Reconnect' : 'Connect'
                 }
                 onPress={() =>
-                  run(async () => {
-                    await permission();
-                    await model.switchHost(h.hostId, true);
-                    setHosts(false);
-                  })
-                }
-              />
-              <Action
-                label="Forget approval"
-                onPress={() =>
-                  Alert.alert(
-                    'Forget this host?',
-                    'Legacy recovery is retained. Revoke the device on the host separately.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Forget',
-                        onPress: () =>
-                          run(async () => {
-                            await native.signOut(h.hostId);
-                            model.forgotten(h.hostId);
-                            await model.refreshRecovery();
-                          }),
-                      },
-                    ],
+                  activateSource(
+                    async () => {
+                      await permission();
+                      if (h.hostId === state.host?.hostId)
+                        await model.connect(false);
+                      else await model.switchHost(h.hostId, true);
+                    },
+                    { hostId: h.hostId, workspaceId: h.workspaceId },
                   )
                 }
               />
             </View>
           ))}
+          <Text accessibilityRole="header" style={s.section}>
+            Add a host
+          </Text>
           <TextInput
             style={s.input}
             accessibilityLabel="Host HTTPS address"
@@ -592,193 +799,546 @@ export default function WorkspaceScreen() {
                       throw Error('Waiting for matching-code approval.');
                     await model.adopted();
                     setCode('');
-                    setHosts(false);
+                    if (model.snapshot().connection === 'online')
+                      closeSources();
                   })
                 }
               />
             </>
           ) : null}
-          <Action
-            label="Legacy recovery"
-            onPress={() => {
-              setHosts(false);
-              recoveryOpen();
-            }}
-          />
-          <Action
-            label="Appearance & reading"
-            onPress={() => setAppearance(true)}
-          />
-          <Action
-            label="Offline downloads"
-            onPress={() => setDownloads(true)}
-          />
-        </ScrollView>
-      ) : recovery ? (
-        <ScrollView key="recovery" contentContainerStyle={s.page}>
-          <Text style={s.secondary}>
-            Earlier Android edits and uploads are retained separately. Nothing
-            here is automatically sent to a host.
+          <Text accessibilityRole="header" style={s.section}>
+            Trust & removal
           </Text>
-          {recoveryError ? (
-            <Text accessibilityRole="alert" style={s.error}>
-              {recoveryError}
-            </Text>
-          ) : null}
-          <Action
-            label="Export legacy recovery"
-            disabled={exporting}
-            onPress={() => {
-              if (exportLock.current) return;
-              exportLock.current = true;
-              setExporting(true);
-              setRecoveryError('');
-              setRecoveryStatus('Preparing recovery…');
-              void parse<{ requested?: boolean }>(
-                native.legacyRecovery('export'),
-              )
-                .then(r =>
-                  setRecoveryStatus(
-                    r.requested
-                      ? 'Recovery ZIP saved.'
-                      : 'Export cancelled. Retained records are unchanged.',
-                  ),
-                )
-                .catch((e: Error) => {
-                  setRecoveryStatus('');
-                  setRecoveryError(e.message);
-                })
-                .finally(() => {
-                  exportLock.current = false;
-                  setExporting(false);
-                });
-            }}
-          />
-          {recoveryStatus ? (
-            <Text accessibilityLiveRegion="polite" style={s.secondary}>
-              {recoveryStatus}
-            </Text>
-          ) : null}
-          {inventory ? (
-            <>
-              <Text style={s.section}>
-                {inventory.drafts} drafts · {inventory.creations} creations ·{' '}
-                {inventory.operations} operations · {inventory.inputs} upload
-                inputs
-              </Text>
-              {inventory.items?.length > 50 ? (
-                <Text style={s.secondary}>
-                  Showing 50 retained items. Export includes every record.
-                </Text>
-              ) : null}
-              {inventory.items?.slice(0, 50).map((item: any, i: number) => (
-                <View key={i} style={s.row}>
-                  <Text selectable style={s.section}>
-                    {item.title}
-                  </Text>
-                  <Text selectable style={s.secondary}>
-                    {item.kind} ·{' '}
-                    {item.scope === state.scope
-                      ? 'Current workspace'
-                      : 'Retained source'}{' '}
-                    · {item.status}
-                  </Text>
-                </View>
-              ))}
-            </>
-          ) : (
-            <Text style={s.secondary}>Reading recovery inventory…</Text>
-          )}
           <Text style={s.secondary}>
-            Exports a private ZIP with readable notes, original JSON, request
-            identities and retained upload bytes. Save or share it for desktop
-            review. Export does not delete records or overwrite originals.
+            Forget approval only when you intend to disconnect this host.
+            Protected Reviews and legacy recovery are retained.
           </Text>
-        </ScrollView>
-      ) : (
-        <View
-          key="workspace-body"
-          style={s.content}
-          collapsable={false}
-          importantForAccessibility={
-            more || trail || state.preview ? 'no-hide-descendants' : 'auto'
-          }
-        >
-          {state.view === 'home' ? (
-            <HomeScreen
-              feed={feed}
-              select={select}
-              open={open}
-              retry={() => void quick.refresh()}
-              returnToNote={
-                state.note ? () => run(() => model.returnToNote()) : undefined
-              }
-            />
-          ) : null}
-          <BrowseScreen
-            model={model}
-            visible={state.view === 'browse'}
-            suspended={drawer}
-            searchRequest={searchRequest}
-            onAction={run}
-          />
-          {state.note ? (
-            <View
-              collapsable={false}
-              style={[s.content, state.view !== 'note' && s.hidden]}
-              pointerEvents={state.view === 'note' ? 'auto' : 'none'}
-              importantForAccessibility={
-                state.view === 'note' ? 'auto' : 'no-hide-descendants'
-              }
-            >
-              {state.connection !== 'online' ? (
-                <Text style={s.offline}>Offline · last saved reading copy</Text>
-              ) : null}
-              <ReaderView
-                model={model}
-                panel={readerPanel}
-                closePanel={() => setReaderPanel(undefined)}
-                reduced={reduced}
+          {state.hosts.map(h => (
+            <View key={h.hostId} style={s.row}>
+              <Text style={s.secondary}>{h.address}</Text>
+              <Action
+                label="Forget approval"
+                onPress={() =>
+                  Alert.alert(
+                    'Forget this host?',
+                    'Protected Reviews and legacy recovery are retained. Revoke the device on the host separately.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Forget',
+                        onPress: () =>
+                          run(async () => {
+                            await native.signOut(h.hostId);
+                            model.forgotten(h.hostId);
+                            await model.refreshRecovery();
+                          }),
+                      },
+                    ],
+                  )
+                }
               />
             </View>
-          ) : null}
-        </View>
-      )}
-      {drawer ? (
-        <WorkspaceDrawer
-          feed={feed}
-          select={select}
-          open={open}
-          retry={() => void quick.refresh()}
-          close={closeDrawer}
-          hosts={() => {
-            closeDrawer();
-            setHosts(true);
+          ))}
+        </>
+      ) : null}
+      <Action
+        label="Legacy recovery"
+        onPress={() => {
+          setHosts(false);
+          recoveryOpen();
+        }}
+      />
+      <Action
+        label="Appearance & reading"
+        onPress={() => {
+          setHosts(false);
+          setAppearance(true);
+        }}
+      />
+      <Action
+        label="Offline downloads"
+        onPress={() => {
+          setHosts(false);
+          setDownloads(true);
+        }}
+      />
+    </ScrollView>
+  );
+  const choices = sourceChoices(state, sourceJobs, source.workspace);
+  const quickSources = (
+    <ScrollView
+      contentContainerStyle={s.page}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View ref={sourceRoot} collapsable={false}>
+        {sourceError ? (
+          <Text accessibilityRole="alert" style={s.error}>
+            {sourceError}
+          </Text>
+        ) : null}
+        {choices.map(choice => (
+          <Action
+            key={choice.key}
+            label={`${choice.name}${choice.current ? ' · Current' : ''}\n${
+              choice.status
+            }`}
+            accessibilityLabel={`${choice.name}. ${choice.status}${
+              choice.current ? '. Current source' : '. Choose source'
+            }`}
+            active={choice.current}
+            disabled={state.busy || choice.locked || choice.current}
+            onPress={() =>
+              activateSource(
+                async () => {
+                  if (choice.scope) await model.openCompanion(choice.scope);
+                  else {
+                    await permission();
+                    if (choice.hostId !== state.host?.hostId)
+                      await model.switchHost(choice.hostId, true);
+                    else await model.switchWorkspace(choice.workspaceId!, true);
+                  }
+                },
+                choice.scope
+                  ? { scope: choice.scope }
+                  : { hostId: choice.hostId, workspaceId: choice.workspaceId },
+              )
+            }
+          />
+        ))}
+        {choices.length < 2 ? (
+          <Text style={s.secondary}>
+            Your reading source. Add or manage connections in Source management.
+          </Text>
+        ) : null}
+      </View>
+      <Action
+        label="Source management"
+        onPress={() => setManageConnections(true)}
+      />
+    </ScrollView>
+  );
+  return (
+    <SafeAreaView style={s.root} edges={['top', 'bottom', 'left', 'right']}>
+      <View style={[s.shell, rail && s.wideShell]}>
+        <ResourceMotionProvider value={resourceMotion.context}>
+          <View
+            ref={resourceMotion.viewportRef}
+            collapsable={false}
+            onLayout={resourceMotion.measureViewport}
+            style={[s.content, { zIndex: 1 }]}
+          >
+            {
+              <View
+                style={[
+                  s.screenHeading,
+                  reading && !resourceMotion.moving && s.obscured,
+                ]}
+                collapsable={false}
+                pointerEvents={
+                  reading || resourceMotion.pending ? 'none' : 'auto'
+                }
+                importantForAccessibility={
+                  reading || resourceMotion.pending
+                    ? 'no-hide-descendants'
+                    : 'auto'
+                }
+              >
+                <Text
+                  accessibilityRole="header"
+                  numberOfLines={1}
+                  style={[
+                    s.screenTitle,
+                    (reviewing || hostView) && s.headingGrow,
+                  ]}
+                >
+                  {heading}
+                </Text>
+                {!reviewing && !hostView ? (
+                  <SourceContext
+                    workspace={source.workspace}
+                    availability={source.availability}
+                    disabled={!initialized || state.busy}
+                    open={openSources}
+                    switchable={choices.length > 1}
+                    sourceRef={
+                      !reading && !resourceMotion.pending
+                        ? sourceOrientation
+                        : undefined
+                    }
+                    landing={sourceLanding}
+                  />
+                ) : null}
+                <Action
+                  label="⚙"
+                  accessibilityLabel="Settings"
+                  onPress={() => setUtilities(true)}
+                />
+              </View>
+            }
+            {state.offlineWarning ? (
+              <Text accessibilityRole="alert" style={s.error}>
+                {state.offlineWarning}
+              </Text>
+            ) : null}
+            {state.error &&
+            !hosts &&
+            !hostView &&
+            (state.connection === 'online' || state.navigationRetry) ? (
+              <View style={s.notice} accessibilityRole="alert">
+                <Text style={s.error}>{state.error}</Text>
+                <Action
+                  label="Retry connection"
+                  onPress={() =>
+                    run(async () => {
+                      await permission();
+                      await model.connect(false);
+                    })
+                  }
+                />
+                {state.navigationRetry ? (
+                  <Action
+                    label="Retry opening"
+                    onPress={() => run(() => model.retryNavigation())}
+                  />
+                ) : null}
+              </View>
+            ) : null}
+            {!initialized ? (
+              <View key="starting" style={s.content}>
+                <Text style={s.secondary}>Opening workspace…</Text>
+              </View>
+            ) : hostView ? (
+              <View style={[s.content, reviewing && s.hidden]}>
+                {sourceContent}
+              </View>
+            ) : (
+              <View
+                key="workspace-body"
+                pointerEvents={
+                  reading || resourceMotion.pending ? 'none' : 'auto'
+                }
+                style={[
+                  s.content,
+                  reviewing && s.hidden,
+                  reading && !resourceMotion.moving && s.obscured,
+                ]}
+                collapsable={false}
+                importantForAccessibility={
+                  reading ||
+                  resourceMotion.pending ||
+                  reviewing ||
+                  more ||
+                  utilities ||
+                  trail ||
+                  state.preview ||
+                  hosts ||
+                  recovery
+                    ? 'no-hide-descendants'
+                    : 'auto'
+                }
+              >
+                {state.view === 'home' ||
+                (state.view === 'note' && state.noteOrigin === 'home') ? (
+                  <HomeScreen
+                    resume={state.note}
+                    feed={feed}
+                    select={select}
+                    open={open}
+                    retry={() => void quick.refresh()}
+                    returnToNote={
+                      state.note
+                        ? () => run(() => model.returnToNote())
+                        : undefined
+                    }
+                  />
+                ) : null}
+                <BrowseScreen
+                  model={model}
+                  visible={state.view === 'browse'}
+                  retained={
+                    state.view === 'note' && state.noteOrigin === 'browse'
+                  }
+                  suspended={reviewing || utilities || hosts || recovery}
+                  searchRequest={searchRequest}
+                  onAction={run}
+                />
+              </View>
+            )}
+            {state.note || resourceMotion.pending ? (
+              <View
+                collapsable={false}
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    zIndex:
+                      resourceMotion.visible && !reviewing && !hostView
+                        ? 2
+                        : -1,
+                  },
+                  (!resourceMotion.visible || reviewing || hostView) &&
+                    s.obscured,
+                ]}
+                importantForAccessibility={
+                  !reading ||
+                  more ||
+                  utilities ||
+                  hosts ||
+                  recovery ||
+                  state.preview
+                    ? 'no-hide-descendants'
+                    : 'auto'
+                }
+                pointerEvents={reading ? 'box-none' : 'none'}
+              >
+                <ReaderAperture motion={resourceMotion} reading={reading}>
+                  {state.note ? (
+                    <View
+                      collapsable={false}
+                      style={[s.content, resourceMotion.pending && s.hidden]}
+                      pointerEvents={state.view === 'note' ? 'auto' : 'none'}
+                      importantForAccessibility={
+                        state.view === 'note' ? 'auto' : 'no-hide-descendants'
+                      }
+                    >
+                      <ReaderView
+                        model={model}
+                        settings={() => setUtilities(true)}
+                        panel={readerPanel}
+                        closePanel={() => setReaderPanel(undefined)}
+                        reduced={reduced}
+                        onScroll={() => {}}
+                        capture={evidence => capture(evidence)}
+                      />
+                    </View>
+                  ) : null}
+                  {resourceMotion.pending ? (
+                    <View style={s.page}>
+                      <Text style={s.section}>
+                        {resourceMotion.presentation?.origin.title}
+                      </Text>
+                      <Text style={s.secondary}>Opening resource…</Text>
+                    </View>
+                  ) : null}
+                </ReaderAperture>
+              </View>
+            ) : null}
+            {reviewing ? (
+              <ReviewDestination
+                revision={reviewRevision + reviewSync.revision}
+                syncing={reviewSync.busy}
+                syncError={reviewSync.error}
+                sync={reviewSync.sync}
+                open={(initialId, returnTag) => {
+                  captureFocusTicket.current++;
+                  setCaptureRequest({ initialId, returnTag });
+                }}
+              />
+            ) : null}
+          </View>
+          <NavigationFolio
+            reading={reading || resourceMotion.pending}
+            current={
+              reviewing ? 'review' : state.view === 'home' ? 'home' : 'library'
+            }
+            titleMoving={resourceMotion.titleMoving}
+            appearance={() => setReaderPanel('appearance')}
+            title={
+              (resourceMotion.pending
+                ? resourceMotion.presentation?.origin.title
+                : state.note?.title) || 'Reader'
+            }
+            workspace={source.workspace}
+            availability={source.availability}
+            disabled={!initialized || state.busy}
+            sourceRef={sourceOrientation}
+            landing={sourceLanding}
+            disclosed={navigationDisclosed}
+            disclose={() => setNavigationDisclosed(v => !v)}
+            select={destination => {
+              if (destination === 'review') {
+                Keyboard.dismiss();
+                setReviewing(true);
+              } else select(destination);
+            }}
+            sources={openSources}
+            more={() => (reading ? setMore(true) : setUtilities(true))}
+            back={back}
+          />
+        </ResourceMotionProvider>
+      </View>
+      {recovery ? (
+        <ContextSheet title="Legacy recovery" close={() => setRecovery(false)}>
+          <ScrollView key="recovery" contentContainerStyle={s.page}>
+            <Text style={s.secondary}>
+              Earlier Android edits and uploads are retained separately. Nothing
+              here is automatically sent to a host.
+            </Text>
+            {recoveryError ? (
+              <Text accessibilityRole="alert" style={s.error}>
+                {recoveryError}
+              </Text>
+            ) : null}
+            <Action
+              label="Export legacy recovery"
+              disabled={exporting}
+              onPress={() => {
+                if (exportLock.current) return;
+                exportLock.current = true;
+                setExporting(true);
+                setRecoveryError('');
+                setRecoveryStatus('Preparing recovery…');
+                void parse<{ requested?: boolean }>(
+                  native.legacyRecovery('export'),
+                )
+                  .then(r =>
+                    setRecoveryStatus(
+                      r.requested
+                        ? 'Recovery ZIP saved.'
+                        : 'Export cancelled. Retained records are unchanged.',
+                    ),
+                  )
+                  .catch((e: Error) => {
+                    setRecoveryStatus('');
+                    setRecoveryError(e.message);
+                  })
+                  .finally(() => {
+                    exportLock.current = false;
+                    setExporting(false);
+                  });
+              }}
+            />
+            {recoveryStatus ? (
+              <Text accessibilityLiveRegion="polite" style={s.secondary}>
+                {recoveryStatus}
+              </Text>
+            ) : null}
+            {inventory ? (
+              <>
+                <Text style={s.section}>
+                  {inventory.drafts} drafts · {inventory.creations} creations ·{' '}
+                  {inventory.operations} operations · {inventory.inputs} upload
+                  inputs
+                </Text>
+                {inventory.items?.length > 50 ? (
+                  <Text style={s.secondary}>
+                    Showing 50 retained items. Export includes every record.
+                  </Text>
+                ) : null}
+                {inventory.items?.slice(0, 50).map((item: any, i: number) => (
+                  <View key={i} style={s.row}>
+                    <Text selectable style={s.section}>
+                      {item.title}
+                    </Text>
+                    <Text selectable style={s.secondary}>
+                      {item.kind} ·{' '}
+                      {item.scope === state.scope
+                        ? 'Current workspace'
+                        : 'Retained source'}{' '}
+                      · {item.status}
+                    </Text>
+                  </View>
+                ))}
+              </>
+            ) : (
+              <Text style={s.secondary}>Reading recovery inventory…</Text>
+            )}
+            <Text style={s.secondary}>
+              Exports a private ZIP with readable notes, original JSON, request
+              identities and retained upload bytes. Save or share it for desktop
+              review. Export does not delete records or overwrite originals.
+            </Text>
+          </ScrollView>
+        </ContextSheet>
+      ) : null}
+      {hosts && !hostView && initialized && !recovery ? (
+        <ContextSheet
+          title={manageConnections ? 'Source management' : 'Sources'}
+          close={closeSources}
+          motion="navigation"
+          dismissing={sourceClosing}
+          onDismissed={() => {
+            setHosts(false);
+            setSourceClosing(false);
+            const confirm = sourceConfirmation.current;
+            sourceConfirmation.current = undefined;
+            confirm?.();
+            const tag = findNodeHandle(sourceOrientation.current);
+            if (tag) AccessibilityInfo.setAccessibilityFocus(tag);
           }}
-          recovery={recoveryOpen}
-          appearance={() => {
-            closeDrawer();
-            setAppearance(true);
-          }}
-          downloads={() => {
-            closeDrawer();
-            setDownloadTarget(undefined);
-            setDownloads(true);
-          }}
-          host={
-            state.workspaces?.find(w => w.id === state.host?.workspaceId)
-              ?.name ?? state.host?.address
-          }
-          current={
-            state.view === 'home'
-              ? 'home'
-              : state.view === 'browse'
-              ? state.browse.destination
-              : ''
-          }
-          recoveryCount={state.recovery.length}
-          reducedMotion={reduced}
-        />
+        >
+          {manageConnections ? sourceContent : quickSources}
+        </ContextSheet>
+      ) : null}
+      {utilities ? (
+        <ContextSheet title="Settings & tools" close={closeUtilities}>
+          <ScrollView contentContainerStyle={s.page}>
+            {state.host ? (
+              <>
+                <Action
+                  label="Search workspace"
+                  onPress={() => select('library', true)}
+                />
+                <Action
+                  label="Collections"
+                  onPress={() => select('collections')}
+                />
+                <Action label="Recent" onPress={() => select('recent')} />
+                <Action label="Pinned" onPress={() => select('pinned')} />
+                <Action
+                  label="All resources"
+                  onPress={() => {
+                    model.updateBrowse({
+                      ...state.browse,
+                      destination: 'library',
+                      collection: undefined,
+                      query: '',
+                      page: 0,
+                    });
+                    select('library');
+                  }}
+                />
+              </>
+            ) : null}
+            <Action
+              label="Sources"
+              onPress={() => {
+                closeUtilities();
+                openSources();
+              }}
+            />
+            <Action
+              label="Source management"
+              onPress={() => {
+                closeUtilities();
+                openSources();
+                setManageConnections(true);
+              }}
+            />
+            <Action
+              label="Appearance & reading"
+              onPress={() => {
+                closeUtilities();
+                setAppearance(true);
+              }}
+            />
+            <Action
+              label="Offline downloads"
+              onPress={() => {
+                closeUtilities();
+                setDownloadTarget(undefined);
+                setDownloads(true);
+              }}
+            />
+            <Action
+              label="Captures on this phone"
+              onPress={() => {
+                closeUtilities();
+                setReviewing(true);
+              }}
+            />
+            <Action label="Legacy recovery" onPress={recoveryOpen} />
+          </ScrollView>
+        </ContextSheet>
       ) : null}
       {appearance ? (
         <ReadingControls close={() => setAppearance(false)} />
@@ -807,14 +1367,20 @@ export default function WorkspaceScreen() {
             close={() => setMore(false)}
             choices={[
               { value: 'outline', label: 'Note outline' },
+              { value: 'capture', label: 'Add review item' },
               { value: 'find', label: 'Find within note' },
               { value: 'appearance', label: 'Reading appearance' },
               { value: 'downloads', label: 'Download for offline' },
               { value: 'journey', label: 'Reading journey' },
               { value: 'refresh', label: 'Refresh saved note' },
+              { value: 'utilities', label: 'Settings' },
               { value: 'recovery', label: 'Legacy recovery' },
             ]}
             onChoose={v => {
+              if (v === 'capture') {
+                capture();
+                return;
+              }
               if (v === 'downloads') {
                 setDownloadTarget(undefined);
                 setDownloads(true);
@@ -823,6 +1389,7 @@ export default function WorkspaceScreen() {
               if (v === 'outline' || v === 'find' || v === 'appearance')
                 setReaderPanel(v);
               else if (v === 'journey') setTrail(true);
+              else if (v === 'utilities') setUtilities(true);
               else if (v === 'recovery') recoveryOpen();
               else run(() => model.reconcile());
             }}
@@ -847,6 +1414,7 @@ export default function WorkspaceScreen() {
           />
         ) : null}
         <ResourcePreview
+          capture={page => capture(undefined, page)}
           model={model}
           download={() => {
             const r = model.snapshot().preview;
@@ -864,12 +1432,57 @@ export default function WorkspaceScreen() {
           }}
         />
       </View>
+      {captureRequest ? (
+        <ReviewCapture
+          seed={captureRequest.seed}
+          initialId={captureRequest.initialId}
+          close={() => {
+            const ticket = ++captureFocusTicket.current;
+            const tag =
+              captureRequest.returnTag ||
+              findNodeHandle(sourceOrientation.current);
+            const scope = captureRequest.seed?.scope;
+            setCaptureRequest(undefined);
+            setReviewRevision(v => v + 1);
+            if (tag)
+              requestAnimationFrame(() => {
+                void NativeModules.VaultorPresentation.awaitWindow(tag)
+                  .then((focused: boolean) => {
+                    if (
+                      focused &&
+                      ticket === captureFocusTicket.current &&
+                      (!scope || model.snapshot().scope === scope)
+                    )
+                      AccessibilityInfo.setAccessibilityFocus(tag);
+                  })
+                  .catch(() => {});
+              });
+          }}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
+  shell: { flex: 1, flexDirection: 'column' },
+  wideShell: { flexDirection: 'row-reverse' },
   content: { flex: 1 },
+  screenHeading: {
+    minHeight: 56,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#e8e8e8',
+    flexShrink: 1,
+    maxWidth: '42%',
+  },
+  headingGrow: { flex: 1, maxWidth: '100%' },
   overlayHost: {
     position: 'absolute',
     top: 0,
@@ -879,25 +1492,8 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   hidden: { display: 'none' },
-  header: {
-    zIndex: 1,
-    backgroundColor: '#000',
-    height: 58,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#252525',
-  },
-  title: { flex: 1, fontSize: 19, fontWeight: '600', color: '#e8e8e8' },
-  icon: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  glyph: { fontSize: 25, color: '#e8e8e8' },
-  page: { padding: 24, gap: 16 },
+  obscured: { opacity: 0 },
+  page: { padding: 12, gap: 8 },
   secondary: { color: '#b3b3b3', fontSize: 15, lineHeight: 23 },
   section: { color: '#e8e8e8', fontSize: 16, fontWeight: '600' },
   row: {

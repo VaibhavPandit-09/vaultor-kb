@@ -183,6 +183,61 @@ assert.equal(messages.at(-1).count, 1);
 receive({ type: 'find', loadId: 'old', query: 'no matches' });
 assert.equal(messages.at(-1).count, 1);
 const element = w.document.querySelector('strong');
+const evidenceRange = w.document.createRange();
+evidenceRange.setStart(element.previousSibling, 0);
+evidenceRange.setEnd(element.firstChild, element.firstChild.length);
+w.getSelection().removeAllRanges();
+w.getSelection().addRange(evidenceRange);
+w.document.dispatchEvent(new w.Event('selectionchange'));
+await new Promise(r => setTimeout(r, 40));
+const evidence = messages.filter(m => m.type === 'selection').at(-1).evidence;
+assert.equal(evidence.quote, 'phrase across bold marks');
+assert.equal(evidence.path, '/1');
+assert.ok(evidence.context.includes(evidence.quote));
+const duplicate = element.parentElement.cloneNode(true);
+duplicate.dataset.path = '/2';
+element.parentElement.parentElement.append(duplicate);
+const repeatedRange = w.document.createRange();
+repeatedRange.setStart(duplicate.firstChild, 0);
+repeatedRange.setEnd(
+  duplicate.querySelector('strong').firstChild,
+  duplicate.querySelector('strong').firstChild.length,
+);
+w.getSelection().removeAllRanges();
+w.getSelection().addRange(repeatedRange);
+w.document.dispatchEvent(new w.Event('selectionchange'));
+await new Promise(r => setTimeout(r, 40));
+assert.equal(
+  messages.filter(m => m.type === 'selection').at(-1).evidence.path,
+  '/2',
+);
+duplicate.remove();
+const unicodeBlock = w.document.createElement('p');
+unicodeBlock.dataset.path = '/3';
+unicodeBlock.textContent = 'x'.repeat(3999) + '😀';
+element.parentElement.parentElement.append(unicodeBlock);
+const unicodeRange = w.document.createRange();
+unicodeRange.setStart(unicodeBlock.firstChild, 0);
+unicodeRange.setEnd(unicodeBlock.firstChild, 1);
+w.getSelection().removeAllRanges();
+w.getSelection().addRange(unicodeRange);
+w.document.dispatchEvent(new w.Event('selectionchange'));
+await new Promise(r => setTimeout(r, 40));
+assert.equal(
+  messages.filter(m => m.type === 'selection').at(-1).evidence.context.length,
+  3999,
+);
+unicodeBlock.remove();
+w.getSelection().removeAllRanges();
+w.document.dispatchEvent(new w.Event('selectionchange'));
+await new Promise(r => setTimeout(r, 40));
+assert.equal(
+  messages.filter(m => m.type === 'selection').at(-1).evidence,
+  null,
+);
+console.log(
+  'Review evidence: cross-mark range, block path and cleared selection passed',
+);
 receive({
   type: 'preferences',
   theme: 'light',
@@ -195,6 +250,74 @@ assert.equal(w.document.documentElement.dataset.theme, 'light');
 assert.equal(w.document.querySelector('[contenteditable]'), null);
 console.log(
   'Reader runtime: outline, cross-mark/literal find, stale commands and non-replacing appearance passed',
+);
+// Typography and viewport changes retain a revision-bound reading edge, not just nodes.
+receive({ type: 'preferences', size: 18, theme: 'light' });
+await new Promise(r => setTimeout(r, 80));
+const heading = w.document.querySelector('h2'),
+  paragraph = w.document.querySelector('p');
+let shift = 0;
+heading.getBoundingClientRect = () => ({
+  top: 100 - w.scrollY,
+  bottom: 150 - w.scrollY,
+});
+paragraph.getBoundingClientRect = () => {
+  const top =
+    (Number.parseFloat(
+      w.document.documentElement.style.getPropertyValue('--size'),
+    ) > 20
+      ? 400
+      : 300) +
+    shift -
+    w.scrollY;
+  return { top, bottom: top + 400 };
+};
+w.scrollTo(0, 290);
+receive({ type: 'flush', loadId: 'fixture' });
+receive({ type: 'preferences', size: 28, theme: 'oled' });
+await new Promise(r => setTimeout(r, 80));
+assert.equal(paragraph.getBoundingClientRect().top, 10);
+assert.equal(w.document.querySelector('strong'), element);
+shift = 80;
+w.dispatchEvent(new w.Event('resize'));
+await new Promise(r => setTimeout(r, 80));
+assert.equal(paragraph.getBoundingClientRect().top, 10);
+receive({ type: 'preferences', size: 18 });
+w.dispatchEvent(new w.Event('pointerdown'));
+w.scrollTo(0, 500);
+await new Promise(r => setTimeout(r, 80));
+assert.equal(w.scrollY, 500, 'User touch cancels stale geometry restoration');
+receive({ type: 'preferences', size: 28 });
+await new Promise(r => setTimeout(r, 80));
+assert.equal(w.scrollY, 500, 'Geometry changes cannot fight an active touch');
+w.dispatchEvent(new w.Event('pointerup'));
+receive({ type: 'context', loadId: 'fixture', bottom: 180 });
+receive({ type: 'context', loadId: 'fixture', bottom: 0 });
+assert.equal(
+  w.document.documentElement.style.getPropertyValue('--controls-bottom'),
+  '204px',
+);
+receive({
+  type: 'load',
+  loadId: 'next',
+  noteId: 'next-note',
+  revision: 'r2',
+  content: {
+    type: 'doc',
+    content: [
+      { type: 'paragraph', content: [{ type: 'text', text: 'Next source' }] },
+    ],
+  },
+});
+w.dispatchEvent(new w.Event('pointerdown'));
+assert.ok(
+  messages.some(m => m.type === 'loaded' && m.loadId === 'next'),
+  'Readiness is independent of cancelled restoration',
+);
+
+assert.equal(w.document.querySelector('article.enter'), null);
+console.log(
+  'Reader geometry: typography/resize anchor retention, mounted nodes and touch cancellation passed',
 );
 page.window.close();
 
@@ -251,6 +374,61 @@ assert.equal(picture.style.width, '800px');
 pointer('pointerup', 1, 100, 100);
 pointer('pointerup', 2, 300, 100);
 assert.equal(updates.at(-1).zoom, 2);
+// A Fit keyframe acknowledges only the current, completed transformation.
+picture.getBoundingClientRect = () => ({
+  left: -viewport.scrollLeft,
+  top: -viewport.scrollTop,
+  width: parseFloat(picture.style.width),
+  height: parseFloat(picture.style.height),
+});
+let finishFit;
+picture.animate = () => ({
+  finished: new Promise(resolve => {
+    finishFit = resolve;
+  }),
+  cancel() {},
+});
+mw.vaultorMediaReceive(
+  JSON.stringify({
+    type: 'zoom',
+    zoom: 1,
+    command: 'fit1',
+    feedback: true,
+    duration: 200,
+  }),
+);
+assert.equal(
+  updates.filter(m => m.type === 'settled' && m.command === 'fit1').length,
+  0,
+);
+finishFit();
+await new Promise(r => setTimeout(r, 40));
+assert.equal(
+  updates.filter(
+    m => m.type === 'settled' && m.command === 'fit1' && m.feedback,
+  ).length,
+  1,
+);
+mw.vaultorMediaReceive(JSON.stringify({ type: 'zoom', zoom: 3 }));
+mw.vaultorMediaReceive(
+  JSON.stringify({
+    type: 'zoom',
+    zoom: 1,
+    command: 'fit2',
+    feedback: true,
+    duration: 200,
+  }),
+);
+pointer('pointerdown', 3, 100, 100);
+finishFit();
+await new Promise(r => setTimeout(r, 40));
+assert.equal(
+  updates.filter(m => m.type === 'settled' && m.command === 'fit2').length,
+  0,
+);
+console.log(
+  'Media keyframes: Fit settle acknowledgment and gesture interruption passed',
+);
 media.window.close();
 console.log(
   'Media runtime: fixed viewport fit, bounded zoom, pan persistence and pinch passed',

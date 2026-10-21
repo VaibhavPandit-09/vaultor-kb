@@ -44,6 +44,14 @@ The goal is:
 
 ---
 
+## 1.1 Intentionally hybrid React Native architecture
+
+React Native remains Vaultor Android's primary product/UI framework: product screens, navigation, reader, Review UI, offline/sync presentation, settings and most motion belong there. Thin Android/Kotlin modules own platform capabilities when native access materially improves quality. Haptics are the canonical example. This is not permission to rewrite screens in Jetpack Compose; move a surface only after profiling or a hard platform limitation establishes the need.
+
+Priority: (1) spatial continuity and structural motion, (2) hierarchy/density/typography, (3) responsive touch, (4) haptics. Motion is more central to Vaultor's identity than tactile feedback. Sound is out of scope unless separately authorized. Vaultor is calm, precise, mature, focused and restrained.
+
+The boundary is React Native interaction → semantic Vaultor event → thin native Kotlin renderer → best supported device effect. Feature code requests meaning, never amplitudes, primitive sequences, waveforms, API-level or manufacturer decisions. Native owns capability/effect support, authored composition, fallback, system preference admission, vibration permissions and future Android APIs. The S24 Ultra is a subjective acceptance device, never a manufacturer-specific code path.
+
 ## 2. Android should feel physical
 
 On desktop, Vaultor uses space and motion to preserve continuity.
@@ -71,7 +79,7 @@ The haptic signal should feel like the physical consequence of the visual transf
 
 # 3. Haptics are a first-class design system
 
-Vaultor Android must use the device's haptic capabilities deliberately and deeply.
+Vaultor Android must understand the device's haptic capabilities fully and exercise them with restraint. Quality matters more than frequency; most interactions intentionally have no Vaultor haptic. A diagnostic surface demonstrates capability, not permission to distribute effects throughout the product.
 
 "Use haptics fully" does **not** mean vibrate on every tap.
 
@@ -118,15 +126,7 @@ Examples:
 
 A very light crisp response.
 
-Use for:
-
-- small toggles;
-- compact icon actions;
-- entering/exiting a lightweight selection state;
-- low-importance chip/filter changes;
-- a control snapping into its final state.
-
-This is frequent and therefore must be subtle.
+Reserve for a deliberate micro confirmation only when touch adds information beyond the visual state. Ordinary toggles, icons, chips, filters, settings and Find focus should normally remain H0. H1 is a semantic option, not a mandate for frequent feedback.
 
 ### H2 — Selection / snap
 
@@ -134,7 +134,7 @@ A clear tick or snap.
 
 Use for:
 
-- selecting a resource where tactile confirmation is useful;
+- explicit source/mode locking where tactile confirmation adds information; normal resource opening remains H0;
 - crossing a meaningful drag/reorder target;
 - snapping a sheet or slider to an intentional stop;
 - completing a mode transition;
@@ -179,28 +179,15 @@ The confirmation UI itself must still communicate the consequence visually.
 
 ## 5. Rich haptics
 
-Rich/custom haptics are justified when the interaction itself has a continuous or spatial character.
+Rich/custom haptics reinforce a meaningful spatial or completed interaction; they must never compensate for weak motion. Start with one authored product pattern: REVIEW_CAPTURED, a short completion after durable local persistence and the visible saved/queued transformation. Evidence locking uses subtle standard H2. REVIEW_SYNCED_FOREGROUND is only a possible later pattern for explicitly awaited synchronization, not permission to implement A4. Do not create speculative patterns.
 
-Candidate Vaultor interactions include:
+Classify every caller:
 
-- drag and reorder;
-- pull/reveal interactions if introduced;
-- snapping a reader control or sheet between meaningful states;
-- a successful spatial transition that benefits from a subtle settle sensation;
-- review/capture targeting;
-- offline-to-synced state transition while the user is actively observing it.
+- Group A: intentionally silent ordinary navigation, screen transitions, resource opening, scrolling, typing, search results, passive reader chrome, themes, background sync/refresh and reopening saved Reviews.
+- Group B: subtle meaningful evidence/selection/snap confirmation; short rejection only when an explicit blocked action becomes visibly evident.
+- Group C: rare authored durable Review capture completion; future explicitly awaited completion or genuinely destructive confirmation only when justified.
 
-Rich haptics should be designed as part of the animation.
-
-Example:
-
-1. user drags an object;
-2. visual target magnetically approaches;
-3. intensity/ticks increase near the target;
-4. object snaps;
-5. one clean settle haptic occurs at the snap keyframe.
-
-Do not create rich haptics simply to demonstrate hardware capability.
+The visual interaction carries the experience with haptics disabled. Rich patterns are not weak/medium/strong buzz presets. Diagnostics may expose old/candidate routes for comparison; they are never ordinary production UI. No background celebration or audio feedback.
 
 ---
 
@@ -217,9 +204,9 @@ A semantic call should look conceptually like:
 - `VaultorHaptics.actionComplete()`
 - `VaultorHaptics.reject()`
 - `VaultorHaptics.destructiveConfirm()`
-- `VaultorHaptics.rich(effect)`
+- `VaultorHaptics.playAuthoredPattern(REVIEW_CAPTURED)`
 
-The implementation decides the best available platform mechanism.
+The thin native Kotlin renderer decides the best available platform mechanism. Keep the five-level semantic vocabulary small; the TypeScript facade only forwards semantic names, native view identity and interaction identity. Reject mismatched/unknown authored events at the boundary.
 
 Requirements:
 
@@ -238,7 +225,7 @@ Requirements:
 
 Emulator behavior is insufficient for final haptic approval.
 
-For haptic-heavy interactions:
+For significant tactile interactions (without making the app haptic-heavy):
 
 - test on at least one real Android device;
 - prefer a modern device with a high-quality actuator for design review;
@@ -327,9 +314,9 @@ Preferred qualities:
 
 Haptic guidance:
 
-- entering capture: H1 or H2 only when it clarifies mode entry;
-- anchoring/selecting evidence: H2;
-- successfully queued offline: H3, subtle;
+- entering capture: H0; contextual motion establishes entry;
+- anchoring/selecting evidence: subtle standard H2 at the actual lock endpoint;
+- successfully queued offline: one short H3 / REVIEW_CAPTURED after durable persistence and visible receipt settle;
 - successful foreground sync: H3 if user initiated/awaited it;
 - failed save/sync requiring action: H4;
 - background sync completion: normally H0.
@@ -419,7 +406,7 @@ Respect:
 - system bars;
 - contrast during transition.
 
-A subtle H1/H2 settle at the completion of an explicitly user-triggered theme transition may be tested on real hardware, but it is optional and must not become a gimmick.
+Theme reveals are intentionally H0. Visual continuity should carry the transformation.
 
 System-driven theme changes should normally avoid attention-grabbing haptics.
 
@@ -468,8 +455,8 @@ Haptics and animation must never make the reader feel heavy.
 
 Requirements:
 
-- no per-frame Compose state churn when a lower-level animation signal can be used;
-- avoid unnecessary recomposition during continuous gestures;
+- prefer native/UI-thread-driven React Native transforms where appropriate;
+- avoid per-frame React state churn or rebuilding the WebView during gestures; use bounded JS layout animation only where actual geometry requires it;
 - keep long lists efficient;
 - do not rebuild expensive reader content for chrome transitions;
 - preserve reader/viewer identity across presentation changes when practical;
@@ -485,7 +472,7 @@ Required categories where applicable:
 
 ### Automated
 - unit tests;
-- Compose/UI tests;
+- React Native semantic routing and Android native/UI tests;
 - build/lint/static checks;
 - sync/domain tests.
 
@@ -530,7 +517,7 @@ Do not add haptics as an afterthought.
 
 Do not add vibration to every interaction.
 
-The goal is a product where visual motion and tactile feedback feel like two parts of the same physical interaction.
+Motion carries the product; rare tactile feedback reinforces the same event. An understandable, polished interaction must remain when haptics are disabled.
 
 ---
 
@@ -542,6 +529,8 @@ The desktop standard is:
 
 The Android extension is:
 
-> **"Of course it moved there — and the phone felt like it settled there."**
+> **"Of course it moved there."**
+
+At rare meaningful tactile moments: "And the phone felt like it settled there."
 
 That is the target.
