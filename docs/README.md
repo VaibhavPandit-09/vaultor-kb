@@ -110,6 +110,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
+- [R7–R10 roadmap reconciliation](plans/R7-R10-RECONCILIATION.md): current post-R6 planning authority pending approval; requirement classifications, preserved UI, actionable R7 architecture and product decisions. No implementation authorization.
+
 - [R7 fresh-chat handoff](plans/R7-HANDOFF.md): authoritative R6 master/release, compatibility, remaining acceptance and defined R7 scope.
 
 - [Desktop UI redesign audit and proposal](plans/ui-redesign.md): isolated redesign stream, native baseline, implemented Library/browse/Note/pane/navigation/preview/command-palette/settings/utility/theme review candidates, interaction specifications and remaining motion/native review gates.
@@ -118,7 +120,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Codex product stream](plans/codex-current-stream.md): branch isolation, R5 functional ownership and later UI-integration boundaries.
 
-- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan; W1–W3/R1–R2 shipped, R3 Windows host checkpoints shipped (Mac gate pending), R4 Android alpha.11 and R5 Windows0.12.0 shipped; R6–R10 remain separately authorized work. One sprint per authorization.
+- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): original functional plan and dated execution ledger; W1–W3/R1–R6 implemented, R6 released on master as Android alpha.23 with Windows0.14.0; remaining R7–R10 planning is reconciled above. One sprint per authorization; physical/integrated Mac gates remain explicit.
 - [Original Android tracker](plans/android-plan.md): historical A1–A7 evidence; A8/A9 cancelled and superseded.
 
 - [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): All five sprints implemented on Windows; measured integration, platform limits and separate Android prototype gate recorded.

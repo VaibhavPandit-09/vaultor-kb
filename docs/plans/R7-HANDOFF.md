@@ -2,6 +2,8 @@
 
 Reviewed2026-10-22. R6 is complete as a development milestone. This post-release documentation handoff does not implement or authorize R7 work in the release task.
 
+The [R7–R10 reconciliation](R7-R10-RECONCILIATION.md) now owns the current remaining-milestone plan pending user approval, including code-verified gaps, preserved R6 presentation and ZIP authorization decisions. This handoff retains release/baseline evidence; its original R7 scope is read through that reconciliation.
+
 ## 1. Authoritative source and product state
 
 R6 master merge: **5b0b63981a3ed2cfa83981ca9e8148f7067ceb30**, preserving validated integration21ac91a. Authoritative product/release master commit: **7b5baf5f0b732a85e2d152296de69c405bfd4c67**; immutable tag **android/v0.1.0-alpha.23**. This handoff is an explicitly documented later documentation-only master commit; never move the source tag. Fetch current master before starting new work.

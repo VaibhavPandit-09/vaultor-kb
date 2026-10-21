@@ -30,6 +30,8 @@ Implementation proceeds one sprint per explicit authorization. Maintain this gui
 
 ## Planned multi-workspace and Android companion direction
 
+The [post-R6 R7–R10 reconciliation](plans/R7-R10-RECONCILIATION.md) is the current planning authority for remaining milestones, pending user approval. It preserves the original tracker as historical requirements/evidence and the modern R6 UI as implementation baseline. Code-verified R7 gaps include disabled Share/input uploads, frontend-only text/Markdown conversion, missing generation-bound import acknowledgment and owner-only workspace ZIP authorization. None is implemented by this planning checkpoint; appearance/source/download/Review features already delivered must be reused.
+
 [workspace-companion-plan.md](plans/workspace-companion-plan.md) owns the new 13-sprint sequence: W1–W3 shared hosting/switching/transfers, then R1–R10 reader retirement/design, snapshots/offline storage, reviews, queued imports, exports, settings/updates and integration. W1 is implemented and published as Windows0.8.0 (Mac gate pending); W2 is implemented/published Windows0.9.0/Androidalpha.8 (Mac gate pending); W3 is implemented/published Windows0.10.0 (Mac native gate pending); R1 is complete/published Android alpha.9.1; R2 is complete/published Android alpha.10; R3 is complete/published Windows0.11.0 (Mac native gate pending); R4 is complete/published Android alpha.11; R5 is complete/published Windows0.12.0 on ai/codex-current (Mac gate pending); R6 is complete as a development milestone and published as Android alpha.23/code27 from master; physical A5 follow-ups and R7–R10 remain pending. The former Android A8/A9 are superseded; published A1–A7 describe the historical editing-led implementation, superseded on Android by R1. Android is a source-bound offline reader; Android local Review capture is implemented in the A3 candidate below; native Review delivery/status is implemented in A4; queued imports remain planned. This is not an independently writable local workspace. Full workspace ZIP export is connected-only/host-prepared; partial exports may work offline. Desktop can fork a remote workspace as a separate local copy. W1 implements host-side catalog, isolated contexts, explicit routing and grants while retaining fixed-default protocol3 clients; W2 adds native/browser selectors, owner grants and scoped JSON/files/SSE/session restoration. Archive3 remains unchanged; R1 retires Android editing through a native read-only boundary; alpha.9.1 is published. See WORKSPACES.md for current guarantees rather than interpreting later companion features as shipped.
 
 ### R3 host companion checkpoints
@@ -392,6 +394,10 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 - Build reports a large JS chunk and an outdated Browserslist dataset; these do not prevent packaging. Chunk splitting remains performance work.
 
 ## Change checklist and maintenance history
+
+### 2026-10-22 — One-time R7–R10 roadmap reconciliation
+
+Documentation-only planning, no runtime or architectural change. Fetched/verified master31d80113 and ancestor alpha.23 source7b5baf5; GitHub publication metadata matches the existing R6 ledger. Inspected current Android shell/reader/preferences/Review/storage/transport and host import/export/access code, classified original requirements, defined proposed R7 sequence and unresolved ZIP/original-byte/queue-policy decisions, and corrected stale roadmap/index status while preserving historical requirements. Local documentation links and Git whitespace checks passed. No compilation, tests, UI/runtime inspection, APK installation or fresh artifact-byte verification performed; prior release results remain attributed to the release ledger. No R7 implementation, feature branch, commit, push or release; stop for roadmap approval.
 
 ### 2026-10-22 — Published R6 and committed R7 handoff
 
