@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit
 class CaptureExperienceTest {
   init{require(android.os.Build.HARDWARE=="ranchu")}
   private val i get()=InstrumentationRegistry.getInstrumentation()
+  private val title get()=InstrumentationRegistry.getArguments().getString("noteTitle") ?: "R2 Rich reading"
   private val d get()=UiDevice.getInstance(i)
   private fun tap(label:String){var n=d.wait(Until.findObject(By.desc(label).enabled(true)),5000);if(n==null)n=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.desc(label).enabled(true)));assertNotNull(label,n);n!!.click();Thread.sleep(250)}
   private fun web():WebView{var found:WebView?=null;i.runOnMainSync{fun find(v:View){if(v is WebView)found=v;if(v is ViewGroup)for(n in 0 until v.childCount)find(v.getChildAt(n))};WindowInspector.getGlobalWindowViews().forEach(::find)};return found?:error("No reader")}
@@ -34,9 +35,9 @@ class CaptureExperienceTest {
   private fun reader(){
     launch()
     if(d.hasObject(By.desc("Review comment")))tap("Done")
-    if(!d.hasObject(By.desc("Reading options")) || !d.hasObject(By.text("R2 Rich reading"))) {
+    if(!d.hasObject(By.desc("Reading options")) || !d.hasObject(By.text(title))) {
       if(d.hasObject(By.desc("Browse navigation")))tap("Browse navigation");tap("Library");d.wait(Until.findObject(By.desc("Search resources")),10000).text=""
-      assertTrue("Fixture Library must finish loading",d.wait(Until.hasObject(By.desc("R2 Rich reading, Note")),30000));tap("R2 Rich reading, Note")
+      assertTrue("Fixture Library must finish loading",d.wait(Until.hasObject(By.desc("$title, Note")),30000));tap("$title, Note")
     }
     repeat(100){try{if(js("!!document.querySelector('article p')")=="true")return}catch(_:IllegalStateException){};Thread.sleep(100)};fail("Reader not ready")
   }
@@ -45,7 +46,7 @@ class CaptureExperienceTest {
     reader();val retained=web();val original=saved();val before=captures().length()
     val quote=js("(()=>{const p=document.querySelector('article p');const r=document.createRange();r.selectNodeContents(p);const s=getSelection();s.removeAllRanges();s.addRange(r);document.dispatchEvent(new Event('selectionchange'));return s.toString()})()")
     tap("Flag for review");assertTrue(d.wait(Until.hasObject(By.desc("Review comment")),10000));val field=d.findObject(By.desc("Review comment"));field.text="A3 selection receipt"
-    assertTrue(d.wait(Until.hasObject(By.text("Protected draft on this phone · "+"A3 selection receipt".length+"/5000")),10000));tap("Save on this phone");assertTrue(d.wait(Until.hasObject(By.textContains("On this phone · pending sync")),10000))
+    assertTrue(d.wait(Until.hasObject(By.text("Protected draft on this phone · "+"A3 selection receipt".length+"/5000")),10000));tap("Save on this phone");assertTrue(d.wait(Until.hasObject(By.textContains("Saved on this phone")),10000))
     val after=captures();assertEquals(before+1,after.length());val item=after.getJSONObject(0);assertEquals("queued",item.getString("state"));assertEquals("A3 selection receipt",item.getJSONObject("body").getString("comment"));assertEquals(JSONArray("["+quote+"]").getString(0),item.getJSONObject("body").getString("quote"));assertEquals("block",item.getJSONObject("body").getJSONObject("locator").getString("kind"))
     tap("Done");assertSame(retained,web());assertEquals(original,saved());assertEquals("0",js("document.querySelectorAll('[contenteditable]').length"))
   }
@@ -112,7 +113,7 @@ class CaptureExperienceTest {
           assertTrue("Missing $stage: $raw",rows.any{it.getString("stage")==stage})
         assertEquals(!hideFirst,rows.first{it.getString("stage")=="save_accepted"}.getBoolean("keyboardVisible"))
         assertEquals(1,rows.count{it.getString("stage")=="bridge_received" && it.optString("event")=="complete"})
-        assertFalse(raw.contains(comment));assertFalse(raw.contains("R2 Rich reading"));assertFalse(raw.contains("https://"))
+        assertFalse(raw.contains(comment));assertFalse(raw.contains(title));assertFalse(raw.contains("https://"))
         assertEquals(before+1,captures().length());assertEquals("queued",captures().getJSONObject(0).getString("state"))
         val copy=result{presentation.captureTrace("copy",it)};assertTrue(JSONObject(copy).getBoolean("sealed"))
         var clipboard="";i.runOnMainSync{clipboard=(i.targetContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).primaryClip?.getItemAt(0)?.text?.toString()?:""}
@@ -136,7 +137,7 @@ class CaptureExperienceTest {
     val expand=android.graphics.Rect();var editHeight=0;var density=1f
     repeat(100){if(expand.isEmpty){i.runOnMainSync{fun visit(v:View){if(v.contentDescription?.toString()=="Expand saved comment")v.getGlobalVisibleRect(expand);if(v.contentDescription?.toString()=="Review comment"){editHeight=v.height;density=v.resources.displayMetrics.density};if(v is ViewGroup)for(n in 0 until v.childCount)visit(v.getChildAt(n))};WindowInspector.getGlobalWindowViews().forEach(::visit)};if(expand.isEmpty)Thread.sleep(5)}}
     assertFalse("Saved disclosure must exist during contraction",expand.isEmpty);assertTrue("Interruption must arrive before the comment finishes contracting",editHeight/density>80);inject(expand);Thread.sleep(700)
-    var expanded=false;var complete=false;i.runOnMainSync{fun visit(v:View){if(v.contentDescription?.toString()=="Review comment")expanded=v.height/v.resources.displayMetrics.density>=220;if(v is android.widget.TextView && v.text.toString().startsWith("On this phone · pending sync")){val textAt=IntArray(2);v.getLocationOnScreen(textAt);complete=true;var parent=v.parent;while(parent is View && parent !is android.widget.ScrollView){val at=IntArray(2);parent.getLocationOnScreen(at);if(textAt[1]+v.height-at[1]>parent.height)complete=false;parent=parent.parent}};if(v is ViewGroup)for(n in 0 until v.childCount)visit(v.getChildAt(n))};WindowInspector.getGlobalWindowViews().forEach(::visit)}
+    var expanded=false;var complete=false;i.runOnMainSync{fun visit(v:View){if(v.contentDescription?.toString()=="Review comment")expanded=v.height/v.resources.displayMetrics.density>=220;if(v is android.widget.TextView && v.text.toString().startsWith("Saved on this phone")){val textAt=IntArray(2);v.getLocationOnScreen(textAt);complete=true;var parent=v.parent;while(parent is View && parent !is android.widget.ScrollView){val at=IntArray(2);parent.getLocationOnScreen(at);if(textAt[1]+v.height-at[1]>parent.height)complete=false;parent=parent.parent}};if(v is ViewGroup)for(n in 0 until v.childCount)visit(v.getChildAt(n))};WindowInspector.getGlobalWindowViews().forEach(::visit)}
     assertTrue("Comment expansion must win interruption",expanded);assertTrue("Receipt must finish independently rather than remain clipped",complete);assertEquals("Receipt must own completion even when comment contraction is interrupted","REVIEW_CAPTURED",report().optString("profile"));assertTrue(report().toString(),report().optString("status") in setOf("requested","rejected"));assertEquals("queued",captures().getJSONObject(0).getString("state"));tap("Done");assertSame(retained,web());assertEquals(original,saved())
   }
   @Test fun restoreProtectedDraftAfterDeath(){
@@ -144,7 +145,7 @@ class CaptureExperienceTest {
     launch();tap("Open navigation");tap("Captures on this phone")
     var summary=d.wait(Until.findObject(By.textStartsWith(comment+" ·")),5000);if(summary==null)summary=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.textStartsWith(comment+" ·")))
     assertNotNull("Exact retained draft must be identifiable",summary);summary!!.parent.findObject(By.desc("R2 Rich reading · Protected draft")).click()
-    val field=d.wait(Until.findObject(By.desc("Review comment")),5000);assertEquals(comment,field.text);tap("Save on this phone");assertTrue(d.wait(Until.hasObject(By.textContains("On this phone · pending sync")),10000));assertEquals("queued",(0 until captures().length()).map{captures().getJSONObject(it)}.first{it.getString("id")==fixture.getString("id")}.getString("state"));tap("Done")
+    val field=d.wait(Until.findObject(By.desc("Review comment")),5000);assertEquals(comment,field.text);tap("Save on this phone");assertTrue(d.wait(Until.hasObject(By.textContains("Saved on this phone")),10000));assertEquals("queued",(0 until captures().length()).map{captures().getJSONObject(it)}.first{it.getString("id")==fixture.getString("id")}.getString("state"));tap("Done")
   }
   @Test fun nativeCopyRemainsAvailable(){
     reader();val w=web();val point=JSONObject(js("(()=>{const p=document.querySelector('article p');p.scrollIntoView({block:'center'});const r=p.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()"));Thread.sleep(400);val at=IntArray(2);var density=1f;i.runOnMainSync{w.getLocationOnScreen(at);density=w.resources.displayMetrics.density};val x=at[0]+(point.getDouble("x")*density).toInt();val y=at[1]+(point.getDouble("y")*density).toInt();d.swipe(x,y,x,y,150)
@@ -161,10 +162,10 @@ class CaptureExperienceTest {
         tap("Reading options");tap("Add review item");assertTrue(d.wait(Until.hasObject(By.text("Evidence locked to this source")),5000))
         val field=d.wait(Until.findObject(By.desc("Review comment")),10000);field.text="Remediation $theme large text"
         assertTrue(d.wait(Until.hasObject(By.text("Protected draft on this phone · "+"Remediation $theme large text".length+"/5000")),10000));tap("Save on this phone")
-        var receipt=d.wait(Until.findObject(By.textStartsWith("On this phone · pending sync")),5000)
-        if(receipt==null)receipt=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.textStartsWith("On this phone · pending sync")))
+        var receipt=d.wait(Until.findObject(By.textStartsWith("Saved on this phone")),5000)
+        if(receipt==null)receipt=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.textStartsWith("Saved on this phone")))
         assertNotNull(receipt);Thread.sleep(450)
-        var complete=false;i.runOnMainSync{fun visit(v:View){if(v is android.widget.TextView && v.text.toString().startsWith("On this phone · pending sync")){complete=v.layout!=null && v.height>=v.layout.getLineBottom(v.lineCount-1)};if(v is ViewGroup)for(n in 0 until v.childCount)visit(v.getChildAt(n))};WindowInspector.getGlobalWindowViews().forEach(::visit)}
+        var complete=false;i.runOnMainSync{fun visit(v:View){if(v is android.widget.TextView && v.text.toString().startsWith("Saved on this phone")){complete=v.layout!=null && v.height>=v.layout.getLineBottom(v.lineCount-1)};if(v is ViewGroup)for(n in 0 until v.childCount)visit(v.getChildAt(n))};WindowInspector.getGlobalWindowViews().forEach(::visit)}
         assertTrue("Saved receipt must measure all large-text lines",complete);d.takeScreenshot(java.io.File(i.targetContext.getExternalFilesDir(null),"remediation-$theme-large.png"));tap("Done");assertSame(retained,web());assertEquals(original,saved())
       }
     }finally{result{native.readerPreferences("put",preferences,it)};if(scale=="null")d.executeShellCommand("settings delete system font_scale")else d.executeShellCommand("settings put system font_scale $scale")}
@@ -199,6 +200,6 @@ class CaptureExperienceTest {
   }
   @Test fun pdfPageCapturesRenderedFile(){
     reader();val noteWeb=web();val point=JSONObject(js("(()=>{const a=document.querySelector('a.resource[data-resource-id]');a.scrollIntoView({block:'center'});const r=a.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,id:a.dataset.resourceId}})()"));Thread.sleep(400);val at=IntArray(2);var density=1f;i.runOnMainSync{noteWeb.getLocationOnScreen(at);density=noteWeb.resources.displayMetrics.density};d.click(at[0]+(point.getDouble("x")*density).toInt(),at[1]+(point.getDouble("y")*density).toInt())
-    assertTrue(d.wait(Until.hasObject(By.desc("PDF page controls")),15000));tap("PDF page controls");val page=d.wait(Until.findObject(By.desc("PDF page number")),5000);page.text="8";tap("Go to PDF page");assertTrue(d.wait(Until.hasObject(By.text("Page 8 of 12")),15000));val viewer=web();tap("Preview options");tap("Review PDF page 8");val field=d.wait(Until.findObject(By.desc("Review comment")),10000);field.text="A3 PDF page evidence";assertTrue(d.wait(Until.hasObject(By.text("Protected draft on this phone · "+"A3 PDF page evidence".length+"/5000")),10000));tap("Save on this phone");assertTrue(d.wait(Until.hasObject(By.textContains("On this phone · pending sync")),10000));val item=captures().getJSONObject(0);assertEquals(point.getString("id"),item.getJSONObject("body").getString("resourceId"));assertEquals(8,item.getJSONObject("body").getJSONObject("locator").getInt("page"));tap("Done");assertSame(viewer,web());tap("Close preview");assertSame(noteWeb,web())
+    assertTrue(d.wait(Until.hasObject(By.desc("PDF page controls")),15000));tap("PDF page controls");val page=d.wait(Until.findObject(By.desc("PDF page number")),5000);page.text="8";tap("Go to PDF page");assertTrue(d.wait(Until.hasObject(By.text("Page 8 of 12")),15000));val viewer=web();tap("Preview options");tap("Review PDF page 8");val field=d.wait(Until.findObject(By.desc("Review comment")),10000);field.text="A3 PDF page evidence";assertTrue(d.wait(Until.hasObject(By.text("Protected draft on this phone · "+"A3 PDF page evidence".length+"/5000")),10000));tap("Save on this phone");assertTrue(d.wait(Until.hasObject(By.textContains("Saved on this phone")),10000));val item=captures().getJSONObject(0);assertEquals(point.getString("id"),item.getJSONObject("body").getString("resourceId"));assertEquals(8,item.getJSONObject("body").getJSONObject("locator").getInt("page"));tap("Done");assertSame(viewer,web());tap("Close preview");assertSame(noteWeb,web())
   }
 }

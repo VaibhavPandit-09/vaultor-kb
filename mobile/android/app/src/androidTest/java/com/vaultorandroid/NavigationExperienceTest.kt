@@ -22,9 +22,10 @@ import java.util.concurrent.TimeUnit
 class NavigationExperienceTest {
   init { require(android.os.Build.HARDWARE == "ranchu") }
   private val i get() = InstrumentationRegistry.getInstrumentation()
+  private val title get()=InstrumentationRegistry.getArguments().getString("noteTitle") ?: "R2 Rich reading"
   private val d get() = UiDevice.getInstance(i)
   private fun tap(label: String) {
-    val n = d.wait(Until.findObject(By.desc(label).enabled(true)), 10000)
+    val n = d.wait(Until.findObject(By.descStartsWith(label).enabled(true)), 10000)
     assertNotNull("Missing $label", n); n!!.click(); Thread.sleep(450)
   }
   private fun web(): WebView {
@@ -56,10 +57,10 @@ class NavigationExperienceTest {
     tap("Home"); frame("home")
     tap("Library")
     val input=d.wait(Until.findObject(By.desc("Search resources")),10000)
-    input.click(); input.text="R2 Rich reading"; Thread.sleep(800)
-    assertEquals("Query must be accepted before opening", "R2 Rich reading", d.findObject(By.desc("Search resources")).text)
+    input.click(); input.text=title; Thread.sleep(800)
+    assertEquals("Query must be accepted before opening", title, d.findObject(By.desc("Search resources")).text)
     if(d.hasObject(By.pkg("com.google.android.inputmethod.latin"))) d.pressBack()
-    tap("R2 Rich reading, Note")
+    tap("$title, Note")
     assertTrue(d.wait(Until.hasObject(By.desc("Reading options")),10000)); Thread.sleep(1000)
     val retained=web()
     js(retained,"window.__prototypeIdentity='retained';window.scrollTo(0,300);true")
@@ -93,16 +94,16 @@ class NavigationExperienceTest {
     val list=JSONArray(records)
     if(list.length()>0) {
       val item=list.getJSONObject(0)
-      val label=item.getJSONObject("source").getString("targetTitle")+". "+if(item.getString("state")=="queued")"Queued locally" else "Protected draft"
-      var row=d.findObject(By.desc(label))
-      if(row==null)row=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.desc(label)))
+      val label=item.getJSONObject("source").getString("targetTitle")+". "
+      var row=d.findObject(By.descStartsWith(label))
+      if(row==null)row=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.descStartsWith(label)))
       assertNotNull(row); row!!.click()
       assertTrue(d.wait(Until.hasObject(By.text("Review capture")),5000)); tap("Done")
-      assertEquals("Opening protected records must not mutate the journal",records,call("list"))
+      val unchanged=JSONArray(call("list"));val retained=(0 until unchanged.length()).map{unchanged.getJSONObject(it)}.first{it.getString("id")==item.getString("id")};assertEquals(item.getJSONObject("body").toString(),retained.getJSONObject("body").toString());assertEquals(item.getJSONObject("source").toString(),retained.getJSONObject("source").toString())
     }
     tap("Library")
-    assertEquals("R2 Rich reading",d.wait(Until.findObject(By.desc("Search resources")),10000).text)
-    tap("Home"); tap("Resume reading R2 Rich reading")
+    assertEquals(title,d.wait(Until.findObject(By.desc("Search resources")),10000).text)
+    tap("Home"); tap("Resume reading $title")
     assertSame(retained,web()); assertEquals("\"retained\"",js(retained,"window.__prototypeIdentity"))
     assertEquals("Reading offset (CSS pixel rounding)",scroll.toDouble(),js(retained,"window.scrollY").toDouble(),2.0)
     d.findObject(By.descContains("Choose source")).click()
@@ -114,13 +115,14 @@ class NavigationExperienceTest {
     d.click(context.x,context.y); Thread.sleep(120); d.pressBack(); Thread.sleep(500)
     assertFalse("Back must reverse Sources entry",d.hasObject(By.text("Sources")))
     assertTrue(d.hasObject(By.desc("Reading options"))); assertSame(retained,web())
-    tap("Reading options"); tap("Vaultor options")
+    tap("Reading options"); tap("Settings")
     assertTrue(d.wait(Until.hasObject(By.desc("Collections")),5000))
     tap("Pinned"); assertTrue(d.wait(Until.hasObject(By.text("Pinned")),5000))
     tap("Library")
-    assertEquals("R2 Rich reading",d.wait(Until.findObject(By.desc("Search resources")),10000).text)
+    assertEquals(title,d.wait(Until.findObject(By.desc("Search resources")),10000).text)
     d.findObject(By.descContains("Choose source")).click()
     assertTrue(d.wait(Until.hasObject(By.text("Sources")),5000))
+    tap("Source management")
     var downloaded=d.findObject(By.descStartsWith("Read downloaded "))
     if(downloaded==null)downloaded=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.descStartsWith("Read downloaded ")))
     val react=(i.targetContext.applicationContext as MainApplication).reactHost.currentReactContext as ReactApplicationContext
@@ -141,7 +143,7 @@ class NavigationExperienceTest {
     if(d.hasObject(By.desc("Browse navigation"))) tap("Browse navigation")
     tap("Home")
     for(theme in listOf("Light","Dark","OLED")) {
-      tap("Vaultor options"); tap("Appearance & reading"); tap(theme); tap("Done")
+      tap("Settings"); tap("Appearance & reading"); tap(theme); tap("Done")
       tap("Library")
       val input=d.wait(Until.findObject(By.desc("Search resources")),10000)
       input.text=""; Thread.sleep(700)
@@ -154,7 +156,7 @@ class NavigationExperienceTest {
       d.pressBack(); Thread.sleep(400)
       tap("Home")
     }
-    tap("Resume reading R2 Rich reading")
+    tap("Resume reading $title")
     assertTrue(d.wait(Until.hasObject(By.desc("Browse navigation")),10000))
     val retained=web()
     // Genuine edge gesture: opening Sources then Back must return to the reader.
@@ -206,7 +208,7 @@ class NavigationExperienceTest {
       assertTrue("Large-text source must remain above three destinations: $largeSource / $largeHome",largeSource.bottom<largeHome.top)
       d.executeShellCommand("settings put global transition_animation_scale 0")
       Thread.sleep(500)
-      tap("Resume reading R2 Rich reading")
+      tap("Resume reading $title")
       assertTrue(d.wait(Until.hasObject(By.desc("Browse navigation")),5000))
       tap("Browse navigation"); assertTrue(d.hasObject(By.desc("Review")))
       tap("Focus reading"); assertFalse(d.hasObject(By.desc("Review")))

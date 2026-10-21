@@ -1,13 +1,16 @@
-Current published development acceptance candidate: **0.1.0-alpha.16 / versionCode20**, original signer/package. **A0–A3 were rejected on the real S24 Ultra; A4 is blocked until explicit approval.** [Motion/haptic audit and exact device script](MOTION-HAPTIC-REMEDIATION.md), [candidate ledger](releases/0.1.0-alpha.16.md). Build-release.ps1 -Diagnostics alone enables the native-gated developer panel; ordinary builds default it off. Install the development APK over the existing app without clearing data. [Published Android-only prerelease](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.16) at2026-10-16T12:00:42Z from immutable 9197816856d823b4f1efd35098e6d2985ced295c; installed, staged and anonymous public APK bytes match. See the ledger for evidence.
+# Vaultor for Android — current development
 
-Current local development candidate: **alpha.20/code24**, Prototype 1 reader-first
-navigation, on `ai/codex-android-ux-prototypes`. [Prototype specification and S24 steps](NAVIGATION-PROTOTYPE.md)
-and [validation ledger](releases/0.1.0-alpha.20.md) own the current shell. Home/Library/Review
-and distinct Sources replace the historical drawer/topbar described in older release
-sections below. No public release or subjective design approval. Existing min36/target37,
-React Native/native architecture, signer and domain contracts remain. Stop before
-Prototype 2/3 and A4. Alpha.18 ordinary haptics are perceptible per user feedback;
-no broad remediation or stronger effects are introduced.
+Current consolidated candidate: **alpha.21/code25** on
+`ai/codex-android-ux-prototypes`. [R6 completion](R6-COMPLETION.md) owns Batch1
+quick Sources/management, contextual Aa, resource-reader motion and A4 verification.
+[Review delivery/status](REVIEW-SYNC.md) owns the native queue contract. Existing
+min36/target37, application identity and signer remain. This candidate is local,
+not a public release. Stop for S24 acceptance after delivery; no R7/master merge.
+Alpha.18 ordinary haptics are perceptible per user feedback; no broad remediation.
+
+## Historical releases and preceding gates
+
+The following ledgers describe earlier releases, not the current continuation.
 
 
 Previous published A3 local Review capture candidate: **0.1.0-alpha.15 / versionCode19**, reviewed2026-10-16; [Android-only prerelease](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.15) from immutable7d64708. [Review capture](REVIEW-CAPTURE.md) owns contextual source/evidence, encrypted draft/local queue and haptic/motion behavior; [alpha.15 ledger](releases/0.1.0-alpha.15.md) owns actual validation. A4 upload/status and physical acceptance remain pending. Original resources and desktop are unchanged.

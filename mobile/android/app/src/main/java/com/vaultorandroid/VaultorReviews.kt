@@ -10,7 +10,7 @@ import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-/** Independent, non-evictable encrypted capture journal. No transport or original writes. */
+/** Independent, non-evictable encrypted capture journal. Frozen evidence and additive delivery metadata. */
 class VaultorReviews(path: File, private val key: () -> SecretKey) {
   private val file = AtomicFile(path)
   companion object { private val lock = Any() }
@@ -34,10 +34,22 @@ class VaultorReviews(path: File, private val key: () -> SecretKey) {
     val encrypted=c.iv+c.doFinal(bytes);val out=file.startWrite()
     try{out.write(encrypted);file.finishWrite(out)}catch(e:Exception){file.failWrite(out);throw e}
   }
+  /** Native-only queue operations. Renderer capture actions cannot forge receipts. */
+  fun snapshot():List<JSONObject> = synchronized(lock) {
+    val items=read().getJSONObject("items")
+    items.keys().asSequence().map { JSONObject(items.getJSONObject(it).toString()) }.toList()
+  }
+  fun delivery(id:String,value:JSONObject):JSONObject = synchronized(lock) {
+    val journal=read();val item=journal.getJSONObject("items").getJSONObject(uuid(id))
+    require(item.getString("state")=="queued") {"Only frozen queued evidence can be synchronized."}
+    require(value.getString("state") in listOf("queued","sending","unknown","synced","error"))
+    item.put("delivery",JSONObject(value.toString()));write(journal);JSONObject(item.toString())
+  }
   fun execute(action:String,a:JSONObject):String = synchronized(lock) {
     val journal=read();val items=journal.getJSONObject("items")
     when(action) {
       "list" -> JSONArray(items.keys().asSequence().map{items.getJSONObject(it)}.sortedByDescending{it.getString("createdAt")}.toList()).toString()
+      "get" -> items.getJSONObject(uuid(a.getString("id"))).toString()
       "begin" -> {
         require(items.length()<256){"Capture limit reached (256). Existing evidence is retained."}
         val scope=JSONArray(a.getString("scope"));require(scope.length()==3)

@@ -5,6 +5,8 @@ import {
   Keyboard,
   findNodeHandle,
   NativeModules,
+  NativeEventEmitter,
+  AppState,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +17,7 @@ import {
 import ContextSheet from './ContextSheet';
 import { Action } from './Action';
 import { usePalette, useReading, useThemeStyles } from './ui';
+import { deliveryLabel, deliveryExplanation } from './reviewDelivery';
 import { VaultorHaptics } from './haptics';
 import {
   claimCaptureTrace,
@@ -269,6 +272,35 @@ export default function ReviewCapture({
       alive.current = false;
     };
   }, [seed, initialId, receiptProgress]);
+  useEffect(() => {
+    if (!item?.id || item.state !== 'queued') return;
+    let live = true;
+    const refresh = () => {
+      if (AppState.currentState !== 'active') return;
+      void call('get', { id: item.id })
+        .then((updated: CaptureItem) => {
+          if (live) {
+            current.current = updated;
+            setItem(updated);
+          }
+        })
+        .catch(() => {});
+    };
+    let eventTimer: ReturnType<typeof setTimeout> | undefined;
+    const event = new NativeEventEmitter(
+      NativeModules.VaultorNative,
+    ).addListener('VaultorReviewsChanged', () => {
+      if (eventTimer) clearTimeout(eventTimer);
+      eventTimer = setTimeout(refresh, 250);
+    });
+    const timer = setInterval(refresh, 2000);
+    return () => {
+      live = false;
+      event.remove();
+      if (eventTimer) clearTimeout(eventTimer);
+      clearInterval(timer);
+    };
+  }, [item?.id, item?.state]);
   const protect = (value: string) => {
     if (locked.current || current.current?.state !== 'draft') return;
     setComment(value);
@@ -517,8 +549,12 @@ export default function ReviewCapture({
                         Saved on this phone
                       </Text>
                       <Text accessibilityLiveRegion="polite" style={s.muted}>
-                        On this phone · pending sync. Upload will be available
-                        in a later update.
+                        {item ? deliveryLabel(item) : 'Queued on this phone'}
+                      </Text>
+                      <Text style={s.muted}>
+                        {item
+                          ? deliveryExplanation(item)
+                          : 'Protected locally.'}
                       </Text>
                     </View>
                   </Animated.View>

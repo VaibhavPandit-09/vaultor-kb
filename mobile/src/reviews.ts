@@ -34,6 +34,24 @@ export type CaptureItem = {
   version: number;
   state: 'draft' | 'queued';
   createdAt: string;
+  delivery?: {
+    state: 'queued' | 'sending' | 'unknown' | 'synced' | 'error';
+    reason?: string;
+    uncertain?: boolean;
+    retryable?: boolean;
+    checkedAt?: number;
+    receipt?: {
+      id: string;
+      resourceId: string;
+      status: 'open' | 'resolved' | 'dismissed';
+      revision: string;
+      author: string;
+      createdAt: string;
+      updatedAt: string;
+      availability: string;
+      attachment: string;
+    };
+  };
   source: {
     hostId: string;
     workspaceId: string;

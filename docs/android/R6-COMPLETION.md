@@ -75,3 +75,16 @@ IME or source changes cancel stale origins. Missing origins use a16–20dp bound
 reveal. Hidden reading/browsing trees remain mounted with exclusive touch/accessibility
 ownership. Reader pixels wait for their own load acknowledgment before appearing,
 preventing old-document pixels under a new title. No document text/bitmap scaling.
+
+## A4 implementation checkpoint
+
+Native captured-source transport, durable sending claims, exact PUT retries and
+receipt/status reconciliation are implemented. [REVIEW-SYNC](REVIEW-SYNC.md) is
+the authoritative behavior reference. TypeScript/focused JS checks,14 R5 ReviewTest
+backend cases and original-signer release/instrumentation compilation pass.
+Initial API36 journal/sync run passed8 cases. Real production pinned HTTPS passes:
+lost committed response, process restart/exact retry, intentional death after
+sending claim, recovery, offline/reconnection, genuine capture/Sync now, desktop
+resolution/dismissal, different body under same UUID and nondefault workspace grant
+while default grant is revoked. Host originals stay equal; same resource IDs do
+not misdirect records. Final expanded native/API37/UI/installed gates remain pending.

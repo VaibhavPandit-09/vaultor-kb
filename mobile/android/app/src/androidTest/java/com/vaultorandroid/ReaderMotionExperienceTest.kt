@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit
 class ReaderMotionExperienceTest {
   init { require(android.os.Build.HARDWARE == "ranchu") }
   private val i get() = InstrumentationRegistry.getInstrumentation()
+  private val title get()=InstrumentationRegistry.getArguments().getString("noteTitle") ?: "R2 Rich reading"
   private val d get() = UiDevice.getInstance(i)
   private fun tap(label:String) { var n=d.wait(Until.findObject(By.desc(label).enabled(true)),3000);if(n==null)n=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.desc(label).enabled(true)));assertNotNull(label,n);n!!.click();Thread.sleep(450) }
   private fun launch() {
@@ -44,8 +45,8 @@ class ReaderMotionExperienceTest {
     assertTrue(d.wait(Until.gone(By.text("Source management")),5000))
     tap("Library")
     val input=d.wait(Until.findObject(By.desc("Search resources")),10000)
-    input.text="R2 Rich reading";Thread.sleep(800)
-    val row=d.wait(Until.findObject(By.desc("R2 Rich reading, Note")),10000);assertNotNull(row)
+    input.text=title;Thread.sleep(800)
+    val row=d.wait(Until.findObject(By.desc("$title, Note")),10000);assertNotNull(row)
     val center=row!!.visibleCenter
     // Native bounds sampled without UI-idle waits certify actual intermediate geometry.
     val heights=mutableSetOf<Int>();d.click(center.x,center.y)
@@ -62,9 +63,9 @@ class ReaderMotionExperienceTest {
     assertSame(retained,web());assertEquals("true",js(retained,"window.__batch1Node===document.querySelector('p')"))
     assertEquals(scroll,js(retained,"window.scrollY").toDouble(),3.0);frame("reader")
     tap("Back")
-    assertEquals("R2 Rich reading",d.wait(Until.findObject(By.desc("Search resources")),10000).text)
+    assertEquals(title,d.wait(Until.findObject(By.desc("Search resources")),10000).text)
     assertSame(retained,web());frame("return")
-    tap("R2 Rich reading, Note")
+    tap("$title, Note")
     assertTrue(d.wait(Until.hasObject(By.desc("Reading appearance")),10000));assertSame(retained,web())
     assertEquals(scroll,js(retained,"window.scrollY").toDouble(),3.0)
     tap("Reading appearance");tap("Settings")

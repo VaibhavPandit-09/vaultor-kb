@@ -47,6 +47,7 @@ import {
 } from './ResourceMotion';
 import { sourceChoices } from './sourceChoices';
 import ReviewDestination from './ReviewDestination';
+import { useReviewSync } from './useReviewSync';
 import { BrowseMemory, navigationLayout } from './navigationPresentation';
 import BrowseScreen, { Action, ChoiceSheet } from './BrowseScreen';
 import ResourcePreview from './ResourcePreview';
@@ -73,6 +74,7 @@ async function permission(interactive = true) {
 export default function WorkspaceScreen() {
   const { reduced, preferences } = useReading();
   const s = useThemeStyles(styles);
+  const reviewSync = useReviewSync();
   const model = useRef(
     new MobileWorkspace({
       storage: (a, v = {}) => parse(native.storage(a, JSON.stringify(v))),
@@ -503,6 +505,7 @@ export default function WorkspaceScreen() {
         await refreshDownloads();
       },
       reconcile: () => model.changedFeed(),
+      reviews: reviewSync.refresh,
       error: e => {
         if (!model.snapshot().downloaded) model.report(e);
       },
@@ -541,6 +544,7 @@ export default function WorkspaceScreen() {
     state.host,
     state.localOnly,
     refreshDownloads,
+    reviewSync.refresh,
   ]);
   const select = (destination: RootDestination, search = false) => {
     closeUtilities();
@@ -1086,7 +1090,10 @@ export default function WorkspaceScreen() {
             ) : null}
             {reviewing ? (
               <ReviewDestination
-                revision={reviewRevision}
+                revision={reviewRevision + reviewSync.revision}
+                syncing={reviewSync.busy}
+                syncError={reviewSync.error}
+                sync={reviewSync.sync}
                 open={initialId => setCaptureRequest({ initialId })}
               />
             ) : null}

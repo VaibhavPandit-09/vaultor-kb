@@ -67,6 +67,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [Android Review delivery/status](android/REVIEW-SYNC.md): A4 native ownership, exact-source retries, durable receipts and desktop triage.
 - [Consolidated R6 completion](android/R6-COMPLETION.md): authorized Batch1 usability/motion then A4, branch audit, state boundaries and validation checkpoints.
 
 - [Genuine Review capture haptic trace](android/HAPTIC-CAPTURE-TRACE.md): development-only bounded diagnostics, sanitized copy, Samsung keyboard A/B procedure and interpretation.
@@ -142,7 +143,7 @@ Keep CODEBASE and this index at the docs root for agent discovery. Put topic gui
 - [Android reader context](android/READER-CONTEXT.md) — A2 stable reading edge, contextual controls, media and platform Back.
 - [Android alpha.14 release evidence](android/releases/0.1.0-alpha.14.md) — A2 review candidate and actual installed checks.
 
-- [Android Review capture](android/REVIEW-CAPTURE.md) — A3 source-bound protected capture/local queue; upload/status stays A4.
+- [Android Review capture](android/REVIEW-CAPTURE.md) — source-bound protected capture/local queue.
 - [Android alpha.15](android/releases/0.1.0-alpha.15.md) — actual A3 installed/publication evidence.
 
 - [Android motion/haptic remediation](android/MOTION-HAPTIC-REMEDIATION.md) — shipped A0–A3 inventory, rejected S24 acceptance, candidate changes and real-device script; A4 blocked.
