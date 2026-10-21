@@ -68,6 +68,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 ## Android — `android/`
 
 - [Android Review delivery/status](android/REVIEW-SYNC.md): A4 native ownership, exact-source retries, durable receipts and desktop triage.
+- [Android alpha.22 R6 milestone candidate](android/releases/0.1.0-alpha.22.md): one-step Review completion, automatic foreground delivery, A5 ledger and S24 script; local only.
 - [Android alpha.21 consolidated development candidate](android/releases/0.1.0-alpha.21.md): local APK identity, installed-byte verification and S24 gate; no public release.
 - [Consolidated R6 completion](android/R6-COMPLETION.md): authorized Batch1 usability/motion then A4, branch audit, state boundaries and validation checkpoints.
 

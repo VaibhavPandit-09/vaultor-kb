@@ -8,6 +8,8 @@ release, R7, master integration, new UI framework or haptic-engine expansion.
 
 ## Alpha.22 completion sprint (current)
 
+[Alpha.22 ledger](releases/0.1.0-alpha.22.md) owns current verification, artifact and the single S24 acceptance script.
+
 Alpha.21 UI is accepted as the foundation. This sprint corrects Review completion
 and finishes A5 engineering without a redesign. R5 rejects blank comments: Flag
 opens a protected draft; one Create Review durably queues it and initiates native
@@ -207,7 +209,7 @@ fallback. Platform predictive cancellation preserves the current visit; the shar
 return runs on committed Back rather than inventing a speculative destination.
 No R7, public release, master merge or unrelated branch integration.
 
-## Artifact handoff
+## Alpha.21 artifact handoff (historical)
 
 [Alpha.21 identity ledger](releases/0.1.0-alpha.21.md) records the local APK,
 original signer and SHA256. Both pulled installed base.apk files match the staged

@@ -3,7 +3,7 @@
 Current consolidated candidate: **alpha.22/code26** on
 `ai/codex-android-ux-prototypes`. [R6 completion](R6-COMPLETION.md) owns Batch1
 quick Sources/management, contextual Aa, resource-reader motion and A4 verification.
-[Review delivery/status](REVIEW-SYNC.md) owns the native queue contract. Existing
+[Alpha.22 ledger and S24 acceptance](releases/0.1.0-alpha.22.md) owns current completed checks and physical limits. [Review delivery/status](REVIEW-SYNC.md) owns the native queue contract. Existing
 min36/target37, application identity and signer remain. This candidate is local,
 not a public release. Stop for S24 acceptance after delivery; no R7/master merge.
 Alpha.18 ordinary haptics are perceptible per user feedback; no broad remediation.

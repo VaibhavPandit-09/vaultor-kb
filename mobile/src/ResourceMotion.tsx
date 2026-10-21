@@ -293,6 +293,16 @@ export function useResourceMotion(
       progress.stopAnimation();
     };
   }, [progress, reset]);
+  const hasPresentation = !!presentation;
+  useEffect(() => {
+    if (reading || !hasPresentation) return;
+    // A recycled origin or interrupted native callback must never cover browsing.
+    // Navigation already committed; this is only bounded retained-pixel cleanup.
+    const cleanup = setTimeout(() => {
+      if (!latest.current.reading) reset();
+    }, motionDuration('navigation', preferences.motion, reduced) + 240);
+    return () => clearTimeout(cleanup);
+  }, [reading, hasPresentation, preferences.motion, reduced, reset]);
   const area = presentation?.viewport ?? viewport.current;
   const titleTarget: Rect = {
     x: area.x + (rail ? -120 : 56),

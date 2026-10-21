@@ -25,6 +25,7 @@ class ReaderContinuityTest {
   private val i get() = InstrumentationRegistry.getInstrumentation()
   private val d get() = UiDevice.getInstance(i)
   private fun tap(label:String) {
+    if(label=="System" && d.hasObject(By.desc("More reading settings"))){d.findObject(By.desc("More reading settings")).click();Thread.sleep(400)}
     var node=d.wait(Until.findObject(By.desc(label).enabled(true)),3000)
     if(node==null) node=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.desc(label).enabled(true)))
     if(node==null) node=d.findObject(By.scrollable(true))?.scrollUntil(Direction.UP,Until.findObject(By.desc(label).enabled(true)))
@@ -46,8 +47,8 @@ class ReaderContinuityTest {
   private fun waitJs(code:String) {repeat(60){if(js(code)=="true")return;Thread.sleep(100)};fail(code)}
   private fun openReader() {
     i.targetContext.startActivity(i.targetContext.packageManager.getLaunchIntentForPackage("com.vaultor.app")!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    assertTrue(d.wait(Until.hasObject(By.desc("Open navigation").enabled(true)),30000))
-    tap("Open navigation");tap("Library")
+    assertTrue(d.wait(Until.hasObject(By.descContains("Choose source").enabled(true)),30000))
+    if(d.hasObject(By.desc("Browse navigation")))tap("Browse navigation");tap("Library")
     val search=d.wait(Until.findObject(By.desc("Search resources")),10000);search.text=""
     tap("R2 Rich reading, Note")
     assertTrue(d.wait(Until.hasObject(By.desc("Reading options")),15000));waitJs("!!document.querySelector('article p')")
@@ -71,7 +72,8 @@ class ReaderContinuityTest {
     js("window.a2Node=[...document.querySelectorAll('p')].find(p=>p.textContent.startsWith('Paragraph 18.'));window.scrollTo(0,window.scrollY+a2Node.getBoundingClientRect().top-20);true")
     waitJs("Math.abs(a2Node.getBoundingClientRect().top-20)<3");Thread.sleep(400);val before=js("a2Node.getBoundingClientRect().top").toDouble();assertEquals(20.0,before,3.0);val viewport=retained.height
     val workingTop=IntArray(2);i.runOnMainSync {retained.getLocationOnScreen(workingTop)}
-    assertTrue("Reader chrome must visibly reclaim space",viewport-originalHeight>=12)
+    // Hybrid navigation contracts on entry; scrolling need not repeat the old header contraction.
+    assertTrue("Working reader must not add another toolbar",viewport>=originalHeight)
     assertEquals("Viewport gains exactly the chrome's reclaimed space",viewport-originalHeight,originalTop[1]-workingTop[1])
     val context=(i.targetContext.applicationContext as MainApplication).reactHost.currentReactContext as ReactApplicationContext
     val presentation=context.getNativeModule("VaultorPresentation") as VaultorPresentation

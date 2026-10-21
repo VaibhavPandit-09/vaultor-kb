@@ -79,6 +79,14 @@ class R6MilestoneTest {
     waitSynced(frozen.getString("id"));assertTrue(d.wait(Until.hasObject(By.textContains("Synced · Open on desktop")),10000));assertEquals("draft",get(unfinished.getString("id")).getString("state"));tap("Done")
     assertSame(retained,web());assertEquals("true",js("window.__r6Node===document.querySelector('article p')"))
   }
+  @Test fun captureAccessibilitySemantics() {
+    reader();flag();assertFalse(d.hasObject(By.desc("Dismiss")))
+    val create=d.findObject(By.desc("Create Review"));assertNotNull(create);assertTrue(create.isClickable);assertFalse(create.isEnabled)
+    val input=d.findObject(By.desc("Review comment"));assertNotNull(input);assertEquals("android.widget.EditText",input.className)
+    write("R6 accessible unfinished draft");var quiet=false
+    i.runOnMainSync {fun visit(v:View){if(v is android.widget.TextView && v.text.toString().startsWith("Draft protected on this phone")){assertEquals(View.ACCESSIBILITY_LIVE_REGION_NONE,v.accessibilityLiveRegion);quiet=true};if(v is ViewGroup)for(n in 0 until v.childCount)visit(v.getChildAt(n))};WindowInspector.getGlobalWindowViews().forEach(::visit)}
+    assertTrue("Draft counter must not announce every keystroke",quiet);assertTrue(d.findObject(By.desc("Create Review")).isEnabled);assertTrue(d.hasObject(By.desc("Keep draft")));tap("Keep draft");assertEquals("draft",saved("R6 accessible unfinished draft").getString("state"))
+  }
   @Test fun offlineCreateAndDieAfterDurableQueue() {
     reader();js("window.scrollTo(0,500);true");Thread.sleep(700);remember("scroll",js("window.scrollY").toDouble());Log.i("VaultorR6Test","R6_WAIT_OFFLINE")
     var offline=false;repeat(120){if(!offline){try{module().reviewRequest(meta(),"/access/host");Thread.sleep(500)}catch(_:Exception){offline=true}}};assertTrue("Remove only the explicit emulator reverse mapping",offline)

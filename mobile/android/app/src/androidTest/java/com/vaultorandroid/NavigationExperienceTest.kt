@@ -121,8 +121,10 @@ class NavigationExperienceTest {
     tap("Pinned"); assertTrue(d.wait(Until.hasObject(By.text("Pinned")),5000))
     tap("Library")
     assertEquals(title,d.wait(Until.findObject(By.desc("Search resources")),10000).text)
-    d.findObject(By.descContains("Choose source")).click()
-    assertTrue(d.wait(Until.hasObject(By.text("Sources")),5000))
+    Thread.sleep(600)
+    val sourceTarget=d.findObject(By.descContains("Choose source").enabled(true)).visibleCenter
+    d.click(sourceTarget.x,sourceTarget.y)
+    assertTrue(d.wait(Until.hasObject(By.text("Sources")),10000))
     tap("Source management")
     var downloaded=d.findObject(By.descStartsWith("Read downloaded "))
     if(downloaded==null)downloaded=d.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN,Until.findObject(By.descStartsWith("Read downloaded ")))

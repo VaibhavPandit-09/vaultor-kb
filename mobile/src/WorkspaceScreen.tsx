@@ -1072,7 +1072,12 @@ export default function WorkspaceScreen() {
                     s.hidden,
                 ]}
                 importantForAccessibility={
-                  more || utilities || hosts || recovery || state.preview
+                  !reading ||
+                  more ||
+                  utilities ||
+                  hosts ||
+                  recovery ||
+                  state.preview
                     ? 'no-hide-descendants'
                     : 'auto'
                 }

@@ -454,6 +454,14 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 
 ## Change checklist and maintenance history
 
+### 2026-10-21 — R6 A5 interrupted-reader cleanup
+
+Native regression exposed retained reader pixels covering Library after a Settings/
+Pinned round trip. Browsing now has bounded presentation cleanup independent of
+animation callbacks, and hidden reader ancestry relinquishes accessibility ownership.
+Two focused lifecycle cases simulate lost callbacks and interrupted return; both pass.
+No new motion or document/list remount is introduced. Full installed reruns follow.
+
 ### 2026-10-21 — R6 completion engineering checkpoint
 
 Replaced ambiguous draft Done/separate Save with Create Review and Keep draft.
