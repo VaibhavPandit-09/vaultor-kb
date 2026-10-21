@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-10-19. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-10-21. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -106,7 +106,12 @@ mark, moves Sources beside Home/Library headings and into focused reader context
 and removes active-source scope from global Review. Library shares count/Resume
 and uses concise named membership metadata. Existing virtualized browsing/state and
 protected journal semantics remain unchanged. No public release or subjective visual
-approval; Prototype 2/3 and A4 remain unauthorized.
+approval of visual execution remains user-owned. On2026-10-21 the user accepted
+the navigation foundation and authorized consolidated Batch1 source/settings/resource
+motion plus A4 completion. [Current completion scope](android/R6-COMPLETION.md) owns
+checkpoints and exact branch audit. Quick Sources now separates selection from full
+management; reader Aa exposes existing theme/size/spacing and advanced preferences.
+The native journal, source checks and haptic engine are unchanged in this first slice.
 
 ## Repository and source map
 
@@ -422,6 +427,15 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 - Build reports a large JS chunk and an outdated Browserslist dataset; these do not prevent packaging. Chunk splitting remains performance work.
 
 ## Change checklist and maintenance history
+
+### 2026-10-21 — Consolidated R6 source/settings slice
+
+Verified prototype ancestry/master and documentation-only R6 divergence. Added quick
+source selection separate from preserved connection management, Settings entry and
+reader Aa using existing preferences/anchor behavior. TypeScript and focused source/
+reading Jest pass; Android runtime checks follow in Batch1 before A4. No domain,
+transport, journal/schema, effect or dependency change; no new APK at this checkpoint.
+
 
 ### 2026-10-19 — Prototype 1 refinement after S24 feedback
 

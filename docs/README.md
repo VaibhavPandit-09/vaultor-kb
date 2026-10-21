@@ -67,6 +67,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [Consolidated R6 completion](android/R6-COMPLETION.md): authorized Batch1 usability/motion then A4, branch audit, state boundaries and validation checkpoints.
+
 - [Genuine Review capture haptic trace](android/HAPTIC-CAPTURE-TRACE.md): development-only bounded diagnostics, sanitized copy, Samsung keyboard A/B procedure and interpretation.
 
 - [Android interaction foundations](android/INTERACTION-FOUNDATIONS.md): A0 motion, semantic haptics, coordinated theme/bar foundation and physical review boundary.

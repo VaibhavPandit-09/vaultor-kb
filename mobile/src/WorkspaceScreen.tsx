@@ -40,6 +40,7 @@ import { QuickAccess, type RootDestination } from './navigation';
 import { HomeScreen } from './NavigationSurface';
 import NavigationFolio from './NavigationFolio';
 import SourceContext from './SourceContext';
+import { sourceChoices } from './sourceChoices';
 import ReviewDestination from './ReviewDestination';
 import { BrowseMemory, navigationLayout } from './navigationPresentation';
 import BrowseScreen, { Action, ChoiceSheet } from './BrowseScreen';
@@ -321,6 +322,7 @@ export default function WorkspaceScreen() {
     setNavigationDisclosed(false);
     if (!state.host) setReviewing(false);
     setSourceClosing(false);
+    setManageConnections(false);
     setHosts(true);
   };
   const keyboard = useRef(false);
@@ -696,12 +698,6 @@ export default function WorkspaceScreen() {
           />
         </View>
       ))}
-      <Action
-        label={
-          manageConnections || hostView ? 'Connections' : 'Manage connections'
-        }
-        onPress={() => setManageConnections(v => !v)}
-      />
       {manageConnections || hostView ? (
         <>
           {state.hosts.map(h => (
@@ -806,9 +802,71 @@ export default function WorkspaceScreen() {
       />
       <Action
         label="Appearance & reading"
-        onPress={() => setAppearance(true)}
+        onPress={() => {
+          setHosts(false);
+          setAppearance(true);
+        }}
       />
-      <Action label="Offline downloads" onPress={() => setDownloads(true)} />
+      <Action
+        label="Offline downloads"
+        onPress={() => {
+          setHosts(false);
+          setDownloads(true);
+        }}
+      />
+    </ScrollView>
+  );
+  const choices = sourceChoices(state, sourceJobs, source.workspace);
+  const quickSources = (
+    <ScrollView
+      contentContainerStyle={s.page}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View ref={sourceRoot} collapsable={false}>
+        {sourceError ? (
+          <Text accessibilityRole="alert" style={s.error}>
+            {sourceError}
+          </Text>
+        ) : null}
+        {choices.map(choice => (
+          <Action
+            key={choice.key}
+            label={`${choice.name}${choice.current ? ' · Current' : ''}\n${
+              choice.status
+            }`}
+            accessibilityLabel={`${choice.name}. ${choice.status}${
+              choice.current ? '. Current source' : '. Choose source'
+            }`}
+            active={choice.current}
+            disabled={state.busy || choice.locked || choice.current}
+            onPress={() =>
+              activateSource(
+                async () => {
+                  if (choice.scope) await model.openCompanion(choice.scope);
+                  else {
+                    await permission();
+                    if (choice.hostId !== state.host?.hostId)
+                      await model.switchHost(choice.hostId, true);
+                    else await model.switchWorkspace(choice.workspaceId!, true);
+                  }
+                },
+                choice.scope
+                  ? { scope: choice.scope }
+                  : { hostId: choice.hostId, workspaceId: choice.workspaceId },
+              )
+            }
+          />
+        ))}
+        {choices.length < 2 ? (
+          <Text style={s.secondary}>
+            Your reading source. Add or manage connections in Source management.
+          </Text>
+        ) : null}
+      </View>
+      <Action
+        label="Source management"
+        onPress={() => setManageConnections(true)}
+      />
     </ScrollView>
   );
   return (
@@ -838,8 +896,8 @@ export default function WorkspaceScreen() {
                 />
               ) : null}
               <Action
-                label="•••"
-                accessibilityLabel="Vaultor options"
+                label="⚙"
+                accessibilityLabel="Settings"
                 onPress={() => setUtilities(true)}
               />
             </View>
@@ -929,6 +987,7 @@ export default function WorkspaceScreen() {
                 >
                   <ReaderView
                     model={model}
+                    settings={() => setUtilities(true)}
                     panel={readerPanel}
                     closePanel={() => setReaderPanel(undefined)}
                     reduced={reduced}
@@ -951,6 +1010,7 @@ export default function WorkspaceScreen() {
           current={
             reviewing ? 'review' : state.view === 'home' ? 'home' : 'library'
           }
+          appearance={() => setReaderPanel('appearance')}
           title={state.note?.title || 'Reader'}
           workspace={source.workspace}
           availability={source.availability}
@@ -1056,7 +1116,7 @@ export default function WorkspaceScreen() {
       ) : null}
       {hosts && !hostView && initialized && !recovery ? (
         <ContextSheet
-          title="Sources"
+          title={manageConnections ? 'Source management' : 'Sources'}
           close={closeSources}
           motion="navigation"
           dismissing={sourceClosing}
@@ -1070,11 +1130,11 @@ export default function WorkspaceScreen() {
             if (tag) AccessibilityInfo.setAccessibilityFocus(tag);
           }}
         >
-          {sourceContent}
+          {manageConnections ? sourceContent : quickSources}
         </ContextSheet>
       ) : null}
       {utilities ? (
-        <ContextSheet title="Vaultor options" close={closeUtilities}>
+        <ContextSheet title="Settings & tools" close={closeUtilities}>
           <ScrollView contentContainerStyle={s.page}>
             {state.host ? (
               <>
@@ -1108,6 +1168,14 @@ export default function WorkspaceScreen() {
               onPress={() => {
                 closeUtilities();
                 openSources();
+              }}
+            />
+            <Action
+              label="Source management"
+              onPress={() => {
+                closeUtilities();
+                openSources();
+                setManageConnections(true);
               }}
             />
             <Action
@@ -1169,7 +1237,7 @@ export default function WorkspaceScreen() {
               { value: 'downloads', label: 'Download for offline' },
               { value: 'journey', label: 'Reading journey' },
               { value: 'refresh', label: 'Refresh saved note' },
-              { value: 'utilities', label: 'Vaultor options' },
+              { value: 'utilities', label: 'Settings' },
               { value: 'recovery', label: 'Legacy recovery' },
             ]}
             onChoose={v => {

@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   NativeModules,
   findNodeHandle,
+  Keyboard,
 } from 'react-native';
 import {
   SafeAreaView,
@@ -52,13 +53,37 @@ function ReadingNumber({
     />
   );
 }
-export default function ReadingControls({ close }: { close: () => void }) {
+export default function ReadingControls({
+  close,
+  compact = false,
+  settings,
+}: {
+  close: () => void;
+  compact?: boolean;
+  settings?: () => void;
+}) {
   const s = useThemeStyles(styles),
     { preferences: p, update, error, retry, chooseTheme } = useReading();
   const root = useRef<React.ElementRef<typeof View>>(null),
     insets = useSafeAreaInsets(),
     light = useAppearance() === 'light';
-  const [shown, setShown] = useState(false);
+  const [shown, setShown] = useState(false),
+    [advanced, setAdvanced] = useState(!compact);
+  const ime = useRef(false),
+    hiddenAt = useRef(-Infinity);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => {
+      ime.current = true;
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      ime.current = false;
+      hiddenAt.current = Date.now();
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
   useEffect(() => {
     NativeModules.VaultorPresentation?.systemBars(
       light,
@@ -109,7 +134,13 @@ export default function ReadingControls({ close }: { close: () => void }) {
       statusBarTranslucent
       navigationBarTranslucent
       animationType="none"
-      onRequestClose={close}
+      onRequestClose={() => {
+        if (ime.current || Keyboard.isVisible()) {
+          Keyboard.dismiss();
+          return;
+        }
+        close();
+      }}
       onShow={() => setShown(true)}
     >
       <KeyboardAvoidingView behavior="height" style={s.full}>
@@ -159,90 +190,12 @@ export default function ReadingControls({ close }: { close: () => void }) {
                     />
                   ))}
                 </View>
-                <Text style={s.label}>Accent</Text>
-                <View style={s.choices}>
-                  {(['blue', 'violet', 'mint', 'amber'] as const).map(
-                    accent => (
-                      <Action
-                        key={accent}
-                        label={accent[0].toUpperCase() + accent.slice(1)}
-                        active={p.accent === accent}
-                        onPress={() => {
-                          if (accent !== p.accent) update({ accent });
-                        }}
-                      />
-                    ),
-                  )}
-                </View>
                 {number('Text size', p.size, 14, 28, 1, size =>
                   update({ size }),
                 )}
                 {number('Line spacing', p.spacing, 1.4, 2.2, 0.1, spacing =>
                   update({ spacing }),
                 )}
-                {number('Reading width', p.measure, 320, 800, 40, measure =>
-                  update({ measure }),
-                )}
-                <Text style={s.muted}>
-                  Size also respects the system font scale. Width is a maximum;
-                  small windows fit automatically.
-                </Text>
-                <Text style={s.label}>Transitions</Text>
-                <View style={s.choices}>
-                  {(['snappy', 'smooth'] as const).map(motion => (
-                    <Action
-                      key={motion}
-                      label={motion === 'smooth' ? 'Smooth' : 'Snappy'}
-                      active={p.motion === motion}
-                      onPress={() => update({ motion })}
-                    />
-                  ))}
-                </View>
-                <Text style={s.muted}>
-                  Reduced motion always takes priority.
-                </Text>
-                <Text style={s.label}>Touch feedback</Text>
-                <View style={s.choices}>
-                  <Action
-                    label="System"
-                    active={p.haptics === 'system'}
-                    onPress={() => update({ haptics: 'system' })}
-                  />
-                  <Action
-                    label="Off"
-                    active={p.haptics === 'off'}
-                    onPress={() => update({ haptics: 'off' })}
-                  />
-                </View>
-                <Text style={s.muted}>
-                  Follows Android touch-feedback settings. Ordinary reading and
-                  background changes stay silent.
-                </Text>
-                <FeedbackPreview />
-                <Text style={s.label}>Capture tactile profile</Text>
-                <View style={s.choices}>
-                  {(['clear', 'platform', 'expressive'] as const).map(
-                    richHaptics => (
-                      <Action
-                        key={richHaptics}
-                        label={
-                          richHaptics === 'clear'
-                            ? 'Clear clicks'
-                            : richHaptics === 'platform'
-                            ? 'Platform fallback'
-                            : 'Expressive if supported'
-                        }
-                        active={p.richHaptics === richHaptics}
-                        onPress={() => update({ richHaptics })}
-                      />
-                    ),
-                  )}
-                </View>
-                <Text style={s.muted}>
-                  Use Platform fallback if custom capture feedback is weak on
-                  this device. System and app touch settings always apply.
-                </Text>
-                <DevelopmentFeedbackPanel />
                 {error ? (
                   <View>
                     <Text accessibilityRole="alert" style={s.error}>
@@ -251,20 +204,112 @@ export default function ReadingControls({ close }: { close: () => void }) {
                     <Action label="Retry saving preferences" onPress={retry} />
                   </View>
                 ) : null}
-                <Action
-                  label="Reset reading appearance"
-                  onPress={() =>
-                    update({
-                      theme: 'os',
-                      accent: 'blue',
-                      size: 18,
-                      spacing: 1.75,
-                      measure: 660,
-                      motion: 'smooth',
-                      haptics: 'system',
-                    })
-                  }
-                />
+                {!advanced ? (
+                  <Action
+                    label="More reading settings"
+                    onPress={() => setAdvanced(true)}
+                  />
+                ) : null}
+                {settings ? (
+                  <Action label="Settings" onPress={settings} />
+                ) : null}
+                {advanced ? (
+                  <>
+                    <Text style={s.label}>Accent</Text>
+                    <View style={s.choices}>
+                      {(['blue', 'violet', 'mint', 'amber'] as const).map(
+                        accent => (
+                          <Action
+                            key={accent}
+                            label={accent[0].toUpperCase() + accent.slice(1)}
+                            active={p.accent === accent}
+                            onPress={() => {
+                              if (accent !== p.accent) update({ accent });
+                            }}
+                          />
+                        ),
+                      )}
+                    </View>
+                    {number('Reading width', p.measure, 320, 800, 40, measure =>
+                      update({ measure }),
+                    )}
+                    <Text style={s.muted}>
+                      Size also respects the system font scale. Width is a
+                      maximum; small windows fit automatically.
+                    </Text>
+                    <Text style={s.label}>Transitions</Text>
+                    <View style={s.choices}>
+                      {(['snappy', 'smooth'] as const).map(motion => (
+                        <Action
+                          key={motion}
+                          label={motion === 'smooth' ? 'Smooth' : 'Snappy'}
+                          active={p.motion === motion}
+                          onPress={() => update({ motion })}
+                        />
+                      ))}
+                    </View>
+                    <Text style={s.muted}>
+                      Reduced motion always takes priority.
+                    </Text>
+                    <Text style={s.label}>Touch feedback</Text>
+                    <View style={s.choices}>
+                      <Action
+                        label="System"
+                        active={p.haptics === 'system'}
+                        onPress={() => update({ haptics: 'system' })}
+                      />
+                      <Action
+                        label="Off"
+                        active={p.haptics === 'off'}
+                        onPress={() => update({ haptics: 'off' })}
+                      />
+                    </View>
+                    <Text style={s.muted}>
+                      Follows Android touch-feedback settings. Ordinary reading
+                      and background changes stay silent.
+                    </Text>
+                    <FeedbackPreview />
+                    <Text style={s.label}>Capture tactile profile</Text>
+                    <View style={s.choices}>
+                      {(['clear', 'platform', 'expressive'] as const).map(
+                        richHaptics => (
+                          <Action
+                            key={richHaptics}
+                            label={
+                              richHaptics === 'clear'
+                                ? 'Clear clicks'
+                                : richHaptics === 'platform'
+                                ? 'Platform fallback'
+                                : 'Expressive if supported'
+                            }
+                            active={p.richHaptics === richHaptics}
+                            onPress={() => update({ richHaptics })}
+                          />
+                        ),
+                      )}
+                    </View>
+                    <Text style={s.muted}>
+                      Use Platform fallback if custom capture feedback is weak
+                      on this device. System and app touch settings always
+                      apply.
+                    </Text>
+                    <DevelopmentFeedbackPanel />
+                    <Action
+                      label="Reset reading appearance"
+                      onPress={() =>
+                        update({
+                          theme: 'os',
+                          accent: 'blue',
+                          size: 18,
+                          spacing: 1.75,
+                          measure: 660,
+                          motion: 'smooth',
+                          haptics: 'system',
+                        })
+                      }
+                    />
+                  </>
+                ) : null}
               </ScrollView>
             </View>
           </MotionSheet>

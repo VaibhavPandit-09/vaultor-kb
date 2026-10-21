@@ -36,6 +36,7 @@ export default function ReaderView({
   reduced,
   onScroll,
   capture,
+  settings,
 }: {
   model: MobileWorkspace;
   panel: ReaderPanel;
@@ -43,6 +44,7 @@ export default function ReaderView({
   reduced: boolean;
   onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   capture: (evidence: Evidence) => void;
+  settings: () => void;
 }) {
   const state = model.snapshot(),
     web = useRef<WebView<{}>>(null),
@@ -520,7 +522,16 @@ export default function ReaderView({
             }}
           />
         ) : null}
-        {panel === 'appearance' ? <ReadingControls close={close} /> : null}
+        {panel === 'appearance' ? (
+          <ReadingControls
+            compact
+            close={close}
+            settings={() => {
+              close();
+              settings();
+            }}
+          />
+        ) : null}
       </View>
     </View>
   );

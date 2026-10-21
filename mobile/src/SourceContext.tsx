@@ -11,6 +11,7 @@ export default function SourceContext({
   open,
   sourceRef,
   landing,
+  switchable = true,
 }: {
   workspace: string;
   availability: string;
@@ -19,6 +20,7 @@ export default function SourceContext({
   open(): void;
   sourceRef?: React.RefObject<React.ElementRef<typeof View> | null>;
   landing: Animated.Value;
+  switchable?: boolean;
 }) {
   const p = usePalette();
   const status =
@@ -74,7 +76,7 @@ export default function SourceContext({
             </Text>
           ) : null}
         </View>
-        {!title && (
+        {!title && switchable && (
           <Text
             importantForAccessibility="no"
             style={[s.chevron, { color: p.muted }]}

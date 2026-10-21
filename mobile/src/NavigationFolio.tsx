@@ -63,6 +63,7 @@ export default function NavigationFolio({
   select,
   sources,
   more,
+  appearance,
   back,
   sourceRef,
   landing,
@@ -78,6 +79,7 @@ export default function NavigationFolio({
   select(d: PrimaryDestination): void;
   sources(): void;
   more(): void;
+  appearance(): void;
   back(): void;
   sourceRef: React.RefObject<React.ElementRef<typeof View> | null>;
   landing: Animated.Value;
@@ -292,6 +294,14 @@ export default function NavigationFolio({
             style={s.button}
           >
             <Text style={[s.disclosure, { color: p.secondary }]}>⌃</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Reading appearance"
+            onPress={appearance}
+            style={s.button}
+          >
+            <Text style={[s.more, { color: p.text }]}>Aa</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
