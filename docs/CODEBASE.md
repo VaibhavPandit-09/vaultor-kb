@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-10-21. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-10-22. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -392,6 +392,10 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 - Build reports a large JS chunk and an outdated Browserslist dataset; these do not prevent packaging. Chunk splitting remains performance work.
 
 ## Change checklist and maintenance history
+
+### 2026-10-22 — R6 master merge and production milestone qualification
+
+Authorized finalization merges validated21ac91a into master as5b0b639 with identical tree and preserved history. Preparing alpha.23/code27, original package/signer and diagnostics disabled, following the existing Android prerelease policy. Backend transfer-status test retries only maintenance409; native production diagnostics rejection gains focused coverage. No new product/architecture or desktop dependency/API/schema change. Mobile TypeScript/104Jest/reader checks pass; final backend/frontend/Electron and signed install-over/host-mobile qualification follow in [alpha.23](android/releases/0.1.0-alpha.23.md). Physical/Mac limitations remain explicit; no R7 work.
 
 ### 2026-10-21 — Unified R6 integration and verification
 

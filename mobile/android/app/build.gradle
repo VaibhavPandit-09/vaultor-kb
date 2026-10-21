@@ -92,8 +92,8 @@ android {
         applicationId "com.vaultor.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 26
-        versionName "0.1.0-alpha.22"
+        versionCode 27
+        versionName "0.1.0-alpha.23"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Explicit acceptance builds only. Ordinary release/debug default false.
         def diagnostics = providers.gradleProperty("vaultorDiagnostics").orElse("false").get() == "true"

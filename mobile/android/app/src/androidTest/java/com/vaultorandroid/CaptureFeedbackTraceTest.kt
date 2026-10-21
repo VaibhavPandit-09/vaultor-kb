@@ -8,6 +8,24 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class CaptureFeedbackTraceTest {
+  @Test fun ordinaryNativeBuildRejectsDiagnostics() {
+    org.junit.Assume.assumeFalse(BuildConfig.VAULTOR_DIAGNOSTICS)
+    val context=androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+    assertEquals("com.vaultor.app",context.packageName)
+    assertEquals(0,context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)
+    val port=VaultorPresentation(BridgeReactContext(context))
+    assertEquals(false,port.getConstants()["developmentDiagnostics"])
+    fun refused(call:(com.facebook.react.bridge.PromiseImpl)->Unit) {
+      val done=java.util.concurrent.CountDownLatch(1);var error="";var resolved=false
+      call(com.facebook.react.bridge.PromiseImpl(com.facebook.react.bridge.Callback{resolved=true;done.countDown()},com.facebook.react.bridge.Callback{error=it[0].toString();done.countDown()}))
+      assertTrue(done.await(10,java.util.concurrent.TimeUnit.SECONDS));assertFalse(resolved);assertTrue(error.contains("DEVELOPMENT_ONLY"))
+    }
+    for(action in listOf("arm","read","copy","clear"))refused{port.captureTrace(action,it)}
+    refused{port.captureTraceRecord("test","durable_save","{}",0.0,it)}
+    refused{port.feedbackTraced("complete","REVIEW_CAPTURED",0.0,"release-test","test",it)}
+    port.invalidate()
+  }
+
   @Test fun bridgeRecordsRejectionWithoutRequestingPlayback() {
     val context=androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
     val port=VaultorPresentation(BridgeReactContext(context))

@@ -67,6 +67,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [Android alpha.23 R6 milestone](android/releases/0.1.0-alpha.23.md): production prerelease qualification, compatibility, install-over and physical limits.
+
 - [R6 integration and verification](plans/R6-INTEGRATION.md): exact fetched branches, original R6 delta, conflict resolutions, fresh regression evidence and the stop before master.
 
 - [Android Review delivery/status](android/REVIEW-SYNC.md): A4 native ownership, exact-source retries, durable receipts and desktop triage.
