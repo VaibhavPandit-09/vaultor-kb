@@ -11,7 +11,7 @@ beforeEach(()=>{vi.stubGlobal('ResizeObserver',class{observe(){} disconnect(){}}
 afterEach(()=>{cleanup();vi.resetAllMocks();vi.unstubAllGlobals();});
 it('uses one mixed pin query and filters server paging while preserving title search',async()=>{
  vi.mocked(api.get).mockImplementation(async (_url,options)=>{
-  const kind=options?.params?.kind;
+  const kind=(options?.params as {kind?:string}|undefined)?.kind;
   return {data:{appliedKind:kind??'all',items:kind==='file'?[{id:'f',kind:'file',name:'File title',count:0}]:[{id:'c',kind:'collection',name:'Atlas',count:2},{id:'f',kind:'file',name:'File title',count:0},{id:'n',kind:'note',name:'Note title',count:0}],totalItems:kind==='file'?1:3,totalPages:1,page:0}};
  });
  render(<EscapeManagerProvider><PinnedList onResource={()=>{}} onCollection={()=>{}}/></EscapeManagerProvider>);
@@ -35,7 +35,7 @@ it('refuses an unacknowledged filter from an older server instead of broadening 
 });
 
 it('keeps Collections search, page and scroll when hidden, with one reachable pager',async()=>{
- vi.mocked(api.get).mockImplementation(async (_url,options)=>{const page=options?.params?.page??0;return {data:{items:[{id:'c'+page,name:'Collection '+page,count:0}],totalItems:205,totalPages:3,page}};});
+ vi.mocked(api.get).mockImplementation(async (_url,options)=>{const page=(options?.params as {page?:number}|undefined)?.page??0;return {data:{items:[{id:'c'+page,name:'Collection '+page,count:0}],totalItems:205,totalPages:3,page}};});
  const props={onOpen:vi.fn()};
  const view=render(<EscapeManagerProvider><CollectionsView {...props}/></EscapeManagerProvider>);
  await screen.findByText('Collection 0');
@@ -55,7 +55,7 @@ it('keeps Collections search, page and scroll when hidden, with one reachable pa
  fireEvent.click(screen.getByText('Collection 1'));expect(props.onOpen).toHaveBeenCalledWith(expect.objectContaining({id:'c1'}));
 });
 it('retains the full Pinned query/page through navigation without changing compact sidebar ownership',async()=>{
- vi.mocked(api.get).mockImplementation(async (_url,options)=>{const page=options?.params?.page??0;return {data:{items:[{id:'c'+page,kind:'collection',name:'Pinned collection '+page,count:2}],totalItems:205,totalPages:3,page}};});
+ vi.mocked(api.get).mockImplementation(async (_url,options)=>{const page=(options?.params as {page?:number}|undefined)?.page??0;return {data:{items:[{id:'c'+page,kind:'collection',name:'Pinned collection '+page,count:2}],totalItems:205,totalPages:3,page}};});
  const props={onResource:vi.fn(),onCollection:vi.fn()};
  const view=render(<EscapeManagerProvider><PinnedList {...props}/></EscapeManagerProvider>);
  await screen.findByText('Pinned collection 0');
