@@ -17,18 +17,25 @@ public class ZipWorkspaceExporter implements WorkspaceExporter {
     @Value("${app.transfer.max-entries}") private int maxEntries;
     public ExporterRegistry.Format format() { return new ExporterRegistry.Format(ExporterRegistry.Scope.workspace,"zip","application/zip","zip"); }
     public void write(TransferService.Workspace workspace,Map<String,Path> binaries,Path destination) throws Exception {
+        writePackage(workspace,binaries,destination,null);
+    }
+    public void writePartial(TransferService.Workspace workspace,Map<String,Path> binaries,Path destination,Object coverage)throws Exception {writePackage(workspace,binaries,destination,coverage);}
+    private void writePackage(TransferService.Workspace workspace,Map<String,Path> binaries,Path destination,Object coverage)throws Exception {
+        byte[] partial=coverage==null?null:mapper.writeValueAsBytes(coverage);
         byte[] data=mapper.writeValueAsBytes(workspace);
         if(data.length>20*1024*1024 || binaries.size()+2>maxEntries) throw new IllegalArgumentException("Workspace exceeds archive entry/JSON limits");
-        long expanded=data.length;for(Path binary:binaries.values()) expanded+=Files.size(binary);
+        long expanded=data.length+(partial==null?0:partial.length);for(Path binary:binaries.values()) expanded+=Files.size(binary);
         if(expanded>maxExpanded) throw new IllegalArgumentException("Workspace exceeds expanded archive limit "+maxExpanded);
         Map<String,String> hashes=new LinkedHashMap<>();hashes.put("workspace.json",hash(new ByteArrayInputStream(data)));
+        if(partial!=null)hashes.put("partial.json",hash(new ByteArrayInputStream(partial)));
         try(var zip=new ZipOutputStream(Files.newOutputStream(destination))) {
+            if(partial!=null){zip.putNextEntry(new ZipEntry("partial.json"));zip.write(partial);zip.closeEntry();}
             zip.putNextEntry(new ZipEntry("workspace.json"));zip.write(data);zip.closeEntry();
             for(var entry:binaries.entrySet()) {
                 try(var input=Files.newInputStream(entry.getValue())) { hashes.put(entry.getKey(),hash(input)); }
                 zip.putNextEntry(new ZipEntry(entry.getKey()));Files.copy(entry.getValue(),zip);zip.closeEntry();
             }
-            byte[] manifest=mapper.writeValueAsBytes(new TransferService.Manifest(5,Instant.now().toString(),workspace.resources().size(),workspace.tags().size(),hashes));
+            byte[] manifest=mapper.writeValueAsBytes(new TransferService.Manifest(partial==null?5:6,Instant.now().toString(),workspace.resources().size(),workspace.tags().size(),hashes));
             if(expanded+manifest.length>maxExpanded) throw new IllegalArgumentException("Workspace exceeds expanded archive limit including manifest");
             zip.putNextEntry(new ZipEntry("manifest.json"));zip.write(manifest);zip.closeEntry();
         }

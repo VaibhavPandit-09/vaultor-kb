@@ -69,6 +69,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [R8 exports and R9 connections/updates](android/EXPORTS-AND-CONNECTIONS.md): current implementation, portable partial format, source/consent boundaries and validation.
+
 - [R7 alpha.24 acceptance ledger](android/releases/0.1.0-alpha.24.md): artifacts, actual faults/upgrade checks, limitations and S24 procedure.
 
 - [Collected imports](android/IMPORTS.md): R7 acceptance candidate; host receipts/provenance/archive5, owner-approved ZIPs and separate protected Android queue.
