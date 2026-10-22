@@ -1,8 +1,8 @@
 # Multi-workspace Vaultor and the Android reading companion
 
-**2026-10-22 consolidation complete:** [R7–R9 integration](R7-R9-INTEGRATION.md) merged non-fast-forward to master63668b0 and published compatible Windows0.16.0/Androidalpha.28. Source-lock security repair passed both APIs. [R10 handoff](R10-HANDOFF.md) is unstarted. Earlier candidate/blocked entries below are historical.
+**2026-10-22 consolidation complete:** [R7–R9 integration](R7-R9-INTEGRATION.md) merged non-fast-forward to master63668b0 and published compatible Windows0.16.0/Androidalpha.28. Source-lock security repair passed both APIs. [R10 candidate](R10-ACCEPTANCE.md) awaits final user acceptance. Earlier candidate/blocked entries below are historical.
 
-Created 2026-10-13; reviewed 2026-10-22. **W1–W3 and R1–R6 are implemented; R6 is integrated on master and published as Android alpha.23/code27 with compatible Windows0.14.0. Physical/Samsung and integrated Mac acceptance remain unclaimed; R7–R9 are integrated on master and published as Windows0.16.0/Androidalpha.28; R10 remains unstarted.** This tracker preserves the original functional intentions and dated execution evidence. The [R7–R10 reconciliation](R7-R10-RECONCILIATION.md) is the current remaining-milestone planning authority, approved by the user; it distinguishes shipped capabilities, gaps and superseded UI suggestions. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **only the milestones explicitly authorized in the implementation call**, then stop for discussion.
+Created 2026-10-13; reviewed 2026-10-22. **W1–W3 and R1–R6 are implemented; R6 is integrated on master and published as Android alpha.23/code27 with compatible Windows0.14.0. Physical/Samsung and integrated Mac acceptance remain unclaimed; R7–R9 are integrated on master and published as Windows0.16.0/Androidalpha.28; R10 engineering candidate awaits final acceptance.** This tracker preserves the original functional intentions and dated execution evidence. The [R7–R10 reconciliation](R7-R10-RECONCILIATION.md) is the current remaining-milestone planning authority, approved by the user; it distinguishes shipped capabilities, gaps and superseded UI suggestions. It supersedes the remaining A8/A9 and editing-led direction in [the original Android tracker](android-plan.md), preserving its published A1–A7 evidence. Planning authorization does not start implementation. Deliver **only the milestones explicitly authorized in the implementation call**, then stop for discussion.
 
 [R6 completion](../android/R6-COMPLETION.md) and the [alpha.23 ledger](../android/releases/0.1.0-alpha.23.md) own completed integration/release evidence; earlier candidate and stop-before-A4/master statements in dated records below are historical. R7 implementation was authorized after reconciliation; [collected imports](../android/IMPORTS.md) and its acceptance ledger own current evidence. Android remains a companion. The original R7–R10 bullets below are retained for comparison; use the reconciliation to extend the current R6 UI rather than rebuilding historical sketches.
 
@@ -53,7 +53,7 @@ W1 owns the exact routes, schema, limits, capability/protocol versions and migra
 | R9 | Companion settings, discovery and verified updates | Android | R8 |
 | R10 | Integration, scale, upgrade and release handoff | All affected targets | All preceding gates |
 
-This table is sequential delivery, not permission to run dependency-independent sprints in parallel. Unstarted milestones require explicit authorization; the latest call authorizes R8 and R9 together. Version numbers are assigned at implementation from actual compatibility, not promised here. Every shipped sprint needs usable verified artifacts; documentation-only work does not.
+This table is sequential delivery, not permission to run dependency-independent sprints in parallel. Unstarted milestones require explicit authorization; R7–R9 are integrated/published and the latest call authorizes R10 engineering, with final acceptance before merge/publication. Version numbers are assigned at implementation from actual compatibility, not promised here. Every shipped sprint needs usable verified artifacts; documentation-only work does not.
 
 ## W1 — Isolated host workspace foundation
 
@@ -182,7 +182,7 @@ Status: **Complete as a development milestone — Android alpha.23/code27 publis
 
 ## R7 — Offline imports and durable collection queue
 
-Status: **Ready for user acceptance on ai/codex-r7-android; unpublished.** See [R7 contracts](../android/IMPORTS.md) and [acceptance ledger](../android/releases/0.1.0-alpha.24.md). Original intentions below remain historical requirements; the approved reconciliation owns UI decisions.
+Status: **Integrated on master and published in Windows0.16.0/Androidalpha.28; prior branch acceptance evidence follows.** See [R7 contracts](../android/IMPORTS.md) and [acceptance ledger](../android/releases/0.1.0-alpha.24.md). Original intentions below remain historical requirements; the approved reconciliation owns UI decisions.
 
 - Android file/photo picker and Share receiver collect supported text, Markdown, PDFs, images and other host-supported files. Text/Markdown become imported notes through host conversion, not mobile editing. Keep original bytes; show unsupported input before dispatch and safe host-preview errors after connection. ZIP workspace imports are queued for **import-as-new** when authorized; no Android replacement/admin flow.
 - Immediately copy permitted content-URI bytes into app-private staging before temporary grants expire; stream large files, enforce advertised/current size limits and a storage budget, reject dangerous archives through host preview. Capture filename/MIME/hash, stable operation identity, source workspace/generation and destination collection before sending. Cold Share without a destination enters a local inbox and asks explicitly; never infer from the next connected host.
@@ -195,7 +195,7 @@ Status: **Ready for user acceptance on ai/codex-r7-android; unpublished.** See [
 
 ## R8 — Android resource and workspace exports
 
-Status: **Implemented as alpha.27/Windows0.16 acceptance candidates; not merged or published.** See [current export contract](../android/EXPORTS-AND-CONNECTIONS.md) and [acceptance ledger](../android/releases/0.1.0-alpha.27.md).
+Status: **Integrated on master and published in Windows0.16.0/Androidalpha.28.** See [current export contract](../android/EXPORTS-AND-CONNECTIONS.md) and [acceptance ledger](../android/releases/0.1.0-alpha.27.md).
 
 - Full workspace ZIP is available only while connected to that workspace's server. Host prepares the authoritative snapshot and Android downloads/verifies/saves/shares it. Offline full export stays disabled with a short explanation even with all content downloaded.
 - Partial export works online/offline for selected/downloaded resources, with clear inventory, included linked-note depth/dependencies, missing originals/targets, review coverage and last-refresh information. Use a versioned portable partial package that desktop import understands; never label it a complete workspace. Cycles/dedup/count/byte/depth limits apply.
@@ -207,7 +207,7 @@ Status: **Implemented as alpha.27/Windows0.16 acceptance candidates; not merged 
 
 ## R9 — Settings, discovery and safe Android updates
 
-Status: **Implemented with R8 as an unpublished acceptance candidate**, explicitly authorized together2026-10-22. Replaces relevant old A8 work; do not resume its editor-related scope.
+Status: **Integrated and published with R8 as Windows0.16.0/Androidalpha.28**, originally authorized together2026-10-22. Replaces relevant old A8 work; do not resume its editor-related scope.
 
 - Flat mobile settings for OS/Light/Dark/OLED, accents, reading size/spacing, Smooth/Snappy/reduced motion, download/storage budgets, sync on metered networks and queue controls. Show This device once; host administration stays desktop. Applicable settings save/retry without nested desktop cards.
 - Workspace selector integrates connected and downloaded companions, explicit manual host address and optional permission-aware discovery. Changed addresses still verify pinned host identity/TLS; changed trust needs enrollment. No automatic public hosting/cloud service.
@@ -218,7 +218,7 @@ Status: **Implemented with R8 as an unpublished acceptance candidate**, explicit
 
 ## R10 — Integration, performance and release handoff
 
-Status: **Not started**.
+Status: **Engineering candidate ready for final user acceptance** on isolated codex/r10-quality from fetched master7b7f4f4. [Consolidated qualification](R10-ACCEPTANCE.md) records fresh measurements/outcomes. Stop for final user acceptance before master merge or publication; no post-R10 development.
 
 - End-to-end: desktop multi-workspace editing, Android connected download, leave LAN/read/search/flag/import, process death, reconnect, exactly-once host outcomes, desktop review resolution, Android refresh, ZIP/partial round trips and independent desktop copy. Include equal IDs across workspaces, grants, replacement, Trash/Restore, missing targets, snapshot expiry and queue cancellation races.
 - Upgrade alpha.7.2 through new milestones without losing approvals, legacy drafts, pending operations or downloaded queues. Test reader rejection/fallback for unsupported structured content; assert there is no general Android note/lifecycle write surface. Refresh cannot clobber local review/import records.

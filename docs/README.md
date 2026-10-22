@@ -2,6 +2,9 @@
 
 Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow guide. Agents also read [AGENTS.md](../AGENTS.md). Keep one authoritative explanation per topic and update the guide in every relevant change.
 
+- [R10 integrated qualification](plans/R10-ACCEPTANCE.md): consolidated engineering candidate, measured evidence, remaining platform/manual acceptance and final merge/publication plan.
+- [R10 Windows0.16.1 candidate](desktop/releases/v0.16.1.md): measured companion-manifest correction, reproduced editor dependency correction, compatibility and unpublished build qualification.
+
 - [R7–R9 integration audit](plans/R7-R9-INTEGRATION.md): fetched ancestry, combined contracts, release-blocking source-lock investigation, actual checks and R10 entry gate.
 
 ## Desktop installation, connections and releases — `desktop/`
@@ -121,7 +124,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
-- [R7–R10 roadmap reconciliation](plans/R7-R10-RECONCILIATION.md): current post-R6 planning authority pending approval; requirement classifications, preserved UI, actionable R7 architecture and product decisions. No implementation authorization.
+- [R7–R10 roadmap reconciliation](plans/R7-R10-RECONCILIATION.md): approved post-R6 planning authority; R7–R9 integrated/published, R10 authorized and awaiting candidate acceptance; preserved UI and requirement classifications.
 
 - [R7 fresh-chat handoff](plans/R7-HANDOFF.md): authoritative R6 master/release, compatibility, remaining acceptance and defined R7 scope.
 
@@ -175,4 +178,4 @@ Keep CODEBASE and this index at the docs root for agent discovery. Put topic gui
 
 - [Integrated Android alpha.28 qualification](android/releases/0.1.0-alpha.28.md)
 
-- [R10 fresh-master handoff (unstarted)](plans/R10-HANDOFF.md)
+- [R10 fresh-master starting handoff](plans/R10-HANDOFF.md): historical entry baseline; current candidate outcomes are in the qualification ledger.

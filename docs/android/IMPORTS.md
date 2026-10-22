@@ -1,6 +1,6 @@
 # Android collected imports — R7
 
-Reviewed 2026-10-22. R7 is incorporated into the authorized R7–R9 consolidation on `integration/r7-r9`. Android alpha.28/code32 and compatible Windows0.16.0 are under final release qualification; see [integration evidence](../plans/R7-R9-INTEGRATION.md). R6 alpha.23 remains the published baseline until publication completes. R10 is unstarted.
+Reviewed 2026-10-22. R7 is integrated on master and published as Android alpha.28/code32 with compatible Windows0.16.0; see [integration evidence](../plans/R7-R9-INTEGRATION.md). [R10 qualification](../plans/R10-ACCEPTANCE.md) is authorized and in progress, with final acceptance required before merge/publication.
 
 ## Authority and host contracts
 
@@ -30,6 +30,6 @@ Pending imports is a Home action, with contextual Library and Settings & tools a
 
 ## Implementation and validation ledger
 
-The host capability/conversion/receipt/provenance slice and native acquisition/staging/delivery/UI slice are implemented. [R7 acceptance ledger](releases/0.1.0-alpha.24.md) owns final artifacts, actual checks, compatibility, limitations and S24 procedure. No public release, master merge or R8 work.
+The host capability/conversion/receipt/provenance slice and native acquisition/staging/delivery/UI slice are implemented. [Integrated alpha.28 ledger](releases/0.1.0-alpha.28.md) owns the published artifacts and final combined qualification. [Historical R7 acceptance ledger](releases/0.1.0-alpha.24.md) retains earlier checks and the S24 procedure; alpha.24 itself was unpublished.
 
 Integration-sensitive files: Resource/lifecycle provenance fields; TransferService/ZipWorkspaceExporter archive5; CollectedZips and owner transfer controls; VaultorModule restricted import transport; MainActivity Share handling; WorkspaceScreen contextual entry. Review journals and original apiFor write restrictions remain separate. CommonMark0.30.0 is the only new host dependency. Native queue schema is version1 and fails closed on unsupported upgrades.

@@ -8,6 +8,7 @@ $dataPath = Join-Path $root 'profile'
 $updatesPath = Join-Path $root 'updates'
 New-Item -ItemType Directory -Path $appPath,$dataPath,$updatesPath -Force | Out-Null
 $links = @(@([Environment]::GetFolderPath('Desktop'),[Environment]::GetFolderPath('Programs')) | ForEach-Object {Join-Path $_ 'Vaultor.lnk'} | Where-Object {Test-Path -LiteralPath $_} | ForEach-Object { $backup=Join-Path $root ([Guid]::NewGuid().ToString()+'.lnk');Copy-Item -LiteralPath $_ -Destination $backup;[PSCustomObject]@{Original=$_;Backup=$backup}})
+$links | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'shortcut-backups.json')
 $target = Join-Path $appPath 'Vaultor.exe'
 $env:VAULTOR_DESKTOP_TEST_DIRECTORY=$dataPath
 $env:VAULTOR_UPDATE_RELAUNCH_CHECK='1'
@@ -40,10 +41,17 @@ try {
     $resolvedRoot=[IO.Path]::GetFullPath($root)
     $resolvedApp=[IO.Path]::GetFullPath($appPath)
     if(-not $resolvedApp.StartsWith($resolvedRoot+[IO.Path]::DirectorySeparatorChar)){throw 'Unexpected test installation target'}
-    Get-Process Vaultor -ErrorAction SilentlyContinue | Where-Object {$_.Path -eq $target} | ForEach-Object {Stop-Process -Id $_.Id}
-    $uninstaller=Join-Path $appPath 'Uninstall Vaultor.exe'
-    if(Test-Path -LiteralPath $uninstaller){$remove=Start-Process -FilePath $uninstaller -ArgumentList '/S' -WindowStyle Hidden -PassThru -Wait;if($remove.ExitCode -ne 0){throw 'Disposable uninstall failed'}}
-    foreach($link in $links){Copy-Item -LiteralPath $link.Backup -Destination $link.Original -Force}
-    Remove-Item Env:\VAULTOR_DESKTOP_TEST_DIRECTORY -ErrorAction SilentlyContinue
-    Remove-Item Env:\VAULTOR_UPDATE_RELAUNCH_CHECK -ErrorAction SilentlyContinue
+    try {
+        Get-Process Vaultor -ErrorAction SilentlyContinue | Where-Object {$_.Path -eq $target} | ForEach-Object {
+            $ownedPid=$_.Id
+            try {Stop-Process -Id $ownedPid -ErrorAction Stop}
+            catch {if(Get-Process -Id $ownedPid -ErrorAction SilentlyContinue){throw}}
+        }
+        $uninstaller=Join-Path $appPath 'Uninstall Vaultor.exe'
+        if(Test-Path -LiteralPath $uninstaller){$remove=Start-Process -FilePath $uninstaller -ArgumentList '/S' -WindowStyle Hidden -PassThru -Wait;if($remove.ExitCode -ne 0){throw 'Disposable uninstall failed'}}
+    } finally {
+        foreach($link in $links){Copy-Item -LiteralPath $link.Backup -Destination $link.Original -Force}
+        Remove-Item Env:\VAULTOR_DESKTOP_TEST_DIRECTORY -ErrorAction SilentlyContinue
+        Remove-Item Env:\VAULTOR_UPDATE_RELAUNCH_CHECK -ErrorAction SilentlyContinue
+    }
 }

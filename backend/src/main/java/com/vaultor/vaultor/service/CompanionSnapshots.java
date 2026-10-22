@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 import java.io.*;
+import java.lang.ref.SoftReference;
 import java.nio.file.*;
 import java.security.*;
 import java.time.*;
@@ -52,6 +53,10 @@ public class CompanionSnapshots {
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final Map<String,Receipt> receipts=new LinkedHashMap<>();
     private final Set<String> cancelled=ConcurrentHashMap.newKeySet();
+    // One reclaimable parsed value per workspace, never a cache of authorization or bytes.
+    private record ParsedManifest(String sha256,Manifest value) {}
+    private SoftReference<ParsedManifest> parsedManifest=new SoftReference<>(null);
+    private static final int MAX_PARSED_MANIFEST_BYTES=4*1024*1024;
     @Value("${app.storage.path}") private String storagePath;
     @Value("${app.companion.ttl-seconds:3600}") private long ttl;
     private Path root;
@@ -83,7 +88,7 @@ public class CompanionSnapshots {
         if(receipts.size()>MAX_RECEIPTS)throw new IOException("Companion receipt limit exceeded");
         cleanup();
     }
-    @PreDestroy public void shutdown() {cancelled.addAll(snapshotIds());worker.shutdown();try{if(!worker.awaitTermination(15,TimeUnit.SECONDS))worker.shutdownNow();}catch(InterruptedException e){worker.shutdownNow();Thread.currentThread().interrupt();}}
+    @PreDestroy public void shutdown() {cancelled.addAll(snapshotIds());clearParsedManifest(null);worker.shutdown();try{if(!worker.awaitTermination(15,TimeUnit.SECONDS))worker.shutdownNow();}catch(InterruptedException e){worker.shutdownNow();Thread.currentThread().interrupt();}}
     private synchronized List<String> snapshotIds(){return List.copyOf(receipts.keySet());}
     public static void uuid(String value) {if(value==null || !value.matches("[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}"))throw error(400,"INVALID_SNAPSHOT_ID","Use a canonical UUID");}
     private static AccessFailure error(int code,String kind,String detail){return new AccessFailure(code,kind,detail);}
@@ -104,7 +109,7 @@ public class CompanionSnapshots {
     private Path dir(String id){uuid(id);return root.resolve(id);}
     private synchronized void persist(Receipt r) throws IOException {HostFiles.write(dir(r.id()).resolve("receipt.json"),json.writeValueAsBytes(r));receipts.put(r.id(),r);}
     private synchronized Receipt finish(Receipt r,String status,String detail,String hash,int count,long bytes) throws IOException {
-        Receipt next=new Receipt(r.id(),r.workspaceId(),r.device(),r.selection(),r.createdAt(),r.expiresAt(),status,detail,hash,count,bytes);persist(next);return next;
+        Receipt next=new Receipt(r.id(),r.workspaceId(),r.device(),r.selection(),r.createdAt(),r.expiresAt(),status,detail,hash,count,bytes);persist(next);if(!status.equals("READY"))clearParsedManifest(r.id());return next;
     }
     private void remove(Path p) throws IOException {safe(p);if(!Files.exists(p,LinkOption.NOFOLLOW_LINKS))return;try(var walk=Files.walk(p)){for(var f:walk.sorted(Comparator.reverseOrder()).toList()){safe(f);Files.delete(f);}}}
     private synchronized void cleanup() throws IOException {
@@ -233,7 +238,19 @@ public class CompanionSnapshots {
         if(match==null)throw error(428,"COMPANION_VALIDATOR_REQUIRED","Pin the manifest SHA-256 using If-Match");
         if(!match.equals('"'+r.manifestSha256()+'"'))throw error(412,"COMPANION_VALIDATOR_MISMATCH","Checkpoint validator differs; do not mix datasets");
         Path path=dir(id).resolve("manifest.json");safe(path);if(Files.size(path)>MAX_JSON)throw error(409,"COMPANION_DAMAGED","Manifest exceeds its limit");byte[] data=Files.readAllBytes(path);if(data.length>MAX_JSON || !hash(data).equals(r.manifestSha256()))throw error(409,"COMPANION_DAMAGED","Checkpoint is damaged; prepare a new one");
-        return json.readValue(data,Manifest.class);
+        return parsedManifest(data,r.manifestSha256());
+    }
+    private synchronized void clearParsedManifest(String id) {var cached=parsedManifest.get();if(id==null || cached!=null && cached.value().id().equals(id))parsedManifest.clear();}
+    private synchronized Manifest parsedManifest(byte[] verified,String sha256) throws Exception {
+        var cached=parsedManifest.get();if(cached!=null && cached.sha256().equals(sha256))return cached.value();
+        parsedManifest.clear();
+        Manifest m=json.readValue(verified,Manifest.class);
+        if(verified.length>MAX_PARSED_MANIFEST_BYTES)return m;
+        // Callers must not be able to mutate a value reused by another request.
+        var entries=m.resources().stream().map(e->new Entry(e.id(),e.type(),e.title(),e.revision(),e.mimeType(),e.originalSize(),e.updatedAt(),e.lastOpenedAt(),e.favorite(),List.copyOf(e.tags()),List.copyOf(e.collections()),List.copyOf(e.references()),e.document(),e.binary(),e.state())).toList();
+        var s=m.selection();var selection=new Selection(s.generation(),s.scope(),List.copyOf(s.ids()),s.dependencies(),s.files());
+        var value=new Manifest(m.version(),m.id(),m.workspaceId(),m.generation(),selection,m.createdAt(),m.expiresAt(),entries,List.copyOf(m.excluded()),m.organization(),m.bytes());
+        parsedManifest=new SoftReference<>(new ParsedManifest(sha256,value));return value;
     }
     private static void page(int page,int size){if(page<0||page>100000||size<1||size>PAGE_SIZE)throw error(400,"INVALID_COMPANION_PAGE","Use a nonnegative page and size1–200");}
     private static <T> List<T> slice(List<T> rows,int page,int size){return rows.subList(Math.min(rows.size(),page*size),Math.min(rows.size(),(page+1)*size));}

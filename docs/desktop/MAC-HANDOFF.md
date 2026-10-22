@@ -378,6 +378,46 @@ npm --prefix desktop run publish:release -- --publish --add-platform --notes doc
 The helper preserves existing Windows assets and the source tag, accepting identical retries and refusing differing bytes. It does not edit publication notes/status. Then update GitHub notes with actual Mac results/availability; update living docs in a separate documentation-only commit. Never claim Windows-only publication updates a Mac host.
 
 
+## R10 — exact 0.16.0 Mac qualification
+
+Reviewed2026-10-22 for R10. No macOS execution endpoint is arranged in the Windows R10 session. **No Mac0.16 artifact, installation, host startup or regression result is claimed.** Earlier Mac0.7.1 or development results do not qualify this release. Windows0.16.0 and Androidalpha.28 remain usable independently.
+
+Use immutable `v0.16.0`, peeled commit **63668b00f8e970d5799498a056e35d3c96c2302e**; current master includes documentation follow-ups and is not a substitute source for adding this missing platform. Preserve original Ed25519 trust, version/lock files, published tag and all Windows asset bytes. Transfer the matching private key through a private owner-controlled channel outside Git/chat/logs. Native Apple Silicon access and original key availability are separate prerequisites; neither is established by this Windows session.
+
+On the actual Mac:
+
+```sh
+git fetch origin master --tags
+git worktree add --detach ../vaultor-mac-016 v0.16.0
+cd ../vaultor-mac-016
+test "$(git rev-parse HEAD)" = 63668b00f8e970d5799498a056e35d3c96c2302e
+uname -m
+sw_vers
+node --version
+java -version
+xcode-select -p
+npm --prefix frontend ci
+npm --prefix desktop ci
+export BUILD_VERSION=0.16.0
+export VITE_BUILD_VERSION=0.16.0
+# Set VAULTOR_RELEASE_KEY privately to the original key outside this checkout.
+npm --prefix desktop run build
+npm --prefix desktop run prepare-server
+npm --prefix desktop run check
+npm --prefix frontend test -- --run --maxWorkers=2
+npm --prefix desktop test
+(cd backend && ./mvnw test)
+npm --prefix desktop run package:release
+codesign --verify --deep --strict --verbose=2 desktop/releases/mac-arm64/Vaultor.app
+npm --prefix desktop run publish:release
+```
+
+Use disposable profiles for native launch/edit/save/relaunch with bundled Java and no system Java, matching-code source approval, source/grant/generation compatibility, independent workspace copy, Review resolution and full5/partial6 import/export/provenance round trips. Verify Finder/DMG installation and normal Gatekeeper consent, arm64/version/server build, Keychain, menu/Dock/tray/close/quit, sleep/resume, native Save/Share dialogs, manual DMG update with retained settings/drafts/approvals and backup recovery. Record exact OS/tool versions, source/installer/sidecar hashes and failures. Observe motion in motion; screenshots alone do not qualify it. Real Windows↔Mac LAN/browser trust/discovery remains a separate physical network check.
+
+Expected absent pair: `Vaultor-0.16.0-mac-arm64.dmg` and `.dmg.vaultor.json`. Verify current release assets before any upload. Under the R10 user's final-acceptance gate, **prepare the qualified pair and report it; do not publish it automatically**. After explicit final authorization, the release policy's `--publish --add-platform --notes docs/desktop/releases/v0.16.0.md` may add only absent original-key verified bytes from this exact clean tag. Independently download/compare both assets and update release notes with actual Mac outcomes. Never overwrite or move existing assets/tags. A necessary source fix ends this same-version path: use a new version with appropriate Windows/Mac qualification and acceptance.
+
+R10's late dependency audit identified affected frontend editor dependencies in the immutable0.16.0 source; the inherited-attribute library regression is reproduced and corrected only in the new0.16.1 candidate. See [R10 advisory qualification](../plans/R10-ACCEPTANCE.md#dependency-advisory-qualification). Native Mac build success alone does not clear these known source findings. Do not patch0.16.0 while calling it exact-tag qualification or upload an affected artifact as silently equivalent to corrected0.16.1. Assess the recorded advisories as part of acceptance; native qualification of the accepted new version is the correction path.
+
 ## 0.4.1 — update transport and remaining Mac one-click gate
 
 Windows 0.4.1 adds default GitHub discovery/internal downloads and a verified silent NSIS handoff/relaunch. Macs receive platform-filtered automatic downloads, but still explicitly open a DMG for manual replacement. Standard Electron macOS auto-update requires its supported signing setup; our personal ad-hoc/no-payment constraint does not permit pretending that path is verified. No automatic Mac helper is enabled or published in this Windows delivery.

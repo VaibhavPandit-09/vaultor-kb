@@ -1,4 +1,6 @@
-# R10 fresh-chat handoff — not started
+# R10 starting handoff
+
+**2026-10-22: R10 engineering candidate ready for final user acceptance** from fetched master7b7f4f4 on isolated codex/r10-quality. [Consolidated qualification ledger](R10-ACCEPTANCE.md) owns measured results, limitations, local Windows0.16.1 candidate and the final acceptance-before-merge/publication gate. The original starting instructions below are retained as baseline context.
 
 R7–R9 are complete and published. Start from current fetched `master`, containing non-fast-forward merge **63668b00f8e970d5799498a056e35d3c96c2302e** plus documentation-only completion. Immutable tags `v0.16.0` and `android/v0.1.0-alpha.28` both identify63668b0. Compatible Windows0.16.0/protocol3/full5/partial6 and Androidalpha.28/code32 original signer are published. [Integration evidence/checksums](R7-R9-INTEGRATION.md) is authoritative; historical feature branches are not starting points.
 

@@ -1,6 +1,6 @@
 # Companion checkpoints — schema 1
 
-Reviewed2026-10-14. R3/host0.11.0 adds a reading-dataset service. Android alpha.11 R4 consumes this capability; [OFFLINE.md](../android/OFFLINE.md) owns native retained storage, activation and local-search bounds. This is neither a portable workspace ZIP nor bidirectional synchronization. Protocol3/archive3 and original-resource APIs stay unchanged.
+Reviewed2026-10-22. R3/host0.11.0 introduced the reading-dataset service, consumed by current Androidalpha.28. The R10 host0.16.1 candidate reduces repeated manifest parsing without changing this schema or authority contract; [qualification](../plans/R10-ACCEPTANCE.md) owns measured outcomes and approval status. [OFFLINE.md](../android/OFFLINE.md) owns native retained storage, activation and local-search bounds. This is neither a portable workspace ZIP nor bidirectional synchronization. Protocol3 and original-resource APIs stay unchanged; current portable full5/partial6 formats are separate.
 
 ## Identity and authorization
 
@@ -33,6 +33,8 @@ One worker per workspace acquires its exclusive maintenance gate and a SQLite tr
 Streams remain hints with bounded replay. Never build an offline checkpoint by assuming no change events were missed. Prepare another coherent checkpoint, then GET `/{new}/delta?from={old}` using If-Match for the new manifest and **X-Vaultor-Base-Manifest** with the quoted old hash. Both must be READY/current/unexpired and have identical workspace/generation/selection. Paged changes are added/changed entries and `not-in-checkpoint` removals. A removal means absence from that selected reading dataset, not proof of irreversible deletion. Selected unavailable/trashed entries give explicit state. Always reconcile the new organization/coverage descriptors too. Reuse local bytes only by verified payload SHA/size. If old state expired or selection changed, compare the full new inventory with local metadata; no unbounded change history or silent broadening exists.
 
 Byte streams recheck cancellation, expiry, grants and generation at each256KiB chunk. A bounded chunk already in flight can arrive after revocation. A read lease excludes replacement/capture/search-index maintenance while each immutable payload streams, preventing routine index writes from truncating ranges; already admitted bytes can finish before replacement commits. Shutdown, cancellation, expiry or access loss interrupts delivery; the client must retain progress without accepting incomplete bytes. Requests and worker state participate in private host stop/drain. No new note-writing endpoint is needed.
+
+R10 retains at most one softly referenced parsed manifest per workspace context, only for manifests up to4MiB. Every manifest/inventory/coverage/payload request still checks its receipt owner, current approval/grant, expiry/cancellation, generation and exact If-Match, then reads and SHA-256-verifies the current manifest bytes before using a parsed value keyed by that verified hash. Same-length/unchanged-mtime corruption cannot reuse the cache. Cached lists are immutable; cancellation/expiry/shutdown clear the matching value, and memory pressure may reclaim it. Larger manifests keep the original verified parse path. No cached authority, persistent index, portable-format change or skipped per-chunk check is introduced.
 
 ## Bounds and storage
 
