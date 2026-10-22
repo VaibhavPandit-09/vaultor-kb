@@ -25,7 +25,7 @@ class CompanionStoreTest {
   private val base=InstrumentationRegistry.getInstrumentation().targetContext
   private fun uuid()=UUID.randomUUID().toString()
   private fun digest(b:ByteArray)=MessageDigest.getInstance("SHA-256").digest(b).joinToString(""){"%02x".format(it)}
-  private inner class Fixture(val count:Int=3,rootOverride:File?=null) {
+  internal inner class Fixture(val count:Int=3,rootOverride:File?=null) {
     val root=rootOverride ?: File(base.noBackupFilesDir,"r4-test-${uuid()}").apply {mkdirs()}
     val context=object:ContextWrapper(base) {
       override fun getNoBackupFilesDir()=root

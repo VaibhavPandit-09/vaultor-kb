@@ -95,11 +95,33 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   },{a,id -> if(a.optBoolean("offline")){companionScope(a);companions.file(a.getString("scope"),id)}else null}) }
   @ReactMethod fun media(action:String,input:String,promise:Promise) {try {require(action in listOf("list","thumbnail","preview","share","open","copy","save")) {"Android reading cannot upload or alter placements. Export legacy recovery instead."};require(input.length<=12000);media.call(action,JSONObject(input),promise)}catch(_:Exception){promise.reject("MEDIA_INPUT","Invalid media request.")}}
   @ReactMethod fun cancelMedia() {media.cancel()}
+  private fun utilityChanged(event:String){if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit(event,"changed")}
+  private val discovery by lazy {VaultorDiscovery(ctx){utilityChanged("VaultorDiscoveryChanged")}}
+  private val updates by lazy {VaultorUpdates(ctx,changed={utilityChanged("VaultorUpdatesChanged")}).also {it.activityProvider={ctx.currentActivity}}}
+  @ReactMethod fun nearby(action:String,promise:Promise)=run(promise){when(action){"start"->discovery.start().toString();"stop"->{discovery.stop();discovery.snapshot().toString()};"list"->discovery.snapshot().toString();else->error("Unsupported discovery action")}}
+  @ReactMethod fun appUpdates(action:String,promise:Promise){if(action=="picker"||action=="releases"){ctx.runOnUiQueueThread{try{if(action=="picker")updates.picker()else updates.openReleases();promise.resolve("{}")}catch(_:Exception){promise.reject("UPDATE_HANDOFF","Update picker or browser unavailable")}};return};run(promise){when(action){"list"->updates.snapshot().toString();"check"->{updates.check();"{}"};"download"->{updates.download();"{}"};"install"->{updates.install();"{}"};"pause"->{updates.pause();"{}"};else->error("Unsupported update action")}}}
+  private fun exportAdmission(source:JSONObject){importProfile(source);if(android.os.Build.VERSION.SDK_INT>=37&&ctx.checkSelfPermission(android.Manifest.permission.ACCESS_LOCAL_NETWORK)!=android.content.pm.PackageManager.PERMISSION_GRANTED)error("Local network permission required. Export source is retained.")}
+  private fun exportConnection(source:JSONObject,path:String,method:String):HttpsURLConnection {
+    require(method in listOf("GET","PUT")&&(path=="/companions/export-capabilities"||path.matches(Regex("/companions/exports/[a-f0-9-]{36}(?:/download)?(?:\\?generation=[a-f0-9-]{36})?"))))
+    exportAdmission(source);val p=importProfile(source);val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint"));val c=URI(address(p.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection;c.sslSocketFactory=context(cert).socketFactory;c.connectTimeout=10000;c.readTimeout=30000;c.instanceFollowRedirects=false;c.requestMethod=method;c.setRequestProperty("Authorization","Bearer "+p.getString("credential"));c.setRequestProperty("X-Vaultor-Protocol","3");c.setRequestProperty("X-Vaultor-Workspace",source.getString("workspaceId"));return c
+  }
+  private val exports by lazy {VaultorExports(ctx,companions,::exportConnection,::exportAdmission,{reviews.snapshot()},{if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorExportsChanged","changed")},localIdentity={importProfile(it);Unit}).also {it.activityProvider={ctx.currentActivity}}}
+  @ReactMethod fun companionExports(action:String,input:String,promise:Promise)=run(promise){require(input.length<=12000);val a=JSONObject(input);when(action){
+    "list"->exports.list().toString()
+    "start"->{companionScope(a);exports.start(a).toString()}
+    "resume"->exports.resume(a.getString("id")).toString()
+    "pause"->{exports.pause(a.getString("id"));"{}"}
+    "remove"->{exports.remove(a.getString("id"));"{}"}
+    "save","share"->{exports.handoff(a.getString("id"),action=="share");"{}"}
+    else->error("Unsupported export action")
+  }}
   private val imports by lazy {VaultorImports.get(ctx).also {store->store.changed={if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorImportsChanged","changed")}}}
   private var importOutput:String?=null
   private var importPicker=false
   init {ctx.addActivityEventListener(object:BaseActivityEventListener(){
     override fun onActivityResult(activity:android.app.Activity,requestCode:Int,resultCode:Int,data:android.content.Intent?){
+      if(requestCode==7409)exports.output(resultCode,data)
+      if(requestCode==7410&&resultCode==android.app.Activity.RESULT_OK&&data?.data!=null)try{updates.acquire(data.data!!)}catch(_:Exception){utilityChanged("VaultorUpdatesChanged")}
       if(requestCode==7407){importPicker=false;if(resultCode==android.app.Activity.RESULT_OK&&data!=null)imports.picker(data)}
       if(requestCode==7408){val id=importOutput;importOutput=null;if(resultCode==android.app.Activity.RESULT_OK&&id!=null&&data?.data!=null){val uri=data.data!!;imports.worker.execute {try{require(uri.scheme=="content");val row=imports.item(id);imports.original(row){};ctx.contentResolver.openOutputStream(uri,"wt")?.use {out->imports.original(row){out.write(it)}} ?: error("Destination unavailable");imports.changed?.invoke()}catch(e:Exception){try{val row=imports.item(id);row.put("detail","Original recovery failed: "+(e.message ?: "Destination unavailable").take(180));imports.save(row)}catch(_:Exception){};imports.changed?.invoke()}}}}
     }

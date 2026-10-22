@@ -1,3 +1,5 @@
+import AppUpdateControls, {NearbyHosts,HostAddress} from './AppUpdateControls';
+import ExportControls from './ExportControls';
 import ContextSheet from './ContextSheet';
 import ReviewCapture from './ReviewCapture';
 import { captureSeed, type CaptureSeed, type Evidence } from './reviews';
@@ -362,7 +364,11 @@ export default function WorkspaceScreen() {
       hidden.remove();
     };
   }, []);
+  const [exportOpen,setExportOpen]=useState(false);
+  const [updatesOpen,setUpdatesOpen]=useState(false);
   const closeTransient = () => {
+    if(updatesOpen){setUpdatesOpen(false);return true;}
+    if(exportOpen){setExportOpen(false);return true;}
     if(importsOpen){setImportsOpen(false);return true;}
     if (captureRequest) return true; // Native capture modal owns protected dismissal.
     if (downloads) {
@@ -748,6 +754,7 @@ export default function WorkspaceScreen() {
           {state.hosts.map(h => (
             <View key={h.hostId} style={s.row}>
               <Text style={s.secondary}>{h.address}</Text>
+              {h.hostId===state.host?.hostId?<HostAddress current={h.address} change={async value=>{await permission();await native.changeAddress(h.hostId,value);await model.adopted();}}/>:null}
               <Action
                 disabled={state.busy}
                 label={
@@ -770,6 +777,7 @@ export default function WorkspaceScreen() {
           <Text accessibilityRole="header" style={s.section}>
             Add a host
           </Text>
+          <NearbyHosts permission={permission} choose={setAddress}/>
           <TextInput
             style={s.input}
             accessibilityLabel="Host HTTPS address"
@@ -1284,6 +1292,7 @@ export default function WorkspaceScreen() {
         <ContextSheet title="Settings & tools" close={closeUtilities}>
           <ScrollView contentContainerStyle={s.page}>
             <Action label="Pending imports" onPress={()=>{closeUtilities();setImportsOpen(true);}}/>
+            <Action label="Export" onPress={()=>{closeUtilities();setExportOpen(true);}}/>
             {state.host ? (
               <>
                 <Action
@@ -1348,6 +1357,7 @@ export default function WorkspaceScreen() {
                 setReviewing(true);
               }}
             />
+            <Action label="App updates" onPress={()=>{closeUtilities();setUpdatesOpen(true);}}/>
             <Action label="Legacy recovery" onPress={recoveryOpen} />
           </ScrollView>
         </ContextSheet>
@@ -1355,6 +1365,8 @@ export default function WorkspaceScreen() {
       {appearance ? (
         <ReadingControls close={() => setAppearance(false)} />
       ) : null}
+      {updatesOpen?<AppUpdateControls close={()=>setUpdatesOpen(false)}/>:null}
+      {exportOpen?<ExportControls model={model} label={source.workspace+' · '+source.host} close={()=>setExportOpen(false)}/>:null}
       {importsOpen?<PendingImports items={imports.items} error={imports.error} busy={imports.busy} model={model} label={source.workspace+' · '+source.host} close={()=>setImportsOpen(false)} chooseSource={()=>{setImportsOpen(false);openSources();}} refresh={imports.refresh} sync={imports.sync}/>:null}
       {downloads ? (
         <OfflineControls
@@ -1384,12 +1396,14 @@ export default function WorkspaceScreen() {
               { value: 'find', label: 'Find within note' },
               { value: 'appearance', label: 'Reading appearance' },
               { value: 'downloads', label: 'Download for offline' },
+              { value: 'export', label: 'Export' },
               { value: 'journey', label: 'Reading journey' },
               { value: 'refresh', label: 'Refresh saved note' },
               { value: 'utilities', label: 'Settings' },
               { value: 'recovery', label: 'Legacy recovery' },
             ]}
             onChoose={v => {
+              if(v==='export'){setMore(false);setExportOpen(true);return;}
               if (v === 'capture') {
                 capture();
                 return;
