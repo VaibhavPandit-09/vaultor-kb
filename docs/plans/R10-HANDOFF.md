@@ -1,0 +1,11 @@
+# R10 fresh-chat handoff — not started
+
+R7–R9 are complete and published. Start from current fetched `master`, containing non-fast-forward merge **63668b00f8e970d5799498a056e35d3c96c2302e** plus documentation-only completion. Immutable tags `v0.16.0` and `android/v0.1.0-alpha.28` both identify63668b0. Compatible Windows0.16.0/protocol3/full5/partial6 and Androidalpha.28/code32 original signer are published. [Integration evidence/checksums](R7-R9-INTEGRATION.md) is authoritative; historical feature branches are not starting points.
+
+Begin only when the user authorizes R10 in a fresh chat. Read AGENTS, CODEBASE, docs/README, AI workflow, both design philosophies, approved [R7–R10 reconciliation](R7-R10-RECONCILIATION.md), source-lock/offline/import/export/Review/security contracts and release procedures. Fetch and verify actual master, tags, cleanliness and worktrees, then create a temporary isolated branch from current master. Do not branch from unmerged/obsolete feature tips. Completed milestones integrate before subsequent work; major UI changes require explicit authorization.
+
+R10 retains integrated Small→Atlas5000 startup/search/scroll/memory/disk/queue/checkpoint/export measurements, prolonged lifecycle/fault/upgrade acceptance and one accessibility/interaction audit. Reuse completed source-bound queue/export/lock tests and genuine R6 install-over evidence. Fix demonstrated failures; preserve approved Home/Library/Review, reader/Aa/themes/motion/haptics, structured Tiptap/resource model, desktop authority and protected source journals. No general editing/two-way sync/backup/OCR/Linux expansion.
+
+Remaining platform acceptance: Samsung/One UI touch/haptics/motion, TalkBack/OEM installation, real Wi-Fi/LAN and native Mac0.16. Agents never access/pair the phone. Mac requires exact immutablev0.16.0 native build/qualification and adding only absent platform assets; fixes need a new version. Use disposable data and explicit emulator serials. This handoff does not authorize R10 implementation.
+
+Suggested opening request: “Begin the approved R10 integrated quality/scale acceptance from fetched current master. Read docs/plans/R10-HANDOFF.md and the integration ledger first. Preserve approved UI/domain/security contracts and keep platform limitations explicit.”

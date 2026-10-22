@@ -1,6 +1,8 @@
 # Install and update Vaultor on each device
 
-Reviewed 2026-10-21. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
+Reviewed 2026-10-22. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
+
+Current integrated R7–R9 releases: [Windows0.16.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.16.0) and [Androidalpha.28/code32](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.28). Install host first, then APK over existing app without uninstalling/clearing data. Windows0.4.1+: Updates → Update and restart; manual users fully quit tray hosting and keep EXE+signed sidecar together. Original signing identities and R6 data continuity verified. [Qualification/checksums](../plans/R7-R9-INTEGRATION.md). Windows-only partial platform release; Mac0.16 awaits native acceptance and has no published DMG. Earlier versions discussed below are historical platform baselines.
 
 ## What you download
 

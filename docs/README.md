@@ -174,3 +174,5 @@ Keep CODEBASE and this index at the docs root for agent discovery. Put topic gui
 - [Android alpha.17 hybrid/restraint acceptance ledger](android/releases/0.1.0-alpha.17.md) — historical candidate evidence and alpha.16 comparison; later A4 continuation is recorded in R6 completion.
 
 - [Integrated Android alpha.28 qualification](android/releases/0.1.0-alpha.28.md)
+
+- [R10 fresh-master handoff (unstarted)](plans/R10-HANDOFF.md)

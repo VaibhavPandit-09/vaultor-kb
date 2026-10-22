@@ -1,6 +1,6 @@
 # R7–R9 master consolidation audit
 
-Reviewed 2026-10-22. **Security repair qualified on API36/API37; final master build and publication pending.** Integration/release authorization is explicit in this chat. R10 is not authorized or started. This record supersedes earlier candidate documents' statements that integration/publication lacks authorization; all correctness and release gates still apply.
+Reviewed 2026-10-22. **Complete: security repair qualified, master integrated, Windows0.16.0 and Androidalpha.28 published.** R10 is unstarted. Initial blocked-attempt sections below are historical; final completion supersedes them.
 
 ## Fetched ancestry and strategy
 
@@ -26,7 +26,7 @@ R8 adds companion export capability/preparation/status/download APIs and durable
 
 R9 adds bounded optional native NSD, existing pinned connection recovery, apksig verification of original APK signer/package/increasing code/ABI/API/signed protocol declaration, private update staging and explicit Android install consent. Dependencies added are host CommonMark0.30.0 and Android apksig9.2.1. Original desktop/Android trust policy files are unchanged. Candidate metadata is Windows0.16.0 and Android0.1.0-alpha.27/code31; neither is published by this audit. Earlier Windows0.15.0/Androidalpha.24 candidates remain historical.
 
-## Release-blocking source-lock gap
+## Historical source-lock blocker (repaired below)
 
 The new export response handler handles 401/403 but omits authoritative workspace-grant refusal `404 WORKSPACE_UNAVAILABLE` and replacement `409 EXPORT_GENERATION_CHANGED`. WorkspaceRequestFilter intentionally returns that404 after a scoped grant is removed. The existing R6 ordinary/Review paths observe verified refusals and lock retained copies. Export's localIdentity callback merely checks the remembered host profile; it does not check workspace generation/grant. Its guards consult the companion lock, so failing to set it permits subsequent local reads/offline export after the refusal has already been observed.
 
@@ -36,7 +36,7 @@ The R7 import response handler also omits404 observation, although importAdmissi
 
 The user explicitly required STOP for a serious security blocker. Do not merge to master, create release tags, publish candidates, or begin R10 while this gap remains. Retain originals/queues/receipts; repair must use the established scoped observer and distinguish authoritative refusal from missing operations, maintenance and transient network failures.
 
-## Actual validation
+## Initial blocked-attempt validation (historical)
 
 Fresh full runs in the integration worktree:
 
@@ -60,7 +60,7 @@ The local diagnostic APK was built from the uncommitted merged tree; its generat
 
 The blocked candidate and diagnostic/doc changes are preserved as a non-fast-forward merge checkpoint on integration/r7-r9, with parents master31d8011 and R8–R9c97a73c. It is not merged to master or release-qualified. Product code was not repaired after the STOP gate. No release tag/asset was created or overwritten; Windows0.16.0/Androidalpha.27 remain unpublished candidates. Original/source/master worktrees are checked separately at handoff; old feature branches remain.
 
-## R10 boundary and next-chat handoff
+## Initial blocked handoff (historical; superseded below)
 
 R7–R9 are implemented acceptance candidates, pending security repair, complete combined qualification, master integration and compatible Windows/Android publication. Master remains the released R6 baseline until then; there is no new R10 starting baseline yet. Retain all feature branches.
 
@@ -105,3 +105,25 @@ Repair commit `439b2de` closes the shared invariant rather than special-casing e
 Desktop one-click qualification exposed PowerShell module autoload dependency in detached Get-FileHash. Replaced it with streamed .NET SHA256 and FileInfo, preserving both pre/post-parent-exit verification; actual helper function test with module autoload disabled and changed-byte/size rejection passes. Test-only DocumentsUI picker driver reacquires stale nodes; failed first attempts and corrected passes remain in ignored audit logs. No product picker bypass added.
 
 Raw evidence is retained in ignored `desktop/cache/r7-r9-integration-audit`. Earlier failure tables above are historical, not current release status. Final clean-master builds, exact artifact qualification, tags, publication and checksums will be recorded after completion. No Samsung, TalkBack, physical haptic quality, OEM installer, real-LAN or Mac acceptance is claimed.
+
+## Final master release completion — 2026-10-22
+
+Fetched master and source branches again: unchanged tips from the ancestry table. GitHub reports master unprotected. Explicit non-fast-forward master merge **63668b00f8e970d5799498a056e35d3c96c2302e**, parents31d8011 and40c348f, is pushed. Integration40c348f and master merge have identical trees. Both source histories are reachable from master; old branches/worktrees retained. No history/tag rewrite or R10 implementation.
+
+Fresh UI/JAR/pinned runtime, Windows pair and Android APK/test APK were built from clean master63668b0. Immutable annotated tags **v0.16.0** and **android/v0.1.0-alpha.28** both peel to that commit. Android metadata matches it; original signer af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567, com.vaultor.app, code32/min36/target37/protocol3 and diagnosticsfalse verified. Rebuilding in the master worktree changes four generated C++ shared-library entries relative to the earlier candidate; Java/JS/resources are identical. The exact new APK was separately installed/tested.
+
+Final exact APK: **53/53 native plus7/7 update/discovery on each API36/API37**. Both pulled installed base.apk hashes match the final APK. Earlier R6→candidate→fixed-code32 actual install-over/OS consent and protected-data evidence is distinct from final same-code replacement; immutable R6 evidence and live export recovery passed again on both final installations. Utility navigation/Back and Save-cancel/Share-retained hashes passed on both before final same-source build. Real pinned Review lost-ack/restart retry and Android offline partial6→desktop merge (two resources, original unchanged) additionally passed on API37.
+
+Final Windows0.14→0.16 installer/first launch/relaunch/native save/PDF/repair/uninstall/reinstall passed. Initial final run encountered normal maintenance409 during the smoke script's immediate200-only PDF poll; investigation confirmed WorkspaceGate and frontend retry behavior, then unchanged artifact passed full rerun. Final exact packaged one-click helper passed hash-verified silent replacement/relaunch/bundled server/data retention. No security check relaxed. Original trust/signing identities preserved; no Authenticode claimed.
+
+| Published asset | Bytes | SHA256 |
+| --- | ---: | --- |
+| Vaultor-0.16.0-windows-x64.exe |245916340|8e1cac88821acc20467fc13a8c89da4b17bbe15920009880fffab90b3e34176d|
+| Windows .exe.vaultor.json |400|6b5c0bfc4042be36fbbf631089d37b2139babd8b1721d5c2cea2e72e862642a7|
+| Vaultor-Android-0.1.0-alpha.28.apk |40659456|4b87dd8212f03c8db45395ea113e12761c2b1bb45185e1c7e5de6962aaba730b|
+| android-release.json |467|56d85af4ac5383188f7c9139bd10595b5037344d0dccdd7b5e7f0a488aea353f|
+| SHA256SUMS.txt |101|071cef6c6d8f6af38cf9c29e241a48a25a8e886259b79884745c9a108972218f|
+
+[Windows0.16.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.16.0) published2026-10-22T11:20:28Z as Windows-only/non-latest partial platform release. [Androidalpha.28](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.28) published2026-10-22T11:19:26Z as prerelease. All five staged assets independently downloaded and byte-compared; published GitHub digests match. Anonymous published Android metadata and Windows sidecar also match. No full anonymous binary re-download claimed. Install host0.16 first, then Android over existing app without clearing data. Protocol3/full5/partial6 and original provenance interoperability were verified with fresh0.16 bundled host.
+
+Final logs: ignored master-worktree desktop/cache/r7-r9-final-*; earlier evidence: integration-worktree desktop/cache/r7-r9-integration-audit. Samsung/One UI, TalkBack, physical haptics, OEM installers, real Wi-Fi/LAN and native Mac acceptance remain unclaimed/nonblocking platform handoffs. No Mac0.16 artifact exists. [R10 handoff](R10-HANDOFF.md) starts only from fetched master containing63668b0 and documentation-only completion. R10 is not started.

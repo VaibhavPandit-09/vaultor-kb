@@ -127,7 +127,7 @@ Avoid one endless AI chat spanning many major milestones.
 
 A completed milestone must be integrated and verified on master before the next milestone begins. Never silently start from an unmerged or obsolete feature branch. An explicit user-authorized combined milestone or integration task is an exception, and its source ancestry and scope must be documented. Isolated branches/worktrees are temporary implementation environments, not competing product baselines. Preserve source branches unless the user separately authorizes deletion.
 
-R7–R9 consolidation is currently under audit on `integration/r7-r9`; see [the integration record](../plans/R7-R9-INTEGRATION.md). R10 must not begin until that record confirms master integration and compatible publication. An acceptance candidate alone is insufficient.
+R7–R9 consolidation is complete on master63668b0 with Windows0.16.0/Androidalpha.28 publication; see [integration](../plans/R7-R9-INTEGRATION.md). R10 is unstarted and requires fresh authorization from fetched master; see [handoff](../plans/R10-HANDOFF.md). Temporary branches/worktrees and historical candidate APKs are not alternate baselines.
 
 ---
 
