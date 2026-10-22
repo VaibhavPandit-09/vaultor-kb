@@ -30,7 +30,7 @@ Implementation proceeds one sprint per explicit authorization. Maintain this gui
 
 ## Planned multi-workspace and Android companion direction
 
-The user authorized R7–R9 consolidation and compatible Windows/Android publication on 2026-10-22. [Current integration audit](plans/R7-R9-INTEGRATION.md) owns fetched ancestry, actual combined validation and release gates. Master remains authoritative; candidates do not replace it. The integration source-security investigation blocks release qualification; no new master baseline or R10 start is certified. The [AI workflow](development/AI_DEVELOPMENT_WORKFLOW.md) now requires integration before beginning the next milestone and explicit authorization for major UI changes.
+The user authorized R7–R9 consolidation and compatible Windows/Android publication on 2026-10-22. [Current integration audit](plans/R7-R9-INTEGRATION.md) owns fetched ancestry, actual combined validation and release gates. Master remains authoritative; candidates do not replace it. The integration source-lock repair is under final native qualification; no new master baseline or R10 start is certified until compatible publication completes. The [AI workflow](development/AI_DEVELOPMENT_WORKFLOW.md) now requires integration before beginning the next milestone and explicit authorization for major UI changes.
 
 The [post-R6 R7–R10 reconciliation](plans/R7-R10-RECONCILIATION.md) is approved. R7 implementation is authorized on isolated `ai/codex-r7-android`; R8 and R9 implementation is now authorized together on ai/codex-r8-r9-android; R10 remains unauthorized. [Exports/connections](android/EXPORTS-AND-CONNECTIONS.md) owns the implementation contract. [Collected imports](android/IMPORTS.md) owns current host/native/UI contracts and actual checks. The modern R6 UI remains accepted; appearance/source/download/Review features are reused. R7–R9 integration/publication is now explicitly authorized, subject to the current integration audit and security/release gates.
 
@@ -392,7 +392,7 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 
 ## Known limitations
 
-- R7–R9 candidate release gate: new import/export transport paths omit some verified source-refusal observations; retained content may remain unlocked after scoped grant loss or export-generation rejection. See the integration audit and native release-gate regressions. Do not certify these candidates for master/publication until repaired and qualified.
+- R7–R9 qualification is in progress on integration/r7-r9. The source-lock repair centralizes authenticated scoped problem-code observation for JSON/Review/import/export/download/media/SSE, persists lock tombstones, denies stale-cache/media/export access, and prevents in-flight checkpoint activation from clearing a new lock. Final API36/API37, installed-byte and publication evidence belong in the integration audit.
 
 - Browser storage is origin-specific and best-effort; session snapshots can lag by 500 ms, shared undo is not persisted, and old session records have no automatic expiry. Packaged Windows refresh identities/journeys passed Sprint 5; real concurrent browser-tab/platform interruption coverage remains limited; see SESSIONS.md.
 - Scoped settings preserve concurrent changes to different fields; same-field edits remain last committed wins. There is no collaborative typing or multi-instance SQLite/gate coordination. Saved-state streams reconcile clean notes, preserve drafts and use existing revision conflicts; prolonged/multi-machine fault testing remains D9.
@@ -404,6 +404,10 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 - Build reports a large JS chunk and an outdated Browserslist dataset; these do not prevent packaging. Chunk splitting remains performance work.
 
 ## Change checklist and maintenance history
+
+### 2026-10-22 — Resume R7–R9 security repair and qualification
+
+Resumed existing90bafed without reintegration. Native VaultorSourceAccess classifies exact authenticated source-specific errors; all source transports feed the persistent companion observer. Generation refusals lock only the captured generation; scoped grant refusals invalidate that workspace's retained copies. Unknown, transient, unrelated and untrusted responses do not authorize a lock. Checkpoint admission versions and immediate in-process denial prevent a concurrent refresh/export lease from delaying invalidation or clearing a newer lock. Native cache/media/provider guards and foreground revalidation hide locked readers without deleting original bytes, Reviews/import journals or recovery. Original-signer Android candidate advances to alpha.28/code32; desktop0.16.0 remains the unpublished compatible host. Six legacy backend fixture classes now isolate host-access/catalog storage as well as SQLite/files. Full backend119/frontend323/desktop44 and mobile111Jest pass; native53 core cases (including13 source-boundary cases) and7 update/discovery cases pass on API36; real pinned scoped-grant loss hides the reader and persists across restart with verified recovery; final expanded native/real transport/upgrade/publication gates remain in progress. A detached Windows helper now uses streamed .NET SHA-256 instead of module-dependent Get-FileHash after native one-click qualification exposed autoload failure; real helper correctness/tamper checks and0.14→0.16 silent install/relaunch/data retention pass. No UI redesign, domain/protocol/archive/signing-identity change or R10 work.
 
 ### 2026-10-22 — R7–R9 consolidation audit and release gate
 

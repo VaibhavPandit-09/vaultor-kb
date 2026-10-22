@@ -82,6 +82,7 @@ export default function WorkspaceScreen() {
   const reviewSync = useReviewSync();
   const reconnectReviews = reviewSync.reconnect;
   const imports=useImportQueue();
+  const syncImports=imports.sync;
   const [importsOpen,setImportsOpen]=useState(false);
   useEffect(()=>{if(imports.incoming)setImportsOpen(true);},[imports.incoming]);
   const model = useRef(
@@ -509,6 +510,7 @@ export default function WorkspaceScreen() {
     if (state.localOnly) {
       const listener = AppState.addEventListener('change', value => {
         if (value !== 'active') void model.background();
+        else void model.verifyRetainedAccess().catch(e => model.report(e));
       });
       return () => listener.remove();
     }
@@ -564,14 +566,14 @@ export default function WorkspaceScreen() {
     reviewSync.refresh,
   ]);
   useEffect(() => {
-    if (initialized && state.connection === 'online') {reconnectReviews();void imports.sync();}
+    if (initialized && state.connection === 'online') {reconnectReviews();void syncImports();}
   }, [
     initialized,
     state.connection,
     state.host?.hostId,
     state.host?.epoch,
     reconnectReviews,
-    imports.sync,
+    syncImports,
   ]);
   const select = (destination: RootDestination, search = false) => {
     closeUtilities();

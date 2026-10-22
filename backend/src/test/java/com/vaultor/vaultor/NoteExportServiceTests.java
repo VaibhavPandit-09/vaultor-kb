@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class NoteExportServiceTests {
     static final Path DATA;
     static {try {DATA=Files.createTempDirectory("vaultor-note-export-");}catch(Exception e){throw new ExceptionInInitializerError(e);}}
-    @DynamicPropertySource static void properties(DynamicPropertyRegistry p) {p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());}
+    @DynamicPropertySource static void properties(DynamicPropertyRegistry p) {p.add("app.host.path",()->DATA.resolve("host-access").toString());p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());}
     @Autowired TransferService transfers;
     @Autowired TransferController controller;
     @Autowired ResourceService resources;

@@ -1,6 +1,6 @@
 # Android collected imports — R7
 
-Reviewed 2026-10-22. **Ready for user acceptance on `ai/codex-r7-android`; not a published capability.** The user approved the [reconciliation](../plans/R7-R10-RECONCILIATION.md) and complete R7 implementation. R6 alpha.23 remains the published baseline. No R8 work, public publication or master merge is authorized in this task.
+Reviewed 2026-10-22. R7 is incorporated into the authorized R7–R9 consolidation on `integration/r7-r9`. Android alpha.28/code32 and compatible Windows0.16.0 are under final release qualification; see [integration evidence](../plans/R7-R9-INTEGRATION.md). R6 alpha.23 remains the published baseline until publication completes. R10 is unstarted.
 
 ## Authority and host contracts
 

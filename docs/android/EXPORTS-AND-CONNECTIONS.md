@@ -1,6 +1,6 @@
 # R8 exports and R9 connections/updates
 
-Authorized together 2026-10-22 on ai/codex-r8-r9-android, based on unchanged fetched master31d8011 plus the completed R7 prerequisite c55a833; no master integration or public release authorized. R10 remains out of scope.
+R8/R9 were implemented on ai/codex-r8-r9-android after R7; they are now incorporated once on integration/r7-r9 with explicit master-integration and publication authorization. Android alpha.28/code32 and Windows0.16.0 are under final qualification. [The integration audit](../plans/R7-R9-INTEGRATION.md) owns current status; R10 remains out of scope.
 
 Current UI audit: retain Home/Library/Review, compact Sources, separate Source management, contextual Aa, existing storage/Review/import policies and shared ContextSheet/Back/motion. Add one Export utility from reading options, current Library context and Settings & tools. Selecting scope/format reveals inventory and omissions on that same scrolling surface; preparing/ready/error update in place silently. Save/Share uses Android consent; dismiss/reopen retains operation/source and never implies recipient save. Full ZIP requires connectivity. Offline partial/Markdown uses an immutable unlocked reading checkpoint with explicit capture time, missing content, Review and provenance coverage. No offline PDF/Word renderer.
 

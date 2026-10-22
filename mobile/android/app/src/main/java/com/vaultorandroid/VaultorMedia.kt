@@ -31,7 +31,9 @@ class VaultorMedia(private val ctx:ReactApplicationContext,
   private val seal:(ByteArray)->ByteArray, private val unseal:(ByteArray)->ByteArray,
   private val connection:(JSONObject,String,String)->HttpsURLConnection,
   private val valid:(JSONObject)->Unit,
-  private val retained:(JSONObject,String)->File? = {_,_->null}) : BaseActivityEventListener() {
+  private val retained:(JSONObject,String)->File? = {_,_->null},
+  private val observed:(JSONObject,String,Int,JSONObject)->Unit = {_,_,_,_->},
+  private val accessible:(JSONObject)->Unit = {}) : BaseActivityEventListener() {
   companion object {
     const val IMAGE_LIMIT=20*1024*1024
     const val FILE_LIMIT=64*1024*1024
@@ -56,6 +58,7 @@ class VaultorMedia(private val ctx:ReactApplicationContext,
   private var pendingAction=""
   private var camera:File?=null
   private var outgoing:File?=null
+  private var outgoingSource:JSONObject?=null
   private var cold=false
   private val active=java.util.concurrent.ConcurrentHashMap.newKeySet<HttpsURLConnection>()
   init {ctx.addActivityEventListener(this)}
@@ -91,7 +94,7 @@ class VaultorMedia(private val ctx:ReactApplicationContext,
     val p=pending ?: return;pending=null;val action=pendingAction
     if(resultCode!=Activity.RESULT_OK){camera?.delete();camera=null;outgoing=null;exporting.set(false);p.resolve("[]");return}
     worker.execute {try {
-      if(action=="save") {val target=data?.data ?: error("No save destination.");require(target.scheme=="content");val source=outgoing ?: error("Save source missing");ctx.contentResolver.openOutputStream(target,"wt")?.use {out->source.inputStream().use {it.copyTo(out)}} ?: error("Cannot write destination");outgoing=null;p.resolve("{\"requested\":true}")}
+      if(action=="save") {val target=data?.data ?: error("No save destination.");require(target.scheme=="content");val source=outgoing ?: error("Save source missing");ctx.contentResolver.openOutputStream(target,"wt")?.use {out->source.inputStream().use {input->val b=ByteArray(65536);while(true){outgoingSource?.let(accessible);val n=input.read(b);if(n<0)break;out.write(b,0,n)}};outgoingSource?.let(accessible)} ?: error("Cannot write destination");outgoing=null;p.resolve("{\"requested\":true}")}
       else {val uris=if(action=="camera")listOf(FileProvider.getUriForFile(ctx,ctx.packageName+".media",camera ?: error("Camera output missing")))else inputs(data ?: Intent());val result=JSONArray();uris.forEach {result.put(stage(it))};camera?.delete();camera=null;p.resolve(result.toString());emit()}
     }catch(e:Exception){camera?.delete();camera=null;outgoing=null;p.reject("MEDIA_INPUT",e.message ?: "Input failed. Retry with the file picker.")}finally{exporting.set(false)}}
   }
@@ -119,7 +122,7 @@ class VaultorMedia(private val ctx:ReactApplicationContext,
     val key=MessageDigest.getInstance("SHA-256").digest((a.getString("scope")+id+variant).toByteArray()).joinToString(""){"%02x".format(it)}
     val f=File(cache,key);if(f.exists()){f.setLastModified(System.currentTimeMillis());return f}
     val con=connection(a,"/resources/$id/$variant","GET");active.add(con)
-    try {require(con.responseCode in 200..299) {"Resource unavailable (${con.responseCode}). It may have been removed or access revoked. Retry when connected."};val max=if(variant=="thumbnail")384*1024 else FILE_LIMIT
+    try {val status=con.responseCode;if(status !in 200..299){val problem=con.errorStream?.use{it.readNBytes(16385)}?:byteArrayOf();if(problem.size<=16384)observed(a,"/resources/$id/$variant",status,runCatching{JSONObject(String(problem))}.getOrDefault(JSONObject()))};require(status in 200..299) {"Resource unavailable (${con.responseCode}). It may have been removed or access revoked. Retry when connected."};val max=if(variant=="thumbnail")384*1024 else FILE_LIMIT
       require(con.contentLengthLong<=max);val data=con.inputStream.use {it.readNBytes(max+1)};require(data.size<=max){"Resource exceeds the mobile 64 MiB file limit."};valid(a)
       while((cache.listFiles()?.sumOf {it.length()} ?: 0)+data.size>96L*1024*1024){val old=cache.listFiles()?.minByOrNull {it.lastModified()} ?: break;old.delete()}
       f.writeBytes(data);return f
@@ -178,14 +181,14 @@ class VaultorMedia(private val ctx:ReactApplicationContext,
         else result.put("external",true)
         result.toString()
       }
-      "share","open","copy","save" -> {val f=copyForShare(a);val uri=FileProvider.getUriForFile(ctx,ctx.packageName+".media",f);val mime=a.optString("mime","application/octet-stream");ctx.runOnUiQueueThread {try {val activity=ctx.currentActivity ?: error("Open Vaultor first")
+      "share","open","copy","save" -> {val f=copyForShare(a);val uri=FileProvider.getUriForFile(ctx,ctx.packageName+".media",f);val mime=a.optString("mime","application/octet-stream");ctx.runOnUiQueueThread {try {accessible(a);val activity=ctx.currentActivity ?: error("Open Vaultor first")
         when(action){
-          "save"->{require(pending==null);outgoing=f;pending=p;pendingAction="save";activity.startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(mime).putExtra(Intent.EXTRA_TITLE,safeName(a.optString("title","attachment"))),4404)}
+          "save"->{require(pending==null);outgoingSource=JSONObject(a.toString());outgoing=f;pending=p;pendingAction="save";activity.startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(mime).putExtra(Intent.EXTRA_TITLE,safeName(a.optString("title","attachment"))),4404)}
           "copy"->{require(mime.startsWith("image/"));(ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newUri(ctx.contentResolver,"Vaultor image",uri));p.resolve("{\"requested\":true}")}
           else->{val intent=if(action=="share")Intent(Intent.ACTION_SEND).setType(mime).putExtra(Intent.EXTRA_STREAM,uri)else Intent(Intent.ACTION_VIEW).setDataAndType(uri,mime);intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);intent.clipData=ClipData.newRawUri(f.name,uri);activity.startActivity(if(action=="share")Intent.createChooser(intent,"Share original")else intent);p.resolve("{\"requested\":true}")}
         }
       }catch(_:Exception){pending=null;outgoing=null;p.reject("MEDIA_DESTINATION","No compatible viewer/destination. Save original instead.")}};return@execute}
       else -> error("Unsupported media operation")
-    };p.resolve(result)}catch(e:Exception){p.reject("MEDIA_FAILURE",if(e is javax.net.ssl.SSLException)"Host TLS verification failed." else e.message?.take(180) ?: "Media unavailable. Retry without removing your draft.")}}
+    };if(a.has("scope"))accessible(a);p.resolve(result)}catch(e:Exception){p.reject("MEDIA_FAILURE",if(e is javax.net.ssl.SSLException)"Host TLS verification failed." else e.message?.take(180) ?: "Media unavailable. Retry without removing your draft.")}}
   }
 }

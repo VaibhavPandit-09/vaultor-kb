@@ -22,7 +22,7 @@ class VaultorCompanions(private val ctx:Context,
   private val connection:(JSONObject,String,String)->HttpsURLConnection,
   private val valid:(JSONObject)->Unit,
   private val changed:(String)->Unit = {}) {
-  private class Owner {val busy=AtomicBoolean(false);val cancel=AtomicBoolean(false);@Volatile var connection:HttpsURLConnection?=null}
+  private class Owner {val access=Any();val denied=java.util.concurrent.ConcurrentHashMap.newKeySet<String>();val invalidations=java.util.concurrent.ConcurrentHashMap<String,java.util.concurrent.atomic.AtomicLong>();fun revision(scope:String)=invalidations.getOrPut(scope){java.util.concurrent.atomic.AtomicLong()};val busy=AtomicBoolean(false);val cancel=AtomicBoolean(false);@Volatile var connection:HttpsURLConnection?=null}
   companion object {private val owners=java.util.concurrent.ConcurrentHashMap<String,Owner>()}
   private val root=File(ctx.noBackupFilesDir,"companions-v1").apply {check(mkdirs() || isDirectory)}
   private val owner=owners.getOrPut(root.canonicalPath){Owner()}
@@ -78,12 +78,13 @@ class VaultorCompanions(private val ctx:Context,
     guard(a);val c=connection(a,path,method);current=c
     try {if(pin!=null)c.setRequestProperty("If-Match","\"$pin\"");if(body!=null){c.doOutput=true;c.setRequestProperty("Content-Type","application/json");c.outputStream.use {it.write(body.toString().toByteArray())}}
       val status=c.responseCode
-      if(status in listOf(401,403)){lock(a.getString("scope"));error("Access revoked. This companion is locked; retained recovery is separate.")}
+
       val bytes=(if(status in 200..299)c.inputStream else c.errorStream)?.use {it.readNBytes(1500001)} ?: ByteArray(0)
       require(bytes.size<=1500000){"Checkpoint metadata page exceeds the Android limit."}
       val value=if(bytes.isEmpty())JSONObject() else JSONObject(String(bytes,Charsets.UTF_8))
+      observeScopeResponse(a.getString("scope"),path,status,value)
       if(status==409 && value.optString("code")=="WORKSPACE_BUSY" && retry<40) {guard(a);c.disconnect();Thread.sleep(350);return call(a,path,method,body,pin,retry+1)}
-      if(value.optString("code")=="COMPANION_GENERATION_CHANGED") {lock(a.getString("scope"));error("Workspace replaced. Former reading copy is locked; pending recovery remains separate.")}
+
       require(status in 200..299){value.optString("detail","Host refused download ($status). Retry when connected.").take(180)}
       guard(a);return value
     }finally {if(current===c)current=null;c.disconnect()}
@@ -109,7 +110,8 @@ class VaultorCompanions(private val ctx:Context,
         db.execSQL("INSERT INTO jobs(id,scope,selection,status,at) VALUES(?,?,?,'paused',?)",arrayOf<Any>(id,s,selection.toString(),System.currentTimeMillis()))
       }
       update(id,"status" to "downloading","detail" to "Preparing checkpoint…","bytes" to File(root,id).walkTopDown().filter {it.isFile}.sumOf {it.length()})
-      worker.execute {try {download(a,id,selection)}catch(e:Exception){update(id,"status" to (if(job(id).optString("status")=="expired")"expired" else "paused"),"detail" to (e.message?.take(180) ?: "Download interrupted. Previous reading copy remains; resume."))}finally {current?.disconnect();current=null;busy.set(false)}}
+      val admission=owner.revision(a.getString("scope")).get()
+      worker.execute {try {download(a,id,selection,admission)}catch(e:Exception){update(id,"status" to (if(job(id).optString("status")=="expired")"expired" else "paused"),"detail" to (e.message?.take(180) ?: "Download interrupted. Previous reading copy remains; resume."))}finally {current?.disconnect();current=null;busy.set(false)}}
       return JSONObject().put("id",id)
     }catch(e:Exception){busy.set(false);throw e}
   }
@@ -125,7 +127,7 @@ class VaultorCompanions(private val ctx:Context,
     if(offset<length){guard(a);val c=connection(a,"/companions/$id/payloads/$key","GET");current=c
       try {c.setRequestProperty("If-Match","\"$pin\"");if(offset>0)c.setRequestProperty("Range","bytes=$offset-")
         val status=c.responseCode
-        if(status in listOf(401,403)){lock(a.getString("scope"));error("Access revoked. Companion locked.")}
+        if(status !in 200..299){val problem=c.errorStream?.use{it.readNBytes(16385)}?:byteArrayOf();if(problem.size<=16384)observeScopeResponse(a.getString("scope"),"/companions/$id/payloads/$key",status,runCatching{JSONObject(String(problem))}.getOrDefault(JSONObject()))}
         require(status==(if(offset>0)206 else 200)) {"Download interrupted ($status). Retry the same checkpoint."}
         require(c.getHeaderField("X-Vaultor-SHA256")==expected) {"Payload identity differs. Retained checkpoint was not changed."}
         if(offset>0)require(c.getHeaderField("Content-Range")=="bytes $offset-${length-1}/$length") {"Invalid download range."}
@@ -135,7 +137,7 @@ class VaultorCompanions(private val ctx:Context,
     if(part.length()!=length || hash(part)!=expected){part.delete();error("Downloaded bytes failed verification. Retry; previous copy remains.")}
     check(part.renameTo(target));update(id,"bytes" to baseBytes+length-startOffset);return target
   }
-  private fun download(a:JSONObject,id:String,selection:JSONObject) {
+  private fun download(a:JSONObject,id:String,selection:JSONObject,admission:Long) {
     val caps=call(a,"/capabilities");require(caps.optInt("companionSnapshots")>=1){"Update this host to 0.11.0 or later for offline downloads."}
     fun identity() {val identity=call(a,"/workspace/identity");val source=JSONArray(a.getString("scope"));if(identity.getString("id")!=source.getString(1) || identity.getString("generation")!=source.getString(2)){lock(a.getString("scope"));error("Workspace replaced. Reconnect; former reading copy remains locked.")}}
     identity()
@@ -149,7 +151,7 @@ class VaultorCompanions(private val ctx:Context,
     // The exact canonical manifest is verified independently; never parse a 64 MiB manifest into JS.
     val manifestConnection=connection(a,"/companions/$id/payloads/manifest.json","GET")
     val manifestLength:Long
-    try {manifestConnection.setRequestProperty("If-Match","\"$pin\"");require(manifestConnection.responseCode==200);manifestLength=manifestConnection.contentLengthLong;require(manifestLength in 1..67108864)}finally {manifestConnection.disconnect()}
+    try {manifestConnection.setRequestProperty("If-Match","\"$pin\"");val status=manifestConnection.responseCode;if(status!=200){val b=manifestConnection.errorStream?.use{it.readNBytes(16385)}?:byteArrayOf();if(b.size<=16384)observeScopeResponse(a.getString("scope"),"/companions/$id/payloads/manifest.json",status,runCatching{JSONObject(String(b))}.getOrDefault(JSONObject()))};require(status==200);manifestLength=manifestConnection.contentLengthLong;require(manifestLength in 1..67108864)}finally {manifestConnection.disconnect()}
     val manifest=payload(a,id,"manifest.json",JSONObject().put("bytes",manifestLength).put("sha256",pin),pin)
     android.util.JsonReader(manifest.reader()).use {reader->val seen=mutableSetOf<String>();val source=JSONArray(a.getString("scope"));reader.beginObject();while(reader.hasNext())when(val name=reader.nextName()){
       "version"->{require(reader.nextInt()==1){"Unsupported reading manifest. Update the client before downloading."};seen.add(name)}
@@ -184,26 +186,40 @@ class VaultorCompanions(private val ctx:Context,
     do {val coverage=call(a,"/companions/$id/coverage?page=$coveragePage&size=100",pin=pin);val items=coverage.getJSONArray("items");require(items.length()<=100);omissions+=items.length();require(omissions<=20000);transaction {for(i in 0 until items.length()){val e=items.getJSONObject(i);db.execSQL("INSERT OR REPLACE INTO coverage(job,id,reason) VALUES(?,?,?)",arrayOf(id,UUID.fromString(e.getString("id")).toString(),e.getString("reason").take(180)))}};coveragePage++}while(coveragePage<coverage.getInt("totalPages"))
     guard(a);identity();syncDirectory(File(root,id));syncDirectory(root)
     val previous=rows("SELECT active FROM sources WHERE scope=?",arrayOf(a.getString("scope"))).firstOrNull()?.optString("active")
-    transaction {update(id,"status" to "ready","organization" to orgText,"at" to System.currentTimeMillis(),"detail" to "$count resources · $omittedOriginals originals not downloaded · $omissions unavailable/unselected links")
-      db.execSQL("UPDATE sources SET active=?,locked=0 WHERE scope=?",arrayOf(id,a.getString("scope"))) }
+    synchronized(owner) {synchronized(owner.access){check(owner.revision(a.getString("scope")).get()==admission){"Source invalidated during download. Verify approval and refresh again."};transaction {update(id,"status" to "ready","organization" to orgText,"at" to System.currentTimeMillis(),"detail" to "$count resources · $omittedOriginals originals not downloaded · $omissions unavailable/unselected links")
+      db.execSQL("UPDATE sources SET active=?,locked=0 WHERE scope=?",arrayOf(id,a.getString("scope"))) };owner.denied.remove(a.getString("scope")) }}
     if(!previous.isNullOrEmpty() && previous!=id)deleteJob(previous)
     try {changed(a.getString("scope"))}catch(_:Exception){ /* Cold restoration reads the committed pointer. */ }
     try {call(a,"/companions/$id","DELETE",retry=40)}catch(_:Exception){ /* Host expiry cleans up an unavailable cache; local bytes stay verified. */ }
   }
   private fun savedText(doc:JSONObject):String {val out=StringBuilder();fun visit(n:JSONObject,depth:Int){if(depth>64 || out.length>=1048576)return;n.optString("text").takeIf {it.isNotEmpty()}?.let {out.append(it).append(' ')};n.optJSONObject("attrs")?.let {at->for(k in listOf("caption","alt","label"))out.append(at.optString(k)).append(' ')};val c=n.optJSONArray("content");if(c!=null)for(i in 0 until c.length())visit(c.getJSONObject(i),depth+1)};visit(doc,0);return out.take(1048576).toString()}
   fun list():JSONArray=JSONArray(rows("SELECT j.*,s.active,s.locked,s.name FROM jobs j JOIN sources s ON s.scope=j.scope ORDER BY j.at DESC").map {if(!busy.get() && it.optString("status")=="downloading")it.put("status","paused");it.put("bytes",it.optLong("bytes")).put("workerActive",busy.get());it})
-  fun available(host:String,workspace:String):JSONObject?=rows("SELECT s.*,j.at,j.detail FROM sources s JOIN jobs j ON s.active=j.id WHERE s.locked=0 ORDER BY j.at DESC").firstOrNull {val parts=JSONArray(it.getString("scope"));parts.getString(0)==host && (workspace.isEmpty() || parts.getString(1)==workspace)}
+  fun available(host:String,workspace:String):JSONObject?=rows("SELECT s.*,j.at,j.detail FROM sources s JOIN jobs j ON s.active=j.id WHERE s.locked=0 ORDER BY j.at DESC").firstOrNull {val parts=JSONArray(it.getString("scope"));parts.getString(0)==host && (workspace.isEmpty() || parts.getString(1)==workspace) && !isLocked(it.getString("scope"))}
   fun blocked(host:String,workspace:String):JSONObject?=rows("SELECT scope FROM sources WHERE locked=1").firstOrNull {val parts=JSONArray(it.getString("scope"));parts.getString(0)==host && (workspace.isEmpty() || parts.getString(1)==workspace)}?.put("locked",true)
-  fun isLocked(scope:String)=rows("SELECT locked FROM sources WHERE scope=?",arrayOf(scope)).firstOrNull()?.optString("locked")=="1"
-  fun lock(scope:String) {db.execSQL("UPDATE sources SET locked=1 WHERE scope=?",arrayOf(scope));try {changed(scope)}catch(_:Exception){}}
+  fun isLocked(scope:String)=owner.denied.contains(scope) || rows("SELECT locked FROM sources WHERE scope=?",arrayOf(scope)).firstOrNull()?.optString("locked")=="1"
+  fun lock(scope:String) {synchronized(owner.access){owner.denied.add(scope);owner.revision(scope).incrementAndGet()};try{synchronized(owner){db.execSQL("INSERT INTO sources(scope,locked,name) VALUES(?,1,'Unavailable source') ON CONFLICT(scope) DO UPDATE SET locked=1",arrayOf(scope))}}finally{try {changed(scope)}catch(_:Exception){}}}
+  /** Consume only a captured pinned connection's response, never an arbitrary JS error. */
+  internal fun observeResponse(source:JSONObject,path:String,status:Int,body:JSONObject) {
+    val host=source.getString("hostId");val workspace=source.optString("workspaceId")
+    if(VaultorSourceAccess.invalidates(path,status,body)) {
+      val generation=source.optString("generation")
+      if(workspace.isEmpty() && status in listOf(404,409))return
+      if(workspace.isNotEmpty() && generation.isNotEmpty())lock(JSONArray(listOf(host,workspace,generation)).toString())
+      if(status!=409)observe(host,if(status==401)"" else workspace,revoked=true)
+    } else if(status==200 && path=="/workspace/identity" && body.optString("id")==workspace) {
+      observe(host,workspace,body.getString("generation"))
+    }
+  }
+  internal fun observeScopeResponse(scope:String,path:String,status:Int,body:JSONObject) {val p=JSONArray(scope);observeResponse(JSONObject().put("hostId",p.getString(0)).put("workspaceId",p.getString(1)).put("generation",p.getString(2)),path,status,body)}
+  internal fun requireAccess(scope:String) {check(!isLocked(scope)){"Source is locked. Verify approval and refresh before reading."}}
   fun observe(host:String,workspace:String,generation:String?=null,revoked:Boolean=false) {rows("SELECT scope FROM sources").forEach {r->val s=r.getString("scope");val p=JSONArray(s);if(p.getString(0)==host && (workspace.isEmpty() || p.getString(1)==workspace) && (revoked || (generation!=null && p.getString(2)!=generation)))lock(s)}}
   private fun active(scope:String):String=rows("SELECT active FROM sources WHERE scope=? AND locked=0",arrayOf(scope)).firstOrNull()?.optString("active")?.takeIf {it.isNotEmpty()} ?: error("No unlocked downloaded reading copy for this workspace.")
-  fun file(scope:String,id:String):File? {val job=active(scope);val e=rows("SELECT entry FROM resources WHERE job=? AND id=?",arrayOf(job,id)).firstOrNull()?.let {JSONObject(it.getString("entry"))} ?: return null;val b=e.optJSONObject("binary") ?: return null;if(b.optString("state")!="available")return null;val f=File(File(root,job),"$id.bin");require(f.length()==b.getLong("bytes") && hash(f)==b.getString("sha256")) {"Downloaded original is damaged. Refresh this companion."};return f}
+  fun file(scope:String,id:String):File? {val job=active(scope);val e=rows("SELECT entry FROM resources WHERE job=? AND id=?",arrayOf(job,id)).firstOrNull()?.let {JSONObject(it.getString("entry"))} ?: return null;val b=e.optJSONObject("binary") ?: return null;if(b.optString("state")!="available")return null;val f=File(File(root,job),"$id.bin");require(f.length()==b.getLong("bytes") && hash(f)==b.getString("sha256")) {"Downloaded original is damaged. Refresh this companion."};requireAccess(scope);return f}
   fun query(scope:String,path:String):JSONObject {
     val job=active(scope);val uri=URI(path);val route=uri.path;require(uri.scheme==null && uri.rawAuthority==null && uri.fragment==null)
     val params=uri.rawQuery.orEmpty().split('&').filter {it.isNotEmpty()}.associate {val p=it.split('=',limit=2);java.net.URLDecoder.decode(p[0],"UTF-8") to java.net.URLDecoder.decode(p.getOrElse(1){""},"UTF-8")}
     val entryId=Regex("/resources/([a-fA-F0-9-]{36})(?:/summary)?").matchEntire(route)?.groupValues?.get(1)
-    if(entryId!=null){val row=rows("SELECT entry FROM resources WHERE job=? AND id=?",arrayOf(job,entryId)).firstOrNull() ?: error("Not downloaded. Connect and include this resource; the current note remains open.");val e=JSONObject(row.getString("entry"));require(e.optString("state")=="available"){"Resource unavailable in this reading copy."};if(!route.endsWith("/summary") && e.getString("type")=="note"){val d=e.getJSONObject("document");val f=File(File(root,job),"$entryId.json");require(hash(f)==d.getString("sha256"));e.put("content",JSONObject(f.readText()))};return e}
+    if(entryId!=null){val row=rows("SELECT entry FROM resources WHERE job=? AND id=?",arrayOf(job,entryId)).firstOrNull() ?: error("Not downloaded. Connect and include this resource; the current note remains open.");val e=JSONObject(row.getString("entry"));require(e.optString("state")=="available"){"Resource unavailable in this reading copy."};if(!route.endsWith("/summary") && e.getString("type")=="note"){val d=e.getJSONObject("document");val f=File(File(root,job),"$entryId.json");require(hash(f)==d.getString("sha256"));e.put("content",JSONObject(f.readText()))};requireAccess(scope);return e}
     require(route in listOf("/resources","/resources/query","/collections","/organization/pins","/tags/browse")) {"This action requires a connected host."}
     val q=params["q"].orEmpty().take(500).lowercase();val type=params["type"] ?: params["kind"].orEmpty();val cat=params["category"].orEmpty();val collection=params["collection"];val content=route=="/resources/query";val favorite=route=="/organization/pins" || params["favorites"]=="true"
     val pattern="%"+q.replace("\\","\\\\").replace("%","\\%").replace("_","\\_")+"%"
@@ -228,7 +244,7 @@ class VaultorCompanions(private val ctx:Context,
     val order=when(sort){"title"->"titlekey ASC,id ASC";"recent"->"recent DESC,id ASC";else->"updated DESC,id ASC"}
     val size=(params["size"]?.toIntOrNull() ?: 100).coerceIn(1,100);val page=(params["page"]?.toIntOrNull() ?: 0).coerceIn(0,100000)
     val items=rows("SELECT entry,shortcut FROM ($query) ORDER BY $order LIMIT ? OFFSET ?",args+arrayOf(size.toString(),(page*size).toString())).map {row->val e=JSONObject(row.getString("entry"));if(route=="/organization/pins"){if(row.getString("shortcut")=="collection")e.put("kind","collection")else JSONObject().put("kind","resource").put("id",e.getString("id")).put("resource",e)}else e}
-    return JSONObject().put("items",JSONArray(items)).put("page",page).put("size",size).put("totalItems",total).put("totalPages",(total+size-1)/size).put("downloadedOnly",true)
+    requireAccess(scope);return JSONObject().put("items",JSONArray(items)).put("page",page).put("size",size).put("totalItems",total).put("totalPages",(total+size-1)/size).put("downloadedOnly",true)
   }
   /** Keep the captured immutable job alive while a partial export streams its payloads. */
   fun exportSnapshot(scope:String,consume:(JSONObject,List<JSONObject>,File)->Unit)=synchronized(owner){

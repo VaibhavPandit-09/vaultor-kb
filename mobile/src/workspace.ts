@@ -903,6 +903,7 @@ export class MobileWorkspace {
   }
   lockCompanion(scope: string) {
     if (this.state.scope !== scope) return;
+    this.epoch++;
     this.navigation++;
     this.journeyRequest++;
     this.patch({
@@ -915,6 +916,14 @@ export class MobileWorkspace {
       error:
         'Access or workspace generation changed. This reading companion is locked; recovery remains separate.',
     });
+  }
+  async verifyRetainedAccess() {
+    const { host, scope, downloaded } = this.state;
+    if (!host || !downloaded) return;
+    const current = await this.availableCompanion(host);
+    if (this.state.host === host && this.state.scope === scope &&
+        (!current || current.locked || current.scope !== scope))
+      this.lockCompanion(scope);
   }
   private readApi(path: string) {
     if (!this.state.host) return Promise.reject(Error('Choose a workspace.'));
