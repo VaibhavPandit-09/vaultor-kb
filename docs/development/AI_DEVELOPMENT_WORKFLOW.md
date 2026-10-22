@@ -1,203 +1,54 @@
-# Vaultor AI Development & Integration Workflow
+# Vaultor AI development and integration workflow
 
-> **Status:** Engineering workflow contract  
-> **Purpose:** Keep parallel AI development safe, reviewable, and easy to integrate.
+Reviewed 2026-10-23. This is the authoritative Git workflow for Vaultor, a primarily single-developer, AI-assisted project. It supersedes the former automatic milestone-branch and integration-branch pattern. Product, security, UI and release contracts remain in force.
 
----
+## Master-centered direct development
 
-## 1. Master is the product baseline
+`master` is the default working branch and authoritative development baseline. New Codex chats and new milestones do not automatically create branches or worktrees. Work directly on master in small coherent commits within the user's authorized scope.
 
-`master` is always the authoritative integrated product baseline. A feature branch or acceptance APK does not supersede it.
+Before editing, fetch and inspect the actual remote/local master tips, working tree and worktree inventory. Preserve unrelated changes. Use the existing master checkout; if master is checked out elsewhere, inspect that checkout rather than creating another integration branch. Never start from an obsolete feature branch because a previous chat used it. A new milestone still requires authorization, but does not require a branch.
 
-Fetch before beginning a milestone, verify the actual remote and local master tips and working trees, then start its temporary isolated branch/worktree from current verified `master`.
+Validate changes before committing or pushing. Keep ordinary checks focused on compilation and changed failure-prone behavior; run full regressions and native/release suites at meaningful integration/release checkpoints. Maintain CODEBASE and supporting contracts in the same coherent change. Durable context belongs in source, tests, documentation, Git history and release notes.
 
-Do not begin a new roadmap milestone from an old feature branch merely because the previous AI chat still has context.
+## When isolation is justified
 
-Durable context belongs in:
+Create a temporary branch/worktree only when explicitly requested, when concurrent work requires isolation, or when a substantial risky experiment warrants it. State the reason and use the latest verified master as the baseline unless the user explicitly names another source. A new chat or milestone alone is not a reason. Reuse suitable existing isolation where practical.
 
-- source code;
-- tests;
-- documentation;
-- Git history;
-- release notes.
+Concurrent agents must stay in their assigned scopes and must not merge, rebase onto, cherry-pick from or otherwise incorporate another active agent branch without explicit integration authorization. Do not continuously synchronize active feature branches. Preserve coherent history and document integration-sensitive changes.
 
----
+## Direct integration into master
 
-## 2. One branch, one responsibility
+Do not create a separate integration branch for routine work. When integrating an authorized temporary branch, fetch, inspect both histories and diffs from their common base, verify cleanliness and check GitHub branch protection/rules and required checks first.
 
-Examples:
+If direct merging is permitted, use the clean master checkout:
 
-- `ai/codex-ui-redesign` — desktop UI transformation
-- `ai/codex-r5` — R5 review functionality
-- `ai/codex-r6-android` — R6 + Android companion UI work
-- `integration/r5-redesign` — integration only
+```text
+git fetch origin --tags
+git switch master
+git merge --ff-only origin/master
+git merge --no-ff --no-commit <authorized-source>
+# Inspect every changed file, resolve semantically, validate and update docs.
+git diff --cached --check
+git commit
+git push origin master
+```
 
-An active implementation branch must not continuously merge other active AI branches.
+Use the actual authorized source, never a guessed historical branch. Review automatically merged files as well as conflicts. If there is genuine unresolved product/security/compatibility ambiguity, stop and explain it. Do not mechanically choose ours/theirs or revert accepted presentation architecture. If a merge cannot be completed safely, preserve the source and report the blocker; do not rewrite history as a shortcut.
 
----
+If protections require a PR or checks, use that required route with the existing source branch, attach any created PR to the task, and wait for required checks/reviews. Never bypass protections, disable checks, use force-push, or rewrite established history. An explicit user request does not authorize bypassing repository policy.
 
-## 3. Fresh integration chat for divergent major branches
+## Product and presentation precedence
 
-When two major branches have diverged substantially, use a fresh AI conversation as integration engineer.
+Preserve all approved product/UI contracts unless a change is explicitly authorized. Current master owns integrated architecture and presentation; an authorized feature contributes its intended domain semantics. Tests and explicit contracts take precedence over incidental implementation details. Preserve resources, structured Tiptap JSON, shared clients/settings/tokens, centralized Escape/focus/Back, host authority, source isolation and protected journals.
 
-The integration agent must have an explicit precedence contract.
+For UI work read UI_PHILOSOPHY.md completely; Android-facing work also requires ANDROID_UI_PHILOSOPHY.md. Major interaction changes require explicit authorization and meaningful user review. Milestone, integration and release authorization do not authorize a redesign. Electron is authoritative for desktop runtime; browser/Vite is supplementary. Inspect motion in motion. Emulator evidence cannot certify physical Samsung/OEM/tactile quality, TalkBack speech or real-LAN behavior. Do not self-certify unperformed platform checks.
 
-Example:
+## Release and recovery points
 
-- `master` owns current presentation/UI/motion architecture;
-- `ai/codex-r5` owns R5 functional/domain semantics.
+Finish release qualification before tagging. Follow RELEASE-PROCESS.md and Android's separate release contract: deliberate version/lock bumps, fresh UI/server/runtime as needed, original signing identity, native checks and verified installer/sidecar pairs. Reconcile old branch release metadata without downgrading current versions or republishing historical bytes.
 
-A conflict is resolved semantically, not by mechanically choosing "ours" or "theirs."
+Use immutable release tags as stable recovery points. Never move existing tags, replace published assets, force-push or rewrite established history. A correction to a published app needs a new version; only the documented exact-source absent-platform addition is permitted. Respect platform gates and report unavailable hardware precisely. Documentation/test-only changes do not require new installers.
 
-Automatically merged files must also be reviewed. A clean Git merge does not prove a clean product integration.
+After any integration, verify master contains the intended source and earlier integrated functionality, record actual tests/limitations, and push coherent changes. Preserve historical branches and worktrees; do not delete them automatically. Branch/worktree retirement requires explicit user direction.
 
----
-
-## 4. Preferred integration branch pattern
-
-Create the integration branch from current `master`:
-
-`integration/<feature>-<baseline>`
-
-Then inspect both branch diffs from their common base.
-
-Preferred first attempt:
-
-- merge source branch with `--no-commit`;
-- inspect all changed files;
-- resolve/adapt presentation conflicts;
-- test before creating the integration commit.
-
-If the merge produces an unreasonably tangled result:
-
-- abort;
-- port/cherry-pick coherent functional layers in dependency order;
-- adapt presentation work explicitly to the current baseline.
-
-Never "solve" integration by reverting the current design system to an older feature branch's UI.
-
----
-
-## 5. Integration precedence
-
-Unless the user specifies otherwise:
-
-1. current `master` architecture and documentation win for current product structure;
-2. feature branch domain semantics win for the feature it implemented;
-3. current UI philosophy wins for presentation;
-4. current Android UI philosophy wins for Android interaction/haptics;
-5. tests and explicit product contracts beat incidental implementation details;
-6. if two branches imply different product behavior, stop and ask instead of guessing.
-
----
-
-## 6. Version/release files
-
-Old feature branches may contain release/version metadata that was correct when they were created.
-
-During integration:
-
-- do not accidentally downgrade current product versions;
-- preserve historical release notes;
-- reconcile current versioning intentionally;
-- do not republish historical artifacts as if newly built;
-- follow the current release process for new artifacts.
-
----
-
-## 7. Milestone lifecycle
-
-For R6 and later, require:
-
-1. latest verified `master`;
-2. fresh branch `ai/codex-rN[-scope]`;
-3. fresh milestone chat;
-4. audit/plan;
-5. user approval;
-6. implement in coherent slices;
-7. tests + runtime verification side by side;
-8. small commits;
-9. push;
-10. milestone review;
-11. integrate to `master`;
-12. verify `master`;
-13. only then begin R(N+1).
-
-Avoid one endless AI chat spanning many major milestones.
-
-A completed milestone must be integrated and verified on master before the next milestone begins. Never silently start from an unmerged or obsolete feature branch. An explicit user-authorized combined milestone or integration task is an exception, and its source ancestry and scope must be documented. Isolated branches/worktrees are temporary implementation environments, not competing product baselines. Preserve source branches unless the user separately authorizes deletion.
-
-R7–R9 consolidation is complete on master63668b0 with Windows0.16.0/Androidalpha.28 publication; see [integration](../plans/R7-R9-INTEGRATION.md). R10 is unstarted and requires fresh authorization from fetched master; see [handoff](../plans/R10-HANDOFF.md). Temporary branches/worktrees and historical candidate APKs are not alternate baselines.
-
----
-
-## 8. UI review gates
-
-Major UI or interaction changes require explicit user authorization before implementation and must stop for user review at meaningful gates. Milestone/integration authorization does not authorize redesigning accepted screens. Preserve all approved design and domain contracts, including the resource model, structured documents, host authority, source isolation, protected queues and centralized interaction ownership.
-
-Desktop examples:
-
-- Library transformation;
-- pane transitions;
-- preview geometry;
-- theme reveal.
-
-Android examples:
-
-- navigation shell;
-- reader chrome;
-- review capture;
-- major offline/sync transitions;
-- haptic vocabulary;
-- theme transition.
-
-The implementing agent does not get to self-certify subjective motion/haptic quality.
-
----
-
-## 9. Desktop validation
-
-For desktop-facing UI:
-
-- Electron runtime is authoritative;
-- browser/Vite is supplementary;
-- motion must be inspected in motion;
-- static screenshots cannot certify temporal quality.
-
----
-
-## 10. Android validation
-
-For Android-facing UI:
-
-- emulator is useful for deterministic layout/testing;
-- real-device validation is required for final haptic feel and important touch/motion interactions;
-- system settings/accessibility must be respected;
-- screenshots cannot certify haptic or motion quality.
-
----
-
-## 11. Handoff at branch completion
-
-Before an implementation branch is considered ready:
-
-- working tree clean;
-- branch pushed;
-- tests/builds documented;
-- relevant native/runtime checks documented;
-- CODEBASE/current tracker updated as required;
-- major risks listed;
-- integration-sensitive files listed;
-- branch does not contain unrelated changes.
-
----
-
-## 12. Branch retirement
-
-After successful integration and master verification:
-
-- tag important historical states when useful;
-- retain source branch until confidence/release threshold is reached;
-- then delete the branch if desired.
-
-Do not delete the only copy of unintegrated work.
+Complete only the authorized work and stop at its requested completion/acceptance gate. Do not automatically begin the next milestone or post-roadmap product work.

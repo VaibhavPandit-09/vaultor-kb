@@ -2,6 +2,8 @@
 
 Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow guide. Agents also read [AGENTS.md](../AGENTS.md). Keep one authoritative explanation per topic and update the guide in every relevant change.
 
+- [Master-centered AI development workflow](development/AI_DEVELOPMENT_WORKFLOW.md): direct development on master, justified isolation only, protected integration, validation and immutable release recovery points.
+
 - [R10 integrated qualification](plans/R10-ACCEPTANCE.md): consolidated engineering candidate, measured evidence, remaining platform/manual acceptance and final merge/publication plan.
 - [R10 Windows0.16.1 candidate](desktop/releases/v0.16.1.md): measured companion-manifest correction, reproduced editor dependency correction, compatibility and unpublished build qualification.
 

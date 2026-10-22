@@ -1,6 +1,6 @@
 # R10 integrated qualification
 
-Reviewed 2026-10-22. **R10 engineering candidate ready for final user acceptance; unpublished and unmerged.** Requalification after dependency-advisory discovery is complete for the available Windows/Android environments. The user requires final acceptance before merge or publication. No post-R10 work is authorized. Remaining platform/manual acceptance and tooling-advisory limitations below are not claimed as passes.
+Reviewed2026-10-23. **R10 completion, direct master integration and Windows0.16.1 publication authorized by the user.** Candidate5145f21 merged as2918d85 without history rewriting; final merged-source regression/release checks are in progress. Remaining platform/manual acceptance and tooling-advisory limitations below are not claimed as passes. No post-R10 product work is authorized. Earlier acceptance-stop statements describe the completed candidate checkpoint.
 
 ## Baseline and evidence rules
 
@@ -136,3 +136,12 @@ After final R10 acceptance:
 Reproduction entry points: `desktop/scripts/r10-fixture.mjs` owns marked disposable host creation/resume/normal matching-code approval; `r10-manifest-benchmark.mjs` requires its explicit loopback `R10_OWNER_ADDRESS`; `r10-desktop.mjs` requires an explicit production `R10_APP` and corpus root, with optional guarded retained-profile resume; `r10-fixture-actions.mjs` performs marked owner-side original verification/conditional Review resolution/grant/replacement and archive round trips. Native R10 scale/interaction/concurrent tests require an explicit emulator serial and normal pinned enrollment. Never copy fixture approval credentials into arguments or archives. Raw local reports are ignored under `desktop/cache/r10`, not portable product data.
 
 Final housekeeping: requested normal stop of the R10 fixture; its49684/49696 listeners are closed. Explicit R10 emulators5554/5556 are stopped; original AVDs/databases remain preserved. Local candidate files/evidence remain available for acceptance. The original checkout is clean and untouched. Final documentation/test-cleanup changes do not alter the d95116e packaged production tree. No merge, tag, draft upload or publication was performed.
+
+## Authorized integration and release — 2026-10-23
+
+Fetched master7b7f4f4 and R10 candidate5145f21; both clean and unchanged from the measured candidate. GitHub master protection=false, required contexts empty and active rules=[] permitted direct integration. Merge2918d85 has parents7b7f4f4/5145f21, and its tree exactly equals the candidate. Released63668b0 and all five R10 commits remain ancestors. No integration branch, force push or history rewrite. The primary checkout is now master; historical branches/worktrees are retained. The permanent master-centered workflow is in AI_DEVELOPMENT_WORKFLOW.md and AGENTS.md. Final results and published asset identity follow after qualification.
+
+Fresh merged-source frontend324/68 files and mobile111/24 suites passed; TypeScript/reader runtime and frontend/desktop production audits0 passed. Initial backend run:120 tests/0 assertion failures/1 maintenance409 polling error in NoteExportServiceTests. Reproduced at TransferService.get while the snapshot gate excluded request admission; only the test helper now retries the exact409 reason within20seconds, all other refusals still propagate. Focused NoteExport3 passed. This is a diagnostic race correction, not a product/API/security change; initial logs remain desktop/cache/r10-release/backend-tests.log.
+
+Full corrected backend rerun120/120 passed (backend-tests-rerun.log), following focused NoteExport3/3. Fresh UI/TypeScript passed. No application security/data-integrity/compatibility/signing blocker was established by the polling failure.
+Fresh merged-source desktop44/44 passed against the freshly built bundled server; original release trust and all Android product files are unchanged. Native API36/API37 candidate evidence remains applicable and was not falsely counted as a new emulator run.

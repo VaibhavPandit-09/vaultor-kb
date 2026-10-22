@@ -51,8 +51,8 @@ Haptics are a first-class part of Android interaction design. Design motion and 
 Do not equate "fully use haptics" with vibrating on every tap. Frequent interactions must remain subtle; meaningful state changes may use stronger or richer feedback; passive/background events should usually remain silent.
 Significant haptic interactions are not considered polished until verified on real Android hardware. Emulator-only validation cannot certify haptic quality.
 For Android UI work, static screenshots cannot certify motion quality. Inspect important transitions in motion on an Android runtime and verify meaningful touch/haptic interactions on real hardware.
-AI branch and integration workflow
-Read `docs/development/AI_DEVELOPMENT_WORKFLOW.md` before integrating divergent AI branches or starting a new major roadmap milestone.
+Master-centered direct development
+Read `docs/development/AI_DEVELOPMENT_WORKFLOW.md` before development or integration. Master is the default working branch: new chats and milestones do not automatically create feature branches or worktrees. Work directly on master with small coherent commits; validate before committing/pushing and complete release qualification before tagging. Do not create a separate integration branch for routine work. Temporary isolation is appropriate only when explicitly requested, concurrent work requires it, or a substantial risky experiment warrants it. Respect GitHub branch protections and required PR checks. Never force-push or rewrite established history. Use immutable release tags as recovery points and never delete historical branches automatically. Preserve approved product/UI contracts unless change is explicitly authorized.
 Do not let an old feature branch overwrite newer presentation architecture merely because Git can merge it automatically. Integration must preserve feature semantics while adapting presentation to the current product baseline.
 
 Motion is part of the interaction architecture. Do not merely add animation on top of otherwise static layout decisions. Where appropriate, use motion to communicate continuity, compression, expansion, navigation, focus, hierarchy, and cause-and-effect.
@@ -71,7 +71,7 @@ Each agent should remain within its assigned scope, make small coherent commits,
 
 During parallel development, optimize for clear intent and coherent commits rather than trying to keep the branches continuously synchronized.
 
-Final branch integration will be handled as a separate task.
+When integration is authorized, integrate directly into master through the documented procedure or required PR route; a separate integration branch is not the default.
 
 ## Agent-owned releases
 

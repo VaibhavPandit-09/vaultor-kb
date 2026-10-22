@@ -22,7 +22,19 @@ class NoteExportServiceTests {
     @Autowired ExporterRegistry exporters;
     @Autowired WorkspaceGate gate;
     static String doc(String text) {return "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\""+text+"\"}]}]}";}
-    TransferService.Operation finish(String id) throws Exception {long end=System.nanoTime()+20_000_000_000L;TransferService.Operation op;do{op=transfers.get(id);if(!List.of("QUEUED","RUNNING").contains(op.status()))return op;Thread.sleep(20);}while(System.nanoTime()<end);fail("Export timed out");return op;}
+    TransferService.Operation finish(String id) throws Exception {
+        long end=System.nanoTime()+20_000_000_000L;
+        do {
+            try {
+                var op=transfers.get(id);
+                if(!List.of("QUEUED","RUNNING").contains(op.status()))return op;
+            } catch(org.springframework.web.server.ResponseStatusException e) {
+                if(e.getStatusCode().value()!=409 || !"Workspace maintenance is in progress. Retry shortly.".equals(e.getReason()))throw e;
+            }
+            Thread.sleep(20);
+        } while(System.nanoTime()<end);
+        throw new AssertionError("Export timed out");
+    }
     @Test void snapshotsBeforeReturningAndUsesDiscoverableFormatsAndDownloadMetadata() throws Exception {
         var note=resources.createNote("workspace",doc("Original snapshot"));
         org.slf4j.MDC.put("requestId","note-export-check");
