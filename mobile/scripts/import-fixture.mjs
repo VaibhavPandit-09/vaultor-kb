@@ -1,0 +1,23 @@
+// Explicit disposable R7 fixture. Owner credentials stay in memory, never descriptors/logs.
+import {OwnedServer} from '../../desktop/src/owned-server.mjs';
+import {mkdtemp,writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {randomUUID} from 'node:crypto';
+import {createInterface} from 'node:readline';
+const root=await mkdtemp(join(tmpdir(),'vaultor-r7-import-'));process.env.HOST_NETWORK_PORT='0';
+const owned=new OwnedServer({bundle:fileURLToPath(new URL('../../desktop/bundle/',import.meta.url)),data:join(root,'data')});
+async function api(path,method='GET',body,workspace){for(let n=0;n<200;n++){const r=await fetch(owned.address+'/api'+path,{method,headers:{'X-Vaultor-Owner':owned.accessKey,'X-Vaultor-Protocol':'3',...(workspace?{'X-Vaultor-Workspace':workspace}:{}),...(body&&!(body instanceof FormData)?{'Content-Type':'application/json'}:{})},body:body instanceof FormData?body:body?JSON.stringify(body):undefined});const text=await r.text();const data=text?JSON.parse(text):null;if(r.status===409&&data?.code==='WORKSPACE_BUSY'){await new Promise(resolve=>setTimeout(resolve,25));continue;}if(!r.ok)throw Error('Disposable fixture request refused '+r.status);return data;}throw Error('Maintenance did not settle');}
+try{
+ await owned.start();const sharing=await api('/owner/sharing','PUT',{enabled:true});const identity=await api('/workspace/identity');const secondId=randomUUID();await api('/owner/workspaces/'+secondId,'PUT',{name:'R7 other workspace'});const second=await api('/workspace/identity','GET',undefined,secondId);
+ const note=await api('/resources','POST',{title:'R7 preserved reader fixture',content:{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Original R6 reader and Review contracts remain intact.'}]}]}});
+ const descriptor={address:`https://127.0.0.1:${sharing.port}`,port:sharing.port,identity,second,noteId:note.id,revision:note.revision,root};
+ await writeFile(new URL('../cache/r7/fixture.json',import.meta.url),JSON.stringify(descriptor));console.log(JSON.stringify({ready:true,address:descriptor.address}));
+ for await(const line of createInterface({input:process.stdin,terminal:false}))try{const c=JSON.parse(line);if(c.stop)break;
+  if(c.approve){if(!/^[0-9]{6}$/.test(c.approve))throw Error('Expected comparison code');const p=(await api('/owner/pairings')).find(p=>p.code===c.approve&&p.name==='Vaultor Android');if(!p)throw Error('No matching code');await api('/owner/pairings/'+p.id+'/approve','POST',{code:c.approve});for(const d of await api('/owner/devices'))if(d.name==='Vaultor Android')for(const w of [identity.id,secondId])await api('/owner/workspaces/'+w+'/grants','PUT',{deviceId:d.id,allowed:true});console.log('Matching disposable comparison code approved');}
+  if(c.verifyId){if(!/^[a-f0-9-]{36}$/.test(c.verifyId))throw Error('Invalid resource identity');const resource=await api('/resources/'+c.verifyId);const original=await api('/resources/'+note.id);if(original.revision!==note.revision)throw Error('Original fixture changed');console.log(JSON.stringify({verified:true,resourceId:resource.id,type:resource.type,title:resource.title}));}
+  if(c.zipId){if(!/^[a-f0-9-]{36}$/.test(c.zipId))throw Error('Invalid ZIP identity');await api('/owner/collected-zips/'+c.zipId+'/preview','POST');await api('/owner/collected-zips/'+c.zipId+'/approve','POST');console.log('Exact ZIP inspected and owner-authorized');}
+  if(c.revoke){for(const d of await api('/owner/devices'))if(d.name==='Vaultor Android')await api('/owner/devices/'+d.id,'DELETE');console.log('Disposable device approval revoked');}
+ }catch(e){console.log('Fixture command refused: '+e.message);}
+}finally{await owned.stop();console.log('Disposable R7 host stopped');}

@@ -38,7 +38,7 @@ try {
     if ($PriorInstaller) { Install-Checked (Resolve-Path -LiteralPath $PriorInstaller).Path }
     Install-Checked
     if (-not $SkipNative) {
-        & node "$PSScriptRoot\chrome-smoke.mjs" (Join-Path $appPath 'Vaultor.exe')
+        & node "$PSScriptRoot\owned-smoke.mjs" (Join-Path $appPath 'Vaultor.exe')
         if ($LASTEXITCODE -ne 0) { throw 'Installed native app check failed' }
     }
     Install-Checked # Same-version repair, not a claim of a different-version upgrade.

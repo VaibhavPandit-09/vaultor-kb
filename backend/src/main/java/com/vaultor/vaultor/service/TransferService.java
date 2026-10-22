@@ -234,6 +234,8 @@ public class TransferService {
             }
             Workspace workspace=readWorkspace(op); if(manifest.version()>=4 && workspace.reviews()==null)throw new IllegalArgumentException("Review section missing"); if(manifest.version()<4 && workspace.reviews()!=null && !workspace.reviews().isEmpty())throw new IllegalArgumentException("Reviews require archive format4"); if(manifest.version()>=2 && workspace.organization()==null) throw new IllegalArgumentException("Organization section missing"); validateWorkspace(workspace,dir);
             if(manifest.version()<5 && (workspace.resources().stream().anyMatch(r->r.importOriginal()!=null)||names.stream().anyMatch(n->n.startsWith("originals/"))))throw new IllegalArgumentException("Import originals require archive format5");
+            Set<String> provenanceEntries=new HashSet<>();for(var r:workspace.resources())if(r.importOriginal()!=null)provenanceEntries.add(r.importOriginal().binary());
+            if(!provenanceEntries.equals(names.stream().filter(n->n.startsWith("originals/")).collect(java.util.stream.Collectors.toSet())))throw new IllegalArgumentException("Import provenance entries do not match note ownership");
             if(workspace.resources().size()!=manifest.resources() || workspace.tags().size()!=manifest.tags()) throw new IllegalArgumentException("Manifest counts do not match");
             List<String> warnings=new ArrayList<>();
             if(workspace.organization()!=null) warnings.add("Organization: "+workspace.organization().collections().size()+" collections; "+workspace.organization().favorites().size()+" favorite resources. Merge matches collections by name and preserves existing collection favorites.");

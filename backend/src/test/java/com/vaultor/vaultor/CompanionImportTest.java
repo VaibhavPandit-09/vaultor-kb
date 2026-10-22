@@ -65,4 +65,16 @@ class CompanionImportTest {
   var d=pair();var store=java.security.KeyStore.getInstance("PKCS12");store.load(null,null);store.setCertificateEntry("host",access.trust.ca());var tm=javax.net.ssl.TrustManagerFactory.getInstance(javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());tm.init(store);var ssl=javax.net.ssl.SSLContext.getInstance("TLS");ssl.init(null,tm.getTrustManagers(),null);var client=HttpClient.newBuilder().sslContext(ssl).build();String base="https://127.0.0.1:"+listener.set(true).get("port")+"/api";
   try{for(String path:List.of("/owner/collected-zips/"+id()+"/approve","/workspace-imports/"+id()+"/commit")){var response=client.send(HttpRequest.newBuilder(URI.create(base+path)).header("Authorization","Bearer "+d.get("credential")).POST(HttpRequest.BodyPublishers.noBody()).build(),HttpResponse.BodyHandlers.ofString());assertEquals(403,response.statusCode());}}finally{listener.set(false);}
  }
+ @Test void ownerApprovalCreatesOneNewWorkspaceAndDoesNotGrantPhoneAdministration()throws Exception {
+  var exported=transfers.export("workspace","zip");assertEquals("SUCCEEDED",await(exported.id()).status());byte[] bytes=Files.readAllBytes(transfers.download(exported.id()));var paired=pair();String operation=id(),device=paired.get("deviceId");int before=catalog.list(null).size();var input=new CollectedZips.Input(access.hostId,catalog.defaultId(),identity.current().generation(),"owner-approved.zip",CompanionImports.hash(new java.io.ByteArrayInputStream(bytes)),bytes.length,"Owner approved independent import");var file=new MockMultipartFile("file","owner-approved.zip","application/zip",bytes);
+  assertEquals("AWAITING_OWNER",zips.submit(operation,input,file,device).state());assertEquals(before,catalog.list(null).size());assertEquals("PREVIEWED",zips.preview(operation).state());assertEquals(before,catalog.list(null).size());zips.approve(operation);zips.approve(operation);CollectedZips.Receipt receipt=null;for(int n=0;n<400;n++){receipt=zips.get(operation,device);if(receipt.state().equals("SUCCEEDED"))break;Thread.sleep(25);}assertNotNull(receipt);assertEquals("SUCCEEDED",receipt.state());assertEquals(operation,receipt.destinationWorkspaceId());assertEquals(before+1,catalog.list(null).size());assertFalse(catalog.allowed(operation,device));assertEquals(receipt,zips.submit(operation,input,file,device));assertEquals(409,assertThrows(AccessFailure.class,()->zips.reject(operation)).status);
+ }
+ @Test void definitiveRefusalIsDurableAndCannotBeChangedUnderSameOperation()throws Exception {
+  var f=new MockMultipartFile("file","unsupported.txt","text/plain",new byte[]{(byte)0xc3,0x28});var input=intent(f,"text",null);String operation=id();
+  assertEquals("IMPORT_ENCODING_UNSUPPORTED",assertThrows(AccessFailure.class,()->imports.create(operation,input,f,"device")).code);
+  assertEquals("IMPORT_ENCODING_UNSUPPORTED",assertThrows(AccessFailure.class,()->imports.create(operation,input,f,"device")).code);
+  assertEquals("IMPORT_ID_REUSED",assertThrows(AccessFailure.class,()->imports.create(operation,intent(f,"original",null),f,"device")).code);
+  assertFalse(resources.existsById(operation));String confirmedNew=id();assertEquals("file",imports.create(confirmedNew,intent(f,"original",null),f,"device").kind());assertFalse(resources.existsById(operation));
+ }
+
 }

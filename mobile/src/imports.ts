@@ -9,6 +9,7 @@ export type ImportItem = {
   detail: string;
   createdAt?: number;
   attempted?: boolean;
+  rejectionCode?: string;
   submitted?: boolean;
   source?: {
     hostId: string;

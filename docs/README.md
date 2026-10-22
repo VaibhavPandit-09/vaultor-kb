@@ -4,6 +4,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Desktop installation, connections and releases — `desktop/`
 
+- [R7 / Windows0.15.0 acceptance candidate](desktop/releases/v0.15.0.md): unpublished compatible host, original-key artifacts, checks and platform limits.
+
 - [0.14.0 integrated desktop and Reviews](desktop/releases/v0.14.0.md): fresh Windows release, installed verification, artifact hashes and exact integrated Mac handoff.
 
 - [0.13.0 spatial desktop UI](desktop/releases/v0.13.0.md): accepted redesign integration, Mac delivery gates and separate Windows feature-stream limits.
@@ -64,6 +66,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 - [API guide](development/API.md): shared UI/agent contracts and diagnostics.
 - [Operations](development/OPERATIONS.md): development, Docker, data/limits, logs and isolated verification.
 - [Host access and pairing](security/HOST-ACCESS.md): owner bootstrap, HTTPS trust, persistent approvals and approved agent access.
+
+- [R7 alpha.24 acceptance ledger](android/releases/0.1.0-alpha.24.md): artifacts, actual faults/upgrade checks, limitations and S24 procedure.
 
 ## Android — `android/`
 

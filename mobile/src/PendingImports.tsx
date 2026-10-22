@@ -108,6 +108,20 @@ export default function PendingImports({
   }
   const header = (
     <View style={s.body}>
+      <Text accessibilityRole="text" style={s.secondary}>
+        {items.filter(item => item.state === 'acknowledged').length} host
+        acknowledgments ·{' '}
+        {
+          items.filter(
+            item => !['acknowledged', 'cancelled'].includes(item.state),
+          ).length
+        }{' '}
+        pending ·{' '}
+        {(
+          items.reduce((total, item) => total + item.bytes, 0) / 1048576
+        ).toFixed(1)}{' '}
+        MiB retained
+      </Text>
       <Text style={s.secondary}>
         Private on this phone · all sources. Originals stay local until the
         confirmed host accepts them.
@@ -333,7 +347,22 @@ export default function PendingImports({
               onPress={() => void run(() => importCall('stop', { id: row.id }))}
             />
           ) : null}
-          {!row.attempted || row.receipt ? (
+          {row.rejectionCode ? (
+            <Action
+              label="Choose a new import after host rejection"
+              disabled={working}
+              onPress={() =>
+                void run(async () => {
+                  const next = await importCall<ImportItem>(
+                    'newAfterRejection',
+                    { id: row.id },
+                  );
+                  inspect(next);
+                })
+              }
+            />
+          ) : null}
+          {!row.attempted || row.receipt || row.rejectionCode ? (
             <Action
               label="Remove local input"
               disabled={working || row.state === 'acquiring'}
