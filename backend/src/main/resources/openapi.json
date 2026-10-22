@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Vaultor API",
-    "version": "1.11.0",
-    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration. 0.8.0 adds bounded isolated host workspaces with optional X-Vaultor-Workspace selection; missing scope always means the fixed legacy workspace. API protocol3/archive3 remain unchanged. 0.9.0 exposes owner grant inspection for client workspace selectors; scope and protocol remain unchanged. 0.10.0 adds owner-only staged import-as-new and native snapshot forks; protocol3/archive3 unchanged. 0.11.0 adds companion checkpoint schema1: immutable hashed inventory/payloads and bounded range resume; protocol3/archive3 unchanged. Android offline storage follows separately. 0.12.0 adds workspace-scoped review evidence/status (reviews:1). API protocol3 remains compatible; workspace archive4 includes portable reviews and rejects unsupported versions. Android alpha.11 remains compatible; capture/sync follows in R6."
+    "version": "1.16.0",
+    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration. 0.8.0 adds bounded isolated host workspaces with optional X-Vaultor-Workspace selection; missing scope always means the fixed legacy workspace. API protocol3/archive3 remain unchanged. 0.9.0 exposes owner grant inspection for client workspace selectors; scope and protocol remain unchanged. 0.10.0 adds owner-only staged import-as-new and native snapshot forks; protocol3/archive3 unchanged. 0.11.0 adds companion checkpoint schema1: immutable hashed inventory/payloads and bounded range resume; protocol3/archive3 unchanged. Android offline storage follows separately. 0.12.0 adds workspace-scoped review evidence/status (reviews:1). API protocol3 remains compatible; workspace archive4 includes portable reviews and rejects unsupported versions. Android alpha.11 remains compatible; capture/sync follows in R6. 0.15.0 adds collectedImports:1, bounded host text/Markdown conversion and immutable receipts, original-byte provenance in archive5, and paired-device ZIP proposals with separate local-owner inspection/authorization. Protocol3 remains compatible; readers of archive4 or below reject new archive5 packages."
   },
   "servers": [
     {
@@ -8900,6 +8900,621 @@
           }
         }
       }
+    },
+    "/companions/import-capabilities": {
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "collectedImportCapabilities",
+        "summary": "Advertise bounded authoritative host imports",
+        "responses": {
+          "200": {
+            "description": "Exact durable result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "const": 1
+                    },
+                    "maxBytes": {
+                      "type": "integer",
+                      "const": 67108864
+                    },
+                    "maxTextBytes": {
+                      "type": "integer",
+                      "const": 5242880
+                    },
+                    "modes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "workspaceZip": {
+                      "type": "string",
+                      "const": "owner-approval"
+                    },
+                    "archiveVersion": {
+                      "type": "integer",
+                      "const": 5
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Owner required"
+          },
+          "404": {
+            "description": "Source or receipt unavailable"
+          },
+          "409": {
+            "description": "Immutable intent/generation conflict, quota or maintenance refusal"
+          },
+          "413": {
+            "description": "Input or conversion limit"
+          }
+        }
+      }
+    },
+    "/resources/collected-imports/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "put": {
+        "operationId": "createCollectedImport",
+        "summary": "Create one generation-bound original/note and exact durable receipt",
+        "description": "Never edits an existing resource. Native sends original bytes with immutable CollectedImportIntent. Same UUID/body retries return the original receipt even after resource edits/purge; mismatch refuses. Converted originals remain associated provenance.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "intent",
+                  "file"
+                ],
+                "properties": {
+                  "intent": {
+                    "type": "string",
+                    "description": "JSON serialized CollectedImportIntent"
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exact durable result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectedImportReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Owner required"
+          },
+          "404": {
+            "description": "Source or receipt unavailable"
+          },
+          "409": {
+            "description": "Immutable intent/generation conflict, quota or maintenance refusal"
+          },
+          "413": {
+            "description": "Input or conversion limit"
+          }
+        }
+      },
+      "get": {
+        "operationId": "getCollectedImportReceipt",
+        "summary": "Read same-device import acknowledgment",
+        "parameters": [
+          {
+            "name": "generation",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exact durable result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectedImportReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Owner required"
+          },
+          "404": {
+            "description": "Source or receipt unavailable"
+          },
+          "409": {
+            "description": "Immutable intent/generation conflict, quota or maintenance refusal"
+          },
+          "413": {
+            "description": "Input or conversion limit"
+          }
+        }
+      }
+    },
+    "/resources/{id}/import-original": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "recoverConvertedImportOriginal",
+        "summary": "Recover original bytes associated with an imported note",
+        "responses": {
+          "200": {
+            "description": "Original unchanged bytes",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No retained provenance or resource unavailable"
+          }
+        }
+      }
+    },
+    "/collected-zips/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "put": {
+        "operationId": "submitCollectedWorkspaceZip",
+        "summary": "Stage a paired-device proposal, without workspace creation authority",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "intent",
+                  "file"
+                ],
+                "properties": {
+                  "intent": {
+                    "type": "string",
+                    "description": "JSON serialized CollectedZipInput"
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exact durable result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectedZipReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Owner required"
+          },
+          "404": {
+            "description": "Source or receipt unavailable"
+          },
+          "409": {
+            "description": "Immutable intent/generation conflict, quota or maintenance refusal"
+          },
+          "413": {
+            "description": "Input or conversion limit"
+          }
+        }
+      },
+      "get": {
+        "operationId": "getCollectedWorkspaceZip",
+        "summary": "Reconcile own immutable proposal with original source grant/generation",
+        "responses": {
+          "200": {
+            "description": "Exact durable result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectedZipReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Owner required"
+          },
+          "404": {
+            "description": "Source or receipt unavailable"
+          },
+          "409": {
+            "description": "Immutable intent/generation conflict, quota or maintenance refusal"
+          },
+          "413": {
+            "description": "Input or conversion limit"
+          }
+        }
+      }
+    },
+    "/owner/collected-zips": {
+      "get": {
+        "operationId": "listCollectedWorkspaceZips",
+        "summary": "Local owner lists private archive proposals",
+        "responses": {
+          "200": {
+            "description": "Exact durable result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CollectedZipReceipt"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Owner required"
+          },
+          "404": {
+            "description": "Source or receipt unavailable"
+          },
+          "409": {
+            "description": "Immutable intent/generation conflict, quota or maintenance refusal"
+          },
+          "413": {
+            "description": "Input or conversion limit"
+          }
+        }
+      }
+    },
+    "/owner/collected-zips/{id}/preview": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "previewCollectedWorkspaceZip",
+        "summary": "Owner inspects archive without publishing a workspace",
+        "responses": {
+          "200": {
+            "description": "Exact durable result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectedZipReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Owner required"
+          },
+          "404": {
+            "description": "Source or receipt unavailable"
+          },
+          "409": {
+            "description": "Immutable intent/generation conflict, quota or maintenance refusal"
+          },
+          "413": {
+            "description": "Input or conversion limit"
+          }
+        }
+      }
+    },
+    "/owner/collected-zips/{id}/approve": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "approveCollectedWorkspaceZip",
+        "summary": "Owner explicitly authorizes exact archive import-as-new",
+        "responses": {
+          "200": {
+            "description": "Exact durable result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectedZipReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Owner required"
+          },
+          "404": {
+            "description": "Source or receipt unavailable"
+          },
+          "409": {
+            "description": "Immutable intent/generation conflict, quota or maintenance refusal"
+          },
+          "413": {
+            "description": "Input or conversion limit"
+          }
+        }
+      }
+    },
+    "/owner/collected-zips/{id}/reject": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "rejectCollectedWorkspaceZip",
+        "summary": "Owner rejects an uncommitted proposal",
+        "responses": {
+          "200": {
+            "description": "Exact durable result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectedZipReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Owner required"
+          },
+          "404": {
+            "description": "Source or receipt unavailable"
+          },
+          "409": {
+            "description": "Immutable intent/generation conflict, quota or maintenance refusal"
+          },
+          "413": {
+            "description": "Input or conversion limit"
+          }
+        }
+      }
+    },
+    "/api/companions/export-capabilities": {
+      "get": {
+        "summary": "Companion export modes and bounded partial package capabilities",
+        "responses": {
+          "200": {
+            "description": "version1, partial package1/archive6,500resources/depth3/256MiB and connected note formats"
+          }
+        }
+      }
+    },
+    "/api/companions/exports/{id}": {
+      "put": {
+        "summary": "Idempotent captured-generation/device export; creates no resource",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanionExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exact operation receipt; readiness includes bytes, SHA256 and partial coverage"
+          },
+          "409": {
+            "description": "Changed generation or immutable intent; retain operation"
+          }
+        }
+      },
+      "get": {
+        "summary": "Reconcile the original device export",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "generation",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Source/device-bound status, exact input, size/checksum and coverage"
+          },
+          "404": {
+            "description": "Not this device or no such operation"
+          },
+          "409": {
+            "description": "Workspace busy/replaced"
+          }
+        }
+      }
+    },
+    "/api/companions/exports/{id}/download": {
+      "get": {
+        "summary": "Immutable export stream with per-chunk source/access checks",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "generation",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exact artifact; X-Vaultor-SHA256, no-store, bounded length"
+          },
+          "409": {
+            "description": "Not ready or original generation unavailable"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10069,7 +10684,11 @@
           },
           "workspaceArchiveVersion": {
             "type": "integer",
-            "description": "Current full archive writer version4; reader accepts1–4"
+            "const": 5
+          },
+          "collectedImports": {
+            "type": "integer",
+            "const": 1
           }
         }
       },
@@ -10856,6 +11475,266 @@
           },
           "generation": {
             "type": "string"
+          }
+        }
+      },
+      "CollectedImportIntent": {
+        "type": "object",
+        "required": [
+          "generation",
+          "filename",
+          "mime",
+          "sha256",
+          "bytes",
+          "mode"
+        ],
+        "properties": {
+          "generation": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "filename": {
+            "type": "string",
+            "maxLength": 180
+          },
+          "mime": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 67108864
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "original",
+              "text",
+              "markdown"
+            ]
+          },
+          "collectionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "CollectedImportReceipt": {
+        "type": "object",
+        "required": [
+          "version",
+          "id",
+          "workspaceId",
+          "generation",
+          "sha256",
+          "fingerprint",
+          "resourceId",
+          "kind",
+          "filename",
+          "bytes",
+          "warnings",
+          "createdAt"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "generation": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "note",
+              "file"
+            ]
+          },
+          "collectionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CollectedZipInput": {
+        "type": "object",
+        "required": [
+          "hostId",
+          "workspaceId",
+          "generation",
+          "filename",
+          "sha256",
+          "bytes",
+          "name"
+        ],
+        "properties": {
+          "hostId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "generation": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer",
+            "maximum": 67108864
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        }
+      },
+      "CollectedZipReceipt": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "input": {
+            "$ref": "#/components/schemas/CollectedZipInput"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "AWAITING_OWNER",
+              "PREVIEWED",
+              "APPROVED",
+              "SUCCEEDED",
+              "REJECTED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "destinationWorkspaceId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "preview": {
+            "type": [
+              "object",
+              "null"
+            ]
+          }
+        }
+      },
+      "CompanionExportRequest": {
+        "type": "object",
+        "required": [
+          "generation",
+          "scope",
+          "ids",
+          "depth",
+          "format"
+        ],
+        "properties": {
+          "generation": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "workspace",
+              "resources",
+              "collection",
+              "note"
+            ]
+          },
+          "ids": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "zip",
+              "partial",
+              "md",
+              "md-assets",
+              "pdf",
+              "docx"
+            ]
           }
         }
       }

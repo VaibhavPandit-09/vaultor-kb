@@ -4,6 +4,7 @@ import {getConnection,saveApiFile} from '../lib/platform';
 import {blockConnectionSwitch,prepareConnectionSwitch,unwrap} from '../lib/desktop';
 import {pickFiles} from '../lib/filePicker';
 import type {WorkspaceTransferReceipt} from '../lib/workspaceTransfers';
+import CollectedZipApprovals from './CollectedZipApprovals';
 type Intent={id:string;name:string;kind:'import'|'copy'};
 export default function WorkspaceTransfers({owner,supported,workspaceName,onBusy,onReady,onOpen}:{owner:boolean;supported:boolean;workspaceName:string;onBusy(value:boolean):void;onReady():Promise<unknown>;onOpen(id:string,name:string,local:boolean):void}){
  const [name,setName]=useState(workspaceName+' copy'),[receipt,setReceipt]=useState<WorkspaceTransferReceipt>(),[intent,setIntent]=useState<Intent>(),[error,setError]=useState(''),[working,setWorking]=useState(false),[exportId,setExportId]=useState(''),[exportReady,setExportReady]=useState(false);
@@ -48,6 +49,7 @@ export default function WorkspaceTransfers({owner,supported,workspaceName,onBusy
  async function exportZip(){await run(async()=>{let id=exportId;if(!id){id=(await api.post<{id:string}>('/exports',{scope:'workspace',format:'zip'},config)).data.id;setExportId(id);}for(let n=0;n<600;n++){let op:{status:string};try{op=(await api.get<{status:string}>('/operations/'+id,config)).data;}catch(e){if((e as {response?:{status:number}}).response?.status!==409)throw e;await new Promise(r=>setTimeout(r,500));continue;}if(op.status==='SUCCEEDED'){setExportReady(true);const outcome=await saveApiFile('/exports/'+id+'/download','workspace.zip');if(outcome==='cancelled')throw Error('Save cancelled. The same ZIP is ready to download again.');return;}if(op.status==='FAILED'){setExportId('');throw Error('Export preparation failed. Start a new export.');}await new Promise(r=>setTimeout(r,500));}throw Error('Preparation is still pending. Retry status.');},!exportId);}
  return <div className="space-y-3 border-t border-border pt-3" aria-label="Workspace transfers">
   <h2 className="text-sm font-semibold">Workspace transfers</h2>
+  {owner&&supported&&<CollectedZipApprovals/>}
   {error&&<p role="alert" className="text-sm text-red-400">{error}</p>}
   {!intent&&<><button className="library-button" disabled={working} onClick={()=>void exportZip()}>{exportReady?'Download ZIP again':exportId?'Check export and download':'Export this workspace'}</button>{(owner&&supported||canCopy)&&<label className="block text-sm">New workspace name<input aria-label="Imported workspace name" className="organization-input w-full mt-1" maxLength={100} value={name} disabled={working} onChange={e=>setName(e.target.value)}/></label>}
    <div className="flex flex-wrap gap-2">{owner&&supported&&<button className="library-button" disabled={working||!name.trim()} onClick={()=>void prepare('import')}>Import ZIP as new workspace</button>}{canCopy&&<button className="library-button" disabled={working||!name.trim()} onClick={()=>void prepare('copy')}>Make local copy</button>}</div></>}
