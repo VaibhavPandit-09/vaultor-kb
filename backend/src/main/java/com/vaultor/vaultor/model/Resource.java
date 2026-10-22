@@ -55,6 +55,13 @@ public class Resource {
 
     private String importFingerprint; // Internal retry identity; omitted from DTOs/archives.
 
+    // Original input of a converted import, never an independently visible resource.
+    private String importOriginalPath;
+    private String importOriginalName;
+    private String importOriginalMime;
+    private String importOriginalHash;
+    private Long importOriginalSize;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

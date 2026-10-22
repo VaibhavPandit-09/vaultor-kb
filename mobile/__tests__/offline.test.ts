@@ -191,3 +191,25 @@ test('a refreshed checkpoint with an unavailable current note keeps its old read
   expect(x.model.state.content).toBe(content);
   expect(x.model.state.error).toContain('older reading copy');
 });
+
+test('a missed native lock event is caught on foreground without network or protected-data writes', async () => {
+  const x = setup();
+  await x.model.initialize();
+  expect(x.model.state.content).toBeDefined();
+  x.local.mockImplementationOnce(async () => ({ scope, locked: true }));
+  await x.model.verifyRetainedAccess();
+  expect(x.model.state.connection).toBe('revoked');
+  expect(x.model.state.content).toBeUndefined();
+  expect(x.model.state.note).toBeUndefined();
+  expect(x.model.state.preview).toBeUndefined();
+  expect(x.api).not.toHaveBeenCalled();
+});
+
+test('an inactive source lock cannot clear the current reader', async () => {
+  const x = setup();
+  await x.model.initialize();
+  const content = x.model.state.content;
+  x.model.lockCompanion(JSON.stringify(['other', 'workspace', 'generation']));
+  expect(x.model.state.content).toBe(content);
+  expect(x.model.state.downloaded).toBe(true);
+});

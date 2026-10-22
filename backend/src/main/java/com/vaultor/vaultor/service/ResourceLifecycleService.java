@@ -68,6 +68,8 @@ public class ResourceLifecycleService {
         try {
             String binary=transaction.execute(tx->resources.findById(item.resourceId()).map(Resource::getFilePath).orElse(null));
             if(binary!=null)files.deleteFile(binary);
+            String original=transaction.execute(tx->resources.findById(item.resourceId()).map(Resource::getImportOriginalPath).orElse(null));
+            if(original!=null)files.deleteFile(original);
             return transaction.execute(tx->{
                 resources.findById(item.resourceId()).ifPresent(r->{links.deleteRelationshipsFor(r.getId());resources.delete(r);resources.flush();});
                 var result=new Result(item.operationId(),item.resourceId(),"purged",null,"",List.of());

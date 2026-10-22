@@ -25,15 +25,16 @@ class CompanionStoreTest {
   private val base=InstrumentationRegistry.getInstrumentation().targetContext
   private fun uuid()=UUID.randomUUID().toString()
   private fun digest(b:ByteArray)=MessageDigest.getInstance("SHA-256").digest(b).joinToString(""){"%02x".format(it)}
-  private inner class Fixture(val count:Int=3,rootOverride:File?=null) {
+  internal inner class Fixture(val count:Int=3,rootOverride:File?=null,hostOverride:String?=null,workspaceOverride:String?=null) {
     val root=rootOverride ?: File(base.noBackupFilesDir,"r4-test-${uuid()}").apply {mkdirs()}
     val context=object:ContextWrapper(base) {
       override fun getNoBackupFilesDir()=root
       override fun getSharedPreferences(name:String,mode:Int)=base.getSharedPreferences(root.name+name,mode)
     }
-    val host=uuid();val workspace=uuid();val generation=uuid();val scope=JSONArray(listOf(host,workspace,generation)).toString()
+    val host=hostOverride?:uuid();val workspace=workspaceOverride?:uuid();val generation=uuid();val scope=JSONArray(listOf(host,workspace,generation)).toString()
     var note=uuid();val image=uuid();val collection=uuid();val binary=ByteArray(2*1024*1024){(it%251).toByte()}
     var text="needle saved-only";var corrupt=false;var oversized=false;var revoked=false;var replacement=false;var interrupt=false;var slow=false
+    @Volatile var identityHook:(()->Unit)?=null
     val ranges=mutableListOf<Long>();val snapshots=mutableMapOf<String,Pair<JSONObject,Map<String,ByteArray>>>()
     val args=JSONObject().put("hostId",host).put("epoch","test").put("scope",scope).put("name","Offline test").put("selection",JSONObject().put("scope","workspace").put("ids",JSONArray()).put("dependencies","linked").put("files","readable"))
     fun store()=VaultorCompanions(context,{_,path,method->Connection(path,method)},{})
@@ -69,8 +70,9 @@ class CompanionStoreTest {
       override fun getResponseCode():Int=if(revoked)403 else if(getRequestProperty("Range")!=null)206 else 200
       override fun getContentLengthLong()=body().size.toLong()
       override fun getHeaderField(name:String?):String? {val b=body();return when(name){"X-Vaultor-SHA256"->digest(b);"Content-Range"->"bytes ${getRequestProperty("Range").substringAfter("=").substringBefore('-')}-${b.size-1}/${b.size}";else->null}}
-      override fun getErrorStream()=ByteArrayInputStream("{}".toByteArray())
+      override fun getErrorStream()=ByteArrayInputStream("{\"code\":\"WORKSPACE_ACCESS_REVOKED\"}".toByteArray())
       override fun getInputStream():java.io.InputStream {
+        if(path=="/workspace/identity")identityHook?.invoke()
         val all=body();val offset=getRequestProperty("Range")?.substringAfter('=')?.substringBefore('-')?.toLong() ?: 0L
         if(offset>0)synchronized(ranges){ranges.add(offset)}
         val data=all.copyOfRange(offset.toInt(),all.size)

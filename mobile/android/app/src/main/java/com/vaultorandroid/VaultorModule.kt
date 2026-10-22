@@ -34,6 +34,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   private val shortcuts = Executors.newSingleThreadExecutor()
   private val streams = Executors.newSingleThreadExecutor()
   private val reviewWorker = Executors.newSingleThreadExecutor()
+  private val importWorker = Executors.newSingleThreadExecutor()
   companion object {private val reviewScheduled=java.util.concurrent.atomic.AtomicBoolean(false);private val stateLock = Any();@Volatile private var connectionEpoch = UUID.randomUUID().toString()}
   private var epoch:String
     get()=connectionEpoch
@@ -55,7 +56,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     c.setRequestProperty("Authorization","Bearer "+p.getString("credential"));c.setRequestProperty("X-Vaultor-Protocol","3")
     c.setRequestProperty("X-Vaultor-Workspace",JSONArray(a.getString("scope")).getString(1));c
   },{a->require(a.getString("epoch")==epoch) {"Connection changed. Download paused for its original source."}},{scope->if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorCompanionReady",JSONObject().put("scope",scope).put("locked",companions.isLocked(scope)).toString())})}
-  @ReactMethod fun companion(action:String,input:String,promise:Promise)=run(promise) {
+  @ReactMethod fun companion(action:String,input:String,promise:Promise)=run(promise,locked=action!="remove") {
     require(input.length<=12000);val a=JSONObject(input)
     when(action) {
       "list" -> companions.list().toString()
@@ -87,13 +88,100 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     con.sslSocketFactory=context(cert).socketFactory;con.connectTimeout=10000;con.readTimeout=30000;con.instanceFollowRedirects=false;con.requestMethod=method
     con.setRequestProperty("Authorization","Bearer "+p.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");if(path!="/capabilities" && p.optString("selectedWorkspaceId").isNotEmpty())con.setRequestProperty("X-Vaultor-Workspace",p.getString("selectedWorkspaceId"));con
   },{a ->
+    companions.requireAccess(a.getString("scope"))
     if(a.optBoolean("offline")) {companionScope(a);return@VaultorMedia}
     val p=selected(a.getString("hostId"),a.getString("epoch"));val scope=JSONArray(a.getString("scope"));require(scope.length()==3 && scope.getString(0)==a.getString("hostId"))
     val identity=json(request(p,"/workspace/identity",token=a.getString("epoch")))
     require(scope.getString(1)==identity.getString("id") && scope.getString(2)==identity.getString("generation")) {"Workspace changed. Media remains bound to its original source."}
-  },{a,id -> if(a.optBoolean("offline")){companionScope(a);companions.file(a.getString("scope"),id)}else null}) }
+  },{a,id -> if(a.optBoolean("offline")){companionScope(a);companions.file(a.getString("scope"),id)}else null},{a,path,status,body->companions.observeScopeResponse(a.getString("scope"),path,status,body)},{a->companions.requireAccess(a.getString("scope"))}) }
   @ReactMethod fun media(action:String,input:String,promise:Promise) {try {require(action in listOf("list","thumbnail","preview","share","open","copy","save")) {"Android reading cannot upload or alter placements. Export legacy recovery instead."};require(input.length<=12000);media.call(action,JSONObject(input),promise)}catch(_:Exception){promise.reject("MEDIA_INPUT","Invalid media request.")}}
   @ReactMethod fun cancelMedia() {media.cancel()}
+  private fun utilityChanged(event:String){if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit(event,"changed")}
+  private val discovery by lazy {VaultorDiscovery(ctx){utilityChanged("VaultorDiscoveryChanged")}}
+  private val updates by lazy {VaultorUpdates(ctx,changed={utilityChanged("VaultorUpdatesChanged")}).also {it.activityProvider={ctx.currentActivity}}}
+  @ReactMethod fun nearby(action:String,promise:Promise)=run(promise){when(action){"start"->discovery.start().toString();"stop"->{discovery.stop();discovery.snapshot().toString()};"list"->discovery.snapshot().toString();else->error("Unsupported discovery action")}}
+  @ReactMethod fun appUpdates(action:String,promise:Promise){if(action=="picker"||action=="releases"){ctx.runOnUiQueueThread{try{if(action=="picker")updates.picker()else updates.openReleases();promise.resolve("{}")}catch(_:Exception){promise.reject("UPDATE_HANDOFF","Update picker or browser unavailable")}};return};run(promise){when(action){"list"->updates.snapshot().toString();"check"->{updates.check();"{}"};"download"->{updates.download();"{}"};"install"->{updates.install();"{}"};"pause"->{updates.pause();"{}"};else->error("Unsupported update action")}}}
+  private fun exportAdmission(source:JSONObject){importProfile(source);if(android.os.Build.VERSION.SDK_INT>=37&&ctx.checkSelfPermission(android.Manifest.permission.ACCESS_LOCAL_NETWORK)!=android.content.pm.PackageManager.PERMISSION_GRANTED)error("Local network permission required. Export source is retained.")}
+  private fun exportConnection(source:JSONObject,path:String,method:String):HttpsURLConnection {
+    require(method in listOf("GET","PUT")&&(path=="/companions/export-capabilities"||path.matches(Regex("/companions/exports/[a-f0-9-]{36}(?:/download)?(?:\\?generation=[a-f0-9-]{36})?"))))
+    exportAdmission(source);val p=importProfile(source);val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint"));val c=URI(address(p.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection;c.sslSocketFactory=context(cert).socketFactory;c.connectTimeout=10000;c.readTimeout=30000;c.instanceFollowRedirects=false;c.requestMethod=method;c.setRequestProperty("Authorization","Bearer "+p.getString("credential"));c.setRequestProperty("X-Vaultor-Protocol","3");c.setRequestProperty("X-Vaultor-Workspace",source.getString("workspaceId"));return c
+  }
+  private val exports by lazy {VaultorExports(ctx,companions,::exportConnection,::exportAdmission,{reviews.snapshot()},{if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorExportsChanged","changed")},localIdentity={importProfile(it);Unit}).also {it.activityProvider={ctx.currentActivity}}}
+  @ReactMethod fun companionExports(action:String,input:String,promise:Promise)=run(promise){require(input.length<=12000);val a=JSONObject(input);when(action){
+    "list"->exports.list().toString()
+    "start"->{companionScope(a);exports.start(a).toString()}
+    "resume"->exports.resume(a.getString("id")).toString()
+    "pause"->{exports.pause(a.getString("id"));"{}"}
+    "remove"->{exports.remove(a.getString("id"));"{}"}
+    "save","share"->{exports.handoff(a.getString("id"),action=="share");"{}"}
+    else->error("Unsupported export action")
+  }}
+  private val imports by lazy {VaultorImports.get(ctx).also {store->store.changed={if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorImportsChanged","changed")}}}
+  private var importOutput:String?=null
+  private var importPicker=false
+  init {ctx.addActivityEventListener(object:BaseActivityEventListener(){
+    override fun onActivityResult(activity:android.app.Activity,requestCode:Int,resultCode:Int,data:android.content.Intent?){
+      if(requestCode==7409)exports.output(resultCode,data)
+      if(requestCode==7410&&resultCode==android.app.Activity.RESULT_OK&&data?.data!=null)try{updates.acquire(data.data!!)}catch(_:Exception){utilityChanged("VaultorUpdatesChanged")}
+      if(requestCode==7407){importPicker=false;if(resultCode==android.app.Activity.RESULT_OK&&data!=null)imports.picker(data)}
+      if(requestCode==7408){val id=importOutput;importOutput=null;if(resultCode==android.app.Activity.RESULT_OK&&id!=null&&data?.data!=null){val uri=data.data!!;imports.worker.execute {try{require(uri.scheme=="content");val row=imports.item(id);imports.original(row){};ctx.contentResolver.openOutputStream(uri,"wt")?.use {out->imports.original(row){out.write(it)}} ?: error("Destination unavailable");imports.changed?.invoke()}catch(e:Exception){try{val row=imports.item(id);row.put("detail","Original recovery failed: "+(e.message ?: "Destination unavailable").take(180));imports.save(row)}catch(_:Exception){};imports.changed?.invoke()}}}}
+    }
+  })}
+  @ReactMethod fun collectedImports(action:String,input:String,promise:Promise) {
+    try{imports}catch(_:Exception){promise.reject("IMPORT_STORAGE","Import storage cannot be unlocked. Existing bytes are retained; do not clear app data.");return}
+    if(action in listOf("pickFiles","pickPhotos","recover")) {ctx.runOnUiQueueThread {try{
+      require(!importPicker&&importOutput==null){"Finish the open picker first"};val activity=ctx.currentActivity ?: error("Open Vaultor first")
+      if(action=="recover"){val row=imports.item(JSONObject(input).getString("id"));importOutput=row.getString("id");activity.startActivityForResult(android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT).addCategory(android.content.Intent.CATEGORY_OPENABLE).setType(row.getString("mime")).putExtra(android.content.Intent.EXTRA_TITLE,row.getString("filename")),7408)}
+      else {importPicker=true;val intent=if(action=="pickPhotos")android.content.Intent(android.provider.MediaStore.ACTION_PICK_IMAGES).setType("image/*").putExtra(android.provider.MediaStore.EXTRA_PICK_IMAGES_MAX,8) else android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT).addCategory(android.content.Intent.CATEGORY_OPENABLE).setType("*/*").putExtra(android.content.Intent.EXTRA_ALLOW_MULTIPLE,true);activity.startActivityForResult(intent,7407)}
+      promise.resolve("{}")
+    }catch(e:Exception){importPicker=false;importOutput=null;promise.reject("IMPORT_PICKER",e.message ?: "No compatible picker available")}};return}
+    if(action=="sync") {importWorker.execute {try{promise.resolve(importDelivery.sync(JSONObject(input).optBoolean("force")).toString())}catch(_:Exception){promise.reject("IMPORT_SYNC","Import delivery unavailable; originals retained")}};return}
+    run(promise){require(input.length<=12000);val a=JSONObject(input);when(action){
+      "list"->JSONArray(imports.rows()).toString()
+      "policy"->imports.policy().toString()
+      "policyPut"->imports.policy(a).toString()
+      "confirm"->{companionScope(a);val parts=JSONArray(a.getString("scope"));require(!companions.isLocked(a.getString("scope"))){"Original source is locked"};val source=JSONObject().put("hostId",parts.getString(0)).put("workspaceId",parts.getString(1)).put("generation",parts.getString(2)).put("label",a.optString("label").take(200));imports.confirm(a.getString("id"),source,a.getString("mode"),a.optString("collectionId").takeIf {it.isNotEmpty()&&it!="null"},a.optString("workspaceName"),a.optBoolean("metered")).toString()}
+      "retry"->imports.retry(a.getString("id"),a.optBoolean("metered")).toString()
+      "newAfterRejection"->imports.newAfterRejection(a.getString("id")).toString()
+      "stop"->imports.stop(a.getString("id")).toString()
+      "remove"->imports.remove(a.getString("id")).toString()
+      else->error("Unsupported import action")
+    }}
+  }
+  private fun importProfile(source:JSONObject):JSONObject=synchronized(stateLock){val p=read().optJSONObject("profiles")?.optJSONObject(source.getString("hostId")) ?: throw VaultorImportDelivery.Refusal("APPROVAL_REQUIRED");JSONObject(p.toString()).put("selectedWorkspaceId",source.getString("workspaceId"))}
+  internal fun importRequest(row:JSONObject,path:String,upload:Boolean=false):JSONObject {
+    require(path in listOf("/access/host","/workspace/identity","/capabilities","/companions/import-capabilities")||path.matches(Regex("/(?:resources/collected-imports|collected-zips)/[a-f0-9-]{36}")))
+    val source=row.getJSONObject("source");val profile=importProfile(source)
+    fun approval(){val current=importProfile(source);require(listOf("credential","fingerprint","address").all {current.optString(it)==profile.optString(it)}){"Original source approval changed"}}
+    approval()
+    if(android.os.Build.VERSION.SDK_INT>=37&&ctx.checkSelfPermission(android.Manifest.permission.ACCESS_LOCAL_NETWORK)!=android.content.pm.PackageManager.PERMISSION_GRANTED)throw VaultorImportDelivery.Refusal("APPROVAL_REQUIRED")
+    val cert=ca(profile);require(fingerprint(cert)==profile.getString("fingerprint"));val con=URI(address(profile.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection
+    con.sslSocketFactory=context(cert).socketFactory;con.connectTimeout=10000;con.readTimeout=30000;con.instanceFollowRedirects=false;con.requestMethod=if(upload)"PUT" else "GET"
+    con.setRequestProperty("Authorization","Bearer "+profile.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");con.setRequestProperty("X-Vaultor-Workspace",source.getString("workspaceId"))
+    try {
+      if(upload){val intent=row.getJSONObject("intent").toString();val boundary="vaultor-import-"+UUID.randomUUID();val filename=row.getString("filename");val mime=row.getString("mime")
+        val prefix=("--$boundary\r\nContent-Disposition: form-data; name=\"intent\"\r\n\r\n$intent\r\n--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"$filename\"\r\nContent-Type: $mime\r\n\r\n").toByteArray();val suffix="\r\n--$boundary--\r\n".toByteArray()
+        con.doOutput=true;con.setRequestProperty("Content-Type","multipart/form-data; boundary=$boundary");con.setFixedLengthStreamingMode(prefix.size+row.getLong("bytes")+suffix.size)
+        con.outputStream.use {out->out.write(prefix);imports.original(row){bytes->approval();if(imports.item(row.getString("id")).optString("state")=="stoppedUncertain")error("Attempts stopped; reconcile before removal");out.write(bytes)};out.write(suffix)}
+      }
+      val status=con.responseCode;require(status !in 300..399){"Host redirects refused"};val bytes=(if(status in 200..299)con.inputStream else con.errorStream)?.use {it.readNBytes(1500001)} ?: byteArrayOf();require(bytes.size<=1500000);approval()
+      companions.observeResponse(source,path,status,runCatching{JSONObject(String(bytes,Charsets.UTF_8))}.getOrDefault(JSONObject()))
+      return JSONObject().put("status",status).put("body",String(bytes,Charsets.UTF_8))
+    }finally{con.disconnect()}
+  }
+  internal fun importAdmission(row:JSONObject){
+      val cm=ctx.getSystemService(android.net.ConnectivityManager::class.java)
+      if(cm.isActiveNetworkMetered&&!imports.policy().getBoolean("metered")&&!row.optBoolean("metered"))throw VaultorImportDelivery.Refusal("METERED_PAUSED",true)
+      fun get(path:String):JSONObject{val r=importRequest(row,path);if(r.getInt("status") !in 200..299)throw VaultorImportDelivery.Refusal(if(r.getInt("status") in listOf(401,403,404))"APPROVAL_REQUIRED" else "HOST_UNAVAILABLE",r.getInt("status")>=500);return JSONObject(r.getString("body"))}
+      val source=row.getJSONObject("source");val profile=importProfile(source);val host=get("/access/host");require(host.getString("hostId")==source.getString("hostId")&&host.getString("fingerprint")==profile.getString("fingerprint")){"Host identity changed"}
+      val identity=get("/workspace/identity");if(identity.getString("id")!=source.getString("workspaceId")||identity.getString("generation")!=source.getString("generation")){try{if(identity.getString("id")==source.getString("workspaceId"))companions.observe(source.getString("hostId"),source.getString("workspaceId"),identity.getString("generation"))}catch(_:Exception){};throw VaultorImportDelivery.Refusal("IMPORT_GENERATION_CHANGED")}
+      val capabilities=get("/companions/import-capabilities");if(capabilities.optInt("version")!=1)throw VaultorImportDelivery.Refusal("IMPORT_FORMAT_UNSUPPORTED")
+      if(row.getLong("bytes")>capabilities.getLong("maxBytes"))throw VaultorImportDelivery.Refusal("IMPORT_LIMIT")
+  }
+  private val importDelivery by lazy {VaultorImportDelivery(imports,object:VaultorImportDelivery.Port {
+    override fun admit(row:JSONObject)=importAdmission(row)
+    override fun request(row:JSONObject,path:String,upload:Boolean)=importRequest(row,path,upload)
+  })}
   /** Device presentation only. Does not acknowledge or export legacy recovery records. */
   @ReactMethod fun readerPreferences(action:String,input:String,promise:Promise)=run(promise) {
     val prefs=ctx.getSharedPreferences("reader-presentation-v1",android.content.Context.MODE_PRIVATE)
@@ -170,8 +258,8 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       currentApproval()
       // Preserve R4 locks even when an inactive source is checked by the outbox.
       val status=result.getInt("status");val workspace=source.getString("workspaceId")
-      if(status in listOf(401,403))try {companions.observe(hostId,workspace,revoked=true)}catch(_:Exception){}
-      if(status==404 && JSONObject(result.optString("body","{}")).optString("code")=="WORKSPACE_UNAVAILABLE")try {companions.observe(hostId,workspace,revoked=true)}catch(_:Exception){}
+
+      companions.observeResponse(source,path,status,runCatching{JSONObject(result.optString("body","{}"))}.getOrDefault(JSONObject()))
       if(path=="/workspace/identity" && status==200) {
         val identity=JSONObject(result.getString("body"))
         if(identity.optString("id")==workspace)try {companions.observe(hostId,workspace,identity.getString("generation"))}catch(_:Exception){}
@@ -229,8 +317,8 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     val out = file.startWrite()
     try { out.write(encrypted); file.finishWrite(out) } catch (e: Exception) { file.failWrite(out); throw e }
   }
-  private fun run(promise: Promise, action: () -> String) { executor.execute { synchronized(stateLock) {
-    try { promise.resolve(action()) } catch (e: Exception) {
+  private fun run(promise: Promise, locked:Boolean=true, action: () -> String) { executor.execute {
+    try { promise.resolve(if(locked)synchronized(stateLock){action()}else action()) } catch (e: Exception) {
       // No payloads, credentials, addresses or platform stack traces in bridge errors.
       promise.reject("VAULTOR_FAILURE", when(e) {
         is SSLException -> "Host TLS verification failed. Verify its address and identity."
@@ -238,7 +326,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
         else -> e.message?.take(180) ?: "Operation failed; retry. Retained recovery is unchanged."
       })
     }
-  } } }
+  } }
   private fun net(promise: Promise, worker:java.util.concurrent.ExecutorService=network, action: () -> String) { worker.execute {
     try { promise.resolve(action()) } catch(e:Exception) {
       promise.reject("VAULTOR_NETWORK",if(e is SSLException) "Host TLS verification failed. Verify its identity." else "Host unavailable, access refused or request cancelled. Reading copies and recovery remain.")
@@ -299,14 +387,28 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
         con.outputStream.use { it.write(bytes) }
       }
       val status=con.responseCode
-      if(token!=null && status in listOf(401,403))try {companions.observe(p.getString("hostId"),p.optString("selectedWorkspaceId"),revoked=true)}catch(_:Exception){}
+
       require(status !in 300..399) { "Host redirects are refused." }
       val stream=if(status in 200..299) con.inputStream else con.errorStream
       val bytes=stream?.use { it.readNBytes(1500001) } ?: ByteArray(0)
       require(bytes.size<=1500000) { "Response exceeds the mobile document limit." }
+      observeProfile(p,path,status,String(bytes,Charsets.UTF_8))
       if(browse!=null) require(browse==lane.sequence.get()) {"Obsolete browsing response."}
       return JSONObject().put("status",status).put("body",String(bytes,Charsets.UTF_8))
     } finally {requests.remove(con);if(lane.connection===con)lane.connection=null;con.disconnect()}
+  }
+  private fun observeProfile(p:JSONObject,path:String,status:Int,body:String) {
+    if(!p.has("credential"))return
+    val current=synchronized(stateLock){read().optJSONObject("profiles")?.optJSONObject(p.getString("hostId"))}
+    if(current==null || listOf("credential","fingerprint","address").any{current.optString(it)!=p.optString(it)})return
+    val value=runCatching{JSONObject(body)}.getOrDefault(JSONObject())
+    val source=JSONObject().put("hostId",p.getString("hostId")).put("workspaceId",p.optString("selectedWorkspaceId"))
+    companions.observeResponse(source,path,status,value)
+    if(VaultorSourceAccess.invalidates(path,status,value)) {
+      // The evictable saved-note fallback may exist without a retained checkpoint.
+      val scopes=synchronized(stateLock){val state=read();listOf("cache","sessions").flatMap{name->state.optJSONObject(name)?.keys()?.asSequence()?.map{it.substringBefore('\n')}?.toList()?:emptyList()}}
+      for(scope in scopes.distinct())runCatching{val parts=JSONArray(scope);if(parts.getString(0)==source.getString("hostId") && (status==401 || source.optString("workspaceId").isEmpty() || parts.getString(1)==source.getString("workspaceId")))companions.lock(scope)}
+    }
   }
   private fun json(response: JSONObject): JSONObject {
     require(response.getInt("status") in 200..299) { "Host refused this request (${response.getInt("status")})." }
@@ -425,9 +527,9 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
         if(old?.optString("id")==a.optString("id")) ops.remove(a.getString("key"))
         if(ops!=null && ops.length()==0)all.remove(a.getString("scope"))
       }
-      "getCache" -> return@run cache.optJSONObject(entryKey())?.getJSONObject("note")?.toString() ?: "null"
+      "getCache" -> {companions.requireAccess(a.getString("scope"));return@run cache.optJSONObject(entryKey())?.getJSONObject("note")?.toString() ?: "null"}
       "putCache" -> {
-        val key=entryKey();a.put("at",System.currentTimeMillis());cache.put(key,a)
+        companions.requireAccess(a.getString("scope"));val key=entryKey();a.put("at",System.currentTimeMillis());cache.put(key,a)
         while(cache.length()>12 || cache.toString().toByteArray().size>8388608) {val oldest=cache.keys().asSequence().minBy {cache.getJSONObject(it).optLong("at")};cache.remove(oldest)}
       }
       else -> error("Unsupported local state operation.")
@@ -460,6 +562,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     val h=json(request(p,"/access/host",token=token));require(h.getString("hostId")==p.getString("hostId") && h.getString("fingerprint")==p.getString("fingerprint"))
     val caps=json(request(p,"/capabilities",token=token));require(caps.getInt("apiProtocolVersion")>=3 && caps.getInt("minimumClientProtocolVersion")<=3)
     val identity=json(request(p,"/workspace/identity",token=token));val selected=p.optString("selectedWorkspaceId");require(selected.isEmpty() || selected==identity.getString("id")) {"Destination workspace identity differs."}
+    if(selected.isEmpty())p.put("selectedWorkspaceId",identity.getString("id"))
   }
   @ReactMethod fun selectWorkspace(hostId:String,token:String,id:String,generation:String,promise:Promise)=net(promise) {
     require(id.matches(Regex("[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}")))
@@ -501,9 +604,9 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     val p=selected(hostId,token)
     if(path=="/capabilities") {val h=json(request(p,"/access/host",token=token));require(h.getString("hostId")==hostId && h.getString("fingerprint")==p.getString("fingerprint"))}
     val result=request(p,path,method,body,revision=revision,token=token,multipart=path.contains("/imports/"))
-    if(result.getInt("status") in listOf(401,403)) try {companions.observe(hostId,p.optString("selectedWorkspaceId"),revoked=true)}catch(_:Exception){}
-    if(result.getInt("status")==404 && JSONObject(result.getString("body")).optString("code")=="WORKSPACE_UNAVAILABLE")try {companions.observe(hostId,p.optString("selectedWorkspaceId"),revoked=true)}catch(_:Exception){}
-    if(path=="/workspace/identity" && result.getInt("status")==200){val identity=JSONObject(result.getString("body"));try {companions.observe(hostId,identity.getString("id"),identity.getString("generation"))}catch(_:Exception){}}
+
+
+
     result.toString()
   }
 
@@ -552,7 +655,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       var status=0
       fun emit(payload:JSONObject) {if(token==epoch && stream===con) ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorChanges",payload.put("epoch",token).put("hostId",hostId).toString())}
       try {
-        status=con.responseCode;require(status==200 && con.contentType?.startsWith("text/event-stream")==true)
+        status=con.responseCode;if(status!=200){val problem=con.errorStream?.use{it.readNBytes(16385)}?:byteArrayOf();if(problem.size<=16384)observeProfile(p,"/changes",status,String(problem))};require(status==200 && con.contentType?.startsWith("text/event-stream")==true)
         con.inputStream.bufferedReader(Charsets.UTF_8).use {reader->
           val frame=StringBuilder()
           while(token==epoch && stream===con) {

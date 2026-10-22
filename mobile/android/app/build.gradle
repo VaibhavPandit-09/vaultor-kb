@@ -92,8 +92,8 @@ android {
         applicationId "com.vaultor.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 27
-        versionName "0.1.0-alpha.23"
+        versionCode 32
+        versionName "0.1.0-alpha.28"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Explicit acceptance builds only. Ordinary release/debug default false.
         def diagnostics = providers.gradleProperty("vaultorDiagnostics").orElse("false").get() == "true"
@@ -132,6 +132,7 @@ android {
 }
 
 dependencies {
+    implementation("com.android.tools.build:apksig:9.2.1")
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
@@ -144,3 +145,9 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+// Public release identity only; no private signing material enters application assets.
+def updateTrustDir = layout.buildDirectory.dir("generated/updateTrust")
+tasks.register("generateUpdateTrust", Copy) { from("../../release-trust.json"); into(updateTrustDir) }
+android.sourceSets.main.assets.srcDir(updateTrustDir.get().asFile)
+tasks.named("preBuild").configure { dependsOn("generateUpdateTrust") }

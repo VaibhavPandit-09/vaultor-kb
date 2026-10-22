@@ -7,9 +7,9 @@
 
 ## 1. Master is the product baseline
 
-`master` is the current integrated product.
+`master` is always the authoritative integrated product baseline. A feature branch or acceptance APK does not supersede it.
 
-New milestone branches start from the latest verified `master`.
+Fetch before beginning a milestone, verify the actual remote and local master tips and working trees, then start its temporary isolated branch/worktree from current verified `master`.
 
 Do not begin a new roadmap milestone from an old feature branch merely because the previous AI chat still has context.
 
@@ -107,7 +107,7 @@ During integration:
 
 ## 7. Milestone lifecycle
 
-For R6 and later, prefer:
+For R6 and later, require:
 
 1. latest verified `master`;
 2. fresh branch `ai/codex-rN[-scope]`;
@@ -125,11 +125,15 @@ For R6 and later, prefer:
 
 Avoid one endless AI chat spanning many major milestones.
 
+A completed milestone must be integrated and verified on master before the next milestone begins. Never silently start from an unmerged or obsolete feature branch. An explicit user-authorized combined milestone or integration task is an exception, and its source ancestry and scope must be documented. Isolated branches/worktrees are temporary implementation environments, not competing product baselines. Preserve source branches unless the user separately authorizes deletion.
+
+R7–R9 consolidation is currently under audit on `integration/r7-r9`; see [the integration record](../plans/R7-R9-INTEGRATION.md). R10 must not begin until that record confirms master integration and compatible publication. An acceptance candidate alone is insufficient.
+
 ---
 
 ## 8. UI review gates
 
-Major interaction work must stop for user review at meaningful gates.
+Major UI or interaction changes require explicit user authorization before implementation and must stop for user review at meaningful gates. Milestone/integration authorization does not authorize redesigning accepted screens. Preserve all approved design and domain contracts, including the resource model, structured documents, host authority, source isolation, protected queues and centralized interaction ownership.
 
 Desktop examples:
 

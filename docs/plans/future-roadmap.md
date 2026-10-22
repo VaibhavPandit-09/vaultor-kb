@@ -1,6 +1,6 @@
 # Deferred product roadmap
 
-Reviewed 2026-10-13. This is the authoritative parking place for future scope; items here are not implemented or automatically authorized. Active resource work is in [resource-lifecycle-plan.md](resource-lifecycle-plan.md); existing native/platform blockers remain in the desktop tracker.
+Reviewed 2026-10-22. This is the authoritative parking place for deferred scope; listing an item is not implementation authorization. Active resource work is in [resource-lifecycle-plan.md](resource-lifecycle-plan.md); existing native/platform blockers remain in the desktop tracker.
 
 ## Backups and recovery — explicitly deferred by the user
 
@@ -14,7 +14,7 @@ Before implementation decide defaults for cadence, count/age/byte retention, des
 
 ## Multi-workspace and Android companion — promoted to planning
 
-[The replacement 13-sprint tracker](workspace-companion-plan.md) now owns multi-workspace hosting and clients, desktop independent copies, Android reading redesign, source-bound offline downloads, review inbox/sync, queued offline imports, connected full exports and offline partial exports. W1 host isolation is published as Windows0.8.0 (Mac gate pending); W2–W3 and R1–R10 are unstarted. The old A8/A9 are superseded. Original Android A1–A7 remain shipped. Do not implement these capabilities from this parking document or treat planning as implementation authorization. General mobile document editing and two-way fork sync remain deferred.
+[The replacement 13-sprint tracker](workspace-companion-plan.md) retains the original intentions and execution history. W1–W3/R1–R6 are implemented; R6 is integrated on master and published as Android alpha.23, compatible with Windows0.14.0. The [R7–R10 reconciliation](R7-R10-RECONCILIATION.md) owns current remaining-milestone planning, pending approval: imports, full/partial exports, remaining settings/discovery/verified updates and integrated readiness. Physical acceptance and integrated Mac verification remain unclaimed. The old A8/A9 and editing-led A1–A7 UI are historical, superseded by the reader companion and current R6 design. Do not implement from this parking document or treat planning as implementation authorization. General mobile document editing and two-way fork sync remain deferred.
 
 ## Later discovery and platform work
 

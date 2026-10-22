@@ -21,7 +21,7 @@ class ExistingSearchIndexStartupTest {
    statement.execute("create virtual table resource_fts using fts5(id UNINDEXED,title,body,tokenize='unicode61 remove_diacritics 2')");
   }
  }catch(Exception e){throw new ExceptionInInitializerError(e);}}
- @DynamicPropertySource static void properties(DynamicPropertyRegistry p){p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());}
+ @DynamicPropertySource static void properties(DynamicPropertyRegistry p){p.add("app.host.path",()->DATA.resolve("host-access").toString());p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());}
  @Autowired ResourceSearchService search;
  @Autowired ResourceService resources;
  @Test void startsWithExistingFtsTablesAndKeepsSearchWorking()throws Exception {

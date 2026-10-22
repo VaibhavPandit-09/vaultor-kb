@@ -11,7 +11,7 @@ import java.nio.file.Path;
 class VaultorApplicationTests {
     static final Path DATA;
     static { try { DATA = Files.createTempDirectory("vaultor-context-test-"); } catch(Exception e) { throw new ExceptionInInitializerError(e); } }
-    @DynamicPropertySource static void properties(DynamicPropertyRegistry properties) {
+    @DynamicPropertySource static void properties(DynamicPropertyRegistry properties) {properties.add("app.host.path",()->DATA.resolve("host-access").toString());
         properties.add("spring.datasource.url", () -> "jdbc:sqlite:" + DATA.resolve("app.db"));
         properties.add("app.storage.path", () -> DATA.resolve("files").toString());
     }

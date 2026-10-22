@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ResourceOrganizationTest {
  static final Path DATA;
  static {try {DATA=Files.createTempDirectory("vaultor-u2-test-");}catch(Exception e){throw new ExceptionInInitializerError(e);}}
- @DynamicPropertySource static void properties(DynamicPropertyRegistry p) {p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());}
+ @DynamicPropertySource static void properties(DynamicPropertyRegistry p) {p.add("app.host.path",()->DATA.resolve("host-access").toString());p.add("spring.datasource.url",()->"jdbc:sqlite:"+DATA.resolve("app.db"));p.add("app.storage.path",()->DATA.resolve("files").toString());}
  @Autowired OrganizationService org;
  @Autowired ResourceService resources;
  @Autowired ResourceRepository repository;

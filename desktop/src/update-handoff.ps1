@@ -6,8 +6,14 @@ function Status([string]$Phase, [string]$Message = '') {
     @{phase=$Phase; error=$Message; version=$task.version} | ConvertTo-Json -Compress | Set-Content -LiteralPath $statusPath -Encoding utf8
 }
 function Verify-Package {
-    $file = Get-Item -LiteralPath $task.installer
-    if ($file.Length -ne $task.size -or (Get-FileHash -LiteralPath $task.installer -Algorithm SHA256).Hash.ToLowerInvariant() -ne $task.sha256) { throw 'Staged installer changed. Nothing was installed.' }
+    $file = [IO.FileInfo]::new($task.installer)
+    # Detached Windows PowerShell can inherit an incompatible module search path.
+    # Use the runtime's streamed SHA-256 without depending on Get-FileHash autoload.
+    $sha = [Security.Cryptography.SHA256]::Create()
+    $inputFile = [IO.File]::OpenRead($task.installer)
+    try { $actualHash = [BitConverter]::ToString($sha.ComputeHash($inputFile)).Replace('-', '').ToLowerInvariant() }
+    finally { $inputFile.Dispose(); $sha.Dispose() }
+    if ($file.Length -ne $task.size -or $actualHash -ne $task.sha256) { throw 'Staged installer changed. Nothing was installed.' }
 }
 try {
     $target = [IO.Path]::GetFullPath($task.executable)

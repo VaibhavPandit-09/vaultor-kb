@@ -2,7 +2,11 @@
 
 Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow guide. Agents also read [AGENTS.md](../AGENTS.md). Keep one authoritative explanation per topic and update the guide in every relevant change.
 
+- [R7–R9 integration audit](plans/R7-R9-INTEGRATION.md): fetched ancestry, combined contracts, release-blocking source-lock investigation, actual checks and R10 entry gate.
+
 ## Desktop installation, connections and releases — `desktop/`
+
+- [R7 / Windows0.15.0 acceptance candidate](desktop/releases/v0.15.0.md): unpublished compatible host, original-key artifacts, checks and platform limits.
 
 - [0.14.0 integrated desktop and Reviews](desktop/releases/v0.14.0.md): fresh Windows release, installed verification, artifact hashes and exact integrated Mac handoff.
 
@@ -67,6 +71,13 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Android — `android/`
 
+- [R8/R9 acceptance ledger](android/releases/0.1.0-alpha.27.md): unpublished signed Android/Windows candidates, exact tests and S24 procedure.
+- [R8 exports and R9 connections/updates](android/EXPORTS-AND-CONNECTIONS.md): current implementation, portable partial format, source/consent boundaries and validation.
+
+- [R7 alpha.24 acceptance ledger](android/releases/0.1.0-alpha.24.md): artifacts, actual faults/upgrade checks, limitations and S24 procedure.
+
+- [Collected imports](android/IMPORTS.md): R7 acceptance candidate; host receipts/provenance/archive5, owner-approved ZIPs and separate protected Android queue.
+
 - [Android alpha.23 R6 milestone](android/releases/0.1.0-alpha.23.md): published production prerelease, compatibility, install-over and physical limits.
 
 - [R6 integration and verification](plans/R6-INTEGRATION.md): exact fetched branches, original R6 delta, conflict resolutions, fresh regression evidence and the stop before master.
@@ -110,6 +121,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
+- [R7–R10 roadmap reconciliation](plans/R7-R10-RECONCILIATION.md): current post-R6 planning authority pending approval; requirement classifications, preserved UI, actionable R7 architecture and product decisions. No implementation authorization.
+
 - [R7 fresh-chat handoff](plans/R7-HANDOFF.md): authoritative R6 master/release, compatibility, remaining acceptance and defined R7 scope.
 
 - [Desktop UI redesign audit and proposal](plans/ui-redesign.md): isolated redesign stream, native baseline, implemented Library/browse/Note/pane/navigation/preview/command-palette/settings/utility/theme review candidates, interaction specifications and remaining motion/native review gates.
@@ -118,7 +131,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Codex product stream](plans/codex-current-stream.md): branch isolation, R5 functional ownership and later UI-integration boundaries.
 
-- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): active replacement plan; W1–W3/R1–R2 shipped, R3 Windows host checkpoints shipped (Mac gate pending), R4 Android alpha.11 and R5 Windows0.12.0 shipped; R6–R10 remain separately authorized work. One sprint per authorization.
+- [Multi-workspace and Android companion](plans/workspace-companion-plan.md): original functional plan and dated execution ledger; W1–W3/R1–R6 implemented, R6 released on master as Android alpha.23 with Windows0.14.0; remaining R7–R10 planning is reconciled above. One sprint per authorization; physical/integrated Mac gates remain explicit.
 - [Original Android tracker](plans/android-plan.md): historical A1–A7 evidence; A8/A9 cancelled and superseded.
 
 - [Resource lifecycle, discovery and Android readiness](plans/resource-lifecycle-plan.md): All five sprints implemented on Windows; measured integration, platform limits and separate Android prototype gate recorded.
@@ -159,3 +172,5 @@ Keep CODEBASE and this index at the docs root for agent discovery. Put topic gui
 - [Android motion/haptic remediation](android/MOTION-HAPTIC-REMEDIATION.md) — shipped A0–A3 inventory, rejected S24 acceptance, candidate changes and real-device script; A4 blocked.
 
 - [Android alpha.17 hybrid/restraint acceptance ledger](android/releases/0.1.0-alpha.17.md) — historical candidate evidence and alpha.16 comparison; later A4 continuation is recorded in R6 completion.
+
+- [Integrated Android alpha.28 qualification](android/releases/0.1.0-alpha.28.md)

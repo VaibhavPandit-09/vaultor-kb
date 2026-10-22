@@ -62,6 +62,7 @@ export function HomeScreen(
   props: Props & {
     returnToNote?: () => void;
     resume?: Note;
+    imports?: {count:number;open():void};
   },
 ) {
   const s = useThemeStyles(sheet);
@@ -136,6 +137,7 @@ export function HomeScreen(
         </View>
       ))}
       <Action label="Browse Library" onPress={() => props.select('library')} />
+      {props.imports?<Action label={props.imports.count?`Pending imports · ${props.imports.count}`:'Collect files & photos'} onPress={props.imports.open}/>:null}
     </ScrollView>
   );
 }
