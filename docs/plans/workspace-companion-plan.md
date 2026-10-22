@@ -180,7 +180,7 @@ Status: **Complete as a development milestone — Android alpha.23/code27 publis
 
 ## R7 — Offline imports and durable collection queue
 
-Status: **Implemented; acceptance verification in progress on ai/codex-r7-android.** See [R7 contracts](../android/IMPORTS.md) and [acceptance ledger](../android/releases/0.1.0-alpha.24.md). Original intentions below remain historical requirements; the approved reconciliation owns UI decisions.
+Status: **Ready for user acceptance on ai/codex-r7-android; unpublished.** See [R7 contracts](../android/IMPORTS.md) and [acceptance ledger](../android/releases/0.1.0-alpha.24.md). Original intentions below remain historical requirements; the approved reconciliation owns UI decisions.
 
 - Android file/photo picker and Share receiver collect supported text, Markdown, PDFs, images and other host-supported files. Text/Markdown become imported notes through host conversion, not mobile editing. Keep original bytes; show unsupported input before dispatch and safe host-preview errors after connection. ZIP workspace imports are queued for **import-as-new** when authorized; no Android replacement/admin flow.
 - Immediately copy permitted content-URI bytes into app-private staging before temporary grants expire; stream large files, enforce advertised/current size limits and a storage budget, reject dangerous archives through host preview. Capture filename/MIME/hash, stable operation identity, source workspace/generation and destination collection before sending. Cold Share without a destination enters a local inbox and asks explicitly; never infer from the next connected host.

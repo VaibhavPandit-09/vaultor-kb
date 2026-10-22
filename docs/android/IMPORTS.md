@@ -1,6 +1,6 @@
 # Android collected imports — R7
 
-Reviewed 2026-10-22. **In development on `ai/codex-r7-android`; not a published capability.** The user approved the [reconciliation](../plans/R7-R10-RECONCILIATION.md) and complete R7 implementation. R6 alpha.23 remains the published baseline. No R8 work, public publication or master merge is authorized in this task.
+Reviewed 2026-10-22. **Ready for user acceptance on `ai/codex-r7-android`; not a published capability.** The user approved the [reconciliation](../plans/R7-R10-RECONCILIATION.md) and complete R7 implementation. R6 alpha.23 remains the published baseline. No R8 work, public publication or master merge is authorized in this task.
 
 ## Authority and host contracts
 
@@ -20,7 +20,7 @@ The owner inspects requests in existing Workspace transfers. Owner-only `/api/ow
 
 ## Android queue and presentation
 
-Native `VaultorImports` owns `noBackupFilesDir/collected-imports-v1`, independent of legacy recovery, Reviews and downloads. SQLite FULL-synchronous records encrypt payload metadata with Android Keystore; originals use independently authenticated256KiB AES-GCM chunks. Copy streams count/hash original bytes, fsync file and directory, then expose Collected. Partial acquisition is never a collected input. Original URI strings/credentials do not enter queue payloads. Cold/warm SEND/SEND_MULTIPLE and Files/Photos feed native acquisition before a JS event is required; recreated acquisition tokens prevent accidental repeat delivery. Two intentional shares remain separate inputs. Temporary grant loss after successful staging cannot remove owned bytes.
+Native `VaultorImports` owns `noBackupFilesDir/collected-imports-v1`, independent of legacy recovery, Reviews and downloads. SQLite FULL-synchronous records encrypt payload metadata with Android Keystore; originals use independently authenticated256KiB AES-GCM chunks. Copy streams count/hash original bytes, fsync file and directory, then expose Collected. Partial acquisition is never a collected input. Uploads use owned staged bytes rather than retained provider grants; credentials remain in the existing protected native profiles. Cold/warm SEND/SEND_MULTIPLE and Files/Photos feed native acquisition before a JS event is required; recreated acquisition tokens prevent accidental repeat delivery. Two intentional shares remain separate inputs. Temporary grant loss after successful staging cannot remove owned bytes.
 
 Defaults:64MiB/item, eight inputs/acquisition, 256MiB private staging, 128 retained rows and16MiB free reserve. Existing bytes, partial files and encryption overhead count toward the storage budget. Staging budget is adjustable64–2048MiB; lowering it never evicts. Full/quota/provider failures remain per-item and visible. Acquired originals have explicit SAF recovery/removal. Unknown dispatched items cannot be removed before reconciliation. Uninstall/clear-data still destroys app-private data; key loss is not repaired by resetting journals.
 

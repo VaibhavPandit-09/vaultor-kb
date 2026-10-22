@@ -67,11 +67,11 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 - [Operations](development/OPERATIONS.md): development, Docker, data/limits, logs and isolated verification.
 - [Host access and pairing](security/HOST-ACCESS.md): owner bootstrap, HTTPS trust, persistent approvals and approved agent access.
 
-- [R7 alpha.24 acceptance ledger](android/releases/0.1.0-alpha.24.md): artifacts, actual faults/upgrade checks, limitations and S24 procedure.
-
 ## Android — `android/`
 
-- [Collected imports](android/IMPORTS.md): R7 implementation in progress; host receipts/provenance/archive5, owner-approved ZIPs and separate protected Android queue.
+- [R7 alpha.24 acceptance ledger](android/releases/0.1.0-alpha.24.md): artifacts, actual faults/upgrade checks, limitations and S24 procedure.
+
+- [Collected imports](android/IMPORTS.md): R7 acceptance candidate; host receipts/provenance/archive5, owner-approved ZIPs and separate protected Android queue.
 
 - [Android alpha.23 R6 milestone](android/releases/0.1.0-alpha.23.md): published production prerelease, compatibility, install-over and physical limits.
 
