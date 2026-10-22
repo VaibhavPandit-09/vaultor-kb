@@ -122,6 +122,21 @@ class CompanionSnapshotsTest {
             assertThrows(IOException.class,()->capture.stream(id,file+".bin",null,validator,null,broken));assertEquals("READY",capture.status(id,null).status());var rest=new MockHttpServletResponse();capture.stream(id,file+".bin",null,validator,"bytes="+part.size()+"-",rest);part.write(rest.getContentAsByteArray());assertArrayEquals(bytes,part.toByteArray());
         }finally{release.countDown();capture.cancel(id,null);capture.shutdown();}
     }
+    @Test void warmedManifestStillChecksBytesValidatorsAndCancellation() throws Exception {
+        var note=service.createNote("Warmed manifest",doc("Retained original"));var state=create(selection("resources",List.of(note.getId()),"none","readable"));
+        var first=manifest(state);assertSame(first,manifest(state));
+        assertThrows(UnsupportedOperationException.class,()->first.resources().clear());
+        assertThrows(UnsupportedOperationException.class,()->first.resources().getFirst().references().clear());
+        Path path=DATA.resolve("companions").resolve(state.id()).resolve("manifest.json");byte[] bytes=Files.readAllBytes(path);var at=Files.getLastModifiedTime(path);
+        byte[] damaged=bytes.clone();damaged[damaged.length/2]^=1;
+        try {Files.write(path,damaged);Files.setLastModifiedTime(path,at);assertEquals("COMPANION_DAMAGED",assertThrows(AccessFailure.class,()->manifest(state)).code);}
+        finally {Files.write(path,bytes);Files.setLastModifiedTime(path,at);}
+        assertEquals(first,manifest(state));
+        assertEquals("COMPANION_VALIDATOR_MISMATCH",assertThrows(AccessFailure.class,()->snapshots.manifest(state.id(),null,"\"different\"")).code);
+        snapshots.cancel(state.id(),null);
+        assertEquals("COMPANION_CANCELLED",assertThrows(AccessFailure.class,()->manifest(state)).code);
+        assertEquals("Retained original",json.readTree(service.getResourceOrThrow(note.getId()).getContent()).path("content").get(0).path("content").get(0).path("text").asText());
+    }
     @Test void boundsAndTamperedManifestCannotBecomeAValidDownload() throws Exception {
         var note=service.createNote("Limits",doc("Original"));var s=selection("resources",List.of(note.getId()),"none","readable");var state=create(s);assertEquals(400,assertThrows(AccessFailure.class,()->snapshots.estimate(selection("resources",List.of("../../escape"),"none","originals"),null)).status);
         Path manifest=DATA.resolve("companions").resolve(state.id()).resolve("manifest.json");byte[] original=Files.readAllBytes(manifest);try{Files.writeString(manifest,"{\"resources\":[{\"key\":\"../host-access/owner.key\",\"bytes\":-1}]}");assertEquals("COMPANION_DAMAGED",assertThrows(AccessFailure.class,()->manifest(state)).code);}finally{Files.write(manifest,original);}

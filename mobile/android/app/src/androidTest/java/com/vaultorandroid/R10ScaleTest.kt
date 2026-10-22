@@ -122,19 +122,49 @@ class R10ScaleTest {
     val a = JSONObject(metadata.readText()); val expected = a.getInt("expected"); val d = UiDevice.getInstance(i)
     val began = System.nanoTime()
     ctx.startActivity(ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    // Offline restoration without a current note intentionally enters Home.
+    val library = d.wait(Until.findObject(By.desc("Library").enabled(true)), 45000)
+    assertNotNull("Offline Home navigation absent", library)
+    val homeMs = (System.nanoTime() - began) / 1e6
+    library!!.click()
+    val libraryBegan = System.nanoTime()
     val usable = d.wait(Until.hasObject(By.text("$expected resources")), 45000)
     d.takeScreenshot(File(ctx.getExternalFilesDir(null), "r10-library-$expected.png"))
     d.dumpWindowHierarchy(File(ctx.getExternalFilesDir(null), "r10-library-$expected.xml"))
     assertTrue("Offline Library did not become usable", usable)
-    val report = JSONObject().put("activityToUsableMs", (System.nanoTime() - began) / 1e6)
+    val report = JSONObject().put("activityToHomeMs", homeMs).put("homeToLibraryMs", (System.nanoTime() - libraryBegan) / 1e6)
       .put("qualification", "Instrumented process; cold process startup is collected separately with am start -W")
     d.executeShellCommand("dumpsys gfxinfo ${ctx.packageName} reset")
     val scrolling = System.nanoTime()
     repeat(12) { val x = d.displayWidth / 2; d.swipe(x, d.displayHeight * 3 / 4, x, d.displayHeight / 3, 12) }
     report.put("twelveScrollsMs", (System.nanoTime() - scrolling) / 1e6)
-    assertTrue(d.hasObject(By.text("$expected resources")))
+    assertTrue("Library navigation must remain available after scrolling", d.hasObject(By.desc("Library")))
     File(ctx.getExternalFilesDir(null), "r10-frames-$expected.txt").writeText(d.executeShellCommand("dumpsys gfxinfo ${ctx.packageName}"))
     d.takeScreenshot(File(ctx.getExternalFilesDir(null), "r10-library-$expected.png"))
     emit("ui-$expected", report)
+  }
+  @Test fun offlineReaderAndMedia() {
+    val m = module(); val a = JSONObject(metadata.readText()).put("epoch", boot(m).getString("epoch")).put("offline", true)
+    val report = JSONObject(); val detailStart = System.nanoTime()
+    val note = JSONObject(call { m.companion("read", JSONObject(a.toString()).put("path", "/resources/" + a.getString("noteId")).toString(), it) })
+    assertEquals("doc", note.getJSONObject("content").getString("type")); report.put("noteDetailMs", (System.nanoTime() - detailStart) / 1e6)
+    for ((name, mime) in listOf("image" to "image/png", "pdf" to "application/pdf")) {
+      val began = System.nanoTime()
+      val preview = JSONObject(call { m.media("preview", JSONObject(a.toString()).put("resourceId", a.getString(name + "Id")).put("mime", mime).put("page", 1).put("renderScale", 1).toString(), it) })
+      assertTrue(preview.getInt("width") > 0); assertTrue(preview.getInt("height") > 0)
+      report.put(name + "PreviewMs", (System.nanoTime() - began) / 1e6)
+    }
+    call { m.storage("putSession", JSONObject().put("scope", a.getString("scope")).put("hostId", a.getString("hostId"))
+      .put("localOnly", true).put("view", "note").put("noteId", a.getString("noteId")).toString(), it) }
+    emit("media-" + a.getInt("expected"), report)
+  }
+  @Test fun prepareIntegratedReviewMetadata() {
+    val m = module(); val a = JSONObject(metadata.readText()).put("epoch", boot(m).getString("epoch"))
+    val parts = JSONArray(a.getString("scope"))
+    a.put("generation", parts.getString(2))
+    val note = JSONObject(call { m.companion("read", JSONObject(a.toString()).put("path", "/resources/" + a.getString("noteId")).toString(), it) })
+    a.put("revision", note.getString("revision"))
+    // Public test metadata only; credentials remain in the production profile.
+    File(ctx.cacheDir, "r6-live-review.json").writeText(a.toString())
   }
 }

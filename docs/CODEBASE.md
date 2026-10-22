@@ -44,6 +44,8 @@ One worker per workspace captures under its exclusive WorkspaceGate/SQLite trans
 
 Limits: four active checkpoints/128 receipts; one-hour fixed byte lifetime/seven-day receipts;10,000 resources and collections/tags;100 seed IDs;64MiB per original,1MiB per note,64MiB JSON/manifest;2GiB retained payloads per workspace plus bounded metadata. Oversized/missing/policy-omitted originals and unselected links are explicit. Partial preparation fails/cancels without READY; restart removes interrupted staging. Damaged optional storage disables companion downloads with503, without disabling original-workspace startup. Immutable streams hold a maintenance read lease; every byte chunk rechecks current access/generation/cancellation; If-Match pins manifests and client final hashes reject truncation. Deltas compare two matching immutable selections; expired/gapped streams require full reconciliation, never silently broader scope. Current validation/publication evidence is recorded in desktop/releases/v0.11.0.md.
 
+The R10 host0.16.1 candidate caches one reclaimable immutable parsed manifest up to4MiB per workspace to avoid re-deserializing an Atlas manifest for every payload. Current bytes are still read and SHA-256-verified on every request after receipt/source/validator checks; cached authority is never admitted. Cancellation/expiry/shutdown clear the matching parsed value, and larger manifests keep the verified parse path. [COMPANIONS.md](architecture/COMPANIONS.md) owns the exact boundary; [R10 qualification](plans/R10-ACCEPTANCE.md) owns baseline/candidate measurements and acceptance status. Protocol/schema/Android app remain unchanged.
+
 ### R8/R9 exports, connections and updates
 
 The acceptance candidates are Android alpha27/code31 and compatible Windows0.16. Full connected exports retain archive5 and host note-format converters. New portable partial6 packages contain checksum-covered inventory/omissions/dependency depth and Review/import-provenance coverage; merge or empty-new import only, never populated replacement. Offline verified checkpoints support partial/Markdown+available originals and exact JSON sidecars, with hidden provenance/all-host Review omissions declared. Separate native derivative export storage is256MiB/eight operations; captured source/generation/UUID survive active-source changes and process death. Save/Share verify bytes again and require Android/provider consent; ordinary exports never contain credentials or unacknowledged queues. [Export contract](android/EXPORTS-AND-CONNECTIONS.md) owns exact bounds and compatibility.
@@ -404,6 +406,10 @@ Validated 2026-09-22: frontend production build/lint and nine component/unit tes
 - Build reports a large JS chunk and an outdated Browserslist dataset; these do not prevent packaging. Chunk splitting remains performance work.
 
 ## Change checklist and maintenance history
+
+### 2026-10-22 — R10 measured companion-manifest parsing correction
+
+Released alpha.28/API36 Atlas5000 download passed in408.65seconds for21.26MB retained payloads. A51request controlled owner-loopback payload observation had24.63ms warm median and confirmed repeated3.66MB manifest deserialization. Added one softly referenced immutable parsed manifest up to4MiB per workspace while retaining per-request byte hash/receipt/grant/generation/expiry/validator and per-chunk checks. Same-size/same-mtime corruption, warm-cache cancellation and immutable-list coverage added; focused companion tests passed. Windows0.16.1 candidate version/lock bumped; packaging and candidate comparison are in progress. No Android app/protocol/schema change, no merge/tag/publication, no physical/Mac acceptance claimed.
 
 ### 2026-10-22 — Authorized R10 qualification foundation
 

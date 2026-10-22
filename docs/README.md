@@ -3,6 +3,7 @@
 Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow guide. Agents also read [AGENTS.md](../AGENTS.md). Keep one authoritative explanation per topic and update the guide in every relevant change.
 
 - [R10 integrated qualification](plans/R10-ACCEPTANCE.md): authorized engineering, measured evidence, remaining acceptance and final merge/publication gate.
+- [R10 Windows0.16.1 candidate](desktop/releases/v0.16.1.md): measured companion-manifest correction, compatibility and unpublished build qualification.
 
 - [R7–R9 integration audit](plans/R7-R9-INTEGRATION.md): fetched ancestry, combined contracts, release-blocking source-lock investigation, actual checks and R10 entry gate.
 

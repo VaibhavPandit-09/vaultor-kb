@@ -28,7 +28,32 @@ Reports and disposable host data stay ignored under `desktop/cache/r10`; Android
 - First API36 pairing hit the existing eight-remembered-host bound after actual host approval. The test now removes only an inactive loopback fixture approval, checking protected Review equality before/after; no data clear or permission relaxation. Corrected pairing and Small full verified download passed (5,902.16ms download phase).
 - Disconnected cold Small Library was observed after explicit host reverse-route removal: Android `am start -W` reported COLD/TotalTime522ms/WaitTime525ms; first complete UI-dump observation found70resources at3,248.22ms. That is an upper bound including dump/poll overhead, not a precise display timestamp or cold OS cache measurement.
 - Initial combined offline test run failed: UI readiness was not observed and queries reused a stale epoch after process restart. The query driver now obtains the current bootstrap epoch; its focused rerun passed11samples each of four bounded local queries. UI is being rerun separately with captured hierarchy/screenshot. Neither initial failure is counted as a product fix or successful gate.
-- Fresh TypeScript, Node syntax and `git diff --check` passed. Full Android Jest111/111 passed; frontend regression is in progress. No product defect has yet been demonstrated or repaired.
+- Fresh TypeScript, Node syntax and `git diff --check` passed. Initial full regression passed backend119/frontend323/desktop44/mobile111. The first backend attempt used the bundled JRE rather than a JDK and failed compilation; the installed JDK25 rerun passed. Product parsing work below was identified after this foundation checkpoint.
+
+## Scale observations and demonstrated correction
+
+The reused API36 image held eight remembered fixture hosts and eight companion scopes. Those refusal outcomes correctly enforced bounds; they are not failed data-integrity behavior. Preserved its disk image and created separate `Vaultor_R10_API36` writable storage under the ignored R10 root (stock API36, Pixel8,1080×2400,420dpi,2GiB RAM,60Hz, SwiftShader). Installed unchanged published alpha.28/code32. Pulled installed base.apk SHA256 **4b87dd8212f03c8db45395ea113e12761c2b1bb45185e1c7e5de6962aaba730b**, matching the published release. No app-data clear or original emulator reset.
+
+| Fresh API36 observation | Small70 | Atlas5000 |
+| --- | ---: | ---: |
+| Full readable checkpoint transfer/verification/activation |5,593.18ms|408,645.98ms|
+| External cold Activity `TotalTime` |938ms|522ms|
+| First offline Home resource-row XML observation (upper bound) |4,253.97ms|3,347.02ms|
+| Instrumented activity → Home navigation ready |1,541.18ms|1,440.12ms|
+| Explicit Home → usable Library |1,263.31ms|1,226.72ms|
+| Twelve scroll gestures |3,566.84ms|3,173.65ms|
+| Android gfxinfo frames / janky |227 /18 (7.93%)|231 /20 (8.66%)|
+| gfxinfo median /95th frame time |22/36ms|16/29ms|
+
+These are observations, not physical-device/FPS/battery guarantees, cold OS-cache measurements or statistically repeatable startup rankings. The initial no-note offline session intentionally restores Home; earlier Library assertions assumed another root, then also incorrectly required the scrolled-away resource count to stay visible. Corrected tests explicitly enter Library and preserve accessible navigation while scrolling. Both focused final Library/scroll runs passed. Cold readiness checks now require actual resource rows, not the fixture source name containing a count. Legacy gfxinfo jank is separately retained in raw files; use the modern platform count above.
+
+Small local query first /10warm median /warm max: Library34.83/7.51/21.35ms, title5.08/6.40/13.61ms, saved text11.22/7.53/13.31ms, beacon6.63/6.40/14.71ms. Atlas bounded queries passed; detailed measurements are retained for consolidation. Atlas native note detail37.11ms, downloaded image preview23.62ms and first PDF page353.66ms passed; this is native readiness, not full document decoding or displayed frame timing. Atlas retained payloads21,259,956bytes;80 originals explicitly omitted by readable policy, no unavailable/unselected links. Local storage includes catalogs and coexisting Small data; do not call total retained-store size an Atlas-only footprint.
+
+Released Windows0.16.0 executable, fresh Small portable copy: Library usable12,898.20ms from process spawn; long image-heavy note DOM519.75ms. Process-tree working set/private bytes: Library977.85/854.54MiB, reader1,158.56/1,030.43MiB, immediate post-edit/undo1,187.43/1,059.21MiB. Edit/undo passed. Shared pages may be double-counted, and the final sample is not a cache-release or leak test. Two-second rAF scroll intervals are retained as raw observations, not physical display/FPS certification.
+
+The released Atlas transfer exposed repeated whole-manifest deserialization: each payload reads/hashes/parses the3,656,900byte manifest. Controlled owner-loopback **51 identical859byte payload requests** after preparing another5000resource checkpoint: first40.26ms;50warm median24.63ms, empirical p9540.67ms/max47.57ms. Every returned payload length/SHA was checked. This isolates the payload path and does not model Android TLS. Baseline scripts/source and initial failed setup attempts remain retained.
+
+The host0.16.1 candidate now retains one softly referenced immutable parsed manifest up to4MiB per workspace; it still reads and hashes actual bytes and rechecks receipt/source/validator on every request, plus per-chunk authority. Larger manifests remain uncached. Focused CompanionSnapshotsTest **14/14 passed**, including warm-cache same-size/same-mtime corruption, immutable nested lists, validator refusal/cancellation, expiry/restart/generation, grants/revocation, range and cross-workspace isolation. Full candidate backend regression, native candidate comparison and fresh Windows installer/sidecar preparation are in progress. Android product source/version is unchanged. No speedup or candidate release claim is made before measured requalification.
 
 ## Platform limits and release gate
 
