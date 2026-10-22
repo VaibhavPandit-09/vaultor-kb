@@ -1,8 +1,10 @@
-# Vaultor for Android — completed R6 milestone
+# Vaultor for Android — R8/R9 acceptance candidate
 
 R6 is complete as a development milestone. [Android alpha.23/code27](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.23) is published as a production prerelease from master source **7b5baf5f0b732a85e2d152296de69c405bfd4c67**, immutable tag **android/v0.1.0-alpha.23**. Master merge5b0b639 preserves integration21ac91a and complete Android product history. Physical/TalkBack/OEM/Mac acceptance remains unclaimed and nonblocking. [R7 handoff](../plans/R7-HANDOFF.md) preserves the preimplementation baseline. R7 is now an unpublished alpha.24/code28 acceptance candidate with compatible Windows0.15.0; [imports](IMPORTS.md) and [acceptance ledger](releases/0.1.0-alpha.24.md) own current contracts/checks.
 
-Install **Vaultor-Android-0.1.0-alpha.23.apk** over the existing alpha installation; never uninstall or clear data. Requires Android16/API36+, targets37, original com.vaultor.app identity and signer. Published Windows0.14.0 is the recommended compatible Review host. [Release ledger](releases/0.1.0-alpha.23.md) owns exact artifact/validation evidence.
+Current unpublished acceptance: **alpha.27/code31**, compatible **Windows0.16.0**. [Exports/connections](EXPORTS-AND-CONNECTIONS.md) owns current R8/R9 behavior; [alpha.26 ledger](releases/0.1.0-alpha.27.md) records artifacts, checks and remaining acceptance. Install over the existing app, without clearing data; compatible host first. R10 remains unstarted. No master integration or public release is authorized.
+
+Published R6 baseline: install **Vaultor-Android-0.1.0-alpha.23.apk** over the existing alpha installation; never uninstall or clear data. Requires Android16/API36+, targets37, original com.vaultor.app identity and signer. Published Windows0.14.0 is the recommended compatible Review host. [Release ledger](releases/0.1.0-alpha.23.md) owns exact artifact/validation evidence.
 
 ## Historical releases and preceding gates
 
