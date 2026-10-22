@@ -1,6 +1,6 @@
 # R10 starting handoff
 
-**2026-10-23 completion authorized:** R10 candidate5145f21 is integrated directly into master2918d85; Windows0.16.1 release qualification/publication is authorized. [R10 ledger](R10-ACCEPTANCE.md) owns final results. The starting isolation instructions below are historical; [the permanent workflow](../development/AI_DEVELOPMENT_WORKFLOW.md) now defaults to direct master development.
+**2026-10-23 complete:** R10 candidate5145f21 is integrated directly into master2918d85; Windows0.16.1 is published from immutable5ac77de, Androidalpha.28/code32 unchanged. [R10 ledger](R10-ACCEPTANCE.md) owns final results. The starting isolation instructions below are historical; [the permanent workflow](../development/AI_DEVELOPMENT_WORKFLOW.md) now defaults to direct master development.
 
 **2026-10-22: R10 engineering candidate ready for final user acceptance** from fetched master7b7f4f4 on isolated codex/r10-quality. [Consolidated qualification ledger](R10-ACCEPTANCE.md) owns measured results, limitations, local Windows0.16.1 candidate and the final acceptance-before-merge/publication gate. The original starting instructions below are retained as baseline context.
 

@@ -4,8 +4,8 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 - [Master-centered AI development workflow](development/AI_DEVELOPMENT_WORKFLOW.md): direct development on master, justified isolation only, protected integration, validation and immutable release recovery points.
 
-- [R10 integrated qualification](plans/R10-ACCEPTANCE.md): consolidated engineering candidate, measured evidence, remaining platform/manual acceptance and final merge/publication plan.
-- [R10 Windows0.16.1 candidate](desktop/releases/v0.16.1.md): measured companion-manifest correction, reproduced editor dependency correction, compatibility and unpublished build qualification.
+- [R10 integrated qualification](plans/R10-ACCEPTANCE.md): completed master integration/publication, measured evidence, actual checks and remaining platform/manual limitations.
+- [Published Windows0.16.1 R10 release](desktop/releases/v0.16.1.md): measured companion-manifest correction, reproduced editor dependency correction, compatibility and verified Windows-only publication.
 
 - [R7–R9 integration audit](plans/R7-R9-INTEGRATION.md): fetched ancestry, combined contracts, release-blocking source-lock investigation, actual checks and R10 entry gate.
 
@@ -126,7 +126,7 @@ Start with [CODEBASE.md](CODEBASE.md), the living architecture/design/workflow g
 
 ## Active execution trackers — `plans/`
 
-- [R7–R10 roadmap reconciliation](plans/R7-R10-RECONCILIATION.md): approved post-R6 planning authority; R7–R9 integrated/published, R10 authorized and awaiting candidate acceptance; preserved UI and requirement classifications.
+- [R7–R10 roadmap reconciliation](plans/R7-R10-RECONCILIATION.md): approved post-R6 planning authority; R7–R9 integrated/published, R10 integrated/published; preserved UI and requirement classifications.
 
 - [R7 fresh-chat handoff](plans/R7-HANDOFF.md): authoritative R6 master/release, compatibility, remaining acceptance and defined R7 scope.
 
@@ -180,4 +180,4 @@ Keep CODEBASE and this index at the docs root for agent discovery. Put topic gui
 
 - [Integrated Android alpha.28 qualification](android/releases/0.1.0-alpha.28.md)
 
-- [R10 fresh-master starting handoff](plans/R10-HANDOFF.md): historical entry baseline; current candidate outcomes are in the qualification ledger.
+- [R10 fresh-master starting handoff](plans/R10-HANDOFF.md): historical entry baseline; completed outcomes are in the qualification ledger.
