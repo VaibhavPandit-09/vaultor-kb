@@ -2,8 +2,8 @@
 import assert from 'node:assert/strict';
 import { OwnedServer } from '../src/owned-server.mjs';
 import { Profiles } from '../src/profiles.mjs';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { resolve, join } from 'node:path';
+import { readFile, writeFile, mkdir, realpath } from 'node:fs/promises';
+import { resolve, join, sep } from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 import { createServer } from 'node:net';
@@ -13,8 +13,12 @@ const app = process.env.R10_APP, bundle = process.env.VAULTOR_BUILD_BUNDLE, corp
 assert.ok(app && bundle && corpusRoot, 'Explicit installed executable, released bundle and corpus root required');
 const corpus = process.argv.includes('--small') ? 'small' : 'atlas';
 const expected = corpus === 'small' ? 70 : 5000;
-const root = resolve('desktop/cache/r10', 'desktop-' + corpus + '-' + randomUUID());
+const resume=process.env.R10_DESKTOP_RESUME;
+const root = resume?resolve(resume):resolve('desktop/cache/r10', 'desktop-' + corpus + '-' + randomUUID());
+assert.ok(root.startsWith(resolve('desktop/cache/r10')+sep));
 const profile = join(root, 'profile'); await mkdir(profile, { recursive: true });
+assert.equal(await realpath(root),root);
+if(resume){const prior=JSON.parse(await readFile(join(root,'report.json')));assert.equal(prior.corpus,corpus);assert.equal(prior.expected,expected);}
 const report = { corpus, expected, app, started: new Date().toISOString(), samples: {},
   limitations: ['New processes with OS/disk caches retained; one native observation per corpus.',
     'Working-set sums can double-count shared pages; private bytes are sampled, not continuous peaks.',
@@ -55,7 +59,7 @@ function memory() {
   return JSON.parse(execFileSync('powershell.exe', ['-NoProfile', '-Command', code], { encoding: 'utf8', windowsHide: true }));
 }
 try {
-  const dir = corpus === 'small' ? join(corpusRoot, 'small') : corpusRoot;
+  if(!resume){const dir = corpus === 'small' ? join(corpusRoot, 'small') : corpusRoot;
   const manifest = JSON.parse(await readFile(join(dir, 'manifest.json'))), bytes = await readFile(join(dir, 'baseline.zip'));
   assert.equal(createHash('sha256').update(bytes).digest('hex'), manifest.archive.sha256);
   await owned.start(); const form = new FormData(); form.set('file', new Blob([bytes]), 'fixture.zip');
@@ -63,7 +67,7 @@ try {
   await api('/imports/' + preview.operation.id + '/commit', 'POST', { mode: 'replace', confirmation: 'replace' });
   let done = false;
   for (let n = 0; n < 3600; n++) { const op = await api('/operations/' + preview.operation.id); if (op.status === 'SUCCEEDED') { done = true; break; } assert.notEqual(op.status, 'FAILED'); await sleep(100); }
-  assert.ok(done); assert.equal((await api('/resources?size=1')).totalItems, expected); await owned.stop();
+  assert.ok(done); assert.equal((await api('/resources?size=1')).totalItems, expected); await owned.stop();}
   const profiles = new Profiles(profile); await profiles.load(); await profiles.ensureManaged();
   const socket = createServer(); await new Promise(r => socket.listen(0, '127.0.0.1', r)); const port = socket.address().port; await new Promise(r => socket.close(r));
   const env = { ...process.env, VAULTOR_DESKTOP_TEST_DIRECTORY: profile }; delete env.ELECTRON_RUN_AS_NODE;
@@ -73,8 +77,13 @@ try {
   assert.ok(target, 'Installed app CDP missing'); ws = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((r, j) => { ws.addEventListener('open', r, { once: true }); ws.addEventListener('error', j, { once: true }); });
   ws.addEventListener('message', e => { const r = JSON.parse(e.data), p = pending.get(r.id); if (p) { pending.delete(r.id); r.error ? p.reject(Error(r.error.message)) : p.resolve(r.result); } });
-  await wait("document.querySelectorAll('.library-resource').length>0");
-  report.samples.processToLibraryUsableMs = performance.now() - began;
+  await wait("document.querySelectorAll('.library-resource').length>0||document.querySelector('.tiptap')?.innerText.includes('Atlas — Start here')");
+  report.samples.processToFirstContentMs = performance.now() - began;
+  await evaluate("[...document.querySelectorAll('.sidebar-nav')].find(b=>b.textContent.trim()==='Library')?.click()");
+  await wait("Boolean(document.querySelector('input[aria-label=\"Search resources\"]'))");
+  await evaluate("(()=>{const e=document.querySelector('input[aria-label=\"Search resources\"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'');e.dispatchEvent(new Event('input',{bubbles:true}))})()");
+  await wait(`document.querySelectorAll('.library-resource').length===${Math.min(expected,100)}`);
+  report.samples.processToLibraryUsableMs=performance.now()-began;
   assert.equal(await evaluate("document.querySelectorAll('.library-resource').length"), Math.min(expected, 100));
   report.memoryLibrary = memory(); await frame('library');
   report.samples.scrollFrames = await evaluate(`new Promise(resolve=>{const box=document.querySelector('.library-view');const samples=[];let previous=performance.now(),start=previous;function tick(now){samples.push(now-previous);previous=now;box.scrollTop=(now-start)/2000*(box.scrollHeight-box.clientHeight);if(now-start<2000)requestAnimationFrame(tick);else resolve(samples)}requestAnimationFrame(tick)})`);
@@ -82,7 +91,7 @@ try {
   await evaluate("(()=>{const e=document.querySelector('input[aria-label=\"Search resources\"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'Atlas — Start here');e.dispatchEvent(new Event('input',{bubbles:true}))})()");
   await wait("[...document.querySelectorAll('.library-resource')].some(e=>e.textContent.includes('Atlas — Start here'))");
   const reader = performance.now(); await evaluate("[...document.querySelectorAll('.library-resource')].find(e=>e.textContent.includes('Atlas — Start here')).querySelector('button').click()");
-  await wait("document.querySelector('.tiptap')?.innerText.includes('Atlas — Start here')&&document.querySelectorAll('.tiptap img').length>=3");
+  await wait("document.querySelector('.tiptap')?.innerText.includes('Atlas — Start here')&&[...document.querySelectorAll('.tiptap img')].some(img=>img.complete&&img.naturalWidth>0)");
   report.samples.longImageNoteDomMs = performance.now() - reader; report.memoryReader = memory(); await frame('reader');
   const saved = await evaluate("JSON.stringify(document.querySelector('.tiptap').editor.getJSON())");
   await evaluate("document.querySelector('.tiptap').editor.commands.insertContent('R10 disposable desktop edit ')");
@@ -95,6 +104,6 @@ finally {
   if (ws?.readyState === 1) { await evaluate("window.vaultorDesktop.hostAction('stop')").catch(() => {}); ws.close(); }
   // Only the directly spawned disposable shell, after requesting owned host stop.
   child?.kill();
-  await owned.stop(); await writeFile(join(root, 'report.json'), JSON.stringify(report, null, 2));
-  console.log(JSON.stringify({ root, success: report.success ?? false, samples: report.samples, failure: report.failure }));
+  await owned.stop(); await writeFile(join(root, resume?'report-rerun-'+Date.now()+'.json':'report.json'), JSON.stringify({...report,resumed:!!resume}, null, 2));
+  console.log(JSON.stringify({ root, success: report.success ?? false, samples: { ...report.samples, scrollFrames: undefined }, failure: report.failure }));
 }

@@ -45,7 +45,7 @@ try {
   const report = { source: process.env.R10_MEASUREMENT_LABEL ?? 'released-0.16.0', resources: status.resources,
     payloadBytes: payload.bytes, samples, firstMs: samples[0], warmMedianMs: (warm[24] + warm[25]) / 2,
     warmP95Ms: warm[47], warmMaxMs: warm.at(-1),
-    limitations: ['51 sequential owner-loopback requests against one immutable Atlas payload, one cold cache observation plus50warm samples.',
+    limitations: ['51 sequential owner-loopback requests against one immutable Atlas payload, first request plus50warm samples; inventory has already verified the manifest.',
       'Not Android TLS or first-time whole-checkpoint transfer. No OS/disk cache flush. Every returned payload size/hash is checked.'] };
   const label = report.source.replace(/[^a-zA-Z0-9.-]/g, '-');
   await writeFile(resolve('desktop/cache/r10/manifest-' + label + '.json'), JSON.stringify(report, null, 2));

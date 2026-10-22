@@ -58,7 +58,7 @@ class ReaderMotionExperienceTest {
     try {
       d.executeShellCommand("settings put secure show_ime_with_hard_keyboard 1");launch()
       if(d.hasObject(By.desc("Browse navigation")))tap("Browse navigation")
-      tap("Library");d.wait(Until.findObject(By.desc("Search resources")),10000).text=title;Thread.sleep(700);tap("$title, Note")
+      tap("Library");d.wait(Until.findObject(By.desc("Search resources")),10000).text=title;Thread.sleep(700);d.wait(Until.findObject(By.descStartsWith("$title, Note")),10000).click();Thread.sleep(450)
       val retained=web();tap("Reading appearance")
       val field=d.wait(Until.findObject(By.desc("Text size")),10000);field.click()
       fun ime():Boolean {var visible=false;i.runOnMainSync{visible=WindowInspector.getGlobalWindowViews().any{it.rootWindowInsets?.isVisible(android.view.WindowInsets.Type.ime())==true}};return visible}
@@ -84,7 +84,7 @@ class ReaderMotionExperienceTest {
     tap("Library")
     val input=d.wait(Until.findObject(By.desc("Search resources")),10000)
     input.text=title;Thread.sleep(800)
-    val row=d.wait(Until.findObject(By.desc("$title, Note")),10000);assertNotNull(row)
+    val row=d.wait(Until.findObject(By.descStartsWith("$title, Note")),10000);assertNotNull(row)
     val center=row!!.visibleCenter
     // Native bounds sampled without UI-idle waits certify actual intermediate geometry.
     val heights=mutableSetOf<Int>();d.click(center.x,center.y)
@@ -104,7 +104,7 @@ class ReaderMotionExperienceTest {
     tap("Back")
     assertEquals(title,d.wait(Until.findObject(By.desc("Search resources")),10000).text)
     assertSame(retained,web());frame("return")
-    tap("$title, Note")
+    d.wait(Until.findObject(By.descStartsWith("$title, Note")),10000).click();Thread.sleep(450)
     assertTrue(d.wait(Until.hasObject(By.desc("Reading appearance")),10000));assertSame(retained,web())
     assertEquals(scroll,js(retained,"window.scrollY").toDouble(),3.0)
     tap("Reading appearance");tap("Settings")

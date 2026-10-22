@@ -43,9 +43,10 @@ class SourceLockExperienceTest {
         assertTrue(d.wait(Until.hasObject(By.desc("Reading options")),30000))
         val react=(ctx.applicationContext as MainApplication).reactHost.currentReactContext as ReactApplicationContext
         val m=VaultorModule(react);val saved=JSONObject(marker.readText());val boot=JSONObject(call{m.storage("bootstrap","{}",it)})
-        val signal=File(ctx.getExternalFilesDir(null),"r89-fixtures/grant-removed.ready");signal.parentFile!!.mkdirs();signal.delete()
+        val authority=args.getString("authorityChange")?:"grant-removed";require(authority in listOf("grant-removed","generation-replaced"))
+        val signal=File(ctx.getExternalFilesDir(null),"r89-fixtures/$authority.ready");signal.parentFile!!.mkdirs();signal.delete()
         Log.i("VaultorSourceLockTest","SOURCE_LOCK_READY")
-        repeat(600){if(!signal.exists())Thread.sleep(100)};assertTrue("Owner grant-removal handshake required",signal.exists()) // Owner removes only this fixture's workspace grant through its normal API.
+        repeat(600){if(!signal.exists())Thread.sleep(100)};assertTrue("Owner authority-change handshake required",signal.exists()) // The owner changes only this fixture's grant/generation through the normal API.
         val input=JSONObject(saved.toString()).put("epoch",boot.getString("epoch")).put("offline",false).put("request",JSONObject().put("scope","workspace").put("format","zip").put("ids",JSONArray()).put("depth",0))
         val id=JSONObject(call{m.companionExports("start",input.toString(),it)}).getString("id")
         val refused=await(m,id);assertEquals(refused.optString("detail"),"error",refused.getString("state"));Log.i("VaultorSourceLockTest","REFUSAL "+refused.optString("detail"))

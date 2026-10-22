@@ -118,6 +118,12 @@ class R10ScaleTest {
     val m = module(); val a = JSONObject(metadata.readText()); val b = boot(m); a.put("epoch", b.getString("epoch"))
     emit("refresh-" + a.getInt("expected"), download(m, a))
   }
+  @Test fun verifyChangedFixtureAddress() {
+    val address = args.getString("address")!!; require(address.matches(Regex("https://127\\.0\\.0\\.1:[0-9]+")))
+    val m = module(); val a = JSONObject(metadata.readText())
+    call { m.changeAddress(a.getString("hostId"), address, it) }
+    a.put("epoch", boot(m).getString("epoch")); metadata.writeText(a.toString())
+  }
   @Test fun offlineLibraryAndScroll() {
     val a = JSONObject(metadata.readText()); val expected = a.getInt("expected"); val d = UiDevice.getInstance(i)
     val began = System.nanoTime()
@@ -166,5 +172,10 @@ class R10ScaleTest {
     a.put("revision", note.getString("revision"))
     // Public test metadata only; credentials remain in the production profile.
     File(ctx.cacheDir, "r6-live-review.json").writeText(a.toString())
+  }
+  @Test fun activateRetainedReader() {
+    val m=module();val a=JSONObject(metadata.readText())
+    call { m.companion("activate", a.toString(), it) }
+    call { m.storage("putSession", JSONObject().put("scope",a.getString("scope")).put("hostId",a.getString("hostId")).put("localOnly",true).put("view","note").put("noteId",a.getString("noteId")).toString(),it) }
   }
 }

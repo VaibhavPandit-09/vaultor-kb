@@ -1,12 +1,12 @@
-Current A3 candidate adds [source-bound Review capture](REVIEW-CAPTURE.md) over the retained read-only reader; native Copy remains and original JSON is unchanged. Upload/status is A4.
+The published alpha.28 reader includes [source-bound Review capture](REVIEW-CAPTURE.md) and [automatic delivery/status reconciliation](REVIEW-SYNC.md), with native Copy and unchanged original JSON. Imports and exports use their separate source-bound contracts; no general Android document editing is reintroduced.
 
 # Android reader and legacy recovery
 
-Reviewed 2026-10-16. A2 alpha.14/code18 is the current reader-context review candidate; [READER-CONTEXT.md](READER-CONTEXT.md) owns the interaction specification. R2 alpha.10 is the earlier reading refinement; see [ANDROID.md](ANDROID.md) for delivery/transport/storage and [tracker](../plans/workspace-companion-plan.md) for remaining work.
+Reviewed 2026-10-22. Current published Android is alpha.28/code32. Approved R6 Home/Library/Review, contextual Aa, retained resource-to-reader motion and semantic haptics remain authoritative; [READER-CONTEXT.md](READER-CONTEXT.md) and [SHELL-NAVIGATION.md](SHELL-NAVIGATION.md) own their interaction contracts. Earlier R2/A0–A2 foundations below remain relevant where not superseded by those current presentation owners. See [ANDROID.md](ANDROID.md) for delivery/transport/storage and [R10 qualification](../plans/R10-ACCEPTANCE.md) for fresh scale/interaction evidence and explicit physical-device limits.
 
 ## Source map
 
-- mobile/src/WorkspaceScreen.tsx: compact reader shell, approved workspace switching, Home/drawer/search, centralized Back and recovery destination.
+- mobile/src/WorkspaceScreen.tsx: Home/Library/Review shell, compact source switching with separate management, contextual reader utilities, centralized Back and recovery access.
 - mobile/src/readerFeed.ts: normal events reconcile without reopening streams; closure resumes from the retained cursor, bounded backoff/background cancellation.
 - mobile/src/ReaderView.tsx: typed source-bound read-only commands; no editing/save handler.
 - mobile/reader/render.js: safe schema-aware DOM,20,000node traversal/64depth limits, explicit unknown/limit placeholders. Stored JSON never becomes HTML/script/style.
