@@ -218,7 +218,7 @@ Status: **Implemented with R8 as an unpublished acceptance candidate**, explicit
 
 ## R10 — Integration, performance and release handoff
 
-Status: **Not started**.
+Status: **Authorized engineering in progress** on isolated codex/r10-quality from fetched master7b7f4f4. [Consolidated qualification](R10-ACCEPTANCE.md) records fresh measurements/outcomes. Stop for final user acceptance before master merge or publication; no post-R10 development.
 
 - End-to-end: desktop multi-workspace editing, Android connected download, leave LAN/read/search/flag/import, process death, reconnect, exactly-once host outcomes, desktop review resolution, Android refresh, ZIP/partial round trips and independent desktop copy. Include equal IDs across workspaces, grants, replacement, Trash/Restore, missing targets, snapshot expiry and queue cancellation races.
 - Upgrade alpha.7.2 through new milestones without losing approvals, legacy drafts, pending operations or downloaded queues. Test reader rejection/fallback for unsupported structured content; assert there is no general Android note/lifecycle write surface. Refresh cannot clobber local review/import records.
