@@ -1,4 +1,14 @@
-## Integrated0.16.0 — exact-tag Mac gate pending
+## R10 0.16.1 — current native Mac handoff
+
+Reviewed2026-10-23. R10 is integrated into master and Windows0.16.1 publication is authorized. No macOS execution endpoint is arranged here; no0.16.1 Mac build, DMG, installation, host startup, update or real-LAN result is claimed. Historical Windows/Mac results below do not qualify this source. New Git work defaults to master under AI_DEVELOPMENT_WORKFLOW.md; native release qualification must use the exact immutable source tag.
+
+On an arranged Apple Silicon Mac, fetch tags, verify a clean checkout and use immutable `v0.16.1` after publication. Confirm its source hash against the GitHub release, package/lock0.16.1, original release public key and privately supplied matching private key. Do not use historical feature tips or silently update dependencies on the tag. Follow RELEASE-PROCESS.md: npm ci; BUILD_VERSION/VITE_BUILD_VERSION0.16.1; fresh UI, embedded JAR, pinned arm64 runtime, original-key DMG+sidecar; native ad-hoc codesign verification, mount/Finder install and normal Gatekeeper consent. Never disable OS security or modify the published Windows pair.
+
+Run shared regressions and disposable native first/relaunch/save/PDF, host startup without system Java, approved pinned source compatibility, source revocation/generation, Review resolution, import provenance/full5/partial6/independent-copy round trips, settings/protected recovery retention and install-over/manual DMG update. Exercise Cmd/menu/Dock/tray/close/quit/sleep-resume and native dialogs. Record OS/architecture/toolchain, exact source/artifact hashes and actual outcomes; inspect important transitions in motion. Physical LAN and Android phone/OEM acceptance remain separate unclaimed checks.
+
+Prepare only the absent `Vaultor-0.16.1-mac-arm64.dmg` and `.dmg.vaultor.json`. Native qualification and original-key verification are prerequisites to any exact-tag `--add-platform` upload; preserve immutable existing assets/tags. Any necessary source correction requires a new version and appropriate platform requalification. The recorded editor dependency correction is in0.16.1; do not present an unchanged affected0.16.0 build as equivalent. Windows release proceeds independently of this unavailable environment.
+
+## Integrated0.16.0 — historical exact-tag Mac gate pending
 
 Use immutable `v0.16.0` after publication, not historical feature tips. Preserve package/lock0.16 and original signing key. Follow RELEASE-PROCESS for fresh UI/JAR/arm64 runtime/DMG, native mount/install-over, shared full suites and disposable R7 import/R8 full5+partial6/Review/workspace checks. Add only the absent verified Mac pair with --add-platform; never replace Windows bytes or move tags. Fixes require a higher version. Windows-first publication is authorized; no Mac artifact or native Mac result is claimed. See [integrated notes](releases/v0.16.0.md).
 
