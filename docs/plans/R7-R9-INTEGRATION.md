@@ -1,6 +1,6 @@
 # R7–R9 master consolidation audit
 
-Reviewed 2026-10-22. **Resumed: source-security repair is under final qualification; master and releases remain unchanged.** Integration/release authorization is explicit in this chat. R10 is not authorized or started. This record supersedes earlier candidate documents' statements that integration/publication lacks authorization; all correctness and release gates still apply.
+Reviewed 2026-10-22. **Security repair qualified on API36/API37; final master build and publication pending.** Integration/release authorization is explicit in this chat. R10 is not authorized or started. This record supersedes earlier candidate documents' statements that integration/publication lacks authorization; all correctness and release gates still apply.
 
 ## Fetched ancestry and strategy
 
@@ -81,3 +81,27 @@ Failures retained: the first resumed backend run began before fixture edits took
 Resumed API36 closure: final core53/53 (including13 security cases) and update/discovery7/7 pass. The pinned-host grant-loss test passes with an explicit owner-removal handshake before issuing export: the open reader disappears, cold restart refuses native reads/offline exports, and only owner-restored access plus a verified fresh download restores availability. The initial uncoordinated test did not establish that refusal occurred before the export began; it is retained as a failed sequencing attempt, not evidence of successful invalidation. The final installed API36 APK matches338e29f56bf1ad8451af88ad025c4ee17f2ddfbd25cce714a57c840f6208d2ee. Full mobile lint is0errors/196existing-style warnings after fixing R7's stable import-sync effect dependency. Actual published R6 APK and Windows0.14 installer digests match their GitHub asset metadata.
 
 A further mandatory Windows one-click gate exposed detached PowerShell Get-FileHash autoload failure. The helper now streams SHA-256 through .NET, keeping size/hash checks before and after parent exit. A real-helper test disables module autoload and verifies correct bytes plus wrong hash/size refusals. Desktop44/44 and actual0.14→0.16 silent helper install/relaunch/owned-server/data-retention pass; the initial failure remains recorded. Rebuilt final installer/master-source qualification is still required before publication.
+
+## Resumed security qualification — 2026-10-22
+
+Repair commit `439b2de` closes the shared invariant rather than special-casing export tests. Verified transports now share exact source/route/problem-code classification. Export and import previously missed authoritative404; generation refusals also failed to reach the retained-source observer. Persistent catalog tombstones, immediate per-scope denial/version invalidation, snapshot activation race checks and cache/media/provider/reader/export admission prevent stale or in-flight access. Locks preserve originals, protected Review/import journals and recovery identity. Only verified refresh/reapproval can recover the matching scope; switching sources cannot unlock it. Transient failures, wrong hosts and unrelated404/409 do not invalidate sources.
+
+| Fresh qualification | Result |
+| --- | --- |
+| Full backend | 119/119; old seven context errors traced to six tests sharing default host catalog despite isolated DB/files; isolated host paths fixed fixtures |
+| Full frontend | 323/323 with maxWorkers2; earlier default-worker timeout retained, not dismissed |
+| Full desktop | 44/44 after preparing fresh bundle; former five bundle failures reproduced as missing prerequisites |
+| Android Jest / TypeScript | 111/111; TypeScript passed |
+| Android lint / reader runtime | 0 errors,196 style warnings; six reader groups passed |
+| API36 and API37 native combined batch | 53/53 each: source authority/races13, companion4, export8, import10, Review store4/sync8, presentation1, reader-storage3, immutable R6 evidence1, live recovered export1 |
+| API36 and API37 update/discovery | 7/7 each, including wrong signer/package, tamper, increasing version, feed compatibility, interrupted staging, actual NSD; API37 denied permission checked before granting NSD permission |
+| Real pinned host on both APIs | scoped grant removal hides open reader; cold restart refuses retained reads/offline exports; owner grant restoration + verified refresh recovers |
+| Real generation replacement on API37 | actual host409 hides reader; cold restart still refuses reads/offline export |
+| Android install-over on both APIs | actual published R6 alpha.23/code27 → historical candidate → alpha.28/code32; nonempty encrypted legacy evidence, Reviews, preferences, retained downloads and import originals preserved |
+| Android OS updater on both APIs | actual picker verification, denied install permission retaining candidate, allowed permission + explicit OS Update; installed code32 and three post-upgrade preservation/recovery tests passed |
+| R7→R8 interoperability on both APIs | normal pairing, lost import ack, process restart/source switch/exact retry; host full export includes converted imported original with original SHA; interrupted download resumes same identity after upgrade |
+| Windows | original-key candidate lifecycle0.14→0.16 repair/uninstall/reinstall; actual one-click helper hash/size checks and install/relaunch/data retention passed; final master package still required |
+
+Desktop one-click qualification exposed PowerShell module autoload dependency in detached Get-FileHash. Replaced it with streamed .NET SHA256 and FileInfo, preserving both pre/post-parent-exit verification; actual helper function test with module autoload disabled and changed-byte/size rejection passes. Test-only DocumentsUI picker driver reacquires stale nodes; failed first attempts and corrected passes remain in ignored audit logs. No product picker bypass added.
+
+Raw evidence is retained in ignored `desktop/cache/r7-r9-integration-audit`. Earlier failure tables above are historical, not current release status. Final clean-master builds, exact artifact qualification, tags, publication and checksums will be recorded after completion. No Samsung, TalkBack, physical haptic quality, OEM installer, real-LAN or Mac acceptance is claimed.

@@ -1,3 +1,7 @@
+## Integrated0.16.0 — exact-tag Mac gate pending
+
+Use immutable `v0.16.0` after publication, not historical feature tips. Preserve package/lock0.16 and original signing key. Follow RELEASE-PROCESS for fresh UI/JAR/arm64 runtime/DMG, native mount/install-over, shared full suites and disposable R7 import/R8 full5+partial6/Review/workspace checks. Add only the absent verified Mac pair with --add-platform; never replace Windows bytes or move tags. Fixes require a higher version. Windows-first publication is authorized; no Mac artifact or native Mac result is claimed. See [integrated notes](releases/v0.16.0.md).
+
 ## R8/R9 -0.16.0 native Mac acceptance pending
 
 No Mac artifact or publication is claimed. Use the exact accepted R8/R9 source (host d8bc9e9faedb719119e60da014659d88a5a70c76 / integrated product05e288e53e87deb7069c3deba831ab34c735b778 plus documentation continuation), never an unrelated branch or a newer master. Keep package/lock0.16.0, obtain the original matching release key privately and follow RELEASE-PROCESS.md for fresh UI/JAR/arm64 runtime, DMG+sidecar, native codesign/mount/install-over and disposable note/PDF/Review/workspace checks. Run CompanionExportTest, CompanionImportTest, ReviewTest, WorkspaceImportTest and DesktopContractTest, partial6 merge/empty-new and full5 original recovery. Verify discovery/pinned reconnect and paired Android source-bound exports on real LAN. Record actual results and preserve accepted Windows bytes. No master merge/publication authorization is granted by this handoff. [0.16 ledger](releases/v0.16.0.md).
