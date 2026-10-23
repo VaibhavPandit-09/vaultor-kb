@@ -1,6 +1,6 @@
 # Android collected imports — R7
 
-Reviewed 2026-10-22. R7 is integrated on master and published as Android alpha.28/code32 with compatible Windows0.16.0; see [integration evidence](../plans/R7-R9-INTEGRATION.md). [R10 qualification](../plans/R10-ACCEPTANCE.md) is authorized and in progress, with final acceptance required before merge/publication.
+Reviewed 2026-10-23. R7 is integrated on master and published as Android alpha.28/code32 with current compatible Windows0.16.1; see [integration evidence](../development/qualification/R7-R9.md). [R10 qualification](../development/qualification/R10.md) is complete and Windows0.16.1 is published; Android remains alpha.28.
 
 ## Authority and host contracts
 

@@ -1,3 +1,3 @@
 # Vaultor for Android
 
-Android A1 prototype. See [the execution tracker](../docs/plans/android-plan.md) and [Android documentation](../docs/android/ANDROID.md) for actual status, setup, limitations and release steps. Do not connect or control the user's phone; agents test Windows emulators only. Keys, credentials, fixtures and APK build output stay out of Git.
+Source-bound connected/offline reader, Review capture/delivery, collected imports and exports. Start with [Android implementation and release instructions](../docs/android/ANDROID.md); [CODEBASE](../docs/CODEBASE.md) owns the current product/architecture baseline. Agents test explicit Windows emulator serials only and never access/pair the user's phone. Keys, credentials, private fixtures and APK build output stay out of Git.

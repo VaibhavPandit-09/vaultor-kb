@@ -1,6 +1,6 @@
 # Companion checkpoints — schema 1
 
-Reviewed2026-10-22. R3/host0.11.0 introduced the reading-dataset service, consumed by current Androidalpha.28. The R10 host0.16.1 candidate reduces repeated manifest parsing without changing this schema or authority contract; [qualification](../plans/R10-ACCEPTANCE.md) owns measured outcomes and approval status. [OFFLINE.md](../android/OFFLINE.md) owns native retained storage, activation and local-search bounds. This is neither a portable workspace ZIP nor bidirectional synchronization. Protocol3 and original-resource APIs stay unchanged; current portable full5/partial6 formats are separate.
+Reviewed 2026-10-23. R3/host0.11.0 introduced the reading-dataset service, consumed by current Androidalpha.28. The R10 published host0.16.1 reduces repeated manifest parsing without changing this schema or authority contract; [qualification](../development/qualification/R10.md) owns measured outcomes and platform limitations. [OFFLINE.md](../android/OFFLINE.md) owns native retained storage, activation and local-search bounds. This is neither a portable workspace ZIP nor bidirectional synchronization. Protocol3 and original-resource APIs stay unchanged; current portable full5/partial6 formats are separate.
 
 ## Identity and authorization
 
@@ -47,4 +47,4 @@ R10 retains at most one softly referenced parsed manifest per workspace context,
 
 ## Verification and later work
 
-CompanionSnapshotsTest uses disposable storage and targeted owner/CA-verified paired HTTPS checks. It covers immutable note/file capture, range reassembly and manifest SHA, policy/collection coverage, missing/oversized files, delta/Trash, cancellation/retry, restart/expiry/replacement, equal IDs across workspaces, mid-stream revocation/disconnection and concurrent edit/Trash admission. DesktopContract retains protocol compatibility. Release notes/tracker record actual counts, packaged checks and platform status. No Android offline, phone, physical Wi-Fi or Mac-native result is inferred from these host tests.
+CompanionSnapshotsTest uses disposable storage and targeted owner/CA-verified paired HTTPS checks. It covers immutable note/file capture, range reassembly and manifest SHA, policy/collection coverage, missing/oversized files, delta/Trash, cancellation/retry, restart/expiry/replacement, equal IDs across workspaces, mid-stream revocation/disconnection and concurrent edit/Trash admission. DesktopContract retains protocol compatibility. Release notes record actual counts, packaged checks and platform status. No Android offline, phone, physical Wi-Fi or Mac-native result is inferred from these host tests.

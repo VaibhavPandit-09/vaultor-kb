@@ -1,6 +1,6 @@
 # Primary synthetic workspace: Vaultor Lab — Atlas
 
-Reviewed 2026-10-08. Sprint 1 is implemented. Atlas is the primary manual/performance workspace; small disposable fixtures remain preferable for focused mutation tests. See [actual baseline results](ATLAS-BASELINE.md) and [execution tracker](../plans/resource-lifecycle-plan.md). This is test infrastructure, not a new app release.
+Reviewed 2026-10-08. Sprint 1 is implemented. Atlas is the primary manual/performance workspace; small disposable fixtures remain preferable for focused mutation tests. See [actual baseline results](ATLAS-BASELINE.md) and [execution tracker](../workspace/RESOURCE-LIFECYCLE.md). This is test infrastructure, not a new app release.
 
 ## Open Atlas
 
@@ -88,16 +88,16 @@ Small has 40 notes, 30 files, 8 collections, 12 tags and 20 pins. Generation and
 | Text files | 150 | Plain text/Markdown/CSV/JSON/Python, Unicode and literal markers; never executed |
 | Other files | 50 | 25 WAV and 25 explicitly unsupported binaries; no video encoder was available |
 
-80 collections include four empty, dense and overlapping membership; 250 tags include a long name; 300 pins comprise 280 resources and 20 collections. Recent uses 24 alternating note/file open calls rather than fabricated timestamps. Link graph includes `0 → 1 → 2 → 0`, longer chains and an image shared by 200 source notes with repeated placements. Duplicate/Unicode/RTL/emoji/long titles and literal punctuation are explicit fixtures. `atlasbeacon0317` identifies note 317 in saved-body search and is absent from title search. `filecompass021` is a **future** file-search assertion: current FTS does not search file bodies.
+80 collections include four empty, dense and overlapping membership; 250 tags include a long name; 300 pins comprise 280 resources and 20 collections. Recent uses 24 alternating note/file open calls rather than fabricated timestamps. Link graph includes `0 → 1 → 2 → 0`, longer chains and an image shared by 200 source notes with repeated placements. Duplicate/Unicode/RTL/emoji/long titles and literal punctuation are explicit fixtures. `atlasbeacon0317` identifies note 317 in saved-body search and is absent from title search. `filecompass021` exercises supported saved file-content extraction when indexing reaches that resource; observe coverage rather than assume every original is searchable.
 
 900 unique source files total 11,668,841 bytes. Baseline archive: 10,452,524 bytes, SHA-256 `d95d7224bd1190104eafd18c97b9cef2380d5f808399d7dc623678ca2cf8f0f6`. Mutable host storage was 78.18 MiB; entire lab including small profile, screenshots and faults about 154.3 MiB at handoff. Logs/operation history grow.
 
-Separate, unimported faults: 20,311,475-byte PNG below 20 MiB, 8001×5000 PNG above 40 MP, invalid PDF, unsupported inline SVG. Encrypted PDFs, video, malformed documents and trashed/deleted destinations are not generated. Trash fixtures require Sprint 2's domain contract. Drafts/journeys are session scenarios, not saved archive content.
+Separate, unimported faults: 20,311,475-byte PNG below 20 MiB, 8001×5000 PNG above 40 MP, invalid PDF, unsupported inline SVG. Encrypted PDFs, video, malformed documents and trashed/deleted destinations are not generated. Trash is implemented; create lifecycle fault fixtures separately from the immutable baseline. Drafts/journeys are session scenarios, not saved archive content.
 
 ## Measurement and future fault scenarios
 
 After quitting Atlas, `node desktop/scripts/atlas.mjs benchmark` records seven calls per case (first plus six warm samples, median/max). `node desktop/scripts/atlas-native.mjs` exercises Library/Recent/mixed pins, images, 200 journeys, duplicate live views/shared undo and a 412×915 desktop viewport. It changes recency/session and performs edit/undo; reset before strict baseline verification afterward. It stops only its owned host/app. Reports do not imply cold OS caches, continuous peak memory, complete image decoding or Android certification.
 
-Sprint 5 uses small fixtures for retained drafts on host stop/restart, generation replacement, competing revisions and delayed/out-of-order responses. Slow-network measurement is **not implemented/verified** here: add bounded delay at the actual transport boundary in a disposable harness. Renderer throttling alone cannot model main-process IPC HTTP. Preserve auth/TLS/revisions. Real paired Windows/Mac/Android checks remain separate gates.
+Small fault scenarios use disposable fixtures for retained drafts on host stop/restart, generation replacement, competing revisions and delayed/out-of-order responses. Slow-network measurement is **not implemented/verified** here: add bounded delay at the actual transport boundary in a disposable harness. Renderer throttling alone cannot model main-process IPC HTTP. Preserve auth/TLS/revisions. Real paired Windows/Mac/Android checks remain separate gates.
 
-Focused commands: `node --test desktop/test/atlas.test.mjs`, `node --check desktop/scripts/atlas.mjs`, `node --check desktop/scripts/atlas-native.mjs`, plus Python syntax/media/PDF checks when changing generators. No shipped runtime/schema/dependency changes or installer are required for this sprint.
+Focused commands: `node --test desktop/test/atlas.test.mjs`, `node --check desktop/scripts/atlas.mjs`, `node --check desktop/scripts/atlas-native.mjs`, plus Python syntax/media/PDF checks when changing generators. No shipped runtime/schema/dependency changes or installer are required for generator-only changes.

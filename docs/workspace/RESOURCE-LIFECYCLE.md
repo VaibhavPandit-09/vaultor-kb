@@ -1,6 +1,6 @@
 # Resource actions, Trash and recovery
 
-Reviewed 2026-10-08 for Vaultor 0.6.0, lifecycle/discovery Sprints 2–3. This owns lifecycle semantics; [Library](LIBRARY.md), [sessions](SESSIONS.md), [API](../development/API.md) and [release delivery](../desktop/RELEASE-PROCESS.md) own their respective contracts.
+Reviewed 2026-10-23 against current protocol3/full5/partial6; lifecycle was introduced in0.5.0. This owns lifecycle semantics; [Library](LIBRARY.md), [sessions](SESSIONS.md), [API](../development/API.md) and [release delivery](../desktop/RELEASE-PROCESS.md) own their respective contracts.
 
 ## Actions and distinctions
 
@@ -35,7 +35,7 @@ Workspace transfer/replacement takes an exclusive workspace gate; lifecycle requ
 
 Nullable `trashed_at`, `purge_pending` and `trash_organization` resource columns and `resource_lifecycle_requests` are additive. Legacy rows with null lifecycle fields remain active. Changes increment existing optimistic revisions. Memberships remain real joins; trash snapshots organization labels solely to explain deletions before restore. Deleted collections/tags are not recreated. Rename/delete-and-recreate organization names cannot be treated as restored membership IDs.
 
-Complete workspace ZIP **format 3** preserves trashed timestamps, structured documents, original binaries, organization/favorites and restoration labels. Merge remaps resource IDs; replacement preserves archived IDs and changes workspace generation. Formats 1 and 2 remain readable; absent lifecycle fields mean active. Operational retry identities, purge tombstones, credentials, device preferences and recovery drafts are not portable. Replacement clears former lifecycle identities inside the same rollback boundary. Complete ZIP export refuses cleanup-pending resources; finish cleanup first. Individual note/linked-graph exports exclude trashed destinations and keep unavailable-reference warnings.
+Current complete workspace ZIP **format5** (lifecycle introduced in3) preserves trashed timestamps, structured documents, original binaries, organization/favorites and restoration labels. Merge remaps resource IDs; replacement preserves archived IDs and changes workspace generation. Older full formats1–4 remain readable; absent lifecycle fields mean active. Operational retry identities, purge tombstones, credentials, device preferences and recovery drafts are not portable. Replacement clears former lifecycle identities inside the same rollback boundary. Complete ZIP export refuses cleanup-pending resources; finish cleanup first. Individual note/linked-graph exports exclude trashed destinations and keep unavailable-reference warnings.
 
 Clients and hosts require API protocol/minimum client **3**. Update hosts before remote clients; 0.4.x clients are refused by the current compatibility gate before editors mount. The old hard-delete and replace-links-and-delete routes return 405 without changing originals or referring notes. Local legacy note writes still follow their existing contract; active-state checks prevent edits to Trash.
 

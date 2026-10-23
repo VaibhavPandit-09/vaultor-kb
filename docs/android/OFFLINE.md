@@ -1,6 +1,6 @@
 # Android offline reading companions
 
-Reviewed 2026-10-14. R4 targets Android **0.1.0-alpha.11 / versionCode15**; the [execution tracker](../plans/workspace-companion-plan.md) and [release ledger](releases/0.1.0-alpha.11.md) own current validation/publication status. Hosts require **0.11.0 or later** with `companionSnapshots:1`. Protocol3/archive3 remain unchanged. Do not rebuild desktop for this Android-only change.
+Reviewed 2026-10-23. Current alpha.28 retained-reading implementation; introduced in [alpha.11](releases/0.1.0-alpha.11.md), with final integrated checks in [R10](../development/qualification/R10.md). Download preparation requires host0.11+ with companionSnapshots:1; current full5/partial6 portability is separate from checkpoint schema1/protocol3.
 
 ## Using downloads
 
@@ -34,7 +34,7 @@ Up to8 source scopes and32 retained active/incomplete jobs; one active selection
 
 Title search remains default. Explicit content mode matches downloaded titles plus saved note text, including visible link labels and image captions/alt text; literal substring matching uses a derived local text column, not the host FTS relevance index. Collection/type/category/favorite scope remains explicit. Extracted PDF/file text is **not** locally indexed. Resources outside the selection remain unavailable; there is no automatic broadening. Collections/pins retain checkpoint organization and resource metadata; previews retain R2 image20MiB/40MP/PDF20MiB renderer bounds even when larger originals were transported. Existing Save/Share/Copy uses retained originals when local mode is selected.
 
-No reviews/import synchronization or workspace ZIP/partial export is added in R4. R5–R8 own those capabilities. Legacy recovery export remains independent and never acknowledges anything as synced.
+Reviews, collected imports and exports are implemented through independent journals/adapters, never by mutating a reading checkpoint. Legacy recovery export remains independent and never acknowledges anything as synced.
 
 ## Verification
 

@@ -1,20 +1,15 @@
 # Android reader context and motion
 
-Reviewed2026-10-21. Alpha.14/code18 was the A2 reader baseline. The user's S24 rejection of A0–A3 reopens interaction acceptance; alpha.17/code21 refines the development remediation candidate, not approved work. [Remediation](MOTION-HAPTIC-REMEDIATION.md) owns audit/script; [R6 phases](../plans/android-r6-plan.md) owns scope; [reader](READER.md), [media](MEDIA.md) and [foundations](INTERACTION-FOUNDATIONS.md) retain source/security/device-policy contracts. A3 capture and A4 delivery/status exist in the [consolidated continuation](R6-COMPLETION.md); earlier stop gates are historical. S24 acceptance remains pending.
+Reviewed 2026-10-23. This owns current reader/media motion and anchor behavior. [Shell navigation](SHELL-NAVIGATION.md) owns folio/source/resource-origin geometry; [reader](READER.md), [media](MEDIA.md) and [foundations](INTERACTION-FOUNDATIONS.md) own rendering/security/device-policy details. Capture and automatic delivery are implemented. Historical S24 rejection and remediation remain in release evidence; physical quality is not certified.
 
 ## Reading edge and orientation
 
-Alpha.20 refines Prototype 1’s single browsing/reader navigation folio. Three
+The integrated navigation folio retains one browsing/reader surface. Three
 balanced destination slots retract as reader controls take the released width;
 no duplicate topbar remains. Source identity lives beside the browsing heading
 and in focused reader context, with full Sources inspection from either action.
 Offline identity stays available rather than hiding with scroll.
-[Navigation prototype](NAVIGATION-PROTOTYPE.md) owns current edge geometry,
-reversibility, text scaling, rail adaptation and acceptance.
-Reader content/anchor, Find, media and native admission below retain their contracts.
-The2026-10-21 [R6 continuation](R6-COMPLETION.md) adds measured resource/title
-aperture motion and retained browsing context; that document owns its current
-geometry and validation. Reader/DOM position and original data contracts remain.
+[Shell navigation](SHELL-NAVIGATION.md) owns edge geometry, reversibility, text scaling, wide adaptation and measured resource/title aperture motion. Reader/DOM position and original data contracts remain.
 
 Find is a contextual bottom overlay that rises by its own measured height at shared utility timing, retaining the same WebView. A token-bound native activity-window focus handoff waits for window/layout ownership, bounded250ms and cancelled on close/background, before requesting the React Native input IME. It never blocks opening the control or navigation. Only the actual system IME/rotation may resize the viewport; opening/closing Find itself does not take layout space from the document. Measured bounded bottom clearance keeps final text reachable. Clearance does not shrink during the same visit, avoiding a bottom clamp when controls close; a new resource starts with the normal96CSSpx tail. Find remains literal saved-content search,200characters/500matches, cross-mark CSS Highlights. Closing retains the current match position. There is no editable note UI.
 
@@ -22,7 +17,7 @@ Revision-bound block/path/offset geometry is captured before typography or decod
 
 ## Media surface
 
-The full-screen preview window remains mounted across source-note gallery changes, while resource-keyed content retains captured host/epoch/full scope/resource ownership. Controls and original-file outputs share a contextual sheet over the same viewer. Fit/Actual size/zoom and editable PDF page controls no longer reserve permanent rows; only a compact page/gallery navigation row remains. Explicit Go supports numeric keyboards with no submit key and gives local validation feedback. Preparation/status/errors overlay rather than resize the media viewport. A requested PDF page is distinct from its last confirmed rendered page; the displayed label advances only with the current render acknowledgment. Future capture must check readiness/error and bind the rendered page, never infer evidence from a pending page request.
+The full-screen preview window remains mounted across source-note gallery changes, while resource-keyed content retains captured host/epoch/full scope/resource ownership. Controls and original-file outputs share a contextual sheet over the same viewer. Fit/Actual size/zoom and editable PDF page controls no longer reserve permanent rows; only a compact page/gallery navigation row remains. Explicit Go supports numeric keyboards with no submit key and gives local validation feedback. Preparation/status/errors overlay rather than resize the media viewport. A requested PDF page is distinct from its last confirmed rendered page; the displayed label advances only with the current render acknowledgment. Review capture checks readiness/error and bind the rendered page, never infer evidence from a pending page request.
 
 Fit changes real geometry immediately, then a bounded single-image FLIP transform explains the existing pixels settling into fit. Shared Smooth/Snappy structure timing and easing apply, with immediate fallback when reduced motion or Web Animations support prevents motion. One current command/load ticket owns completion. Gesture, background, resize, newer command, page change or unmount suppresses obsolete tactile completion. True viewport resizing preserves a normalized image center and bounded zoom. Original colors/bytes, PDF page limits and zero-based internal/one-based visible page numbering remain authoritative.
 
@@ -44,4 +39,4 @@ Every interaction remains fully visible and usable with app/system haptics disab
 
 ## Review boundary
 
-Release ledgers record actual checks/failures. Reader refinements do not alter original resources, transport/host/schema/protocol/archive or desktop. [A3 local capture](REVIEW-CAPTURE.md) uses the retained reader; upload/status remains A4 and blocked. Haptic timing, OEM gestures, TalkBack and sustained performance remain open pending physical approval. Platform predictive progress does not imply a custom destination preview or tablet/DeX parity.
+Release ledgers record actual checks/failures. Reader refinements do not alter original resources, transport/host/schema/protocol/archive or desktop. [A3 local capture](REVIEW-CAPTURE.md) uses the retained reader; [automatic delivery/status](REVIEW-SYNC.md) is implemented and remains separate from capture durability. Haptic timing, OEM gestures, TalkBack and sustained performance remain open pending physical approval. Platform predictive progress does not imply a custom destination preview or tablet/DeX parity.

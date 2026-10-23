@@ -34,7 +34,7 @@ Storage errors are visible and retryable without disabling editing or successful
 
 Caret positions are numeric and clamped to the restored document; there is no semantic anchoring across server edits while away. The shared editor undo history is not persisted. Recovering a copy does not duplicate its linked resource graph (linked-graph export is a separate export operation).
 
-Validation: frontend compilation, focused IndexedDB/tab identity/journal/restore/Library/recovery component tests, and a disposable SQLite HTTP/transfer test covering existing-schema upgrade, conditional updates, stale rejection, generation rollback and replacement. N6 added malformed-record validation and checked real Dashboard refresh restoration using disposable storage; see [INTEGRATION.md](INTEGRATION.md). Invalid layouts are discarded with an explanation while recovery journals remain readable. No production data or Docker rebuild.
+Validation: frontend compilation, focused IndexedDB/tab identity/journal/restore/Library/recovery component tests, and a disposable SQLite HTTP/transfer test covering existing-schema upgrade, conditional updates, stale rejection, generation rollback and replacement. N6 added malformed-record validation and checked real Dashboard refresh restoration using disposable storage; see [integration evidence below](#navigationrecovery-integration-evidence). Invalid layouts are discarded with an explanation while recovery journals remain readable. No production data or Docker rebuild.
 
 ## Incoming saved changes
 
@@ -51,3 +51,7 @@ Trash is a remembered Library destination; dialogs/selections remain transient. 
 ## Multiple workspaces (W2)
 
 Workspace selectors run the existing departure barrier and remount only after checked destination activation. Snapshots/recovery stay keyed by workspace identity/generation within the existing tab/profile store; query, collection, panes, journey and reading positions restore independently. Browser selection is per tab (sessionStorage); desktop selection is main-owned per server profile. Device appearance is cached outside workspace archives. See [WORKSPACES.md](../architecture/WORKSPACES.md) for native scope, revocation and limitations.
+
+## Navigation/recovery integration evidence
+
+The completed N6 integration (2026-09-30) verified55 focused frontend cases, disposable SessionRevisionTest old-schema/concurrent-save/revision/generation/archive isolation and an isolated real Dashboard session: linked trails, Ctrl-click split, two-pane refresh/focus/journey restoration, failed-save retry and Library query restoration. It exposed/corrected mount-triggered saves, SQLite upgrade contention and narrow title controls. Editability changes must not enqueue writes; one pooled connection serializes reads as well as writes. Malformed session entries cannot prevent independent recovery-journal access. No broad timing/OS-keyboard/abrupt-power-loss guarantee follows. Current release qualification is in [R10](../development/qualification/R10.md); undo remains transient and browser persistence best effort.

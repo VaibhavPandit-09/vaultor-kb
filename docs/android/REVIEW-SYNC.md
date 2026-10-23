@@ -1,9 +1,9 @@
 # Android Review delivery and desktop status
 
-Reviewed 2026-10-22. R6 A4 is incorporated into master and published as Android alpha.23/code27. [Alpha.23 release ledger](releases/0.1.0-alpha.23.md) owns final production artifact/host-mobile results; [integration verification](../plans/R6-INTEGRATION.md) retains the earlier matrix.
+Reviewed 2026-10-23. Current alpha.28 retains native R6 Review delivery/status, first published in [alpha.23](releases/0.1.0-alpha.23.md). [R6 qualification](../development/qualification/R6.md) retains the original host-mobile matrix; [R10](../development/qualification/R10.md) records final integrated fault/journey checks.
 [REVIEWS](../workspace/REVIEWS.md) owns the unchanged R5 domain/API contract;
 [Review capture](REVIEW-CAPTURE.md) owns evidence and protected local drafts.
-[R6 completion](R6-COMPLETION.md) owns authorization and acceptance.
+[Shell navigation](SHELL-NAVIGATION.md) owns retained presentation; release ledgers distinguish automated evidence from physical acceptance.
 
 ## Native delivery ownership
 

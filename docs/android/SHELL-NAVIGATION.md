@@ -1,11 +1,6 @@
 # Android shell and source navigation
 
-Reviewed2026-10-21. Current development: **alpha.21/code25**, consolidated R6
-continuation on ai/codex-android-ux-prototypes. [R6 completion](R6-COMPLETION.md)
-owns current source/settings/resource-motion behavior and installed acceptance;
-[Review synchronization](REVIEW-SYNC.md) owns A4. The three-destination Model D
-foundation is retained. Alpha.13's drawer is historical; alpha.20 established the
-current foundation. S24 acceptance remains user-owned; no public release or R7.
+Reviewed 2026-10-23. Current published alpha.28 retains the integrated reader-first Home/Library/Review shell. This document owns navigation and source presentation; [ANDROID.md](ANDROID.md) owns implementation/build/release boundaries and [Review delivery](REVIEW-SYNC.md) owns synchronization. Earlier drawer/prototype gates are superseded; physical Samsung/TalkBack/OEM acceptance remains unqualified.
 
 ## Source ownership and preserved behavior
 
@@ -34,7 +29,7 @@ No effect, intensity, admission or semantic usage policy changes.
 Review reads the device journal grouped by full host/workspace/generation without
 activating a source. Existing local drafts/queued captures open by journal ID through
 the current protected composer, including forgotten/unavailable source records.
-No original write, upload, replay, acknowledgment or source substitution is introduced.
+Review inspection never changes original content, captured source or delivery identity.
 
 ## Shared surfaces and review boundary
 
@@ -48,5 +43,15 @@ physical-device checks. Automated checks cannot approve motion or tactile qualit
 [Review capture](REVIEW-CAPTURE.md) owns protected local record semantics;
 [interaction foundations](INTERACTION-FOUNDATIONS.md) owns semantic haptic/native
 policy. The user reports perceptible alpha.18 S24 haptics. Exact individual H2/H3
-physical trace evidence remains user-owned and does not block this prototype.
-Stop for S24 visual approval before the next prototype or A4.
+physical trace evidence remains user-owned and does not establish current full hardware acceptance.
+Current automatic Review delivery is implemented; subjective device acceptance remains user-owned.
+
+## Retained navigation, source and reader state
+
+One NavigationFolio owns browsing/disclosed/focused states. Three equal Home/Library/Review slots retract as reader controls take their space; disclosure returns to browsing without replacing the reader. Hidden controls leave touch/accessibility routing. Compact browse/reader allocations start at58/52dp and grow with font scale, retaining48dp action targets. Wide adaptation uses actual inset-adjusted width≥840dp, height≥480dp and width/fontScale≥720, yielding144dp browsing/128dp focused rail; it is not a device-name/tablet parity promise. Source control is distinct from primary destinations.
+
+Library uses heading/source/options, search/Filters, one count/Resume row and one virtualized list. Counts scroll with that list; active scope/coverage stays discoverable. Per-source destination configuration restores query/collection/page/offset. A bounded64-entry memory presentation history also restores utility destinations; after process death only the durable current-source session is promised. Review is device-wide and starts closed after restart.
+
+Compact Sources lists current source, retained offline generations and connected-host workspaces; remembered servers/pairing/forgetting remain in management. Locked copies stay visible/nonselectable. A single source has no switch chevron. Settings & tools reaches management and utilities. Reader Aa first exposes theme/text size/spacing; More reading settings retains width/accent/motion/feedback/reset and build-gated diagnostics, with the same preferences and reading anchor.
+
+Measured resource/title origin opens a clipped reader viewport and a separately settling title; document text renders at final size. The browsing tree remains mounted below it. Reverse motion validates scope/resource/visit and live origin bounds. Missing/recycled/offscreen origins use a16–20dp fallback; source/resize/background/new interaction cancels obsolete motion. Reader pixels await their own load acknowledgment. Hidden native WebView visibility and exclusive touch/accessibility ownership have bounded cleanup independent of animation completion. Reduced motion resolves immediately; navigation/load/failure/central Back never waits for motion. Files remain temporary previews, and unrelated notes never receive false shared-object motion.

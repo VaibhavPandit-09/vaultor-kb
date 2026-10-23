@@ -1,17 +1,6 @@
 # Genuine Review capture feedback trace
 
-Reviewed 2026-10-19. Development-only diagnostic slice on
-`ai/codex-android-ux-prototypes`, based exactly on alpha.17
-`1586743a6d15e55be824aa62a5a1c4019ac98cbe`. The frozen R6 checkout,
-master and immutable release are untouched. Alpha.18/code22 is a local
-acceptance build, not a public release. Navigation and A4 are not implemented
-by this slice. S24 Ultra / One UI 9 / Android 17 acceptance is user-owned.
-
-Model D (compact bottom destinations that transform during reading, adapting
-by actual width) and device-wide source-grouped Review are approved design
-directions only. Measurements, labels (Review/Reviews/Captures) and exact
-arrangement remain prototype hypotheses. Navigation implementation requires
-the next explicit authorization after these real-device trace results.
+Reviewed 2026-10-23. Current build-gated diagnostic procedure for genuine Review capture, introduced in the historical alpha.18 local candidate. Production alpha.28 has diagnostics disabled; an explicit original-signer -Diagnostics acceptance build is required. Source selection, navigation and automatic delivery are already implemented. S24/One UI touch and tactile acceptance is user-owned; diagnostic reports describe requests/admission, never felt sensation.
 
 ## Architecture and boundaries
 
@@ -123,7 +112,7 @@ claim of individual H2/H3 measurements. No Samsung trace JSON was supplied here.
 Existing emulator A/B traces show H2/H3 requests; native API submission does not
 establish physical actuator output. Preserve effects, intensity and restrained
 policy. A missing H3 remains a targeted optional trace follow-up and does not block
-the separately authorized [navigation prototype](NAVIGATION-PROTOTYPE.md).
+the separately authorized [navigation prototype](SHELL-NAVIGATION.md).
 
 ## Validation
 

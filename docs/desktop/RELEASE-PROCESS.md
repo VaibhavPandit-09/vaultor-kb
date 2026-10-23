@@ -1,6 +1,6 @@
 # Agent-owned release process
 
-Reviewed 2026-10-08. This is the authoritative implementation-agent checklist. The user-facing steps are in [INSTALLATION-AND-UPDATES.md](INSTALLATION-AND-UPDATES.md); updater contracts/recovery are in [UPDATES.md](UPDATES.md). Agents must read this when making an installed-app change, and carry release preparation through to usable GitHub artifacts whenever access permits. Do not merely tell the user to rebuild.
+Reviewed 2026-10-23. This is the authoritative implementation-agent checklist. The user-facing steps are in [INSTALLATION-AND-UPDATES.md](INSTALLATION-AND-UPDATES.md); updater contracts/recovery are in [UPDATES.md](UPDATES.md). Agents must read this when making an installed-app change, and carry release preparation through to usable GitHub artifacts whenever access permits. Do not merely tell the user to rebuild.
 
 ## Scope and standing authorization
 
@@ -100,7 +100,7 @@ The 0.4.1 updater discovers stable public GitHub platform pairs regardless of th
 
 ## After release
 
-Preserve the original private key and prior artifact pairs privately for recovery; don't erase the build output before retaining the previous version. Keep CODEBASE, UPDATES, installation guide and tracker synchronized with actual publication and platform state. Reconnect/host instructions must maintain revision/TLS/pairing checks. Do not mutate user data or roll back a database blindly. If a release is broken, stop recommending it, publish a new fixed version and document recovery; do not replace bytes under its existing signed version/tag.
+Preserve the original private key and prior artifact pairs privately for recovery; don't erase the build output before retaining the previous version. Keep CODEBASE, UPDATES, installation guide and release ledgers synchronized with actual publication and platform state. Reconnect/host instructions must maintain revision/TLS/pairing checks. Do not mutate user data or roll back a database blindly. If a release is broken, stop recommending it, publish a new fixed version and document recovery; do not replace bytes under its existing signed version/tag.
 
 
 ## Add a missing platform after Windows-first publication

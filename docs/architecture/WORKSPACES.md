@@ -1,6 +1,6 @@
 # Host workspaces and client selection
 
-Reviewed2026-10-14. W1 implements server-side isolation; W2 adds desktop/browser/Android selection and owner grant management. W3 adds import-as-new and independent desktop snapshot copies; WORKSPACE-TRANSFERS.md owns their workflow. [The execution tracker](../plans/workspace-companion-plan.md) owns sequence and actual release evidence.
+Reviewed 2026-10-23. This owns host workspace isolation, catalog/adoption, grants and client selection. Import-as-new and independent desktop copies are implemented; [WORKSPACE-TRANSFERS.md](../workspace/WORKSPACE-TRANSFERS.md) owns their workflow. Android is a read-only source-bound companion with separate Reviews/imports/exports; [ANDROID.md](../android/ANDROID.md) owns that boundary. Current protocol3/full5/partial6 compatibility is summarized in [CODEBASE](../CODEBASE.md).
 
 ## Architecture decision — W1
 
@@ -26,11 +26,11 @@ Before initial catalog publication, SQLite VACUUM INTO writes a temporary checkp
 
 Malformed/oversized catalogs, identity mismatch, invalid UUIDs, symbolic-link catalog/storage paths, damaged checkpoints or a missing catalog alongside existing workspace UUID directories fail rather than reset. A persisted creation whose context failed can be retried with the same UUID/name. Creation does not delete its files on failure. Files must stay under server-owned UUID paths; no client path input exists. Names contain 1–100 non-control characters; duplicate display names are permitted because UUIDs identify destinations.
 
-The host owns this catalog; workspace portable exports never contain it, grants, host identities/credentials or generation. Archives remain format3. Current replacement changes only that workspace's generation. There is no workspace deletion/catalog-recovery UI in W1. Existing updater private recovery inventory copies the entire stopped owned data tree, including the new directories; private backups must not be shared as portable archives.
+The host owns this catalog; workspace portable exports never contain it, grants, host identities/credentials or generation. Current full archives use format5; partial packages use6. Current replacement changes only that workspace's generation. There is no workspace deletion/catalog-recovery UI in W1. Existing updater private recovery inventory copies the entire stopped owned data tree, including the new directories; private backups must not be shared as portable archives.
 
 ## HTTP contract
 
-API protocol/minimum client remain **3/3**: this is additive. Archive3 and updater1 remain unchanged. `GET /api/capabilities` adds `multiWorkspace:true`, `workspaceHeader:"X-Vaultor-Workspace"`, `workspaceLimit:8`. Unauthenticated capabilities exposes features only; it cannot select or inspect a workspace.
+API protocol/minimum client remain **3/3**: this is additive. Portable formats and updater envelope versions are independent of protocol3; updater envelope remains1. `GET /api/capabilities` adds `multiWorkspace:true`, `workspaceHeader:"X-Vaultor-Workspace"`, `workspaceLimit:8`. Unauthenticated capabilities exposes features only; it cannot select or inspect a workspace.
 
 For workspace-domain APIs, send the canonical UUID header **X-Vaultor-Workspace**. It applies to resources/bytes/previews, collections/tags/organization/settings, workspace identity, search/index diagnostics, health, changes, imports/exports/operations and export formats. The response echoes the selected ID. Omitting it always targets the fixed adopted default workspace, preserving existing desktop/browser/Android clients. It never means another client's most recent selection. No selected-workspace state lives on the connection or host.
 
@@ -53,13 +53,13 @@ Grant revocation closes the workspace's streams immediately. Delivery/heartbeat 
 
 Desktop's private stop channel quiesces all opened contexts, emits restart notices and waits for admitted requests/transfers across all workspaces before closing. Failed orderly stop resumes every gate. Child transfer shutdown waits a bounded time before interruption; interrupted transfers retain their existing restart/retry semantics. Abrupt process termination is never a guaranteed final flush.
 
-Existing clients continue to use the default workspace with existing save/revision rules. W2 clients carry explicit scope across JSON, streaming, binary, native files and sessions. Android full offline companions remain R3/R4; the existing clean cache is not a workspace download.
+Existing clients continue to use the default workspace with existing save/revision rules. W2 clients carry explicit scope across JSON, streaming, binary, native files and sessions. Android retained companions are implemented separately from its evictable clean cache; see [OFFLINE.md](../android/OFFLINE.md).
 
 R3 adds `/api/companions` to scoped dispatch and host request/worker drain. Its domain context writes private sibling `companions/` checkpoints, outside original files and portable archives. [COMPANIONS.md](COMPANIONS.md) owns generation/device binding, snapshot/byte consistency, scope/coverage, expiry and resume. Host0.11.0 publishes the capability; Android offline activation is R4, not implied by this host release.
 
 ## Verification boundary
 
-Use disposable SQLite/file roots. Focused tests cover adoption, identity/corruption/restart, UUID retries/limits, concurrent requests with equal resource IDs, original-byte isolation, separate gates/search/transfer status, multipart upload, Trash, actual scoped SSE and approved HTTPS grant/revocation. A stale existing contract test expecting protocol2 was corrected to the already-shipped protocol3; production protocol was not advanced. Initial child lazy-association failure required the existing request entity-manager configuration; missing child notification filtering was corrected with selected-feed publication. Release notes/tracker record actual final counts and packaged results. No new visual layout or phone access is needed for W1.
+Use disposable SQLite/file roots. Focused tests cover adoption, identity/corruption/restart, UUID retries/limits, concurrent requests with equal resource IDs, original-byte isolation, separate gates/search/transfer status, multipart upload, Trash, actual scoped SSE and approved HTTPS grant/revocation. A stale existing contract test expecting protocol2 was corrected to the already-shipped protocol3; production protocol was not advanced. Initial child lazy-association failure required the existing request entity-manager configuration; missing child notification filtering was corrected with selected-feed publication. Release notes record actual final counts and packaged results. No new visual layout or phone access is needed for W1.
 
 ## Client selection — W2
 
@@ -71,9 +71,9 @@ Browser selection first probes the destination, runs the existing save/recovery/
 
 Device presentation is cached in vaultor-device-presentation-v1 in device-local browser storage, applied before settings load, and overlaid on the selected workspace settings document. Local patches still use the existing scoped API; workspace/keybinding patch boundaries remain unchanged. The cache is outside portable archives. Blocked local storage falls back to host preferences; browser tab selection requires working session storage to persist a switch.
 
-Android selects through the epoch-bound native bridge. It verifies pinned host/capabilities and destination identity/generation before atomically persisting selection and cancelling previous requests/media/SSE. Legacy unscoped bridge mutations are refused. Sessions/recovery/cache remain host/workspace/generation scoped; equal resource IDs are independent. Switching protects the source draft and saves by default; explicit Keep drafts retains its encrypted recovery record. Re-pairing the same host preserves explicit selection. Offline restore refuses an ambiguous collection of cached workspace scopes; complete offline workspace selection is not yet delivered. Android editing remains transitional until R1.
+Android selects through the epoch-bound native bridge. It verifies pinned host/capabilities and destination identity/generation before atomically persisting selection and cancelling previous requests/media/SSE. Legacy unscoped bridge mutations are refused. Sessions/recovery/cache remain host/workspace/generation scoped; equal resource IDs are independent. Switching never flushes retired legacy edits; protected Review/import work retains its captured source. Re-pairing the same host preserves explicit selection. Downloaded-source selection/restoration uses verified native checkpoint identity and locks; the old cache is not a complete workspace download. Original editing is retired.
 
-Grant revocation must never trigger fallback to the default. Lists remain host-level so another authorized destination can be selected. Already cached files cannot be remotely recalled. Multi-window desktop selection and downloaded offline companions are not claimed.
+Grant revocation must never trigger fallback to the default. Lists remain host-level so another authorized destination can be selected. Already cached files cannot be remotely recalled. Desktop remains single-window; independent browser tabs and Android downloaded companions retain their own selected scope.
 
 ## W3 publication and staging
 

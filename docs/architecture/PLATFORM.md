@@ -1,6 +1,6 @@
 # Platform and connection boundary
 
-Reviewed 2026-10-08, 0.4.0 image compatibility. Browser and the Electron development shell share these interfaces. This computer now owns a bundled loopback Java server; paired remote-host selection, private-LAN trust and integrated desktop chrome are implemented. See [the tracker](../plans/desktop-network-plan.md) and [DESKTOP.md](../desktop/DESKTOP.md).
+Reviewed 2026-10-23. Browser and Electron share the frontend transport interface below; desktop owns a bundled loopback Java server or selects a paired remote host. Android implements equivalent scoped domain contracts through thin native adapters, without Electron IPC, a local Java host or general original-resource writes. [DESKTOP.md](../desktop/DESKTOP.md) owns native desktop lifecycle, [ANDROID.md](../android/ANDROID.md) owns mobile and [HOST-ACCESS.md](../security/HOST-ACCESS.md) owns trust.
 
 ## Transport and compatibility
 
@@ -28,7 +28,7 @@ Mac Option-letter events match physical letter codes because Option may produce 
 
 ## Verification
 
-D1 focused tests cover incompatible protocol/no workspace mount, Retry/no premature mutations, shared handshake, blob/multipart/request IDs, structured failure without retries, cancellation/stale responses, diagnostic bounds/no recursion/host isolation, stream ownership, download cleanup, default/custom shortcut migration, real Tiptap formatting/sidebar dispatch and Mac Option matching. Backend cases cover capabilities, logs/request IDs, bounded versioned diagnostics and settings migration. Exact results are in CODEBASE and the tracker. No native launch, browser visual session, Docker rebuild or broad API smoke is claimed.
+D1 focused tests cover incompatible protocol/no workspace mount, Retry/no premature mutations, shared handshake, blob/multipart/request IDs, structured failure without retries, cancellation/stale responses, diagnostic bounds/no recursion/host isolation, stream ownership, download cleanup, default/custom shortcut migration, real Tiptap formatting/sidebar dispatch and Mac Option matching. Backend cases cover capabilities, logs/request IDs, bounded versioned diagnostics and settings migration. Versioned release and qualification ledgers retain actual results. No native launch, browser visual session, Docker rebuild or broad API smoke is claimed.
 
 ## Browser and desktop host access
 
@@ -39,3 +39,11 @@ Window controls and the sidebar connection context are frontend components; narr
 D8 adds main-only update IPC and native independent-loopback owner-key authorization. No update request uses the workspace transport or device credentials. Updates stays mounted beside desktop chrome before workspace SettingsProvider; AppModal can render with default transparency without that provider. Archive onboarding is an epoch-scoped deliberate handoff to the existing import review dialog, not a new backend operation. See [UPDATES.md](../desktop/UPDATES.md).
 
 Managed images add an optional resource-ID-only native clipboard service, authenticated image metadata/loading and first-frame PNG conversion. Electron 44 clipboard writes use asynchronous ClipboardItem payloads; neither renderer paths nor credentials are accepted for copying. Browser clipboard writes remain explicit user gestures with a download fallback. Managed images introduced protocol 2; current lifecycle protocol 3/minimum client 3 also protects safe Trash/Restore. Frontend and main-process connection checks agree; lifecycle requests carry X-Vaultor-Protocol: 3. [IMAGES.md](../workspace/IMAGES.md) owns the image workflow.
+
+## Cross-platform invariants
+
+Host UUID, workspace UUID, generation, resource UUID and opaque revision serve different purposes. Capture scope on requests/files/SSE/jobs; reject stale epochs without rerouting. Capability checks supplement protocol3: matching protocol is not proof every later endpoint exists. Current full5/partial6 portability is independent of companion schema1/updater1.
+
+The host owns persistence and conditional mutation. Android only reads originals plus narrow explicit recency/checkpoint/Review/collected-import/export operations through distinct adapters. New collected inputs create resources; they do not edit an existing note. Desktop/browser retain editing, organization, lifecycle and administration. Shared structured Tiptap JSON and original bytes stay intact; unknown nodes/marks preserve JSON and block unsafe saving. Native media handles, host paths, credentials and Electron IPC are never portable contracts.
+
+Android's RN UI/restricted DOM and Kotlin trust/storage/haptics division is intentional, not a reason for a speculative framework rewrite. Source-bound downloads/queues are not a two-way sync engine. Full workspace export stays connected/host-prepared even if all content is downloaded. Read [OFFLINE.md](../android/OFFLINE.md), [IMPORTS.md](../android/IMPORTS.md) and [EXPORTS-AND-CONNECTIONS.md](../android/EXPORTS-AND-CONNECTIONS.md) for current bounds and admission.

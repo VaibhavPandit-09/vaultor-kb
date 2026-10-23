@@ -1,6 +1,6 @@
 # Desktop setup and troubleshooting
 
-Reviewed 2026-10-04. These notes cover the desktop install/build errors reported during the 0.2.2 Mac handoff. Run commands from the repository root unless noted. For the full Mac validation record and remaining D9 gates, see [MAC-HANDOFF.md](MAC-HANDOFF.md).
+Reviewed 2026-10-23. This preserves reusable setup fixes, originally diagnosed during the0.2.2 Mac development handoff. Run commands from the repository root unless noted. For current Mac release qualification and blockers, see [MAC-HANDOFF.md](MAC-HANDOFF.md).
 
 ## Missing `package.json` at the repository root
 
@@ -55,11 +55,11 @@ The 0.2.2 Mac smoke failures below were in test assumptions/setup and were corre
 - The smoke previously created its transport before the owned server had a ready address and could quit while disposable file/save/mutation activity was still in flight. It now creates the transport after readiness and waits for those activities to settle before requesting quit.
 - The chrome smoke expected a hidden window menu bar on all platforms. macOS owns an application menu, so its check now verifies the File/View/Window application menu instead; other platforms retain the window-menu assertion.
 
-The corrected native owned-server smoke passed launch, edit/save, PDF preview and relaunch with Java removed from `PATH`; the corrected chrome smoke passed its Connections/theme/credential/window-control assertions. The detailed environment, bundle hashes and test scope are in [MAC-HANDOFF.md](MAC-HANDOFF.md). These automated checks do not replace manual Finder/Gatekeeper/titlebar/tray checks or the coordinated two-device test.
+The corrected native owned-server smoke passed launch, edit/save, PDF preview and relaunch with Java removed from `PATH`; the corrected chrome smoke passed its Connections/theme/credential/window-control assertions. These are historical development results; current release evidence is in [v0.13](releases/v0.13.0.md) and current qualification requirements in [MAC-HANDOFF.md](MAC-HANDOFF.md). These automated checks do not replace manual Finder/Gatekeeper/titlebar/tray checks or the coordinated two-device test.
 
 ## Mac release key unavailable
 
-The 0.2.2 development app and native checks passed, but release packaging remains blocked because the matching private release key was unavailable. A release DMG and signed `.vaultor.json` were not produced. Obtain the existing matching key through a private transfer, keep it outside Git with owner-only permissions, and set `VAULTOR_RELEASE_KEY` to its absolute path. **Never paste the key into chat or regenerate/rotate it with `release:key`.** Do not treat the development Electron.app as a release installer.
+At the historical0.2.2 development checkpoint native checks passed but release packaging was blocked by an unavailable matching key. Later Mac0.13.0 was published; a new machine still needs the original matching key. A release DMG and signed `.vaultor.json` were not produced. Obtain the existing matching key through a private transfer, keep it outside Git with owner-only permissions, and set `VAULTOR_RELEASE_KEY` to its absolute path. **Never paste the key into chat or regenerate/rotate it with `release:key`.** Do not treat the development Electron.app as a release installer.
 
 ## Known install warnings
 

@@ -8,6 +8,6 @@ Read [the agent-owned release process](../docs/desktop/RELEASE-PROCESS.md) befor
 - Source commit pushed and immutable version tag matches it.
 - Draft assets verified by `npm --prefix desktop run publish:release`; no overwrites.
 - Both Windows x64 and Mac arm64 pairs ready for a complete release; partial platforms explicitly labeled.
-- Published release notes and URL provided to the user; docs/tracker reflect actual results.
+- Published release notes and URL provided to the user; current guides and release ledgers reflect actual results.
 
-No CI auto-publishing, paid signing or automatic background update feed is configured. GitHub Release downloads are imported into the app; current feed transport rejects redirects. Missing native access/signing identity is a blocker, never a reason to fabricate artifacts or bypass verification.
+No CI auto-publishing or paid signing is configured. Built-in GitHub discovery permits bounded credential-free asset redirects and verifies original-key platform pairs; custom feeds reject redirects. Installed Windows uses Update and restart; manual pair import is Advanced. Missing native access/signing identity is a blocker, never a reason to fabricate artifacts or bypass verification.
