@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Vaultor API",
-    "version": "1.16.0",
-    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration. 0.8.0 adds bounded isolated host workspaces with optional X-Vaultor-Workspace selection; missing scope always means the fixed legacy workspace. API protocol3/archive3 remain unchanged. 0.9.0 exposes owner grant inspection for client workspace selectors; scope and protocol remain unchanged. 0.10.0 adds owner-only staged import-as-new and native snapshot forks; protocol3/archive3 unchanged. 0.11.0 adds companion checkpoint schema1: immutable hashed inventory/payloads and bounded range resume; protocol3/archive3 unchanged. Android offline storage follows separately. 0.12.0 adds workspace-scoped review evidence/status (reviews:1). API protocol3 remains compatible; workspace archive4 includes portable reviews and rejects unsupported versions. Android alpha.11 remains compatible; capture/sync follows in R6. 0.15.0 adds collectedImports:1, bounded host text/Markdown conversion and immutable receipts, original-byte provenance in archive5, and paired-device ZIP proposals with separate local-owner inspection/authorization. Protocol3 remains compatible; readers of archive4 or below reject new archive5 packages."
+    "version": "1.18.0",
+    "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration. 0.8.0 adds bounded isolated host workspaces with optional X-Vaultor-Workspace selection; missing scope always means the fixed legacy workspace. API protocol3/archive3 remain unchanged. 0.9.0 exposes owner grant inspection for client workspace selectors; scope and protocol remain unchanged. 0.10.0 adds owner-only staged import-as-new and native snapshot forks; protocol3/archive3 unchanged. 0.11.0 adds companion checkpoint schema1: immutable hashed inventory/payloads and bounded range resume; protocol3/archive3 unchanged. Android offline storage follows separately. 0.12.0 adds workspace-scoped review evidence/status (reviews:1). API protocol3 remains compatible; workspace archive4 includes portable reviews and rejects unsupported versions. Android alpha.11 remains compatible; capture/sync follows in R6. 0.15.0 adds collectedImports:1, bounded host text/Markdown conversion and immutable receipts, original-byte provenance in archive5, and paired-device ZIP proposals with separate local-owner inspection/authorization. Protocol3 remains compatible; readers of archive4 or below reject new archive5 packages. 0.18.0 adds collection hierarchy and guarded folder-import relationship finalization. Flat full/partial exports retain schemas 5/6; hierarchy-bearing exports use 7/8. Nested offline companion checkpoints are refused until a hierarchy-aware mobile client exists."
   },
   "servers": [
     {
@@ -3504,6 +3504,14 @@
               "type": "boolean",
               "default": false
             }
+          },
+          {
+            "name": "parent",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Omit for all matching branches; empty string for roots; collection ID for direct children."
           }
         ],
         "responses": {
@@ -4042,7 +4050,7 @@
     "/organization/memberships": {
       "post": {
         "operationId": "changeMemberships",
-        "summary": "Atomically add/remove one tag or collection on 1–100 selected resources",
+        "summary": "Atomically add/remove one tag or collection on 1\u2013100 selected resources",
         "description": "Validates every ID before mutation. Repeating the same add/remove is idempotent; other memberships are preserved. No bulk resource deletion.",
         "requestBody": {
           "required": true,
@@ -7405,7 +7413,7 @@
         ],
         "responses": {
           "200": {
-            "description": "At most 320×320 pixels and 384 KiB. Input limited to 20 MiB/40 MP. Cache-Control no-store. Original bytes unchanged.",
+            "description": "At most 320\u00d7320 pixels and 384 KiB. Input limited to 20 MiB/40 MP. Cache-Control no-store. Original bytes unchanged.",
             "content": {
               "image/png": {
                 "schema": {
@@ -9515,6 +9523,154 @@
           }
         }
       }
+    },
+    "/collections/{id}/parent": {
+      "put": {
+        "operationId": "moveCollection",
+        "summary": "Move a collection subtree without changing resource memberships",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Vaultor-Generation",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional workspace-generation precondition; mismatch returns 409."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "parentId": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Applied or previously completed request"
+          },
+          "409": {
+            "description": "Identity, hierarchy or generation conflict"
+          },
+          "412": {
+            "description": "Resource changed; edits preserved"
+          }
+        }
+      }
+    },
+    "/resources/imports/{id}/relationships": {
+      "put": {
+        "operationId": "resolveImportedRelationships",
+        "summary": "Finalize references only in an unchanged imported note; receipt retries preserve later edits",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Vaultor-Generation",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional workspace-generation precondition; mismatch returns 409."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "original": {
+                    "type": "string"
+                  },
+                  "resolvedContent": {
+                    "type": "string"
+                  },
+                  "collectionId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Applied or previously completed request"
+          },
+          "409": {
+            "description": "Identity, hierarchy or generation conflict"
+          },
+          "412": {
+            "description": "Resource changed; edits preserved"
+          }
+        }
+      }
+    },
+    "/collections/capabilities": {
+      "get": {
+        "operationId": "collectionCapabilities",
+        "summary": "Detect hierarchy and folder-import support",
+        "responses": {
+          "200": {
+            "description": "Supported collection features",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "hierarchy": {
+                      "type": "integer",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    "folderImports": {
+                      "type": "integer",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    "maxDepth": {
+                      "type": "integer",
+                      "enum": [
+                        32
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10078,6 +10234,20 @@
           "count": {
             "type": "integer",
             "minimum": 0
+          },
+          "ancestors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollectionAncestor"
+            }
+          },
+          "parentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "childCount": {
+            "type": "integer",
+            "minimum": 0
           }
         }
       },
@@ -10290,6 +10460,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "parentId": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -10326,6 +10500,12 @@
           "selectedCount": {
             "type": "integer",
             "minimum": 1
+          },
+          "ancestors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollectionAncestor"
+            }
           }
         }
       },
@@ -10362,6 +10542,9 @@
               }
             ],
             "description": "Batch-enriched resource metadata; null for collection shortcuts. No note body."
+          },
+          "collection": {
+            "$ref": "#/components/schemas/Collection"
           }
         }
       },
@@ -11735,6 +11918,21 @@
               "pdf",
               "docx"
             ]
+          }
+        }
+      },
+      "CollectionAncestor": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
           }
         }
       }

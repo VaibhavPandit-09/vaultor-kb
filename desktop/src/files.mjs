@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { mkdir, open, rename, rm, stat, readdir } from 'node:fs/promises';
-import { join, basename, extname } from 'node:path';
+import { mkdir, open, rename, rm, stat, readdir, lstat, realpath } from 'node:fs/promises';
+import { join, basename, extname, relative, isAbsolute } from 'node:path';
 import { Readable } from 'node:stream';
 import { connectionFetch } from './network.mjs';
 
@@ -20,12 +20,13 @@ export class NativeFiles {
     if(this.dialogPending) throw new Error('Close the current file dialog first.');
     this.dialogPending=true;try{return await this.dialogs[kind](options);}finally{this.dialogPending=false;}
   }
-  async pick({ token, accept = '', multiple = false }) {
+  async pick({ token, accept = '', multiple = false, directory = false }) {
     this.connection(token);
-    if (typeof accept !== 'string' || accept.length > 500 || typeof multiple !== 'boolean') throw new Error('Invalid file picker.');
+    if (typeof accept !== 'string' || accept.length > 500 || typeof multiple !== 'boolean' || typeof directory !== 'boolean') throw new Error('Invalid file picker.');
     const extensions = accept.split(',').map(s => s.trim()).filter(s => /^\.[a-z0-9]+$/i.test(s)).map(s => s.slice(1));
-    const result = await this.dialog('open', { properties: multiple ? ['openFile', 'multiSelections'] : ['openFile'], ...(extensions.length ? { filters: [{ name: 'Supported files', extensions }, { name: 'All files', extensions: ['*'] }] } : {}) });
+    const result = await this.dialog('open', { properties: directory ? ['openDirectory'] : multiple ? ['openFile', 'multiSelections'] : ['openFile'], ...(extensions.length ? { filters: [{ name: 'Supported files', extensions }, { name: 'All files', extensions: ['*'] }] } : {}) });
     if (result.canceled) return []; this.connection(token);
+    if(directory)return this.pickTree(result.filePaths[0],token);
     if (result.filePaths.length > 50) throw new Error('Select at most 50 files at once.');
     for(const [id,file] of this.picked) if(file.created<Date.now()-3600000) this.picked.delete(id);
     if(this.picked.size+result.filePaths.length>200) throw new Error('Too many retained file selections. Reconnect before choosing more files.');
@@ -38,10 +39,26 @@ export class NativeFiles {
     }
     return descriptors;
   }
+  async pickTree(root,token) {
+    const rootInfo=await lstat(root);if(!rootInfo.isDirectory()||rootInfo.isSymbolicLink())throw new Error('Choose a regular folder, not a symbolic link or junction.');
+    const canonical=await realpath(root),descriptors=[],tickets=[];let bytes=0;
+    const walk=async(path,source,depth)=>{
+      if(depth>32||descriptors.length>=2000)throw new Error('Folder import is limited to 2,000 entries and 32 levels.');
+      const info=await lstat(path);if(info.isSymbolicLink())throw new Error('This folder contains a symbolic link or junction. Remove it from the selected copy before importing.');
+      const actual=await realpath(path),rel=relative(canonical,actual);if(rel.startsWith('..')||isAbsolute(rel))throw new Error('A selected entry escapes the folder.');
+      if(info.isDirectory()){descriptors.push({name:basename(path),relativePath:source,directory:true});for(const entry of await readdir(path))await walk(join(path,entry),source+'/'+entry,depth+1);}
+      else if(info.isFile()){bytes+=info.size;if(info.size>this.limit||bytes>2*1024*1024*1024)throw new Error('Folder exceeds 512 MiB per file or 2 GiB total.');const id=randomUUID();tickets.push([id,{path,canonical:actual,token,size:info.size,modified:info.mtimeMs,created:Date.now()}]);descriptors.push({id,name:basename(path),relativePath:source,size:info.size,lastModified:info.mtimeMs});}
+      else throw new Error('Folder contains a non-regular file.');
+    };
+    await walk(root,basename(root),1);this.connection(token);
+    for(const [id,file] of this.picked)if(file.created<Date.now()-3600000)this.picked.delete(id);
+    if(this.picked.size+tickets.length>4000)throw new Error('Too many retained selections. Reconnect before selecting another folder.');
+    for(const [id,file] of tickets)this.picked.set(id,file);return descriptors;
+  }
   async selected(id, token) {
     this.connection(token); const file = this.picked.get(id);
     if (!file || file.token !== token) throw new Error('File selection expired. Choose the file again.');
-    const info = await stat(file.path); if (info.size !== file.size || info.mtimeMs !== file.modified) throw new Error('Selected file changed. Choose it again before importing.'); return file;
+    const info = await lstat(file.path); if (info.isSymbolicLink() || (file.canonical && await realpath(file.path)!==file.canonical))throw new Error('Selected path changed. Choose the folder again.'); if (info.size !== file.size || info.mtimeMs !== file.modified) throw new Error('Selected file changed. Choose it again before importing.'); return file;
   }
   async read({ token, id, offset, length }) {
     if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(length) || length < 1 || length > 1024 * 1024) throw new Error('Invalid file read.');

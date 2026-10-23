@@ -39,6 +39,7 @@ Reviewed 2026-10-23 against integrated master, published Windows0.16.1 and Andro
 
 ## Workspace behavior
 
+- [IMPORTS](workspace/IMPORTS.md): Ordinary file/folder acquisition, batch relationship resolution, limits, resume and UI disclosure patterns.
 - [LIBRARY](workspace/LIBRARY.md): Resource browsing, collections/tags/pins and organization.
 - [SEARCH](workspace/SEARCH.md): Title-first Library/Ctrl+K, explicit saved content, extraction and coverage.
 - [REFERENCES](workspace/REFERENCES.md): Categories, thumbnails, saved references/occurrence counts and safe navigation.
@@ -87,4 +88,5 @@ Desktop: [v0.3.0](desktop/releases/v0.3.0.md) · [v0.3.1](desktop/releases/v0.3.
 
 Android: [0.1.0-alpha.1](android/releases/0.1.0-alpha.1.md) · [0.1.0-alpha.2](android/releases/0.1.0-alpha.2.md) · [0.1.0-alpha.3](android/releases/0.1.0-alpha.3.md) · [0.1.0-alpha.4](android/releases/0.1.0-alpha.4.md) · [0.1.0-alpha.5](android/releases/0.1.0-alpha.5.md) · [0.1.0-alpha.6.1](android/releases/0.1.0-alpha.6.1.md) · [0.1.0-alpha.7.2](android/releases/0.1.0-alpha.7.2.md) · [0.1.0-alpha.8](android/releases/0.1.0-alpha.8.md) · [0.1.0-alpha.9.1](android/releases/0.1.0-alpha.9.1.md) · [0.1.0-alpha.9](android/releases/0.1.0-alpha.9.md) · [0.1.0-alpha.10](android/releases/0.1.0-alpha.10.md) · [0.1.0-alpha.11](android/releases/0.1.0-alpha.11.md) · [0.1.0-alpha.12](android/releases/0.1.0-alpha.12.md) · [0.1.0-alpha.13](android/releases/0.1.0-alpha.13.md) · [0.1.0-alpha.14](android/releases/0.1.0-alpha.14.md) · [0.1.0-alpha.15](android/releases/0.1.0-alpha.15.md) · [0.1.0-alpha.16](android/releases/0.1.0-alpha.16.md) · [0.1.0-alpha.17](android/releases/0.1.0-alpha.17.md) · [0.1.0-alpha.18](android/releases/0.1.0-alpha.18.md) · [0.1.0-alpha.19](android/releases/0.1.0-alpha.19.md) · [0.1.0-alpha.20](android/releases/0.1.0-alpha.20.md) · [0.1.0-alpha.21](android/releases/0.1.0-alpha.21.md) · [0.1.0-alpha.22](android/releases/0.1.0-alpha.22.md) · [0.1.0-alpha.23](android/releases/0.1.0-alpha.23.md) · [0.1.0-alpha.24](android/releases/0.1.0-alpha.24.md) · [0.1.0-alpha.27](android/releases/0.1.0-alpha.27.md) · [0.1.0-alpha.28](android/releases/0.1.0-alpha.28.md).
 
+- [Desktop 0.18.0 release evidence](desktop/releases/v0.18.0.md): nested collections, recursive imports, Windows qualification and the Mac/Latest gate.
 - [Desktop 0.17.0 release evidence](desktop/releases/v0.17.0.md): Open Notes/session migration, Windows qualification and the incomplete Mac/Latest gate.

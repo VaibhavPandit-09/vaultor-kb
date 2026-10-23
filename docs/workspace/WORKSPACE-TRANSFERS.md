@@ -1,6 +1,6 @@
 # Workspace ZIP transfers and independent desktop copies
 
-Reviewed2026-10-22; implemented in0.10.0/W3 and extended through published0.16.0. [WORKSPACES.md](../architecture/WORKSPACES.md) owns host isolation/selection; this document owns whole-workspace transfers. Individual note exports remain in NOTE-EXPORTS.md. [R7 provenance](../android/IMPORTS.md) owns full archive5 originals; [R8 partial packages](../android/EXPORTS-AND-CONNECTIONS.md) owns portable partial6.
+Reviewed 2026-10-24; implemented in 0.10.0/W3 and extended through 0.18.0. [WORKSPACES.md](../architecture/WORKSPACES.md) owns host isolation/selection; this document owns whole-workspace transfers. Individual note exports remain in NOTE-EXPORTS.md. [R7 provenance](../android/IMPORTS.md) owns full archive5 originals; [R8 partial packages](../android/EXPORTS-AND-CONNECTIONS.md) owns portable partial6.
 
 ## User flows
 
@@ -12,7 +12,7 @@ Browser owner clients can import to their authorized host and download host-prep
 
 **Export this workspace** flushes/protects its current edits and exports one selected workspace. Download/status retry uses the same successful artifact. It includes active resources *and Trash*, original files, structured documents, tags, collections/pins/recency, portable review evidence/status and portable workspace settings. It excludes local appearance, keyboard bindings, sessions, drafts, credentials, host catalog/grants, routing identity/generation, copy/import receipts and private update backups. Finish pending permanent-deletion cleanup before a complete export. A prepared export is a fixed snapshot, not a live sync or private full-data-directory backup. Reload does not automatically download old exports.
 
-Current full exports emit archive5 with required Review evidence and retained import originals. Supported archives1–4 remain readable; older hosts reject unsupported versions. Synced Review provenance is portable, while private validators/routing identity are omitted; [REVIEWS.md](REVIEWS.md) owns remapping and retention. Partial6 declares omissions and permits merge or import into an empty new workspace, never populated replacement.
+Current full exports emit archive5 for flat organization and archive7 for nested organization, with required Review evidence and retained import originals. Supported archives1–8 remain readable; older hosts reject unsupported versions. Synced Review provenance is portable, while private validators/routing identity are omitted; [REVIEWS.md](REVIEWS.md) owns remapping and retention. Partial6/8 declares omissions and permits merge or import into an empty new workspace, never populated replacement.
 
 ## Private staging and atomic publication
 
@@ -49,3 +49,7 @@ Review/provenance/partial extensions are explicitly versioned as described above
 ## Verification boundary
 
 Focused tests cover private previews, UUID/name/hash retries, original bytes/IDs, cancel/reservation cleanup, resumed READY publication, renamed completed receipts, owner multipart and paired denial, checkpoint/generation, stale source generation, cached offline upload retry and protected source switching. Disposable native/browser UI and two independent loopback-owned host copy tests exercise real services/streams. Versioned release notes own exact final package checks. These are not proof of Mac/Wi-Fi/Samsung hardware; no phone or personal workspace is accessed.
+
+## Nested organization — 0.18
+
+Hierarchy-bearing exports use full schema7 or partial schema8; flat exports continue using5/6. Readers accept1–8 with existing partial replacement restrictions. Organization collection records add nullable parentId. Validation rejects missing parents, cycles, depth above32 and duplicate normalized sibling names; hierarchy fields inside older formats are rejected. Replace retains IDs. Merge walks parents before children, remaps parent identities and matches siblings only within that destination parent. Partial selection retains required ancestor nodes with empty direct memberships. Old apps reject7/8; never open newer workspace databases in an older host as a rollback.

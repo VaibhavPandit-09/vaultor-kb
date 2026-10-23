@@ -2,8 +2,8 @@ import type { Resource } from '../types';
 import api from './api';
 import {resourceFilter} from './resourceKinds';
 import { useRetainedQuery } from './useRetainedQuery';
-export type Membership = {id:string;name:string;selectedCount:number};
-export type PinnedItem = {id:string;kind:string;name:string;count:number;resource?:Resource};
+export type Membership = {id:string;name:string;selectedCount:number;ancestors?:{id:string;name:string}[]};
+export type PinnedItem = {id:string;kind:string;name:string;count:number;resource?:Resource;collection?:import('./organization').OrganizationItem};
 export type PinnedShortcut = PinnedItem & ({entityKind:'collection'} | {entityKind:'resource';resourceType:string});
 export function normalizePinnedItem(item:PinnedItem):PinnedShortcut {
  return item.kind==='collection'?{...item,entityKind:'collection'}:{...item,entityKind:'resource',resourceType:item.kind};

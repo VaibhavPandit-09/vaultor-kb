@@ -54,6 +54,7 @@ public class Resource {
     }
 
     private String importFingerprint; // Internal retry identity; omitted from DTOs/archives.
+    private String importResolvedFingerprint;
 
     // Original input of a converted import, never an independently visible resource.
     private String importOriginalPath;

@@ -35,7 +35,7 @@ public class ZipWorkspaceExporter implements WorkspaceExporter {
                 try(var input=Files.newInputStream(entry.getValue())) { hashes.put(entry.getKey(),hash(input)); }
                 zip.putNextEntry(new ZipEntry(entry.getKey()));Files.copy(entry.getValue(),zip);zip.closeEntry();
             }
-            byte[] manifest=mapper.writeValueAsBytes(new TransferService.Manifest(partial==null?5:6,Instant.now().toString(),workspace.resources().size(),workspace.tags().size(),hashes));
+            byte[] manifest=mapper.writeValueAsBytes(new TransferService.Manifest(workspace.organization()!=null&&workspace.organization().collections().stream().anyMatch(c->c.parentId()!=null)?(partial==null?7:8):(partial==null?5:6),Instant.now().toString(),workspace.resources().size(),workspace.tags().size(),hashes));
             if(expanded+manifest.length>maxExpanded) throw new IllegalArgumentException("Workspace exceeds expanded archive limit including manifest");
             zip.putNextEntry(new ZipEntry("manifest.json"));zip.write(manifest);zip.closeEntry();
         }

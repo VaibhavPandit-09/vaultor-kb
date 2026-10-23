@@ -1,64 +1,72 @@
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AppModal from './AppModal';
-import { importResource, type ImportRow, type ImportSession } from '../../lib/fileImports';
+import InlineImportModal from './InlineImportModal';
+import CollectionDestination from '../CollectionDestination';
+import { type ImportSession, type ImportRow, convertText } from '../../lib/fileImports';
+import { folderJournal, folderPaths, referenceResolver, restoreFolderRows, runFolderImport, type FolderJournal } from '../../lib/folderImports';
+import type { OrganizationItem } from '../../lib/organization';
 import type { Resource } from '../../types';
 
-export default function FileImportModal({ session, onClose, onResource }: { session: ImportSession; onClose: () => void; onResource: (resource: Resource) => void }) {
-  const [rows, setRows] = useState(session.rows);
-  const [pending, setPending] = useState(false);
-  const running = useRef(false);
-  const update = (id: string, patch: Partial<ImportRow>) => setRows(current => current.map(row => row.id === id ? { ...row, ...patch } : row));
-  async function apply() {
-    if (running.current) return;
-    running.current = true; setPending(true);
-    try {
-      for (const row of rows.filter(item => item.status !== 'done')) {
-        update(row.id, { status: 'pending', error: undefined });
-        try {
-          const needsDocument = session.target ? session.mode !== 'link' : row.asNote;
-          if (needsDocument && (!row.doc || row.parseError)) throw new Error(row.parseError || 'Cannot read this document.');
-          session.target?.assertValid();
-          update(row.id, { started: true });
-          if (session.target) {
-            let content = row.doc?.content ?? [];
-            if (session.mode === 'csv' || session.mode === 'link') {
-              const resource = await importResource(row.id, row.file);
-              onResource(resource);
-              if (session.mode === 'link') content = [{ type: 'resourceLink', attrs: { resourceId: resource.id, label: resource.title, type: 'file' } }, { type: 'text', text: ' ' }];
-              else content = content.map(node => node.type === 'table' ? { ...node, attrs: { ...node.attrs, sourceResourceId: resource.id, sourceResourceTitle: resource.title, sourceResourceType: 'file' } } : node);
-            }
-            session.target.insert(content.length ? content : [{ type: 'paragraph' }]);
-          } else {
-            const resource = await importResource(row.id, row.file, row.asNote ? row.doc : undefined,session.collection?.id);
-            onResource(resource);
-          }
-          update(row.id, { status: 'done' });
-        } catch (error) { update(row.id, { status: 'failed', error: error instanceof Error ? error.message : String(error) }); }
-      }
-    } finally { running.current = false; setPending(false); }
-  }
-  const complete = rows.every(row => row.status === 'done');
-  return <AppModal open title={session.target ? 'Insert file into note' : 'Import files'} description={session.target ? 'Your command is replaced only after a successful import. Cancel keeps the note unchanged.' : 'Choose how to import each file. Existing notes are never overwritten.'} widthClassName="max-w-2xl" footer={<div className="flex justify-end gap-2">
-        <button disabled={pending} className="rounded-lg border border-border px-3 py-2" onClick={onClose}>{complete ? 'Done' : 'Cancel'}</button>
-        {!complete && <button disabled={pending} className="rounded-lg bg-primary px-3 py-2 text-white disabled:opacity-50" onClick={() => void apply()}>{pending ? 'Importing…' : rows.some(row => row.status === 'failed') ? 'Retry failed files' : 'Import'}</button>}
-      </div>} onClose={() => { if (!running.current) onClose(); }}>
-    <div className="space-y-4">
-      {session.collection&&<p className="text-sm">Import destination: <strong>{session.collection.name}</strong>. Every successful import will join this collection.</p>}
-      {rows.map(row => <div key={row.id} className="border-b border-border py-3 space-y-2 last:border-0 first:pt-0">
-        <p className="break-all font-medium">{row.file.name}</p>
-        {!session.target && <div className="flex flex-wrap items-center gap-2">
-          <label className="text-sm">Import as <select aria-label={`Import ${row.file.name} as`} disabled={pending || row.started || row.status === 'done'} value={row.asNote ? 'note' : 'file'} onChange={e => update(row.id, { asNote: e.target.value === 'note', error: undefined, status: 'ready' })} className="rounded border border-border bg-background p-2">
-            <option value="file">Original file</option>
-            {row.kind !== 'binary' && <option value="note">{row.kind === 'csv' ? 'Note with table' : row.kind === 'code' ? 'Note with code block' : 'Note'}</option>}
-          </select></label>
-          {row.kind !== 'binary' && <button disabled={pending} className="text-xs text-primary disabled:opacity-50" onClick={() => setRows(current => current.map(other => other.kind === row.kind && !other.started && other.status !== 'done' ? { ...other, asNote: row.asNote } : other))}>Apply to similar files</button>}
-        </div>}
-        {(row.asNote || session.target) && row.warnings.map((warning, i) => <p key={i} className="text-sm text-amber-600">{warning}</p>)}
-        {(row.asNote || (session.target && session.mode !== 'link')) && row.parseError && <p role="alert" className="text-sm text-red-500">{row.parseError}</p>}
-        {row.error && <p role="alert" className="text-sm text-red-500">{row.error}</p>}
-        <p role="status" className="text-xs text-[var(--text-secondary)]">{row.status === 'done' ? 'Imported' : row.status === 'pending' ? 'Importing…' : row.status === 'failed' ? 'Failed — retry below' : 'Ready for review'}</p>
-      </div>)}
-
-    </div>
-  </AppModal>;
+type Props={session:ImportSession;onClose:()=>void;onResource:(resource:Resource)=>void;onDestination?:(item:OrganizationItem|null)=>void};
+export default function FileImportModal(props:Props){return props.session.target?<InlineImportModal {...props}/>:<BatchImportModal {...props}/>;}
+function BatchImportModal({session,onClose,onResource,onDestination}:Props){
+ const [rows,setRows]=useState(session.rows),[destination,setDestination]=useState<OrganizationItem|null>(session.collection?{...session.collection,count:0}:null);
+ const [includeRoot,setIncludeRoot]=useState(true),[merge,setMerge]=useState(false),[pending,setPending]=useState(false),[phase,setPhase]=useState('Review import'),[error,setError]=useState(''),[page,setPage]=useState(0);
+ const [context,setContext]=useState<Awaited<ReturnType<typeof folderJournal>>>(),[previous,setPrevious]=useState<FolderJournal>();
+ const journal=useRef<FolderJournal|undefined>(undefined),running=useRef(false),cancel=useRef(false);
+ useEffect(()=>{let active=true;void folderJournal(session).then(value=>{if(active){setContext(value);setPrevious(value.previous);}}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;};},[session]);
+ const locked=pending||Boolean(journal.current)||Boolean(previous),complete=journal.current?.complete??false;
+ const updateRow=(id:string,patch:Partial<ImportRow>)=>setRows(current=>current.map(row=>row.id===id?{...row,...patch}:row));
+ async function apply(){if(running.current||!context)return;running.current=true;cancel.current=false;setPending(true);setError('');
+   let working=rows;
+   try{
+     if(previous){journal.current=previous;working=restoreFolderRows(previous,rows);setRows(working);setDestination(previous.destination?{...previous.destination,count:0}:null);setIncludeRoot(previous.includeRoot);setMerge(previous.merge);setPrevious(undefined);}
+     journal.current??={key:context.key,identity:context.identity,signature:context.signature,rows:[],directories:{},destination:destination??undefined,includeRoot,merge,complete:false};
+     await runFolderImport(session,working,journal.current,context.store,()=>cancel.current,stage=>{setPhase(stage);setRows([...working]);},onResource);
+     setRows([...working]);if(cancel.current)setPhase('Paused — successful resources are kept');
+   }catch(e){setError(e instanceof Error?e.message:String(e));}finally{running.current=false;setPending(false);}
+ }
+ const notes=rows.filter(r=>r.asNote).length,done=rows.filter(r=>r.status==='done').length,failed=rows.filter(r=>r.error).length;
+ const directories=session.folder?folderPaths(session):[];
+ const referenceKey=rows.map(r=>r.id+':'+r.asNote+':'+r.imageValid).join(',');
+ const {warnings,resolved}=useMemo(()=>{
+  const warnings=new Map<string,number>();let resolved=0;
+ for(const row of rows){let issues=row.asNote?row.warnings:[];if(session.folder&&row.asNote&&row.kind==='markdown'&&row.sourceText){const result=convertText('markdown',row.sourceText,referenceResolver(rows,row.path!));issues=result.warnings;const count=(node:{type?:string;content?:unknown[]})=>{if(node.type==='resourceLink'||node.type==='image')resolved++;node.content?.forEach(child=>count(child as typeof node));};count(result.doc);}
+   for(const issue of issues){const group=issue.split(':')[0];warnings.set(group,(warnings.get(group)??0)+1);}
+ }
+ return {warnings,resolved};
+ // Status updates retain the same source documents and choices.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[referenceKey,session,complete]);
+ return <AppModal open title={session.folder?'Import folder':'Import files'} widthClassName="max-w-2xl" onClose={()=>{if(!running.current)onClose();}} footer={<div className="flex justify-between gap-2">
+   <button className="library-button" onClick={()=>{if(pending){cancel.current=true;setPhase('Pausing after the current request…');}else onClose();}}>{pending?'Pause import':complete?'Done':'Close'}</button>
+   {complete?<button className="library-button" onClick={()=>{const root=session.folder&&includeRoot?journal.current?.directories[session.folder.name]:undefined;onDestination?.(root?{id:root.id,name:root.name,count:0}:destination);onClose();}}>View destination</button>:<button className="rounded-lg bg-primary px-3 py-2 text-white disabled:opacity-50" disabled={pending||!context} onClick={()=>void apply()}>{pending?'Importing…':previous?'Resume import':journal.current?'Retry outstanding work':'Import'}</button>}
+ </div>}>
+ <div className="space-y-3">
+   <p className="font-medium truncate" title={session.folder?.name}>{session.folder?.name??`${rows.length} selected files`}</p>
+   <p className="text-sm">{rows.length} files · {directories.length} folders · {notes} notes · {rows.length-notes} original files</p>
+   <p className="text-sm text-[var(--text-secondary)]">{resolved} internal references {complete?'resolved':'can resolve'}{warnings.size?` · ${[...warnings.values()].reduce((a,b)=>a+b,0)} references need review`:''}</p>
+   {previous&&<p className="text-sm">An unfinished import matches this selection. Resume keeps its IDs and skips completed work. <button className="text-primary" onClick={()=>setPrevious(undefined)}>Start a separate import</button></p>}
+   {!journal.current&&<CollectionDestination value={destination} onChange={setDestination} disabled={locked}/>}
+   {session.folder&&!journal.current&&<label className="flex gap-2 text-sm"><input type="checkbox" checked={includeRoot} disabled={locked} onChange={e=>setIncludeRoot(e.target.checked)}/>Create a collection for “{session.folder.name}”</label>}
+   {session.folder?.emptyFoldersUnavailable&&<p className="text-sm">This browser includes folders containing files. Use desktop import to retain empty folders.</p>}
+   <p className="text-xs text-[var(--text-secondary)]">{merge?'Matching collection paths will be reused.':'Conflicting collection names will receive a separate import copy.'} Existing resources are never overwritten.</p>
+   {(pending||journal.current)&&<div role="status" aria-live="polite"><p className="text-sm">{phase} · {done}/{rows.length} files{failed?` · ${failed} need attention`:''}</p><progress className="w-full accent-primary" value={done} max={Math.max(1,rows.length)}/></div>}
+   {error&&<p role="alert" className="text-sm text-red-500">{error}</p>}
+   <details><summary className="cursor-pointer text-sm">Options and individual files</summary><div className="space-y-3 pt-2">
+     {session.folder&&<label className="flex gap-2 text-sm"><input type="checkbox" checked={merge} disabled={locked} onChange={e=>setMerge(e.target.checked)}/>Reuse matching collection paths</label>}
+     <label className="text-sm">Text conversion <select className="organization-input" disabled={locked} onChange={e=>setRows(current=>current.map(row=>({...row,asNote:e.target.value==='all'?row.kind!=='binary':e.target.value==='defaults'?(row.kind==='markdown'||row.kind==='text'):false})))} defaultValue="defaults"><option value="defaults">Markdown and plain text as notes</option><option value="all">All supported text as notes</option><option value="originals">Keep all originals</option></select></label>
+     {rows.slice(page*30,page*30+30).map(row=><div key={row.id} className="border-b border-border py-2 text-sm"><div className="flex gap-2 items-center"><span className="truncate flex-1" title={row.path}>{row.path??row.file.name}</span><select aria-label={`Import ${row.file.name} as`} className="organization-input" disabled={pending||row.started||row.status==='done'||Boolean(previous)} value={row.asNote?'note':'file'} onChange={e=>updateRow(row.id,{asNote:e.target.value==='note',error:undefined,status:'ready'})}><option value="file">Original</option>{row.kind!=='binary'&&<option value="note">Note</option>}</select><small>{row.status}</small></div>{(row.error||(row.asNote&&row.parseError))&&<p className="text-red-500">{row.error??row.parseError}</p>}</div>)}
+     {rows.length>30&&<div className="flex justify-between"><button disabled={!page} onClick={()=>setPage(page-1)}>Previous</button><span>{page+1}/{Math.ceil(rows.length/30)}</span><button disabled={(page+1)*30>=rows.length} onClick={()=>setPage(page+1)}>Next</button></div>}
+   </div></details>
+   {session.folder&&<details><summary className="cursor-pointer text-sm">Folder preview</summary><FolderPreview paths={directories} rows={rows} parent=""/></details>}
+   {warnings.size>0&&<details><summary className="cursor-pointer text-sm">References needing review</summary>{[...warnings].map(([cause,count])=><p className="text-sm py-1" key={cause}>{count} · {cause}</p>)}<p className="text-xs">Original destinations remain as text. File details show conversion failures separately.</p></details>}
+ </div></AppModal>;
 }
+function FolderPreview({paths,rows,parent}:{paths:string[];rows:ImportRow[];parent:string}){
+ const [limit,setLimit]=useState(30);const children=paths.filter(p=>(p.includes('/')?p.slice(0,p.lastIndexOf('/')):'')===parent);
+ const files=rows.filter(r=>(r.path??'').split('/').slice(0,-1).join('/')===parent);
+ return <div className="pl-3 text-sm">{children.slice(0,limit).map(path=><FolderBranch key={path} path={path} paths={paths} rows={rows}/>)}{files.slice(0,limit).map(row=><p key={row.id} className="py-1 truncate">{row.file.name}</p>)}{Math.max(children.length,files.length)>limit&&<button onClick={()=>setLimit(limit+30)}>Show 30 more</button>}</div>;
+}
+
+function FolderBranch({path,paths,rows}:{path:string;paths:string[];rows:ImportRow[]}){const [open,setOpen]=useState(false);return <details onToggle={e=>setOpen(e.currentTarget.open)}><summary className="py-1 cursor-pointer truncate" title={path}>{path.split('/').at(-1)}</summary>{open&&<FolderPreview paths={paths} rows={rows} parent={path}/>}</details>;}

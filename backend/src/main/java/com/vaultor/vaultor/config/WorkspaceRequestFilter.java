@@ -36,6 +36,8 @@ public class WorkspaceRequestFilter extends OncePerRequestFilter {
             var gate=runtime.gate();boolean entered=transfer?gate.enterTransferRequest():!guarded || gate.enterRequest();
             try {
                 if(!entered)throw new AccessFailure(409,"WORKSPACE_BUSY","Workspace maintenance is in progress. Retry shortly.");
+                String expected=req.getHeader("X-Vaultor-Generation");
+                if(expected!=null && guarded && !expected.equals(runtime.context().getBean(com.vaultor.vaultor.service.WorkspaceIdentityService.class).current().generation()))throw new AccessFailure(409,"WORKSPACE_GENERATION_CHANGED","Workspace was replaced; return to the original import source");
                 if(runtime.dispatcher()==null)chain.doFilter(req,res);else {runtime.dispatcher().service(req,res);ChangeNotificationFilter.publish(req,res,runtime.feed());}
             } finally {if(guarded && entered)gate.leaveRequest();if(transfer && entered)gate.leaveTransferRequest();}
         } catch(AccessFailure failure){

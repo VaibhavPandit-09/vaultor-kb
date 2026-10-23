@@ -6,16 +6,17 @@ window.addEventListener('keyup', event => { held.delete(event.key); }, true);
 window.addEventListener('blur', () => held.clear());
 
 /** All upload entry points use a connected, short-lived native input. */
-export function pickFiles(accept = '', multiple = false): Promise<File[]> {
+export function pickFiles(accept = '', multiple = false, directory = false): Promise<File[] & {directories?:string[];emptyFoldersUnavailable?:boolean}> {
   if (active) return Promise.reject(new Error('A file picker is already open.'));
   active = true;
-  if (window.vaultorDesktop?.pickFiles) return pickDesktopFiles(accept, multiple).finally(() => { active = false; });
+  if (window.vaultorDesktop?.pickFiles) return pickDesktopFiles(accept, multiple, directory).finally(() => { active = false; });
   return new Promise((resolve, reject) => {
     const input = document.createElement('input');
     input.type = 'file'; input.accept = accept; input.multiple = multiple;
+    if(directory){if(!('webkitdirectory' in input)){active=false;reject(new Error('This browser cannot select folders. Use the desktop app.'));return;}input.webkitdirectory=true;}
     input.style.cssText = 'position:fixed;left:-10000px;width:1px;height:1px;';
     document.body.append(input);
-    const finish = (files: File[]) => { active = false; input.remove(); resolve(files); };
+    const finish = (files: File[]) => { active = false; input.remove(); resolve(Object.assign(files,directory?{emptyFoldersUnavailable:true}:{})); };
     input.addEventListener('change', () => finish(Array.from(input.files ?? [])), { once: true });
     input.addEventListener('cancel', () => finish([]), { once: true });
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();

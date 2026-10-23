@@ -44,6 +44,18 @@ class CompanionSnapshotsTest {
     HttpResponse<byte[]> request(String method,String path,Object body,Map<String,String> headers) throws Exception {
         var b=HttpRequest.newBuilder(URI.create("http://localhost:"+env.getProperty("local.server.port")+"/api"+path)).timeout(java.time.Duration.ofSeconds(15)).header("X-Vaultor-Owner",Files.readString(DATA.resolve("host-access/owner.key"))).header("Content-Type","application/json");headers.forEach(b::header);var request=b.method(method,body==null?HttpRequest.BodyPublishers.noBody():HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build();for(int n=0;n<100;n++){var response=client.send(request,HttpResponse.BodyHandlers.ofByteArray());if(!path.startsWith("/companions/")||response.statusCode()!=409||!json.readTree(response.body()).path("code").asText().equals("WORKSPACE_BUSY"))return response;Thread.sleep(10);}throw new AssertionError("Companion admission did not settle");
     }
+    @Test void nestedCheckpointRefusesFlatteningAndGenerationHeaderGuardsWrites() throws Exception {
+        var parent=organization.createOnce(UUID.randomUUID().toString(),new OrganizationService.CreationInput("Checkpoint root",List.of()));
+        var child=organization.createOnce(UUID.randomUUID().toString(),new OrganizationService.CreationInput("Checkpoint child",List.of(),parent.id()));
+        try {
+            var note=service.createNote("Nested checkpoint",doc("Preserve hierarchy"));organization.bulk(new OrganizationService.BulkInput(List.of(note.getId()),"collection",child.id(),"add"));
+            String id=UUID.randomUUID().toString();made.add(id);retry(()->snapshots.create(id,selection("resources",List.of(note.getId()),"none","originals"),null));
+            CompanionSnapshots.Status status=null;
+            for(int n=0;n<200;n++){status=retry(()->snapshots.status(id,null));if(!Set.of("RUNNING","QUEUED").contains(status.status()))break;Thread.sleep(25);}
+            assertEquals("FAILED",status.status());assertTrue(status.detail().contains("nested collections"));
+            var response=request("PUT","/collections/"+child.id(),Map.of("name","Must not apply"),Map.of("X-Vaultor-Generation","wrong"));assertEquals(409,response.statusCode());assertTrue(new String(response.body()).contains("WORKSPACE_GENERATION_CHANGED"));assertEquals("Checkpoint child",organization.get(child.id()).name());
+        } finally {organization.delete(child.id());organization.delete(parent.id());}
+    }
     @Test void immutableNotesFilesRangeResumeAndValidators() throws Exception {
         String file=UUID.randomUUID().toString();byte[] original=new byte[600000];new Random(12).nextBytes(original);imports.create(file,"original.txt",null,new MockMultipartFile("file","original.txt","text/plain",original),null);
         var note=service.createNote("Captured",linked(file,"Before"));var state=create(selection("resources",List.of(note.getId()),"linked","originals"));
@@ -56,7 +68,7 @@ class CompanionSnapshotsTest {
         var raw=request("GET","/companions/"+state.id()+"/payloads/manifest.json",null,Map.of("If-Match",match(state)));assertEquals(200,raw.statusCode());assertEquals(state.manifestSha256(),HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(raw.body())));
         assertEquals(428,request("GET","/companions/"+state.id()+"/inventory",null,Map.of()).statusCode());assertEquals(412,request("GET","/companions/"+state.id()+"/inventory",null,Map.of("If-Match","\"wrong\"")).statusCode());
         assertEquals(416,request("GET","/companions/"+state.id()+"/payloads/"+file+".bin",null,Map.of("If-Match",match(state),"Range","bytes=0-1,4-5")).statusCode());
-        assertEquals(400,assertThrows(AccessFailure.class,()->snapshots.stream(state.id(),"../../owner.key",null,match(state),null,new MockHttpServletResponse())).status);
+        assertEquals(400,assertThrows(AccessFailure.class,()->retry(()->{snapshots.stream(state.id(),"../../owner.key",null,match(state),null,new MockHttpServletResponse());return null;})).status);
         assertEquals(200,request("GET","/companions/"+state.id()+"/inventory",null,Map.of("If-Match",match(state))).statusCode());
     }
     @Test void collectionScopeDependenciesCoverageAndMissingBytes() throws Exception {

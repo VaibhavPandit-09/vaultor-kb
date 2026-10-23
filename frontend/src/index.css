@@ -998,3 +998,10 @@ button:focus-visible, [role='option']:focus-visible { outline:2px solid var(--ac
 :root[data-theme-reveal]::view-transition-new(root) {
   mask-image:radial-gradient(circle at var(--theme-reveal-x) var(--theme-reveal-y), #000 max(0px, calc(var(--theme-reveal-radius) - 48px)), transparent var(--theme-reveal-radius));
 }
+
+/* Hierarchical organization retains one browse surface and bounded indentation. */
+.collection-breadcrumb { display:flex; gap:4px; max-width:calc(100% - 48px); white-space:nowrap; overflow:hidden; }
+.collection-breadcrumb > span { min-width:0; overflow:hidden; text-overflow:ellipsis; flex-shrink:1; }
+.collection-breadcrumb button { max-width:18ch; overflow:hidden; text-overflow:ellipsis; vertical-align:bottom; }
+.collection-breadcrumb:focus-within { overflow-x:auto; }
+.library-row > button[aria-expanded] svg { transition:transform var(--motion-interaction) var(--motion-ease); }

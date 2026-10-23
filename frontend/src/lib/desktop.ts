@@ -16,7 +16,7 @@ type Result<T> = { ok: true; value: T } | { ok: false; error: { code: string; de
 export type UpdateStatus={automaticInstall?:boolean;source?:'github'|'custom';availableVersion?:string;candidateVersion?:string;phase:string;feed:string;currentVersion:string;version?:string;progress:number;error:string;backupDirectory:string;recoveryAvailable:boolean;previousPackageAvailable:boolean};
 type Part = { name: string; value: string | Uint8Array; filename?: string; type?: string };
 type NativePart = { name: string; fileId: string; filename: string; type: string };
-type NativeSelection = { id: string; name: string; size: number; lastModified: number };
+type NativeSelection = { relativePath?:string; directory?:boolean; id: string; name: string; size: number; lastModified: number };
 export type WireRequest = { id: string; token: string; path: string; method: string; timeout: number; headers: Record<string, string>; body?: { kind: 'text'; value: string } | { kind: 'multipart'; parts: (Part | NativePart)[] } };
 export interface DesktopBridge {
   copiesList?():Promise<Result<WorkspaceCopyJob[]>>;
@@ -69,7 +69,7 @@ export interface DesktopBridge {
   cancel(id: string): Promise<Result<void>>;
   copyResourceImage?(value: { token: string; resourceId: string }): Promise<Result<void>>;
   writeClipboard(text: string): Promise<Result<void>>;
-  pickFiles?(value: { token: string; accept: string; multiple: boolean }): Promise<Result<NativeSelection[]>>;
+  pickFiles?(value: { token: string; accept: string; multiple: boolean; directory?: boolean }): Promise<Result<NativeSelection[]>>;
   readFile?(value: { token: string; id: string; offset: number; length: number }): Promise<Result<Uint8Array>>;
   beginSave?(value: { token: string; filename: string }): Promise<Result<{ id?: string; outcome?: 'cancelled' }>>;
   saveChunk?(value: { token: string; id: string; data: Uint8Array }): Promise<Result<void>>;
@@ -87,18 +87,20 @@ let desktopSessionId: string | undefined;
 let desktopBuild: string | undefined;
 let desktopToken = '';
 const selectedFiles = new WeakMap<File, string>();
-export async function pickDesktopFiles(accept: string, multiple: boolean): Promise<File[]> {
+export async function pickDesktopFiles(accept: string, multiple: boolean, directory = false): Promise<File[] & {directories?:string[]}> {
   const bridge = window.vaultorDesktop!;
   const selectionToken=desktopToken;
-  const items = unwrap(await bridge.pickFiles!({ token: selectionToken, accept, multiple }));
-  return items.map(item => {
+  const items = unwrap(await bridge.pickFiles!({ token: selectionToken, accept, multiple, directory }));
+  const files = items.filter(item=>!item.directory).map(item => {
     const extension = item.name.split('.').at(-1)?.toLowerCase() || '';
     const types: Record<string, string> = { pdf: 'application/pdf', md: 'text/markdown', txt: 'text/plain', csv: 'text/csv', tsv: 'text/tab-separated-values', zip: 'application/zip', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', json: 'application/json' };
     const file = new File([], item.name, { type: types[extension] || '', lastModified: item.lastModified });
     Object.defineProperty(file, 'size', { value: item.size });
+    if(item.relativePath)Object.defineProperty(file,'webkitRelativePath',{value:item.relativePath});
     const read = async () => { if (item.size > 32 * 1024 * 1024) throw new Error('This file is too large for text conversion. Keep the original file.'); const data = new Uint8Array(item.size); for (let offset = 0; offset < item.size; offset += 1024 * 1024) data.set(unwrap(await bridge.readFile!({ token: selectionToken, id: item.id, offset, length: Math.min(1024 * 1024, item.size - offset) })), offset); return data; };
     file.arrayBuffer = async () => (await read()).buffer; file.text = async () => new TextDecoder().decode(await read()); selectedFiles.set(file, item.id); return file;
   });
+  return Object.assign(files,{directories:items.filter(item=>item.directory).map(item=>item.relativePath!)});
 }
 export const getDesktopSessionId = () => desktopSessionId;
 export const getDesktopBuild = () => desktopBuild;

@@ -6,6 +6,7 @@ import java.util.UUID;
 @Entity @Table(name="collections") @Data @NoArgsConstructor
 public class ResourceCollection {
     private String creationFingerprint;
+    private String parentId;
     @Id private String id=UUID.randomUUID().toString();
     @Column(nullable=false) private String name;
     @Column(nullable=false,unique=true) private String normalizedName;

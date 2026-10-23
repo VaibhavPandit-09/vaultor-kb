@@ -36,6 +36,7 @@ public class ResourceController {
     public ResourceDto importFile(@PathVariable String id, @RequestParam String title, @RequestParam(required=false) String content, @RequestParam(required=false) MultipartFile file, @RequestParam(required=false) String collectionId) throws Exception {
         return dto(imports.create(id,title,content,file,collectionId));
     }
+    @PutMapping("/imports/{id}/relationships") public ResourceDto resolveImport(@PathVariable String id,@RequestBody FileImportService.Resolution input) throws Exception {return dto(imports.resolve(id,input));}
     @GetMapping(value="/{id}/image-png", produces="image/png") public byte[] imagePng(@PathVariable String id) throws Exception { return images.clipboardPng(id); }
     private ResourceDto dto(Resource r) { return ResourceDto.of(r, documents); }
     private Resource get(String id) { return service.getResourceOrThrow(id); }

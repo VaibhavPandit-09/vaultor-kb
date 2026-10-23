@@ -24,6 +24,26 @@ public class FileImportService {
     private final TransactionTemplate transaction;
     private final com.vaultor.vaultor.repository.CollectionRepository collections;
 
+    public record Resolution(String title,String original,String resolvedContent,String collectionId) {}
+    /** Finalize only an unchanged imported note. Receipts make lost-response retries harmless. */
+    public synchronized Resource resolve(String id,Resolution input) throws Exception {
+        String original=documents.parse(input.original()).toString(),content=documents.parse(input.resolvedContent()).toString();
+        documents.validate(documents.parse(original));documents.validate(documents.parse(content));
+        var digest=MessageDigest.getInstance("SHA-256");
+        digest.update(("note\0"+input.title()+"\0\0").getBytes(StandardCharsets.UTF_8));digest.update(original.getBytes(StandardCharsets.UTF_8));
+        if(input.collectionId()!=null)digest.update(("\0collection:"+input.collectionId()).getBytes(StandardCharsets.UTF_8));
+        String creation=HexFormat.of().formatHex(digest.digest());
+        String resolved=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8)));
+        return transaction.execute(status->{
+            var resource=resources.findById(id).orElseThrow();ResourceService.requireActive(resource);
+            if(!creation.equals(resource.getImportFingerprint()))throw new ResponseStatusException(HttpStatus.CONFLICT,"Import identity does not match");
+            if(resolved.equals(resource.getImportResolvedFingerprint()))return resource;
+            if(resource.getImportResolvedFingerprint()!=null || !original.equals(resource.getContent()) || !input.title().trim().equals(resource.getTitle()))throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED,"Imported note changed; its edits were preserved");
+            for(String target:documents.references(documents.parse(content)))ResourceService.requireActive(resources.findById(target).orElseThrow());
+            resource.setContent(content);resource.setImportResolvedFingerprint(resolved);var saved=resources.saveAndFlush(resource);links.updateLinksForNote(id,content);return saved;
+        });
+    }
+
     public synchronized Resource create(String id, String title, String content, MultipartFile file) throws Exception {
         return create(id,title,content,file,null);
     }

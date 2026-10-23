@@ -590,20 +590,17 @@ export default function Dashboard() {
   const syncUploadedResource = useCallback((resource: Resource) => {
     setResources((current) => upsertResourceInList(current, resource).slice(0, 12));
     resourcesChanged([resource.id], true);
-    setResourceDetails((current) => ({
-      ...current,
-      [resource.id]: resource,
-    }));
+    setResourceDetails(current => current[resource.id] ? { ...current, [resource.id]: resource } : current);
   }, []);
 
-  const beginImport = useCallback(async (editor?: Editor, range?: Range, mode?: ImportSession['mode']) => {
+  const beginImport = useCallback(async (editor?: Editor, range?: Range, mode?: ImportSession['mode'], folder = false) => {
     if (importBusy.current) return;
     importBusy.current = true; setUploadPending(true);
     const target = editor && range ? captureImportTarget(editor, range) : undefined;
     try {
       const accept = mode === 'markdown' ? '.md,.markdown,.txt' : mode === 'csv' ? '.csv,.tsv,.txt' : '';
-      const files = await pickFiles(accept, !target);
-      if (!files.length) { target?.dispose(); importBusy.current = false; if (target && !target.editor.isDestroyed) target.editor.commands.focus(undefined, { scrollIntoView: false }); else restoreImportFocus(); return; }
+      const files = await pickFiles(accept, !target, folder);
+      if (!files.length&&!files.directories?.length) { target?.dispose(); importBusy.current = false; if (target && !target.editor.isDestroyed) target.editor.commands.focus(undefined, { scrollIntoView: false }); else restoreImportFocus(); return; }
       setFileImport({...await prepareImport(files, target, mode),collection:!target&&libraryVisible&&collection?{id:collection.id,name:collection.name}:undefined});
     } catch (error) { target?.dispose(); importBusy.current = false; if(target&&!target.editor.isDestroyed)target.editor.commands.focus(undefined,{scrollIntoView:false});else restoreImportFocus(); reportError('file.import.prepare', error); }
     finally { setUploadPending(false); }
@@ -1221,7 +1218,7 @@ export default function Dashboard() {
         >
           {uploadPending ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
           Import files
-        </button>
+        </button><LibraryPopover label="Import options" trigger={<ChevronDown size={14}/>} className="sidebar-create-menu">{close=><button className="library-button" disabled={uploadPending} onClick={()=>{close();importReturnFocus.current=importButton.current;void beginImport(undefined,undefined,undefined,true);}}>Import folder</button>}</LibraryPopover>
       </div>
 
       {tagsError && <button className="sidebar-nav text-xs" onClick={() => void fetchTags()}>{tagsError} Retry</button>}
@@ -1326,7 +1323,7 @@ export default function Dashboard() {
       <ShortcutsModal open={shortcutsOpen} onClose={closeShortcutsModal} />
       <ErrorBoundary region="settings"><SettingsModal open={settingsOpen} onClose={closeSettingsModal} /></ErrorBoundary>
 
-      {fileImport && <ErrorBoundary region="file import"><FileImportModal session={fileImport} onClose={closeFileImport} onResource={syncUploadedResource} /></ErrorBoundary>}
+      {fileImport && <ErrorBoundary region="file import"><FileImportModal session={fileImport} onClose={closeFileImport} onResource={syncUploadedResource} onDestination={item=>{setCollection(item);setLibrarySection('library');setLibraryVisible(true);}} /></ErrorBoundary>}
       <ErrorBoundary region="note export"><NoteExportModal key={(identityRef.current?.id ?? "") + ":" + (identityRef.current?.generation ?? "")} flushNote={id => exportSaveRef.current(id)} noteId={noteExport?.id} title={noteExport?.title ?? ""} flush={async () => { if (noteExport) await exportSaveRef.current(noteExport.id); }} onClose={() => setNoteExport(null)} /></ErrorBoundary>
       <ErrorBoundary region="workspace transfer"><TransferModal mode={transferMode} onClose={() => setTransferMode(null)} flush={async () => { await saves.flushAll(); await flushSettings(); }} onImported={afterImport} /></ErrorBoundary>
       {(sessionError||sessionMessage||recoveryRecords.length>0)&&<div className="flex flex-wrap items-center gap-3 border-b border-border bg-[var(--surface-3)] px-4 py-2 text-sm"><span role="status">{sessionError||sessionMessage||(recoveryRecords.length+' recovery drafts available')}</span>{sessionError&&<button className="library-button" onClick={()=>{setSessionError('');void Promise.all([recovery.retryStorage(),sessionPersistence.current?.retry()]).catch(()=>setSessionError('Local recovery storage is still unavailable.'));}}>Retry storage</button>}{recoveryRecords.length>0&&<button className="library-button" onClick={()=>{recoveryFocus.captureFocus();setRecoveryOpen(true);}}>Review drafts ({recoveryRecords.length})</button>}{sessionMessage&&<button aria-label="Dismiss session message" onClick={()=>setSessionMessage('')}><X size={16}/></button>}</div>}

@@ -63,3 +63,10 @@ test('image clipboard endpoint stays inside the narrow approved resource path',(
  assert.equal(fileApiPath('/resources/image-id/image-png'),'/resources/image-id/image-png');
  for(const path of ['https://example.com/resources/id/image-png','/resources/../image-png','/resources/id/image-png?token=secret','/resources/id/other','/resources/id/image-info']) assert.throws(()=>fileApiPath(path),/Invalid file endpoint/);
 });
+
+test('folder discovery preserves empty directories and relative paths without exposing local paths',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'vaultor-folder-'));const selected=join(root,'docs');await mkdir(join(selected,'empty'),{recursive:true});await mkdir(join(selected,'nested'));await writeFile(join(selected,'nested','hello.md'),'# Hello');
+ const files=new NativeFiles({directory:join(root,'cache'),owner:()=>({token:'one'}),dialogs:{open:async()=>({canceled:false,filePaths:[selected]})}});
+ try{const entries=await files.pick({token:'one',directory:true});assert.ok(entries.some(e=>e.directory&&e.relativePath==='docs/empty'));const note=entries.find(e=>e.name==='hello.md');assert.equal(note.relativePath,'docs/nested/hello.md');assert.equal(JSON.stringify(entries).includes(root),false);assert.equal(new TextDecoder().decode(await files.read({token:'one',id:note.id,offset:0,length:100})),'# Hello');}
+ finally{await files.reset();await rm(root,{recursive:true,force:true});}
+});
