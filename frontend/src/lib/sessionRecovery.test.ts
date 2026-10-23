@@ -74,10 +74,56 @@ it('a late response from the replaced workspace cannot rebase its replacement',a
 });
 it('restoring pane state does not replay navigation, previews or save commands',async()=>{
  const {PaneNavigation}=await import('./paneNavigation');const load=vi.fn(),save=vi.fn(),preview=vi.fn(),committed=vi.fn();const navigation=new PaneNavigation(()=>({load,save,preview,committed,max:3,behavior:'split'}));const state=snapshot();
- navigation.restore(state.panes,state.activePaneId,state.positions);expect(navigation.exportSession()).toEqual({panes:state.panes,activePaneId:state.activePaneId,positions:state.positions});expect(load).not.toHaveBeenCalled();expect(save).not.toHaveBeenCalled();expect(preview).not.toHaveBeenCalled();expect(committed).not.toHaveBeenCalled();
+ navigation.restore(state.panes,state.activePaneId,state.positions);expect(navigation.exportSession()).toEqual({sessions:state.panes,panes:state.panes.map(p=>({...p,slotId:p.paneId})),activePaneId:state.activePaneId,positions:state.positions});expect(load).not.toHaveBeenCalled();expect(save).not.toHaveBeenCalled();expect(preview).not.toHaveBeenCalled();expect(committed).not.toHaveBeenCalled();
 });
 it('malformed positions do not prevent access to independent recovery journals',async()=>{
  const store=memory(),error=vi.fn(),sessions=new SessionPersistence(store,'tab',error);
  await store.put('session:workspace:tab',{...snapshot(),positions:{v:null}});
  expect(await sessions.load(identity)).toBeUndefined();expect(error).toHaveBeenCalledOnce();
+});
+
+it('v2 restores all sessions independently of one visible pane and round trips hidden journeys',async()=>{
+ const {PaneNavigation}=await import('./paneNavigation');
+ const navigation=new PaneNavigation(()=>({load:async id=>resource(id),save:async()=>{},preview:()=>{},committed:()=>{},max:1,behavior:'split'}));
+ for(const id of ['a','b','c','d','e','f'])await navigation.open(id);
+ const state:SessionSnapshot={...snapshot(),version:2,...navigation.exportSession()};
+ const store=memory(),persistence=new SessionPersistence(store,'tab',vi.fn());await persistence.save(state,true);
+ const loaded=(await persistence.load(identity))!;const restored=await restoreSession(loaded,1,async id=>resource(id));
+ expect(restored.sessions).toHaveLength(6);expect(restored.panes.map(p=>p.id)).toEqual(['f']);
+ navigation.reset();navigation.restore(restored.panes,restored.activePaneId,state.positions,restored.sessions);
+ await navigation.open('a');expect(navigation.snapshot().sessions).toHaveLength(6);expect(navigation.snapshot().panes[0].id).toBe('a');
+});
+it('legacy extra panes migrate into retained sessions instead of being truncated',async()=>{
+ const state=snapshot();state.panes.push({paneId:'p2',id:'two',history:[{visitId:'v2',resourceId:'two',title:'Two'}],cursor:0});
+ const restored=await restoreSession(state,1,async id=>resource(id));
+ expect(restored.sessions.map(p=>p.id)).toEqual(['n','two']);expect(restored.panes.map(p=>p.id)).toEqual(['n']);
+});
+it('missing or trashed inactive sessions cannot survive hydration, and restore does not mutate the stored record',async()=>{
+ const state=snapshot();state.version=2;state.sessions=[...state.panes,{paneId:'gone',id:'gone',history:[{visitId:'g',resourceId:'gone',title:'Gone'}],cursor:0}];
+ const before=structuredClone(state);
+ const restored=await restoreSession(state,3,async id=>id==='gone'?{...resource(id),trashedAt:'2026-10-23'}:resource(id));
+ expect(restored.sessions.map(p=>p.id)).toEqual(['n']);expect(state).toEqual(before);
+ await expect(restoreSession(state,3,async()=>{throw new Error('host unreachable');})).rejects.toThrow('host unreachable');expect(state).toEqual(before);
+});
+it('v2 remains isolated across workspace generations when leaving and returning',async()=>{
+ const store=memory(),persistence=new SessionPersistence(store,'tab',vi.fn());const first={...snapshot(),version:2 as const,sessions:snapshot().panes};
+ await persistence.save(first,true);const second={...first,identity:{id:'other',generation:'other'},panes:[],sessions:[],activePaneId:null};await persistence.save(second,true);
+ expect(await persistence.load(identity)).toEqual(first);expect(await persistence.load(second.identity)).toEqual(second);
+ expect(await persistence.load({...identity,generation:'replacement'})).toBeUndefined();
+});
+it('keeps visible slot order distinct from session opening order and respects deliberately closed panes',async()=>{
+ const state=snapshot();state.version=2;
+ const first=state.panes[0],second={...first,paneId:'two',id:'two',history:[{visitId:'two-v',resourceId:'two',title:'Two'}]};
+ state.sessions=[first,second];state.panes=[{...second,slotId:'left'},{...first,slotId:'right'}];state.activePaneId=first.paneId;
+ const restored=await restoreSession(state,3,async id=>resource(id));
+ expect(restored.panes.map(p=>[p.id,p.slotId])).toEqual([['two','left'],['n','right']]);
+ state.panes=[];state.activePaneId=null;
+ const closed=await restoreSession(state,3,async id=>resource(id));expect(closed.sessions).toHaveLength(2);expect(closed.panes).toEqual([]);
+});
+it('loads a body for a visible historical fallback while hidden sessions need only summaries',async()=>{
+ const state=snapshot();state.panes[0].history.push({visitId:'fallback',resourceId:'fallback',title:'Fallback'});
+ const detail=vi.fn(async(id:string)=>id==='n'?null:resource(id));
+ const summary=vi.fn(async(id:string)=>({...resource(id),content:undefined}));
+ const restored=await restoreSession(state,1,detail,summary);
+ expect(summary).toHaveBeenCalledWith('fallback');expect(detail).toHaveBeenCalledWith('fallback');expect(restored.resources.fallback.content).toBeDefined();
 });

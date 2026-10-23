@@ -1,4 +1,5 @@
 import axios, { type AxiosAdapter, type InternalAxiosRequestConfig } from 'axios';
+import { RequestSlots } from './requestSlots';
 
 export type ConnectionIdentity = { profileId: string; kind: 'browser' | 'local' | 'remote'; hostId?: string; workspaceId?: string; generation?: string };
 export type DownloadOutcome = 'requested' | 'saved' | 'cancelled';
@@ -87,6 +88,7 @@ export function validateApiPath(path: string) {
   if (!/^\/[a-zA-Z0-9]/.test(decoded) || /[\\#]/.test(decoded) || /(^|\/)\.\.?($|\/|\?)/.test(decoded)) throw new Error('Invalid API path.');
   return path;
 }
+const desktopRequestSlots = new RequestSlots(8);
 export const connectionAdapter: AxiosAdapter = async config => {
   validateApiPath(config.url ?? '');
   const requestEpoch = epoch;
@@ -95,7 +97,10 @@ export const connectionAdapter: AxiosAdapter = async config => {
   const owner = lifetime.signal, caller = config.signal;
   if (owner.aborted || caller?.aborted) cancel();
   owner.addEventListener('abort', cancel, { once: true }); caller?.addEventListener?.('abort', cancel);
+  let release: (() => void) | undefined;
   try {
+    if (platform.kind === 'desktop') release = await desktopRequestSlots.acquire(signal.signal);
+    if (signal.signal.aborted || epoch !== requestEpoch) throw new axios.CanceledError('Connection request cancelled');
     const scopedHeaders=new axios.AxiosHeaders(config.headers);
     if(platform.kind==='browser' && identity.workspaceId)scopedHeaders.set('X-Vaultor-Workspace',identity.workspaceId);
     const response = await platform.request({ ...config, headers:scopedHeaders, baseURL: '/api', signal: signal.signal } as InternalAxiosRequestConfig);
@@ -109,7 +114,7 @@ export const connectionAdapter: AxiosAdapter = async config => {
     }
     if (signal.signal.aborted || epoch !== requestEpoch) throw new axios.CanceledError('Connection request cancelled');
     throw error;
-  } finally { owner.removeEventListener('abort', cancel); caller?.removeEventListener?.('abort', cancel); }
+  } finally { release?.(); owner.removeEventListener('abort', cancel); caller?.removeEventListener?.('abort', cancel); }
 };
 export async function openConnectionStream(path: string, signal: AbortSignal, receive: (data: unknown) => void) {
   validateApiPath(path);

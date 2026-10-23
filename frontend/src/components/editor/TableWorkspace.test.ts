@@ -22,7 +22,7 @@ it('migrates the photographed collision and shares history/help/validation defin
   const history = historyShortcuts('windows');expect(shortcutMatchesEvent(keys.switchNoteNext, new KeyboardEvent('keydown', { key: 'ArrowRight', ctrlKey: true, altKey: true }))).toBe(false);
   expect(validateShortcutBinding('switchNoteNext', history.forward, keys)).toContain('history');
   const navigation = getShortcutCategories(keys).filter(g => g.category === 'Navigation');expect(navigation).toHaveLength(1);
-  expect(navigation[0].items.find(i => i.description === 'Switch note (next)')?.keys).toEqual(['Alt', 'Right']);
+  expect(navigation[0].items.find(i => i.description === 'Focus next pane')?.keys).toEqual(['Alt', 'Right']);
 });
 it('keeps filters out of saved JSON and rejects hidden-row and structural mutations', () => {
   const e = editor(), before = e.getJSON(), table = tableContext(e)!.table, columnId = table.attrs.columnIds[0];

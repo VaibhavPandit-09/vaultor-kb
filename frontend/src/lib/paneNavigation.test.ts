@@ -24,12 +24,12 @@ describe('pane navigation commits', () => {
     expect(nav.snapshot().issue?.message).toContain('not supported');
     expect(dep.preview).not.toHaveBeenCalled();expect(dep.save).not.toHaveBeenCalled();
   });
-  it('linked replacement leaves other panes intact and permits duplicate views', async () => {
-    const { nav, dep } = setup(); await nav.open('A'); const first = nav.snapshot().activePaneId!; await nav.open('B'); const second = nav.snapshot().activePaneId!;
+  it('a linked destination already visible focuses its existing session', async () => {
+    const { nav, dep } = setup(); await nav.open('A'); const first = nav.snapshot().activePaneId!; await nav.open('B', {destination:'new'}); const second = nav.snapshot().activePaneId!;
     await nav.open('B', { sourcePaneId: first, intent: 'link', destination: 'here' });
-    expect(nav.snapshot().panes.map(p => [p.paneId, p.id])).toEqual([[first, 'B'], [second, 'B']]);
-    expect(dep.save.mock.calls).toEqual([['A']]); expect(nav.snapshot().panes[0].history.map(v => v.resourceId)).toEqual(['A', 'B']);
-    nav.activate(second); expect(nav.snapshot().panes[0].history.map(v => v.resourceId)).toEqual(['A', 'B']);
+    expect(nav.snapshot().panes.map(p => [p.paneId, p.id])).toEqual([[first, 'A'], [second, 'B']]);
+    expect(dep.save).not.toHaveBeenCalled(); expect(nav.snapshot().activePaneId).toBe(second); expect(nav.snapshot().panes[0].history.map(v => v.resourceId)).toEqual(['A']);
+    nav.activate(second); expect(nav.snapshot().panes[0].history.map(v => v.resourceId)).toEqual(['A']);
   });
   it('does not evict at capacity and supports explicit open here', async () => {
     const { nav, dep } = setup(); dep.max = 1; await nav.open('A');
@@ -58,7 +58,7 @@ describe('pane navigation commits', () => {
     await nav.open('file', { intent: 'link', destination: 'new' }); expect(nav.snapshot().panes).toBe(before); expect(dep.save).not.toHaveBeenCalled(); expect(dep.preview).toHaveBeenCalledWith(expect.objectContaining({ id: 'file' }), before[0].paneId);
   });
   it('direct replace affects only focused pane and starts a new trail', async () => {
-    const { nav, dep } = setup(); await nav.open('A'); await nav.open('B'); dep.behavior = 'replace'; await nav.open('C');
+    const { nav, dep } = setup(); await nav.open('A'); await nav.open('B', {destination:'new'}); dep.behavior = 'replace'; await nav.open('C');
     expect(nav.snapshot().panes.map(p => p.id)).toEqual(['A', 'C']); expect(nav.snapshot().panes[1].history.map(v => v.resourceId)).toEqual(['C']);
   });
   it('history stays in its pane and close saves only the departing note', async () => {
@@ -76,7 +76,7 @@ it('failed close stays retryable and successful retry clears the error', async (
 });
 
 it('an outstanding navigation cannot steal focus back from another pane', async () => {
-  const { nav, dep } = setup(); await nav.open('A'); const a = nav.snapshot().activePaneId!; await nav.open('B'); const b = nav.snapshot().activePaneId!;
+  const { nav, dep } = setup(); await nav.open('A'); const a = nav.snapshot().activePaneId!; await nav.open('B', {destination:'new'}); const b = nav.snapshot().activePaneId!;
   nav.activate(a); let resolve!: (value: Resource) => void;
   dep.load.mockImplementationOnce(() => new Promise(done => { resolve = done; }));
   const pending = nav.open('C', { sourcePaneId: a, intent: 'link' }); nav.activate(b); resolve(note('C')); await pending;
@@ -118,4 +118,86 @@ it('bounds visits at 200 and self-links do not add a step', async () => {
 it('transient failures do not mark a step unavailable or change cursor', async () => {
   const { nav, dep } = setup(); await nav.open('A'); await nav.open('B', { intent: 'link' }); dep.load.mockRejectedValueOnce(new Error('Offline'));
   await nav.history(-1); expect(nav.snapshot().panes[0].cursor).toBe(1); expect(nav.snapshot().panes[0].history[0].unavailable).toBeUndefined();
+});
+
+describe('open sessions independent of visible panes', () => {
+  it.each([1, 2, 3])('opens seven notes with %i occupied panes without an ordinary capacity prompt', async maximum => {
+    const {nav, dep} = setup(); dep.max = maximum;
+    for (let i=0; i<maximum; i++) await nav.open('note-'+i, {destination:'new'});
+    for (let i=maximum; i<7; i++) await nav.open('note-'+i);
+    expect(nav.snapshot().sessions).toHaveLength(7);
+    expect(nav.snapshot().panes).toHaveLength(maximum);
+    expect(nav.snapshot().panes.at(-1)?.id).toBe('note-6');
+    expect(nav.snapshot().issue).toBeNull();
+  });
+  it('switches back to a hidden session without resetting journey or positions', async () => {
+    const {nav}=setup(); await nav.open('A'); await nav.open('B', {intent:'link'});
+    const session = nav.snapshot().panes[0], entry = session.history[1];
+    nav.recordPosition(session.paneId, entry.visitId, {scrollTop:333, selection:{from:3,to:4}});
+    await nav.open('C'); await nav.open('B'); await nav.open('B');
+    expect(nav.snapshot().panes[0]).toMatchObject({paneId:session.paneId, history:session.history, cursor:1});
+    expect(nav.position(entry.visitId)).toMatchObject({scrollTop:333});
+    await nav.history(-1); expect(nav.snapshot().panes[0].id).toBe('A');
+    await nav.history(1); expect(nav.snapshot().panes[0].id).toBe('B');
+  });
+  it('closes inactive and active sessions with a deterministic last-opened fallback', async () => {
+    const {nav}=setup(); for (const id of ['A','B','C','D']) await nav.open(id);
+    await nav.closeSession(nav.snapshot().sessions[1].paneId);
+    expect(nav.snapshot().panes[0].id).toBe('D');
+    await nav.closeSession(nav.snapshot().activePaneId!);
+    expect(nav.snapshot().panes[0].id).toBe('C');
+    expect(nav.snapshot().sessions.map(p=>p.id)).toEqual(['A','C']);
+    await nav.closeOthers(nav.snapshot().activePaneId!); expect(nav.snapshot().sessions.map(p=>p.id)).toEqual(['C']);
+    await nav.closeOthers(); expect(nav.snapshot().sessions).toEqual([]); expect(nav.snapshot().activePaneId).toBeNull();
+  });
+  it('closing a viewing pane preserves its complete session and allows explicit reopening', async () => {
+    const {nav}=setup(); await nav.open('A'); await nav.open('B', {intent:'link'});
+    const session=nav.snapshot().panes[0]; await nav.close(session.paneId);
+    expect(nav.snapshot().panes).toHaveLength(0); expect(nav.snapshot().sessions[0].history).toEqual(session.history);
+    await nav.open('B'); expect(nav.snapshot().panes[0].history).toEqual(session.history);
+  });
+  it.each(['active','inactive'])('reconciles a confirmed %s deletion and does not reopen on restore', async kind => {
+    const {nav}=setup(); await nav.open('A'); await nav.open('B');
+    nav.markUnavailable(kind === 'active' ? 'B' : 'A');
+    expect(nav.snapshot().sessions.map(p=>p.id)).toEqual([kind === 'active' ? 'A' : 'B']);
+    expect(nav.snapshot().panes).toHaveLength(1);
+    nav.markAvailable('A'); nav.markAvailable('B'); expect(nav.snapshot().sessions).toHaveLength(1);
+    await nav.open(kind === 'active' ? 'B' : 'A'); expect(nav.snapshot().sessions).toHaveLength(2);
+  });
+  it('keeps unavailable history references but removes every active instance, including permanent deletion', async () => {
+    const {nav}=setup(); await nav.open('A'); await nav.open('B',{intent:'link'}); await nav.open('A',{destination:'new'});
+    nav.markUnavailable('A'); nav.markUnavailable('A');
+    expect(nav.snapshot().sessions.map(p=>p.id)).toEqual(['B']);
+    expect(nav.snapshot().sessions[0].history[0].unavailable).toBe(true);
+    nav.markUnavailable('B'); expect(nav.snapshot().panes).toEqual([]); expect(nav.snapshot().activePaneId).toBeNull();
+  });
+  it('does not resurrect a deleted resource from a stale load', async () => {
+    const {nav,dep}=setup(); await nav.open('A'); let finish!:(r:Resource)=>void;
+    dep.load.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));
+    const opening=nav.open('B'); nav.markUnavailable('B'); finish(note('B')); await opening;
+    expect(nav.snapshot().sessions.map(p=>p.id)).toEqual(['A']);
+  });
+  it('a failed unsaved departure keeps both session and editor assignment intact', async () => {
+    const {nav,dep}=setup(); await nav.open('A'); await nav.open('B');
+    dep.save.mockRejectedValueOnce(new Error('Revision conflict; draft retained'));
+    await nav.open('A'); expect(nav.snapshot().panes[0].id).toBe('B');
+    expect(nav.snapshot().sessions).toHaveLength(2); expect(nav.snapshot().issue?.message).toContain('draft retained');
+    await nav.open('A'); expect(nav.snapshot().panes[0].id).toBe('A');
+  });
+  it('deduplicates concurrent direct opens from different panes after their save barriers', async () => {
+    const {nav,dep}=setup(); await nav.open('A'); await nav.open('B',{destination:'new'});
+    const [a,b]=nav.snapshot().panes;
+    const resolvers:(()=>void)[]=[]; dep.save.mockImplementation(()=>new Promise(resolve=>resolvers.push(resolve)));
+    const first=nav.open('C',{sourcePaneId:a.paneId}), second=nav.open('C',{sourcePaneId:b.paneId});
+    await Promise.resolve(); resolvers.forEach(resolve=>resolve()); await Promise.all([first,second]);
+    expect(nav.snapshot().sessions.filter(p=>p.id==='C')).toHaveLength(1);
+    expect(nav.snapshot().panes.filter(p=>p.id==='C')).toHaveLength(1);
+  });
+  it('rapid opening and switching retains one session per direct destination', async () => {
+    const {nav}=setup(); await nav.open('A');
+    await Promise.all(['B','C','D','E','F'].map(id=>nav.open(id)));
+    expect(nav.snapshot().panes[0].id).toBe('F');
+    await Promise.all(['A','F','A','F'].map(id=>nav.open(id)));
+    expect(nav.snapshot().panes[0].id).toBe('F'); expect(nav.snapshot().sessions).toHaveLength(2);
+  });
 });

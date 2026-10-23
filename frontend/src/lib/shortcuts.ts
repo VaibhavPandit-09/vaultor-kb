@@ -13,6 +13,8 @@ export function getShortcutPlatformLabel(platform: ShortcutPlatform) {
 }
 
 export type ShortcutAction =
+  | 'nextOpenNote'
+  | 'previousOpenNote'
   | 'commandPalette'
   | 'switchNoteNext'
   | 'switchNotePrevious'
@@ -46,6 +48,8 @@ const SHORTCUT_ORDER = ['Mod', 'Alt', 'Shift'] as const;
 const modKey = isMac ? 'Cmd' : 'Ctrl';
 
 const shortcutActionMeta: ShortcutActionMeta[] = [
+  { action: 'nextOpenNote', category: 'Navigation', description: 'Next open note', defaultShortcut: { mac: 'Mod+Alt+PageDown', windows: 'Mod+Alt+PageDown' } },
+  { action: 'previousOpenNote', category: 'Navigation', description: 'Previous open note', defaultShortcut: { mac: 'Mod+Alt+PageUp', windows: 'Mod+Alt+PageUp' } },
   {
     action: 'commandPalette',
     category: 'Navigation',
@@ -55,13 +59,13 @@ const shortcutActionMeta: ShortcutActionMeta[] = [
   {
     action: 'switchNoteNext',
     category: 'Navigation',
-    description: 'Switch note (next)',
+    description: 'Focus next pane',
     defaultShortcut: { mac: 'Alt+ArrowRight', windows: 'Alt+ArrowRight' },
   },
   {
     action: 'switchNotePrevious',
     category: 'Navigation',
-    description: 'Switch note (previous)',
+    description: 'Focus previous pane',
     defaultShortcut: { mac: 'Alt+ArrowLeft', windows: 'Alt+ArrowLeft' },
   },
   {

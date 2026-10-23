@@ -58,8 +58,7 @@ it('preserves scoped writes for every appearance and layout control without touc
 });
 it('keeps numeric edits valid and changes workspace controls with workspace-only patches', async () => {
   await open(); category('Workspace');
-  fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Max open notes' })).getByRole('radio', { name: '3' })); await saved();
-  fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Open behavior' })).getByRole('radio', { name: 'Replace' })); await saved();
+  fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Maximum visible panes' })).getByRole('radio', { name: '3' })); await saved();
   fireEvent.click(screen.getByRole('switch', { name: 'Focus mode' })); await saved();
   const number = screen.getByRole('spinbutton', { name: 'Autosave delay value' });
   fireEvent.change(number, { target: { value: '1100' } }); fireEvent.keyDown(number, { key: 'Enter' });
@@ -67,7 +66,7 @@ it('keeps numeric edits valid and changes workspace controls with workspace-only
   fireEvent.change(number, { target: { value: '500' } }); fireEvent.keyDown(number, { key: 'Enter', isComposing: true });
   expect(doc.workspace?.autosaveDelay ?? 0).toBe(0);
   fireEvent.keyDown(number, { key: 'Enter' }); await saved();
-  expect(doc.workspace).toMatchObject({ maxOpenNotes: 3, openBehavior: 'replace', focusMode: true, autosaveDelay: 500 });
+  expect(doc.workspace).toMatchObject({ maxOpenNotes: 3, openBehavior: 'split', focusMode: true, autosaveDelay: 500 });
   for (const [, patch] of vi.mocked(api.patch).mock.calls) expect(Object.keys(patch as object)).toEqual(['workspace']);
 });
 it('retains a failed setting and retries the same scoped change', async () => {

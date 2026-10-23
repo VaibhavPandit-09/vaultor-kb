@@ -87,7 +87,7 @@ const LEGACY_SIDEBAR_STORAGE_KEY = 'vaultor_sidebar_collapsed';
 
 const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
   maxOpenNotes: 2,
-  openBehavior: 'split',
+  openBehavior: 'replace',
   autosaveDelay: 0,
   focusMode: false,
 };
@@ -476,7 +476,7 @@ function normalizeSettingsDocument(input: Partial<SettingsDocument> | null | und
 function normalizeWorkspaceSettings(input: Partial<WorkspaceSettings> | null | undefined): WorkspaceSettings {
   return {
     maxOpenNotes: Math.max(1, Math.min(3, Number(input?.maxOpenNotes ?? DEFAULT_WORKSPACE_SETTINGS.maxOpenNotes))),
-    openBehavior: input?.openBehavior === 'replace' ? 'replace' : 'split',
+    openBehavior: 'replace', // Legacy split preference is retired; splitting is always explicit.
     autosaveDelay: Math.max(0, Number(input?.autosaveDelay ?? DEFAULT_WORKSPACE_SETTINGS.autosaveDelay)),
     focusMode: Boolean(input?.focusMode),
   };

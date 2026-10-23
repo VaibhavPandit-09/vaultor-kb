@@ -1,3 +1,4 @@
+import OpenNotes from '../components/OpenNotes';
 import ResourceReferences from '../components/ResourceReferences';
 import ReviewInbox, {ReviewButton} from '../components/ReviewInbox';
 import {reviewsChanged} from '../lib/reviews';
@@ -142,9 +143,10 @@ export default function Dashboard() {
   const navigationDependencies = useRef<ConstructorParameters<typeof PaneNavigation>[0] | null>(null);
   const [paneNavigation] = useState(() => new PaneNavigation(() => navigationDependencies.current!()));
   const paneState = useSyncExternalStore(paneNavigation.subscribe, paneNavigation.snapshot);
-  const openNotes = paneState.panes;
+  const openNotes = paneState.sessions;
+  const visibleNotes = paneState.panes;
   const activePaneId = paneState.activePaneId;
-  const activeNoteId = openNotes.find(p => p.paneId === activePaneId)?.id ?? null;
+  const activeNoteId = visibleNotes.find(p => p.paneId === activePaneId)?.id ?? null;
   const [sharedDocuments] = useState(() => new SharedNoteDocuments());
   const previewSourcePane = useRef<string | null>(null);
   const [referenceTarget,setReferenceTarget]=useState<Resource|null>(null);
@@ -181,6 +183,18 @@ export default function Dashboard() {
       return saved;
     },
     () => saveChanged(v => v + 1), (id,value,version) => recovery.queued(id,value,version)));
+  // Inactive sessions retain metadata/positions, not mounted editors or clean document bodies.
+  useEffect(() => {
+    setResourceDetails(previous => {
+      let next = previous;
+      for (const session of paneNavigation.snapshot().sessions) {
+        if (visibleNotes.some(p => p.id === session.id) || saves.latest(session.id) || recovery.current(session.id) || previous[session.id]?.content == null) continue;
+        if (next === previous) next = { ...previous };
+        next[session.id] = { ...previous[session.id], content: undefined };
+      }
+      return next;
+    });
+  }, [visibleNotes, paneNavigation, saves, recovery]);
   useEffect(() => { Object.values(resourceDetails).forEach(resource => recovery.observe(resource)); }, [resourceDetails,recovery]);
   useEffect(() => () => saves.clear(), [saves]);
   useEffect(() => {
@@ -549,7 +563,7 @@ export default function Dashboard() {
     activateOpenNote(state.panes[next].paneId, { focus: true });
   }, [activateOpenNote, paneNavigation]);
   const closeActiveNote = useCallback(async () => {
-    const id = paneNavigation.snapshot().activePaneId; if (id) await paneNavigation.close(id);
+    const id = paneNavigation.snapshot().activePaneId; if (id) await paneNavigation.closeSession(id);
   }, [paneNavigation]);
   const handleBackNavigation = useCallback(() => paneNavigation.history(-1), [paneNavigation]);
   const handleForwardNavigation = useCallback(() => paneNavigation.history(1), [paneNavigation]);
@@ -644,6 +658,15 @@ export default function Dashboard() {
         return;
       }
 
+      if (shortcutMatchesEvent(resolvedShortcuts.nextOpenNote, event) || shortcutMatchesEvent(resolvedShortcuts.previousOpenNote, event)) {
+        event.preventDefault();
+        const state = paneNavigation.snapshot(), current = state.sessions.findIndex(p => p.paneId === state.activePaneId);
+        const direction = shortcutMatchesEvent(resolvedShortcuts.nextOpenNote, event) ? 1 : -1;
+        const session = state.sessions[(current + direction + state.sessions.length) % state.sessions.length];
+        if (session) void openResourceById(session.id);
+        return;
+      }
+
       if (shortcutMatchesEvent(resolvedShortcuts.switchNoteNext, event)) {
         event.preventDefault();
         switchNote('next');
@@ -684,7 +707,7 @@ export default function Dashboard() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [closeActiveNote, handleBackNavigation, handleForwardNavigation, openCommandPalette, openShortcutsModal, resolvedShortcuts, switchNote, toggleSidebar]);
+  }, [paneNavigation, openResourceById, closeActiveNote, handleBackNavigation, handleForwardNavigation, openCommandPalette, openShortcutsModal, resolvedShortcuts, switchNote, toggleSidebar]);
 
   useEffect(() => {
     if (!activeNoteId || libraryVisible) return;
@@ -734,12 +757,12 @@ export default function Dashboard() {
   useEffect(()=>{const receive=(event:Event)=>{event.preventDefault();const request=(event as CustomEvent<ActionRequest>).detail;void resourceActionHandler.current(request).then(request.resolve,request.reject);};window.addEventListener(RESOURCE_ACTION_EVENT,receive);return()=>window.removeEventListener(RESOURCE_ACTION_EVENT,receive);},[]);
 
   const renameResource = useCallback(async (resourceId: string, title: string) => {
-    paneNavigation.rename(resourceId, title);
-    const resource = resourceDetails[resourceId] ?? await fetchResourceDetails(resourceId);
+    const resource = resourceDetails[resourceId]?.content != null ? resourceDetails[resourceId] : await fetchResourceDetails(resourceId);
     if (resource?.type === 'file') {const {data:fresh}=await api.get<Resource>('/resources/'+resourceId+'/summary');await api.patch('/resources/'+resourceId+'/title',{title},{headers:{'If-Match':'"'+fresh.revision+'"'}});resourcesChanged([resourceId]);return;}
     if (!resource || resource.type !== 'note') {
       return;
     }
+    paneNavigation.rename(resourceId, title);
 
     setResourceDetails((prev) => ({
       ...prev,
@@ -938,6 +961,8 @@ export default function Dashboard() {
       catch { setSessionError('Local recovery storage is unavailable. Editing still works; keep this tab open until saved.'); }
       const restored = snapshot ? await restoreSession(snapshot,workspaceSettings.maxOpenNotes,async id => {
         try {return (await api.get<Resource>('/resources/'+id,{backgroundDiagnostic:true})).data;} catch(error) {if([404,410].includes((error as {response?:{status?:number}}).response?.status??0))return null;throw error;}
+      },async id => {
+        try {return (await api.get<Resource>('/resources/'+id+'/summary',{backgroundDiagnostic:true})).data;} catch(error) {if([404,410].includes((error as {response?:{status?:number}}).response?.status??0))return null;throw error;}
       }) : undefined;
       const confirmed=(await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;
       if(!sameWorkspace(identity,confirmed))throw new Error('Workspace changed during restoration.');
@@ -969,7 +994,7 @@ export default function Dashboard() {
       }
       setResourceDetails(details);
       if(snapshot&&restored) {
-        paneNavigation.restore(restored.panes,restored.activePaneId,snapshot.positions);
+        paneNavigation.restore(restored.panes,restored.activePaneId,snapshot.positions,restored.sessions);
         setLibraryVisible(snapshot.library.visible||!restored.panes.length);setLibrarySection(snapshot.library.section);setCollection(snapshot.library.collection);setLibraryContext(snapshot.library.context);
         dispatch(clearSelectedTags());snapshot.library.tags.forEach(tag=>dispatch(toggleSelectedTag(tag)));
         dispatch(setCurrentResourceId(restored.panes.find(p=>p.paneId===restored.activePaneId)?.id??null));
@@ -1003,14 +1028,14 @@ export default function Dashboard() {
     try {
       await recovery.retryStorage();
       const identity = identityRef.current;
-      await sessionPersistence.current?.save({ version: 1, identity, ...paneNavigation.exportSession(), library: sessionView.current }, true);
+      await sessionPersistence.current?.save({ version: 2, identity, ...paneNavigation.exportSession(), library: sessionView.current }, true);
     } catch { throw new SwitchBlockedError('Recovery storage is unavailable. Keep this workspace open until storage succeeds.'); }
   }), [sessionReady, transferMode, uploadPending, fileImport, createNotePending, deletePending, tagDeletePending, tagAddPending, noteExport, titleEditState, commitTitleEditing, saves, flushSettings, settingsSaveStatus, recovery, paneNavigation]);
   useEffect(()=>{sessionView.current={visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext};},[libraryVisible,librarySection,collection,filters.selectedTags,libraryContext]);
   useEffect(()=>{
     if(!sessionReady)return;
     let last='';
-    const save=()=>{const identity=identityRef.current;if(!identity)return;const snapshot:SessionSnapshot={version:1,identity,...paneNavigation.exportSession(),library:sessionView.current};const serialized=JSON.stringify(snapshot);if(serialized!==last){last=serialized;void sessionPersistence.current?.save(snapshot);}};
+    const save=()=>{const identity=identityRef.current;if(!identity)return;const snapshot:SessionSnapshot={version:2,identity,...paneNavigation.exportSession(),library:sessionView.current};const serialized=JSON.stringify(snapshot);if(serialized!==last){last=serialized;void sessionPersistence.current?.save(snapshot);}};
     save(); const timer=setInterval(save,500);window.addEventListener('pagehide',save);
     return()=>{clearInterval(timer);window.removeEventListener('pagehide',save);};
   },[sessionReady,paneNavigation]);
@@ -1030,6 +1055,7 @@ export default function Dashboard() {
     const handoff=()=>{if(consumeLocalArchiveImport())setTransferMode('import');};handoff();
     window.addEventListener('vaultor:local-archive-import',handoff);return()=>window.removeEventListener('vaultor:local-archive-import',handoff);
   },[sessionReady]);
+  const resourceReconcileWork = useRef(Promise.resolve());
   const remoteReconcile = useRef<(events:RemoteChange[])=>void>(()=>{});
   remoteReconcile.current = events => {
     const broad=events.some(e=>e.kind==='reset'||e.kind==='workspace'||(e.generation && e.generation!==identityRef.current?.generation));
@@ -1038,6 +1064,7 @@ export default function Dashboard() {
     if(broad || events.some(e=>e.kind==='settings'))window.dispatchEvent(new Event('vaultor:settings-refresh'));
     if(broad || events.some(e=>e.kind==='organization'))notifyResourceChange({kind:'organization',entity:'all'});
     if(broad || events.some(e=>e.kind==='tags'))notifyResourceChange({kind:'organization',entity:'tag'});
+    const enqueue = (work: () => Promise<unknown>) => { resourceReconcileWork.current = resourceReconcileWork.current.then(work).then(() => {}, () => {}); };
     const resourceEvents=events.filter(e=>e.kind==='resources');
     if(broad || resourceEvents.length || events.some(e=>e.kind==='organization'||e.kind==='tags')) {
       const ids=resourceEvents.some(e=>!e.ids.length)?undefined:new Set(resourceEvents.flatMap(e=>e.ids));
@@ -1047,15 +1074,18 @@ export default function Dashboard() {
         void api.get<Resource>('/resources/'+previewId+'/summary',{backgroundDiagnostic:true}).catch(error=>{if(epoch===workspaceEpoch.current && [404,410].includes(error.response?.status))dismissPreview();});
       }
       const openIds=new Set(openNotes.map(p=>p.id));
-      const journeyIds=new Set(paneNavigation.snapshot().panes.flatMap(p=>p.history.map(v=>v.resourceId)));
+      const journeyIds=new Set(paneNavigation.snapshot().sessions.flatMap(p=>p.history.map(v=>v.resourceId)));
       for(const id of ids??[])if(!openIds.has(id)&&journeyIds.has(id)) {
-        const epoch=workspaceEpoch.current;
-        void api.get<Resource>('/resources/'+id+'/summary',{backgroundDiagnostic:true}).then(()=>{if(epoch===workspaceEpoch.current)paneNavigation.markAvailable(id);}).catch(error=>{if(epoch===workspaceEpoch.current && [404,410].includes(error.response?.status))paneNavigation.markUnavailable(id);});
+        const epoch=workspaceEpoch.current, version=(resourceLoadVersions.current.get(id)??0)+1;resourceLoadVersions.current.set(id,version);
+        enqueue(async()=>{if(epoch!==workspaceEpoch.current||resourceLoadVersions.current.get(id)!==version)return;await api.get<Resource>('/resources/'+id+'/summary',{backgroundDiagnostic:true}).then(()=>{if(epoch===workspaceEpoch.current&&resourceLoadVersions.current.get(id)===version)paneNavigation.markAvailable(id);}).catch(error=>{if(epoch===workspaceEpoch.current && resourceLoadVersions.current.get(id)===version && [404,410].includes(error.response?.status))paneNavigation.markUnavailable(id);});});
       }
       for(const id of new Set(openNotes.map(p=>p.id))) {
         if(!broad && ids?.size && !ids.has(id) && !events.some(e=>e.kind==='organization'||e.kind==='tags'))continue;
         const epoch=workspaceEpoch.current;const version=(resourceLoadVersions.current.get(id)??0)+1;resourceLoadVersions.current.set(id,version);
-        void api.get<Resource>('/resources/'+id,{backgroundDiagnostic:true}).then(({data})=>{
+        enqueue(async()=>{
+        if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
+        const detail = paneNavigation.snapshot().panes.some(p=>p.id===id);
+        await api.get<Resource>('/resources/'+id+(detail?'':'/summary'),{backgroundDiagnostic:true}).then(({data})=>{
           if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
           paneNavigation.markAvailable(id);
           const draft=recovery.current(id);
@@ -1064,10 +1094,11 @@ export default function Dashboard() {
             setResourceDetails(prev=>prev[id]?{...prev,[id]:{...prev[id],tags:data.tags,collections:data.collections,favorite:data.favorite}}:prev);
             return;
           }
-          paneNavigation.markAvailable(id);recovery.observe(data,true);sharedDocuments.acceptSaved(id,parseNoteContent(data.content));paneNavigation.rename(id,data.title);setResourceDetails(prev=>({...prev,[id]:data}));
+          paneNavigation.markAvailable(id);recovery.observe(data,true);if(data.content!=null)sharedDocuments.acceptSaved(id,parseNoteContent(data.content));paneNavigation.rename(id,data.title);setResourceDetails(prev=>({...prev,[id]:data}));
         }).catch(error=>{
           if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
-          if([404,410].includes(error.response?.status)){paneNavigation.markUnavailable(id);if(!recovery.current(id) && resourceDetails[id])recovery.queued(id,{title:resourceDetails[id].title,content:parseNoteContent(resourceDetails[id].content)},-Date.now());const draft=recovery.current(id);if(draft)setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);saves.forget(id);setResourceDetails(previous=>previous[id]?{...previous,[id]:{...previous[id],trashedAt:new Date().toISOString()}}:previous);setSessionMessage('An open note is unavailable or in Trash. Editing is paused; its content is retained as a recovery copy.');}
+          if([404,410].includes(error.response?.status)){if(!recovery.current(id) && resourceDetails[id]?.content != null)recovery.queued(id,{title:resourceDetails[id].title,content:parseNoteContent(resourceDetails[id].content)},-Date.now());const draft=recovery.current(id);if(draft)setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);saves.forget(id);paneNavigation.markUnavailable(id);setResourceDetails(previous=>previous[id]?{...previous,[id]:{...previous[id],trashedAt:new Date().toISOString()}}:previous);setSessionMessage('An unavailable note was removed from Open Notes. Its content is retained as a recovery copy.');}
+        });
         });
       }
     }
@@ -1094,7 +1125,7 @@ export default function Dashboard() {
   };
 
   const filteredTags = tags.filter((tag) => tag.name.toLowerCase().includes(tagSearch.toLowerCase()));
-  const openWorkspaceNotes = useMemo(() => openNotes.map((note) => {
+  const openWorkspaceNotes = useMemo(() => visibleNotes.map((note) => {
     const resource = resourceDetails[note.id] ?? null;
     const metadata = resources.find((entry) => entry.id === note.id) ?? null;
 
@@ -1103,7 +1134,7 @@ export default function Dashboard() {
       resource,
       title: resource?.title ?? metadata?.title ?? 'Loading note...',
     };
-  }), [openNotes, resourceDetails, resources]);
+  }), [visibleNotes, resourceDetails, resources]);
 
   const hasUnsavedChanges=saves.dirty();
   const commandPaletteContext = useMemo<CommandContext>(() => ({
@@ -1117,8 +1148,8 @@ export default function Dashboard() {
     exportResource:resource=>setNoteExport({id:resource.id,title:resource.title}),
     openDiagnostics:()=>setDiagnosticsOpen(true),
     previewResource,
-    openNotes: openWorkspaceNotes
-      .map((note) => note.resource)
+    openNotes: openNotes
+      .map((note) => resourceDetails[note.id])
       .filter((note): note is Resource => Boolean(note)),
     sidebarCollapsed: sidebarCollapsedForContext,
     openResource: (resourceId: string) => openResourceById(resourceId,{throwOnFailure:true}),
@@ -1143,7 +1174,7 @@ export default function Dashboard() {
     openResourceById,
     openSettingsModal,
     openShortcutsModal,
-    openWorkspaceNotes,
+    openNotes, resourceDetails,
     previewResource,
     renameResource,
     requestFileUpload,
@@ -1213,6 +1244,7 @@ export default function Dashboard() {
       <div className="border-t border-border" />
 
       <div className="sidebar-secondary min-h-0 flex-1 overflow-y-auto py-2" style={{overflowAnchor:'none'}}>
+        <OpenNotes sessions={openNotes} panes={visibleNotes} activeId={!libraryVisible ? activePaneId : null} onOpen={id => void openResourceById(id)} onSplit={id => void openResourceById(id, {destination:'new'})} onClose={id => void paneNavigation.closeSession(id)} onCloseOthers={id => void paneNavigation.closeOthers(id)} canSplit={visibleNotes.length < workspaceSettings.maxOpenNotes}/>
         <SidebarSection name="pinned" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('favorites')}><PinnedList compact filterType={sidebarPreferences.pinned.type} activeId={!libraryVisible?currentResourceId??undefined:undefined} visible={sidebarVisible&&sidebarPreferences.pinned.visible&&!sidebarPreferences.pinned.collapsed} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></SidebarSection>
         <SidebarSection name="recent" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('recent')}><SidebarRecent type={sidebarPreferences.recent.type} enabled={sidebarVisible&&sidebarPreferences.recent.visible&&!sidebarPreferences.recent.collapsed} activeId={!libraryVisible?currentResourceId??undefined:undefined} onOpen={id=>void openResourceById(id)} onDelete={(id,event)=>void handleDeleteResource(id,event)} onResources={setResources}/>{recencyError&&<button className="sidebar-nav text-xs" onClick={()=>recency.retry()}>{recencyError} Retry</button>}</SidebarSection>
       <SidebarSection name="tags" preferences={sidebarPreferences} onChange={updateSidebarPreferences}><div className="flex flex-col px-3 py-2">
@@ -1302,7 +1334,7 @@ export default function Dashboard() {
       <ErrorBoundary region="diagnostics"><DiagnosticsPanel open={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} /></ErrorBoundary>
       {paneState.issue && <div role="alert" className="z-[85] flex flex-wrap items-center gap-3 border-b border-border bg-[var(--surface-3)] px-4 py-2 text-sm">
         <span>{paneState.issue.message}</span>
-        {!paneState.issue.unavailable && <button className="rounded border border-border px-3 py-1 focus-visible:outline-primary" onClick={() => { const issue = paneState.issue!; if (issue.closePaneId) { void paneNavigation.close(issue.closePaneId); return; } void openResourceById(issue.id, { ...issue.options, ...(issue.limit ? { destination: 'here' as const } : {}), throwOnFailure: false }); }}>{paneState.issue.limit ? 'Open here' : 'Retry'}</button>}
+        {!paneState.issue.unavailable && <button className="rounded border border-border px-3 py-1 focus-visible:outline-primary" onClick={() => { const issue = paneState.issue!; if (issue.closePaneId) { void (issue.closeSession ? paneNavigation.closeSession(issue.closePaneId) : paneNavigation.close(issue.closePaneId)); return; } void openResourceById(issue.id, { ...issue.options, ...(issue.limit ? { destination: 'here' as const } : {}), throwOnFailure: false }); }}>{paneState.issue.limit ? 'Open here' : 'Retry'}</button>}
         <button aria-label="Dismiss navigation message" onClick={paneNavigation.dismissIssue}><X size={16} /></button>
       </div>}
       {notice && <div role="alert" className="z-[1200] flex items-center gap-3 bg-red-950 p-3 text-sm text-white">
@@ -1367,10 +1399,11 @@ export default function Dashboard() {
           <div className="workspace-view h-full" hidden={libraryVisible}>
           <div className="flex h-full min-h-0 flex-col">
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
+            {activePaneId&&<button className="library-button" onClick={()=>void paneNavigation.close(activePaneId)}>Close pane</button>}
             {activeNoteId&&resourceDetails[activeNoteId]&&<button className="library-button" onClick={()=>setReferenceTarget(resourceDetails[activeNoteId])}>References</button>}
           </JourneyBar>}
           <div className="min-h-0 flex-1 relative">
-            <WorkspacePaneLayout transparency={uiTransparency} paneIds={openWorkspaceNotes.map(note => note.paneId)} focusedId={activePaneId} animationMode={localSettings.animationMode}>
+            <WorkspacePaneLayout transparency={uiTransparency} paneIds={openWorkspaceNotes.map(note => note.slotId!)} focusedId={openWorkspaceNotes.find(note=>note.paneId===activePaneId)?.slotId ?? null} animationMode={localSettings.animationMode}>
               {openWorkspaceNotes.map((note, index) => (
                 <div
                   key={note.paneId}
