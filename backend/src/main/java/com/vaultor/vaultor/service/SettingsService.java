@@ -127,11 +127,11 @@ public class SettingsService {
         }
 
         int maxOpenNotes = incoming.maxOpenNotes() == null ? 2 : Math.max(1, Math.min(3, incoming.maxOpenNotes()));
-        String openBehavior = "replace".equalsIgnoreCase(incoming.openBehavior()) ? "replace" : "split";
+        String noteOpening = "reuse".equals(incoming.noteOpening()) ? "reuse" : "fill";
         int autosaveDelay = incoming.autosaveDelay() == null ? 0 : Math.max(0, incoming.autosaveDelay());
         boolean focusMode = incoming.focusMode() != null && incoming.focusMode();
 
-        return new WorkspaceSettings(maxOpenNotes, openBehavior, autosaveDelay, focusMode);
+        return new WorkspaceSettings(maxOpenNotes, noteOpening, autosaveDelay, focusMode);
     }
 
     private LocalSettings normalizeLocalSettings(LocalSettings incoming) {
@@ -198,7 +198,7 @@ public class SettingsService {
     }
 
     public static WorkspaceSettings defaultWorkspaceSettings() {
-        return new WorkspaceSettings(2, "split", 0, false);
+        return new WorkspaceSettings(2, "fill", 0, false);
     }
 
     public static LocalSettings defaultLocalSettings() {
@@ -222,7 +222,7 @@ public class SettingsService {
 
     public record WorkspaceSettings(
             Integer maxOpenNotes,
-            String openBehavior,
+            @com.fasterxml.jackson.annotation.JsonAlias("openBehavior") String noteOpening,
             Integer autosaveDelay,
             Boolean focusMode
     ) {}

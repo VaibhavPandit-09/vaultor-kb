@@ -1,3 +1,4 @@
+import { frameResizeObserver } from './frameResizeObserver';
 import { useEffect, type RefObject } from 'react';
 
 /** One bounded scroll signal. Never owns React, queries, editor or focus state. */
@@ -66,7 +67,7 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
     schedule();
   };
   const measure = () => { measureTravel(); measureActions(); };
-  const observer = new ResizeObserver(measure);
+  const observer = frameResizeObserver(measure);
   const observeContent = () => {
     observer.disconnect(); observer.observe(viewport);
     // Header shrink and bottom compensation cancel. Observe content changes,

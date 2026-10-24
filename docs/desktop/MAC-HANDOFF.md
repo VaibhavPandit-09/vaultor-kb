@@ -2,6 +2,10 @@
 
 Reviewed 2026-10-24. Mac arm64 0.18.1 qualification is complete and published. Both Windows x64 and Mac Apple Silicon pairs are fully qualified and published on the immutable `v0.18.1` release (`f8bd4743c2ee4225cc1597ddc16ddcfee06bca8e`), and the release is promoted to Latest. See [0.18.1 release ledger](releases/v0.18.1.md) for full qualification evidence, hashes, and platform verification.
 
+## 0.18.2 pending qualification
+
+Windows0.18.2 is the navigation/diagnostics patch; native Mac access was unavailable on2026-10-24 (trusted endpoint connection timed out). Keep complete-platform Latest at0.18.1. On arranged Apple Silicon access, check out immutable v0.18.2 and verify its exact source hash against the release ledger. Preserve package/lock0.18.2 and original signing identity. Build fresh UI/server/arm64 runtime and DMG using RELEASE-PROCESS.md. Run packaged native-navigation-check (Fill/reuse, real browser delivery classification, genuine error/save conflict, resize/scroll, reduced motion and restore), native-session-check, native-collection-check, first/save/PDF/relaunch, mount/codesign and original-key sidecar verification. Add only the absent DMG/sidecar using --publish --add-platform from that tag. Download/verify both public platform pairs and updater discovery before explicitly promoting Latest. Do not move the tag or replace Windows bytes; source corrections require another version. No Mac0.18.2 result is claimed.
+
 ## 0.18.1 Mac qualification summary
 
 On an arranged Apple Silicon Mac mini (macOS 27.0.0 arm64, Temurin OpenJDK 25+36, Node v22.16.0), verified clean immutable `v0.18.1` source. Obtained the matching original private release key privately outside Git. Built fresh UI, embedded backend JAR and pinned arm64 JRE into original-key `Vaultor-0.18.1-mac-arm64.dmg` (280,180,540 bytes, SHA256 `ac61e4d95d3c8d2ff0e54eec63165b70f49f04cdd54dcddddfe105f1c9d41712`) and `.dmg.vaultor.json`. Verified ad-hoc codesign (`codesign --verify --deep --strict`), valid DMG CRC32 checksums (`hdiutil verify`), read-only mount, Applications symlink and standard Gatekeeper consent.

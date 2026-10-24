@@ -55,4 +55,12 @@ class SidebarSettingsTest {
         assertEquals("os",service.getSettings().local().get("device").theme());
     }
 
+    @Test void noteOpeningMigratesLegacyDefaultsAndPersistsExplicitReuse() {
+        var repository=mock(SettingRepository.class);var stored=new AtomicReference<Setting>();
+        when(repository.findById(anyString())).thenAnswer(call->Optional.ofNullable(stored.get()));when(repository.save(any(Setting.class))).thenAnswer(call->{stored.set(call.getArgument(0));return stored.get();});
+        var mapper=new ObjectMapper();var service=new SettingsService(repository,mapper);
+        service.patch(mapper.readTree("{\"workspace\":{\"openBehavior\":\"replace\"}}"));assertEquals("fill",service.getSettings().workspace().noteOpening());
+        service.patch(mapper.readTree("{\"workspace\":{\"noteOpening\":\"reuse\"}}"));assertEquals("reuse",new SettingsService(repository,mapper).getSettings().workspace().noteOpening());assertFalse(mapper.writeValueAsString(service.getSettings()).contains("openBehavior"));
+    }
+
 }

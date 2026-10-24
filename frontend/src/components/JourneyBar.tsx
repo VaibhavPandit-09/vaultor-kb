@@ -1,3 +1,4 @@
+import { frameResizeObserver } from '../lib/frameResizeObserver';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, ChevronRight, MoreHorizontal } from 'lucide-react';
@@ -30,7 +31,7 @@ export default function JourneyBar({ pane, motion, animationMode, onJump, childr
   useLayoutEffect(() => {
     const element=trail.current;if(!element)return;
     const reveal=()=>{const selected=element.querySelector<HTMLElement>('[aria-current="step"]');if(!selected)return;const bounds=element.getBoundingClientRect(),item=selected.getBoundingClientRect();if(item.right>bounds.right)element.scrollLeft+=item.right-bounds.right;else if(item.left<bounds.left)element.scrollLeft-=bounds.left-item.left;};
-    reveal();const observer=new ResizeObserver(reveal);observer.observe(element);return()=>observer.disconnect();
+    reveal();const observer=frameResizeObserver(reveal);observer.observe(element);return()=>observer.disconnect();
   },[pane.paneId,current.visitId]);
   return <nav aria-label="Note journey" className="journey-bar" data-speed={animationMode}>
     <div className="journey-controls">

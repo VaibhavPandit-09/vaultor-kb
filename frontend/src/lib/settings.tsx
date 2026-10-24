@@ -31,7 +31,7 @@ import {
 
 export type WorkspaceSettings = {
   maxOpenNotes: number;
-  openBehavior: 'replace' | 'split';
+  noteOpening: 'fill' | 'reuse';
   autosaveDelay: number;
   focusMode: boolean;
 };
@@ -88,7 +88,7 @@ const LEGACY_SIDEBAR_STORAGE_KEY = 'vaultor_sidebar_collapsed';
 
 const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
   maxOpenNotes: 2,
-  openBehavior: 'replace',
+  noteOpening: 'fill',
   autosaveDelay: 0,
   focusMode: false,
 };
@@ -478,7 +478,7 @@ function normalizeSettingsDocument(input: Partial<SettingsDocument> | null | und
 function normalizeWorkspaceSettings(input: Partial<WorkspaceSettings> | null | undefined): WorkspaceSettings {
   return {
     maxOpenNotes: Math.max(1, Math.min(3, Number(input?.maxOpenNotes ?? DEFAULT_WORKSPACE_SETTINGS.maxOpenNotes))),
-    openBehavior: 'replace', // Legacy split preference is retired; splitting is always explicit.
+    noteOpening: input?.noteOpening === 'reuse' ? 'reuse' : 'fill', // Retired openBehavior values migrate to Fill.
     autosaveDelay: Math.max(0, Number(input?.autosaveDelay ?? DEFAULT_WORKSPACE_SETTINGS.autosaveDelay)),
     focusMode: Boolean(input?.focusMode),
   };

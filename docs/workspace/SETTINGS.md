@@ -1,6 +1,6 @@
 # Settings
 
-Reviewed 2026-10-15. Settings is a focused window over the current workspace. Sprint 1 of the 0.4.0 update replaces nested cards with flat rows; managed images and expressive Smooth motion complete the coordinated 0.4.0 update. These controls ship in 0.4.0; installed older versions retain their previous UI until updating.
+Reviewed 2026-10-24. Settings is a focused window over the current workspace. Sprint 1 of the 0.4.0 update replaces nested cards with flat rows; managed images and expressive Smooth motion complete the coordinated 0.4.0 update. These controls ship in 0.4.0; installed older versions retain their previous UI until updating.
 
 ## Navigation and controls
 
@@ -9,6 +9,8 @@ The window opens to Appearance with focus in global search. Its four categories 
 The header and category navigation remain fixed. Only settings content scrolls. The current redesign candidate caps the canvas at1000×660px and the actual available height, reserving40px for native desktop controls; compact header/rail and14px row padding reclaim vertical space. Narrow rows use12px padding and the existing category selector. Category/search ownership and setting scopes are unchanged. Narrow windows replace the rail with a native category selector and stack controls below descriptions. Theme choices and two-choice controls are radio groups with arrow/Home/End keys; accent swatches have accessible names and roving keyboard focus. Focus mode is a switch. Numeric sliders also offer direct input; blur/Enter commits values within bounds and steps, invalid entries remain local with feedback linked through aria-describedby, and composition does not submit. Autosave accepts 0–1000 ms in steps of 100; transparency accepts 60–100% in steps of 5.
 
 Appearance contains theme, accent, density, animation feel and transparency. Workspace contains pane capacity, direct-open behavior, autosave delay and focus mode. Layout & previews contains sidebar and file-preview modes. Keyboard exposes every configurable app shortcut using existing platform-aware conflict/reserved-key validation. Editing a shortcut affects the current platform. Escape cancels recording before closing the window; Tab ends recording without becoming a shortcut.
+
+Opening new notes is a workspace preference: **Fill available panes, then replace** (default) or **Always reuse focused pane**. `noteOpening` persists `fill`/`reuse`; old `openBehavior` values migrate to fill and are not serialized again. Maximum visible panes remains a ceiling of 1–3, without empty startup panes. [NAVIGATION.md](NAVIGATION.md) owns placement and responsive behavior.
 
 ## Scope, saving and resets
 

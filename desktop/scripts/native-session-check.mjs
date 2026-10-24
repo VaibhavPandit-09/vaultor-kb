@@ -35,8 +35,15 @@ export async function runSessionCheck(window, directory, owned) {
     assert.ok(['trashed','restored','purged'].includes(result[0].status));
   };
   window.setSize(1800,950);window.showInactive();nativeTheme.themeSource='dark';
-  await request('/settings','PATCH',{workspace:{maxOpenNotes:3,autosaveDelay:1000}});
+  await request('/settings','PATCH',{workspace:{maxOpenNotes:3,noteOpening:'reuse',autosaveDelay:1000}});
   await evaluate("window.dispatchEvent(new Event('vaultor:settings-refresh'))");
+  // Confirm the settings through their product controls before exercising placement.
+  await evaluate("document.querySelector('button[title=\"Settings\"]').click()");await wait("document.querySelector('[role=dialog]')");await click('button','Workspace');
+  await wait("document.querySelector('[role=radiogroup][aria-label=\"Maximum visible panes\"]')");
+  await evaluate("[...document.querySelectorAll('[role=radiogroup][aria-label=\"Maximum visible panes\"] button')].find(b=>b.textContent==='3').click()");
+  await evaluate("[...document.querySelectorAll('[role=radiogroup][aria-label=\"Opening new notes\"] button')].find(b=>b.textContent==='Always reuse focused pane').click()");
+  await wait("document.querySelector('[role=radiogroup][aria-label=\"Maximum visible panes\"] [aria-checked=true]')?.textContent==='3'");
+  await evaluate("document.querySelector('[aria-label=\"Close settings\"]').click()");
   const notes=[];
   for(let i=0;i<8;i++)notes.push(await request('/resources','POST',{type:'note',title:'Session '+i,content:{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Disposable session body '+i}]}]}}));
   const first=await request('/resources/'+notes[0].id);

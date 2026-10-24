@@ -1,3 +1,4 @@
+import { frameResizeObserver } from '../lib/frameResizeObserver';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { attachLibraryCompression } from '../lib/useLibraryCompression';
@@ -23,10 +24,11 @@ export default function NoteOrientation({ identity, children, status, tagCount }
       button.setAttribute('aria-expanded', String(!folded));
     };
     const measure = () => {
-      viewport.style.setProperty('--note-organization-height', `${content.firstElementChild?.scrollHeight ?? 0}px`);
+      const height=`${content.firstElementChild?.scrollHeight ?? 0}px`;
+      if(viewport.style.getPropertyValue('--note-organization-height')!==height)viewport.style.setProperty('--note-organization-height',height);
     };
     measure();
-    const observer = new ResizeObserver(measure);
+    const observer = frameResizeObserver(measure);
     if (content.firstElementChild) observer.observe(content.firstElementChild);
     const stop = attachLibraryCompression(viewport, root, { pinHeaderFocus: true, onProgress: update });
     return () => { stop(); observer.disconnect(); viewport.style.removeProperty('--note-organization-height'); };

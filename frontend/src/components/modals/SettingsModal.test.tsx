@@ -13,7 +13,7 @@ beforeEach(() => {
   localStorage.setItem('vaultor_device_id', 'test-device');
   vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => setTimeout(() => callback(0), 0));
-  doc = { workspace: { maxOpenNotes: 2, openBehavior: 'split', autosaveDelay: 0, focusMode: false }, local: { other: { theme: 'dark' } }, keybindings: { toggleSidebar: { mac: 'Mod+Alt+Z' } } };
+  doc = { workspace: { maxOpenNotes: 2, noteOpening: 'fill', autosaveDelay: 0, focusMode: false }, local: { other: { theme: 'dark' } }, keybindings: { toggleSidebar: { mac: 'Mod+Alt+Z' } } };
   vi.mocked(api.get).mockImplementation(async () => ({ data: doc }));
   vi.mocked(api.patch).mockImplementation(async (_url, patch) => ({ data: doc = mergeSettingsPatch(doc as SettingsPatch, patch as SettingsPatch) as Partial<SettingsDocument> }));
 });
@@ -66,7 +66,7 @@ it('keeps numeric edits valid and changes workspace controls with workspace-only
   fireEvent.change(number, { target: { value: '500' } }); fireEvent.keyDown(number, { key: 'Enter', isComposing: true });
   expect(doc.workspace?.autosaveDelay ?? 0).toBe(0);
   fireEvent.keyDown(number, { key: 'Enter' }); await saved();
-  expect(doc.workspace).toMatchObject({ maxOpenNotes: 3, openBehavior: 'split', focusMode: true, autosaveDelay: 500 });
+  expect(doc.workspace).toMatchObject({ maxOpenNotes: 3, noteOpening: 'fill', focusMode: true, autosaveDelay: 500 });
   for (const [, patch] of vi.mocked(api.patch).mock.calls) expect(Object.keys(patch as object)).toEqual(['workspace']);
 });
 it('retains a failed setting and retries the same scoped change', async () => {
@@ -114,7 +114,7 @@ it('uses radio arrow keys and wraps dialog Tab while restoring focus after click
 });
 
 it.each(['Reset workspace behavior', 'Reset keyboard shortcuts', 'Reset all settings'])('confirms %s and preserves its advertised boundaries', async label => {
-  doc.workspace = { maxOpenNotes: 3, openBehavior: 'replace', autosaveDelay: 0, focusMode: false };
+  doc.workspace = { maxOpenNotes: 3, noteOpening: 'reuse', autosaveDelay: 0, focusMode: false };
   doc.local = { other: { theme: 'dark' }, 'test-device': { theme: 'oled' } };
   doc.keybindings = { toggleSidebar: { mac: 'Mod+Alt+Z', windows: 'Mod+Alt+Y' } };
   await open();
@@ -138,4 +138,9 @@ it('confirms a single shortcut reset without resetting the rest of the keyboard'
   fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Reset' })); await saved();
   expect(doc.keybindings?.toggleSidebar).toEqual({ windows: 'Mod+Alt+B', mac: 'Mod+Alt+Z' });
   expect(doc.keybindings?.commandPalette?.windows).toBe('Mod+Alt+K');
+});
+
+it('persists Fill or Reuse in one workspace opening preference',async()=>{
+ await open();category('Workspace');const group=screen.getByRole('radiogroup',{name:'Opening new notes'});expect(within(group).getByRole('radio',{name:'Fill available panes, then replace'}).getAttribute('aria-checked')).toBe('true');
+ fireEvent.click(within(group).getByRole('radio',{name:'Always reuse focused pane'}));await saved();expect(doc.workspace?.noteOpening).toBe('reuse');expect(screen.getAllByRole('radiogroup',{name:'Opening new notes'})).toHaveLength(1);
 });

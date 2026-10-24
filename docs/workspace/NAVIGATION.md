@@ -1,6 +1,6 @@
 # Open Notes, viewing panes and reading journeys
 
-Reviewed 2026-10-23 for desktop/browser 0.17.0. [SESSIONS.md](SESSIONS.md) owns persistence and protected recovery; [RESOURCE-LIFECYCLE.md](RESOURCE-LIFECYCLE.md) owns Trash/Restore/purge. Android navigation is unchanged.
+Reviewed 2026-10-24 for desktop/browser 0.18.2. [SESSIONS.md](SESSIONS.md) owns persistence and protected recovery; [RESOURCE-LIFECYCLE.md](RESOURCE-LIFECYCLE.md) owns Trash/Restore/purge. Android navigation is unchanged.
 
 ## State and ownership
 
@@ -10,11 +10,11 @@ Session order is stable opening order, without rows moving beneath a pointer on 
 
 ## Direct opening, switching and splitting
 
-Library, Search/Ctrl+K, pins, Recent, creation/imports, references and Open Notes use the same opening coordinator. Ordinary direct opening loads immediately into the focused viewing slot, saving the departing note first. The displaced session remains in Open Notes. Five, seven or more sessions do not consume extra panes. An already open current destination focuses its existing session without resetting its journey, cursor or caret; if already visible, focus moves to that pane. There is no ordinary pane-capacity prompt.
+Library, Search/Ctrl+K, pins, Recent, creation/imports, references and Open Notes use the same opening coordinator. Ordinary direct opening defaults to **Fill available panes, then replace**. It adds a pane while below both the configured maximum and the existing side-by-side capacity (workspace width >1200px: three, >850px: two, otherwise one). At capacity it reuses the focused viewing slot, saving the departing note first. **Always reuse focused pane** skips automatic filling. Placement is rechecked after asynchronous loading and save barriers. The displaced session remains in Open Notes. Five, seven or more sessions do not consume extra panes. An already open current destination focuses its existing session without resetting its journey, cursor or caret; if already visible, focus moves to that pane. There is no ordinary pane-capacity prompt.
 
 Open Notes lives in the existing sidebar's shared secondary scroll area. Rows identify active state and visible pane number, offer Close, and have a contextual Close other notes action. The section menu offers Close all notes. At more than five sessions a title filter appears; an active filter stays editable as the collection shrinks. Menus retain centralized Escape/portal/focus handling; native buttons support Tab, Enter and Space. Ctrl+K's Open suggestions include inactive sessions too.
 
-Splitting is deliberate: use **Open in another pane** on an inactive session's menu, or Ctrl/Cmd-click a linked destination. Visible panes are bounded to 1–3 by **Maximum visible panes** (the existing shared `maxOpenNotes` wire key). At capacity, an explicit split keeps the arrangement and shows a dismissible capacity message; ordinary opening still reuses the focused slot. Lowering the maximum does not discard live assignments; restoring retains excess sessions but caps visible assignments. The obsolete Open behavior control is removed. Its legacy `openBehavior` setting normalizes to replace, with no backend/API migration or setting write required; automatic splitting is retired.
+Splitting is deliberate: use **Open in another pane** on an inactive session's menu, or Ctrl/Cmd-click a linked destination. Visible panes are bounded to 1–3 by **Maximum visible panes** (the existing shared `maxOpenNotes` wire key). At capacity, an explicit split falls back to the focused slot without a confirmation. Explicit splitting can use responsive pane navigation; ordinary clicks never add a hidden pane. Lowering the maximum does not discard live assignments; restoring retains excess sessions but caps visible assignments. The workspace-wide **Opening new notes** preference uses `noteOpening: fill | reuse`, default fill. Legacy `openBehavior: split | replace` migrates deliberately to fill; the old control/key is no longer emitted. Narrowing preserves sessions and assignments, with existing responsive pane navigation.
 
 Files remain temporary side/modal previews, never note sessions or journey visits, and retain source-focus restoration. Unsupported resource kinds stay identifiable without guessed editing/preview behavior.
 

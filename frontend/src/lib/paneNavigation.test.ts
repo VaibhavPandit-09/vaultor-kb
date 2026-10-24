@@ -4,7 +4,7 @@ import { PaneNavigation, ResourceUnavailableError } from './paneNavigation';
 import type { Resource } from '../types';
 const note = (id: string) => ({ id, title: id, type: 'note', content: '{}' } as Resource);
 function setup() {
-  const dep = { load: vi.fn(async (id: string) => note(id)), save: vi.fn(async (_id: string) => {void _id;}), preview: vi.fn(), committed: vi.fn(), max: 3, behavior: 'split' as 'split' | 'replace' };
+  const dep = { load: vi.fn(async (id: string) => note(id)), save: vi.fn(async (_id: string) => {void _id;}), preview: vi.fn(), committed: vi.fn(), max: 3, behavior: 'replace' as 'fill' | 'replace' };
   return { dep, nav: new PaneNavigation(() => dep) };
 }
 describe('pane navigation commits', () => {
@@ -31,12 +31,11 @@ describe('pane navigation commits', () => {
     expect(dep.save).not.toHaveBeenCalled(); expect(nav.snapshot().activePaneId).toBe(second); expect(nav.snapshot().panes[0].history.map(v => v.resourceId)).toEqual(['A']);
     nav.activate(second); expect(nav.snapshot().panes[0].history.map(v => v.resourceId)).toEqual(['A']);
   });
-  it('does not evict at capacity and supports explicit open here', async () => {
+  it('reuses the focused slot at capacity without a replacement confirmation', async () => {
     const { nav, dep } = setup(); dep.max = 1; await nav.open('A');
     const pane = nav.snapshot().activePaneId!;
     await nav.open('B', { sourcePaneId: pane, destination: 'new', intent: 'link' });
-    expect(nav.snapshot().panes[0].id).toBe('A'); expect(nav.snapshot().issue?.limit).toBe(true); expect(dep.save).not.toHaveBeenCalled();
-    await nav.open('B', { ...nav.snapshot().issue!.options, destination: 'here' });
+    expect(nav.snapshot().issue).toBeNull(); expect(dep.save).toHaveBeenCalledWith('A');
     expect(nav.snapshot().panes[0].id).toBe('B');
   });
   it('keeps note and journey on failed saves and retries only that note', async () => {

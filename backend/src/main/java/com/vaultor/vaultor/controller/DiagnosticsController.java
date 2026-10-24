@@ -21,14 +21,15 @@ public class DiagnosticsController {
     private final Deque<Event> events = new ArrayDeque<>();
     @GetMapping(value="/openapi.json", produces="application/json")
     public org.springframework.core.io.Resource openapi() { return new org.springframework.core.io.ClassPathResource("openapi.json"); }
-    public record Event(String id, String timestamp, String action, String route, String message, String stack, String requestId, String build, String serverBuild, Integer apiProtocolVersion, Integer connectionEpoch) {}
+    public record Event(String id, String timestamp, String action, String route, String message, String stack, String requestId, String build, String serverBuild, Integer apiProtocolVersion, Integer connectionEpoch, String severity,String category,Integer occurrences) {}
     @PostMapping("/diagnostics/events") public synchronized void collect(@RequestBody List<Event> incoming) {
         if(incoming.size()>20) throw new IllegalArgumentException("At most 20 diagnostic events per batch");
         for(var e:incoming) {
             if(e==null) throw new IllegalArgumentException("Diagnostic events must be objects");
-            var safe=new Event(cut(e.id(),80),Instant.now().toString(),cut(e.action(),120),cut(e.route(),200),cut(e.message(),1000),cut(e.stack(),6000),cut(e.requestId(),80),cut(e.build(),80),cut(e.serverBuild(),80),e.apiProtocolVersion(),e.connectionEpoch());
+            var safe=new Event(cut(e.id(),80),Instant.now().toString(),cut(e.action(),120),cut(e.route(),200),cut(e.message(),1000),cut(e.stack(),6000),cut(e.requestId(),80),cut(e.build(),80),cut(e.serverBuild(),80),e.apiProtocolVersion(),e.connectionEpoch(),Set.of("info","warning","error","critical").contains(Objects.toString(e.severity(),""))?e.severity():"error",Set.of("layout","ui","application","save","recovery","integrity").contains(Objects.toString(e.category(),""))?e.category():"application",e.occurrences()==null?1:Math.max(1,Math.min(1000000,e.occurrences())));
             events.addLast(safe); while(events.size()>200) events.removeFirst();
-            log.warn("ui_error eventId={} action={} clientRequestId={} clientBuild={} clientProtocol={} message={} stack={}",safe.id(),safe.action(),safe.requestId(),safe.build(),safe.apiProtocolVersion(),safe.message(),safe.stack());
+            if(safe.severity().equals("info")){log.info("ui_notice eventId={} category={} occurrences={} message={}",safe.id(),safe.category(),safe.occurrences(),safe.message());continue;}
+            log.atLevel(safe.severity().equals("warning")?org.slf4j.event.Level.WARN:org.slf4j.event.Level.ERROR).log("ui_error eventId={} action={} clientRequestId={} clientBuild={} clientProtocol={} message={} stack={}",safe.id(),safe.action(),safe.requestId(),safe.build(),safe.apiProtocolVersion(),safe.message(),safe.stack());
         }
     }
     private String cut(String value,int max) { return value==null?"":value.substring(0,Math.min(max,value.length())); }

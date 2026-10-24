@@ -11,6 +11,7 @@ export class SaveCoordinator<T> {
   latest(id: string) { const e=this.entries.get(id); return e && e.version!==e.saved ? e.value : undefined; }
   version(id: string) { return this.entries.get(id)?.version ?? 0; }
   status(id: string): SaveStatus { return this.entries.get(id)?.status ?? 'saved'; }
+  failed() { return [...this.entries.values()].some(e=>e.status==='failed'); }
   dirty() { return [...this.entries.values()].some(e => e.version !== e.saved); }
   forget(id: string) { const e = this.entries.get(id); clearTimeout(e?.timer); this.entries.delete(id); }
   clear() { for (const id of this.entries.keys()) this.forget(id); }

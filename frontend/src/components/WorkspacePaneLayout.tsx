@@ -1,4 +1,6 @@
+import { frameResizeObserver } from '../lib/frameResizeObserver';
 import { Children, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { sideBySideCapacity } from '../lib/paneCapacity';
 import { motionProfile } from '../lib/motion';
 import { capturePaneReadingAnchors } from '../lib/paneReadingAnchor';
 
@@ -13,14 +15,14 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
  const key = JSON.stringify(paneIds);
  const added = paneIds.filter(id => !slots.includes(id));
  if (added.length) setSlots([...slots, ...added]);
- const compact = (paneIds.length === 2 && width <= 850) || (paneIds.length >= 3 && width <= 1200);
+ const compact = paneIds.length > sideBySideCapacity(width);
  const available = Math.max(0, width - 32 - (compact ? 0 : (paneIds.length > 1 ? paneIds.length * 16 : 0)));
  const duration = motionProfile(animationMode, reduced).panel;
  const nodeById = new Map(paneIds.map((id, index) => [id, Children.toArray(children)[index]]));
  useLayoutEffect(() => {
   const element = root.current; if (!element) return;
   const measure = () => { if (element.clientWidth) setWidth(element.clientWidth); };
-  measure(); const observer = new ResizeObserver(measure); observer.observe(element);
+  measure(); const observer = frameResizeObserver(measure); observer.observe(element);
   const preference = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   const motion = () => setReduced(Boolean(preference?.matches));
   motion(); preference?.addEventListener('change', motion);
@@ -44,7 +46,7 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
   const element = root.current; if (!element) return;
   if (!held.current) { ignoredViewport.current = null; restoreAnchor.current = capturePaneReadingAnchors(element); }
   anchorUntil.current = performance.now() + duration + 60;
-  const observer = new ResizeObserver(() => {
+  const observer = frameResizeObserver(() => {
    if (performance.now() > anchorUntil.current) restoreAnchor.current = null;
    if (!held.current) restoreAnchor.current?.(ignoredViewport.current);
   });

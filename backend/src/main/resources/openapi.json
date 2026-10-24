@@ -9892,18 +9892,21 @@
             "minimum": 1,
             "maximum": 3
           },
-          "openBehavior": {
-            "enum": [
-              "split",
-              "replace"
-            ]
-          },
           "autosaveDelay": {
             "type": "integer",
             "minimum": 0
           },
           "focusMode": {
             "type": "boolean"
+          },
+          "noteOpening": {
+            "type": "string",
+            "enum": [
+              "fill",
+              "reuse"
+            ],
+            "default": "fill",
+            "description": "Opening new notes; legacy openBehavior inputs migrate to fill."
           }
         },
         "required": []

@@ -40,10 +40,10 @@ it('freezes an interrupted width until pointerup and click complete, including a
 });
 it('keeps narrow peers mounted and inert, and restores them without remounting on resize',()=>{
  const result=render(view(['a','b'])); const input=result.getByLabelText('a');
- width=800; act(()=>resizes.forEach(fn=>fn())); result.rerender(view(['a','b'],'b'));
+ width=800; act(()=>resizes.forEach(fn=>fn())); tick(); result.rerender(view(['a','b'],'b'));
  const slot=result.container.querySelector<HTMLElement>('[data-slot-id="a"]')!;
  expect(slot.hidden).toBe(true); expect(slot.hasAttribute('inert')).toBe(true); expect(result.getByLabelText('a')).toBe(input);
- width=1600; act(()=>resizes.forEach(fn=>fn())); expect(slot.hidden).toBe(false); expect(slot.hasAttribute('inert')).toBe(false);
+ width=1600; act(()=>resizes.forEach(fn=>fn())); tick(); expect(slot.hidden).toBe(false); expect(slot.hasAttribute('inert')).toBe(false);
 });
 it('uses immediate reduced-motion allocation and removes the last closed editor before its empty slot',()=>{
  reduced=true; const result=render(view(['a'])); result.rerender(view(['a','b'],'b'));
@@ -63,7 +63,7 @@ it('holds open picker geometry and releases it after dismissal', async()=>{
 
 it('does not begin visual departure while the navigation save barrier is pending or failed', async()=>{
  const save=vi.fn(async()=>{});
- const nav=new PaneNavigation(()=>({load:async(id:string)=>({id,title:id,type:'note',content:'{}'} as Resource),save,preview:()=>{},committed:()=>{},max:3,behavior:'split'}));
+ const nav=new PaneNavigation(()=>({load:async(id:string)=>({id,title:id,type:'note',content:'{}'} as Resource),save,preview:()=>{},committed:()=>{},max:3,behavior:'replace'}));
  await nav.open('a'); await nav.open('b');
  function Harness(){const state=useSyncExternalStore(nav.subscribe,nav.snapshot);return <WorkspacePaneLayout paneIds={state.panes.map(p=>p.paneId)} focusedId={state.activePaneId} animationMode="smooth">{state.panes.map(p=><input key={p.paneId} aria-label={p.id}/>)}</WorkspacePaneLayout>;}
  const result=render(<Harness/>), id=nav.snapshot().activePaneId!, editor=result.getByLabelText('b');

@@ -22,6 +22,7 @@ import WorkspacePaneLayout from '../components/WorkspacePaneLayout';
 import NoteOrientation from '../components/NoteOrientation';
 import SidebarFrame from '../components/SidebarFrame';
 import JourneyViewport from '../components/JourneyViewport';
+import { sideBySideCapacity } from '../lib/paneCapacity';
 import { PaneNavigation, ResourceUnavailableError, type OpenIntent } from '../lib/paneNavigation';
 import { SharedNoteDocuments } from '../lib/sharedNoteDocuments';
 import type { LinkedResourceIntent } from '../lib/resourceLinkNavigation';
@@ -87,6 +88,7 @@ import FileImportModal from '../components/modals/FileImportModal';
 import { prepareImport, type ImportSession } from '../lib/fileImports';
 import { pickFiles } from '../lib/filePicker';
 import { captureImportTarget } from '../lib/importTarget';
+import DiagnosticNotice from '../components/DiagnosticNotice';
 import { reportError } from '../lib/diagnostics';
 import AppModal from '../components/modals/AppModal';
 import CommandPaletteModal from '../components/modals/CommandPaletteModal';
@@ -140,6 +142,7 @@ export default function Dashboard() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [resourceDetails, setResourceDetails] = useState<Record<string, Resource>>({});
+  const workspaceElement=useRef<HTMLElement>(null);
   const navigationDependencies = useRef<ConstructorParameters<typeof PaneNavigation>[0] | null>(null);
   const [paneNavigation] = useState(() => new PaneNavigation(() => navigationDependencies.current!()));
   const paneState = useSyncExternalStore(paneNavigation.subscribe, paneNavigation.snapshot);
@@ -169,7 +172,7 @@ export default function Dashboard() {
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [notice, setNotice] = useState<DiagnosticEvent | null>(null);
   const [, saveChanged] = useState(0);
-  const [recovery] = useState(() => new NoteRecovery(localStore, () => saveChanged(v => v + 1), setSessionError, record => {
+  const [recovery] = useState(() => new NoteRecovery(localStore, () => saveChanged(v => v + 1), message=>{setSessionError(message);reportError('recovery.storage',new Error(message),undefined,false,{category:'recovery',severity:'critical'});}, record => {
     setRecoveryRecords(previous => [...previous.filter(r => r.key !== record.key), record]);
   }));
   const [saves] = useState(() => new SaveCoordinator<NoteDraft>(
@@ -177,7 +180,7 @@ export default function Dashboard() {
       const identity=identityRef.current;
       let saved:Resource;
       try {saved=await recovery.write(id, value, version, async revision => (await api.put<Resource>('/resources/' + id + '/note', value, {headers:{'If-Match':'"'+revision+'"'},backgroundDiagnostic:true,connectionEpoch:sourceEpoch})).data);}
-      catch(error){const record=recovery.current(id);if(record)setRecoveryRecords(items=>[...items.filter(r=>r.key!==record.key),record]);throw error;}
+      catch(error){reportError('note.save',error,undefined,true,{category:'save',severity:'error'});const record=recovery.current(id);if(record)setRecoveryRecords(items=>[...items.filter(r=>r.key!==record.key),record]);throw error;}
       setRecoveryRecords(items=>items.filter(r=>r.key!==('draft:'+identity?.id+':'+identity?.generation+':'+recovery.tabId+':'+id)));
       if(identity===identityRef.current)setResourceDetails(previous=>previous[id]?{...previous,[id]:{...previous[id],revision:saved.revision,updatedAt:saved.updatedAt}}:previous);
       return saved;
@@ -457,9 +460,9 @@ export default function Dashboard() {
       save: id => exportSaveRef.current(id),
       preview: (resource, sourcePaneId) => { previewSourcePane.current = sourcePaneId ?? null; openPreview(resource); markOpened(resource.id); },
       committed: (id, focus) => { if (focus) { setLibraryVisible(false); dismissPreview({ restoreFocus: false }); dispatch(setCurrentResourceId(id)); } markOpened(id); },
-      max: workspaceSettings.maxOpenNotes, behavior: workspaceSettings.openBehavior,
+      max: workspaceSettings.maxOpenNotes, behavior: workspaceSettings.noteOpening === 'reuse' ? 'replace' : 'fill', capacity:()=>sideBySideCapacity(workspaceElement.current?.clientWidth??0),
     });
-  }, [resourceDetails, openNotes, fetchResourceDetails, saves, openPreview, markOpened, dismissPreview, dispatch, workspaceSettings.maxOpenNotes, workspaceSettings.openBehavior]);
+  }, [resourceDetails, openNotes, fetchResourceDetails, saves, openPreview, markOpened, dismissPreview, dispatch, workspaceSettings.maxOpenNotes, workspaceSettings.noteOpening]);
   const openResourceById = useCallback((id: string, options?: OpenIntent) => paneNavigation.open(id, options), [paneNavigation]);
   const openLinkedResource = useCallback((request: LinkedResourceIntent) => { void paneNavigation.open(request.resourceId, request); }, [paneNavigation]);
   const activateOpenNote = useCallback((paneId: string, options?: { focus?: boolean }) => {
@@ -1334,12 +1337,7 @@ export default function Dashboard() {
         {!paneState.issue.unavailable && <button className="rounded border border-border px-3 py-1 focus-visible:outline-primary" onClick={() => { const issue = paneState.issue!; if (issue.closePaneId) { void (issue.closeSession ? paneNavigation.closeSession(issue.closePaneId) : paneNavigation.close(issue.closePaneId)); return; } void openResourceById(issue.id, { ...issue.options, ...(issue.limit ? { destination: 'here' as const } : {}), throwOnFailure: false }); }}>{paneState.issue.limit ? 'Open here' : 'Retry'}</button>}
         <button aria-label="Dismiss navigation message" onClick={paneNavigation.dismissIssue}><X size={16} /></button>
       </div>}
-      {notice && <div role="alert" className="z-[1200] flex items-center gap-3 bg-red-950 p-3 text-sm text-white">
-        <span>{notice.message} · {notice.requestId ?? notice.id}</span>
-        <button onClick={() => setDiagnosticsOpen(true)}>Details</button>
-        <button onClick={() => { void saves.flushAll().catch(() => {}); }}>Retry saves</button>
-        <button onClick={() => setNotice(null)}>Dismiss</button>
-      </div>}
+      {notice&&<DiagnosticNotice event={notice} saveFailed={saves.failed()} onDetails={()=>setDiagnosticsOpen(true)} onRetrySaves={()=>{void saves.flushAll().catch(()=>{});}} onDismiss={()=>setNotice(null)}/>}
       {reviewTarget!==undefined&&<ReviewInbox key={getConnection().epoch} resource={reviewTarget} onClose={()=>setReviewTarget(undefined)} onOpen={async id=>{await openResourceById(id,{throwOnFailure:true});const issue=paneNavigation.snapshot().issue;if(issue)throw new Error(issue.message);return ()=>{const state=paneNavigation.snapshot();if(state.panes.some(p=>p.id===id&&p.paneId===state.activePaneId))paneNavigation.activate(state.activePaneId!,true);else document.querySelector<HTMLElement>('.preview-shell button')?.focus({preventScroll:true});};}}/>}
       {referenceTarget&&<ResourceReferences resource={referenceTarget} localNotes={openNotes.filter((p,index,all)=>all.findIndex(other=>other.id===p.id)===index).flatMap(p=>{const draft=saves.latest(p.id)??recovery.current(p.id)?.value;return draft?[{id:p.id,title:draft.title,content:parseNoteContent(draft.content as Resource['content'])}]:[];})} onClose={()=>setReferenceTarget(null)}/>}
       {lifecycleTargets&&<ResourceLifecycleDialog resources={lifecycleTargets} action="trash" onBusy={setDeletePending} onClose={()=>setLifecycleTargets(null)}/>}
@@ -1385,7 +1383,7 @@ export default function Dashboard() {
           }}>{sidebarContent}</div>
         </SidebarFrame>
 
-        <main className="workspace-main min-w-0 flex-1 relative flex flex-col" data-pane-count={openWorkspaceNotes.length} data-narrow={narrowWorkspace} data-navigation-hidden={!sidebarVisible || isFloatingSidebarMode}>
+        <main ref={workspaceElement} className="workspace-main min-w-0 flex-1 relative flex flex-col" data-pane-count={openWorkspaceNotes.length} data-narrow={narrowWorkspace} data-navigation-hidden={!sidebarVisible || isFloatingSidebarMode}>
           <div className="workspace-compact-controls">
             {!libraryVisible && openWorkspaceNotes.length>1 && <label className="workspace-pane-switcher">Pane <select aria-label="Focused pane" value={activePaneId ?? ''} onChange={event=>activateOpenNote(event.target.value)}>{openWorkspaceNotes.map((note,index)=><option key={note.paneId} value={note.paneId}>{index+1} · {note.resource?.title ?? 'Untitled note'}</option>)}</select></label>}
           </div>

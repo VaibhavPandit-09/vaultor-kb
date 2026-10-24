@@ -45,9 +45,12 @@ class DesktopContractTest {
     }
     @Test void diagnosticsRetainSeparateVersionsAndBoundTheirText() {
         var controller = new DiagnosticsController(null,null,null,null,null,null,new BuildInformation("server"));
-        controller.collect(java.util.List.of(new DiagnosticsController.Event("id","", "action","/", "x".repeat(1200),"","request","client","server",1,2)));
+        controller.collect(java.util.List.of(new DiagnosticsController.Event("id","", "action","/", "x".repeat(1200),"","request","client","server",1,2,null,null,null)));
         var event = controller.recent().getFirst();
         assertEquals("client",event.build()); assertEquals("server",event.serverBuild());
+        assertEquals("error",event.severity());assertEquals("application",event.category());assertEquals(1,event.occurrences());
+        controller.collect(java.util.List.of(new DiagnosticsController.Event("layout","","browser.layout-delivery","/","ResizeObserver loop completed with undelivered notifications.","",null,"client","server",3,2,"info","layout",40)));
+        assertEquals("info",controller.recent().getLast().severity());assertEquals(40,controller.recent().getLast().occurrences());
         assertEquals(1,event.apiProtocolVersion()); assertEquals(1000,event.message().length());
     }
 }

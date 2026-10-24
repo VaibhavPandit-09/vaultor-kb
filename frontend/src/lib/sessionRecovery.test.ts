@@ -73,7 +73,7 @@ it('a late response from the replaced workspace cannot rebase its replacement',a
  const request=recovery.write('n',old,1,()=>new Promise(resolve=>{done=resolve;}));recovery.configure({...identity,generation:'new'},'tab');recovery.observe(resource('n','new-revision'));recovery.queued('n',{title:'new',content:{}},1);done(resource('n','old-response'));await request;expect(recovery.current('n')?.baseRevision).toBe('new-revision');
 });
 it('restoring pane state does not replay navigation, previews or save commands',async()=>{
- const {PaneNavigation}=await import('./paneNavigation');const load=vi.fn(),save=vi.fn(),preview=vi.fn(),committed=vi.fn();const navigation=new PaneNavigation(()=>({load,save,preview,committed,max:3,behavior:'split'}));const state=snapshot();
+ const {PaneNavigation}=await import('./paneNavigation');const load=vi.fn(),save=vi.fn(),preview=vi.fn(),committed=vi.fn();const navigation=new PaneNavigation(()=>({load,save,preview,committed,max:3,behavior:'replace'}));const state=snapshot();
  navigation.restore(state.panes,state.activePaneId,state.positions);expect(navigation.exportSession()).toEqual({sessions:state.panes,panes:state.panes.map(p=>({...p,slotId:p.paneId})),activePaneId:state.activePaneId,positions:state.positions});expect(load).not.toHaveBeenCalled();expect(save).not.toHaveBeenCalled();expect(preview).not.toHaveBeenCalled();expect(committed).not.toHaveBeenCalled();
 });
 it('malformed positions do not prevent access to independent recovery journals',async()=>{
@@ -84,7 +84,7 @@ it('malformed positions do not prevent access to independent recovery journals',
 
 it('v2 restores all sessions independently of one visible pane and round trips hidden journeys',async()=>{
  const {PaneNavigation}=await import('./paneNavigation');
- const navigation=new PaneNavigation(()=>({load:async id=>resource(id),save:async()=>{},preview:()=>{},committed:()=>{},max:1,behavior:'split'}));
+ const navigation=new PaneNavigation(()=>({load:async id=>resource(id),save:async()=>{},preview:()=>{},committed:()=>{},max:1,behavior:'replace'}));
  for(const id of ['a','b','c','d','e','f'])await navigation.open(id);
  const state:SessionSnapshot={...snapshot(),version:2,...navigation.exportSession()};
  const store=memory(),persistence=new SessionPersistence(store,'tab',vi.fn());await persistence.save(state,true);

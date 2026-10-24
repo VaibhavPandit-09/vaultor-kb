@@ -16,7 +16,7 @@ it('renders recent resources in server order with one bounded mixed query',async
  expect(screen.getAllByTitle(/ · /).map(button=>button.textContent)).toEqual(['New file','Older note']);
  expect(browseResources).toHaveBeenCalledTimes(1);
  expect(browseResources).toHaveBeenCalledWith({type:'all',sort:'recent',size:12},expect.any(AbortSignal));
- expect(report).toHaveBeenLastCalledWith(items);
+ await waitFor(()=>expect(report).toHaveBeenLastCalledWith(items));
 });
 it('keeps cached children mounted while collapsed or hidden and separates View all',()=>{
  const prefs=normalizeSidebarSections(undefined),change=vi.fn(),all=vi.fn();

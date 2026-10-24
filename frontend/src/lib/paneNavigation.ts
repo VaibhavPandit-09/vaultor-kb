@@ -9,7 +9,7 @@ export type Pane = { paneId: string; slotId?: string; id: string; selection?: { 
 export type OpenIntent = { sourcePaneId?: string; destination?: 'here' | 'new'; intent?: 'direct' | 'link' | 'history'; historyIndex?: number; focus?: boolean; throwOnFailure?: boolean };
 export type NavigationIssue = { message: string; id: string; options: OpenIntent; limit?: boolean; closePaneId?: string; closeSession?: boolean; unavailable?: boolean };
 type State = { sessions: Pane[]; panes: Pane[]; activePaneId: string | null; issue: NavigationIssue | null; focusPaneId: string | null; motion: 'forward' | 'back' | 'replace' | 'switch' };
-type Dependencies = { load: (id: string) => Promise<Resource | null>; save: (id: string) => Promise<void>; preview: (resource: Resource, sourcePaneId?: string) => void; committed: (id: string, focus: boolean) => void; max: number; behavior: 'split' | 'replace' };
+type Dependencies = { load: (id: string) => Promise<Resource | null>; save: (id: string) => Promise<void>; preview: (resource: Resource, sourcePaneId?: string) => void; committed: (id: string, focus: boolean) => void; max: number; behavior: 'fill' | 'replace'; capacity?: () => number };
 /** Pane mutations commit only after loading and the source save barrier succeed. */
 export class PaneNavigation {
   private state: State = { sessions: [], panes: [], activePaneId: null, issue: null, focusPaneId: null, motion: 'replace' };
@@ -113,7 +113,12 @@ export class PaneNavigation {
     const focusToken = ++this.focusSequence;
     const intent = options.intent ?? 'direct';
     if (intent === 'history' && (!source || options.historyIndex === source.cursor || source.history[options.historyIndex ?? -1]?.resourceId !== id || source.history[options.historyIndex ?? -1]?.unavailable)) return;
-    const destination = options.destination ?? 'here';
+    const placement = () => {
+      const latest=this.dependencies();
+      const desired=options.destination??(intent==='direct'&&latest.behavior==='fill'&&this.state.panes.length<Math.min(latest.max,latest.capacity?.()??latest.max)?'new':'here');
+      return desired==='new'&&source&&this.state.panes.length>=latest.max?'here':desired;
+    };
+    let destination = placement();
     const epoch = this.epoch, resourceVersion = this.unavailable.get(id);
     const key = sourcePaneId ?? 'workspace', token = ++this.sequence;
     this.requests.set(key, token);
@@ -128,11 +133,13 @@ export class PaneNavigation {
       if (resource.type !== 'note' && intent === 'history') throw new ResourceUnavailableError('This journey step is no longer a note.');
       if (resource.type !== 'note') { dep.preview(resource, sourcePaneId); return; }
       if (intent === 'link' && destination === 'here' && source?.id === id) return;
+      destination=placement();
       // Reopening preserves the existing journey, selection and visit identity.
       const existing = intent !== 'history' ? this.state.sessions.find(p => p.id === id) : undefined;
       if (existing) {
         if (source && source.paneId !== existing.paneId && !this.state.panes.some(p => p.paneId === existing.paneId) && destination === 'here') await dep.save(source.id);
         if (!valid()) return;
+        destination=placement();
         this.show(existing, sourcePaneId, destination, this.focusSequence === focusToken, options.focus !== false);
         return;
       }
@@ -141,6 +148,7 @@ export class PaneNavigation {
       }
       if (source && destination === 'here') await dep.save(source.id);
       if (!valid()) return;
+      destination=placement();
       // Capacity may have changed while another pane was loading/saving.
       if ((!source || destination === 'new') && this.state.panes.length >= this.dependencies().max) {
         this.patch({ issue: { message: 'Pane limit reached', id, options: { ...options, sourcePaneId }, limit: true } }); return;
