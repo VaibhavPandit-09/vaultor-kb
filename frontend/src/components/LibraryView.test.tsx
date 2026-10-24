@@ -122,9 +122,10 @@ it('transforms collection identity and actions without duplicating the long titl
  await screen.findByText('Note 0');
  const heading=screen.getByRole('heading',{name,level:1});
  expect(heading.getAttribute('title')).toBe(name);
- expect(screen.getAllByText(name)).toHaveLength(1);
+ expect(screen.getAllByRole('heading',{name})).toHaveLength(1);
+ expect(screen.getAllByText(name).filter(node=>!node.closest('[aria-hidden="true"]'))).toHaveLength(1);
  expect(view.container.querySelector('.collection-transform .library-orientation')?.contains(heading)).toBe(true);
- expect(screen.getByRole('button',{name:'+ Add resource'})).toBeTruthy();
+ expect(screen.getByRole('button',{name:'Add resource'})).toBeTruthy();
  fireEvent.click(screen.getByRole('button',{name:'Library'})); expect(changeScope).toHaveBeenCalledWith(null);
 });
 

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Vaultor API",
-    "version": "1.18.0",
+    "version": "1.18.1",
     "description": "Personal workspace with local owner access and opt-in host-approved LAN HTTPS. No accounts, master passwords or encrypted archives. See docs/security/HOST-ACCESS.md. Resource lifecycle protocol 3; workspace archives 3. Trash preserves originals; legacy destructive routes return 405. 0.6.0 adds category-filtered paging, saved-reference pages and bounded PNG thumbnails without a protocol/schema migration. 0.8.0 adds bounded isolated host workspaces with optional X-Vaultor-Workspace selection; missing scope always means the fixed legacy workspace. API protocol3/archive3 remain unchanged. 0.9.0 exposes owner grant inspection for client workspace selectors; scope and protocol remain unchanged. 0.10.0 adds owner-only staged import-as-new and native snapshot forks; protocol3/archive3 unchanged. 0.11.0 adds companion checkpoint schema1: immutable hashed inventory/payloads and bounded range resume; protocol3/archive3 unchanged. Android offline storage follows separately. 0.12.0 adds workspace-scoped review evidence/status (reviews:1). API protocol3 remains compatible; workspace archive4 includes portable reviews and rejects unsupported versions. Android alpha.11 remains compatible; capture/sync follows in R6. 0.15.0 adds collectedImports:1, bounded host text/Markdown conversion and immutable receipts, original-byte provenance in archive5, and paired-device ZIP proposals with separate local-owner inspection/authorization. Protocol3 remains compatible; readers of archive4 or below reject new archive5 packages. 0.18.0 adds collection hierarchy and guarded folder-import relationship finalization. Flat full/partial exports retain schemas 5/6; hierarchy-bearing exports use 7/8. Nested offline companion checkpoints are refused until a hierarchy-aware mobile client exists."
   },
   "servers": [
@@ -9917,8 +9917,19 @@
           "local": {
             "type": "object",
             "additionalProperties": {
-              "type": "object"
-            }
+              "type": "object",
+              "properties": {
+                "collectionView": {
+                  "type": "string",
+                  "enum": [
+                    "all",
+                    "hierarchy"
+                  ],
+                  "default": "all"
+                }
+              }
+            },
+            "description": "Device-keyed presentation settings. collectionView is all (default) or hierarchy; persisted within the selected workspace and excluded from portable archives."
           },
           "keybindings": {
             "type": "object",

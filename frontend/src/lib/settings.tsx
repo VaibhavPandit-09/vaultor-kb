@@ -43,6 +43,7 @@ export type LocalSettings = {
   animationMode: 'snappy' | 'smooth';
   previewMode: 'side' | 'modal';
   sidebarMode: 'fixed' | 'floating';
+  collectionView: 'all' | 'hierarchy';
   uiTransparency: number;
   sidebarCollapsed: boolean;
   sidebarSections: SidebarSections;
@@ -99,6 +100,7 @@ const DEFAULT_LOCAL_SETTINGS: LocalSettings = {
   animationMode: 'snappy',
   previewMode: 'side',
   sidebarMode: 'fixed',
+  collectionView: 'all',
   uiTransparency: 0.85,
   sidebarCollapsed: false,
   sidebarSections: normalizeSidebarSections(undefined),
@@ -490,6 +492,7 @@ function normalizeLocalSettings(input: Partial<LocalSettings> | null | undefined
     animationMode: input?.animationMode === 'smooth' ? 'smooth' : 'snappy',
     previewMode: input?.previewMode === 'modal' ? 'modal' : 'side',
     sidebarMode: input?.sidebarMode === 'floating' ? 'floating' : 'fixed',
+    collectionView: input?.collectionView === 'hierarchy' ? 'hierarchy' : 'all',
     uiTransparency: normalizeTransparency(
       typeof input?.uiTransparency === 'number'
         ? input.uiTransparency

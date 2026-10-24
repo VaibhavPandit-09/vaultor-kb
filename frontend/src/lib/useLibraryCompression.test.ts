@@ -74,3 +74,15 @@ it('keeps reduced-motion density stable around its switching boundary', () => {
  scroll(64); expect(progress()).toBe(1); scroll(48); expect(progress()).toBe(1);
  scroll(16); expect(progress()).toBe(0); scroll(48); expect(progress()).toBe(0);
 });
+
+it('measures the breadcrumb row and withdraws it before title migration at every scroll depth',()=>{
+ stop();const nav=document.createElement('nav');nav.className='collection-breadcrumb';nav.textContent='Library / docs / android / releases / a very long parent';Object.defineProperty(nav,'getBoundingClientRect',{value:()=>({height:27})});header.append(nav);stop=attachLibraryCompression(viewport,header);settle();
+ expect(viewport.style.getPropertyValue('--collection-path-space')).toBe('35px');
+ for(const top of [0,16,40,55,56,80,120,160,80,40,0]){viewport.scrollTop=top;viewport.dispatchEvent(new Event('scroll'));settle();const p=progress();const title=Number(viewport.style.getPropertyValue('--collection-title-progress'));if(p<.35){expect(title).toBe(0);expect(nav.inert).toBe(false);}else{expect(nav.inert).toBe(true);expect(nav.getAttribute('aria-hidden')).toBe('true');}}
+ stop();expect(nav.inert).toBe(false);expect(nav.hasAttribute('aria-hidden')).toBe(false);
+});
+it('keeps keyboard breadcrumb navigation stable through scrolling until focus leaves',()=>{
+ stop();const nav=document.createElement('nav');nav.className='collection-breadcrumb';const button=document.createElement('button');button.textContent='Parent';nav.append(button);header.append(nav);stop=attachLibraryCompression(viewport,header);button.focus();
+ viewport.scrollTop=160;viewport.dispatchEvent(new Event('scroll'));settle();expect(progress()).toBe(0);expect(document.activeElement).toBe(button);
+ button.blur();settle();expect(progress()).toBe(1);expect(nav.inert).toBe(true);
+});

@@ -4,6 +4,7 @@ import { useEffect, type RefObject } from 'react';
 export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElement, options: { pinHeaderFocus?: boolean; onProgress?: (progress: number) => void } = {}) {
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   let frame = 0, releaseFrame = 0, pointerHeld = false, lastTime = 0;
+  let titleMeasure:HTMLElement|undefined;
   let travel = 160;
   const measureTravel = () => { travel = Math.min(160, Math.max(0, viewport.scrollHeight - viewport.clientHeight)); };
   measureTravel();
@@ -12,10 +13,16 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
   const write = () => {
     viewport.style.setProperty('--library-progress', String(progress));
     options.onProgress?.(progress);
+    // Breadcrumbs withdraw in their own row before the title enters that lane.
+    viewport.style.setProperty('--collection-path-progress', String(Math.min(1,progress/.35)));
+    viewport.style.setProperty('--collection-title-progress', String(Math.max(0,(progress-.35)/.65)));
+    const path=header.querySelector<HTMLElement>('.collection-breadcrumb');
+    if(path){path.inert=progress>=.35;path.setAttribute('aria-hidden',String(progress>=.35));}
+
     // The second title line is already clipped before its ellipsis changes.
     viewport.style.setProperty('--library-title-lines', progress > .96 ? '1' : '2');
   };
-  const locked = () => pointerHeld || (options.pinHeaderFocus && header.contains(document.activeElement)) || Boolean(header.querySelector('[aria-haspopup][aria-expanded="true"]'));
+  const locked = () => pointerHeld || Boolean(header.querySelector('.collection-breadcrumb')?.contains(document.activeElement)) || (options.pinHeaderFocus && header.contains(document.activeElement)) || Boolean(header.querySelector('[aria-haspopup][aria-expanded="true"]'));
   const step = (time: number) => {
     frame = 0;
     if (locked()) { lastTime = 0; return; }
@@ -43,6 +50,19 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
   const measureActions = () => {
     const actions = header.querySelector<HTMLElement>('.library-heading-actions');
     viewport.style.setProperty('--library-actions-width', `${actions?.getBoundingClientRect().width ?? 0}px`);
+    const path=header.querySelector<HTMLElement>('.collection-breadcrumb');
+    if(path){
+      viewport.style.setProperty('--collection-path-space',`${path.getBoundingClientRect().height+8}px`);
+      const title=header.querySelector<HTMLElement>('h1');
+      if(title){
+        if(!titleMeasure){titleMeasure=document.createElement('div');titleMeasure.setAttribute('aria-hidden','true');document.body.append(titleMeasure);}
+        const font=getComputedStyle(title);
+        titleMeasure.style.cssText=`position:fixed;left:-10000px;top:0;visibility:hidden;pointer-events:none;width:${title.clientWidth}px;font-family:${font.fontFamily};font-weight:${font.fontWeight};font-size:28px;line-height:1.25;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-height:70px;`;
+        titleMeasure.textContent=title.textContent;
+        viewport.style.setProperty('--collection-title-expanded',`${Math.max(35,Math.min(70,titleMeasure.getBoundingClientRect().height))}px`);
+      }
+    }
+
     schedule();
   };
   const measure = () => { measureTravel(); measureActions(); };
@@ -54,6 +74,7 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
     for (const child of viewport.children) if (child !== header) observer.observe(child);
     const actions = header.querySelector('.library-heading-actions');
     if (actions) observer.observe(actions);
+    const path=header.querySelector('.collection-breadcrumb');if(path)observer.observe(path);
     measure();
   };
   const content = new MutationObserver(observeContent);
@@ -84,6 +105,10 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
     viewport.style.removeProperty('--library-progress');
     viewport.style.removeProperty('--library-title-lines');
     viewport.style.removeProperty('--library-actions-width');
+    titleMeasure?.remove();
+    for(const key of ['--collection-title-expanded','--collection-path-progress','--collection-title-progress','--collection-path-space'])viewport.style.removeProperty(key);
+    const path=header.querySelector<HTMLElement>('.collection-breadcrumb');if(path){path.inert=false;path.removeAttribute('aria-hidden');}
+
   };
 }
 

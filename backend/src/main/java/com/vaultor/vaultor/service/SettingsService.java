@@ -148,7 +148,7 @@ public class SettingsService {
         double uiTransparency = incoming.uiTransparency() == null ? defaultLocalSettings().uiTransparency() : Math.max(0.6d, Math.min(1d, incoming.uiTransparency()));
         boolean sidebarCollapsed = incoming.sidebarCollapsed() != null && incoming.sidebarCollapsed();
 
-        return new LocalSettings(theme, accentColor, density, animationMode, previewMode, sidebarMode, uiTransparency, sidebarCollapsed, normalizeSidebarSections(incoming.sidebarSections()));
+        return new LocalSettings(theme, accentColor, density, animationMode, previewMode, sidebarMode, uiTransparency, sidebarCollapsed, normalizeSidebarSections(incoming.sidebarSections()), "hierarchy".equals(incoming.collectionView()) ? "hierarchy" : "all");
     }
 
     private static Map<String, SidebarSection> normalizeSidebarSections(Map<String, SidebarSection> incoming) {
@@ -202,7 +202,7 @@ public class SettingsService {
     }
 
     public static LocalSettings defaultLocalSettings() {
-        return new LocalSettings("os", "blue", "comfortable", "snappy", "side", "fixed", 0.85d, false, normalizeSidebarSections(null));
+        return new LocalSettings("os", "blue", "comfortable", "snappy", "side", "fixed", 0.85d, false, normalizeSidebarSections(null), "all");
     }
 
     public static final Map<String, Keybinding> DEFAULT_KEYBINDINGS = Map.of(
@@ -236,7 +236,8 @@ public class SettingsService {
             String sidebarMode,
             Double uiTransparency,
             Boolean sidebarCollapsed,
-            Map<String, SidebarSection> sidebarSections
+            Map<String, SidebarSection> sidebarSections,
+            String collectionView
     ) {}
 
     public record Keybinding(

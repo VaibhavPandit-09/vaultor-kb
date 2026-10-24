@@ -20,9 +20,12 @@ class SidebarSettingsTest {
         var service = new SettingsService(repository, mapper);
         service.patch(mapper.readTree("{\"local\":{\"device\":{\"theme\":\"light\"}}}"));
         assertTrue(service.getSettings().local().get("device").sidebarSections().get("pinned").visible());
+        assertEquals("all",service.getSettings().local().get("device").collectionView());
+        service.patch(mapper.readTree("{\"local\":{\"device\":{\"collectionView\":\"hierarchy\"}}}"));
         service.patch(mapper.readTree("{\"local\":{\"device\":{\"sidebarSections\":{\"pinned\":{\"visible\":false},\"recent\":{\"collapsed\":true}}}}}"));
         var local = service.getSettings().local().get("device");
         assertEquals("light", local.theme());
+        assertEquals("hierarchy",new SettingsService(repository,mapper).getSettings().local().get("device").collectionView());
         assertFalse(local.sidebarSections().get("pinned").visible());
         assertTrue(local.sidebarSections().get("recent").collapsed());
         assertTrue(local.sidebarSections().get("tags").visible());

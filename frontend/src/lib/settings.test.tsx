@@ -6,7 +6,7 @@ import api from './api';
 import {mergeSettingsPatch,type SettingsPatch} from './settingsPatch';
 vi.mock('./api',()=>({default:{get:vi.fn(),patch:vi.fn()}}));
 afterEach(()=>{cleanup();vi.restoreAllMocks();localStorage.clear();vi.unstubAllGlobals();});
-function Probe(){const s=useSettings();return <><span>{s.settings.local.theme}:{s.resolvedTheme}:{s.saveStatus}</span><button onClick={()=>s.updateLocalSetting('theme','dark')}>Dark</button><button onClick={()=>s.updateLocalSetting('theme','dark',{x:20,y:30})}>Reveal Dark</button><button onClick={()=>s.updateWorkspaceSetting('maxOpenNotes',3)}>Three</button><button onClick={()=>s.retrySave()}>Retry</button><button onClick={()=>s.updateLocalSetting('theme','oled')}>OLED</button><button onClick={()=>s.toggleTheme()}>Cycle</button><button onClick={()=>s.updateLocalSetting('uiTransparency',.65)}>Opacity65</button><span data-testid="transparency">{s.settings.local.uiTransparency}</span></>;}
+function Probe(){const s=useSettings();return <><span>{s.settings.local.theme}:{s.resolvedTheme}:{s.saveStatus}</span><button onClick={()=>s.updateLocalSetting('theme','dark')}>Dark</button><button onClick={()=>s.updateLocalSetting('theme','dark',{x:20,y:30})}>Reveal Dark</button><button onClick={()=>s.updateWorkspaceSetting('maxOpenNotes',3)}>Three</button><button onClick={()=>s.retrySave()}>Retry</button><button onClick={()=>s.updateLocalSetting('theme','oled')}>OLED</button><button onClick={()=>s.toggleTheme()}>Cycle</button><button onClick={()=>s.updateLocalSetting('uiTransparency',.65)}>Opacity65</button><button onClick={()=>s.updateLocalSetting('collectionView','hierarchy')}>Hierarchy view</button><span data-testid="collection-view">{s.settings.local.collectionView}</span><span data-testid="transparency">{s.settings.local.uiTransparency}</span></>;}
 it('defaults to OS, reacts to OS changes and keeps an explicit choice',async()=>{
   let listener!:()=>void;const media={matches:false,addEventListener:vi.fn((_name,fn)=>{listener=fn;}),removeEventListener:vi.fn()};
   vi.stubGlobal('matchMedia',()=>media);
@@ -67,4 +67,16 @@ it('persists an explicit request immediately while capture is pending and retain
   await waitFor(()=>expect(screen.getByText('dark:dark:failed')).toBeTruthy());expect(api.patch).toHaveBeenCalledWith('/settings',expect.objectContaining({local:expect.any(Object)}),expect.any(Object));
   update();ready();await Promise.resolve();expect(document.documentElement.dataset.theme).toBe('dark');expect(document.documentElement.style.colorScheme).toBe('dark');
  } finally {cleanup();delete (document as unknown as {startViewTransition?:unknown}).startViewTransition;delete (document.documentElement as unknown as {animate?:unknown}).animate;if(visibility)Object.defineProperty(document,'visibilityState',visibility);}
+});
+
+it('persists collection presentation per device and workspace without changing other preferences',async()=>{
+ vi.stubGlobal('matchMedia',()=>({matches:false,addEventListener(){},removeEventListener(){}}));
+ localStorage.setItem('vaultor_device_id','device');
+ let doc:SettingsPatch={workspace:{maxOpenNotes:3},local:{device:{collectionView:'all'},other:{collectionView:'all',theme:'oled'}},keybindings:{}};
+ vi.mocked(api.get).mockImplementation(async()=>({data:doc}));vi.mocked(api.patch).mockImplementation(async(_url,patch)=>({data:doc=mergeSettingsPatch(doc,patch as SettingsPatch)}));
+ const view=render(<SettingsProvider><Probe/></SettingsProvider>);await waitFor(()=>expect(screen.getByText('os:light:saved')).toBeTruthy());expect(screen.getByTestId('collection-view').textContent).toBe('all');
+ fireEvent.click(screen.getByText('Hierarchy view'));await waitFor(()=>expect(api.patch).toHaveBeenCalledWith('/settings',expect.objectContaining({local:expect.any(Object)}),expect.anything()));
+ const patch=vi.mocked(api.patch).mock.calls.at(-1)![1] as SettingsPatch;expect(Object.keys(patch)).toEqual(['local']);expect(Object.values(patch.local as object)).toEqual([{collectionView:'hierarchy'}]);
+ view.unmount();render(<SettingsProvider><Probe/></SettingsProvider>);await waitFor(()=>expect(screen.getByTestId('collection-view').textContent).toBe('hierarchy'));
+ expect(doc.workspace).toEqual({maxOpenNotes:3});expect((doc.local as SettingsPatch).other).toEqual({collectionView:'all',theme:'oled'});
 });
