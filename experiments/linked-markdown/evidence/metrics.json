@@ -1,0 +1,190 @@
+{
+  "recordedAt": "2026-10-24T07:17:53.793Z",
+  "runtime": "v24.18.1",
+  "os": "win32 10.0.26300",
+  "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+  "methodology": "Corpus projection timings:9 sequential samples after one warmup; p95 is maximum for n=9. Edit timings include one real PM transaction, patch, full reparse and document comparison; no DOM. Synthetic:one sample each, not throughput or UI latency qualification.",
+  "corpus": [
+    {
+      "path": "docs/CODEBASE.md",
+      "bytes": 103842,
+      "sha256": "7716d5add28a18ea9317f6faee3748ab7e5031336e05a1e3d461b21c85c71cb5",
+      "textUnits": 92485,
+      "literalUnits": 92485,
+      "literalPercent": 100,
+      "protectedNodes": 203,
+      "projectionMedianMs": 47.23,
+      "projectionP95Ms": 59.63,
+      "editReparseMs": 49.96,
+      "patch": {
+        "start": 51,
+        "end": 59,
+        "inserted": "qualified",
+        "removed": "reviewed"
+      },
+      "unchangedPrefix": true,
+      "unchangedSuffix": true
+    },
+    {
+      "path": "docs/workspace/SESSIONS.md",
+      "bytes": 12098,
+      "sha256": "5996524e74dc6e54638224da5ee290e480e893a52c2205f1a818b7a2c492992b",
+      "textUnits": 11527,
+      "literalUnits": 11527,
+      "literalPercent": 100,
+      "protectedNodes": 15,
+      "projectionMedianMs": 4.01,
+      "projectionP95Ms": 6.53,
+      "editReparseMs": 7.17,
+      "patch": {
+        "start": 41,
+        "end": 49,
+        "inserted": "qualified",
+        "removed": "Reviewed"
+      },
+      "unchangedPrefix": true,
+      "unchangedSuffix": true
+    },
+    {
+      "path": "docs/workspace/NAVIGATION.md",
+      "bytes": 10505,
+      "sha256": "e7d068dac6b3efc83dbcfde8367f87484f80d5beb263993924fa80a643e82ecf",
+      "textUnits": 10185,
+      "literalUnits": 10185,
+      "literalPercent": 100,
+      "protectedNodes": 7,
+      "projectionMedianMs": 3.59,
+      "projectionP95Ms": 7.57,
+      "editReparseMs": 4.39,
+      "patch": {
+        "start": 375,
+        "end": 386,
+        "inserted": "qualified",
+        "removed": "assignments"
+      },
+      "unchangedPrefix": true,
+      "unchangedSuffix": true
+    },
+    {
+      "path": "docs/security/HOST-ACCESS.md",
+      "bytes": 21521,
+      "sha256": "e21b04394956fd72a8cf2fed3bd03e0830c73796f30c483bca917f3f645771ab",
+      "textUnits": 19666,
+      "literalUnits": 19666,
+      "literalPercent": 100,
+      "protectedNodes": 50,
+      "projectionMedianMs": 7.09,
+      "projectionP95Ms": 17.54,
+      "editReparseMs": 7.31,
+      "patch": {
+        "start": 53,
+        "end": 61,
+        "inserted": "qualified",
+        "removed": "Reviewed"
+      },
+      "unchangedPrefix": true,
+      "unchangedSuffix": true
+    },
+    {
+      "path": "docs/design/UI_PHILOSOPHY.md",
+      "bytes": 33422,
+      "sha256": "a51ec3789611f8e9c229c1650033a598551dc01d61aa88226082c2041b10d08c",
+      "textUnits": 29746,
+      "literalUnits": 29746,
+      "literalPercent": 100,
+      "protectedNodes": 17,
+      "projectionMedianMs": 33.86,
+      "projectionP95Ms": 45.89,
+      "editReparseMs": 47.9,
+      "patch": {
+        "start": 98,
+        "end": 108,
+        "inserted": "qualified",
+        "removed": "interfaces"
+      },
+      "unchangedPrefix": true,
+      "unchangedSuffix": true
+    }
+  ],
+  "synthetic": [
+    {
+      "bytes": 8200,
+      "nodes": 164,
+      "openMs": 8.18,
+      "singleEditReparseMs": 7.97
+    },
+    {
+      "bytes": 65550,
+      "nodes": 1311,
+      "openMs": 91.59,
+      "singleEditReparseMs": 92.89
+    },
+    {
+      "bytes": 262150,
+      "nodes": 5243,
+      "openMs": 430.21,
+      "singleEditReparseMs": 433.07
+    },
+    {
+      "bytes": 1048600,
+      "nodes": 20972,
+      "openMs": 2630.47,
+      "singleEditReparseMs": 2782.24
+    }
+  ],
+  "repositoryExample": {
+    "path": "docs/CODEBASE.md",
+    "beforeSha256": "7716d5add28a18ea9317f6faee3748ab7e5031336e05a1e3d461b21c85c71cb5",
+    "afterSha256": "99634cedfd936032819e32f39e686ba86e5445a2b77f67b713015891b2b49817",
+    "patches": [
+      {
+        "start": 385,
+        "end": 406,
+        "inserted": "Vaultor remains a personal",
+        "removed": "Vaultor is a personal"
+      }
+    ]
+  },
+  "example": {
+    "patches": [
+      {
+        "start": 75,
+        "end": 93,
+        "inserted": "Paragraph edited",
+        "removed": "Paragraph original"
+      },
+      {
+        "start": 99,
+        "end": 112,
+        "inserted": "bold changed",
+        "removed": "bold original"
+      },
+      {
+        "start": 182,
+        "end": 197,
+        "inserted": "Nested edited",
+        "removed": "Nested original"
+      },
+      {
+        "start": 288,
+        "end": 302,
+        "inserted": "const changed",
+        "removed": "const original"
+      },
+      {
+        "start": 374,
+        "end": 389,
+        "inserted": "Inline edited",
+        "removed": "Inline original"
+      },
+      {
+        "start": 353,
+        "end": 361,
+        "inserted": "changed",
+        "removed": "original"
+      }
+    ],
+    "beforeSha256": "ee8ac8bdc886f953e451e20486ee40e8e08df58f082e49a5a4e5cb73874ca43f",
+    "afterSha256": "da66e9c023b17ec3c612ece723e5563e88a690264f4dbbc72934a6e5d5ad0a50"
+  }
+}

@@ -1,0 +1,538 @@
+TAP version 13
+# Subtest: P2 LF: open no-op preserves exact bytes including unsupported regions
+ok 1 - P2 LF: open no-op preserves exact bytes including unsupported regions
+  ---
+  duration_ms: 27.7574
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit Paragraph original
+ok 2 - P2 LF: literal edit Paragraph original
+  ---
+  duration_ms: 11.4706
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit bold original
+ok 3 - P2 LF: literal edit bold original
+  ---
+  duration_ms: 9.3792
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit italic original
+ok 4 - P2 LF: literal edit italic original
+  ---
+  duration_ms: 4.1993
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit Heading original
+ok 5 - P2 LF: literal edit Heading original
+  ---
+  duration_ms: 3.4329
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit Ordered original
+ok 6 - P2 LF: literal edit Ordered original
+  ---
+  duration_ms: 3.4126
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit Nested original
+ok 7 - P2 LF: literal edit Nested original
+  ---
+  duration_ms: 2.4768
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit Deep original
+ok 8 - P2 LF: literal edit Deep original
+  ---
+  duration_ms: 3.1331
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit Bullet original
+ok 9 - P2 LF: literal edit Bullet original
+  ---
+  duration_ms: 3.3108
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit Child original
+ok 10 - P2 LF: literal edit Child original
+  ---
+  duration_ms: 5.2277
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit Inline original
+ok 11 - P2 LF: literal edit Inline original
+  ---
+  duration_ms: 3.8931
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit original
+ok 12 - P2 LF: literal edit original
+  ---
+  duration_ms: 3.4205
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit 😀 café é
+ok 13 - P2 LF: literal edit 😀 café é
+  ---
+  duration_ms: 2.4676
+  type: 'test'
+  ...
+# Subtest: P2 LF: literal edit Final original
+ok 14 - P2 LF: literal edit Final original
+  ---
+  duration_ms: 2.8149
+  type: 'test'
+  ...
+# Subtest: P2 LF: GFM cell edit retains alignment and all padding
+ok 15 - P2 LF: GFM cell edit retains alignment and all padding
+  ---
+  duration_ms: 2.5474
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: open no-op preserves exact bytes including unsupported regions
+ok 16 - P2 CRLF: open no-op preserves exact bytes including unsupported regions
+  ---
+  duration_ms: 1.9324
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit Paragraph original
+ok 17 - P2 CRLF: literal edit Paragraph original
+  ---
+  duration_ms: 4.9353
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit bold original
+ok 18 - P2 CRLF: literal edit bold original
+  ---
+  duration_ms: 6.2997
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit italic original
+ok 19 - P2 CRLF: literal edit italic original
+  ---
+  duration_ms: 2.4987
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit Heading original
+ok 20 - P2 CRLF: literal edit Heading original
+  ---
+  duration_ms: 3.3834
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit Ordered original
+ok 21 - P2 CRLF: literal edit Ordered original
+  ---
+  duration_ms: 2.2931
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit Nested original
+ok 22 - P2 CRLF: literal edit Nested original
+  ---
+  duration_ms: 2.4921
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit Deep original
+ok 23 - P2 CRLF: literal edit Deep original
+  ---
+  duration_ms: 2.5107
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit Bullet original
+ok 24 - P2 CRLF: literal edit Bullet original
+  ---
+  duration_ms: 2.6495
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit Child original
+ok 25 - P2 CRLF: literal edit Child original
+  ---
+  duration_ms: 1.946
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit Inline original
+ok 26 - P2 CRLF: literal edit Inline original
+  ---
+  duration_ms: 2.1251
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit original
+ok 27 - P2 CRLF: literal edit original
+  ---
+  duration_ms: 2.5879
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit 😀 café é
+ok 28 - P2 CRLF: literal edit 😀 café é
+  ---
+  duration_ms: 3.3724
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: literal edit Final original
+ok 29 - P2 CRLF: literal edit Final original
+  ---
+  duration_ms: 3.4884
+  type: 'test'
+  ...
+# Subtest: P2 CRLF: GFM cell edit retains alignment and all padding
+ok 30 - P2 CRLF: GFM cell edit retains alignment and all padding
+  ---
+  duration_ms: 3.9372
+  type: 'test'
+  ...
+# Subtest: P2 fenced code body with tilde fence/meta retained
+ok 31 - P2 fenced code body with tilde fence/meta retained
+  ---
+  duration_ms: 4.4197
+  type: 'test'
+  ...
+# Subtest: P2 backtick multiline code body edit and fence collision rejection
+ok 32 - P2 backtick multiline code body edit and fence collision rejection
+  ---
+  duration_ms: 2.3735
+  type: 'test'
+  ...
+# Subtest: P2 CRLF multiline code is protected, adjacent paragraph editable
+ok 33 - P2 CRLF multiline code is protected, adjacent paragraph editable
+  ---
+  duration_ms: 0.6935
+  type: 'test'
+  ...
+# Subtest: P2 multiple transactions and real PM Undo/Redo return exact original bytes
+ok 34 - P2 multiple transactions and real PM Undo/Redo return exact original bytes
+  ---
+  duration_ms: 14.9007
+  type: 'test'
+  ...
+# Subtest: P2 multi-step transaction uses each intermediate document map
+ok 35 - P2 multi-step transaction uses each intermediate document map
+  ---
+  duration_ms: 1.3161
+  type: 'test'
+  ...
+# Subtest: P2 rejected with draft retained: new emphasis delimiter changes grammar
+ok 36 - P2 rejected with draft retained: new emphasis delimiter changes grammar
+  ---
+  duration_ms: 2.8796
+  type: 'test'
+  ...
+# Subtest: P2 rejected with draft retained: structural join across paragraph boundaries
+ok 37 - P2 rejected with draft retained: structural join across paragraph boundaries
+  ---
+  duration_ms: 3.3663
+  type: 'test'
+  ...
+# Subtest: P2 rejected with draft retained: split paragraph
+ok 38 - P2 rejected with draft retained: split paragraph
+  ---
+  duration_ms: 2.9422
+  type: 'test'
+  ...
+# Subtest: P2 rejected with draft retained: heading level mutation
+ok 39 - P2 rejected with draft retained: heading level mutation
+  ---
+  duration_ms: 2.5214
+  type: 'test'
+  ...
+# Subtest: P2 rejected with draft retained: new bold mark
+ok 40 - P2 rejected with draft retained: new bold mark
+  ---
+  duration_ms: 2.4835
+  type: 'test'
+  ...
+# Subtest: P2 rejected with draft retained: newline replacement
+ok 41 - P2 rejected with draft retained: newline replacement
+  ---
+  duration_ms: 1.6068
+  type: 'test'
+  ...
+# Subtest: P2 entities/escapes, references and unknown blocks cannot be edited as literal spans
+ok 42 - P2 entities/escapes, references and unknown blocks cannot be edited as literal spans
+  ---
+  duration_ms: 8.9575
+  type: 'test'
+  ...
+# Subtest: P2 source offsets are UTF-16, byte offsets differ, surrogate splits rejected
+ok 43 - P2 source offsets are UTF-16, byte offsets differ, surrogate splits rejected
+  ---
+  duration_ms: 0.5643
+  type: 'test'
+  ...
+# Subtest: P2 BOM, no terminal newline and mixed endings preserve bytes
+ok 44 - P2 BOM, no terminal newline and mixed endings preserve bytes
+  ---
+  duration_ms: 0.6721
+  type: 'test'
+  ...
+# Subtest: P2 invalid UTF-8 fails closed without replacement characters
+ok 45 - P2 invalid UTF-8 fails closed without replacement characters
+  ---
+  duration_ms: 0.2199
+  type: 'test'
+  ...
+# Subtest: P2 lazy list continuation with indentation is protected rather than guessed
+ok 46 - P2 lazy list continuation with indentation is protected rather than guessed
+  ---
+  duration_ms: 1.631
+  type: 'test'
+  ...
+# Subtest: P2 partial deletion, insertion and Undo retain exact bytes
+ok 47 - P2 partial deletion, insertion and Undo retain exact bytes
+  ---
+  duration_ms: 1.0905
+  type: 'test'
+  ...
+# Subtest: P2 final literal deletion rejected to keep reverse source mapping
+ok 48 - P2 final literal deletion rejected to keep reverse source mapping
+  ---
+  duration_ms: 0.3558
+  type: 'test'
+  ...
+# Subtest: P2 multi-step transaction failure commits no earlier patch
+ok 49 - P2 multi-step transaction failure commits no earlier patch
+  ---
+  duration_ms: 0.3843
+  type: 'test'
+  ...
+# Subtest: P2 unsafe GFM pipe, link terminator and block introducer cannot escape validation
+ok 50 - P2 unsafe GFM pipe, link terminator and block introducer cannot escape validation
+  ---
+  duration_ms: 1.4947
+  type: 'test'
+  ...
+# Subtest: P2 text mutation trials: every accepted result reparses to the intended PM document
+ok 51 - P2 text mutation trials: every accepted result reparses to the intended PM document
+  ---
+  duration_ms: 20.5738
+  type: 'test'
+  ...
+# Subtest: P2 normal AST serializer is a demonstrated lossy negative control
+ok 52 - P2 normal AST serializer is a demonstrated lossy negative control
+  ---
+  duration_ms: 2.0203
+  type: 'test'
+  ...
+# Subtest: P2 Lezer comparison: unresolved reference accepted syntactically, mdast uses text
+ok 53 - P2 Lezer comparison: unresolved reference accepted syntactically, mdast uses text
+  ---
+  duration_ms: 1.8265
+  type: 'test'
+  ...
+# Subtest: P2 repository sample exact no-op and one literal edit: docs/CODEBASE.md
+ok 54 - P2 repository sample exact no-op and one literal edit: docs/CODEBASE.md
+  ---
+  duration_ms: 104.9416
+  type: 'test'
+  ...
+# Subtest: P2 repository sample exact no-op and one literal edit: docs/workspace/SESSIONS.md
+ok 55 - P2 repository sample exact no-op and one literal edit: docs/workspace/SESSIONS.md
+  ---
+  duration_ms: 11.8749
+  type: 'test'
+  ...
+# Subtest: P2 repository sample exact no-op and one literal edit: docs/workspace/NAVIGATION.md
+ok 56 - P2 repository sample exact no-op and one literal edit: docs/workspace/NAVIGATION.md
+  ---
+  duration_ms: 7.6242
+  type: 'test'
+  ...
+# Subtest: P2 repository sample exact no-op and one literal edit: docs/security/HOST-ACCESS.md
+ok 57 - P2 repository sample exact no-op and one literal edit: docs/security/HOST-ACCESS.md
+  ---
+  duration_ms: 17.9871
+  type: 'test'
+  ...
+# Subtest: P2 repository sample exact no-op and one literal edit: docs/design/UI_PHILOSOPHY.md
+ok 58 - P2 repository sample exact no-op and one literal edit: docs/design/UI_PHILOSOPHY.md
+  ---
+  duration_ms: 79.5898
+  type: 'test'
+  ...
+# Subtest: P3 SHA-256 content revision detects same-size external edit
+ok 59 - P3 SHA-256 content revision detects same-size external edit
+  ---
+  duration_ms: 110.9135
+  type: 'test'
+  ...
+# Subtest: P3 negative control reproduces lost disk edit between hash check and rename
+ok 60 - P3 negative control reproduces lost disk edit between hash check and rename
+  ---
+  duration_ms: 93.6129
+  type: 'test'
+  ...
+# Subtest: P3 capture/recheck preserves intervening external write and retains local draft
+ok 61 - P3 capture/recheck preserves intervening external write and retains local draft
+  ---
+  duration_ms: 102.3241
+  type: 'test'
+  ...
+# Subtest: P3 external creation during capture gap is never overwritten
+ok 62 - P3 external creation during capture gap is never overwritten
+  ---
+  duration_ms: 97.4023
+  type: 'test'
+  ...
+# Subtest: P3 two successive successful saves preserve independent preimages
+ok 63 - P3 two successive successful saves preserve independent preimages
+  ---
+  duration_ms: 37.6058
+  type: 'test'
+  ...
+# Subtest: P3 identical-byte replacement still changes file identity and requires review
+ok 64 - P3 identical-byte replacement still changes file identity and requires review
+  ---
+  duration_ms: 13.9613
+  type: 'test'
+  ...
+# Subtest: P3 source delete retains durable local/base journal
+ok 65 - P3 source delete retains durable local/base journal
+  ---
+  duration_ms: 10.4393
+  type: 'test'
+  ...
+# Subtest: P3 source rename retains durable local/base journal
+ok 66 - P3 source rename retains durable local/base journal
+  ---
+  duration_ms: 12.2367
+  type: 'test'
+  ...
+# Subtest: P3 real worker exit recovery: prepared
+ok 67 - P3 real worker exit recovery: prepared
+  ---
+  duration_ms: 100.0428
+  type: 'test'
+  ...
+# Subtest: P3 real worker exit recovery: staged
+ok 68 - P3 real worker exit recovery: staged
+  ---
+  duration_ms: 110.2779
+  type: 'test'
+  ...
+# Subtest: P3 real worker exit recovery: captured-before-journal
+ok 69 - P3 real worker exit recovery: captured-before-journal
+  ---
+  duration_ms: 100.8052
+  type: 'test'
+  ...
+# Subtest: P3 real worker exit recovery: captured
+ok 70 - P3 real worker exit recovery: captured
+  ---
+  duration_ms: 93.3554
+  type: 'test'
+  ...
+# Subtest: P3 real worker exit recovery: published-before-journal
+ok 71 - P3 real worker exit recovery: published-before-journal
+  ---
+  duration_ms: 101.4295
+  type: 'test'
+  ...
+# Subtest: P3 journal write/storage refusal prevents source mutation
+ok 72 - P3 journal write/storage refusal prevents source mutation
+  ---
+  duration_ms: 7.5507
+  type: 'test'
+  ...
+# Subtest: P3 injected permission failure after capture recovers without overwriting
+ok 73 - P3 injected permission failure after capture recovers without overwriting
+  ---
+  duration_ms: 21.3168
+  type: 'test'
+  ...
+# Subtest: P3 corrupt journal fails closed and source remains intact
+ok 74 - P3 corrupt journal fails closed and source remains intact
+  ---
+  duration_ms: 19.0389
+  type: 'test'
+  ...
+# Subtest: P3 ordinary watcher events are invalidations and hashes identify self/external state
+ok 75 - P3 ordinary watcher events are invalidations and hashes identify self/external state
+  ---
+  duration_ms: 321.8116
+  type: 'test'
+  ...
+# Subtest: P3 rapid Git-style replacements reconcile latest bytes rather than event count
+ok 76 - P3 rapid Git-style replacements reconcile latest bytes rather than event count
+  ---
+  duration_ms: 31.6014
+  type: 'test'
+  ...
+# Subtest: P3 path traversal, absolute paths and Windows alternate streams rejected
+ok 77 - P3 path traversal, absolute paths and Windows alternate streams rejected
+  ---
+  duration_ms: 4.5385
+  type: 'test'
+  ...
+# Subtest: P3 real directory junction/symlink escape is rejected
+ok 78 - P3 real directory junction/symlink escape is rejected
+  ---
+  duration_ms: 7.5779
+  type: 'test'
+  ...
+# Subtest: P3 multiple hardlink authority rejected
+ok 79 - P3 multiple hardlink authority rejected
+  ---
+  duration_ms: 6.6406
+  type: 'test'
+  ...
+# Subtest: P3 external open handle can mutate retained captured inode: retain and reconcile it
+ok 80 - P3 external open handle can mutate retained captured inode: retain and reconcile it
+  ---
+  duration_ms: 17.503
+  type: 'test'
+  ...
+# Subtest: P3 three-way compare: disjoint lines yield reviewed merge, overlap stays conflict
+ok 81 - P3 three-way compare: disjoint lines yield reviewed merge, overlap stays conflict
+  ---
+  duration_ms: 0.4383
+  type: 'test'
+  ...
+# Subtest: P3 Windows ReplaceFileW native backup / sharing behavior: race
+ok 82 - P3 Windows ReplaceFileW native backup / sharing behavior: race
+  ---
+  duration_ms: 486.8717
+  type: 'test'
+  ...
+# Subtest: P3 Windows ReplaceFileW native backup / sharing behavior: locked
+ok 83 - P3 Windows ReplaceFileW native backup / sharing behavior: locked
+  ---
+  duration_ms: 461.984
+  type: 'test'
+  ...
+# Subtest: P3 durable pre-Save drafts recover unsupported editor JSON after reopening journal
+ok 84 - P3 durable pre-Save drafts recover unsupported editor JSON after reopening journal
+  ---
+  duration_ms: 8.4048
+  type: 'test'
+  ...
+# Subtest: P3 exact-version acknowledgement cannot clear a newer durable draft
+ok 85 - P3 exact-version acknowledgement cannot clear a newer durable draft
+  ---
+  duration_ms: 16.9798
+  type: 'test'
+  ...
+# Subtest: P3 injected ENOSPC before staging retains source and recoverable journal
+ok 86 - P3 injected ENOSPC before staging retains source and recoverable journal
+  ---
+  duration_ms: 11.5681
+  type: 'test'
+  ...
+# Subtest: P3 external deletion after committed save is never resurrected by recovery
+ok 87 - P3 external deletion after committed save is never resurrected by recovery
+  ---
+  duration_ms: 17.6568
+  type: 'test'
+  ...
+# Subtest: P3 three-way merge refuses invalid UTF-8 rather than decoding replacement characters
+ok 88 - P3 three-way merge refuses invalid UTF-8 rather than decoding replacement characters
+  ---
+  duration_ms: 0.5444
+  type: 'test'
+  ...
+1..88
+# tests 88
+# suites 0
+# pass 88
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2557.1168

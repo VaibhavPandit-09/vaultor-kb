@@ -1,0 +1,35 @@
+diff --git a/evidence/mixed.before.md b/evidence/mixed.after.md
+index c24e9bd..cb02b51 100644
+--- a/evidence/mixed.before.md
++++ b/evidence/mixed.after.md
+@@ -5,10 +5,10 @@ custom: [one, two]
+ 
+ # Heading original ###
+ 
+-Paragraph original with **bold original** and _italic original_ and 😀 café é.
++Paragraph edited with **bold changed** and _italic original_ and 😀 café é.
+ 
+ 7. Ordered original
+-   - Nested original
++   - Nested edited
+      1. Deep original
+ 8. Next item
+ 
+@@ -16,14 +16,14 @@ Paragraph original with **bold original** and _italic original_ and 😀 café e
+   * Child original
+ 
+ ~~~~js extra-meta
+-const original = "😀";
++const changed = "😀";
+ ~~~~
+ 
+ | name | value |
+ | :--- | ---: |
+-| original | keep  |
++| changed | keep  |
+ 
+-[Inline original](../workspace/SESSIONS.md#durable-drafts-and-conflicts "Keep title")
++[Inline edited](../workspace/SESSIONS.md#durable-drafts-and-conflicts "Keep title")
+ 
+ [Reference original][guide]
+ 

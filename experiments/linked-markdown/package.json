@@ -1,0 +1,22 @@
+{
+  "name": "vaultor-linked-markdown-qualification",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test phase2.test.mjs phase3.test.mjs", "fidelity": "node --test phase2.test.mjs", "filesystem": "node --test phase3.test.mjs", "evidence": "node evidence.mjs" },
+  "dependencies": {
+    "@lezer/markdown": "1.8.0",
+    "@tiptap/core": "3.31.4",
+    "@tiptap/pm": "3.31.4",
+    "@tiptap/starter-kit": "3.31.4",
+    "@tiptap/extension-table": "3.31.4",
+    "mdast-util-from-markdown": "2.0.2",
+    "mdast-util-to-markdown": "2.1.2",
+    "mdast-util-gfm": "3.1.0",
+    "mdast-util-frontmatter": "2.0.1",
+    "mdast-util-directive": "3.1.0",
+    "micromark-extension-gfm": "3.0.0",
+    "micromark-extension-frontmatter": "2.0.0",
+    "micromark-extension-directive": "4.0.0"
+  }
+}

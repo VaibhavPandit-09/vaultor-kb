@@ -1,0 +1,13 @@
+diff --git a/evidence/corpus.before.tmp b/evidence/corpus.after.tmp
+index 8e0ea0e..c25c1c9 100644
+--- a/evidence/corpus.before.tmp
++++ b/evidence/corpus.after.tmp
+@@ -4,7 +4,7 @@ Last reviewed: 2026-10-24. This is the current implementation reference. Update
+ 
+ ## Product and architecture
+ 
+-Vaultor is a personal, locally hosted knowledge workspace. Notes and uploaded files are resources, organized by nested collections and tags and connected through inline links. The desktop restores its selected server/workspace, starting the owned server when needed; browser access uses a local owner handoff or host-approved LAN device session. There are no accounts, master passwords, note lock controls, note/archive encryption, or encrypted archive compatibility. D5 adds owner/device access credentials separately from workspace data. Obsolete credentials stored in an existing database are ignored; startup does not delete resources.
++Vaultor remains a personal, locally hosted knowledge workspace. Notes and uploaded files are resources, organized by nested collections and tags and connected through inline links. The desktop restores its selected server/workspace, starting the owned server when needed; browser access uses a local owner handoff or host-approved LAN device session. There are no accounts, master passwords, note lock controls, note/archive encryption, or encrypted archive compatibility. D5 adds owner/device access credentials separately from workspace data. Obsolete credentials stored in an existing database are ignored; startup does not delete resources.
+ 
+ React 19 + TypeScript 5.9 + Vite 8 + Tailwind 3 + Redux + Tiptap 3 call Spring Boot 4 / Java 25 through a shared Axios client at /api. Spring Data JPA stores metadata and serialized Tiptap documents in SQLite; file bytes live separately on disk. Hikari uses one connection per workspace to serialize application transactions and avoid concurrent SQLite read-to-write lock upgrades; reads also queue, so keep transactions short. W1 adds up to eight isolated host workspaces: the adopted default uses the main context; each additional workspace uses a separate database/file root and independent Spring domain/JPA/worker context in the same JVM. Explicit X-Vaultor-Workspace routing never changes a global active datasource. [WORKSPACES.md](architecture/WORKSPACES.md) owns catalog, grants, migration/checkpoint, API and bounds. Backend JSON uses Jackson 3 tools.jackson. Exact versions are in the package lock and pom.xml. Vite proxies /api and /access to 127.0.0.1:8080 on fixed port 5173; only exact loopback development Origins are rewritten. Docker embeds the frontend in the Spring JAR and serves one origin.
+ 

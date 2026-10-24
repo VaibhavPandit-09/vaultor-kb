@@ -76,6 +76,8 @@ Reviewed 2026-10-24 against integrated master, published Windows0.18.1 and Andro
 
 ## Qualification evidence
 
+- [Linked Markdown](development/qualification/LINKED-MARKDOWN.md): active five-phase source-fidelity and filesystem-safety qualification; isolated experiments, no production feature or release.
+
 - [R6](development/qualification/R6.md): Historical R6 integrated/native/upgrade evidence with failures and corrected reruns.
 - [R7-R9](development/qualification/R7-R9.md): Source-lock security defect/repair, actual upgrades, OS consent and published artifact checks.
 - [R10](development/qualification/R10.md): Final integrated measurements, faults, security advisories, native/release results and remaining limits.
