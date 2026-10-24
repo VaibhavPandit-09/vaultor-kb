@@ -77,8 +77,9 @@ Reviewed 2026-10-24 against integrated master, published Windows0.18.2/Mac0.18.1
 ## Qualification evidence
 
 - [Linked Markdown Gate 1](development/qualification/LINKED-MARKDOWN-G1.md): editing engine and remediation, current bounded capability contract, mounted/IME/performance evidence and Conditional verdict; no linked-folder writes or release.
+- [Linked Markdown Gate 2](development/qualification/LINKED-MARKDOWN-G2.md): isolated native ownership, revision/draft API, durable exclusive saving, recovery and watcher qualification; Conditional Windows verdict, no public authority or release.
 
-- [Linked Markdown](development/qualification/LINKED-MARKDOWN.md): active five-phase source-fidelity and filesystem-safety qualification; isolated experiments, no production feature or release.
+- [Linked Markdown](development/qualification/LINKED-MARKDOWN.md): completed five-phase feasibility qualification and historical source-fidelity/filesystem experiments; subsequent engineering contracts live in the Gate reports above, with no production feature or release.
 
 - [R6](development/qualification/R6.md): Historical R6 integrated/native/upgrade evidence with failures and corrected reruns.
 - [R7-R9](development/qualification/R7-R9.md): Source-lock security defect/repair, actual upgrades, OS consent and published artifact checks.

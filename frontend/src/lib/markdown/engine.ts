@@ -83,6 +83,20 @@ export class MarkdownEngine {
   private historySize = 0;
   private byteLimit: number;
   private historyLimit: number;
+  private regionEpoch = 0;
+  private regions = new Map<string, { index: number; epoch: number }>();
+  sourceRegion(index: number, expected: JSONContent) {
+    const block = this.projection.blocks[index];
+    if (!block || key(block.node) !== key(expected)) throw new Error('SOURCE_REGION_MAPPING_AMBIGUOUS');
+    if (this.regions.size >= 8) throw new Error('SOURCE_REGION_TICKET_LIMIT');
+    const token = crypto.randomUUID(); this.regions.set(token, { index, epoch: this.regionEpoch });
+    return { text: block.raw, token };
+  }
+  editRegion(token: string, replacement: string) {
+    const ticket = this.regions.get(token); this.regions.delete(token);
+    if (!ticket || ticket.epoch !== this.regionEpoch) throw new Error('SOURCE_REGION_TICKET_STALE');
+    return this.editSource(ticket.index, replacement);
+  }
   constructor(bytes: Uint8Array, byteLimit = LIMITS.bytes, historyLimit = LIMITS.historyEntries) { if (!Number.isSafeInteger(byteLimit) || byteLimit < 1 || !Number.isSafeInteger(historyLimit) || historyLimit < 1) throw new Error('INVALID_ENGINE_LIMIT'); this.historyLimit = Math.min(historyLimit, LIMITS.historyEntries); this.byteLimit = Math.min(byteLimit, LIMITS.bytes); if (bytes.length > this.byteLimit) throw new Error('SOURCE_SIZE_LIMIT'); this.projection = project(decode(bytes)); assertProjectionShape(this.projection.doc, this.byteLimit > LIMITS.interactiveBytes); this.history = [{ hash: fingerprint(key(this.projection.doc)) }]; }
   get source() { return this.projection.source; }
   private remember(k: string, patch: CharPatch) {
@@ -186,6 +200,7 @@ export class MarkdownEngine {
       if (historical >= 0) this.cursor = historical; else this.remember(k, local);
       const patch = { start: encode.encode(source.slice(0, local.start)).length, end: encode.encode(source.slice(0, local.end)).length, text: local.text, removed: local.removed };
       this.projection = parsed;
+      this.regionEpoch++; this.regions.clear();
       return { accepted: true, source: candidate, patches: [patch], patchMs, validationMs, totalMs: performance.now() - begin };
     } catch (e) { return { accepted: false, source: this.source, patches: [], reason: e instanceof Error ? e.message : 'VALIDATION_FAILED', patchMs, validationMs: performance.now() - begin - patchMs }; }
   }
@@ -202,6 +217,6 @@ export class MarkdownEngine {
       const retained = next.blocks.find(n => n.start === other.start + shift && n.end === other.end + shift);
       if (!retained || retained.raw !== other.raw || key(retained.node) !== key(other.node)) throw new Error('SOURCE_EDIT_CROSSES_BOUNDARY');
     }
-    this.history = [{ hash: fingerprint(key(next.doc)) }]; this.cursor = 0; this.historySize = 0; this.projection = next; return next.doc;
+    this.history = [{ hash: fingerprint(key(next.doc)) }]; this.cursor = 0; this.historySize = 0; this.projection = next; this.regionEpoch++; this.regions.clear(); return next.doc;
   }
 }

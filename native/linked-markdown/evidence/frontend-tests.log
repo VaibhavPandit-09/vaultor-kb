@@ -1,0 +1,40 @@
+
+ RUN  v5.0.1 C:/GitDev/vaultor-kb/frontend
+
+ ✓ src/lib/markdown/session.test.ts (6 tests) 18ms
+ ✓ src/lib/markdown/saveContract.test.ts (6 tests) 25ms
+ ✓ src/lib/sessionRecovery.test.ts (20 tests) 283ms
+ ✓ src/lib/sharedNoteDocuments.test.ts (6 tests) 152ms
+ ✓ src/components/editor/TableWorkspace.test.ts (5 tests) 142ms
+ ✓ src/components/editor/tableCommands.test.ts (5 tests) 227ms
+ ✓ src/components/editor/boundedCodeHighlighting.test.ts (1 test) 97ms
+ ✓ src/lib/markdown/engine.test.ts (52 tests) 417ms
+ ✓ src/lib/markdown/remediation.test.ts (22 tests) 3210ms
+   ✓ R5 visual-operation corpus workflow, no fallback: docs/CODEBASE.md 1444ms
+   ✓ R5 visual-operation corpus workflow, no fallback: docs/design/UI_PHILOSOPHY.md 865ms
+ ✓ src/lib/markdown/corpus.test.ts (11 tests) 4264ms
+   ✓ G1-D corpus: exact no-op, text, marks, structural edit, protected raw, Undo bytes: docs/CODEBASE.md 450ms
+   ✓ G1-D corpus: exact no-op, text, marks, structural edit, protected raw, Undo bytes: docs/design/UI_PHILOSOPHY.md 326ms
+   ✓ G1-D repeated edits and history restoration use bounded deltas rather than whole documents 3146ms
+stderr | src/components/editor/BlockEditor.images.test.tsx > retains unknown document content in a safe state without stripping and autosaving
+[tiptap warn]: Invalid content. Passed value: { type: 'doc', content: [ { type: 'futureBlock', attrs: [Object] } ] } Error: RangeError: Unknown node type: futureBlock
+    at Schema.nodeType (file:///C:/GitDev/vaultor-kb/frontend/node_modules/prosemirror-model/dist/index.js:2493:19)
+    at Node.fromJSON (file:///C:/GitDev/vaultor-kb/frontend/node_modules/prosemirror-model/dist/index.js:1540:27)
+    at Schema.nodeFromJSON (file:///C:/GitDev/vaultor-kb/frontend/node_modules/prosemirror-model/dist/index.js:2451:42)
+    at Array.map (<anonymous>)
+    at Fragment.fromJSON (file:///C:/GitDev/vaultor-kb/frontend/node_modules/prosemirror-model/dist/index.js:324:41)
+    at Node.fromJSON (file:///C:/GitDev/vaultor-kb/frontend/node_modules/prosemirror-model/dist/index.js:1539:32)
+    at Schema.nodeFromJSON (file:///C:/GitDev/vaultor-kb/frontend/node_modules/prosemirror-model/dist/index.js:2451:42)
+    at createNodeFromContent (file:///C:/GitDev/vaultor-kb/frontend/node_modules/@tiptap/core/dist/index.js:596:23)
+    at createDocument (file:///C:/GitDev/vaultor-kb/frontend/node_modules/@tiptap/core/dist/index.js:1065:9)
+    at Editor.createDoc (file:///C:/GitDev/vaultor-kb/frontend/node_modules/@tiptap/core/dist/index.js:6576:24)
+
+ ✓ src/components/editor/BlockEditor.images.test.tsx (2 tests) 169ms
+ ✓ src/lib/markdown/mounted.test.tsx (20 tests) 3167ms
+
+ Test Files  12 passed (12)
+      Tests  156 passed (156)
+   Start at  22:48:08
+   Duration  36.81s (environment 89%, import 6%, tests 4%, transform 1%)
+
+JSON report written to C:/GitDev/vaultor-kb/native/linked-markdown/evidence/frontend-tests.json

@@ -32,14 +32,14 @@ export function Surface({ lab }: { lab: Lab }) {
     return () => { detach(); editor.view.dom.removeEventListener('keydown', key, true); editor.off('transaction', transactions); };
   } }), [lab, session]);
   const editRegion = (pos: number) => {
-    if (!lab.editor || !['ready', 'needs-source'].includes(status.state)) return;
+    if (!lab.editor || status.state !== 'ready') { setError('Source fallback requires the last validated document. Retain this draft or Undo the unsupported action first.'); return; }
     let region = 0;
     lab.editor.state.doc.forEach((node, offset) => {
       if (node.type.name === 'paragraph' && !node.content.size) return;
       const block = region++;
       if (pos >= offset && pos < offset + node.nodeSize) {
         setRetainedDraft(JSON.stringify(session.checkpoint().draft)); setSourceEdit({ block, text: '', loading: true });
-        void session.readRegion(block).then(text => setSourceEdit(old => old?.block === block ? { block, text } : old)).catch(e => setError(String(e)));
+        void session.readRegion(block, node.toJSON()).then(text => setSourceEdit(old => old?.block === block ? { block, text } : old)).catch(e => setError(String(e)));
       }
     });
   };

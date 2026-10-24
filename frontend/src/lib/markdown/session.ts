@@ -32,6 +32,7 @@ export class MarkdownSession {
   readonly ready = new Promise<void>((resolve, reject) => { this.readyResolve = resolve; this.readyReject = reject; });
   private port: MarkdownPort;
   private timeoutMs: number;
+  private regionTicket?: { block: number; version: number; token?: string };
   readonly originalBytes: Uint8Array;
   constructor(port: MarkdownPort, bytes: Uint8Array, timeoutMs = 15000, options: { stress?: boolean } = {}) {
     this.port = port; this.timeoutMs = timeoutMs;
@@ -61,7 +62,7 @@ export class MarkdownSession {
     if (reply.type === 'ready') { this.initialDoc = reply.doc; this.source = reply.source; this.status = { ...this.status, state: 'ready' }; this.readyResolve(); this.emit(); return; }
     this.busy = false; this.inFlight = undefined;
     if (reply.type === 'error') { this.fail(reply.reason); return; }
-    if (reply.type === 'region') { this.regionResolve?.(reply.text); this.regionResolve = undefined; this.regionReject = undefined; this.sendLatest(); return; }
+    if (reply.type === 'region') { if (this.regionTicket) this.regionTicket.token = reply.token; this.regionResolve?.(reply.text); this.regionResolve = undefined; this.regionReject = undefined; this.sendLatest(); return; }
     this.lastTelemetry = { version: reply.version, result: reply.result };
     this.historyBytes = reply.historyBytes;
     if (reply.result.accepted) { this.source = reply.result.source; this.status = { ...this.status, acceptedVersion: reply.version }; }
@@ -75,22 +76,26 @@ export class MarkdownSession {
   }
   submit(doc: JSONContent) {
     if (this.disposed || this.status.state === 'failed' || !this.initialDoc) throw new Error('SESSION_CLOSED_OR_FAILED');
-    this.draft = doc; const version = this.status.version + 1;
+    this.regionTicket = undefined; this.draft = doc; const version = this.status.version + 1;
     this.status = { ...this.status, version, state: 'validating', reason: undefined }; this.queued = { version, doc };
     this.sendLatest(); this.emit();
   }
   editSource(block: number, text: string): Promise<JSONContent> {
     if (this.busy || this.queued || this.disposed || this.status.state === 'failed') return Promise.reject(new Error('SOURCE_EDIT_NOT_READY'));
+    const ticket = this.regionTicket; this.regionTicket = undefined;
+    if (!ticket?.token || ticket.block !== block || ticket.version !== this.status.version || this.status.state !== 'ready') return Promise.reject(new Error('SOURCE_REGION_TICKET_REQUIRED'));
     const version = this.status.version + 1;
     this.status = { ...this.status, version, state: 'validating' }; this.busy = true; this.inFlight = version; this.watchdog();
     const pending = new Promise<JSONContent>((resolve, reject) => { this.sourceResolve = resolve; this.sourceReject = reject; });
-    this.port.postMessage({ type: 'source', version, block, text }); this.emit(); return pending;
+    this.port.postMessage({ type: 'source', version, token: ticket.token, text }); this.emit(); return pending;
   }
-  readRegion(block: number): Promise<string> {
+  readRegion(block: number, expected: JSONContent): Promise<string> {
     if (this.busy || this.queued || this.disposed || this.status.state === 'failed') return Promise.reject(new Error('SOURCE_EDIT_NOT_READY'));
+    if (this.status.state !== 'ready' || this.status.version !== this.status.acceptedVersion) return Promise.reject(new Error('SOURCE_REGION_REQUIRES_VALIDATED_DRAFT'));
+    this.regionTicket = { block, version: this.status.version };
     this.busy = true; this.inFlight = this.status.version; this.watchdog();
     const result = new Promise<string>((resolve, reject) => { this.regionResolve = resolve; this.regionReject = reject; });
-    this.port.postMessage({ type: 'region', version: this.status.version, block }); return result;
+    this.port.postMessage({ type: 'region', version: this.status.version, block, expected }); return result;
   }
   async applySource(editor: Editor, block: number, text: string) {
     // Caller explicitly chose the targeted replacement. Retain the old draft for

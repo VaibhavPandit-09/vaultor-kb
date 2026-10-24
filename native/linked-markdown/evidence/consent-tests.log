@@ -1,0 +1,15 @@
+✔ main consent sends reviewed path only to private host and returns only opaque root (1.7595ms)
+✔ reject remote even with matching token (0.3678ms)
+✔ reject browser even with matching token (0.207ms)
+✔ reject android even with matching token (0.1321ms)
+✔ renderer path, subframe, foreign workspace/generation/token cannot authorize (0.3907ms)
+✔ owner epoch switch during picker prevents any registration (1.167ms)
+✔ cancel and duplicate pickers do not acquire authority (0.3111ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 85.4791

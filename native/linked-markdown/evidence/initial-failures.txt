@@ -1,0 +1,36 @@
+PASS explicit Save preserves displaced B, validated L, rejected-draft payload, metadata and UTF8/CRLF
+PASS scope and opaque capability denial
+PASS root grants require signed path, expiry and one-use nonce
+PASS traversal, ADS paths, reserved names, absolute paths and .git refused
+PASS forged validation proof and raw visual JSON cannot Save
+PASS newer unvalidated or failed proof revokes older Save candidate
+FAIL external same-file revision before Save is CONFLICT java.lang.AssertionError
+FAIL replacement with same bytes never silently retargets identity java.lang.AssertionError
+FAIL competing in-place writer is denied during verified native lease java.lang.AssertionError
+FAIL exclusive publication preserves interloper created during capture gap java.lang.AssertionError
+FAIL atomic editor save in gap is preserved and publication refused java.lang.AssertionError
+PASS directory/root rename attempt is denied while ancestor pins are held
+PASS hardlinks refused, original and alias intact
+PASS real junction escape refused before accessing outside documentation
+PASS read-only file is not chmodded or overwritten
+PASS real denied read ACL leaves original and durable local draft
+FAIL independent process lock blocks Save without bypass java.lang.NullPointerException: Cannot invoke "String.equals(Object)" because the return value of "java.io.BufferedReader.readLine()" is null
+FAIL missing file is not automatically recreated java.lang.AssertionError
+PASS source unavailable differs from deletion; reconnect invalidates old epoch
+PASS root path reuse cannot reconnect a different directory
+PASS draft protection continues during explicit source disconnection
+PASS larger files are read-only and chunk accessible without conversion
+PASS simulated ENOSPC before capture retains full journal and original
+PASS journal corruption/truncation retains valid prior records; recovery never writes source
+PASS process termination at prepared
+PASS process termination at staged
+PASS process termination at before-capture
+PASS process termination at captured-before-journal
+PASS process termination at captured
+PASS process termination at published-before-journal
+PASS process termination at published
+PASS process termination at committed
+FAIL notifications and periodic rechecks retain dirty drafts and see rapid/Git writes java.lang.AssertionError
+FAIL own Save watcher events are rechecked and later external edits are not suppressed java.lang.AssertionError
+PASS repeated Save/restart recovers drafts and never replays writes
+passed=26 failed=9

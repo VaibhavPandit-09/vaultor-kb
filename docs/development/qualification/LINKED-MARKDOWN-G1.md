@@ -2,6 +2,8 @@
 
 Reviewed 2026-10-24. Authoritative Gate 1 contract, progress and evidence. Continues [qualification](LINKED-MARKDOWN.md) at clean master/origin `13486fa`. Scope: source-preserving everyday editing engine and isolated mounted-editor integration. No linked roots, disk writes/watchers, managed-note redesign, protocols/archives, releases or installed-app changes.
 
+Continuation: the user accepted this bounded contract for engineering and separately authorized [Gate2 native safety](LINKED-MARKDOWN-G2.md) from `faee732`. Physical/platform and production-release acceptance remain outstanding; historical Gate1 stop instructions below describe that gate's original authorization.
+
 
 ## Gate 1 remediation — requalified Conditional
 

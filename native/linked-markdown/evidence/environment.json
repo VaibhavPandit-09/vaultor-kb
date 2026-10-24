@@ -1,0 +1,34 @@
+{
+  "recordedUtc": "2026-10-24T18:08:34.6136136Z",
+  "baseline": "faee732",
+  "os": "Microsoft Windows 11 Home Single Language",
+  "osVersion": "10.0.26300",
+  "architecture": "AMD64",
+  "java": "java 25.0.3 2026-04-21 LTS\nJava(TM) SE Runtime Environment (build 25.0.3+9-LTS-195)\nJava HotSpot(TM) 64-Bit Server VM (build 25.0.3+9-LTS-195, mixed mode, sharing)",
+  "node": "v24.18.1",
+  "worker": [
+    {
+      "sha256": "671dd2451f76fa4758e14279011c1a2e4f108f83600873f1c8c19d7d2b10ed66",
+      "file": "markdown.worker-DzxLsf1Z.js"
+    }
+  ],
+  "coverage": "Oracle Java on Windows local NTFS x64; not installed Temurin, physical input, power loss or other platforms",
+  "nativeSources": [
+    {
+      "file": "ChangeMonitor.java",
+      "sha256": "477dd3e1f3310c5a1026f1c71ba4a114a08d519ffdd11667700647ffc35f5b88"
+    },
+    {
+      "file": "Journal.java",
+      "sha256": "002cf43c0257f986a9537671ded4541f1c856b5b81d62fc5f961dcf64c0290bc"
+    },
+    {
+      "file": "LinkedStore.java",
+      "sha256": "60fae9ff8a370314e7acebb6f34db6dc60fb60f6e0f51eb64ebf224714847002"
+    },
+    {
+      "file": "WindowsFiles.java",
+      "sha256": "e0eadd99be8636d70dd9ac53f1322c9d11fc56098cecc01e4668f70bb745e1f9"
+    }
+  ]
+}

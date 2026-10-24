@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-24T17:24:05.291Z",
+  "browser": "156.0.4314.42",
+  "surface": "headless Edge actual mounted BlockEditor/module worker; not physical IME/installed Electron",
+  "checks": [
+    "real mounted token-backed protected source edit preserves unrelated source",
+    "rejected structural draft cannot open an ordinal source target or export Save bytes",
+    "Undo retains and restores rejected visual work without source damage",
+    "intervening accepted transaction invalidates open source dialog ticket",
+    "fresh explicit review obtains a new token and safely applies"
+  ],
+  "errors": []
+}
