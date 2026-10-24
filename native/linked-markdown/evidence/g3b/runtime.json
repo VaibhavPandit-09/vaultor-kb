@@ -1,0 +1,19 @@
+{
+  "capturedUtc": "2026-10-24T22:48:25.2272942Z",
+  "os": "Microsoft Windows 11 Home Single Language",
+  "osVersion": "10.0.26300",
+  "architecture": "64-bit",
+  "javaRelease": [
+    "IMPLEMENTOR=\"Eclipse Adoptium\"",
+    "JAVA_RUNTIME_VERSION=\"25.0.4.1+1-LTS\"",
+    "OS_ARCH=\"x86_64\""
+  ],
+  "filesystem": "Fixed local NTFS, verified by native admission",
+  "qualifiedWriteEnvelope": "None: strict metadata admission refused; content-only probes are not Save",
+  "replacementTests": "55 passed",
+  "candidateTests": "9 passed",
+  "directoryLeaseConfigurations": 6,
+  "gate2Regression": "68 passed",
+  "bridgeRefusal": "1 passed",
+  "mandatoryRejectedInplace": "25 passed, 1 failed, 1 unqualified; expected exit1"
+}

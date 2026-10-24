@@ -10,7 +10,110 @@ Reviewed 2026-10-25. Authoritative Gate 3 tracker and continuation point. Starti
 | G3-D Runtime/fault/long-session | Blocked | Actual bundled Windows JRE/Electron, independent writers, faults, resource retention and measured sustained behavior | Actual bundled Temurin and development Electron used;7 real process-halt windows tested. Sustained resource/input/save latency, physical input, actual full volume/VM, privileged metadata and independent review remain unqualified. |
 | G3-E Readiness/roadmap | Passed (assessment only) | Independent assessment of ten requested dimensions, exact limits and staged Gate 4 plan | BLOCKED assessment and prerequisites below. This phase status describes the assessment, not acceptance of the combined system. Stop for architecture review; no Gate4/release. |
 
-## Initial decisions and risks
+Latest focused remediation: **G3B remains BLOCKED on metadata admission**, despite55 passing content/recovery checks. New-inode probes preserve old aliases; no metadata-qualified publisher is approved. Read G3B-R4 below before the historical Gate3 continuation.
+
+## G3B publication remediation (authorized from e599ec4)
+
+Public/private-desktop Save, repair and restore remain refused. This focused remediation does not resume G3-A/C/D or Gate4. All writes use generated scratch NTFS fixtures and the bundled Windows runtime.
+
+| Phase | Status | Acceptance / next evidence |
+| --- | --- | --- |
+| G3B-R1 Architecture review | Passed | Compared3 actual candidates. Select handle-relative detach + exclusive publication for further engineering; reject raw overwrite and unrestricted ReplaceFileW. Guarantees and failures below. |
+| G3B-R2 Native implementation | Passed (isolated experiment) | Host-created candidate, B/L/V journals, stronger directory leases, immutable new inode and final identity/revision checks implemented. Strict metadata gate refuses before detach. Content-only mode cannot return COMMITTED. |
+| G3B-R3 Adversarial qualification | Blocked (content probes passed) |55 replacement and9 candidate checks pass; directory sharing matrix,68 Gate2 regressions and bridge refusal pass. Full SACL/inheritance and API partial-state qualification remain unmet. |
+| G3B-R4 Decision | Passed (assessment only) | **BLOCKED** for a qualified publisher. Content confinement is demonstrated; no candidate meets the full metadata/recovery contract. Public Save/repair/restore stay refused; stop for review. |
+
+Initial hypothesis: detach original entry by held handle into retained recovery storage, then publish a separately prepared immutable inode using handle-relative rename with ReplaceIfExists=false. This retains a missing-name interval, but refuses an interloper rather than overwriting it. Metadata preparation must precede publication. Unknown/unreadable metadata must refuse strict writes; a test-only content experiment cannot count as metadata acceptance. ReplaceFileW's path API, documented partial states and metadata merging will be measured rather than assumed safe.
+
+### G3B-R1 candidate comparison and selection
+
+| Candidate | Actual observations | Decision |
+| --- | --- | --- |
+| ReplaceFileW with backup, flags0 | Outside old alias retains B; source receives replacement inode. Backup captures a revision introduced after comparison even though API returns success. Existing backup was overwritten. Real named stream, compression, creation time and ordinary security observations survived; a real NTFS EA **did not** reach the new inode (backup retained it). Holding the original READ+DELETE lease returns sharing error32. | Not selected as a qualified publisher. A fresh protected backup namespace and post-backup identity comparison would be essential. Source/stage/backup are pathname parameters; private stage merge writes and documented partial states require more qualification. Native success is not CAS or metadata parity. |
+| Native handle-relative replacing rename | Experiment overwrote an unseen external revision and retained no displaced inode. | Rejected, including FileRenameInformationEx replace/POSIX variants with the same absent-backup problem. Stronger open-handle replacement is not revision CAS. |
+| Native handle-relative capture + exclusive new-inode publication | Original handle never requests content WRITE and receives no SetSecurityInfo. Captured original stays in the recovery operation. Links introduced after initial single-link admission retain B. Gap occupants are never overwritten. New inode is completely written before publication; no postpublication content/metadata repair. | Selected **content-confinement mechanism**, not a qualified Save implementation. Metadata admission is still blocked. Missing-path recovery is explicit; there is no automatic rollback/replay. |
+
+Primary references: [ReplaceFileW](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-replacefilew) documents unsupported WRITE_THROUGH, preservation classes and1175/1176/1177 partial states. [FILE_RENAME_INFORMATION](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_rename_information) defines RootDirectory and ReplaceIfExists. No standard Windows rename-exchange or content-hash CAS is assumed. Reusing the defeated original-inode writer/oplocks is rejected. Cooperating-process locks cannot constrain unrelated editors. A privileged metadata broker is an architectural follow-up, not an implemented guarantee.
+
+### G3B-R2 implemented contract
+
+`LinkedStore.replacementProbe` is package-private, requires an explicit test JVM property and consumes an existing host-private validated ticket. No renderer or PrivateHost command can select it. Scope/root/document epoch, source limit, quota and immutable B/L/V records remain enforced. Strict mode explicitly requests ACCESS_SYSTEM_SECURITY on the source lease and receives OpenRelative:1314 (required privilege not held) under the current token, refusing before detach. Merely querying a plain READ_CONTROL handle returns5 and would not by itself establish inability to obtain the required access; both observations are recorded. Even a future successful full inspection currently returns SACL_TRANSFER_UNQUALIFIED until a transfer policy is qualified.
+
+The independently labeled **content-only probe** explicitly keeps the new inode's protected private ACL rather than claiming to preserve source metadata. It can return OBSERVED_NOT_QUALIFIED, CONFLICT or RECOVERY_REQUIRED, **never COMMITTED**. This mode is a disposable experiment; its permission changes are not an accepted product policy. Do not activate it to make metadata tests appear successful.
+
+Protocol: journal B/L/V before mutation; acquire confined original READ+DELETE lease; compare identity/hash/known metadata; audit unsupported classes; stage/flush L privately; retain the new inode under a read/write/delete lease; prepare its protected probe ACL; verify stage; detach original entry into captured.md by handle; journal capture; recheck scope/source metadata; exclusively rename new inode into the absent authorized leaf; journal publication; close leases; recheck source identity/hash/metadata; journal the observation; recheck again before receipt. Any uncertainty preserves evidence and refuses success. `external.md` retains an observed postpublication D where readable; fresh source reads stop after revocation or failed root checks. No original content or explicit original security/timestamp setter is used.
+
+**Directory lease correction:** attribute-only handles allowed an emptied parent to move. A real independent process reproduced this; see `empty-parent-move-failure.log`. `pinPublication` now acquires directory GENERIC_READ handles with read/write sharing but no delete sharing. Six lease combinations were tested: read sharing alone denied the attack but also blocked our rename with32; read/write sharing allowed our rename and denied external parent move; allowing delete sharing allowed the move. Junction mutation still succeeds. Verification detects it, and a direct handle-relative rename after mutation returned1921 without creating an outside file. See `directory-leases.txt`. Legacy Gate2 pin behavior is preserved for its historical experiments; the new candidate explicitly selects stronger leases for root, parent, private store and operation.
+
+**Revision guarantee:** immutable B/L/V plus retained captured object and any readable observed D are recoverable. Pre-lease replacement is conflict; in-lease data writer/delete/replace attempts were denied; gap creation is recovery-required with all versions retained. Post-release or post-finalization write/replacement/deletion cannot report success. A reused pathname with identical bytes must still match the published identity. This is not linearizable CAS: an unrelated process can mutate after the final observation, and no client can preserve every ephemeral external revision another process itself overwrites. Private journals are trusted against ordinary tools, not a malicious same-user process that steals host credentials or tampers with private recovery storage; checksums detect corruption, not such an attacker. Admin/kernel/storage attacks are outside this process-level evidence.
+
+### G3B metadata admission and measured matrix
+
+| Class | ReplaceFileW observation | Selected candidate / initial strict policy |
+| --- | --- | --- |
+| Owner/group | Hashes matched in ordinary fixtures | Protected-DACL new-object transfer matched; strict full policy not qualified. Never change old object. |
+| DACL / inheritance | Ordinary DACL and unprotected state matched | Transferring inherited ACEs into a private parent produced NEW_METADATA_MISMATCH; earlier attempt dropped inherited ACEs and denied reopening stage. Protected-DACL transfer matched. No general inheritance policy accepted. |
+| Full SACL | Plain READ_CONTROL query returned5; explicit ACCESS_SYSTEM_SECURITY lease request returned1314 | Unavailable under current token; strict admission refuses **before detach**. No audit-SACL transfer or privilege elevation was attempted. |
+| Integrity label | Default/absent label hash matched | Explicit labels refused by observation audit. Positive explicit-label fixture remains unavailable under this token; not certified from default-label evidence. |
+| Ordinary flags | Archive20 matched | Only NORMAL/ARCHIVE observations admitted in content probe; readonly changes refuse. New inode metadata remains unqualified. |
+| Creation / modification / access times | Creation retained, modification became replacement's time; access changed during observation | Protected-DACL preparation retained creation/ordinary flags. NTFS can tunnel creation time on name reuse; content-only logic permits only its recorded stage or old creation time, with no qualified metadata claim. Modified/access/NTFS change-time policy remains unaccepted. |
+| Alternate streams | Real named stream copied and retained in backup | Existing or racing ADS refuse. Native fixture helper needed because Java NIO rejects colon stream paths. |
+| NTFS EA | **Lost from new file**, retained in backup | Real EA fixture refused unchanged. No EA transfer claim. |
+| Compression | Real compressed source replaced successfully with compressed new source | Compressed input refused unchanged. No broader compression policy. |
+| EFS | Not exercised; avoiding creation of user EFS credentials | Encrypted attribute excluded. Positive encrypted fixture requires disposable VM/certificate scope; not qualified. |
+| Short names | API documents preservation; arbitrary short-name parity not qualified | Distinct8.3 alias refused. Case-only alternate spelling of an already8.3 leaf is distinguished from a second short name. |
+| Object identifiers / unusual attributes | General parity not established | Non-mutating GET_OBJECT_ID audit refuses existing IDs and unexpected failures; other attrs/cloud/reparse/sparse/etc refused. Not every positive fixture exists. |
+| Hardlinks | Old alias content retained | Initially multi-linked sources refused. Late old links retain B; a late link to new inode retains L and causes uncertainty/refusal. Replacement intentionally changes authorized entry identity; never in-place patch an aliased original. |
+
+`ReplacementMetadata.prepareNew` is an experimental helper, not write admission. The probe uses no inherited-DACL workaround, no unsupported SetKernelObjectSecurity fallback (Microsoft explicitly advises against that API for filesystem descriptors), and no postpublication metadata repair. Actual metadata output and rejected candidates are in `native/linked-markdown/evidence/g3b/`.
+
+### G3B-R3 evidence, recovery and reproducibility
+
+All results below are **new** Windows11 x64 / fixed local NTFS experiments using the actual bundled Temurin25.0.4.1+1-LTS; native sources compile with the existing Java25 compiler. No installation, personal Markdown, workspace or external project was modified. Every fixture is generated under ignored `.scratch`. No renderer, frontend editor, managed-note storage, updater, protocol or archive behavior changed. Compilation and native checks were appropriate; frontend/backend product suites were not rerun for this isolated native remediation.
+
+| Evidence file under `native/linked-markdown/evidence/g3b/` | Result |
+| --- | --- |
+| replacement-tests.txt / replacement-run.log | **55 passed,0 failed**: strict/default refusal; original/new hardlinks; old alias security/creation/modified observations unchanged; conflicts before lease; blocked data writers; gap interloper preservation; same-byte path reuse; post-release/finalization mutations; readonly/DACL/ADS/EA/compression; actual independent lock/map; parent rename and real junction attack; revocation; consumed-ticket retry refusal; corrupt recovery;20 reopen cycles;13 independent process halts. |
+| candidate-tests.txt / candidate-observations.txt | **9 passed,0 failed**. These include successful negative characterizations: raw overwrite loses D, ReplaceFileW overwrites backup and omits EA, private inherited-DACL transfer fails. Passing assertions do not make those candidates acceptable. |
+| directory-leases.txt |6 actual sharing/access configurations; strong read+share3 permits our rename, denies parent move, permits junction mutation; native rename after reparse returns1921 with no outside file created. |
+| gate2-regression-tests.txt | **68 passed,0 failed**, bundled runtime. Historical Gate2 evidence restored byte-for-byte. |
+| bridge-refusal.log | **1 passed**. Save/repair/restore remain refused and no replacement-probe command exists. |
+| rejected-inplace-results.txt | Mandatory prior negative regression retained: **25 passed,1 failed,1 unqualified**, expected exit1. The unsafe hardlink assertion still fails; it was neither deleted nor recategorized as an acceptable writer. Original G3 evidence restored byte-for-byte. |
+| initial-replacement-failure.txt / initial-parent-race.log / empty-parent-move-failure.log | Retained failed experiments: metadata assumptions, an incorrect assumption that attribute pins prevent empty-directory rename, and the precise independent rename result0. Final tests require the corrected lease behavior; they do not ignore a confinement failure. |
+
+Separate child processes perform source writes/replacements/deletes, hardlinks, directory moves/junctions, readonly/DACL/ADS mutations and map/lease holding. The directory-sharing probe also bypasses the prepublication attribute recheck deliberately to test the native handle-relative operation after a real junction mutation: it refuses rather than creating a file in the outside target. This is stronger evidence than testing only an early path-string check.
+
+Thirteen child processes halt with exit76 at prepared, stage chunk, stage pre-flush, staged, metadata-ready, pre-capture, capture-before-record, captured, pre-publication, publication-before-record, published, lease-released and journal-finalized. On restart B/L/V remain readable from checksummed records. Original path is B, missing, or L according to the actual boundary; capture remains B after detach. Inspection never republishes or cleans evidence. A deliberately truncated09.rec marks damaged-tail recovery; it cannot authorize review/restore. A reviewed missing path subsequently filled by an independent occupant refuses restoration and preserves that occupant and captured B. Source restore remains disabled in the host; this is native guard evidence only, not an enabled recovery workflow.
+
+**Not proved:** termination inside the kernel's individual rename/ReplaceFileW operation, actual1175/1176/1177 partial outcomes, physical power loss, OS crash/controller flush durability, actual volume exhaustion, positive privileged SACL/explicit-label/EFS fixtures, every filesystem metadata class, or independent security review. Existing ReplaceFileW tests reproduce32 and stale-base success but do not certify its documented partial states. Failure/corruption handling retains uncertainty; it does not turn an unknown native outcome into success. No universal durability claim follows from process halts or FlushFileBuffers.
+
+Reproduce from repository root after Java compilation:
+
+```powershell
+javac -d native/linked-markdown/build native/linked-markdown/src/vaultor/linked/*.java native/linked-markdown/test/vaultor/linked/*.java
+& desktop/bundle/runtime/bin/java.exe --enable-native-access=ALL-UNNAMED -cp native/linked-markdown/build vaultor.linked.ReplacementTests
+& desktop/bundle/runtime/bin/java.exe --enable-native-access=ALL-UNNAMED -cp native/linked-markdown/build vaultor.linked.PublicationCandidates
+& desktop/bundle/runtime/bin/java.exe --enable-native-access=ALL-UNNAMED -cp native/linked-markdown/build vaultor.linked.PublicationPinsProbe
+node --test desktop/qualification/linked-markdown/bridge-refusal.test.mjs
+```
+
+The original `Gate3Tests` remains an explicitly rejected writer characterization expecting exit1; it is not part of a passing aggregate. Running `SafetyTests`/`Gate3Tests` writes their historical default evidence files, so preserve them and put new results under g3b as this run did. The replacement test JVM property is set only inside its disposable runner. No desktop command or mode selects it.
+
+The native comparison also exercises both FileRenameInformation10 replacing rename and FileRenameInformationEx65 with flags3 (replace+POSIX). Both succeed without an original lease and lose the unbacked competing inode. A separate native POSIX replacing child, run while the selected publisher holds its original lease, was refused (exit2); authorized path became L and the outside old alias remained B. Native flags were tested with a successful control rather than assuming Java Files.move exercised the same operation.
+
+Two test-harness mistakes were also corrected without changing source fidelity/security acceptance: Java NIO cannot address ADS and was replaced with a fixture-only native helper; a pre-ReplaceFile composite identity included creation time, which ReplaceFileW deliberately transfers from the old file. The candidate test now compares physical volume/file-ID components when proving which inode was published. Actual publication receipts still compare the **complete postpublication revision identity**, including creation metadata, and same-byte path reuse remains a mandatory uncertain result. Timestamp observations are not a blanket metadata guarantee; [Microsoft's filesystem behavior reference](https://download.microsoft.com/download/4/3/8/43889780-8d45-4b2e-9d3a-c696a890309f/file%20system%20behavior%20overview.pdf) also describes creation-time tunneling. [Backup privilege guidance](https://learn.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/back-up-files-and-directories) makes clear why a future metadata helper's privileges require explicit security review rather than routine activation.
+
+### G3B-R4 verdict and exact continuation
+
+**BLOCKED for full publication qualification.** The original hardlink-content violation is eliminated in the tested new-inode mechanism: old aliases remain B, new aliases see L, existing hardlinks refuse, and no original content/security setter is used. Revision/gap and process-recovery behavior is demonstrated within the tested Windows scope. This is not enough to meet the user's full contract: strict writes currently all refuse because full security inspection/transfer is unqualified; ordinary inherited metadata cannot silently be replaced by a private ACL. No candidate is approved for normal Save, repair or restore.
+
+The smallest credible next security-architecture change to investigate is a **host-private, narrowly scoped metadata inspection/transfer facility** with explicitly reviewed privilege requirements, tested on a disposable Windows VM. It must inspect full security information and unsupported metadata by confined handles, prepare a new inode with correct source security/inheritance before publication, and refuse unknown classes. Protected-DACL evidence is a starting subset, not permission to discard inheritance or SACLs. BackupRead/BackupWrite or another supported native mechanism may be investigated, but no privilege enabling, helper installation or claim of success occurred here. Privileged observation also needs race handling and independent security review; it is not automatically a solution.
+
+An alternative would be an explicitly reviewed product contract accepting specific replacement metadata semantics while keeping unknown/per-file security read-only. That changes the current fidelity/security contract and has **not** been adopted. Explicit new-copy export remains a safe engineering fallback, not a substitute for the promised direct editing experience.
+
+Resume only focused G3B metadata/publication engineering after review, with these exit conditions: full-SACL and inheritance policy accepted and tested; positive refusal fixtures for each excluded metadata class; old aliases' content and applicable security unchanged; prepared replacement metadata verified before publication and reconciled after namespace operations; API-specific uncertain states/recovery tested; missing paths/reused occupants protected; new adversarial tests plus the mandatory old failures retained; bridge still refused until separately authorized. Only then seek authorization to finish G3-A/C/D. Do not start those phases or Gate4 from this checkpoint.
+
+## Historical initial decisions and risks
 
 Keep authoritative B (original), L (validated source), V (visual draft) and D (fresh disk) separate. The host must never accept renderer source as validated. Native Save consumes a one-use host-created candidate. Trusted validation must reproduce source transitions using the existing engine, not merely parse arbitrary renderer replacement bytes. Scope includes workspace/generation, connection epoch, document epoch and edit version. Renderer receives opaque capabilities and display names only.
 
@@ -18,7 +121,9 @@ Gate 2's missing-path exclusive publication and incomplete metadata window are n
 
 UI work follows the fully read UI philosophy: audit the existing lab before changes, specify states, then implement a compact development-only surface with shared editor/modal/focus primitives. Comparison/recovery is a contextual disclosure around the active document, not permanent diagnostic chrome. Reduced-motion correctness is immediate; no correctness waits for animation.
 
-## Continuation
+## Historical Gate3 stop at e599ec4
+
+The following stop is retained as history. Its focused G3B review was subsequently authorized and executed above; use G3B-R4 for current continuation. Remaining G3-A/C/D and Gate4 are still unauthorized.
 
 Stop for review of G3-B's failed confinement assumption. Do not enable the original-object writer or silently restore Gate2 publication. The next authorized continuation must resolve the publication/metadata contract first, then finish G3-A/C/D. This is an isolated engineering checkpoint, not an accepted release subsystem. Initial observations below are historical and superseded by the explicit rejection that follows.
 
@@ -111,7 +216,7 @@ Process halts were tested; OS/power/controller failures were not. Flush completi
 
 **BLOCKED.** The replacement publication assumption failed a core confinement guarantee. This triggers the requested stop-for-review condition. The private integration is useful evidence, not a foundation accepted for public activation.
 
-## Exact continuation and Gate 4 plan
+## Historical Gate3 continuation and Gate 4 plan (read G3B-R4 first)
 
 Authorize a focused G3-B architecture review first. Reproduce both hardlink probes using the bundled runtime. Investigate replacement-inode publication preserving displaced bytes/metadata without an overwrite race, or a demonstrably stronger native mechanism. Do not treat hash-check/rename as CAS, remove the failed assertion or accept out-of-root effects. Contract changes require explicit review. Keep bridge writes refused until independent-process safety tests establish the replacement. Revalidate Gate2 hardlink/reparse behavior and every metadata transfer primitive.
 

@@ -1,0 +1,10 @@
+PASS ReplaceFileW backup leaves old hardlink content B and publishes a different inode
+PASS ReplaceFileW retains actually displaced external revision but is not comparison CAS
+PASS ReplaceFileW metadata including EA and ADS is measured rather than assumed
+PASS ReplaceFileW sharing failure leaves source and stage intact
+PASS ReplaceFileW existing backup behavior retains observation of all names
+PASS raw handle-relative overwrite loses an unseen competing revision and is rejected
+PASS inherited-DACL prepublication transfer in private staging is refused
+PASS protected-DACL transfer onto a new object is independently measured
+PASS real NTFS compression preservation by ReplaceFileW is measured
+passed=9 failed=0

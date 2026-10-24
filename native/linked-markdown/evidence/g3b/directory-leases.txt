@@ -1,0 +1,6 @@
+access=80000000 sharing=1 ownRename=RenameRelativeExclusive:32 independentMove=2 junction=2 handle-relative-after-reparse=not attempted outside-file-created=false
+access=80000000 sharing=3 ownRename=ok independentMove=2 junction=0 handle-relative-after-reparse=RenameRelativeExclusive:1921 outside-file-created=false
+access=80000000 sharing=7 ownRename=ok independentMove=0 junction=not attempted handle-relative-after-reparse=not attempted outside-file-created=false
+access=c0000000 sharing=1 ownRename=RenameRelativeExclusive:32 independentMove=2 junction=2 handle-relative-after-reparse=not attempted outside-file-created=false
+access=c0000000 sharing=3 ownRename=ok independentMove=2 junction=0 handle-relative-after-reparse=RenameRelativeExclusive:1921 outside-file-created=false
+access=c0000000 sharing=7 ownRename=ok independentMove=0 junction=not attempted handle-relative-after-reparse=not attempted outside-file-created=false

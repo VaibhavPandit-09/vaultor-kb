@@ -95,9 +95,10 @@ public final class WindowsFiles {
     public static final class Pins implements AutoCloseable{
         final List<Handle> handles=new ArrayList<>();
         Path actual;
-        Pins(Path directory)throws IOException{
+        Pins(Path directory)throws IOException{this(directory,false);}
+        Pins(Path directory,boolean publication)throws IOException{
             Path absolute=directory.toAbsolutePath().normalize();localNtfs(absolute);Path current=absolute.getRoot();
-            try{handles.add(open(current,0x80,1,OPEN,true));ordinaryDirectory(handles.getLast());actual=canonical(handles.getLast());for(Path segment:absolute){current=current.resolve(segment);handles.add(relative(handles.getLast(),segment.toString(),0,1,true));ordinaryDirectory(handles.getLast());Path child=canonical(handles.getLast());if(!child.toString().equalsIgnoreCase(actual.resolve(segment).toString()))throw new IOException("ANCESTOR_IDENTITY_CHANGED");actual=child;}}catch(IOException e){close();throw e;}
+            try{handles.add(open(current,publication?READ:0x80,publication?3:1,OPEN,true));ordinaryDirectory(handles.getLast());actual=canonical(handles.getLast());for(Path segment:absolute){current=current.resolve(segment);handles.add(relative(handles.getLast(),segment.toString(),publication?READ:0,publication?3:1,true));ordinaryDirectory(handles.getLast());Path child=canonical(handles.getLast());if(!child.toString().equalsIgnoreCase(actual.resolve(segment).toString()))throw new IOException("ANCESTOR_IDENTITY_CHANGED");actual=child;}}catch(IOException e){close();throw e;}
         }
         public Info last()throws IOException{return info(handles.getLast());}
         public Path canonicalPath(){return actual;}
@@ -106,6 +107,10 @@ public final class WindowsFiles {
         public void close()throws IOException{IOException error=null;for(var h:handles.reversed())try{h.close();}catch(IOException e){error=e;}handles.clear();if(error!=null)throw error;}
     }
     public static Pins pin(Path directory)throws IOException{return new Pins(directory);}
+    /** Read-data directory lease denies moves of an emptied publication parent.
+     * Write sharing is necessary for our own rename target open. Reparse changes
+     * are NOT prevented; checks and handle-relative operations remain mandatory. */
+    static Pins pinPublication(Path directory)throws IOException{return new Pins(directory,true);}
     private static void ordinaryDirectory(Handle directory)throws IOException{try(var arena=Arena.ofConfined()){var flags=arena.allocate(JAVA_INT);yes("CaseSensitivityAdmission",invoke("GetFileInformationByHandleEx",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,JAVA_INT),directory.value,23,flags,4));if((flags.get(JAVA_INT,0)&1)!=0)throw new IOException("CASE_SENSITIVE_DIRECTORY_UNQUALIFIED");}}
     /** Notification requests are attached to an already confined directory, not
      * a pathname re-resolved by Java WatchService. Overflow is an invalidation.

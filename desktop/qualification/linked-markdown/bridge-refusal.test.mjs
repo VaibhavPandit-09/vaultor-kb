@@ -15,6 +15,7 @@ test('bundled private host refuses all source publication paths after failed con
     await assert.rejects(channel.call('save','forged-document','forged-epoch','forged-candidate','forged-operation'),/G3_PUBLICATION_UNQUALIFIED/);
     await assert.rejects(channel.call('repair','forged-ticket','local'),/G3_PUBLICATION_UNQUALIFIED/);
     await assert.rejects(channel.call('restore','forged-ticket'),/G3_PUBLICATION_UNQUALIFIED/);
+    await assert.rejects(channel.call('replacement-probe','forged-document'),/PRIVATE_COMMAND/);
     const metrics=await channel.call('metrics');assert.ok(metrics.length>=9);
   } finally {await channel.close();}
   assert.equal(channel.closed,true);assert.equal(channel.pending.size,0);

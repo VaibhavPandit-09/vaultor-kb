@@ -152,6 +152,71 @@ public final class LinkedStore implements AutoCloseable {
             if(!finalState.revision().metadata().equals(base.revision().metadata())){persist(op,r.state("METADATA_RECOVERY_REQUIRED"),4);return new Receipt(operation,savingVersion,"RECOVERY_REQUIRED",finalState.revision());}persist(op,r.state("COMMITTED"),5);hook("committed",op);d.base=finalState;d.saved=savingVersion;if(d.version!=savingVersion)d.candidate=null;return new Receipt(operation,savingVersion,"COMMITTED",finalState.revision());}
         }
     }
+    /** G3B disposable qualification only. No IPC route selects this method.
+     * Content-only mode explicitly cannot return a qualified Save receipt. */
+    synchronized Receipt replacementProbe(Scope s,String cap,String epoch,String candidate,String operation,boolean contentOnlyProbe)throws IOException{
+        scope(s);if(!Boolean.getBoolean("vaultor.linked.g3b.replacement-probe"))throw new IOException("G3B_PROBE_ONLY");
+        var d=doc(s,cap,epoch);try{if(!UUID.fromString(operation).toString().equals(operation))throw new IllegalArgumentException();}catch(Exception e){throw new IOException("OPERATION_ID");}
+        if(originalObjectWrites||candidate==null||!candidate.equals(d.candidate)||d.local==null)throw new IOException("UNVALIDATED_DRAFT");
+        long version=d.version;byte[] local=d.local.clone();var base=d.base;String visual=d.draft;d.candidate=null;
+        try(var root=WindowsFiles.pinPublication(d.root.path);var parent=WindowsFiles.pinPublication(d.root.path.resolve(d.relative).getParent());var privatePins=WindowsFiles.pinPublication(privateRoot)){
+            if(!root.last().identity().equals(d.root.identity))throw new IOException("ROOT_REPLACED");
+            if(!root.last().identity().split(":")[0].equals(privatePins.last().identity().split(":")[0]))throw new IOException("JOURNAL_VOLUME_MISMATCH");
+            Path op=newOperation(operation);try(var operationPin=WindowsFiles.pinPublication(op)){
+                var r=new Journal.Record(operation,owner.workspace(),owner.generation(),d.root.identity,d.relative,epoch,version,"REPLACEMENT_PREPARED",base.revision(),base.bytes(),local,visual);
+                persist(op,r,0);hook("replacement-prepared",op);String leaf=Path.of(d.relative).getFileName().toString();String stagedId,stagedMetadata;
+                try{
+                    hook("replacement-before-lease",op);
+                    try(var old=ReplacementMetadata.sourceLease(parent.handle(),leaf,!contentOnlyProbe)){
+                        var info=WindowsFiles.info(old);byte[] bytes=WindowsFiles.readStart(old,READ_LIMIT);var disk=new Revision(info.identity(),hash(bytes),metadata(old,info));
+                        if(!disk.equals(base.revision())){quota(bytes.length);WindowsFiles.createFlushed(op.resolve("external.md"),bytes);persist(op,r.state("REPLACEMENT_CONFLICT_BEFORE_CAPTURE"),1);return new Receipt(operation,version,"CONFLICT",disk);}
+                        if(!contentOnlyProbe)ReplacementMetadata.requireFullSecurityInspection(old);
+                        var observed=ReplacementMetadata.observe(old);
+                        hook("replacement-compared",op);quota(local.length+7L*Journal.encode(r).length);
+                        WindowsFiles.createFlushed(op.resolve("stage.md"),local,()->hook("replacement-stage-chunk",op),()->hook("replacement-stage-before-flush",op));
+                        persist(op,r.state("REPLACEMENT_STAGED"),1);hook("replacement-staged",op);
+                        // Only this fresh inode receives content or metadata writes.
+                        try(var stage=WindowsFiles.open(op.resolve("stage.md"),WindowsFiles.READ|WindowsFiles.WRITE|WindowsFiles.DELETE|0xc0100,1,WindowsFiles.OPEN,false)){
+                            if(WindowsFiles.info(stage).links()!=1||!hash(WindowsFiles.readStart(stage,SOURCE_LIMIT)).equals(hash(local)))throw new IOException("STAGE_CHANGED");
+                            // Explicit content-only experiment: keep the new
+                            // inode's private metadata. It is NOT a normal Save.
+                            // Inheritance and full SACL transfer remain blocked.
+                            ReplacementMetadata.protectPrivateStage(stage);var stageObserved=ReplacementMetadata.observe(stage);stagedMetadata=metadata(stage,WindowsFiles.info(stage));
+                            persist(op,r.state("REPLACEMENT_CONTENT_ONLY_METADATA_UNQUALIFIED"),2);hook("replacement-metadata-ready",op);
+                            doc(s,cap,epoch);root.verify();parent.verify();operationPin.verify();
+                            if(!ReplacementMetadata.observe(old).fingerprint().equals(observed.fingerprint())||!hash(WindowsFiles.readStart(old,READ_LIMIT)).equals(base.revision().sha256()))throw new IOException("SOURCE_CHANGED_BEFORE_CAPTURE");
+                            hook("replacement-before-capture",op);doc(s,cap,epoch);root.verify();parent.verify();
+                            WindowsFiles.renameExclusive(old,operationPin.handle(),"captured.md");hook("replacement-captured-before-record",op);
+                            persist(op,r.state("REPLACEMENT_CAPTURED"),3);hook("replacement-captured",op);
+                            // Metadata-only changes can evade ordinary share modes.
+                            if(!ReplacementMetadata.observe(old).fingerprint().equals(observed.fingerprint()))throw new IOException("SOURCE_METADATA_CHANGED");
+                            doc(s,cap,epoch);root.verify();parent.verify();operationPin.verify();hook("replacement-before-publish",op);
+                            doc(s,cap,epoch);root.verify();parent.verify();operationPin.verify();
+                            if(WindowsFiles.info(stage).links()!=1||!ReplacementMetadata.observe(stage).fingerprint().equals(stageObserved.fingerprint())||!hash(WindowsFiles.readStart(stage,SOURCE_LIMIT)).equals(hash(local)))throw new IOException("STAGE_CHANGED");
+                            WindowsFiles.renameExclusive(stage,parent.handle(),leaf);stagedId=WindowsFiles.info(stage).identity();hook("replacement-published-before-record",op);
+                            persist(op,r.state("REPLACEMENT_PUBLISHED_REVIEW"),4);hook("replacement-published",op);
+                            var publishedMetadata=ReplacementMetadata.observe(stage);
+                            // NTFS may tunnel the displaced entry's creation time
+                            // onto the new inode. This content-only experiment
+                            // accepts no metadata contract or successful Save.
+                            if(!ReplacementMetadata.sameExceptCreation(publishedMetadata,stageObserved)||(publishedMetadata.creation()!=stageObserved.creation()&&publishedMetadata.creation()!=observed.creation()))throw new IOException("PUBLISHED_METADATA_CHANGED");
+                        }
+                    }
+                    hook("replacement-released",op);doc(s,cap,epoch);root.verify();parent.verify();
+                    var after=snapshot(parent.handle(),leaf,false);
+                    if(!after.revision().identity().equals(stagedId)||!after.revision().sha256().equals(hash(local))||!after.revision().metadata().equals(stagedMetadata))throw new IOException("EXTERNAL_AFTER_PUBLICATION");
+                    persist(op,r.state("REPLACEMENT_OBSERVED_NOT_QUALIFIED"),5);hook("replacement-finalized",op);
+                    // Detect a changed/reused pathname after journal finalization.
+                    var last=snapshot(parent.handle(),leaf,false);if(!last.revision().equals(after.revision()))throw new IOException("EXTERNAL_BEFORE_RECEIPT");
+                    return new Receipt(operation,version,"OBSERVED_NOT_QUALIFIED",last.revision());
+                }catch(IOException failure){
+                    // Original/captured inode, L and V survive. Never replay/rollback.
+                    try{doc(s,cap,epoch);root.verify();parent.verify();var disk=snapshot(parent.handle(),leaf,false);if(disk.size()<=SOURCE_LIMIT){quota(disk.size());if(!Files.exists(op.resolve("external.md"),LinkOption.NOFOLLOW_LINKS))WindowsFiles.createFlushed(op.resolve("external.md"),disk.bytes());}}catch(IOException ignored){/* revoked/unavailable/locked D remains explicit uncertainty */}
+                    persist(op,r.state("REPLACEMENT_UNCERTAIN:"+failure.getMessage()),9);return new Receipt(operation,version,"RECOVERY_REQUIRED",null);
+                }
+            }
+        }
+    }
     private Receipt saveOriginal(Scope scope,String cap,String epoch,String candidate,String operation)throws IOException{
         var d=doc(scope,cap,epoch);try{if(!UUID.fromString(operation).toString().equals(operation))throw new IllegalArgumentException();}catch(Exception e){throw new IOException("OPERATION_ID");}
         if(candidate==null||!candidate.equals(d.candidate)||d.local==null)throw new IOException("UNVALIDATED_DRAFT");

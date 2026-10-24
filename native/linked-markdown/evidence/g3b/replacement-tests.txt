@@ -1,0 +1,56 @@
+PASS replacement probe has no default write admission
+PASS strict metadata admission refuses unreadable or unqualified SACL before detach
+PASS fresh inode publication retains captured B, L and V without qualified Save receipt
+PASS old outside alias stays B when introduced at replacement-compared
+PASS old outside alias stays B when introduced at replacement-stage-chunk
+PASS old outside alias stays B when introduced at replacement-staged
+PASS old outside alias stays B when introduced at replacement-before-capture
+PASS existing hardlinked source is refused with both names intact
+PASS old alias retains inspected security, creation and modified times after capture
+PASS published alias retains L on next attempted publication; hardlinked file refused
+PASS captured old inode alias remains B at replacement-captured
+PASS captured old inode alias remains B at replacement-before-publish
+PASS new alias at publication retains L and forces uncertain receipt
+PASS prelease write at replacement-prepared preserved as conflict
+PASS prelease replace at replacement-prepared preserved as conflict
+PASS prelease write at replacement-before-lease preserved as conflict
+PASS prelease replace at replacement-before-lease preserved as conflict
+PASS independent write blocked between comparison and capture
+PASS independent replace blocked between comparison and capture
+PASS independent delete blocked between comparison and capture
+PASS interloper hardlink in capture gap is never overwritten
+PASS postpublication write at replacement-released never reports success
+PASS postpublication replace at replacement-released never reports success
+PASS postpublication delete at replacement-released never reports success
+PASS postpublication write at replacement-finalized never reports success
+PASS postpublication replace at replacement-finalized never reports success
+PASS postpublication delete at replacement-finalized never reports success
+PASS metadata-only readonly mutation refuses source capture
+PASS ADS introduced by independent process is retained and publication refused
+PASS mapped original refuses before capture and map data is not replaced
+PASS independent DACL protection change is detected without source content mutation
+PASS real compressed source refuses admission without changing its bytes
+PASS real NTFS EA source refuses admission and retains attributes
+PASS independent source lease refuses publication without breaking its lock
+PASS real empty-root junction mutation is detected without touching outside target
+PASS revocation at last publication boundary leaves captured evidence without publishing
+PASS ambiguous gap cannot be retried with the consumed candidate
+PASS reviewed missing-path restore refuses a fresh unrelated occupant
+PASS corrupt recovery record cannot authorize restoration or source writes
+PASS same-byte pathname reuse after publication is still uncertain
+PASS twenty reopened content publications retain every displaced B without automatic cleanup
+PASS native POSIX replacing process cannot cause an uncontested lost external revision
+PASS independent process halt preserves B L V at replacement-prepared
+PASS independent process halt preserves B L V at replacement-stage-chunk
+PASS independent process halt preserves B L V at replacement-stage-before-flush
+PASS independent process halt preserves B L V at replacement-staged
+PASS independent process halt preserves B L V at replacement-metadata-ready
+PASS independent process halt preserves B L V at replacement-before-capture
+PASS independent process halt preserves B L V at replacement-captured-before-record
+PASS independent process halt preserves B L V at replacement-captured
+PASS independent process halt preserves B L V at replacement-before-publish
+PASS independent process halt preserves B L V at replacement-published-before-record
+PASS independent process halt preserves B L V at replacement-published
+PASS independent process halt preserves B L V at replacement-released
+PASS independent process halt preserves B L V at replacement-finalized
+passed=55 failed=0

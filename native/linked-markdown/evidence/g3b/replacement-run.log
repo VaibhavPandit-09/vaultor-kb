@@ -1,0 +1,80 @@
+PASS replacement probe has no default write admission
+PASS strict metadata admission refuses unreadable or unqualified SACL before detach
+PASS fresh inode publication retains captured B, L and V without qualified Save receipt
+PASS old outside alias stays B when introduced at replacement-compared
+PASS old outside alias stays B when introduced at replacement-stage-chunk
+PASS old outside alias stays B when introduced at replacement-staged
+PASS old outside alias stays B when introduced at replacement-before-capture
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:SINGLE_LINK_ONLY]
+PASS existing hardlinked source is refused with both names intact
+PASS old alias retains inspected security, creation and modified times after capture
+PASS published alias retains L on next attempted publication; hardlinked file refused
+PASS captured old inode alias remains B at replacement-captured
+PASS captured old inode alias remains B at replacement-before-publish
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:SINGLE_LINK_ONLY]
+PASS new alias at publication retains L and forces uncertain receipt
+PASS prelease write at replacement-prepared preserved as conflict
+PASS prelease replace at replacement-prepared preserved as conflict
+PASS prelease write at replacement-before-lease preserved as conflict
+PASS prelease replace at replacement-before-lease preserved as conflict
+PASS independent write blocked between comparison and capture
+PASS independent replace blocked between comparison and capture
+PASS independent delete blocked between comparison and capture
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:RenameRelativeExclusive:183]
+PASS interloper hardlink in capture gap is never overwritten
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:EXTERNAL_AFTER_PUBLICATION]
+PASS postpublication write at replacement-released never reports success
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:EXTERNAL_AFTER_PUBLICATION]
+PASS postpublication replace at replacement-released never reports success
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:OpenRelative:2]
+PASS postpublication delete at replacement-released never reports success
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:EXTERNAL_BEFORE_RECEIPT]
+PASS postpublication write at replacement-finalized never reports success
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:EXTERNAL_BEFORE_RECEIPT]
+PASS postpublication replace at replacement-finalized never reports success
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:OpenRelative:2]
+PASS postpublication delete at replacement-finalized never reports success
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:REPLACEMENT_ATTRIBUTES_UNQUALIFIED]
+PASS metadata-only readonly mutation refuses source capture
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:ALTERNATE_STREAM]
+PASS ADS introduced by independent process is retained and publication refused
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:OpenRelative:32]
+PASS mapped original refuses before capture and map data is not replaced
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:SOURCE_CHANGED_BEFORE_CAPTURE]
+PASS independent DACL protection change is detected without source content mutation
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:UNQUALIFIED_ATTRIBUTES]
+PASS real compressed source refuses admission without changing its bytes
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:EA_UNQUALIFIED:0]
+PASS real NTFS EA source refuses admission and retains attributes
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:OpenRelative:32]
+PASS independent source lease refuses publication without breaking its lock
+EMPTY_PARENT_MOVE=2
+EMPTY_PARENT_JUNCTION=0
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:PINNED_DIRECTORY_BECAME_REPARSE]
+PASS real empty-root junction mutation is detected without touching outside target
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:ROOT_REVOKED]
+PASS revocation at last publication boundary leaves captured evidence without publishing
+PASS ambiguous gap cannot be retried with the consumed candidate
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:INTERRUPTED_AFTER_CAPTURE]
+PASS reviewed missing-path restore refuses a fresh unrelated occupant
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:INTERRUPTED_AFTER_CAPTURE]
+PASS corrupt recovery record cannot authorize restoration or source writes
+OBSERVATION_REFUSED [REPLACEMENT_UNCERTAIN:EXTERNAL_BEFORE_RECEIPT]
+PASS same-byte pathname reuse after publication is still uncertain
+PASS twenty reopened content publications retain every displaced B without automatic cleanup
+NATIVE_POSIX_ATTACK_EXIT=2
+PASS native POSIX replacing process cannot cause an uncontested lost external revision
+PASS independent process halt preserves B L V at replacement-prepared
+PASS independent process halt preserves B L V at replacement-stage-chunk
+PASS independent process halt preserves B L V at replacement-stage-before-flush
+PASS independent process halt preserves B L V at replacement-staged
+PASS independent process halt preserves B L V at replacement-metadata-ready
+PASS independent process halt preserves B L V at replacement-before-capture
+PASS independent process halt preserves B L V at replacement-captured-before-record
+PASS independent process halt preserves B L V at replacement-captured
+PASS independent process halt preserves B L V at replacement-before-publish
+PASS independent process halt preserves B L V at replacement-published-before-record
+PASS independent process halt preserves B L V at replacement-published
+PASS independent process halt preserves B L V at replacement-released
+PASS independent process halt preserves B L V at replacement-finalized
+TOTAL 55 passed; 0 failed

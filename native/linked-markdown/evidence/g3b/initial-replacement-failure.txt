@@ -1,0 +1,9 @@
+PASS strict metadata admission refuses unreadable or unqualified SACL before detach
+FAIL fresh inode publication retains captured B, L and V without qualified Save receipt java.lang.AssertionError
+FAIL old outside alias stays B when introduced at replacement-compared java.lang.AssertionError
+FAIL old outside alias stays B when introduced at replacement-stage-chunk java.lang.AssertionError
+FAIL old outside alias stays B when introduced at replacement-staged java.lang.AssertionError
+FAIL old outside alias stays B when introduced at replacement-before-capture java.lang.AssertionError
+PASS existing hardlinked source is refused with both names intact
+FAIL published alias retains L on next attempted publication; hardlinked file refused java.lang.AssertionError
+passed=2 failed=6
