@@ -1,0 +1,2 @@
+# Exact source-byte evidence, including CRLF, must survive every checkout.
+roundtrip-*.md -text whitespace=cr-at-eol

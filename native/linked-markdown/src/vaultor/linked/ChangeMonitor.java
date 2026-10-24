@@ -12,6 +12,7 @@ public final class ChangeMonitor implements AutoCloseable {
     private final LinkedStore.Scope scope;
     private final Map<Path,WindowsFiles.Notifications> directories=new HashMap<>();
     private final Set<String> documents=new HashSet<>();
+    private final Map<String,Path> parents=new HashMap<>();
     private final Map<String,LinkedStore.Change> latest=new ConcurrentHashMap<>();
     private final ScheduledExecutorService worker=Executors.newSingleThreadScheduledExecutor(r->{var t=new Thread(r,"linked-reconcile");t.setDaemon(true);return t;});
     private long last;
@@ -34,7 +35,10 @@ public final class ChangeMonitor implements AutoCloseable {
             if(directories.size()>=64)throw new IOException("WATCH_DIRECTORY_LIMIT");
             directories.put(parent,store.watchDirectory(scope,document));
         }
-        documents.add(document);invalid=true;
+        documents.add(document);parents.put(document,parent);invalid=true;
+    }
+    public synchronized void unregister(String document)throws IOException{
+        documents.remove(document);latest.remove(document);Path parent=parents.remove(document);if(parent!=null&&!parents.containsValue(parent)){var notification=directories.remove(parent);if(notification!=null)notification.close();}
     }
     public synchronized void invalidate(){invalid=true;}
     public LinkedStore.Change latest(String document){return latest.get(document);}
@@ -55,6 +59,6 @@ public final class ChangeMonitor implements AutoCloseable {
     public synchronized void close()throws IOException{
         if(closed)return;closed=true;worker.shutdownNow();IOException failure=null;
         for(var notification:directories.values())try{notification.close();}catch(IOException e){failure=e;}
-        directories.clear();if(failure!=null)throw failure;
+        directories.clear();documents.clear();parents.clear();latest.clear();if(failure!=null)throw failure;
     }
 }

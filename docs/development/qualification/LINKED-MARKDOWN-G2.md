@@ -1,5 +1,7 @@
 # Linked Markdown Gate 2 — native filesystem safety
 
+Continuation: [Gate 3 integration/recovery/runtime](LINKED-MARKDOWN-G3.md) is separately authorized from `dc86997`; the historical Gate 2 stop and limitations remain evidence.
+
 Reviewed 2026-10-24. Authoritative Gate 2 contract, evidence and continuation point. Starting source: clean fetched `master`/`origin/master` at `faee732`, including unrelated desktop corrections. Gate 1's bounded CONDITIONAL contract was accepted for continued engineering only. **Gate 2 verdict: CONDITIONAL.** No public activation, release, version, protocol, archive, managed-resource, collection, Open Notes or updater change.
 
 ## Phase gates

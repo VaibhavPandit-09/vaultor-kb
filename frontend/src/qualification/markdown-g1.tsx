@@ -12,17 +12,17 @@ import { markdownExtensions, type RefusedInput } from '../lib/markdown/extension
 import { browserPort } from '../lib/markdown/browserPort';
 import '../index.css';
 
-type Lab = { session: MarkdownSession; stress: boolean; refused?: RefusedInput; editor?: Editor; keys: number[]; transactions: number; longTasks: number[]; registerEditor: (editor: Editor) => void; recordKey: (ms: number) => void; recordTransaction: () => void };
+export type Lab = { session: MarkdownSession; stress: boolean; shared?: SharedNoteDocuments; initialDraft?: import('@tiptap/core').JSONContent; documentId?: string; refused?: RefusedInput; editor?: Editor; keys: number[]; transactions: number; longTasks: number[]; registerEditor: (editor: Editor) => void; recordKey: (ms: number) => void; recordTransaction: () => void; beforeSourceApply?: (block: number, text: string) => Promise<void>; sourceDraftChanged?: (draft?: { block: number; text: string }) => void; activated?: () => void; focusHandled?: () => void };
 declare global { interface Window { markdownG1: { open: (source: string, stress?: boolean) => Promise<void>; settled: () => Promise<void>; rejectedBytes?: Uint8Array; lab?: Lab } } }
-const root = createRoot(document.getElementById('root')!);
+const root = window.location.pathname.endsWith('/markdown-g1.html') ? createRoot(document.getElementById('root')!) : undefined;
 const mountedSessions: MarkdownSession[] = [];
-export function Surface({ lab }: { lab: Lab }) {
+export function Surface({ lab, paneId = 'g1', embedded = false, active = false, restoreFocus = false }: { lab: Lab; paneId?: string; embedded?: boolean; active?: boolean; restoreFocus?: boolean }) {
   const { session } = lab;
   const status = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const [sourceEdit, setSourceEdit] = useState<{ block: number; text: string; loading?: boolean }>();
   const [retainedDraft, setRetainedDraft] = useState('');
   const [error, setError] = useState('');
-  const shared = useMemo(() => new SharedNoteDocuments(), []);
+  const shared = useMemo(() => lab.shared ?? new SharedNoteDocuments(), [lab]);
   const integration = useMemo(() => ({ codeHighlightLimit: 4096, extensions: markdownExtensions({ stress: lab.stress, onRefused: input => { lab.refused = input; setError(input.reason); } }), headingLevels: [1, 2, 3, 4, 5, 6] as Array<1 | 2 | 3 | 4 | 5 | 6>, unsupported: setError, attach: (editor: Editor) => {
     lab.registerEditor(editor);
     const detach = session.attach(editor);
@@ -39,31 +39,32 @@ export function Surface({ lab }: { lab: Lab }) {
       const block = region++;
       if (pos >= offset && pos < offset + node.nodeSize) {
         setRetainedDraft(JSON.stringify(session.checkpoint().draft)); setSourceEdit({ block, text: '', loading: true });
-        void session.readRegion(block, node.toJSON()).then(text => setSourceEdit(old => old?.block === block ? { block, text } : old)).catch(e => setError(String(e)));
+        void session.readRegion(block, node.toJSON()).then(text => { setSourceEdit(old => old?.block === block ? { block, text } : old); lab.sourceDraftChanged?.({ block, text }); }).catch(e => setError(String(e)));
       }
     });
   };
   const editProtected = (element: HTMLElement) => { if (lab.editor) editRegion(lab.editor.view.posAtDOM(element, 0)); };
-  return <EscapeManagerProvider><main style={{ maxWidth: 896, margin: '24px auto', padding: 16 }}>
-    <h1>Markdown Gate 1 laboratory</h1><p>In-memory documents only. No external files or Save API.</p>
+  return <EscapeManagerProvider><section style={{ maxWidth: 896, margin: embedded ? 0 : '24px auto', padding: embedded ? 0 : 16 }}>
+    {!embedded && <><h1>Markdown Gate 1 laboratory</h1><p>In-memory documents only. No external files or Save API.</p></>}
     <div role="status" aria-live="polite">{status.state}{status.reason ? ' · ' + status.reason : ''}</div>
     {error && !sourceEdit && <p role="alert">{error}</p>}
     {status.state === 'needs-source' && <p role="alert">Your visual draft is retained. Undo the unsupported action or edit its source region. <button onClick={() => { if (lab.editor) editRegion(lab.editor.state.selection.from); }}>Edit selected block source</button></p>}
     <div onClick={e => { const element = (e.target as HTMLElement).closest<HTMLElement>('[data-source-kind]'); if (element) editProtected(element); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { const element = (e.target as HTMLElement).closest<HTMLElement>('[data-source-kind]'); if (element) { e.preventDefault(); editProtected(element); } } }}>
-      <BlockEditor integration={integration} paneId="g1" sharedDocuments={shared} noteId="g1-memory-only" noteTitle="Markdown laboratory" saveStatus="saved" onRetrySave={() => {}} content={session.initialDoc!} autosaveDelay={0} isActive={false} interactionLocked={!!sourceEdit} shouldRestoreFocus={false} onOpenResource={() => {}} onUpdate={() => { throw new Error('Managed autosave must not run'); }} onSelectionChange={() => {}} onActivate={() => {}} onFocusRestored={() => {}} onRequestMdUpload={() => {}} onRequestCsvUpload={() => {}} onRequestLinkUpload={() => {}} />
+      <BlockEditor integration={integration} paneId={paneId} sharedDocuments={shared} noteId={lab.documentId ?? 'g1-memory-only'} noteTitle="Markdown laboratory" saveStatus="saved" onRetrySave={() => {}} content={session.checkpoint().draft ?? lab.initialDraft ?? session.initialDoc!} autosaveDelay={0} isActive={active} interactionLocked={!!sourceEdit} shouldRestoreFocus={restoreFocus} onOpenResource={() => {}} onUpdate={() => { throw new Error('Managed autosave must not run'); }} onSelectionChange={() => {}} onActivate={() => lab.activated?.()} onFocusRestored={() => lab.focusHandled?.()} onRequestMdUpload={() => {}} onRequestCsvUpload={() => {}} onRequestLinkUpload={() => {}} />
     </div>
-    <AppModal open={!!sourceEdit} title="Edit protected Markdown region" description="Only this source block will change. Your previous editor draft remains retained." onClose={() => { setSourceEdit(undefined); setError(''); }} footer={<button disabled={sourceEdit?.loading || status.state === 'validating'} onClick={() => void (async () => {
+    <AppModal open={!!sourceEdit} title="Edit protected Markdown region" description="Only this source block will change. Your previous editor draft remains retained." onClose={() => { setSourceEdit(undefined); setError(''); lab.sourceDraftChanged?.(); }} footer={<button disabled={sourceEdit?.loading || status.state === 'validating'} onClick={() => void (async () => {
       if (!sourceEdit || !lab.editor) return;
-      try { await session.applySource(lab.editor, sourceEdit.block, sourceEdit.text); flushSync(() => setSourceEdit(undefined)); lab.editor.commands.focus(undefined, { scrollIntoView: false }); }
+      try { await lab.beforeSourceApply?.(sourceEdit.block, sourceEdit.text); await session.applySource(lab.editor, sourceEdit.block, sourceEdit.text); flushSync(() => setSourceEdit(undefined)); lab.sourceDraftChanged?.(); lab.editor.commands.focus(undefined, { scrollIntoView: false }); }
       catch (e) { setError(e instanceof Error ? e.message : 'Source edit failed'); }
     })()}>Apply region</button>}>
-      <label>Markdown source<textarea autoFocus disabled={sourceEdit?.loading} aria-label="Markdown source" value={sourceEdit?.text ?? ''} onChange={e => setSourceEdit(old => old ? { ...old, text: e.target.value } : old)} style={{ width: '100%', minHeight: 160 }} /></label>{error && <p role="alert">{error}</p>}
+      <label>Markdown source<textarea autoFocus disabled={sourceEdit?.loading} aria-label="Markdown source" value={sourceEdit?.text ?? ''} onChange={e => { const text = e.target.value; setSourceEdit(old => old ? { ...old, text } : old); if (sourceEdit) lab.sourceDraftChanged?.({ block: sourceEdit.block, text }); }} style={{ width: '100%', minHeight: 160 }} /></label>{error && <p role="alert">{error}</p>}
     </AppModal>
     {retainedDraft && <details><summary>Retained draft JSON</summary><pre>{retainedDraft}</pre></details>}
-  </main></EscapeManagerProvider>;
+  </section></EscapeManagerProvider>;
 }
 window.markdownG1 = {
   async open(source, stress = false) {
+    if (!root) throw new Error('G1_ENTRY_REQUIRED');
     const session = new MarkdownSession(browserPort(new Worker(new URL('../lib/markdown/markdown.worker.ts', import.meta.url), { type: 'module' })), new TextEncoder().encode(source), 15000, { stress });
     try { await session.ready; } catch (error) { window.markdownG1.rejectedBytes = session.originalBytes; session.dispose(); throw error; }
     mountedSessions.splice(0).forEach(s => s.dispose());
@@ -81,4 +82,4 @@ window.markdownG1 = {
     await new Promise<void>((resolve, reject) => { const detach = s.subscribe(() => { if (s.status.state === 'ready') { detach(); resolve(); } else if (s.status.state === 'needs-source' || s.status.state === 'failed') { detach(); reject(new Error(s.status.reason)); } }); });
   },
 };
-void window.markdownG1.open('---\ntitle: protected\n---\n\nParagraph **bold** and _italic_.\n\n<!-- preserve me -->\n');
+if (root) void window.markdownG1.open('---\ntitle: protected\n---\n\nParagraph **bold** and _italic_.\n\n<!-- preserve me -->\n');

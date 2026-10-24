@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-10-24. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-10-25. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -16,7 +16,7 @@ Installed-app changes are not complete at a development build: agents own versio
 
 ## Current platform responsibilities and compatibility
 
-Reviewed against integrated master and the published Windows0.18.2 / Mac0.18.1 / Android alpha.28 baseline on 2026-10-24. W1–W3 and R1–R10 engineering is complete. Linked Markdown has isolated [Gate 1 editing](development/qualification/LINKED-MARKDOWN-G1.md) and [Gate 2 native safety](development/qualification/LINKED-MARKDOWN-G2.md) engineering; both remain CONDITIONAL and no linked-source feature is shipped. Other future product work requires separate authorization. [The deferred roadmap](plans/future-roadmap.md) distinguishes limitations, pending platform acceptance and future ideas. [Qualification evidence](development/qualification/R10.md) records actual measurements and tests, not new requirements.
+Reviewed against integrated master and the published Windows0.18.2 / Mac0.18.1 / Android alpha.28 baseline on 2026-10-25. W1–W3 and R1–R10 engineering is complete. Linked Markdown has isolated [Gate 1 editing](development/qualification/LINKED-MARKDOWN-G1.md) and [Gate 2 native safety](development/qualification/LINKED-MARKDOWN-G2.md) engineering; both remain CONDITIONAL. [Gate 3 integration](development/qualification/LINKED-MARKDOWN-G3.md) is BLOCKED by the proposed writer's hardlink confinement failure; its development bridge refuses source publication. No linked-source feature is shipped. Other future product work requires separate authorization. [The deferred roadmap](plans/future-roadmap.md) distinguishes limitations, pending platform acceptance and future ideas. [Qualification evidence](development/qualification/R10.md) records actual measurements and tests, not new requirements.
 
 | Surface | Responsibility and current boundary |
 | --- | --- |
@@ -412,6 +412,10 @@ Latest integrated release qualification: backend120/frontend324/desktop44/mobile
 Diagnostic events carry category (layout/ui/application/save/recovery/integrity), severity (info/warning/error/critical) and bounded occurrences. Only exact native ResizeObserver delivery messages without an exception object or source location, from the current document or no filename, become informational layout events, aggregated over10seconds per connection. Other exceptions/rejections remain visible. Render/recovery failures retain critical classification; recoverable request/UI errors use warning. Save errors are explicitly classified by the SaveCoordinator writer. The shared notice reserves critical styling for critical severity and offers Retry saves only for a current genuine failed save; identifiers remain in Details. Recovery storage failures also retain their dedicated recovery warning. Pane/header/breadcrumb geometry observers coalesce layout writes into one cancellable animation frame, deduplicate measurements and preserve existing reading anchors. No correctness depends on motion completion.
 
 ## Maintenance history
+
+### 2026-10-25 — Linked Markdown Gate 3 blocked qualification checkpoint
+
+Added an isolated development Electron/private Java bridge, independent Markdown validation, mounted editor/pane harness and native B/L/V/D recovery experiments; no normal application routes, storage/protocol/archive/version or release behavior change. [Gate3](development/qualification/LINKED-MARKDOWN-G3.md) is **BLOCKED**: original-inode publication and an RWH-oplock mitigation allow independent hardlink creation before writing, exposing the edit outside the authorized root. Private-host source Save/repair/restore now refuse publication; rejected writer primitives require an explicitly unsafe native-test property. Earlier mounted picker/edit/Save/Undo/Redo evidence does not qualify the final publisher. Actual checks and incomplete platform/lifecycle/runtime acceptance are recorded in the single Gate3 tracker. Stop for publication architecture review; do not activate linked sources or proceed to Gate4.
 
 ### 2026-10-24 — Linked Markdown Gate 2 native safety
 

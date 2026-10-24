@@ -1,0 +1,12 @@
+.g3-harness { max-width: 1360px; margin: 0 auto; padding: 20px; color: var(--text-primary); background: var(--background); }
+.g3-harness h1 { font-size: 1.3rem; font-weight: 650; }
+.g3-harness h2 { font-size: 1.05rem; font-weight: 600; }
+.g3-harness p { margin: 6px 0; }
+.g3-actions, .g3-harness nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.g3-harness button { padding: 5px 9px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-2); }
+.g3-harness button:disabled { opacity: .5; }
+.g3-harness button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.g3-panes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 18px; }
+.g3-harness section { min-width: 0; }
+.g3-harness pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .85rem; margin: 8px 0; }
+.g3-harness details { margin: 8px 0; }

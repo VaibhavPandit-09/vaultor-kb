@@ -78,6 +78,7 @@ Reviewed 2026-10-24 against integrated master, published Windows0.18.2/Mac0.18.1
 
 - [Linked Markdown Gate 1](development/qualification/LINKED-MARKDOWN-G1.md): editing engine and remediation, current bounded capability contract, mounted/IME/performance evidence and Conditional verdict; no linked-folder writes or release.
 - [Linked Markdown Gate 2](development/qualification/LINKED-MARKDOWN-G2.md): isolated native ownership, revision/draft API, durable exclusive saving, recovery and watcher qualification; Conditional Windows verdict, no public authority or release.
+- [Linked Markdown Gate 3](development/qualification/LINKED-MARKDOWN-G3.md): BLOCKED private desktop qualification; hardlink confinement failure, rejected publication strategy, retained recovery/runtime evidence and review prerequisites; source writes refused, no public activation or release.
 
 - [Linked Markdown](development/qualification/LINKED-MARKDOWN.md): completed five-phase feasibility qualification and historical source-fidelity/filesystem experiments; subsequent engineering contracts live in the Gate reports above, with no production feature or release.
 

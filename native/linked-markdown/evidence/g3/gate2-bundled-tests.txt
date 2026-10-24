@@ -1,0 +1,69 @@
+PASS explicit Save preserves displaced B, validated L, rejected-draft payload, metadata and UTF8/CRLF
+PASS scope and opaque capability denial
+PASS root grants require signed path, expiry and one-use nonce
+PASS traversal, ADS paths, reserved names, absolute paths and .git refused
+PASS forged validation proof and raw visual JSON cannot Save
+PASS newer unvalidated or failed proof revokes older Save candidate
+PASS external same-file revision before Save is CONFLICT
+PASS replacement with same bytes never silently retargets identity
+PASS competing in-place writer is denied during verified native lease
+PASS exclusive publication preserves interloper created during capture gap
+PASS atomic editor save in gap is preserved and publication refused
+PASS directory/root rename attempt is denied while ancestor pins are held
+PASS hardlinks refused, original and alias intact
+PASS real junction escape refused before accessing outside documentation
+PASS read-only file is not chmodded or overwritten
+PASS real denied read ACL leaves original and durable local draft
+PASS independent process lock blocks Save without bypass
+PASS missing file is not automatically recreated
+PASS source unavailable differs from deletion; reconnect invalidates old epoch
+PASS root path reuse cannot reconnect a different directory
+PASS draft protection continues during explicit source disconnection
+PASS larger files are read-only and chunk accessible without conversion
+PASS simulated ENOSPC before capture retains full journal and original
+PASS journal corruption/truncation retains valid prior records; recovery never writes source
+PASS process termination at prepared
+PASS process termination at stage-chunk
+PASS process termination at stage-before-flush
+PASS process termination at staged
+PASS process termination at before-capture
+PASS process termination at captured-before-journal
+PASS process termination at captured
+PASS process termination at published-before-metadata
+PASS process termination at published-before-journal
+PASS process termination at published
+PASS process termination at committed
+PASS notifications and periodic rechecks retain dirty drafts and see rapid/Git writes
+PASS own Save watcher events are rechecked and later external edits are not suppressed
+PASS repeated Save/restart recovers drafts and never replays writes
+PASS actual JS main consent proof interoperates with Java host
+PASS real bundled Markdown worker rejection and validation drive native candidate/save
+PASS actual alternate NTFS data stream is refused without touching original
+PASS physical Unicode directory and filename round trip
+PASS private store rejects foreign workspace/generation and a duplicate host
+PASS periodic reconciliation works with notifications disabled
+PASS private journal quota refuses new work without losing existing draft
+PASS closed host and revoked roots cannot use retained Save candidates
+PASS newer drafts remain dirty after an older Save receipt and can save using new base
+PASS captured-gap hardlink interloper is not overwritten or followed
+PASS root revocation between capture and publication preserves both bytes without publishing
+PASS interrupted recovery is read-only and repeatable
+PASS post-publication competing write is detected and B/L/D are all preserved
+PASS unqualified platform is rejected before native ownership
+PASS root disconnection/reconnection monitor never silently rebinds an old document
+PASS staged new content remains owner-only until publication; final source ACL is preserved
+PASS validation proof binds the exact current visual draft as well as source/version
+PASS new draft observed before old receipt acknowledgement is never cleared or misacknowledged
+PASS malformed UTF8 is refused even with a trusted validation signature
+PASS directory-write handles are not reparse locks; safety uses relative handles
+PASS canonical parent chains match kernel-reported identities
+PASS actual watched folder move retains dirty recovery and requires explicit reopen
+PASS fully corrupt journal retains displaced artifacts as untrusted recovery evidence
+PASS host-owned storage, private recovery and their ancestors are never linked roots
+PASS actual concurrent junction mutation cannot redirect publication at captured
+PASS actual concurrent junction mutation cannot redirect publication at publication-boundary
+PASS native notification handle remains bound during actual junction mutation
+PASS repeated native notification arm/cancel closes directory and event handles
+PASS aliased host-protected catalog cannot conceal physical storage
+PASS unavailable protected-storage volume refuses ownership instead of dropping exclusion
+passed=68 failed=0 externalBusyRetries=0

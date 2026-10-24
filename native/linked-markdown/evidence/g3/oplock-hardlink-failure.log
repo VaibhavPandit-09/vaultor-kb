@@ -1,0 +1,4 @@
+request=0 error=997
+hardlink completed before release=true alias exists=true output flags=0
+child after release=0 alias=true
+CONFIRMED unsafe candidate: the outside-root alias received the in-place edit; do not enable this writer

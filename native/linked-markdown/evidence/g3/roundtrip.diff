@@ -1,0 +1,7 @@
+diff --git a/native/linked-markdown/evidence/g3/roundtrip-before.md b/native/linked-markdown/evidence/g3/roundtrip-after.md
+index 2fa38d3..c9cca11 100644
+--- a/native/linked-markdown/evidence/g3/roundtrip-before.md
++++ b/native/linked-markdown/evidence/g3/roundtrip-after.md
+@@ -7 +7 @@ title: untouched
+-Edited A **bold** paragraph with Unicode 😀 and [relative link](./other.md).
++Edited Edited A **bold** paragraph with Unicode 😀 and [relative link](./other.md).

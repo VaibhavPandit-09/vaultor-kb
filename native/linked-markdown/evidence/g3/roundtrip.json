@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-24T19:05:38.043Z",
+  "electron": "44.5.1",
+  "nativePicker": "actual Windows folder and file selection via computer-use; no picker stub",
+  "checks": [
+    "real native root/file pickers and mounted editor opened exact source via private Java host",
+    "ordinary native-editor keyboard input independently validated, journaled and explicitly saved with exact localized bytes",
+    "Undo restores exact original Markdown in draft without automatic disk Save",
+    "Redo retains exact source and independent validator ancestry",
+    "actual trusted-renderer IPC rejects forged context, arbitrary paths, raw-source flags and replay"
+  ],
+  "pageErrors": [],
+  "saveUiReceiptMs": [
+    196.7527
+  ],
+  "chromium": "152.0.7977.130"
+}

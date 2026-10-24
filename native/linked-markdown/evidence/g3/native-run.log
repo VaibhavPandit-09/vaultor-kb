@@ -1,0 +1,36 @@
+PASS original-object Save preserves inode, owner/DACL, CRLF and exact bytes
+PASS live writable mapping with closed file handle prevents original-object Save
+PASS independent writer and rename are refused while original-object lease is active
+FAIL independent hardlink creation is refused during the original-object write lease java.lang.AssertionError
+java.lang.AssertionError
+	at vaultor.linked.SafetyTests.require(SafetyTests.java:10)
+	at vaultor.linked.Gate3Tests.lambda$main$5(Gate3Tests.java:23)
+	at vaultor.linked.LinkedStore.hook(LinkedStore.java:128)
+	at vaultor.linked.LinkedStore.saveOriginal(LinkedStore.java:169)
+	at vaultor.linked.LinkedStore.save(LinkedStore.java:130)
+	at vaultor.linked.Gate3Tests$G3Fixture.save(Gate3Tests.java:13)
+	at vaultor.linked.Gate3Tests.lambda$main$4(Gate3Tests.java:23)
+	at vaultor.linked.SafetyTests.check(SafetyTests.java:9)
+	at vaultor.linked.Gate3Tests.main(Gate3Tests.java:23)
+PASS partial original write is recovery-required with B/L/V intact and path present
+PASS reviewed repair preserves partial D and restores exact L on the same inode
+PASS external D changing after review refuses repair without touching it
+PASS reused pathname remains independent even when bytes match
+PASS same-file external conflict requires reviewed resolution and retains external B
+PASS explicit recovery exports B/L/V with owner-only ACL and never overwrite a source
+PASS reviewed disk export is immutable and consumes its one-use review ticket
+PASS revocation invalidates repair tickets but leaves versions available to export
+PASS full operation quota permits lifeboat export and explicit reviewed resolution
+PASS tampered-tail records can export prior valid bytes but cannot repair
+PASS fully corrupt records export raw stage without granting source authority
+PASS group, owner, inherited DACL and mandatory label remain on the original object
+PASS real NTFS extended attributes survive original-object Save byte-for-byte
+PASS legacy missing pathname restores captured original with full object identity
+PASS an interloper filling a reviewed missing path is never overwritten by restore
+PASS actual process halt and explicit repair at original-prepared
+PASS actual process halt and explicit repair at original-staged
+PASS actual process halt and explicit repair at original-before-write
+PASS actual process halt and explicit repair at original-write-chunk
+PASS actual process halt and explicit repair at original-before-flush
+PASS actual process halt and explicit repair at original-flushed
+PASS actual process halt and explicit repair at original-committed

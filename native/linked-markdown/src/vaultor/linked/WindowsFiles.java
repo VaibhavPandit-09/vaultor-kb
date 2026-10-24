@@ -33,7 +33,8 @@ public final class WindowsFiles {
             return new Result(value,state.get(JAVA_INT,ERROR_OFFSET));
         }catch(Throwable e){if(e instanceof IOException x)throw x;throw new IOException("NATIVE_CALL:"+name,e);}
     }
-    static MemorySegment wide(Arena arena,String text){return arena.allocateFrom(text,StandardCharsets.UTF_16LE);}
+    static void wellFormedPath(String text)throws IOException{for(int i=0;i<text.length();i++){char c=text.charAt(i);if(Character.isHighSurrogate(c)){if(++i>=text.length()||!Character.isLowSurrogate(text.charAt(i)))throw new IOException("PATH_UNICODE_UNQUALIFIED");}else if(Character.isLowSurrogate(c))throw new IOException("PATH_UNICODE_UNQUALIFIED");}}
+    static MemorySegment wide(Arena arena,String text)throws IOException{wellFormedPath(text);return arena.allocateFrom(text,StandardCharsets.UTF_16LE);}
     static void yes(String name,Result r)throws IOException{if((int)r.value()==0)throw new NativeFailure(name,r.error());}
     public static final class Handle implements AutoCloseable {
         final MemorySegment value; private boolean closed;
@@ -41,6 +42,8 @@ public final class WindowsFiles {
         public void close()throws IOException{if(!closed){closed=true;yes("CloseHandle",invoke("CloseHandle",FunctionDescriptor.of(JAVA_INT,ADDRESS),value));}}
     }
     public record Info(int attributes,String identity,long size,int links){}
+    static long handleCount()throws IOException{try(var arena=Arena.ofConfined()){var count=arena.allocate(JAVA_INT);yes("HandleCount",invoke("GetProcessHandleCount",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS),MemorySegment.ofAddress(-1L),count));return Integer.toUnsignedLong(count.get(JAVA_INT,0));}}
+    static long workingSet()throws IOException{try(var arena=Arena.ofConfined()){var info=arena.allocate(72,8);info.set(JAVA_INT,0,72);yes("ProcessMemory",invoke("K32GetProcessMemoryInfo",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS,JAVA_INT),MemorySegment.ofAddress(-1L),info,72));return info.get(JAVA_LONG,16);}}
     static Handle open(Path path,int access,int sharing,int mode,boolean directory)throws IOException{
         try(var a=Arena.ofConfined()){
             var r=invoke("CreateFileW",FunctionDescriptor.of(ADDRESS,ADDRESS,JAVA_INT,JAVA_INT,ADDRESS,JAVA_INT,JAVA_INT,ADDRESS),wide(a,path.toString()),access,sharing,MemorySegment.NULL,mode,0x00200000|(directory?0x02000000:0),MemorySegment.NULL);
@@ -53,6 +56,7 @@ public final class WindowsFiles {
         return relative(parent,name,access,sharing,directory,false);
     }
     private static Handle relative(Handle parent,String name,int access,int sharing,boolean directory,boolean asynchronous)throws IOException{
+        wellFormedPath(name);
         if(name.isEmpty()||name.matches(".*[\\\\/:\\x00].*"))throw new IOException("RELATIVE_COMPONENT");
         try(var a=Arena.ofConfined()){
             byte[] utf16=name.getBytes(StandardCharsets.UTF_16LE);var string=a.allocate(16,8);string.set(JAVA_SHORT,0,(short)utf16.length);string.set(JAVA_SHORT,2,(short)utf16.length);string.set(ADDRESS,8,a.allocateFrom(JAVA_BYTE,utf16));
@@ -93,7 +97,7 @@ public final class WindowsFiles {
         Path actual;
         Pins(Path directory)throws IOException{
             Path absolute=directory.toAbsolutePath().normalize();localNtfs(absolute);Path current=absolute.getRoot();
-            try{handles.add(open(current,0,1,OPEN,true));actual=canonical(handles.getLast());for(Path segment:absolute){current=current.resolve(segment);handles.add(relative(handles.getLast(),segment.toString(),0,1,true));Path child=canonical(handles.getLast());if(!child.toString().equalsIgnoreCase(actual.resolve(segment).toString()))throw new IOException("ANCESTOR_IDENTITY_CHANGED");actual=child;}}catch(IOException e){close();throw e;}
+            try{handles.add(open(current,0x80,1,OPEN,true));ordinaryDirectory(handles.getLast());actual=canonical(handles.getLast());for(Path segment:absolute){current=current.resolve(segment);handles.add(relative(handles.getLast(),segment.toString(),0,1,true));ordinaryDirectory(handles.getLast());Path child=canonical(handles.getLast());if(!child.toString().equalsIgnoreCase(actual.resolve(segment).toString()))throw new IOException("ANCESTOR_IDENTITY_CHANGED");actual=child;}}catch(IOException e){close();throw e;}
         }
         public Info last()throws IOException{return info(handles.getLast());}
         public Path canonicalPath(){return actual;}
@@ -102,6 +106,7 @@ public final class WindowsFiles {
         public void close()throws IOException{IOException error=null;for(var h:handles.reversed())try{h.close();}catch(IOException e){error=e;}handles.clear();if(error!=null)throw error;}
     }
     public static Pins pin(Path directory)throws IOException{return new Pins(directory);}
+    private static void ordinaryDirectory(Handle directory)throws IOException{try(var arena=Arena.ofConfined()){var flags=arena.allocate(JAVA_INT);yes("CaseSensitivityAdmission",invoke("GetFileInformationByHandleEx",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,JAVA_INT),directory.value,23,flags,4));if((flags.get(JAVA_INT,0)&1)!=0)throw new IOException("CASE_SENSITIVE_DIRECTORY_UNQUALIFIED");}}
     /** Notification requests are attached to an already confined directory, not
      * a pathname re-resolved by Java WatchService. Overflow is an invalidation.
      * Callers serialize poll/close; no event filenames leave this class. */
@@ -163,6 +168,52 @@ public final class WindowsFiles {
         var h=open(path,READ|(writable?DELETE:0),1,OPEN,false);
         try{var i=info(h);if(i.links()!=1)throw new IOException("SINGLE_LINK_ONLY");if((i.attributes()&~(0x20|0x80|1))!=0)throw new IOException("UNQUALIFIED_ATTRIBUTES");if(writable&&(i.attributes()&1)!=0)throw new IOException("READ_ONLY");streams(h);return h;}catch(IOException e){h.close();throw e;}
     }
+    /** Gate3 alternative: preserve the original inode and all attached metadata.
+     * Refuse competing readers/writers/delete handles and writable mappings. */
+    static Handle exclusiveWriter(Handle parent,String name)throws IOException{
+        if(!Boolean.getBoolean("vaultor.linked.g3.unsafe-publication-probe"))throw new IOException("G3_PUBLICATION_UNQUALIFIED");
+        var h=relative(parent,name,READ|WRITE,0,false);
+        try{var i=info(h);if(i.links()!=1||(i.attributes()&~(0x20|0x80))!=0)throw new IOException("UNQUALIFIED_WRITE_FILE");streams(h);requireImplicitLabel(h);return h;}catch(IOException e){h.close();throw e;}
+    }
+    private static void requireImplicitLabel(Handle handle)throws IOException{
+        try(var arena=Arena.ofConfined()){
+            var sacl=arena.allocate(ADDRESS);var descriptor=arena.allocate(ADDRESS);
+            int status=(int)invoke("GetSecurityInfo",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_INT,JAVA_INT,ADDRESS,ADDRESS,ADDRESS,ADDRESS,ADDRESS),handle.value,1,0x10,MemorySegment.NULL,MemorySegment.NULL,MemorySegment.NULL,sacl,descriptor).value();
+            if(status!=0)throw new NativeFailure("LabelAdmission",status);
+            try{var label=sacl.get(ADDRESS,0);if(label.address()!=0&&Short.toUnsignedInt(label.reinterpret(8).get(JAVA_SHORT,4))>0)throw new IOException("EXPLICIT_INTEGRITY_LABEL_UNQUALIFIED");}finally{invoke("LocalFree",FunctionDescriptor.of(ADDRESS,ADDRESS),descriptor.get(ADDRESS,0));}
+        }
+    }
+    /** Explicit recovery export: owner-only CREATE_NEW relative to a consented
+     * directory. It does not need journal quota or admit arbitrary source Save. */
+    static Handle createPrivateRelative(Handle parent,String name)throws IOException{
+        wellFormedPath(name);
+        if(name.isEmpty()||name.matches(".*[\\\\/:\\x00].*"))throw new IOException("RELATIVE_COMPONENT");
+        try(var arena=Arena.ofConfined()){
+            var descriptor=arena.allocate(ADDRESS);
+            yes("ExportSecurity",invoke("ConvertStringSecurityDescriptorToSecurityDescriptorW",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,ADDRESS),wide(arena,"D:P(A;;FA;;;OW)"),1,descriptor,MemorySegment.NULL));
+            var security=descriptor.get(ADDRESS,0);
+            try{
+                byte[] encoded=name.getBytes(StandardCharsets.UTF_16LE);var string=arena.allocate(16,8);string.set(JAVA_SHORT,0,(short)encoded.length);string.set(JAVA_SHORT,2,(short)encoded.length);string.set(ADDRESS,8,arena.allocateFrom(JAVA_BYTE,encoded));
+                var object=arena.allocate(48,8);object.set(JAVA_INT,0,48);object.set(ADDRESS,8,parent.value);object.set(ADDRESS,16,string);object.set(JAVA_INT,24,0x40);object.set(ADDRESS,32,security);
+                var handle=arena.allocate(ADDRESS);var status=arena.allocate(16,8);
+                int result=(int)invoke("NtCreateFile",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,ADDRESS,ADDRESS,JAVA_INT,JAVA_INT,JAVA_INT,JAVA_INT,ADDRESS,JAVA_INT),handle,READ|WRITE|0x100000,object,status,MemorySegment.NULL,0,0,2,0x00200000|0x20,MemorySegment.NULL,0).value();
+                if(result!=0){var partial=handle.get(ADDRESS,0);if(partial.address()!=0&&partial.address()!=-1L)invoke("CloseHandle",FunctionDescriptor.of(JAVA_INT,ADDRESS),partial);throw new NativeFailure("ExportCreateNew",(int)invoke("RtlNtStatusToDosError",FunctionDescriptor.of(JAVA_INT,JAVA_INT),result).value());}
+                var opened=new Handle(handle.get(ADDRESS,0));try{var info=info(opened);if((info.attributes()&(REPARSE|DIRECTORY))!=0||info.links()!=1)throw new IOException("EXPORT_TYPE");return opened;}catch(IOException e){opened.close();throw e;}
+            }finally{invoke("LocalFree",FunctionDescriptor.of(ADDRESS,ADDRESS),security);}
+        }
+    }
+    static byte[] readStart(Handle h,int limit)throws IOException{
+        yes("Seek",invoke("SetFilePointerEx",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_LONG,ADDRESS,JAVA_INT),h.value,0L,MemorySegment.NULL,0));return read(h,limit);
+    }
+    static void overwrite(Handle h,byte[] data,Boundary chunk,Boundary beforeFlush)throws IOException{
+        yes("Seek",invoke("SetFilePointerEx",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_LONG,ADDRESS,JAVA_INT),h.value,0L,MemorySegment.NULL,0));
+        try(var arena=Arena.ofConfined()){
+            var bytes=arena.allocateFrom(JAVA_BYTE,data);var count=arena.allocate(JAVA_INT);int offset=0;
+            while(offset<data.length){yes("WriteOriginal",invoke("WriteFile",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS,JAVA_INT,ADDRESS,ADDRESS),h.value,bytes.asSlice(offset),Math.min(4096,data.length-offset),count,MemorySegment.NULL));int written=count.get(JAVA_INT,0);if(written<=0)throw new IOException("SHORT_WRITE");offset+=written;chunk.run();}
+            yes("SetEndOfFile",invoke("SetEndOfFile",FunctionDescriptor.of(JAVA_INT,ADDRESS),h.value));beforeFlush.run();
+            yes("FlushOriginal",invoke("FlushFileBuffers",FunctionDescriptor.of(JAVA_INT,ADDRESS),h.value));
+        }
+    }
     static Handle leaseRelative(Handle parent,String name,boolean writable)throws IOException{
         var h=relative(parent,name,READ|(writable?DELETE:0),1,false);
         try{var i=info(h);if(i.links()!=1)throw new IOException("SINGLE_LINK_ONLY");if((i.attributes()&~(0x20|0x80|1))!=0)throw new IOException("UNQUALIFIED_ATTRIBUTES");if(writable&&(i.attributes()&1)!=0)throw new IOException("READ_ONLY");streams(h);return h;}catch(IOException e){h.close();throw e;}
@@ -208,6 +259,7 @@ public final class WindowsFiles {
     }
     static Info attributes(Path path)throws IOException{try(var h=open(path,0,7,OPEN,false)){return info(h);}}
     static void renameExclusive(Handle source,Handle directory,String name)throws IOException{
+        wellFormedPath(name);
         if(name.isEmpty()||name.matches(".*[\\\\/:\\x00].*"))throw new IOException("RELATIVE_COMPONENT");
         byte[] encoded=name.getBytes(StandardCharsets.UTF_16LE);try(var a=Arena.ofConfined()){
             var data=a.allocate(24+encoded.length,8);data.set(JAVA_INT,0,0);data.set(ADDRESS,8,directory.value);data.set(JAVA_INT,16,encoded.length);MemorySegment.copy(encoded,0,data,JAVA_BYTE,20,encoded.length);
