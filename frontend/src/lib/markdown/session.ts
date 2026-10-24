@@ -6,6 +6,7 @@ import { isSharedTransaction } from '../sharedNoteDocuments';
 import type { EngineResult } from './engine';
 import type { MarkdownPort, WorkerReply } from './protocol';
 import { LIMITS } from './limits';
+import { snapshotCache } from './foreground';
 // Admission constants only; importing parser code here would block the renderer.
 export const INTERACTIVE_BYTES = LIMITS.interactiveBytes;
 
@@ -14,6 +15,7 @@ export type MarkdownStatus = { state: 'opening' | 'validating' | 'ready' | 'need
 export class MarkdownSession {
   status: MarkdownStatus = { state: 'opening', version: 0, acceptedVersion: 0 };
   source = ''; initialDoc?: JSONContent; lastResult?: EngineResult; historyBytes = 0;
+  lastTelemetry?: { version: number; result: EngineResult };
   private listeners = new Set<() => void>();
   private busy = false;
   private inFlight?: number;
@@ -30,8 +32,10 @@ export class MarkdownSession {
   readonly ready = new Promise<void>((resolve, reject) => { this.readyResolve = resolve; this.readyReject = reject; });
   private port: MarkdownPort;
   private timeoutMs: number;
+  readonly originalBytes: Uint8Array;
   constructor(port: MarkdownPort, bytes: Uint8Array, timeoutMs = 15000, options: { stress?: boolean } = {}) {
     this.port = port; this.timeoutMs = timeoutMs;
+    this.originalBytes = bytes.slice();
     port.onmessage = event => this.receive(event.data);
     port.onerror = () => this.fail('WORKER_FAILED');
     this.watchdog(); port.postMessage({ type: 'open', bytes, byteLimit: options.stress ? LIMITS.bytes : INTERACTIVE_BYTES });
@@ -58,6 +62,7 @@ export class MarkdownSession {
     this.busy = false; this.inFlight = undefined;
     if (reply.type === 'error') { this.fail(reply.reason); return; }
     if (reply.type === 'region') { this.regionResolve?.(reply.text); this.regionResolve = undefined; this.regionReject = undefined; this.sendLatest(); return; }
+    this.lastTelemetry = { version: reply.version, result: reply.result };
     this.historyBytes = reply.historyBytes;
     if (reply.result.accepted) { this.source = reply.result.source; this.status = { ...this.status, acceptedVersion: reply.version }; }
     if (reply.version === this.status.version) {
@@ -104,16 +109,29 @@ export class MarkdownSession {
     this.watchdog(); this.port.postMessage({ type: 'edit', ...request });
   }
   attach(editor: Editor) {
-    let scheduled = false, attached = true;
+    const snapshot = snapshotCache();
+    let scheduled = false, attached = true, composing = false;
+    const compositionStart = () => {
+      composing = true; this.draft = snapshot(editor.state.doc);
+      this.status = { ...this.status, version: this.status.version + 1, state: 'validating', reason: 'COMPOSITION_IN_PROGRESS' }; this.emit();
+    };
+    const compositionEnd = () => queueMicrotask(() => {
+      if (!attached || this.disposed || editor.isDestroyed || this.status.state === 'failed') return;
+      composing = false;
+      editor.view.dispatch(editor.state.tr.setMeta('markdownCompositionEnd', true));
+      this.submit(snapshot(editor.state.doc));
+    });
     const changed = ({ transaction }: { transaction: Transaction }) => {
       if (!transaction.docChanged || isSharedTransaction(transaction) || transaction.getMeta('markdownSourceReset') || scheduled) return;
       scheduled = true;
-      queueMicrotask(() => { scheduled = false; if (attached && !this.disposed && !editor.isDestroyed) this.submit(editor.getJSON()); });
+      queueMicrotask(() => { scheduled = false; if (attached && !this.disposed && !editor.isDestroyed && this.status.state !== 'failed') { const doc = snapshot(editor.state.doc); if (composing) this.draft = doc; else this.submit(doc); } });
     };
     editor.on('transaction', changed);
-    return () => { if (scheduled && !editor.isDestroyed && !this.disposed) this.submit(editor.getJSON()); attached = false; editor.off('transaction', changed); };
+    editor.view.dom.addEventListener('compositionstart', compositionStart);
+    editor.view.dom.addEventListener('compositionend', compositionEnd);
+    return () => { if ((scheduled || composing) && !editor.isDestroyed && !this.disposed && this.status.state !== 'failed') this.submit(snapshot(editor.state.doc)); attached = false; editor.off('transaction', changed); editor.view.dom.removeEventListener('compositionstart', compositionStart); editor.view.dom.removeEventListener('compositionend', compositionEnd); };
   }
-  checkpoint() { return { source: this.source, draft: this.draft ?? this.initialDoc, status: this.status }; }
+  checkpoint() { return { source: this.source, originalBytes: this.originalBytes, draft: this.draft ?? this.initialDoc, status: this.status }; }
   bytes() { if (this.status.state !== 'ready' || this.status.acceptedVersion !== this.status.version) throw new Error('UNVALIDATED_DRAFT'); return new TextEncoder().encode(this.source); }
   dispose() { this.disposed = true; clearTimeout(this.timer); this.queued = undefined; this.sourceReject?.(new Error('SESSION_CLOSED')); this.regionReject?.(new Error('SESSION_CLOSED')); if (!this.initialDoc) this.readyReject(new Error('SESSION_CLOSED')); this.sourceResolve = undefined; this.sourceReject = undefined; this.regionResolve = undefined; this.regionReject = undefined; this.port.onmessage = null; this.port.onerror = null; this.port.terminate(); this.status = { ...this.status, state: 'closed' }; this.listeners.clear(); }
 }

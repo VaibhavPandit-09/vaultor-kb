@@ -1,2 +1,4 @@
 evidence/*.md text eol=lf
 evidence/*.diff -text whitespace=-blank-at-eol,-blank-at-eof
+remediation/evidence/*.md text eol=lf
+remediation/evidence/*.diff -text whitespace=-blank-at-eol,-blank-at-eof

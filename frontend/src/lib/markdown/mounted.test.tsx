@@ -9,6 +9,7 @@ import { MarkdownEngine } from './engine';
 import { MarkdownSession } from './session';
 import { markdownExtensions } from './extensions';
 import type { MarkdownPort, WorkerReply, WorkerRequest } from './protocol';
+import { CellSelection } from '@tiptap/pm/tables';
 afterEach(cleanup);
 class AsyncPort implements MarkdownPort {
   onmessage: MarkdownPort['onmessage'] = null; onerror: MarkdownPort['onerror'] = null;
@@ -27,7 +28,7 @@ async function create(source: string) { const port = new AsyncPort(), session = 
 function mount(session: MarkdownSession, shared = new SharedNoteDocuments(), pane = 'a', savedSelection?: { from: number; to: number }) {
   let editor!: Editor; const updates = vi.fn();
   const unsupported = vi.fn();
-  const integration = { extensions: markdownExtensions(), headingLevels: [1, 2, 3, 4, 5, 6] as Array<1 | 2 | 3 | 4 | 5 | 6>, unsupported, attach: (e: Editor) => { editor = e; return session.attach(e); } };
+  const integration = { codeHighlightLimit: 4096, extensions: markdownExtensions(), headingLevels: [1, 2, 3, 4, 5, 6] as Array<1 | 2 | 3 | 4 | 5 | 6>, unsupported, attach: (e: Editor) => { editor = e; return session.attach(e); } };
   const props = { integration, savedSelection, paneId: pane, sharedDocuments: shared, noteId: 'g1-memory', noteTitle: 'Gate 1', saveStatus: 'saved' as const, onRetrySave: () => {}, content: session.checkpoint().draft ?? session.initialDoc!, autosaveDelay: 0, isActive: false, interactionLocked: false, shouldRestoreFocus: false, onOpenResource: () => {}, onUpdate: updates, onSelectionChange: () => {}, onActivate: () => {}, onFocusRestored: () => {}, onRequestMdUpload: () => {}, onRequestCsvUpload: () => {}, onRequestLinkUpload: () => {} };
   const view = render(<EscapeManagerProvider><BlockEditor {...props} /></EscapeManagerProvider>);
   return { ...view, get editor() { return editor; }, updates, unsupported, props };
@@ -105,4 +106,53 @@ it('actual task-list creation and checkbox interaction produce GFM without touch
   const { session } = await create('Task text.\n\nTail.\n'), v = mount(session); await waitFor(() => expect(v.editor).toBeTruthy());
   v.editor.commands.setTextSelection(3); v.editor.commands.toggleTaskList(); await settled(session); expect(session.source).toContain('- [ ] Task text.');
   const checkbox = v.container.querySelector<HTMLInputElement>('input[type="checkbox"]')!; fireEvent.click(checkbox); await settled(session); expect(session.source).toContain('- [x] Task text.'); expect(session.source.endsWith('\n\nTail.\n')).toBe(true); v.unmount(); session.dispose();
+});
+it('R4 composition retains draft, blocks source output until completion and survives Unicode Undo', async () => {
+  const source='Text **bold**.\n\nTail.\n', {session}=await create(source), v=mount(session); await waitFor(()=>expect(v.editor).toBeTruthy());
+  const pos=locate(v.editor,'bold'); v.editor.commands.setTextSelection(pos);
+  fireEvent.compositionStart(v.editor.view.dom,{data:''});
+  v.editor.view.dispatch(v.editor.state.tr.insertText('に',pos).setMeta('composition',1)); await Promise.resolve();
+  expect(()=>session.bytes()).toThrow('UNVALIDATED'); expect(session.checkpoint().draft).toEqual(v.editor.getJSON());
+  v.editor.view.dispatch(v.editor.state.tr.insertText('日本語😀',pos,pos+1).setMeta('composition',1));
+  fireEvent.compositionUpdate(v.editor.view.dom,{data:'日本語😀'}); fireEvent.compositionEnd(v.editor.view.dom,{data:'日本語😀'});
+  await settled(session); expect(session.source).toContain('日本語😀'); expect(session.source.endsWith('\n\nTail.\n')).toBe(true);
+  v.editor.commands.undo(); await settled(session); expect(session.source).toBe(source); v.editor.commands.redo(); await settled(session); expect(session.source).toContain('日本語😀');
+  const draft=v.editor.getJSON(), selection={from:v.editor.state.selection.from,to:v.editor.state.selection.to}; v.unmount(); const b=mount(session,undefined,'a',selection); await waitFor(()=>expect(b.editor).toBeTruthy()); expect(b.editor.getJSON()).toEqual(draft); expect(b.editor.state.selection.from).toBe(selection.from); b.unmount(); session.dispose();
+});
+it('R3 clipboard and render admission rejects oversized input before parsing without changing the draft', async () => {
+  const {session}=await create('Keep.\n'), v=mount(session); await waitFor(()=>expect(v.editor).toBeTruthy());
+  const source=session.source, original=v.editor.getJSON(), payload='x'.repeat(65537);
+  const event=new Event('paste',{bubbles:true,cancelable:true}); Object.defineProperty(event,'clipboardData',{value:{getData:(type:string)=>type==='text/plain'?payload:''}});
+  v.editor.view.dom.dispatchEvent(event); expect(event.defaultPrevented).toBe(true); expect(v.editor.getJSON()).toEqual(original);
+  v.editor.commands.insertContent('x'.repeat(17000)); await Promise.resolve(); expect(v.editor.getJSON()).toEqual(original); expect(session.source).toBe(source); v.unmount(); session.dispose();
+});
+it('R2 mounted table Tab, HTML paste, cell/row deletion and Undo keep surrounding bytes', async () => {
+  const source='Keep _raw_.\n\n| a | b |\n| --- | --- |\n| c | d |\n| e | f |\n\nTail.\n', {session}=await create(source), v=mount(session); await waitFor(()=>expect(v.editor).toBeTruthy());
+  v.editor.commands.setTextSelection(locate(v.editor,'c')); fireEvent.keyDown(v.editor.view.dom,{key:'Tab',code:'Tab'}); expect(v.editor.state.selection.from).toBe(locate(v.editor,'d'));
+  v.editor.commands.deleteRow(); await settled(session); expect(session.source).not.toContain('| c');
+  v.editor.commands.undo(); await settled(session); expect(session.source).toBe(source);
+  const event=new Event('paste',{bubbles:true,cancelable:true}); Object.defineProperty(event,'clipboardData',{value:{files:[],items:[],getData:(type:string)=>type==='text/html'?'<table><tr><td>newC</td><td>newD</td></tr></table>':'newC\tnewD'}});
+  v.editor.commands.setTextSelection(locate(v.editor,'c')); v.editor.view.dom.dispatchEvent(event); await settled(session);
+  expect(v.editor.getText()).toContain('newC'); expect(session.source.startsWith('Keep _raw_.\n\n')).toBe(true); expect(session.source.endsWith('\n\nTail.\n')).toBe(true); v.unmount(); session.dispose();
+});
+it('R2 mounted cell-range copy produces existing plain TSV with no source mutation', async () => {
+  const source='| a | b |\n| --- | --- |\n| c | d |\n', {session}=await create(source),v=mount(session);await waitFor(()=>expect(v.editor).toBeTruthy());
+  v.editor.view.dispatch(v.editor.state.tr.setSelection(CellSelection.create(v.editor.state.doc,locate(v.editor,'c')-2,locate(v.editor,'d')-2)));
+  const copied:Record<string,string>={}; const event=new Event('copy',{bubbles:true,cancelable:true});Object.defineProperty(event,'clipboardData',{value:{setData:(type:string,value:string)=>{copied[type]=value;},clearData:()=>{}}});
+  v.editor.view.dom.dispatchEvent(event);expect(event.defaultPrevented).toBe(true);expect(copied['text/plain']).toBe('c\td');expect(copied['text/html']).toBeUndefined();await settled(session);expect(session.source).toBe(source);v.unmount();session.dispose();
+});
+it('R4 unmount during preedit retains the draft and remount can continue editing',async()=>{
+  const {session}=await create('Text.\n\nTail.\n'),a=mount(session);await waitFor(()=>expect(a.editor).toBeTruthy());a.editor.commands.setTextSelection(2);
+  fireEvent.compositionStart(a.editor.view.dom);a.editor.view.dispatch(a.editor.state.tr.insertText('に',2).setMeta('composition',1));await Promise.resolve();const draft=a.editor.getJSON();a.unmount();await settled(session);
+  const b=mount(session);await waitFor(()=>expect(b.editor).toBeTruthy());expect(b.editor.getJSON()).toEqual(draft);b.editor.commands.insertContent('続');await settled(session);expect(session.source).toContain('に');expect(session.source).toContain('続');b.unmount();session.dispose();
+});
+it('R2 mounted HTML-only table paste retains supported rich cell formatting',async()=>{
+  const source='| a | b |\n| --- | --- |\n| c | d |\n\nTail.\n',{session}=await create(source),v=mount(session);await waitFor(()=>expect(v.editor).toBeTruthy());v.editor.commands.setTextSelection(locate(v.editor,'c'));
+  const event=new Event('paste',{bubbles:true,cancelable:true});Object.defineProperty(event,'clipboardData',{value:{files:[],items:[],getData:(type:string)=>type==='text/html'?'<table><tr><td><strong>richC</strong></td><td>richD</td></tr></table>':''}});
+  v.editor.view.dom.dispatchEvent(event);await settled(session);expect(session.source).toContain('**richC**');expect(session.source.endsWith('\n\nTail.\n')).toBe(true);v.unmount();session.dispose();
+});
+it('R4 Undo during synthetic preedit remains unvalidated until end and Redo retains input',async()=>{
+  const source='Text.\n',{session}=await create(source),v=mount(session);await waitFor(()=>expect(v.editor).toBeTruthy());fireEvent.compositionStart(v.editor.view.dom);
+  v.editor.view.dispatch(v.editor.state.tr.insertText('に',2).setMeta('composition',1));v.editor.commands.undo();await Promise.resolve();expect(()=>session.bytes()).toThrow('UNVALIDATED');
+  fireEvent.compositionEnd(v.editor.view.dom);await settled(session);expect(session.source).toBe(source);v.editor.commands.redo();await settled(session);expect(session.source).toContain('に');v.unmount();session.dispose();
 });

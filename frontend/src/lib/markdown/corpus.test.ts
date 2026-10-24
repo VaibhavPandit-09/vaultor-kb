@@ -53,10 +53,10 @@ it('G1-D repeated edits and history restoration use bounded deltas rather than w
   for (let i = 0; i < 250; i++) { const target = structuredClone(e.projection.doc); target.content![0].content![0].text += 'x'; const r = e.apply(target); expect(r.accepted, `${i}: ${r.reason}; ${!r.accepted ? writeBlock(target.content![0], '\n', e.projection.fragments) : ''}`).toBe(true); }
   expect(e.historyBytes).toBeLessThan(40000); expect(e.apply(initial).accepted).toBe(true); expect(e.source).toBe(source);
 }, 15000);
-it('G1-D aligned table column change is explicit restriction, with original retained', () => {
+it('G1-R2 aligned table column change retains cell-owned alignment', () => {
   const source = '| a | b |\n| :--- | ---: |\n| c | d |\n', e = new MarkdownEngine(new TextEncoder().encode(source)), target = structuredClone(e.projection.doc);
   target.content![0].content!.forEach(row => row.content!.push(structuredClone(row.content![1])));
-  const r = e.apply(target); expect(r.accepted).toBe(false); expect(r.reason).toBe('ALIGNED_TABLE_COLUMNS_REQUIRE_SOURCE'); expect(e.source).toBe(source);
+  const r = e.apply(target); expect(r.accepted, r.reason).toBe(true); expect(e.projection.doc.content![0].attrs!.mdAlign).toEqual(['left', 'right', 'right']); expect(e.apply(project(source).doc).accepted).toBe(true); expect(e.source).toBe(source);
 });
 it('G1-D soft-wrapped paragraph becomes a heading visually without losing words', () => {
   const e = new MarkdownEngine(new TextEncoder().encode('First line\nsecond line\n\nTail.\n')), target = structuredClone(e.projection.doc);

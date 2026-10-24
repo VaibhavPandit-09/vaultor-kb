@@ -1,5 +1,19 @@
-import { Extension, Node, mergeAttributes } from '@tiptap/core';
+import { Extension, Node, mergeAttributes, type Editor } from '@tiptap/core';
 import { Plugin } from '@tiptap/pm/state';
+import { isInTable, selectedRect } from '@tiptap/pm/tables';
+import { LIMITS } from './limits';
+import { clipboardReason, shapeCache, shapeReason } from './foreground';
+
+/** Column semantics travel with cells through real PM column operations. */
+export function setMarkdownAlignment(editor: Editor, alignment: 'left' | 'center' | 'right' | null) {
+  if (!isInTable(editor.state)) return false;
+  const rect = selectedRect(editor.state), tr = editor.state.tr;
+  for (const pos of new Set(rect.map.cellsInRect({ left: rect.left, right: rect.right, top: 0, bottom: rect.map.height }))) {
+    const cell = rect.table.nodeAt(pos)!;
+    tr.setNodeMarkup(rect.tableStart + pos, undefined, { ...cell.attrs, mdAlignment: alignment });
+  }
+  editor.view.dispatch(tr); return true;
+}
 
 const sourceNode = (name: string, inline: boolean) => Node.create({
   name, inline, group: inline ? 'inline' : 'block', atom: true, selectable: true,
@@ -18,19 +32,57 @@ const sourceNode = (name: string, inline: boolean) => Node.create({
     };
   },
 });
-export const markdownExtensions = () => [
+export type RefusedInput = { reason: string; text?: string; html?: string; steps?: unknown[] };
+export const markdownExtensions = (options: { stress?: boolean; onRefused?: (input: RefusedInput) => void } = {}) => [
   sourceNode('sourceBlock', false), sourceNode('sourceInline', true),
+  Extension.create({
+    name: 'markdownInputAdmission',
+    addProseMirrorPlugins() {
+      const shape = shapeCache();
+      let clipboard: { text: string; html: string } | undefined;
+      return [new Plugin({
+        filterTransaction(tr) {
+          if (!tr.docChanged) return true;
+          const reason = shapeReason(shape(tr.doc), tr.doc.childCount, options.stress);
+          if (!reason) return true;
+          options.onRefused?.({ reason, ...clipboard, ...(shape(tr.doc).units <= LIMITS.bytes ? { steps: tr.steps.map(step => step.toJSON()) } : {}) }); return false;
+        },
+        props: { handleDOMEvents: { paste(_view, event) {
+          const text = event.clipboardData?.getData('text/plain') ?? '', html = event.clipboardData?.getData('text/html') ?? '';
+          if (text.length + html.length <= LIMITS.bytes) { clipboard = { text, html }; queueMicrotask(() => { clipboard = undefined; }); }
+          const reason = clipboardReason(text, html); if (!reason) return false;
+          event.preventDefault();
+          options.onRefused?.({ reason: reason + ': input was not inserted; original clipboard is unchanged', ...(text.length + html.length <= LIMITS.bytes ? { text, html } : {}) });
+          return true;
+        } } },
+      })];
+    },
+  }),
   Extension.create({
     name: 'markdownSourceAttributes',
     addGlobalAttributes: () => [
       { types: ['table'], attributes: { mdAlign: { default: [], rendered: false } } },
+      { types: ['tableCell', 'tableHeader'], attributes: { mdAlignment: { default: null, parseHTML: (el: HTMLElement) => el.style.textAlign || el.getAttribute('align') || null, renderHTML: (a: Record<string, unknown>) => a.mdAlignment ? { style: `text-align: ${a.mdAlignment}` } : {} } } },
       { types: ['codeBlock'], attributes: { mdMeta: { default: null, rendered: false } } },
     ],
+    addProseMirrorPlugins: () => [new Plugin({ appendTransaction(transactions, _old, state) {
+      if (!transactions.some(tr => tr.docChanged)) return null;
+      const tr = state.tr;
+      state.doc.descendants((table, pos) => {
+        if (table.type.name !== 'table') return;
+        const header = table.firstChild;
+        table.forEach((row, rowPos) => row.forEach((cell, cellPos, index) => {
+          const alignment = header?.maybeChild(index)?.attrs.mdAlignment;
+          if (cell.attrs.mdAlignment == null && alignment != null) tr.setNodeMarkup(pos + rowPos + cellPos + 2, undefined, { ...cell.attrs, mdAlignment: alignment });
+        }));
+      });
+      return tr.docChanged ? tr : null;
+    } })],
   }),
   Extension.create({
     name: 'markdownMarkBoundaries',
     addProseMirrorPlugins: () => [new Plugin({ appendTransaction(transactions, _old, state) {
-      if (!transactions.some(tr => tr.docChanged) || transactions.some(tr => tr.getMeta('composition') !== undefined)) return null;
+      if ((!transactions.some(tr => tr.docChanged) && !transactions.some(tr => tr.getMeta('markdownCompositionEnd'))) || transactions.some(tr => tr.getMeta('composition') !== undefined)) return null;
       const tr = state.tr;
       state.doc.descendants((node, pos) => {
         if (!node.isText) return;

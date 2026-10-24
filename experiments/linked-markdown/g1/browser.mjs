@@ -33,7 +33,7 @@ async function workerMemory() {
 try {
   await page.goto(process.env.VAULTOR_G1_URL ?? 'http://127.0.0.1:5174/markdown-g1.html');
   await page.waitForFunction(() => window.markdownG1?.lab?.editor && window.markdownG1.lab.session.status.state === 'ready');
-  const open = async source => { await page.evaluate(source => window.markdownG1.open(source), source); await page.evaluate(() => window.markdownG1.settled()); };
+  const open = async source => { await page.evaluate(source => window.markdownG1.open(source, true), source); await page.evaluate(() => window.markdownG1.settled()); };
   const focused = () => page.waitForFunction(() => window.markdownG1.lab.editor.view.hasFocus());
   const source = '---\ntitle: protected\n---\n\nParagraph **bold** and _italic_.\n\n<!-- preserve me -->\n';
   await open(source);

@@ -1,0 +1,340 @@
+{
+  "method": "10 scripted common operations and exact inverse restoration on each of five actual docs; not telemetry or physical user study",
+  "documents": [
+    {
+      "path": "docs/CODEBASE.md",
+      "sha256": "e6f4d33ddf696cce631424230a1d226a8b92d71e7e0bd2b410a75bf495bd5373",
+      "bytes": 112797,
+      "operations": [
+        {
+          "label": "text",
+          "accepted": true,
+          "patchMs": 10.231300000000147,
+          "validationMs": 66.28650000000016
+        },
+        {
+          "label": "bold",
+          "accepted": true,
+          "patchMs": 5.4996000000001,
+          "validationMs": 61.41979999999967
+        },
+        {
+          "label": "italic",
+          "accepted": true,
+          "patchMs": 10.659200000000055,
+          "validationMs": 139.01670000000013
+        },
+        {
+          "label": "heading",
+          "accepted": true,
+          "patchMs": 11.785200000000259,
+          "validationMs": 62.889700000000175
+        },
+        {
+          "label": "paragraph split",
+          "accepted": true,
+          "patchMs": 5.383800000000065,
+          "validationMs": 73.36509999999998
+        },
+        {
+          "label": "link",
+          "accepted": true,
+          "patchMs": 5.455699999999979,
+          "validationMs": 60.02739999999994
+        },
+        {
+          "label": "list",
+          "accepted": true,
+          "patchMs": 10.47230000000036,
+          "validationMs": 56.591699999999946
+        },
+        {
+          "label": "code",
+          "accepted": true,
+          "patchMs": 3.9195999999997184,
+          "validationMs": 50.357600000000275
+        },
+        {
+          "label": "table",
+          "accepted": true,
+          "patchMs": 4.388000000000375,
+          "validationMs": 76.11409999999978
+        },
+        {
+          "label": "paragraph deletion",
+          "accepted": true,
+          "patchMs": 8.351300000000265,
+          "validationMs": 50.19389999999976
+        }
+      ]
+    },
+    {
+      "path": "docs/workspace/SESSIONS.md",
+      "sha256": "5996524e74dc6e54638224da5ee290e480e893a52c2205f1a818b7a2c492992b",
+      "bytes": 12098,
+      "operations": [
+        {
+          "label": "text",
+          "accepted": true,
+          "patchMs": 0.5761999999995169,
+          "validationMs": 5.081500000000233
+        },
+        {
+          "label": "bold",
+          "accepted": true,
+          "patchMs": 1.1475000000004911,
+          "validationMs": 5.45949999999948
+        },
+        {
+          "label": "italic",
+          "accepted": true,
+          "patchMs": 1.514599999999973,
+          "validationMs": 11.077600000000075
+        },
+        {
+          "label": "heading",
+          "accepted": true,
+          "patchMs": 0.5824000000002343,
+          "validationMs": 5.162800000000061
+        },
+        {
+          "label": "paragraph split",
+          "accepted": true,
+          "patchMs": 0.5293000000001484,
+          "validationMs": 5.2150000000001455
+        },
+        {
+          "label": "link",
+          "accepted": true,
+          "patchMs": 0.4756000000002132,
+          "validationMs": 5.075199999999768
+        },
+        {
+          "label": "list",
+          "accepted": true,
+          "patchMs": 0.4349000000001979,
+          "validationMs": 5.483999999999924
+        },
+        {
+          "label": "code",
+          "accepted": true,
+          "patchMs": 0.41919999999981883,
+          "validationMs": 5.2029999999999745
+        },
+        {
+          "label": "table",
+          "accepted": true,
+          "patchMs": 0.5153999999997723,
+          "validationMs": 5.2159999999998945
+        },
+        {
+          "label": "paragraph deletion",
+          "accepted": true,
+          "patchMs": 0.279700000000048,
+          "validationMs": 4.444799999999759
+        }
+      ]
+    },
+    {
+      "path": "docs/workspace/NAVIGATION.md",
+      "sha256": "9d3423b6469f8393c245c76cdd537366bc1ff0cda57b12992fb73d91560a76fd",
+      "bytes": 10982,
+      "operations": [
+        {
+          "label": "text",
+          "accepted": true,
+          "patchMs": 0.4066000000002532,
+          "validationMs": 4.695900000000165
+        },
+        {
+          "label": "bold",
+          "accepted": true,
+          "patchMs": 0.6022000000002663,
+          "validationMs": 7.619499999999789
+        },
+        {
+          "label": "italic",
+          "accepted": true,
+          "patchMs": 0.9633000000003449,
+          "validationMs": 15.02520000000004
+        },
+        {
+          "label": "heading",
+          "accepted": true,
+          "patchMs": 0.49490000000014334,
+          "validationMs": 5.405999999999949
+        },
+        {
+          "label": "paragraph split",
+          "accepted": true,
+          "patchMs": 0.4471000000003187,
+          "validationMs": 4.700600000000122
+        },
+        {
+          "label": "link",
+          "accepted": true,
+          "patchMs": 0.40370000000029904,
+          "validationMs": 4.715799999999945
+        },
+        {
+          "label": "list",
+          "accepted": true,
+          "patchMs": 0.364100000000235,
+          "validationMs": 4.720600000000104
+        },
+        {
+          "label": "code",
+          "accepted": true,
+          "patchMs": 0.377100000000155,
+          "validationMs": 4.98259999999982
+        },
+        {
+          "label": "table",
+          "accepted": true,
+          "patchMs": 0.45240000000012515,
+          "validationMs": 4.9099999999998545
+        },
+        {
+          "label": "paragraph deletion",
+          "accepted": true,
+          "patchMs": 0.2662000000000262,
+          "validationMs": 4.51740000000018
+        }
+      ]
+    },
+    {
+      "path": "docs/security/HOST-ACCESS.md",
+      "sha256": "e21b04394956fd72a8cf2fed3bd03e0830c73796f30c483bca917f3f645771ab",
+      "bytes": 21521,
+      "operations": [
+        {
+          "label": "text",
+          "accepted": true,
+          "patchMs": 0.9704999999999018,
+          "validationMs": 14.245499999999993
+        },
+        {
+          "label": "bold",
+          "accepted": true,
+          "patchMs": 0.9066000000002532,
+          "validationMs": 10.428499999999985
+        },
+        {
+          "label": "italic",
+          "accepted": true,
+          "patchMs": 1.9971999999997934,
+          "validationMs": 21.153400000000147
+        },
+        {
+          "label": "heading",
+          "accepted": true,
+          "patchMs": 1.0005999999998494,
+          "validationMs": 10.80849999999964
+        },
+        {
+          "label": "paragraph split",
+          "accepted": true,
+          "patchMs": 1.7662000000000262,
+          "validationMs": 16.227300000000014
+        },
+        {
+          "label": "link",
+          "accepted": true,
+          "patchMs": 0.8998999999998887,
+          "validationMs": 16.784400000000005
+        },
+        {
+          "label": "list",
+          "accepted": true,
+          "patchMs": 0.7260000000001128,
+          "validationMs": 9.13359999999966
+        },
+        {
+          "label": "code",
+          "accepted": true,
+          "patchMs": 0.7154999999997926,
+          "validationMs": 9.490999999999985
+        },
+        {
+          "label": "table",
+          "accepted": true,
+          "patchMs": 1.6756999999997788,
+          "validationMs": 9.926299999999628
+        },
+        {
+          "label": "paragraph deletion",
+          "accepted": true,
+          "patchMs": 0.6264999999998508,
+          "validationMs": 10.293099999999868
+        }
+      ]
+    },
+    {
+      "path": "docs/design/UI_PHILOSOPHY.md",
+      "sha256": "a51ec3789611f8e9c229c1650033a598551dc01d61aa88226082c2041b10d08c",
+      "bytes": 33422,
+      "operations": [
+        {
+          "label": "text",
+          "accepted": true,
+          "patchMs": 4.180199999999786,
+          "validationMs": 40.61080000000038
+        },
+        {
+          "label": "bold",
+          "accepted": true,
+          "patchMs": 2.8704999999999927,
+          "validationMs": 30.514699999999266
+        },
+        {
+          "label": "italic",
+          "accepted": true,
+          "patchMs": 4.3408999999992375,
+          "validationMs": 66.5555000000004
+        },
+        {
+          "label": "heading",
+          "accepted": true,
+          "patchMs": 3.9657999999999447,
+          "validationMs": 33.77170000000024
+        },
+        {
+          "label": "paragraph split",
+          "accepted": true,
+          "patchMs": 2.8078999999997905,
+          "validationMs": 30.890300000000025
+        },
+        {
+          "label": "link",
+          "accepted": true,
+          "patchMs": 2.771600000000035,
+          "validationMs": 43.095800000000054
+        },
+        {
+          "label": "list",
+          "accepted": true,
+          "patchMs": 4.904100000000653,
+          "validationMs": 42.860500000000684
+        },
+        {
+          "label": "code",
+          "accepted": true,
+          "patchMs": 3.712000000000444,
+          "validationMs": 29.90769999999975
+        },
+        {
+          "label": "table",
+          "accepted": true,
+          "patchMs": 2.7633999999998196,
+          "validationMs": 33.466599999999744
+        },
+        {
+          "label": "paragraph deletion",
+          "accepted": true,
+          "patchMs": 2.5010000000002037,
+          "validationMs": 33.39080000000013
+        }
+      ]
+    }
+  ]
+}

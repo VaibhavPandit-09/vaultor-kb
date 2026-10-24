@@ -9,13 +9,13 @@ import { directiveFromMarkdown } from 'mdast-util-directive';
 import { toMarkdown, defaultHandlers, type Handlers, type Handle, type State } from 'mdast-util-to-markdown';
 import type { RootContent, Nodes, Parents } from 'mdast';
 import { LIMITS } from './limits';
-import { encodedTokens } from './sourceMap';
+import { decodedBoundaries, encodedTokens } from './sourceMap';
 export { LIMITS } from './limits';
 
 type Syntax = { type: string; value?: string; children?: Syntax[]; depth?: number; ordered?: boolean; start?: number; checked?: boolean | null; url?: string; title?: string | null; lang?: string | null; meta?: string | null; align?: (string | null)[]; position?: { start: { offset: number }; end: { offset: number } } };
 export type Block = { start: number; end: number; raw: string; node: JSONContent };
 export type Leaf = { node: JSONContent; start: number; end: number; raw: string };
-export type Fragment = { start: number; end: number; type: string; signature: string; raw: string; url?: string; title?: string | null; suffix?: string };
+export type Fragment = { start: number; end: number; type: string; signature: string; raw: string; decoded?: string; url?: string; title?: string | null; suffix?: string };
 export type Projection = { source: string; doc: JSONContent; blocks: Block[]; leaves: Leaf[]; fragments: Fragment[] };
 function syntaxKey(n: Syntax): string { return JSON.stringify({ type: n.type, ...(n.value !== undefined ? { value: n.value } : {}), ...(n.type === 'link' ? { url: n.url, title: n.title ?? null } : {}), ...(n.children ? { children: n.children.map(c => syntaxKey(c)) } : {}) }); }
 export function assertUnicode(source: string) {
@@ -43,7 +43,7 @@ export function project(source: string): Projection {
     if (node.position && ['text', 'link', 'inlineCode', 'strong', 'emphasis', 'delete'].includes(node.type)) {
       const start = node.position.start.offset + bom, end = node.position.end.offset + bom, raw = source.slice(start, end);
       const labelEnd = node.children?.at(-1)?.position?.end.offset;
-      fragments.push({ start, end, type: node.type, signature: syntaxKey(node), raw, url: node.url, title: node.title ?? null, ...(node.type === 'link' && raw.startsWith('[') && labelEnd !== undefined ? { suffix: source.slice(labelEnd + bom, end) } : {}) });
+      fragments.push({ start, end, type: node.type, signature: syntaxKey(node), raw, decoded: node.value?.replace(/\r\n|\r|\n/g, ' '), url: node.url, title: node.title ?? null, ...(node.type === 'link' && raw.startsWith('[') && labelEnd !== undefined ? { suffix: source.slice(labelEnd + bom, end) } : {}) });
     }
     for (const child of node.children ?? []) pending.push({ node: child, depth: depth + 1 });
   }
@@ -77,7 +77,7 @@ export function project(source: string): Projection {
       if (!task && items.some(i => typeof i.checked === 'boolean')) return opaque(n);
       return { type: task ? 'taskList' : n.ordered ? 'orderedList' : 'bulletList', ...(n.ordered && !task ? { attrs: { start: n.start ?? 1 } } : {}), content: items.map(i => ({ type: task ? 'taskItem' : 'listItem', ...(task ? { attrs: { checked: i.checked } } : {}), content: i.children?.length ? i.children.map(c => block(c, depth + 1)) : [paragraph()] })) };
     }
-    if (n.type === 'table') return (n.children ?? []).reduce((n, r) => n + (r.children?.length ?? 0), 0) > LIMITS.tableCells ? opaque(n) : { type: 'table', attrs: { mdAlign: n.align ?? [] }, content: (n.children ?? []).map((r, ri) => ({ type: 'tableRow', content: (r.children ?? []).map(c => ({ type: ri ? 'tableCell' : 'tableHeader', content: [paragraph((c.children ?? []).flatMap(x => inline(x, [], depth + 1)))] })) })) };
+    if (n.type === 'table') return (n.children ?? []).reduce((n, r) => n + (r.children?.length ?? 0), 0) > LIMITS.tableCells ? opaque(n) : { type: 'table', attrs: { mdAlign: n.align ?? [] }, content: (n.children ?? []).map((r, ri) => ({ type: 'tableRow', content: (r.children ?? []).map((c, ci) => ({ type: ri ? 'tableCell' : 'tableHeader', attrs: { mdAlignment: n.align?.[ci] ?? null }, content: [paragraph((c.children ?? []).flatMap(x => inline(x, [], depth + 1)))] })) })) };
     return opaque(n);
   };
   const blocks = (ast.children ?? []).map(n => ({ ...range(n), raw: raw(n), node: block(n) }));
@@ -95,7 +95,14 @@ export function canonical(node: JSONContent, root = true): JSONContent {
     case 'orderedList': attrs = { start: a.start ?? 1 }; break;
     case 'taskItem': attrs = { checked: a.checked ?? false }; break;
     case 'codeBlock': attrs = { language: a.language || null, mdMeta: a.mdMeta || null }; break;
-    case 'table': attrs = { mdAlign: Array.from({ length: node.content?.[0]?.content?.length ?? 0 }, (_, i) => a.mdAlign?.[i] ?? null) }; break;
+    case 'table': {
+      const align = (node.content?.[0]?.content ?? []).map((cell, i) => cell.attrs && 'mdAlignment' in cell.attrs ? cell.attrs.mdAlignment : a.mdAlign?.[i] ?? null);
+      if (align.some(value => value !== null && !['left', 'center', 'right'].includes(value))) throw new Error('GFM_ALIGNMENT_REQUIRES_SOURCE');
+      for (const row of node.content?.slice(1) ?? []) row.content?.forEach((cell, i) => {
+        if (cell.attrs?.mdAlignment != null && cell.attrs.mdAlignment !== align[i]) throw new Error('CELL_ALIGNMENT_REQUIRES_COLUMN_COMMAND');
+      });
+      attrs = { mdAlign: align }; break;
+    }
     case 'tableCell': case 'tableHeader':
       if ((a.colspan ?? 1) !== 1 || (a.rowspan ?? 1) !== 1) throw new Error('TABLE_SPANS_REQUIRE_SOURCE');
       break;
@@ -119,8 +126,17 @@ export function canonical(node: JSONContent, root = true): JSONContent {
 export const key = (node: JSONContent) => JSON.stringify(canonical(node));
 
 type Output = { type: string; children?: Output[]; value?: string; [field: string]: unknown };
+function mergeInline(nodes: Output[]): Output[] {
+  const out: Output[] = [];
+  for (const node of nodes) {
+    const last = out.at(-1);
+    if (last && ['strong', 'emphasis', 'delete', 'link'].includes(node.type) && last.type === node.type && last.url === node.url && last.title === node.title) last.children = mergeInline([...(last.children ?? []), ...(node.children ?? [])]);
+    else out.push(node);
+  }
+  return out;
+}
 function toSyntax(node: JSONContent): Output {
-  const children = () => (node.content ?? []).map(toSyntax);
+  const children = () => mergeInline((node.content ?? []).map(toSyntax));
   const a = node.attrs ?? {};
   switch (node.type) {
     case 'text': {
@@ -151,6 +167,46 @@ function toSyntax(node: JSONContent): Output {
     default: throw new Error('UNSUPPORTED_NODE:' + node.type);
   }
 }
+/** Mark-only edits have a provable positional correspondence even when equal
+ * decoded strings have different spellings. Never infer identity from value
+ * alone. Atom/block sentinels prevent a match across unrelated structures. */
+function positionalRaw(tree: Output, node: JSONContent, previous: Block | undefined, fragments: Fragment[]) {
+  const result = new WeakMap<Output, string>();
+  if (!previous) return result;
+  const stream = (n: JSONContent): string => n.type === 'text' ? n.text ?? '' : ['sourceInline', 'sourceBlock', 'hardBreak', 'codeBlock'].includes(n.type!) ? '\0' + key(n) : (['paragraph', 'heading'].includes(n.type!) ? '\0p' : '\0' + n.type) + (n.content ?? []).map(stream).join('');
+  if (stream(previous.node) !== stream(node)) return result;
+  const tokens = fragments.filter(f => f.type === 'text' || f.type === 'inlineCode').sort((a, b) => a.start - b.start);
+  const plain = (n: JSONContent): string => n.type === 'text' ? n.text ?? '' : (n.content ?? []).map(plain).join('');
+  if (tokens.map(t => t.decoded ?? '').join('') !== plain(node)) return result;
+  let offset = 0;
+  const runs = tokens.map(t => { const start = offset; offset += t.decoded?.length ?? 0; return { ...t, from: start, to: offset }; });
+  const ranges = new Map<Fragment, { from: number; to: number }>();
+  for (const f of fragments) {
+    const inside = runs.filter(r => r.start >= f.start && r.end <= f.end);
+    if (inside.length) ranges.set(f, { from: inside[0].from, to: inside.at(-1)!.to });
+  }
+  offset = 0;
+  const visit = (n: Output) => {
+    const from = offset;
+    if (n.type === 'text' || n.type === 'inlineCode') offset += n.value?.length ?? 0;
+    else n.children?.forEach(visit);
+    const to = offset;
+    const exact = fragments.filter(f => f.type === n.type && f.signature === syntaxKey(n as unknown as Syntax) && ranges.get(f)?.from === from && ranges.get(f)?.to === to);
+    if (exact.length === 1 && !/[\r\n]/.test(exact[0].raw)) { result.set(n, exact[0].raw); return; }
+    if (n.type !== 'text' || from === to) return;
+    let raw = '', covered = from;
+    for (const run of runs) {
+      if (run.to <= from || run.from >= to) continue;
+      if (run.type !== 'text') return; // Removing code needs ordinary escaping.
+      const bounds = decodedBoundaries(run.raw, run.decoded ?? '');
+      const a = Math.max(from, run.from), b = Math.min(to, run.to), start = bounds?.get(a - run.from), end = bounds?.get(b - run.from);
+      if (a !== covered || start === undefined || end === undefined) return;
+      raw += run.raw.slice(start, end); covered = b;
+    }
+    if (covered === to && !/[\r\n]/.test(raw)) result.set(n, raw);
+  };
+  visit(tree); return result;
+}
 export function writeBlock(node: JSONContent, eol: string, fragments: Fragment[] = [], previous?: Block): string {
   const normalized = canonical(node, false);
   if (node.type === 'sourceBlock') return node.attrs?.raw ?? '';
@@ -165,14 +221,18 @@ export function writeBlock(node: JSONContent, eol: string, fragments: Fragment[]
       return marker.repeat(width) + open[2] + localEol + body.replaceAll('\n', localEol) + localEol + marker.repeat(Math.max(width, close[1].length)) + close[2];
     }
   }
+  const tree = toSyntax(normalized), provenance = positionalRaw(tree, normalized, previous, fragments);
   const gfmExtension = gfmToMarkdown(), builtInHandlers: Partial<Handlers> = { ...defaultHandlers, ...gfmExtension.handlers }, handlers: Partial<Handlers> = {};
   for (const type of ['text', 'link', 'inlineCode', 'strong', 'emphasis', 'delete'] as const) {
   handlers[type] = (n, parent, state, info) => {
+    const positional = provenance.get(n as Output);
     const signature = syntaxKey(n as unknown as Syntax), matching = fragments.filter(f => f.type === type && f.signature === signature);
     const raw = new Set(matching.map(f => f.raw));
+    if (positional !== undefined && type === 'text') return positional;
+    if (positional !== undefined) { raw.clear(); raw.add(positional); }
     if (raw.size > 1) throw new Error('AMBIGUOUS_INLINE_PROVENANCE_REQUIRES_SOURCE');
     if (raw.size === 1) {
-      const value = matching[0].raw;
+      const value = positional ?? matching[0].raw;
       if (/[\r\n]/.test(value)) throw new Error('MULTILINE_INLINE_PROVENANCE_REQUIRES_SOURCE');
       if (['strong', 'emphasis', 'delete'].includes(type)) {
         const width = type === 'strong' ? 2 : type === 'delete' && value.startsWith('~~') ? 2 : 1;
@@ -203,11 +263,12 @@ export function writeBlock(node: JSONContent, eol: string, fragments: Fragment[]
   };
   type PeekWriter = Handle & { peek?: (n: Nodes, parent: Parents | undefined, state: State) => string };
   (handlers[type] as PeekWriter).peek = (n, parent, state) => {
+    const positional = provenance.get(n as Output); if (positional !== undefined) return positional[0] ?? '';
     const matching = fragments.filter(f => f.type === type && f.signature === syntaxKey(n as unknown as Syntax));
     return matching[0]?.raw[0] ?? (builtInHandlers[type] as PeekWriter | undefined)?.peek?.(n, parent, state) ?? (n.type === 'text' ? n.value[0] : '') ?? '';
   };
   }
-  const out = toMarkdown({ type: 'root', children: [toSyntax(normalized) as RootContent] }, { extensions: [gfmExtension], handlers, bullet: '-', fences: true, listItemIndent: 'one', emphasis: '_', strong: '*' });
+  const out = toMarkdown({ type: 'root', children: [tree as RootContent] }, { extensions: [gfmExtension], handlers, bullet: '-', fences: true, listItemIndent: 'one', emphasis: '_', strong: '*' });
   const encoded = fragments.filter(f => f.type === 'text').flatMap(f => encodedTokens(f.raw));
   for (const token of new Set(encoded)) if (out.split(token).length - 1 < encoded.filter(t => t === token).length) throw new Error('ENCODED_TEXT_PROVENANCE_REQUIRES_SOURCE');
   return out.replace(/\n$/, '').replaceAll('\n', eol);

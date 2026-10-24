@@ -21,6 +21,7 @@ it('coalesces pending edits, never acknowledges stale success and keeps latest d
   s.submit(doc('First')); s.submit(doc('Second')); s.submit(doc('Latest'));
   expect(p.pending.length).toBe(1); p.run();
   expect(s.status.state).toBe('validating'); expect(s.status.acceptedVersion).toBe(1); expect(s.status.version).toBe(3);
+  expect(s.lastTelemetry?.version).toBe(1); expect(s.lastTelemetry?.result.source).toBe('First\n');
   expect(() => s.bytes()).toThrow('UNVALIDATED'); expect(p.pending.length).toBe(1);
   p.run(); expect(s.source).toBe('Latest\n'); expect(s.status.acceptedVersion).toBe(3); expect(s.checkpoint().draft).toEqual(doc('Latest')); s.dispose();
 });

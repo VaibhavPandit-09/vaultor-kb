@@ -116,9 +116,9 @@ describe('G1-B source boundaries and structural operations', () => {
     const f = fixture("[label](<../a b.md> 'title')\n\nTail.\n"), p = f.locate('label');
     f.editor.view.dispatch(f.editor.state.tr.insertText('new', p, p + 5)); f.sync(); expect(f.engine.source).toBe("[new](<../a b.md> 'title')\n\nTail.\n"); f.editor.destroy();
   });
-  it('ambiguous inline lexical identity rejects rather than guessing which spelling to rewrite', () => {
+  it('positional inline provenance distinguishes duplicate code spellings during formatting', () => {
     const f = fixture('Start `same` and ``same``.\n\nTail.\n'); f.editor.chain().setTextSelection({ from: 1, to: 6 }).toggleBold().run();
-    const r = f.engine.apply(f.editor.getJSON()); expect(r.accepted).toBe(false); expect(r.reason).toContain('AMBIGUOUS_INLINE'); expect(f.engine.source).toBe('Start `same` and ``same``.\n\nTail.\n'); f.editor.destroy();
+    f.sync(); expect(f.engine.source).toBe('**Start** `same` and ``same``.\n\nTail.\n'); f.editor.commands.undo(); f.sync(); expect(f.engine.source).toBe('Start `same` and ``same``.\n\nTail.\n'); f.editor.destroy();
   });
   it('CRLF code edits retain fence spelling, metadata, and exact external ranges', () => {
     const f = fixture('Keep.\r\n\r\n~~~~js meta\r\nfirst\r\nsecond\r\n~~~~\r\n\r\nTail.\r\n'); const p = f.locate('second'); f.editor.view.dispatch(f.editor.state.tr.insertText('new', p, p + 6)); f.sync();
@@ -135,8 +135,8 @@ describe('G1-B source boundaries and structural operations', () => {
   for (const source of ['Text &amp; more \\*literal\\*.\n\nTail.\n', '1. Text &amp; line\r\n   continuation \\*literal\\*.\r\n\r\nTail.\r\n']) it('decoded source maps keep entities, escapes and continuation indentation exact: ' + source.slice(0, 6), () => {
     const f = fixture(source), p = f.locate('Text'); f.editor.view.dispatch(f.editor.state.tr.insertText('Edited', p, p + 4)); f.sync(); expect(f.engine.source).toBe(source.replace('Text', 'Edited')); f.editor.destroy();
   });
-  it('partial formatting of encoded text refuses lexical normalization and retains draft', () => {
-    const source = 'Text &amp; remains.\n\nTail.\n', f = fixture(source); f.editor.chain().setTextSelection({ from: 1, to: 5 }).toggleBold().run(); const r = f.engine.apply(f.editor.getJSON()); expect(r.accepted).toBe(false); expect(r.reason).toContain('ENCODED_TEXT_PROVENANCE'); expect(f.engine.source).toBe(source); f.editor.destroy();
+  it('partial formatting of encoded text preserves positional token spelling', () => {
+    const source = 'Text &amp; remains.\n\nTail.\n', f = fixture(source); f.editor.chain().setTextSelection({ from: 1, to: 5 }).toggleBold().run(); f.sync(); expect(f.engine.source).toBe('**Text** &amp; remains.\n\nTail.\n'); f.editor.commands.undo(); f.sync(); expect(f.engine.source).toBe(source); f.editor.destroy();
   });
   it('removes inline code/italic and edits a relative link destination through normal commands', () => {
     const f = fixture('Keep.\n\nText `code` and _italic_ [label](../old.md).\n\nTail.\n');

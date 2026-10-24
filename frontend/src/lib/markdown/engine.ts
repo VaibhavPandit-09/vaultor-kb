@@ -1,6 +1,7 @@
 import type { JSONContent } from '@tiptap/core';
 import { canonical, decode, key, LIMITS, project, writeBlock, assertUnicode, type Projection } from './syntax';
-import { literalPatch } from './sourceMap';
+import { decodedBoundaries, literalPatch } from './sourceMap';
+import { assertProjectionShape } from './foreground';
 
 export type SourcePatch = { start: number; end: number; text: string; removed: string };
 export type EngineResult = { accepted: boolean; source: string; patches: SourcePatch[]; reason?: string; patchMs: number; validationMs: number; totalMs?: number };
@@ -26,7 +27,6 @@ function protectedValues(doc: JSONContent): string[] {
   const walk = (n: JSONContent) => { if (n.type === 'sourceBlock' || n.type === 'sourceInline') result.push(JSON.stringify(canonical(n).attrs)); n.content?.forEach(walk); };
   walk(doc); return result.sort();
 }
-function tables(doc: JSONContent) { const result: JSONContent[] = []; const walk = (n: JSONContent) => { if (n.type === 'table') result.push(n); n.content?.forEach(walk); }; walk(doc); return result; }
 function singleTextChange(a: JSONContent, b: JSONContent): { old: JSONContent; next: string } | null {
   const changes: { old: JSONContent; next: string }[] = [];
   const visit = (x: JSONContent, y: JSONContent): boolean => {
@@ -39,6 +39,41 @@ function singleTextChange(a: JSONContent, b: JSONContent): { old: JSONContent; n
   };
   return visit(a, b) && changes.length === 1 ? changes[0] : null;
 }
+function addedFormatting(projection: Projection, target: JSONContent): CharPatch | undefined {
+  const old = projection.blocks, next = (target.content ?? []).filter(n => n.type !== 'paragraph' || n.content?.length);
+  if (old.length !== next.length) return;
+  const changed = old.map((b, i) => key(b.node) === key(next[i]) ? -1 : i).filter(i => i >= 0);
+  if (changed.length !== 1) return;
+  const index = changed[0], collect = (n: JSONContent): JSONContent[] => n.type === 'text' ? [n] : (n.content ?? []).flatMap(collect);
+  const strip = (n: JSONContent): JSONContent => ({ ...n, marks: undefined, content: n.content?.map(strip) });
+  if (key(strip(old[index].node)) !== key(strip(next[index]))) return;
+  const a = collect(old[index].node), b = collect(next[index]);
+  const marks = (n: JSONContent) => (canonical(n).marks ?? []).map(m => JSON.stringify(m));
+  const expand = (nodes: JSONContent[]) => nodes.flatMap(n => Array.from({ length: n.text?.length ?? 0 }, () => marks(n)));
+  const am = expand(a), bm = expand(b); let from = -1, to = 0, added: string | undefined;
+  for (let i = 0; i < am.length; i++) {
+    if (JSON.stringify(am[i]) === JSON.stringify(bm[i])) continue;
+    const plus = bm[i].filter(m => !am[i].includes(m)), minus = am[i].filter(m => !bm[i].includes(m));
+    if (minus.length || plus.length !== 1 || (added && added !== plus[0])) return;
+    if (from < 0) from = i; to = i + 1; added = plus[0];
+  }
+  if (from < 0 || !added) return;
+  for (let i = from; i < to; i++) if (!bm[i].includes(added) || am[i].includes(added)) return;
+  const marker = { bold: '**', italic: '_', strike: '~~' }[JSON.parse(added).type as 'bold']; if (!marker) return;
+  let offset = 0, start: number | undefined, end: number | undefined;
+  for (const n of a) {
+    const size = n.text?.length ?? 0, leaf = projection.leaves.find(l => l.node === n);
+    if (leaf) {
+      const bounds = decodedBoundaries(leaf.raw, n.text ?? '');
+      if (from >= offset && from < offset + size) { const p = bounds?.get(from - offset); if (p !== undefined) start = leaf.start + p; }
+      if (to > offset && to <= offset + size) { const p = bounds?.get(to - offset); if (p !== undefined) end = leaf.start + p; }
+    }
+    offset += size;
+  }
+  if (start === undefined || end === undefined) return;
+  const removed = projection.source.slice(start, end);
+  return { start, end, removed, text: marker + removed + marker };
+}
 
 /** Source-authoritative engine. All expensive work belongs in its worker. */
 export class MarkdownEngine {
@@ -48,7 +83,7 @@ export class MarkdownEngine {
   private historySize = 0;
   private byteLimit: number;
   private historyLimit: number;
-  constructor(bytes: Uint8Array, byteLimit = LIMITS.bytes, historyLimit = LIMITS.historyEntries) { if (!Number.isSafeInteger(byteLimit) || byteLimit < 1 || !Number.isSafeInteger(historyLimit) || historyLimit < 1) throw new Error('INVALID_ENGINE_LIMIT'); this.historyLimit = Math.min(historyLimit, LIMITS.historyEntries); this.byteLimit = Math.min(byteLimit, LIMITS.bytes); if (bytes.length > this.byteLimit) throw new Error('SOURCE_SIZE_LIMIT'); this.projection = project(decode(bytes)); this.history = [{ hash: fingerprint(key(this.projection.doc)) }]; }
+  constructor(bytes: Uint8Array, byteLimit = LIMITS.bytes, historyLimit = LIMITS.historyEntries) { if (!Number.isSafeInteger(byteLimit) || byteLimit < 1 || !Number.isSafeInteger(historyLimit) || historyLimit < 1) throw new Error('INVALID_ENGINE_LIMIT'); this.historyLimit = Math.min(historyLimit, LIMITS.historyEntries); this.byteLimit = Math.min(byteLimit, LIMITS.bytes); if (bytes.length > this.byteLimit) throw new Error('SOURCE_SIZE_LIMIT'); this.projection = project(decode(bytes)); assertProjectionShape(this.projection.doc, this.byteLimit > LIMITS.interactiveBytes); this.history = [{ hash: fingerprint(key(this.projection.doc)) }]; }
   get source() { return this.projection.source; }
   private remember(k: string, patch: CharPatch) {
     const retained = this.history.slice(0, this.cursor + 1);
@@ -67,13 +102,16 @@ export class MarkdownEngine {
     const begin = performance.now(); let patchMs = 0, speculativeValidationMs = 0;
     try {
       const intended = canonical(target), k = JSON.stringify(intended), source = this.source;
+      assertProjectionShape(target, this.byteLimit > LIMITS.interactiveBytes);
       if (key(this.projection.doc) === k) return { accepted: true, source, patches: [], patchMs: performance.now() - begin, validationMs: 0 };
       if (JSON.stringify(protectedValues(this.projection.doc)) !== JSON.stringify(protectedValues(target))) throw new Error('PROTECTED_SYNTAX_REQUIRES_TARGETED_SOURCE');
-      const oldTables = tables(this.projection.doc), newTables = tables(target);
-      oldTables.forEach((t, i) => {
-        if (t.attrs?.mdAlign?.some((value: string | null) => value) && newTables[i] && t.content?.[0]?.content?.length !== newTables[i].content?.[0]?.content?.length) throw new Error('ALIGNED_TABLE_COLUMNS_REQUIRE_SOURCE');
-      });
       let candidate: string; let start = 0, end = source.length, replacement: string;
+      let validated: Projection | undefined;
+      const matchesCandidate = (value: string) => {
+        const start = performance.now(); validated = project(value);
+        const matches = key(validated.doc) === k;
+        speculativeValidationMs += performance.now() - start; return matches;
+      };
       const targetHash = fingerprint(k), historical = this.history.findIndex(r => r.hash === targetHash);
       if (historical >= 0) {
         // Exact provenance restoration, not serialization. Minimize its source diff.
@@ -85,28 +123,29 @@ export class MarkdownEngine {
         if (/[\udc00-\udfff]/.test(source[end] ?? '')) { end++; tail++; }
         replacement = candidate.slice(start, tail);
       } else {
+        const formatting = addedFormatting(this.projection, target);
         const change = singleTextChange(this.projection.doc, target);
         const leaf = change && this.projection.leaves.find(l => l.node === change.old);
         const literal = change && leaf ? literalPatch(leaf, change.next) : undefined;
-        if (literal) {
+        if (formatting && matchesCandidate(source.slice(0, formatting.start) + formatting.text + source.slice(formatting.end))) {
+          start = formatting.start; end = formatting.end; replacement = formatting.text;
+          candidate = source.slice(0, start) + replacement + source.slice(end);
+        } else if (literal) {
           start = literal.start; end = literal.end; replacement = literal.text;
           candidate = source.slice(0, start) + replacement + source.slice(end);
           // A literal edit introducing syntax must use an escaping block writer.
-          const speculativeStart = performance.now(), matches = key(project(candidate).doc) === k;
-          speculativeValidationMs += performance.now() - speculativeStart;
+          const matches = matchesCandidate(candidate);
           if (!matches) {
             replacement = replacement ? writeBlock({ type: 'paragraph', content: [{ type: 'text', text: replacement }] }, '\n') : '';
             candidate = source.slice(0, start) + replacement + source.slice(end);
-            const retryStart = performance.now(), escapedMatches = key(project(candidate).doc) === k;
-            speculativeValidationMs += performance.now() - retryStart;
+            const escapedMatches = matchesCandidate(candidate);
             if (!escapedMatches) {
               // Entity spelling changes only the intentionally inserted text;
               // useful next to existing underscore delimiters without touching
               // their original source or an adjacent existing entity.
               replacement = [...literal.text].map(c => '&#x' + c.codePointAt(0)!.toString(16) + ';').join('');
               candidate = source.slice(0, start) + replacement + source.slice(end);
-              const entityStart = performance.now(), entityMatches = key(project(candidate).doc) === k;
-              speculativeValidationMs += performance.now() - entityStart;
+              const entityMatches = matchesCandidate(candidate);
               if (!entityMatches) candidate = '';
             }
           }
@@ -141,7 +180,7 @@ export class MarkdownEngine {
       if (encode.encode(candidate).length > this.byteLimit) throw new Error('SOURCE_SIZE_LIMIT');
       const local = difference(source, candidate);
       patchMs = performance.now() - begin - speculativeValidationMs;
-      const validationStart = performance.now(), parsed = project(candidate);
+      const validationStart = performance.now(), parsed = validated?.source === candidate ? validated : project(candidate);
       if (key(parsed.doc) !== k) throw new Error('REPARSE_MISMATCH: targeted source editing required');
       const validationMs = speculativeValidationMs + performance.now() - validationStart;
       if (historical >= 0) this.cursor = historical; else this.remember(k, local);
@@ -156,6 +195,7 @@ export class MarkdownEngine {
     const source = this.source.slice(0, block.start) + replacement + this.source.slice(block.end);
     assertUnicode(source); if (encode.encode(source).length > this.byteLimit) throw new Error('SOURCE_SIZE_LIMIT');
     const next = project(source), delta = replacement.length - (block.end - block.start);
+    assertProjectionShape(next.doc, this.byteLimit > LIMITS.interactiveBytes);
     for (const other of this.projection.blocks) {
       if (other === block) continue;
       const shift = other.start >= block.end ? delta : 0;

@@ -1,0 +1,32 @@
+[
+  {
+    "accepted": true,
+    "source": "---\ntitle: keep\n---\n\n**Text** &amp; and **bold _nested_** with `same` and ``same``.\n\n| a | b |\n| :--- | ---: |\n| c | d |\n\n<!-- untouched -->\n",
+    "patches": [
+      {
+        "start": 21,
+        "end": 25,
+        "text": "**Text**",
+        "removed": "Text"
+      }
+    ],
+    "patchMs": 0.40970000000015716,
+    "validationMs": 1.081000000000131,
+    "totalMs": 1.498199999999997
+  },
+  {
+    "accepted": true,
+    "source": "---\ntitle: keep\n---\n\n**Text** &amp; and **bold _nested_** with `same` and ``same``.\n\n| a  |   |  b |\n| :- | - | -: |\n| c  |   |  d |\n\n<!-- untouched -->\n",
+    "patches": [
+      {
+        "start": 89,
+        "end": 116,
+        "text": " |   |  b |\n| :- | - | -: |\n| c  |   | ",
+        "removed": "| b |\n| :--- | ---: |\n| c |"
+      }
+    ],
+    "patchMs": 0.2048000000004322,
+    "validationMs": 0.4525000000003274,
+    "totalMs": 0.667699999999968
+  }
+]

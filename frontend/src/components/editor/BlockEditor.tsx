@@ -12,6 +12,7 @@ import { useEditor, EditorContent, ReactNodeViewRenderer, type Editor } from '@t
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { boundedCodeHighlighting } from './boundedCodeHighlighting';
 import { WorkspaceTable } from './WorkspaceTable';
 import TableControls from './TableControls';
 import type { SaveStatus } from '../../lib/saveCoordinator';
@@ -47,7 +48,7 @@ interface BlockEditorProps {
   /** Isolated document adapters may add schema and observe live transactions.
    * Adapter owns document updates; managed JSON autosave remains separate.
    * Ordinary managed notes omit this; no parser/worker is imported here. */
-  integration?: { extensions: Extensions; headingLevels?: Array<1 | 2 | 3 | 4 | 5 | 6>; unsupported: (reason: string) => void; attach: (editor: Editor) => () => void };
+  integration?: { extensions: Extensions; codeHighlightLimit?: number; headingLevels?: Array<1 | 2 | 3 | 4 | 5 | 6>; unsupported: (reason: string) => void; attach: (editor: Editor) => () => void };
   paneId: string;
   sharedDocuments: SharedNoteDocuments;
   onOpenResource: (intent: LinkedResourceIntent) => void;
@@ -137,6 +138,12 @@ function BlockEditor({
         ...(integration ? { link: { openOnClick: false } } : {}),
       }),
       CodeBlockLowlight.extend({
+        addProseMirrorPlugins() {
+          const plugins = this.parent?.() ?? [];
+          // Pinned CodeBlockLowlight appends its highlighting plugin after the
+          // base CodeBlock plugins; retain those keyboard/VS Code paste rules.
+          return integration?.codeHighlightLimit === undefined ? plugins : [...plugins.slice(0, -1), boundedCodeHighlighting(lowlight, integration.codeHighlightLimit)];
+        },
         addNodeView() {
           return ReactNodeViewRenderer(CodeBlockView);
         },
@@ -500,7 +507,7 @@ function BlockEditor({
   }, [editor, interactionLocked]);
 
   useEffect(() => {
-    if (!editor || invalidContent.current || !content || editor.isFocused) {
+    if (integration || !editor || invalidContent.current || !content || editor.isFocused) {
       return;
     }
 
@@ -510,11 +517,10 @@ function BlockEditor({
     if (current !== incoming) {
       editor.view.dispatch(editor.state.tr.setMeta(tableViewKey, { reset: true }));
       let doc;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Unsupported incoming server content disables editing without saving a stripped document.
       try { validateImageContent(parsed); doc = createNodeFromContent(parsed, editor.schema, { errorOnInvalidContent: true }); } catch { invalidContent.current = true; editor.setEditable(false, false); setContentError(true); return; }
       editor.view.dispatch(resetSharedHistory(editor.state.tr.replaceWith(0, editor.state.doc.content.size, doc.content), editor.state));
     }
-  }, [content, editor]);
+  }, [content, editor, integration]);
 
   useEffect(() => {
     if (!editor) {

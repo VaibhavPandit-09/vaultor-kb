@@ -76,7 +76,7 @@ Reviewed 2026-10-24 against integrated master, published Windows0.18.2/Mac0.18.1
 
 ## Qualification evidence
 
-- [Linked Markdown Gate 1](development/qualification/LINKED-MARKDOWN-G1.md): production editing engine, isolated mounted integration, fidelity/usability/performance gates; no linked-folder writes or release.
+- [Linked Markdown Gate 1](development/qualification/LINKED-MARKDOWN-G1.md): editing engine and remediation, current bounded capability contract, mounted/IME/performance evidence and Conditional verdict; no linked-folder writes or release.
 
 - [Linked Markdown](development/qualification/LINKED-MARKDOWN.md): active five-phase source-fidelity and filesystem-safety qualification; isolated experiments, no production feature or release.
 

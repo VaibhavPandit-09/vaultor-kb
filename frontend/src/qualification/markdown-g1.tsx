@@ -8,12 +8,12 @@ import AppModal from '../components/modals/AppModal';
 import { EscapeManagerProvider } from '../lib/escape/EscapeManagerProvider';
 import { SharedNoteDocuments } from '../lib/sharedNoteDocuments';
 import { MarkdownSession } from '../lib/markdown/session';
-import { markdownExtensions } from '../lib/markdown/extensions';
+import { markdownExtensions, type RefusedInput } from '../lib/markdown/extensions';
 import { browserPort } from '../lib/markdown/browserPort';
 import '../index.css';
 
-type Lab = { session: MarkdownSession; editor?: Editor; keys: number[]; transactions: number; longTasks: number[]; registerEditor: (editor: Editor) => void; recordKey: (ms: number) => void; recordTransaction: () => void };
-declare global { interface Window { markdownG1: { open: (source: string) => Promise<void>; settled: () => Promise<void>; lab?: Lab } } }
+type Lab = { session: MarkdownSession; stress: boolean; refused?: RefusedInput; editor?: Editor; keys: number[]; transactions: number; longTasks: number[]; registerEditor: (editor: Editor) => void; recordKey: (ms: number) => void; recordTransaction: () => void };
+declare global { interface Window { markdownG1: { open: (source: string, stress?: boolean) => Promise<void>; settled: () => Promise<void>; rejectedBytes?: Uint8Array; lab?: Lab } } }
 const root = createRoot(document.getElementById('root')!);
 const mountedSessions: MarkdownSession[] = [];
 export function Surface({ lab }: { lab: Lab }) {
@@ -23,7 +23,7 @@ export function Surface({ lab }: { lab: Lab }) {
   const [retainedDraft, setRetainedDraft] = useState('');
   const [error, setError] = useState('');
   const shared = useMemo(() => new SharedNoteDocuments(), []);
-  const integration = useMemo(() => ({ extensions: markdownExtensions(), headingLevels: [1, 2, 3, 4, 5, 6] as Array<1 | 2 | 3 | 4 | 5 | 6>, unsupported: setError, attach: (editor: Editor) => {
+  const integration = useMemo(() => ({ codeHighlightLimit: 4096, extensions: markdownExtensions({ stress: lab.stress, onRefused: input => { lab.refused = input; setError(input.reason); } }), headingLevels: [1, 2, 3, 4, 5, 6] as Array<1 | 2 | 3 | 4 | 5 | 6>, unsupported: setError, attach: (editor: Editor) => {
     lab.registerEditor(editor);
     const detach = session.attach(editor);
     const key = (event: KeyboardEvent) => { if (event.key.length !== 1 || event.ctrlKey || event.altKey || event.metaKey) return; const start = performance.now(); requestAnimationFrame(() => lab.recordKey(performance.now() - start)); };
@@ -63,11 +63,12 @@ export function Surface({ lab }: { lab: Lab }) {
   </main></EscapeManagerProvider>;
 }
 window.markdownG1 = {
-  async open(source) {
+  async open(source, stress = false) {
+    const session = new MarkdownSession(browserPort(new Worker(new URL('../lib/markdown/markdown.worker.ts', import.meta.url), { type: 'module' })), new TextEncoder().encode(source), 15000, { stress });
+    try { await session.ready; } catch (error) { window.markdownG1.rejectedBytes = session.originalBytes; session.dispose(); throw error; }
     mountedSessions.splice(0).forEach(s => s.dispose());
-    const session = new MarkdownSession(browserPort(new Worker(new URL('../lib/markdown/markdown.worker.ts', import.meta.url), { type: 'module' })), new TextEncoder().encode(source), 15000, { stress: true });
-    mountedSessions.push(session); await session.ready;
-    const lab: Lab = { session, keys: [], transactions: 0, longTasks: [], registerEditor: e => { lab.editor = e; }, recordKey: ms => { lab.keys.push(ms); }, recordTransaction: () => { lab.transactions++; } }; window.markdownG1.lab = lab;
+    mountedSessions.push(session);
+    const lab: Lab = { session, stress, keys: [], transactions: 0, longTasks: [], registerEditor: e => { lab.editor = e; }, recordKey: ms => { lab.keys.push(ms); }, recordTransaction: () => { lab.transactions++; } }; window.markdownG1.lab = lab;
     const observer = new PerformanceObserver(list => { lab.longTasks.push(...list.getEntries().map(e => e.duration)); }); observer.observe({ entryTypes: ['longtask'] });
     root.render(<Surface key={crypto.randomUUID()} lab={lab} />);
     await new Promise<void>(resolve => { const check = () => lab.editor ? resolve() : setTimeout(check, 5); check(); });

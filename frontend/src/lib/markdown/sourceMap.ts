@@ -4,8 +4,8 @@ const token = /^(?:\\[!-/:-@[-`{-~]|&(?:#[xX][\da-fA-F]+|#\d+|[a-zA-Z][a-zA-Z\d]
 export function encodedTokens(raw: string) { return [...raw.matchAll(new RegExp(token.source.slice(1), 'g'))].map(m => m[0]).filter(value => decodeString(value) !== value); }
 /** Token boundaries map decoded UTF16 to raw UTF16. Entity interiors and
  * surrogate interiors have no mapping; no byte/codepoint guessing. */
-export function literalPatch(leaf: Leaf, next: string) {
-  const old = leaf.node.text ?? '', raw = leaf.raw, boundaries = new Map<number, number>([[0, 0]]);
+export function decodedBoundaries(raw: string, old: string) {
+  const boundaries = new Map<number, number>([[0, 0]]);
   let r = 0, d = 0;
   while (r < raw.length) {
     const begin = r; let value: string;
@@ -24,6 +24,11 @@ export function literalPatch(leaf: Leaf, next: string) {
     boundaries.set(d, begin); d += value.length; boundaries.set(d, r);
   }
   if (d !== old.length) return;
+  return boundaries;
+}
+export function literalPatch(leaf: Leaf, next: string) {
+  const old = leaf.node.text ?? '', boundaries = decodedBoundaries(leaf.raw, old);
+  if (!boundaries) return;
   let a = 0, b = old.length, to = next.length;
   while (a < b && a < to && old[a] === next[a]) a++;
   while (b > a && to > a && old[b - 1] === next[to - 1]) { b--; to--; }

@@ -1,0 +1,19 @@
+diff --git a/locality.before.md b/locality.after.md
+index 008ef19..65202b5 100644
+--- a/locality.before.md
++++ b/locality.after.md
+@@ -2,10 +2,10 @@
+ title: keep
+ ---
+ 
+-Text &amp; and **bold _nested_** with `same` and ``same``.
++**Text** &amp; and **bold _nested_** with `same` and ``same``.
+ 
+-| a | b |
+-| :--- | ---: |
+-| c | d |
++| a  |   |  b |
++| :- | - | -: |
++| c  |   |  d |
+ 
+ <!-- untouched -->
