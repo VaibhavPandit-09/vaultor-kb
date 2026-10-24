@@ -1,0 +1,9 @@
+FAIL ordinary inherited permissions, owner/group, creation and exact source survive production Save java.lang.AssertionError
+FAIL ordinary Unicode filename and BOM CRLF source are accepted java.lang.AssertionError
+PASS validated no-op preserves original identity and bytes
+PASS external content before explicit Save remains conflict and is retained
+FAIL late original hardlink never receives Vaultor content or permission changes java.lang.AssertionError
+FAIL interruption before inheritance restoration never reports successful Save java.lang.AssertionError
+FAIL publication gap occupant is never overwritten by production policy java.lang.AssertionError
+FAIL postpublication competing replacement is never acknowledged uncontested java.lang.AssertionError
+passed=2 failed=6

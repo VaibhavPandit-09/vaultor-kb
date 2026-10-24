@@ -39,13 +39,16 @@ final class ReplacementMetadata {
         }
     }
     static Observed observe(WindowsFiles.Handle h)throws IOException {
+        return observe(h,false);
+    }
+    static Observed observe(WindowsFiles.Handle h,boolean ordinaryNames)throws IOException {
         var info=WindowsFiles.info(h);if((info.attributes()&~(0x20|0x80))!=0)throw new IOException("REPLACEMENT_ATTRIBUTES_UNQUALIFIED");WindowsFiles.streams(h);
         try(var a=Arena.ofConfined()) {
             var io=a.allocate(16,8);var ea=a.allocate(65536,4);
             int result=(int)WindowsFiles.invoke("NtQueryEaFile",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS,ADDRESS,JAVA_INT,JAVA_BYTE,ADDRESS,JAVA_INT,ADDRESS,JAVA_BYTE),h.value,io,ea,65536,(byte)0,MemorySegment.NULL,0,MemorySegment.NULL,(byte)1).value();
             if(result!=0xc0000052)throw new IOException("EA_UNQUALIFIED:"+Integer.toUnsignedString(result,16));
             var alternate=a.allocate(1024,4);int alternateStatus=(int)WindowsFiles.invoke("NtQueryInformationFile",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS,ADDRESS,JAVA_INT,JAVA_INT),h.value,io,alternate,1024,21).value();
-            if(alternateStatus!=0xc0000034){int length=alternate.get(JAVA_INT,0);if(alternateStatus!=0||length<0||length>1020)throw new IOException("SHORT_NAME_UNQUALIFIED");String shortName=new String(alternate.asSlice(4,length).toArray(JAVA_BYTE),java.nio.charset.StandardCharsets.UTF_16LE);if(length!=0&&!shortName.equalsIgnoreCase(WindowsFiles.canonical(h).getFileName().toString()))throw new IOException("SHORT_NAME_UNQUALIFIED");}
+            if(alternateStatus!=0xc0000034){int length=alternate.get(JAVA_INT,0);if(alternateStatus!=0||length<0||length>1020)throw new IOException("SHORT_NAME_UNQUALIFIED");String shortName=new String(alternate.asSlice(4,length).toArray(JAVA_BYTE),java.nio.charset.StandardCharsets.UTF_16LE);if(!ordinaryNames&&length!=0&&!shortName.equalsIgnoreCase(WindowsFiles.canonical(h).getFileName().toString()))throw new IOException("SHORT_NAME_UNQUALIFIED");}
             var object=a.allocate(64,8);var count=a.allocate(JAVA_INT);
             var objectResult=WindowsFiles.invoke("DeviceIoControl",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,ADDRESS),h.value,0x9009c,MemorySegment.NULL,0,object,64,count,MemorySegment.NULL);
             if((int)objectResult.value()!=0||objectResult.error()!=2)throw new IOException("OBJECT_ID_UNQUALIFIED:"+objectResult.error());

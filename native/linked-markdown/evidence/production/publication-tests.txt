@@ -1,0 +1,11 @@
+PASS ordinary inherited permissions, owner/group, creation and exact source survive production Save
+PASS ordinary Unicode filename and BOM CRLF source are accepted
+PASS validated no-op preserves original identity and bytes
+PASS external content before explicit Save remains conflict and is retained
+PASS late original hardlink never receives Vaultor content or permission changes
+PASS interruption before inheritance restoration never reports successful Save
+PASS publication gap occupant is never overwritten by production policy
+PASS postpublication competing replacement is never acknowledged uncontested
+PASS reviewed interrupted permission recovery restores ordinary inheritance without content write
+PASS metadata recovery refuses a reused pathname even with identical content
+passed=10 failed=0

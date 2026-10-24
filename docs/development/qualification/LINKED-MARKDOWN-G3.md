@@ -1,5 +1,7 @@
 # Linked Markdown Gate 3 — integration, recovery and runtime
 
+Production continuation: the user subsequently authorized full Windows delivery with a revised practical metadata contract. [Linked Sources L1–L6](../LINKED-SOURCES.md) now owns implementation and release progress. This report preserves historical findings and stop conditions; its exhaustive metadata blockade is not the current production acceptance contract.
+
 Reviewed 2026-10-25. Authoritative Gate 3 tracker and continuation point. Starting source is clean fetched master/origin `dc869971ae15fae98357e79bb4e0c1b2f9370117` (remote rechecked October25; unchanged). **Gate 3: BLOCKED.** The proposed original-object writer failed an actual hardlink confinement experiment; RWH oplocks also failed to prevent the demonstrated alias write. Source Save, repair and restore are now refused by the private desktop host. No public activation, release, version/protocol/archive change or real-project source writes. All mutating qualification uses disposable directories.
 
 | Phase | Status | Objective / acceptance | Work, evidence, limitations and next action |
