@@ -1,0 +1,36 @@
+
+ RUN  v5.0.1 C:/GitDev/vaultor-kb/frontend
+
+ ✓ src/lib/sessionRecovery.test.ts (20 tests) 94ms
+ ✓ src/lib/markdown/session.test.ts (6 tests) 21ms
+ ✓ src/lib/sharedNoteDocuments.test.ts (6 tests) 148ms
+ ✓ src/components/editor/TableWorkspace.test.ts (5 tests) 121ms
+ ✓ src/components/editor/tableCommands.test.ts (5 tests) 155ms
+ ✓ src/lib/markdown/engine.test.ts (52 tests) 400ms
+stderr | src/components/editor/BlockEditor.images.test.tsx > retains unknown document content in a safe state without stripping and autosaving
+[tiptap warn]: Invalid content. Passed value: { type: 'doc', content: [ { type: 'futureBlock', attrs: [Object] } ] } Error: RangeError: Unknown node type: futureBlock
+    at Schema.nodeType (file:///C:/GitDev/vaultor-kb/frontend/node_modules/prosemirror-model/dist/index.js:2493:19)
+    at Node.fromJSON (file:///C:/GitDev/vaultor-kb/frontend/node_modules/prosemirror-model/dist/index.js:1540:27)
+    at Schema.nodeFromJSON (file:///C:/GitDev/vaultor-kb/frontend/node_modules/prosemirror-model/dist/index.js:2451:42)
+    at Array.map (<anonymous>)
+    at Fragment.fromJSON (file:///C:/GitDev/vaultor-kb/frontend/node_modules/prosemirror-model/dist/index.js:324:41)
+    at Node.fromJSON (file:///C:/GitDev/vaultor-kb/frontend/node_modules/prosemirror-model/dist/index.js:1539:32)
+    at Schema.nodeFromJSON (file:///C:/GitDev/vaultor-kb/frontend/node_modules/prosemirror-model/dist/index.js:2451:42)
+    at createNodeFromContent (file:///C:/GitDev/vaultor-kb/frontend/node_modules/@tiptap/core/dist/index.js:596:23)
+    at createDocument (file:///C:/GitDev/vaultor-kb/frontend/node_modules/@tiptap/core/dist/index.js:1065:9)
+    at Editor.createDoc (file:///C:/GitDev/vaultor-kb/frontend/node_modules/@tiptap/core/dist/index.js:6576:24)
+
+ ✓ src/components/editor/BlockEditor.images.test.tsx (2 tests) 153ms
+ ✓ src/lib/markdown/mounted.test.tsx (13 tests) 1973ms
+ ✓ src/lib/markdown/corpus.test.ts (11 tests) 6009ms
+   ✓ G1-D corpus: exact no-op, text, marks, structural edit, protected raw, Undo bytes: docs/CODEBASE.md 489ms
+   ✓ G1-D corpus: exact no-op, text, marks, structural edit, protected raw, Undo bytes: docs/design/UI_PHILOSOPHY.md 352ms
+   ✓ G1-D repeated edits and history restoration use bounded deltas rather than whole documents 4499ms
+   ✓ G1-D structural Git evidence: mixed fixture and an actual repository paragraph 408ms
+
+ Test Files  9 passed (9)
+      Tests  120 passed (120)
+   Start at  14:23:21
+   Duration  7.44s (tests 47%, environment 33%, import 13%, transform 6%)
+
+JSON report written to C:/GitDev/vaultor-kb/experiments/linked-markdown/g1/evidence/focused-tests.json

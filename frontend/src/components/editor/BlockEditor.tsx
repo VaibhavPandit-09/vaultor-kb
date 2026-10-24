@@ -6,7 +6,7 @@ import { TextSelection } from '@tiptap/pm/state';
 import { SharedHistory, SharedNoteDocuments, isSharedTransaction, resetSharedHistory } from '../../lib/sharedNoteDocuments';
 import { registerResourceLinkNavigation, registerResourceLinkNavigator, type LinkedResourceIntent } from '../../lib/resourceLinkNavigation';
 import { flushSync } from 'react-dom';
-import { createNodeFromContent, type JSONContent } from '@tiptap/core';
+import { createNodeFromContent, type JSONContent, type Extensions } from '@tiptap/core';
 import { memo, useRef, useState, useEffect, useCallback, useId, useSyncExternalStore } from 'react';
 import { useEditor, EditorContent, ReactNodeViewRenderer, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -44,6 +44,10 @@ type SlashCommandRegistryWindow = typeof window & {
 };
 
 interface BlockEditorProps {
+  /** Isolated document adapters may add schema and observe live transactions.
+   * Adapter owns document updates; managed JSON autosave remains separate.
+   * Ordinary managed notes omit this; no parser/worker is imported here. */
+  integration?: { extensions: Extensions; headingLevels?: Array<1 | 2 | 3 | 4 | 5 | 6>; unsupported: (reason: string) => void; attach: (editor: Editor) => () => void };
   paneId: string;
   sharedDocuments: SharedNoteDocuments;
   onOpenResource: (intent: LinkedResourceIntent) => void;
@@ -73,6 +77,7 @@ export interface NoteSelection {
 }
 
 function BlockEditor({
+  integration,
   paneId, sharedDocuments, onOpenResource,
   noteId,
   noteTitle,
@@ -128,7 +133,8 @@ function BlockEditor({
         codeBlock: false,
         undoRedo: false,
         underline: false,
-        heading: { levels: [1, 2, 3] },
+        heading: { levels: integration?.headingLevels ?? [1, 2, 3] },
+        ...(integration ? { link: { openOnClick: false } } : {}),
       }),
       CodeBlockLowlight.extend({
         addNodeView() {
@@ -155,6 +161,7 @@ function BlockEditor({
       ResourceLinkExtension,
       ManagedImage,
       SymbolSystemExtension,
+      ...(integration?.extensions ?? []),
     ],
     content: parseInitialContent(content),
     editorProps: {
@@ -164,6 +171,7 @@ function BlockEditor({
       handleDrop: (view, event, _slice, moved) => {
         if (moved || !event.dataTransfer) return false;
         const files = clipboardImages(event.dataTransfer); if (!files.length) return false;
+        if (integration) { event.preventDefault(); integration.unsupported('Managed image uploads are unavailable for Markdown. Use a targeted Markdown image reference; your document is unchanged.'); return true; }
         event.preventDefault(); const position = view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos ?? view.state.selection.from;
         if (window.__vaultor_editor?.view === view) uploadNoteImages(noteId, window.__vaultor_editor, files, position);
         else view.dom.dispatchEvent(new CustomEvent('vaultor:image-files', { detail: { files, position } }));
@@ -172,6 +180,7 @@ function BlockEditor({
       handlePaste: (view, event) => {
         if (event.clipboardData) {
           const files = clipboardImages(event.clipboardData);
+          if (integration && (files.length || /<img\b/i.test(event.clipboardData.getData('text/html')))) { event.preventDefault(); integration.unsupported('This paste contains unsupported images. Your document is unchanged; use targeted Markdown source or paste text.'); return true; }
           if (files.length) {
             event.preventDefault();
             const text = event.clipboardData.getData('text/plain');
@@ -199,7 +208,7 @@ function BlockEditor({
       },
     },
     onUpdate: ({ editor: ed, transaction }) => {
-      if (invalidContent.current || isSharedTransaction(transaction)) return;
+      if (integration || invalidContent.current || isSharedTransaction(transaction)) return;
       if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
       if (autosaveDelayRef.current === 0) {
         onUpdateRef.current(ed.getJSON());
@@ -318,6 +327,12 @@ function BlockEditor({
   });
 
   // Handle Enter key synchronously to preserve the browser user gesture
+  const admitSlash = useCallback((id: string) => {
+    if (integration && ['image', 'link-resource', 'upload-markdown', 'upload-csv', 'highlight'].includes(id)) {
+      integration.unsupported('This managed-note command is unavailable for Markdown. Your typed command and draft are retained; use supported rich text or targeted source editing.'); return false;
+    }
+    return true;
+  }, [integration]);
   useEffect(() => {
     if (!editor) {
       return undefined;
@@ -334,6 +349,7 @@ function BlockEditor({
       const idx = selectedIndex >= filtered.length ? 0 : selectedIndex;
       const item = filtered[idx];
       if (item && current.range) {
+        if (!admitSlash(item.id)) { flushSync(closeSlash); return; }
         const range = { ...current.range };
         if (!item.keepOpen) flushSync(closeSlash);
         item.action(editor, range);
@@ -358,7 +374,7 @@ function BlockEditor({
         delete globalWindow.__slashCommandExecutors;
       }
     };
-  }, [slashState, selectedIndex, editor, onRequestMdUpload, onRequestCsvUpload, closeSlash]);
+  }, [slashState, selectedIndex, editor, onRequestMdUpload, onRequestCsvUpload, closeSlash, admitSlash]);
 
   useEffect(() => {
     if (!editor) return;
@@ -401,6 +417,7 @@ function BlockEditor({
       // Handle Resource Link Plugin State Synchronously
       const rlState = resourceLinkPluginKey.getState(editor.state) as ResourceLinkState | undefined;
       if (rlState?.active) {
+        if (integration) { integration.unsupported('Managed resource links are unavailable for Markdown. Use an ordinary Markdown link; typed text is retained.'); return; }
         if (rlState.query !== resourceState?.query) setResourceSelectedIndex(0);
         setResourceState(rlState);
 
@@ -422,13 +439,17 @@ function BlockEditor({
 
     editor.on('transaction', handleTransaction);
     return () => { editor.off('transaction', handleTransaction); };
-  }, [editor, slashState, selectedIndex, resourceState]);
+  }, [editor, slashState, selectedIndex, resourceState, integration]);
 
   useEffect(() => {
     if (!editor || invalidContent.current) return;
     const detach = sharedDocuments.attach(noteId, editor);
     return detach;
   }, [editor, noteId, sharedDocuments]);
+  useEffect(() => {
+    if (!editor || invalidContent.current || !integration) return;
+    return integration.attach(editor);
+  }, [editor, integration]);
   useEffect(() => {
     if (!editor) return;
     const detachReference=registerReferenceView(paneId,noteId,editor);
@@ -525,13 +546,19 @@ function BlockEditor({
 
   useEffect(() => {
     if (!editor || invalidContent.current) return;
+    if (integration) {
+      const refuse = () => integration.unsupported('Managed image actions are unavailable for Markdown. Use a targeted Markdown image reference; your document is unchanged.');
+      const events = ['vaultor:image-files', 'vaultor:image-picker', 'vaultor:image-reference'];
+      events.forEach(event => editor.view.dom.addEventListener(event, refuse));
+      return () => events.forEach(event => editor.view.dom.removeEventListener(event, refuse));
+    }
     const detach = attachImageUploads(noteId, editor);
     const files = (event: Event) => { const detail = (event as CustomEvent<{ files: File[]; position: number }>).detail; uploadNoteImages(noteId, editor, detail.files, detail.position); };
     const picker = (event: Event) => setImagePicker((event as CustomEvent).detail ?? { position: editor.state.selection.from });
     const reference = () => { setImagePicker({ position: editor.state.selection.from }); };
     editor.view.dom.addEventListener('vaultor:image-files', files); editor.view.dom.addEventListener('vaultor:image-picker', picker); editor.view.dom.addEventListener('vaultor:image-reference', reference);
     return () => { detach(); editor.view.dom.removeEventListener('vaultor:image-files', files); editor.view.dom.removeEventListener('vaultor:image-picker', picker); editor.view.dom.removeEventListener('vaultor:image-reference', reference); };
-  }, [editor, noteId]);
+  }, [editor, noteId, integration]);
 
   if (!editor) return null;
 
@@ -546,6 +573,7 @@ function BlockEditor({
       {slashState?.active && menuPos && slashState.range && (
         <div className="absolute z-50" style={{ top: menuPos.top, left: menuPos.left }}>
           <SlashMenu
+            beforeAction={admitSlash}
             editor={editor}
             range={slashState.range}
             query={slashState.query}
@@ -575,7 +603,8 @@ function BlockEditor({
 }
 
 const MemoizedBlockEditor = memo(BlockEditor, (prev, next) => (
-  prev.paneId === next.paneId
+  prev.integration === next.integration
+  && prev.paneId === next.paneId
   && prev.sharedDocuments === next.sharedDocuments
   && prev.onOpenResource === next.onOpenResource
   && prev.noteId === next.noteId

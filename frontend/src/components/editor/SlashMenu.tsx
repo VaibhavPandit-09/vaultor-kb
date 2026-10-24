@@ -247,6 +247,7 @@ export function getFilteredSlashItems(query: string, onUploadMd: (editor: Editor
 }
 
 interface SlashMenuProps {
+  beforeAction?: (id: string) => boolean;
   editor: Editor;
   range: Range;
   query: string;
@@ -257,6 +258,7 @@ interface SlashMenuProps {
 }
 
 export default function SlashMenu({
+  beforeAction,
   editor,
   range,
   query,
@@ -275,12 +277,13 @@ export default function SlashMenu({
   const selectItem = useCallback((index: number) => {
     const item = filtered[index];
     if (item) {
+      if (beforeAction && !beforeAction(item.id)) { flushSync(onClose); return; }
       const current = slashCommandPluginKey.getState(editor.state) as SlashCommandState | undefined;
       const latestRange = current?.active && current.range ? current.range : range;
       if (!item.keepOpen) flushSync(onClose);
       item.action(editor, latestRange);
     }
-  }, [filtered, editor, range, onClose]);
+  }, [filtered, editor, range, onClose, beforeAction]);
 
   useEffect(() => { menuRef.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'nearest' }); }, [selectedIndex, query]);
 

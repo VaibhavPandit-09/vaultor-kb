@@ -4,6 +4,8 @@ Reviewed: 2026-10-24. **Qualification only; production implementation and releas
 
 Baseline: clean `master`, `4c760e43dbec1c72e4b4fe3f886d321426579709`, matching fetched `origin/master`. Other worktrees were inspected but are outside scope. Preserve managed resources, Tiptap JSON, protocol3, archives and all existing data.
 
+Continuation: [Gate 1 production engineering](LINKED-MARKDOWN-G1.md) is separately authorized from13486fa; its tracker owns current editing implementation and readiness, while this report retains feasibility evidence.
+
 ## Phase gates and progress
 
 ### Phase 1 — Architecture and library investigation
