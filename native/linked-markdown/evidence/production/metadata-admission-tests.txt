@@ -1,0 +1,6 @@
+PASS ordinary object-ID inspection succeeds without changing source metadata or bytes
+PASS CODEBASE-sized source with an object ID opens and saves only the intended edit
+PASS object ID does not bypass alternate-stream refusal
+PASS object ID does not bypass extended-attribute refusal
+PASS object ID does not bypass multiple-hardlink refusal
+passed=5 failed=0

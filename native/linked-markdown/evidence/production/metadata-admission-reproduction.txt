@@ -1,0 +1,36 @@
+Windows11 x64 / local NTFS / bundled Temurin25.0.4.1
+Target: C:\GitDev\vaultor-kb\docs\CODEBASE.md
+Target read-only inspection only; no source/attribute/security/object-ID setter used on original.
+Length133168; attributes32 (Archive); links1; default data stream only.
+Original SHA256 A0ACC4074B86B08CDCDA3F033647108D679084BBC97B876BADC670AB7DF26D2E
+Original identity9e243938:370000:1808d:1dd49e5d994b4d4
+Original modified FILETIME134374146978319563
+
+Before fix:
+A plain disposable Copy-Item omits the NTFS object ID and passes PracticalMetadata.inspect.
+On the original, the read-only FSCTL_GET_OBJECT_ID query succeeds:
+DeviceIoControl BOOL=1; captured GetLastError=0; bytes returned64.
+Independent NtFsControlFile query returns STATUS_SUCCESS0x00000000; IO information64.
+PracticalMetadata.inspect then throws java.io.IOException: OBJECT_ID_UNQUALIFIED:0
+  at vaultor.linked.ReplacementMetadata.observe(ReplacementMetadata.java:54)
+  at vaultor.linked.PracticalMetadata.inspect(PracticalMetadata.java:11)
+There was no failing Windows operation. The admission condition itself rejected success.
+Create an implementation-generated ID ONLY on the disposable copy with FSCTL_CREATE_OR_GET_OBJECT_ID:
+same BOOL1 / error0 /64bytes / NTSTATUS0 and exact same exception reproduced.
+
+After fix:
+Practical policy admits a successful, correctly sized object-ID observation.
+Historical strict qualification policy still refuses object IDs.
+Unexpected query errors and malformed output still refuse admission; ADS/EA/hardlink refusals remain.
+No ID is manually copied/removed/changed on any original. Incidental tracking IDs are not promised across replacement; original content and physical inode remain captured for recovery.
+Native regression5/5: read-only inspect/no-op metadata; actual CODEBASE corpus localized Save plus original captured inode/bytes; ADS refusal; EA refusal; multiple-hardlink refusal.
+Existing readonly4/4 and publication11/11 pass, including late outside-root alias confinement and conflict/recovery.
+Actual normal Windows Electron/Tiptap + rebuilt private JAR/bundled runtime, disposable profile:
+Admission-CODEBASE.md (133168bytes + object ID) opens editable with heading and Save.
+Read-only-CODEBASE.md (same bytes + fixture ADS) opens formatted, with no Save control.
+View Source shows raw Markdown; View Formatted restores rendered headings/paragraphs.
+Screenshots: readonly-fix/admitted-editor.png, formatted-preview.png, source-view.png.
+Not an installed patch release; no version/tag/installer/publication changes.
+
+Final focused validation: native20/20; frontend18/18; desktop28/28; TypeScript/lint/desktop syntax and fresh normal UI/server/native JAR builds pass. Original hash/length checked after UI/source toggles and before commit.
+API reference: https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_get_object_id
