@@ -1,0 +1,14 @@
+PARENT_PERMISSION state=RECOVERY_REQUIRED originalExists=false
+FAIL a parent that denies creating replacement files refuses Save before original capture java.lang.AssertionError
+java.lang.AssertionError
+	at vaultor.linked.SafetyTests.require(SafetyTests.java:10)
+	at vaultor.linked.LinkedParentPermissionTests.lambda$main$0(LinkedParentPermissionTests.java:14)
+	at vaultor.linked.SafetyTests.check(SafetyTests.java:9)
+	at vaultor.linked.LinkedParentPermissionTests.main(LinkedParentPermissionTests.java:8)
+FAIL a probe-name collision never deletes or overwrites the existing entry java.lang.AssertionError
+java.lang.AssertionError
+	at vaultor.linked.SafetyTests.require(SafetyTests.java:10)
+	at vaultor.linked.LinkedParentPermissionTests.lambda$main$2(LinkedParentPermissionTests.java:22)
+	at vaultor.linked.SafetyTests.check(SafetyTests.java:9)
+	at vaultor.linked.LinkedParentPermissionTests.main(LinkedParentPermissionTests.java:19)
+TOTAL 0 passed; 2 failed

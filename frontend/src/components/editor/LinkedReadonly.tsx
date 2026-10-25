@@ -1,7 +1,7 @@
 import {useState,useEffect} from 'react';
 import type {LinkedWorkspace} from '../../lib/linked/workspace';
 import type {Opened} from '../../lib/linked/types';
-const reasons:Record<string,string>={LARGE_DOCUMENT:'Rich-text editing supports documents up to 256 KiB. The original file remains unchanged.',ENCODING_UNSUPPORTED:'This encoding cannot be edited safely. The original bytes remain unchanged.',HARDLINKED_FILE:'This file has multiple hardlinks and is read-only.',SPECIAL_FILE:'This file has filesystem characteristics outside the supported editing contract.',DOCUMENT_SHAPE_LIMIT:'This document is too complex for safe rich-text editing. Its source remains intact.'};
+const reasons:Record<string,string>={RECOVERY_VOLUME_UNAVAILABLE:'Safe recovery storage is not configured on this drive. The original file remains read-only.',LARGE_DOCUMENT:'Rich-text editing supports documents up to 256 KiB. The original file remains unchanged.',ENCODING_UNSUPPORTED:'This encoding cannot be edited safely. The original bytes remain unchanged.',HARDLINKED_FILE:'This file has multiple hardlinks and is read-only.',SPECIAL_FILE:'This file has filesystem characteristics outside the supported editing contract.',DOCUMENT_SHAPE_LIMIT:'This document is too complex for safe rich-text editing. Its source remains intact.'};
 export default function LinkedReadonly({workspace,opened}:{workspace:LinkedWorkspace;opened:Opened}){
   useEffect(()=>workspace.previewMounted(opened.id),[workspace,opened.id]);
   const [offset,setOffset]=useState(0),[text,setText]=useState(()=>new TextDecoder().decode(opened.bytes)),[error,setError]=useState(''),[busy,setBusy]=useState(false);

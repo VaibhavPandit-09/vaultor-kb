@@ -106,6 +106,7 @@ else {
         if(!workerName||!(await stat(resolve(linkedBundle,'linked-files.jar')).catch(()=>null)))throw Error('Linked folder components are unavailable. Reinstall the current desktop version.');
         linked??=new LinkedManager({owner:linkedIdentity,privateOwner:privateLinkedIdentity,current:scope=>scope&&privateLinkedIdentity(scope,scope)?scope:null,
           directory:resolve(app.getPath('userData'),'linked-sources'),java:resolve(linkedBundle,'runtime/bin/java.exe'),classes:resolve(linkedBundle,'linked-files.jar'),worker:resolve(assets,workerName),
+          confirmDiscard:async({archived=false}={})=>{const answer=await dialog.showMessageBox(window,{type:'question',title:'Remove private recovery copies?',message:'Export any versions you need first.',detail:(archived?'':'Linked editors will close. ')+'Only the reviewed private recovery copies are removed; external files are unchanged.',buttons:['Keep copies','Remove recovery copies'],defaultId:0,cancelId:0,noLink:true});return answer.response===1;},
           protectedRoot:app.getPath('userData'),applicationRoot:app.getAppPath(),protectedPaths:[linkedBundle,ui],picker:options=>dialog.showOpenDialog(window,options),saveDialog:options=>dialog.showSaveDialog(window,options)});
       }
       return linked.dispatch(value);

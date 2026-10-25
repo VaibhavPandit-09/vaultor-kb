@@ -1,0 +1,3 @@
+PASS a parent that denies creating replacement files refuses Save before original capture
+PASS a probe-name collision never deletes or overwrites the existing entry
+passed=2 failed=0

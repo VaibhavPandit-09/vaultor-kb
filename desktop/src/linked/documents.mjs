@@ -17,7 +17,7 @@ export class LinkedDocuments {
       const found=await this.registry.native.call('lookup-view',fields[0]);
       if(found[0]===id&&found[1]){recoveryOperation=found[1];try{
         const record=await this.registry.native.call('inspect',found[1]),parsed=JSON.parse(record[2]);
-        if(['DRAFT_VALIDATED','DRAFT_UNVALIDATED'].includes(record[3])&&parsed.schema==='G3_VISUAL_1'&&parsed.document?.type==='doc'){
+        if(found[2]==='true'&&['DRAFT_VALIDATED','DRAFT_UNVALIDATED'].includes(record[3])&&parsed.schema==='G3_VISUAL_1'&&parsed.document?.type==='doc'){
           const recovered=await this.registry.native.call('recover-linked',found[1],capability);await this.registry.native.call('close',fields[0]);fields=recovered;base=readBase(fields);seed=Buffer.from(fields[7],'base64');visual=parsed;recoveryOnly=fields[9]==='true';nativeVersion=Number(fields[11]);
         }
       }catch{/* Corrupt or unsupported drafts remain inspectable in Recovery. */}}
@@ -69,8 +69,8 @@ export class LinkedDocuments {
     if(/\.(md|markdown)$/i.test(target.relative)){
       const fields=await this.registry.native.call('open-linked',cap,target.relative);
       try{
-        this.registry.check(request);const key=this.registry.entryKey(d.source,target.relative,fields[2]);let entry=this.registry.entries.get(this.registry.entryIndex.get(key));
-        if(!entry){if(this.registry.entries.size>=50000)throw Error('LINKED_INDEX_LIMIT');entry={id:randomUUID(),root:d.source,relative:target.relative,name:target.relative.split('/').at(-1),identity:fields[2],directory:false,markdown:true,unsupported:false,size:Number(fields[6]),parent:null,available:true};this.registry.entries.set(entry.id,entry);this.registry.entryIndex.set(key,entry.id);await this.registry.persist();}
+        this.registry.check(request);const relative=fields[8]??target.relative,key=this.registry.entryKey(d.source,relative,fields[2]);let entry=this.registry.entries.get(this.registry.entryIndex.get(key));
+        if(!entry){if(this.registry.entries.size>=50000)throw Error('LINKED_INDEX_LIMIT');entry={id:randomUUID(),root:d.source,relative,name:relative.split('/').at(-1),identity:fields[2],directory:false,markdown:true,unsupported:false,size:Number(fields[6]),parent:null,available:true};this.registry.entries.set(entry.id,entry);this.registry.entryIndex.set(key,entry.id);await this.registry.persist();}
         return {kind:'document',id:entry.id,fragment:target.fragment};
       }finally{await this.registry.native.call('close',fields[0]).catch(()=>{});}
     }

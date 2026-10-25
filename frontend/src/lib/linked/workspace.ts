@@ -21,12 +21,14 @@ export class LinkedWorkspace{
   private listeners=new Set<()=>void>();
   private revision=0;
   private lifetime=0;
+  private contextVersion=0;
   private refreshing=new Set<string>();
   private directories=new Map<string,()=>Promise<void>>();
   private directoryCursor=0;
   observeDirectory(id:string,refresh:()=>Promise<void>){this.directories.set(id,refresh);return()=>{if(this.directories.get(id)===refresh)this.directories.delete(id);};}
   subscribe=(listener:()=>void)=>{this.listeners.add(listener);return()=>{this.listeners.delete(listener);};};
   getSnapshot=()=>this.revision;
+  getContextVersion=()=>this.contextVersion;
   private emit(){this.revision++;this.listeners.forEach(listener=>listener());}
   constructor(identity:()=>Identity|null){this.identity=identity;}
   supported(){return getPlatform().kind==='desktop'&&getConnection().profileId==='this-computer';}
@@ -96,6 +98,8 @@ export class LinkedWorkspace{
     }catch(error){previous.external('EXTERNAL_CHANGED');if(reviewedRevision!==undefined)throw error;}
     finally{if(ticket)await this.request('abort-refresh',{ticket}).catch(()=>{});next?.dispose();restore();this.refreshing.delete(id);}
   }
-  dispose(){this.lifetime++;for(const document of this.documents.values())document.dispose();this.documents.clear();this.previews.clear();this.metadata.clear();this.unavailable.clear();this.directories.clear();this.previewMounts.clear();this.emit();}
-  async close(){await this.flush();this.dispose();}
+  closedEditors(){this.lifetime++;for(const document of this.documents.values()){this.unavailable.set(document.opened.id,'Recovery review closed this editor safely. Reopen to continue.');document.dispose();}for(const preview of this.previews.values())this.unavailable.set(preview.id,'Reopen this linked document to continue.');this.documents.clear();this.previews.clear();this.previewMounts.clear();this.emit();}
+  dispose(){this.lifetime++;this.contextVersion++;for(const document of this.documents.values())document.dispose();this.documents.clear();this.previews.clear();this.metadata.clear();this.unavailable.clear();this.directories.clear();this.previewMounts.clear();this.emit();}
+  async closeNativeDocuments(){if(!this.documents.size&&!this.previews.size)return;await this.request('close-documents').catch(error=>{if(!/WORKSPACE_CHANGED|OWNER_CHANGED/.test(String(error)))throw error;});}
+  async close(){await this.flush();await this.closeNativeDocuments();this.dispose();}
 }

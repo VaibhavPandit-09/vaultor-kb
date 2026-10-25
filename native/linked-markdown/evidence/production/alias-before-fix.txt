@@ -1,0 +1,8 @@
+PASS Save through a real DOS alias preserves the original long directory entry
+FAIL case-insensitive link spelling never changes original filename casing java.lang.AssertionError
+java.lang.AssertionError
+	at vaultor.linked.SafetyTests.require(SafetyTests.java:10)
+	at vaultor.linked.LinkedAliasTests.lambda$main$2(LinkedAliasTests.java:27)
+	at vaultor.linked.SafetyTests.check(SafetyTests.java:9)
+	at vaultor.linked.LinkedAliasTests.main(LinkedAliasTests.java:24)
+TOTAL 1 passed; 1 failed

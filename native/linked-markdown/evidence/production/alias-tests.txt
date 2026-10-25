@@ -1,0 +1,3 @@
+PASS Save through a real DOS alias preserves the original long directory entry
+PASS case-insensitive link spelling never changes original filename casing
+passed=2 failed=0

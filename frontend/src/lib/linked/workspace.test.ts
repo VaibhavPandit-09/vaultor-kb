@@ -14,7 +14,7 @@ function fixture(){vi.stubGlobal('Worker',WorkerStub);const workspace=new Linked
   workspace.request=(async(operation,p={})=>{calls.push(operation);const id=String(p.document);
     if(operation==='open'){const saved=drafts.get(id);const source='Paragraph '+id+'.\n';return {id,source:'root',binding:id+'-binding',identity:id+'-inode',revision:'sha',name:id+'.md',relative:id+'.md',bytes:new TextEncoder().encode(source),size:source.length,readonlyReason:'',seed:saved?new TextEncoder().encode(saved.source??source):undefined,visual:saved?{schema:'G3_VISUAL_1',document:saved.document}:undefined,nativeVersion:saved?.version} satisfies Opened;}
     if(operation==='protect'){drafts.set(id,{document:structuredClone(p.draft as JSONContent),source:p.source as string|undefined,version:p.version as number});return {protected:true,validated:p.source!==undefined,version:p.version};}
-    if(operation==='close')return;
+    if(operation==='close'||operation==='close-documents')return;
     throw Error('Unexpected '+operation);
   }) as LinkedRequest;
   return {workspace,calls};

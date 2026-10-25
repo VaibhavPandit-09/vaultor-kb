@@ -1,5 +1,5 @@
 import {linkedError} from '../lib/linked/errors';
-import {useEffect,useState,useRef} from 'react';
+import {useEffect,useState,useRef,useSyncExternalStore} from 'react';
 import {ChevronDown,FileText,Folder,FolderPlus} from 'lucide-react';
 import LibraryPopover from './LibraryPopover';
 import LinkedRecovery from './LinkedRecovery';
@@ -9,8 +9,9 @@ import type {Entry,Source} from '../lib/linked/types';
 export default function LinkedSources({workspace,onOpen}:{workspace:LinkedWorkspace;onOpen:(entry:Entry)=>void}){
   const [sources,setSources]=useState<Source[]>([]),[error,setError]=useState(''),[pending,setPending]=useState(false),[expanded,setExpanded]=useState(true),[revision,setRevision]=useState(0);
   const [recovery,setRecovery]=useState(false);
+  const lifetime=useSyncExternalStore(workspace.subscribe,workspace.getContextVersion);
   const refresh=async()=>{setSources((await workspace.sources()).sources);};
-  useEffect(()=>{let active=true;if(workspace.supported())void workspace.sources().then(value=>{if(active)setSources(value.sources);}).catch(failure=>{if(active)setError(linkedError(failure));});return()=>{active=false;};},[workspace]);
+  useEffect(()=>{let active=true;setSources([]);setError('');setRecovery(false);if(workspace.supported())void workspace.sources().then(value=>{if(active)setSources(value.sources);}).catch(failure=>{if(active)setError(linkedError(failure));});return()=>{active=false;};},[workspace,lifetime]);
   if(!workspace.supported())return null;
   const add=async()=>{setPending(true);setError('');try{const result=await workspace.request<{root?:string}>('add');if(result.root&&sources.some(source=>source.id===result.root&&!source.enabled))await workspace.reopen(result.root);await refresh();setExpanded(true);setRevision(value=>value+1);}catch(failure){setError(linkedError(failure));}finally{setPending(false);}};
   return <section className="sidebar-section" aria-label="Linked sources">

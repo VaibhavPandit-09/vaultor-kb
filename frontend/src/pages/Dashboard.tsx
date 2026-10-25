@@ -947,7 +947,7 @@ export default function Dashboard() {
   const afterImport = async () => {
     identityCheckVersion.current++;
     const identity=(await api.get<Identity>('/workspace/identity')).data;
-    await linkedWorkspace.close();identityRef.current=identity;recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));
+    await linkedWorkspace.flush();await linkedWorkspace.closeNativeDocuments();identityRef.current=identity;linkedWorkspace.dispose();recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));
     setNoteExport(null);setTitleEditState(null);
     setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
     saves.clear();
@@ -1055,10 +1055,10 @@ export default function Dashboard() {
   useEffect(()=>{
     if(!sessionReady)return;let stopped=false;
     const check=async()=>{const version=++identityCheckVersion.current;try {const identity=(await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;if(!stopped&&version===identityCheckVersion.current&&identityRef.current&&!sameWorkspace(identity,identityRef.current)) {
-      await linkedWorkspace.close();workspaceEpoch.current++;resourceLoadVersions.current.clear();setReferenceTarget(null);setReviewTarget(undefined);dispatch(setCurrentResourceId(null));
+      await linkedWorkspace.flush();await linkedWorkspace.closeNativeDocuments();workspaceEpoch.current++;resourceLoadVersions.current.clear();setReferenceTarget(null);setReviewTarget(undefined);dispatch(setCurrentResourceId(null));
       setCommandPaletteOpen(false);setFileImport(null);setTagPickerOpenNoteId(null);setLifecycleTargets(null);setRecoveryOpen(false);setTransferMode(null);
       saves.clear();paneNavigation.reset();setResourceDetails({});setPreviewResourceId(null);setPreviewResourceType(null);setNoteExport(null);setTitleEditState(null);setLibraryVisible(true);setCollection(null);setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
-      identityRef.current=identity;recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));setSessionMessage('The workspace was replaced. Previous drafts are available as separate recovery copies.');notifyResourceChange({kind:'workspace'});
+      identityRef.current=identity;linkedWorkspace.dispose();recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));setSessionMessage('The workspace was replaced. Previous drafts are available as separate recovery copies.');notifyResourceChange({kind:'workspace'});
     }}catch{/* Offline checks must not interrupt editing. */}};
     window.addEventListener('vaultor:identity-check',check);window.addEventListener('focus',check);
     return()=>{stopped=true;window.removeEventListener('vaultor:identity-check',check);window.removeEventListener('focus',check);};

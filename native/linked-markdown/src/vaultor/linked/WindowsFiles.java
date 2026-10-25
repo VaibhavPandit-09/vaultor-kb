@@ -207,6 +207,14 @@ public final class WindowsFiles {
     /** Explicit recovery export: owner-only CREATE_NEW relative to a consented
      * directory. It does not need journal quota or admit arbitrary source Save. */
     static Handle createPrivateRelative(Handle parent,String name)throws IOException{
+        return createPrivateRelative(parent,name,false);
+    }
+    static void probeParentWrite(Handle parent,String operation)throws IOException{
+        try(var file=createPrivateRelative(parent,".vaultor-recovery-probe-"+operation+".tmp",true)){
+            if(info(file).links()!=1||info(file).size()!=0)throw new IOException("PARENT_PROBE_CHANGED");
+        }
+    }
+    private static Handle createPrivateRelative(Handle parent,String name,boolean deleteOnClose)throws IOException{
         wellFormedPath(name);
         if(name.isEmpty()||name.matches(".*[\\\\/:\\x00].*"))throw new IOException("RELATIVE_COMPONENT");
         try(var arena=Arena.ofConfined()){
@@ -217,7 +225,7 @@ public final class WindowsFiles {
                 byte[] encoded=name.getBytes(StandardCharsets.UTF_16LE);var string=arena.allocate(16,8);string.set(JAVA_SHORT,0,(short)encoded.length);string.set(JAVA_SHORT,2,(short)encoded.length);string.set(ADDRESS,8,arena.allocateFrom(JAVA_BYTE,encoded));
                 var object=arena.allocate(48,8);object.set(JAVA_INT,0,48);object.set(ADDRESS,8,parent.value);object.set(ADDRESS,16,string);object.set(JAVA_INT,24,0x40);object.set(ADDRESS,32,security);
                 var handle=arena.allocate(ADDRESS);var status=arena.allocate(16,8);
-                int result=(int)invoke("NtCreateFile",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,ADDRESS,ADDRESS,JAVA_INT,JAVA_INT,JAVA_INT,JAVA_INT,ADDRESS,JAVA_INT),handle,READ|WRITE|0x100000,object,status,MemorySegment.NULL,0,0,2,0x00200000|0x20,MemorySegment.NULL,0).value();
+                int result=(int)invoke("NtCreateFile",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,ADDRESS,ADDRESS,JAVA_INT,JAVA_INT,JAVA_INT,JAVA_INT,ADDRESS,JAVA_INT),handle,READ|WRITE|0x100000|(deleteOnClose?0x10000:0),object,status,MemorySegment.NULL,0,0,2,0x00200000|0x20|(deleteOnClose?0x1000:0),MemorySegment.NULL,0).value();
                 if(result!=0){var partial=handle.get(ADDRESS,0);if(partial.address()!=0&&partial.address()!=-1L)invoke("CloseHandle",FunctionDescriptor.of(JAVA_INT,ADDRESS),partial);throw new NativeFailure("ExportCreateNew",(int)invoke("RtlNtStatusToDosError",FunctionDescriptor.of(JAVA_INT,JAVA_INT),result).value());}
                 var opened=new Handle(handle.get(ADDRESS,0));try{var info=info(opened);if((info.attributes()&(REPARSE|DIRECTORY))!=0||info.links()!=1)throw new IOException("EXPORT_TYPE");return opened;}catch(IOException e){opened.close();throw e;}
             }finally{invoke("LocalFree",FunctionDescriptor.of(ADDRESS,ADDRESS),security);}

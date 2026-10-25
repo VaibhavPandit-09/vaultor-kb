@@ -33,6 +33,7 @@ public final class LinkedStore implements AutoCloseable {
     private boolean originalObjectWrites;
     private record Review(String operation,Root root,String epoch,Journal.Record record,Snapshot disk,long expires){}
     private final Map<String,Review> reviews=new HashMap<>();
+    private final PrivateEvidence privateEvidence;
     public record RecoveryReview(String ticket,String state,byte[] base,byte[] local,String visual,Snapshot disk){}
     /** Explicit isolated Gate3 admission; legacy Gate2 remains reproducible. */
     /** Rejected G3 experiment, callable only by disposable native fault probes.
@@ -41,7 +42,7 @@ public final class LinkedStore implements AutoCloseable {
     public LinkedStore(Scope owner,Path privateRoot,byte[] validationKey,byte[] consentKey,List<Path> hostProtectedPaths,Faults faults)throws IOException{
         if(!System.getProperty("os.name").startsWith("Windows")||!Set.of("amd64","x86_64").contains(System.getProperty("os.arch")))throw new IOException("PLATFORM_UNQUALIFIED");
         if(owner.client()!=Client.LOCAL_DESKTOP_OWNER||validationKey.length<32||consentKey.length<32||Arrays.equals(validationKey,consentKey))throw new IOException("LOCAL_OWNER_AND_SEPARATE_KEYS_REQUIRED");
-        this.owner=owner;this.privateRoot=privateRoot.toAbsolutePath().normalize();this.validationKey=validationKey.clone();this.consentKey=consentKey.clone();this.faults=faults==null?(phase,path)->{}:faults;
+        this.owner=owner;this.privateRoot=privateRoot.toAbsolutePath().normalize();this.privateEvidence=new PrivateEvidence(this.privateRoot);this.validationKey=validationKey.clone();this.consentKey=consentKey.clone();this.faults=faults==null?(phase,path)->{}:faults;
         var protectedList=new ArrayList<>(Objects.requireNonNull(hostProtectedPaths));protectedList.add(this.privateRoot);this.protectedPaths=protectedList.stream().map(p->p.toAbsolutePath().normalize()).toList();
         // Catalog exclusions must use the same canonical namespace as grants.
         // Refuse aliases instead of allowing a junctioned host-storage path to
@@ -66,7 +67,8 @@ public final class LinkedStore implements AutoCloseable {
     private Root root(Scope s,String id)throws IOException{scope(s);var r=roots.get(id);if(r==null)throw new IOException("ROOT_CAPABILITY");if(!r.connected)throw new IOException("SOURCE_UNAVAILABLE");return r;}
     WindowsFiles.Pins rootPins(Root r)throws IOException{try{var p=WindowsFiles.pin(r.path);if(!p.last().identity().equals(r.identity)){p.close();throw new IOException("ROOT_REPLACED");}return p;}catch(IOException e){if(e.getMessage().equals("ROOT_REPLACED"))throw e;throw new IOException("SOURCE_UNAVAILABLE:"+e.getMessage(),e);}}
     private Doc doc(Scope scope,String cap,String epoch)throws IOException{scope(scope);var d=docs.get(cap);if(d==null)throw new IOException("DOCUMENT_CAPABILITY");if(d.root.revoked)throw new IOException("ROOT_REVOKED");if(!d.root.connected)throw new IOException("SOURCE_UNAVAILABLE");if(!d.epoch.equals(epoch)||!d.root.epoch.equals(epoch))throw new IOException("SOURCE_EPOCH_STALE");return d;}
-    static String relative(String n)throws IOException{if(n==null||n.length()>1000||n.contains("\\")||n.contains(":"))throw new IOException("RELATIVE_PATH");String[] segments=n.split("/",-1);if(segments.length>32)throw new IOException("PATH_DEPTH");for(String part:segments)if(part.isEmpty()||part.equals(".")||part.equals("..")||part.endsWith(".")||part.endsWith(" ")||part.matches("(?i)(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(?:\\..*)?")||part.matches(".*[<>\"|?*\\x00-\\x1f].*")||part.equalsIgnoreCase(".git")||part.toLowerCase(Locale.ROOT).startsWith(".vaultor-recovery"))throw new IOException("RELATIVE_PATH");if(!n.toLowerCase(Locale.ROOT).endsWith(".md"))throw new IOException("MARKDOWN_ONLY");return n;}
+    static String relativePath(String n)throws IOException{if(n==null||n.length()>1000||n.contains("\\")||n.contains(":"))throw new IOException("RELATIVE_PATH");String[] segments=n.split("/",-1);if(segments.length>32)throw new IOException("PATH_DEPTH");for(String part:segments)if(part.isEmpty()||part.equals(".")||part.equals("..")||part.endsWith(".")||part.endsWith(" ")||part.matches("(?i)(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(?:\\..*)?")||part.matches(".*[<>\"|?*\\x00-\\x1f].*")||part.equalsIgnoreCase(".git")||part.toLowerCase(Locale.ROOT).startsWith(".vaultor-recovery"))throw new IOException("RELATIVE_PATH");return n;}
+    static String relative(String n)throws IOException{relativePath(n);if(!n.toLowerCase(Locale.ROOT).endsWith(".md")&&!n.toLowerCase(Locale.ROOT).endsWith(".markdown"))throw new IOException("MARKDOWN_ONLY");return n;}
     public static String consentPayload(Scope scope,Path selected,String nonce,long expires){return "G2-ROOT-1\n"+scope.workspace()+"\n"+scope.generation()+"\n"+selected.toAbsolutePath().normalize()+"\n"+nonce+"\n"+expires;}
     /** Signed one-use picker result, never a renderer-selected path/role flag. */
     public synchronized String authorizeSelectedRoot(Scope scope,Path selected,String nonce,long expires,String signature)throws IOException{
@@ -90,12 +92,25 @@ public final class LinkedStore implements AutoCloseable {
     public synchronized Opened openLinked(Scope s,String root,String name)throws IOException {
         var r=root(s,root);relative(name);if(docs.size()>=64)throw new IOException("DOCUMENT_LIMIT");
         try(var rootPin=WindowsFiles.pinPublication(r.path);var parent=WindowsFiles.pinPublication(r.path.resolve(name).getParent());var file=WindowsFiles.relative(parent.handle(),Path.of(name).getFileName().toString(),WindowsFiles.READ,1,false)){
-            if(!rootPin.last().identity().equals(r.identity))throw new IOException("ROOT_REPLACED");var info=WindowsFiles.info(file);byte[] bytes=info.size()<=SOURCE_LIMIT?WindowsFiles.readStart(file,SOURCE_LIMIT):new byte[0];var snap=new Snapshot(new Revision(info.identity(),info.size()<=SOURCE_LIMIT?hash(bytes):"READ_ONLY_LARGE:"+info.modified()+":"+info.size(),metadata(file,info)),bytes,info.size());var d=new Doc(r,name,snap);d.linkedRead=true;
-            if(info.size()>SOURCE_LIMIT)d.readonlyReason="LARGE_DOCUMENT";else if(info.links()!=1)d.readonlyReason="HARDLINKED_FILE";else try{PracticalMetadata.inspect(file);}catch(IOException unsupported){d.readonlyReason="SPECIAL_FILE";}
+            if(!rootPin.last().identity().equals(r.identity))throw new IOException("ROOT_REPLACED");var info=WindowsFiles.info(file);byte[] bytes=info.size()<=SOURCE_LIMIT?WindowsFiles.readStart(file,SOURCE_LIMIT):new byte[0];var snap=new Snapshot(new Revision(info.identity(),info.size()<=SOURCE_LIMIT?hash(bytes):"READ_ONLY_LARGE:"+info.modified()+":"+info.size(),metadata(file,info)),bytes,info.size());Path canonical=WindowsFiles.canonical(file);if(!canonical.startsWith(rootPin.canonicalPath()))throw new IOException("SOURCE_NAME_UNQUALIFIED");String actualName=rootPin.canonicalPath().relativize(canonical).toString().replace('\\','/');relative(actualName);var d=new Doc(r,actualName,snap);d.linkedRead=true;
+            try(var recovery=WindowsFiles.pinPublication(privateRoot)){if(!rootPin.last().identity().split(":")[0].equals(recovery.last().identity().split(":")[0]))d.readonlyReason="RECOVERY_VOLUME_UNAVAILABLE";}
+            if(d.readonlyReason.isEmpty()){if(info.size()>SOURCE_LIMIT)d.readonlyReason="LARGE_DOCUMENT";else if(info.links()!=1)d.readonlyReason="HARDLINKED_FILE";else try{PracticalMetadata.inspect(file);}catch(IOException unsupported){d.readonlyReason="SPECIAL_FILE";}}
             if(d.readonlyReason.isEmpty())try{StandardCharsets.UTF_8.newDecoder().onMalformedInput(java.nio.charset.CodingErrorAction.REPORT).onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT).decode(java.nio.ByteBuffer.wrap(bytes));}catch(java.nio.charset.CharacterCodingException invalid){d.readonlyReason="ENCODING_UNSUPPORTED";}
             d.recoveryOnly=!d.readonlyReason.isEmpty();String capability=UUID.randomUUID().toString();docs.put(capability,d);return new Opened(capability,r.epoch,snap);
         }
     }
+    /** Read-only scoped asset snapshot. Never creates a document/candidate. */
+    public synchronized Snapshot readLinkedAsset(Scope s,String capability,String name)throws IOException{
+        var r=root(s,capability);relativePath(name);
+        try(var rootPin=WindowsFiles.pinPublication(r.path);var parent=WindowsFiles.pinPublication(r.path.resolve(name).getParent());var file=WindowsFiles.relative(parent.handle(),Path.of(name).getFileName().toString(),WindowsFiles.READ,1,false)){
+            if(!rootPin.last().identity().equals(r.identity))throw new IOException("ROOT_REPLACED");
+            var before=WindowsFiles.info(file);if(before.size()>2*1024*1024)throw new IOException("ASSET_SIZE_LIMIT");
+            byte[] bytes=WindowsFiles.readStart(file,2*1024*1024);var after=WindowsFiles.info(file);
+            if(!before.identity().equals(after.identity())||before.size()!=after.size()||before.modified()!=after.modified()||bytes.length!=after.size())throw new IOException("ASSET_CHANGED");
+            rootPin.verify();parent.verify();return new Snapshot(new Revision(after.identity(),hash(bytes),"READ_ONLY_ASSET"),bytes,bytes.length);
+        }
+    }
+    public synchronized String documentRelative(Scope scope,String capability)throws IOException{scope(scope);var d=docs.get(capability);if(d==null)throw new IOException("DOCUMENT_CAPABILITY");return d.relative;}
     public synchronized String readonlyReason(Scope s,String capability)throws IOException{scope(s);var d=docs.get(capability);if(d==null)throw new IOException("DOCUMENT_CAPABILITY");return d.readonlyReason;}
     public record Entry(String name,boolean directory,boolean markdown,long size,long modified,String identity,boolean unsupported){}
     /** Main-process indexer only. Renderer receives opaque entry IDs assigned by
@@ -105,7 +120,7 @@ public final class LinkedStore implements AutoCloseable {
         if(!directory.isEmpty())relative(directory+"/index.md");
         try(var rootPin=WindowsFiles.pinPublication(r.path);var pins=WindowsFiles.pinPublication(directory.isEmpty()?r.path:r.path.resolve(directory))){
             if(!rootPin.last().identity().equals(r.identity))throw new IOException("ROOT_REPLACED");var all=WindowsFiles.entries(pins.handle(),50001);if(all.size()>50000)throw new IOException("DIRECTORY_ENTRY_LIMIT");
-            return all.stream().filter(e->!e.name().equalsIgnoreCase(".git")&&!e.name().toLowerCase(Locale.ROOT).startsWith(".vaultor-recovery")).sorted(Comparator.comparing((WindowsFiles.DirectoryEntry e)->(e.attributes()&WindowsFiles.DIRECTORY)==0).thenComparing(e->e.name().toLowerCase(Locale.ROOT)).thenComparing(WindowsFiles.DirectoryEntry::name)).skip(offset).limit(limit).map(e->new Entry(e.name(),(e.attributes()&WindowsFiles.DIRECTORY)!=0,e.name().toLowerCase(Locale.ROOT).endsWith(".md"),e.size(),e.modified(),e.identity(),(e.attributes()&WindowsFiles.REPARSE)!=0)).toList();
+            return all.stream().filter(e->!e.name().equalsIgnoreCase(".git")&&!e.name().toLowerCase(Locale.ROOT).startsWith(".vaultor-recovery")).sorted(Comparator.comparing((WindowsFiles.DirectoryEntry e)->(e.attributes()&WindowsFiles.DIRECTORY)==0).thenComparing(e->e.name().toLowerCase(Locale.ROOT)).thenComparing(WindowsFiles.DirectoryEntry::name)).skip(offset).limit(limit).map(e->new Entry(e.name(),(e.attributes()&WindowsFiles.DIRECTORY)!=0,(e.name().toLowerCase(Locale.ROOT).endsWith(".md")||e.name().toLowerCase(Locale.ROOT).endsWith(".markdown")),e.size(),e.modified(),e.identity(),(e.attributes()&WindowsFiles.REPARSE)!=0)).toList();
         }
     }
     public synchronized byte[] readChunk(Scope s,String cap,String epoch,long offset,int length)throws IOException{
@@ -151,11 +166,17 @@ public final class LinkedStore implements AutoCloseable {
     }
     private void pruneAcknowledged(String operation)throws IOException{
         Path op=privateRoot.resolve(operation);var acknowledged=new ArrayList<Path>();for(var recovery:recover(owner))if(!recovery.damagedTail()&&recovery.record()!=null&&Set.of("LINKED_ACKNOWLEDGED","VIEW_ACKNOWLEDGED").contains(recovery.record().state()))acknowledged.add(privateRoot.resolve(recovery.operation()));
-        acknowledged.sort(Comparator.comparingLong(p->{try{return Files.getLastModifiedTime(p.resolve("08.rec")).toMillis();}catch(IOException e){return Long.MAX_VALUE;}}));
+        acknowledged.sort(Comparator.comparingLong(p->{try{return Files.getLastModifiedTime(p.resolve(Files.exists(p.resolve("08.rec"))?"08.rec":"01.rec")).toMillis();}catch(IOException e){return Long.MAX_VALUE;}}));
         // The just-acknowledged operation is always retained, even if the wall
         // clock moved backwards or timestamp precision produces equal values.
         acknowledged.remove(op);
-        for(int i=0;i<acknowledged.size()-19;i++)try{discardPrivateEvidence(acknowledged.get(i).getFileName().toString());}catch(IOException ignored){/* Quota remains explicit when private cleanup cannot complete. */}
+        long historyBytes=evidenceBytes(op);for(Path previous:acknowledged)historyBytes+=evidenceBytes(previous);int remaining=acknowledged.size();
+        for(Path previous:acknowledged){if(remaining<=19&&historyBytes<=64L*1024*1024)break;try{long bytes=evidenceBytes(previous);discardPrivateEvidence(previous.getFileName().toString());historyBytes-=bytes;remaining--;}catch(IOException ignored){/* Refuse quota rather than delete unresolved work. */}}
+    }
+    private long evidenceBytes(Path operation)throws IOException{
+        try(var parent=WindowsFiles.pinPublication(privateRoot);var pins=WindowsFiles.pinPublication(operation);var files=Files.list(operation)){
+            long bytes=0;for(Path path:files.limit(13).toList())try(var file=WindowsFiles.leaseRelative(pins.handle(),path.getFileName().toString(),false)){bytes+=WindowsFiles.info(file).size();}return bytes;
+        }
     }
     /** Replacing a view is not permission to replay its old draft on reopen.
      * Dirty V/L remain explicitly recoverable; signed no-op views enter bounded
@@ -166,6 +187,10 @@ public final class LinkedStore implements AutoCloseable {
         if(!record.rootIdentity().equals(d.root.identity)||!record.relative().equals(d.relative)||record.version()!=d.version)throw new IOException("DRAFT_VIEW_CHANGED");
         boolean clean=d.local!=null&&Arrays.equals(d.local,d.base.bytes())&&d.saved==d.version;String operation=d.lastDraft;Path op=privateRoot.resolve(operation);
         try(var pins=WindowsFiles.pinPublication(op)){persist(op,record.state(clean?"VIEW_ACKNOWLEDGED":"DRAFT_RETAINED"),1);}d.lastDraft=null;d.resumedDraft=null;if(clean)pruneAcknowledged(operation);
+    }
+    public synchronized void acknowledgeCleanView(Scope scope,String capability)throws IOException{
+        scope(scope);var d=docs.get(capability);if(d==null)throw new IOException("DOCUMENT_CAPABILITY");
+        if(d.linkedRead&&d.lastDraft!=null&&d.local!=null&&Arrays.equals(d.local,d.base.bytes())&&d.saved==d.version)retainViewDraft(scope,capability);
     }
     private void discardPrivateEvidence(String operation)throws IOException {
         if(!UUID.fromString(operation).toString().equals(operation))throw new IOException("RECOVERY_PATH");Path op=privateRoot.resolve(operation);try(var privatePin=WindowsFiles.pinPublication(privateRoot)){
@@ -243,12 +268,18 @@ public final class LinkedStore implements AutoCloseable {
                 try{
                     hook("replacement-before-lease",op);
                     try(var old=ReplacementMetadata.sourceLease(parent.handle(),leaf,policy==0)){
+                        if(!WindowsFiles.canonical(old).toString().equals(parent.canonicalPath().resolve(leaf).toString()))throw new IOException("SOURCE_PATH_ALIAS");
                         var info=WindowsFiles.info(old);byte[] bytes=WindowsFiles.readStart(old,READ_LIMIT);var disk=new Revision(info.identity(),hash(bytes),metadata(old,info));
                         if(!disk.equals(base.revision())){quota(bytes.length);WindowsFiles.createFlushed(op.resolve("external.md"),bytes);persist(op,r.state("REPLACEMENT_CONFLICT_BEFORE_CAPTURE"),1);return new Receipt(operation,version,"CONFLICT",disk);}
                         if(policy==0)ReplacementMetadata.requireFullSecurityInspection(old);
                         var observed=practical?PracticalMetadata.inspect(old):ReplacementMetadata.observe(old);
                         try(var marker=WindowsFiles.lease(privateRoot.resolve("store.marker"),false)){if(!Arrays.equals(observed.owner(),WindowsFiles.security(marker).owner()))throw new IOException("SOURCE_OWNER_UNQUALIFIED");}
                         if(practical&&Arrays.equals(local,base.bytes())){doc(s,cap,epoch);root.verify();parent.verify();persist(op,r.state("LINKED_NOOP"),1);d.saved=version;d.lastValidated=local.clone();return new Receipt(operation,version,"COMMITTED",base.revision());}
+                        // Probe ordinary replacement permissions before detaching
+                        // the original. This empty private-ACL entry is removed
+                        // by the kernel on close/process exit. Later ACL races
+                        // still require preserved capture and explicit recovery.
+                        if(practical)WindowsFiles.probeParentWrite(parent.handle(),operation);
                         hook("replacement-compared",op);quota(local.length+7L*Journal.encode(r).length);
                         WindowsFiles.createFlushed(op.resolve("stage.md"),local,()->hook("replacement-stage-chunk",op),()->hook("replacement-stage-before-flush",op));
                         persist(op,r.state("REPLACEMENT_STAGED"),1);hook("replacement-staged",op);
@@ -336,15 +367,20 @@ public final class LinkedStore implements AutoCloseable {
      * path lookup or authority source; root + relative + original inode must match. */
     public synchronized String[] lookupView(Scope scope,String document)throws IOException{
         scope(scope);var d=docs.get(document);if(d==null)throw new IOException("DOCUMENT_CAPABILITY");
+        if(d.viewId!=null&&d.lastDraft!=null)return new String[]{d.viewId,d.lastDraft,"true"};
+        String[] fallback=null,active=null;long latest=-1;
         try(var privatePins=WindowsFiles.pin(privateRoot);var entries=Files.list(privateRoot)){
             for(Path op:entries.filter(p->p.getFileName().toString().matches("[0-9a-f-]{36}")).sorted(Comparator.comparingLong((Path p)->p.toFile().lastModified()).reversed()).limit(100).toList()){
                 try(var pin=WindowsFiles.pin(op);var ref=WindowsFiles.leaseRelative(pin.handle(),"view.ref",false)){
                     String[] fields=new String(WindowsFiles.read(ref,4096),StandardCharsets.UTF_8).split("\n",-1);if(fields.length!=7)continue;String body=String.join("\n",Arrays.copyOf(fields,6));
                     if(!hash(utf8(body)).equals(fields[6])||!fields[0].equals(owner.workspace())||!fields[1].equals(owner.generation())||!fields[2].equals(d.root.identity)||!fields[3].equals(d.relative)||!fields[4].equals(d.base.revision().identity()))continue;
-                    if(!UUID.fromString(fields[5]).toString().equals(fields[5]))continue;return new String[]{fields[5],op.getFileName().toString()};
+                    if(!UUID.fromString(fields[5]).toString().equals(fields[5]))continue;
+                    if(fallback==null)fallback=new String[]{fields[5],op.getFileName().toString(),"false"};
+                    var recovery=Journal.recover(op,owner);var record=recovery.record();
+                    if(!recovery.damagedTail()&&record!=null&&(record.state().equals("DRAFT_UNVALIDATED")||record.state().equals("DRAFT_VALIDATED")&&record.local()!=null&&!Arrays.equals(record.local(),record.base()))&&record.version()>latest){latest=record.version();active=new String[]{fields[5],op.getFileName().toString(),"true"};}
                 }catch(IOException|IllegalArgumentException ignored){/* Damaged metadata never changes a binding. */}
             }
-        }return new String[]{"",""};
+        }return active!=null?active:fallback!=null?fallback:new String[]{"","","false"};
     }
     public synchronized long[] metrics(Scope scope)throws IOException{
         scope(scope);long bytes=0,operations=0,files=0;try(var pins=WindowsFiles.pin(privateRoot);var entries=Files.list(privateRoot)){for(Path op:entries.limit(102).toList()){if(!op.getFileName().toString().matches("[0-9a-f-]{36}"))continue;operations++;try(var opPin=WindowsFiles.pin(op);var children=Files.list(op)){for(Path file:children.limit(13).toList()){bytes+=WindowsFiles.attributes(file).size();files++;}}}}
@@ -487,6 +523,29 @@ public final class LinkedStore implements AutoCloseable {
         }return result;
     }
     public synchronized Journal.Record inspectRecovery(Scope scope,String operation)throws IOException{return recoveryRecord(scope,operation,false);}
+    public record PreviousStore(String id,String workspace,String generation,int operations,long modified){}
+    /** Host-private catalog only: derive the fixed sibling namespace from this
+     * store, reject reparse points, and read only bounded store markers. */
+    public synchronized List<PreviousStore> previousStores(Scope scope)throws IOException{
+        scope(scope);Path namespace=privateRoot.getParent(),catalog=namespace.getParent();if(!namespace.getFileName().toString().matches("[a-f0-9]{64}")||!privateRoot.getFileName().toString().equals("journal"))throw new IOException("PRIVATE_CATALOG_LAYOUT");
+        var result=new ArrayList<PreviousStore>();
+        try(var parent=WindowsFiles.pinPublication(catalog);var children=Files.list(catalog)){
+            for(Path child:children.filter(p->p.getFileName().toString().matches("[a-f0-9]{64}")).limit(128).toList()){
+                if(child.equals(namespace))continue;Path journal=child.resolve("journal");
+                try(var pins=WindowsFiles.pinPublication(journal);var marker=WindowsFiles.leaseRelative(pins.handle(),"store.marker",false);var entries=Files.list(journal)){
+                    String[] fields=new String(WindowsFiles.read(marker,4096),StandardCharsets.UTF_8).split("\n",-1);if(fields.length!=3||!fields[0].equals("G2-PRIVATE-STORE-1")||fields[1].isEmpty()||fields[2].isEmpty()||fields[1].length()>100||fields[2].length()>100||!hash(utf8(fields[1]+"\n"+fields[2])).equals(child.getFileName().toString()))continue;
+                    int count=(int)entries.limit(103).filter(p->p.getFileName().toString().matches("[a-f0-9-]{36}")).count();if(count>0)result.add(new PreviousStore(child.getFileName().toString(),fields[1],fields[2],count,Files.getLastModifiedTime(journal).toMillis()));
+                }catch(IOException ignored){/* Missing/locked/reparse stores are not silently followed. */}
+            }
+        }
+        result.sort(Comparator.comparingLong(PreviousStore::modified).reversed());return result;
+    }
+    public synchronized PrivateEvidence.Review reviewPrivateEvidence(Scope scope,String operation)throws IOException{scope(scope);return privateEvidence.review(operation);}
+    public synchronized void discardReviewedPrivateEvidence(Scope scope,String ticket)throws IOException{
+        scope(scope);String operation=privateEvidence.consume(ticket);
+        if(docs.values().stream().anyMatch(d->operation.equals(d.lastDraft)||operation.equals(d.resumedDraft)))throw new IOException("RECOVERY_EDITOR_ACTIVE");
+        discardPrivateEvidence(operation);
+    }
     /** Evidence export only: corrupt journals/artifacts never mint Save tickets. */
     public synchronized byte[] readRecoveryArtifact(Scope scope,String operation,String kind)throws IOException{
         scope(scope);try{if(!UUID.fromString(operation).toString().equals(operation))throw new IllegalArgumentException();}catch(Exception e){throw new IOException("OPERATION_ID");}
