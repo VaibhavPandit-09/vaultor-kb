@@ -36,3 +36,7 @@ Real two-device acceptance, when arranged, must cover normal CA trust/code appro
 ## 0.19.0 pending qualification
 
 Windows0.19.0 is published from immutable ad10135a6defc11e4b1836f4f4223f05112f885f/v0.19.0 and adds owner-local linked folders; no Mac filesystem-writing support is claimed. Use exact immutable v0.19.0 after Windows publication, preserve version/lock and original signer, and build fresh UI/server/native arm64 runtime/DMG on Apple Silicon. Confirm Linked sources registration is unavailable and remote/portable references grant no filesystem authority. Run native-navigation, native-session, native-collection and owned first/save/PDF/restart checks, themes, mount/codesign and sidecar verification. Only then add the absent original-key DMG/sidecar with --add-platform and verify public pairs/updater before promoting Latest. No Windows evidence substitutes for native Mac checks. Never move the tag or repair code underneath it.
+
+## 0.19.1 pending qualification
+
+Windows-only linked admission/read-only preview patch. After Windows publication, use immutable v0.19.1 and its exact release-ledger source; retain0.19.1 package/lock and original signer. Native Apple Silicon build, mount/codesign, managed Save/PDF/restart/navigation/session checks, unsupported local-write refusal and signed DMG/sidecar public verification are required before adding the absent pair/promoting Latest. No native Mac access or Mac0.19.1 qualification is claimed. Do not move tags or replace Windows assets.

@@ -102,3 +102,5 @@ Android: [0.1.0-alpha.1](android/releases/0.1.0-alpha.1.md) · [0.1.0-alpha.2](a
 - [Desktop 0.17.0 release evidence](desktop/releases/v0.17.0.md): Open Notes/session migration, Windows qualification and the incomplete Mac/Latest gate.
 
 - [Desktop0.19.0 release evidence](desktop/releases/v0.19.0.md): Windows linked external folders, bounded filesystem/editor contract and original-key publication.
+
+- [Desktop0.19.1 release evidence](desktop/releases/v0.19.1.md): ordinary NTFS tracking-ID admission and formatted read-only Markdown patch.
