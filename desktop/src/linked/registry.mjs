@@ -57,26 +57,27 @@ export class LinkedRegistry {
     const result=await consent.select({token:before.token,workspace:before.workspace,generation:before.generation});this.check(request);return result;}finally{this.pending--;}
   }
   async adoptReference(request,id,reference,rootId,{replace=false}={}){
-    this.check(request);const old=this.entries.get(id);if(old&&!replace)return old;
+    this.check(request);this.requireStablePublication(rootId);const old=this.entries.get(id);if(old&&!replace)return old;
     const root=this.roots.get(rootId),capability=await this.grant(root),fields=await this.native.call('open-linked',capability,reference.relativePath);
     try{
-      this.check(request);if(this.entries.size>=50000&&!old)throw Error('LINKED_INDEX_LIMIT');
+      this.check(request);this.requireStablePublication(rootId);if(this.entries.size>=50000&&!old)throw Error('LINKED_INDEX_LIMIT');
       const relative=fields[8]??reference.relativePath,entry={id,root:rootId,relative,name:relative.split('/').at(-1),identity:fields[2],directory:false,markdown:true,unsupported:false,size:Number(fields[6]),parent:null,available:true,reference:{...reference}};
       if(old)this.entryIndex.delete(this.entryKey(old.root,old.relative,old.identity));this.entries.set(id,entry);this.entryIndex.set(this.entryKey(rootId,relative,entry.identity),id);await this.persist();return entry;
     }finally{await this.native.call('close',fields[0]).catch(()=>{});}
   }
+  requireStablePublication(source){if(this.isPublishing?.(source))throw Error('LINKED_SOURCE_BUSY');}
   async list(request,{source,directory,offset=0,limit=200}){
-    this.check(request);if(!Number.isInteger(offset)||offset<0||offset>50000||!Number.isInteger(limit)||limit<1||limit>500)throw Error('INVALID_LINKED_PAGE');const root=this.roots.get(source);if(!root)throw Error('LINKED_SOURCE_NOT_FOUND');let relative='';
+    this.check(request);this.requireStablePublication(source);if(!Number.isInteger(offset)||offset<0||offset>50000||!Number.isInteger(limit)||limit<1||limit>500)throw Error('INVALID_LINKED_PAGE');const root=this.roots.get(source);if(!root)throw Error('LINKED_SOURCE_NOT_FOUND');let relative='';
     if(directory){const entry=this.entries.get(directory);if(!entry||entry.root!==source||!entry.directory||entry.unsupported)throw Error('LINKED_DIRECTORY_UNAVAILABLE');relative=entry.relative;}
     try{
-      const capability=await this.grant(root),rows=await this.native.call('directory',capability,relative,offset,limit);this.check(request);const results=[];let changed=false;
+      const capability=await this.grant(root),rows=await this.native.call('directory',capability,relative,offset,limit);this.check(request);this.requireStablePublication(source);const results=[];let changed=false;
       for(let at=0;at<rows.length;at+=7){const name=rows[at],path=relative?relative+'/'+name:name,identity=rows[at+5],key=this.entryKey(source,path,identity);let entry=this.entries.get(this.entryIndex.get(key));const before=entry?JSON.stringify(entry):'';
         // Never infer a move from an equal inode alone: both names can be live
         // hardlinks. A later authoritative old-path check owns reconciliation.
         if(!entry){if(this.entries.size>=50000)throw Error('LINKED_INDEX_LIMIT');entry={id:randomUUID(),root:source};}Object.assign(entry,{relative:path,name,identity,directory:rows[at+1]==='true',markdown:rows[at+2]==='true',size:Number(rows[at+3]),modified:rows[at+4],unsupported:rows[at+6]==='true',available:true,parent:directory??null});this.entries.set(entry.id,entry);this.entryIndex.set(key,entry.id);changed||=before!==JSON.stringify(entry);results.push({...entry});
       }
-      if(changed)await this.persist();return {items:results,more:results.length===limit,status:root.status};
-    }catch(error){root.status=root.enabled===false?'disconnected':error.message.includes('REPLACED')?'reauthorize':'unavailable';throw error;}
+      if(changed)await this.persist();root.status='available';return {items:results,more:results.length===limit,status:root.status};
+    }catch(error){if(error.message==='LINKED_SOURCE_BUSY')throw error;root.status=root.enabled===false?'disconnected':error.message.includes('REPLACED')?'reauthorize':'unavailable';throw error;}
   }
   async disconnect(request,id){this.check(request);const root=this.roots.get(id);if(!root)throw Error('LINKED_SOURCE_NOT_FOUND');if(root.capability)await this.native.call('revoke',root.capability);root.capability=undefined;root.enabled=false;root.status='disconnected';for(const entry of this.entries.values())if(entry.root===id)entry.available=false;await this.persist();}
   async remove(request,id){await this.disconnect(request,id);this.roots.delete(id);await this.persist();}

@@ -19,7 +19,7 @@ public final class LinkedRecoveryTests extends SafetyTests {
         });
         check("an active recoverable draft cannot be removed through the private evidence endpoint",()->{
             try(var f=new LinkedPublicationTests.LinkedFixture("guide.md","Original",null)){
-                var doc=f.store.openLinked(OWNER,f.rootCap,"guide.md");candidate(f.store,doc,1,"Keep while open");String op=f.store.recover(OWNER).getFirst().operation();var review=f.store.reviewPrivateEvidence(OWNER,op);rejects("EDITOR_ACTIVE",()->f.store.discardReviewedPrivateEvidence(OWNER,review.ticket()));require(Files.exists(f.journal.resolve(op)));require(Files.readString(f.file).equals("Original"));
+                var doc=f.store.openLinked(OWNER,f.rootCap,"guide.md");candidate(f.store,doc,1,"Keep while open");String op=f.store.recover(OWNER).getFirst().operation();var review=f.store.reviewPrivateEvidence(OWNER,op);rejects("EDITOR_ACTIVE",()->f.store.discardReviewedPrivateEvidence(OWNER,review.ticket()));var originalReview=f.store.reviewRecovery(OWNER,op,f.rootCap);rejects("EDITOR_ACTIVE",()->f.store.resolveRecovery(OWNER,originalReview.ticket()));require(Files.exists(f.journal.resolve(op)));require(Files.readString(f.file).equals("Original"));
             }
         });
         Files.writeString(Path.of("native/linked-markdown/evidence/production/recovery-tests.txt"),String.join("\n",results)+"\npassed="+passed+" failed="+failed+"\n");System.out.println("TOTAL "+passed+" passed; "+failed+" failed");if(failed>0)System.exit(1);

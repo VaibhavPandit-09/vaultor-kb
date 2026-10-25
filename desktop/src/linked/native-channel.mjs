@@ -1,3 +1,4 @@
+import {linkedPublicError} from './errors.mjs';
 import {spawn} from 'node:child_process';
 import {randomBytes} from 'node:crypto';
 
@@ -12,7 +13,7 @@ export class NativeChannel {
     this.ready=new Promise((resolve,reject)=>this.pending.set(0,{resolve,reject,timer:setTimeout(()=>this.fail(new Error('NATIVE_START_TIMEOUT')),30000)}));
     this.child.stdout.setEncoding('utf8');this.child.stdout.on('data',chunk=>{
       this.buffer+=chunk;if(this.buffer.length>6*1024*1024)return this.fail(new Error('NATIVE_FRAME_LIMIT'));
-      let end;while((end=this.buffer.indexOf('\n'))>=0){const fields=decode(this.buffer.slice(0,end).replace(/\r$/,''));this.buffer=this.buffer.slice(end+1);const id=Number(fields.shift()),pending=this.pending.get(id);if(!pending)return this.fail(new Error('NATIVE_SEQUENCE'));this.pending.delete(id);clearTimeout(pending.timer);if(fields[0]==='ERROR')pending.reject(new Error(fields[1]));else pending.resolve(fields.slice(1));}
+      let end;while((end=this.buffer.indexOf('\n'))>=0){const fields=decode(this.buffer.slice(0,end).replace(/\r$/,''));this.buffer=this.buffer.slice(end+1);const id=Number(fields.shift()),pending=this.pending.get(id);if(!pending)return this.fail(new Error('NATIVE_SEQUENCE'));this.pending.delete(id);clearTimeout(pending.timer);if(fields[0]==='ERROR')pending.reject(linkedPublicError(new Error(fields[1])));else pending.resolve(fields.slice(1));}
     });
     this.child.stderr.on('data',()=>{this.nativeDiagnostics=(this.nativeDiagnostics??0)+1;}); // Never forward payloads/credentials.
     this.child.on('error',error=>this.fail(error));this.child.on('exit',()=>this.fail(new Error('NATIVE_HOST_CLOSED')));

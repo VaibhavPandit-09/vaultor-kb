@@ -1,0 +1,14 @@
+PASS abrupt production child exit preserves and explicitly recovers at replacement-prepared
+PASS abrupt production child exit preserves and explicitly recovers at replacement-stage-chunk
+PASS abrupt production child exit preserves and explicitly recovers at replacement-stage-before-flush
+PASS abrupt production child exit preserves and explicitly recovers at replacement-staged
+PASS abrupt production child exit preserves and explicitly recovers at replacement-metadata-ready
+PASS abrupt production child exit preserves and explicitly recovers at replacement-before-capture
+PASS abrupt production child exit preserves and explicitly recovers at replacement-captured-before-record
+PASS abrupt production child exit preserves and explicitly recovers at replacement-captured
+PASS abrupt production child exit preserves and explicitly recovers at replacement-before-publish
+PASS abrupt production child exit preserves and explicitly recovers at replacement-published-before-record
+PASS abrupt production child exit preserves and explicitly recovers at replacement-published
+PASS abrupt production child exit preserves and explicitly recovers at replacement-released
+PASS abrupt production child exit preserves and explicitly recovers at replacement-finalized
+passed=13 failed=0

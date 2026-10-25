@@ -5,7 +5,7 @@ import {relativeDestination,assetMime} from './links.mjs';
 
 const readBase=fields=>({identity:fields[2],sha256:fields[3],metadata:fields[4],bytes:Buffer.from(fields[5],'base64'),size:Number(fields[6])});
 export class LinkedDocuments {
-  constructor(registry,options){this.registry=registry;this.options=options;this.documents=new Map();this.refreshes=new Map();}
+  constructor(registry,options){this.registry=registry;this.options=options;this.documents=new Map();this.refreshes=new Map();registry.isPublishing=source=>[...this.documents.values()].some(document=>document.source===source&&document.publishing);}
   state(request,id,binding){this.registry.check(request);const d=this.documents.get(id);if(!d||d.binding!==binding)throw Error('LINKED_DOCUMENT_CHANGED');return d;}
   async open(request,id){
     this.registry.check(request);const entry=this.registry.entries.get(id);if(!entry||entry.directory||!entry.markdown||entry.unsupported)throw Error('LINKED_DOCUMENT_UNAVAILABLE');
@@ -45,7 +45,7 @@ export class LinkedDocuments {
   async save(request,p){
     const d=this.state(request,p.document,p.binding);if(d.readonlyReason||d.recoveryOnly||d.busy||d.pendingOperation||!d.candidate||p.version!==d.version)throw Error('LINKED_SOURCE_NOT_VALIDATED');
     await this.options.owner?.(request);this.state(request,p.document,p.binding);if(d.busy||d.pendingOperation||!d.candidate||p.version!==d.version)throw Error('LINKED_SOURCE_NOT_VALIDATED');
-    d.busy=true;const candidate=d.candidate;d.candidate=undefined;
+    d.busy=true;d.publishing=true;const candidate=d.candidate;d.candidate=undefined;
     try{
       d.pendingOperation=randomUUID();
       const receipt=await this.registry.native.call('save',d.document,d.epoch,candidate,d.pendingOperation);await this.options.owner?.(request);this.registry.check(request);
@@ -59,7 +59,7 @@ export class LinkedDocuments {
         await this.registry.native.call('ack-save',receipt[5]).catch(()=>{});
       }
       if(['COMMITTED','CONFLICT'].includes(receipt[0]))d.pendingOperation=undefined;return {state:receipt[0],version:Number(receipt[1]),operation:receipt[5],identity:receipt[2],revision:receipt[3]};
-    }catch(error){return {state:'RECOVERY_REQUIRED',version:p.version,operation:d.pendingOperation,reason:error.message};}finally{d.busy=false;}
+    }catch(error){return {state:'RECOVERY_REQUIRED',version:p.version,operation:d.pendingOperation,reason:error.message};}finally{d.busy=false;d.publishing=false;}
   }
   async retainCurrent(request,p){const d=this.state(request,p.document,p.binding);if(d.busy||d.version!==p.version)throw Error('LINKED_VERSION_OR_BUSY');d.busy=true;try{await this.registry.native.call('retain-draft',d.document);this.registry.check(request);d.candidate=undefined;return {retained:true};}finally{d.busy=false;}}
   async source(request,p){const d=this.state(request,p.document,p.binding);if(d.busy||d.version!==p.version||typeof d.reviewableSource!=='string')throw Error('SOURCE_REQUIRES_VALIDATED_REGION');d.candidate=undefined;d.busy=true;try{const region=await d.validator.request({type:'region',version:p.version,block:p.block,expected:p.expected});const reply=await d.validator.request({type:'source',version:p.version+1,token:region.token,text:p.text});this.registry.check(request);if(!reply.result?.accepted)throw Error('SOURCE_REGION_REFUSED');return {source:reply.result.source};}finally{d.busy=false;}}
@@ -69,9 +69,10 @@ export class LinkedDocuments {
     if(target.relative===d.entry.relative)return {kind:'document',id:d.id,fragment:target.fragment};
     const root=this.registry.roots.get(d.source),cap=await this.registry.grant(root);this.registry.check(request);
     if(/\.(md|markdown)$/i.test(target.relative)){
+      this.registry.requireStablePublication?.(d.source);
       const fields=await this.registry.native.call('open-linked',cap,target.relative);
       try{
-        this.registry.check(request);const relative=fields[8]??target.relative,key=this.registry.entryKey(d.source,relative,fields[2]);let entry=this.registry.entries.get(this.registry.entryIndex.get(key));
+        this.registry.check(request);this.registry.requireStablePublication?.(d.source);const relative=fields[8]??target.relative,key=this.registry.entryKey(d.source,relative,fields[2]);let entry=this.registry.entries.get(this.registry.entryIndex.get(key));
         if(!entry){if(this.registry.entries.size>=50000)throw Error('LINKED_INDEX_LIMIT');entry={id:randomUUID(),root:d.source,relative,name:relative.split('/').at(-1),identity:fields[2],directory:false,markdown:true,unsupported:false,size:Number(fields[6]),parent:null,available:true};this.registry.entries.set(entry.id,entry);this.registry.entryIndex.set(key,entry.id);await this.registry.persist();}
         return {kind:'document',id:entry.id,fragment:target.fragment};
       }finally{await this.registry.native.call('close',fields[0]).catch(()=>{});}
@@ -105,6 +106,7 @@ export class LinkedDocuments {
       const next=pending.next,version=d.version+1,accepted=await next.validator.validate({document:next.document,epoch:next.epoch,base:next.base,version,draft:ready.doc,claimedSource:bytes.toString('utf8'),sessionMetadata:{id:d.id,name:d.entry.name}},this.registry.native.validation);
       if(!accepted.source||!accepted.source.equals(bytes))throw Error('LINKED_COMBINATION_SOURCE_REFUSED');
       this.state(request,p.document,p.binding);if(d.version!==pending.version||d.pendingOperation)throw Error('LINKED_REFRESH_SUPERSEDED');
+      clearTimeout(pending.timer);pending.timer=setTimeout(()=>{void this.abortRefresh(request,{ticket:opened.ticket}).catch(()=>{});},300000);pending.timer.unref();
       pending.resolution={...accepted,version};next.seed=Buffer.from(bytes);next.visual=JSON.parse(accepted.visual);next.version=version;
       return {...this.public(next),ticket:opened.ticket};
     }catch(error){await this.abortRefresh(request,{ticket:opened.ticket});throw error;}finally{await parser?.close();}

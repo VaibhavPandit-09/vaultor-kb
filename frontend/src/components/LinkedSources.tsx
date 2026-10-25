@@ -34,7 +34,7 @@ function Directory({workspace,source,id,label,onOpen,depth=0}:{workspace:LinkedW
     if(!open)return;
     return workspace.observeDirectory(source+':'+(id??''),async()=>{
       if(listing.current.busy)return;listing.current.busy=true;
-      try{const page=await workspace.request<{items:Entry[];more:boolean}>('list',{source,directory:id,offset:listing.current.offset,limit:200});setItems(previous=>JSON.stringify(previous)===JSON.stringify(page.items)?previous:page.items);setMore(page.more);setError('');}catch(failure){setError(linkedError(failure));}finally{listing.current.busy=false;}
+      try{const page=await workspace.request<{items:Entry[];more:boolean}>('list',{source,directory:id,offset:listing.current.offset,limit:200});setItems(previous=>JSON.stringify(previous)===JSON.stringify(page.items)?previous:page.items);setMore(page.more);setError('');}catch(failure){if(!String(failure).includes('LINKED_SOURCE_BUSY'))setError(linkedError(failure));}finally{listing.current.busy=false;}
     });
   },[open,source,id,workspace]);
   return <div><button className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-card" aria-expanded={open} onClick={toggle}><ChevronDown size={12} className={open?'':'sidebar-disclosure-closed'}/><Folder size={14}/><span className="truncate">{label}</span></button>

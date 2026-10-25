@@ -1,3 +1,4 @@
+import {linkedPublicError} from './linked/errors.mjs';
 import {linkedReferenceReader} from './linked/references.mjs';
 import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, ClipboardItem, dialog, Tray, nativeImage, Notification, powerMonitor, safeStorage } from 'electron';
 import { randomUUID } from 'node:crypto';
@@ -110,7 +111,7 @@ else {
           confirmDiscard:async({archived=false}={})=>{const answer=await dialog.showMessageBox(window,{type:'question',title:'Remove private recovery copies?',message:'Export any versions you need first.',detail:(archived?'':'Linked editors will close. ')+'Only the reviewed private recovery copies are removed; external files are unchanged.',buttons:['Keep copies','Remove recovery copies'],defaultId:0,cancelId:0,noLink:true});return answer.response===1;},
           protectedRoot:app.getPath('userData'),applicationRoot:app.getAppPath(),protectedPaths:[linkedBundle,ui],picker:options=>dialog.showOpenDialog(window,options),saveDialog:options=>dialog.showSaveDialog(window,options)});
       }
-      return linked.dispatch(value);
+      try{return await linked.dispatch(value);}catch(error){throw linkedPublicError(error);}
     });
     const releaseTrust=JSON.parse(await readFile(fileURLToPath(new URL('../release-trust.json',import.meta.url)),'utf8'));
     updates=new Updates({directory:resolve(app.getPath('userData'),'updates'),workspace:owned.data,publicKey:releaseTrust.publicKey,currentVersion:app.getVersion(),onState:value=>window?.webContents.send('desktop:updates-state',{...value,automaticInstall})});await updates.load();automaticInstall=await supportsAutomaticInstall(process.execPath,packaged);

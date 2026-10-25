@@ -1,0 +1,10 @@
+diff --git a/START.md b/START.md
+index 76e72c8..9e31699 100644
+--- a/START.md
++++ b/START.md
+@@ -7 +7 @@ title: Source fidelity
+-Edit this ordinary paragraph.
++Edit this ordinary paragraph. Verified Ω **😀. Local revision.**
+@@ -16 +16 @@ Edit this ordinary paragraph.
+-<!-- Keep this exact comment -->
++<!-- Clean refresh external comment -->

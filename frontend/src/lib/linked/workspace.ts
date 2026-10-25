@@ -11,6 +11,7 @@ import {linkedError} from './errors';
 export class LinkedWorkspace{
   readonly documents=new Map<string,LinkedDocument>();
   readonly previews=new Map<string,Opened>();
+  readonly previewStatus=new Map<string,string>();
   readonly metadata=new Map<string,Resource>();
   readonly unavailable=new Map<string,string>();
   private previewMounts=new Set<string>();
@@ -86,11 +87,27 @@ export class LinkedWorkspace{
     for(const document of [...this.documents.values()]){
       if(this.refreshing.has(document.opened.id))continue;
       const changed=await this.request<{state:string}>('check',{document:document.opened.id,binding:document.opened.binding});
-      if(changed.state==='EXTERNAL_CHANGED'&&!document.getSnapshot().dirty)await this.refresh(document);else document.external(changed.state);
+      if(['EXTERNAL_CHANGED','DISK_TOO_LARGE_READ_ONLY'].includes(changed.state)&&!document.getSnapshot().dirty)await this.refresh(document);else document.external(changed.state);
+    }
+    for(const preview of [...this.previews.values()]){
+      const changed=await this.request<{state:string}>('check',{document:preview.id,binding:preview.binding});
+      if(['EXTERNAL_CHANGED','DISK_TOO_LARGE_READ_ONLY'].includes(changed.state))await this.refreshPreview(preview);
+      else if(changed.state!=='BUSY_RETRY'&&this.previewStatus.get(preview.id)!==changed.state){this.previewStatus.set(preview.id,changed.state);this.emit();}
     }
     await this.request('index').catch(()=>{});
     const directories=[...this.directories.values()];
     for(let i=0;i<Math.min(4,directories.length);i++){const index=this.directoryCursor++%directories.length;await directories[index]().catch(()=>{});}
+  }
+  async refreshPreview(previous:Opened){
+    const id=previous.id;if(this.refreshing.has(id))return;this.refreshing.add(id);let ticket:string|undefined,next:MarkdownSession|undefined;
+    try{
+      const opened=await this.request<Opened&{ticket:string}>('prepare-refresh',{document:id,binding:previous.binding});ticket=opened.ticket;
+      if(!opened.readonlyReason){next=new MarkdownSession(browserPort(new Worker(new URL('../markdown/markdown.worker.ts',import.meta.url),{type:'module'})),opened.bytes);await next.ready;}
+      if(this.previews.get(id)!==previous)throw Error('LINKED_REFRESH_SUPERSEDED');
+      await this.request('commit-refresh',{ticket});ticket=undefined;if(this.previews.get(id)!==previous)throw Error('LINKED_REFRESH_SUPERSEDED');
+      this.previews.delete(id);this.previewStatus.delete(id);if(next){this.documents.set(id,new LinkedDocument(opened,next,this.request));next=undefined;}else this.previews.set(id,opened);this.emit();
+    }catch{if(this.previews.get(id)===previous&&this.previewStatus.get(id)!=='REVIEW_REQUIRED'){this.previewStatus.set(id,'REVIEW_REQUIRED');this.emit();}}
+    finally{if(ticket)await this.request('abort-refresh',{ticket}).catch(()=>{});next?.dispose();this.refreshing.delete(id);}
   }
   async refresh(previous:LinkedDocument,reviewedRevision?:string){
     const id=previous.opened.id;if(this.refreshing.has(id))return;this.refreshing.add(id);let ticket:string|undefined,next:MarkdownSession|undefined;
@@ -118,8 +135,8 @@ export class LinkedWorkspace{
       previous.dispose();this.documents.set(id,new LinkedDocument(committed,next,this.request));next=undefined;this.emit();
     }finally{next?.dispose();for(const editor of previous.editors)if(!editor.isDestroyed)editor.setEditable(!previous.sourceDraft,false);this.refreshing.delete(id);}
   }
-  closedEditors(){this.lifetime++;for(const document of this.documents.values()){this.unavailable.set(document.opened.id,'Recovery review closed this editor safely. Reopen to continue.');document.dispose();}for(const preview of this.previews.values())this.unavailable.set(preview.id,'Reopen this linked document to continue.');this.documents.clear();this.previews.clear();this.previewMounts.clear();this.emit();}
-  dispose(){this.lifetime++;this.contextVersion++;for(const document of this.documents.values())document.dispose();this.documents.clear();this.previews.clear();this.metadata.clear();this.unavailable.clear();this.directories.clear();this.previewMounts.clear();this.emit();}
+  closedEditors(){this.lifetime++;for(const document of this.documents.values()){this.unavailable.set(document.opened.id,'Recovery review closed this editor safely. Reopen to continue.');document.dispose();}for(const preview of this.previews.values())this.unavailable.set(preview.id,'Reopen this linked document to continue.');this.documents.clear();this.previews.clear();this.previewStatus.clear();this.previewMounts.clear();this.emit();}
+  dispose(){this.lifetime++;this.contextVersion++;for(const document of this.documents.values())document.dispose();this.documents.clear();this.previews.clear();this.previewStatus.clear();this.metadata.clear();this.unavailable.clear();this.directories.clear();this.previewMounts.clear();this.emit();}
   async closeNativeDocuments(){if(!this.documents.size&&!this.previews.size)return;await this.request('close-documents').catch(error=>{if(!/WORKSPACE_CHANGED|OWNER_CHANGED/.test(String(error)))throw error;});}
   async close(){await this.flush();await this.closeNativeDocuments();this.dispose();}
 }

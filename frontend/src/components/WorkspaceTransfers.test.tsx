@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach,beforeEach,expect,it,vi} from 'vitest';
-import {cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import WorkspaceTransfers from './WorkspaceTransfers';
 import {configureConnection,getConnection,getPlatform} from '../lib/platform';
 import {registerConnectionBarrier,SwitchBlockedError,type DesktopBridge} from '../lib/desktop';
@@ -16,7 +16,7 @@ it('uncertain preview keeps UUID/name/bytes and source epoch; commit retry never
  mocks.post.mockResolvedValue({data:{...base,state:'COMMITTING'}});mocks.get.mockResolvedValue({data:{...base,state:'SUCCEEDED'}});fireEvent.click(screen.getByText('Create separate workspace'));await screen.findByText('Open workspace',{}, {timeout:2500});expect(mocks.post).toHaveBeenCalledTimes(1);fireEvent.click(screen.getByText('Open workspace'));expect(p.onOpen).toHaveBeenCalledWith(mocks.put.mock.calls[0][0].split('/').at(-1),'New copy',false);
 });
 it('lost commit response resumes status from the saved identity after reopening',async()=>{
- mocks.put.mockResolvedValue({data:base});mocks.post.mockRejectedValue(Error('Commit response lost'));const p=props();const view=render(<WorkspaceTransfers {...p}/>);fireEvent.click(screen.getByText('Import ZIP as new workspace'));await screen.findByText('Create separate workspace');fireEvent.click(screen.getByText('Create separate workspace'));await screen.findByText('Commit response lost');view.unmount();mocks.get.mockResolvedValue({data:{...base,state:'SUCCEEDED'}});render(<WorkspaceTransfers {...p}/>);await screen.findByText('Open workspace');expect(mocks.post).toHaveBeenCalledTimes(1);expect(p.onReady).toHaveBeenCalledTimes(1);
+ mocks.put.mockResolvedValue({data:base});mocks.post.mockRejectedValue(Error('Commit response lost'));const p=props();const view=render(<WorkspaceTransfers {...p}/>);fireEvent.click(screen.getByText('Import ZIP as new workspace'));await screen.findByText('Create separate workspace');fireEvent.click(screen.getByText('Create separate workspace'));await screen.findByText('Commit response lost');view.unmount();mocks.get.mockResolvedValue({data:{...base,state:'SUCCEEDED'}});render(<WorkspaceTransfers {...p}/>);await screen.findByText('Open workspace');expect(mocks.post).toHaveBeenCalledTimes(1);await waitFor(()=>expect(p.onReady).toHaveBeenCalledTimes(1));
 });
 it('copy requires source draft protection before invoking native snapshot preparation',async()=>{
  const copyPreview=vi.fn();window.vaultorDesktop={copyPreview,copiesList:vi.fn(async()=>({ok:true,value:[]})),bootstrap:vi.fn(async()=>({ok:true,value:{token:'source-token'}}))} as unknown as DesktopBridge;
