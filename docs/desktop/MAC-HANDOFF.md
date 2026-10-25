@@ -39,4 +39,4 @@ Windows0.19.0 is published from immutable ad10135a6defc11e4b1836f4f4223f05112f88
 
 ## 0.19.1 pending qualification
 
-Windows-only linked admission/read-only preview patch. After Windows publication, use immutable v0.19.1 and its exact release-ledger source; retain0.19.1 package/lock and original signer. Native Apple Silicon build, mount/codesign, managed Save/PDF/restart/navigation/session checks, unsupported local-write refusal and signed DMG/sidecar public verification are required before adding the absent pair/promoting Latest. No native Mac access or Mac0.19.1 qualification is claimed. Do not move tags or replace Windows assets.
+Published Windows-only linked admission/read-only preview patch. Use immutable v0.19.1/d7844c67c7632793c672c500cb434aa61c1cd1fe; retain0.19.1 package/lock and original signer. Native Apple Silicon build, mount/codesign, managed Save/PDF/restart/navigation/session checks, unsupported local-write refusal and signed DMG/sidecar public verification are required before adding the absent pair/promoting Latest. No native Mac access or Mac0.19.1 qualification is claimed. Do not move tags or replace Windows assets.

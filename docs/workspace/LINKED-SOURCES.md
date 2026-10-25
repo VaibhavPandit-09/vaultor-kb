@@ -1,6 +1,6 @@
 # Linked external folders
 
-Reviewed2026-10-25 for published Windows0.19.0. Publication and installed-runtime results belong in the versioned release ledger; this guide owns the product and safety contract. [Implementation evidence](../development/LINKED-SOURCES.md) retains the engineering history and actual limits.
+Reviewed2026-10-25 for published Windows0.19.1. Publication and installed-runtime results belong in the versioned release ledger; this guide owns the product and safety contract. [Implementation evidence](../development/LINKED-SOURCES.md) retains the engineering history and actual limits.
 
 ## Link instead of import
 
