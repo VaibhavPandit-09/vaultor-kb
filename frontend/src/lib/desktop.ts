@@ -91,7 +91,8 @@ let desktopToken = '';
 export async function requestLinked<T>(identity:{id:string;generation:string},operation:string,payload:Record<string,unknown>={}):Promise<T>{
   const bridge=window.vaultorDesktop;
   if(!bridge?.linked||getConnection().profileId!=='this-computer')throw Error('Linked folders require This computer in Vaultor Desktop.');
-  return unwrap(await bridge.linked({token:desktopToken,workspace:identity.id,generation:identity.generation,operation,payload})) as T;
+  const result=await bridge.linked({token:desktopToken,workspace:identity.id,generation:identity.generation,operation,payload});
+  try{return unwrap(result) as T;}catch(error){if(error instanceof Error)Object.assign(error,{sourceNotAdmitted:true});throw error;}
 }
 const selectedFiles = new WeakMap<File, string>();
 export async function pickDesktopFiles(accept: string, multiple: boolean, directory = false): Promise<File[] & {directories?:string[]}> {

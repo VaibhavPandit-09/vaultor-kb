@@ -25,5 +25,10 @@ export class NativeChannel {
     return new Promise((resolve,reject)=>{const timer=setTimeout(()=>this.fail(new Error('NATIVE_TIMEOUT')),30000);this.pending.set(id,{resolve,reject,timer});this.child.stdin.write(frame);});
   }
   fail(error){if(this.closed)return;this.closed=true;for(const pending of this.pending.values()){clearTimeout(pending.timer);pending.reject(error);}this.pending.clear();this.validation.fill(0);this.consent.fill(0);this.child.kill();}
-  async close(){if(this.closed)return;try{await this.call('quit');}finally{this.fail(new Error('NATIVE_HOST_CLOSED'));}}
+  async close(){
+    if(this.child.exitCode!==null||this.child.signalCode!==null)return;
+    let timer;const exited=new Promise(resolve=>this.child.once('exit',resolve));
+    const shutdown=(async()=>{if(!this.closed)try{await this.call('quit');}finally{this.fail(new Error('NATIVE_HOST_CLOSED'));}await exited;})();
+    try{await Promise.race([shutdown,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('NATIVE_CLOSE_TIMEOUT')),3000);})]);}finally{clearTimeout(timer);this.fail(new Error('NATIVE_HOST_CLOSED'));}
+  }
 }

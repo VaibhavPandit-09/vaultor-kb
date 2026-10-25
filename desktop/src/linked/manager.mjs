@@ -2,7 +2,7 @@ import {exportLinked} from './exports.mjs';
 import {LinkedRegistry} from './registry.mjs';
 import {LinkedDocuments} from './documents.mjs';
 
-const fields={export:['operation','document','binding','kind'],recovery:[],inspect:['operation'],review:['operation','source'],restore:['ticket'],'metadata-repair':['ticket'],resolve:['ticket'],state:[],add:[],metadata:['document'],'prepare-refresh':['document','binding'],'commit-refresh':['ticket'],'abort-refresh':['ticket'],list:['source','directory','offset','limit'],open:['document'],protect:['document','binding','version','draft','source','session','sourceDraft','editorVersion'],save:['document','binding','version'],source:['document','binding','version','block','expected','text'],check:['document','binding'],chunk:['document','binding','offset'],close:['document','binding'],disconnect:['source'],remove:['source']};
+const fields={'close-documents':['source'],export:['operation','document','binding','kind'],recovery:[],inspect:['operation'],review:['operation','source'],restore:['ticket'],'metadata-repair':['ticket'],resolve:['ticket'],state:[],add:[],metadata:['document'],'prepare-refresh':['document','binding'],'commit-refresh':['ticket'],'abort-refresh':['ticket'],list:['source','directory','offset','limit'],open:['document'],protect:['document','binding','version','draft','source','session','sourceDraft','editorVersion'],save:['document','binding','version'],source:['document','binding','version','block','expected','text'],check:['document','binding'],chunk:['document','binding','offset'],close:['document','binding'],disconnect:['source'],remove:['source']};
 /** One owner-local workspace lifetime. The outer Electron handler authenticates
  * the exact window/main frame; owner() independently verifies the host identity. */
 export class LinkedManager {
@@ -23,9 +23,11 @@ export class LinkedManager {
     if(['protect','inspect','recovery','export'].includes(value.operation)&&this.documents&&this.options.privateOwner?.(value,this.context))this.registry.check(value);
     else await this.ensure(value);
     if(this.closing||this.active>=8)throw Error('LINKED_BUSY');this.active++;
-    const mutation=['add','protect','source','save','close','disconnect','remove','export','restore','metadata-repair','resolve','commit-refresh'].includes(value.operation);if(mutation)this.mutations++;
+    const mutation=['add','protect','source','save','close','disconnect','remove','close-documents','export','restore','metadata-repair','resolve','commit-refresh'].includes(value.operation);if(mutation)this.mutations++;
     try{
+      if(!['state','metadata','close-documents'].includes(value.operation))await this.registry.ensureNative();
       switch(value.operation){
+        case 'close-documents':return await this.documents.closeDocuments(value,p);
         case 'export':return await exportLinked(this,value,p);
         case 'recovery':{const rows=await this.registry.native.call('recovery'),items=[];for(let at=0;at<rows.length;at+=4)items.push({operation:rows[at],state:rows[at+1],name:rows[at+2],version:Number(rows[at+3])});return items;}
         case 'inspect':{const r=await this.registry.native.call('inspect',p.operation);return {base:new Uint8Array(Buffer.from(r[0],'base64')),local:r[1]?new Uint8Array(Buffer.from(r[1],'base64')):null,visual:r[2],state:r[3]};}

@@ -6,10 +6,15 @@ import {LinkedDocument} from './document';
 import type {Identity} from '../sessionStore';
 import type {Resource} from '../../types';
 import type {Entry,LinkedRequest,Opened,Source} from './types';
+import {linkedError} from './errors';
 export class LinkedWorkspace{
   readonly documents=new Map<string,LinkedDocument>();
   readonly previews=new Map<string,Opened>();
   readonly metadata=new Map<string,Resource>();
+  readonly unavailable=new Map<string,string>();
+  private previewMounts=new Set<string>();
+  previewMounted(id:string){this.previewMounts.add(id);return()=>{this.previewMounts.delete(id);};}
+  private admission:Promise<unknown>=Promise.resolve();
   private opening=new Map<string,Promise<void>>();
   private identity:()=>Identity|null;
   private listeners=new Set<()=>void>();
@@ -34,15 +39,27 @@ export class LinkedWorkspace{
   async open(id:string){
     if(this.documents.has(id)||this.previews.has(id))return;
     const pending=this.opening.get(id);if(pending)return pending;
-    const task=(async()=>{
+    const task=this.admission.catch(()=>{}).then(async()=>{
+      if(this.documents.size+this.previews.size>=7){
+        const inactive=[...this.documents.values()].find(document=>!document.editors.size&&!this.refreshing.has(document.opened.id)&&!document.getSnapshot().saving);
+        if(inactive){await inactive.flush();await this.request('close',{document:inactive.opened.id,binding:inactive.opened.binding});inactive.dispose();this.documents.delete(inactive.opened.id);}
+        else{const preview=[...this.previews.values()].find(value=>!this.previewMounts.has(value.id));if(!preview)throw Error('Close a document pane before opening another linked file.');await this.request('close',{document:preview.id,binding:preview.binding});this.previews.delete(preview.id);}
+      }
       const opened=await this.request<Opened>('open',{document:id});
+      this.unavailable.delete(id);
       if(opened.readonlyReason){this.previews.set(id,opened);return;}
-      const session=new MarkdownSession(browserPort(new Worker(new URL('../markdown/markdown.worker.ts',import.meta.url),{type:'module'})),opened.bytes);
+      const session=new MarkdownSession(browserPort(new Worker(new URL('../markdown/markdown.worker.ts',import.meta.url),{type:'module'})),opened.seed??opened.bytes);
       try{await session.ready;}catch(error){session.dispose();await this.request('close',{document:id,binding:opened.binding});throw error;}
-      this.documents.set(id,new LinkedDocument(opened,session,this.request));
-    })();this.opening.set(id,task);try{await task;}finally{this.opening.delete(id);}
+      const document=new LinkedDocument(opened,session,this.request);this.documents.set(id,document);if(opened.visual)session.submit(opened.visual.document);
+    }).catch(error=>{this.unavailable.set(id,linkedError(error));});this.admission=task;this.opening.set(id,task);try{await task;}finally{this.opening.delete(id);this.emit();}
   }
   async flush(){await Promise.all(this.opening.values());for(const document of this.documents.values())await document.flush();}
+  async reopen(source?:string){
+    await this.flush();const documents=[...this.documents.values()].filter(d=>source===undefined||d.opened.source===source),previews=[...this.previews.values()].filter(d=>source===undefined||d.source===source);
+    await this.request('close-documents',{source});
+    for(const document of documents){document.dispose();this.documents.delete(document.opened.id);}for(const preview of previews)this.previews.delete(preview.id);this.emit();
+    for(const id of [...documents.map(d=>d.opened.id),...previews.map(d=>d.id)])await this.open(id);
+  }
   async reconcile(){
     for(const document of [...this.documents.values()]){
       if(this.refreshing.has(document.opened.id))continue;
@@ -67,5 +84,5 @@ export class LinkedWorkspace{
     }catch(error){previous.external('EXTERNAL_CHANGED');if(reviewedRevision!==undefined)throw error;}
     finally{if(ticket)await this.request('abort-refresh',{ticket}).catch(()=>{});next?.dispose();restore();this.refreshing.delete(id);}
   }
-  async close(){await this.flush();for(const document of this.documents.values())document.dispose();this.documents.clear();this.previews.clear();this.metadata.clear();}
+  async close(){await this.flush();for(const document of this.documents.values())document.dispose();this.documents.clear();this.previews.clear();this.metadata.clear();this.unavailable.clear();}
 }

@@ -1307,9 +1307,10 @@ export default function Dashboard() {
           {filteredTags.length === 0 && <span className="text-[10px] text-slate-400">No tags</span>}
         </div>
       </div></SidebarSection>
+      <LinkedSources workspace={linkedWorkspace} onOpen={entry=>{void openResourceById(entry.id);}}/>
       </div>
 
-      <LinkedSources workspace={linkedWorkspace} onOpen={entry=>{void openResourceById(entry.id);}}/>
+
       <DesktopConnectionButton/>
       <div className="flex items-center justify-between border-t border-border bg-background/80 p-2">
         <div className="flex items-center gap-0.5">
@@ -1346,7 +1347,7 @@ export default function Dashboard() {
 
       {fileImport && <ErrorBoundary region="file import"><FileImportModal session={fileImport} onClose={closeFileImport} onResource={syncUploadedResource} onDestination={item=>{setCollection(item);setLibrarySection('library');setLibraryVisible(true);}} /></ErrorBoundary>}
       <ErrorBoundary region="note export"><NoteExportModal key={(identityRef.current?.id ?? "") + ":" + (identityRef.current?.generation ?? "")} flushNote={id => exportSaveRef.current(id)} noteId={noteExport?.id} title={noteExport?.title ?? ""} flush={async () => { if (noteExport) await exportSaveRef.current(noteExport.id); }} onClose={() => setNoteExport(null)} /></ErrorBoundary>
-      <ErrorBoundary region="workspace transfer"><TransferModal mode={transferMode} onClose={() => setTransferMode(null)} flush={async () => { await saves.flushAll(); await flushSettings(); }} onImported={afterImport} /></ErrorBoundary>
+      <ErrorBoundary region="workspace transfer"><TransferModal mode={transferMode} onClose={() => setTransferMode(null)} flush={async () => { await linkedWorkspace.flush(); await saves.flushAll(); await flushSettings(); }} onImported={afterImport} /></ErrorBoundary>
       {(sessionError||sessionMessage||recoveryRecords.length>0)&&<div className="flex flex-wrap items-center gap-3 border-b border-border bg-[var(--surface-3)] px-4 py-2 text-sm"><span role="status">{sessionError||sessionMessage||(recoveryRecords.length+' recovery drafts available')}</span>{sessionError&&<button className="library-button" onClick={()=>{setSessionError('');void Promise.all([recovery.retryStorage(),sessionPersistence.current?.retry()]).catch(()=>setSessionError('Local recovery storage is still unavailable.'));}}>Retry storage</button>}{recoveryRecords.length>0&&<button className="library-button" onClick={()=>{recoveryFocus.captureFocus();setRecoveryOpen(true);}}>Review drafts ({recoveryRecords.length})</button>}{sessionMessage&&<button aria-label="Dismiss session message" onClick={()=>setSessionMessage('')}><X size={16}/></button>}</div>}
       {recoveryOpen&&<RecoveryPanel records={recoveryRecords} onResolve={resolveRecovery} canRetry={record=>recovery.current(record.noteId)?.key===record.key&&saves.status(record.noteId)==='failed'} onRetry={record=>saves.flush(record.noteId)} onClose={()=>{setRecoveryOpen(false);recoveryFocus.restoreFocus();}}/>}
       <ErrorBoundary region="diagnostics"><DiagnosticsPanel open={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} /></ErrorBoundary>
@@ -1624,7 +1625,7 @@ export default function Dashboard() {
                       </div>
                     )}
                   </NoteOrientation>
-                    {note.resource?.type==='linked' ? (linkedWorkspace.documents.has(note.id)?<LinkedEditor onReload={revision=>linkedWorkspace.refresh(linkedWorkspace.documents.get(note.id)!,revision)} key={linkedWorkspace.documents.get(note.id)!.opened.binding} document={linkedWorkspace.documents.get(note.id)!} paneId={note.paneId} active={!libraryVisible&&note.paneId===activePaneId} locked={commandPaletteOpen||libraryVisible} restoreFocus={!libraryVisible&&paneState.focusPaneId===note.paneId} selection={note.selection} selectionKey={note.history[note.cursor].visitId} onSelection={selection=>saveNoteSelection(note.paneId,note.history[note.cursor].visitId,selection)} onActivate={()=>activateOpenNote(note.paneId)} onFocusRestored={()=>paneNavigation.focusHandled(note.paneId)}/>:linkedWorkspace.previews.has(note.id)?<LinkedReadonly workspace={linkedWorkspace} opened={linkedWorkspace.previews.get(note.id)!}/>:<p role="status">Opening linked document…</p>) : note.resource?.type === 'note' ? (
+                    {note.resource?.type==='linked' ? (linkedWorkspace.documents.has(note.id)?<LinkedEditor onReload={revision=>linkedWorkspace.refresh(linkedWorkspace.documents.get(note.id)!,revision)} key={linkedWorkspace.documents.get(note.id)!.opened.binding} document={linkedWorkspace.documents.get(note.id)!} paneId={note.paneId} active={!libraryVisible&&note.paneId===activePaneId} locked={commandPaletteOpen||libraryVisible} restoreFocus={!libraryVisible&&paneState.focusPaneId===note.paneId} selection={note.selection} selectionKey={note.history[note.cursor].visitId} onSelection={selection=>saveNoteSelection(note.paneId,note.history[note.cursor].visitId,selection)} onActivate={()=>activateOpenNote(note.paneId)} onFocusRestored={()=>paneNavigation.focusHandled(note.paneId)}/>:linkedWorkspace.previews.has(note.id)?<LinkedReadonly workspace={linkedWorkspace} opened={linkedWorkspace.previews.get(note.id)!}/>:<div className="px-5 py-3"><p role="alert" className="browse-feedback">{linkedWorkspace.unavailable.get(note.id)??'Opening linked document…'}</p><button className="library-button" onClick={()=>void linkedWorkspace.open(note.id)}>Retry opening</button><p className="browse-feedback">Protected drafts and interrupted Saves remain available under Linked sources → Recovery.</p></div>) : note.resource?.type === 'note' ? (
                       <ErrorBoundary region="note editor"><BlockEditor
                         key={note.id}
                         paneId={note.paneId}

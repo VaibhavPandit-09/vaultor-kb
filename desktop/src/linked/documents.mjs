@@ -7,16 +7,26 @@ export class LinkedDocuments {
   state(request,id,binding){this.registry.check(request);const d=this.documents.get(id);if(!d||d.binding!==binding)throw Error('LINKED_DOCUMENT_CHANGED');return d;}
   async open(request,id){
     this.registry.check(request);const entry=this.registry.entries.get(id);if(!entry||entry.directory||!entry.markdown||entry.unsupported)throw Error('LINKED_DOCUMENT_UNAVAILABLE');
-    const existing=this.documents.get(id);if(existing){if(existing.base.identity!==entry.identity)throw Error('LINKED_DOCUMENT_REPLACED');return this.public(existing);}
+    const existing=this.documents.get(id);if(existing){if(existing.busy)throw Error('LINKED_DOCUMENT_BUSY');if(existing.base.identity!==entry.identity)throw Error('LINKED_DOCUMENT_REPLACED');return this.public(existing);}
     if(this.documents.size>=8)throw Error('LINKED_OPEN_LIMIT');const root=this.registry.roots.get(entry.root),capability=await this.registry.grant(root);
-    const fields=await this.registry.native.call('open-linked',capability,entry.relative);this.registry.check(request);const base=readBase(fields);
+    let fields=await this.registry.native.call('open-linked',capability,entry.relative);this.registry.check(request);let base=readBase(fields),seed,visual,nativeVersion=-1,recoveryOnly=false,recoveryOperation;
     if(base.identity!==entry.identity){await this.registry.native.call('close',fields[0]);throw Error('LINKED_DOCUMENT_REPLACED_REFRESH');}
-    const d={id,source:entry.root,entry,document:fields[0],epoch:fields[1],base,readonlyReason:fields[7],binding:randomUUID(),version:-1,busy:false};
-    if(!d.readonlyReason){d.validator=new Validator(this.options.worker,base.bytes);try{await d.validator.ready;}catch(error){await d.validator.close();d.validator=undefined;d.readonlyReason='DOCUMENT_SHAPE_LIMIT';}}
+    const readonlyReason=fields[7];
+    if(!readonlyReason){
+      const found=await this.registry.native.call('lookup-view',fields[0]);
+      if(found[0]===id&&found[1]){recoveryOperation=found[1];try{
+        const record=await this.registry.native.call('inspect',found[1]),parsed=JSON.parse(record[2]);
+        if(['DRAFT_VALIDATED','DRAFT_UNVALIDATED'].includes(record[3])&&parsed.schema==='G3_VISUAL_1'&&parsed.document?.type==='doc'){
+          const recovered=await this.registry.native.call('recover-linked',found[1],capability);await this.registry.native.call('close',fields[0]);fields=recovered;base=readBase(fields);seed=Buffer.from(fields[7],'base64');visual=parsed;recoveryOnly=fields[9]==='true';nativeVersion=Number(fields[11]);
+        }
+      }catch{/* Corrupt or unsupported drafts remain inspectable in Recovery. */}}
+    }
+    const d={id,source:entry.root,entry,document:fields[0],epoch:fields[1],base,readonlyReason,binding:randomUUID(),version:nativeVersion,busy:false,seed,visual,recoveryOnly,recoveryOperation};
+    if(!d.readonlyReason){d.validator=new Validator(this.options.worker,seed??base.bytes);try{await d.validator.ready;}catch(error){await d.validator.close();d.validator=undefined;d.readonlyReason='DOCUMENT_SHAPE_LIMIT';}}
     try{this.registry.check(request);}catch(error){await d.validator?.close();await this.registry.native.call('close',d.document).catch(()=>{});throw error;}
     await this.registry.native.call('bind-view',d.document,id);this.documents.set(id,d);return this.public(d);
   }
-  public(d){return {id:d.id,source:d.source,binding:d.binding,name:d.entry.name,relative:d.entry.relative,identity:d.base.identity,revision:d.base.sha256,bytes:new Uint8Array(d.base.bytes),size:d.base.size,readonlyReason:d.readonlyReason};}
+  public(d){return {id:d.id,source:d.source,binding:d.binding,name:d.entry.name,relative:d.entry.relative,identity:d.base.identity,revision:d.base.sha256,bytes:new Uint8Array(d.base.bytes),size:d.base.size,readonlyReason:d.readonlyReason,seed:d.seed?new Uint8Array(d.seed):undefined,visual:d.visual,nativeVersion:d.version,recoveryOnly:d.recoveryOnly,recoveryOperation:d.recoveryOperation};}
   async protect(request,p){
     const d=this.state(request,p.document,p.binding);if(d.readonlyReason||d.busy||!Number.isSafeInteger(p.version)||p.version<=d.version)throw Error('LINKED_VERSION_OR_BUSY');
     d.version=p.version;d.candidate=undefined;d.busy=true;
@@ -26,12 +36,12 @@ export class LinkedDocuments {
       try{accepted=await d.validator.validate({document:d.document,epoch:d.epoch,base:d.base,version:p.version,draft:p.draft,claimedSource:p.source,sessionMetadata},this.registry.native.validation);}
       catch{accepted={visual:JSON.stringify({schema:'G3_VISUAL_1',document:p.draft,session:sessionMetadata}),reason:'VALIDATION_FAILED_DRAFT_RETAINED'};}
       this.registry.check(request);const [candidate]=await this.registry.native.call('draft',d.document,d.epoch,p.version,accepted.visual,accepted.source?.toString('base64')??'-',accepted.proof??'-');
-      this.registry.check(request);d.candidate=candidate;d.validatedSource=accepted.source;d.reviewableSource=accepted.sourceForReview??accepted.source?.toString('utf8');
+      this.registry.check(request);d.visual=JSON.parse(accepted.visual);if(accepted.source)d.seed=Buffer.from(accepted.source);d.candidate=candidate;d.validatedSource=accepted.source;d.reviewableSource=accepted.sourceForReview??accepted.source?.toString('utf8');
       return {version:p.version,protected:true,validated:!!candidate,reason:accepted.reason};
     }finally{d.busy=false;}
   }
   async save(request,p){
-    const d=this.state(request,p.document,p.binding);if(d.readonlyReason||d.busy||d.pendingOperation||!d.candidate||p.version!==d.version)throw Error('LINKED_SOURCE_NOT_VALIDATED');
+    const d=this.state(request,p.document,p.binding);if(d.readonlyReason||d.recoveryOnly||d.busy||d.pendingOperation||!d.candidate||p.version!==d.version)throw Error('LINKED_SOURCE_NOT_VALIDATED');
     d.busy=true;const candidate=d.candidate;d.candidate=undefined;
     try{
       d.pendingOperation=randomUUID();
@@ -56,7 +66,7 @@ export class LinkedDocuments {
     d.busy=true;let next;
     try{
       const root=this.registry.roots.get(d.source),capability=await this.registry.grant(root),fields=await this.registry.native.call('open-linked',capability,d.entry.relative),base=readBase(fields);
-      next={...d,document:fields[0],epoch:fields[1],base,binding:randomUUID(),version:-1,busy:false,candidate:undefined,validatedSource:undefined,reviewableSource:undefined,validator:undefined,readonlyReason:fields[7]};
+      next={...d,document:fields[0],epoch:fields[1],base,binding:randomUUID(),version:-1,busy:false,candidate:undefined,validatedSource:undefined,reviewableSource:undefined,validator:undefined,readonlyReason:fields[7],seed:undefined,visual:undefined,recoveryOnly:false,recoveryOperation:undefined};
       // Path reuse is independent. A fresh navigation/explicit review owns it.
       if(base.identity!==d.base.identity)throw Error('LINKED_DOCUMENT_REPLACED');
       if(!next.readonlyReason){next.validator=new Validator(this.options.worker,base.bytes);await next.validator.ready;}
@@ -69,9 +79,10 @@ export class LinkedDocuments {
   async commitRefresh(request,{ticket}){
     this.registry.check(request);const pending=this.refreshes.get(ticket);if(!pending)throw Error('LINKED_REFRESH_EXPIRED');const {previous:d,next}=pending;
     if(this.documents.get(d.id)!==d||d.busy||d.version!==pending.version||d.pendingOperation)throw Error('LINKED_REFRESH_SUPERSEDED');
-    d.busy=true;try{const disk=await this.registry.native.call('check',next.document);this.registry.check(request);if(disk[0]!=='UNCHANGED')throw Error('LINKED_REFRESH_DISK_CHANGED');await this.registry.native.call('close',d.document);await d.validator?.close();this.refreshes.delete(ticket);clearTimeout(pending.timer);this.documents.set(d.id,next);return this.public(next);}finally{d.busy=false;}
+    d.busy=true;try{const disk=await this.registry.native.call('check',next.document);this.registry.check(request);if(disk[0]!=='UNCHANGED')throw Error('LINKED_REFRESH_DISK_CHANGED');await this.registry.native.call('retain-draft',d.document);await this.registry.native.call('close',d.document);await d.validator?.close();this.refreshes.delete(ticket);clearTimeout(pending.timer);this.documents.set(d.id,next);return this.public(next);}finally{d.busy=false;}
   }
   async chunk(request,p){const d=this.state(request,p.document,p.binding);if(!Number.isSafeInteger(p.offset)||p.offset<0)throw Error('LINKED_CHUNK_OFFSET');const [bytes]=await this.registry.native.call('chunk',d.document,d.epoch,p.offset,65536);this.registry.check(request);return new Uint8Array(Buffer.from(bytes,'base64'));}
-  async close(request,p){const d=this.state(request,p.document,p.binding);if(d.busy)throw Error('LINKED_OPERATION_PENDING');await d.validator?.close();await this.registry.native.call('close',d.document);this.documents.delete(d.id);}
+  async close(request,p){const d=this.state(request,p.document,p.binding);if(d.busy)throw Error('LINKED_OPERATION_PENDING');d.busy=true;try{for(const [ticket,pending] of this.refreshes)if(pending.previous===d)await this.abortRefresh(request,{ticket});await d.validator?.close();await this.registry.native.call('close',d.document);this.documents.delete(d.id);}finally{d.busy=false;}}
+  async closeDocuments(request,{source}={}){this.registry.check(request);const documents=[...this.documents.values()].filter(d=>source===undefined||d.source===source);if(documents.some(d=>d.busy))throw Error('LINKED_OPERATION_PENDING');for(const d of documents)await this.close(request,{document:d.id,binding:d.binding});return {closed:documents.length};}
   async dispose(){for(const p of this.refreshes.values()){clearTimeout(p.timer);await p.next.validator?.close();}this.refreshes.clear();for(const d of this.documents.values())await d.validator?.close();this.documents.clear();}
 }
