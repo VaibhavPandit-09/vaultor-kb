@@ -4,7 +4,7 @@ import {exportLinked} from './exports.mjs';
 import {LinkedRegistry} from './registry.mjs';
 import {LinkedDocuments} from './documents.mjs';
 
-const fields={'retain-current':['document','binding','version'],'release-recovery':[],'previous-scopes':[],'discard-evidence':['ticket','recoveryScope'],'index':[],search:['query','mode'],'resolve-link':['document','binding','href'],'close-documents':['source'],export:['operation','document','binding','kind','recoveryScope'],recovery:['recoveryScope'],inspect:['operation','recoveryScope'],review:['operation','source'],restore:['ticket'],'metadata-repair':['ticket'],resolve:['ticket'],state:[],add:[],metadata:['document'],'prepare-combination':['document','binding'],'prepare-refresh':['document','binding'],'commit-refresh':['ticket'],'abort-refresh':['ticket'],list:['source','directory','offset','limit'],open:['document'],protect:['document','binding','version','draft','source','session','sourceDraft','editorVersion'],save:['document','binding','version'],source:['document','binding','version','block','expected','text'],check:['document','binding'],chunk:['document','binding','offset'],close:['document','binding'],disconnect:['source'],remove:['source']};
+const fields={'reconnect-reference':['document'],'retain-current':['document','binding','version'],'release-recovery':[],'previous-scopes':[],'discard-evidence':['ticket','recoveryScope'],'index':[],search:['query','mode'],'resolve-link':['document','binding','href'],'close-documents':['source'],export:['operation','document','binding','kind','recoveryScope'],recovery:['recoveryScope'],inspect:['operation','recoveryScope'],review:['operation','source'],restore:['ticket'],'metadata-repair':['ticket'],resolve:['ticket'],state:[],add:[],metadata:['document'],'prepare-combination':['document','binding'],'prepare-refresh':['document','binding'],'commit-refresh':['ticket'],'abort-refresh':['ticket'],list:['source','directory','offset','limit'],open:['document'],protect:['document','binding','version','draft','source','session','sourceDraft','editorVersion'],save:['document','binding','version'],source:['document','binding','version','block','expected','text'],check:['document','binding'],chunk:['document','binding','offset'],close:['document','binding'],disconnect:['source'],remove:['source']};
 /** One owner-local workspace lifetime. The outer Electron handler authenticates
  * the exact window/main frame; owner() independently verifies the host identity. */
 export class LinkedManager {
@@ -17,6 +17,19 @@ export class LinkedManager {
     if(this.active)throw Error('LINKED_CONTEXT_BUSY');
     this.opening=(async()=>{await this.recoveryCatalog?.close();await this.documents?.dispose();await this.registry?.close();this.context={...owner};this.registry=new LinkedRegistry({...this.options,current:()=>this.options.current?.(this.context)??(this.options.current?null:this.context)});await this.registry.load(owner);this.documents=new LinkedDocuments(this.registry,{worker:this.options.worker,owner:this.options.owner});this.search=new LinkedSearch(this.registry);this.recoveryCatalog=new RecoveryCatalog(this.registry);})().finally(()=>{this.opening=undefined;});await this.opening;
   }
+  async reference(request,id,{reconnect=false}={}){
+    if(!reconnect&&this.registry.entries.has(id))return this.registry.entries.get(id);
+    const reference=await this.options.readReference?.(request,id);this.registry.check(request);if(!reference)throw Error('LINKED_REFERENCE_UNAVAILABLE');
+    let rootId=this.registry.sourceAliases.get(reference.sourceId)??reference.sourceId;
+    if(reconnect){
+      const selected=await this.registry.add(request,{title:'Locate '+reference.sourceName+' · '+reference.relativePath});if(selected.outcome!=='authorized')return null;
+      rootId=selected.root;if(this.registry.sourceAliases.size>=8&&!this.registry.sourceAliases.has(reference.sourceId))throw Error('LINKED_SOURCE_LIMIT');
+      const previous=this.documents.documents.get(id);if(previous)await this.documents.close(request,{document:id,binding:previous.binding});
+      this.registry.sourceAliases.set(reference.sourceId,rootId);await this.registry.persist();
+    }
+    if(!this.registry.roots.has(rootId))throw Error('LINKED_REFERENCE_NEEDS_AUTHORIZATION');
+    return this.registry.adoptReference(request,id,reference,rootId,{replace:reconnect});
+  }
   async dispatch(value){
     if(!value||Array.isArray(value)||Object.keys(value).some(key=>!['token','workspace','generation','operation','payload'].includes(key)))throw Error('INVALID_LINKED_REQUEST');
     const allowed=fields[value.operation],p=value.payload??{};
@@ -25,7 +38,7 @@ export class LinkedManager {
     if(['retain-current','protect','inspect','recovery','previous-scopes','release-recovery','export','discard-evidence'].includes(value.operation)&&this.documents&&this.options.privateOwner?.(value,this.context))this.registry.check(value);
     else await this.ensure(value);
     if(this.closing||this.active>=8)throw Error('LINKED_BUSY');this.active++;
-    const mutation=['retain-current','add','protect','source','save','close','disconnect','remove','close-documents','export','restore','metadata-repair','resolve','discard-evidence','commit-refresh'].includes(value.operation);if(mutation)this.mutations++;
+    const mutation=['retain-current','add','protect','source','save','close','disconnect','remove','close-documents','export','restore','metadata-repair','resolve','discard-evidence','commit-refresh','reconnect-reference'].includes(value.operation);if(mutation)this.mutations++;
     try{
       if(!['state','metadata','close-documents','index','search'].includes(value.operation))await this.registry.ensureNative();
       switch(value.operation){
@@ -54,9 +67,10 @@ export class LinkedManager {
         case 'resolve':await this.registry.native.call('resolve',p.ticket);return {resolved:true};
         case 'state':return {supported:true,sources:this.registry.snapshot()};
         case 'add':return await this.registry.add(value);
-        case 'metadata':{const e=this.registry.entries.get(p.document);return e&&!e.directory&&e.markdown?{id:e.id,type:'linked',title:e.name,tags:[],content:{type:'linkedDocument',version:1,sourceId:e.root,sourceName:this.registry.roots.get(e.root)?.name??'Unavailable source',relativePath:e.relative},createdAt:'',updatedAt:'',size:null}:null;}
+        case 'reconnect-reference':return {outcome:await this.reference(value,p.document,{reconnect:true})?'authorized':'cancelled'};
+        case 'metadata':{let e=this.registry.entries.get(p.document);if(!e)e=await this.reference(value,p.document);return e&&!e.directory&&e.markdown?{id:e.id,type:'linked',title:e.name,tags:[],content:e.reference??{type:'linkedDocument',version:1,sourceId:e.root,sourceName:this.registry.roots.get(e.root)?.name??'Unavailable source',relativePath:e.relative},createdAt:'',updatedAt:'',size:null}:null;}
         case 'list':return await this.registry.list(value,p);
-        case 'open':return await this.documents.open(value,p.document);
+        case 'open':await this.reference(value,p.document);return await this.documents.open(value,p.document);
         case 'protect':return await this.documents.protect(value,p);
         case 'save':return await this.documents.save(value,p);
         case 'retain-current':return await this.documents.retainCurrent(value,p);

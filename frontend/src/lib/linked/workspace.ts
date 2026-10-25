@@ -22,6 +22,7 @@ export class LinkedWorkspace{
   private revision=0;
   private lifetime=0;
   private contextVersion=0;
+  private sourcesVersion=0;
   private refreshing=new Set<string>();
   private directories=new Map<string,()=>Promise<void>>();
   private directoryCursor=0;
@@ -29,6 +30,7 @@ export class LinkedWorkspace{
   subscribe=(listener:()=>void)=>{this.listeners.add(listener);return()=>{this.listeners.delete(listener);};};
   getSnapshot=()=>this.revision;
   getContextVersion=()=>this.contextVersion;
+  getSourcesVersion=()=>this.sourcesVersion;
   private emit(){this.revision++;this.listeners.forEach(listener=>listener());}
   constructor(identity:()=>Identity|null){this.identity=identity;}
   supported(){return getPlatform().kind==='desktop'&&getConnection().profileId==='this-computer';}
@@ -61,6 +63,13 @@ export class LinkedWorkspace{
     }).catch(error=>{if(lifetime===this.lifetime)this.unavailable.set(id,linkedError(error));});this.admission=task;this.opening.set(id,task);try{await task;}finally{this.opening.delete(id);this.emit();}
   }
   async flush(){await Promise.all(this.opening.values());for(const document of this.documents.values())await document.flush();}
+  async reconnectReference(id:string){
+    const previous=this.documents.get(id);for(const editor of previous?.editors??[])editor.setEditable(false,false);
+    try{
+      await previous?.flush();const result=await this.request<{outcome:string}>('reconnect-reference',{document:id});if(result.outcome!=='authorized')return;
+      previous?.dispose();this.documents.delete(id);this.previews.delete(id);this.unavailable.delete(id);this.sourcesVersion++;this.emit();await this.open(id);
+    }finally{for(const editor of previous?.editors??[])if(!editor.isDestroyed)editor.setEditable(!previous?.sourceDraft,false);}
+  }
   async reopen(source?:string){
     await this.flush();const documents=[...this.documents.values()].filter(d=>source===undefined||d.opened.source===source),previews=[...this.previews.values()].filter(d=>source===undefined||d.source===source);
     await this.request('close-documents',{source});

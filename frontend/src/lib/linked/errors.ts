@@ -1,5 +1,6 @@
 export function linkedError(value:unknown){
   const detail=String(value instanceof Error?value.message:value).replace(/^Error: /,'');
+  if(/REFERENCE_NEEDS_AUTHORIZATION|REFERENCE_UNAVAILABLE/.test(detail))return 'Locate the source folder to authorize access on this computer. Workspace references do not grant filesystem access.';
   if(/COMBINATION_OVERLAP/.test(detail))return 'These changes overlap or share a boundary. Keep or export your protected draft, reload the external file, and reapply the desired edits.';
   if(/COMBINATION_SOURCE_REFUSED|COMBINATION_REQUIRES_VALIDATED|COMBINATION_READONLY/.test(detail))return 'These versions cannot be combined safely. Keep or export your draft and review the external file.';
   if(/REFRESH_DISK_CHANGED|REFRESH_EXPIRED/.test(detail))return 'The external file changed again or this review expired. Compare the current versions again.';

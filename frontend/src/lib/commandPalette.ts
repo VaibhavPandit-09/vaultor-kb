@@ -146,11 +146,11 @@ const commandDefinitions: CommandDefinition[] = [
     title: 'Rename active note',
     keywords: ['rename', 'title', 'note'],
     aliases: ['mv'],
-    isAvailable: (context) => Boolean(context.activeNote),
+    isAvailable: (context) => context.activeNote?.type === 'note',
     scoreBoost: (context) => (context.activeNote ? 260 : 0),
     subtitle: (context) => context.activeNote?.title,
     getInitialStep: (context) => {
-      if (!context.activeNote) {
+      if (context.activeNote?.type !== 'note') {
         return { type: 'noop' };
       }
       return {
@@ -160,13 +160,13 @@ const commandDefinitions: CommandDefinition[] = [
       };
     },
     remember: (context) => (
-      context.activeNote
+      context.activeNote?.type === 'note'
         ? {
             id: 'rename_active_note',
             title: 'Rename active note',
             subtitle: context.activeNote.title,
             resume: (resumeContext) => (
-              resumeContext.activeNote
+              resumeContext.activeNote?.type === 'note'
                 ? { type: 'push', step: buildRenameStep(resumeContext.activeNote), query: resumeContext.activeNote.title }
                 : { type: 'noop' }
             ),
