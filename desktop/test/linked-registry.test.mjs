@@ -1,0 +1,21 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {existsSync} from 'node:fs';
+import {mkdtemp,mkdir,writeFile,readFile} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {LinkedRegistry} from '../src/linked/registry.mjs';
+
+const repository=fileURLToPath(new URL('../../',import.meta.url));
+const java=resolve(repository,'desktop/bundle/runtime/bin/java.exe'),classes=resolve(repository,'native/linked-markdown/build');
+const skip=process.platform!=='win32'||!existsSync(java)||!existsSync(join(classes,'vaultor/linked/LinkedHost.class'));
+async function fixture(){
+  const directory=await mkdtemp(join(repository,'native/linked-markdown/.scratch/registry-')),source=join(directory,'source'),privateDirectory=join(directory,'private');await mkdir(source);await mkdir(privateDirectory);await writeFile(join(source,'guide.md'),'# Original\n');
+  let current={token:'local-token',workspace:'workspace',generation:'generation',epoch:'epoch-one',kind:'owned-local',mainFrame:true};
+  const registry=new LinkedRegistry({directory:join(privateDirectory,'registry'),java,classes,protectedRoot:privateDirectory,applicationRoot:resolve(repository,'desktop'),current:()=>current,picker:async()=>({canceled:false,filePaths:[source]})});
+  await registry.load(current);return {directory,source,registry,current,change:value=>{current=value;},close:()=>registry.close()};
+}
+test('native linked registry authorizes, pages and persists opaque source/document identity',{skip},async()=>{const f=await fixture();try{const result=await f.registry.add(f.current);assert.equal(result.outcome,'authorized');assert.equal('path' in result,false);const roots=f.registry.snapshot();assert.equal('path' in roots[0],false);const page=await f.registry.list(f.current,{source:result.root});assert.equal(page.items.length,1);assert.equal(page.items[0].name,'guide.md');const identity=page.items[0].id;await f.registry.close();await f.registry.load(f.current);assert.equal(f.registry.snapshot()[0].id,result.root);const reopened=await f.registry.list(f.current,{source:result.root});assert.equal(reopened.items[0].id,identity);}finally{await f.close();}});
+test('same pathname replacement never reuses the old document identity',{skip},async()=>{const f=await fixture();try{const {root}=await f.registry.add(f.current);const before=await f.registry.list(f.current,{source:root});await writeFile(join(f.source,'replacement.md'),'New occupant');const {rename}=await import('node:fs/promises');await rename(join(f.source,'replacement.md'),join(f.source,'guide.md'));const after=await f.registry.list(f.current,{source:root});assert.notEqual(after.items[0].id,before.items[0].id);assert.equal(await readFile(join(f.source,'guide.md'),'utf8'),'New occupant');}finally{await f.close();}});
+test('workspace epoch change while picker is open creates no registration',{skip},async()=>{const f=await fixture();try{f.registry.options.picker=async()=>{f.change({...f.current,epoch:'different-epoch',workspace:'different-workspace'});return {canceled:false,filePaths:[f.source]};};await assert.rejects(f.registry.add(f.current),/context|owner|epoch/i);assert.equal(f.registry.snapshot().length,0);}finally{await f.close();}});
+test('disconnect revokes browse authority but keeps source content',{skip},async()=>{const f=await fixture();try{const {root}=await f.registry.add(f.current);await f.registry.disconnect(f.current,root);assert.equal(f.registry.snapshot()[0].status,'disconnected');await assert.rejects(f.registry.list(f.current,{source:root}),/DISCONNECTED/);assert.equal(await readFile(join(f.source,'guide.md'),'utf8'),'# Original\n');}finally{await f.close();}});

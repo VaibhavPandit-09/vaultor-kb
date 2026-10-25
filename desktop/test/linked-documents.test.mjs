@@ -1,0 +1,22 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {existsSync} from 'node:fs';
+import {mkdtemp,mkdir,writeFile,readFile,readdir} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {LinkedRegistry} from '../src/linked/registry.mjs';
+import {LinkedDocuments} from '../src/linked/documents.mjs';
+const repository=fileURLToPath(new URL('../../',import.meta.url)),assets=resolve(repository,'frontend/node_modules/.cache/markdown-g3-build/assets');
+const worker=process.env.VAULTOR_MARKDOWN_WORKER??(existsSync(assets)?join(assets,(await readdir(assets)).find(name=>/^markdown\.worker-.*\.js$/.test(name))??'missing'):'missing');
+const java=resolve(repository,'desktop/bundle/runtime/bin/java.exe'),classes=resolve(repository,'native/linked-markdown/build');
+const skip=process.platform!=='win32'||!existsSync(java)||!existsSync(worker)||!existsSync(join(classes,'vaultor/linked/LinkedHost.class'));
+async function fixture(source='# Guide\n\nText.\n'){
+  const dir=await mkdtemp(join(repository,'native/linked-markdown/.scratch/documents-')),root=join(dir,'source'),privateDir=join(dir,'private');await mkdir(root);await mkdir(privateDir);await writeFile(join(root,'guide.md'),source);
+  const scope={token:'local-token',workspace:'workspace',generation:'generation',epoch:'epoch',kind:'owned-local',mainFrame:true};
+  const registry=new LinkedRegistry({directory:join(privateDir,'sources'),java,classes,protectedRoot:privateDir,applicationRoot:resolve(repository,'desktop'),current:()=>scope,picker:async()=>({canceled:false,filePaths:[root]})});await registry.load(scope);const added=await registry.add(scope),page=await registry.list(scope,{source:added.root});const documents=new LinkedDocuments(registry,{worker}),opened=await documents.open(scope,page.items[0].id);
+  return {root,scope,registry,documents,opened,close:async()=>{await documents.dispose();await registry.close();}};
+}
+test('real validator/private native host saves exact local Markdown and updates stable identity',{skip},async()=>{const f=await fixture();try{const host=f.documents.documents.get(f.opened.id),ready=await host.validator.ready,draft=structuredClone(ready.doc);const edit=node=>{if(node.text==='Text.')node.text='Edited Text.';node.content?.forEach(edit);};edit(draft);const expected='# Guide\n\nEdited Text.\n';const protectedDraft=await f.documents.protect(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1,draft,source:expected,editorVersion:1});assert.equal(protectedDraft.validated,true);const saved=await f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1});assert.equal(saved.state,'COMMITTED');assert.notEqual(saved.identity,f.opened.identity);assert.equal(f.registry.entries.get(f.opened.id).identity,saved.identity);assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),expected);await assert.rejects(f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1}),/NOT_VALIDATED/);}finally{await f.close();}});
+test('forged source cannot get a valid candidate even when visual draft is supported',{skip},async()=>{const f=await fixture();try{const ready=await f.documents.documents.get(f.opened.id).validator.ready;const result=await f.documents.protect(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1,draft:ready.doc,source:'Arbitrary unrelated content'});assert.equal(result.validated,false);assert.equal(result.protected,true);await assert.rejects(f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1}),/NOT_VALIDATED/);assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),'# Guide\n\nText.\n');}finally{await f.close();}});
+test('invalid original UTF8 remains exact read-only bytes without creating a validator',{skip},async()=>{const f=await fixture(Buffer.from([255,65]));try{assert.equal(f.opened.readonlyReason,'ENCODING_UNSUPPORTED');assert.deepEqual([...f.opened.bytes],[255,65]);assert.equal(f.documents.documents.get(f.opened.id).validator,undefined);assert.deepEqual([...await readFile(join(f.root,'guide.md'))],[255,65]);}finally{await f.close();}});
+test('stale document binding cannot journal or save another session',{skip},async()=>{const f=await fixture();try{await assert.rejects(f.documents.protect(f.scope,{document:f.opened.id,binding:'stale',version:1,draft:{}}),/DOCUMENT_CHANGED/);assert.equal(f.documents.documents.get(f.opened.id).version,-1);}finally{await f.close();}});

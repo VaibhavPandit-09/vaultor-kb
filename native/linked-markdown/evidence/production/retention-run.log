@@ -1,0 +1,4 @@
+PASS 150 acknowledged checkpoints coalesce only older drafts and retain latest rejected V plus validated L
+PASS only acknowledged successful saves enter bounded twenty-version history
+PASS unacknowledged completed Save and uncertain conflict are never history-pruned
+TOTAL 3 passed; 0 failed

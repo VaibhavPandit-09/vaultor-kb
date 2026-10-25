@@ -1,0 +1,5 @@
+PASS invalid UTF8 is read-only before editor projection and cannot mint a candidate
+PASS large documents have stable read-only revisions and bounded chunk access
+PASS hardlinked sources remain readable without write authority
+PASS reserved private recovery paths cannot become document capabilities
+TOTAL 4 passed; 0 failed

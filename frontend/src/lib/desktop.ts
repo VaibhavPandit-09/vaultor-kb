@@ -19,6 +19,7 @@ type NativePart = { name: string; fileId: string; filename: string; type: string
 type NativeSelection = { relativePath?:string; directory?:boolean; id: string; name: string; size: number; lastModified: number };
 export type WireRequest = { id: string; token: string; path: string; method: string; timeout: number; headers: Record<string, string>; body?: { kind: 'text'; value: string } | { kind: 'multipart'; parts: (Part | NativePart)[] } };
 export interface DesktopBridge {
+  linked?(value:{token:string;workspace:string;generation:string;operation:string;payload:Record<string,unknown>}):Promise<Result<unknown>>;
   copiesList?():Promise<Result<WorkspaceCopyJob[]>>;
   copyPreview?(value:{id:string;name:string;token:string}):Promise<Result<WorkspaceTransferReceipt>>;
   copyStatus?(value:{id:string}):Promise<Result<WorkspaceTransferReceipt>>;
@@ -86,6 +87,12 @@ declare global { interface Window { vaultorDesktop?: DesktopBridge } }
 let desktopSessionId: string | undefined;
 let desktopBuild: string | undefined;
 let desktopToken = '';
+/** Opaque capabilities only; native paths are never accepted by this bridge. */
+export async function requestLinked<T>(identity:{id:string;generation:string},operation:string,payload:Record<string,unknown>={}):Promise<T>{
+  const bridge=window.vaultorDesktop;
+  if(!bridge?.linked||getConnection().profileId!=='this-computer')throw Error('Linked folders require This computer in Vaultor Desktop.');
+  return unwrap(await bridge.linked({token:desktopToken,workspace:identity.id,generation:identity.generation,operation,payload})) as T;
+}
 const selectedFiles = new WeakMap<File, string>();
 export async function pickDesktopFiles(accept: string, multiple: boolean, directory = false): Promise<File[] & {directories?:string[]}> {
   const bridge = window.vaultorDesktop!;

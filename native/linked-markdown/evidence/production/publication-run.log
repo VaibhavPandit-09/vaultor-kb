@@ -1,0 +1,16 @@
+PASS ordinary inherited permissions, owner/group, creation and exact source survive production Save
+PASS ordinary Unicode filename and BOM CRLF source are accepted
+PASS validated no-op preserves original identity and bytes
+PASS external content before explicit Save remains conflict and is retained
+PASS late original hardlink never receives Vaultor content or permission changes
+RECOVERY [REPLACEMENT_UNCERTAIN:INTERRUPTED_METADATA]
+PASS interruption before inheritance restoration never reports successful Save
+RECOVERY [REPLACEMENT_UNCERTAIN:RenameRelativeExclusive:183]
+PASS publication gap occupant is never overwritten by production policy
+RECOVERY [REPLACEMENT_UNCERTAIN:EXTERNAL_BEFORE_RECEIPT]
+PASS postpublication competing replacement is never acknowledged uncontested
+RECOVERY [REPLACEMENT_UNCERTAIN:INTERRUPTED_METADATA]
+PASS reviewed interrupted permission recovery restores ordinary inheritance without content write
+RECOVERY [REPLACEMENT_UNCERTAIN:INTERRUPTED_METADATA]
+PASS metadata recovery refuses a reused pathname even with identical content
+TOTAL 10 passed; 0 failed

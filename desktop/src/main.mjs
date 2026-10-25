@@ -1,6 +1,6 @@
 import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, ClipboardItem, dialog, Tray, nativeImage, Notification, powerMonitor, safeStorage } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { readFile,stat,writeFile } from 'node:fs/promises';
+import { readFile,readdir,stat,writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { isAbsolute, resolve, sep } from 'node:path';
 import { WorkspaceCopies } from './workspace-copies.mjs';
@@ -18,6 +18,8 @@ import { Updates } from './updates.mjs';
 import {supportsAutomaticInstall,startUpdateHandoff} from './update-handoff.mjs';
 import { spawn } from 'node:child_process';
 import { probeReady } from './probe-ready.mjs';
+import {LinkedManager} from './linked/manager.mjs';
+import {linkedOwner} from './linked/owner.mjs';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'vaultor', privileges: { standard: true, secure: true, supportFetchAPI: true } },{scheme:'vaultor-file',privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true}}]);
 // A renamed developer Electron executable reports isPackaged=true; use our actual app layout.
@@ -31,7 +33,7 @@ if (testDirectory && !isAbsolute(testDirectory)) throw new Error('VAULTOR_DESKTO
 if (smokeDirectory || testDirectory) app.setPath('userData', smokeDirectory || testDirectory);
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  let window, profiles, owned, files, hosting, credentials, discovery, connections, tray, updates, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false, updating=false, updateApplying=false, automaticInstall=false;
+  let window, profiles, owned, files, linked, hosting, credentials, discovery, connections, tray, updates, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false, updating=false, updateApplying=false, automaticInstall=false;
   const transport = new DesktopTransport(), candidates = new Map();
   const copies=new WorkspaceCopies({directory:resolve(app.getPath('userData'),'workspace-copies'),owned:{start:()=>owned.start(),get address(){return owned.address;},get accessKey(){return owned.accessKey;}},source:()=>transport.active});
   const queue = task => { const next = writes.catch(() => {}).then(task); writes = next; return next; };
@@ -94,6 +96,19 @@ else {
     });
     profiles = new Profiles(app.getPath('userData'));
     owned = new OwnedServer({ bundle: packaged?resolve(process.resourcesPath,'bundle'):fileURLToPath(new URL('../bundle/', import.meta.url)), data: resolve(app.getPath('userData'), 'local-workspace') });
+    const linkedIdentity=linkedOwner({transport,currentToken:()=>token,status:()=>owned.status});
+    const linkedBundle=packaged?resolve(process.resourcesPath,'bundle'):fileURLToPath(new URL('../bundle/',import.meta.url));
+    handle('desktop:linked',async value=>{
+      if(process.platform!=='win32'||process.arch!=='x64')throw Error('Linked folder access requires Windows x64.');
+      if(!linked){
+        const assets=resolve(ui,'assets'),workerName=(await readdir(assets)).find(name=>/^markdown\.worker-.*\.js$/.test(name));
+        if(!workerName||!(await stat(resolve(linkedBundle,'linked-files.jar')).catch(()=>null)))throw Error('Linked folder components are unavailable. Reinstall the current desktop version.');
+        linked??=new LinkedManager({owner:linkedIdentity,current:scope=>transport.active?.token===scope?.token&&token===scope?.token&&transport.active?.profile.source==='bundled'&&owned.status==='ready'?scope:null,
+          directory:resolve(app.getPath('userData'),'linked-sources'),java:resolve(linkedBundle,'runtime/bin/java.exe'),classes:resolve(linkedBundle,'linked-files.jar'),worker:resolve(assets,workerName),
+          protectedRoot:app.getPath('userData'),applicationRoot:app.getAppPath(),protectedPaths:[linkedBundle,ui],picker:options=>dialog.showOpenDialog(window,options)});
+      }
+      return linked.dispatch(value);
+    });
     const releaseTrust=JSON.parse(await readFile(fileURLToPath(new URL('../release-trust.json',import.meta.url)),'utf8'));
     updates=new Updates({directory:resolve(app.getPath('userData'),'updates'),workspace:owned.data,publicKey:releaseTrust.publicKey,currentVersion:app.getVersion(),onState:value=>window?.webContents.send('desktop:updates-state',{...value,automaticInstall})});await updates.load();automaticInstall=await supportsAutomaticInstall(process.execPath,packaged);
     const updateStatus=()=>({...updates.snapshot(),automaticInstall});
@@ -132,14 +147,14 @@ else {
     });
     const updateBarrier=async()=>{
       const approval=await requestQuitBarrier();if(!approval.success)throw new Error(approval.error);
-      if(files.active.size||files.saves.size||files.dialogPending||copies.active||transport.mutations.size)throw new Error('Finish current file/workspace operations before updating.');
+      if(files.active.size||files.saves.size||files.dialogPending||copies.active||linked?.active||transport.mutations.size)throw new Error('Finish current file/workspace operations before updating.');
       updating=true;window?.webContents.send('desktop:updates-state',{...updates.snapshot(),phase:'preparing'});
       discovery.withdraw();transport.cancelAll();
     };
     const installFile=async file=>{
       if(process.platform==='win32')await new Promise((done,reject)=>{const child=spawn(file,[],{detached:true,windowsHide:true,stdio:'ignore'});child.once('error',reject);child.once('spawn',()=>{child.unref();done();});});
       else {const error=await shell.openPath(file);if(error)throw new Error(error);}
-      stoppedForQuit=true;discovery.destroy();await files.reset();window?.destroy();tray?.destroy();app.quit();
+      stoppedForQuit=true;discovery.destroy();await linked?.close();await files.reset();window?.destroy();tray?.destroy();app.quit();
     };
     handle('desktop:updates-apply',()=>{
       if(updateApplying)throw new Error('An update action is already running.');
@@ -151,7 +166,7 @@ else {
           const prepared=await updates.prepare({barrier:updateBarrier,stop:()=>owned.stop()});
           if(automaticInstall){
             await startUpdateHandoff({directory:updates.directory,file:prepared.file,manifest:updates.candidate.envelope.manifest});
-            stoppedForQuit=true;discovery.destroy();await files.reset();window?.destroy();tray?.destroy();app.quit();
+            stoppedForQuit=true;discovery.destroy();await linked?.close();await files.reset();window?.destroy();tray?.destroy();app.quit();
           }else await installFile(prepared.file);
         }catch(e){updating=false;updates.publish({error:e.message});throw e;}
         finally{updateApplying=false;}
@@ -167,7 +182,7 @@ else {
       const answer=await dialog.showMessageBox(window,{type:'warning',buttons:['Cancel','Restore local backup'],defaultId:0,cancelId:0,message:'Restore the workspace from before updating?',detail:'This replaces only the managed local workspace. Current data is retained in a separate folder. Use the previous app installer afterward if its schema is incompatible. Remote hosts and client drafts/preferences are untouched.'});if(answer.response!==1)return updates.snapshot();
       try{const restored=await updates.restore({barrier:updateBarrier,stop:()=>owned.stop()});updating=false;
         if(restored.previous){await dialog.showMessageBox(window,{message:'Recovery restored',detail:'The previous retained installer will open. Complete installation and reopen Vaultor.'});await installFile(restored.previous);}
-        else {await dialog.showMessageBox(window,{message:'Recovery restored',detail:'Vaultor will quit. Reinstall the original version if needed; the restored workspace and preserved data remain on disk.'});stoppedForQuit=true;discovery.destroy();await files.reset();window?.destroy();tray?.destroy();app.quit();}
+        else {await dialog.showMessageBox(window,{message:'Recovery restored',detail:'Vaultor will quit. Reinstall the original version if needed; the restored workspace and preserved data remain on disk.'});stoppedForQuit=true;discovery.destroy();await linked?.close();await files.reset();window?.destroy();tray?.destroy();app.quit();}
       }catch(e){updating=false;window?.webContents.send('desktop:updates-state',updates.snapshot());throw e;}
     }));
     handle('desktop:local-status', () => owned.snapshot());
@@ -191,7 +206,7 @@ else {
     handle('desktop:host-action',async action=>{
       if(action==='browser'){if(!owned.address)throw new Error('Start the local host first.');await openOwnerBrowser();return;}
       if(action==='start'){await owned.start();return;}
-      if(action==='stop'){const approved=await requestQuitBarrier(false);if(!approved.success)throw new Error(approved.error);if(files.active.size||files.saves.size||files.dialogPending||copies.active||transport.mutations.size)throw new Error('Finish current file operations first.');await owned.stop();return;}
+      if(action==='stop'){const approved=await requestQuitBarrier(false);if(!approved.success)throw new Error(approved.error);if(files.active.size||files.saves.size||files.dialogPending||copies.active||linked?.active||transport.mutations.size)throw new Error('Finish current file operations first.');await owned.stop();return;}
       throw new Error('Invalid hosting action.');
     });
     for(const [channel,method] of [['pick-files','pick'],['read-file','read'],['begin-save','begin'],['save-chunk','chunk'],['finish-save','finish'],['cancel-save','cancel'],['file-action','download'],['release-file','release'],['cancel-file','cancelRequest']]) handle('desktop:'+channel,value=>files[method](value));
@@ -215,17 +230,17 @@ else {
     handle('desktop:workspaces',async id=>{const stored=profiles.get(id);const profile=stored.source==='bundled'?{...stored,address:await owned.start()}:stored.kind==='remote'?await connections.resolve(stored):stored;delete profile.selectedWorkspaceId;const check=new DesktopTransport(),token=randomUUID();check.activate(profile,token,profile.source==='bundled'?owned.accessKey:profile.kind==='local'?credentials.get(id):undefined,profile.kind==='remote'?credentials.get(id):undefined);return probeReady(()=>check.request({token,id:randomUUID(),path:'/workspaces',method:'GET',headers:{},timeout:10000}));});
     handle('desktop:probe', value => typeof value==='string'?probe(value):probe(value?.id,true,value?.workspaceId));
     handle('desktop:activate', ticket => queue(async () => {
-      if (copies.active||transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
+      if (copies.active||linked?.active||transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
       const candidate = candidates.get(ticket);
       if (!candidate || candidate.expires < Date.now()) throw new Error('Connection check expired. Retry.');
       const latest = await probe(candidate.profile.id,true,candidate.profile.selectedWorkspaceId);
       if (latest.identity.id !== candidate.identity.id || latest.identity.generation !== candidate.identity.generation) throw new Error('Workspace changed during connection. Retry.');
-      if (copies.active||transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
+      if (copies.active||linked?.active||transport.mutations.size||files.active.size||files.saves.size||files.dialogPending) throw new Error('Finish pending workspace or file changes before switching.');
       const actual = latest.profile.source === 'bundled' ? latest.profile : { ...profiles.get(latest.profile.id), address: latest.profile.address, selectedWorkspaceId: latest.profile.selectedWorkspaceId };
       const credential = actual.kind === 'remote' ? credentials.get(actual.id) : undefined;
       if (actual.kind === 'remote' && actual.address !== profiles.get(actual.id).address) await profiles.update(actual.id, { address: actual.address });
       await profiles.activate(candidate.profile.id, candidate.identity.id, candidate.profile.selectedWorkspaceId);
-      await files.reset();
+      await linked?.close();await files.reset();
       token = randomUUID(); transport.activate(actual, token, actual.source === 'bundled' ? owned.accessKey : actual.kind==='local'?credentials.get(actual.id):undefined, credential); candidates.clear();
       return state();
     }));
@@ -318,13 +333,13 @@ else {
   }
   async function finishQuit() {
     try {
-      if(files?.active.size||files?.saves.size||files?.dialogPending||copies.active||transport.mutations.size) throw new Error('Finish current file operations before quitting.');
+      if(files?.active.size||files?.saves.size||files?.dialogPending||copies.active||linked?.active||transport.mutations.size) throw new Error('Finish current file operations before quitting.');
       let approval=await requestQuitBarrier();
       if(!approval.success && approval.canKeepDrafts && !smokeDirectory){const choice=dialog.showMessageBoxSync(window,{type:'warning',buttons:['Keep editing','Keep drafts and quit'],defaultId:0,cancelId:0,message:approval.error,detail:'Quit only after local recovery records have been written.'});if(choice===1) approval=await requestQuitBarrier(true);}
       if(!approval.success) throw new Error(approval.error);
       if(owned.address&&!smokeDirectory){const choice=dialog.showMessageBoxSync(window,{type:'question',buttons:['Keep hosting','Quit'],defaultId:0,cancelId:0,message:'Quit Vaultor?',detail:'The local host stops. Connected browser clients will be disconnected.'});if(choice!==1){quitting=false;return;}}
       try {await owned.stop();} catch(error){if(smokeDirectory) throw error;const choice=dialog.showMessageBoxSync(window,{type:'warning',buttons:['Keep hosting','Force quit'],defaultId:0,cancelId:0,message:error.message,detail:'Force quit interrupts server operations. Their persisted journals are recovered on restart. Only this app’s owned server is stopped.'});if(choice!==1){quitting=false;return;}await owned.stop({force:true});}
-      discovery?.destroy(); await files?.reset(); stoppedForQuit=true;window?.destroy();tray?.destroy();app.quit();
+      discovery?.destroy(); await linked?.close();await files?.reset(); stoppedForQuit=true;window?.destroy();tray?.destroy();app.quit();
     } catch(error){quitting=false;window?.show(); if(smokeDirectory){console.error(error);app.exit(1);}else dialog.showMessageBoxSync(window,{type:'warning',message:'Vaultor is still running',detail:error.message});}
   }
   app.on('before-quit',event=>{if(stoppedForQuit||!owned)return;event.preventDefault();if(quitting)return;quitting=true;void finishQuit();});

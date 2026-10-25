@@ -5,8 +5,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
-/** Development harness private stdin/stdout protocol. No listener, Spring route,
- * renderer role/path deserialization or inherited production activation. */
+/** Bounded private stdin/stdout protocol. No listener or Spring route. The
+ * default historical entrypoint refuses source writes; LinkedHost deliberately
+ * selects the production policy without accepting a renderer policy flag. */
 public final class PrivateHost {
     private static final int FRAME_LIMIT=6*1024*1024;
     private static String line(InputStream input)throws IOException{
@@ -27,10 +28,14 @@ public final class PrivateHost {
     }
     private static void count(String[] frame,int expected)throws IOException{if(frame.length!=expected)throw new IOException("FRAME_FIELDS");}
     public static void main(String[] args)throws Exception{
-        String first=line(System.in);if(first==null)return;String[] init=decode(first);count(init,8);if(!init[0].equals("INIT-G3"))throw new IOException("PRIVATE_INIT");
+        run(false);
+    }
+    static void run(boolean production)throws Exception {
+        String first=line(System.in);if(first==null)return;String[] init=decode(first);if(init.length<8||init.length>16||!init[0].equals("INIT-G3"))throw new IOException("PRIVATE_INIT");
         var scope=new LinkedStore.Scope(init[1],init[2],LinkedStore.Client.LOCAL_DESKTOP_OWNER);
         byte[] validation=Base64.getDecoder().decode(init[5]),consent=Base64.getDecoder().decode(init[6]);
-        try(var store=new LinkedStore(scope,Path.of(init[3]),validation,consent,List.of(Path.of(init[4]),Path.of(init[7])),null);var monitor=new ChangeMonitor(store,scope,1000)){
+        var protectedPaths=new ArrayList<Path>(List.of(Path.of(init[4]),Path.of(init[7])));for(int i=8;i<init.length;i++)protectedPaths.add(Path.of(init[i]));
+        try(var store=new LinkedStore(scope,Path.of(init[3]),validation,consent,protectedPaths,null);var monitor=new ChangeMonitor(store,scope,1000)){
             Arrays.fill(validation,(byte)0);Arrays.fill(consent,(byte)0);reply(0,List.of("READY",System.getProperty("java.runtime.version")));
             long previous=0;String raw;
             while((raw=line(System.in))!=null){String[] f=decode(raw);long id=Long.parseLong(f[0]);if(id<=previous)throw new IOException("FRAME_REPLAY");previous=id;
@@ -38,12 +43,14 @@ public final class PrivateHost {
                     List<String> result=new ArrayList<>();result.add("OK");
                     switch(f[1]){
                         case "root"->{count(f,6);result.add(store.authorizeSelectedRoot(scope,Path.of(f[2]),f[3],Long.parseLong(f[4]),f[5]));}
+                        case "root-info"->{count(f,3);result.add(store.rootIdentity(scope,f[2]));}
                         case "open"->{count(f,4);var opened=store.openRelative(scope,f[2],f[3]);try{monitor.register(opened.document());}catch(IOException e){store.closeDocument(scope,opened.document());throw e;}result.add(opened.document());result.add(opened.epoch());result.addAll(snapshot(opened.base()));}
+                        case "open-linked"->{if(!production)throw new IOException("PRIVATE_COMMAND");count(f,4);var opened=store.openLinked(scope,f[2],f[3]);try{monitor.register(opened.document());}catch(IOException e){store.closeDocument(scope,opened.document());throw e;}result.add(opened.document());result.add(opened.epoch());result.addAll(snapshot(opened.base()));result.add(store.readonlyReason(scope,opened.document()));}
+                        case "directory"->{if(!production)throw new IOException("PRIVATE_COMMAND");count(f,6);for(var entry:store.listDirectory(scope,f[2],f[3],Integer.parseInt(f[4]),Integer.parseInt(f[5]))){result.add(entry.name());result.add(Boolean.toString(entry.directory()));result.add(Boolean.toString(entry.markdown()));result.add(Long.toString(entry.size()));result.add(Long.toString(entry.modified()));result.add(entry.identity());result.add(Boolean.toString(entry.unsupported()));}}
                         case "draft"->{count(f,8);String candidate=store.journalDraft(scope,f[2],f[3],Long.parseLong(f[4]),f[5],f[6].equals("-")?null:Base64.getDecoder().decode(f[6]),f[7].equals("-")?null:f[7]);result.add(candidate==null?"":candidate);}
-                        // Neither publication strategy is accepted for this bridge.
-                        // The in-place candidate failed the hardlink race; returning
-                        // to Gate2 publication silently would reintroduce its gaps.
-                        case "save"->{count(f,6);throw new IOException("G3_PUBLICATION_UNQUALIFIED");}
+                        // The historical harness stays read-only. Production
+                        // uses only the new-inode ordinary-file contract.
+                        case "save"->{count(f,6);if(!production)throw new IOException("G3_PUBLICATION_UNQUALIFIED");var receipt=store.saveLinked(scope,f[2],f[3],f[4],f[5]);result.addAll(List.of(receipt.state(),Long.toString(receipt.version()),receipt.revision()==null?"":receipt.revision().identity(),receipt.revision()==null?"":receipt.revision().sha256(),receipt.revision()==null?"":receipt.revision().metadata(),receipt.operation()));}
                         case "check"->{count(f,3);var changed=store.reconcile(scope,f[2]);result.add(changed.state());result.add(Boolean.toString(changed.dirty()));result.addAll(snapshot(changed.disk()));}
                         case "close"->{count(f,3);monitor.unregister(f[2]);store.closeDocument(scope,f[2]);}
                         case "chunk"->{count(f,6);result.add(Base64.getEncoder().encodeToString(store.readChunk(scope,f[2],f[3],Long.parseLong(f[4]),Integer.parseInt(f[5]))));}
@@ -54,7 +61,9 @@ public final class PrivateHost {
                         case "inspect"->{count(f,3);var record=store.inspectRecovery(scope,f[2]);result.add(Base64.getEncoder().encodeToString(record.base()));result.add(record.local()==null?"":Base64.getEncoder().encodeToString(record.local()));result.add(record.visual());result.add(record.state());}
                         case "review"->{count(f,4);var r=store.reviewRecovery(scope,f[2],f[3]);result.add(r.ticket());result.add(r.state());result.add(Base64.getEncoder().encodeToString(r.base()));result.add(r.local()==null?"":Base64.getEncoder().encodeToString(r.local()));result.add(r.visual());result.addAll(snapshot(r.disk()));}
                         case "repair"->{count(f,4);throw new IOException("G3_PUBLICATION_UNQUALIFIED");}
-                        case "restore"->{count(f,3);throw new IOException("G3_PUBLICATION_UNQUALIFIED");}
+                        case "restore"->{count(f,3);if(!production)throw new IOException("G3_PUBLICATION_UNQUALIFIED");result.add(store.restoreMissingBase(scope,f[2]).state());}
+                        case "metadata"->{count(f,3);if(!production)throw new IOException("G3_PUBLICATION_UNQUALIFIED");result.add(store.completeLinkedMetadata(scope,f[2]).state());}
+                        case "ack-save"->{count(f,3);if(!production)throw new IOException("PRIVATE_COMMAND");store.acknowledgeLinkedSave(scope,f[2]);}
                         case "export"->{count(f,6);result.add(store.exportRecovery(scope,f[2],f[3],f[4],f[5]));}
                         case "export-disk"->{count(f,5);result.add(store.exportReviewedDisk(scope,f[2],f[3],f[4]));}
                         case "resolve"->{count(f,3);store.resolveRecovery(scope,f[2]);}

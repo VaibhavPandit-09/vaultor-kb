@@ -4,6 +4,9 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // Markdown's named-entity decoder has a DOM-free worker export. The same
+  // module worker is also independently executed by the owner-local validator.
+  resolve: { conditions: ['worker', 'module', 'browser', 'development|production'] },
   server: {
     proxy: {
       '/api': {

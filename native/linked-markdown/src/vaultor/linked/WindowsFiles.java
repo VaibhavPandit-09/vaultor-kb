@@ -41,7 +41,23 @@ public final class WindowsFiles {
         Handle(MemorySegment value){this.value=value;}
         public void close()throws IOException{if(!closed){closed=true;yes("CloseHandle",invoke("CloseHandle",FunctionDescriptor.of(JAVA_INT,ADDRESS),value));}}
     }
-    public record Info(int attributes,String identity,long size,int links){}
+    public record Info(int attributes,String identity,long size,int links,long modified){}
+    record DirectoryEntry(String name,int attributes,long size,long modified,String identity){}
+    /** Synchronous, bounded enumeration attached to an already confined handle.
+     * FILE_ID_BOTH_DIR_INFORMATION x64: file ID96, UTF16 name104. */
+    static List<DirectoryEntry> entries(Handle directory,int maximum)throws IOException {
+        if(maximum<1||maximum>50001)throw new IOException("DIRECTORY_LIMIT");var entries=new ArrayList<DirectoryEntry>();String volume=info(directory).identity().split(":")[0];boolean restart=true;
+        try(var a=Arena.ofConfined()){
+            var io=a.allocate(16,8);var buffer=a.allocate(65536,8);
+            for(;;){int status=(int)invoke("NtQueryDirectoryFile",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS,ADDRESS,ADDRESS,ADDRESS,ADDRESS,JAVA_INT,JAVA_INT,JAVA_BYTE,ADDRESS,JAVA_BYTE),directory.value,MemorySegment.NULL,MemorySegment.NULL,MemorySegment.NULL,io,buffer,65536,37,(byte)0,MemorySegment.NULL,(byte)(restart?1:0)).value();restart=false;
+                if(status==0x80000006)break;if(status!=0)throw new IOException("DIRECTORY_READ:"+Integer.toUnsignedString(status,16));long length=io.get(JAVA_LONG,8);if(length<104||length>65536)throw new IOException("DIRECTORY_LAYOUT");
+                int at=0;for(;;){if(at+104>length)throw new IOException("DIRECTORY_LAYOUT");int next=buffer.get(JAVA_INT,at),names=buffer.get(JAVA_INT,at+60),attributes=buffer.get(JAVA_INT,at+56);if(names<0||(names&1)!=0||at+104L+names>length)throw new IOException("DIRECTORY_LAYOUT");String name=new String(buffer.asSlice(at+104,names).toArray(JAVA_BYTE),StandardCharsets.UTF_16LE);wellFormedPath(name);
+                    if(!name.equals(".")&&!name.equals("..")){long id=buffer.get(JAVA_LONG,at+96),creation=buffer.get(JAVA_LONG,at+8);String identity=volume+":"+Integer.toUnsignedString((int)(id>>>32),16)+":"+Integer.toUnsignedString((int)id,16)+":"+Long.toUnsignedString(creation,16);entries.add(new DirectoryEntry(name,attributes,buffer.get(JAVA_LONG,at+40),buffer.get(JAVA_LONG,at+24),identity));if(entries.size()>=maximum)return entries;}
+                    if(next==0)break;if(next<104||at+(long)next>=length)throw new IOException("DIRECTORY_LAYOUT");at+=next;
+                }
+            }
+        }return entries;
+    }
     static long handleCount()throws IOException{try(var arena=Arena.ofConfined()){var count=arena.allocate(JAVA_INT);yes("HandleCount",invoke("GetProcessHandleCount",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS),MemorySegment.ofAddress(-1L),count));return Integer.toUnsignedLong(count.get(JAVA_INT,0));}}
     static long workingSet()throws IOException{try(var arena=Arena.ofConfined()){var info=arena.allocate(72,8);info.set(JAVA_INT,0,72);yes("ProcessMemory",invoke("K32GetProcessMemoryInfo",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS,JAVA_INT),MemorySegment.ofAddress(-1L),info,72));return info.get(JAVA_LONG,16);}}
     static Handle open(Path path,int access,int sharing,int mode,boolean directory)throws IOException{
@@ -72,7 +88,7 @@ public final class WindowsFiles {
             var out=a.allocate(56,8);yes("FileInformation",invoke("GetFileInformationByHandle",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS),h.value,out));
             int attr=out.get(JAVA_INT,0),volume=out.get(JAVA_INT,28),high=out.get(JAVA_INT,44),low=out.get(JAVA_INT,48);
             long size=(Integer.toUnsignedLong(out.get(JAVA_INT,32))<<32)|Integer.toUnsignedLong(out.get(JAVA_INT,36));
-            return new Info(attr,Integer.toUnsignedString(volume,16)+":"+Integer.toUnsignedString(high,16)+":"+Integer.toUnsignedString(low,16)+":"+Long.toUnsignedString(out.get(JAVA_LONG_UNALIGNED,4),16),size,out.get(JAVA_INT,40));
+            return new Info(attr,Integer.toUnsignedString(volume,16)+":"+Integer.toUnsignedString(high,16)+":"+Integer.toUnsignedString(low,16)+":"+Long.toUnsignedString(out.get(JAVA_LONG_UNALIGNED,4),16),size,out.get(JAVA_INT,40),out.get(JAVA_LONG_UNALIGNED,20));
         }
     }
     public static Path canonical(Handle h)throws IOException{

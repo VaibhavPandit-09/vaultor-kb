@@ -1,0 +1,6 @@
+PASS native hierarchy lists directories first with exact Unicode file identity
+PASS directory pages are bounded and stable
+PASS native traversal, private recovery and Git internals are not browsable
+PASS junction entries are visible as unsupported and never traversed
+PASS revoked and non-owner directory requests refuse
+TOTAL 5 passed; 0 failed
