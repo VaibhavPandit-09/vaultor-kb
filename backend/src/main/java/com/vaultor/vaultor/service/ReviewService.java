@@ -72,6 +72,7 @@ public class ReviewService {
         }
         Resource target=resources.findById(i.resourceId()).orElseThrow(()->new AccessFailure(404,"RESOURCE_NOT_FOUND","Target is unavailable. Keep the review evidence on its source device."));
         require(!Boolean.TRUE.equals(target.getPurgePending()),"Target deletion is pending");
+        require(Set.of("note","file").contains(target.getType()),"Reviews require a managed note or file; external source review is unavailable");
         if(i.locator()!=null && "block".equals(i.locator().kind()))require("note".equals(target.getType()),"Block locators require a note");
         if(i.locator()!=null && "page".equals(i.locator().kind()))require("application/pdf".equals(target.getMimeType()),"Page locators require a PDF");
         if(jdbc.queryForObject("SELECT COUNT(*) FROM review_items",Integer.class)>=10000)throw new AccessFailure(409,"REVIEW_LIMIT","Workspace review limit reached (10000). Export/retain evidence before adding more.");

@@ -6,3 +6,4 @@ export type Protected={version:number;protected:boolean;validated:boolean;reason
 export type Receipt={state:string;version:number;operation?:string;identity?:string;revision?:string;reason?:string};
 export type SourceDraft={block:number;text:string;expected:JSONContent};
 export type LinkedRequest=<T>(operation:string,payload?:Record<string,unknown>)=>Promise<T>;
+export type LinkedTarget={kind:'document';id:string;fragment:string}|{kind:'asset';bytes:Uint8Array;mime:string;pixels?:number;name:string};

@@ -1,5 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {Validator} from './validator.mjs';
+import {relativeDestination,assetMime} from './links.mjs';
 
 const readBase=fields=>({identity:fields[2],sha256:fields[3],metadata:fields[4],bytes:Buffer.from(fields[5],'base64'),size:Number(fields[6])});
 export class LinkedDocuments {
@@ -42,10 +43,11 @@ export class LinkedDocuments {
   }
   async save(request,p){
     const d=this.state(request,p.document,p.binding);if(d.readonlyReason||d.recoveryOnly||d.busy||d.pendingOperation||!d.candidate||p.version!==d.version)throw Error('LINKED_SOURCE_NOT_VALIDATED');
+    await this.options.owner?.(request);this.state(request,p.document,p.binding);if(d.busy||d.pendingOperation||!d.candidate||p.version!==d.version)throw Error('LINKED_SOURCE_NOT_VALIDATED');
     d.busy=true;const candidate=d.candidate;d.candidate=undefined;
     try{
       d.pendingOperation=randomUUID();
-      const receipt=await this.registry.native.call('save',d.document,d.epoch,candidate,d.pendingOperation);this.registry.check(request);
+      const receipt=await this.registry.native.call('save',d.document,d.epoch,candidate,d.pendingOperation);await this.options.owner?.(request);this.registry.check(request);
       if(receipt[0]==='COMMITTED'){
         this.registry.entryIndex.delete(this.registry.entryKey(d.entry.root,d.entry.relative,d.entry.identity));
         d.base={identity:receipt[2],sha256:receipt[3],metadata:receipt[4],bytes:Buffer.from(d.validatedSource),size:d.validatedSource.length};d.entry.identity=d.base.identity;d.entry.size=d.base.size;d.entry.modified=String(Date.now());
@@ -60,6 +62,21 @@ export class LinkedDocuments {
   }
   async source(request,p){const d=this.state(request,p.document,p.binding);if(d.busy||d.version!==p.version||typeof d.reviewableSource!=='string')throw Error('SOURCE_REQUIRES_VALIDATED_REGION');d.candidate=undefined;d.busy=true;try{const region=await d.validator.request({type:'region',version:p.version,block:p.block,expected:p.expected});const reply=await d.validator.request({type:'source',version:p.version+1,token:region.token,text:p.text});this.registry.check(request);if(!reply.result?.accepted)throw Error('SOURCE_REGION_REFUSED');return {source:reply.result.source};}finally{d.busy=false;}}
   async check(request,p){const d=this.state(request,p.document,p.binding);const reply=await this.registry.native.call('check',d.document);this.registry.check(request);return {state:reply[0],dirty:reply[1]==='true',disk:reply[2]?{identity:reply[2],revision:reply[3],bytes:new Uint8Array(Buffer.from(reply[5],'base64')),size:Number(reply[6])}:null};}
+  async resolveLink(request,p){
+    const d=this.state(request,p.document,p.binding),target=relativeDestination(d.entry.relative,p.href);
+    if(target.relative===d.entry.relative)return {kind:'document',id:d.id,fragment:target.fragment};
+    const root=this.registry.roots.get(d.source),cap=await this.registry.grant(root);this.registry.check(request);
+    if(/\.(md|markdown)$/i.test(target.relative)){
+      const fields=await this.registry.native.call('open-linked',cap,target.relative);
+      try{
+        this.registry.check(request);const key=this.registry.entryKey(d.source,target.relative,fields[2]);let entry=this.registry.entries.get(this.registry.entryIndex.get(key));
+        if(!entry){if(this.registry.entries.size>=50000)throw Error('LINKED_INDEX_LIMIT');entry={id:randomUUID(),root:d.source,relative:target.relative,name:target.relative.split('/').at(-1),identity:fields[2],directory:false,markdown:true,unsupported:false,size:Number(fields[6]),parent:null,available:true};this.registry.entries.set(entry.id,entry);this.registry.entryIndex.set(key,entry.id);await this.registry.persist();}
+        return {kind:'document',id:entry.id,fragment:target.fragment};
+      }finally{await this.registry.native.call('close',fields[0]).catch(()=>{});}
+    }
+    const fields=await this.registry.native.call('asset',cap,target.relative);this.registry.check(request);const bytes=Buffer.from(fields[3],'base64');
+    let pixels=0;const mime=assetMime(bytes,(width,height)=>{pixels=width*height;});return {kind:'asset',bytes:new Uint8Array(bytes),mime,pixels,name:target.relative.split('/').at(-1)};
+  }
   async prepareRefresh(request,p){
     const d=this.state(request,p.document,p.binding);if(d.busy||d.pendingOperation||this.refreshes.size>=8)throw Error('LINKED_REFRESH_BUSY');
     for(const pending of this.refreshes.values())if(pending.previous===d)throw Error('LINKED_REFRESH_PENDING');

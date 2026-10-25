@@ -18,7 +18,7 @@ public class Resource {
     private String id = UUID.randomUUID().toString();
 
     @Column(nullable = false)
-    private String type; // "note" or "file"
+    private String type; // note, managed file, or metadata-only linked reference
 
     @Column(nullable = false)
     private String title;
@@ -105,6 +105,9 @@ public class Resource {
         } else if ("file".equals(type)) {
             if (filePath == null) throw new IllegalStateException("File resources must have a file_path");
             content = null;
+        } else if ("linked".equals(type)) {
+            if(content==null)throw new IllegalStateException("Linked reference descriptor is required");
+            filePath=null;importOriginalPath=null;size=null;
         }
     }
 }

@@ -9,5 +9,5 @@ export function requestResourceAction(action:ResourceAction,resources:Resource[]
 }
 export function supportedResourceActions(resource:Resource) {
  const mode=resourceKind(resource.type).mode;
- return {open:mode!=='unsupported',export:mode==='editor',download:mode==='preview',rename:mode!=='unsupported',organize:true,pin:true,trash:true};
+ return {open:mode!=='unsupported',export:mode==='editor'&&resource.type!=='linked',download:mode==='preview',rename:mode!=='unsupported'&&resource.type!=='linked',organize:true,pin:true,trash:true};
 }

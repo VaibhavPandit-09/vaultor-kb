@@ -138,6 +138,7 @@ export default function Dashboard() {
   const sessionPersistence = useRef<SessionPersistence | null>(null), identityRef = useRef<Identity | null>(null);
   const identityCheckVersion=useRef(0);
   const linkedWorkspace=useMemo(()=>new LinkedWorkspace(()=>identityRef.current),[]);
+  useEffect(()=>()=>linkedWorkspace.dispose(),[linkedWorkspace]);
   useSyncExternalStore(linkedWorkspace.subscribe,linkedWorkspace.getSnapshot);
   const recoveryFocus = useRestoreFocusOnClose();
   const [tagsError, setTagsError] = useState('');
@@ -415,6 +416,7 @@ export default function Dashboard() {
       const external=await linkedWorkspace.describe(id).catch(()=>null);
       if(external){await linkedWorkspace.open(id);if(epoch!==workspaceEpoch.current)return null;setResourceDetails(previous=>({...previous,[id]:external}));return external;}
       const { data } = await api.get(`/resources/${id}`, { backgroundDiagnostic: navigationRequest || background });
+      if(data.type==='linked'){linkedWorkspace.metadata.set(id,data);await linkedWorkspace.open(id);if(epoch!==workspaceEpoch.current)return null;setResourceDetails(previous=>({...previous,[id]:data}));return data as Resource;}
       if (epoch !== workspaceEpoch.current || resourceLoadVersions.current.get(id) !== version) return null;
       const draft=saves.latest(id)??recovery.current(id)?.value;
       recovery.observe(data,true);
@@ -431,8 +433,8 @@ export default function Dashboard() {
   }, [saves, paneNavigation, recovery,linkedWorkspace]);
 
   const markOpened = useCallback((id: string) => {
-    if(!linkedWorkspace.metadata.has(id))recency.open(id);
-  }, [recency,linkedWorkspace]);
+    recency.open(id);
+  }, [recency]);
 
   const dismissPreview = useCallback((options?: { restoreFocus?: boolean; clearSelection?: boolean }) => {
     setPreviewResourceId(null);
@@ -747,7 +749,7 @@ export default function Dashboard() {
       if(resource.type==='note')await renameResource(resource.id,request.value??'');
       else {const {data:fresh}=await api.get<Resource>('/resources/'+resource.id+'/summary');await api.patch('/resources/'+resource.id+'/title',{title:request.value},{headers:{'If-Match':'"'+fresh.revision+'"'}});resourcesChanged([resource.id]);}return;
     }
-    if(request.action==='prepare-trash'){await exportSaveRef.current(resource.id);return;}
+    if(request.action==='prepare-trash'){if(resource.type==='linked')await linkedWorkspace.documents.get(resource.id)?.flush();else await exportSaveRef.current(resource.id);return;}
     if(request.action==='retain-draft'){
       const pending=saves.latest(resource.id);if(pending)recovery.queued(resource.id,pending,saves.version(resource.id));
       await recovery.retryStorage();return;
@@ -945,7 +947,7 @@ export default function Dashboard() {
   const afterImport = async () => {
     identityCheckVersion.current++;
     const identity=(await api.get<Identity>('/workspace/identity')).data;
-    identityRef.current=identity;recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));
+    await linkedWorkspace.close();identityRef.current=identity;recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));
     setNoteExport(null);setTitleEditState(null);
     setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
     saves.clear();
@@ -1053,14 +1055,14 @@ export default function Dashboard() {
   useEffect(()=>{
     if(!sessionReady)return;let stopped=false;
     const check=async()=>{const version=++identityCheckVersion.current;try {const identity=(await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;if(!stopped&&version===identityCheckVersion.current&&identityRef.current&&!sameWorkspace(identity,identityRef.current)) {
-      workspaceEpoch.current++;resourceLoadVersions.current.clear();setReferenceTarget(null);setReviewTarget(undefined);dispatch(setCurrentResourceId(null));
+      await linkedWorkspace.close();workspaceEpoch.current++;resourceLoadVersions.current.clear();setReferenceTarget(null);setReviewTarget(undefined);dispatch(setCurrentResourceId(null));
       setCommandPaletteOpen(false);setFileImport(null);setTagPickerOpenNoteId(null);setLifecycleTargets(null);setRecoveryOpen(false);setTransferMode(null);
       saves.clear();paneNavigation.reset();setResourceDetails({});setPreviewResourceId(null);setPreviewResourceType(null);setNoteExport(null);setTitleEditState(null);setLibraryVisible(true);setCollection(null);setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
       identityRef.current=identity;recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));setSessionMessage('The workspace was replaced. Previous drafts are available as separate recovery copies.');notifyResourceChange({kind:'workspace'});
     }}catch{/* Offline checks must not interrupt editing. */}};
     window.addEventListener('vaultor:identity-check',check);window.addEventListener('focus',check);
     return()=>{stopped=true;window.removeEventListener('vaultor:identity-check',check);window.removeEventListener('focus',check);};
-  },[sessionReady,saves,paneNavigation,recovery,dispatch]);
+  },[sessionReady,saves,paneNavigation,recovery,dispatch,linkedWorkspace]);
   useEffect(()=>{
     if(!sessionReady)return;
     const handoff=()=>{if(consumeLocalArchiveImport())setTransferMode('import');};handoff();
@@ -1091,7 +1093,7 @@ export default function Dashboard() {
         enqueue(async()=>{if(epoch!==workspaceEpoch.current||resourceLoadVersions.current.get(id)!==version)return;await api.get<Resource>('/resources/'+id+'/summary',{backgroundDiagnostic:true}).then(()=>{if(epoch===workspaceEpoch.current&&resourceLoadVersions.current.get(id)===version)paneNavigation.markAvailable(id);}).catch(error=>{if(epoch===workspaceEpoch.current && resourceLoadVersions.current.get(id)===version && [404,410].includes(error.response?.status))paneNavigation.markUnavailable(id);});});
       }
       for(const id of new Set(openNotes.map(p=>p.id))) {
-        if(linkedWorkspace.metadata.has(id))continue;
+
         if(!broad && ids?.size && !ids.has(id) && !events.some(e=>e.kind==='organization'||e.kind==='tags'))continue;
         const epoch=workspaceEpoch.current;const version=(resourceLoadVersions.current.get(id)??0)+1;resourceLoadVersions.current.set(id,version);
         enqueue(async()=>{
@@ -1099,6 +1101,7 @@ export default function Dashboard() {
         const detail = paneNavigation.snapshot().panes.some(p=>p.id===id);
         await api.get<Resource>('/resources/'+id+(detail?'':'/summary'),{backgroundDiagnostic:true}).then(({data})=>{
           if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
+          if(data.type==='linked'){const known=linkedWorkspace.metadata.get(id);linkedWorkspace.metadata.set(id,{...known,...data});setResourceDetails(previous=>({...previous,[id]:{...previous[id],...data}}));paneNavigation.markAvailable(id);return;}
           paneNavigation.markAvailable(id);
           const draft=recovery.current(id);
           if(draft || saves.latest(id)) {
@@ -1337,7 +1340,7 @@ export default function Dashboard() {
   return (
     <div className={`app-root flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen ? 'command-open pointer-events-none' : ''}`}>
 
-      <CommandPaletteModal
+      <CommandPaletteModal searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined}
         open={commandPaletteOpen}
         onClose={closeCommandPalette}
         context={commandPaletteContext}
@@ -1409,7 +1412,7 @@ export default function Dashboard() {
           <div className="workspace-view h-full" hidden={!libraryVisible}>
             <CollectionsView mode={settings.local.collectionView} onModeChange={value=>updateLocalSetting('collectionView',value)} key={'collections:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={libraryVisible&&librarySection==='collections'} onOpen={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
             <PinnedList key={'pins:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={libraryVisible&&librarySection==='favorites'} onResource={id=>void openResourceById(id)} onCollection={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
-            {librarySection==='trash'?<TrashView hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'||librarySection==='favorites'?null:<LibraryView key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
+            {librarySection==='trash'?<TrashView hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'||librarySection==='favorites'?null:<LibraryView searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined} key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="workspace-view h-full" hidden={libraryVisible}>
           <div className="flex h-full min-h-0 flex-col">
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
@@ -1483,15 +1486,15 @@ export default function Dashboard() {
                     )}
 
                     </div>
-                    {note.resource?.type!=='linked'&&<div className="ml-auto flex shrink-0 items-center gap-2">
-                    <button type="button" disabled={Boolean(note.resource?.trashedAt)} title="Export note" aria-label={`Export ${note.title}`} className="rounded-lg p-2 text-slate-400 hover:bg-background hover:text-primary" onClick={() => setNoteExport({ id: note.id, title: note.title })}><DownloadCloud size={16} /></button>
-                    <ReviewButton resource={note} onOpen={setReviewTarget}/><PinButton id={note.id} name={note.title} favorite={note.resource?.favorite}/>{note.resource&&!note.resource.trashedAt&&<ResourceActions resource={note.resource}/>}
-                    <SaveIndicator status={saves.status(note.id)} onRetry={() => void saves.flush(note.id).catch(() => {})} />
-                    </div>}
+                    <div className="ml-auto flex shrink-0 items-center gap-2">
+                    {note.resource?.type!=='linked'&&<button type="button" disabled={Boolean(note.resource?.trashedAt)} title="Export note" aria-label={`Export ${note.title}`} className="rounded-lg p-2 text-slate-400 hover:bg-background hover:text-primary" onClick={() => setNoteExport({ id: note.id, title: note.title })}><DownloadCloud size={16} /></button>}
+                    {note.resource?.type!=='linked'&&<ReviewButton resource={note} onOpen={setReviewTarget}/>}<PinButton id={note.id} name={note.title} favorite={note.resource?.favorite}/>{note.resource&&!note.resource.trashedAt&&<ResourceActions resource={note.resource}/>}
+                    {note.resource?.type!=='linked'&&<SaveIndicator status={saves.status(note.id)} onRetry={() => void saves.flush(note.id).catch(() => {})} />}
+                    </div>
                     </div>
 
                   } status={note.resource?.trashedAt ? <p role="status" className="text-sm text-[var(--text-secondary)]">This note is unavailable. Editing is paused; its content is retained. <button className="library-button" onClick={()=>showLibrary('trash')}>Open Trash</button><button className="library-button" onClick={()=>setRecoveryOpen(true)}>Recovery copies</button></p> : undefined}>
-                    {note.resource?.type==='note'&&!note.resource?.trashedAt && <ResourceCollections id={note.id} onOpen={openCollection}/>}
+                    {['note','linked'].includes(note.resource?.type??'')&&!note.resource?.trashedAt && <ResourceCollections id={note.id} onOpen={openCollection}/>}
                     {note.resource?.type === 'note' && !note.resource.trashedAt && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {(note.resource.tags ?? []).slice(0, 4).map((tag) => (
@@ -1625,7 +1628,7 @@ export default function Dashboard() {
                       </div>
                     )}
                   </NoteOrientation>
-                    {note.resource?.type==='linked' ? (linkedWorkspace.documents.has(note.id)?<LinkedEditor onReload={revision=>linkedWorkspace.refresh(linkedWorkspace.documents.get(note.id)!,revision)} key={linkedWorkspace.documents.get(note.id)!.opened.binding} document={linkedWorkspace.documents.get(note.id)!} paneId={note.paneId} active={!libraryVisible&&note.paneId===activePaneId} locked={commandPaletteOpen||libraryVisible} restoreFocus={!libraryVisible&&paneState.focusPaneId===note.paneId} selection={note.selection} selectionKey={note.history[note.cursor].visitId} onSelection={selection=>saveNoteSelection(note.paneId,note.history[note.cursor].visitId,selection)} onActivate={()=>activateOpenNote(note.paneId)} onFocusRestored={()=>paneNavigation.focusHandled(note.paneId)}/>:linkedWorkspace.previews.has(note.id)?<LinkedReadonly workspace={linkedWorkspace} opened={linkedWorkspace.previews.get(note.id)!}/>:<div className="px-5 py-3"><p role="alert" className="browse-feedback">{linkedWorkspace.unavailable.get(note.id)??'Opening linked document…'}</p><button className="library-button" onClick={()=>void linkedWorkspace.open(note.id)}>Retry opening</button><p className="browse-feedback">Protected drafts and interrupted Saves remain available under Linked sources → Recovery.</p></div>) : note.resource?.type === 'note' ? (
+                    {note.resource?.type==='linked' ? (linkedWorkspace.documents.has(note.id)?<LinkedEditor onNavigate={async(id,newPane,fragment)=>{await openResourceById(id,{sourcePaneId:note.paneId,destination:newPane?'new':'here',intent:'link'});if(fragment)linkedWorkspace.documents.get(id)?.focusFragment(fragment);}} onReload={revision=>linkedWorkspace.refresh(linkedWorkspace.documents.get(note.id)!,revision)} key={linkedWorkspace.documents.get(note.id)!.opened.binding} document={linkedWorkspace.documents.get(note.id)!} paneId={note.paneId} active={!libraryVisible&&note.paneId===activePaneId} locked={commandPaletteOpen||libraryVisible||!!note.resource?.trashedAt} restoreFocus={!libraryVisible&&paneState.focusPaneId===note.paneId} selection={note.selection} selectionKey={note.history[note.cursor].visitId} onSelection={selection=>saveNoteSelection(note.paneId,note.history[note.cursor].visitId,selection)} onActivate={()=>activateOpenNote(note.paneId)} onFocusRestored={()=>paneNavigation.focusHandled(note.paneId)}/>:linkedWorkspace.previews.has(note.id)?<LinkedReadonly workspace={linkedWorkspace} opened={linkedWorkspace.previews.get(note.id)!}/>:<div className="px-5 py-3"><p role="alert" className="browse-feedback">{linkedWorkspace.unavailable.get(note.id)??'Opening linked document…'}</p><button className="library-button" onClick={()=>void linkedWorkspace.open(note.id)}>Retry opening</button><p className="browse-feedback">Protected drafts and interrupted Saves remain available under Linked sources → Recovery.</p></div>) : note.resource?.type === 'note' ? (
                       <ErrorBoundary region="note editor"><BlockEditor
                         key={note.id}
                         paneId={note.paneId}

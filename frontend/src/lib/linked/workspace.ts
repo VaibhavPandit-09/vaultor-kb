@@ -1,3 +1,4 @@
+import api from '../api';
 import {requestLinked} from '../desktop';
 import {getConnection,getPlatform} from '../platform';
 import {MarkdownSession} from '../markdown/session';
@@ -19,6 +20,7 @@ export class LinkedWorkspace{
   private identity:()=>Identity|null;
   private listeners=new Set<()=>void>();
   private revision=0;
+  private lifetime=0;
   private refreshing=new Set<string>();
   private directories=new Map<string,()=>Promise<void>>();
   private directoryCursor=0;
@@ -32,13 +34,14 @@ export class LinkedWorkspace{
   sources(){return this.request<{sources:Source[]}>('state');}
   async describe(id:string){
     if(!this.supported())return null;
-    const known=this.metadata.get(id);if(known)return known;
-    const value=await this.request<Resource|null>('metadata',{document:id});if(value)this.metadata.set(id,value);return value;
+    const known=this.metadata.get(id);if(known?.revision)return known;
+    const connectionEpoch=getConnection().epoch;const value=await this.request<Resource|null>('metadata',{document:id});if(!value)return null;const {data}=await api.put<Resource>('/resources/linked/'+id,{title:value.title,reference:value.content},{backgroundDiagnostic:true,connectionEpoch});this.metadata.set(id,data);return data;
   }
-  remember(entry:Entry){const resource:Resource={id:entry.id,type:'linked',title:entry.name,tags:[],content:null,size:entry.size,createdAt:'',updatedAt:''};this.metadata.set(entry.id,resource);return resource;}
+  remember(entry:Entry){const resource:Resource={id:entry.id,type:'linked',title:entry.name,tags:[],content:null,size:entry.size,createdAt:'',updatedAt:''};if(!this.metadata.get(entry.id)?.revision)this.metadata.set(entry.id,resource);return this.metadata.get(entry.id)!;}
   async open(id:string){
     if(this.documents.has(id)||this.previews.has(id))return;
     const pending=this.opening.get(id);if(pending)return pending;
+    const lifetime=this.lifetime;
     const task=this.admission.catch(()=>{}).then(async()=>{
       if(this.documents.size+this.previews.size>=7){
         const inactive=[...this.documents.values()].find(document=>!document.editors.size&&!this.refreshing.has(document.opened.id)&&!document.getSnapshot().saving);
@@ -46,12 +49,14 @@ export class LinkedWorkspace{
         else{const preview=[...this.previews.values()].find(value=>!this.previewMounts.has(value.id));if(!preview)throw Error('Close a document pane before opening another linked file.');await this.request('close',{document:preview.id,binding:preview.binding});this.previews.delete(preview.id);}
       }
       const opened=await this.request<Opened>('open',{document:id});
+      if(lifetime!==this.lifetime){await this.request('close',{document:id,binding:opened.binding}).catch(()=>{});return;}
       this.unavailable.delete(id);
       if(opened.readonlyReason){this.previews.set(id,opened);return;}
       const session=new MarkdownSession(browserPort(new Worker(new URL('../markdown/markdown.worker.ts',import.meta.url),{type:'module'})),opened.seed??opened.bytes);
       try{await session.ready;}catch(error){session.dispose();await this.request('close',{document:id,binding:opened.binding});throw error;}
+      if(lifetime!==this.lifetime){session.dispose();await this.request('close',{document:id,binding:opened.binding}).catch(()=>{});return;}
       const document=new LinkedDocument(opened,session,this.request);this.documents.set(id,document);if(opened.visual)session.submit(opened.visual.document);
-    }).catch(error=>{this.unavailable.set(id,linkedError(error));});this.admission=task;this.opening.set(id,task);try{await task;}finally{this.opening.delete(id);this.emit();}
+    }).catch(error=>{if(lifetime===this.lifetime)this.unavailable.set(id,linkedError(error));});this.admission=task;this.opening.set(id,task);try{await task;}finally{this.opening.delete(id);this.emit();}
   }
   async flush(){await Promise.all(this.opening.values());for(const document of this.documents.values())await document.flush();}
   async reopen(source?:string){
@@ -60,12 +65,19 @@ export class LinkedWorkspace{
     for(const document of documents){document.dispose();this.documents.delete(document.opened.id);}for(const preview of previews)this.previews.delete(preview.id);this.emit();
     for(const id of [...documents.map(d=>d.opened.id),...previews.map(d=>d.id)])await this.open(id);
   }
+  search=async(query:string,mode:'title'|'content')=>{
+    if(!this.supported())return {items:[],indexing:false,limited:false,indexed:0};const connectionEpoch=getConnection().epoch;
+    const result=await this.request<{items:Resource[];indexing:boolean;limited:boolean;indexed:number}>('search',{query,mode});
+    if(result.items.length){const {data}=await api.put<Resource[]>('/resources/linked',result.items.map(item=>({id:item.id,title:item.title,reference:item.content})),{backgroundDiagnostic:true,connectionEpoch});const metadata=new Map(data.map(item=>[item.id,item]));result.items=result.items.map(item=>({...item,...metadata.get(item.id)})).filter(item=>!item.trashedAt);for(const item of result.items)this.metadata.set(item.id,item);}
+    return result;
+  };
   async reconcile(){
     for(const document of [...this.documents.values()]){
       if(this.refreshing.has(document.opened.id))continue;
       const changed=await this.request<{state:string}>('check',{document:document.opened.id,binding:document.opened.binding});
       if(changed.state==='EXTERNAL_CHANGED'&&!document.getSnapshot().dirty)await this.refresh(document);else document.external(changed.state);
     }
+    await this.request('index').catch(()=>{});
     const directories=[...this.directories.values()];
     for(let i=0;i<Math.min(4,directories.length);i++){const index=this.directoryCursor++%directories.length;await directories[index]().catch(()=>{});}
   }
@@ -84,5 +96,6 @@ export class LinkedWorkspace{
     }catch(error){previous.external('EXTERNAL_CHANGED');if(reviewedRevision!==undefined)throw error;}
     finally{if(ticket)await this.request('abort-refresh',{ticket}).catch(()=>{});next?.dispose();restore();this.refreshing.delete(id);}
   }
-  async close(){await this.flush();for(const document of this.documents.values())document.dispose();this.documents.clear();this.previews.clear();this.metadata.clear();this.unavailable.clear();}
+  dispose(){this.lifetime++;for(const document of this.documents.values())document.dispose();this.documents.clear();this.previews.clear();this.metadata.clear();this.unavailable.clear();this.directories.clear();this.previewMounts.clear();this.emit();}
+  async close(){await this.flush();this.dispose();}
 }

@@ -1,7 +1,7 @@
 import type {Editor} from '@tiptap/core';
 import {MarkdownSession} from '../markdown/session';
 import {SharedNoteDocuments} from '../sharedNoteDocuments';
-import type {LinkedRequest,Opened,Protected,Receipt,SourceDraft} from './types';
+import type {LinkedRequest,Opened,Protected,Receipt,SourceDraft,LinkedTarget} from './types';
 
 type State={dirty:boolean;protecting:boolean;saving:boolean;protectedVersion:number;notice:string;error:string;conflict:boolean;recovery:boolean;available:boolean};
 /** One document lifetime, independent of visible pane mounts. Acknowledging an
@@ -9,6 +9,18 @@ type State={dirty:boolean;protecting:boolean;saving:boolean;protectedVersion:num
 export class LinkedDocument{
   readonly shared=new SharedNoteDocuments({retainClosed:true});
   readonly editors=new Set<Editor>();
+  private fragment='';
+  focusFragment(fragment:string){this.fragment=fragment;this.restoreFragment();}
+  restoreFragment(){
+    if(!this.fragment)return;let desired:string;try{desired=decodeURIComponent(this.fragment);}catch{return;}
+    for(const editor of this.editors){
+      const slugs=new Map<string,number>();
+      for(const heading of editor.view.dom.querySelectorAll<HTMLElement>('h1,h2,h3,h4,h5,h6')){
+        const base=(heading.textContent??'').trim().toLowerCase().replace(/[^\p{L}\p{N}\p{M}\s_-]/gu,'').replace(/\s/g,'-'),count=slugs.get(base)??0;slugs.set(base,count+1);
+        if((count?base+'-'+count:base)===desired){heading.scrollIntoView({block:'start'});this.fragment='';return;}
+      }
+    }
+  }
   sourceDraft?:SourceDraft;
   private listeners=new Set<()=>void>();
   private state:State={dirty:false,protecting:false,saving:false,protectedVersion:-1,notice:'',error:'',conflict:false,recovery:false,available:true};
@@ -26,6 +38,10 @@ export class LinkedDocument{
   private validated=false;
   private saveWork?:Promise<Receipt>;
   private cancelSaveWait?:()=>void;
+  private imageQueue:Promise<unknown>=Promise.resolve();
+  private imageBytes=0;
+  private imagePixels=0;
+  private imageJobs=0;
   private protectedSource='';
   readonly opened:Opened;
   readonly session:MarkdownSession;
@@ -124,6 +140,18 @@ export class LinkedDocument{
   async flush(){if(this.session.status.reason==='COMPOSITION_IN_PROGRESS')throw Error('Finish text composition before leaving this document.');await this.protect();}
   async compare(){await this.flush();const result=await this.request<{state:string;disk:{identity:string;revision:string;bytes:Uint8Array;size:number}|null}>('check',this.payload());return {...result,baseIdentity:this.savedIdentity,base:this.savedSource.slice(),local:this.session.source,visual:JSON.stringify(this.session.checkpoint().draft)};}
   async export(kind:'base'|'local'|'visual'){await this.flush();return this.request<{outcome:string}>('export',{...this.payload(),kind});}
+  resolveLink(href:string){return this.request<LinkedTarget>('resolve-link',{...this.payload(),href});}
+  loadImage=(href:string):Promise<{url:string;release:()=>void}>=>{
+    if(this.imageJobs>=32)return Promise.reject(Error('Image preview queue is full.'));
+    this.imageJobs++;
+    const work=this.imageQueue.catch(()=>{}).then(async()=>{
+      if(this.closed||this.imageBytes>=8*1024*1024)throw Error('Image preview budget reached.');
+      const asset=await this.resolveLink(href);if(asset.kind!=='asset'||!asset.mime.startsWith('image/'))throw Error('Not a supported local image.');
+      if(this.closed||!Number.isSafeInteger(asset.pixels)||!asset.pixels||this.imagePixels+asset.pixels>16000000||this.imageBytes+asset.bytes.length>8*1024*1024)throw Error('Image preview budget reached.');
+      const size=asset.bytes.length,url=URL.createObjectURL(new Blob([new Uint8Array(asset.bytes).buffer],{type:asset.mime}));this.imageBytes+=size;const pixels=asset.pixels;this.imagePixels+=pixels;let released=false;
+      return {url,release:()=>{if(!released){released=true;URL.revokeObjectURL(url);this.imageBytes-=size;this.imagePixels-=pixels;}}};
+    }).finally(()=>{this.imageJobs--;});this.imageQueue=work;return work;
+  };
   /** Called only after the departure barrier has durably protected this draft. */
   dispose(){clearTimeout(this.timer);this.closed=true;this.cancelSaveWait?.();this.detached();this.session.dispose();this.shared.clear();this.listeners.clear();this.editors.clear();}
 }

@@ -113,7 +113,7 @@ public class ResourceSearchService {
         if(words.isEmpty())return new PageDto<>(List.of(),page,size,0,0,category);
         var args=new ArrayList<Object>();args.add(String.join(" AND ",words));
         StringBuilder where=new StringBuilder(" from resource_fts join resources r on r.id=resource_fts.id where r.trashed_at is null and resource_fts match ?");
-        if(type!=null&&!type.isBlank()&&!type.equals("all")){if(!List.of("note","file").contains(type))throw new IllegalArgumentException("Unknown resource type");where.append(" and r.type=?");args.add(type);}
+        if(type!=null&&!type.isBlank()&&!type.equals("all")){if(!List.of("note","file","linked").contains(type))throw new IllegalArgumentException("Unknown resource type");where.append(" and r.type=?");args.add(type);}
         FileCategories.filter(where,args,"r",category);
         if(pins)where.append(" and coalesce(r.favorite,0)=1");
         if(collection!=null&&!collection.isBlank()){where.append(" and exists(select 1 from resource_collections rc where rc.resource_id=r.id and rc.collection_id=?)");args.add(collection);}

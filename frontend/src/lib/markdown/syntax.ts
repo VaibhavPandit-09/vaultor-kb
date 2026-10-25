@@ -12,7 +12,7 @@ import { LIMITS } from './limits';
 import { decodedBoundaries, encodedTokens } from './sourceMap';
 export { LIMITS } from './limits';
 
-type Syntax = { type: string; value?: string; children?: Syntax[]; depth?: number; ordered?: boolean; start?: number; checked?: boolean | null; url?: string; title?: string | null; lang?: string | null; meta?: string | null; align?: (string | null)[]; position?: { start: { offset: number }; end: { offset: number } } };
+type Syntax = { type: string; value?: string; children?: Syntax[]; depth?: number; ordered?: boolean; start?: number; checked?: boolean | null; url?: string; alt?:string; title?: string | null; lang?: string | null; meta?: string | null; align?: (string | null)[]; position?: { start: { offset: number }; end: { offset: number } } };
 export type Block = { start: number; end: number; raw: string; node: JSONContent };
 export type Leaf = { node: JSONContent; start: number; end: number; raw: string };
 export type Fragment = { start: number; end: number; type: string; signature: string; raw: string; decoded?: string; url?: string; title?: string | null; suffix?: string };
@@ -49,7 +49,7 @@ export function project(source: string): Projection {
   }
   const range = (n: Syntax) => { if (!n.position) throw new Error('MISSING_SOURCE_RANGE'); return { start: n.position.start.offset + bom, end: n.position.end.offset + bom }; };
   const raw = (n: Syntax) => { const r = range(n); return source.slice(r.start, r.end); };
-  const opaque = (n: Syntax, inline = false): JSONContent => ({ type: inline ? 'sourceInline' : 'sourceBlock', attrs: { raw: raw(n), kind: n.type } });
+  const opaque = (n: Syntax, inline = false): JSONContent => ({ type: inline ? 'sourceInline' : 'sourceBlock', attrs: { raw: raw(n), kind: n.type,...(n.type==='image'?{mdUrl:n.url,mdAlt:n.alt??''}:{}) } });
   const visit = (depth: number) => { if (depth > LIMITS.depth) throw new Error('SOURCE_COMPLEXITY_LIMIT'); };
   const inline = (n: Syntax, marks: JSONContent['marks'] = [], depth = 0): JSONContent[] => {
     visit(depth);

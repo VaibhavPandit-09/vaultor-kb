@@ -24,6 +24,9 @@ public class ResourceController {
     private final ImageService images;
     private final ResourceLifecycleService lifecycle;
     private final ResourceReferences references;
+    private final LinkedReferences linkedReferences;
+    @PutMapping("/linked") public List<ResourceDto> linkedBatch(@RequestBody List<LinkedReferences.Registration> input){return linkedReferences.registerMany(input).stream().map(this::dto).toList();}
+    @PutMapping("/linked/{id}") public ResourceDto linked(@PathVariable String id,@RequestBody LinkedReferences.Input input){return dto(linkedReferences.register(id,input));}
     @GetMapping("/{id}/references") public ResourceReferences.Page references(@PathVariable String id,@RequestParam(defaultValue="incoming") String direction,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="30") int size) {return references.list(id,direction,page,size);}
     @GetMapping(value="/{id}/thumbnail",produces="image/png") public ResponseEntity<byte[]> thumbnail(@PathVariable String id) throws Exception {return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(images.thumbnail(id));}
     @GetMapping("/trash") public PageDto<ResourceSummary> trash(@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="100") int size,@RequestParam(defaultValue="") String q) {return browse.trash(page,size,q);}

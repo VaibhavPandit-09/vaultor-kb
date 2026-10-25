@@ -149,3 +149,5 @@ describe('G1-B source boundaries and structural operations', () => {
     expect(f.engine.projection.doc.content![1].content![0].type).toBe('sourceInline'); f.editor.view.dispatch(f.editor.state.tr.insertText('Edited.', p, p + 7)); f.sync(); expect(f.engine.source).toBe(source.replace('Before.', 'Edited.')); f.editor.destroy();
   });
 });
+
+it('image preview attributes never change preserved image source during unrelated editing',()=>{const source='Before.\r\n\r\n![Alt Ω](<images/picture one.png> "Keep title")\r\n\r\nAfter.\r\n';const f=fixture(source);try{f.sync();expect(f.engine.source).toBe(source);const projected=f.engine.projection.doc.content![1].content![0];expect(projected.attrs).toMatchObject({kind:'image',mdUrl:'images/picture one.png',mdAlt:'Alt Ω'});f.editor.commands.insertContentAt(f.locate('Before.'),'Edit ');f.sync();expect(f.engine.source).toBe(source.replace('Before.','Edit Before.'));}finally{f.editor.destroy();}});

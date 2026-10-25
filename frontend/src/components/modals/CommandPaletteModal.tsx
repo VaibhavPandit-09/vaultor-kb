@@ -1,3 +1,4 @@
+import {useLinkedSearch,type LinkedSearchProvider} from '../../lib/linked/search';
 import CommandStage from '../CommandStage';
 import SearchCoverage from '../SearchCoverage';
 import { MotionIndicator } from '../MotionFeedback';
@@ -27,8 +28,8 @@ import { saveApiFile } from '../../lib/platform';
 
 type Entry={step:CommandStep;query:string;parentSelectedId:string};
 type Result=CommandItem & {resource?:Resource;kind?:string};
-interface Props {open:boolean;onClose:(options?:{restorePreview?:boolean;restoreFocus?:boolean})=>void;context:CommandContext;}
-export default function CommandPaletteModal({open,onClose,context}:Props) {
+interface Props {searchLinked?:LinkedSearchProvider;open:boolean;onClose:(options?:{restorePreview?:boolean;restoreFocus?:boolean})=>void;context:CommandContext;}
+export default function CommandPaletteModal({open,onClose,context,searchLinked}:Props) {
  const [wasOpen,setWasOpen]=useState(false),[captured,setCaptured]=useState(context);
  const [query,setQuery]=useState(''),[search,setSearch]=useState(''),[mode,setMode]=useState<'search'|'commands'>('search'),[stack,setStack]=useState<Entry[]>([]);
  const [searchMode,setSearchMode]=useState<SearchMode>('title'),[searchCollection,setSearchCollection]=useState<OrganizationItem|null>(null);
@@ -41,6 +42,7 @@ export default function CommandPaletteModal({open,onClose,context}:Props) {
  useEffect(()=>{if(open){const frame=requestAnimationFrame(()=>input.current?.focus());return()=>cancelAnimationFrame(frame);}},[open,stack.length,mode]);
  const selecting=entry?.step.id==='delete-select';
  const resources=useResourcePage({q:search,size:50,sort:search.trim()?'title':'recent',searchMode,collection:searchCollection?.id},open&&((mode==='search'&&!entry)||selecting));
+ const linked=useLinkedSearch(searchLinked,search,searchMode,open&&mode==='search'&&!entry&&!searchCollection);
  const collections=useOrganizationPage('collection',search,0,open&&mode==='search'&&!entry&&!searchCollection&&searchMode==='title'&&Boolean(search.trim()),false,20);
  const pins=usePins('',0,30,open&&mode==='search'&&!search.trim()&&!entry&&!searchCollection);
  const scope={...captured,resources:resources.data?.items??[]};
@@ -52,7 +54,7 @@ export default function CommandPaletteModal({open,onClose,context}:Props) {
    action('membership','Add to collection',()=>handoff('collection',[resource.id]),resource.title),
    action('pin',resource.favorite?'Unpin':'Pin',()=>setResourceFavorite(resource.id,!resource.favorite),resource.title),
    action('tags','Manage tags',()=>handoff('tag',[resource.id]),resource.title),
-   ...(resourceKind(resource.type).mode!=='unsupported'?[{id:'rename',title:'Rename',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildRenameStep(resource),query:resource.title})},...(resource.type==='note'?[action('export','Export note',()=>captured.exportResource?.(resource),resource.title)]:[action('download','Download original',async()=>{if(await saveApiFile('/resources/'+resource.id+'/raw',resource.title)==='cancelled')throw new Error('Download cancelled. Try again.');},resource.title)])]:resourceKind(resource.type).mode==='preview'?[action('preview','Preview file',()=>captured.openResource(resource.id),resource.title),action('download','Download file',async()=>{if(await saveApiFile('/resources/'+resource.id+'/raw',resource.title)==='cancelled')throw new Error('Save cancelled. Choose Download to try again.');},resource.title)]:[]),
+   ...(resourceKind(resource.type).mode!=='unsupported'&&resource.type!=='linked'?[{id:'rename',title:'Rename',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildRenameStep(resource),query:resource.title})},...(resource.type==='note'?[action('export','Export note',()=>captured.exportResource?.(resource),resource.title)]:[action('download','Download original',async()=>{if(await saveApiFile('/resources/'+resource.id+'/raw',resource.title)==='cancelled')throw new Error('Download cancelled. Try again.');},resource.title)])]:resourceKind(resource.type).mode==='preview'?[action('preview','Preview file',()=>captured.openResource(resource.id),resource.title),action('download','Download file',async()=>{if(await saveApiFile('/resources/'+resource.id+'/raw',resource.title)==='cancelled')throw new Error('Save cancelled. Choose Download to try again.');},resource.title)]:[]),
    action('references','Used in / links',()=>requestResourceAction('references',[resource]),resource.title),
    {id:'delete',title:'Move to Trash…',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildDeleteConfirmStep(scope,resource)})}
  ].filter(item=>item.title.toLowerCase().includes(filter.toLowerCase()))};}
@@ -78,6 +80,7 @@ export default function CommandPaletteModal({open,onClose,context}:Props) {
   (pins.data?.items??[]).forEach(p=>{if(p.entityKind==='collection')add({...action('collection-'+p.id,p.name,async()=>{const {data}=await api.get('/collections/'+p.id,{backgroundDiagnostic:true});captured.openCollection?.(data);},'Collection'),kind:'collection',section:'Pinned'});else add(resourceItem(p.resource??{id:p.id,type:p.resourceType,title:p.name,favorite:true,tags:[],createdAt:'',updatedAt:''},'Pinned'));});
   (resources.data?.items??[]).slice(0,20).forEach(r=>add(resourceItem(r,'Recent')));
  }
+ if(!entry&&mode==='search'&&search.trim()&&!searchCollection){const known=new Set(items.map(item=>item.id));items.push(...linked.data.items.map(r=>resourceItem(r,'Linked folders')).filter(item=>!known.has(item.id)));}
  const searchPending=((mode==='search'&&!entry)||selecting)&&currentQuery.trim()!==search.trim();
  if(searchPending)items=[];
  const selected=items.find(item=>item.id===selectedId)??items[0];

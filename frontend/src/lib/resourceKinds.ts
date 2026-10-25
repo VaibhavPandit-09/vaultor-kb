@@ -3,6 +3,7 @@ import type { Resource } from '../types';
 export const collectionKind = { type: 'collection', label: 'Collection', plural: 'Collections', icon: Folder };
 export const resourceKinds = [
   { type: 'note', label: 'Note', plural: 'Notes', icon: FileText, action: 'Open note', mode: 'editor' },
+  {type:'linked',label:'Linked Markdown',plural:'Linked documents',icon:FileCode,action:'Open linked document',mode:'editor'},
   { type: 'file', label: 'File', plural: 'Files', icon: Paperclip, action: 'Preview file', mode: 'preview' },
 ] as const;
 export const fileCategories = [

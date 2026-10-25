@@ -42,6 +42,7 @@ public class NoteExportGraph {
                 }
                 var r=found.get();if(visit.depth()==0 && !"note".equals(r.getType()))throw new IllegalArgumentException("Only notes can be exported");
                 version.append(r.getId()).append(':').append(r.getRevision()).append(';');
+                if("linked".equals(r.getType())){warnings.add("External linked document omitted; its label is retained and original bytes are not owned by Vaultor.");continue;}
                 var content="note".equals(r.getType()) && (linked || visit.depth()==0)?documents.parse(r.getContent()):null;
                 String binary=null;
                 if(content!=null) {

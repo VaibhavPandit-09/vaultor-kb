@@ -21,7 +21,7 @@ export class LinkedRegistry {
     for(const entry of this.entries.values())this.entryIndex.set(this.entryKey(entry.root,entry.relative,entry.identity),entry.id);
     return this.snapshot();
   }
-  entryKey(root,relative,identity){return [root,relative,identity].join('\0');}
+  entryKey(root,relative,identity){return [root,relative.toLowerCase(),identity].join('\0');}
   async ensureNative(){this.check(this.scope);if(!this.native)this.native=new NativeChannel({...this.options,workspace:this.scope.workspace,generation:this.scope.generation,privateRoot:join(this.directory,'journal'),production:true});await this.native.ready;return this.native;}
   persist(){const next=(this.persisting??Promise.resolve()).catch(()=>{}).then(()=>this.writeRegistry());this.persisting=next;return next;}
   async writeRegistry(){

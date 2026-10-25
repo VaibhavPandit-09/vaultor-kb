@@ -15,9 +15,10 @@ export function setMarkdownAlignment(editor: Editor, alignment: 'left' | 'center
   editor.view.dispatch(tr); return true;
 }
 
-const sourceNode = (name: string, inline: boolean) => Node.create({
+type SourceImage = (href:string)=>Promise<{url:string;release:()=>void}>;
+const sourceNode = (name: string, inline: boolean, image?:SourceImage) => Node.create({
   name, inline, group: inline ? 'inline' : 'block', atom: true, selectable: true,
-  addAttributes: () => ({ raw: { default: '', rendered: false }, kind: { default: '', rendered: false } }),
+  addAttributes: () => ({ raw: { default: '', rendered: false }, kind: { default: '', rendered: false },mdUrl:{default:null,rendered:false},mdAlt:{default:null,rendered:false} }),
   parseHTML: () => [],
   renderHTML({ node, HTMLAttributes }) {
     // Content is text, never executable imported HTML. Action is owned by the
@@ -28,13 +29,18 @@ const sourceNode = (name: string, inline: boolean) => Node.create({
     return ({ node }) => {
       const dom = document.createElement(inline ? 'span' : 'div');
       dom.setAttribute('data-source-kind', node.attrs.kind); dom.setAttribute('role', 'button'); dom.setAttribute('tabindex', '0'); dom.setAttribute('contenteditable', 'false'); dom.setAttribute('aria-label', `Edit ${node.attrs.kind} source`); dom.className = 'source-protected'; dom.textContent = `${node.attrs.kind}: ${String(node.attrs.raw).slice(0, 120)}`;
-      return { dom, stopEvent: event => event.type === 'keydown', ignoreMutation: () => true };
+      let disposed=false,release:(()=>void)|undefined;
+      if(image&&node.attrs.kind==='image'&&typeof node.attrs.mdUrl==='string'){
+        const preview=document.createElement('img');preview.alt=node.attrs.mdAlt??'';preview.loading='lazy';preview.className='max-h-96 max-w-full object-contain';
+        void image(node.attrs.mdUrl).then(asset=>{if(disposed){asset.release();return;}release=asset.release;preview.src=asset.url;dom.replaceChildren(preview);dom.setAttribute('title','Edit image Markdown');}).catch(()=>{dom.setAttribute('title','Image unavailable; edit its preserved Markdown source.');});
+      }
+      return { dom, stopEvent: event => event.type === 'keydown', ignoreMutation: () => true,destroy(){disposed=true;release?.();} };
     };
   },
 });
 export type RefusedInput = { reason: string; text?: string; html?: string; steps?: unknown[] };
-export const markdownExtensions = (options: { stress?: boolean; onRefused?: (input: RefusedInput) => void } = {}) => [
-  sourceNode('sourceBlock', false), sourceNode('sourceInline', true),
+export const markdownExtensions = (options: { stress?: boolean; onRefused?: (input: RefusedInput) => void;image?:SourceImage } = {}) => [
+  sourceNode('sourceBlock', false,options.image), sourceNode('sourceInline', true,options.image),
   Extension.create({
     name: 'markdownInputAdmission',
     addProseMirrorPlugins() {
