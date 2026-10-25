@@ -19,6 +19,8 @@ export class MarkdownSession {
   private listeners = new Set<() => void>();
   private busy = false;
   private inFlight?: number;
+  private inFlightDoc?: JSONContent;
+  private validatedDoc?: JSONContent;
   private queued?: { version: number; doc: JSONContent };
   private disposed = false;
   private draft?: JSONContent;
@@ -59,13 +61,14 @@ export class MarkdownSession {
     if (reply.type === 'ready' && this.initialDoc) return;
     if (reply.type !== 'ready' && reply.version !== this.inFlight) return;
     clearTimeout(this.timer);
-    if (reply.type === 'ready') { this.initialDoc = reply.doc; this.source = reply.source; this.status = { ...this.status, state: 'ready' }; this.readyResolve(); this.emit(); return; }
+    if (reply.type === 'ready') { this.initialDoc = reply.doc; this.validatedDoc = reply.doc; this.source = reply.source; this.status = { ...this.status, state: 'ready' }; this.readyResolve(); this.emit(); return; }
+    const completedDoc=this.inFlightDoc;this.inFlightDoc=undefined;
     this.busy = false; this.inFlight = undefined;
     if (reply.type === 'error') { this.fail(reply.reason); return; }
     if (reply.type === 'region') { if (this.regionTicket) this.regionTicket.token = reply.token; this.regionResolve?.(reply.text); this.regionResolve = undefined; this.regionReject = undefined; this.sendLatest(); return; }
     this.lastTelemetry = { version: reply.version, result: reply.result };
     this.historyBytes = reply.historyBytes;
-    if (reply.result.accepted) { this.source = reply.result.source; this.status = { ...this.status, acceptedVersion: reply.version }; }
+    if (reply.result.accepted) { this.validatedDoc=reply.doc??completedDoc??this.validatedDoc; this.source = reply.result.source; this.status = { ...this.status, acceptedVersion: reply.version }; }
     if (reply.version === this.status.version) {
       this.lastResult = reply.result;
       if (reply.result.accepted) { this.source = reply.result.source; this.status = { ...this.status, acceptedVersion: reply.version, state: 'ready', reason: undefined }; }
@@ -108,9 +111,15 @@ export class MarkdownSession {
     tr.setSelection(TextSelection.between(clamp(editor.state.selection.anchor), clamp(editor.state.selection.head)));
     editor.view.dispatch(resetSharedHistory(tr, editor.state).setMeta('markdownSourceReset', true));
   }
+  restoreValidated(editor:Editor){
+    if(this.status.state!=='needs-source'||!this.validatedDoc||editor.isDestroyed)throw Error('VALIDATED_RESTORE_NOT_READY');
+    const doc=this.validatedDoc,next=editor.schema.nodeFromJSON(doc),tr=editor.state.tr.replaceWith(0,editor.state.doc.content.size,next.content);
+    const clamp=(pos:number)=>tr.doc.resolve(Math.min(pos,tr.doc.content.size));tr.setSelection(TextSelection.between(clamp(editor.state.selection.anchor),clamp(editor.state.selection.head)));
+    editor.view.dispatch(resetSharedHistory(tr,editor.state).setMeta('markdownSourceReset',true));this.submit(doc);
+  }
   private sendLatest() {
     if (this.busy || !this.queued || this.disposed) return;
-    const request = this.queued; this.queued = undefined; this.busy = true; this.inFlight = request.version;
+    const request = this.queued; this.queued = undefined; this.busy = true; this.inFlight = request.version; this.inFlightDoc=request.doc;
     this.watchdog(); this.port.postMessage({ type: 'edit', ...request });
   }
   attach(editor: Editor) {

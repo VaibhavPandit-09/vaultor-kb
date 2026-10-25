@@ -156,3 +156,12 @@ it('R4 Undo during synthetic preedit remains unvalidated until end and Redo reta
   v.editor.view.dispatch(v.editor.state.tr.insertText('に',2).setMeta('composition',1));v.editor.commands.undo();await Promise.resolve();expect(()=>session.bytes()).toThrow('UNVALIDATED');
   fireEvent.compositionEnd(v.editor.view.dom);await settled(session);expect(session.source).toBe(source);v.editor.commands.redo();await settled(session);expect(session.source).toContain('に');v.unmount();session.dispose();
 });
+
+
+it('explicit validated restoration after a rejected edit remounts safely without requiring old Undo history',async()=>{
+  const source='Text.\n\n<!-- preserve -->\n',{session}=await create(source);let v=mount(session);await waitFor(()=>expect(v.editor).toBeTruthy());
+  const start=locate(v.editor,'Text.');v.editor.chain().setTextSelection({from:start,to:start+5}).insertContent('Accepted.').run();await settled(session);
+  const accepted=session.source;v.editor.chain().setTextSelection({from:start,to:start+9}).setUnderline().run();await waitFor(()=>expect(session.status.state).toBe('needs-source'));
+  const rejected=session.checkpoint().draft;v.unmount();v=mount(session);await waitFor(()=>expect(v.editor).toBeTruthy());expect(session.checkpoint().draft).toEqual(rejected);
+  session.restoreValidated(v.editor);await settled(session);expect(session.source).toBe(accepted);expect(v.editor.getText()).toContain('Accepted.');expect(v.editor.isActive('underline')).toBe(false);expect(v.updates).not.toHaveBeenCalled();v.unmount();session.dispose();
+});

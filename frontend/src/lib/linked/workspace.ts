@@ -6,7 +6,7 @@ import {browserPort} from '../markdown/browserPort';
 import {LinkedDocument} from './document';
 import type {Identity} from '../sessionStore';
 import type {Resource} from '../../types';
-import type {Entry,LinkedRequest,Opened,Source} from './types';
+import type {Entry,LinkedRequest,Opened,Source,Combination} from './types';
 import {linkedError} from './errors';
 export class LinkedWorkspace{
   readonly documents=new Map<string,LinkedDocument>();
@@ -97,6 +97,17 @@ export class LinkedWorkspace{
       this.documents.delete(id);previous.dispose();if(next){this.documents.set(id,new LinkedDocument(opened,next,this.request));next=undefined;}else this.previews.set(id,opened);this.emit();
     }catch(error){previous.external('EXTERNAL_CHANGED');if(reviewedRevision!==undefined)throw error;}
     finally{if(ticket)await this.request('abort-refresh',{ticket}).catch(()=>{});next?.dispose();restore();this.refreshing.delete(id);}
+  }
+  async acceptCombination(previous:LinkedDocument,prepared:Combination){
+    const id=previous.opened.id;if(this.refreshing.has(id))throw Error('Another document review is pending.');this.refreshing.add(id);let next:MarkdownSession|undefined;
+    try{
+      if(!prepared.seed||prepared.readonlyReason)throw Error('The combined source is unavailable.');
+      next=new MarkdownSession(browserPort(new Worker(new URL('../markdown/markdown.worker.ts',import.meta.url),{type:'module'})),prepared.seed);await next.ready;
+      for(const editor of previous.editors)editor.setEditable(false,false);await Promise.resolve();
+      if(this.documents.get(id)!==previous||previous.session.status.version!==prepared.editorVersion||previous.session.status.state!=='ready'||previous.sourceDraft)throw Error('Newer edits are retained. Review the combination again.');
+      const committed=await this.request<Opened>('commit-refresh',{ticket:prepared.ticket});
+      previous.dispose();this.documents.set(id,new LinkedDocument(committed,next,this.request));next=undefined;this.emit();
+    }finally{next?.dispose();for(const editor of previous.editors)if(!editor.isDestroyed)editor.setEditable(!previous.sourceDraft,false);this.refreshing.delete(id);}
   }
   closedEditors(){this.lifetime++;for(const document of this.documents.values()){this.unavailable.set(document.opened.id,'Recovery review closed this editor safely. Reopen to continue.');document.dispose();}for(const preview of this.previews.values())this.unavailable.set(preview.id,'Reopen this linked document to continue.');this.documents.clear();this.previews.clear();this.previewMounts.clear();this.emit();}
   dispose(){this.lifetime++;this.contextVersion++;for(const document of this.documents.values())document.dispose();this.documents.clear();this.previews.clear();this.metadata.clear();this.unavailable.clear();this.directories.clear();this.previewMounts.clear();this.emit();}

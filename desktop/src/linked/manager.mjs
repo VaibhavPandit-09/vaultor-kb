@@ -4,7 +4,7 @@ import {exportLinked} from './exports.mjs';
 import {LinkedRegistry} from './registry.mjs';
 import {LinkedDocuments} from './documents.mjs';
 
-const fields={'release-recovery':[],'previous-scopes':[],'discard-evidence':['ticket','recoveryScope'],'index':[],search:['query','mode'],'resolve-link':['document','binding','href'],'close-documents':['source'],export:['operation','document','binding','kind','recoveryScope'],recovery:['recoveryScope'],inspect:['operation','recoveryScope'],review:['operation','source'],restore:['ticket'],'metadata-repair':['ticket'],resolve:['ticket'],state:[],add:[],metadata:['document'],'prepare-refresh':['document','binding'],'commit-refresh':['ticket'],'abort-refresh':['ticket'],list:['source','directory','offset','limit'],open:['document'],protect:['document','binding','version','draft','source','session','sourceDraft','editorVersion'],save:['document','binding','version'],source:['document','binding','version','block','expected','text'],check:['document','binding'],chunk:['document','binding','offset'],close:['document','binding'],disconnect:['source'],remove:['source']};
+const fields={'retain-current':['document','binding','version'],'release-recovery':[],'previous-scopes':[],'discard-evidence':['ticket','recoveryScope'],'index':[],search:['query','mode'],'resolve-link':['document','binding','href'],'close-documents':['source'],export:['operation','document','binding','kind','recoveryScope'],recovery:['recoveryScope'],inspect:['operation','recoveryScope'],review:['operation','source'],restore:['ticket'],'metadata-repair':['ticket'],resolve:['ticket'],state:[],add:[],metadata:['document'],'prepare-combination':['document','binding'],'prepare-refresh':['document','binding'],'commit-refresh':['ticket'],'abort-refresh':['ticket'],list:['source','directory','offset','limit'],open:['document'],protect:['document','binding','version','draft','source','session','sourceDraft','editorVersion'],save:['document','binding','version'],source:['document','binding','version','block','expected','text'],check:['document','binding'],chunk:['document','binding','offset'],close:['document','binding'],disconnect:['source'],remove:['source']};
 /** One owner-local workspace lifetime. The outer Electron handler authenticates
  * the exact window/main frame; owner() independently verifies the host identity. */
 export class LinkedManager {
@@ -22,10 +22,10 @@ export class LinkedManager {
     const allowed=fields[value.operation],p=value.payload??{};
     if(!allowed||!p||Array.isArray(p)||typeof p!=='object'||Object.keys(p).some(key=>!allowed.includes(key)))throw Error('INVALID_LINKED_FIELDS');
     if(this.active>=8)throw Error('LINKED_BUSY');
-    if(['protect','inspect','recovery','previous-scopes','release-recovery','export','discard-evidence'].includes(value.operation)&&this.documents&&this.options.privateOwner?.(value,this.context))this.registry.check(value);
+    if(['retain-current','protect','inspect','recovery','previous-scopes','release-recovery','export','discard-evidence'].includes(value.operation)&&this.documents&&this.options.privateOwner?.(value,this.context))this.registry.check(value);
     else await this.ensure(value);
     if(this.closing||this.active>=8)throw Error('LINKED_BUSY');this.active++;
-    const mutation=['add','protect','source','save','close','disconnect','remove','close-documents','export','restore','metadata-repair','resolve','discard-evidence','commit-refresh'].includes(value.operation);if(mutation)this.mutations++;
+    const mutation=['retain-current','add','protect','source','save','close','disconnect','remove','close-documents','export','restore','metadata-repair','resolve','discard-evidence','commit-refresh'].includes(value.operation);if(mutation)this.mutations++;
     try{
       if(!['state','metadata','close-documents','index','search'].includes(value.operation))await this.registry.ensureNative();
       switch(value.operation){
@@ -59,7 +59,9 @@ export class LinkedManager {
         case 'open':return await this.documents.open(value,p.document);
         case 'protect':return await this.documents.protect(value,p);
         case 'save':return await this.documents.save(value,p);
+        case 'retain-current':return await this.documents.retainCurrent(value,p);
         case 'source':return await this.documents.source(value,p);
+        case 'prepare-combination':return await this.documents.prepareCombination(value,p);
         case 'prepare-refresh':return await this.documents.prepareRefresh(value,p);
         case 'commit-refresh':return await this.documents.commitRefresh(value,p);
         case 'abort-refresh':return await this.documents.abortRefresh(value,p);

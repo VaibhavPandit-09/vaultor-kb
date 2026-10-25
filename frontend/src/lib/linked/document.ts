@@ -1,7 +1,7 @@
 import type {Editor} from '@tiptap/core';
 import {MarkdownSession} from '../markdown/session';
 import {SharedNoteDocuments} from '../sharedNoteDocuments';
-import type {LinkedRequest,Opened,Protected,Receipt,SourceDraft,LinkedTarget} from './types';
+import type {LinkedRequest,Opened,Protected,Receipt,SourceDraft,LinkedTarget,Combination} from './types';
 
 type State={dirty:boolean;protecting:boolean;saving:boolean;protectedVersion:number;notice:string;error:string;conflict:boolean;recovery:boolean;available:boolean};
 /** One document lifetime, independent of visible pane mounts. Acknowledging an
@@ -110,7 +110,7 @@ export class LinkedDocument{
     const result=await this.serial(async()=>{
     if(this.session.status.state!=='ready')return null;
     if(this.state.recovery||!this.state.available||this.sourceDraft)throw Error('The source changed while Save was waiting. Your draft is retained.');
-    await this.protectNow();if(!this.validated)throw Error('Independent source validation is required before Save.');
+    clearTimeout(this.timer);this.timer=undefined;await this.protectNow();if(!this.validated)throw Error('Independent source validation is required before Save.');
     const version=this.protectedVersion,editorVersion=this.journaledEditor,savedText=this.protectedSource,savedSource=new TextEncoder().encode(savedText);
     try{
       const receipt=await this.request<Receipt>('save',{...this.payload(),version});this.validated=false;
@@ -128,6 +128,12 @@ export class LinkedDocument{
     if(Date.now()>=deadline)throw Error('Source validation is still pending. Your draft is retained; try Save again.');
     }}catch(error){this.update({error:String(error)});throw error;}finally{this.update({saving:false});}
   }
+  returnToValidated(editor:Editor){return this.serial(async()=>{
+    if(this.session.status.state!=='needs-source')throw Error('The current source does not need restoration.');
+    const version=this.session.status.version;await this.protectNow();await this.request('retain-current',{...this.payload(),version:this.protectedVersion});
+    if(this.session.status.version!==version)throw Error('Newer draft retained. Review it before restoring.');
+    this.session.restoreValidated(editor);this.setSourceDraft(undefined);this.update({notice:'Returned to validated source. Rejected work remains in Recovery.',error:''});
+  });}
   async applySource(editor:Editor,value:SourceDraft){
     return this.serial(async()=>{
       await this.protectNow();
@@ -138,6 +144,10 @@ export class LinkedDocument{
     });
   }
   async flush(){if(this.session.status.reason==='COMPOSITION_IN_PROGRESS')throw Error('Finish text composition before leaving this document.');await this.protect();}
+  async prepareCombination():Promise<Combination>{
+    await this.flush();return this.serial(async()=>{if(this.sourceDraft||this.state.recovery||this.session.status.state!=='ready')throw Error('Finish the current edit before combining versions.');const editorVersion=this.session.status.version,opened=await this.request<Opened&{ticket:string}>('prepare-combination',this.payload());return {...opened,editorVersion};});
+  }
+  async cancelCombination(ticket:string){await this.request('abort-refresh',{ticket});}
   async compare(){await this.flush();const result=await this.request<{state:string;disk:{identity:string;revision:string;bytes:Uint8Array;size:number}|null}>('check',this.payload());return {...result,baseIdentity:this.savedIdentity,base:this.savedSource.slice(),local:this.session.source,visual:JSON.stringify(this.session.checkpoint().draft)};}
   async export(kind:'base'|'local'|'visual'){await this.flush();return this.request<{outcome:string}>('export',{...this.payload(),kind});}
   resolveLink(href:string){return this.request<LinkedTarget>('resolve-link',{...this.payload(),href});}
