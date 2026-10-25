@@ -1029,3 +1029,9 @@ button:focus-visible, [role='option']:focus-visible { outline:2px solid var(--ac
 .collection-breadcrumb button { min-width:0; max-width:18ch; overflow:hidden; text-overflow:ellipsis; vertical-align:bottom; }
 .collection-breadcrumb:focus-within { overflow-x:auto; }
 .library-row > button[aria-expanded] svg { transition:transform var(--motion-interaction) var(--motion-ease); }
+
+/* Imported source is text, never executable HTML. Protected atoms remain in
+   document flow and disclose a targeted editor on keyboard/click activation. */
+.tiptap .source-protected { border:1px dashed var(--border); border-radius:6px; padding:3px 6px; color:var(--text-secondary); background:var(--surface-2); font-family:ui-monospace,monospace; font-size:.8em; overflow-wrap:anywhere; cursor:pointer; }
+.tiptap div.source-protected { margin:.65em 0; padding:8px 10px; }
+.tiptap .source-protected:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }

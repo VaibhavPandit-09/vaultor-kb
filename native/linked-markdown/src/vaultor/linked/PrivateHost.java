@@ -65,6 +65,7 @@ public final class PrivateHost {
                         case "metadata"->{count(f,3);if(!production)throw new IOException("G3_PUBLICATION_UNQUALIFIED");result.add(store.completeLinkedMetadata(scope,f[2]).state());}
                         case "ack-save"->{count(f,3);if(!production)throw new IOException("PRIVATE_COMMAND");store.acknowledgeLinkedSave(scope,f[2]);}
                         case "export"->{count(f,6);result.add(store.exportRecovery(scope,f[2],f[3],f[4],f[5]));}
+                        case "export-selected"->{if(!production)throw new IOException("PRIVATE_COMMAND");count(f,8);result.add(store.exportSelectedRecovery(scope,f[2],f[3],Path.of(f[4]),f[5],Long.parseLong(f[6]),f[7]));}
                         case "export-disk"->{count(f,5);result.add(store.exportReviewedDisk(scope,f[2],f[3],f[4]));}
                         case "resolve"->{count(f,3);store.resolveRecovery(scope,f[2]);}
                         case "recover-open"->{count(f,4);var recovered=store.openRecovery(scope,f[2],f[3]);try{if(!recovered.recoveryOnly())monitor.register(recovered.opened().document());}catch(IOException e){store.closeDocument(scope,recovered.opened().document());throw e;}result.add(recovered.opened().document());result.add(recovered.opened().epoch());result.addAll(snapshot(recovered.opened().base()));result.add(Base64.getEncoder().encodeToString(recovered.source()));result.add(recovered.visual());result.add(Boolean.toString(recovered.recoveryOnly()));result.add(recovered.relative());}

@@ -1,6 +1,7 @@
 import type { Pane } from './paneNavigation';
 import type { Resource } from '../types';
 import type { SessionSnapshot } from './sessionStore';
+import {resourceKind} from './resourceKinds';
 /** Only missing notes trigger fallback. Network failures leave the snapshot retryable. */
 export async function restoreSession(snapshot: SessionSnapshot, maximum: number, load: (id: string) => Promise<Resource | null>, loadSummary = load) {
   const resources: Record<string, Resource> = {}, messages: string[] = [];
@@ -17,7 +18,7 @@ export async function restoreSession(snapshot: SessionSnapshot, maximum: number,
     let found = false;
     for (const index of indices) {
       const entry = pane.history[index], resource = await get(entry.resourceId);
-      if (!resource || resource.type !== 'note' || resource.trashedAt) { entry.unavailable = true; continue; }
+      if (!resource || resourceKind(resource.type).mode !== 'editor' || resource.trashedAt) { entry.unavailable = true; continue; }
       resources[resource.id] = resource; entry.title = resource.title; entry.unavailable = false;
       if (index !== pane.cursor) messages.push(`“${pane.history[pane.cursor].title}” is unavailable. Restored the nearest available journey step.`);
       pane.cursor = index; pane.id = resource.id; pane.selection = snapshot.positions[entry.visitId]?.selection; pane.transition = 'replace'; if (snapshot.version === 2 || !sessions.some(p => p.id === pane.id)) sessions.push(pane); found = true; break;
@@ -30,7 +31,7 @@ export async function restoreSession(snapshot: SessionSnapshot, maximum: number,
   // Complete its body before mounting; transport failure leaves the original snapshot retryable.
   for (const pane of panes) if (resources[pane.id]?.content == null) {
     const resource = await load(pane.id);
-    if (!resource || resource.type !== 'note' || resource.trashedAt) throw new Error('A restored note changed while loading. Retry restoration.');
+    if (!resource || resourceKind(resource.type).mode !== 'editor' || resource.trashedAt) throw new Error('A restored note changed while loading. Retry restoration.');
     resources[pane.id] = resource;
   }
   if (snapshot.panes.length > maximum) messages.push('Extra panes remain in Open Notes beyond the visible pane limit.');

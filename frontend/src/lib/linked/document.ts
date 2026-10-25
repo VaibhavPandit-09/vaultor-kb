@@ -7,7 +7,7 @@ type State={dirty:boolean;protecting:boolean;saving:boolean;protectedVersion:num
 /** One document lifetime, independent of visible pane mounts. Acknowledging an
  * earlier Save never marks a newer visual draft clean. No external autosave. */
 export class LinkedDocument{
-  readonly shared=new SharedNoteDocuments();
+  readonly shared=new SharedNoteDocuments({retainClosed:true});
   readonly editors=new Set<Editor>();
   sourceDraft?:SourceDraft;
   private listeners=new Set<()=>void>();
@@ -19,18 +19,24 @@ export class LinkedDocument{
   private journaledEditor=-1;
   private protectedVersion=0;
   private savedVersion=0;
+  private savedSource:Uint8Array;
+  private savedIdentity:string;
   private detached:()=>void;
   private closed=false;
   private validated=false;
+  private protectedSource='';
   readonly opened:Opened;
   readonly session:MarkdownSession;
   private request:LinkedRequest;
   constructor(opened:Opened,session:MarkdownSession,request:LinkedRequest){
     this.opened=opened;this.session=session;this.request=request;
+    this.savedSource=opened.bytes.slice();
+    this.savedIdentity=opened.identity;
     this.detached=session.subscribe(()=>{this.update({dirty:session.status.version!==this.savedVersion||!!this.sourceDraft});this.schedule();});
   }
   subscribe=(listener:()=>void)=>{this.listeners.add(listener);return()=>{this.listeners.delete(listener);};};
   getSnapshot=()=>this.state;
+  external(state:string){if(state==='UNCHANGED')return;this.update({conflict:state==='CONFLICT'||state==='EXTERNAL_CHANGED',notice:state==='CONFLICT'||state==='EXTERNAL_CHANGED'?'The original file changed. Your draft is retained; compare before resolving.':state==='DOCUMENT_REPLACED'?'The file was replaced outside Vaultor. Reopen it from the folder to review the new file.':'The source is unavailable or requires review. Your draft is retained.'});}
   private update(value:Partial<State>){this.state={...this.state,...value};this.listeners.forEach(listener=>listener());}
   private serial<T>(task:()=>Promise<T>):Promise<T>{const next=this.chain.catch(()=>{}).then(()=>{if(this.closed)throw Error('LINKED_DOCUMENT_CLOSED');return task();});this.chain=next;return next;}
   private payload(){return {document:this.opened.id,binding:this.opened.binding};}
@@ -44,7 +50,7 @@ export class LinkedDocument{
     try{
       const result=await this.request<Protected>('protect',{...this.payload(),version,editorVersion,draft:checkpoint.draft,source:checkpoint.status.state==='ready'?checkpoint.source:undefined,sourceDraft:this.sourceDraft});
       if(result.version!==version||!result.protected)throw Error('Draft protection was not acknowledged.');
-      this.journaledEditor=editorVersion;this.journaledMetadata=metadataVersion;this.validated=result.validated;
+      this.journaledEditor=editorVersion;this.journaledMetadata=metadataVersion;this.validated=result.validated;if(result.validated)this.protectedSource=checkpoint.source;
       this.update({protectedVersion:editorVersion,notice:result.validated?'Draft protected':'Draft protected; this edit needs source review',error:''});
     }finally{this.update({protecting:false});}
   }
@@ -53,13 +59,13 @@ export class LinkedDocument{
     if(this.state.recovery)throw Error('Review the previous Save before saving again.');
     if(this.sourceDraft||this.session.status.state!=='ready')throw Error('Your draft is retained. Finish source editing or Undo the unsupported change before saving.');
     await this.protectNow();if(!this.validated)throw Error('Independent source validation is required before Save.');
-    const version=this.protectedVersion,editorVersion=this.journaledEditor;
+    const version=this.protectedVersion,editorVersion=this.journaledEditor,savedSource=new TextEncoder().encode(this.protectedSource);
     this.update({saving:true,error:''});
     try{
       const receipt=await this.request<Receipt>('save',{...this.payload(),version});this.validated=false;
       if(receipt.version!==version)throw Error('Save receipt version differs. Recovery review is required.');
       if(receipt.state==='COMMITTED'){
-        this.savedVersion=editorVersion;this.update({dirty:this.session.status.version!==editorVersion||!!this.sourceDraft,notice:this.session.status.version===editorVersion?'Saved to original file':'Saved; newer edits remain unsaved',conflict:false});
+        this.savedVersion=editorVersion;this.savedSource=savedSource;this.savedIdentity=receipt.identity??this.savedIdentity;this.update({dirty:this.session.status.version!==editorVersion||!!this.sourceDraft,notice:this.session.status.version===editorVersion?'Saved to original file':'Saved; newer edits remain unsaved',conflict:false});
       }else this.update({conflict:receipt.state==='CONFLICT',recovery:receipt.state!=='CONFLICT',notice:receipt.state==='CONFLICT'?'The file changed outside Vaultor. Your draft is protected.':'Save needs recovery review. Your versions remain protected.'});
       return receipt;
     }catch(error){this.update({recovery:true,error:String(error)});throw error;}finally{this.update({saving:false});}
@@ -73,6 +79,8 @@ export class LinkedDocument{
     });
   }
   async flush(){if(this.session.status.reason==='COMPOSITION_IN_PROGRESS')throw Error('Finish text composition before leaving this document.');await this.protect();}
+  async compare(){await this.flush();const result=await this.request<{state:string;disk:{identity:string;revision:string;bytes:Uint8Array;size:number}|null}>('check',this.payload());return {...result,baseIdentity:this.savedIdentity,base:this.savedSource.slice(),local:this.session.source,visual:JSON.stringify(this.session.checkpoint().draft)};}
+  async export(kind:'base'|'local'|'visual'){await this.flush();return this.request<{outcome:string}>('export',{...this.payload(),kind});}
   /** Called only after the departure barrier has durably protected this draft. */
-  dispose(){clearTimeout(this.timer);this.closed=true;this.detached();this.session.dispose();this.listeners.clear();this.editors.clear();}
+  dispose(){clearTimeout(this.timer);this.closed=true;this.detached();this.session.dispose();this.shared.clear();this.listeners.clear();this.editors.clear();}
 }

@@ -1,7 +1,8 @@
+import {exportLinked} from './exports.mjs';
 import {LinkedRegistry} from './registry.mjs';
 import {LinkedDocuments} from './documents.mjs';
 
-const fields={state:[],add:[],list:['source','directory','offset','limit'],open:['document'],protect:['document','binding','version','draft','source','session','sourceDraft','editorVersion'],save:['document','binding','version'],source:['document','binding','version','block','expected','text'],check:['document','binding'],chunk:['document','binding','offset'],close:['document','binding'],disconnect:['source']};
+const fields={export:['operation','document','binding','kind'],recovery:[],inspect:['operation'],review:['operation','source'],restore:['ticket'],'metadata-repair':['ticket'],resolve:['ticket'],state:[],add:[],metadata:['document'],'prepare-refresh':['document','binding'],'commit-refresh':['ticket'],'abort-refresh':['ticket'],list:['source','directory','offset','limit'],open:['document'],protect:['document','binding','version','draft','source','session','sourceDraft','editorVersion'],save:['document','binding','version'],source:['document','binding','version','block','expected','text'],check:['document','binding'],chunk:['document','binding','offset'],close:['document','binding'],disconnect:['source'],remove:['source']};
 /** One owner-local workspace lifetime. The outer Electron handler authenticates
  * the exact window/main frame; owner() independently verifies the host identity. */
 export class LinkedManager {
@@ -18,20 +19,35 @@ export class LinkedManager {
     if(!value||Array.isArray(value)||Object.keys(value).some(key=>!['token','workspace','generation','operation','payload'].includes(key)))throw Error('INVALID_LINKED_REQUEST');
     const allowed=fields[value.operation],p=value.payload??{};
     if(!allowed||!p||Array.isArray(p)||typeof p!=='object'||Object.keys(p).some(key=>!allowed.includes(key)))throw Error('INVALID_LINKED_FIELDS');
-    if(this.active>=8)throw Error('LINKED_BUSY');await this.ensure(value);if(this.closing||this.active>=8)throw Error('LINKED_BUSY');this.active++;
-    const mutation=['add','protect','source','save','close','disconnect'].includes(value.operation);if(mutation)this.mutations++;
+    if(this.active>=8)throw Error('LINKED_BUSY');
+    if(['protect','inspect','recovery','export'].includes(value.operation)&&this.documents&&this.options.privateOwner?.(value,this.context))this.registry.check(value);
+    else await this.ensure(value);
+    if(this.closing||this.active>=8)throw Error('LINKED_BUSY');this.active++;
+    const mutation=['add','protect','source','save','close','disconnect','remove','export','restore','metadata-repair','resolve','commit-refresh'].includes(value.operation);if(mutation)this.mutations++;
     try{
       switch(value.operation){
+        case 'export':return await exportLinked(this,value,p);
+        case 'recovery':{const rows=await this.registry.native.call('recovery'),items=[];for(let at=0;at<rows.length;at+=4)items.push({operation:rows[at],state:rows[at+1],name:rows[at+2],version:Number(rows[at+3])});return items;}
+        case 'inspect':{const r=await this.registry.native.call('inspect',p.operation);return {base:new Uint8Array(Buffer.from(r[0],'base64')),local:r[1]?new Uint8Array(Buffer.from(r[1],'base64')):null,visual:r[2],state:r[3]};}
+        case 'review':{const root=this.registry.roots.get(p.source);if(!root)throw Error('LINKED_SOURCE_NOT_FOUND');const cap=await this.registry.grant(root),r=await this.registry.native.call('review',p.operation,cap);this.registry.check(value);return {ticket:r[0],state:r[1],base:new Uint8Array(Buffer.from(r[2],'base64')),local:r[3]?new Uint8Array(Buffer.from(r[3],'base64')):null,visual:r[4],disk:r[5]?{identity:r[5],revision:r[6],bytes:new Uint8Array(Buffer.from(r[8],'base64')),size:Number(r[9])}:null};}
+        case 'restore':return {state:(await this.registry.native.call('restore',p.ticket))[0]};
+        case 'metadata-repair':return {state:(await this.registry.native.call('metadata',p.ticket))[0]};
+        case 'resolve':await this.registry.native.call('resolve',p.ticket);return {resolved:true};
         case 'state':return {supported:true,sources:this.registry.snapshot()};
         case 'add':return await this.registry.add(value);
+        case 'metadata':{const e=this.registry.entries.get(p.document);return e&&!e.directory&&e.markdown?{id:e.id,type:'linked',title:e.name,tags:[],content:null,createdAt:'',updatedAt:'',size:e.size}:null;}
         case 'list':return await this.registry.list(value,p);
         case 'open':return await this.documents.open(value,p.document);
         case 'protect':return await this.documents.protect(value,p);
         case 'save':return await this.documents.save(value,p);
         case 'source':return await this.documents.source(value,p);
+        case 'prepare-refresh':return await this.documents.prepareRefresh(value,p);
+        case 'commit-refresh':return await this.documents.commitRefresh(value,p);
+        case 'abort-refresh':return await this.documents.abortRefresh(value,p);
         case 'check':return await this.documents.check(value,p);
         case 'chunk':return await this.documents.chunk(value,p);
         case 'close':return await this.documents.close(value,p);
+        case 'remove':return await this.registry.remove(value,p.source);
         case 'disconnect':return await this.registry.disconnect(value,p.source);
         default:throw Error('INVALID_LINKED_OPERATION');
       }

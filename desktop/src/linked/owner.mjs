@@ -1,4 +1,9 @@
 import {randomUUID} from 'node:crypto';
+/** Keeping an already-open draft private needs no disk-source authority. This
+ * remains bound to the exact desktop connection and original workspace epoch. */
+export function linkedPrivateOwner({currentToken,activeProfile}){
+  return (request,context)=>{const profile=activeProfile();return !!context&&context.kind==='owned-local'&&context.mainFrame===true&&profile?.source==='bundled'&&profile.kind==='local'&&currentToken()===context.token&&request?.token===context.token&&request.workspace===context.workspace&&request.generation===context.generation;};
+}
 /** Recheck the authenticated bundled host, never a renderer-supplied role. */
 export function linkedOwner({transport,currentToken,status}){
   return async request=>{

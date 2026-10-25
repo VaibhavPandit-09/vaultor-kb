@@ -23,6 +23,7 @@ export function resourcePresentation(resource:Pick<Resource,'type'|'mimeType'>) 
   return {...kind,...fileCategories.find(c=>c.type===category)!};
 }
 export function resourceKind(type: string) {
+  if(type==='linked')return {type,label:'Linked Markdown',plural:'Linked documents',icon:FileCode,action:'Open linked document',mode:'editor' as const};
   return resourceKinds.find(kind => kind.type === type) ?? { type, label: type || 'Resource', plural: type || 'Resources', icon: Box, action: 'Unsupported resource type', mode: 'unsupported' };
 }
 export function resourceDescription(resource: Pick<Resource, 'type' | 'mimeType' | 'title'>) {

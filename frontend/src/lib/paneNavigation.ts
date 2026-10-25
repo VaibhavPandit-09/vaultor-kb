@@ -130,8 +130,8 @@ export class PaneNavigation {
       if (resource?.trashedAt) throw new ResourceUnavailableError('This note is in Trash.');
       if (!resource) throw new Error('Resource could not be loaded.');
       if (resourceKind(resource.type).mode === 'unsupported') throw new Error('This resource type is not supported by this app: '+resource.type);
-      if (resource.type !== 'note' && intent === 'history') throw new ResourceUnavailableError('This journey step is no longer a note.');
-      if (resource.type !== 'note') { dep.preview(resource, sourcePaneId); return; }
+      if (resourceKind(resource.type).mode !== 'editor' && intent === 'history') throw new ResourceUnavailableError('This journey step is no longer an editable document.');
+      if (resourceKind(resource.type).mode !== 'editor') { dep.preview(resource, sourcePaneId); return; }
       if (intent === 'link' && destination === 'here' && source?.id === id) return;
       destination=placement();
       // Reopening preserves the existing journey, selection and visit identity.

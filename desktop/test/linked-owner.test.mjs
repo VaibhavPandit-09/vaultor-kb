@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {linkedOwner} from '../src/linked/owner.mjs';
+import {linkedOwner,linkedPrivateOwner} from '../src/linked/owner.mjs';
 function fixture(){let token='owner',status='ready';const transport={active:{token,profile:{source:'bundled',kind:'local'}},request:async()=>({status:200,data:Buffer.from(JSON.stringify({id:'workspace',generation:'generation'}))})};return {transport,owner:linkedOwner({transport,currentToken:()=>token,status:()=>status}),rotate:()=>{token='other';},stop:()=>{status='stopped';}};}
 const request={token:'owner',workspace:'workspace',generation:'generation'};
 test('linked owner rechecks authenticated bundled workspace identity',async()=>{const f=fixture(),scope=await f.owner(request);assert.equal(scope.kind,'owned-local');assert.equal(scope.generation,'generation');});
@@ -8,3 +8,4 @@ test('remote and manually registered localhost do not receive native authority',
 test('forged workspace and stale generation are refused',async()=>{const f=fixture();for(const change of [{workspace:'other'},{generation:'old'},{token:'forged'}])await assert.rejects(f.owner({...request,...change}),/WORKSPACE_CHANGED|LOCAL_OWNER/);});
 test('connection rotation while identity check is pending refuses authority',async()=>{const f=fixture();f.transport.request=async()=>{f.rotate();return {status:200,data:Buffer.from(JSON.stringify({id:'workspace',generation:'generation'}))};};await assert.rejects(f.owner(request),/OWNER_CHANGED/);});
 test('stopped bundled host refuses native authority',async()=>{const f=fixture();f.stop();await assert.rejects(f.owner(request),/LOCAL_OWNER/);});
+test('retaining a known private draft is bound to the exact original owner connection and workspace',()=>{let profile={source:'bundled',kind:'local'},token='owner';const privateOwner=linkedPrivateOwner({currentToken:()=>token,activeProfile:()=>profile}),context={...request,kind:'owned-local',mainFrame:true};assert.equal(privateOwner(request,context),true);assert.equal(privateOwner({...request,generation:'new'},context),false);assert.equal(privateOwner(request,{...context,mainFrame:false}),false);profile={kind:'remote'};assert.equal(privateOwner(request,context),false);profile={source:'bundled',kind:'local'};token='new';assert.equal(privateOwner(request,context),false);});

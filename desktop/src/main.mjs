@@ -19,7 +19,7 @@ import {supportsAutomaticInstall,startUpdateHandoff} from './update-handoff.mjs'
 import { spawn } from 'node:child_process';
 import { probeReady } from './probe-ready.mjs';
 import {LinkedManager} from './linked/manager.mjs';
-import {linkedOwner} from './linked/owner.mjs';
+import {linkedOwner,linkedPrivateOwner} from './linked/owner.mjs';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'vaultor', privileges: { standard: true, secure: true, supportFetchAPI: true } },{scheme:'vaultor-file',privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true}}]);
 // A renamed developer Electron executable reports isPackaged=true; use our actual app layout.
@@ -97,15 +97,16 @@ else {
     profiles = new Profiles(app.getPath('userData'));
     owned = new OwnedServer({ bundle: packaged?resolve(process.resourcesPath,'bundle'):fileURLToPath(new URL('../bundle/', import.meta.url)), data: resolve(app.getPath('userData'), 'local-workspace') });
     const linkedIdentity=linkedOwner({transport,currentToken:()=>token,status:()=>owned.status});
+    const privateLinkedIdentity=linkedPrivateOwner({currentToken:()=>token,activeProfile:()=>{try{return profiles.get(profiles.data.active);}catch{return null;}}});
     const linkedBundle=packaged?resolve(process.resourcesPath,'bundle'):fileURLToPath(new URL('../bundle/',import.meta.url));
     handle('desktop:linked',async value=>{
       if(process.platform!=='win32'||process.arch!=='x64')throw Error('Linked folder access requires Windows x64.');
       if(!linked){
         const assets=resolve(ui,'assets'),workerName=(await readdir(assets)).find(name=>/^markdown\.worker-.*\.js$/.test(name));
         if(!workerName||!(await stat(resolve(linkedBundle,'linked-files.jar')).catch(()=>null)))throw Error('Linked folder components are unavailable. Reinstall the current desktop version.');
-        linked??=new LinkedManager({owner:linkedIdentity,current:scope=>transport.active?.token===scope?.token&&token===scope?.token&&transport.active?.profile.source==='bundled'&&owned.status==='ready'?scope:null,
+        linked??=new LinkedManager({owner:linkedIdentity,privateOwner:privateLinkedIdentity,current:scope=>scope&&privateLinkedIdentity(scope,scope)?scope:null,
           directory:resolve(app.getPath('userData'),'linked-sources'),java:resolve(linkedBundle,'runtime/bin/java.exe'),classes:resolve(linkedBundle,'linked-files.jar'),worker:resolve(assets,workerName),
-          protectedRoot:app.getPath('userData'),applicationRoot:app.getAppPath(),protectedPaths:[linkedBundle,ui],picker:options=>dialog.showOpenDialog(window,options)});
+          protectedRoot:app.getPath('userData'),applicationRoot:app.getAppPath(),protectedPaths:[linkedBundle,ui],picker:options=>dialog.showOpenDialog(window,options),saveDialog:options=>dialog.showSaveDialog(window,options)});
       }
       return linked.dispatch(value);
     });

@@ -390,9 +390,10 @@ public final class LinkedStore implements AutoCloseable {
      * an absent name. Occupants, changed captures and ambiguous metadata refuse. */
     public synchronized Receipt restoreMissingBase(Scope scope,String ticket)throws IOException{
         var review=consumeReview(scope,ticket);if(review.disk()!=null)throw new IOException("INDEPENDENT_OCCUPANT");var record=review.record();Path op=privateRoot.resolve(review.operation());
-        try(var root=rootPins(review.root());var parent=WindowsFiles.pin(review.root().path.resolve(record.relative()).getParent());var privatePin=WindowsFiles.pin(privateRoot);var operationPin=WindowsFiles.pin(op);var captured=WindowsFiles.leaseRelative(operationPin.handle(),"captured.md",true)){
+        try(var root=WindowsFiles.pinPublication(review.root().path);var parent=WindowsFiles.pinPublication(review.root().path.resolve(record.relative()).getParent());var privatePin=WindowsFiles.pinPublication(privateRoot);var operationPin=WindowsFiles.pinPublication(op);var captured=WindowsFiles.leaseRelative(operationPin.handle(),"captured.md",true)){
+            if(!root.last().identity().equals(review.root().identity))throw new IOException("ROOT_REPLACED");
             var info=WindowsFiles.info(captured);var revision=new Revision(info.identity(),hash(WindowsFiles.readStart(captured,SOURCE_LIMIT)),metadata(captured,info));if(!revision.equals(record.baseRevision()))throw new IOException("CAPTURE_CHANGED_EXPORT_REVIEW");
-            if(Files.exists(op.resolve("06.rec"),LinkOption.NOFOLLOW_LINKS))throw new IOException("RECOVERY_ALREADY_RECORDED");persist(op,record.state("EXPLICIT_RESTORE_PREPARED"),6);root.verify();parent.verify();WindowsFiles.renameExclusive(captured,parent.handle(),Path.of(record.relative()).getFileName().toString());root.verify();parent.verify();persist(op,record.state("EXPLICIT_BASE_RESTORED"),7);return new Receipt(review.operation(),record.version(),"BASE_RESTORED_REOPEN_REQUIRED",revision);
+            if(Files.exists(op.resolve("06.rec"),LinkOption.NOFOLLOW_LINKS))throw new IOException("RECOVERY_ALREADY_RECORDED");persist(op,record.state("EXPLICIT_RESTORE_PREPARED"),6);hook("restore-before-publication",op);root.verify();parent.verify();WindowsFiles.renameExclusive(captured,parent.handle(),Path.of(record.relative()).getFileName().toString());root.verify();parent.verify();persist(op,record.state("EXPLICIT_BASE_RESTORED"),7);return new Receipt(review.operation(),record.version(),"BASE_RESTORED_REOPEN_REQUIRED",revision);
         }
     }
     /** Export is a separate explicit new-file action, not source Save admission. */
@@ -400,6 +401,20 @@ public final class LinkedStore implements AutoCloseable {
         byte[] chosen;if(Set.of("captured","stage","external").contains(choice))chosen=readRecoveryArtifact(scope,operation,choice);
         else{var record=recoveryRecord(scope,operation,false);chosen=switch(choice){case "base"->record.base();case "local"->record.local();case "visual"->utf8(record.visual());default->throw new IOException("RECOVERY_CHOICE");};}
         if(chosen==null)throw new IOException("RECOVERY_VERSION_MISSING");return exportBytes(scope,rootCapability,name,chosen);
+    }
+    /** One-use native Save-dialog consent permits only CREATE_NEW of a retained
+     * derivative. It grants no reusable root capability and cannot replace an
+     * original or any other existing pathname. */
+    public static String exportConsentPayload(Scope scope,Path selected,String operation,String choice,String nonce,long expires){return "LINKED-EXPORT-1\n"+scope.workspace()+"\n"+scope.generation()+"\n"+selected.toAbsolutePath().normalize()+"\n"+operation+"\n"+choice+"\n"+nonce+"\n"+expires;}
+    public synchronized String exportSelectedRecovery(Scope scope,String operation,String choice,Path selected,String nonce,long expires,String signature)throws IOException{
+        scope(scope);long now=System.currentTimeMillis();if(usedConsents.size()>=128||expires<now||expires>now+60000||usedConsents.contains(nonce))throw new IOException("EXPORT_CONSENT_EXPIRED_OR_REPLAYED");
+        String expected=mac(consentKey,exportConsentPayload(scope,selected,operation,choice,nonce,expires));if(signature==null||!MessageDigest.isEqual(utf8(expected),utf8(signature)))throw new IOException("EXPORT_CONSENT_PROOF");usedConsents.add(nonce);
+        byte[] chosen;
+        if(choice.equals("disk")){var review=consumeReview(scope,operation);if(review.disk()==null||review.disk().size()!=review.disk().bytes().length)throw new IOException("REVIEW_DISK_UNAVAILABLE_OR_LARGE");chosen=review.disk().bytes();}
+        else if(Set.of("captured","stage","external").contains(choice))chosen=readRecoveryArtifact(scope,operation,choice);
+        else{var record=recoveryRecord(scope,operation,false);chosen=switch(choice){case "base"->record.base();case "local"->record.local();case "visual"->utf8(record.visual());default->throw new IOException("RECOVERY_CHOICE");};}
+        if(chosen==null)throw new IOException("RECOVERY_VERSION_MISSING");Path target=selected.toAbsolutePath().normalize(),parent=target.getParent();if(parent==null||protectedPaths.stream().anyMatch(p->target.startsWith(p)||p.startsWith(target)))throw new IOException("PROTECTED_HOST_LOCATION");
+        try(var pins=WindowsFiles.pinPublication(parent)){if(!pins.canonicalPath().equals(parent))throw new IOException("EXPORT_PARENT_ALIAS");pins.verify();try(var output=WindowsFiles.createPrivateRelative(pins.handle(),target.getFileName().toString())){WindowsFiles.overwrite(output,chosen,()->{},()->{});if(!hash(WindowsFiles.readStart(output,READ_LIMIT)).equals(hash(chosen)))throw new IOException("EXPORT_VERIFY");pins.verify();return "EXPORTED_NEW_FILE";}}
     }
     public synchronized String exportReviewedDisk(Scope scope,String ticket,String rootCapability,String name)throws IOException{
         var review=consumeReview(scope,ticket);if(review.disk()==null||review.disk().size()!=review.disk().bytes().length)throw new IOException("REVIEW_DISK_UNAVAILABLE_OR_LARGE");return exportBytes(scope,rootCapability,name,review.disk().bytes());

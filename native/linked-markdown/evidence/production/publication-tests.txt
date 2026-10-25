@@ -8,4 +8,5 @@ PASS publication gap occupant is never overwritten by production policy
 PASS postpublication competing replacement is never acknowledged uncontested
 PASS reviewed interrupted permission recovery restores ordinary inheritance without content write
 PASS metadata recovery refuses a reused pathname even with identical content
-passed=10 failed=0
+PASS explicit missing-path restore pins an empty parent against independent out-of-root substitution
+passed=11 failed=0

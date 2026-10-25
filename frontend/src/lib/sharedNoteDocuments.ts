@@ -1,6 +1,6 @@
 import { Extension, type Editor } from '@tiptap/core';
 import { Plugin, TextSelection, type Transaction, type EditorState } from '@tiptap/pm/state';
-import type { Schema } from '@tiptap/pm/model';
+import type { Schema,Node } from '@tiptap/pm/model';
 import { history, undo, redo } from '@tiptap/pm/history';
 
 const mirror = 'vaultorSharedTransaction';
@@ -19,7 +19,12 @@ export const SharedHistory = Extension.create({
 
 /** Broadcast steps synchronously; local selection/plugin state remain per view. */
 export class SharedNoteDocuments {
+  private retainClosed:boolean;
+  private retained=new Map<string,{doc:Node;history:ReturnType<typeof baseHistory.getState>}>();
+  constructor(options:{retainClosed?:boolean}={}){this.retainClosed=options.retainClosed===true;}
+  clear(){this.retained.clear();}
   acceptSaved(noteId: string, content: unknown) {
+    this.retained.delete(noteId);
     for (const editor of this.groups.get(noteId) ?? []) {
       if (editor.isDestroyed) continue;
       const doc = editor.schema.nodeFromJSON(content);
@@ -42,11 +47,14 @@ export class SharedNoteDocuments {
   attach(noteId: string, editor: Editor) {
     const group = this.groups.get(noteId) ?? new Set<Editor>(); this.groups.set(noteId, group);
     const existing = group.values().next().value as Editor | undefined;
+    const retained=this.retained.get(noteId);this.retained.delete(noteId);
     // Normalize append-transaction plugins once before another view joins.
     if (!existing) editor.view.dispatch(editor.state.tr.setMeta('addToHistory', false));
     if (existing) {
       const tr = editor.state.tr.replaceWith(0, editor.state.doc.content.size, existing.state.doc.content).setMeta(mirror, true).setMeta(historyState, baseHistory.getState(existing.state));
       editor.view.dispatch(tr);
+    }else if(retained){
+      editor.view.dispatch(editor.state.tr.replaceWith(0,editor.state.doc.content.size,retained.doc.content).setMeta(mirror,true).setMeta(historyState,retained.history));
     }
     group.add(editor);
     const onTransaction = ({ transaction, appendedTransactions }: { transaction: Transaction; appendedTransactions?: Transaction[] }) => {
@@ -63,7 +71,7 @@ export class SharedNoteDocuments {
       }
     };
     editor.on('transaction', onTransaction);
-    return () => { editor.off('transaction', onTransaction); group.delete(editor); if (!group.size) this.groups.delete(noteId); };
+    return () => { editor.off('transaction', onTransaction);group.delete(editor);if(!group.size){if(this.retainClosed&&!editor.isDestroyed)this.retained.set(noteId,{doc:editor.state.doc,history:baseHistory.getState(editor.state)});this.groups.delete(noteId);} };
   }
 }
 export const isSharedTransaction = (tr: import('@tiptap/pm/state').Transaction) => Boolean(tr.getMeta(mirror));

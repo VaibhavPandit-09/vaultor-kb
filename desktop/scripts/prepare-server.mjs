@@ -17,6 +17,13 @@ const run = (command, args, options = {}) => new Promise((resolveRun, reject) =>
   const child = spawn(command, args, { stdio: 'inherit', windowsHide: true, ...options });
   child.once('error', reject); child.once('close', code => code === 0 ? resolveRun() : reject(new Error(command + ' failed (' + code + ')')));
 });
+// Windows javac shims can be on PATH without jar.exe. Ask the selected compiler
+// for its actual JDK instead of guessing installed vendor/version directories.
+const compilerHome=await new Promise((done,reject)=>{
+  const child=spawn('javac',['-J-XshowSettings:properties','-version'],{windowsHide:true,stdio:['ignore','pipe','pipe']});let output='';
+  const append=bytes=>{output+=bytes.toString();if(output.length>65536){child.kill();reject(Error('Unexpected compiler diagnostics'));}};
+  child.stdout.on('data',append);child.stderr.on('data',append);child.once('error',reject);child.once('close',code=>{const home=output.match(/^\s*java\.home\s*=\s*(.+)$/m)?.[1].trim();if(code||!home)reject(Error('A Java25 JDK is required for desktop packaging.'));else done(home);});
+});
 let lock = JSON.parse(await readFile(lockFile, 'utf8').catch(e => { if (e.code === 'ENOENT') return '{"version":1,"targets":{}}'; throw e; }));
 if (!lock.targets[key]) {
   const url = `https://api.adoptium.net/v3/assets/latest/25/hotspot?architecture=${architecture}&image_type=jre&os=${os}&vendor=eclipse`;
@@ -52,7 +59,7 @@ await cp(join(backend, 'target', 'vaultor-0.0.1-SNAPSHOT.jar'), join(staging, 's
 const nativeSources=resolve(root,'../native/linked-markdown/src/vaultor/linked');
 const nativeClasses=join(root,'cache','linked-classes-'+Date.now());await mkdir(nativeClasses,{recursive:true});
 await run('javac',['--release','25','-d',nativeClasses,...(await readdir(nativeSources)).filter(name=>name.endsWith('.java')).map(name=>join(nativeSources,name))]);
-await run('jar',['--create','--file',join(staging,'linked-files.jar'),'-C',nativeClasses,'.']);
+await run(join(compilerHome,'bin',platform==='win32'?'jar.exe':'jar'),['--create','--file',join(staging,'linked-files.jar'),'-C',nativeClasses,'.']);
 await writeFile(join(staging, 'THIRD-PARTY.md'), `# Bundled runtime and server notices\n\nRuntime: Eclipse Temurin ${pinned.name}, GPL-2.0 with Classpath Exception; all runtime legal notices retained under runtime/legal. Corresponding source/release: ${pinned.source}\nArchive: ${pinned.url}\nSHA-256: ${pinned.sha256}\n\nThe Spring Boot JAR retains dependency license/notice files in its nested BOOT-INF/lib JARs. Dependency versions and origins are in backend/pom.xml and the embedded Maven metadata. Electron's LICENSE and LICENSES.chromium.html travel with the development package. This package does not include a paid Oracle runtime.\n`);
 const files = [];
 async function walk(directory, prefix = '') { for (const entry of await readdir(directory, { withFileTypes: true })) { const relative = prefix + entry.name, path = join(directory, entry.name); if (entry.isDirectory()) await walk(path, relative + '/'); else files.push({ path: relative, sha256: await digest(path) }); } }

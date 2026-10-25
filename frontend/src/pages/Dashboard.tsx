@@ -3,6 +3,10 @@ import ResourceReferences from '../components/ResourceReferences';
 import ReviewInbox, {ReviewButton} from '../components/ReviewInbox';
 import {reviewsChanged} from '../lib/reviews';
 import {useNarrowWorkspace} from '../lib/useNarrowWorkspace';
+import LinkedSources from '../components/LinkedSources';
+import LinkedEditor from '../components/editor/LinkedEditor';
+import LinkedReadonly from '../components/editor/LinkedReadonly';
+import {LinkedWorkspace} from '../lib/linked/workspace';
 import {revealReference} from '../lib/referenceNavigation';
 import ResourceActions from '../components/ResourceActions';
 import ResourceLifecycleDialog from '../components/ResourceLifecycleDialog';
@@ -133,6 +137,8 @@ export default function Dashboard() {
   const [localStore] = useState(() => new IndexedSessionStore());
   const sessionPersistence = useRef<SessionPersistence | null>(null), identityRef = useRef<Identity | null>(null);
   const identityCheckVersion=useRef(0);
+  const linkedWorkspace=useMemo(()=>new LinkedWorkspace(()=>identityRef.current),[]);
+  useSyncExternalStore(linkedWorkspace.subscribe,linkedWorkspace.getSnapshot);
   const recoveryFocus = useRestoreFocusOnClose();
   const [tagsError, setTagsError] = useState('');
   const [recencyError, setRecencyError] = useState('');
@@ -406,6 +412,8 @@ export default function Dashboard() {
     const epoch = workspaceEpoch.current;
     setLoadingResourceIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     try {
+      const external=await linkedWorkspace.describe(id).catch(()=>null);
+      if(external){await linkedWorkspace.open(id);if(epoch!==workspaceEpoch.current)return null;setResourceDetails(previous=>({...previous,[id]:external}));return external;}
       const { data } = await api.get(`/resources/${id}`, { backgroundDiagnostic: navigationRequest || background });
       if (epoch !== workspaceEpoch.current || resourceLoadVersions.current.get(id) !== version) return null;
       const draft=saves.latest(id)??recovery.current(id)?.value;
@@ -420,11 +428,11 @@ export default function Dashboard() {
     } finally {
       if (resourceLoadVersions.current.get(id) === version) setLoadingResourceIds((prev) => prev.filter((entry) => entry !== id));
     }
-  }, [saves, paneNavigation, recovery]);
+  }, [saves, paneNavigation, recovery,linkedWorkspace]);
 
   const markOpened = useCallback((id: string) => {
-    recency.open(id);
-  }, [recency]);
+    if(!linkedWorkspace.metadata.has(id))recency.open(id);
+  }, [recency,linkedWorkspace]);
 
   const dismissPreview = useCallback((options?: { restoreFocus?: boolean; clearSelection?: boolean }) => {
     setPreviewResourceId(null);
@@ -805,10 +813,11 @@ export default function Dashboard() {
   const exportSaveRef = useRef<(id: string) => Promise<void>>(async () => {});
   useEffect(() => {
     exportSaveRef.current = async id => {
+      const external=linkedWorkspace.documents.get(id);if(external){await external.flush();return;}
       if (titleEditNoteId === id) await commitTitleEditing();
       await saves.flush(id);
     };
-  }, [titleEditNoteId, commitTitleEditing, saves]);
+  }, [titleEditNoteId, commitTitleEditing, saves,linkedWorkspace]);
 
   const handleContentUpdate = (noteId: string, json: unknown) => {
     const resource = resourceDetails[noteId]; if (!resource || resource.trashedAt) return;
@@ -954,15 +963,16 @@ export default function Dashboard() {
     let cancelled = false;
     const work = bootWork.current ??= (async () => {
       const identity = (await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;
+      identityRef.current=identity;
       const tab = await claimTab();
       const persistence = new SessionPersistence(localStore,tab.id,setSessionError); sessionPersistence.current = persistence;
       let snapshot: SessionSnapshot | undefined, records: RecoveryRecord[] = [];
       try { snapshot = await persistence.load(identity,tab.seed); records = await recovery.all(identity); }
       catch { setSessionError('Local recovery storage is unavailable. Editing still works; keep this tab open until saved.'); }
       const restored = snapshot ? await restoreSession(snapshot,workspaceSettings.maxOpenNotes,async id => {
-        try {return (await api.get<Resource>('/resources/'+id,{backgroundDiagnostic:true})).data;} catch(error) {if([404,410].includes((error as {response?:{status?:number}}).response?.status??0))return null;throw error;}
+        try {const external=await linkedWorkspace.describe(id).catch(()=>null);if(external){await linkedWorkspace.open(id);return external;}return (await api.get<Resource>('/resources/'+id,{backgroundDiagnostic:true})).data;} catch(error) {if([404,410].includes((error as {response?:{status?:number}}).response?.status??0))return null;throw error;}
       },async id => {
-        try {return (await api.get<Resource>('/resources/'+id+'/summary',{backgroundDiagnostic:true})).data;} catch(error) {if([404,410].includes((error as {response?:{status?:number}}).response?.status??0))return null;throw error;}
+        try {const external=await linkedWorkspace.describe(id).catch(()=>null);if(external)return external;return (await api.get<Resource>('/resources/'+id+'/summary',{backgroundDiagnostic:true})).data;} catch(error) {if([404,410].includes((error as {response?:{status?:number}}).response?.status??0))return null;throw error;}
       }) : undefined;
       const confirmed=(await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;
       if(!sameWorkspace(identity,confirmed))throw new Error('Workspace changed during restoration.');
@@ -1003,10 +1013,11 @@ export default function Dashboard() {
       setRecoveryRecords(isolated);setSessionReady(true);setBootError('');
     }).catch(()=>{if(!cancelled){bootWork.current=null;setBootError('Could not restore this workspace. Retry when the server is available.');}});
     return ()=>{cancelled=true;};
-  },[bootAttempt,workspaceLoaded,sessionReady,localStore,recovery,saves,paneNavigation,dispatch,workspaceSettings.maxOpenNotes,workspaceSettings.autosaveDelay]);
+  },[bootAttempt,workspaceLoaded,sessionReady,localStore,recovery,saves,paneNavigation,dispatch,workspaceSettings.maxOpenNotes,workspaceSettings.autosaveDelay,linkedWorkspace]);
   const sessionView = useRef({visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext});
   useEffect(() => registerConnectionBarrier(async keepDrafts => {
     if (!sessionReady || !identityRef.current) throw new SwitchBlockedError('Wait for session restoration before leaving the workspace.');
+    await linkedWorkspace.flush();
     if (hasPendingImages()) throw new SwitchBlockedError('Wait for image uploads to finish before leaving this workspace.');
     if (transferMode || uploadPending || importBusy.current || fileImport || createNotePending || deletePending || tagDeletePending || tagAddPending || noteExport) throw new SwitchBlockedError('Finish or dismiss the current operation before leaving the workspace.');
     const currentIdentity = await inspectWorkspaceDeparture({
@@ -1030,7 +1041,7 @@ export default function Dashboard() {
       const identity = identityRef.current;
       await sessionPersistence.current?.save({ version: 2, identity, ...paneNavigation.exportSession(), library: sessionView.current }, true);
     } catch { throw new SwitchBlockedError('Recovery storage is unavailable. Keep this workspace open until storage succeeds.'); }
-  }), [sessionReady, transferMode, uploadPending, fileImport, createNotePending, deletePending, tagDeletePending, tagAddPending, noteExport, titleEditState, commitTitleEditing, saves, flushSettings, settingsSaveStatus, recovery, paneNavigation]);
+  }), [sessionReady, transferMode, uploadPending, fileImport, createNotePending, deletePending, tagDeletePending, tagAddPending, noteExport, titleEditState, commitTitleEditing, saves, flushSettings, settingsSaveStatus, recovery, paneNavigation,linkedWorkspace]);
   useEffect(()=>{sessionView.current={visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext};},[libraryVisible,librarySection,collection,filters.selectedTags,libraryContext]);
   useEffect(()=>{
     if(!sessionReady)return;
@@ -1080,6 +1091,7 @@ export default function Dashboard() {
         enqueue(async()=>{if(epoch!==workspaceEpoch.current||resourceLoadVersions.current.get(id)!==version)return;await api.get<Resource>('/resources/'+id+'/summary',{backgroundDiagnostic:true}).then(()=>{if(epoch===workspaceEpoch.current&&resourceLoadVersions.current.get(id)===version)paneNavigation.markAvailable(id);}).catch(error=>{if(epoch===workspaceEpoch.current && resourceLoadVersions.current.get(id)===version && [404,410].includes(error.response?.status))paneNavigation.markUnavailable(id);});});
       }
       for(const id of new Set(openNotes.map(p=>p.id))) {
+        if(linkedWorkspace.metadata.has(id))continue;
         if(!broad && ids?.size && !ids.has(id) && !events.some(e=>e.kind==='organization'||e.kind==='tags'))continue;
         const epoch=workspaceEpoch.current;const version=(resourceLoadVersions.current.get(id)??0)+1;resourceLoadVersions.current.set(id,version);
         enqueue(async()=>{
@@ -1108,6 +1120,11 @@ export default function Dashboard() {
     if(!sessionReady)return;const controller=new AbortController();const stop=watchChanges(events=>remoteReconcile.current(events),controller.signal);
     return()=>{controller.abort();stop();};
   },[sessionReady]);
+  useEffect(()=>{
+    if(!sessionReady||!linkedWorkspace.supported())return;let running=false;
+    const timer=setInterval(()=>{if(running)return;running=true;void linkedWorkspace.reconcile().catch(()=>{}).finally(()=>{running=false;});},2000);
+    return()=>clearInterval(timer);
+  },[sessionReady,linkedWorkspace]);
   const resolveRecovery = async (record: RecoveryRecord, copy: boolean) => {
     const latest=recovery.current(record.noteId);
     if(latest?.key===record.key&&latest.editId!==record.editId){setRecoveryRecords(items=>items.map(r=>r.key===record.key?latest:r));throw new Error('This draft changed. Review it and choose again.');}
@@ -1292,6 +1309,7 @@ export default function Dashboard() {
       </div></SidebarSection>
       </div>
 
+      <LinkedSources workspace={linkedWorkspace} onOpen={entry=>{void openResourceById(entry.id);}}/>
       <DesktopConnectionButton/>
       <div className="flex items-center justify-between border-t border-border bg-background/80 p-2">
         <div className="flex items-center gap-0.5">
@@ -1449,7 +1467,7 @@ export default function Dashboard() {
                       />
                     ) : (
                       <button
-                        disabled={Boolean(note.resource?.trashedAt)}
+                        disabled={Boolean(note.resource?.trashedAt)||note.resource?.type==='linked'}
                         onClick={() => startTitleEditing(note.id, note.title, note.paneId)}
                         title={note.title}
                         data-active={note.paneId === activePaneId}
@@ -1464,15 +1482,15 @@ export default function Dashboard() {
                     )}
 
                     </div>
-                    <div className="ml-auto flex shrink-0 items-center gap-2">
+                    {note.resource?.type!=='linked'&&<div className="ml-auto flex shrink-0 items-center gap-2">
                     <button type="button" disabled={Boolean(note.resource?.trashedAt)} title="Export note" aria-label={`Export ${note.title}`} className="rounded-lg p-2 text-slate-400 hover:bg-background hover:text-primary" onClick={() => setNoteExport({ id: note.id, title: note.title })}><DownloadCloud size={16} /></button>
                     <ReviewButton resource={note} onOpen={setReviewTarget}/><PinButton id={note.id} name={note.title} favorite={note.resource?.favorite}/>{note.resource&&!note.resource.trashedAt&&<ResourceActions resource={note.resource}/>}
                     <SaveIndicator status={saves.status(note.id)} onRetry={() => void saves.flush(note.id).catch(() => {})} />
-                    </div>
+                    </div>}
                     </div>
 
                   } status={note.resource?.trashedAt ? <p role="status" className="text-sm text-[var(--text-secondary)]">This note is unavailable. Editing is paused; its content is retained. <button className="library-button" onClick={()=>showLibrary('trash')}>Open Trash</button><button className="library-button" onClick={()=>setRecoveryOpen(true)}>Recovery copies</button></p> : undefined}>
-                    {!note.resource?.trashedAt && <ResourceCollections id={note.id} onOpen={openCollection}/>}
+                    {note.resource?.type==='note'&&!note.resource?.trashedAt && <ResourceCollections id={note.id} onOpen={openCollection}/>}
                     {note.resource?.type === 'note' && !note.resource.trashedAt && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {(note.resource.tags ?? []).slice(0, 4).map((tag) => (
@@ -1606,7 +1624,7 @@ export default function Dashboard() {
                       </div>
                     )}
                   </NoteOrientation>
-                    {note.resource?.type === 'note' ? (
+                    {note.resource?.type==='linked' ? (linkedWorkspace.documents.has(note.id)?<LinkedEditor onReload={revision=>linkedWorkspace.refresh(linkedWorkspace.documents.get(note.id)!,revision)} key={linkedWorkspace.documents.get(note.id)!.opened.binding} document={linkedWorkspace.documents.get(note.id)!} paneId={note.paneId} active={!libraryVisible&&note.paneId===activePaneId} locked={commandPaletteOpen||libraryVisible} restoreFocus={!libraryVisible&&paneState.focusPaneId===note.paneId} selection={note.selection} selectionKey={note.history[note.cursor].visitId} onSelection={selection=>saveNoteSelection(note.paneId,note.history[note.cursor].visitId,selection)} onActivate={()=>activateOpenNote(note.paneId)} onFocusRestored={()=>paneNavigation.focusHandled(note.paneId)}/>:linkedWorkspace.previews.has(note.id)?<LinkedReadonly workspace={linkedWorkspace} opened={linkedWorkspace.previews.get(note.id)!}/>:<p role="status">Opening linked document…</p>) : note.resource?.type === 'note' ? (
                       <ErrorBoundary region="note editor"><BlockEditor
                         key={note.id}
                         paneId={note.paneId}
