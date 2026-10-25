@@ -94,3 +94,8 @@ D8 supports connecting to an upgraded independent loopback server by selecting i
 ## W1 workspace grants
 
 Host pairing remains separate from workspace permission. [WORKSPACES.md](../architecture/WORKSPACES.md) owns the new private catalog and owner APIs. Existing and new normal approvals inherit access to the fixed default workspace only, unless explicitly denied; new workspaces require explicit owner grants. Each scoped request is authenticated/CSRF-checked first, then grant-checked before context opening/dispatch. Revoking a workspace grant closes its streams; child streams also check global approval on delivery/heartbeat. Queued transfers capture and recheck the admitting device before work; executing admitted actions are not retroactively rolled back. Workspace data, operations and export bytes require current access. Sharing stays opt-in. No public/unknown-workspace fallback to the default is permitted.
+
+
+## Linked sources are owner-local
+
+Linked consent is available only to the verified bundled Windows x64 owner connection. Electron main issues opaque workspace/generation-bound capabilities after its native picker; private Java pipes independently verify consent and source proofs. No HTTP endpoint, client boolean or portable descriptor authorizes filesystem publication. Remote/browser/Android clients receive no native grants. Keys, absolute roots and recovery journals never enter portable archives. See [Linked-source contract](../workspace/LINKED-SOURCES.md); host TLS/approval/revision requirements remain unchanged.

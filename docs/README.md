@@ -2,7 +2,7 @@
 
 Start with [CODEBASE.md](CODEBASE.md) for the current product, source map, architecture, contracts and limitations. Agents read [AGENTS.md](../AGENTS.md) and the [development workflow](development/AI_DEVELOPMENT_WORKFLOW.md) before changes. UI work additionally reads the design contracts below. [Root README](../README.md) and [mobile README](../mobile/README.md) are short discovery entry points; [.github release checklist](../.github/RELEASE_CHECKLIST.md) delegates to the release process.
 
-Reviewed 2026-10-24 against integrated master, published Windows0.18.2/Mac0.18.1 and Androidalpha.28/code32. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
+Reviewed 2026-10-25 against integrated master, published Windows0.18.2/Mac0.18.1 and Androidalpha.28/code32. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
 
 ## Architecture and security
 
@@ -39,6 +39,7 @@ Reviewed 2026-10-24 against integrated master, published Windows0.18.2/Mac0.18.1
 
 ## Workspace behavior
 
+- [LINKED-SOURCES](workspace/LINKED-SOURCES.md): Windows external folders, bounded rich-text fidelity, explicit Save, private recovery and reference-only portability.
 - [IMPORTS](workspace/IMPORTS.md): Ordinary file/folder acquisition, batch relationship resolution, limits, resume and UI disclosure patterns.
 - [LIBRARY](workspace/LIBRARY.md): Resource browsing, collections/tags/pins and organization.
 - [SEARCH](workspace/SEARCH.md): Title-first Library/Ctrl+K, explicit saved content, extraction and coverage.
@@ -99,3 +100,5 @@ Android: [0.1.0-alpha.1](android/releases/0.1.0-alpha.1.md) · [0.1.0-alpha.2](a
 - [Desktop 0.18.1 release evidence](desktop/releases/v0.18.1.md): collection compression, directory modes and patch qualification.
 - [Desktop 0.18.0 release evidence](desktop/releases/v0.18.0.md): nested collections, recursive imports, Windows qualification and the Mac/Latest gate.
 - [Desktop 0.17.0 release evidence](desktop/releases/v0.17.0.md): Open Notes/session migration, Windows qualification and the incomplete Mac/Latest gate.
+
+- [Desktop0.19.0 release evidence](desktop/releases/v0.19.0.md): Windows linked external folders, bounded filesystem/editor contract and original-key publication.

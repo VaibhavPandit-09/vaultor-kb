@@ -7,9 +7,9 @@ import {LinkedRegistry} from '../../desktop/src/linked/registry.mjs';
 import {LinkedDocuments} from '../../desktop/src/linked/documents.mjs';
 const repo=fileURLToPath(new URL('../../',import.meta.url)),assets=join(repo,'frontend/dist/assets'),worker=join(assets,(await readdir(assets)).find(n=>/^markdown\.worker-.*\.js$/.test(n))??'missing');
 if(process.platform!=='win32')throw Error('Windows qualification only');
-const output=join(repo,'native/linked-markdown/evidence/production/product-soak.json'),all=[],started=Date.now();
+const output=join(repo,process.env.VAULTOR_LINKED_SOAK_QUICK==='1'?'native/linked-markdown/evidence/production/product-soak-bounded-worker.json':'native/linked-markdown/evidence/production/product-soak.json'),all=[],started=Date.now();
 const summary=values=>{const sorted=[...values].sort((a,b)=>a-b);return {count:values.length,p50:sorted[Math.floor(sorted.length*.5)]??0,p95:sorted[Math.min(sorted.length-1,Math.floor(sorted.length*.95))]??0,max:sorted.at(-1)??0};};
-for(const [size,edits] of [[4096,1000],[65536,500],[262000,500]]){
+for(const [size,edits] of (process.env.VAULTOR_LINKED_SOAK_QUICK==='1'?[[262000,100]]:[[4096,1000],[65536,500],[262000,500]])){
   const base=await mkdtemp(join(repo,'native/linked-markdown/.scratch/product-soak-')),root=join(base,'source'),privateDir=join(base,'private');await mkdir(root);await mkdir(privateDir);
   let source='# Long editing session\n\nCounter 000000.\n\n';while(Buffer.byteLength(source)<size){const remaining=size-Buffer.byteLength(source);source+='x'.repeat(Math.min(10000,Math.max(0,remaining-2)))+'\n\n';if(remaining<=2)break;}
   await writeFile(join(root,'Guide.md'),source);const scope={token:randomUUID(),workspace:randomUUID(),generation:randomUUID(),epoch:randomUUID(),kind:'owned-local',mainFrame:true};

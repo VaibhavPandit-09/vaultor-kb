@@ -2,6 +2,10 @@
 
 Reviewed 2026-10-24. Ordinary imports create Vaultor-owned resources and leave source files untouched. They do not watch, refresh, synchronize or write back to external folders. Workspace ZIP transfers remain a separate workflow.
 
+## Linking is a separate workflow
+
+Use Windows **Linked sources → Link folder** to retain filesystem ownership and explicitly save to the original Markdown. Import still creates independent managed resources. [Linked external folders](LINKED-SOURCES.md) owns the bounded source-preserving contract and local authorization.
+
 ## Selection and review
 
 Use Import files, or Import options → Import folder beside it. The current visible collection is captured; review can choose another destination. Folder hierarchy is always preserved. By default the selected root becomes an additional collection; uncheck Create a collection for the folder to place its contents directly inside the destination. Desktop preserves empty directories. Browser directory input retains relative paths but cannot enumerate empty directories; review states that limitation instead of claiming full fidelity.

@@ -18,7 +18,7 @@ final class PrivateEvidence {
     private String fingerprint(Path operation)throws IOException{
         try(var parent=WindowsFiles.pinPublication(root);var pins=WindowsFiles.pinPublication(operation)){
             StringBuilder text=new StringBuilder(pins.last().identity());
-            for(Path path:files(operation))try(var file=WindowsFiles.leaseRelative(pins.handle(),path.getFileName().toString(),false)){
+            for(Path path:files(operation))try(var file=WindowsFiles.relative(pins.handle(),path.getFileName().toString(),WindowsFiles.READ,1,false)){
                 var info=WindowsFiles.info(file);text.append('\n').append(path.getFileName()).append(':').append(info.identity()).append(':').append(LinkedStore.hash(WindowsFiles.read(file,LinkedStore.JOURNAL_LIMIT)));
             }
             pins.verify();parent.verify();return LinkedStore.hash(LinkedStore.utf8(text.toString()));

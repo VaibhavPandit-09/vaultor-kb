@@ -48,3 +48,8 @@ Saved references now open on demand through **References** in the focused-note w
 ## Validation and limits
 
 Focused state tests cover independent capacity, direct deduplication/journey preservation, explicit splits, historical positions, active/inactive/bulk close, lifecycle invalidation/restore, concurrent requests, failed save barriers, v1/v2 hydration, offline retry and workspace isolation. Component checks cover Open Notes filtering/actions, pane identity/reduced-motion geometry, settings, shortcuts and recovery. Actual native/build/release evidence is recorded in [0.17.0 release notes](../desktop/releases/v0.17.0.md), including any unverified platform cases. Older N-series evidence is historical, not qualification of this redesign. No Android product code, protocol, resource schema or security boundary changes.
+
+
+## Linked external documents
+
+Windows This computer adds a distinct Linked sources hierarchy; directories are source-owned, not generated Vaultor collections. Markdown uses ordinary Open Notes sessions and existing pane placement/journeys. Ctrl+click scoped relative links opens the target while preserving its Markdown URL; scoped raster images/PDF are read-only previews. Traversal cannot escape consented roots. Collection memberships reference logical documents without moving files. External replacement/rename is conservative: an old session cannot silently become a reused pathname. [Linked sources](LINKED-SOURCES.md) owns reauthorization, cache and size limits.

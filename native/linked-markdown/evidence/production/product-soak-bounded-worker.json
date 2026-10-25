@@ -1,0 +1,83 @@
+{
+  "environment": {
+    "node": "v24.18.1",
+    "platform": "win32",
+    "arch": "x64",
+    "worker": "markdown.worker-DMHm_v4C.js",
+    "javaRuntime": "bundled Temurin25.0.4.1",
+    "rendererFrames": "not measured by this headless host experiment"
+  },
+  "elapsedMs": 16004,
+  "cases": [
+    {
+      "sourceBytes": 262000,
+      "edits": 100,
+      "elapsedMs": 15246,
+      "protectMs": {
+        "count": 100,
+        "p50": 140.10140000000138,
+        "p95": 151.8221999999987,
+        "max": 179.5919
+      },
+      "saveMs": {
+        "count": 4,
+        "p50": 340.9494999999988,
+        "p95": 369.8072000000011,
+        "max": 369.8072000000011
+      },
+      "remountMs": {
+        "count": 1,
+        "p50": 145.96630000000005,
+        "p95": 145.96630000000005,
+        "max": 145.96630000000005
+      },
+      "baseline": [
+        33624288,
+        134217728,
+        110280704,
+        395,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "after": [
+        38596656,
+        134217728,
+        197918720,
+        388,
+        0,
+        1,
+        4,
+        26273352,
+        36,
+        11,
+        25
+      ],
+      "samples": [
+        {
+          "edit": 100,
+          "workerHeap": 18951784,
+          "workerTotalHeap": 33652736,
+          "coordinatorRss": 142974976,
+          "native": [
+            31256624,
+            134217728,
+            197566464,
+            387,
+            1,
+            1,
+            4,
+            26273352,
+            36,
+            11,
+            24
+          ]
+        }
+      ]
+    }
+  ]
+}

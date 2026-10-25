@@ -13,6 +13,10 @@ Resource rows, sidebar shortcuts, note headers and file previews share an Action
 
 Trash has one bounded, metadata-only title-search list, 100 rows per UI page, checkbox selection, Restore and confirmed Delete permanently. Normal Library, Recent, pins, resource pickers, title/content search and membership counts exclude Trash. Tags and empty collections themselves remain discoverable. Nothing is automatically purged.
 
+## Linked references
+
+For externally linked documents, Trash/purge removes only the Vaultor metadata/reference and memberships. The original filesystem file is not owned or deleted. Source disconnection/removal also retains private recovery evidence. [Linked external folders](LINKED-SOURCES.md) owns native draft and interrupted-publication recovery.
+
 ## Confirmation, drafts and shared views
 
 Confirmation names each original and checks how many distinct **active saved notes** refer to it through links/image placements. Repeated placements count once. This count excludes unsaved references, references from trashed notes and table provenance; the on-demand [References view](REFERENCES.md) provides paginated sources and bounded occurrences. If usage cannot be checked, Retry is required before proceeding.

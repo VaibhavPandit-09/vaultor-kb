@@ -6,6 +6,10 @@ The Library is the main browsing surface. Library, Recent, collection contents, 
 
 Pinned and Recent each show one mixed list of up to 12 shortcuts: pins alphabetically across resources/collections, Recent by last-opened time across resource types. Type icons remain visible without repeated category headings. Each section has an on-demand searchable Type filter; All is the default. Pinned includes Collections as organizational shortcuts, while Recent includes resource types only. Pinned, Recent and Tags retain accessible disclosure headers and separate View all. Sidebar options → Customize sidebar controls hiding and Restore defaults. Device settings retain visibility/collapse/type, outside portable archives; old settings default to visible/expanded/All. Hidden/collapsed sections retain cached rows and suspend queries. Reopening refreshes without discarding matching rows. Recency/navigation are independent. Hidden Tags never clears active filters. The connected host must be 0.3.1+ to persist type choices and apply basic pin filters; 0.6.0 adds Images/PDFs/Audio/Video/Text/Other file categories and acknowledged category paging.
 
+## Linked documents
+
+The Windows Linked sources tree follows the external hierarchy; ordinary collections remain Vaultor organization. Linked resources can have multiple memberships, tags and pins without copying or moving their file. [Linked external folders](LINKED-SOURCES.md) owns access, editing, recovery and portability.
+
 ## Behavior
 
 Page headings keep the title at the left and actions at the same right edge as search and results. Long titles and action groups wrap rather than overlap. Desktop window controls occupy only the top edge; page actions below them use the full content width. New collection has a small plus icon; collection rows share padded icon/title/pin alignment. Empty Library and Recent explain how to populate them; a collection search with no matches is distinct from having no collections.

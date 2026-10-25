@@ -1,6 +1,6 @@
 # Desktop shell and connections
 
-Reviewed 2026-10-23. Electron44.5.1 runs the bundled React UI against its owned loopback Java host or a remembered paired private-network host. Native files/tray/login, pairing/discovery/pinned trust, integrated chrome, saved-change streams, workspace selection and independent copies are implemented. [WORKSPACES.md](../architecture/WORKSPACES.md) owns isolated host contexts; private stop drains all opened contexts before backup. Browser access remains owner handoff or paired HTTPS; [ANDROID.md](../android/ANDROID.md) owns the separate companion. Windows0.16.1 is published; Mac0.13.0 is the last published Mac build and current integrated native delivery remains unqualified under [MAC-HANDOFF.md](MAC-HANDOFF.md). [UPDATES.md](UPDATES.md) owns updater integrity and [troubleshooting](DESKTOP-SETUP-TROUBLESHOOTING.md) owns setup failures.
+Reviewed 2026-10-23. Electron44.5.1 runs the bundled React UI against its owned loopback Java host or a remembered paired private-network host. Native files/tray/login, pairing/discovery/pinned trust, integrated chrome, saved-change streams, workspace selection and independent copies are implemented. [WORKSPACES.md](../architecture/WORKSPACES.md) owns isolated host contexts; private stop drains all opened contexts before backup. Browser access remains owner handoff or paired HTTPS; [ANDROID.md](../android/ANDROID.md) owns the separate companion. Windows0.18.2 and Mac0.18.1 are published; Windows0.19.0 is in release qualification. [MAC-HANDOFF.md](MAC-HANDOFF.md) owns missing-platform acceptance. [UPDATES.md](UPDATES.md) owns updater integrity and [troubleshooting](DESKTOP-SETUP-TROUBLESHOOTING.md) owns setup failures.
 
 ## Development launch
 
@@ -164,3 +164,10 @@ Sidebar workspace name opens selection; adjacent ellipsis opens server connectio
 ## Independent local copies (0.10.0/W3)
 
 Workspace selector → Make local copy on an external connection uses main-owned pinned/owner transport, private disk streaming and source generation recheck, then the owned server staged import. It is an independent fork with new workspace identity, not synchronization. Native journals contain IDs/status only and are outside portable archives. Switching/quit/update guards cover copy preparation and all host work. WORKSPACE-TRANSFERS.md owns limits/retry/cancel/recovery; no Android APK changes.
+
+
+## Owner-local linked filesystem service
+
+Windows x64 This computer uses a separate bundled Java25 private-pipe LinkedHost, not Spring filesystem RPC. Electron main owns native folder consent and opaque capabilities; preload exposes no arbitrary filesystem paths or keys. The host owns handle confinement, revisions, private B/L/V recovery and detached exclusive publication. An independent bounded worker validates renderer source transitions. Inherited JVM option injection is removed; capabilities/ephemeral credentials dispose on owner/workspace-generation change. Dialog scope is checked before and after selection. Browser, Android, remote hosts and unsupported desktop platforms gain no native access. Main/renderer remain unprivileged.
+
+Initial writes require ordinary fixed local NTFS on the private recovery volume; other volumes/special files remain read-only. Registrations/grants and recovery copies stay outside portable workspace data. [Linked sources](../workspace/LINKED-SOURCES.md) owns the product, metadata, recovery and retention contract. [Implementation evidence](../development/LINKED-SOURCES.md) retains rejected writers and actual tests.

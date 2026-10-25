@@ -1,4 +1,5 @@
 PASS private evidence can be explicitly resolved with a disconnected source and never changes external content
 PASS changed private evidence invalidates removal while corrupt journals still allow preserved-object export
 PASS an active recoverable draft cannot be removed through the private evidence endpoint
-passed=3 failed=0
+PASS a late outside alias does not block private inspection or explicit missing-name restoration
+passed=4 failed=0

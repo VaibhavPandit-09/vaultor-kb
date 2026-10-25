@@ -175,7 +175,7 @@ public final class LinkedStore implements AutoCloseable {
     }
     private long evidenceBytes(Path operation)throws IOException{
         try(var parent=WindowsFiles.pinPublication(privateRoot);var pins=WindowsFiles.pinPublication(operation);var files=Files.list(operation)){
-            long bytes=0;for(Path path:files.limit(13).toList())try(var file=WindowsFiles.leaseRelative(pins.handle(),path.getFileName().toString(),false)){bytes+=WindowsFiles.info(file).size();}return bytes;
+            long bytes=0;for(Path path:files.limit(13).toList())try(var file=WindowsFiles.relative(pins.handle(),path.getFileName().toString(),WindowsFiles.READ,1,false)){bytes+=WindowsFiles.info(file).size();}return bytes;
         }
     }
     /** Replacing a view is not permission to replay its old draft on reopen.
@@ -194,7 +194,7 @@ public final class LinkedStore implements AutoCloseable {
     }
     private void discardPrivateEvidence(String operation)throws IOException {
         if(!UUID.fromString(operation).toString().equals(operation))throw new IOException("RECOVERY_PATH");Path op=privateRoot.resolve(operation);try(var privatePin=WindowsFiles.pinPublication(privateRoot)){
-            try(var pins=WindowsFiles.pinPublication(op);var entries=Files.list(op)){var files=entries.limit(13).toList();if(files.size()>12)throw new IOException("RECOVERY_ENTRY_LIMIT");for(Path file:files){if(!file.getFileName().toString().matches("(?:[0-9]{2}\\.rec|stage\\.md|captured\\.md|external\\.md|view\\.ref)"))throw new IOException("RECOVERY_ENTRY_TYPE");try(var h=WindowsFiles.leaseRelative(pins.handle(),file.getFileName().toString(),false)){} }for(Path file:files){pins.verify();Files.delete(file);}}
+            try(var pins=WindowsFiles.pinPublication(op);var entries=Files.list(op)){var files=entries.limit(13).toList();if(files.size()>12)throw new IOException("RECOVERY_ENTRY_LIMIT");for(Path file:files){if(!file.getFileName().toString().matches("(?:[0-9]{2}\\.rec|stage\\.md|captured\\.md|external\\.md|view\\.ref)"))throw new IOException("RECOVERY_ENTRY_TYPE");try(var h=WindowsFiles.relative(pins.handle(),file.getFileName().toString(),WindowsFiles.READ,1,false)){} }for(Path file:files){pins.verify();Files.delete(file);}}
             Files.delete(op);
         }
     }
@@ -448,7 +448,7 @@ public final class LinkedStore implements AutoCloseable {
      * an absent name. Occupants, changed captures and ambiguous metadata refuse. */
     public synchronized Receipt restoreMissingBase(Scope scope,String ticket)throws IOException{
         var review=consumeReview(scope,ticket);if(review.disk()!=null)throw new IOException("INDEPENDENT_OCCUPANT");var record=review.record();Path op=privateRoot.resolve(review.operation());
-        try(var root=WindowsFiles.pinPublication(review.root().path);var parent=WindowsFiles.pinPublication(review.root().path.resolve(record.relative()).getParent());var privatePin=WindowsFiles.pinPublication(privateRoot);var operationPin=WindowsFiles.pinPublication(op);var captured=WindowsFiles.leaseRelative(operationPin.handle(),"captured.md",true)){
+        try(var root=WindowsFiles.pinPublication(review.root().path);var parent=WindowsFiles.pinPublication(review.root().path.resolve(record.relative()).getParent());var privatePin=WindowsFiles.pinPublication(privateRoot);var operationPin=WindowsFiles.pinPublication(op);var captured=WindowsFiles.relative(operationPin.handle(),"captured.md",WindowsFiles.READ|WindowsFiles.DELETE,1,false)){
             if(!root.last().identity().equals(review.root().identity))throw new IOException("ROOT_REPLACED");
             var info=WindowsFiles.info(captured);var revision=new Revision(info.identity(),hash(WindowsFiles.readStart(captured,SOURCE_LIMIT)),metadata(captured,info));if(!revision.equals(record.baseRevision()))throw new IOException("CAPTURE_CHANGED_EXPORT_REVIEW");
             if(Files.exists(op.resolve("06.rec"),LinkOption.NOFOLLOW_LINKS))throw new IOException("RECOVERY_ALREADY_RECORDED");persist(op,record.state("EXPLICIT_RESTORE_PREPARED"),6);hook("restore-before-publication",op);root.verify();parent.verify();WindowsFiles.renameExclusive(captured,parent.handle(),Path.of(record.relative()).getFileName().toString());root.verify();parent.verify();persist(op,record.state("EXPLICIT_BASE_RESTORED"),7);return new Receipt(review.operation(),record.version(),"BASE_RESTORED_REOPEN_REQUIRED",revision);
@@ -555,7 +555,7 @@ public final class LinkedStore implements AutoCloseable {
     public synchronized byte[] readRecoveryArtifact(Scope scope,String operation,String kind)throws IOException{
         scope(scope);try{if(!UUID.fromString(operation).toString().equals(operation))throw new IllegalArgumentException();}catch(Exception e){throw new IOException("OPERATION_ID");}
         if(!Set.of("captured","stage","external").contains(kind))throw new IOException("RECOVERY_ARTIFACT_KIND");
-        Path op=privateRoot.resolve(operation);try(var parent=WindowsFiles.pin(privateRoot);var pins=WindowsFiles.pin(op);var h=WindowsFiles.lease(op.resolve(kind+".md"),false)){return WindowsFiles.read(h,READ_LIMIT);}
+        Path op=privateRoot.resolve(operation);try(var parent=WindowsFiles.pin(privateRoot);var pins=WindowsFiles.pin(op);var h=WindowsFiles.relative(pins.handle(),kind+".md",WindowsFiles.READ,1,false)){return WindowsFiles.read(h,READ_LIMIT);}
     }
     synchronized Path watchParent(Scope s,String cap)throws IOException{scope(s);var d=docs.get(cap);if(d==null)throw new IOException("DOCUMENT_CAPABILITY");return d.root.path.resolve(d.relative).getParent();}
     synchronized WindowsFiles.Notifications watchDirectory(Scope s,String cap)throws IOException{

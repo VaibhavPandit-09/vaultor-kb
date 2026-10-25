@@ -108,3 +108,8 @@ The prior 0.4.0 Windows release is published and original-key verified; use [the
 
 
 0.4.1 verification/publication results are recorded in the tracker and versioned release notes. The new targeted `oneclick-smoke.ps1` refuses a real installed Vaultor, preserves existing shortcut bytes and uses a temporary installation/profile. It exercises the original-key verified silent helper upgrade and real relaunch/server readiness without modifying a production workspace.
+
+
+## External documents and update backups
+
+Windows0.19.0 adds [Linked sources](../workspace/LINKED-SOURCES.md). Ordinary workspace/updater backups do not embed or roll back externally owned documents. Keep external Git/backups separately. Private recovery retains admitted B/L/V evidence; archives carry dependency references and require explicit local reauthorization elsewhere. [0.19.0 ledger](releases/v0.19.0.md) owns actual publication status. Original-key updater trust and Android protocols remain unchanged.

@@ -117,3 +117,8 @@ Update the selected host to 0.6.0 to use file-category filtering, References and
 Update the selected host to 0.7.0, then its clients, for saved PDF/UTF-8 file text and coverage. API/minimum client 3 and archive 3 stay unchanged. Use Search options → Include saved content; Titles only stays default. Pending files can be refreshed; Diagnostics explains unavailable/unsupported extraction. A Windows client update cannot add these host APIs to an older remote Mac host. Mac availability still requires the exact same-tag verified pair.
 
 Workspace switching (0.9.0 desktop/alpha.8 Android) is distinct from server switching. Use the sidebar workspace button on desktop/browser, or navigation → workspace/connections → Workspaces on this server on Android. Owner grant UI requires host0.9.0; Android workspace discovery works on0.8.0+. A Windows update cannot update a Mac host. Published platform status is in versioned release notes and MAC-HANDOFF.md.
+
+
+## Linked-folder release candidate
+
+Windows0.19.0 is being qualified; consult [its ledger](releases/v0.19.0.md) before downloading. [Linked sources](../workspace/LINKED-SOURCES.md) supports explicit Save for ordinary local NTFS documentation on the recovery volume, with a256KiB visual limit and protected unsupported syntax. Other-volume/large/special documents remain read-only. External contents are not included in normal workspace/update backups. This does not grant Mac, Android or remote filesystem access. Complete-platform Latest stays0.18.1 pending native Mac qualification.
