@@ -29,7 +29,7 @@ Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0
 
 ## Desktop delivery
 
-- [0.23.0 local candidate](desktop/releases/v0.23.0.md):1MiB editing implementation, qualified source/recovery behavior and failed packaged performance gate; no publication.
+- [Windows0.23.0 release](desktop/releases/v0.23.0.md): explicitly authorized Windows-only publication, verified public updater and disclosed failed1MiB performance qualification.
 
 - [0.22.0 release candidate](desktop/releases/v0.22.0.md): recursive collection deletion, Windows artifact/acceptance status and exact-source Mac handoff.
 
