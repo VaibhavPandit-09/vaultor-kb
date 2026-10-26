@@ -36,7 +36,7 @@ class CollectionHierarchyTest {
   org.save(a.id(),new CollectionInput("Renamed",null));assertEquals("Renamed",org.get(grand.id()).ancestors().getFirst().name());
   assertThrows(ResponseStatusException.class,()->org.move(child.id(),new MoveInput(b.id())));
   org.move(child.id(),new MoveInput(null));assertNull(org.get(child.id()).parentId());assertEquals(child.id(),org.get(grand.id()).parentId());assertTrue(org.get(child.id()).favorite());assertEquals(1,org.get(child.id()).count());
-  assertThrows(ResponseStatusException.class,()->org.delete(child.id()));org.delete(grand.id());org.delete(child.id());assertNotNull(resources.getResourceOrThrow(note.getId()));assertEquals(1,org.get(other.id()).count());
+  org.delete(child.id());assertNotNull(resources.getResourceOrThrow(note.getId()));assertEquals(1,org.get(other.id()).count());
  }
  @Test void portableHierarchyRejectsInvalidTreesAndMergesByBranch(){
   String root=UUID.randomUUID().toString(),child=UUID.randomUUID().toString();

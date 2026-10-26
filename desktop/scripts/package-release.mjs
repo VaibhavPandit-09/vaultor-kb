@@ -15,7 +15,10 @@ const key=await readFile(process.env.VAULTOR_RELEASE_KEY||join(root,'cache','rel
 const proof=Buffer.from('Vaultor release identity');if(!verify(null,proof,trust.publicKey,sign(null,proof,key)))throw new Error('Private release key does not match the bundled public key.');
 process.env.CSC_IDENTITY_AUTO_DISCOVERY='false';
 const target=process.platform==='win32'?Platform.WINDOWS:Platform.MAC;
-const artifacts=await build({projectDir:root,config:join(root,'electron-builder.cjs'),targets:target.createTarget(process.argv.includes('--dir')?'dir':undefined,process.platform==='win32'?Arch.x64:Arch.arm64),publish:'never'});
+const output=process.env.VAULTOR_BUILD_OUTPUT?resolve(process.env.VAULTOR_BUILD_OUTPUT):null;
+if(output&&!output.startsWith(resolve(root,'cache')+sep))throw new Error('Alternate build output must stay inside desktop/cache.');
+const config=output?{extends:join(root,'electron-builder.cjs'),directories:{output}}:join(root,'electron-builder.cjs');
+const artifacts=await build({projectDir:root,config,targets:target.createTarget(process.argv.includes('--dir')?'dir':undefined,process.platform==='win32'?Arch.x64:Arch.arm64),publish:'never'});
 const pkg=JSON.parse(await readFile(join(root,'package.json'),'utf8'));
 for(const file of artifacts.filter(path=>path.endsWith('.exe')||path.endsWith('.dmg'))){
  const hash=createHash('sha256');for await(const chunk of createReadStream(file))hash.update(chunk);

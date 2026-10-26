@@ -12,6 +12,7 @@ import java.util.*;
 
 @Service @RequiredArgsConstructor
 public class OrganizationService {
+    private final CollectionDeletionService deletions;
     private final CollectionRepository collections;
     private final JdbcTemplate jdbc;
     private final ResourceBrowseService browse;
@@ -178,9 +179,8 @@ public class OrganizationService {
         return dto(entity,count);
     }
     @Transactional public void delete(String id) {
-        var entity=collections.findById(id).orElseThrow();
-        if(jdbc.queryForObject("select count(*) from collections where parent_id=?",Long.class,id)>0)throw new ResponseStatusException(HttpStatus.CONFLICT,"Move or delete child collections first. Resources are always kept.");
-        jdbc.update("delete from resource_collections where collection_id=?",id);collections.delete(entity);
+        var plan=deletions.plan(id);
+        deletions.apply(id,UUID.randomUUID().toString(),new CollectionDeletionService.Input(plan.fingerprint(),"keep",Map.of()));
     }
     @Transactional public void bulk(BulkInput input) {
         if(input.resourceIds()==null || input.resourceIds().isEmpty() || input.resourceIds().size()>100 || input.resourceIds().stream().anyMatch(Objects::isNull)) throw new IllegalArgumentException("Select 1–100 resource IDs");

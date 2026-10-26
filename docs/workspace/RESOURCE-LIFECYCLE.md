@@ -7,11 +7,19 @@ Reviewed 2026-10-23 against current protocol3/full5/partial6; lifecycle was intr
 Resource rows, sidebar shortcuts, note headers and file previews share an Actions menu: Open/Preview, Rename, Add to collection, Manage tags, Pin/Unpin, applicable Export note/Download original, and Move to Trash. Ctrl+K targets the highlighted/captured resource and hands Trash confirmation to the same coordinator. Unknown resource kinds cannot be opened, renamed, exported or downloaded through guessed file behavior; organization, pins and Trash remain available. Collection shortcuts are organizational destinations, not resources.
 
 - Move to Trash makes an original unavailable throughout the workspace. Its ID, original bytes, structured document, tags, surviving memberships and pin state remain.
-- Remove from collection changes only that membership. Delete collection removes the organization and all its membership links, including links to trashed resources; originals survive.
+- Remove from collection changes only that membership. Delete collection removes the selected hierarchy and its membership links, including links to trashed resources. The default keeps originals; explicit Trash mode moves only exclusively contained active managed originals to Trash.
 - Remove from note removes an image placement, not its File resource or other placements. Unpin changes only the shortcut.
 - Delete permanently exists only inside Trash. It removes the original, never rewrites referring documents. Their link labels/image placements remain identifiable broken references.
 
 Trash has one bounded, metadata-only title-search list, 100 rows per UI page, checkbox selection, Restore and confirmed Delete permanently. Normal Library, Recent, pins, resource pickers, title/content search and membership counts exclude Trash. Tags and empty collections themselves remain discoverable. Nothing is automatically purged.
+
+## Recursive collection deletion
+
+Collection deletion reviews a generation-bound database fingerprint of stable subtree IDs, parents/names, all affected memberships (including outside memberships), resource kinds and lifecycle states. Keep mode leaves resources, tags, pins, revisions, sessions and content unchanged. Trash mode protects each active exclusive managed target through the existing local save barrier; failed saves require the explicit durable-recovery choice, and recovery storage failure blocks mutation. Fresh target revisions are captured after protection. Shared originals and linked references never participate in this Trash barrier.
+
+One backend transaction rechecks the fingerprint and exact exclusive target set, calls the existing revision-checked Trash lifecycle, removes subtree memberships and collections child-first, and persists a workspace/generation-bound operation receipt. No filesystem cleanup or permanent purge occurs. SQLite's existing one-connection workspace pool serializes these transactions. Any stale state, revision conflict or operation failure rolls back the whole deletion, including lifecycle receipts. Identical UUID/input retries replay the committed result, including after restart; changed input under that UUID conflicts. The UI prevents duplicate submission and reuses the exact request after an uncertain response. Only a definite rejection permits fresh review; no successful partial outcome exists.
+
+Only actually trashed targets reconcile/close sessions; their delayed saves cannot recreate active originals. Keep mode leaves open editors mounted. Recovery journals remain independent. Ordinary resource Restore retains the original ID/content/tags/pins and surviving memberships, but does not recreate deleted collections or reopen sessions. Collection hierarchy restoration is outside this feature. Pending purge cleanup or unsupported resource kinds refuse deletion safely. Receipts are local operational records, excluded from archives; replacement generations cannot replay old receipts.
 
 ## Linked references
 

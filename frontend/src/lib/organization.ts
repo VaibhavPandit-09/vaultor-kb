@@ -4,6 +4,11 @@ import { useRetainedQuery } from './useRetainedQuery';
 export type OrganizationKind = 'collection' | 'tag';
 export type OrganizationItem = { id: string; name: string; count: number; favorite?: boolean; color?: string; parentId?: string | null; ancestors?: {id:string;name:string}[]; childCount?: number };
 export type OrganizationPage = { exactMatch?: boolean; items: OrganizationItem[]; page: number; totalPages: number; totalItems: number };
+export function collectionDeletionDestination(current:OrganizationItem|null,deletedIds:string[],parentId?:string|null):OrganizationItem|null|undefined {
+  if(!current||!deletedIds.includes(current.id))return undefined;
+  if(!parentId)return null;
+  return {...(current.ancestors?.find(a=>a.id===parentId)??{id:parentId,name:'Collection'}),count:0};
+}
 export function organizationChanged(entity: OrganizationKind | 'all' = 'all', resourceIds?: string[]) {
   notifyResourceChange({ kind: 'organization', entity, resourceIds });
 }

@@ -34,7 +34,7 @@ import type { LinkedResourceIntent } from '../lib/resourceLinkNavigation';
 import { affectsScope, notifyResourceChange, subscribeResourceChanges } from '../lib/resourceEvents';
 import { RecencyRecorder } from '../lib/recencyRecorder';
 import { watchChanges, type RemoteChange } from '../lib/changeFeed';
-import { organizationChanged } from '../lib/organization';
+import { organizationChanged, collectionDeletionDestination } from '../lib/organization';
 import ResourceCollections, { CollectionPicker } from '../components/ResourceCollections';
 import PinButton from '../components/PinButton';
 import { PinnedList, CollectionsView } from '../components/OrganizationViews';
@@ -756,13 +756,15 @@ export default function Dashboard() {
       await recovery.retryStorage();return;
     }
     if(request.action==='removed'){
+      for(const resource of request.resources){
       resourceLoadVersions.current.set(resource.id,(resourceLoadVersions.current.get(resource.id)??0)+1);
       const draft=recovery.current(resource.id);if(draft)setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);
       paneNavigation.markUnavailable(resource.id);saves.forget(resource.id);
       if(previewResourceId===resource.id)dismissPreview({restoreFocus:false});
       setResources(items=>items.filter(r=>r.id!==resource.id));
       setResourceDetails(previous=>previous[resource.id]?{...previous,[resource.id]:{...previous[resource.id],trashedAt:new Date().toISOString()}}:previous);
-      dispatch(removeResourceFromState(resource.id));return;
+      dispatch(removeResourceFromState(resource.id));}
+      return;
     }
   };
   useEffect(()=>{const receive=(event:Event)=>{event.preventDefault();const request=(event as CustomEvent<ActionRequest>).detail;void resourceActionHandler.current(request).then(request.resolve,request.reject);};window.addEventListener(RESOURCE_ACTION_EVENT,receive);return()=>window.removeEventListener(RESOURCE_ACTION_EVENT,receive);},[]);
@@ -1212,6 +1214,13 @@ export default function Dashboard() {
     });
   }, [openNotes,fetchResourceDetails]);
 
+  useEffect(()=>subscribeResourceChanges(change=>{
+    if(change.kind!=='organization'||!change.deletedCollectionIds)return;
+    const parent=collectionDeletionDestination(collection,change.deletedCollectionIds,change.survivingParentId);
+    if(parent===undefined)return;
+    setCollection(parent);
+    setLibrarySection(parent?'library':'collections');setLibraryVisible(true);
+  }),[collection]);
   const showLibrary = (section: LibrarySection) => { setPaletteSelection([]);setCollection(null); setLibrarySection(section); setLibraryVisible(true); dismissPreview({ restoreFocus: false }); };
   const returnToNotes = () => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); };
   const sidebarPreferences = localSettings.sidebarSections;

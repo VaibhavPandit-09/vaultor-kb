@@ -1,7 +1,7 @@
 export type ResourceChange =
   | { kind: 'opened'; id: string; phase: 'pending' | 'settled' }
   | { kind: 'metadata'; ids?: string[]; membershipChanged?: boolean }
-  | { kind: 'organization'; entity: 'tag' | 'collection' | 'all'; resourceIds?: string[] }
+  | { kind: 'organization'; entity: 'tag' | 'collection' | 'all'; resourceIds?: string[]; deletedCollectionIds?: string[]; survivingParentId?: string|null }
   | { kind: 'pins'; entity: 'resource' | 'collection'; id: string; favorite?: boolean }
   | { kind: 'workspace' };
 const eventName = 'vaultor:resource-change';

@@ -14,6 +14,7 @@ export async function runChromeSmoke(window, directory, owned, updates) {
   if(process.env.VAULTOR_MAC_LINKED_CHECK==='1'){const {runMacLinkedCheck}=await import('./native-mac-linked-check.mjs');await runMacLinkedCheck(window,directory);return;}
   if(process.env.VAULTOR_MILESTONE_CHECK==='1'){const {runMilestoneCheck}=await import('./native-milestone-check.mjs');await runMilestoneCheck(window,directory);return;}
   if(process.env.VAULTOR_NAVIGATION_CHECK==='1'){const {runNavigationCheck}=await import('./native-navigation-check.mjs');await runNavigationCheck(window,directory,owned);return;}
+  if(process.env.VAULTOR_COLLECTION_DELETION_CHECK==='1'){const {runCollectionDeletionCheck}=await import('./native-collection-deletion-check.mjs');await runCollectionDeletionCheck(window,directory,owned);return;}
   if(process.env.VAULTOR_COLLECTION_CHECK==='1'){const {runCollectionCheck}=await import('./native-collection-check.mjs');await runCollectionCheck(window,directory,owned);return;}
   if(process.env.VAULTOR_FOLDER_CHECK==='1'){const {runFolderCheck}=await import('./native-folder-check.mjs');await runFolderCheck(window,directory,owned);return;}
   if(process.env.VAULTOR_SESSION_CHECK==='1'){const {runSessionCheck}=await import('./native-session-check.mjs');await runSessionCheck(window,directory,owned);return;}

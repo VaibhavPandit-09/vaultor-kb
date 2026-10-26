@@ -32,6 +32,16 @@ public class ResourceLifecycleService {
         resources.findById(id).orElseThrow();
         return new Usage(jdbc.queryForObject("select count(distinct link.from_id) from relationships link join resources source on source.id=link.from_id where link.to_id=? and link.type='link' and source.trashed_at is null",Long.class,id));
     }
+    /** Saved active sources only, same relationship definition as usage; no document hydration. */
+    @org.springframework.transaction.annotation.Transactional(readOnly=true)
+    public Set<String> referencingSources(List<String> targets) {
+        var sources=new HashSet<String>();
+        for(int offset=0;offset<targets.size();offset+=100){
+            var page=targets.subList(offset,Math.min(offset+100,targets.size()));
+            sources.addAll(jdbc.queryForList("select distinct link.from_id from relationships link join resources source on source.id=link.from_id where link.to_id in ("+String.join(",",Collections.nCopies(page.size(),"?"))+") and link.type='link' and source.trashed_at is null",String.class,page.toArray()));
+        }
+        return sources;
+    }
     public Result apply(Item item) {
         if(item==null||item.resourceId()==null||!Set.of("trash","restore","purge").contains(item.action()))throw new IllegalArgumentException("Choose trash, restore or purge");
         UUID.fromString(item.operationId());

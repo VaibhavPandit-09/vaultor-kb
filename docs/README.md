@@ -29,6 +29,8 @@ Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0
 
 ## Desktop delivery
 
+- [0.22.0 release candidate](desktop/releases/v0.22.0.md): recursive collection deletion, Windows artifact/acceptance status and exact-source Mac handoff.
+
 - [0.21.0 release ledger](desktop/releases/v0.21.0.md): Both public platform pairs, Latest status and explicit Windows remaining-runtime-test waiver.
 
 - [Windows 0.20.0 milestone](desktop/releases/v0.20.0.md): Efficiency policy, per-volume NTFS carriers, Settings layout and update visibility; exact source/platform qualification.

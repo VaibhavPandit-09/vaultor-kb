@@ -7,7 +7,10 @@ import org.springframework.http.HttpStatus;
 @RestController @RequestMapping("/api") @RequiredArgsConstructor
 public class OrganizationController {
     private final OrganizationService service;
-    @GetMapping("/collections/capabilities") public java.util.Map<String,Integer> capabilities(){return java.util.Map.of("hierarchy",1,"folderImports",1,"maxDepth",32);}
+    private final com.vaultor.vaultor.service.CollectionDeletionService deletions;
+    @GetMapping("/collections/{id}/deletion-plan") public com.vaultor.vaultor.service.CollectionDeletionService.Plan deletionPlan(@PathVariable String id){return deletions.plan(id);}
+    @PutMapping("/collections/{id}/deletions/{operationId}") public com.vaultor.vaultor.service.CollectionDeletionService.Result deleteHierarchy(@PathVariable String id,@PathVariable String operationId,@RequestBody com.vaultor.vaultor.service.CollectionDeletionService.Input input,@RequestHeader("X-Vaultor-Protocol") int protocol){if(protocol<3)throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UPGRADE_REQUIRED,"Update the client for safe collection deletion");return deletions.apply(id,operationId,input);}
+    @GetMapping("/collections/capabilities") public java.util.Map<String,Integer> capabilities(){return java.util.Map.of("hierarchy",1,"folderImports",1,"maxDepth",32,"recursiveDeletion",1);}
     @GetMapping("/collections") public CollectionPage list(@RequestParam(defaultValue="") String q,@RequestParam(defaultValue="false") boolean favorites,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="50") int size,@RequestParam(required=false) String parent) {return service.list(q,favorites,page,size,parent);}
     @GetMapping("/collections/{id}") public CollectionDto one(@PathVariable String id) {return service.get(id);}
     @PutMapping("/collections/creations/{id}") public CollectionDto createOnce(@PathVariable String id,@RequestBody CreationInput input) {return service.createOnce(id,input);}

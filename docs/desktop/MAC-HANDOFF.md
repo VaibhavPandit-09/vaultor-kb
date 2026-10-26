@@ -1,6 +1,12 @@
 # Current Mac release qualification handoff
 
-Reviewed 2026-10-27. Mac arm64 [0.21.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.21.0) is published as a Mac-only, non-Latest stable release from immutable `v0.21.0` / `2fdf2d116ff9e5ad773086e0b7074e614ad9d0d7`. Its original-key DMG/sidecar and public0.18.1 updater discovery/download are verified. Windows0.21.0 remains unqualified; complete-platform Latest stays0.18.1. The [0.21.0 ledger](releases/v0.21.0.md) owns current acceptance; older sections below retain exact-source historical evidence.
+Reviewed 2026-10-27. Complete-platform0.21.0 is published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The next desktop feature candidate is0.22.0, with Windows assets staged only after native qualification. No Mac0.22.0 build or acceptance is available in this Windows session; the complete-platform stable gate remains open.
+
+## 0.22.0 recursive collection deletion
+
+Use immutable tag v0.22.0 from the release candidate ledger, not moving master, and verify its resolved commit against the GitHub draft source. Preserve desktop package/lock0.22.0 and original signer. On arranged Apple Silicon access, follow RELEASE-PROCESS.md to build fresh UI, bundled server/runtime and original-key DMG/sidecar. Run the focused shared collection/lifecycle regressions only when changed source/evidence requires it; run the packaged disposable native-collection-deletion-check (VAULTOR_COLLECTION_DELETION_CHECK=1 through chrome-smoke.mjs) for the actual204-file import, keep mode, Trash197/shared7, dirty-note/Restore, root/parent navigation, Escape/focus and narrow layout. Use existing owned first/save/PDF/restart checks and Mac mount/codesign/installer/sidecar acceptance. No linked-folder filesystem/Android requalification is needed for this collection-only behavior.
+
+Add only the absent verified Mac pair to the existing v0.22.0 draft from that exact tag using publish:release -- --publish --notes docs/desktop/releases/v0.22.0.md. Verify both platform pairs and native results before publishing complete-platform stable/Latest. Do not move the tag or replace Windows bytes. Source defects require a new version. Windows evidence does not certify Mac acceptance. The [0.22.0 ledger](releases/v0.22.0.md) owns exact Windows results and remaining limits.
 
 ## 0.18.2 pending qualification
 
