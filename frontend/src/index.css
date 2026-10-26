@@ -614,8 +614,8 @@ button {
 .settings-row-copy p { color:var(--text-secondary); font-size:12px; line-height:1.45; margin-top:4px; }
 .settings-row-copy p.settings-error { color:var(--danger,#ef4444); }
 .settings-control { display:flex; justify-content:flex-end; min-width:0; }
-.settings-choices { display:flex; padding:3px; gap:2px; border:1px solid var(--border-subtle); border-radius:8px; background:var(--surface-2); width:100%; }
-.settings-choices button { flex:1; padding:7px 8px; border-radius:5px; font-size:12px; color:var(--text-secondary); white-space:nowrap; }
+.settings-choices { display:flex; flex-wrap:wrap; min-width:0; max-width:100%; padding:3px; gap:2px; border:1px solid var(--border-subtle); border-radius:8px; background:var(--surface-2); width:100%; }
+.settings-choices button { flex:1 1 min-content; min-width:0; overflow-wrap:anywhere; padding:7px 8px; border-radius:5px; font-size:12px; color:var(--text-secondary); white-space:normal; }
 .settings-choices button:hover { background:var(--surface-hover); color:var(--text-primary); }
 .settings-choices button[aria-checked=true] { background:var(--surface-3); color:var(--text-primary); box-shadow:inset 0 0 0 1px var(--border-strong); }
 .settings-swatches { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; padding:3px; }

@@ -35,10 +35,12 @@ export class LinkedRegistry {
     if(root.enabled===false)throw Error('LINKED_SOURCE_DISCONNECTED');
     await this.ensureNative();
     if(root.capability)return root.capability;
-    const scope=this.scope,nonce=randomUUID(),expires=Date.now()+55000,selected=resolve(root.path);
+    const scope=this.scope;
+    if(root.volume){const [located]=await this.native.call('locate-root',root.path,root.volume);root.path=located;}
+    const nonce=randomUUID(),expires=Date.now()+55000,selected=resolve(root.path);
     const proof=createHmac('sha256',this.native.consent).update(['G2-ROOT-1',scope.workspace,scope.generation,selected,nonce,expires].join('\n')).digest('hex');
-    const [capability]=await this.native.call('root',selected,nonce,expires,proof);const [identity]=await this.native.call('root-info',capability);
-    this.check(scope);if(identity!==root.identity){await this.native.call('revoke',capability);root.status='reauthorize';throw Error('LINKED_SOURCE_REPLACED');}root.capability=capability;root.status='available';return capability;
+    const [capability]=await this.native.call('root',selected,nonce,expires,proof);const [identity,volume]=await this.native.call('root-info',capability);
+    this.check(scope);if(identity!==root.identity||(root.volume&&root.volume!==volume)){await this.native.call('revoke',capability);root.status='reauthorize';throw Error('LINKED_SOURCE_REPLACED');}root.volume=volume;root.capability=capability;root.status='available';await this.persist();return capability;
   }
   async add(request,{title='Link an existing Markdown folder'}={}){
     const before=this.check(request);if(this.pending)throw Error('LINKED_PICKER_OPEN');
@@ -46,12 +48,23 @@ export class LinkedRegistry {
     await this.ensureNative();
     const consent=new RootConsent({current:()=>this.closed?null:this.current(),key:this.native.consent,picker:settings=>this.options.picker({...settings,title}),sendToOwnedHost:async selected=>{
       await this.options.owner?.(request);this.check(request);
-      const [capability]=await this.native.call('root',selected.selected,selected.nonce,selected.expires,selected.proof);const [identity]=await this.native.call('root-info',capability);await this.options.owner?.(request);this.check(request);
-      const existing=[...this.roots.values()].find(root=>root.path.toLowerCase()===selected.selected.toLowerCase()&&root.identity===identity);
-      if(existing){if(existing.capability&&existing.capability!==capability)await this.native.call('revoke',existing.capability);existing.enabled=true;existing.capability=capability;existing.status='available';await this.persist();return existing.id;}
+      let capability;
+      try{[capability]=await this.native.call('root',selected.selected,selected.nonce,selected.expires,selected.proof);}
+      catch(error){
+        if(!error.message.includes('CARRIER_SETUP_REQUIRED'))throw error;
+        const carrier=await this.options.carrierPicker?.();this.check(request);if(!carrier)throw Error('CARRIER_SETUP_REQUIRED');
+        const nonce=randomUUID(),expires=Date.now()+55000;
+        const proof=createHmac('sha256',this.native.consent).update(['LINKED-CARRIER-1',before.workspace,before.generation,selected.selected,carrier,nonce,expires].join('\n')).digest('hex');
+        await this.native.call('carrier',selected.selected,carrier,nonce,expires,proof);
+        const rootNonce=randomUUID(),rootExpires=Date.now()+55000;
+        const rootProof=createHmac('sha256',this.native.consent).update(['G2-ROOT-1',before.workspace,before.generation,selected.selected,rootNonce,rootExpires].join('\n')).digest('hex');
+        [capability]=await this.native.call('root',selected.selected,rootNonce,rootExpires,rootProof);
+      }const [identity,volume]=await this.native.call('root-info',capability);await this.options.owner?.(request);this.check(request);
+      const existing=[...this.roots.values()].find(root=>root.identity===identity&&((root.volume&&root.volume===volume)||root.path.toLowerCase()===selected.selected.toLowerCase()));
+      if(existing){if(existing.capability&&existing.capability!==capability)await this.native.call('revoke',existing.capability);existing.path=selected.selected;existing.volume=volume;existing.enabled=true;existing.capability=capability;existing.status='available';await this.persist();return existing.id;}
       const picked=selected.selected.toLowerCase();if([...this.roots.values()].some(root=>{const registered=root.path.toLowerCase();return picked.startsWith(registered+'\\')||registered.startsWith(picked+'\\');})){await this.native.call('revoke',capability);throw Error('LINKED_SOURCE_OVERLAP');}
       if(this.roots.size>=8){await this.native.call('revoke',capability);throw Error('LINKED_SOURCE_LIMIT');}
-      const root={id:randomUUID(),name:(basename(dirname(selected.selected))+' · '+basename(selected.selected)).slice(-255),path:selected.selected,identity,enabled:true,capability,status:'available'};this.roots.set(root.id,root);
+      const root={id:randomUUID(),name:(basename(dirname(selected.selected))+' · '+basename(selected.selected)).slice(-255),path:selected.selected,identity,volume,enabled:true,capability,status:'available'};this.roots.set(root.id,root);
       try{await this.persist();}catch(error){this.roots.delete(root.id);await this.native.call('revoke',capability).catch(()=>{});throw error;}return root.id;
     }});
     const result=await consent.select({token:before.token,workspace:before.workspace,generation:before.generation});this.check(request);return result;}finally{this.pending--;}

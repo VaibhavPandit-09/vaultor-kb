@@ -19,7 +19,7 @@ Reviewed 2026-10-25 against integrated master, published Windows0.19.1/Mac0.18.1
 
 ## Development and validation
 
-- [AI_DEVELOPMENT_WORKFLOW](development/AI_DEVELOPMENT_WORKFLOW.md): Master-centered work, scope/isolation, integration/protections and immutable recovery points.
+- [AI_DEVELOPMENT_WORKFLOW](development/AI_DEVELOPMENT_WORKFLOW.md): Repository-wide AI efficiency policy, risk-based verification/evidence reuse, master-centered work, integration/protections and immutable recovery points.
 - [OPERATIONS](development/OPERATIONS.md): Build/dev/Docker, environment, logs and targeted disposable diagnostics.
 - [API](development/API.md): Shared domain APIs, revisions, compatibility and diagnostics.
 - [PRIMARY-TEST-WORKSPACE](development/PRIMARY-TEST-WORKSPACE.md): Marked Small/Atlas fixtures, guarded launch/reset and reproducible seed.
@@ -28,6 +28,8 @@ Reviewed 2026-10-25 against integrated master, published Windows0.19.1/Mac0.18.1
 - [SCALE-INTEGRATION](development/SCALE-INTEGRATION.md): Historical0.7.1 scale/fault results; compare only under stated conditions.
 
 ## Desktop delivery
+
+- [Windows 0.20.0 milestone](desktop/releases/v0.20.0.md): Efficiency policy, per-volume NTFS carriers, Settings layout and update visibility; exact source/platform qualification.
 
 - [INSTALLATION-AND-UPDATES](desktop/INSTALLATION-AND-UPDATES.md): User installation/update order and honest platform availability.
 - [DESKTOP](desktop/DESKTOP.md): Electron/owned server, storage/processes, native files and connections.

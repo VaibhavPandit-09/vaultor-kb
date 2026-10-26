@@ -1,6 +1,6 @@
 # Current Mac release qualification handoff
 
-Reviewed 2026-10-24. Mac arm64 0.18.1 qualification is complete and published. Both Windows x64 and Mac Apple Silicon pairs are fully qualified and published on the immutable `v0.18.1` release (`f8bd4743c2ee4225cc1597ddc16ddcfee06bca8e`), and the release is promoted to Latest. See [0.18.1 release ledger](releases/v0.18.1.md) for full qualification evidence, hashes, and platform verification.
+Reviewed 2026-10-26. Mac arm64 0.18.1 qualification is complete and published. Both Windows x64 and Mac Apple Silicon pairs are fully qualified and published on the immutable `v0.18.1` release (`f8bd4743c2ee4225cc1597ddc16ddcfee06bca8e`), and the release is promoted to Latest. See [0.18.1 release ledger](releases/v0.18.1.md) for full qualification evidence, hashes, and platform verification.
 
 ## 0.18.2 pending qualification
 
@@ -40,3 +40,21 @@ Windows0.19.0 is published from immutable ad10135a6defc11e4b1836f4f4223f05112f88
 ## 0.19.1 pending qualification
 
 Published Windows-only linked admission/read-only preview patch. Use immutable v0.19.1/d7844c67c7632793c672c500cb434aa61c1cd1fe; retain0.19.1 package/lock and original signer. Native Apple Silicon build, mount/codesign, managed Save/PDF/restart/navigation/session checks, unsupported local-write refusal and signed DMG/sidecar public verification are required before adding the absent pair/promoting Latest. No native Mac access or Mac0.19.1 qualification is claimed. Do not move tags or replace Windows assets.
+
+## Next engineering session: native linked folders after Windows 0.20.0
+
+Start from latest master containing immutable v0.20.0 (the release ledger records its exact commit after publication), not an older pending qualification tag. Mac remains published at 0.18.1; Windows0.20.0 does not implement or qualify macOS writes. Native Mac linked-folder engineering requires a new version and its own acceptance; do not add a changed backend under the Windows tag.
+
+Reuse directly: structured Markdown editing/source-preserving worker patches, editor sessions, explicit Save, conflict combination, Recovery UI/export, linked hierarchy, search, collection/reference metadata and logical source/document identities. Native-channel operations remain opaque: root/root-info (root identity plus stable volume identity), locate-root (verified mount discovery), carrier (signed one-use setup), open-linked/draft/save, recovery/inspect/review/restore/metadata/evidence/export-selected and grant revocation. A carrier descriptor grants evidence access only; it never grants source authority. Primary drafts remain independent of source-volume availability, and publication requires the source-local verified carrier.
+
+Windows boundaries: WindowsFiles owns handle-relative confinement, NTFS admission, volume GUID/mount discovery and exclusive rename; PracticalMetadata owns ordinary Windows metadata and inheritance-only capture directory preparation. RecoveryCarriers coordinates carrier selection/identity/locks and existing journal allocation. LinkedStore retains native publication/recovery policy. Registry volume identity is an opaque platform value; do not copy DOS drive-letter parsing, Windows ACLs, FFM kernel calls or NTFS metadata rules into frontend/editor code.
+
+First steps on Apple Silicon:
+
+1. Fetch latest master, inspect Git state and the current release ledger; read only applicable CODEBASE, linked-source contracts and platform sections under the efficiency policy.
+2. Inspect native-channel/PrivateHost command shapes and the shared registry/validator. Define macOS folder authorization/bookmark lifetime, stable APFS volume/file identities and remount discovery behind the same owner-only native boundary; renderer paths never establish grants.
+3. Implement authorized folder access and same-volume private carrier provisioning with safe permissions, no source/Git artifacts, no cross-volume copy/delete publication and independent retention/revocation. Preserve journals and primary offline drafts. Isolate APFS metadata/publication primitives; do not claim NTFS checks certify them.
+4. Extend existing fixtures for actual APFS sources/carriers, source/carrier mismatch, replacement/revocation, symlinks/aliases, absent/remounted volumes, drive identity substitution, no-space/permission failures, crash after capture/before receipt, conflict/explicit recovery, multiple roots, exact untouched Markdown bytes and retained evidence after source/workspace removal.
+5. Build fresh UI/server/native arm64 package with original signing identity, run bounded native edit/Save/restart and real update/installer acceptance appropriate to Mac, verify DMG/mount/codesign/sidecar and publish under RELEASE-PROCESS. A matching qualified Windows/Mac pair is required before promoting complete-platform Latest.
+
+Windows evidence uses the user's attached external NTFS E: drive, not mocked volume IDs or a VHD. Physical surprise unplug, live drive-letter reassignment, APFS behavior and Mac permissions/metadata remain unqualified. No native Mac backend or release acceptance is claimed by this handoff.

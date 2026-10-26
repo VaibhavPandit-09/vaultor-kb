@@ -8,6 +8,33 @@ import static java.lang.foreign.ValueLayout.*;
 /** First-release ordinary NTFS policy. Optional audit SACLs are neither assumed
  * absent nor promised copied. Source handles are never passed to either setter. */
 final class PracticalMetadata {
+    /** NTFS recomputes inherited ACEs on rename. Give the private operation
+     * directory the source parent's inheritance rules as INHERIT_ONLY: they
+     * grant no directory access. This avoids changing the captured inode's
+     * permissions. New journals/drafts still receive owner-only ACLs before
+     * any private bytes are written; staged publication keeps its own policy. */
+    static void prepareCaptureDirectory(java.nio.file.Path operation,WindowsFiles.Handle sourceParent)throws IOException{
+        byte[] inherited=WindowsFiles.security(sourceParent).dacl();
+        try(var directory=WindowsFiles.open(operation,0x60000,3,WindowsFiles.OPEN,true);var a=Arena.ofConfined()){
+            byte[] privateAcl=WindowsFiles.security(directory).dacl();
+            var source=java.nio.ByteBuffer.wrap(inherited).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+            var own=java.nio.ByteBuffer.wrap(privateAcl).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+            var entries=new java.io.ByteArrayOutputStream();entries.writeBytes(java.util.Arrays.copyOfRange(privateAcl,8,privateAcl.length));
+            int count=Short.toUnsignedInt(own.getShort(4)),offset=8;
+            for(int i=0;i<Short.toUnsignedInt(source.getShort(4));i++){
+                if(offset+4>inherited.length)throw new IOException("CAPTURE_PARENT_ACL");
+                int size=Short.toUnsignedInt(source.getShort(offset+2));if(size<4||offset+size>inherited.length)throw new IOException("CAPTURE_PARENT_ACL");
+                int flags=inherited[offset+1]&255;
+                if((flags&3)!=0){byte[] ace=java.util.Arrays.copyOfRange(inherited,offset,offset+size);ace[1]=(byte)((flags&~0x10)|8);entries.writeBytes(ace);count++;}
+                offset+=size;
+            }
+            if(entries.size()+8>65535)throw new IOException("CAPTURE_PARENT_ACL");
+            byte[] acl=new byte[entries.size()+8];System.arraycopy(privateAcl,0,acl,0,8);System.arraycopy(entries.toByteArray(),0,acl,8,entries.size());
+            var out=java.nio.ByteBuffer.wrap(acl).order(java.nio.ByteOrder.LITTLE_ENDIAN);out.putShort(2,(short)acl.length);out.putShort(4,(short)count);
+            int result=(int)WindowsFiles.invoke("SetSecurityInfo",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_INT,JAVA_INT,ADDRESS,ADDRESS,ADDRESS,ADDRESS),directory.value,1,0x80000004,MemorySegment.NULL,MemorySegment.NULL,a.allocateFrom(JAVA_BYTE,acl),MemorySegment.NULL).value();
+            if(result!=0)throw new IOException("CAPTURE_PARENT_ACL:"+result);
+        }
+    }
     static ReplacementMetadata.Observed inspect(WindowsFiles.Handle source)throws IOException{return ReplacementMetadata.observe(source,true);}
     static byte[] explicitRules(byte[] original)throws IOException {
         byte[] copy=original.clone();var bytes=java.nio.ByteBuffer.wrap(copy).order(java.nio.ByteOrder.LITTLE_ENDIAN);if(copy.length<8)throw new IOException("INVALID_ACL");int count=Short.toUnsignedInt(bytes.getShort(4)),offset=8;

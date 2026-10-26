@@ -141,6 +141,6 @@ it('confirms a single shortcut reset without resetting the rest of the keyboard'
 });
 
 it('persists Fill or Reuse in one workspace opening preference',async()=>{
- await open();category('Workspace');const group=screen.getByRole('radiogroup',{name:'Opening new notes'});expect(within(group).getByRole('radio',{name:'Fill available panes, then replace'}).getAttribute('aria-checked')).toBe('true');
- fireEvent.click(within(group).getByRole('radio',{name:'Always reuse focused pane'}));await saved();expect(doc.workspace?.noteOpening).toBe('reuse');expect(screen.getAllByRole('radiogroup',{name:'Opening new notes'})).toHaveLength(1);
+ await open();category('Workspace');const group=screen.getByRole('radiogroup',{name:'Opening new notes'});expect(within(group).getByRole('radio',{name:'Fill, then replace'}).getAttribute('aria-checked')).toBe('true');
+ fireEvent.click(within(group).getByRole('radio',{name:'Reuse focused pane'}));await saved();expect(doc.workspace?.noteOpening).toBe('reuse');expect(screen.getAllByRole('radiogroup',{name:'Opening new notes'})).toHaveLength(1);
 });

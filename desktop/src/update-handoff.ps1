@@ -44,7 +44,7 @@ try {
     $packagePath = Join-Path $installDirectory 'resources\app\package.json'
     if ((Get-Content -LiteralPath $packagePath -Raw | ConvertFrom-Json).version -ne $task.version) { throw 'Installed version did not match the verified update. Review recovery.' }
     Status 'complete'
-    Start-Process -FilePath $target -WindowStyle Hidden | Out-Null
+    Start-Process -FilePath $target -ArgumentList '--reopen-after-update' -WindowStyle Normal | Out-Null
 } catch {
     Status 'error' $_.Exception.Message
     # Do not attempt a database rollback. Reopen the app to expose retained update/recovery state.

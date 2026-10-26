@@ -20,6 +20,7 @@ import { Updates } from './updates.mjs';
 import {supportsAutomaticInstall,startUpdateHandoff} from './update-handoff.mjs';
 import { spawn } from 'node:child_process';
 import { probeReady } from './probe-ready.mjs';
+import {restoreUpdateWindow,consumeUpdateReopen} from './update-window.mjs';
 import {LinkedManager} from './linked/manager.mjs';
 import {linkedOwner,linkedPrivateOwner} from './linked/owner.mjs';
 
@@ -35,7 +36,7 @@ if (testDirectory && !isAbsolute(testDirectory)) throw new Error('VAULTOR_DESKTO
 if (smokeDirectory || testDirectory) app.setPath('userData', smokeDirectory || testDirectory);
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  let window, profiles, owned, files, linked, hosting, credentials, discovery, connections, tray, updates, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false, updating=false, updateApplying=false, automaticInstall=false;
+  let window, profiles, owned, files, linked, hosting, credentials, discovery, connections, tray, updates, quitWaiter, quitTimer, startupError = '', token = '', writes = Promise.resolve(), quitting = false, stoppedForQuit = false, closeExplained=false, updating=false, updateApplying=false, automaticInstall=false, activationRequested=false;
   const transport = new DesktopTransport(), candidates = new Map();
   const copies=new WorkspaceCopies({directory:resolve(app.getPath('userData'),'workspace-copies'),owned:{start:()=>owned.start(),get address(){return owned.address;},get accessKey(){return owned.accessKey;}},source:()=>transport.active});
   const queue = task => { const next = writes.catch(() => {}).then(task); writes = next; return next; };
@@ -81,7 +82,7 @@ else {
       catch (error) { return { ok: false, error: { code: error.name === 'AbortError' ? 'CANCELLED' : 'DESKTOP_ERROR', detail: error.message === 'fetch failed' ? 'Server unavailable. Check that it is running, then retry.' : String(error.message).slice(0, 1000) } }; }
     });
   }
-  app.on('second-instance', () => { if (window) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } else app.emit('activate'); });
+  app.on('second-instance', () => { if (window) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } else activationRequested=true; });
   app.whenReady().then(async () => {
     const appIcon=nativeImage.createFromPath(fileURLToPath(new URL('../assets/vaultor.png',import.meta.url)));
     if(process.platform==='darwin')app.dock?.setIcon(appIcon);
@@ -109,6 +110,7 @@ else {
         linked??=new LinkedManager({owner:linkedIdentity,readReference:linkedReferenceReader({transport,owner:linkedIdentity}),privateOwner:privateLinkedIdentity,current:scope=>scope&&privateLinkedIdentity(scope,scope)?scope:null,
           directory:resolve(app.getPath('userData'),'linked-sources'),java:resolve(linkedBundle,'runtime/bin/java.exe'),classes:resolve(linkedBundle,'linked-files.jar'),worker:resolve(assets,workerName),
           confirmDiscard:async({archived=false}={})=>{const answer=await dialog.showMessageBox(window,{type:'question',title:'Remove private recovery copies?',message:'Export any versions you need first.',detail:(archived?'':'Linked editors will close. ')+'Only the reviewed private recovery copies are removed; external files are unchanged.',buttons:['Keep copies','Remove recovery copies'],defaultId:0,cancelId:0,noLink:true});return answer.response===1;},
+          carrierPicker:async()=>{const answer=await dialog.showMessageBox(window,{type:'info',title:'Private recovery folder required',message:'This volume needs a private folder for safe Save and recovery.',detail:'Select a writable location on the source volume outside linked folders and Git repositories. Vaultor will create a protected subfolder; documentation will not be moved or changed.',buttons:['Cancel','Choose location'],defaultId:1,cancelId:0,noLink:true});if(answer.response!==1)return null;const selected=await dialog.showOpenDialog(window,{title:'Choose private recovery location on the source volume',properties:['openDirectory']});return selected.canceled?null:resolve(selected.filePaths[0],'Vaultor Recovery '+randomUUID());},
           protectedRoot:app.getPath('userData'),applicationRoot:app.getAppPath(),protectedPaths:[linkedBundle,ui],picker:options=>dialog.showOpenDialog(window,options),saveDialog:options=>dialog.showSaveDialog(window,options)});
       }
       try{return await linked.dispatch(value);}catch(error){throw linkedPublicError(error);}
@@ -261,8 +263,11 @@ else {
       const dimensions=image.getSize();if(dimensions.width*dimensions.height>40000000)throw new Error('Image exceeds 40 megapixels.');await clipboard.write([new ClipboardItem({'image/png':new Blob([image.toPNG()],{type:'image/png'})})]);
     });
     handle('desktop:clipboard', text => { if (typeof text !== 'string' || text.length > 1048576) throw new Error('Clipboard text exceeds 1 MiB.'); return clipboard.writeText(text); });
+    const reopenAfterUpdate=await consumeUpdateReopen(resolve(app.getPath('userData'),'updates'),app.getVersion(),{packaged});
+    let initialUpdateReopen=reopenAfterUpdate;
     const createWindow = () => {
       window = new BrowserWindow({ icon: appIcon, frame: false, autoHideMenuBar: true, width: 1320, height: 900, minWidth: 600, minHeight: 480, show: !smokeDirectory && !process.argv.includes('--background') && !(process.platform==='darwin' && app.getLoginItemSettings().wasOpenedAtLogin), backgroundColor: '#0b1220', title: 'Vaultor', webPreferences: { preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false, plugins: true } });
+      restoreUpdateWindow(window, activationRequested||initialUpdateReopen?['--reopen-after-update']:process.argv);activationRequested=false;initialUpdateReopen=false;
       window.setMenuBarVisibility(false);
       if(process.platform==='win32')window.setAppDetails({appId:'personal.vaultor.desktop',relaunchDisplayName:'Vaultor',appIconPath:fileURLToPath(new URL('../assets/vaultor.ico',import.meta.url)),relaunchCommand:'"'+process.execPath+'"'+(packaged?'':' "'+app.getAppPath()+'"')});
       if (process.platform !== 'darwin') window.setMenu(null);
@@ -295,11 +300,11 @@ else {
     ]);
     Menu.setApplicationMenu(process.platform === 'darwin' ? windowMenu() : null);
     createWindow();
-    if(testDirectory&&process.env.VAULTOR_UPDATE_RELAUNCH_CHECK==='1'){
+    if(testDirectory&&(process.env.VAULTOR_UPDATE_RELAUNCH_CHECK==='1'||process.env.VAULTOR_UPDATE_VISIBILITY_CHECK==='1')){
       if(!resolve(testDirectory).includes('vaultor-oneclick-'))throw new Error('Expected disposable relaunch profile.');
       window.webContents.once('did-finish-load',async()=>{
-        for(let i=0;i<600;i++){if(owned.status==='ready'){await writeFile(resolve(testDirectory,'update-relaunch.json'),JSON.stringify({version:app.getVersion(),ready:true}));stoppedForQuit=true;await owned.stop();discovery.destroy();app.exit(0);return;}await new Promise(done=>setTimeout(done,100));}
-        await writeFile(resolve(testDirectory,'update-relaunch.json'),JSON.stringify({version:app.getVersion(),ready:false}));stoppedForQuit=true;await owned.stop({force:true});discovery.destroy();app.exit(1);
+        for(let i=0;i<600;i++){if(owned.status==='ready'&&window.isVisible()&&window.isFocused()&&await window.webContents.executeJavaScript("Boolean(document.querySelector('.library-view'))")){await writeFile(resolve(testDirectory,'update-visible.png'),(await window.webContents.capturePage()).toPNG());await writeFile(resolve(testDirectory,'update-relaunch.json'),JSON.stringify({version:app.getVersion(),ready:true,visible:window.isVisible(),focused:window.isFocused(),reopenIntent:process.argv.includes('--reopen-after-update')||reopenAfterUpdate,restoredText:await window.webContents.executeJavaScript("document.querySelector('.tiptap')?.textContent??''")}));stoppedForQuit=true;await owned.stop();discovery.destroy();app.exit(0);return;}await new Promise(done=>setTimeout(done,100));}
+        await writeFile(resolve(testDirectory,'update-relaunch.json'),JSON.stringify({version:app.getVersion(),ready:false,visible:window.isVisible()}));stoppedForQuit=true;await owned.stop({force:true});discovery.destroy();app.exit(1);
       });
     }
 

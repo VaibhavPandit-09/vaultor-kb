@@ -1,6 +1,6 @@
 # Linked external folders
 
-Reviewed2026-10-25 for published Windows0.19.1. Publication and installed-runtime results belong in the versioned release ledger; this guide owns the product and safety contract. [Implementation evidence](../development/LINKED-SOURCES.md) retains the engineering history and actual limits.
+Reviewed2026-10-26 for Windows0.20.0. Publication and installed-runtime results belong in the versioned release ledger; this guide owns the product and safety contract. [Implementation evidence](../development/LINKED-SOURCES.md) retains the engineering history and actual limits.
 
 ## Link instead of import
 
@@ -10,11 +10,21 @@ Ordinary Import files / Import folder remains a separate operation: it creates V
 
 Up to eight non-overlapping roots are registered per local workspace generation. Registrations persist privately on this computer. Disconnect revokes access without deleting files. Remove source removes its registration while retaining document reference identities and recovery evidence. **Locate source folder** explicitly reauthorizes an unavailable/restored reference. It selects a fresh root/file identity; it never silently associates an old session with a reused pathname.
 
-## Initial Windows support
+## Windows filesystem support
 
-Write support is limited to Windows x64, ordinary user-owned files on fixed local NTFS, with source and Vaultor’s private recovery store on the **same volume** (normally C:). Other local NTFS drives are accessible read-only. Separate same-volume recovery storage for them is deferred. Network shares, non-NTFS, reparse/cloud/sparse/encrypted/compressed files, alternate streams, extended attributes, explicit integrity labels, existing multiple hardlinks and read-only files are outside direct-write admission. A refused file retains its original bytes. The application remains unprivileged; no elevated helper is required.
+Write support covers Windows x64 ordinary user-owned Markdown on local NTFS, including additional internal volumes and external NTFS SSDs. The installation and primary workspace can stay on C:. Safe publication always uses a verified private recovery carrier on the source volume; it never uses cross-volume rename or copy/delete. Network shares, non-NTFS, reparse/cloud/sparse/encrypted/compressed files, alternate streams, extended attributes, explicit integrity labels, existing multiple hardlinks and read-only files are outside direct-write admission. A refused file retains its original bytes. The application remains unprivileged; no elevated helper is required.
 
 Ordinary owner/group, DACL access/inheritance, creation time and supported attributes are preserved and checked. Modification time, physical file identity and incidental NTFS object tracking IDs can change on Save; replacement does not preserve hardlink relationships. A tracking object ID alone is admitted by the ordinary-file policy. Optional audit SACLs are not assumed absent and exact reproduction is not promised. This is a practical ordinary-file policy, not certification of every NTFS metadata class.
+
+## Private carriers and drive lifecycle
+
+The existing primary recovery store remains the carrier for its own volume. On another volume Vaultor creates an owner-private .vaultor-recovery account/scope directory at the volume root, outside source trees and Git repositories. Multiple roots in a workspace share that volume carrier. If automatic provisioning is refused, the main process explains the requirement and offers a native location picker; Vaultor creates a new protected subfolder and refuses a different volume, source overlap, repositories, reparse paths and pre-existing folders. No documentation is moved and no UAC/system-directory changes are required.
+
+A descriptor beside the primary journal binds the Windows volume GUID, carrier-relative path and native directory identity. Source registrations also retain the volume GUID. Discovery can follow the same GUID at another drive letter; source and carrier identities are rechecked before publication. An unrelated disk at the previous letter gains no authority. Missing/replaced/inaccessible carriers are refused rather than silently recreated. Reconnect the same volume or explicitly select the source through Link or reconnect folder; source removal revokes authority without deleting evidence.
+
+Visual/source drafts remain in the primary store even when the source/carrier disappears. Interrupted publication artifacts remain on their source volume and become reviewable when that same verified carrier returns. Earlier workspace recovery catalogs retain carrier descriptors as well as primary copies. Missing-volume artifacts cannot be exported until that volume is available. Uncertain work is never automatically discarded.
+
+The existing 100-operation/256 MiB allocation cap applies independently to each carrier and the primary draft store. Acknowledged history retains at most 20 versions/64 MiB per carrier; unresolved evidence is retained and quota refuses further allocation. Recovery offers review, separate export and explicit confirmed cleanup. Empty carrier containers/descriptors are retained for reconnect; there is no background volume cleanup.
 
 ## Rich-text editing and exact source
 
@@ -70,4 +80,4 @@ Restoring on another computer requires explicit local reauthorization; a saved p
 
 Main-owned modules are in desktop/src/linked; native Java25 FFM code is under native/linked-markdown/src/vaultor/linked and is packaged without test classes. frontend/src/lib/markdown owns source projection/patching; frontend/src/lib/linked owns session coordination. The Java host is authoritative for identities, revisions, journals and publication. Private consent/validation keys are ephemeral and never enter renderer storage, URLs or archives. Root and file operations use native handle confinement, not string canonicalization alone.
 
-The [single implementation tracker](../development/LINKED-SOURCES.md) contains exact test counts, runtime/soak evidence, failed experiments, phase status and remaining release acceptance. Physical Windows IME, hours-long all-pane editing, non-Windows writing, other-volume publication, independent certification and physical power-loss testing remain unqualified. Actual OS clipboard automation is distinguished from physical hardware testing.
+The [single implementation tracker](../development/LINKED-SOURCES.md) contains exact test counts, runtime/soak evidence, failed experiments, phase status and remaining release acceptance. Physical Windows IME, hours-long all-pane editing, non-Windows writing, physical hot-unplug/drive-letter reassignment, independent certification and physical power-loss testing remain unqualified. Actual OS clipboard automation is distinguished from physical hardware testing.

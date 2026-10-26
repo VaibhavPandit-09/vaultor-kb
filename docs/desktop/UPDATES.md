@@ -33,6 +33,10 @@ Connections & hosting → Bring an existing workspace offers two paths:
 
 Current desktop connections require protocol 2 plus changeFeed/scopedSettings capabilities. Use [HOST-ACCESS.md](../security/HOST-ACCESS.md) for standalone/Docker owner bootstrap, HTTPS publication and pairing. Docker/browser hosting remains supported; the installer does not migrate, stop or delete those servers.
 
+## Explicit update visibility
+
+Windows0.20.0 fixes updater relaunches inherited as hidden processes. The helper relaunches with --reopen-after-update and normal window visibility; Electron restores/shows/focuses the existing main window after ready-to-show. For older helpers, only a fresh (at most ten minutes), matching-version complete handoff receipt is consumed once to request the same behavior. Failed/installing receipts retain diagnostics and do not force visibility; stale/mismatched completed receipts are consumed without opening a background window. Ordinary login/background startup and tray preferences remain unchanged. Early second-instance activation is queued until the initial window exists, without creating another window. Workspace/session startup follows the existing path.
+
 ## In-app updates
 
 Window menu → Updates checks for releases automatically on opening. Installed normal apps also perform one check 10 seconds after startup; there is no repeating polling loop. Blank custom feed means the public Vaultor GitHub repository, not an unconfigured updater. The API reads at most the latest 100 release records (2 MiB), ignores drafts/prereleases, and chooses the highest stable version with a complete uploaded pair for this OS/architecture. It does not depend on GitHub's global latest flag, so Windows-first releases do not offer a Windows installer to Macs. Missing platform pairs are skipped; a selected pair with invalid metadata/signature fails explicitly instead of falling back silently.

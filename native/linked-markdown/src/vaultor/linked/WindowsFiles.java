@@ -102,10 +102,26 @@ public final class WindowsFiles {
         if(!System.getProperty("os.name").startsWith("Windows")||!Set.of("amd64","x86_64").contains(System.getProperty("os.arch"))||ADDRESS.byteSize()!=8)throw new IOException("WINDOWS_X64_ONLY");
         String root=path.toAbsolutePath().getRoot().toString();if(!root.matches("[A-Za-z]:\\\\"))throw new IOException("LOCAL_VOLUME_ONLY");
         try(var a=Arena.ofConfined()){
-            var drive=invoke("GetDriveTypeW",FunctionDescriptor.of(JAVA_INT,ADDRESS),wide(a,root));if((int)drive.value()!=3)throw new IOException("FIXED_VOLUME_ONLY");
+            var drive=invoke("GetDriveTypeW",FunctionDescriptor.of(JAVA_INT,ADDRESS),wide(a,root));if((int)drive.value()!=3&&(int)drive.value()!=2)throw new IOException("LOCAL_VOLUME_ONLY");
             var name=a.allocate(128,2);yes("VolumeInformation",invoke("GetVolumeInformationW",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS,JAVA_INT,ADDRESS,ADDRESS,ADDRESS,ADDRESS,JAVA_INT),wide(a,root),MemorySegment.NULL,0,MemorySegment.NULL,MemorySegment.NULL,MemorySegment.NULL,name,64));
             if(!name.getString(0,StandardCharsets.UTF_16LE).equals("NTFS"))throw new IOException("NTFS_ONLY");
         }
+    }
+    /** Stable volume identity, independent of its current DOS drive letter. */
+    public static String volumeIdentity(Path path)throws IOException{
+        localNtfs(path);
+        try(var a=Arena.ofConfined()){
+            var buffer=a.allocate(1024,2);
+            yes("VolumeIdentity",invoke("GetVolumeNameForVolumeMountPointW",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS,JAVA_INT),wide(a,path.toAbsolutePath().getRoot().toString()),buffer,512));
+            return buffer.getString(0,StandardCharsets.UTF_16LE).toLowerCase(Locale.ROOT);
+        }
+    }
+    static Path mountedVolume(String identity)throws IOException{
+        for(char letter='A';letter<='Z';letter++){
+            Path root=Path.of(letter+":\\");
+            try{if(volumeIdentity(root).equals(identity))return root;}catch(IOException ignored){/* Absent/unsupported drives grant nothing. */}
+        }
+        throw new IOException("SOURCE_VOLUME_UNAVAILABLE");
     }
     /** Each ancestor is opened before its child, without delete sharing. */
     public static final class Pins implements AutoCloseable{

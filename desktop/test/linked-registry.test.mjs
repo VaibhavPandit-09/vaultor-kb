@@ -19,6 +19,18 @@ test('native linked registry authorizes, pages and persists opaque source/docume
 test('same pathname replacement never reuses the old document identity',{skip},async()=>{const f=await fixture();try{const {root}=await f.registry.add(f.current);const before=await f.registry.list(f.current,{source:root});await writeFile(join(f.source,'replacement.md'),'New occupant');const {rename}=await import('node:fs/promises');await rename(join(f.source,'replacement.md'),join(f.source,'guide.md'));const after=await f.registry.list(f.current,{source:root});assert.notEqual(after.items[0].id,before.items[0].id);assert.equal(await readFile(join(f.source,'guide.md'),'utf8'),'New occupant');}finally{await f.close();}});
 test('workspace epoch change while picker is open creates no registration',{skip},async()=>{const f=await fixture();try{f.registry.options.picker=async()=>{f.change({...f.current,epoch:'different-epoch',workspace:'different-workspace'});return {canceled:false,filePaths:[f.source]};};await assert.rejects(f.registry.add(f.current),/context|owner|epoch/i);assert.equal(f.registry.snapshot().length,0);}finally{await f.close();}});
 test('disconnect revokes browse authority but keeps source content',{skip},async()=>{const f=await fixture();try{const {root}=await f.registry.add(f.current);await f.registry.disconnect(f.current,root);assert.equal(f.registry.snapshot()[0].status,'disconnected');await assert.rejects(f.registry.list(f.current,{source:root}),/DISCONNECTED/);assert.equal(await readFile(join(f.source,'guide.md'),'utf8'),'# Original\n');}finally{await f.close();}});
+
+test('explicit selection of the same verified moved root retains logical source identity',{skip},async()=>{
+ const f=await fixture();try{
+  const first=await f.registry.add(f.current);const {rename}=await import('node:fs/promises');
+  const moved=join(f.directory,'remounted-source');await rename(f.source,moved);
+  f.registry.options.picker=async()=>({canceled:false,filePaths:[moved]});
+  const selected=await f.registry.add(f.current);assert.equal(selected.root,first.root);
+  assert.equal(f.registry.roots.get(first.root).path,moved);
+  assert.equal(f.registry.snapshot().length,1);
+  assert.equal((await f.registry.list(f.current,{source:first.root})).items[0].name,'guide.md');
+ }finally{await f.close();}
+});
 test('host identity change during picker refuses root registration even when renderer connection token did not change',{skip},async()=>{const f=await fixture();try{f.registry.options.owner=async()=>{throw Error('LINKED_WORKSPACE_CHANGED');};await assert.rejects(f.registry.add(f.current),/WORKSPACE_CHANGED/);assert.equal(f.registry.snapshot().length,0);const metrics=await f.registry.native.call('metrics');assert.equal(Number(metrics[5]),0);}finally{await f.close();}});
 test('source removal retains reference identities and private evidence without filesystem deletion',{skip},async()=>{const f=await fixture();try{const {root}=await f.registry.add(f.current),page=await f.registry.list(f.current,{source:root}),id=page.items[0].id;await f.registry.remove(f.current,root);assert.equal(f.registry.snapshot().length,0);await f.registry.close();await f.registry.load(f.current);assert.equal(f.registry.entries.get(id).name,'guide.md');assert.equal(f.registry.snapshot().length,0);assert.equal(await readFile(join(f.source,'guide.md'),'utf8'),'# Original\n');}finally{await f.close();}});
 

@@ -8,15 +8,16 @@ import java.util.*;
 final class PrivateEvidence {
     record Ticket(String operation,String fingerprint,long expires){}
     record Review(String ticket,List<String> artifacts){}
-    private final Path root;
+    @FunctionalInterface interface Operations {Path resolve(String id)throws IOException;}
+    private final Operations operations;
     private final Map<String,Ticket> tickets=new HashMap<>();
-    PrivateEvidence(Path root){this.root=root;}
-    private Path operation(String id)throws IOException{try{if(!UUID.fromString(id).toString().equals(id))throw new IllegalArgumentException();}catch(Exception e){throw new IOException("OPERATION_ID");}return root.resolve(id);}
+    PrivateEvidence(Operations operations){this.operations=operations;}
+    private Path operation(String id)throws IOException{try{if(!UUID.fromString(id).toString().equals(id))throw new IllegalArgumentException();}catch(Exception e){throw new IOException("OPERATION_ID");}return operations.resolve(id);}
     private List<Path> files(Path operation)throws IOException{
         try(var entries=Files.list(operation)){var files=entries.sorted().limit(13).toList();if(files.size()>12)throw new IOException("RECOVERY_ENTRY_LIMIT");for(Path file:files)if(!file.getFileName().toString().matches("(?:[0-9]{2}\\.rec|stage\\.md|captured\\.md|external\\.md|view\\.ref)"))throw new IOException("RECOVERY_ENTRY_TYPE");return files;}
     }
     private String fingerprint(Path operation)throws IOException{
-        try(var parent=WindowsFiles.pinPublication(root);var pins=WindowsFiles.pinPublication(operation)){
+        try(var parent=WindowsFiles.pinPublication(operation.getParent());var pins=WindowsFiles.pinPublication(operation)){
             StringBuilder text=new StringBuilder(pins.last().identity());
             for(Path path:files(operation))try(var file=WindowsFiles.relative(pins.handle(),path.getFileName().toString(),WindowsFiles.READ,1,false)){
                 var info=WindowsFiles.info(file);text.append('\n').append(path.getFileName()).append(':').append(info.identity()).append(':').append(LinkedStore.hash(WindowsFiles.read(file,LinkedStore.JOURNAL_LIMIT)));
@@ -27,7 +28,7 @@ final class PrivateEvidence {
     Review review(String operation)throws IOException{
         tickets.entrySet().removeIf(entry->entry.getValue().expires()<System.currentTimeMillis());if(tickets.size()>=16)throw new IOException("RECOVERY_REVIEW_LIMIT");
         Path op=operation(operation);String fingerprint=fingerprint(op),ticket=UUID.randomUUID().toString();var artifacts=new ArrayList<String>();
-        try(var parent=WindowsFiles.pinPublication(root);var pins=WindowsFiles.pinPublication(op)){
+        try(var parent=WindowsFiles.pinPublication(op.getParent());var pins=WindowsFiles.pinPublication(op)){
             for(Path path:files(op)){String name=path.getFileName().toString();if(Set.of("captured.md","stage.md","external.md").contains(name))artifacts.add(name.substring(0,name.length()-3));}
         }
         tickets.put(ticket,new Ticket(operation,fingerprint,System.currentTimeMillis()+60000));return new Review(ticket,List.copyOf(artifacts));
