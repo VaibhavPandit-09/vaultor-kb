@@ -2,7 +2,7 @@
 
 Start with [CODEBASE.md](CODEBASE.md) for the current product, source map, architecture, contracts and limitations. Agents read [AGENTS.md](../AGENTS.md) and the [development workflow](development/AI_DEVELOPMENT_WORKFLOW.md) before changes. UI work additionally reads the design contracts below. [Root README](../README.md) and [mobile README](../mobile/README.md) are short discovery entry points; [.github release checklist](../.github/RELEASE_CHECKLIST.md) delegates to the release process.
 
-Reviewed 2026-10-26 against integrated master, published Windows0.20.0/Mac0.18.1 and Androidalpha.28/code32. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
+Reviewed 2026-10-26 against integrated master, published Windows0.20.0/Mac0.21.0 and Androidalpha.28/code32. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
 
 ## Architecture and security
 
@@ -107,4 +107,4 @@ Android: [0.1.0-alpha.1](android/releases/0.1.0-alpha.1.md) · [0.1.0-alpha.2](a
 
 - [Desktop0.19.1 release evidence](desktop/releases/v0.19.1.md): ordinary NTFS tracking-ID admission and formatted read-only Markdown patch.
 
-- [Desktop 0.21.0 candidate](desktop/releases/v0.21.0.md): native APFS linked folders, actual Mac evidence and exact Windows/complete-platform release handoff.
+- [Mac 0.21.0 release](desktop/releases/v0.21.0.md): native APFS linked folders, actual Mac publication evidence and exact-tag Windows/complete-platform handoff.

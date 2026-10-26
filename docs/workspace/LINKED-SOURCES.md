@@ -1,6 +1,6 @@
 # Linked external folders
 
-Reviewed2026-10-27 for Windows0.20.0 and the unpublished Mac0.21.0 candidate. Publication and installed-runtime results belong in the versioned release ledger; this guide owns the product and safety contract. [Implementation evidence](../development/LINKED-SOURCES.md) retains the engineering history and actual limits.
+Reviewed2026-10-27 for Windows0.20.0 and published Mac0.21.0. Publication and installed-runtime results belong in the versioned release ledger; this guide owns the product and safety contract. [Implementation evidence](../development/LINKED-SOURCES.md) retains the engineering history and actual limits.
 
 ## Link instead of import
 
@@ -18,7 +18,7 @@ Ordinary owner/group, DACL access/inheritance, creation time and supported attri
 
 ## macOS filesystem support
 
-The 0.21.0 candidate adds ordinary owner-owned UTF8 Markdown on writable local APFS on Apple Silicon. Existing React/Tiptap editing, source patches, sessions, explicit Save, conflicts, Recovery, relative links/assets, search and reference-only collections are shared with Windows. The personal DMG is unsandboxed (ad-hoc signed, without hardened runtime/notarization); private picker-selected registrations persist on this Mac. Security-scoped bookmarks are not needed for this distribution. Registrations retain the root's APFS volume UUID and inode/birth identity; reauthorization inspects a fresh selected identity. Renderer paths and portable references convey no grant.
+Mac0.21.0 adds ordinary owner-owned UTF8 Markdown on writable local APFS on Apple Silicon. Existing React/Tiptap editing, source patches, sessions, explicit Save, conflicts, Recovery, relative links/assets, search and reference-only collections are shared with Windows. The personal DMG is unsandboxed (ad-hoc signed, without hardened runtime/notarization); private picker-selected registrations persist on this Mac. Security-scoped bookmarks are not needed for this distribution. Registrations retain the root's APFS volume UUID and inode/birth identity; reauthorization inspects a fresh selected identity. Renderer paths and portable references convey no grant.
 
 The native arm64 helper uses no-follow `openat`, held directory descriptors, APFS volume UUID queries, `renameatx_np(RENAME_EXCL)`, flushed private files and vnode invalidation. Publication keeps the shared same-volume carrier/capture/journal architecture. POSIX owner/group, ordinary mode and birth time are preserved; file identity and modification time change. Private stores and exports clear inherited ACLs before private bytes are written and use 0700 directories/0600 files. Existing multi-hardlink files, non-owner files, read-only files, extended ACLs, special mode/flags, resource forks and extended attributes other than incidental OS-managed `com.apple.provenance` refuse direct Save. Provenance is admitted as OS tracking metadata; exact transfer of that attribute is not promised. Unsupported ordinary readable Markdown can remain a read-only view.
 
