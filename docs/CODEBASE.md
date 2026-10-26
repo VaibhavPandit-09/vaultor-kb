@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-10-25. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-10-26. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -392,6 +392,8 @@ Future work: table XLSX/PDF and separately connected Google Docs publishing. Ind
 
 ## Development, deployment and validation
 
+[AI development workflow](development/AI_DEVELOPMENT_WORKFLOW.md#efficient-exploration-and-verification) owns platform-wide context efficiency, risk-based verification and evidence reuse. Read relevant reference sections; reserve complete UI-contract reads for substantial redesigns.
+
 See [OPERATIONS.md](development/OPERATIONS.md) for commands, environment, Docker logs and disposable API smoke testing. Keep development verification minimal: compile affected code and run focused checks only for meaningful risks. Do not routinely run API smoke, full suites, Docker verification or browser sessions; use APIs for specific debugging or explicit requests. Available frontend commands are npm run build, npm run lint and npm test (after npm ci). Backend uses Java 25 and the Maven wrapper: ./mvnw test (Windows: .\mvnw.cmd test). Both service tests use temporary SQLite/storage. Docker builds the entire app; do not mount real data into the smoke runner.
 
 Latest integrated release qualification: backend120/frontend324/desktop44/mobile111 passed, with TypeScript/reader runtime and focused native/installer evidence recorded in [R10 qualification](development/qualification/R10.md). These are historical release results, not checks rerun for every edit. Keep ordinary validation scoped to the change.
@@ -414,6 +416,10 @@ Latest integrated release qualification: backend120/frontend324/desktop44/mobile
 Diagnostic events carry category (layout/ui/application/save/recovery/integrity), severity (info/warning/error/critical) and bounded occurrences. Only exact native ResizeObserver delivery messages without an exception object or source location, from the current document or no filename, become informational layout events, aggregated over10seconds per connection. Other exceptions/rejections remain visible. Render/recovery failures retain critical classification; recoverable request/UI errors use warning. Save errors are explicitly classified by the SaveCoordinator writer. The shared notice reserves critical styling for critical severity and offers Retry saves only for a current genuine failed save; identifiers remain in Details. Recovery storage failures also retain their dedicated recovery warning. Pane/header/breadcrumb geometry observers coalesce layout writes into one cancellable animation frame, deduplicate measurements and preserve existing reading anchors. No correctness depends on motion completion.
 
 ## Maintenance history
+
+### 2026-10-26 — Permanent development efficiency policy
+
+Reconciled root, workflow and UI-contract reading requirements; added risk-based checks, evidence reuse, bounded investigation and concise reporting. No application architecture changed. Validation: reviewed instruction consistency and git diff --check; no runtime checks needed for this policy-only change.
 
 ### 2026-10-25 — Linked-source registry and native hierarchy foundation
 

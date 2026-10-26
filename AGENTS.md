@@ -1,6 +1,10 @@
 # Instructions for agents working on Vaultor
 
-Read [docs/CODEBASE.md](docs/CODEBASE.md) before making changes. It is the living reference for architecture, data contracts, UI behavior, design conventions, setup, and known limitations. Use [docs/README.md](docs/README.md) to find other documentation.
+Read the relevant sections of [docs/CODEBASE.md](docs/CODEBASE.md) before making changes. It is the living reference for architecture, data contracts, UI behavior, design conventions, setup, and known limitations. Use [docs/README.md](docs/README.md) to find other documentation.
+
+## AI development efficiency contract
+
+All agents and platforms follow [the authoritative efficiency workflow](docs/development/AI_DEVELOPMENT_WORKFLOW.md#efficient-exploration-and-verification). Inspect Git state first, search symbols and read bounded relevant sections. Reuse unchanged evidence; do not repeat passing checks after unrelated edits or reread unchanged references after compaction. Classify risk, run focused checks during implementation and the relevant broader regression once at final integration. Preserve content-loss, authorization, native-platform and release gates. Investigate evidenced risks, refuse unsupported configurations safely, avoid unrelated refactors and long reports, and continue autonomously within authorized scope. Record actual checks and gaps; never invent token savings. These rules apply to Windows, macOS, Android and future environments.
 
 ## Required maintenance workflow
 
@@ -21,7 +25,7 @@ For local owner or paired LAN API access, follow [docs/security/HOST-ACCESS.md](
 
 UI / Interaction Design Contract
 
-For any task that changes Vaultor's user interface, layout, styling, interaction behavior, animation, navigation, responsive behavior, visual hierarchy, density, scrolling behavior, panes, previews, theme behavior, or other presentation-layer behavior, you MUST read docs/design/UI_PHILOSOPHY.md completely before proposing or modifying code.
+For narrow UI fixes, read applicable sections of docs/design/UI_PHILOSOPHY.md before proposing or modifying code. Substantial interaction redesigns require reading the complete contract. Understand relevant architecture, accessibility and UI contracts in either case.
 
 Treat docs/design/UI_PHILOSOPHY.md as the authoritative design contract for Vaultor UI work, not as optional inspiration.
 

@@ -1,6 +1,6 @@
 # Vaultor AI development and integration workflow
 
-Reviewed 2026-10-23. This is the authoritative Git workflow for Vaultor, a primarily single-developer, AI-assisted project. It supersedes the former automatic milestone-branch and integration-branch pattern. Product, security, UI and release contracts remain in force.
+Reviewed 2026-10-26. This is the authoritative Git workflow for Vaultor, a primarily single-developer, AI-assisted project. It supersedes the former automatic milestone-branch and integration-branch pattern. Product, security, UI and release contracts remain in force.
 
 ## Master-centered direct development
 
@@ -41,7 +41,7 @@ If protections require a PR or checks, use that required route with the existing
 
 Preserve all approved product/UI contracts unless a change is explicitly authorized. Current master owns integrated architecture and presentation; an authorized feature contributes its intended domain semantics. Tests and explicit contracts take precedence over incidental implementation details. Preserve resources, structured Tiptap JSON, shared clients/settings/tokens, centralized Escape/focus/Back, host authority, source isolation and protected journals.
 
-For UI work read UI_PHILOSOPHY.md completely; Android-facing work also requires ANDROID_UI_PHILOSOPHY.md. Major interaction changes require explicit authorization and meaningful user review. Milestone, integration and release authorization do not authorize a redesign. Electron is authoritative for desktop runtime; browser/Vite is supplementary. Inspect motion in motion. Emulator evidence cannot certify physical Samsung/OEM/tactile quality, TalkBack speech or real-LAN behavior. Do not self-certify unperformed platform checks.
+For narrow UI fixes read applicable UI_PHILOSOPHY.md sections; substantial interaction redesigns require the complete contract; Android-facing work also requires ANDROID_UI_PHILOSOPHY.md. Major interaction changes require explicit authorization and meaningful user review. Milestone, integration and release authorization do not authorize a redesign. Electron is authoritative for desktop runtime; browser/Vite is supplementary. Inspect motion in motion. Emulator evidence cannot certify physical Samsung/OEM/tactile quality, TalkBack speech or real-LAN behavior. Do not self-certify unperformed platform checks.
 
 ## Release and recovery points
 
@@ -52,3 +52,35 @@ Use immutable release tags as stable recovery points. Never move existing tags, 
 After any integration, verify master contains the intended source and earlier integrated functionality, record actual tests/limitations, and push coherent changes. Preserve historical branches and worktrees; do not delete them automatically. Branch/worktree retirement requires explicit user direction.
 
 Complete only the authorized work and stop at its requested completion/acceptance gate. Do not automatically begin the next milestone or post-roadmap product work.
+
+## Efficient exploration and verification
+
+Minimize AI reasoning and context spent on repetitive verification; preserve automated checks that protect actual product correctness. This is the single operational efficiency policy for every platform and agent.
+
+### Exploration and scope
+
+Inspect Git state and changed files first. Discover filenames and symbols with rg, then read bounded relevant code, CODEBASE and topic-guide sections. Understand applicable architecture and UI contracts before editing; comprehensive design review is reserved for substantial interaction redesigns. Reuse current implementation and evidence rather than historical qualification campaigns. After compaction retain paths, decisions and check outcomes; do not reread large unchanged files. Passing logs need only exit status/counts; inspect full logs for failures.
+
+Implement requested behavior and necessary support only. Avoid opportunistic refactors, architectural replanning and speculative compatibility work. Investigate practical evidenced risks; never dismiss plausible irreversible data loss or authorization failure. Refuse safely unsupported exotic configurations and document the boundary. Explicitly fix, defer or report investigations that expand beyond scope. Use existing fixtures/harnesses and suitable CI; add a small reusable wrapper only when it removes actual repeated work. Do not redesign CI for efficiency alone.
+
+### Risk and verification
+
+| Risk | Examples | Required evidence |
+| --- | --- | --- |
+| Low | Styling, text, layout | Targeted component checks, compilation/type checks, one actual visual inspection covering changed layouts. No routine backend/filesystem/Docker suites. |
+| Medium | Navigation, settings semantics, editor interactions, search | Focused affected tests, relevant integration tests and affected runtime smoke. Expand when shared behavior changes or failures justify it. |
+| High | Publication, recovery, migrations, credentials, security, updates | Existing affected safety regressions, focused new-behavior and failure/recovery cases, final appropriate packaged-runtime check. |
+
+At coherent implementation checkpoints run focused checks. After a fix rerun the failing check and expand only as warranted. Do not rerun unchanged passing suites after unrelated edits. Run the relevant broader regression once at final integration/release. Changes affecting a previously checked behavior invalidate that evidence; documentation edits do not. Keep a compact command/outcome record with artifact/source identity for runtime checks. Avoid duplicate tests, repetitive browser inspections and large passing-log reads. Native evidence remains required for native behavior claims.
+
+### Delivery and reporting
+
+Stable delivery still requires relevant regressions, production build, packaged smoke, affected filesystem/recovery checks, original signing identity, installer/sidecar verification, version/source provenance, applicable public updater/download verification and no known critical correctness/data-loss defects. These are final conditions, not a repeated campaign after every edit. RELEASE-PROCESS.md owns exact release gates and missing-platform handling.
+
+Continue autonomously through authorized work with small coherent commits; ordinary decisions do not need repeated approval. Update authoritative documents in place and avoid lengthy new qualification reports. Report concise meaningful progress, then implementation, tested/untested behavior, limitations, commit/release and remaining platform work.
+
+### Lightweight baseline and measurement
+
+Baseline on 2026-10-26: frontend build/lint/test; desktop check/test and native smoke scripts; native linked run.ps1; backend Maven tests; separate Android checks. Existing instructions discouraged routine full/API/Docker checks but root/workflow/UI contract demanded complete UI-guide reads even for layout fixes. No hosted CI signing pipeline is configured by the release process.
+
+Use explicit affected test files and compact runner summaries during development. Reserve affected native safety regressions and packaged checks for final integration; reuse unchanged results for release. Record eliminated duplicate operations in the milestone result, not a second large qualification ledger. Report actual token consumption only if supported tooling exposes it; command counts or estimated percentages are not token measurements.

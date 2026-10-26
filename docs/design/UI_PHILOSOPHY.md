@@ -787,7 +787,7 @@ For meaningful UI changes, follow this process.
 
 Before proposing or editing UI:
 
-1. Read this file completely.
+1. Read applicable sections for narrow fixes; read this file completely for substantial interaction redesigns.
 2. Read the relevant current Vaultor documentation.
 3. Inspect the actual current components and styles involved.
 4. Understand existing state and interaction behavior.
@@ -869,7 +869,7 @@ Ask:
 
 When an AI agent is asked to work on Vaultor UI, the following instruction should be treated as part of the task:
 
-> Read `docs/design/UI_PHILOSOPHY.md` completely before making UI decisions. Treat it as the product's design contract, not optional inspiration. Preserve Vaultor's existing visual identity while applying its rules for density, progressive compression, spatial continuity, and structural motion. Do not default to sticky headers, nested scroll containers, floating toolbars, excessive cards, or arbitrary fade/slide animations when a spatial transformation can solve the problem more elegantly. For significant changes, first analyze the current screen and describe the interaction transformation before implementing it.
+> Read applicable sections of `docs/design/UI_PHILOSOPHY.md` for narrow fixes, or the complete contract for substantial redesigns before making UI decisions. Treat it as the product's design contract, not optional inspiration. Preserve Vaultor's existing visual identity while applying its rules for density, progressive compression, spatial continuity, and structural motion. Do not default to sticky headers, nested scroll containers, floating toolbars, excessive cards, or arbitrary fade/slide animations when a spatial transformation can solve the problem more elegantly. For significant changes, first analyze the current screen and describe the interaction transformation before implementing it.
 
 ---
 
@@ -877,7 +877,7 @@ When an AI agent is asked to work on Vaultor UI, the following instruction shoul
 
 Use this when beginning work on an existing screen:
 
-> Read `docs/design/UI_PHILOSOPHY.md` completely, then inspect the implementation of this screen and all directly related components/styles.
+> Read applicable sections of `docs/design/UI_PHILOSOPHY.md` for narrow fixes, or the complete contract for substantial redesigns, then inspect the implementation of this screen and all directly related components/styles.
 >
 > Do **not** modify code yet.
 >
@@ -939,7 +939,7 @@ Use this when performing the larger Vaultor refinement pass:
 
 > We are entering a dedicated Vaultor UI transformation phase.
 >
-> Read `docs/design/UI_PHILOSOPHY.md` completely and treat it as authoritative for all UI work.
+> Read applicable sections of `docs/design/UI_PHILOSOPHY.md` for narrow fixes, or the complete contract for substantial redesigns and treat it as authoritative for all UI work.
 >
 > Do not begin by globally rewriting styles.
 >
