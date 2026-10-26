@@ -43,7 +43,7 @@ Published Windows-only linked admission/read-only preview patch. Use immutable v
 
 ## Next engineering session: native linked folders after Windows 0.20.0
 
-Start from latest master containing immutable v0.20.0 (the release ledger records its exact commit after publication), not an older pending qualification tag. Mac remains published at 0.18.1; Windows0.20.0 does not implement or qualify macOS writes. Native Mac linked-folder engineering requires a new version and its own acceptance; do not add a changed backend under the Windows tag.
+Start from latest master containing immutable v0.20.0 / e795b32914fddc107a9235373e527a1e8988f584, not an older pending qualification tag. Windows0.20.0 is published with its original-key EXE/sidecar and public updater verified. Mac remains published at 0.18.1; Windows0.20.0 does not implement or qualify macOS writes. Native Mac linked-folder engineering requires a new version and its own acceptance; do not add a changed backend under the Windows tag.
 
 Reuse directly: structured Markdown editing/source-preserving worker patches, editor sessions, explicit Save, conflict combination, Recovery UI/export, linked hierarchy, search, collection/reference metadata and logical source/document identities. Native-channel operations remain opaque: root/root-info (root identity plus stable volume identity), locate-root (verified mount discovery), carrier (signed one-use setup), open-linked/draft/save, recovery/inspect/review/restore/metadata/evidence/export-selected and grant revocation. A carrier descriptor grants evidence access only; it never grants source authority. Primary drafts remain independent of source-volume availability, and publication requires the source-local verified carrier.
 
