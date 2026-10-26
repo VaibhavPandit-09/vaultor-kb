@@ -1,6 +1,6 @@
 # Linked Markdown 1 MiB implementation candidate
 
-Reviewed 2026-10-27. Windows-only implementation milestone after clean master/origin `018ae44`. Desktop candidate 0.23.0; no merge, tag, asset upload or publication is authorized. **Performance qualification is incomplete; this candidate is not ready for release authorization.** Published 256 KiB qualification remains historical evidence, not proof of this candidate's responsiveness.
+Reviewed 2026-10-27. Exact implementation source `a3564c7f2f8254d7fe09c675c16adf3cf7f6c32c`, after clean master/origin `018ae44`. Desktop candidate 0.23.0; no merge, tag, asset upload or publication is authorized. **Performance qualification is incomplete; this candidate is not ready for release authorization.** Published 256 KiB qualification remains historical evidence, not proof of this candidate's responsiveness.
 
 ## Implementation
 
