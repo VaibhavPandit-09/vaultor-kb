@@ -2,7 +2,7 @@
 
 Start with [CODEBASE.md](CODEBASE.md) for the current product, source map, architecture, contracts and limitations. Agents read [AGENTS.md](../AGENTS.md) and the [development workflow](development/AI_DEVELOPMENT_WORKFLOW.md) before changes. UI work additionally reads the design contracts below. [Root README](../README.md) and [mobile README](../mobile/README.md) are short discovery entry points; [.github release checklist](../.github/RELEASE_CHECKLIST.md) delegates to the release process.
 
-Reviewed 2026-10-26 against integrated master, published Windows0.20.0/Mac0.21.0 and Androidalpha.28/code32. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
+Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0 and Androidalpha.28/code32. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
 
 ## Architecture and security
 
@@ -28,6 +28,8 @@ Reviewed 2026-10-26 against integrated master, published Windows0.20.0/Mac0.21.0
 - [SCALE-INTEGRATION](development/SCALE-INTEGRATION.md): Historical0.7.1 scale/fault results; compare only under stated conditions.
 
 ## Desktop delivery
+
+- [0.21.0 release ledger](desktop/releases/v0.21.0.md): Both public platform pairs, Latest status and explicit Windows remaining-runtime-test waiver.
 
 - [Windows 0.20.0 milestone](desktop/releases/v0.20.0.md): Efficiency policy, per-volume NTFS carriers, Settings layout and update visibility; exact source/platform qualification.
 
