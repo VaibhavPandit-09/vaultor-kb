@@ -9,7 +9,7 @@ import java.util.*;
  * default historical entrypoint refuses source writes; LinkedHost deliberately
  * selects the production policy without accepting a renderer policy flag. */
 public final class PrivateHost {
-    private static final int FRAME_LIMIT=6*1024*1024;
+    private static final int FRAME_LIMIT=16*1024*1024;
     private static String line(InputStream input)throws IOException{
         var bytes=new ByteArrayOutputStream();int value;
         while((value=input.read())!=-1&&value!='\n'){if(bytes.size()>=FRAME_LIMIT)throw new IOException("FRAME_LIMIT");bytes.write(value);}

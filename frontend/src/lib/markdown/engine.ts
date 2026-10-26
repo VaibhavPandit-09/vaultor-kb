@@ -27,9 +27,10 @@ function protectedValues(doc: JSONContent): string[] {
   const walk = (n: JSONContent) => { if (n.type === 'sourceBlock' || n.type === 'sourceInline') result.push(JSON.stringify(canonical(n).attrs)); n.content?.forEach(walk); };
   walk(doc); return result.sort();
 }
-function singleTextChange(a: JSONContent, b: JSONContent): { old: JSONContent; next: string } | null {
+function singleTextChange(a: JSONContent, b: JSONContent, retained?: WeakMap<JSONContent, JSONContent>): { old: JSONContent; next: string } | null {
   const changes: { old: JSONContent; next: string }[] = [];
   const visit = (x: JSONContent, y: JSONContent): boolean => {
+    if (retained?.get(x) === y) return true;
     if (x.type === 'text' && y.type === 'text') {
       if (JSON.stringify(canonical(x).marks ?? []) !== JSON.stringify(canonical(y).marks ?? [])) return false;
       if (x.text !== y.text) changes.push({ old: x, next: y.text ?? '' }); return true;
@@ -85,6 +86,9 @@ export class MarkdownEngine {
   private historyLimit: number;
   private regionEpoch = 0;
   private regions = new Map<string, { index: number; epoch: number }>();
+  private canonicalBlocks = new WeakMap<JSONContent, JSONContent>();
+  private retained = new WeakMap<JSONContent, JSONContent>();
+  private projectionKey = '';
   sourceRegion(index: number, expected: JSONContent) {
     const block = this.projection.blocks[index];
     if (!block || key(block.node) !== key(expected)) throw new Error('SOURCE_REGION_MAPPING_AMBIGUOUS');
@@ -112,17 +116,28 @@ export class MarkdownEngine {
     return source;
   }
   get historyBytes() { return this.historySize; }
-  apply(target: JSONContent): EngineResult {
+  apply(target: JSONContent, immutable = false): EngineResult {
     const begin = performance.now(); let patchMs = 0, speculativeValidationMs = 0;
     try {
-      const intended = canonical(target), k = JSON.stringify(intended), source = this.source;
+      // Only worker-owned immutable snapshots may reuse semantic blocks. Public
+      // callers/tests can mutate JSON between apply calls and keep the full path.
+      const intended = immutable && target.type === 'doc' && target.content?.every(n => n.type !== 'text') ? {
+        ...canonical({ ...target, content: [] }),
+        content: target.content.filter(n => n.type !== 'paragraph' || n.content?.length).map(n => {
+          let value = this.canonicalBlocks.get(n);
+          if (!value) { value = canonical(n, false); this.canonicalBlocks.set(n, value); }
+          return value;
+        }),
+      } : canonical(target);
+      const k = JSON.stringify(intended), source = this.source;
       assertProjectionShape(target, this.byteLimit > LIMITS.interactiveBytes);
-      if (key(this.projection.doc) === k) return { accepted: true, source, patches: [], patchMs: performance.now() - begin, validationMs: 0 };
+      this.projectionKey ||= key(this.projection.doc);
+      if (this.projectionKey === k) return { accepted: true, source, patches: [], patchMs: performance.now() - begin, validationMs: 0 };
       if (JSON.stringify(protectedValues(this.projection.doc)) !== JSON.stringify(protectedValues(target))) throw new Error('PROTECTED_SYNTAX_REQUIRES_TARGETED_SOURCE');
       let candidate: string; let start = 0, end = source.length, replacement: string;
       let validated: Projection | undefined;
       const matchesCandidate = (value: string) => {
-        const start = performance.now(); validated = project(value);
+        const start = performance.now(); validated = this.projectCandidate(value);
         const matches = key(validated.doc) === k;
         speculativeValidationMs += performance.now() - start; return matches;
       };
@@ -137,11 +152,11 @@ export class MarkdownEngine {
         if (/[\udc00-\udfff]/.test(source[end] ?? '')) { end++; tail++; }
         replacement = candidate.slice(start, tail);
       } else {
-        const formatting = addedFormatting(this.projection, target);
-        const change = singleTextChange(this.projection.doc, target);
+        const change = singleTextChange(this.projection.doc, target, immutable ? this.retained : undefined);
+        const formatting = !change ? addedFormatting(this.projection, target) : undefined;
         const leaf = change && this.projection.leaves.find(l => l.node === change.old);
         const literal = change && leaf ? literalPatch(leaf, change.next) : undefined;
-        if (formatting && matchesCandidate(source.slice(0, formatting.start) + formatting.text + source.slice(formatting.end))) {
+        if (!change && formatting && matchesCandidate(source.slice(0, formatting.start) + formatting.text + source.slice(formatting.end))) {
           start = formatting.start; end = formatting.end; replacement = formatting.text;
           candidate = source.slice(0, start) + replacement + source.slice(end);
         } else if (literal) {
@@ -194,15 +209,50 @@ export class MarkdownEngine {
       if (encode.encode(candidate).length > this.byteLimit) throw new Error('SOURCE_SIZE_LIMIT');
       const local = difference(source, candidate);
       patchMs = performance.now() - begin - speculativeValidationMs;
-      const validationStart = performance.now(), parsed = validated?.source === candidate ? validated : project(candidate);
+      const validationStart = performance.now(), parsed = validated?.source === candidate ? validated : this.projectCandidate(candidate);
       if (key(parsed.doc) !== k) throw new Error('REPARSE_MISMATCH: targeted source editing required');
       const validationMs = speculativeValidationMs + performance.now() - validationStart;
       if (historical >= 0) this.cursor = historical; else this.remember(k, local);
       const patch = { start: encode.encode(source.slice(0, local.start)).length, end: encode.encode(source.slice(0, local.end)).length, text: local.text, removed: local.removed };
       this.projection = parsed;
+      this.projectionKey = k;
+      if (immutable) {
+        const roots = (target.content ?? []).filter(n => n.type !== 'paragraph' || n.content?.length);
+        parsed.blocks.forEach((block, index) => { const raw = roots[index]; if(raw) this.retained.set(block.node,raw); });
+      }
       this.regionEpoch++; this.regions.clear();
       return { accepted: true, source: candidate, patches: [patch], patchMs, validationMs, totalMs: performance.now() - begin };
     } catch (e) { return { accepted: false, source: this.source, patches: [], reason: e instanceof Error ? e.message : 'VALIDATION_FAILED', patchMs, validationMs: performance.now() - begin - patchMs }; }
+  }
+  /** Reparse a self-contained root region, retaining the
+   * already parsed ranges elsewhere. Cross-block/context-sensitive syntax always
+   * uses the full parser. The complete intended document is still compared by apply.
+   */
+  private projectCandidate(candidate: string): Projection {
+    const previous = this.projection, source = previous.source;
+    const patch = difference(source, candidate);
+    const index = previous.blocks.findIndex(b => patch.start >= b.start && patch.end <= b.end);
+    const block = previous.blocks[index];
+    if (!block || !['paragraph', 'heading', 'codeBlock', 'bulletList', 'orderedList', 'blockquote', 'table'].includes(block.node.type!) || /[[\]]/.test(block.raw + patch.text)) return project(candidate);
+    const delta = candidate.length - source.length;
+    const raw = candidate.slice(block.start, block.end + delta);
+    // Blank-line boundaries isolate the region. Bracket-bearing regions always
+    // take the full path: definitions/references can affect distant blocks.
+    if (
+      (block.start > (source.startsWith('\ufeff') ? 1 : 0) && !/(?:\r?\n)[ \t]*(?:\r?\n)$/.test(source.slice(0, block.start))) ||
+      (block.end < source.trimEnd().length && !/^(?:\r?\n)[ \t]*(?:\r?\n)/.test(source.slice(block.end)))) return project(candidate);
+    const local = project(raw);
+    if (!local.blocks.length || local.blocks[0].start !== 0 || local.blocks.at(-1)!.end !== raw.length) return project(candidate);
+    const syntaxNodes = previous.syntaxNodes - block.syntaxNodes + local.syntaxNodes - 1;
+    if (syntaxNodes > LIMITS.nodes) throw new Error('SOURCE_COMPLEXITY_LIMIT');
+    const shifted = <T extends { start: number; end: number }>(entry: T, by: number): T => ({ ...entry, start: entry.start + by, end: entry.end + by });
+    const retain = <T extends { start: number; end: number }>(entries: T[], added: T[]) => [
+      ...entries.filter(e => e.end <= block.start),
+      ...added.map(e => shifted(e, block.start)),
+      ...entries.filter(e => e.start >= block.end).map(e => shifted(e, delta)),
+    ];
+    const blocks = [ ...previous.blocks.slice(0,index), ...local.blocks.map(b=>shifted(b,block.start)), ...previous.blocks.slice(index+1).map(b=>shifted(b,delta)) ];
+    return { source: candidate, blocks, leaves: retain(previous.leaves, local.leaves), fragments: retain(previous.fragments, local.fragments), syntaxNodes, doc: { type: 'doc', content: blocks.map(b => b.node) } };
   }
   /** Explicit reviewed source-region replacement; no implicit whole-file fallback. */
   editSource(blockIndex: number, replacement: string) {
@@ -217,6 +267,6 @@ export class MarkdownEngine {
       const retained = next.blocks.find(n => n.start === other.start + shift && n.end === other.end + shift);
       if (!retained || retained.raw !== other.raw || key(retained.node) !== key(other.node)) throw new Error('SOURCE_EDIT_CROSSES_BOUNDARY');
     }
-    this.history = [{ hash: fingerprint(key(next.doc)) }]; this.cursor = 0; this.historySize = 0; this.projection = next; this.regionEpoch++; this.regions.clear(); return next.doc;
+    this.history = [{ hash: fingerprint(key(next.doc)) }]; this.cursor = 0; this.historySize = 0; this.projection = next; this.projectionKey = ''; this.retained = new WeakMap(); this.regionEpoch++; this.regions.clear(); return next.doc;
   }
 }

@@ -20,7 +20,7 @@ public final class LinkedStore implements AutoCloseable {
     public record Receipt(String operation,long version,String state,Revision revision){}
     public record Change(String state,Snapshot disk,boolean dirty,String draft){}
     @FunctionalInterface public interface Faults {void at(String phase,Path operation)throws Exception;}
-    static final int SOURCE_LIMIT=262144,READ_LIMIT=8*1024*1024,DRAFT_LIMIT=1024*1024;
+    static final int SOURCE_LIMIT=1024*1024,READ_LIMIT=8*1024*1024,DRAFT_LIMIT=8*1024*1024;
     static final int JOURNAL_LIMIT=20*1024*1024; static final long STORE_LIMIT=256L*1024*1024;
     static final class Root {final Path path;final String identity,volume;boolean connected=true,revoked;String epoch=UUID.randomUUID().toString();Root(Path p,String id)throws IOException{path=p;identity=id;volume=NativeFiles.volumeIdentity(p);}}
     static final class Doc {final Root root;final String relative,epoch;Snapshot base;long version=-1,saved=-1;String draft="",candidate,viewId,lastDraft,resumedDraft,readonlyReason="";byte[] local,lastValidated;boolean recoveryOnly,linkedRead;Doc(Root r,String n,Snapshot b){root=r;relative=n;base=b;epoch=r.epoch;lastValidated=b.bytes();}}

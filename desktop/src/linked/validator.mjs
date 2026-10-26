@@ -7,7 +7,7 @@ const hash=value=>createHash('sha256').update(value).digest('hex');
 export class Validator {
   constructor(file,bytes){
     const bootstrap=`const {parentPort,workerData}=require('node:worker_threads');globalThis.postMessage=value=>parentPort.postMessage(value);import(require('node:url').pathToFileURL(workerData).href).then(()=>parentPort.on('message',data=>globalThis.onmessage({data})));`;
-    this.worker=new Worker(bootstrap,{eval:true,workerData:file,resourceLimits:{maxOldGenerationSizeMb:128,maxYoungGenerationSizeMb:16,stackSizeMb:4}});this.busy=false;this.worker.on('error',()=>{});this.worker.on('exit',()=>{this.exited=true;this.cancel?.(new Error('VALIDATOR_EXIT'));});this.ready=this.request({type:'open',bytes,byteLimit:262144});
+    this.worker=new Worker(bootstrap,{eval:true,workerData:file,resourceLimits:{maxOldGenerationSizeMb:128,maxYoungGenerationSizeMb:16,stackSizeMb:4}});this.busy=false;this.worker.on('error',()=>{});this.worker.on('exit',()=>{this.exited=true;this.cancel?.(new Error('VALIDATOR_EXIT'));});this.ready=this.request({type:'open',bytes,byteLimit:1048576});
   }
   request(message){
     if(this.closed||this.exited||this.busy)return Promise.reject(new Error('VALIDATOR_BUSY_OR_CLOSED'));this.busy=true;
@@ -19,7 +19,7 @@ export class Validator {
     });
   }
   async validate({document,epoch,base,version,draft,claimedSource,sessionMetadata},key){
-    await this.ready;const visual=JSON.stringify({schema:'G3_VISUAL_1',document:draft,session:sessionMetadata});if(Buffer.byteLength(visual)>1024*1024)throw new Error('DRAFT_LIMIT');
+    await this.ready;const visual=JSON.stringify({schema:'G3_VISUAL_1',document:draft,session:sessionMetadata});if(Buffer.byteLength(visual)>8*1024*1024)throw new Error('DRAFT_LIMIT');
     const reply=await this.request({type:'edit',version,doc:draft});
     if(!reply.result?.accepted)return {visual,reason:reply.result?.reason??'VALIDATION_REFUSED'};
     if(claimedSource===undefined)return {visual,reason:'VISUAL_SOURCE_NOT_ADMITTED'};

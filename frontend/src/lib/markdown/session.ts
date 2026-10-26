@@ -21,7 +21,8 @@ export class MarkdownSession {
   private inFlight?: number;
   private inFlightDoc?: JSONContent;
   private validatedDoc?: JSONContent;
-  private queued?: { version: number; doc: JSONContent };
+  private queued?: { version: number; doc: JSONContent; coalesceMs?: number };
+  private coalesceTimer?: ReturnType<typeof setTimeout>;
   private disposed = false;
   private draft?: JSONContent;
   private sourceResolve?: (doc: JSONContent) => void;
@@ -46,7 +47,7 @@ export class MarkdownSession {
   private watchdog() { clearTimeout(this.timer); this.timer = setTimeout(() => this.fail('VALIDATION_TIMEOUT'), this.timeoutMs); }
   private fail(reason: string) {
     if (this.disposed) return;
-    clearTimeout(this.timer); this.busy = false;
+    clearTimeout(this.timer); clearTimeout(this.coalesceTimer); this.busy = false;
     this.port.onmessage = null; this.port.onerror = null; this.port.terminate();
     if (!this.initialDoc) this.readyReject(new Error(reason));
     this.status = { ...this.status, state: 'failed', reason }; this.emit();
@@ -77,10 +78,10 @@ export class MarkdownSession {
     }
     this.sendLatest(); this.emit();
   }
-  submit(doc: JSONContent) {
+  submit(doc: JSONContent, coalesceMs = 0) {
     if (this.disposed || this.status.state === 'failed' || !this.initialDoc) throw new Error('SESSION_CLOSED_OR_FAILED');
     this.regionTicket = undefined; this.draft = doc; const version = this.status.version + 1;
-    this.status = { ...this.status, version, state: 'validating', reason: undefined }; this.queued = { version, doc };
+    this.status = { ...this.status, version, state: 'validating', reason: undefined }; this.queued = { version, doc, coalesceMs };
     this.sendLatest(); this.emit();
   }
   editSource(block: number, text: string): Promise<JSONContent> {
@@ -119,8 +120,15 @@ export class MarkdownSession {
   }
   private sendLatest() {
     if (this.busy || !this.queued || this.disposed) return;
+    // Fixed rather than trailing debounce: continuous input must make progress.
+    // Draft/version become dirty immediately; Save waits for final validation.
+    if (this.queued.coalesceMs) {
+      this.coalesceTimer ??= setTimeout(() => { this.coalesceTimer = undefined; if(this.queued)this.queued.coalesceMs=0; this.sendLatest(); }, this.queued.coalesceMs);
+      return;
+    }
+    clearTimeout(this.coalesceTimer); this.coalesceTimer = undefined;
     const request = this.queued; this.queued = undefined; this.busy = true; this.inFlight = request.version; this.inFlightDoc=request.doc;
-    this.watchdog(); this.port.postMessage({ type: 'edit', ...request });
+    this.watchdog(); this.port.postMessage({ type: 'edit', version: request.version, doc: request.doc });
   }
   attach(editor: Editor) {
     const snapshot = snapshotCache();
@@ -138,7 +146,7 @@ export class MarkdownSession {
     const changed = ({ transaction }: { transaction: Transaction }) => {
       if (!transaction.docChanged || isSharedTransaction(transaction) || transaction.getMeta('markdownSourceReset') || scheduled) return;
       scheduled = true;
-      queueMicrotask(() => { scheduled = false; if (attached && !this.disposed && !editor.isDestroyed && this.status.state !== 'failed') { const doc = snapshot(editor.state.doc); if (composing) this.draft = doc; else this.submit(doc); } });
+      queueMicrotask(() => { scheduled = false; if (attached && !this.disposed && !editor.isDestroyed && this.status.state !== 'failed') { const doc = snapshot(editor.state.doc); if (composing) this.draft = doc; else this.submit(doc, 75); } });
     };
     editor.on('transaction', changed);
     editor.view.dom.addEventListener('compositionstart', compositionStart);
@@ -147,5 +155,5 @@ export class MarkdownSession {
   }
   checkpoint() { return { source: this.source, originalBytes: this.originalBytes, draft: this.draft ?? this.initialDoc, status: this.status }; }
   bytes() { if (this.status.state !== 'ready' || this.status.acceptedVersion !== this.status.version) throw new Error('UNVALIDATED_DRAFT'); return new TextEncoder().encode(this.source); }
-  dispose() { this.disposed = true; clearTimeout(this.timer); this.queued = undefined; this.sourceReject?.(new Error('SESSION_CLOSED')); this.regionReject?.(new Error('SESSION_CLOSED')); if (!this.initialDoc) this.readyReject(new Error('SESSION_CLOSED')); this.sourceResolve = undefined; this.sourceReject = undefined; this.regionResolve = undefined; this.regionReject = undefined; this.port.onmessage = null; this.port.onerror = null; this.port.terminate(); this.status = { ...this.status, state: 'closed' }; this.listeners.clear(); }
+  dispose() { this.disposed = true; clearTimeout(this.timer); clearTimeout(this.coalesceTimer); this.queued = undefined; this.sourceReject?.(new Error('SESSION_CLOSED')); this.regionReject?.(new Error('SESSION_CLOSED')); if (!this.initialDoc) this.readyReject(new Error('SESSION_CLOSED')); this.sourceResolve = undefined; this.sourceReject = undefined; this.regionResolve = undefined; this.regionReject = undefined; this.port.onmessage = null; this.port.onerror = null; this.port.terminate(); this.status = { ...this.status, state: 'closed' }; this.listeners.clear(); }
 }

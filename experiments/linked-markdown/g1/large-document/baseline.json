@@ -1,0 +1,148 @@
+{
+  "metrics": [
+    {
+      "kib": 256,
+      "bytes": 258044,
+      "stress": false,
+      "openMs": 564.9432000000015,
+      "roots": 667,
+      "nodes": 2549,
+      "keyP95": 11.720000006258488,
+      "patchP95": 26.04499999433756,
+      "validationP95": 193.38500000536442,
+      "workerReplies": 5,
+      "longTasks": [],
+      "heap": 46083742,
+      "operations": [
+        {
+          "fraction": 0,
+          "selectionMs": 2.285000003874302,
+          "editMs": 172.26499999314547,
+          "undoMs": 157.5899999961257,
+          "redoMs": 186.97500000149012,
+          "saveCandidateMs": 1.3900000005960464,
+          "bytes": 258073,
+          "patchBytes": 5
+        },
+        {
+          "fraction": 0.5,
+          "selectionMs": 1.214999996125698,
+          "editMs": 196.49500000476837,
+          "undoMs": 154.3399999961257,
+          "redoMs": 168.6600000038743,
+          "saveCandidateMs": 0.6599999964237213,
+          "bytes": 258078,
+          "patchBytes": 5
+        },
+        {
+          "fraction": 1,
+          "selectionMs": 0.619999997317791,
+          "editMs": 155.6550000011921,
+          "undoMs": 189.03999999910593,
+          "redoMs": 151.26999999582767,
+          "saveCandidateMs": 1.0499999970197678,
+          "bytes": 258083,
+          "patchBytes": 5
+        }
+      ]
+    },
+    {
+      "kib": 512,
+      "bytes": 520189,
+      "stress": true,
+      "openMs": 621.8711000000003,
+      "roots": 1367,
+      "nodes": 5229,
+      "keyP95": 18.17000000178814,
+      "patchP95": 44.17499999701977,
+      "validationP95": 353.70000000298023,
+      "workerReplies": 3,
+      "longTasks": [],
+      "heap": 67797253,
+      "operations": [
+        {
+          "fraction": 0,
+          "selectionMs": 1.3200000002980232,
+          "editMs": 413.74000000208616,
+          "undoMs": 431.875,
+          "redoMs": 471.6499999985099,
+          "saveCandidateMs": 3.6299999952316284,
+          "bytes": 520218,
+          "patchBytes": 5
+        },
+        {
+          "fraction": 0.5,
+          "selectionMs": 1.5500000044703484,
+          "editMs": 425.83500000089407,
+          "undoMs": 320,
+          "redoMs": 366.0649999976158,
+          "saveCandidateMs": 2.689999997615814,
+          "bytes": 520223,
+          "patchBytes": 5
+        },
+        {
+          "fraction": 1,
+          "selectionMs": 1.0549999997019768,
+          "editMs": 455.5300000011921,
+          "undoMs": 480.3100000023842,
+          "redoMs": 379.57999999821186,
+          "saveCandidateMs": 2.3200000002980232,
+          "bytes": 520228,
+          "patchBytes": 5
+        }
+      ]
+    },
+    {
+      "kib": 1024,
+      "bytes": 1044479,
+      "stress": true,
+      "openMs": 1507.3963000000003,
+      "roots": 2767,
+      "nodes": 10589,
+      "keyP95": 34.55499999970198,
+      "patchP95": 84.14499999582767,
+      "validationP95": 670.9549999982119,
+      "workerReplies": 3,
+      "longTasks": [
+        64,
+        74
+      ],
+      "heap": 69820442,
+      "operations": [
+        {
+          "fraction": 0,
+          "selectionMs": 1.285000003874302,
+          "editMs": 847.515000000596,
+          "undoMs": 906.2300000041723,
+          "redoMs": 879.6549999937415,
+          "saveCandidateMs": 7.2750000059604645,
+          "bytes": 1044508,
+          "patchBytes": 5
+        },
+        {
+          "fraction": 0.5,
+          "selectionMs": 1.844999998807907,
+          "editMs": 897.2700000032783,
+          "undoMs": 812.5100000053644,
+          "redoMs": 861.8649999946356,
+          "saveCandidateMs": 8.445000000298023,
+          "bytes": 1044513,
+          "patchBytes": 5
+        },
+        {
+          "fraction": 1,
+          "selectionMs": 2.060000002384186,
+          "editMs": 771.3449999988079,
+          "undoMs": 687.6550000011921,
+          "redoMs": 811.2250000014901,
+          "saveCandidateMs": 6.315000005066395,
+          "bytes": 1044518,
+          "patchBytes": 5
+        }
+      ]
+    }
+  ],
+  "errors": [
+    "WORKER_FAILED"
+  ]
+}

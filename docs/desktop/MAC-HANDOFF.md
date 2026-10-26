@@ -1,6 +1,10 @@
 # Current Mac release qualification handoff
 
-Reviewed 2026-10-27. Complete-platform0.21.0 is published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The next desktop feature candidate is0.22.0, with Windows assets staged only after native qualification. No Mac0.22.0 build or acceptance is available in this Windows session; the complete-platform stable gate remains open.
+Reviewed 2026-10-27. Complete-platform0.21.0 is published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The0.22.0 release candidate remains a separate pending platform record.0.23.0 is a later local1MiB implementation candidate whose Windows packaged performance gate fails; it must not be published. No Mac0.22.0 build or acceptance is available in this Windows session; the complete-platform stable gate remains open.
+
+## 0.23.0 linked Markdown candidate — deferred batch qualification
+
+This is a local Windows implementation candidate with an unresolved performance gate, not a published release or permission to publish. Use the exact implementation commit recorded in the1MiB milestone delivery, not moving master or an older tag; preserve package/lock0.23.0 and the original signing key. [Candidate evidence](../development/qualification/LINKED-MARKDOWN-1M.md) owns current results/blockers. On later arranged Apple Silicon access, build fresh UI/server/native arm64 artifacts; rerun the shared differential/source-fidelity checks and APFS Save/conflict/durable-draft/restart/carrier checks at256KiB,512KiB and1MiB. Measure packaged typing/selection/history/long tasks and context-sensitive full parsing, including beginning/middle/end byte-local edits, BOM/CRLF/protected syntax, panes/navigation/search and recovery. Retain0.22.0 recursive-deletion semantics. Windows results cannot certify Mac UI/APFS. Do not upload, tag or publish until separately authorized and the performance/platform gates are met. No Mac qualification is performed in this milestone.
 
 ## 0.22.0 recursive collection deletion
 

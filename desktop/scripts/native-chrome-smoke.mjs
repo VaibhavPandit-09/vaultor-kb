@@ -11,6 +11,7 @@ export async function runChromeSmoke(window, directory, owned, updates) {
   const evaluate = code => window.webContents.executeJavaScript(code);
   const wait = async (code, label) => { for (let i = 0; i < 500; i++) { if (await evaluate(code).catch(() => false)) return; await new Promise(r => setTimeout(r, 100)); } throw new Error(label + ': ' + await evaluate('document.body.innerText')); };
   await wait("Boolean(document.querySelector('.library-view'))", 'Local workspace');
+  if(process.env.VAULTOR_LARGE_MARKDOWN_CHECK==='1'){const {runLargeMarkdownCheck}=await import('./native-large-markdown-check.mjs');await runLargeMarkdownCheck(window,directory);return;}
   if(process.env.VAULTOR_MAC_LINKED_CHECK==='1'){const {runMacLinkedCheck}=await import('./native-mac-linked-check.mjs');await runMacLinkedCheck(window,directory);return;}
   if(process.env.VAULTOR_MILESTONE_CHECK==='1'){const {runMilestoneCheck}=await import('./native-milestone-check.mjs');await runMilestoneCheck(window,directory);return;}
   if(process.env.VAULTOR_NAVIGATION_CHECK==='1'){const {runNavigationCheck}=await import('./native-navigation-check.mjs');await runNavigationCheck(window,directory,owned);return;}

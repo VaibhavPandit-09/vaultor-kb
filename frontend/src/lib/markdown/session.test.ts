@@ -46,6 +46,16 @@ it('ignores unsolicited out-of-order replies without releasing the real in-fligh
   p.emit({ type: 'result', version: 99, result: { accepted: true, source: 'Wrong', patches: [], patchMs: 0, validationMs: 0 }, historyBytes: 0 });
   expect(s.source).toBe('Initial\n'); expect(s.status.state).toBe('validating'); p.run(); expect(s.source).toBe('Correct\n'); s.dispose();
 });
-it('opening request explicitly bounds ordinary interactive size while stress is opt-in', () => {
-  const p = new ControlledPort(), s = new MarkdownSession(p, new Uint8Array()); expect(p.pending[0]).toMatchObject({ type: 'open', byteLimit: 262144 }); const done = s.ready.catch(() => {}); s.dispose(); void done;
+it('opening request explicitly bounds ordinary interactive size at 1 MiB', () => {
+  const p = new ControlledPort(), s = new MarkdownSession(p, new Uint8Array()); expect(p.pending[0]).toMatchObject({ type: 'open', byteLimit: 1048576 }); const done = s.ready.catch(() => {}); s.dispose(); void done;
+});
+it('fixed coalescing protects the latest draft without starving continuous input or exposing unvalidated bytes',async()=>{
+  vi.useFakeTimers();
+  const p=new ControlledPort(),s=new MarkdownSession(p,new Uint8Array());p.run();await s.ready;
+  try{
+    s.submit(doc('First'),75);vi.advanceTimersByTime(50);s.submit(doc('Latest'),75);
+    expect(s.status.state).toBe('validating');expect(s.checkpoint().draft).toEqual(doc('Latest'));expect(()=>s.bytes()).toThrow('UNVALIDATED_DRAFT');expect(p.pending).toHaveLength(0);
+    vi.advanceTimersByTime(25);expect(p.pending).toHaveLength(1);p.run();expect(s.source).toBe('Latest\n');expect(s.status.state).toBe('ready');
+    s.submit(doc('Disposed'),75);s.dispose();vi.advanceTimersByTime(100);expect(p.pending).toHaveLength(0);
+  }finally{s.dispose();vi.useRealTimers();}
 });

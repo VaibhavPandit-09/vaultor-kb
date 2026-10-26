@@ -73,7 +73,7 @@ it('R3 snapshot cache is exact, shares unchanged subtrees and follows Undo witho
 });
 it('R3 dense/long-line admission is bounded before an editor is mounted', () => {
   expect(()=>new MarkdownEngine(new TextEncoder().encode('x'.repeat(LIMITS.textBlockUnits+1)),LIMITS.interactiveBytes)).toThrow('RENDER_COMPLEXITY_LIMIT');
-  expect(()=>new MarkdownEngine(new TextEncoder().encode('x\n\n'.repeat(1501)),LIMITS.interactiveBytes)).toThrow('RENDER_COMPLEXITY_LIMIT');
+  expect(()=>new MarkdownEngine(new TextEncoder().encode('x\n\n'.repeat(LIMITS.rootBlocks+1)),LIMITS.interactiveBytes)).toThrow('RENDER_COMPLEXITY_LIMIT');
 });
 it('R3 clipboard complexity is bounded before DOM parsing, including malformed/deep input',()=>{
   expect(clipboardReason('', '<span>'.repeat(33)+'x'+'</span>'.repeat(33))).toBe('CLIPBOARD_COMPLEXITY_LIMIT');

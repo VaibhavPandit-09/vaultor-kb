@@ -3,6 +3,17 @@ import { Plugin } from '@tiptap/pm/state';
 import { isInTable, selectedRect } from '@tiptap/pm/tables';
 import { LIMITS } from './limits';
 import { clipboardReason, shapeCache, shapeReason } from './foreground';
+import type { Node as ProseNode } from '@tiptap/pm/model';
+
+// Normalization is local to a root block. Immutable, already-normalized roots
+// need no traversal; neighboring inline nodes inside a changed root still do.
+function changedRoots(old: ProseNode, next: ProseNode, visit: (node: ProseNode, pos: number) => boolean | void) {
+  const retained = new Set<ProseNode>(); old.forEach(node => { retained.add(node); });
+  next.forEach((node, pos) => {
+    if (retained.has(node)) return;
+    if (visit(node, pos) !== false) node.descendants((child, offset) => visit(child, pos + 1 + offset));
+  });
+}
 
 /** Column semantics travel with cells through real PM column operations. */
 export function setMarkdownAlignment(editor: Editor, alignment: 'left' | 'center' | 'right' | null) {
@@ -71,10 +82,10 @@ export const markdownExtensions = (options: { stress?: boolean; onRefused?: (inp
       { types: ['tableCell', 'tableHeader'], attributes: { mdAlignment: { default: null, parseHTML: (el: HTMLElement) => el.style.textAlign || el.getAttribute('align') || null, renderHTML: (a: Record<string, unknown>) => a.mdAlignment ? { style: `text-align: ${a.mdAlignment}` } : {} } } },
       { types: ['codeBlock'], attributes: { mdMeta: { default: null, rendered: false } } },
     ],
-    addProseMirrorPlugins: () => [new Plugin({ appendTransaction(transactions, _old, state) {
+    addProseMirrorPlugins: () => [new Plugin({ appendTransaction(transactions, old, state) {
       if (!transactions.some(tr => tr.docChanged)) return null;
       const tr = state.tr;
-      state.doc.descendants((table, pos) => {
+      changedRoots(old.doc, state.doc, (table, pos) => {
         if (table.type.name !== 'table') return;
         const header = table.firstChild;
         table.forEach((row, rowPos) => row.forEach((cell, cellPos, index) => {
@@ -87,10 +98,10 @@ export const markdownExtensions = (options: { stress?: boolean; onRefused?: (inp
   }),
   Extension.create({
     name: 'markdownMarkBoundaries',
-    addProseMirrorPlugins: () => [new Plugin({ appendTransaction(transactions, _old, state) {
+    addProseMirrorPlugins: () => [new Plugin({ appendTransaction(transactions, old, state) {
       if ((!transactions.some(tr => tr.docChanged) && !transactions.some(tr => tr.getMeta('markdownCompositionEnd'))) || transactions.some(tr => tr.getMeta('composition') !== undefined)) return null;
       const tr = state.tr;
-      state.doc.descendants((node, pos) => {
+      changedRoots(transactions.some(tr => tr.getMeta('markdownCompositionEnd')) ? state.schema.topNodeType.create() : old.doc, state.doc, (node, pos) => {
         if (!node.isText) return;
         const prefix = /^[ \t]+/.exec(node.text!)?.[0].length ?? 0, suffix = /[ \t]+$/.exec(node.text!)?.[0].length ?? 0;
         for (const mark of node.marks) {

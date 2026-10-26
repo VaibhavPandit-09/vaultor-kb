@@ -5,8 +5,8 @@ import {MarkdownEngine} from '../markdown/engine';
 import type {WorkerReply,WorkerRequest} from '../markdown/protocol';
 import type {LinkedRequest,Opened} from './types';
 class WorkerStub{
-  onmessage:((event:MessageEvent<WorkerReply>)=>void)|null=null;onerror:((event:unknown)=>void)|null=null;engine!:MarkdownEngine;closed=false;
-  postMessage(r:WorkerRequest){queueMicrotask(()=>{if(this.closed)return;let data:WorkerReply;if(r.type==='open'){this.engine=new MarkdownEngine(r.bytes);data={type:'ready',source:this.engine.source,doc:this.engine.projection.doc};}else if(r.type==='edit')data={type:'result',version:r.version,result:this.engine.apply(r.doc),historyBytes:0};else throw Error('Unused source operation');this.onmessage?.({data} as MessageEvent<WorkerReply>);});}
+  onmessage:((event:MessageEvent<WorkerReply>)=>void)|null=null;onerror:((event:unknown)=>void)|null=null;engine!:MarkdownEngine;draft!:JSONContent;closed=false;
+  postMessage(r:WorkerRequest){queueMicrotask(()=>{if(this.closed)return;let data:WorkerReply;if(r.type==='open'){this.engine=new MarkdownEngine(r.bytes);this.draft=this.engine.projection.doc;data={type:'ready',source:this.engine.source,doc:this.engine.projection.doc};}else if(r.type==='edit'||r.type==='splice'){this.draft=r.type==='edit'?r.doc:{type:'doc',content:[...this.draft.content!.slice(0,r.from),...r.blocks,...this.draft.content!.slice(r.from+r.remove)]};data={type:'result',version:r.version,result:this.engine.apply(this.draft),historyBytes:0};}else throw Error('Unused source operation');this.onmessage?.({data} as MessageEvent<WorkerReply>);});}
   terminate(){this.closed=true;}
 }
 afterEach(()=>vi.unstubAllGlobals());

@@ -1,0 +1,56 @@
+# Linked Markdown 1 MiB implementation candidate
+
+Reviewed 2026-10-27. Windows-only implementation milestone after clean master/origin `018ae44`. Desktop candidate 0.23.0; no merge, tag, asset upload or publication is authorized. **Performance qualification is incomplete; this candidate is not ready for release authorization.** Published 256 KiB qualification remains historical evidence, not proof of this candidate's responsiveness.
+
+## Implementation
+
+The renderer sends root-block splices using immutable snapshot identity; the worker reconstructs the complete submitted draft, including rejected drafts, independently of accepted source. A fixed 75 ms, non-resetting input window coalesces continuous typing without hiding dirty versions or allowing unvalidated Save. Composition completion and detach flush immediately. Session disposal/failure cancels pending work.
+
+The engine reuses previously parsed source ranges outside an isolated changed root. Per-root parser-node counts retain the full-document30,000-node ceiling across localized edits. Both outer blank-line boundaries must remain intact; bracket-bearing/reference-sensitive regions and changes crossing root boundaries use a full parse. The changed region is parsed by the existing parser, offsets are shifted, and the complete reconstructed semantic document must equal the intended draft. Protected syntax checks, Unicode/byte bounds, exact source history, byte patches and the independent main-owned validator remain mandatory. Immutable worker snapshots also reuse canonical root semantics. Public mutable engine callers retain uncached validation.
+
+Normalization scans only changed immutable root blocks, retaining inline-neighbor checks inside those roots. Bounded code highlighting maps existing decoration positions when code nodes are unchanged. There is no document virtualization, replacement editor, whole-document serialization fallback, filesystem-publication redesign or UI redesign.
+
+Candidate admission is 1,048,576 UTF8 bytes, 8,192 root blocks and 30,000 projected nodes. The original 30,000 parser-node/depth64 ceiling, 16,384 text/code units per editable block, 2,000 cells per table, 65,536-unit clipboard bounds and 4,096-unit total highlighting budget remain. The added realistic near-1 MiB repeated paragraph/list/fence fixture exceeded the earlier 5,000-root experiment; it passes with the candidate root ceiling. These are bounded candidate limits, **not proof that every admitted shape is responsive**. Tables/fences can remain protected; excessive shapes safely refuse visual admission.
+
+The visual journal limit is 8 MiB because a 1 MiB source expands into structured JSON and protected raw syntax; the authenticated private pipe limit is 16 MiB to accommodate base64 visual/source/recovery fields. Journal20MiB, allocation256MiB and acknowledgement-history64MiB quotas remain. Real near-1 MiB protection/reopening exercises these bounds. Native source publication, carrier identity, revisions, metadata policy, HMAC validation and original signer are unchanged. Private linked body search remains bounded to256KiB per indexed file; title/navigation semantics remain available.
+
+## Controlled workload and measurements
+
+Reuse `experiments/linked-markdown/g1/large-document.mjs` with `VAULTOR_PLAYWRIGHT_PACKAGE` pointing to the existing bundled Playwright package and the normal Gate1 Vite lab at port5174. The frozen fixture incorporates actual Vaultor SESSIONS documentation plus headings, prose, lists, fences, GFM tables, links, frontmatter and mixed formatting. Sizes reserve4KiB edit headroom. Baseline was run once; 512KiB/1MiB needed the pre-existing diagnostic stress override and were not production-supported. Historical 53.7/570ms values were not reused as measurements.
+
+Baseline/final JSON is retained in `experiments/linked-markdown/g1/large-document/`. These are headless Edge/dev-build observations on the same Windows machine, not hardware-normalized causal estimates or a production-runtime guarantee. The baseline recorded an unrelated initial-laboratory `WORKER_FAILED` page error after all three fixtures completed; the harness now awaits the initial ready session before replacing it. Final page errors are empty. Intermediate trials were used to profile suspected bottlenecks; only the final implementation run is tabulated.
+
+| Metric (ms unless noted) | 256 KiB baseline → final | 512 KiB baseline → final | 1 MiB baseline → final |
+| --- | ---: | ---: | ---: |
+| Actual input bytes | 258,044 | 520,189 | 1,044,479 |
+| Editor readiness | 565 →413 | 622 →824 | 1507 →1411 |
+| Typing-to-frame p95,24 samples | 11.72 →12.91 | 18.17 →15.82 | 34.55 →29.97 |
+| Worker validation p95 | 193.39 →18.58 | 353.70 →26.21 | 670.95 →44.12 |
+| Patch generation p95 | 26.04 →21.59 | 44.17 →33.20 | 84.14 →60.37 |
+| Foreground typing tasks ≥50ms | 0 →0 (final max0) | 0 →0 (final max0) | 2 →2 (final max92) |
+| Foreground heap after typing,MiB | 43.9 →32.0 | 64.7 →42.4 | 66.6 →75.0 |
+| Worker replies during24 inputs | 5 →8 | 3 →6 | 3 →7 |
+
+Beginning/middle/end edits each produce an exact five-byte insertion with no removed bytes. Final near-1MiB selection dispatch is1.3–2.3ms; middle/end edit acknowledgement186–188ms and Undo/Redo149–185ms, versus roughly771–897ms edit and688–906ms history acknowledgement at baseline. The beginning paragraph contains reference-sensitive syntax and takes the full path: final edit916ms and history876–1,052ms versus baseline848/880–906ms. Source-byte candidate extraction is about7ms at1MiB; it is **not** native Save latency. Raw operation timings are in the JSON. Heap readings are foreground JS observations, not peak/process/worker memory ceilings; native/worker peak memory remains unqualified.
+
+The validation improvement is substantial, but1MiB foreground p95/long tasks, reference-sensitive full parsing and refusal of the dense packaged fixture do not satisfy the overall performance target. The256KiB typing p95 increases1.2ms while remaining within16.7ms; the single baseline does not establish a statistically reliable no-regression claim. Do not infer universal1MiB usability from admission or the successful fidelity tests. Further foreground/source-reply and context-sensitive parsing work needs another measured implementation increment.10MiB and writable oversized source mode remain deferred.
+
+## Validation and delivery
+
+- Focused frontend/editor regression:198/198 across17 files after fixes; the final parser-count bookkeeping then passed93 engine/corpus/remediation/large cases and the added cumulative-parser-cap regression passed with8 large-document cases. TypeScript/production UI build and lint pass. Includes mounted linked Save/panes, shared documents/keyboard, worker/session, source mapping, fidelity corpus and differential large-document parsing. Fixed coalescing has a no-starvation/unvalidated-bytes/disposal regression.
+- Linked desktop integration:49 existing cases pass; the new near-1MiB NTFS case passes in a focused rerun after correcting test-only external-writer command length/escaping and transient sharing retry. It verifies exact beginning/middle/end Save, dirty protection/reopening and refusal to overwrite a concurrent external append. Forged source, stale bindings, revision conflicts, protected syntax, ownership and recovery checks remain.
+- Native Windows safety68/68 and consent7/7 pass. The oversized-source case now tests above the new ceiling. Prior native publication/multi-volume architecture remains unchanged; no new physical-drive/power-loss qualification is claimed.
+- Fresh production frontend and bundled Java/native server builds pass. Maven packaging skips backend tests; no backend behavior changed. Desktop syntax checks and frontend lint pass. Existing unrelated build chunk-size/dynamic-import warnings remain.
+- Original-key Windows installer/sidecar prepared locally under `desktop/cache/large-markdown-candidate-0.23.0/`; no signing identity change or remote publication. The first packaged dense1,043,920-byte fixture refused with SOURCE_COMPLEXITY_LIMIT and retained exact source, confirming that not every realistic near-1MiB shape is admitted.
+
+### Packaged Windows result — functionality passes, performance fails
+
+`VAULTOR_LARGE_MARKDOWN_CHECK=1` through the existing chrome-smoke harness runs the production renderer/main, independent worker, bundled native host and actual NTFS files on C:. Only native picker selection is supplied by the disposable harness; production root confinement, approval, source/revision/proof and Save paths remain in force. An initial test source inside private app storage was correctly refused; fixtures now use a separate disposable source directory. Harness fixes also wait for the completed Save receipt before starting another Save (newer edits during an existing Save intentionally remain dirty) and tolerate the publication capture's transient missing pathname during external observation. These were test-fixture corrections, not changes to native publication.
+
+The prose-heavier1,042,834-byte fixture opens editable.24 native keyboard samples measured **629.4ms typing-to-frame p95**, with8,007ms open-to-editor readiness. Three actual Ctrl+S operations reached exact disk bytes in1,967/1,115/1,219ms; the harness additionally waits for the UI's completed receipt before proceeding. Beginning/middle/end insertions preserve all other bytes, BOM/CRLF, frontmatter, lists, fences, table alignment, reference definitions and comments. The adjacent file remains byte-exact. Native Undo/Redo, protected dirty Recovery, an external append followed by refused Save, and full application restart restoring the dirty draft while retaining those external bytes all pass. The captured conflict UI was visually inspected. `packaged-windows.json` retains concise measurements.
+
+This is **not** successful1MiB performance acceptance. The full product runtime has a much larger foreground delay than the lighter Gate1 lab; steady-state/native peak-memory and detailed cause attribution remain unqualified. The measured native delay and the independently confirmed dense-fixture parser refusal are exact release blockers. Do not advertise1MiB as generally qualified support or publish0.23.0. No installer-over of the user's app, new physical multi-volume/power-loss acceptance, Mac qualification or universal size guarantee is claimed.
+
+Mac qualification is explicitly deferred. The updated [Mac handoff](../../desktop/MAC-HANDOFF.md) must use this implementation's exact source commit, preserve0.23.0 and the original signer, and repeat APFS native Save/conflict/recovery and packaged editing performance on Apple Silicon. No Android change, Mac package or10MiB support is claimed.
+
+Final artifact provenance: installer/sidecar preflight passes against unchanged release-trust.json;365 production source/UI/bundle files match the tested runtime. [The local candidate ledger](../../desktop/releases/v0.23.0.md) records exact installer bytes/hash and source identity. Source/handoff follow-up is documentation-only and does not alter those production bytes.

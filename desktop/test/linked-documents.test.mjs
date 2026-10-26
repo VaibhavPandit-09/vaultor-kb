@@ -23,6 +23,41 @@ async function fixture(source='# Guide\n\nText.\n'){
   const registry=new LinkedRegistry({directory:join(privateDir,'sources'),java,classes,protectedRoot:privateDir,applicationRoot:resolve(repository,'desktop'),current:()=>scope,picker:async()=>({canceled:false,filePaths:[root]})});await registry.load(scope);const added=await registry.add(scope),page=await registry.list(scope,{source:added.root});const documents=new LinkedDocuments(registry,{worker}),opened=await documents.open(scope,page.items[0].id);
   return {root,scope,registry,documents,opened,close:async()=>{await documents.dispose();await registry.close();}};
 }
+
+test('near-1 MiB real NTFS source preserves local edits, explicit Save, conflict and restart recovery',{skip},async()=>{
+  const block='Technical documentation words with unchanged spelling. '.repeat(12)+'\r\n\r\n';
+  const base='\ufeff---\r\ntitle: retain\r\n---\r\n\r\n'+block.repeat(Math.floor((1048576-4096)/Buffer.byteLength(block)))+'[label][ref]\r\n\r\n[ref]: ./keep.md "exact"\r\n\r\n<!-- protected -->\r\n';
+  const f=await fixture(base);try{
+    assert.equal(f.opened.readonlyReason,'');
+    const payload={document:f.opened.id,binding:f.opened.binding},draft=structuredClone((await f.documents.documents.get(f.opened.id).validator.ready).doc);
+    const paragraphs=draft.content.filter(n=>n.type==='paragraph'&&n.content?.[0]?.text?.startsWith('Technical'));
+    let expected=base,version=0;
+    for(const index of [0,Math.floor(paragraphs.length/2),paragraphs.length-1]){
+      const before=expected,needle=paragraphs[index].content[0].text;
+      // Find this occurrence by paragraph ordinal, not a global replacement.
+      const offset=base.indexOf(block)+index*block.length+(expected.length-base.length);
+      paragraphs[index].content[0].text=needle.replace('documentation','documentation LOCAL');
+      expected=expected.slice(0,offset)+expected.slice(offset).replace('documentation','documentation LOCAL');
+      const protectedDraft=await f.documents.protect(f.scope,{...payload,version:++version,draft,source:expected,editorVersion:version});
+      assert.equal(protectedDraft.validated,true,protectedDraft.reason);assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),before);
+      assert.equal((await f.documents.save(f.scope,{...payload,version})).state,'COMMITTED');
+      assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),expected);
+    }
+    paragraphs[1].content[0].text+=' Retained unsaved work.';
+    // Derive exact source from the independently owned worker to include its
+    // minimal literal insertion spelling, then require main provenance validation.
+    const reply=await f.documents.documents.get(f.opened.id).validator.request({type:'edit',version:++version,doc:draft});
+    assert(reply.result.accepted);const unsaved=reply.result.source;
+    assert.equal((await f.documents.protect(f.scope,{...payload,version:++version,draft,source:unsaved})).validated,true);
+    await f.documents.dispose();f.documents=new LinkedDocuments(f.registry,{worker});
+    const reopened=await f.documents.open(f.scope,f.opened.id);assert.equal(Buffer.from(reopened.seed).toString('utf8'),unsaved);assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),expected);
+    const fresh={document:reopened.id,binding:reopened.binding};
+    assert.equal((await f.documents.protect(f.scope,{...fresh,version:++version,draft,source:unsaved})).validated,true);
+    const external=expected+'\r\nExternal concurrent change.\r\n';
+    await run(process.execPath,['-e',"const fs=require('node:fs/promises');(async()=>{for(let i=0;;i++){try{await fs.appendFile(process.argv[1],String.fromCharCode(13,10)+'External concurrent change.'+String.fromCharCode(13,10));break;}catch(e){if(e.code!=='EBUSY'||i===30)throw e;await new Promise(r=>setTimeout(r,100));}}})()",join(f.root,'guide.md')]);
+    const receipt=await f.documents.save(f.scope,{...fresh,version});assert.notEqual(receipt.state,'COMMITTED');assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),external);
+  }finally{await f.documents.dispose();await f.registry.close();}
+});
 test('real validator/private native host saves exact local Markdown and updates stable identity',{skip},async()=>{const f=await fixture();try{const host=f.documents.documents.get(f.opened.id),ready=await host.validator.ready,draft=structuredClone(ready.doc);const edit=node=>{if(node.text==='Text.')node.text='Edited Text.';node.content?.forEach(edit);};edit(draft);const expected='# Guide\n\nEdited Text.\n';const protectedDraft=await f.documents.protect(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1,draft,source:expected,editorVersion:1});assert.equal(protectedDraft.validated,true);const saved=await f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1});assert.equal(saved.state,'COMMITTED');assert.notEqual(saved.identity,f.opened.identity);assert.equal(f.registry.entries.get(f.opened.id).identity,saved.identity);assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),expected);await assert.rejects(f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1}),/NOT_VALIDATED/);}finally{await f.close();}});
 test('forged source cannot get a valid candidate even when visual draft is supported',{skip},async()=>{const f=await fixture();try{const ready=await f.documents.documents.get(f.opened.id).validator.ready;const result=await f.documents.protect(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1,draft:ready.doc,source:'Arbitrary unrelated content'});assert.equal(result.validated,false);assert.equal(result.protected,true);await assert.rejects(f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1}),/NOT_VALIDATED/);assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),'# Guide\n\nText.\n');}finally{await f.close();}});
 test('invalid original UTF8 remains exact read-only bytes without creating a validator',{skip},async()=>{const f=await fixture(Buffer.from([255,65]));try{assert.equal(f.opened.readonlyReason,'ENCODING_UNSUPPORTED');assert.deepEqual([...f.opened.bytes],[255,65]);assert.equal(f.documents.documents.get(f.opened.id).validator,undefined);assert.deepEqual([...await readFile(join(f.root,'guide.md'))],[255,65]);}finally{await f.close();}});

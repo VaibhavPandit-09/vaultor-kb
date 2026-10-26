@@ -1,0 +1,15 @@
+{
+  "bytes": 1042834,
+  "openMs": 8007.4094000000005,
+  "keySamples": 24,
+  "keyP95": 629.3999999985099,
+  "saveMs": [
+    1966.7832999999991,
+    1115.225599999998,
+    1219.001699999997
+  ],
+  "exactSource": true,
+  "nativeUndoRedo": true,
+  "conflict": true,
+  "protectedRecovery": true
+}

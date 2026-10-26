@@ -13,10 +13,10 @@ import { decodedBoundaries, encodedTokens } from './sourceMap';
 export { LIMITS } from './limits';
 
 type Syntax = { type: string; value?: string; children?: Syntax[]; depth?: number; ordered?: boolean; start?: number; checked?: boolean | null; url?: string; alt?:string; title?: string | null; lang?: string | null; meta?: string | null; align?: (string | null)[]; position?: { start: { offset: number }; end: { offset: number } } };
-export type Block = { start: number; end: number; raw: string; node: JSONContent };
+export type Block = { start: number; end: number; raw: string; node: JSONContent; syntaxNodes: number };
 export type Leaf = { node: JSONContent; start: number; end: number; raw: string };
 export type Fragment = { start: number; end: number; type: string; signature: string; raw: string; decoded?: string; url?: string; title?: string | null; suffix?: string };
-export type Projection = { source: string; doc: JSONContent; blocks: Block[]; leaves: Leaf[]; fragments: Fragment[] };
+export type Projection = { source: string; doc: JSONContent; blocks: Block[]; leaves: Leaf[]; fragments: Fragment[]; syntaxNodes: number };
 function syntaxKey(n: Syntax): string { return JSON.stringify({ type: n.type, ...(n.value !== undefined ? { value: n.value } : {}), ...(n.type === 'link' ? { url: n.url, title: n.title ?? null } : {}), ...(n.children ? { children: n.children.map(c => syntaxKey(c)) } : {}) }); }
 export function assertUnicode(source: string) {
   for (let i = 0; i < source.length; i++) {
@@ -37,15 +37,17 @@ export function project(source: string): Projection {
   const bom = source.startsWith('\ufeff') ? 1 : 0;
   const ast = fromMarkdown(source.slice(bom), { extensions: [gfm(), frontmatter(['yaml', 'toml']), directive()], mdastExtensions: [gfmFromMarkdown(), frontmatterFromMarkdown(['yaml', 'toml']), directiveFromMarkdown()] }) as unknown as Syntax;
   const leaves: Leaf[] = [], fragments: Fragment[] = []; let count = 0;
-  const pending = [{ node: ast, depth: 0 }];
+  const counts = new Map<Syntax, number>();
+  const pending: { node: Syntax; depth: number; root?: Syntax }[] = [{ node: ast, depth: 0 }];
   while (pending.length) {
-    const { node, depth } = pending.pop()!; if (++count > LIMITS.nodes || depth > LIMITS.depth) throw new Error('SOURCE_COMPLEXITY_LIMIT');
+    const { node, depth, root } = pending.pop()!; if (++count > LIMITS.nodes || depth > LIMITS.depth) throw new Error('SOURCE_COMPLEXITY_LIMIT');
+    if (root) counts.set(root, (counts.get(root) ?? 0) + 1);
     if (node.position && ['text', 'link', 'inlineCode', 'strong', 'emphasis', 'delete'].includes(node.type)) {
       const start = node.position.start.offset + bom, end = node.position.end.offset + bom, raw = source.slice(start, end);
       const labelEnd = node.children?.at(-1)?.position?.end.offset;
       fragments.push({ start, end, type: node.type, signature: syntaxKey(node), raw, decoded: node.value?.replace(/\r\n|\r|\n/g, ' '), url: node.url, title: node.title ?? null, ...(node.type === 'link' && raw.startsWith('[') && labelEnd !== undefined ? { suffix: source.slice(labelEnd + bom, end) } : {}) });
     }
-    for (const child of node.children ?? []) pending.push({ node: child, depth: depth + 1 });
+    for (const child of node.children ?? []) pending.push({ node: child, depth: depth + 1, root: root ?? child });
   }
   const range = (n: Syntax) => { if (!n.position) throw new Error('MISSING_SOURCE_RANGE'); return { start: n.position.start.offset + bom, end: n.position.end.offset + bom }; };
   const raw = (n: Syntax) => { const r = range(n); return source.slice(r.start, r.end); };
@@ -80,8 +82,8 @@ export function project(source: string): Projection {
     if (n.type === 'table') return (n.children ?? []).reduce((n, r) => n + (r.children?.length ?? 0), 0) > LIMITS.tableCells ? opaque(n) : { type: 'table', attrs: { mdAlign: n.align ?? [] }, content: (n.children ?? []).map((r, ri) => ({ type: 'tableRow', content: (r.children ?? []).map((c, ci) => ({ type: ri ? 'tableCell' : 'tableHeader', attrs: { mdAlignment: n.align?.[ci] ?? null }, content: [paragraph((c.children ?? []).flatMap(x => inline(x, [], depth + 1)))] })) })) };
     return opaque(n);
   };
-  const blocks = (ast.children ?? []).map(n => ({ ...range(n), raw: raw(n), node: block(n) }));
-  return { source, blocks, leaves, fragments, doc: { type: 'doc', content: blocks.length ? blocks.map(b => b.node) : [paragraph()] } };
+  const blocks = (ast.children ?? []).map(n => ({ ...range(n), raw: raw(n), node: block(n), syntaxNodes: counts.get(n) ?? 1 }));
+  return { source, blocks, leaves, fragments, syntaxNodes: count, doc: { type: 'doc', content: blocks.length ? blocks.map(b => b.node) : [paragraph()] } };
 }
 
 // Compare Markdown semantics, not renderer-owned IDs/widths. Unknown semantics

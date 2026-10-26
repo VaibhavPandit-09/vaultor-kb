@@ -29,6 +29,8 @@ Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0
 
 ## Desktop delivery
 
+- [0.23.0 local candidate](desktop/releases/v0.23.0.md):1MiB editing implementation, qualified source/recovery behavior and failed packaged performance gate; no publication.
+
 - [0.22.0 release candidate](desktop/releases/v0.22.0.md): recursive collection deletion, Windows artifact/acceptance status and exact-source Mac handoff.
 
 - [0.21.0 release ledger](desktop/releases/v0.21.0.md): Both public platform pairs, Latest status and explicit Windows remaining-runtime-test waiver.
@@ -82,6 +84,8 @@ Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0
 - [future-roadmap](plans/future-roadmap.md): Unqualified platforms/acceptance, known debt, deferred backups and future ideas; no implicit implementation authorization.
 
 ## Qualification evidence
+
+- [Linked Markdown1MiB candidate](development/qualification/LINKED-MARKDOWN-1M.md): implemented range/worker improvements, current before/after results, native fidelity checks and unresolved foreground performance gate.
 
 - [Linked external folders implementation](development/LINKED-SOURCES.md): current authorized L1–L6 production implementation, practical Windows contract, integration and release progress.
 - [Linked Markdown Gate 1](development/qualification/LINKED-MARKDOWN-G1.md): editing engine and remediation, current bounded capability contract, mounted/IME/performance evidence and Conditional verdict; no linked-folder writes or release.

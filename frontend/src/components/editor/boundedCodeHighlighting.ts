@@ -33,6 +33,21 @@ export function boundedCodeHighlighting(lowlight: ReturnType<typeof createLowlig
     });
     return DecorationSet.create(doc, decorations);
   };
-  const plugin: Plugin<DecorationSet> = new Plugin<DecorationSet>({ state: { init: (_, state) => decorate(state.doc), apply: (tr, value) => tr.docChanged ? decorate(tr.doc) : value }, props: { decorations: state => plugin.getState(state) } });
+  const codeNodes = (doc: Node) => {
+    const nodes: Node[] = [];
+    doc.descendants(node => { if (node.type.name === 'codeBlock') { nodes.push(node); return false; } });
+    return nodes;
+  };
+  const plugin: Plugin<DecorationSet> = new Plugin<DecorationSet>({ state: {
+    init: (_, state) => decorate(state.doc),
+    apply: (tr, value, old) => {
+      if (!tr.docChanged) return value;
+      const before=codeNodes(old.doc), after=codeNodes(tr.doc);
+      // Preserve decoration identity as positions move. Recreating equivalent
+      // spans makes every React code node view update on unrelated prose input.
+      if (before.length===after.length && before.every((node,i)=>node===after[i])) return value.map(tr.mapping,tr.doc);
+      return decorate(tr.doc);
+    },
+  }, props: { decorations: state => plugin.getState(state) } });
   return plugin;
 }
