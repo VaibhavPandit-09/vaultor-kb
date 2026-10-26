@@ -43,7 +43,7 @@ public final class PrivateHost {
                     List<String> result=new ArrayList<>();result.add("OK");
                     switch(f[1]){
                         case "root"->{count(f,6);result.add(store.authorizeSelectedRoot(scope,Path.of(f[2]),f[3],Long.parseLong(f[4]),f[5]));}
-                        case "locate-root"->{count(f,4);Path original=Path.of(f[2]);result.add(WindowsFiles.mountedVolume(f[3]).resolve(original.getRoot().relativize(original)).toString());}
+                        case "locate-root"->{count(f,4);Path original=Path.of(f[2]);result.add(NativeFiles.locateRoot(original,f[3]).toString());}
                         case "carrier"->{if(!production)throw new IOException("PRIVATE_COMMAND");count(f,7);store.configureCarrier(scope,Path.of(f[2]),Path.of(f[3]),f[4],Long.parseLong(f[5]),f[6]);}
                         case "root-info"->{count(f,3);result.add(store.rootIdentity(scope,f[2]));result.add(store.rootVolume(scope,f[2]));}
                         case "open"->{count(f,4);var opened=store.openRelative(scope,f[2],f[3]);try{monitor.register(opened.document());}catch(IOException e){store.closeDocument(scope,opened.document());throw e;}result.add(opened.document());result.add(opened.epoch());result.addAll(snapshot(opened.base()));}

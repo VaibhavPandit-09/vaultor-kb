@@ -26,8 +26,8 @@ public final class LinkedVolumeTests extends SafetyTests {
             throw new AssertionError("Crash boundary not reached");
         }
         if(args.length!=1)throw new IllegalArgumentException("Explicit disposable secondary NTFS test volume required");
-        secondary=Path.of(args[0]).toAbsolutePath();WindowsFiles.localNtfs(secondary);
-        require(!WindowsFiles.volumeIdentity(secondary).equals(WindowsFiles.volumeIdentity(Path.of(".").toAbsolutePath())));
+        secondary=Path.of(args[0]).toAbsolutePath();NativeFiles.localFilesystem(secondary);
+        require(!NativeFiles.volumeIdentity(secondary).equals(NativeFiles.volumeIdentity(Path.of(".").toAbsolutePath())));
         check("real secondary NTFS Save retains source-local captured original; unrelated Git bytes unchanged",()->{
             try(var f=new Multi(null)){
                 Files.createDirectory(f.source.resolve(".git"));Path unrelated=f.source.resolve("unrelated.md");Files.writeString(unrelated,"Unchanged\r\n");
@@ -73,7 +73,7 @@ public final class LinkedVolumeTests extends SafetyTests {
                 candidate(f.store,f.doc,1,"Restart draft");f.store.close();Path moved=f.source.resolveSibling(f.source.getFileName()+"-absent");Files.move(f.source,moved);
                 f.store=new LinkedStore(OWNER,f.journal,VALIDATOR,CONSENT,List.of(f.home.resolve("managed")),null);
                 require(f.store.recover(OWNER).stream().anyMatch(r->r.record()!=null&&Arrays.equals(r.record().local(),LinkedStore.utf8("Restart draft"))));
-                Files.move(moved,f.source);f.cap=grant(f.store,f.source);require(f.store.rootVolume(OWNER,f.cap).equals(WindowsFiles.volumeIdentity(secondary)));
+                Files.move(moved,f.source);f.cap=grant(f.store,f.source);require(f.store.rootVolume(OWNER,f.cap).equals(NativeFiles.volumeIdentity(secondary)));
             }
         });
         check("real process termination after secondary capture retains usable recovery",()->{
@@ -94,7 +94,7 @@ public final class LinkedVolumeTests extends SafetyTests {
                 Files.delete(carrier.resolve("store.marker"));Files.delete(carrier);Files.move(retained,carrier);
             }
         });
-        System.out.println("SECONDARY "+secondary+" "+WindowsFiles.volumeIdentity(secondary));
+        System.out.println("SECONDARY "+secondary+" "+NativeFiles.volumeIdentity(secondary));
         System.out.println("TOTAL "+passed+" passed; "+failed+" failed");if(failed>0)System.exit(1);
     }
 }

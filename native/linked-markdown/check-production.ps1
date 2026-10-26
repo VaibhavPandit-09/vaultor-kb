@@ -5,7 +5,7 @@ Push-Location $repository
 try {
     $output=Join-Path $repository ('desktop/cache/linked-check-'+[DateTimeOffset]::UtcNow.ToUnixTimeSeconds())
     New-Item -ItemType Directory -Path $output | Out-Null
-    & javac -d native/linked-markdown/build native/linked-markdown/src/vaultor/linked/*.java native/linked-markdown/test/vaultor/linked/*.java
+    & javac -d native/linked-markdown/build native/linked-markdown/src/vaultor/linked/*.java native/linked-markdown/platform/windows/vaultor/linked/*.java native/linked-markdown/test/vaultor/linked/*.java
     if($LASTEXITCODE -ne 0){throw 'Native compilation failed'}
     $checks=@('LinkedPublicationTests','LinkedMetadataTests','LinkedParentPermissionTests','LinkedAliasTests','LinkedCrashTests','LinkedRecoveryTests','LinkedRetentionTests','LinkedReadonlyTests','LinkedDirectoryTests','LinkedExportTests','LinkedVolumeTests')
     foreach($check in $checks){

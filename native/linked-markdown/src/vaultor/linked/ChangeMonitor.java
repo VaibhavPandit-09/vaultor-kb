@@ -10,7 +10,7 @@ import java.util.concurrent.*;
 public final class ChangeMonitor implements AutoCloseable {
     private final LinkedStore store;
     private final LinkedStore.Scope scope;
-    private final Map<Path,WindowsFiles.Notifications> directories=new HashMap<>();
+    private final Map<Path,NativeFiles.Notifications> directories=new HashMap<>();
     private final Set<String> documents=new HashSet<>();
     private final Map<String,Path> parents=new HashMap<>();
     private final Map<String,LinkedStore.Change> latest=new ConcurrentHashMap<>();

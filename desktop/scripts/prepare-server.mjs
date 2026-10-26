@@ -1,3 +1,4 @@
+import {buildLinkedNative} from './build-linked-native.mjs';
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
@@ -56,10 +57,10 @@ await run(platform === 'win32' ? 'cmd.exe' : './mvnw', platform === 'win32' ? ['
 await cp(join(backend, 'target', 'vaultor-0.0.1-SNAPSHOT.jar'), join(staging, 'server.jar'));
 // The owner-local linked-file host is a separate private-pipe process. Compile
 // only maintained sources; qualification fixtures/test writers never ship.
-const nativeSources=resolve(root,'../native/linked-markdown/src/vaultor/linked');
-const nativeClasses=join(root,'cache','linked-classes-'+Date.now());await mkdir(nativeClasses,{recursive:true});
-await run('javac',['--release','25','-d',nativeClasses,...(await readdir(nativeSources)).filter(name=>name.endsWith('.java')).map(name=>join(nativeSources,name))]);
-await run(join(compilerHome,'bin',platform==='win32'?'jar.exe':'jar'),['--create','--file',join(staging,'linked-files.jar'),'-C',nativeClasses,'.']);
+const nativeClasses=join(root,'cache','linked-classes-'+Date.now());
+await buildLinkedNative(nativeClasses);
+if(platform==='darwin')await cp(join(nativeClasses,'libvaultor-files.dylib'),join(staging,'libvaultor-files.dylib'));
+await run(join(compilerHome,'bin',platform==='win32'?'jar.exe':'jar'),['--create','--file',join(staging,'linked-files.jar'),'-C',nativeClasses,'vaultor']);
 await writeFile(join(staging, 'THIRD-PARTY.md'), `# Bundled runtime and server notices\n\nRuntime: Eclipse Temurin ${pinned.name}, GPL-2.0 with Classpath Exception; all runtime legal notices retained under runtime/legal. Corresponding source/release: ${pinned.source}\nArchive: ${pinned.url}\nSHA-256: ${pinned.sha256}\n\nThe Spring Boot JAR retains dependency license/notice files in its nested BOOT-INF/lib JARs. Dependency versions and origins are in backend/pom.xml and the embedded Maven metadata. Electron's LICENSE and LICENSES.chromium.html travel with the development package. This package does not include a paid Oracle runtime.\n`);
 const files = [];
 async function walk(directory, prefix = '') { for (const entry of await readdir(directory, { withFileTypes: true })) { const relative = prefix + entry.name, path = join(directory, entry.name); if (entry.isDirectory()) await walk(path, relative + '/'); else files.push({ path: relative, sha256: await digest(path) }); } }

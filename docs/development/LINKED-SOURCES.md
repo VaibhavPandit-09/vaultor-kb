@@ -1,5 +1,7 @@
 # Linked external folders — production implementation
 
+Mac0.21.0 platform implementation/acceptance is recorded in [the current product contract](../workspace/LINKED-SOURCES.md#macos-filesystem-support) and [candidate ledger](../desktop/releases/v0.21.0.md). This document retains Windows engineering evidence; historical `WindowsFiles` is now the platform-selected `NativeFiles` under `platform/windows`.
+
 Reviewed 2026-10-26. Single authoritative implementation tracker and practical contract. Baseline: clean fetched master/origin `cd904793bf147fda0f8c5e63cc577b3bce5ce523`. User explicitly superseded the historical Gate3B metadata blockade and authorized complete Windows delivery. [Gate3](qualification/LINKED-MARKDOWN-G3.md) retains historical evidence, not current approval requirements.
 
 | Phase | Status | Requirements, implementation, evidence and next actions |

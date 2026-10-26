@@ -9,7 +9,12 @@ import java.util.*;
 import static java.lang.foreign.ValueLayout.*;
 
 /** Windows x64 local-NTFS primitives. No ordinary Java path move/overwrite fallback. */
-public final class WindowsFiles {
+public final class NativeFiles {
+    static void checkPrivatePermissions(Path path)throws IOException{throw new IOException("POSIX_ONLY");}
+    static void privatePermissions(Path path)throws IOException{throw new IOException("POSIX_ONLY");}
+    static boolean supported(){return System.getProperty("os.name").startsWith("Windows")&&Set.of("amd64","x86_64").contains(System.getProperty("os.arch"));}
+    static Path volumeRoot(Path path)throws IOException{localFilesystem(path);return path.toAbsolutePath().getRoot();}
+    static Path locateRoot(Path original,String volume)throws IOException{return mountedVolume(volume).resolve(original.getRoot().relativize(original));}
     static final int READ=0x80000000, WRITE=0x40000000, DELETE=0x10000, OPEN=3, NEW=1;
     static final int REPARSE=0x400, DIRECTORY=0x10;
     static final SymbolLookup KERNEL=SymbolLookup.libraryLookup("kernel32",Arena.global());
@@ -98,7 +103,7 @@ public final class WindowsFiles {
             return Path.of(new String(buffer.asSlice(0,length*2L).toArray(JAVA_BYTE),StandardCharsets.UTF_16LE));
         }
     }
-    public static void localNtfs(Path path)throws IOException{
+    public static void localFilesystem(Path path)throws IOException{
         if(!System.getProperty("os.name").startsWith("Windows")||!Set.of("amd64","x86_64").contains(System.getProperty("os.arch"))||ADDRESS.byteSize()!=8)throw new IOException("WINDOWS_X64_ONLY");
         String root=path.toAbsolutePath().getRoot().toString();if(!root.matches("[A-Za-z]:\\\\"))throw new IOException("LOCAL_VOLUME_ONLY");
         try(var a=Arena.ofConfined()){
@@ -109,7 +114,7 @@ public final class WindowsFiles {
     }
     /** Stable volume identity, independent of its current DOS drive letter. */
     public static String volumeIdentity(Path path)throws IOException{
-        localNtfs(path);
+        localFilesystem(path);
         try(var a=Arena.ofConfined()){
             var buffer=a.allocate(1024,2);
             yes("VolumeIdentity",invoke("GetVolumeNameForVolumeMountPointW",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS,JAVA_INT),wide(a,path.toAbsolutePath().getRoot().toString()),buffer,512));
@@ -129,7 +134,7 @@ public final class WindowsFiles {
         Path actual;
         Pins(Path directory)throws IOException{this(directory,false);}
         Pins(Path directory,boolean publication)throws IOException{
-            Path absolute=directory.toAbsolutePath().normalize();localNtfs(absolute);Path current=absolute.getRoot();
+            Path absolute=directory.toAbsolutePath().normalize();localFilesystem(absolute);Path current=absolute.getRoot();
             try{handles.add(open(current,publication?READ:0x80,publication?3:1,OPEN,true));ordinaryDirectory(handles.getLast());actual=canonical(handles.getLast());for(Path segment:absolute){current=current.resolve(segment);handles.add(relative(handles.getLast(),segment.toString(),publication?READ:0,publication?3:1,true));ordinaryDirectory(handles.getLast());Path child=canonical(handles.getLast());if(!child.toString().equalsIgnoreCase(actual.resolve(segment).toString()))throw new IOException("ANCESTOR_IDENTITY_CHANGED");actual=child;}}catch(IOException e){close();throw e;}
         }
         public Info last()throws IOException{return info(handles.getLast());}

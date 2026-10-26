@@ -7,8 +7,8 @@ import {fileURLToPath} from 'node:url';
 import {LinkedRegistry} from '../src/linked/registry.mjs';
 
 const repository=fileURLToPath(new URL('../../',import.meta.url));
-const java=resolve(repository,'desktop/bundle/runtime/bin/java.exe'),classes=resolve(repository,'native/linked-markdown/build');
-const skip=process.platform!=='win32'||!existsSync(java)||!existsSync(join(classes,'vaultor/linked/LinkedHost.class'));
+const java=resolve(repository,process.platform==='darwin'?'desktop/bundle/runtime/bin/java':'desktop/bundle/runtime/bin/java.exe'),classes=resolve(repository,process.platform==='darwin'?'native/linked-markdown/build-mac':'native/linked-markdown/build');
+const skip=!['win32','darwin'].includes(process.platform)||!existsSync(java)||!existsSync(join(classes,'vaultor/linked/LinkedHost.class'));
 async function fixture(){
   const directory=await mkdtemp(join(repository,'native/linked-markdown/.scratch/registry-')),source=join(directory,'source'),privateDirectory=join(directory,'private');await mkdir(source);await mkdir(privateDirectory);await writeFile(join(source,'guide.md'),'# Original\n');
   let current={token:'local-token',workspace:'workspace',generation:'generation',epoch:'epoch-one',kind:'owned-local',mainFrame:true};

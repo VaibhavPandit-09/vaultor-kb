@@ -8,8 +8,8 @@ import static java.lang.foreign.ValueLayout.*;
 public final class LinkedAliasTests extends SafetyTests {
     static String shortLeaf(Path file)throws Exception{
         try(var arena=Arena.ofConfined()){
-            var output=arena.allocate(65536,2);var result=WindowsFiles.invoke("GetShortPathNameW",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS,JAVA_INT),WindowsFiles.wide(arena,file.toString()),output,32768);
-            int length=(int)result.value();if(length<=0||length>=32768)throw new WindowsFiles.NativeFailure("ShortPath",result.error());
+            var output=arena.allocate(65536,2);var result=NativeFiles.invoke("GetShortPathNameW",FunctionDescriptor.of(JAVA_INT,ADDRESS,ADDRESS,JAVA_INT),NativeFiles.wide(arena,file.toString()),output,32768);
+            int length=(int)result.value();if(length<=0||length>=32768)throw new NativeFiles.NativeFailure("ShortPath",result.error());
             return Path.of(new String(output.asSlice(0,length*2L).toArray(JAVA_BYTE),StandardCharsets.UTF_16LE)).getFileName().toString();
         }
     }

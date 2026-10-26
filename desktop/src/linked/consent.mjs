@@ -1,5 +1,6 @@
 import {createHmac,randomUUID} from 'node:crypto';
-import {win32} from 'node:path';
+import {win32,posix} from 'node:path';
+const paths=process.platform==='darwin'?posix:win32;
 /** Main-process consent adapter. Paths and keys stay outside the renderer.
  * The callback is the owned Java host's private channel, never HTTP. */
 export class RootConsent {
@@ -13,8 +14,8 @@ export class RootConsent {
     try{
       const result=await this.picker({properties:['openDirectory']});if(result.canceled)return {outcome:'cancelled'};
       const after=this.context(request);if(before.epoch!==after.epoch)throw new Error('Owner epoch changed');
-      if(result.filePaths.length!==1||!win32.isAbsolute(result.filePaths[0]))throw new Error('Invalid picker result');
-      const selected=win32.normalize(result.filePaths[0]),nonce=randomUUID(),expires=Date.now()+55000;
+      if(result.filePaths.length!==1||!paths.isAbsolute(result.filePaths[0]))throw new Error('Invalid picker result');
+      const selected=paths.normalize(result.filePaths[0]),nonce=randomUUID(),expires=Date.now()+55000;
       const payload=['G2-ROOT-1',before.workspace,before.generation,selected,nonce,String(expires)].join('\n');
       const proof=createHmac('sha256',this.key).update(payload).digest('hex');
       const root=await this.send({selected,nonce,expires,proof,workspace:before.workspace,generation:before.generation});

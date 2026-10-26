@@ -1,5 +1,6 @@
 import {createHmac,randomUUID} from 'node:crypto';
-import {win32} from 'node:path';
+import {win32,posix} from 'node:path';
+const paths=process.platform==='darwin'?posix:win32;
 /** Retained versions only, explicit OS dialog, one-use host-private proof.
  * Native CREATE_NEW is mandatory even when the dialog permits overwrite. */
 export async function exportLinked(manager,request,p){
@@ -12,8 +13,8 @@ export async function exportLinked(manager,request,p){
   if(['base','local','visual'].includes(p.kind))await target.native.call('inspect',operation);
   const result=await manager.options.saveDialog({title:'Export a separate linked-document copy',defaultPath:p.kind==='visual'?'visual-draft.json':'document-copy.md'});
   registry.check(request);if(result.canceled)return {outcome:'cancelled'};
-  if(typeof result.filePath!=='string'||!win32.isAbsolute(result.filePath))throw Error('INVALID_EXPORT_SELECTION');
-  const selected=win32.normalize(result.filePath),nonce=randomUUID(),expires=Date.now()+55000,scope=target.scope;
+  if(typeof result.filePath!=='string'||!paths.isAbsolute(result.filePath))throw Error('INVALID_EXPORT_SELECTION');
+  const selected=paths.normalize(result.filePath),nonce=randomUUID(),expires=Date.now()+55000,scope=target.scope;
   const signature=createHmac('sha256',target.native.consent).update(['LINKED-EXPORT-1',scope.workspace,scope.generation,selected,operation,p.kind,nonce,expires].join('\n')).digest('hex');
   const [state]=await target.native.call('export-selected',operation,p.kind,selected,nonce,expires,signature);registry.check(request);return {outcome:state==='EXPORTED_NEW_FILE'?'saved':'recovery-required'};}finally{target.release?.();}
 }

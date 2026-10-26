@@ -1,4 +1,5 @@
 import {linkedPublicError} from './errors.mjs';
+import {dirname,join} from 'node:path';
 import {spawn} from 'node:child_process';
 import {randomBytes} from 'node:crypto';
 
@@ -10,7 +11,7 @@ export class NativeChannel {
     if(typeof production!=='boolean'||!Array.isArray(protectedPaths)||protectedPaths.length>8||protectedPaths.some(path=>typeof path!=='string'))throw new Error('INVALID_NATIVE_CONFIGURATION');
     this.validation=randomBytes(32);this.consent=randomBytes(32);this.sequence=0;this.pending=new Map();this.buffer='';
     const env={...process.env};for(const key of Object.keys(env))if(['JAVA_TOOL_OPTIONS','JDK_JAVA_OPTIONS','_JAVA_OPTIONS','CLASSPATH'].includes(key.toUpperCase()))delete env[key];
-    this.child=spawn(java,['-Xmx128m','--enable-native-access=ALL-UNNAMED','-cp',classes,production?'vaultor.linked.LinkedHost':'vaultor.linked.PrivateHost'],{windowsHide:true,env,stdio:['pipe','pipe','pipe']});
+    this.child=spawn(java,['-Xmx128m',...(process.platform==='darwin'?['-Dvaultor.linked.library='+join(classes.endsWith('.jar')?dirname(classes):classes,'libvaultor-files.dylib')]:[]),'--enable-native-access=ALL-UNNAMED','-cp',classes,production?'vaultor.linked.LinkedHost':'vaultor.linked.PrivateHost'],{windowsHide:true,env,stdio:['pipe','pipe','pipe']});
     this.ready=new Promise((resolve,reject)=>this.pending.set(0,{resolve,reject,timer:setTimeout(()=>this.fail(new Error('NATIVE_START_TIMEOUT')),30000)}));
     this.child.stdout.setEncoding('utf8');this.child.stdout.on('data',chunk=>{
       this.buffer+=chunk;if(this.buffer.length>6*1024*1024)return this.fail(new Error('NATIVE_FRAME_LIMIT'));

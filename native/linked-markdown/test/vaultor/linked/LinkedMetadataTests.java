@@ -9,22 +9,22 @@ import static java.lang.foreign.ValueLayout.*;
 /** Narrow regression for ordinary files with NTFS tracking object IDs. */
 public final class LinkedMetadataTests extends SafetyTests {
     static byte[] objectId(Path file,boolean create)throws IOException {
-        try(var h=WindowsFiles.open(file,WindowsFiles.READ,7,WindowsFiles.OPEN,false);var a=Arena.ofConfined()){
+        try(var h=NativeFiles.open(file,NativeFiles.READ,7,NativeFiles.OPEN,false);var a=Arena.ofConfined()){
             var data=a.allocate(64,8);var count=a.allocate(JAVA_INT);
-            var result=WindowsFiles.invoke("DeviceIoControl",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,ADDRESS),h.value,create?0x900c0:0x9009c,MemorySegment.NULL,0,data,64,count,MemorySegment.NULL);
-            WindowsFiles.yes(create?"FixtureObjectId":"ReadObjectId",result);require(count.get(JAVA_INT,0)==64);return data.toArray(JAVA_BYTE);
+            var result=NativeFiles.invoke("DeviceIoControl",FunctionDescriptor.of(JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,JAVA_INT,ADDRESS,ADDRESS),h.value,create?0x900c0:0x9009c,MemorySegment.NULL,0,data,64,count,MemorySegment.NULL);
+            NativeFiles.yes(create?"FixtureObjectId":"ReadObjectId",result);require(count.get(JAVA_INT,0)==64);return data.toArray(JAVA_BYTE);
         }
     }
     public static void main(String[] args)throws Exception {
         check("ordinary object-ID inspection succeeds without changing source metadata or bytes",()->{
             try(var f=new LinkedPublicationTests.LinkedFixture("guide.md","# Guide\r\n\r\nOriginal.\r\n",null)){
-                byte[] id=objectId(f.file,true),bytes=Files.readAllBytes(f.file);WindowsFiles.Info before;
-                try(var h=WindowsFiles.open(f.file,WindowsFiles.READ,1,WindowsFiles.OPEN,false)){
-                    before=WindowsFiles.info(h);PracticalMetadata.inspect(h);
+                byte[] id=objectId(f.file,true),bytes=Files.readAllBytes(f.file);NativeFiles.Info before;
+                try(var h=NativeFiles.open(f.file,NativeFiles.READ,1,NativeFiles.OPEN,false)){
+                    before=NativeFiles.info(h);PracticalMetadata.inspect(h);
                     rejects("OBJECT_ID_UNQUALIFIED",()->ReplacementMetadata.observe(h)); // historical strict mode stays strict
                 }
                 require(Arrays.equals(id,objectId(f.file,false)));require(Arrays.equals(bytes,Files.readAllBytes(f.file)));
-                try(var h=WindowsFiles.open(f.file,WindowsFiles.READ,1,WindowsFiles.OPEN,false)){require(before.equals(WindowsFiles.info(h)));}
+                try(var h=NativeFiles.open(f.file,NativeFiles.READ,1,NativeFiles.OPEN,false)){require(before.equals(NativeFiles.info(h)));}
                 var doc=f.store.openLinked(OWNER,f.rootCap,"guide.md");require(f.store.readonlyReason(OWNER,doc.document()).isEmpty());
             }
         });
@@ -34,7 +34,7 @@ public final class LinkedMetadataTests extends SafetyTests {
                 objectId(f.file,true);var doc=f.store.openLinked(OWNER,f.rootCap,"CODEBASE.md");require(f.store.readonlyReason(OWNER,doc.document()).isEmpty());require(Arrays.equals(original,doc.base().bytes()));
                 String local=source.replaceFirst("# Vaultor:","# Vaultor regression:");require(!local.equals(source));
                 var receipt=f.store.saveLinked(OWNER,doc.document(),doc.epoch(),candidate(f.store,doc,1,local),UUID.randomUUID().toString());require(receipt.state().equals("COMMITTED"));require(Arrays.equals(LinkedStore.utf8(local),Files.readAllBytes(f.file)));
-                Path captured=f.journal.resolve(receipt.operation()).resolve("captured.md");require(Arrays.equals(original,Files.readAllBytes(captured)));try(var h=WindowsFiles.open(captured,WindowsFiles.READ,1,WindowsFiles.OPEN,false)){require(WindowsFiles.info(h).identity().equals(doc.base().revision().identity()));}
+                Path captured=f.journal.resolve(receipt.operation()).resolve("captured.md");require(Arrays.equals(original,Files.readAllBytes(captured)));try(var h=NativeFiles.open(captured,NativeFiles.READ,1,NativeFiles.OPEN,false)){require(NativeFiles.info(h).identity().equals(doc.base().revision().identity()));}
             }
         });
         check("object ID does not bypass alternate-stream refusal",()->{

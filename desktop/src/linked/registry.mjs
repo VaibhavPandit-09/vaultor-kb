@@ -1,6 +1,6 @@
 import {randomUUID,createHash,createHmac} from 'node:crypto';
 import {mkdir,readFile,open,rename,stat} from 'node:fs/promises';
-import {join,basename,dirname,resolve} from 'node:path';
+import {join,basename,dirname,resolve,sep} from 'node:path';
 import {NativeChannel} from './native-channel.mjs';
 import {RootConsent} from './consent.mjs';
 
@@ -21,7 +21,7 @@ export class LinkedRegistry {
     for(const entry of this.entries.values())this.entryIndex.set(this.entryKey(entry.root,entry.relative,entry.identity),entry.id);
     return this.snapshot();
   }
-  entryKey(root,relative,identity){return [root,relative.toLowerCase(),identity].join('\0');}
+  entryKey(root,relative,identity){return [root,process.platform==='darwin'?relative:relative.toLowerCase(),identity].join('\0');}
   async ensureNative(){this.check(this.scope);if(!this.native)this.native=new NativeChannel({...this.options,workspace:this.scope.workspace,generation:this.scope.generation,privateRoot:join(this.directory,'journal'),production:true});await this.native.ready;return this.native;}
   persist(){const next=(this.persisting??Promise.resolve()).catch(()=>{}).then(()=>this.writeRegistry());this.persisting=next;return next;}
   async writeRegistry(){
@@ -60,9 +60,9 @@ export class LinkedRegistry {
         const rootProof=createHmac('sha256',this.native.consent).update(['G2-ROOT-1',before.workspace,before.generation,selected.selected,rootNonce,rootExpires].join('\n')).digest('hex');
         [capability]=await this.native.call('root',selected.selected,rootNonce,rootExpires,rootProof);
       }const [identity,volume]=await this.native.call('root-info',capability);await this.options.owner?.(request);this.check(request);
-      const existing=[...this.roots.values()].find(root=>root.identity===identity&&((root.volume&&root.volume===volume)||root.path.toLowerCase()===selected.selected.toLowerCase()));
+      const existing=[...this.roots.values()].find(root=>root.identity===identity&&((root.volume&&root.volume===volume)||(process.platform==='darwin'?root.path===selected.selected:root.path.toLowerCase()===selected.selected.toLowerCase())));
       if(existing){if(existing.capability&&existing.capability!==capability)await this.native.call('revoke',existing.capability);existing.path=selected.selected;existing.volume=volume;existing.enabled=true;existing.capability=capability;existing.status='available';await this.persist();return existing.id;}
-      const picked=selected.selected.toLowerCase();if([...this.roots.values()].some(root=>{const registered=root.path.toLowerCase();return picked.startsWith(registered+'\\')||registered.startsWith(picked+'\\');})){await this.native.call('revoke',capability);throw Error('LINKED_SOURCE_OVERLAP');}
+      const picked=process.platform==='darwin'?selected.selected:selected.selected.toLowerCase();if([...this.roots.values()].some(root=>{const registered=process.platform==='darwin'?root.path:root.path.toLowerCase();return picked.startsWith(registered+sep)||registered.startsWith(picked+sep);})){await this.native.call('revoke',capability);throw Error('LINKED_SOURCE_OVERLAP');}
       if(this.roots.size>=8){await this.native.call('revoke',capability);throw Error('LINKED_SOURCE_LIMIT');}
       const root={id:randomUUID(),name:(basename(dirname(selected.selected))+' · '+basename(selected.selected)).slice(-255),path:selected.selected,identity,volume,enabled:true,capability,status:'available'};this.roots.set(root.id,root);
       try{await this.persist();}catch(error){this.roots.delete(root.id);await this.native.call('revoke',capability).catch(()=>{});throw error;}return root.id;

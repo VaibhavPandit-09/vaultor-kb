@@ -34,8 +34,8 @@ public final class Journal {
   Record latest=null;boolean damaged=false;
   try(var list=Files.list(op)){
    for(Path file:list.filter(p->p.getFileName().toString().matches("[0-9]{2}\\.rec")).sorted().limit(10).toList()){
-    try(var handle=WindowsFiles.lease(file,false)){
-     Record record=decode(WindowsFiles.read(handle,LinkedStore.JOURNAL_LIMIT));
+    try(var handle=NativeFiles.lease(file,false)){
+     Record record=decode(NativeFiles.read(handle,LinkedStore.JOURNAL_LIMIT));
      if(!record.operation().equals(op.getFileName().toString())||!record.workspace().equals(owner.workspace())||!record.generation().equals(owner.generation()))throw new IOException("JOURNAL_SCOPE");latest=record;
     }catch(IOException e){damaged=true;}
    }
