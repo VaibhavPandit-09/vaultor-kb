@@ -179,17 +179,35 @@ public final class LinkedStore implements AutoCloseable {
         pruneAcknowledged(operation);
     }
     private void pruneAcknowledged(String operation)throws IOException{
-        Path op=operationPath(operation);var acknowledged=new ArrayList<Path>();for(var recovery:recover(owner))if(!recovery.damagedTail()&&recovery.record()!=null&&Set.of("LINKED_ACKNOWLEDGED","VIEW_ACKNOWLEDGED").contains(recovery.record().state())){Path previous=operationPath(recovery.operation());if(previous.getParent().equals(op.getParent()))acknowledged.add(previous);}
+        Path op=operationPath(operation);var acknowledged=new ArrayList<Path>();
+        // Retention is per store and always keeps the just-acknowledged item.
+        // Its complete chain was checked before the flushed acknowledgement;
+        // rereading it here cannot make it eligible for deletion. Other stores
+        // likewise cannot contribute to this store's history count or budget.
+        try(var storePins=NativeFiles.pin(op.getParent());var entries=Files.list(op.getParent())){
+            for(Path previous:entries.limit(102).toList()){
+                if(!previous.getFileName().toString().matches("[0-9a-f-]{36}")||previous.equals(op))continue;
+                try(var pins=NativeFiles.pin(previous)){
+                    var recovery=Journal.recover(previous,owner);
+                    if(!recovery.damagedTail()&&recovery.record()!=null&&Set.of("LINKED_ACKNOWLEDGED","VIEW_ACKNOWLEDGED").contains(recovery.record().state())){
+                        Path verified=operationPath(recovery.operation());
+                        if(verified.getParent().equals(op.getParent()))acknowledged.add(verified);
+                    }
+                }
+            }
+        }
         acknowledged.sort(Comparator.comparingLong(p->{try{return Files.getLastModifiedTime(p.resolve(Files.exists(p.resolve("08.rec"))?"08.rec":"01.rec")).toMillis();}catch(IOException e){return Long.MAX_VALUE;}}));
         // The just-acknowledged operation is always retained, even if the wall
         // clock moved backwards or timestamp precision produces equal values.
-        acknowledged.remove(op);
         long historyBytes=evidenceBytes(op);for(Path previous:acknowledged)historyBytes+=evidenceBytes(previous);int remaining=acknowledged.size();
         for(Path previous:acknowledged){if(remaining<=19&&historyBytes<=64L*1024*1024)break;try{long bytes=evidenceBytes(previous);discardPrivateEvidence(previous.getFileName().toString());historyBytes-=bytes;remaining--;}catch(IOException ignored){/* Refuse quota rather than delete unresolved work. */}}
     }
     private long evidenceBytes(Path operation)throws IOException{
         try(var parent=NativeFiles.pinPublication(operation.getParent());var pins=NativeFiles.pinPublication(operation);var files=Files.list(operation)){
-            long bytes=0;for(Path path:files.limit(13).toList())try(var file=NativeFiles.relative(pins.handle(),path.getFileName().toString(),NativeFiles.READ,1,false)){bytes+=NativeFiles.info(file).size();}return bytes;
+            // Counting retained bytes only needs attributes, not a data-read
+            // lease on every multi-MiB record. Relative opens still check type
+            // and confinement; recovery and deletion keep their full reads.
+            long bytes=0;for(Path path:files.limit(13).toList())try(var file=NativeFiles.relative(pins.handle(),path.getFileName().toString(),0,1,false)){bytes+=NativeFiles.info(file).size();}return bytes;
         }
     }
     /** Replacing a view is not permission to replay its old draft on reopen.

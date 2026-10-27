@@ -10,10 +10,26 @@ import java.util.*;
  * selects the production policy without accepting a renderer policy flag. */
 public final class PrivateHost {
     private static final int FRAME_LIMIT=16*1024*1024;
-    private static String line(InputStream input)throws IOException{
-        var bytes=new ByteArrayOutputStream();int value;
-        while((value=input.read())!=-1&&value!='\n'){if(bytes.size()>=FRAME_LIMIT)throw new IOException("FRAME_LIMIT");bytes.write(value);}
-        return value==-1&&bytes.size()==0?null:bytes.toString(StandardCharsets.UTF_8);
+    static final class FrameReader {
+        private final InputStream input;
+        private final byte[] buffer=new byte[65536];
+        private int position,available;
+        FrameReader(InputStream input){this.input=input;}
+        String line()throws IOException{
+            var bytes=new ByteArrayOutputStream();
+            for(;;){
+                if(position>=available){
+                    available=input.read(buffer);position=0;
+                    if(available<0)return bytes.size()==0?null:bytes.toString(StandardCharsets.UTF_8);
+                    if(available==0){int value=input.read();if(value<0)return bytes.size()==0?null:bytes.toString(StandardCharsets.UTF_8);buffer[0]=(byte)value;available=1;}
+                }
+                int end=position;while(end<available&&buffer[end]!='\n')end++;
+                int length=end-position;
+                if((long)bytes.size()+length>FRAME_LIMIT)throw new IOException("FRAME_LIMIT");
+                bytes.write(buffer,position,length);position=end;
+                if(position<available){position++;return bytes.toString(StandardCharsets.UTF_8);}
+            }
+        }
     }
     private static String[] decode(String line)throws IOException{
         try{return Arrays.stream(line.split("\t",-1)).map(s->new String(Base64.getDecoder().decode(s),StandardCharsets.UTF_8)).toArray(String[]::new);}catch(IllegalArgumentException e){throw new IOException("FRAME_ENCODING");}
@@ -31,14 +47,14 @@ public final class PrivateHost {
         run(false);
     }
     static void run(boolean production)throws Exception {
-        String first=line(System.in);if(first==null)return;String[] init=decode(first);if(init.length<8||init.length>16||!init[0].equals("INIT-G3"))throw new IOException("PRIVATE_INIT");
+        var frames=new FrameReader(System.in);String first=frames.line();if(first==null)return;String[] init=decode(first);if(init.length<8||init.length>16||!init[0].equals("INIT-G3"))throw new IOException("PRIVATE_INIT");
         var scope=new LinkedStore.Scope(init[1],init[2],LinkedStore.Client.LOCAL_DESKTOP_OWNER);
         byte[] validation=Base64.getDecoder().decode(init[5]),consent=Base64.getDecoder().decode(init[6]);
         var protectedPaths=new ArrayList<Path>(List.of(Path.of(init[4]),Path.of(init[7])));for(int i=8;i<init.length;i++)protectedPaths.add(Path.of(init[i]));
         try(var store=new LinkedStore(scope,Path.of(init[3]),validation,consent,protectedPaths,null);var monitor=new ChangeMonitor(store,scope,1000)){
             Arrays.fill(validation,(byte)0);Arrays.fill(consent,(byte)0);reply(0,List.of("READY",System.getProperty("java.runtime.version")));
             long previous=0;String raw;
-            while((raw=line(System.in))!=null){String[] f=decode(raw);long id=Long.parseLong(f[0]);if(id<=previous)throw new IOException("FRAME_REPLAY");previous=id;
+            while((raw=frames.line())!=null){String[] f=decode(raw);long id=Long.parseLong(f[0]);if(id<=previous)throw new IOException("FRAME_REPLAY");previous=id;
                 try{
                     List<String> result=new ArrayList<>();result.add("OK");
                     switch(f[1]){
