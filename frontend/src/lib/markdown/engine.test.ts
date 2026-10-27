@@ -20,6 +20,43 @@ function fixture(source = 'Before unchanged.\n\nParagraph **bold** and _italic_ 
 }
 
 describe('G1-B source boundaries and structural operations', () => {
+  it('coalesced host checkpoints reproduce table source after renderer Undo and a prose edit', () => {
+    const source = 'Beginning marker.\r\n\r\n| h | t |\r\n| :--- | ---: |\r\n| cell | x |\r\n\r\nTail.\r\n';
+    for (const immutable of [false, true]) {
+      const renderer = new MarkdownEngine(bytes(source)), host = new MarkdownEngine(bytes(source));
+      const original = structuredClone(renderer.projection.doc);
+      const typed = structuredClone(original);
+      typed.content!.find(n => n.type === 'table')!.content![1].content![0].content![0].content![0].text = 'cellxxxx';
+      expect(renderer.apply(typed, immutable).accepted).toBe(true);
+      expect(host.apply(typed, immutable).accepted).toBe(true); // checkpoint during typing
+      expect(renderer.apply(original, immutable).accepted).toBe(true); // Undo is not checkpointed
+      const final = structuredClone(original);
+      final.content![0].content![0].text = 'Beginning LOCAL marker.';
+      expect(renderer.apply(final, immutable).accepted).toBe(true);
+      expect(host.apply(final, immutable).accepted).toBe(true);
+      expect(renderer.source).toBe(source.replace('Beginning', 'Beginning LOCAL'));
+      expect(host.source).toBe(renderer.source);
+    }
+  });
+  it('coalesced literal edits preserve encoded source and still validate syntax-introducing batches', () => {
+    const source = 'Keep &amp; text.\r\n\r\n| h | t |\r\n| :--- | ---: |\r\n| cell | x |\r\n\r\nTail 😀.\r\n';
+    for (const cell of ['cell edited', '**literal** | value']) {
+      const engine = new MarkdownEngine(bytes(source)), target = structuredClone(engine.projection.doc);
+      target.content![0].content![0].text = 'Keep & revised text.';
+      target.content!.find(n => n.type === 'table')!.content![1].content![0].content![0].content![0].text = cell;
+      const result = engine.apply(target, true);
+      if (cell !== 'cell edited') {
+        expect(result.accepted).toBe(false);
+        expect(result.reason).toBe('ENCODED_TEXT_PROVENANCE_REQUIRES_SOURCE');
+        expect(engine.source).toBe(source); // No batch bypass of the existing writer safeguard.
+        continue;
+      }
+      expect(result.accepted, result.reason).toBe(true);
+      expect(canonical(project(engine.source).doc)).toEqual(canonical(target));
+      expect(engine.source.endsWith('Tail 😀.\r\n')).toBe(true);
+      if (cell === 'cell edited') expect(engine.source).toBe(source.replace('&amp; text', '&amp; revised text').replace('| cell |', '| cell edited |'));
+    }
+  });
   it('table text patches ignore renderer-only empty root paragraphs, including immutable worker snapshots', () => {
     const source = 'Before.\r\n\r\n| h | t |\r\n| :--- | ---: |\r\n| cell | x |\r\n\r\n<!-- retain -->\r\n';
     for (const immutable of [false, true]) {

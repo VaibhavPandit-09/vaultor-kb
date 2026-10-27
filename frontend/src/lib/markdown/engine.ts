@@ -27,7 +27,8 @@ function protectedValues(doc: JSONContent): string[] {
   const walk = (n: JSONContent) => { if (n.type === 'sourceBlock' || n.type === 'sourceInline') result.push(JSON.stringify(canonical(n).attrs)); n.content?.forEach(walk); };
   walk(doc); return result.sort();
 }
-function singleTextChange(a: JSONContent, b: JSONContent, retained?: WeakMap<JSONContent, JSONContent>): { old: JSONContent; next: string } | null {
+type TextChange = { old: JSONContent; next: string };
+function textChanges(a: JSONContent, b: JSONContent, retained?: WeakMap<JSONContent, JSONContent>): TextChange[] | null {
   const changes: { old: JSONContent; next: string }[] = [];
   const children = (n: JSONContent) => n.type === 'doc' ? (n.content ?? []).filter(c => c.type !== 'paragraph' || c.content?.length) : n.content ?? [];
   const visit = (x: JSONContent, y: JSONContent): boolean => {
@@ -43,7 +44,27 @@ function singleTextChange(a: JSONContent, b: JSONContent, retained?: WeakMap<JSO
     if (x.type !== y.type || JSON.stringify(canonical({ ...x, content: [] }, false).attrs ?? {}) !== JSON.stringify(canonical({ ...y, content: [] }, false).attrs ?? {}) || a.length !== b.length) return false;
     return a.every((c, i) => visit(c, b[i]));
   };
-  return visit(a, b) && changes.length === 1 ? changes[0] : null;
+  return visit(a, b) ? changes : null;
+}
+function literalBatch(projection: Projection, changes: TextChange[]): string | undefined {
+  // A text permutation may be a block move. Keep the structural writer's raw
+  // fragment provenance for that case rather than rewriting text in place.
+  const previous = new Set(changes.map(change => change.old.text ?? ''));
+  if (changes.some(change => previous.has(change.next))) return;
+  const leaves = new Map(projection.leaves.map(leaf => [leaf.node, leaf]));
+  const patches: NonNullable<ReturnType<typeof literalPatch>>[] = [];
+  for (const change of changes) {
+    const leaf = leaves.get(change.old), patch = leaf && literalPatch(leaf, change.next);
+    if (!patch) return;
+    patches.push(patch);
+  }
+  patches.sort((a, b) => a.start - b.start);
+  const pieces: string[] = []; let end = 0;
+  for (const patch of patches) {
+    if (patch.start < end) return;
+    pieces.push(projection.source.slice(end, patch.start), patch.text); end = patch.end;
+  }
+  pieces.push(projection.source.slice(end)); return pieces.join('');
 }
 function addedFormatting(projection: Projection, target: JSONContent): CharPatch | undefined {
   const old = projection.blocks, next = (target.content ?? []).filter(n => n.type !== 'paragraph' || n.content?.length);
@@ -159,11 +180,19 @@ export class MarkdownEngine {
         if (/[\udc00-\udfff]/.test(source[end] ?? '')) { end++; tail++; }
         replacement = candidate.slice(start, tail);
       } else {
-        const change = singleTextChange(this.projection.doc, target, immutable ? this.retained : undefined);
+        const changes = textChanges(this.projection.doc, target, immutable ? this.retained : undefined);
+        const change = changes?.length === 1 ? changes[0] : undefined;
         const formatting = !change ? addedFormatting(this.projection, target) : undefined;
         const leaf = change && this.projection.leaves.find(l => l.node === change.old);
         const literal = change && leaf ? literalPatch(leaf, change.next) : undefined;
-        if (!change && formatting && matchesCandidate(source.slice(0, formatting.start) + formatting.text + source.slice(formatting.end))) {
+        // Independent protection may skip intermediate renderer Undo/typing
+        // snapshots. Preserve mapped text in every changed leaf before trying
+        // structural writers; otherwise a coalesced revert rewrites table padding.
+        // The entire candidate must still reparse to the complete intended JSON.
+        const batch = changes && changes.length > 1 ? literalBatch(this.projection, changes) : undefined;
+        if (batch !== undefined && matchesCandidate(batch)) {
+          candidate = batch;
+        } else if (!change && formatting && matchesCandidate(source.slice(0, formatting.start) + formatting.text + source.slice(formatting.end))) {
           start = formatting.start; end = formatting.end; replacement = formatting.text;
           candidate = source.slice(0, start) + replacement + source.slice(end);
         } else if (literal) {

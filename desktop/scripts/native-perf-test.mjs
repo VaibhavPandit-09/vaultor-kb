@@ -4,8 +4,15 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import { fixture, hash, summary } from './perf-support.mjs';
 import { structuralCases } from './perf-structures.mjs';
+import { saveDiagnostics, saveFailureMessage, saveFailureEvidence, observeSaveUI } from './perf-save-diagnostics.mjs';
+import { LinkedManager } from '../src/linked/manager.mjs';
+import { NativeChannel } from '../src/linked/native-channel.mjs';
 
 export async function runPerfTest(window, directory) {
+  const diagnostics=saveDiagnostics(LinkedManager.prototype,NativeChannel.prototype);
+  try{return await executePerfTest(window,directory,diagnostics);}finally{diagnostics.restore();}
+}
+async function executePerfTest(window, directory, diagnostics) {
   const config=JSON.parse(await readFile(join(directory,'perf-config.json'),'utf8'));
   const cases=config.suite==='structures'?structuralCases({smoke:config.smoke,caseName:config.caseName}):config.sizes.map(kib=>({kib,file:'perf-'+kib+'.md',text:fixture(kib),targets:['Beginning','Middle','End'].map(label=>({label,prefix:label,needle:label+' marker paragraph.',kind:'paragraph'}))}));
   const wc=window.webContents, evaluate=code=>wc.executeJavaScript(code);
@@ -112,10 +119,23 @@ export async function runPerfTest(window, directory) {
       const marker=target.label;
       await position(target,' LOCAL'.repeat(sample));
       const start=performance.now();await insert();const editMs=performance.now()-start;doc.raw.editAcknowledgementMs.push(editMs);
+      const previousSaved=expected;
       expected=expected.replace(changed(target,' LOCAL'.repeat(sample)),changed(target,' LOCAL'.repeat(sample+1)));
-      const saving=performance.now();await click('Save');
+      await evaluate(`window.perf.saveUI?.stop();window.perf.saveUI=(${observeSaveUI.toString()})(document);void 0`);
+      const boundary=diagnostics.cursor;
+      const saving=performance.now();let clickReturned=false;
+      try{await click('Save');clickReturned=true;
       await wait(saved,'Save receipt');assert.ok((await readFile(file,'utf8'))===expected,'Complete source preservation');
-      const saveMs=performance.now()-saving;doc.raw.saveMs.push(saveMs);doc.operations.push({marker,sample,editAcknowledgementMs:editMs,saveMs});
+      }catch(error){
+        doc.status='failed';
+        doc.failure=await saveFailureEvidence({context:{round:(config.round??0)+1,caseId:f.caseId??'size-'+kib,marker,sample,operation:'save',clickReturned,elapsedMs:performance.now()-saving},readUI:()=>evaluate(`({...window.perf.saveUI.snapshot(),pending:window.perf.pending,workerErrors:window.perf.errors.length,pageErrors:window.perf.pageErrors.length})`),readSource:()=>readFile(file),expected,original,previousSaved,stages:diagnostics.since(boundary),traceTruncated:diagnostics.truncatedSince(boundary)});
+        await persist();
+        throw Error(saveFailureMessage(error)+' [round '+doc.failure.round+', '+doc.failure.caseId+', target '+marker+', sample '+sample+', UI '+doc.failure.ui.statuses?.join('/')+']');
+      }
+      const saveMs=performance.now()-saving;doc.raw.saveMs.push(saveMs);
+      await evaluate('window.perf.saveUI.stop()');
+      const stages=diagnostics.since(boundary),ended=(stage,operation,state)=>stages.some(e=>e.stage===stage&&e.operation===operation&&e.phase==='end'&&(!state||e.state===state));
+      doc.operations.push({marker,sample,editAcknowledgementMs:editMs,saveMs,receipt:{nativeCommitted:ended('native','save','COMMITTED'),acknowledgementReturned:ended('native','ack-save'),dispatchCommitted:ended('dispatch','save','COMMITTED')}});
     }
     const measured=await evaluate(`(()=>{const m=window.perf;m.long.push(...m.observer.takeRecords().map(e=>({start:e.startTime,duration:e.duration})));return {timeline:m.timeline,keys:m.keys,validation:m.validation,patch:m.patch,dispatch:m.dispatch,long:m.long,heap:performance.memory?.usedJSHeapSize,errors:m.errors,pageErrors:m.pageErrors};})()`);
     assert.deepEqual(measured.errors,[],'Worker errors');

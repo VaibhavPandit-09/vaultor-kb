@@ -28,6 +28,13 @@ test('comparisons cannot match different structures at the same size or mix suit
   assert.equal(comparison(run([]),{...run([]),suite:'sizes'}).compatible,false);
 });
 
+test('bounded structural prefixes retain matrix order, full sizes and strict case validation',()=>{
+  assert.deepEqual(structuralCases({caseName:'prose,tables'}).map(f=>f.caseId),['prose-1024','tables-256']);
+  assert.deepEqual(structuralCases({smoke:true,caseName:'prose,tables'}).map(f=>f.caseId),['prose-64','tables-64']);
+  assert.throws(()=>structuralCases({caseName:'prose,unknown'}));
+  assert.throws(()=>structuralCases({caseName:'prose,'}));
+});
+
 test('application environment cannot inherit personal database, credentials or configuration overrides',()=>{
   assert.deepEqual(isolatedEnvironment({Path:'tools',SystemRoot:'windows',TEMP:'temp',SPRING_APPLICATION_JSON:'private',DB_PATH:'personal',STORAGE_PATH:'personal',VAULTOR_OWNER_TOKEN:'secret',HOST_ACCESS_PATH:'personal',NODE_OPTIONS:'inject',JAVA_TOOL_OPTIONS:'inject',GITHUB_TOKEN:'secret'}),{Path:'tools',SystemRoot:'windows',TEMP:'temp'});
 });

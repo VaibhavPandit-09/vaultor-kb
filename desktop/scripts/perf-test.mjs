@@ -99,14 +99,14 @@ try {
   result.environment.javaRuntime=(await json(join(desktop,'bundle','manifest.json'))).runtime;
   // Commits/app versions are recorded but deliberately excluded: compare code
   // revisions only when the workload, toolchain and machine remain identical.
-  const harnessPaths=['desktop/scripts/perf-test.mjs','desktop/scripts/native-perf-test.mjs','desktop/scripts/perf-support.mjs','desktop/scripts/perf-structures.mjs','desktop/scripts/perf-process.ps1','desktop/scripts/native-chrome-smoke.mjs'];
+  const harnessPaths=['desktop/scripts/perf-test.mjs','desktop/scripts/native-perf-test.mjs','desktop/scripts/perf-support.mjs','desktop/scripts/perf-structures.mjs','desktop/scripts/perf-save-diagnostics.mjs','desktop/scripts/perf-process.ps1','desktop/scripts/native-chrome-smoke.mjs'];
   const harnessHash=await fingerprint(harnessPaths);
   result.compatibility=hash(JSON.stringify({protocol,workload,environment:{...result.environment,commit:undefined,dirty:undefined,appVersion:undefined},fixtures:fixtures.map(f=>hash(f.text)),harness:harnessHash}));
   temporary=await mkdtemp(join(tmpdir(),'vaultor-perf-'));
   for(let round=0;round<workload.rounds;round++) {
     const directory=join(temporary,`profile-${round}`),source=join(temporary,`source-${round}`);
     await mkdir(directory);await mkdir(source);
-    await writeFile(join(directory,'perf-config.json'),JSON.stringify({...workload,source}));
+    await writeFile(join(directory,'perf-config.json'),JSON.stringify({...workload,source,round}));
     // Allowlisted environment avoids inherited test switches, owner credentials,
     // source roots or dev URLs from changing the application under test.
     const env=isolatedEnvironment(process.env);

@@ -58,6 +58,20 @@ test('near-1 MiB real NTFS source preserves local edits, explicit Save, conflict
     const receipt=await f.documents.save(f.scope,{...fresh,version});assert.notEqual(receipt.state,'COMMITTED');assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),external);
   }finally{await f.documents.dispose();await f.registry.close();}
 });
+test('coalesced table Undo checkpoints keep independent validation and exact Save',{skip},async()=>{
+  const base='Beginning marker.\r\n\r\n| h | t |\r\n| :--- | ---: |\r\n| cell | x |\r\n\r\nTail.\r\n',f=await fixture(base);
+  try{
+    const payload={document:f.opened.id,binding:f.opened.binding};
+    const original=structuredClone((await f.documents.documents.get(f.opened.id).validator.ready).doc),typed=structuredClone(original);
+    typed.content.find(n=>n.type==='table').content[1].content[0].content[0].content[0].text='cellxxxx';
+    assert.equal((await f.documents.protect(f.scope,{...payload,version:1,draft:typed,source:base.replace('cell','cellxxxx')})).validated,true);
+    const final=structuredClone(original);final.content[0].content[0].text='Beginning LOCAL marker.';
+    const expected=base.replace('Beginning','Beginning LOCAL');
+    assert.equal((await f.documents.protect(f.scope,{...payload,version:2,draft:final,source:expected})).validated,true);
+    assert.equal((await f.documents.save(f.scope,{...payload,version:2})).state,'COMMITTED');
+    assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),expected);
+  }finally{await f.close();}
+});
 test('real validator/private native host saves exact local Markdown and updates stable identity',{skip},async()=>{const f=await fixture();try{const host=f.documents.documents.get(f.opened.id),ready=await host.validator.ready,draft=structuredClone(ready.doc);const edit=node=>{if(node.text==='Text.')node.text='Edited Text.';node.content?.forEach(edit);};edit(draft);const expected='# Guide\n\nEdited Text.\n';const protectedDraft=await f.documents.protect(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1,draft,source:expected,editorVersion:1});assert.equal(protectedDraft.validated,true);const saved=await f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1});assert.equal(saved.state,'COMMITTED');assert.notEqual(saved.identity,f.opened.identity);assert.equal(f.registry.entries.get(f.opened.id).identity,saved.identity);assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),expected);await assert.rejects(f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1}),/NOT_VALIDATED/);}finally{await f.close();}});
 test('forged source cannot get a valid candidate even when visual draft is supported',{skip},async()=>{const f=await fixture();try{const ready=await f.documents.documents.get(f.opened.id).validator.ready;const result=await f.documents.protect(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1,draft:ready.doc,source:'Arbitrary unrelated content'});assert.equal(result.validated,false);assert.equal(result.protected,true);await assert.rejects(f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1}),/NOT_VALIDATED/);assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),'# Guide\n\nText.\n');}finally{await f.close();}});
 test('invalid original UTF8 remains exact read-only bytes without creating a validator',{skip},async()=>{const f=await fixture(Buffer.from([255,65]));try{assert.equal(f.opened.readonlyReason,'ENCODING_UNSUPPORTED');assert.deepEqual([...f.opened.bytes],[255,65]);assert.equal(f.documents.documents.get(f.opened.id).validator,undefined);assert.deepEqual([...await readFile(join(f.root,'guide.md'))],[255,65]);}finally{await f.close();}});

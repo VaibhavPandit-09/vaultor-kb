@@ -83,7 +83,9 @@ export function structureFixture(spec){
 }
 
 export function structuralCases({smoke=false,caseName}={}){
-  const selected=caseName?structureMatrix.filter(s=>s.id===caseName):structureMatrix;
+  const names=caseName?.split(',');
+  if(names?.some(name=>!structureMatrix.some(s=>s.id===name)))throw Error('Unknown structural case');
+  const selected=names?structureMatrix.filter(s=>names.includes(s.id)):structureMatrix;
   if(!selected.length)throw Error('Unknown structural case');
   return selected.map(s=>structureFixture(smoke&&s.admission==='editable'?{...s,kib:64}:s));
 }
