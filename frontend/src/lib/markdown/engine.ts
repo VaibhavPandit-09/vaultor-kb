@@ -46,7 +46,7 @@ function textChanges(a: JSONContent, b: JSONContent, retained?: WeakMap<JSONCont
   };
   return visit(a, b) ? changes : null;
 }
-function literalBatch(projection: Projection, changes: TextChange[]): string | undefined {
+function literalBatch(projection: Projection, changes: TextChange[], range = { start: 0, end: projection.source.length }): string | undefined {
   // A text permutation may be a block move. Keep the structural writer's raw
   // fragment provenance for that case rather than rewriting text in place.
   const previous = new Set(changes.map(change => change.old.text ?? ''));
@@ -59,12 +59,12 @@ function literalBatch(projection: Projection, changes: TextChange[]): string | u
     patches.push(patch);
   }
   patches.sort((a, b) => a.start - b.start);
-  const pieces: string[] = []; let end = 0;
+  const pieces: string[] = []; let end = range.start;
   for (const patch of patches) {
-    if (patch.start < end) return;
+    if (patch.start < end || patch.end > range.end) return;
     pieces.push(projection.source.slice(end, patch.start), patch.text); end = patch.end;
   }
-  pieces.push(projection.source.slice(end)); return pieces.join('');
+  pieces.push(projection.source.slice(end, range.end)); return pieces.join('');
 }
 function addedFormatting(projection: Projection, target: JSONContent): CharPatch | undefined {
   const old = projection.blocks, next = (target.content ?? []).filter(n => n.type !== 'paragraph' || n.content?.length);
@@ -226,9 +226,19 @@ export class MarkdownEngine {
           const eol = source.includes('\r\n') ? '\r\n' : '\n';
           const available = new Map<string, { raw: string; index: number }[]>();
           for (let i = a; i < b; i++) available.set(oldKeys[i], [...(available.get(oldKeys[i]) ?? []), { raw: old[i].raw, index: i }]);
+          const mapped = new Set(this.projection.leaves.map(leaf => leaf.node));
+          const preserveMappedRoots = changes && changes.length > 1 && changes.some(change => !mapped.has(change.old));
           const pieces = next.slice(a, to).map((n, i) => {
             const retained = available.get(key(n))?.shift(); if (retained) return retained;
             const index = b - a === to - a ? a + i : -1, low = index >= 0 ? old[index].start : start, high = index >= 0 ? old[index].end : end;
+            // Code/opaque leaves may need their structural writer. That must not
+            // force unrelated mapped table/list text through the same writer.
+            const rootChanges = preserveMappedRoots && index >= 0 ? textChanges(old[index].node, n) : null;
+            const literal = rootChanges?.length ? literalBatch(this.projection, rootChanges, old[index]) : undefined;
+            if (literal !== undefined) {
+              const local = project(literal).doc.content ?? [];
+              if (local.length === 1 && key(local[0]) === key(n)) return { raw: literal, index };
+            }
             return { raw: writeBlock(n, eol, this.projection.fragments.filter(f => f.start >= low && f.end <= high), index >= 0 ? old[index] : undefined), index };
           });
           replacement = pieces.map((part, i) => {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { saveDiagnostics, errorCode, saveFailureMessage, saveFailureEvidence, observeSaveUI } from '../scripts/perf-save-diagnostics.mjs';
+import { saveDiagnostics, errorCode, saveFailureMessage, saveFailureEvidence, observeSaveUI, openFailureUI, mountedBenchmarkEditor } from '../scripts/perf-save-diagnostics.mjs';
 
 test('Save stage observation preserves results, arguments and durable receipt ordering without payloads',async()=>{
   const secret={operation:'save',payload:{document:'private-id',source:'PRIVATE CONTENT',path:'C:\\private\\source.md',token:'SECRET'}};
@@ -44,6 +44,45 @@ test('UI receipt probe retains a transient Saved state and redacts unrelated pag
   assert.deepEqual(snapshot.saveButtons,[{disabled:false,visible:true}]);
   assert.doesNotMatch(JSON.stringify(snapshot),/private/);
   probe.stop();assert.equal(disconnected,true);
+});
+
+test('Save polling fails on an observed terminal refusal without mistaking pending or stale alerts for failure',()=>{
+  const label={textContent:'Unsaved changes'};let alerts=1;
+  const document={defaultView:{performance:{now:()=>0},MutationObserver:class{observe(){}disconnect(){}}},querySelectorAll:s=>s==='[role="status"]'?[label]:s==='[role="alert"]'?Array(alerts).fill({}):[]};
+  const probe=observeSaveUI(document);
+  assert.equal(probe.outcome(),false);
+  label.textContent='Saving…';assert.equal(probe.outcome(),false);
+  label.textContent='Checking edit…';assert.equal(probe.outcome(),false);
+  label.textContent='Unsaved changes';assert.equal(probe.outcome(),'refused');
+  label.textContent='Saved';assert.equal(probe.outcome(),'saved');
+  alerts=0;label.textContent='Recovery needed';assert.equal(probe.outcome(),'refused');
+});
+
+test('opening evidence exposes safe stage codes and mount flags without leaking source paths',async()=>{
+  const manager={async dispatch(){throw Error('LINKED_DOCUMENT_BUSY');}},native={async call(){return ['private-file-id'];}};
+  const diagnostics=saveDiagnostics(manager,native);
+  try{
+    await assert.rejects(manager.dispatch({operation:'open',payload:{document:'PRIVATE'}}),/BUSY/);
+    await native.call('open-linked','private-capability','C:\\private\\source.md');
+    assert.equal(diagnostics.events[1].code,'LINKED_DOCUMENT_BUSY');
+    assert.doesNotMatch(JSON.stringify(diagnostics.events),/private|PRIVATE/);
+    const document={querySelectorAll:s=>s==='.tiptap'?[]:[{textContent:'Error: LINKED_DOCUMENT_BUSY'},{textContent:'C:\\private\\source.md'}]};
+    const ui=openFailureUI(document,{errors:['SOURCE_SIZE_LIMIT'],pageErrors:[],pending:0,previousEditor:null},undefined);
+    assert.equal(ui.editors,0);assert.deepEqual(ui.alerts,['LINKED_DOCUMENT_BUSY','UNCLASSIFIED_ERROR']);
+    assert.doesNotMatch(JSON.stringify(ui),/private/);
+  }finally{diagnostics.restore();}
+});
+
+test('mounted editor readiness is independent of the focus-only bridge and rejects stale/hidden/uninitialized views',()=>{
+  const surface={style:{display:''}},dom={textContent:'End marker paragraph.',closest:()=>surface};
+  const editor={isInitialized:true,isDestroyed:false,view:{dom}};dom.editor=editor;
+  const document={querySelectorAll:()=>[dom]};
+  assert.equal(mountedBenchmarkEditor(document,null),editor); // no global focus bridge exists
+  assert.equal(mountedBenchmarkEditor(document,editor),null);
+  surface.style.display='none';assert.equal(mountedBenchmarkEditor(document,null),null);
+  surface.style.display='';editor.isInitialized=false;assert.equal(mountedBenchmarkEditor(document,null),null);
+  editor.isInitialized=true;editor.isDestroyed=true;assert.equal(mountedBenchmarkEditor(document,null),null);
+  editor.isDestroyed=false;editor.view.dom={};assert.equal(mountedBenchmarkEditor(document,null),null);
 });
 
 test('bounded stage history reports truncation and preserves a stable cursor',async()=>{

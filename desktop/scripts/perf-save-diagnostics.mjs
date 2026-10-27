@@ -16,24 +16,41 @@ export function saveDiagnostics(manager, native) {
     };
     restore.push(()=>{target[key]=original;});
   };
-  wrap(manager,'dispatch','dispatch',args=>['save','protect'].includes(args[0]?.operation)?args[0].operation:null);
-  wrap(native,'call','native',args=>['draft','save','ack-save'].includes(args[0])?args[0]:null);
+  wrap(manager,'dispatch','dispatch',args=>['open','close','save','protect'].includes(args[0]?.operation)?args[0].operation:null);
+  wrap(native,'call','native',args=>['open-linked','bind-view','close','draft','save','ack-save'].includes(args[0])?args[0]:null);
   return {events,get cursor(){return cursor;},since:at=>events.filter(e=>e.event>at),truncatedSince:at=>!!events.length&&events[0].event>at+1,restore:()=>restore.reverse().forEach(fn=>fn())};
 }
 
 // Serialized into this benchmark's renderer; keep dependencies inside the function.
 export function observeSaveUI(document) {
   const known=['Saved','Saving…','Recovery needed','Source unavailable','Checking edit…','Unsaved changes'];
-  const states=[];let previous;
+  const states=[];let previous,sawSaving=false;
   const statuses=()=>[...document.querySelectorAll('[role="status"]')].map(e=>e.textContent).filter(t=>known.includes(t));
-  const record=()=>{const status=statuses(),key=JSON.stringify(status);if(key!==previous){states.push({t:document.defaultView.performance.now(),statuses:status});if(states.length>32)states.shift();previous=key;}};
+  const record=()=>{const status=statuses(),key=JSON.stringify(status);sawSaving ||= status.includes('Saving…');if(key!==previous){states.push({t:document.defaultView.performance.now(),statuses:status});if(states.length>32)states.shift();previous=key;}return status;};
   const observer=new document.defaultView.MutationObserver(record);
   for(const element of document.querySelectorAll('[role="status"]'))if(known.includes(element.textContent))observer.observe(element,{childList:true,characterData:true,subtree:true});
   record();
-  return {stop:()=>observer.disconnect(),snapshot:()=>{record();return {statuses:statuses(),transitions:states,alerts:document.querySelectorAll('[role="alert"]').length,saveButtons:[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Save').map(b=>({disabled:b.disabled,visible:!!b.getBoundingClientRect().width}))};}};
+  return {stop:()=>observer.disconnect(),outcome:()=>{const status=record();if(status.includes('Saved'))return 'saved';if(sawSaving&&!status.includes('Saving…')&&!status.includes('Checking edit…')&&(status.includes('Recovery needed')||status.includes('Source unavailable')||document.querySelectorAll('[role="alert"]').length))return 'refused';return false;},snapshot:()=>{record();return {statuses:statuses(),transitions:states,alerts:document.querySelectorAll('[role="alert"]').length,saveButtons:[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Save').map(b=>({disabled:b.disabled,visible:!!b.getBoundingClientRect().width}))};}};
 }
 
 export async function saveFailureEvidence({context,readUI,readSource,expected,original,previousSaved,stages,traceTruncated}) {
   const ui=await readUI().catch(()=>({unavailable:true})),disk=await readSource().catch(()=>null);
   return {...context,ui,source:{readable:!!disk,expectedMatches:disk?disk.equals(Buffer.from(expected)):null,previousSavedMatches:disk?disk.equals(Buffer.from(previousSaved)):null,fixtureMatches:disk?disk.equals(Buffer.from(original)):null},stages,traceTruncated};
+}
+
+// Opening errors may contain filenames/paths; report codes and structural flags only.
+export function openFailureUI(document, perf, editor) {
+  const code=value=>/^(?:Error:\s*)?([A-Z][A-Z0-9_]{1,79})$/.exec(value ?? '')?.[1] ?? 'UNCLASSIFIED_ERROR';
+  const editors=[...document.querySelectorAll('.tiptap')];
+  return {editors:editors.length,endMarkerPresent:editors.some(e=>e.textContent.includes('End marker paragraph.')),domEditorInitialized:editors.some(e=>e.editor?.isInitialized&&!e.editor.isDestroyed),editorBridgePresent:!!editor,editorBridgeChanged:editor!==perf.previousEditor,pending:perf.pending,workerErrors:perf.errors.map(code),pageErrors:perf.pageErrors.length,alerts:[...document.querySelectorAll('[role="alert"]')].map(e=>code(e.textContent))};
+}
+
+// Tiptap exposes the owning instance on its DOM. The app's global bridge is
+// focus-owned and can legitimately remain unset until this harness focuses it.
+export function mountedBenchmarkEditor(document, previous) {
+  for(const dom of document.querySelectorAll('.tiptap')){
+    const editor=dom.editor,surface=dom.closest('.editor-workspace');
+    if(editor&&editor!==previous&&!editor.isDestroyed&&editor.isInitialized&&editor.view.dom===dom&&surface&&surface.style.display!=='none'&&dom.textContent.includes('End marker paragraph.'))return editor;
+  }
+  return null;
 }

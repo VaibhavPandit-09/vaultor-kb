@@ -58,6 +58,23 @@ test('near-1 MiB real NTFS source preserves local edits, explicit Save, conflict
     const receipt=await f.documents.save(f.scope,{...fresh,version});assert.notEqual(receipt.state,'COMMITTED');assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),external);
   }finally{await f.documents.dispose();await f.registry.close();}
 });
+test('mixed visual-only checkpoints converge before a later independently validated Save',{skip},async()=>{
+  const base='Beginning marker.\r\n\r\n| h | t |\r\n| :--- | ---: |\r\n| cell | x |\r\n\r\n~~~~json extra\r\n{"value":"code marker"}\r\n~~~~\r\n\r\n- Parent\r\n  - Nested marker.\r\n',f=await fixture(base);
+  try{
+    const payload={document:f.opened.id,binding:f.opened.binding};
+    const original=structuredClone((await f.documents.documents.get(f.opened.id).validator.ready).doc);
+    const edit=(needle,next)=>{const doc=structuredClone(original);const visit=n=>{if(n.type==='text'&&n.text.includes(needle))n.text=n.text.replace(needle,next);n.content?.forEach(visit);};visit(doc);return doc;};
+    let version=0;
+    for(const needle of ['cell','code marker','Nested marker']){
+      const checkpoint=await f.documents.protect(f.scope,{...payload,version:++version,draft:edit(needle,needle+'xxxx')});
+      assert.equal(checkpoint.validated,false);assert.equal(checkpoint.reason,'VISUAL_SOURCE_NOT_ADMITTED');
+    }
+    const expected=base.replace('Beginning','Beginning LOCAL');
+    assert.equal((await f.documents.protect(f.scope,{...payload,version:++version,draft:edit('Beginning','Beginning LOCAL'),source:expected})).validated,true);
+    assert.equal((await f.documents.save(f.scope,{...payload,version})).state,'COMMITTED');
+    assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),expected);
+  }finally{await f.close();}
+});
 test('coalesced table Undo checkpoints keep independent validation and exact Save',{skip},async()=>{
   const base='Beginning marker.\r\n\r\n| h | t |\r\n| :--- | ---: |\r\n| cell | x |\r\n\r\nTail.\r\n',f=await fixture(base);
   try{

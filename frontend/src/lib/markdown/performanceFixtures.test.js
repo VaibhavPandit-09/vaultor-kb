@@ -3,6 +3,27 @@ import { structuralCases } from '../../../../desktop/scripts/perf-structures.mjs
 import { MarkdownEngine } from './engine';
 
 describe('native performance structural fixtures use real admission and source patches', () => {
+  for (const reverse of [false, true]) it(`mixed checkpoint subsequences retain source (${reverse ? 'reverse' : 'forward'})`, () => {
+    const f = structuralCases({smoke:true,caseName:'mixed'})[0];
+    const renderer = new MarkdownEngine(new TextEncoder().encode(f.text)), host = new MarkdownEngine(new TextEncoder().encode(f.text));
+    const original = structuredClone(renderer.projection.doc);
+    const changed = (t, suffix) => {
+      const doc = structuredClone(original);
+      const visit = n => { if(n.type === 'text' && n.text.includes(t.needle)) n.text = n.text.replace(t.prefix,t.prefix+suffix); n.content?.forEach(visit); };
+      visit(doc); return doc;
+    };
+    for (const t of reverse ? [...f.targets].reverse() : f.targets) {
+      const typed = changed(t,'xxxx');
+      expect(renderer.apply(typed,true).accepted).toBe(true);
+      expect(host.apply(typed,true).accepted).toBe(true);
+      expect(renderer.apply(original,true).accepted).toBe(true);
+    }
+    const final = changed(f.targets[0],' LOCAL');
+    expect(renderer.apply(final,true).accepted).toBe(true);
+    expect(host.apply(final,true).accepted).toBe(true);
+    expect(host.source).toBe(renderer.source);
+    expect(host.source).toBe(f.text.replace('Beginning','Beginning LOCAL'));
+  },30000);
   for (const f of structuralCases()) it(f.caseId, () => {
     expect(Buffer.byteLength(f.text)).toBe(f.kib * 1024 - (f.kib === 1024 ? 4096 : 0));
     if (f.admission === 'expected-refusal') {

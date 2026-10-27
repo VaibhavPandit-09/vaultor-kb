@@ -20,6 +20,27 @@ function fixture(source = 'Before unchanged.\n\nParagraph **bold** and _italic_ 
 }
 
 describe('G1-B source boundaries and structural operations', () => {
+  it('mixed coalesced checkpoints preserve tables and lists when code Undo is skipped', () => {
+    const source = 'Beginning marker.\r\n\r\n| h | t |\r\n| :--- | ---: |\r\n| cell | x |\r\n\r\n~~~~json extra\r\n{"value":"code marker"}\r\n~~~~\r\n\r\n- Parent\r\n  - Nested marker.\r\n';
+    const renderer = new MarkdownEngine(bytes(source)), host = new MarkdownEngine(bytes(source));
+    const original = structuredClone(renderer.projection.doc);
+    const edit = (needle: string, next: string) => {
+      const doc = structuredClone(original);
+      const visit = (n: JSONContent) => { if (n.type === 'text' && n.text!.includes(needle)) n.text = n.text!.replace(needle, next); n.content?.forEach(visit); };
+      visit(doc); return doc;
+    };
+    for (const needle of ['cell', 'code marker', 'Nested marker']) {
+      const typed = edit(needle, needle + 'xxxx');
+      expect(renderer.apply(typed, true).accepted).toBe(true);
+      expect(host.apply(typed, true).accepted).toBe(true); // host skips each intervening Undo
+      expect(renderer.apply(original, true).accepted).toBe(true);
+    }
+    const final = edit('Beginning', 'Beginning LOCAL');
+    expect(renderer.apply(final, true).accepted).toBe(true);
+    expect(host.apply(final, true).accepted).toBe(true);
+    expect(renderer.source).toBe(source.replace('Beginning', 'Beginning LOCAL'));
+    expect(host.source).toBe(renderer.source);
+  });
   it('coalesced host checkpoints reproduce table source after renderer Undo and a prose edit', () => {
     const source = 'Beginning marker.\r\n\r\n| h | t |\r\n| :--- | ---: |\r\n| cell | x |\r\n\r\nTail.\r\n';
     for (const immutable of [false, true]) {
