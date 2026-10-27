@@ -430,6 +430,11 @@ Diagnostic events carry category (layout/ui/application/save/recovery/integrity)
 
 ## Maintenance history
 
+### 2026-10-27 — Windows0.23.1 release preparation
+
+Bumped desktop package/lock to0.23.1 for compatible large-Markdown opening/typing/Save and checkpoint-source corrections throughc88a055. Fresh versioned UI/browser JAR/Windows linked helper/pinned runtime and original-key EXE/sidecar built; staged production bytes match the packaged source. Packaged near-1MiB exact Save/Undo/Redo/conflict/protected Recovery/full restart and managed Save/PDF/relaunch pass in disposable profiles. Seven updater/publication cases pass; unchanged source regression evidence is reused. Packaged opening was2,324.1ms but rapid24-key burst p95 remained378.2ms; full structural qualification is pending. No personal installation/workspace was modified and no new installer upgrade/uninstall, Mac or power-loss check is claimed. Windows-only publication is explicitly requested; complete-platform Latest remains0.21.0. The0.23.1 ledger owns checksums, compatibility and remaining limits. Publication and public-download verification are pending at this preparation commit.
+
+
 ### 2026-10-27 — Mixed checkpoint provenance and benchmark mount ownership
 
 The mixed Save failure on `3020945` showed the remaining combination of mapped table/list edits with unmapped code text: an independent checkpoint missing intervening Undo states rewrote unrelated table padding. Per-root mapped text retention now allows the code writer to operate without forcing other roots through serialization; complete source reparse/comparison, move/encoded refusals and independent authority remain mandatory. A deterministic mixed regression failed before the fix. Forward/reverse mixed-fixture checkpoint sequences and real visual-only host checkpoints now converge before explicit Save.
