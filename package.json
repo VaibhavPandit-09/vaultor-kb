@@ -1,0 +1,7 @@
+{
+  "name": "vaultor-local-tools",
+  "private": true,
+  "scripts": {
+    "perf:test": "node desktop/scripts/perf-test.mjs"
+  }
+}

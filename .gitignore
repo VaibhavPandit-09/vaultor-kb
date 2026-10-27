@@ -30,6 +30,9 @@ desktop/packages/
 desktop/cache/
 desktop/releases/
 
+# Local automated benchmark history and raw measurements
+performance-results/
+
 # Data
 data/
 app.db
