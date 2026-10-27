@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { createRef } from 'react';
+import { createRef, Profiler } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Editor } from '@tiptap/core';
@@ -26,7 +26,7 @@ it('anchors to the table, follows its visible edge, clamps narrow panes and hide
   expect(tableToolbarPosition({ top: 300, left: 150, right: 750, bottom: 332 }, pane, 300, 40)).not.toBeNull();
 });
 
-async function mountControls(fullscreen = false, status: 'saved' | 'saving' | 'failed' = 'saved') {
+async function mountControls(fullscreen = false, status: 'saved' | 'saving' | 'failed' = 'saved', profile = false) {
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => window.setTimeout(() => callback(0), 0));
   vi.stubGlobal('cancelAnimationFrame', (id: number) => window.clearTimeout(id));
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function(this: HTMLElement) {
@@ -39,10 +39,25 @@ async function mountControls(fullscreen = false, status: 'saved' | 'saving' | 'f
   editors.push(editor); editor.commands.setTextSelection(4);
   if (fullscreen) Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => container });
   const retry = vi.fn();
-  const result = render(<EscapeManagerProvider><TableControls editor={editor} active containerRef={ref} noteTitle="Inventory" saveStatus={status} onRetrySave={retry} /></EscapeManagerProvider>);
+  const commits = vi.fn();
+  const controls = <TableControls editor={editor} active containerRef={ref} noteTitle="Inventory" saveStatus={status} onRetrySave={retry} />;
+  const result = render(<EscapeManagerProvider>{profile ? <Profiler id="table-controls" onRender={commits}>{controls}</Profiler> : controls}</EscapeManagerProvider>);
   await screen.findByRole('toolbar');
-  return { editor, container, ref, result, retry };
+  return { editor, container, ref, result, retry, commits };
 }
+
+it('does not commit React updates for prose typing and restores controls on reentering a table', async () => {
+  const { editor, commits } = await mountControls(false, 'saved', true);
+  act(() => editor.commands.setTextSelection(editor.state.doc.content.size - 1));
+  await waitFor(() => expect(screen.queryByRole('toolbar')).toBeNull());
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+  commits.mockClear();
+  act(() => { editor.commands.insertContent(' prose'); editor.commands.insertContent(' typing'); });
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+  expect(commits).not.toHaveBeenCalled();
+  act(() => editor.commands.setTextSelection(4));
+  await screen.findByRole('toolbar');
+});
 
 it('preserves the cell selection, uses separate popovers, and dismisses on Escape/outside click', async () => {
   const { editor, container } = await mountControls();

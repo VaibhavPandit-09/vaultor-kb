@@ -7,7 +7,7 @@ import { SharedHistory, SharedNoteDocuments, isSharedTransaction, resetSharedHis
 import { registerResourceLinkNavigation, registerResourceLinkNavigator, type LinkedResourceIntent } from '../../lib/resourceLinkNavigation';
 import { flushSync } from 'react-dom';
 import { createNodeFromContent, type JSONContent, type Extensions } from '@tiptap/core';
-import { memo, useRef, useState, useEffect, useCallback, useId, useSyncExternalStore } from 'react';
+import { memo, useRef, useState, useEffect, useLayoutEffect, useCallback, useId, useSyncExternalStore } from 'react';
 import { useEditor, EditorContent, ReactNodeViewRenderer, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -120,6 +120,10 @@ function BlockEditor({
   const [imagePicker, setImagePicker] = useState<{ position: number; replaceId?: string }>();
   const invalidContent = useRef(false);
   const [contentError, setContentError] = useState(false);
+  // EditorContent first attaches the plain PM DOM, then installs React node
+  // views. Keep that intermediate tree out of layout until its child mount
+  // finishes; otherwise Chromium lays out a large document twice.
+  const [mounting, setMounting] = useState(Boolean(integration));
   useSyncExternalStore(subscribeImageJobs, imageJobVersion);
   const imageJobs = noteImageJobs(noteId);
   const editor = useEditor({
@@ -239,6 +243,8 @@ function BlockEditor({
       });
     },
   });
+
+  useLayoutEffect(() => { if (editor) setMounting(false); }, [editor]);
 
   useEffect(() => {
     if (!editor) return;
@@ -527,7 +533,7 @@ function BlockEditor({
       return;
     }
 
-    if (isActive && shouldRestoreFocus && !interactionLocked) {
+    if (!mounting && isActive && shouldRestoreFocus && !interactionLocked) {
       if (!initialSelectionRestored.current && savedSelectionRef.current) {
         editor.commands.setTextSelection(savedSelectionRef.current);
       }
@@ -538,7 +544,7 @@ function BlockEditor({
     }
 
 
-  }, [editor, interactionLocked, isActive, noteId, onFocusRestored, shouldRestoreFocus]);
+  }, [editor, mounting, interactionLocked, isActive, noteId, onFocusRestored, shouldRestoreFocus]);
 
   useEffect(() => {
     if (!editor) return;
@@ -570,7 +576,7 @@ function BlockEditor({
 
   if (contentError) return <div role="alert" className="image-error">This note contains unsupported document content. Its original JSON is retained and editing/saving is disabled. Update the app or open it with a compatible client.</div>;
   return (
-    <div ref={editorContainerRef} className="editor-workspace relative w-full">
+    <div ref={editorContainerRef} className="editor-workspace relative w-full" style={mounting ? { display: 'none' } : undefined}>
       {imagePicker && <ImagePicker editor={editor} noteId={noteId} {...imagePicker} close={() => setImagePicker(undefined)} />}
       {imageJobs.length > 0 && <div className="image-upload-jobs" aria-live="polite">{imageJobs.map(job => <div key={job.id}><span>{job.file?.name ?? 'Uploaded image'} · {job.status === 'pending' ? `Uploading… ${job.progress}%` : job.error ?? 'Ready to insert in this note'}</span>{job.status === 'failed' && <button onClick={() => void retryImageJob(job.id)}>Retry</button>}{job.status === 'ready' && job.resourceId && <button onClick={() => insertImageJob(job.id, editor)}>Insert here</button>}<button onClick={() => removeImageJob(job.id)}>Remove</button></div>)}</div>}
       <TableControls editor={editor} active={isActive && !interactionLocked} containerRef={editorContainerRef} noteTitle={noteTitle} saveStatus={saveStatus} onRetrySave={onRetrySave} />

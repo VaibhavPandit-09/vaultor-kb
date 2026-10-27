@@ -68,7 +68,15 @@ export default function TableControls({ editor, active, containerRef, noteTitle 
   }, [owner]);
   useEffect(() => {
     let frame = 0;
+    let hadTable = false;
+    let selectionWasInTable = Boolean(tableContext(editor));
     const update = () => {
+      const hasTable = Boolean(tableContext(editor));
+      // Prose typing cannot change invisible table controls. Even an empty
+      // React commit captures the native contenteditable selection, which walks
+      // a large document when the caret is near its end.
+      if (!hasTable && !hadTable) return;
+      hadTable = hasTable;
       refresh(n => n + 1);
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
@@ -90,6 +98,10 @@ export default function TableControls({ editor, active, containerRef, noteTitle 
       });
     };
     const selectionChanged = () => {
+      const inTable = Boolean(tableContext(editor));
+      const leavingTable = selectionWasInTable;
+      selectionWasInTable = inTable;
+      if (!inTable && !leavingTable) return;
       // Filtering may move the document selection; retain the input that owns that action.
       if (!popupRef.current?.contains(document.activeElement)) { setMenu(null); setConfirmDelete(false); }
     };

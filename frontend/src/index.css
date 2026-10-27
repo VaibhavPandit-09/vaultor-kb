@@ -141,6 +141,16 @@ button {
 
 .tiptap { outline: none; }
 
+/* Pane compression belongs to the orientation band, not document contents.
+   Stop its per-frame inherited signals at the editor boundary so scrolling
+   does not restyle every text/code/table descendant in a large note. */
+.editor-workspace {
+  --library-progress: 0;
+  --collection-path-progress: 0;
+  --collection-title-progress: 0;
+  --library-title-lines: 2;
+}
+
 /* Placeholder */
 .tiptap p.is-editor-empty:first-child::before,
 .tiptap h1.is-empty::before,

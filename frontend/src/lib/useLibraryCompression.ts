@@ -2,12 +2,16 @@ import { frameResizeObserver } from './frameResizeObserver';
 import { useEffect, type RefObject } from 'react';
 
 /** One bounded scroll signal. Never owns React, queries, editor or focus state. */
-export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElement, options: { pinHeaderFocus?: boolean; onProgress?: (progress: number) => void } = {}) {
+export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElement, options: { pinHeaderFocus?: boolean; onProgress?: (progress: number) => void; observeSubtree?: boolean } = {}) {
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   let frame = 0, releaseFrame = 0, pointerHeld = false, lastTime = 0;
   let titleMeasure:HTMLElement|undefined;
   let travel = 160;
-  const measureTravel = () => { travel = Math.min(160, Math.max(0, viewport.scrollHeight - viewport.clientHeight)); };
+  const measureTravel = () => {
+    // A real scroll offset proves at least this much overflow. Once past the
+    // compression range no full-document geometry read is needed.
+    travel = viewport.scrollTop >= 160 ? 160 : Math.min(160, Math.max(0, viewport.scrollHeight - viewport.clientHeight));
+  };
   measureTravel();
   const target = () => travel > 0 ? Math.min(1, Math.max(0, viewport.scrollTop / travel)) : 0;
   let progress = target();
@@ -79,7 +83,10 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
     measure();
   };
   const content = new MutationObserver(observeContent);
-  content.observe(viewport, { childList: true, subtree: true });
+  // Editor DOM mutations are not layout measurements. Its outer content box is
+  // already observed above: ResizeObserver catches actual wrapping/height changes.
+  // Keep subtree discovery for library rows, whose action/header nodes can change.
+  content.observe(viewport, { childList: true, subtree: options.observeSubtree ?? true });
   const actions = header.querySelector<HTMLElement>('.library-heading-actions');
   if (actions) observer.observe(actions);
   if (reduced?.matches) progress = progress > .25 ? 1 : 0;

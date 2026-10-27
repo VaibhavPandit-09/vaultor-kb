@@ -7,14 +7,18 @@ export default function JourneyViewport({ visitId, initialPosition, onPosition, 
   direction?: string; animationMode: 'smooth' | 'snappy'; children: ReactNode;
 }) {
   const element = useRef<HTMLDivElement>(null), interacted = useRef(false);
+  const previousVisit = useRef(visitId);
   useLayoutEffect(() => {
     interacted.current = false;
     const initial = initialPosition;
-    if (element.current) {
+    // CSS starts the initial entrance itself. Restart only a reused viewport;
+    // flushing layout on first mount lays out the entire newly mounted editor.
+    if (element.current && previousVisit.current !== visitId) {
       element.current.style.animation = 'none';
       void element.current.offsetWidth;
       element.current.style.animation = '';
     }
+    previousVisit.current = visitId;
     const restore = () => { if (element.current && !interacted.current) { element.current.scrollTop = initial.scrollTop; element.current.scrollLeft = initial.scrollLeft; } };
     restore(); const frame = requestAnimationFrame(restore);
     return () => cancelAnimationFrame(frame);

@@ -18,3 +18,13 @@ it('restores each visit once, keeps the editor node, and never rewinds after use
  result.rerender(view('b',40)); expect(viewport.scrollTop).toBe(40); expect(viewport.lastElementChild).toBe(editor);
  result.rerender(view('a',160)); expect(viewport.scrollTop).toBe(160);
 });
+
+it('does not force layout to restart an entrance that CSS already starts on mount', () => {
+ const width = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get');
+ const view=(visitId:string)=><JourneyViewport visitId={visitId} initialPosition={{scrollTop:0,scrollLeft:0}} onPosition={()=>{}} animationMode="smooth">Editor</JourneyViewport>;
+ const result=render(view('a'));
+ expect(width).not.toHaveBeenCalled();
+ result.rerender(view('b'));
+ expect(width).toHaveBeenCalledTimes(1);
+ width.mockRestore();
+});

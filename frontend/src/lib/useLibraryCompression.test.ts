@@ -26,6 +26,17 @@ it('follows absolute scroll depth and reverses while retaining focus, caret and 
  viewport.scrollTop = 16; viewport.dispatchEvent(new Event('scroll')); settle(); expect(progress()).toBe(.1);
  expect(document.activeElement).toBe(input); expect(input.selectionStart).toBe(2); expect(input.selectionEnd).toBe(5); expect(viewport.lastChild).toBe(row);
 });
+
+it('ignores note editor subtree mutations while retaining outer content discovery', async () => {
+ stop();
+ const editor=document.createElement('section');viewport.append(editor);
+ const height=vi.fn(()=>1000);Object.defineProperty(viewport,'scrollHeight',{get:height,configurable:true});
+ stop=attachLibraryCompression(viewport,header,{observeSubtree:false});settle();height.mockClear();
+ editor.append(document.createElement('p'));await Promise.resolve();
+ expect(height).not.toHaveBeenCalled();
+ viewport.append(document.createElement('section'));await Promise.resolve();
+ expect(height).toHaveBeenCalled();
+});
 it('holds a target through pointerup and click, and while its popover is open', () => {
  const button = document.createElement('button'); button.setAttribute('aria-haspopup', 'dialog'); header.append(button);
  button.dispatchEvent(new Event('pointerdown', { bubbles: true })); viewport.scrollTop = 160; viewport.dispatchEvent(new Event('scroll')); settle(); expect(progress()).toBe(0);

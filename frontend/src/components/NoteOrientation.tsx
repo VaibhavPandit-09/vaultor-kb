@@ -30,7 +30,7 @@ export default function NoteOrientation({ identity, children, status, tagCount }
     measure();
     const observer = frameResizeObserver(measure);
     if (content.firstElementChild) observer.observe(content.firstElementChild);
-    const stop = attachLibraryCompression(viewport, root, { pinHeaderFocus: true, onProgress: update });
+    const stop = attachLibraryCompression(viewport, root, { pinHeaderFocus: true, onProgress: update, observeSubtree: false });
     return () => { stop(); observer.disconnect(); viewport.style.removeProperty('--note-organization-height'); };
   }, []);
   return <div ref={header} className="note-orientation" data-organization-open={disclosure}>
