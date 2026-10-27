@@ -19,7 +19,9 @@ export function enterSurface(element: HTMLElement, type = kind(element), delay =
   const profile = motionProfile(), duration = type === 'menu' || type === 'command' ? profile.menu : type === 'page' || type === 'category' ? profile.page : profile.panel;
   ghosts.get(owner(element))?.remove(); ghosts.delete(owner(element));
   if (!duration || !element.animate) return;
-  const base = getComputedStyle(element).transform; const transform = (extra: string) => (base === 'none' ? '' : base + ' ') + extra;
+  // Page/category entrances only animate opacity. Reading their transform
+  // needlessly flushes style while a newly opened editor is still mounting.
+  const base = type === 'page' || type === 'category' ? 'none' : getComputedStyle(element).transform; const transform = (extra: string) => (base === 'none' ? '' : base + ' ') + extra;
   const frames: Keyframe[] = type === 'command' ? [{opacity:0,transform:transform('translateY(6px) scale(.99)')},{opacity:1,transform:base}] : type === 'page' || type === 'category' ? [{ opacity: .4 }, { opacity: 1 }] : [
     { opacity: 0, transform: transform(type === 'side' ? 'translateX(16px)' : type === 'menu' ? 'translateY(6px) scale(.985)' : 'translateY(12px) scale(.985)') },
     { opacity: 1, transform: transform(type==='side'?'translateX(-1px)':'translateY(-1px) scale(1.002)'), offset: .72 }, { opacity: 1, transform: base },
@@ -63,7 +65,16 @@ export function installMotion() {
       if (row.animate) track(row.animate([{opacity:0,translate:'0 5px'},{opacity:1,translate:'0 0'}],{duration:200,delay:index*profile.stagger,easing:'ease-out',fill:'backwards'}));
     });
   };
-  const add = (element: HTMLElement, replay = false) => { if (!seen.has(element) || replay) { seen.add(element); enterSurface(element); } active.add(element); rects.set(element,element.getBoundingClientRect()); if(element.matches('[data-motion-list]'))reveal(element); };
+  const add = (element: HTMLElement, replay = false) => {
+    const type = kind(element);
+    if (!seen.has(element) || replay) { seen.add(element); enterSurface(element, type); }
+    // These surfaces never create exit ghosts (see exitSurface). Measuring
+    // them can synchronously lay out an entire editor before its mount settles.
+    if (type !== 'page' && type !== 'category' && type !== 'geometry') {
+      active.add(element); rects.set(element, element.getBoundingClientRect());
+    } else { active.delete(element); rects.delete(element); }
+    if(element.matches('[data-motion-list]'))reveal(element);
+  };
   const observer = new MutationObserver(records => {
     const removed = records.flatMap(record => [...record.removedNodes].flatMap(candidates));
     for (const element of removed) if (!element.isConnected && !removed.some(other=>other!==element&&other.contains(element))) { const rect=rects.get(element);if(rect)exitSurface(element,rect);active.delete(element); }

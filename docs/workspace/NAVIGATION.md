@@ -1,6 +1,6 @@
 # Open Notes, viewing panes and reading journeys
 
-Reviewed 2026-10-24 for desktop/browser 0.18.2. [SESSIONS.md](SESSIONS.md) owns persistence and protected recovery; [RESOURCE-LIFECYCLE.md](RESOURCE-LIFECYCLE.md) owns Trash/Restore/purge. Android navigation is unchanged.
+Reviewed 2026-10-27 against current desktop/browser master (0.23.0 source). [SESSIONS.md](SESSIONS.md) owns persistence and protected recovery; [RESOURCE-LIFECYCLE.md](RESOURCE-LIFECYCLE.md) owns Trash/Restore/purge. Android navigation is unchanged.
 
 ## State and ownership
 
@@ -33,6 +33,8 @@ Desktop JSON requests queue at eight in the shared connection adapter, below the
 Confirmed local or foreign 404/410 removes all current sessions for that resource and reconciles visible assignments immediately. Recovery captures happen before editor removal; no temporary transport/host failure is interpreted as deletion. Restore clears historical unavailable flags without creating a session. Startup independently validates every current session and retains journals even when nothing restores. See the linked lifecycle/session guides for details.
 
 Alt+Left/Right keeps its existing pane-focus behavior; the shortcut labels now say Focus previous/next pane. Ctrl/Cmd+Alt+PageUp/PageDown selects previous/next Open Notes session in stable order, including inactive ones (configurable in Settings). Existing Back/Forward and Ctrl/Cmd+Shift+Backspace close-note bindings remain; closing a note removes its session, while **Close pane** retains it. Composition, dialogs, fullscreen and centralized Escape/focus conventions remain authoritative. Sidebar toggle remains Ctrl+Alt+B / Cmd+Option+B.
+
+New pane document content mounts once its target allocation is positive. During entry, the outer slot expands/clips around a document already laid out at its target reading width, avoiding an initial zero-width text layout. A bounded timer releases this entry-only width; editing, focus and correctness never depend on an animation event or completion. Existing panes retain their ordinary allocation/reflow behavior. Once mounted, an editor remains mounted through compact/hidden or temporary zero-width states until navigation removes it. Readiness still requires the real editor and validated edits.
 
 Existing WorkspacePaneLayout geometry, focus depth, shared motion tokens, NoteOrientation compression and journey transitions are retained. Slot identity survives session changes and surviving panes retain their editors on close. Session switches do not add a tab strip, nested scroll owner or animation delay. At 850px for two panes / 1200px for three, only the focused assignment is presented; compact peers stay mounted/inert. Reduced motion has immediate endpoints and correctness never waits for animation.
 

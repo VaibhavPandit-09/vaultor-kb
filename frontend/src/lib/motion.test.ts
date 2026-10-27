@@ -11,6 +11,20 @@ it('uses bounded expressive durations, quick Snappy and no motion under reduced 
 it('keeps anchored portal transforms and does not scale page destinations',()=>{
  setup();const element=document.createElement('div');element.style.transform='translateY(-100%)';document.body.append(element);enterSurface(element,'menu');const frames=vi.mocked(element.animate).mock.calls[0][0] as Keyframe[];expect(frames[0].transform).toContain('translateY(-100%)');enterSurface(element,'page');expect(vi.mocked(element.animate).mock.calls[1][0]).toEqual([{opacity:.4},{opacity:1}]);
 });
+it('never measures exit-ineligible surfaces during registration, replay or input',async()=>{
+ setup();dispose=installMotion();
+ const style=vi.spyOn(window,'getComputedStyle');
+ const surfaces=['page','category','geometry'].map(type=>{const element=document.createElement('section');element.dataset.motionSurface=type;const bounds=vi.spyOn(element,'getBoundingClientRect');document.body.append(element);return {element,bounds};});
+ await flush();
+ for(const {element} of surfaces){element.dataset.motionKey='next';element.hidden=true;element.hidden=false;}
+ await flush();document.dispatchEvent(new KeyboardEvent('keydown',{key:'x',bubbles:true}));window.dispatchEvent(new Event('resize'));document.dispatchEvent(new Event('scroll'));
+ for(const {element,bounds} of surfaces){expect(bounds).not.toHaveBeenCalled();element.remove();}
+ await flush();expect(style).not.toHaveBeenCalled();expect(document.querySelector('[data-motion-ghost]')).toBeNull();style.mockRestore();
+});
+it('continues capturing panel bounds for exit ghosts',async()=>{
+ setup();dispose=installMotion();const panel=document.createElement('div');panel.setAttribute('role','dialog');const bounds=vi.spyOn(panel,'getBoundingClientRect').mockReturnValue({top:2,left:3,width:200,height:100} as DOMRect);document.body.append(panel);await flush();
+ expect(bounds).toHaveBeenCalled();bounds.mockClear();document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));expect(bounds).toHaveBeenCalled();panel.remove();await flush();expect(document.querySelector('[data-motion-ghost]')).toBeTruthy();
+});
 it('closed surfaces leave only inert visuals without focus ownership or duplicate IDs',async()=>{
  setup();const input=document.createElement('input');document.body.append(input);input.focus();const original=document.createElement('div');original.setAttribute('role','dialog');original.id='source';original.innerHTML='<button tabindex="0" autofocus>Old action</button>';exitSurface(original,{top:2,left:3,width:200,height:100} as DOMRect);const ghost=document.querySelector<HTMLElement>('[data-motion-ghost]')!;expect(ghost.inert).toBe(true);expect(ghost.getAttribute('aria-hidden')).toBe('true');expect(ghost.querySelector('[tabindex],[autofocus],[id]')).toBeNull();expect(ghost.querySelector('button')?.disabled).toBe(true);expect(document.activeElement).toBe(input);running[0].finish();await flush();expect(ghost.isConnected).toBe(false);
 });

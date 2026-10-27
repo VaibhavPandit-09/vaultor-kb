@@ -6,7 +6,7 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import { closeHistory } from '@tiptap/pm/history';
 import { afterEach, expect, it } from 'vitest';
-import { WorkspaceTable } from './WorkspaceTable';
+import { WorkspaceTable, initializeSourceTableIdentities } from './WorkspaceTable';
 import { TableWorkspace, tableViewState, setTableFilters, ensureTableIdentity, describeTable, pasteTable, parseTabular, delimited, tableRows, tableViewKey } from './TableWorkspace';
 import { tableContext, selectTableAxis } from './tableCommands';
 import { getShortcutCategories, resolveShortcutBindings, historyShortcuts, shortcutMatchesEvent, validateShortcutBinding } from '../../lib/shortcuts';
@@ -16,6 +16,15 @@ function editor() {
   editors.push(e);e.commands.setTextSelection(4);ensureTableIdentity(e);return e;
 }
 afterEach(() => editors.splice(0).forEach(e => e.destroy()));
+it('source identity initialization preserves valid identities and repairs copied duplicates without mutating JSON', () => {
+ const e=editor(), original=e.getJSON(), table=original.content![0];
+ expect(initializeSourceTableIdentities(original,e.schema)).toBe(original);
+ const duplicate={...original,content:[table,table]}, before=JSON.stringify(duplicate), initialized=initializeSourceTableIdentities(duplicate,e.schema);
+ expect(JSON.stringify(duplicate)).toBe(before);expect(initialized.content![0]).toBe(table);
+ expect(initialized.content![1].attrs!.tableId).not.toBe(table.attrs!.tableId);
+ expect(initialized.content![1].attrs!.columnIds).not.toEqual(table.attrs!.columnIds);
+ expect(initializeSourceTableIdentities(initialized,e.schema)).toBe(initialized);
+});
 it('migrates the photographed collision and shares history/help/validation definitions', () => {
   const keys = resolveShortcutBindings({ switchNoteNext: { windows: 'Mod+Alt+ArrowRight' }, switchNotePrevious: { windows: 'Ctrl+Alt+Left' } }, 'windows');
   expect(keys.switchNoteNext).toBe('Alt+ArrowRight');expect(keys.switchNotePrevious).toBe('Alt+ArrowLeft');

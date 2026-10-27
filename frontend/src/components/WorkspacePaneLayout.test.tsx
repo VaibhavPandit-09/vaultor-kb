@@ -18,6 +18,21 @@ beforeEach(()=>{
  vi.stubGlobal('cancelAnimationFrame',(id:number)=>frames.delete(id));
 });
 afterEach(()=>{cleanup(); vi.restoreAllMocks();vi.unstubAllGlobals();vi.useRealTimers();});
+it('waits for a real allocation before mounting a document and retains it after entry or temporary hiding',()=>{
+ width=0;const result=render(view(['a']));expect(result.queryByLabelText('a')).toBeNull();
+ width=1600;act(()=>resizes.forEach(fn=>fn()));tick();
+ const input=result.getByLabelText('a'),slot=result.container.querySelector<HTMLElement>('[data-slot-id="a"]')!;
+ expect(parseFloat(slot.style.getPropertyValue('--pane-width'))).toBeGreaterThan(0);expect(slot.dataset.entering).toBe('true');
+ act(()=>vi.advanceTimersByTime(400));expect(slot.dataset.entering).toBe('false');expect(result.getByLabelText('a')).toBe(input);
+ width=0;act(()=>resizes.forEach(fn=>fn()));tick();expect(result.getByLabelText('a')).toBe(input);
+});
+it('mounts a newly entering document only after its target width is allocated',()=>{
+ const result=render(view(['a']));result.rerender(view(['a','b'],'b'));
+ expect(result.queryByLabelText('b')).toBeNull();tick();tick();
+ const input=result.getByLabelText('b'),slot=result.container.querySelector<HTMLElement>('[data-slot-id="b"]')!;
+ expect(parseFloat(slot.style.getPropertyValue('--pane-width'))).toBeGreaterThan(0);expect(slot.dataset.entering).toBe('true');
+ act(()=>vi.advanceTimersByTime(400));expect(slot.dataset.entering).toBe('false');expect(result.getByLabelText('b')).toBe(input);
+});
 it('retains editor identity and caret across focus, opening and authorized closing',()=>{
  const result=render(view(['a','b'])); const input=result.getByLabelText('a') as HTMLInputElement;
  input.focus(); input.setSelectionRange(0,1);

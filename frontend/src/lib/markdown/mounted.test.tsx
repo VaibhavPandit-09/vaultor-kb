@@ -68,6 +68,22 @@ it('actual table appended IDs do not trigger unrelated Markdown changes', async 
   expect(session.source.startsWith('Text.\n\n')).toBe(true); expect(session.source.endsWith('\n\nTail.\n')).toBe(true);
   const tables: JSONContent[] = []; v.editor.state.doc.descendants(n => { if (n.type.name === 'table') tables.push(n.toJSON()); }); expect(tables[0].attrs?.tableId).toBeTruthy(); v.unmount(); session.dispose();
 });
+it('initializes source table identities without mutating the projection or adding first-edit history steps', async () => {
+  const source = '\ufeffText.\r\n\r\n' + '| h | t |\r\n| --- | --- |\r\n| cell | x |\r\n\r\n'.repeat(80) + 'Tail.\r\n';
+  const { session } = await create(source), original = structuredClone(session.initialDoc), v = mount(session);
+  await waitFor(() => expect(v.editor).toBeTruthy());
+  expect(session.initialDoc).toEqual(original);expect(session.status.version).toBe(0);expect(session.source).toBe(source);
+  const ids = new Set<string>();
+  v.editor.state.doc.descendants(node => { if (node.type.name === 'table') { expect(node.attrs.tableId).toBeTruthy();expect(node.attrs.columnIds).toHaveLength(2);ids.add(node.attrs.tableId); } });
+  expect(ids.size).toBe(80);
+  let appendedSteps = 0;
+  v.editor.on('transaction', ({ appendedTransactions }) => { appendedSteps += appendedTransactions.reduce((sum, tr) => sum + tr.steps.length, 0); });
+  v.editor.view.dispatch(v.editor.state.tr.insertText('LOCAL ', locate(v.editor, 'Text.')));await settled(session);
+  expect(appendedSteps).toBe(0);expect(session.source).toBe(source.replace('Text.', 'LOCAL Text.'));
+  v.editor.commands.undo();await settled(session);expect(session.source).toBe(source);
+  v.editor.commands.redo();await settled(session);expect(session.source).toBe(source.replace('Text.', 'LOCAL Text.'));
+  v.unmount();session.dispose();
+});
 it('unsupported marks retain mounted draft and Undo rejoins accepted source', async () => {
   const { session } = await create('Text.\n'), v = mount(session); await waitFor(() => expect(v.editor).toBeTruthy());
   v.editor.chain().setTextSelection({ from: 1, to: 4 }).toggleUnderline().run(); await waitFor(() => expect(session.status.state).toBe('needs-source'));

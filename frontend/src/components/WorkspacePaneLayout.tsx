@@ -12,12 +12,16 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
  const restoreAnchor = useRef<((skip?: HTMLElement | null) => void) | null>(null), releaseFrames = useRef<number[]>([]), settleAfter = useRef(0), anchorUntil = useRef(0), ignoredViewport = useRef<HTMLElement | null>(null);
  const [width, setWidth] = useState(0), [reduced, setReduced] = useState(false);
  const [slots, setSlots] = useState(paneIds), [entered, setEntered] = useState(paneIds);
+ const [mounted, setMounted] = useState<string[]>([]), [settled, setSettled] = useState<string[]>([]);
  const key = JSON.stringify(paneIds);
  const added = paneIds.filter(id => !slots.includes(id));
  if (added.length) setSlots([...slots, ...added]);
  const compact = paneIds.length > sideBySideCapacity(width);
  const available = Math.max(0, width - 32 - (compact ? 0 : (paneIds.length > 1 ? paneIds.length * 16 : 0)));
  const duration = motionProfile(animationMode, reduced).panel;
+ const ready = paneIds.filter(id => available > 0 && (entered.includes(id) || reduced));
+ const mounting = ready.filter(id => !mounted.includes(id));
+ if (mounting.length) setMounted([...mounted, ...mounting]);
  const nodeById = new Map(paneIds.map((id, index) => [id, Children.toArray(children)[index]]));
  useLayoutEffect(() => {
   const element = root.current; if (!element) return;
@@ -34,10 +38,17 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
   return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
  }, [key]);
  useEffect(() => {
+  // This timer only releases the entry width optimization. Editor mounting,
+  // editing and focus never wait for an animation event or its completion.
+  const timer = setTimeout(() => setSettled(entered), duration + 60);
+  return () => clearTimeout(timer);
+ }, [entered, duration]);
+ useEffect(() => {
   let timer: ReturnType<typeof setTimeout>;
   const prune = () => {
    if (held.current || performance.now() < settleAfter.current) { timer = setTimeout(prune, 50); return; }
    setSlots(current => current.filter(id => (JSON.parse(key) as string[]).includes(id)));
+   setMounted(current => current.filter(id => (JSON.parse(key) as string[]).includes(id)));
   };
   timer = setTimeout(prune, duration + 60);
   return () => clearTimeout(timer);
@@ -116,9 +127,9 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
    const live = paneIds.includes(id), active = id === focus;
    const target = !live || (!entered.includes(id) && !reduced) ? 0 : compact || paneIds.length === 1 ? Math.min(available, paneIds.length === 1 ? 896 : available) : available / paneIds.length;
    const gap = live && entered.includes(id) && !compact && paneIds.length > 1 ? 8 : 0;
-   return <div key={id} className={`workspace-pane-slot${live ? '' : ' workspace-pane-ghost'}`} data-slot-id={id} data-focused={active} hidden={live && compact && !active} inert={!live || (compact && !active)} aria-hidden={!live || (compact && !active) ? true : undefined}
+   return <div key={id} className={`workspace-pane-slot${live ? '' : ' workspace-pane-ghost'}`} data-slot-id={id} data-focused={active} data-entering={!settled.includes(id)} hidden={live && compact && !active} inert={!live || (compact && !active)} aria-hidden={!live || (compact && !active) ? true : undefined}
     style={{ '--pane-width': `${target}px`, '--pane-gap': `${gap}px` } as CSSProperties}>
-    {live ? nodeById.get(id) : null}
+    {live && (mounted.includes(id) || ready.includes(id)) ? nodeById.get(id) : null}
    </div>;
   })}
  </div>;

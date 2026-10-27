@@ -13,7 +13,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { boundedCodeHighlighting } from './boundedCodeHighlighting';
-import { WorkspaceTable } from './WorkspaceTable';
+import { WorkspaceTable, initializeSourceTableIdentities } from './WorkspaceTable';
 import TableControls from './TableControls';
 import type { SaveStatus } from '../../lib/saveCoordinator';
 import { TableWorkspace, handleTablePaste, tableViewKey, tableViewState } from './TableWorkspace';
@@ -131,7 +131,12 @@ function BlockEditor({
     onContentError: () => { invalidContent.current = true; setContentError(true); },
     onBeforeCreate: ({ editor: creating }) => {
       sharedDocuments.prepare(creating);
-      try { validateImageContent(creating.options.content); } catch { invalidContent.current = true; setContentError(true); creating.options.content = { type: 'doc', content: [{ type: 'paragraph' }] }; }
+      try {
+        validateImageContent(creating.options.content);
+        if (integration && typeof creating.options.content === 'object' && !Array.isArray(creating.options.content) && creating.options.content) {
+          creating.options.content = initializeSourceTableIdentities(creating.options.content, creating.schema);
+        }
+      } catch { invalidContent.current = true; setContentError(true); creating.options.content = { type: 'doc', content: [{ type: 'paragraph' }] }; }
     },
     extensions: [
       StarterKit.configure({

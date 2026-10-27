@@ -1,6 +1,6 @@
 # Interaction motion
 
-Reviewed 2026-10-15. Settings → Appearance → Animation feel selects Snappy or Smooth on this device. The interactive Try it comparison is explicit, finite and does not change the preference. There are no decorative loops or cursor-following effects.
+Reviewed 2026-10-27. Settings → Appearance → Animation feel selects Snappy or Smooth on this device. The interactive Try it comparison is explicit, finite and does not change the preference. There are no decorative loops or cursor-following effects.
 
 ## Shared behavior
 
@@ -12,7 +12,7 @@ Selection markers follow category, segmented-control, palette and sidebar select
 
 ## Exit and interruption
 
-React removes the actual closed surface immediately. The motion boundary may retain a short inert visual clone to fade out, with IDs, roles, focusability and editability removed, controls disabled, aria-hidden and pointer events disabled. Clones have no React handlers, save/network ownership or Escape registration. Focus restoration uses the captured source view and centralized restoration registry after React cleanup in a microtask, without waiting for the visual exit or selecting a global editor. Reopening the same surface discards its old visual; interrupted entrance/preference changes cancel obsolete animations. No editor is remounted or replaced by this system. Geometry is refreshed before interactions and on scroll/resize, rather than on a sampling loop.
+React removes the actual closed surface immediately. The motion boundary may retain a short inert visual clone to fade out, with IDs, roles, focusability and editability removed, controls disabled, aria-hidden and pointer events disabled. Clones have no React handlers, save/network ownership or Escape registration. Focus restoration uses the captured source view and centralized restoration registry after React cleanup in a microtask, without waiting for the visual exit or selecting a global editor. Reopening the same surface discards its old visual; interrupted entrance/preference changes cancel obsolete animations. No editor is remounted or replaced by this system. Only exit-ghost-eligible surfaces retain geometry, refreshed before interactions and on scroll/resize rather than on a sampling loop. Page/category surfaces use opacity-only entrances without reading computed transforms; they and geometry-owned surfaces never need exit bounds, so the registry does not measure them. This prevents unrelated Library motion bookkeeping from forcing editor layout during initialization.
 
 Sidebar disclosure uses a 0fr/1fr grid transition with content retained for cached rows. Collapsed contents become inert and aria-hidden immediately, while the existing enabled-query contracts continue to suspend browsing. Visibility/collapse settings and request ownership are unchanged.
 
