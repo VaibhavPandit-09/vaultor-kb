@@ -30,6 +30,8 @@ Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0
 
 ## Desktop delivery
 
+- [Windows0.23.1 release](desktop/releases/v0.23.1.md): published performance/fidelity patch, packaged native acceptance, original-key public updater verification and remaining large-document limits.
+
 - [Windows0.23.0 release](desktop/releases/v0.23.0.md): explicitly authorized Windows-only publication, verified public updater and disclosed failed1MiB performance qualification.
 
 - [0.22.0 release candidate](desktop/releases/v0.22.0.md): recursive collection deletion, Windows artifact/acceptance status and exact-source Mac handoff.

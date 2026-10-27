@@ -4,7 +4,7 @@ Reviewed 2026-10-27. Complete-platform0.21.0 is published as Latest; its ledger 
 
 ## 0.23.1 Windows-only performance and fidelity patch
 
-Windows0.23.1 is prepared with explicit Windows-only release authorization. On separately arranged native Apple Silicon access, use immutable v0.23.1 (resolve the exact commit from the tag), preserve package/lock0.23.1 and the original signing key. Build fresh UI/server/native arm64 DMG and verify APFS source preservation, coalesced code/table/list checkpoints, explicit Save/conflict/protected draft/restart and focus/navigation. Windows sequential benchmark evidence and the remaining packaged rapid-input limitation do not certify Mac performance. Mac stays0.21.0; no0.23.1 DMG or acceptance is claimed. Follow RELEASE-PROCESS for any separately authorized absent-platform addition; never move the tag or replace the Windows pair.
+Windows0.23.1 is published with explicit Windows-only release authorization at immutable v0.23.1 /`343fafa5f6b9bea9abd341dcbd6215a72fc346b3`. On separately arranged native Apple Silicon access, use immutable v0.23.1 (resolve the exact commit from the tag), preserve package/lock0.23.1 and the original signing key. Build fresh UI/server/native arm64 DMG and verify APFS source preservation, coalesced code/table/list checkpoints, explicit Save/conflict/protected draft/restart and focus/navigation. Windows sequential benchmark evidence and the remaining packaged rapid-input limitation do not certify Mac performance. Mac stays0.21.0; no0.23.1 DMG or acceptance is claimed. Follow RELEASE-PROCESS for any separately authorized absent-platform addition; never move the tag or replace the Windows pair.
 
 ## 0.23.0 linked Markdown candidate — deferred batch qualification
 
