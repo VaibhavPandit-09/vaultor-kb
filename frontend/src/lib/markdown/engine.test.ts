@@ -20,6 +20,22 @@ function fixture(source = 'Before unchanged.\n\nParagraph **bold** and _italic_ 
 }
 
 describe('G1-B source boundaries and structural operations', () => {
+  it('table text patches ignore renderer-only empty root paragraphs, including immutable worker snapshots', () => {
+    const source = 'Before.\r\n\r\n| h | t |\r\n| :--- | ---: |\r\n| cell | x |\r\n\r\n<!-- retain -->\r\n';
+    for (const immutable of [false, true]) {
+      const engine = new MarkdownEngine(bytes(source));
+      const original = structuredClone(engine.projection.doc);
+      const target = structuredClone(original);
+      target.content!.push({ type: 'paragraph' }); // Tiptap trailing-node plugin
+      const table = target.content!.find(n => n.type === 'table')!;
+      table.content![1].content![0].content![0].content![0].text = 'cell LOCAL';
+      const result = engine.apply(target, immutable);
+      expect(result.accepted, result.reason).toBe(true);
+      expect(engine.source).toBe(source.replace('cell', 'cell LOCAL'));
+      expect(engine.apply(original, immutable).accepted).toBe(true);
+      expect(engine.source).toBe(source);
+    }
+  });
   for (const eol of ['\n', '\r\n']) {
     it(`no-op exact Unicode/BOM/EOL ${JSON.stringify(eol)}`, () => {
       const source = '\ufeff---\ntitle: x\n---\n\n# Heading ###\n\n😀 é &amp; \\*x\\*\n\n<!-- keep -->\n'.replaceAll('\n', eol);

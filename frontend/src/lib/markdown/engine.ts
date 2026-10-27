@@ -29,14 +29,19 @@ function protectedValues(doc: JSONContent): string[] {
 }
 function singleTextChange(a: JSONContent, b: JSONContent, retained?: WeakMap<JSONContent, JSONContent>): { old: JSONContent; next: string } | null {
   const changes: { old: JSONContent; next: string }[] = [];
+  const children = (n: JSONContent) => n.type === 'doc' ? (n.content ?? []).filter(c => c.type !== 'paragraph' || c.content?.length) : n.content ?? [];
   const visit = (x: JSONContent, y: JSONContent): boolean => {
     if (retained?.get(x) === y) return true;
     if (x.type === 'text' && y.type === 'text') {
       if (JSON.stringify(canonical(x).marks ?? []) !== JSON.stringify(canonical(y).marks ?? [])) return false;
       if (x.text !== y.text) changes.push({ old: x, next: y.text ?? '' }); return true;
     }
-    if (x.type !== y.type || JSON.stringify(canonical({ ...x, content: [] }, false).attrs ?? {}) !== JSON.stringify(canonical({ ...y, content: [] }, false).attrs ?? {}) || (x.content?.length ?? 0) !== (y.content?.length ?? 0)) return false;
-    return (x.content ?? []).every((c, i) => visit(c, y.content![i]));
+    // Tiptap may append empty root paragraphs (not Markdown source blocks).
+    // Match canonical's root semantics while retaining the original leaf nodes
+    // needed by literalPatch. Otherwise an ordinary cell edit rewrites a table.
+    const a = children(x), b = children(y);
+    if (x.type !== y.type || JSON.stringify(canonical({ ...x, content: [] }, false).attrs ?? {}) !== JSON.stringify(canonical({ ...y, content: [] }, false).attrs ?? {}) || a.length !== b.length) return false;
+    return a.every((c, i) => visit(c, b[i]));
   };
   return visit(a, b) && changes.length === 1 ? changes[0] : null;
 }
@@ -136,9 +141,11 @@ export class MarkdownEngine {
       if (JSON.stringify(protectedValues(this.projection.doc)) !== JSON.stringify(protectedValues(target))) throw new Error('PROTECTED_SYNTAX_REQUIRES_TARGETED_SOURCE');
       let candidate: string; let start = 0, end = source.length, replacement: string;
       let validated: Projection | undefined;
+      let validatedKey: string | undefined;
       const matchesCandidate = (value: string) => {
         const start = performance.now(); validated = this.projectCandidate(value);
-        const matches = key(validated.doc) === k;
+        validatedKey = key(validated.doc);
+        const matches = validatedKey === k;
         speculativeValidationMs += performance.now() - start; return matches;
       };
       const targetHash = fingerprint(k), historical = this.history.findIndex(r => r.hash === targetHash);
@@ -210,7 +217,9 @@ export class MarkdownEngine {
       const local = difference(source, candidate);
       patchMs = performance.now() - begin - speculativeValidationMs;
       const validationStart = performance.now(), parsed = validated?.source === candidate ? validated : this.projectCandidate(candidate);
-      if (key(parsed.doc) !== k) throw new Error('REPARSE_MISMATCH: targeted source editing required');
+      // matchesCandidate already compared this exact parsed projection. A new
+      // candidate (e.g. writer fallback) still requires its own complete key.
+      if ((parsed === validated && validatedKey !== undefined ? validatedKey : key(parsed.doc)) !== k) throw new Error('REPARSE_MISMATCH: targeted source editing required');
       const validationMs = speculativeValidationMs + performance.now() - validationStart;
       if (historical >= 0) this.cursor = historical; else this.remember(k, local);
       const patch = { start: encode.encode(source.slice(0, local.start)).length, end: encode.encode(source.slice(0, local.end)).length, text: local.text, removed: local.removed };

@@ -71,7 +71,9 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
     schedule();
   };
   const measure = () => { measureTravel(); measureActions(); };
-  const observer = frameResizeObserver(measure);
+  // Read overflow with the browser's delivered layout, before animation-frame
+  // header writes can dirty the entire document and force a synchronous layout.
+  const observer = frameResizeObserver(measureActions, measureTravel);
   const observeContent = () => {
     observer.disconnect(); observer.observe(viewport);
     // Header shrink and bottom compensation cancel. Observe content changes,

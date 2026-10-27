@@ -21,7 +21,7 @@ Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0
 
 - [AI_DEVELOPMENT_WORKFLOW](development/AI_DEVELOPMENT_WORKFLOW.md): Repository-wide AI efficiency policy, risk-based verification/evidence reuse, master-centered work, integration/protections and immutable recovery points.
 - [OPERATIONS](development/OPERATIONS.md): Build/dev/Docker, environment, logs and targeted disposable diagnostics.
-- [PERFORMANCE-TESTING](development/PERFORMANCE-TESTING.md): One-command local Windows Electron benchmarks, isolated workloads, metrics, reports and compatible history/baselines.
+- [PERFORMANCE-TESTING](development/PERFORMANCE-TESTING.md): One-command local Windows Electron size and structural benchmarks, isolated workloads, typing diagnostics, reports and compatible history/baselines.
 - [API](development/API.md): Shared domain APIs, revisions, compatibility and diagnostics.
 - [PRIMARY-TEST-WORKSPACE](development/PRIMARY-TEST-WORKSPACE.md): Marked Small/Atlas fixtures, guarded launch/reset and reproducible seed.
 - [ATLAS-BASELINE](development/ATLAS-BASELINE.md): Historical0.4.1 corpus measurements and sample limitations.

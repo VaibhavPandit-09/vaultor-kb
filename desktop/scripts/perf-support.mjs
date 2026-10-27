@@ -26,16 +26,16 @@ export function fixture(kib) {
 
 export function comparison(current, previous) {
   if(!previous) return { compatible:false, reason:'No previous successful run.' };
-  if(current.compatibility!==previous.compatibility) return { compatible:false, reason:'Fixture, workload, instrumentation, build toolchain or environment differs.' };
+  if((current.suite??'sizes')!==(previous.suite??'sizes')||current.compatibility!==previous.compatibility) return { compatible:false, reason:'Fixture, workload, instrumentation, build toolchain or environment differs.' };
   const rows=[];
   for(const doc of current.documents) {
-    const old=previous.documents.find(x=>x.kib===doc.kib);
+    const old=previous.documents.find(x=>doc.caseId?x.caseId===doc.caseId:x.kib===doc.kib);
     if(!old || old.status!==doc.status) continue;
     for(const [metric,value] of Object.entries(doc.metrics??{})) {
       const before=old.metrics?.[metric]?.p95, after=value.p95;
       if(before==null||after==null)continue;
       const change=before ? (after-before)/before*100 : null;
-      rows.push({kib:doc.kib,metric,previous:before,current:after,change,
+      rows.push({caseId:doc.caseId,kib:doc.kib,metric,previous:before,current:after,change,
         warning:metric!=='rendererHeapMiB'&&after-before>20&&change>20});
     }
   }
@@ -45,13 +45,14 @@ export function comparison(current, previous) {
 export function markdown(result) {
   const f=n=>n==null?'unavailable':n.toFixed(1);
   const lines=['# Vaultor Performance Report','',`Runtime: ${result.runtime}`,`Commit: ${result.environment.commit} · App: ${result.environment.appVersion} · Mode: ${result.mode}`,`Status: ${result.success?'completed':'HARNESS FAILURE'} · ${result.id}`,'', '| Document | Open p95 | Usable p95 | Typing p50 / p95 | Worker p95 | Save p95 | Source |','| --- | ---: | ---: | ---: | ---: | ---: | --- |'];
-  for(const d of result.documents) { const m=d.metrics??{}; lines.push(`| ${d.kib} KiB (${d.status}) | ${f(m.openMs?.p95)} | ${f(m.usableMs?.p95)} | ${f(m.typingFrameMs?.p50)} / ${f(m.typingFrameMs?.p95)} | ${f(m.workerValidationMs?.p95)} | ${f(m.saveMs?.p95)} | ${d.sourcePreserved?'passed':'unmeasured'} |`); }
+  for(const d of result.documents) { const m=d.metrics??{}; lines.push(`| ${d.caseId??(d.kib+' KiB')} (${d.status}) | ${f(m.openMs?.p95)} | ${f(m.usableMs?.p95)} | ${f(m.typingFrameMs?.p50)} / ${f(m.typingFrameMs?.p95)} | ${f(m.workerValidationMs?.p95)} | ${f(m.saveMs?.p95)} | ${d.sourcePreserved?'passed':'unmeasured'} |`); }
+  if(result.suite==='structures')lines.push('','New structural workloads are baseline candidates until a compatible local run is available. Safety refusals are classified separately and never count as editable performance.');
   lines.push('','Times are ms. Typing is keydown → next animation-frame callback, not paint/presentation latency. Open is click → mounted editor; usable additionally requires a successful edit, worker acknowledgement and a frame.');
   for(const [name,c] of Object.entries(result.comparisons??{})) {
     lines.push('',`Comparison (${name}): ${c.compatible?c.previous:c.reason}`);
     if(c.compatible) {
       lines.push('| Document / p95 metric | Previous | Current | Change |','| --- | ---: | ---: | ---: |');
-      for(const r of c.rows.filter(r=>['openMs','usableMs','typingFrameMs','workerValidationMs','saveMs'].includes(r.metric)))lines.push(`| ${r.kib} / ${r.metric} | ${f(r.previous)} | ${f(r.current)} | ${r.change==null?'n/a':r.change.toFixed(0)+'%'}${r.warning?' WARNING':''} |`);
+      for(const r of c.rows.filter(r=>['openMs','usableMs','typingFrameMs','workerValidationMs','saveMs'].includes(r.metric)))lines.push(`| ${r.caseId??r.kib} / ${r.metric} | ${f(r.previous)} | ${f(r.current)} | ${r.change==null?'n/a':r.change.toFixed(0)+'%'}${r.warning?' WARNING':''} |`);
     }
   }
   if(result.documents.some(d=>d.metrics?.typingFrameMs?.p95>50)) lines.push('','Performance warning: typing-to-frame p95 exceeds 50 ms.');

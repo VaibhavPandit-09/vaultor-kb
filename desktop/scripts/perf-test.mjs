@@ -5,15 +5,23 @@ import { fileURLToPath } from 'node:url';
 import { spawn, execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { hash, protocol, fixture, summary, comparison, markdown, isolatedEnvironment } from './perf-support.mjs';
+import { structuralCases } from './perf-structures.mjs';
 
 const root=fileURLToPath(new URL('../../',import.meta.url)), desktop=join(root,'desktop');
 const results=join(root,'performance-results'), stamp=join(desktop,'cache','perf-build.json');
-const args=process.argv.slice(2), valid=['--smoke','--extended','--baseline','--rebuild'];
-const size=args.find(a=>/^--size=(64|256|512|1024)$/.test(a));
-if(args.some(a=>!valid.includes(a)&&a!==size) || (args.includes('--smoke')&&args.includes('--extended')) || (size&&!args.includes('--smoke')))throw Error('Usage: npm run perf:test -- [--smoke [--size=64|256|512|1024]|--extended] [--baseline] [--rebuild]');
+const args=process.argv.slice(2), valid=['--smoke','--extended','--baseline','--rebuild','--diagnostics','--cpu-profile','--suite=structures'];
+const suite=args.includes('--suite=structures')?'structures':'sizes',caseArg=args.find(a=>a.startsWith('--case=')),caseName=caseArg?.slice(7);
+if(caseArg&&(suite!=='structures'||!caseName))throw Error('--case requires --suite=structures and a case name');
+if(args.includes('--diagnostics')&&(!args.includes('--smoke')||args.includes('--baseline')))throw Error('Diagnostics requires --smoke and cannot pin a baseline');
+const size=args.find(a=>/^--size=(64|256|512|1024)(,(64|256|512|1024))*$/.test(a));
+if(args.includes('--cpu-profile')&&!args.includes('--diagnostics'))throw Error('--cpu-profile requires --diagnostics');
+if(args.some(a=>!valid.includes(a)&&a!==size&&a!==caseArg) || (args.includes('--smoke')&&args.includes('--extended')) || (size&&(!args.includes('--smoke')||suite==='structures')))throw Error('Usage: npm run perf:test -- [--suite=structures [--case=prose|tables|code|dense|mixed|complexity-refusal|size-refusal]] [--smoke [--size=64,256,512,1024]|--extended] [--diagnostics [--cpu-profile]] [--baseline] [--rebuild]');
 const mode=args.includes('--smoke')?'smoke':args.includes('--extended')?'extended':'normal';
 const workload={sizes:mode==='smoke'?[64]:[64,256,512,1024],keys:mode==='extended'?12:mode==='smoke'?2:6,samples:mode==='extended'?3:mode==='smoke'?1:2,rounds:mode==='extended'?5:mode==='smoke'?1:3};
-if(size)workload.sizes=[Number(size.split('=')[1])];
+if(size)workload.sizes=[...new Set(size.split('=')[1].split(',').map(Number))];
+if(suite==='structures')Object.assign(workload,{sizes:undefined,suite,smoke:mode==='smoke',caseName,keys:mode==='extended'?6:mode==='smoke'?2:4,samples:mode==='extended'?2:1,rounds:mode==='extended'?3:mode==='smoke'?1:2});
+if(args.includes('--diagnostics'))Object.assign(workload,{diagnostics:true,cpuProfile:args.includes('--cpu-profile'),keys:6,...(suite==='sizes'?{samples:2}:{})});
+const fixtures=suite==='structures'?structuralCases({smoke:mode==='smoke',caseName}):workload.sizes.map(kib=>({kib,text:fixture(kib)}));
 const json=async path=>JSON.parse(await readFile(path,'utf8'));
 // Concurrent benchmarks distort results and race build/latest outputs. Recover
 // a stale lock only when its recorded process no longer exists; never kill it.
@@ -58,7 +66,7 @@ async function fingerprint(paths) {
   return hash(parts.join('\n'));
 }
 const npm=(cwd,script)=>run(process.execPath,[process.env.npm_execpath,'run',script],cwd);
-const result={id:new Date().toISOString().replaceAll(':','-'),mode,runtime:'Windows Electron (local production UI + bundled Java/native host; unpackaged Electron shell)',success:false,documents:[],environment:{commit:git('rev-parse','HEAD'),dirty:Boolean(git('status','--porcelain')),appVersion:(await json(join(desktop,'package.json'))).version,os:`${version()} ${release()}`,machine:hostname(),cpu:cpus()[0]?.model,cpuCount:cpus().length,ramBytes:totalmem(),arch:process.arch,node:process.version},workload,protocol};
+const result={id:new Date().toISOString().replaceAll(':','-'),mode,suite,runtime:'Windows Electron (local production UI + bundled Java/native host; unpackaged Electron shell)',success:false,documents:[],environment:{commit:git('rev-parse','HEAD'),dirty:Boolean(git('status','--porcelain')),appVersion:(await json(join(desktop,'package.json'))).version,os:`${version()} ${release()}`,machine:hostname(),cpu:cpus()[0]?.model,cpuCount:cpus().length,ramBytes:totalmem(),arch:process.arch,node:process.version},workload,protocol};
 const interrupt=()=>{interrupted=true;process.exitCode=1;void Promise.all([...children].map(killTree));};
 process.once('SIGINT',interrupt);
 process.once('SIGTERM',interrupt);
@@ -91,9 +99,9 @@ try {
   result.environment.javaRuntime=(await json(join(desktop,'bundle','manifest.json'))).runtime;
   // Commits/app versions are recorded but deliberately excluded: compare code
   // revisions only when the workload, toolchain and machine remain identical.
-  const harnessPaths=['desktop/scripts/perf-test.mjs','desktop/scripts/native-perf-test.mjs','desktop/scripts/perf-support.mjs','desktop/scripts/perf-process.ps1','desktop/scripts/native-chrome-smoke.mjs'];
+  const harnessPaths=['desktop/scripts/perf-test.mjs','desktop/scripts/native-perf-test.mjs','desktop/scripts/perf-support.mjs','desktop/scripts/perf-structures.mjs','desktop/scripts/perf-process.ps1','desktop/scripts/native-chrome-smoke.mjs'];
   const harnessHash=await fingerprint(harnessPaths);
-  result.compatibility=hash(JSON.stringify({protocol,workload,environment:{...result.environment,commit:undefined,dirty:undefined,appVersion:undefined},fixtures:workload.sizes.map(k=>hash(fixture(k))),harness:harnessHash}));
+  result.compatibility=hash(JSON.stringify({protocol,workload,environment:{...result.environment,commit:undefined,dirty:undefined,appVersion:undefined},fixtures:fixtures.map(f=>hash(f.text)),harness:harnessHash}));
   temporary=await mkdtemp(join(tmpdir(),'vaultor-perf-'));
   for(let round=0;round<workload.rounds;round++) {
     const directory=join(temporary,`profile-${round}`),source=join(temporary,`source-${round}`);
@@ -108,16 +116,18 @@ try {
     catch(error){const detail=await json(join(directory,'perf-error.json')).catch(()=>null);throw Error(detail?`${error.message}: ${detail.message}`:error.message);}
     finally {
       const raw=await json(join(directory,'perf-raw.json')).catch(()=>null);
+      if(raw&&workload.diagnostics)for(const d of raw.documents)if(d.cpuProfile){const name=result.id+'-round'+round+'-'+d.cpuProfile;await writeFile(join(results,name),await readFile(join(directory,d.cpuProfile)));d.cpuProfile=name;}
       if(raw){result.environment.runtimeVersions=raw.runtimeVersions;result.documents.push(...raw.documents.map(d=>({...d,round})));}
     }
   }
   if(harnessHash!==await fingerprint(harnessPaths))throw Error('Benchmark scripts changed during this run; results cannot be compared.');
   result.rounds=result.documents;
-  result.documents=workload.sizes.map(kib=>{
-    const rounds=result.rounds.filter(d=>d.kib===kib),raw={};
+  result.documents=fixtures.map(f=>{
+    const {kib}=f,rounds=result.rounds.filter(d=>f.caseId?d.caseId===f.caseId:d.kib===kib),raw={};
+    if(rounds.length!==workload.rounds)throw Error('Missing fixture round');
     if(new Set(rounds.map(d=>d.status)).size!==1)throw Error(`Inconsistent admission across rounds: ${kib} KiB`);
     for(const d of rounds)for(const [key,values]of Object.entries(d.raw)) (raw[key]??=[]).push(...values);
-    return {kib,status:rounds[0].status,bytes:rounds[0].bytes,reason:rounds[0].reason,sourcePreserved:rounds.every(d=>d.sourcePreserved),metrics:Object.fromEntries(Object.entries(raw).map(([key,v])=>[key,summary(v)]))};
+    return {...(f.caseId?{caseId:f.caseId,type:f.type,complexity:f.complexity,structure:rounds[0].structure,baselineCandidate:true}:{}),kib,status:rounds[0].status,bytes:rounds[0].bytes,reason:rounds[0].reason,sourcePreserved:rounds.every(d=>d.sourcePreserved),metrics:Object.fromEntries(Object.entries(raw).map(([key,v])=>[key,summary(v)]))};
   });
   result.success=true;
 } catch(error) {result.error=error.message;process.exitCode=1;console.error('Performance harness failed: '+error.message);}
@@ -130,11 +140,13 @@ finally {
     catch(error){result.cleanup='FAILED: '+error.message;result.success=false;process.exitCode=1;}
   }else result.cleanup='no application launched';
   await mkdir(results,{recursive:true});
-  const files=(await readdir(results)).filter(n=>/^\d.*(?<!\.raw)\.json$/.test(n)).sort().reverse();
+  const files=(await readdir(results)).filter(n=>/^\d.*Z\.json$/.test(n)).sort().reverse();
   let previous;
   for(const file of files){const candidate=await json(join(results,file)).catch(()=>null);if(candidate?.success&&candidate.compatibility===result.compatibility){previous=candidate;break;}}
-  const baseline=await json(join(results,'baseline.json')).catch(()=>null);
+  const suffix=suite==='structures'?'-structures':'',latestSuffix=workload.diagnostics?'-diagnostics':suffix;
+  const baseline=await json(join(results,'baseline'+suffix+'.json')).catch(()=>null);
   result.comparisons={previous:comparison(result,previous),...(baseline?{baseline:comparison(result,baseline)}:{})};
+  for(const doc of result.documents)if(doc.caseId)doc.baselineCandidate=!previous?.documents?.some(old=>old.caseId===doc.caseId&&old.status===doc.status);
   if(!previous&&files.length)result.comparisons.previous.reason='No compatible successful history (other modes/environments are not compared).';
   const raw=result.rounds??result.documents;
   result.rawFile=result.id+'.raw.json';
@@ -146,8 +158,8 @@ finally {
   await writeFile(join(results,result.id+'.json'),output);await writeFile(join(results,result.id+'.md'),report);
   // Write each latest file by rename to avoid partially written history.
   const {rename}=await import('node:fs/promises');
-  for(const [name,value]of [['latest.json',output],['latest.md',report]]){await writeFile(join(results,name+'.tmp'),value);await rename(join(results,name+'.tmp'),join(results,name));}
-  if(args.includes('--baseline')&&result.success)await writeFile(join(results,'baseline.json'),output);
+  for(const [name,value]of [['latest'+latestSuffix+'.json',output],['latest'+latestSuffix+'.md',report]]){await writeFile(join(results,name+'.tmp'),value);await rename(join(results,name+'.tmp'),join(results,name));}
+  if(args.includes('--baseline')&&result.success)await writeFile(join(results,'baseline'+suffix+'.json'),output);
   await rm(lock);
   console.log(report);console.log('Reports: '+results);
 }
