@@ -15,6 +15,7 @@ Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0
 ## Design contracts
 
 - [UI_PHILOSOPHY](design/UI_PHILOSOPHY.md): Authoritative desktop/shared density, continuity, motion, accessibility and reduced-motion rules.
+- [Menu and copy audit,2026-10-29](design/MENU-UX-AUDIT-2026-10-29.md): Source/screenshot findings on Activity/window overlap, stale import history and wording across menus; proposed states and priorities, not implemented behavior.
 - [ANDROID_UI_PHILOSOPHY](design/ANDROID_UI_PHILOSOPHY.md): Android extension: hybrid UI, reader, Back, platform adaptation and restrained semantic haptics.
 
 ## Development and validation

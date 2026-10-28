@@ -437,6 +437,10 @@ Diagnostic events carry category (layout/ui/application/save/recovery/integrity)
 
 ## Maintenance history
 
+### 2026-10-29 — Menu/chrome and stale import-history audit
+
+Audited the user’s four screenshots against0.24.0 source across import/history, Activity/window controls, transfers, collection/lifecycle, connection, Settings, updates, search and recovery surfaces. Confirmed164px native-control occupancy versus Activity’s124px offset, and journal-only repeat-import recognition without live collection/resource existence checks. [The dated audit](design/MENU-UX-AUDIT-2026-10-29.md) records wording/state proposals, retained-history safety boundaries and missing runtime evidence. Corrected current topic guides to disclose those known UX issues. No code, behavior, architecture, dependency, API or installer change; validation was bounded source/screenshot review and documentation link/whitespace checks, not new native or application tests.
+
 ### 2026-10-29 — Windows0.24.0 UX reliability qualification
 
 Added source-scoped Activity controllers and durable task metadata outside React, byte-verified reimport review with protected legacy-ID resume, bounded typed maintenance waits/diagnostics, revision/generation-bound all-pages Empty Trash receipts, selection-only bulk controls, single-row compact browse/note controls and CSP-compatible pre-paint/native theme initialization. Full/partial export receipts and queued merge generation checks preserve existing host publication boundaries. This changes interaction/task architecture; resource authority, structured documents, original source ownership and portable archive formats remain intact.

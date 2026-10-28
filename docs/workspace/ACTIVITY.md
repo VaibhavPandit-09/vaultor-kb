@@ -1,10 +1,10 @@
 # Background Activity
 
-Reviewed 2026-10-28 for the Windows0.24.0 candidate. Release qualification is recorded in [the release ledger](../desktop/releases/v0.24.0.md).
+Reviewed 2026-10-29 against Windows0.24.0. Release qualification is recorded in [the release ledger](../desktop/releases/v0.24.0.md).
 
 ## Ownership and interaction
 
-The application has one corner Activity control, clear of native window controls, in Library, editors, Trash, Settings and workspace management. Its anchored popover shows active/attention tasks before recent completions, workspace identity, phase, file/batch done/total where measurable, warnings and bounded details. Unknown-duration archive phases are indeterminate. Completed exports offer Save output only after a host artifact receipt proves positive bytes and SHA-256. A cancelled save leaves the prepared artifact available; preparation never claims a successful disk save.
+The application has one corner Activity control in Library, editors, Trash, Settings and workspace management. Known0.24.0 regression: the desktop offset is124px while the complete window-control group occupies164px, so Activity overlaps the menu/grip region. The intended separation is not currently met; the [menu/chrome audit](../design/MENU-UX-AUDIT-2026-10-29.md) records the source evidence and proposed correction. Its anchored popover shows active/attention tasks before recent completions, workspace identity, phase, file/batch done/total where measurable, warnings and bounded details. Unknown-duration archive phases are indeterminate. Completed exports offer Save output only after a host artifact receipt proves positive bytes and SHA-256. A cancelled save leaves the prepared artifact available; preparation never claims a successful disk save.
 
 Ordinary file/folder review closes after durable dispatch. ZIP import-as-new/local-copy preparation moves into Activity, then requires review of the host preview before publication. Full/partial workspace export and confirmed merge/import-as-new/local-copy commits also run there. Destructive replacement keeps its existing explicit modal and save/generation barrier. Selection export flushes selected managed notes and prepares a partial ZIP; linked originals remain excluded. Simple row actions retain their existing immediate workflows.
 
