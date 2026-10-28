@@ -65,7 +65,7 @@ it('combines collection and tag filtering and scopes selection to the current pa
   await screen.findByText('Note 0');
   expect(browseResources).toHaveBeenCalledWith(expect.objectContaining({collection:'atlas',tags:['topic']}),expect.any(AbortSignal));
   fireEvent.click(screen.getByLabelText('Select Note 0'));expect(screen.getByText('1 selected')).toBeTruthy();
-  fireEvent.click(screen.getByText('Select visible resources'));expect(screen.getByText('100 selected')).toBeTruthy();
+  expect(screen.queryByText('Select visible resources')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Select page'}));expect(screen.getByText('100 selected')).toBeTruthy();
   fireEvent.click(screen.getByRole('button',{name:'Next'}));await waitFor(()=>expect(screen.queryByText('100 selected')).toBeNull());
 });
 it('retains query while opting into content and changing collection destination',async()=>{
@@ -93,9 +93,10 @@ it('attaches compression to the mounted Library scroll owner without replacing s
  input.focus(); input.setSelectionRange(1,3);
  Object.defineProperties(viewport,{scrollHeight:{value:1000,configurable:true},clientHeight:{value:500,configurable:true}});
  viewport.scrollTop=160; fireEvent.scroll(viewport);
+ expect(document.activeElement).toBe(input);expect(input.selectionStart).toBe(1);input.blur();fireEvent.scroll(viewport);
  await waitFor(()=>expect(Number(viewport.style.getPropertyValue('--library-progress'))).toBeGreaterThan(.9));
- expect(screen.getByRole('textbox',{name:'Search resources'})).toBe(input);
- expect(document.activeElement).toBe(input); expect(input.selectionStart).toBe(1);
+ expect(viewport.querySelector('input[aria-label="Search resources"]')).toBe(input);expect(input.selectionStart).toBe(1);
+ fireEvent.click(screen.getByRole('button',{name:/Search and filters applied/}));expect(document.activeElement).toBe(input);
  expect(screen.getAllByRole('listitem')[0]).toBe(row); expect(browseResources).toHaveBeenCalledTimes(queries);
 });
 

@@ -1,4 +1,6 @@
 import WorkspaceTransfers from './WorkspaceTransfers';
+import Activity from './Activity';
+import {DialogFocusContext,useDialogFocus} from '../lib/dialogFocus';
 import { useContext,useEffect,useRef,useState,type ReactNode } from 'react';
 import { DesktopConnectionContext } from '../lib/desktopConnectionContext';
 import api from '../lib/api';
@@ -17,6 +19,7 @@ export default function WorkspaceRoot({children}:{children:ReactNode}){
   const [items,setItems]=useState<WorkspaceSummary[]>([]),[selected,setSelected]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[epoch,setEpoch]=useState(0);
   const [filter,setFilter]=useState(''),[name,setName]=useState(''),[manage,setManage]=useState<WorkspaceSummary>(),[grants,setGrants]=useState<Grant[]>([]),[pending,setPending]=useState<WorkspaceSummary>(),[keep,setKeep]=useState(false);
   const running=useRef(false),creation=useRef<{id:string;name:string}|undefined>(undefined),panel=useRef<HTMLElement>(null),focus=useRestoreFocusOnClose();
+  const workspaceDialog=useDialogFocus(panel,false,open);
   const desktopConnection=useContext(DesktopConnectionContext);
   const server=desktopConnection?.name??location.host;
   const createKey='vaultor-workspace-create:'+getConnection().profileId;
@@ -87,10 +90,12 @@ export default function WorkspaceRoot({children}:{children:ReactNode}){
     try{await api.put('/owner/workspaces/'+manage.id+'/grants',{deviceId:value.deviceId,allowed:!value.allowed});setGrants(rows=>rows.map(v=>v.deviceId===value.deviceId?{...v,allowed:!v.allowed}:v));}
     catch(e){setError((e as Error).message);}finally{release();running.current=false;setBusy(false);}
   }
-  if(!supported&&ready)return children;
+  useEffect(()=>{const changed=()=>{void list().catch(e=>setError(e.message));};window.addEventListener('vaultor:workspaces-changed',changed);return()=>window.removeEventListener('vaultor:workspaces-changed',changed);});
+  if(!supported&&ready)return <>{children}<Activity/></>;
   return <WorkspaceSelectionContext.Provider value={{name:items.find(v=>v.id===selected)?.name||'Workspace',server,imports:transfers&&owner,open:show}}>
+    {ready&&<Activity key={'activity:'+epoch}/>}
     {ready?<div key={epoch} className="h-full" inert={open}>{children}</div>:<div className="p-6" role="status">Choose a workspace to continue.</div>}
-    {open&&<div role="dialog" aria-modal="true" aria-label="Workspaces" className="fixed inset-0 z-[3100] flex items-center justify-center bg-black/50 p-4" onKeyDown={e=>{if(e.key!=='Tab')return;const controls=[...panel.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled)')??[]];const first=controls[0],last=controls.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}}>
+    {open&&<DialogFocusContext.Provider value={workspaceDialog.scope}><div role="dialog" aria-modal="true" aria-label="Workspaces" className="fixed inset-0 z-[3100] flex items-center justify-center bg-black/50 p-4" onKeyDown={workspaceDialog.onKeyDown}>
       <section ref={panel} className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-border bg-background p-5 space-y-3">
         <div className="flex items-center justify-between gap-3"><h1 className="font-semibold">{manage?'Manage workspace':'Workspaces'}</h1><button className="library-button" disabled={busy||!ready} onClick={dismiss}>{manage?'Back':'Close'}</button></div>
         <p className="text-sm text-[var(--text-secondary)]">{server} · {owner?'Owner access':'Approved workspaces'}</p>
@@ -99,10 +104,10 @@ export default function WorkspaceRoot({children}:{children:ReactNode}){
           {items.filter(v=>v.name.toLowerCase().includes(filter.toLowerCase())).map(item=><div key={item.id} className="flex items-center gap-2 border-b border-border py-2"><button className="flex-1 text-left min-w-0 rounded-lg p-2 hover:bg-card focus-visible:ring-2 focus-visible:ring-primary" disabled={busy} onClick={()=>void choose(item)} aria-current={item.id===selected?'true':undefined}><span className="block truncate">{item.name}</span><span className="text-xs text-[var(--text-secondary)]">{item.id===selected?'Current workspace':'Open workspace'}</span></button>{owner&&<button className="library-button" disabled={busy} onClick={()=>void edit(item)} aria-label={'Manage '+item.name}>Manage</button>}</div>)}
           <button className="library-button" disabled={busy} onClick={()=>void list().catch(e=>setError(e.message))}>Refresh</button>
           {owner&&(items.length<8||creation.current)&&<form className="flex gap-2 border-t border-border pt-3" onSubmit={e=>{e.preventDefault();void create();}}><input className="organization-input min-w-0 flex-1" aria-label="New workspace name" placeholder="New workspace name" value={name} disabled={busy||!!creation.current} onChange={e=>setName(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&e.nativeEvent.isComposing)e.preventDefault();}} maxLength={100}/><button className="library-button" disabled={busy||!name.trim()} type="submit">{creation.current?'Retry':'Create'}</button></form>}
-          <WorkspaceTransfers owner={owner} supported={transfers} workspaceName={items.find(v=>v.id===selected)?.name||'Workspace'} onBusy={setBusy} onReady={list} onOpen={(id,label,local)=>void choose({id,name:label},false,local?'this-computer':getConnection().profileId)}/>
+          <WorkspaceTransfers onBackground={()=>{setOpen(false);focus.restoreFocus();}} owner={owner} supported={transfers} workspaceName={items.find(v=>v.id===selected)?.name||'Workspace'} onBusy={setBusy} onReady={list} onOpen={(id,label,local)=>void choose({id,name:label},false,local?'this-computer':getConnection().profileId)}/>
         </>:<><form className="flex gap-2" onSubmit={e=>{e.preventDefault();void rename();}}><input className="organization-input min-w-0 flex-1" aria-label="Workspace name" maxLength={100} value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&e.nativeEvent.isComposing)e.preventDefault();}}/><button className="library-button" disabled={busy||!name.trim()}>Rename</button></form><h2 className="text-sm font-semibold">Device access</h2>{grants.length?grants.map(v=><label key={v.deviceId} className="flex gap-3 items-center border-b border-border py-2"><span className="flex-1 truncate">{v.name}</span><input type="checkbox" aria-label={'Allow '+v.name} checked={v.allowed} disabled={busy} onChange={()=>void grant(v)}/></label>):<p className="text-sm text-[var(--text-secondary)]">No paired devices.</p>}</>}
         {keep&&pending&&<button className="library-button" disabled={busy} onClick={()=>void choose(pending,true)}>Keep drafts and switch</button>}
       </section>
-    </div>}
+    </div></DialogFocusContext.Provider>}
   </WorkspaceSelectionContext.Provider>;
 }

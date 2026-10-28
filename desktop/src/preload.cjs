@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('vaultorDesktop', Object.freeze({
   updatesRestore:()=>ipcRenderer.invoke('desktop:updates-restore'),
   onUpdates:callback=>{const listener=(_event,value)=>callback(value);ipcRenderer.on('desktop:updates-state',listener);return()=>ipcRenderer.removeListener('desktop:updates-state',listener);},
   onUpdatesOpen:callback=>{const listener=()=>callback();ipcRenderer.on('desktop:updates-open',listener);return()=>ipcRenderer.removeListener('desktop:updates-open',listener);},
+  appearance: theme => ipcRenderer.invoke('desktop:appearance',theme),
   localStatus: () => ipcRenderer.invoke('desktop:local-status'),
   onLocalStatus: callback => { const listener=(_event,value)=>callback(value);ipcRenderer.on('desktop:local-status',listener);return()=>ipcRenderer.removeListener('desktop:local-status',listener); },
   hosting: () => ipcRenderer.invoke('desktop:hosting'),

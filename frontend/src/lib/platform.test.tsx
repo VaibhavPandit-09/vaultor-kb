@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import axios, { type AxiosAdapter } from 'axios';
 import { configureConnection, getPlatform, transport, validateApiPath, openConnectionStream, type PlatformServices } from './platform';
-import { ensureCompatible, validateCapabilities } from './connection';
+import { ensureCompatible, validateCapabilities,requireBackgroundOperations } from './connection';
 import { flushDiagnostics, getLocalDiagnostics, reportError } from './diagnostics';
 import ConnectionGate from '../components/ConnectionGate';
 import api from './api';
@@ -28,6 +28,10 @@ it('rejects missing/unsupported contracts and tells which side needs updating', 
   expect(() => validateCapabilities({ ...caps, apiProtocolVersion: 0 })).toThrow();
   expect(() => validateCapabilities({ ...caps, apiProtocolVersion: 4, minimumClientProtocolVersion: 4 })).toThrow('Update this app');
   expect(validateCapabilities({ ...caps, apiProtocolVersion: 3 })).toMatchObject({ apiProtocolVersion: 3 });
+});
+it('new background mutations refuse an older host while ordinary protocol3 remains compatible',async()=>{
+ configureConnection({profileId:'older-host',kind:'local'},services(respond(caps)));await expect(requireBackgroundOperations()).rejects.toThrow('Update the connected host');
+ configureConnection({profileId:'new-host',kind:'local'},services(respond({...caps,backgroundOperations:1})));await expect(requireBackgroundOperations()).resolves.toBeUndefined();
 });
 it('does not mount workspace children or send mutations to an incompatible server; retry works', async () => {
   let compatible = false;

@@ -12,6 +12,7 @@ import { markdownToHtml } from '../components/editor/markdownUtils';
 import { buildCsvImportBlocks } from '../components/editor/csvUtils';
 import api from './api';
 import type { Resource } from '../types';
+import { getConnection } from './platform';
 
 export type ImportKind = 'markdown' | 'text' | 'code' | 'csv' | 'binary';
 export const MAX_TEXT_BYTES = 5 * 1024 * 1024;
@@ -80,18 +81,19 @@ export function convertText(kind: ImportKind, text: string, resolve?: (href:stri
 }
 
 /** Retrying the same ID returns the original creation, even after a lost response. */
-export async function importResource(id: string, file: File, doc?: JSONContent, collectionId?: string, progress?: (percent: number) => void, source?:{generation:string;epoch:number}): Promise<Resource> {
+export async function importResource(id: string, file: File, doc?: JSONContent, collectionId?: string, progress?: (percent: number) => void, source?:{generation:string;epoch:number;waiting?:()=>void}): Promise<Resource> {
   const body = new FormData();
   if(collectionId) body.append('collectionId',collectionId);
   body.append('title', doc ? noteTitle(file.name) : file.name);
   if (doc) body.append('content', JSON.stringify(doc)); else body.append('file', file);
-  const { data } = await api.put<Resource>('/resources/imports/' + id, body, { ...(source?{connectionEpoch:source.epoch,headers:{'X-Vaultor-Generation':source.generation}}:{}),onUploadProgress: event => progress?.(Math.round((event.progress ?? 0) * 85)) });
+  const { data } = await api.put<Resource>('/resources/imports/' + id, body, { ...(source?{connectionEpoch:source.epoch,headers:{'X-Vaultor-Generation':source.generation},onWorkspaceBusy:source.waiting}:{}),onUploadProgress: event => progress?.(Math.round((event.progress ?? 0) * 85)) });
   return data;
 }
 
 export type ImportRow = { path?:string; imageValid?:boolean; sourceText?:string; destinationId?:string; resolved?:boolean; revision?:string; id: string; file: File; kind: ImportKind; asNote: boolean; doc?: JSONContent; warnings: string[]; parseError?: string; status: 'ready' | 'pending' | 'done' | 'failed'; error?: string; started?: boolean };
-export type ImportSession = { collection?: {id:string;name:string}; rows: ImportRow[]; target?: ImportTarget; mode?: 'markdown' | 'csv' | 'link'; folder?: {name:string;directories:string[];emptyFoldersUnavailable?:boolean} };
+export type ImportSession = { sourceEpoch?:number;collection?: {id:string;name:string}; rows: ImportRow[]; target?: ImportTarget; mode?: 'markdown' | 'csv' | 'link'; folder?: {name:string;directories:string[];emptyFoldersUnavailable?:boolean} };
 export async function prepareImport(files: File[] & {directories?:string[];emptyFoldersUnavailable?:boolean}, target?: ImportTarget, mode?: ImportSession['mode']): Promise<ImportSession> {
+  const sourceEpoch=getConnection().epoch;
   if(files.length>2000||files.reduce((n,f)=>n+f.size,0)>2*1024*1024*1024)throw new Error('Select at most 2,000 files and 2 GiB.');
   let decoded=0;
   const rows:ImportRow[]=[];
@@ -106,7 +108,7 @@ export async function prepareImport(files: File[] & {directories?:string[];empty
     rows.push(row);
   }
   const paths=files.directories??[];const root=paths[0]?.split('/')[0]??files[0]?.webkitRelativePath?.split('/')[0];
-  const session:ImportSession={ rows, target, mode,...(root?{folder:{name:root.normalize('NFC'),directories:paths,emptyFoldersUnavailable:files.emptyFoldersUnavailable}}:{}) };
+  const session:ImportSession={ sourceEpoch,rows, target, mode,...(root?{folder:{name:root.normalize('NFC'),directories:paths,emptyFoldersUnavailable:files.emptyFoldersUnavailable}}:{}) };
   if(session.folder)(await import('./folderImports')).folderPaths(session);
   return session;
 }

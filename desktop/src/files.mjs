@@ -29,7 +29,8 @@ export class NativeFiles {
     if(directory)return this.pickTree(result.filePaths[0],token);
     if (result.filePaths.length > 50) throw new Error('Select at most 50 files at once.');
     for(const [id,file] of this.picked) if(file.created<Date.now()-3600000) this.picked.delete(id);
-    if(this.picked.size+result.filePaths.length>200) throw new Error('Too many retained file selections. Reconnect before choosing more files.');
+    const regularSelections=[...this.picked.values()].filter(file=>!file.canonical).length;
+    if(regularSelections+result.filePaths.length>200||this.picked.size+result.filePaths.length>4000) throw new Error('Too many retained file selections. Reconnect before choosing more files.');
     const descriptors = [];
     for (const path of result.filePaths) {
       const info = await stat(path); if (!info.isFile() || info.size > this.limit) throw new Error('Selected file exceeds the desktop 512 MiB limit or is not a regular file.');

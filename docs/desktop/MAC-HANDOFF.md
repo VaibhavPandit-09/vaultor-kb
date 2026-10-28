@@ -1,6 +1,10 @@
 # Current Mac release qualification handoff
 
-Reviewed 2026-10-27. Complete-platform0.21.0 is published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The0.22.0 release candidate remains a separate pending platform record.0.23.0 is a later local1MiB implementation candidate whose Windows packaged performance gate fails; the user has subsequently authorized Windows-only publication with the failure disclosed. No Mac0.22.0 build or acceptance is available in this Windows session; the complete-platform stable gate remains open.
+Reviewed 2026-10-29. Complete-platform0.21.0 is published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The0.22.0 release candidate remains a separate pending platform record.0.23.0/0.23.1 Windows-only releases retain their disclosed performance limits. No later Mac build or acceptance is available in this Windows session; the complete-platform stable gate remains open.
+
+## 0.24.0 UX reliability candidate
+
+The Windows0.24.0 UX candidate is separately tracked in [its ledger](releases/v0.24.0.md). Mac access is unavailable in this Windows session; no0.24.0 DMG or native acceptance is claimed. After Windows qualification/tagging, use that exact immutable tag and package/lock0.24.0, original key, fresh UI/server and native arm64 packaging. Qualify Activity dispatch/navigation/restart, source/generation refusal, byte-verified reimport choices, all-pages snapshot purge/cleanup, compact width/focus behavior and pre-paint/native Light/Dark/OLED/OS. Windows evidence does not establish Mac first-paint/window behavior or APFS/native integration. Only add an absent Mac pair under RELEASE-PROCESS after native qualification; never replace the Windows bytes or move its tag.
 
 ## 0.23.1 Windows-only performance and fidelity patch
 

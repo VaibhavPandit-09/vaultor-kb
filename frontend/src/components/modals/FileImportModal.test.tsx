@@ -5,6 +5,8 @@ import { afterEach, expect, it, vi } from 'vitest';
 import FileImportModal from './FileImportModal';
 import { prepareImport } from '../../lib/fileImports';
 import api from '../../lib/api';
+import { dispatchImport } from '../../lib/importActivity';
+vi.mock('../../lib/importActivity',()=>({dispatchImport:vi.fn(async()=>{})}));
 vi.mock('./AppModal',()=>({default:({children,footer}:{children:ReactNode;footer?:ReactNode})=><div>{children}{footer}</div>}));
 vi.mock('../CollectionDestination',()=>({default:()=>null}));
 vi.mock('../../lib/api',()=>({default:{put:vi.fn(),get:vi.fn(async()=>({data:{id:'workspace',generation:'generation'}}))}}));
@@ -18,14 +20,12 @@ it('shows a summary and batch defaults, retaining per-file overrides in disclosu
  fireEvent.change(screen.getByLabelText('Text conversion'),{target:{value:'originals'}});
  expect((screen.getByLabelText('Import one.md as') as HTMLSelectElement).value).toBe('file');
 });
-it('retries only failed rows with stable identities and captured destination',async()=>{
+it('dispatches the captured destination and closes review while the controller owns completion',async()=>{
  const session=await prepareImport([file('one.md','# One'),file('two.pdf','bytes')]);session.collection={id:'atlas',name:'Project Atlas'};
  vi.mocked(api.put).mockResolvedValueOnce({data:{id:session.rows[0].id}}).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({data:{id:session.rows[1].id}});
- const created=vi.fn();render(<FileImportModal session={session} onClose={vi.fn()} onResource={created}/>);
- await waitFor(()=>expect((screen.getByRole('button',{name:'Import'}) as HTMLButtonElement).disabled).toBe(false));fireEvent.click(screen.getByRole('button',{name:'Import'}));
- await waitFor(()=>expect(screen.getByText(/Some files need retry/)).toBeTruthy());fireEvent.click(screen.getByRole('button',{name:'Retry outstanding work'}));
- await waitFor(()=>expect(screen.getByText(/Import complete/)).toBeTruthy());expect(api.put).toHaveBeenCalledTimes(3);
- expect(vi.mocked(api.put).mock.calls[1][0]).toBe(vi.mocked(api.put).mock.calls[2][0]);for(const call of vi.mocked(api.put).mock.calls)expect((call[1] as FormData).get('collectionId')).toBe('atlas');expect(created).toHaveBeenCalledTimes(2);
+ const close=vi.fn();render(<FileImportModal session={session} onClose={close} onResource={vi.fn()}/>);
+ await waitFor(()=>expect((screen.getByRole('button',{name:'Import in background'}) as HTMLButtonElement).disabled).toBe(false));fireEvent.click(screen.getByRole('button',{name:'Import in background'}));
+ await waitFor(()=>expect(close).toHaveBeenCalledOnce());expect(dispatchImport).toHaveBeenCalledWith(session,session.rows,expect.objectContaining({destination:expect.objectContaining({id:'atlas'}),complete:false}),expect.anything());expect(api.put).not.toHaveBeenCalled();
 });
 it('groups missing asset warnings without mutating on close',async()=>{
  const session=await prepareImport([file('images.md','![Missing](relative.png)')]);const close=vi.fn();render(<FileImportModal session={session} onClose={close} onResource={vi.fn()}/>);

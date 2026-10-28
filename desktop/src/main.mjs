@@ -1,6 +1,7 @@
+import { deviceAppearance,windowBackground } from './appearance.mjs';
 import {linkedPublicError} from './linked/errors.mjs';
 import {linkedReferenceReader} from './linked/references.mjs';
-import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, ClipboardItem, dialog, Tray, nativeImage, Notification, powerMonitor, safeStorage } from 'electron';
+import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, ClipboardItem, dialog, Tray, nativeImage, Notification, powerMonitor, safeStorage, nativeTheme } from 'electron';
 import { randomUUID } from 'node:crypto';
 import { readFile,readdir,stat,writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -265,8 +266,13 @@ else {
     handle('desktop:clipboard', text => { if (typeof text !== 'string' || text.length > 1048576) throw new Error('Clipboard text exceeds 1 MiB.'); return clipboard.writeText(text); });
     const reopenAfterUpdate=await consumeUpdateReopen(resolve(app.getPath('userData'),'updates'),app.getVersion(),{packaged});
     let initialUpdateReopen=reopenAfterUpdate;
+    const appearance=await deviceAppearance(app.getPath('userData'));
+    handle('desktop:appearance',async value=>{if(!['os','light','dark','oled'].includes(value))throw Error('Invalid appearance');await appearance.set(value);window?.setBackgroundColor(windowBackground(appearance.theme,nativeTheme.shouldUseDarkColors));});
+    nativeTheme.on('updated',()=>{if(appearance.theme==='os')window?.setBackgroundColor(windowBackground('os',nativeTheme.shouldUseDarkColors));});
     const createWindow = () => {
-      window = new BrowserWindow({ icon: appIcon, frame: false, autoHideMenuBar: true, width: 1320, height: 900, minWidth: 600, minHeight: 480, show: !smokeDirectory && !process.argv.includes('--background') && !(process.platform==='darwin' && app.getLoginItemSettings().wasOpenedAtLogin), backgroundColor: '#0b1220', title: 'Vaultor', webPreferences: { preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false, plugins: true } });
+      const showInitially=!smokeDirectory && !process.argv.includes('--background') && !(process.platform==='darwin' && app.getLoginItemSettings().wasOpenedAtLogin);
+      window = new BrowserWindow({ icon: appIcon, frame: false, autoHideMenuBar: true, width: 1320, height: 900, minWidth: 600, minHeight: 480, show:false, backgroundColor:windowBackground(appearance.theme,nativeTheme.shouldUseDarkColors), title: 'Vaultor', webPreferences: { preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false, plugins: true } });
+      window.once('ready-to-show',()=>{if(showInitially&&!window.isDestroyed())window.show();});
       restoreUpdateWindow(window, activationRequested||initialUpdateReopen?['--reopen-after-update']:process.argv);activationRequested=false;initialUpdateReopen=false;
       window.setMenuBarVisibility(false);
       if(process.platform==='win32')window.setAppDetails({appId:'personal.vaultor.desktop',relaunchDisplayName:'Vaultor',appIconPath:fileURLToPath(new URL('../assets/vaultor.ico',import.meta.url)),relaunchCommand:'"'+process.execPath+'"'+(packaged?'':' "'+app.getAppPath()+'"')});
@@ -286,7 +292,10 @@ else {
       session.webRequest.onBeforeRequest((details, callback) => { const allowed = details.url.startsWith(UI_ORIGIN + '/') || details.url.startsWith('blob:' + UI_ORIGIN) || details.url.startsWith('data:') || details.url.startsWith('vaultor-file://cache/') || details.url.startsWith('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/') || details.url.startsWith('chrome://resources/'); callback({ cancel: !allowed }); });
       window.on('close', event => { if (!stoppedForQuit && tray) { event.preventDefault(); window.hide(); if (!closeExplained) { closeExplained=true; if (Notification.isSupported()) new Notification({title:'Vaultor is still running',body:'Use the tray icon to reopen Vaultor. Quit stops the local host.'}).show(); } } });
       window.on('closed', () => { transport.cancelAll(); window = undefined; });
-      void window.loadURL(UI_ORIGIN + '/');
+      if(process.env.VAULTOR_UX_RELIABILITY_CHECK==='1'){
+        const target=window;
+        void import('../scripts/native-ux-reliability-check.mjs').then(async({prepareUxFirstPaint})=>{await prepareUxFirstPaint(target.webContents,smokeDirectory);await target.loadURL(UI_ORIGIN+'/');}).catch(error=>{console.error('First-paint check failed',error.message);app.exit(1);});
+      }else void window.loadURL(UI_ORIGIN + '/');
       return window;
     };
     const windowMenu = () => Menu.buildFromTemplate([

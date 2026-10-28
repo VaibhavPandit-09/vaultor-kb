@@ -1,0 +1,33 @@
+# Background Activity
+
+Reviewed 2026-10-28 for the Windows0.24.0 candidate. Release qualification is recorded in [the release ledger](../desktop/releases/v0.24.0.md).
+
+## Ownership and interaction
+
+The application has one corner Activity control, clear of native window controls, in Library, editors, Trash, Settings and workspace management. Its anchored popover shows active/attention tasks before recent completions, workspace identity, phase, file/batch done/total where measurable, warnings and bounded details. Unknown-duration archive phases are indeterminate. Completed exports offer Save output only after a host artifact receipt proves positive bytes and SHA-256. A cancelled save leaves the prepared artifact available; preparation never claims a successful disk save.
+
+Ordinary file/folder review closes after durable dispatch. ZIP import-as-new/local-copy preparation moves into Activity, then requires review of the host preview before publication. Full/partial workspace export and confirmed merge/import-as-new/local-copy commits also run there. Destructive replacement keeps its existing explicit modal and save/generation barrier. Selection export flushes selected managed notes and prepares a partial ZIP; linked originals remain excluded. Simple row actions retain their existing immediate workflows.
+
+`lib/activity.ts` owns dispatch, retained metadata, admission and task execution outside React components. UI adapters subscribe through an external store. `importActivity`, `transferActivity` and `trashActivity` own their respective runners. Component unmounting/navigation does not complete or abandon a task. Recent tasks can be dismissed; attention remains discoverable when the popover is closed. Activity explicitly joins the deepest central dialog focus scope and its own anchored portal, preserving Escape priority and trigger restoration.
+
+Import progress names its measured unit: collections ready, files created, then notes linked; only complete creation/finalization becomes files imported. Pending batch links are not counted as actionable reference warnings before resolution. Expected image-preview ineligibility stays local while original bytes are retained; unexpected validator failures remain global diagnostics. Import writes coalesce at250ms into workspace/generation-scoped saved-content events. Dashboard reuses existing clean-note refresh/draft-conflict reconciliation rather than overwriting editor state or ignoring this client's own finalized links. It emits one metadata invalidation per batch, avoiding per-file query churn.
+
+## Scope, durability and admission
+
+Task metadata is stored in the existing profile-scoped IndexedDB store under workspace ID/generation/task UUID. It contains phases, counts, relative API receipt/output identifiers and warning details, without credentials, absolute native source/destination paths, original bytes or converted documents. File sources remain selected in memory; the ordinary import journal is authoritative for IDs and per-step recovery. Host transfer and lifecycle receipts remain authoritative for committed work.
+
+One long operation per renderer/source is admitted at a time; simultaneous starts refuse with an explanation. Browsing/editing do not join this admission rule. Existing host gates serialize snapshots/replacements against resource writes; snapshot revisions and per-item lifecycle receipts also protect against other clients. Pausing file import/Trash waits for the current request/batch. Pausing transfer monitoring does not cancel an already admitted host operation. Native file work and source switching/Quit retain their existing barriers.
+
+Minimizing retains execution. Reload/exit does not promise arbitrary continued file work. Restored running metadata becomes paused. Resume rechecks the current profile/connection epoch, live permissions and workspace generation. Host-backed jobs consult the same durable receipt after an explicit Resume/Retry; ordinary imports require source reselection after reload. Reselection restores the same map only when the source manifest matches. Former generations never replay into replacements. Other-generation records are retained privately, not adopted into the current workspace. No source bytes or capability tokens are restored from a renderer journal.
+
+## Expected maintenance
+
+Only HTTP409 with exact code `WORKSPACE_BUSY` is expected admission busy. The server rejects it before mutation dispatch. The shared API client waits in cancellable500ms intervals for at most30seconds, retaining the same input/operation identity and captured connection epoch. The task reports Waiting for workspace access. One informational local diagnostic retains method/route, server request ID and supplied lock owner/phase/duration; repeated retries do not raise the global warning banner. Other conflicts, authorization/generation errors, timeouts and genuine failures remain actionable. A stuck lock escalates globally at the bound. Mutations never automatically retry ambiguous network loss; the task's existing durable receipt/UUID controls an explicit retry.
+
+`WorkspaceGate` records exclusive ownership/phase/duration; transfer owners use operation UUIDs and search maintenance identifies its caller. Workspace admission records route/status/request ID through existing request logging and generation when supplied by the caller. This is process-local coordination for the existing single-server-per-data-directory model.
+
+## Limits
+
+New background export/merge and Trash snapshot APIs require advertised `backgroundOperations:1`; older protocol3 hosts remain readable but these commands refuse with an Update connected host message. Update the host to0.24.0 before using them. API/minimum-client protocol3 and archive schemas remain unchanged.
+
+Browser storage remains best effort outside strict admission/journal writes. Clearing it removes renderer task/source recognition metadata. There is no automatic source reacquisition, cross-tab distributed queue, background execution after the whole app exits, or arbitrary filesystem-job restart. Preview files may require reselection when a host receipt cannot prove staging. Restored failed tasks remain explicit review/retry states. Large archive phases can still temporarily make host reads busy; Activity does not remove host integrity locks. [Imports](IMPORTS.md), [resource lifecycle](RESOURCE-LIFECYCLE.md) and [transfers](WORKSPACE-TRANSFERS.md) own the exact operation safety contracts.

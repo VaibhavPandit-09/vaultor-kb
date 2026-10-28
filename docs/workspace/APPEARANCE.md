@@ -1,6 +1,12 @@
 # Appearance and OLED
 
-Reviewed 2026-10-15. Settings → Appearance chooses OS, Light, Dark or OLED for this device. OS remains the default and follows the system Light/Dark choice. The sidebar theme control cycles OS → Light → Dark → OLED → OS. Explicit themes do not change when the OS appearance changes.
+Reviewed 2026-10-28. Settings → Appearance chooses OS, Light, Dark or OLED for this device. OS remains the default and follows the system Light/Dark choice. The sidebar theme control cycles OS → Light → Dark → OLED → OS. Explicit themes do not change when the OS appearance changes.
+
+## First paint
+
+`public/theme-bootstrap.js` is a parser-blocking same-origin script before styles/application modules, compatible with desktop `script-src 'self'`. It reads `vaultor-device-presentation-v1`, normalizes Light/Dark/OLED or OS fallback, and applies root classes, data-theme, color-scheme and a matching background before React or host settings. Missing/corrupt/blocked storage follows OS. The existing SettingsProvider keeps the same device isolation, persistence/migration and OS-change listener. Initial/programmatic application has no reveal; intentional user choices retain the coordinated transition below.
+
+Desktop `appearance.mjs` mirrors only the normalized device theme in private app-data `appearance.json`, written atomically; it never enters archives. BrowserWindow starts hidden with the corresponding OS/Light/Dark/OLED background and shows on ready-to-show. Bootstrap/provider send the normalized preference through a constrained native appearance call; OS mode follows `nativeTheme` changes. The renderer cache remains authoritative for renderer presentation; stale/missing native cache cannot force another theme. Native cold/warm evidence and early-frame captures belong in the release ledger; unit tests alone do not certify a perceptible flash is absent.
 
 ## True-black surfaces
 

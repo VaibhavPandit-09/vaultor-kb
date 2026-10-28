@@ -48,6 +48,14 @@ test('file dialog locks release on cancellation and reject overlapping dialogs',
   try{const pending=files.begin({token:'one',filename:'note.md'});assert.equal(files.dialogPending,true);await assert.rejects(files.begin({token:'one',filename:'note.md'}),/dialog/);release({canceled:true});assert.equal((await pending).outcome,'cancelled');assert.equal(files.dialogPending,false);}finally{await files.reset();await rm(root,{recursive:true,force:true});}
 });
 
+test('repeated folder reviews do not exhaust the separate regular-file picker allowance',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'vaultor-picker-retention-')),folder=join(root,'docs'),zip=join(root,'export.zip');await mkdir(folder);
+ await Promise.all(Array.from({length:137},(_,n)=>writeFile(join(folder,`note-${n}.md`),'# Source')));await writeFile(zip,'PK fixture');
+ const files=new NativeFiles({directory:join(root,'cache'),owner:()=>({token:'one'}),dialogs:{open:async()=>({canceled:false,filePaths:[zip]})}});
+ try{await files.pickTree(folder,'one');await files.pickTree(folder,'one');const [selected]=await files.pick({token:'one',accept:'.zip'});assert.equal(selected.name,'export.zip');assert.equal((await files.selected(selected.id,'one')).size,10);}
+ finally{await files.reset();await rm(root,{recursive:true,force:true});}
+});
+
 test('login is opt-in, persisted, OS denial visible and failed persistence rolls registration back',async()=>{
   const root=await mkdtemp(join(tmpdir(),'vaultor-login-'));let enabled=false,denied=false,registrations=0;
   const app={getLoginItemSettings:()=>({openAtLogin:enabled,executableWillLaunchAtLogin:enabled&&!denied}),setLoginItemSettings:value=>{registrations++;enabled=value.openAtLogin;}};

@@ -25,6 +25,12 @@ public class ResourceController {
     private final ResourceLifecycleService lifecycle;
     private final ResourceReferences references;
     private final LinkedReferences linkedReferences;
+    private final TrashPurgeService trashPurge;
+    @PutMapping("/trash/snapshots/{id}") public TrashPurgeService.Status trashSnapshot(@PathVariable String id){return trashPurge.preview(id);}
+    @GetMapping("/trash/snapshots/{id}") public TrashPurgeService.Status trashSnapshotStatus(@PathVariable String id){return trashPurge.get(id);}
+    @DeleteMapping("/trash/snapshots/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void trashSnapshotCancel(@PathVariable String id){trashPurge.cancelPreview(id);}
+    @PostMapping("/trash/snapshots/{id}/confirm") public TrashPurgeService.Status trashConfirm(@PathVariable String id,@RequestBody TrashPurgeService.Confirmation input){return trashPurge.confirm(id,input);}
+    @PostMapping("/trash/snapshots/{id}/step") public TrashPurgeService.Status trashStep(@PathVariable String id){return trashPurge.step(id);}
     @PutMapping("/linked") public List<ResourceDto> linkedBatch(@RequestBody List<LinkedReferences.Registration> input){return linkedReferences.registerMany(input).stream().map(this::dto).toList();}
     @PutMapping("/linked/{id}") public ResourceDto linked(@PathVariable String id,@RequestBody LinkedReferences.Input input){return dto(linkedReferences.register(id,input));}
     @GetMapping("/{id}/references") public ResourceReferences.Page references(@PathVariable String id,@RequestParam(defaultValue="incoming") String direction,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="30") int size) {return references.list(id,direction,page,size);}

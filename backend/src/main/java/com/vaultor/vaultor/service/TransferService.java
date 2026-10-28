@@ -86,7 +86,7 @@ public class TransferService {
     public Operation get(String id) {
         UUID.fromString(id);
         var active=activeStatus.get(id);if(active!=null)return active;
-        if(!gate.enterRequest())throw new ResponseStatusException(HttpStatus.CONFLICT,"Workspace maintenance is in progress. Retry shortly.");
+        if(!gate.enterRequest())throw new com.vaultor.vaultor.controller.ApiErrors.WorkspaceBusy(gate.diagnostic());
         try{return dto(operations.findById(id).orElseThrow());}finally{gate.leaveRequest();}
     }
     public long activity() {
@@ -129,7 +129,7 @@ public class TransferService {
         if (!"workspace".equals(scope) || !"zip".equals(format)) throw new IllegalArgumentException("Note exports require noteId");
         exporters.require(scope,format); var op=create("export",requestedId);
         op.setOutputFilename("workspace.zip");op.setOutputMediaType("application/zip");operations.save(op);
-        enqueue(op,()->gate.exclusive(()->{if(generation!=null)exportGeneration(generation);exportArchive(op);}),false); return dto(op);
+        enqueue(op,()->gate.exclusive(op.getId(),"export snapshot",()->{if(generation!=null)exportGeneration(generation);exportArchive(op);}),false); return dto(op);
     }
     public record ExportRequest(String generation,String scope,List<String> ids,int depth,String format) {}
     public record ExportReceipt(int version,String id,String generation,ExportRequest request,Operation operation,long bytes,String sha256,JsonNode coverage) {}
@@ -255,9 +255,11 @@ public class TransferService {
             exporters.require("workspace","zip").write(snapshot,binaries,destination);
         return snapshot;
     }
-    public Preview preview(MultipartFile file) throws Exception {
+    public Preview preview(MultipartFile file) throws Exception {return preview(file,null);}
+    public Preview preview(MultipartFile file,String generation) throws Exception {
+        if(generation!=null)exportGeneration(generation);
         if(file.getSize()>maxArchive) throw new IllegalArgumentException("Archive exceeds "+maxArchive+" bytes");
-        var op=create("import"); Path dir=directory(op.getId());Files.createDirectories(dir);
+        var op=create("import");op.setExpectedGeneration(generation); Path dir=directory(op.getId());Files.createDirectories(dir);
         try {
             long total=0;int count=0;Set<String> names=new HashSet<>();
             try(var zip=new ZipInputStream(file.getInputStream())) {
@@ -315,16 +317,20 @@ public class TransferService {
         }
         if(w.organization()!=null) OrganizationService.validate(w.organization(),ids);
     }
-    public synchronized Operation commit(String id,String mode) {
+    public Operation commit(String id,String mode){return commit(id,mode,null);}
+    public synchronized Operation commit(String id,String mode,String generation) {
+        if(generation!=null)exportGeneration(generation);
         var op=operations.findById(id).orElseThrow();
+        String capturedGeneration=op.getExpectedGeneration()!=null?op.getExpectedGeneration():generation;
+        if(capturedGeneration!=null)exportGeneration(capturedGeneration);
         if(!List.of("merge","replace").contains(mode)) throw new IllegalArgumentException("Choose merge or replace");
         if(!op.getKind().equals("import")) throw new IllegalArgumentException("Not an import");
         if(op.getMode()!=null) { if(!mode.equals(op.getMode())) throw new IllegalArgumentException("Import already committed with another mode");return dto(op); }
         if(!op.getStatus().equals("PREVIEW")) throw new IllegalArgumentException("Import is not ready");
         try{if("replace".equals(mode)&&isPartial(op)&&resources.count()>0)throw new IllegalArgumentException("A partial package cannot replace a populated workspace. Merge it or create a separate workspace.");}catch(IOException e){throw new IllegalStateException("Import metadata unavailable",e);}
-        op.setMode(mode);phase(op,"QUEUED","queued",0);
+        op.setMode(mode);op.setExpectedGeneration(capturedGeneration);phase(op,"QUEUED","queued",0);
         enqueue(op,()-> {
-            gate.exclusive(()->apply(op));
+            gate.exclusive(op.getId(),"import commit",()->{if(op.getExpectedGeneration()!=null)exportGeneration(op.getExpectedGeneration());apply(op);});
             // Reconcile again after the mutation gate opens, including interrupted cleanup.
             if(List.of("CLEANUP","SUCCEEDED").contains(operations.findById(op.getId()).orElseThrow().getStatus()))
                 changeFeed.committed("workspace",List.of(),op.getRequestId());

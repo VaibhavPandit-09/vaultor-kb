@@ -30,6 +30,8 @@ Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0
 
 ## Desktop delivery
 
+- [Windows0.24.0 release](desktop/releases/v0.24.0.md): Activity, safe repeat imports/all-pages Trash, one-row compact headers and first-paint themes; exact qualification/publication status.
+
 - [Windows0.23.1 release](desktop/releases/v0.23.1.md): published performance/fidelity patch, packaged native acceptance, original-key public updater verification and remaining large-document limits.
 
 - [Windows0.23.0 release](desktop/releases/v0.23.0.md): explicitly authorized Windows-only publication, verified public updater and disclosed failed1MiB performance qualification.
@@ -49,6 +51,8 @@ Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0
 - [MAC-HANDOFF](desktop/MAC-HANDOFF.md): Current exact-source native Mac blockers/qualification; old tags remain evidence.
 
 ## Workspace behavior
+
+- [ACTIVITY](workspace/ACTIVITY.md): Background task ownership, scoped receipts, admission, pause/restart, verified outputs and typed maintenance waits.
 
 - [LINKED-SOURCES](workspace/LINKED-SOURCES.md): Windows external folders, bounded rich-text fidelity, explicit Save, private recovery and reference-only portability.
 - [IMPORTS](workspace/IMPORTS.md): Ordinary file/folder acquisition, batch relationship resolution, limits, resume and UI disclosure patterns.

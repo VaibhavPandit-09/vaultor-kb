@@ -1,7 +1,7 @@
 import { getConnection, transport } from './platform';
 export const CLIENT_PROTOCOL = 3;
 export const CLIENT_BUILD = import.meta.env.VITE_BUILD_VERSION || 'desktop-d7';
-export type ServerCapabilities = { serverBuild: string; apiProtocolVersion: number; minimumClientProtocolVersion: number; authentication: boolean; multiWorkspace?:boolean; workspaceImports?:boolean; reviews?:number; workspaceArchiveVersion?:number };
+export type ServerCapabilities = { serverBuild: string; apiProtocolVersion: number; minimumClientProtocolVersion: number; authentication: boolean; multiWorkspace?:boolean; workspaceImports?:boolean; backgroundOperations?:number; reviews?:number; workspaceArchiveVersion?:number };
 let accepted: { epoch: number; capabilities: ServerCapabilities } | undefined;
 let pending: { epoch: number; promise: Promise<ServerCapabilities> } | undefined;
 export function validateCapabilities(value: ServerCapabilities) {
@@ -22,3 +22,5 @@ export function ensureCompatible(): Promise<ServerCapabilities> {
   }).finally(() => { if (pending?.epoch === epoch) pending = undefined; });
   pending = { epoch, promise }; return promise;
 }
+
+export async function requireBackgroundOperations(){if((await ensureCompatible()).backgroundOperations!==1)throw Error('Update the connected host to Vaultor 0.24.0 or later for background exports, merge and Empty Trash.');}

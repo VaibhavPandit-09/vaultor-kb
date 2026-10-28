@@ -15,6 +15,10 @@ public class ApiErrors {
     @ExceptionHandler(org.springframework.web.context.request.async.AsyncRequestNotUsableException.class)
     public void disconnected(org.springframework.web.context.request.async.AsyncRequestNotUsableException ignored) {}
     public static class RevisionConflict extends RuntimeException { public RevisionConflict() { super("This note changed elsewhere. Keep your draft and resolve the conflict before saving."); } }
+    public static class WorkspaceBusy extends ResponseStatusException {
+        public final com.vaultor.vaultor.service.WorkspaceGate.Busy busy;
+        public WorkspaceBusy(com.vaultor.vaultor.service.WorkspaceGate.Busy busy){super(HttpStatus.CONFLICT,"Workspace maintenance is in progress. Retry shortly.");this.busy=busy;}
+    }
     public static class FieldError extends IllegalArgumentException {
         public final String field;
         public FieldError(String field, String detail) { super(detail); this.field=field; }
@@ -28,13 +32,15 @@ public class ApiErrors {
             : e instanceof IllegalArgumentException || e instanceof HttpMessageNotReadableException || e instanceof MethodArgumentTypeMismatchException || e instanceof org.springframework.web.bind.MissingRequestHeaderException ? 400 : 500;
         String code = switch(status) { case 428 -> "NOTE_REVISION_REQUIRED"; case 429 -> "RATE_LIMITED"; case 412 -> "NOTE_REVISION_CONFLICT"; case 400 -> "INVALID_REQUEST"; case 404 -> "NOT_FOUND"; case 405 -> "ACTION_RETIRED"; case 410 -> "RESOURCE_TRASHED"; case 426 -> "CLIENT_UPDATE_REQUIRED"; case 409 -> "CONFLICT"; case 413 -> "UPLOAD_TOO_LARGE"; default -> "INTERNAL_ERROR"; };
         if(e instanceof com.vaultor.vaultor.host.AccessFailure a) code=a.code;
+        if(e instanceof WorkspaceBusy)code="WORKSPACE_BUSY";
         String detail = status == 500 ? "Unexpected server error. Use the request ID to find details in logs."
             : revisionConflict ? "This note changed elsewhere. Keep your draft and resolve the conflict before saving."
             : e instanceof HttpMessageNotReadableException ? "Malformed JSON request body"
             : e instanceof ResponseStatusException r ? r.getReason() : e.getMessage();
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(status), detail == null ? code : detail);
         problem.setProperty("code", code); problem.setProperty("requestId", MDC.get("requestId")); problem.setProperty("fieldErrors", e instanceof FieldError f ? Map.of(f.field, List.of(f.getMessage())) : Map.of());
-        if (status >= 500) log.error("request failed code={}", code, e); else log.warn("request rejected code={} detail={}", code, detail);
+        if(e instanceof WorkspaceBusy busy)problem.setProperty("busy",busy.busy);
+        if (status >= 500) log.error("request failed code={}", code, e); else if(code.equals("WORKSPACE_BUSY"))log.info("request waiting code={} detail={}",code,detail);else log.warn("request rejected code={} detail={}", code, detail);
         return ResponseEntity.status(status).body(problem);
     }
 }

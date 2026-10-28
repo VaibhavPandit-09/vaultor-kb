@@ -10,6 +10,7 @@ import java.util.*;
 public class TransferController {
     private final TransferService transfers;
     private final ExporterRegistry registry;
+    @PutMapping("/exports/requests/{id}") public TransferService.ExportReceipt prepareExport(@PathVariable String id,@RequestBody TransferService.ExportRequest input) throws Exception {return transfers.prepareCompanionExport(id,input,"workspace-activity");}
     @GetMapping("/operations/activity") public Map<String,Long> activity() { return Map.of("active",transfers.activity()); }
     @PostMapping("/exports") public TransferService.Operation export(@RequestBody Map<String,String> body) {
         if(!List.of("single","linked").contains(body.getOrDefault("links","single")))throw new IllegalArgumentException("links must be single or linked");
@@ -18,12 +19,12 @@ public class TransferController {
     }
     @GetMapping("/exports/notes/{id}/preview") public NoteExportGraph.Preview previewNote(@PathVariable String id) { return transfers.previewNote(id); }
     @GetMapping("/export-formats") public List<ExporterRegistry.Format> formats() { return registry.available(); }
-    @PostMapping("/imports/preview") public TransferService.Preview preview(@RequestParam MultipartFile file) throws Exception { return transfers.preview(file); }
-    @PostMapping("/imports/{id}/commit") public TransferService.Operation commit(@PathVariable String id,@RequestBody Map<String,String> body) {
+    @PostMapping("/imports/preview") public TransferService.Preview preview(@RequestParam MultipartFile file,@RequestHeader(value="X-Vaultor-Generation",required=false) String generation) throws Exception { return transfers.preview(file,generation); }
+    @PostMapping("/imports/{id}/commit") public TransferService.Operation commit(@PathVariable String id,@RequestBody Map<String,String> body,@RequestHeader(value="X-Vaultor-Generation",required=false) String generation) {
         String mode=body.get("mode"); if("replace".equals(mode) && !"replace".equals(body.get("confirmation"))) throw new IllegalArgumentException("Replacement requires confirmation: replace");
-        return transfers.commit(id,mode);
+        return transfers.commit(id,mode,generation);
     }
-    @GetMapping("/operations/{id}") public TransferService.Operation operation(@PathVariable String id) { return transfers.get(id); }
+    @GetMapping("/operations/{id}") public TransferService.Operation operation(@PathVariable String id) {return transfers.get(id);}
     @PostMapping("/operations/{id}/cancel") public TransferService.Operation cancel(@PathVariable String id) { return transfers.cancel(id); }
     @GetMapping("/exports/{id}/download") public ResponseEntity<FileSystemResource> download(@PathVariable String id) {
         var file=transfers.download(id);var op=transfers.get(id);

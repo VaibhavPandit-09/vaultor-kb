@@ -4,6 +4,8 @@ import { getConnection } from './platform';
 import { IndexedSessionStore, type Identity } from './sessionStore';
 import { organizationChanged, type OrganizationItem } from './organization';
 import type { Resource } from '../types';
+import { importFileChunk } from './desktop';
+import { reportError } from './diagnostics';
 
 export function sourcePath(value:string):string {
   if(!value||value.length>2048||(value.includes('\\')||[...value].some(c=>c.charCodeAt(0)<32))||value.startsWith('/')||/^[a-z]:/i.test(value))throw new Error('Invalid source path.');
@@ -38,24 +40,43 @@ export function referenceResolver(rows:ImportRow[],from:string):(href:string)=>I
     return {id:target.id,type:target.asNote?'note':'file',image:target.imageValid!==false&&!target.asNote&&/\.(png|jpe?g|gif|webp)$/i.test(target.file.name)&&target.file.size<=20*1024*1024,fragment};
   };
 }
-type SavedRow=Omit<ImportRow,'file'> & {name:string;size:number;modified:number};
-export type FolderJournal={key:string;identity:Identity;signature:string;rows:SavedRow[];directories:Record<string,{id:string;name:string;parentId?:string;done?:boolean}>;destination?:{id:string;name:string};includeRoot:boolean;merge:boolean;complete:boolean};
+type SavedRow=Omit<ImportRow,'file'|'doc'|'sourceText'> & {name:string;size:number;modified:number};
+export type FolderJournal={key:string;identity:Identity;signature:string;rows:SavedRow[];directories:Record<string,{id:string;name:string;parentId?:string;done?:boolean}>;destination?:{id:string;name:string};includeRoot:boolean;merge:boolean;complete:boolean;legacyVerification?:boolean;legacySignature?:string};
 export async function folderJournal(session:ImportSession) {
-  const support=await api.get<{hierarchy:number}>('/collections/capabilities');if(support.data.hierarchy!==1)throw new Error('Update the connected host for folder imports.');
-  const {data:identity}=await api.get<Identity>('/workspace/identity');
-  const signature=JSON.stringify([session.folder?folderPaths(session):[],session.rows.map(r=>[r.path,r.file.name,r.file.size,r.file.lastModified])]);
+  const epoch=getConnection().epoch;
+  if(session.sourceEpoch!==undefined&&session.sourceEpoch!==epoch)throw Error('Connection changed since file selection. Reselect in the original source.');
+  const support=await api.get<{hierarchy:number}>('/collections/capabilities',{connectionEpoch:epoch});if(support.data.hierarchy!==1)throw new Error('Update the connected host for folder imports.');
+  const {data:identity}=await api.get<Identity>('/workspace/identity',{connectionEpoch:epoch});
+  const hashes=[];
+  for(const row of session.rows)hashes.push([row.path,row.file.name,row.file.size,await sourceFingerprint(row.file)]);
+  if(epoch!==getConnection().epoch)throw Error('Connection changed during source verification.');
+  const signature=JSON.stringify([session.folder?folderPaths(session):[],hashes]);
   const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(signature)))].map(n=>n.toString(16).padStart(2,'0')).join('');
   const key=`folder-import:${identity.id}:${identity.generation}:${hash}`;
-  const store=new IndexedSessionStore();const previous=await store.get<FolderJournal>(key);
-  return {key,identity,signature,previous:previous&&!previous.complete?previous:undefined,store};
+  const store=new IndexedSessionStore();const manifests=await store.values<FolderJournal>(`folder-import:${identity.id}:${identity.generation}:`);
+  const matching=manifests.filter(value=>value.signature===signature);
+  const legacySignature=JSON.stringify([session.folder?folderPaths(session):[],session.rows.map(row=>[row.path,row.file.name,row.file.size,row.file.lastModified])]);
+  const legacy=manifests.find(value=>!value.complete&&(value.signature===legacySignature||value.legacySignature===legacySignature));
+  const previous=matching.find(value=>!value.complete)??(legacy?{...legacy,legacyVerification:true}:undefined),completed=matching.find(value=>value.complete);
+  const selectedPaths=new Set(session.rows.map(row=>row.path)),selectedDirectories=new Set(session.folder?folderPaths(session):[]);
+  const related=Boolean(completed)||manifests.some(value=>value.rows.some(row=>selectedPaths.has(row.path))||Object.keys(value.directories).some(path=>selectedDirectories.has(path)));
+  return {key:key+':'+crypto.randomUUID(),identity,epoch,signature,previous,completed,related,store};
+}
+/** Chunk digests bound memory for native tickets and large originals. Equal
+ * metadata alone never proves byte equality. No original bytes are journaled. */
+export async function sourceFingerprint(file:File){
+ const digest=async(bytes:Uint8Array)=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes as Uint8Array<ArrayBuffer>))].map(n=>n.toString(16).padStart(2,'0')).join('');
+ const chunks:string[]=[];
+ for(let offset=0;offset<file.size;offset+=1024*1024)chunks.push(await digest(await importFileChunk(file,offset,Math.min(1024*1024,file.size-offset))));
+ return digest(new TextEncoder().encode(JSON.stringify([file.size,chunks])));
 }
 export function restoreFolderRows(journal:FolderJournal,rows:ImportRow[]) {
-  return rows.map((row,i)=>({...row,...journal.rows[i],file:row.file}));
+  return rows.map((row,i)=>({...row,...journal.rows[i],doc:row.doc,sourceText:row.sourceText,file:row.file,...(journal.legacyVerification?{status:'ready' as const}:{} )}));
 }
 export async function runFolderImport(session:ImportSession,rows:ImportRow[],journal:FolderJournal,store:IndexedSessionStore,cancel:()=>boolean,update:(phase:string)=>void,onResource:(r:Resource)=>void) {
-  const epoch=getConnection().epoch;const request={connectionEpoch:epoch,headers:{'X-Vaultor-Generation':journal.identity.generation}};
-  const persist=async()=>{journal.rows=rows.map(({file,...row})=>({...row,name:file.name,size:file.size,modified:file.lastModified}));await store.put(journal.key,journal);};
-  const check=async()=>{if(epoch!==getConnection().epoch)throw new Error('Connection changed; resume in the original workspace.');const {data}=await api.get<Identity>('/workspace/identity');if(data.id!==journal.identity.id||data.generation!==journal.identity.generation)throw new Error('Workspace changed; this import cannot continue here.');};
+  const epoch=getConnection().epoch;const waiting=()=>update('Waiting for workspace access');const request={connectionEpoch:epoch,headers:{'X-Vaultor-Generation':journal.identity.generation},onWorkspaceBusy:waiting};
+  const persist=async()=>{journal.rows=rows.map(({file,...row})=>{delete row.doc;delete row.sourceText;return {...row,name:file.name,size:file.size,modified:file.lastModified};});await store.put(journal.key,journal);};
+  const check=async()=>{if(epoch!==getConnection().epoch)throw new Error('Connection changed; resume in the original workspace.');const {data}=await api.get<Identity>('/workspace/identity',request);if(data.id!==journal.identity.id||data.generation!==journal.identity.generation)throw new Error('Workspace changed; this import cannot continue here.');};
   await persist();await check();
   const paths=session.folder?folderPaths(session):[],root=session.folder?.name??'';
   for(const path of paths){if(cancel())return;await check();if(!journal.includeRoot&&path===root)continue;
@@ -76,7 +97,7 @@ export async function runFolderImport(session:ImportSession,rows:ImportRow[],jou
   for(const row of rows){if(cancel())return;if(row.status==='done')continue;await check();
     row.destinationId=journal.directories[(row.path??'').split('/').slice(0,-1).join('/')]?.id??journal.destination?.id;
     row.status='pending';row.error=undefined;await persist();update('Importing resources');
-    try{if(row.asNote&&(!row.doc||row.parseError))throw new Error(row.parseError??'Cannot convert file.');row.started=true;await persist();const resource=await importResource(row.id,row.file,row.asNote?row.doc:undefined,row.destinationId,undefined,{generation:journal.identity.generation,epoch});row.status='done';row.revision=resource.revision;if(!row.asNote&&/\.(png|jpe?g|gif|webp)$/i.test(row.file.name)){try{await api.get('/resources/'+row.id+'/image-info',request);row.imageValid=true;}catch(error){const status=(error as {response?:{status:number}}).response?.status;if(status===400||status===415||status===422)row.imageValid=false;else throw error;}}onResource(resource);}
+    try{if(row.asNote&&(!row.doc||row.parseError))throw new Error(row.parseError??'Cannot convert file.');row.started=true;await persist();const resource=await importResource(row.id,row.file,row.asNote?row.doc:undefined,row.destinationId,undefined,{generation:journal.identity.generation,epoch,waiting});row.status='done';row.revision=resource.revision;if(!row.asNote&&/\.(png|jpe?g|gif|webp)$/i.test(row.file.name)){try{await api.get('/resources/'+row.id+'/image-info',{...request,backgroundDiagnostic:true});row.imageValid=true;}catch(error){const status=(error as {response?:{status:number}}).response?.status;if(status===400||status===415||status===422)row.imageValid=false;else {reportError('import.image-validation',error);throw error;}}}onResource(resource);}
     catch(error){row.status='failed';row.error=error instanceof Error?error.message:String(error);}
     await persist();update('Importing resources');
   }
@@ -87,5 +108,5 @@ export async function runFolderImport(session:ImportSession,rows:ImportRow[],jou
     catch(error){row.error=error instanceof Error?error.message:String(error);}
     await persist();
   }
-  journal.complete=rows.every(r=>!r.error);await persist();update(journal.complete?'Import complete':'Some relationships need retry');
+  journal.complete=rows.every(r=>!r.error);if(journal.complete)delete journal.legacySignature;await persist();update(journal.complete?'Import complete':'Some relationships need retry');
 }

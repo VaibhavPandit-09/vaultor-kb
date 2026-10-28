@@ -10,6 +10,7 @@ public class TransferOperation {
     private String status="QUEUED";
     private String phase="queued";
     private String mode;
+    private String expectedGeneration;
     private int progress;
     private Integer resourceCount;
     private Integer fileCount;

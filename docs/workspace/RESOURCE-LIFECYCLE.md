@@ -1,6 +1,6 @@
 # Resource actions, Trash and recovery
 
-Reviewed 2026-10-23 against current protocol3/full5/partial6; lifecycle was introduced in0.5.0. This owns lifecycle semantics; [Library](LIBRARY.md), [sessions](SESSIONS.md), [API](../development/API.md) and [release delivery](../desktop/RELEASE-PROCESS.md) own their respective contracts.
+Reviewed 2026-10-28 against current protocol3 and Windows0.24.0 candidate; lifecycle was introduced in0.5.0. This owns lifecycle semantics; [Library](LIBRARY.md), [sessions](SESSIONS.md), [Activity](ACTIVITY.md), [API](../development/API.md) and [release delivery](../desktop/RELEASE-PROCESS.md) own their respective contracts.
 
 ## Actions and distinctions
 
@@ -12,6 +12,16 @@ Resource rows, sidebar shortcuts, note headers and file previews share an Action
 - Delete permanently exists only inside Trash. It removes the original, never rewrites referring documents. Their link labels/image placements remain identifiable broken references.
 
 Trash has one bounded, metadata-only title-search list, 100 rows per UI page, checkbox selection, Restore and confirmed Delete permanently. Normal Library, Recent, pins, resource pickers, title/content search and membership counts exclude Trash. Tags and empty collections themselves remain discoverable. Nothing is automatically purged.
+
+## Empty Trash snapshots
+
+Empty Trash… is a discoverable secondary header action. Its separate confirmation reviews the exact total across every page, regardless of search/type filters, distinct saved referencing-note count and ownership consequences. Linked external originals are never deleted. New arrivals after snapshot creation are excluded. The approval click durably creates an Activity task before sending confirmation; navigation/minimization remain available.
+
+`TrashPurgeService` freezes metadata-only IDs/revisions and per-item purge UUIDs in the local `trash_purges` receipt table. Existing cleanup-pending resources reuse their original lifecycle identity. A snapshot is bound to its workspace generation, requires a separate matching count/generation confirmation, and processes at most50 items per request through `ResourceLifecycleService`. Changed/restored resources fail their original revision check. Each batch checkpoints results; if a response/process is lost between item cleanup and checkpoint, existing lifecycle receipts replay the same outcome. Unfinished cleanup remains unavailable and retryable, never restored or falsely counted as purged. Partial failures retain per-resource evidence; a new reviewed snapshot is required to adopt changed revisions.
+
+Routes under `/resources/trash/snapshots/{UUID}`: PUT creates/replays preview, GET reads status, DELETE discards only an unconfirmed preview, POST `/confirm` approves the exact count/generation, and POST `/step` advances/retries a bounded batch. Status contains total/done/pending/failures, not resource bodies. All paths retain normal owner/paired-workspace authorization and generation admission. JDBC receipt reads/writes join explicit transactions to reuse the workspace's single connection inside HTTP open-view sessions. Confirmation/cleanup do not borrow a second connection.
+
+Limits are20,000 targets per snapshot and128 retained snapshots per workspace storage, with safe refusal at the bound. Explicitly cancelled unconfirmed reviews are discarded; confirmed retry evidence is retained without automatic eviction. Old-generation receipts refuse replay and are excluded from portable archives. Interrupted renderer tasks resume only after explicit approval/Retry and a live source/generation check; host per-item cleanup remains authoritative.
 
 ## Recursive collection deletion
 

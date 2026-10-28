@@ -11,6 +11,7 @@ export async function runChromeSmoke(window, directory, owned, updates) {
   const evaluate = code => window.webContents.executeJavaScript(code);
   const wait = async (code, label) => { for (let i = 0; i < 500; i++) { if (await evaluate(code).catch(() => false)) return; await new Promise(r => setTimeout(r, 100)); } throw new Error(label + ': ' + await evaluate('document.body.innerText')); };
   await wait("Boolean(document.querySelector('.library-view'))", 'Local workspace');
+  if(process.env.VAULTOR_UX_RELIABILITY_CHECK==='1'){const {runUxReliabilityCheck}=await import('./native-ux-reliability-check.mjs');await runUxReliabilityCheck(window,directory,owned);return;}
   if(process.env.VAULTOR_PERF_TEST==='1'){
     try{const {runPerfTest}=await import('./native-perf-test.mjs');await runPerfTest(window,directory);}
     catch(error){await writeFile(join(directory,'perf-error.json'),JSON.stringify({message:error.message,stack:error.stack}));throw error;}

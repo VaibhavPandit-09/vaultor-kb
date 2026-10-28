@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import {StrictMode,useState} from 'react';
+import {StrictMode,useState,useRef,useLayoutEffect} from 'react';
 import {createPortal} from 'react-dom';
 import {cleanup,fireEvent,render,screen,waitFor,within} from '@testing-library/react';
 import {afterEach,beforeEach,expect,it,vi} from 'vitest';
 import AppModal from './AppModal';
 import LibraryPopover from '../LibraryPopover';
 import {EscapeManagerProvider} from '../../lib/escape/EscapeManagerProvider';
+import {useTopDialogScope} from '../../lib/dialogFocus';
 vi.mock('../../lib/settings',()=>({useOptionalSettings:()=>null}));
 beforeEach(()=>{
  vi.spyOn(HTMLElement.prototype,'getClientRects').mockImplementation(()=>[{width:10,height:10}] as unknown as DOMRectList);
@@ -33,6 +34,11 @@ it('honors descendant autofocus, wraps Tab, contains external focus and restores
  expect(fireEvent.keyDown(close,{key:'Tab',shiftKey:true})).toBe(false);expect(document.activeElement).toBe(commit);
  screen.getByText('Outside').focus();expect(dialog.contains(document.activeElement)).toBe(true);
  fireEvent.click(close);await waitFor(()=>expect(document.activeElement).toBe(screen.getByText('Launch')));
+});
+it('lets a registered global Activity control join modal Tab order in both directions',()=>{
+ function GlobalControl(){const scope=useTopDialogScope(),root=useRef<HTMLDivElement>(null);useLayoutEffect(()=>{const node=root.current;if(!node||!scope)return;scope.portals.add(node);return()=>{scope.portals.delete(node);};},[scope]);return <div ref={root}><button>Global Activity</button></div>;}
+ render(<EscapeManagerProvider><AppModal open title="Settings" onClose={()=>{}} footer={<button>Save settings</button>}><input aria-label="Setting"/></AppModal><GlobalControl/></EscapeManagerProvider>);
+ const save=screen.getByText('Save settings'),activity=screen.getByText('Global Activity'),close=screen.getByLabelText('Close modal');save.focus();fireEvent.keyDown(save,{key:'Tab'});expect(document.activeElement).toBe(activity);fireEvent.keyDown(activity,{key:'Tab',shiftKey:true});expect(document.activeElement).toBe(save);activity.focus();fireEvent.keyDown(activity,{key:'Tab'});expect(document.activeElement).toBe(close);
 });
 it('lets the deepest dialog own focus and Escape, then restores its parent trigger',async()=>{
  await launch();const trigger=screen.getByText('Open child');trigger.focus();fireEvent.click(trigger);

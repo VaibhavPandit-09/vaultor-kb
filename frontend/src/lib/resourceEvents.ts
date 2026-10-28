@@ -1,6 +1,7 @@
 export type ResourceChange =
   | { kind: 'opened'; id: string; phase: 'pending' | 'settled' }
   | { kind: 'metadata'; ids?: string[]; membershipChanged?: boolean }
+  | { kind: 'imported'; ids:string[];workspaceId:string;generation:string }
   | { kind: 'organization'; entity: 'tag' | 'collection' | 'all'; resourceIds?: string[]; deletedCollectionIds?: string[]; survivingParentId?: string|null }
   | { kind: 'pins'; entity: 'resource' | 'collection'; id: string; favorite?: boolean }
   | { kind: 'workspace' };
@@ -15,6 +16,7 @@ export function subscribeResourceChanges(listener: (change: ResourceChange) => v
 }
 export type RefreshScope = 'resources' | 'recent' | 'tags' | 'collections' | 'pins';
 export function affectsScope(change: ResourceChange, scope: RefreshScope) {
+  if(change.kind==='imported')return false; // Dashboard reconciles saved content, then invalidates metadata once.
   if (change.kind === 'workspace') return true;
   if (change.kind === 'opened') return scope === 'recent';
   if (scope === 'pins') return change.kind === 'pins' || change.kind === 'metadata' || change.kind === 'organization';

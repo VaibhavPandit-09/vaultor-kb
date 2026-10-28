@@ -1,5 +1,9 @@
 import { frameResizeObserver } from './frameResizeObserver';
 import { useEffect, type RefObject } from 'react';
+export function syncLibraryControls(header:HTMLElement){
+ const compact=header.dataset.compact==='true',open=header.dataset.tools==='true';
+ for(const section of header.querySelectorAll<HTMLElement>('.library-filters,.library-summary,.library-working-context')){section.inert=compact&&!open;section.setAttribute('aria-hidden',String(compact&&!open));}
+}
 
 /** One bounded scroll signal. Never owns React, queries, editor or focus state. */
 export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElement, options: { pinHeaderFocus?: boolean; onProgress?: (progress: number) => void; observeSubtree?: boolean } = {}) {
@@ -15,6 +19,7 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
   measureTravel();
   const target = () => travel > 0 ? Math.min(1, Math.max(0, viewport.scrollTop / travel)) : 0;
   let progress = target();
+  let compact=false;
   const write = () => {
     viewport.style.setProperty('--library-progress', String(progress));
     options.onProgress?.(progress);
@@ -26,6 +31,7 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
 
     // The second title line is already clipped before its ellipsis changes.
     viewport.style.setProperty('--library-title-lines', progress > .96 ? '1' : '2');
+    compact=progress>(compact?.82:.96);header.dataset.compact=String(compact);syncLibraryControls(header);
   };
   const locked = () => pointerHeld || Boolean(header.querySelector('.collection-breadcrumb')?.contains(document.activeElement)) || (options.pinHeaderFocus && header.contains(document.activeElement)) || Boolean(header.querySelector('[aria-haspopup][aria-expanded="true"]'));
   const step = (time: number) => {
@@ -118,12 +124,13 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
     titleMeasure?.remove();
     for(const key of ['--collection-title-expanded','--collection-path-progress','--collection-title-progress','--collection-path-space'])viewport.style.removeProperty(key);
     const path=header.querySelector<HTMLElement>('.collection-breadcrumb');if(path){path.inert=false;path.removeAttribute('aria-hidden');}
+    delete header.dataset.compact;syncLibraryControls(header);
 
   };
 }
 
 export function useLibraryCompression(viewport: RefObject<HTMLElement | null>, header: RefObject<HTMLElement | null>, active: boolean) {
   useEffect(() => {
-    if (active && viewport.current && header.current) return attachLibraryCompression(viewport.current, header.current);
+    if (active && viewport.current && header.current) return attachLibraryCompression(viewport.current, header.current,{pinHeaderFocus:true});
   }, [active, viewport, header]);
 }

@@ -19,6 +19,7 @@ type NativePart = { name: string; fileId: string; filename: string; type: string
 type NativeSelection = { relativePath?:string; directory?:boolean; id: string; name: string; size: number; lastModified: number };
 export type WireRequest = { id: string; token: string; path: string; method: string; timeout: number; headers: Record<string, string>; body?: { kind: 'text'; value: string } | { kind: 'multipart'; parts: (Part | NativePart)[] } };
 export interface DesktopBridge {
+  appearance?(theme:string):Promise<Result<void>>;
   linked?(value:{token:string;workspace:string;generation:string;operation:string;payload:Record<string,unknown>}):Promise<Result<unknown>>;
   copiesList?():Promise<Result<WorkspaceCopyJob[]>>;
   copyPreview?(value:{id:string;name:string;token:string}):Promise<Result<WorkspaceTransferReceipt>>;
@@ -95,6 +96,11 @@ export async function requestLinked<T>(identity:{id:string;generation:string},op
   try{return unwrap(result) as T;}catch(error){if(error instanceof Error)Object.assign(error,{sourceNotAdmitted:true});throw error;}
 }
 const selectedFiles = new WeakMap<File, string>();
+const selectedReads = new WeakMap<File,(offset:number,length:number)=>Promise<Uint8Array>>();
+export async function importFileChunk(file:File,offset:number,length:number):Promise<Uint8Array>{
+ const native=selectedReads.get(file);
+ return native?native(offset,length):new Uint8Array(await file.slice(offset,offset+length).arrayBuffer());
+}
 export async function pickDesktopFiles(accept: string, multiple: boolean, directory = false): Promise<File[] & {directories?:string[]}> {
   const bridge = window.vaultorDesktop!;
   const selectionToken=desktopToken;
@@ -106,7 +112,8 @@ export async function pickDesktopFiles(accept: string, multiple: boolean, direct
     Object.defineProperty(file, 'size', { value: item.size });
     if(item.relativePath)Object.defineProperty(file,'webkitRelativePath',{value:item.relativePath});
     const read = async () => { if (item.size > 32 * 1024 * 1024) throw new Error('This file is too large for text conversion. Keep the original file.'); const data = new Uint8Array(item.size); for (let offset = 0; offset < item.size; offset += 1024 * 1024) data.set(unwrap(await bridge.readFile!({ token: selectionToken, id: item.id, offset, length: Math.min(1024 * 1024, item.size - offset) })), offset); return data; };
-    file.arrayBuffer = async () => (await read()).buffer; file.text = async () => new TextDecoder().decode(await read()); selectedFiles.set(file, item.id); return file;
+    file.arrayBuffer = async () => (await read()).buffer; file.text = async () => new TextDecoder().decode(await read()); selectedFiles.set(file, item.id);
+    selectedReads.set(file,async(offset,length)=>unwrap(await bridge.readFile!({token:selectionToken,id:item.id,offset,length})));return file;
   });
   return Object.assign(files,{directories:items.filter(item=>item.directory).map(item=>item.relativePath!)});
 }

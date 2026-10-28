@@ -33,6 +33,7 @@ class ResourceLifecycleTest {
  @Autowired ResourceSearchService search; @Autowired TransferService transfers; @Autowired ObjectMapper json;
  @Autowired TransactionTemplate tx;
  @Autowired FileImportService imports;
+ @Autowired WorkspaceIdentityService identity;
  @Autowired com.vaultor.vaultor.controller.ResourceController controller;
  @MockitoSpyBean FileStorageService files;
  String doc(String text){return "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\""+text+"\"}]}]}";}
@@ -83,6 +84,7 @@ class ResourceLifecycleTest {
   var export=transfers.export("workspace","zip");waitFor(export.id());byte[] archive=Files.readAllBytes(transfers.download(export.id()));
   try(var zip=new ZipInputStream(new ByteArrayInputStream(archive))){ZipEntry entry;boolean version=false,metadata=false;while((entry=zip.getNextEntry())!=null){byte[] data=zip.readAllBytes();if(entry.getName().equals("manifest.json"))version=json.readTree(data).path("version").asInt()==5;if(entry.getName().equals("workspace.json"))metadata=new String(data).contains("trashedAt");}assertTrue(version&&metadata);}
   var preview=transfers.preview(new MockMultipartFile("file","baseline.zip","application/zip",archive));transfers.commit(preview.operation().id(),"merge");waitFor(preview.operation().id());assertTrue(browse.trash(0,100,"Portable Trash").totalItems()>=2);
+  var bound=transfers.preview(new MockMultipartFile("file","generation-bound.zip","application/zip",archive),identity.current().generation());long before=resources.count();identity.replaced();assertThrows(Exception.class,()->transfers.commit(bound.operation().id(),"merge",identity.current().generation()));assertEquals(before,resources.count());
   var replacement=transfers.preview(new MockMultipartFile("file","baseline.zip","application/zip",archive));transfers.commit(replacement.operation().id(),"replace");waitFor(replacement.operation().id());assertNotNull(resources.findById(note.getId()).orElseThrow().getTrashedAt());
  }
 }

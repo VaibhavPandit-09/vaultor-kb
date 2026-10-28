@@ -35,14 +35,15 @@ public class WorkspaceRequestFilter extends OncePerRequestFilter {
             boolean transfer=path.matches("/api/companions(/.*)?") || !List.of("GET","HEAD","OPTIONS").contains(req.getMethod()) && path.matches("/api/(imports|exports|operations|companions)(/.*)?");
             var gate=runtime.gate();boolean entered=transfer?gate.enterTransferRequest():!guarded || gate.enterRequest();
             try {
-                if(!entered)throw new AccessFailure(409,"WORKSPACE_BUSY","Workspace maintenance is in progress. Retry shortly.");
+                if(!entered){var busy=gate.diagnostic();req.setAttribute("workspaceBusy",busy);org.slf4j.LoggerFactory.getLogger(WorkspaceRequestFilter.class).info("workspace busy workspace={} generation={} owner={} phase={} durationMs={}",id,req.getHeader("X-Vaultor-Generation"),busy.owner(),busy.phase(),busy.durationMs());throw new AccessFailure(409,"WORKSPACE_BUSY","Workspace maintenance is in progress. Retry shortly.");}
                 String expected=req.getHeader("X-Vaultor-Generation");
-                if(expected!=null && guarded && !expected.equals(runtime.context().getBean(com.vaultor.vaultor.service.WorkspaceIdentityService.class).current().generation()))throw new AccessFailure(409,"WORKSPACE_GENERATION_CHANGED","Workspace was replaced; return to the original import source");
+                if(expected!=null && (guarded||transfer) && !expected.equals(runtime.context().getBean(com.vaultor.vaultor.service.WorkspaceIdentityService.class).current().generation()))throw new AccessFailure(409,"WORKSPACE_GENERATION_CHANGED","Workspace was replaced; return to the original import source");
                 if(runtime.dispatcher()==null)chain.doFilter(req,res);else {runtime.dispatcher().service(req,res);ChangeNotificationFilter.publish(req,res,runtime.feed());}
             } finally {if(guarded && entered)gate.leaveRequest();if(transfer && entered)gate.leaveTransferRequest();}
         } catch(AccessFailure failure){
             if(res.isCommitted())throw failure;
-            res.setStatus(failure.status);res.setContentType("application/problem+json");res.getWriter().write(json.writeValueAsString(Map.of("status",failure.status,"code",failure.code,"detail",failure.getMessage(),"requestId",Optional.ofNullable(MDC.get("requestId")).orElse(""))));
+            var problem=new LinkedHashMap<String,Object>();problem.put("status",failure.status);problem.put("code",failure.code);problem.put("detail",failure.getMessage());problem.put("requestId",Optional.ofNullable(MDC.get("requestId")).orElse(""));if(req.getAttribute("workspaceBusy")!=null)problem.put("busy",req.getAttribute("workspaceBusy"));
+            res.setStatus(failure.status);res.setContentType("application/problem+json");res.getWriter().write(json.writeValueAsString(problem));
         } catch(ServletException|IOException failure){throw failure;}
         catch(Exception failure){throw new ServletException("Workspace context unavailable; existing data was retained",failure);}
     }

@@ -175,6 +175,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     root.style.setProperty('--ui-opacity', String(currentLocalSettings.uiTransparency));
     const origin=themeOrigin.current;themeOrigin.current=undefined;
     themeTransition.apply(resolvedTheme,origin);
+    void window.vaultorDesktop?.appearance?.(currentLocalSettings.theme);
   }, [
     currentLocalSettings.accentColor,
     currentLocalSettings.animationMode,

@@ -4,6 +4,8 @@ import api from './api';
 import { importResource, type ImportSession } from './fileImports';
 import { runFolderImport, type FolderJournal } from './folderImports';
 import type { IndexedSessionStore } from './sessionStore';
+import { reportError } from './diagnostics';
+vi.mock('./diagnostics',()=>({reportError:vi.fn()}));
 vi.mock('./api',()=>({default:{get:vi.fn(),put:vi.fn()}}));
 vi.mock('./platform',()=>({getConnection:()=>({epoch:1})}));
 vi.mock('./organization',()=>({organizationChanged:vi.fn()}));
@@ -24,6 +26,7 @@ it('persists IDs before writes and resumes paused imports without recreating com
  cancel=false;await runFolderImport(session,session.rows,journal,store,()=>cancel,()=>{},()=>{});
  expect(vi.mocked(importResource).mock.calls.map(call=>call[0])).toEqual(['a','b']);expect(journal.complete).toBe(true);
  expect(api.put).toHaveBeenCalledWith('/resources/imports/a/relationships',expect.anything(),expect.objectContaining({headers:{'X-Vaultor-Generation':'generation'},connectionEpoch:1}));
+ expect(journal.rows.every(row=>!('sourceText' in row)&&!('doc' in row)&&!('file' in row))).toBe(true);
 });
 it('retries failed finalization without uploading resources again',async()=>{
  const {session,journal,store}=fixture();vi.mocked(api.put).mockRejectedValueOnce(new Error('Lost response'));
@@ -36,4 +39,11 @@ it('refuses to write into a replaced workspace',async()=>{
  const {session,journal,store}=fixture();vi.mocked(api.get).mockResolvedValue({data:{...identity,generation:'replacement'}});
  await expect(runFolderImport(session,session.rows,journal,store,()=>false,()=>{},()=>{})).rejects.toThrow('Workspace changed');
  expect(importResource).not.toHaveBeenCalled();expect(api.put).not.toHaveBeenCalled();
+});
+it('keeps an ineligible image as an original with local diagnostics, and reports unexpected validation failures',async()=>{
+ for(const status of [400,503]){
+  const {session,journal,store}=fixture();session.rows=[{id:'image',path:'docs/image.png',file:new File(['original bytes'],'image.png'),kind:'binary',asNote:false,warnings:[],status:'ready'}];vi.mocked(api.get).mockImplementation(async path=>{if(String(path).endsWith('/image-info'))throw {response:{status},message:'Validation failed'};return {data:identity};});
+  await runFolderImport(session,session.rows,journal,store,()=>false,()=>{},()=>{});expect(session.rows[0].status).toBe(status===400?'done':'failed');if(status===400){expect(session.rows[0].imageValid).toBe(false);expect(reportError).not.toHaveBeenCalled();}else expect(reportError).toHaveBeenCalledWith('import.image-validation',expect.anything());
+ }
+ expect(api.get).toHaveBeenCalledWith('/resources/image/image-info',expect.objectContaining({backgroundDiagnostic:true}));
 });

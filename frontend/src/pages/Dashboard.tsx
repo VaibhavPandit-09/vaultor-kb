@@ -745,6 +745,7 @@ export default function Dashboard() {
     if(request.action==='open'){await openResourceById(resource.id);return;}
     if(request.action==='trash'){setLifecycleTargets(request.resources);return;}
     if(request.action==='export'){setNoteExport({id:resource.id,title:resource.title});return;}
+    if(request.action==='prepare-export'){for(const selected of request.resources)if(selected.type==='note')await exportSaveRef.current(selected.id);return;}
     if(request.action==='restored'){paneNavigation.markAvailable(resource.id);resourcesChanged([resource.id],true);return;}
     if(request.action==='rename'){
       if(resource.type==='note')await renameResource(resource.id,request.value??'');
@@ -1072,8 +1073,10 @@ export default function Dashboard() {
     window.addEventListener('vaultor:local-archive-import',handoff);return()=>window.removeEventListener('vaultor:local-archive-import',handoff);
   },[sessionReady]);
   const resourceReconcileWork = useRef(Promise.resolve());
-  const remoteReconcile = useRef<(events:RemoteChange[])=>void>(()=>{});
+  const remoteReconcile = useRef<(events:Array<Pick<RemoteChange,'kind'|'ids'|'generation'>&{origin?:'import'}>)=>void>(()=>{});
+  useEffect(()=>subscribeResourceChanges(change=>{if(change.kind==='imported'&&identityRef.current?.id===change.workspaceId&&identityRef.current.generation===change.generation)remoteReconcile.current([{kind:'resources',ids:change.ids,generation:change.generation,origin:'import'}]);}),[]);
   remoteReconcile.current = events => {
+    const importGeneration=events.find(event=>event.origin==='import')?.generation;const reconcileConfig={backgroundDiagnostic:true,...(importGeneration?{headers:{'X-Vaultor-Generation':importGeneration}}:{})};
     const broad=events.some(e=>e.kind==='reset'||e.kind==='workspace'||(e.generation && e.generation!==identityRef.current?.generation));
     if(broad)window.dispatchEvent(new Event('vaultor:identity-check'));
     if(broad || events.some(e=>e.kind==='reviews'))reviewsChanged();
@@ -1087,13 +1090,13 @@ export default function Dashboard() {
       notifyResourceChange({kind:'metadata',ids:ids?[...ids]:undefined,membershipChanged:true});
       if(previewResourceId && (broad || !ids?.size || ids.has(previewResourceId))) {
         const previewId=previewResourceId,epoch=workspaceEpoch.current;
-        void api.get<Resource>('/resources/'+previewId+'/summary',{backgroundDiagnostic:true}).catch(error=>{if(epoch===workspaceEpoch.current && [404,410].includes(error.response?.status))dismissPreview();});
+        void api.get<Resource>('/resources/'+previewId+'/summary',reconcileConfig).catch(error=>{if(epoch===workspaceEpoch.current && [404,410].includes(error.response?.status))dismissPreview();});
       }
       const openIds=new Set(openNotes.map(p=>p.id));
       const journeyIds=new Set(paneNavigation.snapshot().sessions.flatMap(p=>p.history.map(v=>v.resourceId)));
       for(const id of ids??[])if(!openIds.has(id)&&journeyIds.has(id)) {
         const epoch=workspaceEpoch.current, version=(resourceLoadVersions.current.get(id)??0)+1;resourceLoadVersions.current.set(id,version);
-        enqueue(async()=>{if(epoch!==workspaceEpoch.current||resourceLoadVersions.current.get(id)!==version)return;await api.get<Resource>('/resources/'+id+'/summary',{backgroundDiagnostic:true}).then(()=>{if(epoch===workspaceEpoch.current&&resourceLoadVersions.current.get(id)===version)paneNavigation.markAvailable(id);}).catch(error=>{if(epoch===workspaceEpoch.current && resourceLoadVersions.current.get(id)===version && [404,410].includes(error.response?.status))paneNavigation.markUnavailable(id);});});
+        enqueue(async()=>{if(epoch!==workspaceEpoch.current||resourceLoadVersions.current.get(id)!==version)return;await api.get<Resource>('/resources/'+id+'/summary',reconcileConfig).then(()=>{if(epoch===workspaceEpoch.current&&resourceLoadVersions.current.get(id)===version)paneNavigation.markAvailable(id);}).catch(error=>{if(epoch===workspaceEpoch.current && resourceLoadVersions.current.get(id)===version && [404,410].includes(error.response?.status))paneNavigation.markUnavailable(id);});});
       }
       for(const id of new Set(openNotes.map(p=>p.id))) {
 
@@ -1102,13 +1105,13 @@ export default function Dashboard() {
         enqueue(async()=>{
         if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
         const detail = paneNavigation.snapshot().panes.some(p=>p.id===id);
-        await api.get<Resource>('/resources/'+id+(detail?'':'/summary'),{backgroundDiagnostic:true}).then(({data})=>{
+        await api.get<Resource>('/resources/'+id+(detail?'':'/summary'),reconcileConfig).then(({data})=>{
           if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
           if(data.type==='linked'){const known=linkedWorkspace.metadata.get(id);linkedWorkspace.metadata.set(id,{...known,...data});setResourceDetails(previous=>({...previous,[id]:{...previous[id],...data}}));paneNavigation.markAvailable(id);return;}
           paneNavigation.markAvailable(id);
           const draft=recovery.current(id);
           if(draft || saves.latest(id)) {
-            if(draft && draft.baseRevision!==data.revision){setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);setSessionMessage('A note changed on another device. Your draft is retained; review it before saving.');}
+            if(draft && draft.baseRevision!==data.revision){setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);setSessionMessage(events.some(event=>event.origin==='import')?'Import finalized this saved note. Your draft is retained; review it before saving.':'A note changed on another device. Your draft is retained; review it before saving.');}
             setResourceDetails(prev=>prev[id]?{...prev,[id]:{...prev[id],tags:data.tags,collections:data.collections,favorite:data.favorite}}:prev);
             return;
           }
