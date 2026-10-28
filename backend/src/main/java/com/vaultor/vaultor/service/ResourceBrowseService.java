@@ -14,6 +14,20 @@ import java.util.*;
 @Service @RequiredArgsConstructor
 public class ResourceBrowseService {
     private final JdbcTemplate jdbc;
+    public record PresenceInput(List<String> ids,List<String> collections) {}
+    public record Presence(Map<String,String> items,List<String> collections) {}
+    /** Current inventory for an import review; no content or original bytes. */
+    @Transactional(readOnly=true)
+    public Presence importPresence(PresenceInput input) {
+        if(input==null||input.ids()==null||input.collections()==null||input.ids().size()>200||input.collections().size()>200)throw new IllegalArgumentException("Review at most 200 items and collections per request");
+        input.ids().forEach(UUID::fromString);input.collections().forEach(UUID::fromString);
+        var items=new LinkedHashMap<String,String>();input.ids().forEach(id->items.put(id,"missing"));
+        if(!items.isEmpty())jdbc.query("select id,trashed_at from resources where id in ("+String.join(",",Collections.nCopies(items.size(),"?"))+")",rs->{items.put(rs.getString(1),rs.getObject(2)==null?"active":"trash");},items.keySet().toArray());
+        var found=new ArrayList<String>();
+        var collections=input.collections().stream().distinct().toList();
+        if(!collections.isEmpty())found.addAll(jdbc.queryForList("select id from collections where id in ("+String.join(",",Collections.nCopies(collections.size(),"?"))+")",String.class,collections.toArray()));
+        return new Presence(items,found);
+    }
     private static LocalDateTime date(ResultSet rs, String column) throws SQLException {
         var value = rs.getTimestamp(column); return value == null ? null : value.toLocalDateTime();
     }

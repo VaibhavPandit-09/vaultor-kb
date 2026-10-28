@@ -26,6 +26,7 @@ public class ResourceController {
     private final ResourceReferences references;
     private final LinkedReferences linkedReferences;
     private final TrashPurgeService trashPurge;
+    @PostMapping("/import-presence") public ResourceBrowseService.Presence importPresence(@RequestBody ResourceBrowseService.PresenceInput input){return browse.importPresence(input);}
     @PutMapping("/trash/snapshots/{id}") public TrashPurgeService.Status trashSnapshot(@PathVariable String id){return trashPurge.preview(id);}
     @GetMapping("/trash/snapshots/{id}") public TrashPurgeService.Status trashSnapshotStatus(@PathVariable String id){return trashPurge.get(id);}
     @DeleteMapping("/trash/snapshots/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void trashSnapshotCancel(@PathVariable String id){trashPurge.cancelPreview(id);}

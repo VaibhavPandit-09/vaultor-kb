@@ -7,9 +7,9 @@ import { DesktopConnectionContext } from '../lib/desktopConnectionContext';
 export function DesktopConnectionButton() {
   const connection = useContext(DesktopConnectionContext);
   const workspace=useContext(WorkspaceSelectionContext);
-  if(workspace)return <div className="flex items-center min-w-0"><button className="desktop-connection-button flex-1 min-w-0" onClick={workspace.open} title={workspace.server+' · Switch workspace'}><Plug size={15}/><span className="truncate">{workspace.name}</span></button>{connection&&<button className="p-2 rounded-lg hover:bg-card" aria-label="Connections and hosting" title={connection.name+' · Connections and hosting'} onClick={connection.open}><Ellipsis size={16}/></button>}</div>;
+  if(workspace)return <div className="flex items-center min-w-0"><button className="desktop-connection-button flex-1 min-w-0" onClick={workspace.open} title={workspace.server+' · Switch workspace'}><Plug size={15}/><span className="truncate">{workspace.name}</span></button>{connection&&<button className="p-2 rounded-lg hover:bg-card" aria-label="Connections and sharing" title={connection.name+' · Connections and sharing'} onClick={connection.open}><Ellipsis size={16}/></button>}</div>;
   if (!connection) return null;
-  return <button className="desktop-connection-button" onClick={connection.open} title="Connections & hosting"><Plug size={15}/><span className="truncate">{connection.name}</span><span className={connection.online ? 'desktop-online' : 'desktop-offline'} aria-label={connection.online ? 'Connected' : 'Connection interrupted'}/></button>;
+  return <button className="desktop-connection-button" onClick={connection.open} title="Connections and sharing"><Plug size={15}/><span className="truncate">{connection.name}</span><span className={connection.online ? 'desktop-online' : 'desktop-offline'} aria-label={connection.online ? 'Connected' : 'Connection interrupted'}/></button>;
 }
 export default function DesktopChrome() {
   const bridge = window.vaultorDesktop;
@@ -23,7 +23,7 @@ export default function DesktopChrome() {
   const action = (value: 'menu' | 'minimize' | 'maximize' | 'close') => { setError(''); void bridge.windowAction!(value).then(unwrap).then(s => setMaximized(s.maximized)).catch(e => setError(e.message)); };
   return <div className="desktop-window-controls" role="group" aria-label="Window controls">
     <div className="desktop-drag-grip" title="Drag window" onDoubleClick={() => action('maximize')}/>
-    <button aria-label="Window menu" title="Window menu · Connections & hosting" onClick={() => action('menu')}><Ellipsis size={16}/></button>
+    <button aria-label="App menu" title="App menu" onClick={() => action('menu')}><Ellipsis size={16}/></button>
     <button aria-label="Minimize" title="Minimize" onClick={() => action('minimize')}><Minus size={16}/></button>
     <button aria-label={maximized ? 'Restore window' : 'Maximize'} title={maximized ? 'Restore window' : 'Maximize'} onClick={() => action('maximize')}>{maximized ? <Minimize2 size={14}/> : <Maximize size={14}/>}</button>
     <button className="desktop-close" aria-label="Close window" title="Close to tray" onClick={() => action('close')}><X size={17}/></button>

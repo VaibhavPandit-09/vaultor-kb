@@ -47,7 +47,7 @@ it('preserves scoped writes for every appearance and layout control without touc
   for (const [group, option] of [['Theme', 'OLED'], ['Accent color', 'Purple'], ['Density', 'Compact'], ['Animation feel', 'Smooth']]) {
     fireEvent.click(within(screen.getByRole('radiogroup', { name: group })).getByRole('radio', { name: option })); await saved();
   }
-  fireEvent.change(screen.getByRole('slider', { name: 'UI transparency' }), { target: { value: '70' } }); await saved();
+  fireEvent.change(screen.getByRole('slider', { name: 'Opacity' }), { target: { value: '70' } }); await saved();
   category('Layout & previews');
   for (const [group, option] of [['Preview style', 'Floating'], ['Sidebar mode', 'Floating']]) {
     fireEvent.click(within(screen.getByRole('radiogroup', { name: group })).getByRole('radio', { name: option })); await saved();
@@ -103,11 +103,11 @@ it('records platform-only shortcuts, reports conflicts and Escape cancels record
   await waitFor(() => expect(document.activeElement).toBe(screen.getByText('Open settings')));
 });
 it('uses radio arrow keys and wraps dialog Tab while restoring focus after click dismissal', async () => {
-  await open(); const os = screen.getByRole('radio', { name: 'OS' }); os.focus(); fireEvent.keyDown(os, { key: 'ArrowRight' }); await saved();
+  await open(); const os = screen.getByRole('radio', { name: 'System' }); os.focus(); fireEvent.keyDown(os, { key: 'ArrowRight' }); await saved();
   expect(screen.getByRole('radio', { name: 'Light' }).getAttribute('aria-checked')).toBe('true');
   fireEvent.click(screen.getByRole('button', { name: 'Settings options' })); fireEvent.keyDown(window, { key: 'Escape' });
   expect(screen.queryByRole('menu')).toBeNull(); expect(screen.getByRole('dialog')).toBeTruthy();
-  const last = screen.getByRole('spinbutton', { name: 'UI transparency value' }); last.focus(); fireEvent.keyDown(last, { key: 'Tab' });
+  const last = screen.getByRole('spinbutton', { name: 'Opacity value' }); last.focus(); fireEvent.keyDown(last, { key: 'Tab' });
   expect(document.activeElement).toBe(screen.getByRole('textbox'));
   fireEvent.click(screen.getByRole('button', { name: 'Close settings' }));
   await waitFor(() => expect(document.activeElement).toBe(screen.getByText('Open settings')));
@@ -141,6 +141,6 @@ it('confirms a single shortcut reset without resetting the rest of the keyboard'
 });
 
 it('persists Fill or Reuse in one workspace opening preference',async()=>{
- await open();category('Workspace');const group=screen.getByRole('radiogroup',{name:'Opening new notes'});expect(within(group).getByRole('radio',{name:'Fill, then replace'}).getAttribute('aria-checked')).toBe('true');
- fireEvent.click(within(group).getByRole('radio',{name:'Reuse focused pane'}));await saved();expect(doc.workspace?.noteOpening).toBe('reuse');expect(screen.getAllByRole('radiogroup',{name:'Opening new notes'})).toHaveLength(1);
+ await open();category('Workspace');const group=screen.getByRole('radiogroup',{name:'Opening new notes'});expect(within(group).getByRole('radio',{name:'Use available panes'}).getAttribute('aria-checked')).toBe('true');
+ fireEvent.click(within(group).getByRole('radio',{name:'Use selected pane'}));await saved();expect(doc.workspace?.noteOpening).toBe('reuse');expect(screen.getAllByRole('radiogroup',{name:'Opening new notes'})).toHaveLength(1);
 });

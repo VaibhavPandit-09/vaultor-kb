@@ -5,7 +5,7 @@ import { blockConnectionSwitch } from './desktop';
 import { getConnection } from './platform';
 import { IndexedSessionStore, type Identity } from './sessionStore';
 
-export type ActivityTask = { id:string; title:string; workspace:Identity; source:string; epoch:number; kind:string; state:'running'|'paused'|'attention'|'complete'; phase:string; done?:number; total?:number; unit?:string;detail?:string; warnings?:number; receipt?:string; exportSelection?:string[]; output?:{path:string;filename:string}; updated:number };
+export type ActivityTask = { id:string; title:string; workspace:Identity; source:string; epoch:number; kind:string; sourceSelection?:'folder'|'files'; state:'running'|'paused'|'attention'|'complete'; phase:string; done?:number; total?:number; unit?:string;detail?:string; warnings?:number; receipt?:string; exportSelection?:string[]; output?:{path:string;filename:string}; updated:number };
 export type TaskContext = { update(patch:Partial<Pick<ActivityTask,'phase'|'done'|'total'|'unit'|'detail'|'warnings'|'receipt'|'output'>>):void; paused():boolean; check():Promise<void> };
 type Runner=(context:TaskContext)=>Promise<boolean>;
 let tasks:ActivityTask[]=[];
@@ -24,6 +24,8 @@ function change(id:string,patch:Partial<ActivityTask>) {
 }
 export function useActivity(){return useSyncExternalStore(callback=>{listeners.add(callback);return()=>listeners.delete(callback);},()=>tasks);}
 export const activityTasks=()=>tasks;
+export const activityPhase=(phase:string)=>({VALIDATING:'Checking ZIP',COMMITTING:'Creating workspace',READY:'Preparing workspace',MOVED:'Finishing workspace',SUCCEEDED:'Complete',FAILED:'Could not finish',CANCELLED:'Cancelled',PREVIEW:'Ready to review',QUEUED:'Waiting to start',RUNNING:'Working',CLEANUP:'Finishing cleanup'} as Record<string,string>)[phase]??phase;
+export const activityNeedsSource=(task:ActivityTask)=>task.kind==='file-import'&&!runners.has(task.id);
 export function approveActivityPreview(receipt:string,phase='Reviewed and approved'){for(const task of tasks)if(task.kind==='workspace-preview'&&task.receipt===receipt&&task.source===getConnection().profileId&&task.state!=='running'){change(task.id,{state:'complete',phase});runners.delete(task.id);}}
 export async function restoreActivity(identity:Identity) {
  const source=getConnection().profileId,epoch=getConnection().epoch;

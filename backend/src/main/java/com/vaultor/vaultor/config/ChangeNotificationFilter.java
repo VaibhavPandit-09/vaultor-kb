@@ -24,6 +24,7 @@ public class ChangeNotificationFilter extends OncePerRequestFilter {
         String path=req.getRequestURI();String kind=null;
         if(path.matches("/api/resources/[^/]+/open"))return;
         if(path.equals("/api/organization/selection"))return;
+        if(path.equals("/api/resources/import-presence"))return;
         if(path.startsWith("/api/resources"))kind="resources";
         else if(path.startsWith("/api/settings"))kind="settings";
         else if(path.startsWith("/api/tags"))kind="tags";

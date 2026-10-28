@@ -49,7 +49,7 @@ it('managed startup failure retains other connections and exposes bounded local 
   native.probe = vi.fn(async () => ({ ok: false as const, error: { code: 'DESKTOP_ERROR', detail: 'Check startup logs and retry' } }));
   render(<EscapeManagerProvider><DesktopRoot><p>Workspace</p></DesktopRoot></EscapeManagerProvider>);
   fireEvent.click(await screen.findByText('Local A')); await screen.findByText('Check startup logs and retry');
-  fireEvent.click(screen.getByRole('button', { name: 'Hosting' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Sharing' }));
   expect(await screen.findByText('Workspace is already in use')).toBeDefined(); fireEvent.click(screen.getByRole('button', { name: 'Connections' })); expect(screen.getByText('Local A')).toBeDefined();
   expect(screen.queryByText('Workspace')).toBeNull(); expect(native.activate).not.toHaveBeenCalled();
 });
@@ -116,7 +116,7 @@ it('connection access stays in the sidebar and opens on demand without a connect
   render(<EscapeManagerProvider><DesktopRoot><DesktopConnectionButton/><p>Workspace</p></DesktopRoot></EscapeManagerProvider>);
   fireEvent.click(await screen.findByText('Local A')); await screen.findByText('Workspace');
   expect(screen.queryByText('Local connection')).toBeNull(); expect(screen.queryByRole('dialog')).toBeNull();
-  fireEvent.click(screen.getByTitle('Connections & hosting')); expect(screen.getByRole('dialog')).toBeDefined();
+  fireEvent.click(screen.getByTitle('Connections and sharing')); expect(screen.getByRole('dialog')).toBeDefined();
   fireEvent.click(screen.getByLabelText('Return to workspace')); expect(screen.queryByRole('dialog')).toBeNull();
 });
 it('network form retains failed values, prevents duplicate Enter, and shows only a comparison code', async () => {

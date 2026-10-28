@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('vaultorDesktop', Object.freeze({
   copyStatus:value=>ipcRenderer.invoke('desktop:copy-status',value),
   copyCommit:value=>ipcRenderer.invoke('desktop:copy-commit',value),
   copyCancel:value=>ipcRenderer.invoke('desktop:copy-cancel',value),
+  onAppCommand:callback=>{const listener=(_event,value)=>{if(['workspaces','settings'].includes(value))callback(value);};ipcRenderer.on('desktop:app-command',listener);return()=>ipcRenderer.removeListener('desktop:app-command',listener);},
   bootstrap: () => ipcRenderer.invoke('desktop:bootstrap'),
   updatesStatus:()=>ipcRenderer.invoke('desktop:updates-status'),
   updatesConfigure:feed=>ipcRenderer.invoke('desktop:updates-configure',feed),

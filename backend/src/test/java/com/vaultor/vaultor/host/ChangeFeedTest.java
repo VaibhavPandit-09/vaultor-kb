@@ -38,6 +38,10 @@ class ChangeFeedTest extends HostAccessTest {
                 ok(lan,"PUT","/api/resources/"+id+"/note",Map.of("title","Device edit","content",body.get("content")),conditional);stream.next("resources");
                 assertEquals(412,call(lan,"PUT","/api/resources/"+id+"/note",body,conditional).statusCode());
                 ok(local,"POST","/api/resources/"+id+"/open",null,owner());
+                var inventory=ok(local,"POST","/api/resources/import-presence",Map.of("ids",List.of(id),"collections",List.of()),owner());
+                assertEquals("active",inventory.path("items").path(id).asText());
+                var staleReview=new HashMap<>(owner());staleReview.put("X-Vaultor-Generation",UUID.randomUUID().toString());
+                assertEquals(409,call(local,"POST","/api/resources/import-presence",Map.of("ids",List.of(id),"collections",List.of()),staleReview).statusCode());
                 assertNull(stream.events.poll(200,TimeUnit.MILLISECONDS),"Rejected writes/open recency do not publish");
                 var feed=context.getBean(ChangeFeed.class);var tx=context.getBean(TransactionTemplate.class);
                 assertThrows(IllegalStateException.class,()->tx.executeWithoutResult(s->{feed.committed("resources",List.of(id),"rollback");throw new IllegalStateException();}));

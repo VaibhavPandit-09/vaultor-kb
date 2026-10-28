@@ -4050,7 +4050,7 @@
     "/organization/memberships": {
       "post": {
         "operationId": "changeMemberships",
-        "summary": "Atomically add/remove one tag or collection on 1\u2013100 selected resources",
+        "summary": "Atomically add/remove one tag or collection on 1–100 selected resources",
         "description": "Validates every ID before mutation. Repeating the same add/remove is idempotent; other memberships are preserved. No bulk resource deletion.",
         "requestBody": {
           "required": true,
@@ -7413,7 +7413,7 @@
         ],
         "responses": {
           "200": {
-            "description": "At most 320\u00d7320 pixels and 384 KiB. Input limited to 20 MiB/40 MP. Cache-Control no-store. Original bytes unchanged.",
+            "description": "At most 320×320 pixels and 384 KiB. Input limited to 20 MiB/40 MP. Cache-Control no-store. Original bytes unchanged.",
             "content": {
               "image/png": {
                 "schema": {
@@ -9761,6 +9761,144 @@
           }
         }
       }
+    },
+    "/resources/import-presence": {
+      "parameters": [
+        {
+          "name": "X-Vaultor-Workspace",
+          "in": "header",
+          "required": false,
+          "description": "Canonical authorized workspace UUID. Omission always selects the fixed legacy/default workspace; never a global active selection.",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "X-Vaultor-Generation",
+          "in": "header",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "Refuse a review from an older workspace generation."
+        }
+      ],
+      "post": {
+        "operationId": "reviewImportPresence",
+        "summary": "Check current imported-item and collection existence without reading content",
+        "description": "Read-only lookup despite POST. At most200 resource IDs and200 collection IDs; reports active, trash or missing. Does not publish change-feed events. Advertised by importPresence:1.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ids",
+                  "collections"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "maxItems": 200,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "collections": {
+                    "type": "array",
+                    "maxItems": 200,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Current inventory in the authorized workspace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "collections"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "trash",
+                          "missing"
+                        ]
+                      }
+                    },
+                    "collections": {
+                      "type": "array",
+                      "maxItems": 200,
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or unauthorized review",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or unauthorized review",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Invalid or unauthorized review",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Workspace busy or generation changed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10976,6 +11114,13 @@
           "collectedImports": {
             "type": "integer",
             "const": 1
+          },
+          "importPresence": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "description": "Bounded read-only import target inventory lookup."
           }
         }
       },

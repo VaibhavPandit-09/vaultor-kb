@@ -34,14 +34,14 @@ export default function OrganizationManager({onClose,onCollection,onTag,tags,res
   }
   const form=useFormKeyboard(save);
   function bulk(item:OrganizationItem,change:'add'|'remove') {void action(async()=>{await api.post('/organization/memberships',{resourceIds,kind,targetId:item.id,action:change});setMessage(`${change==='add'?'Added to':'Removed from'} ${item.name}.`);onApplied();});}
-  return <AppModal open title={resourceIds.length?`Organize ${resourceIds.length} selected resources`:'Collections and tags'} description="Collections group resources by topic. Tags describe them across collections." onClose={()=>{if(!busy)onClose();}} widthClassName="max-w-2xl">
+  return <AppModal open title={resourceIds.length?`Organize ${resourceIds.length} selected items`:'Collections and tags'} description="Collections group items by topic. Tags describe them across collections." onClose={()=>{if(!busy)onClose();}} widthClassName="max-w-2xl">
     <div className="organization-manager">
       <div className="flex gap-2"><button disabled={busy} className="library-button" aria-pressed={kind==='collection'} onClick={()=>switchKind('collection')}><Folder size={16}/>Collections</button><button disabled={busy} className="library-button" aria-pressed={kind==='tag'} onClick={()=>switchKind('tag')}><Tag size={16}/>Tags</button></div>
       <input autoFocus className="organization-input" aria-label={`Search ${noun}s`} placeholder={`Search ${noun}s…`} value={query} maxLength={100} onChange={e=>setQuery(e.target.value)}/>
       <form {...form} className="flex gap-2"><input ref={nameInput} className="organization-input flex-1" readOnly={busy} aria-label={`${editing?'Rename':'New'} ${noun}`} placeholder={`${editing?'Rename':'New'} ${noun}`} maxLength={100} value={name} onChange={e=>setName(e.target.value)}/><button className="library-button" disabled={busy||!name.trim()}>{editing?'Save':'Create'}</button>{editing&&<button type="button" className="library-button" disabled={busy} onClick={()=>{setEditing(null);setName('');}}>Cancel</button>}</form>
       {error&&<p role="alert">{error}</p>}{message&&<p role="status">{message}</p>}
-      {deleting&&kind==='collection'&&<CollectionDeletionDialog collection={deleting} onClose={()=>setDeleting(null)} onDeleted={()=>{setDeleting(null);setEditing(null);setName('');setPage(0);setMessage('Hierarchy deleted.');}}/>}
-      {deleting&&kind==='tag'&&<div className="organization-confirm" role="alert"><p>Delete {noun} “{deleting.name}”? Its resources will be kept.</p><button className="library-button" disabled={busy} onClick={()=>void action(async()=>{await api.delete(`/tags/${deleting.id}`);onTagRenamed(deleting.name,null);setDeleting(null);setEditing(null);setName('');setPage(0);setMessage('Deleted. Resources were kept.');})}>Confirm delete</button><button className="library-button" disabled={busy} onClick={()=>setDeleting(null)}>Cancel</button></div>}
+      {deleting&&kind==='collection'&&<CollectionDeletionDialog collection={deleting} onClose={()=>setDeleting(null)} onDeleted={()=>{setDeleting(null);setEditing(null);setName('');setPage(0);setMessage('Collections deleted.');}}/>}
+      {deleting&&kind==='tag'&&<div className="organization-confirm" role="alert"><p>Delete {noun} “{deleting.name}”? Its items will be kept.</p><button className="library-button" disabled={busy} onClick={()=>void action(async()=>{await api.delete(`/tags/${deleting.id}`);onTagRenamed(deleting.name,null);setDeleting(null);setEditing(null);setName('');setPage(0);setMessage('Deleted. Items were kept.');})}>Confirm delete</button><button className="library-button" disabled={busy} onClick={()=>setDeleting(null)}>Cancel</button></div>}
       {results.error && results.data && <p role="alert">{results.error}<button onClick={results.retry}>Retry</button></p>}
       <div className="organization-list" aria-busy={results.loading}>
         {results.loading?<p>Loading…</p>:results.error && !results.data?<p role="alert">{results.error}<button onClick={results.retry}>Retry</button></p>:!results.data?.items.length?<p>No {noun}s match.</p>:results.data.items.map(item=><div key={item.id} className="organization-row">
@@ -53,7 +53,7 @@ export default function OrganizationManager({onClose,onCollection,onTag,tags,res
         </div>)}
       </div>
       <footer className="library-pagination"><span>{results.data?.totalItems??0} {noun}s · page {page+1}</span><button className="library-button" disabled={busy||results.loading||page===0} onClick={()=>setPage(page-1)}>Previous</button><button className="library-button" disabled={busy||results.loading||!results.data||page+1>=results.data.totalPages} onClick={()=>setPage(page+1)}>Next</button></footer>
-      {resourceIds.length>0&&<p className="text-xs text-[var(--text-tertiary)]">Add/remove affects only the selected resources and chosen {noun}. Other memberships stay unchanged.</p>}
+      {resourceIds.length>0&&<p className="text-xs text-[var(--text-tertiary)]">Add/remove affects only the selected items and chosen {noun}. Other memberships stay unchanged.</p>}
     </div>
   </AppModal>;
 }

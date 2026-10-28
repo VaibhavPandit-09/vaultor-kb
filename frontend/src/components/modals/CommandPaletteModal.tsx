@@ -55,7 +55,7 @@ export default function CommandPaletteModal({open,onClose,context,searchLinked}:
    action('pin',resource.favorite?'Unpin':'Pin',()=>setResourceFavorite(resource.id,!resource.favorite),resource.title),
    action('tags','Manage tags',()=>handoff('tag',[resource.id]),resource.title),
    ...(resourceKind(resource.type).mode!=='unsupported'&&resource.type!=='linked'?[{id:'rename',title:'Rename',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildRenameStep(resource),query:resource.title})},...(resource.type==='note'?[action('export','Export note',()=>captured.exportResource?.(resource),resource.title)]:[action('download','Download original',async()=>{if(await saveApiFile('/resources/'+resource.id+'/raw',resource.title)==='cancelled')throw new Error('Download cancelled. Try again.');},resource.title)])]:resourceKind(resource.type).mode==='preview'?[action('preview','Preview file',()=>captured.openResource(resource.id),resource.title),action('download','Download file',async()=>{if(await saveApiFile('/resources/'+resource.id+'/raw',resource.title)==='cancelled')throw new Error('Save cancelled. Choose Download to try again.');},resource.title)]:[]),
-   action('references','Used in / links',()=>requestResourceAction('references',[resource]),resource.title),
+   action('references','Links and mentions',()=>requestResourceAction('references',[resource]),resource.title),
    {id:'delete',title:'Move to Trash…',subtitle:resource.title,onSelect:()=>({type:'push' as const,step:buildDeleteConfirmStep(scope,resource)})}
  ].filter(item=>item.title.toLowerCase().includes(filter.toLowerCase()))};}
  const extra:Result[]=[

@@ -2,6 +2,10 @@
 
 Reviewed 2026-10-29. Complete-platform0.21.0 is published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The0.22.0 release candidate remains a separate pending platform record.0.23.0/0.23.1 Windows-only releases retain their disclosed performance limits. No later Mac build or acceptance is available in this Windows session; the complete-platform stable gate remains open.
 
+## 0.24.1 menu and import reliability candidate
+
+Mac build/acceptance access is unavailable. [The0.24.1 ledger](releases/v0.24.1.md) records Windows qualification and the final immutable source. Use that exact v0.24.1 tag and matching package/lock version, original signer, fresh UI/server and native arm64 packaging. Qualify native menu commands/focus, Activity/control geometry at supported widths/scales, import recognition after collection deletion/Trash/purge, paused import/purge restart and clear action-specific confirmations. Windows acceptance does not certify macOS geometry or platform behavior. Add only an absent verified Mac pair through RELEASE-PROCESS; never move the tag or replace published Windows bytes.
+
 ## 0.24.0 Windows-only UX reliability release
 
 Windows0.24.0 is published at immutable v0.24.0/source`4bde1ab944aacbf29bffb0aee193bad1a4c51332`, separately tracked in [its ledger](releases/v0.24.0.md). Mac access is unavailable in this Windows session; no0.24.0 DMG or native acceptance is claimed. Use that exact immutable tag and package/lock0.24.0, original key, fresh UI/server and native arm64 packaging. Qualify Activity dispatch/navigation/restart, source/generation refusal, byte-verified reimport choices, all-pages snapshot purge/cleanup, compact width/focus behavior and pre-paint/native Light/Dark/OLED/OS. Windows evidence does not establish Mac first-paint/window behavior or APFS/native integration. Only add an absent Mac pair under RELEASE-PROCESS after native qualification; never replace the Windows bytes or move its tag.

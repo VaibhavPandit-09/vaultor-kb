@@ -46,6 +46,7 @@ export default function WorkspaceRoot({children}:{children:ReactNode}){
     }catch(e){if(active){setError(e instanceof Error?e.message:'Workspace unavailable.');setOpen(true);}}
   })();return()=>{active=false;};},[createKey]);
   function show(){focus.captureFocus();setOpen(true);setError('');void list().catch(e=>setError(e.message));}
+  useEffect(()=>window.vaultorDesktop?.onAppCommand?.(command=>{if(command==='workspaces')show();}));
   useEffect(()=>{const requested=()=>show();window.addEventListener('vaultor:workspace-import',requested);return()=>window.removeEventListener('vaultor:workspace-import',requested);});
   function dismiss(){if(ready&&!running.current&&!busy){if(manage){setManage(undefined);setGrants([]);setName(creation.current?.name??'');}else{setOpen(false);setPending(undefined);focus.restoreFocus();}}}
   useEscapeLayer({id:'workspace-picker',active:open,priority:ESCAPE_PRIORITIES.modal,close:dismiss});

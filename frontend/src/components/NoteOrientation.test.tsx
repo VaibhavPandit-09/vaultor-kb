@@ -17,7 +17,7 @@ it('folds organization into reachable disclosure without remounting title, caret
   const band = screen.getByRole('button', {name:'Add to collection'}).parentElement!.parentElement!;
   act(() => driver.update(1));
   expect(band.inert).toBe(true);
-  const disclosure = screen.getByRole('button', {name:/Organization · 5 tags/});
+  const disclosure = screen.getByRole('button', {name:/Tags and collections · 5 tags/});
   expect(disclosure.getAttribute('aria-expanded')).toBe('false');
   expect(screen.getByRole('textbox')).toBe(title); expect(title.selectionStart).toBe(2);
   fireEvent.click(disclosure); expect(band.inert).toBe(false);

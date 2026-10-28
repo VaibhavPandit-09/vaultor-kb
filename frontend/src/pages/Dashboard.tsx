@@ -560,6 +560,8 @@ export default function Dashboard() {
     setSettingsOpen(true);
   }, [settingsModalFocus]);
 
+  useEffect(()=>window.vaultorDesktop?.onAppCommand?.(command=>{if(command==='settings')openSettingsModal();}),[openSettingsModal]);
+
   const closeSettingsModal = useCallback(() => {
     setSettingsOpen(false);
     settingsModalFocus.restoreFocus();
@@ -620,6 +622,7 @@ export default function Dashboard() {
     finally { setUploadPending(false); }
   }, [libraryVisible,collection,restoreImportFocus]);
   const requestFileUpload = useCallback((event?:{currentTarget?:EventTarget|null}) => { importReturnFocus.current=event?.currentTarget instanceof HTMLElement?event.currentTarget:document.activeElement instanceof HTMLElement?document.activeElement:null; flushSync(() => setCommandPaletteOpen(false)); void beginImport(); }, [beginImport]);
+  useEffect(()=>{const resume=(event:Event)=>{const detail=(event as CustomEvent<{task:{epoch:number;workspace:Identity};folder:boolean}>).detail;if(!detail||detail.task.epoch!==getConnection().epoch||!identityRef.current||!sameWorkspace(detail.task.workspace,identityRef.current))return;void beginImport(undefined,undefined,undefined,detail.folder);};window.addEventListener('vaultor:resume-import',resume);return()=>window.removeEventListener('vaultor:resume-import',resume);},[beginImport]);
   const handleRequestMdUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'markdown'); }, [beginImport]);
   const handleRequestCsvUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'csv'); }, [beginImport]);
   const handleRequestLinkUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'link'); }, [beginImport]);
@@ -1073,6 +1076,7 @@ export default function Dashboard() {
     window.addEventListener('vaultor:local-archive-import',handoff);return()=>window.removeEventListener('vaultor:local-archive-import',handoff);
   },[sessionReady]);
   const resourceReconcileWork = useRef(Promise.resolve());
+  useEffect(()=>{const browse=(event:Event)=>{const detail=(event as CustomEvent<{section:LibrarySection;identity:Identity;epoch:number}>).detail;if(!detail||detail.epoch!==getConnection().epoch||!identityRef.current||!sameWorkspace(detail.identity,identityRef.current)||!['library','trash'].includes(detail.section))return;setCollection(null);setLibrarySection(detail.section);setLibraryVisible(true);dismissPreview({restoreFocus:false});};window.addEventListener('vaultor:import-browse',browse);return()=>window.removeEventListener('vaultor:import-browse',browse);},[dismissPreview]);
   const remoteReconcile = useRef<(events:Array<Pick<RemoteChange,'kind'|'ids'|'generation'>&{origin?:'import'}>)=>void>(()=>{});
   useEffect(()=>subscribeResourceChanges(change=>{if(change.kind==='imported'&&identityRef.current?.id===change.workspaceId&&identityRef.current.generation===change.generation)remoteReconcile.current([{kind:'resources',ids:change.ids,generation:change.generation,origin:'import'}]);}),[]);
   remoteReconcile.current = events => {
@@ -1365,7 +1369,7 @@ export default function Dashboard() {
       <ErrorBoundary region="note export"><NoteExportModal key={(identityRef.current?.id ?? "") + ":" + (identityRef.current?.generation ?? "")} flushNote={id => exportSaveRef.current(id)} noteId={noteExport?.id} title={noteExport?.title ?? ""} flush={async () => { if (noteExport) await exportSaveRef.current(noteExport.id); }} onClose={() => setNoteExport(null)} /></ErrorBoundary>
       <ErrorBoundary region="workspace transfer"><TransferModal mode={transferMode} onClose={() => setTransferMode(null)} flush={async () => { await linkedWorkspace.flush(); await saves.flushAll(); await flushSettings(); }} onImported={afterImport} /></ErrorBoundary>
       {(sessionError||sessionMessage||recoveryRecords.length>0)&&<div className="flex flex-wrap items-center gap-3 border-b border-border bg-[var(--surface-3)] px-4 py-2 text-sm"><span role="status">{sessionError||sessionMessage||(recoveryRecords.length+' recovery drafts available')}</span>{sessionError&&<button className="library-button" onClick={()=>{setSessionError('');void Promise.all([recovery.retryStorage(),sessionPersistence.current?.retry()]).catch(()=>setSessionError('Local recovery storage is still unavailable.'));}}>Retry storage</button>}{recoveryRecords.length>0&&<button className="library-button" onClick={()=>{recoveryFocus.captureFocus();setRecoveryOpen(true);}}>Review drafts ({recoveryRecords.length})</button>}{sessionMessage&&<button aria-label="Dismiss session message" onClick={()=>setSessionMessage('')}><X size={16}/></button>}</div>}
-      {recoveryOpen&&<RecoveryPanel records={recoveryRecords} onResolve={resolveRecovery} canRetry={record=>recovery.current(record.noteId)?.key===record.key&&saves.status(record.noteId)==='failed'} onRetry={record=>saves.flush(record.noteId)} onClose={()=>{setRecoveryOpen(false);recoveryFocus.restoreFocus();}}/>}
+      {recoveryOpen&&<RecoveryPanel ownsDraft={record=>record.tabId===recovery.tabId} records={recoveryRecords} onResolve={resolveRecovery} canRetry={record=>recovery.current(record.noteId)?.key===record.key&&saves.status(record.noteId)==='failed'} onRetry={record=>saves.flush(record.noteId)} onClose={()=>{setRecoveryOpen(false);recoveryFocus.restoreFocus();}}/>}
       <ErrorBoundary region="diagnostics"><DiagnosticsPanel open={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} /></ErrorBoundary>
       {paneState.issue && <div role="alert" className="z-[85] flex flex-wrap items-center gap-3 border-b border-border bg-[var(--surface-3)] px-4 py-2 text-sm">
         <span>{paneState.issue.message}</span>
@@ -1430,7 +1434,7 @@ export default function Dashboard() {
           <div className="flex h-full min-h-0 flex-col">
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
             {activePaneId&&<button className="library-button" onClick={()=>void paneNavigation.close(activePaneId)}>Close pane</button>}
-            {activeNoteId&&resourceDetails[activeNoteId]&&<button className="library-button" onClick={()=>setReferenceTarget(resourceDetails[activeNoteId])}>References</button>}
+            {activeNoteId&&resourceDetails[activeNoteId]&&<button className="library-button" onClick={()=>setReferenceTarget(resourceDetails[activeNoteId])}>Links and mentions</button>}
           </JourneyBar>}
           <div className="min-h-0 flex-1 relative">
             <WorkspacePaneLayout transparency={uiTransparency} paneIds={openWorkspaceNotes.map(note => note.slotId!)} focusedId={openWorkspaceNotes.find(note=>note.paneId===activePaneId)?.slotId ?? null} animationMode={localSettings.animationMode}>

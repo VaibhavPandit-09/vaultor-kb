@@ -57,6 +57,7 @@ export interface DesktopBridge {
   windowStatus?(): Promise<Result<{ maximized: boolean }>>;
   windowAction?(action: 'minimize' | 'maximize' | 'close' | 'menu'): Promise<Result<{ maximized: boolean }>>;
   onWindowStatus?(callback: (value: { maximized: boolean }) => void): () => void;
+  onAppCommand?(callback:(command:'workspaces'|'settings')=>void):()=>void;
   onConnections?(callback: () => void): () => void;
   hosting?(): Promise<Result<{ startAtLogin: boolean; registered: boolean; enabledByOS: boolean; supported: boolean; error: string }>>;
   login?(enabled: boolean): Promise<Result<{ startAtLogin: boolean; registered: boolean; enabledByOS: boolean; supported: boolean; error: string }>>;

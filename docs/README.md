@@ -15,7 +15,7 @@ Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0
 ## Design contracts
 
 - [UI_PHILOSOPHY](design/UI_PHILOSOPHY.md): Authoritative desktop/shared density, continuity, motion, accessibility and reduced-motion rules.
-- [Menu and copy audit,2026-10-29](design/MENU-UX-AUDIT-2026-10-29.md): Source/screenshot findings on Activity/window overlap, stale import history and wording across menus; proposed states and priorities, not implemented behavior.
+- [Menu and copy audit,2026-10-29](design/MENU-UX-AUDIT-2026-10-29.md): Source/screenshot findings on Activity/window overlap, stale import history and wording across menus; historical baseline and rationale for the0.24.1 fixes.
 - [ANDROID_UI_PHILOSOPHY](design/ANDROID_UI_PHILOSOPHY.md): Android extension: hybrid UI, reader, Back, platform adaptation and restrained semantic haptics.
 
 ## Development and validation
@@ -31,6 +31,7 @@ Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0
 
 ## Desktop delivery
 
+- [Windows0.24.1 release](desktop/releases/v0.24.1.md): Caption overlap, current import inventory and clearer menu actions; qualification and platform status.
 - [Windows0.24.0 release](desktop/releases/v0.24.0.md): Activity, safe repeat imports/all-pages Trash, one-row compact headers and first-paint themes; exact qualification/publication status.
 
 - [Windows0.23.1 release](desktop/releases/v0.23.1.md): published performance/fidelity patch, packaged native acceptance, original-key public updater verification and remaining large-document limits.

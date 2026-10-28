@@ -38,6 +38,14 @@ class ResourceLifecycleTest {
  @MockitoSpyBean FileStorageService files;
  String doc(String text){return "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\""+text+"\"}]}]}";}
  ResourceLifecycleService.Item item(String id,String action){return new ResourceLifecycleService.Item(UUID.randomUUID().toString(),id,action,resources.findById(id).orElseThrow().getRevision());}
+ @Test void importReviewReportsLiveTrashAndPurgedTargetsWithoutReadingBodies() {
+  var active=service.createNote("Active imported item",doc("preserved"));var removed=service.createNote("Removed imported item",doc("preserved"));String missing=UUID.randomUUID().toString(),collection=UUID.randomUUID().toString();
+  lifecycle.apply(item(removed.getId(),"trash"));
+  var input=new ResourceBrowseService.PresenceInput(List.of(active.getId(),removed.getId(),missing),List.of(collection));
+  var result=controller.importPresence(input);assertEquals("active",result.items().get(active.getId()));assertEquals("trash",result.items().get(removed.getId()));assertEquals("missing",result.items().get(missing));assertTrue(result.collections().isEmpty());
+  lifecycle.apply(item(removed.getId(),"purge"));assertEquals("missing",controller.importPresence(input).items().get(removed.getId()));assertEquals(doc("preserved"),resources.findById(active.getId()).orElseThrow().getContent());
+  assertThrows(IllegalArgumentException.class,()->browse.importPresence(new ResourceBrowseService.PresenceInput(Collections.nCopies(201,missing),List.of())));
+ }
  @Test void additiveMigrationKeepsLegacyActiveAndRevisionConflictDoesNotMutate() {
   var legacy=resources.findById("legacy").orElseThrow();assertNull(legacy.getTrashedAt());assertNotNull(browse.byIds(List.of("legacy")).get("legacy").revision());
   var stale=item("legacy","trash");service.updateNote("legacy","Changed",doc("new"));assertThrows(RuntimeException.class,()->lifecycle.apply(stale));assertNull(resources.findById("legacy").orElseThrow().getTrashedAt());

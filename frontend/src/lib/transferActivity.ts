@@ -20,7 +20,7 @@ function runner(task:Pick<ActivityTask,'kind'|'receipt'|'epoch'|'workspace'|'exp
    if(operation.status==='SUCCEEDED'){
     const {data:verified}=await api.put<{bytes:number;sha256:string}>('/exports/requests/'+id,intent,config);
     if(verified.bytes<=0||!/^[a-f0-9]{64}$/.test(verified.sha256))throw Error('Export receipt does not prove a prepared artifact. Retry the same receipt.');
-    context.update({phase:'Verified ZIP ready to save',detail:`${verified.bytes} bytes · SHA-256 ${verified.sha256}`,output:{path:'/exports/'+id+'/download',filename:task.exportSelection?'vaultor-partial.zip':'workspace.zip'}});return true;
+    context.update({phase:'ZIP ready to save',detail:`${verified.bytes} bytes · SHA-256 ${verified.sha256}`,output:{path:'/exports/'+id+'/download',filename:task.exportSelection?'vaultor-partial.zip':'workspace.zip'}});return true;
    }
    if(context.paused()){context.update({phase:'Status monitoring paused — host preparation may continue'});return false;}
    await wait();operation=(await api.get<Operation>('/operations/'+id,config)).data;
@@ -41,7 +41,7 @@ function runner(task:Pick<ActivityTask,'kind'|'receipt'|'epoch'|'workspace'|'exp
    const receipt=copy?unwrap(await bridge!.copyStatus!({id})):(await api.get<WorkspaceTransferReceipt>('/workspace-imports/'+id,config)).data;
    context.update({phase:receipt.state,detail:receipt.detail,warnings:receipt.preview?.warnings.length});
    if(receipt.state==='FAILED')throw Error(receipt.detail||'Workspace creation failed. Retry retains its original identity.');
-   if(receipt.state==='SUCCEEDED'){window.dispatchEvent(new Event('vaultor:workspaces-changed'));context.update({phase:'Verified workspace ready — open it from Workspaces'});return true;}
+   if(receipt.state==='SUCCEEDED'){window.dispatchEvent(new Event('vaultor:workspaces-changed'));context.update({phase:'Workspace created — open it from Workspaces'});return true;}
    if(context.paused()){context.update({phase:'Status monitoring paused — host publication may continue'});return false;}
    await wait();await context.check();
   }
@@ -72,7 +72,7 @@ export async function dispatchWorkspacePreview(intent:{id:string;name:string;kin
   if(receipt.state==='FAILED')throw Error(receipt.detail||'Workspace preparation failed. Retry retains the original receipt.');
   if(receipt.state==='SUCCEEDED'||receipt.state==='CANCELLED'){context.update({phase:receipt.state,detail:receipt.detail});return true;}
   if(receipt.state!=='PREVIEW')throw Error('Workspace review is still pending. Retry its retained receipt.');
-  context.update({phase:'Needs approval — review validated workspace',detail:[receipt.detail,receipt.preview?`${receipt.preview.notes} notes · ${receipt.preview.files} files · ${receipt.preview.tags} tags`:'',...(receipt.preview?.warnings??[])].join('\n'),warnings:receipt.preview?.warnings.length});return false;
+  context.update({phase:'Ready to review',detail:[receipt.detail,receipt.preview?`${receipt.preview.notes} notes · ${receipt.preview.files} files · ${receipt.preview.tags} tags`:'',...(receipt.preview?.warnings??[])].join('\n'),warnings:receipt.preview?.warnings.length});return false;
  });
 }
 export async function saveActivityOutput(task:ActivityTask){

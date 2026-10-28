@@ -299,13 +299,16 @@ else {
       return window;
     };
     const windowMenu = () => Menu.buildFromTemplate([
-      { label: 'Connections & hosting…', click: () => window?.webContents.send('desktop:connections') },
+      { label: 'Connections and sharing…', click: () => window?.webContents.send('desktop:connections') },
       { label: 'Updates…', click: () => window?.webContents.send('desktop:updates-open') },
       ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
-      { label: 'File', submenu: [{ role: 'close' }, { role: 'quit' }] },
+      {label:'Workspaces…',click:()=>window?.webContents.send('desktop:app-command','workspaces')},
+      {label:'Settings…',click:()=>window?.webContents.send('desktop:app-command','settings')},
+      {type:'separator'},
       { role: 'editMenu' },
       { label: 'View', submenu: [{ role: 'reload' }, { role: 'togglefullscreen' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'toggleDevTools' }] },
       { role: 'windowMenu' },
+      {type:'separator'},{label:'Close window',role:'close'},{label:'Quit Vaultor',role:'quit'},
     ]);
     Menu.setApplicationMenu(process.platform === 'darwin' ? windowMenu() : null);
     createWindow();
@@ -323,7 +326,7 @@ else {
       const trayIcon=process.platform==='darwin'?nativeImage.createFromPath(fileURLToPath(new URL('../assets/vaultorTemplate.png',import.meta.url))):nativeImage.createFromPath(fileURLToPath(new URL('../assets/vaultor-16.png',import.meta.url)));
       if(process.platform==='darwin')trayIcon.setTemplateImage(true);
       tray=new Tray(trayIcon);tray.setToolTip('Vaultor');tray.on('click',showApp);
-      const trayMenu=()=>tray.setContextMenu(Menu.buildFromTemplate([{label:'Show Vaultor',click:showApp},{label:'Connections & hosting…',click:()=>{showApp();window.webContents.send('desktop:connections');}},{label:'Open in browser',enabled:Boolean(owned.address),click:()=>void openOwnerBrowser().catch(error=>{owned.error=error.message;})},{type:'separator'},{label:'Quit Vaultor',click:()=>app.quit()}]));
+      const trayMenu=()=>tray.setContextMenu(Menu.buildFromTemplate([{label:'Show Vaultor',click:showApp},{label:'Connections and sharing…',click:()=>{showApp();window.webContents.send('desktop:connections');}},{label:'Open in browser',enabled:Boolean(owned.address),click:()=>void openOwnerBrowser().catch(error=>{owned.error=error.message;})},{type:'separator'},{label:'Quit Vaultor',click:()=>app.quit()}]));
       trayMenu();owned.on('status',trayMenu);
     } catch(error){ console.error('Tray unavailable:',error.message);window.show(); }
     powerMonitor.on('resume',()=>{discovery.withdraw();if(owned.address)void connections.owner('/trust/renew','POST').then(()=>connections.sharing()).catch(error=>{owned.error=error.message;});window?.webContents.send('desktop:resume');});

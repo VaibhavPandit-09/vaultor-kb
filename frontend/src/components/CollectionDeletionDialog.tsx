@@ -42,21 +42,21 @@ export default function CollectionDeletionDialog({collection:initialCollection,o
    notifyResourceChange({kind:'organization',entity:'collection',deletedCollectionIds:data.deletedCollectionIds,survivingParentId:data.parentId});
    resourcesChanged(data.trashedResourceIds,true);
    onDeleted();
-  }catch(e){const status=(e as {response?:{status?:number}}).response?.status;setCanReview(!committed.current&&(!submission.current||Boolean(status&&[400,404,409,412,422,428].includes(status))));const detail=(e as {response?:{data?:{detail?:string}}}).response?.data?.detail;setError((committed.current?'Hierarchy deleted. Local view reconciliation failed; retry to finish. ':'')+(detail??(e instanceof Error?e.message:organizationError(e))));}
+  }catch(e){const status=(e as {response?:{status?:number}}).response?.status;setCanReview(!committed.current&&(!submission.current||Boolean(status&&[400,404,409,412,422,428].includes(status))));const detail=(e as {response?:{data?:{detail?:string}}}).response?.data?.detail;setError((committed.current?'Collections deleted. The view could not refresh; retry to finish. ':'')+(detail??(e instanceof Error?e.message:organizationError(e))));}
   finally{running.current=false;setBusy(false);}
  }
- return createPortal(<AppModal open title={'Delete “'+collection.name+'”?'} onClose={()=>{if(!running.current)onClose();}} description="Deleted collections are not restored through resource Trash." footer={<>
-  <button className="library-button text-red-500" disabled={busy||!plan} onClick={()=>void perform()}>{busy?'Working…':submitted?'Retry deletion':'Delete hierarchy'}</button>
-  {draftFailed&&<button className="library-button" disabled={busy} onClick={()=>void perform(true)}>Keep recoverable drafts and trash saved versions</button>}
+ return createPortal(<AppModal open title={'Delete “'+collection.name+'”?'} onClose={()=>{if(!running.current)onClose();}} description="Deleted collections cannot be restored from Trash." footer={<>
+  <button className="library-button text-red-500" disabled={busy||!plan} onClick={()=>void perform()}>{busy?'Working…':submitted?'Retry deletion':mode==='keep'?`Delete ${plan?.collections.length??''} ${plan?.collections.length===1?'collection':'collections'}`:`Delete collections and trash ${plan?.exclusiveResources.length??''} ${plan?.exclusiveResources.length===1?'item':'items'}`}</button>
+  {draftFailed&&<button className="library-button" disabled={busy} onClick={()=>void perform(true)}>Keep drafts and move saved items to Trash</button>}
   <button className="library-button" disabled={busy} onClick={onClose}>Cancel</button>
  </>}>
   {plan?<div className="space-y-3 text-sm">
-   <p>{plan.collections.length} collections, including this root · {plan.managedResources} unique managed resources · {plan.sharedResources} shared outside this hierarchy.</p>
-   <label className="flex gap-2"><input autoFocus type="radio" name="collection-deletion-mode" checked={mode==='keep'} disabled={busy||submitted} onChange={()=>setMode('keep')}/><span><strong>Delete collections only</strong><br/>All {plan.managedResources} managed resources remain available in Library or their existing Trash state.</span></label>
-   <label className="flex gap-2"><input type="radio" name="collection-deletion-mode" checked={mode==='trash-exclusive'} disabled={busy||submitted} onChange={()=>setMode('trash-exclusive')}/><span><strong>Delete collections and move exclusive resources to Trash</strong><br/>{plan.exclusiveResources.length} active exclusive resources move to Trash. {plan.sharedResources} shared resources stay available.</span></label>
-   {plan.linkedReferences>0&&<p>{plan.linkedReferences} linked-document references lose memberships only. External files, linked sources and private recovery evidence remain untouched.</p>}
+   <p>{plan.collections.length} collections, including subcollections · {plan.managedResources} stored items · {plan.sharedResources} also in other collections.</p>
+   <label className="flex gap-2"><input autoFocus type="radio" name="collection-deletion-mode" checked={mode==='keep'} disabled={busy||submitted} onChange={()=>setMode('keep')}/><span><strong>Delete collections only</strong><br/>All {plan.managedResources} items stay in Library or Trash.</span></label>
+   <label className="flex gap-2"><input type="radio" name="collection-deletion-mode" checked={mode==='trash-exclusive'} disabled={busy||submitted} onChange={()=>setMode('trash-exclusive')}/><span><strong>Delete collections and trash items found only here</strong><br/>{plan.exclusiveResources.length} items move to Trash. {plan.sharedResources} items also in other collections stay available.</span></label>
+   {plan.linkedReferences>0&&<p>{plan.linkedReferences} linked items leave these collections. External files and recovery drafts stay untouched.</p>}
    {mode==='trash-exclusive'&&plan.referringNotes>0&&<p>{plan.referringNotes} saved notes outside this hierarchy link to the Trash targets. Those links become unavailable until Restore.</p>}
-  </div>:<p role="status">Checking hierarchy…</p>}
-  {error&&<p role="alert">{error}{submitted?' Retry uses the same operation identity.':''}{canReview&&<button className="library-button" disabled={busy} onClick={()=>{submission.current=undefined;setSubmitted(false);setPlan(undefined);setMode('keep');setRetry(n=>n+1);}}>Review current hierarchy</button>}</p>}
+  </div>:<p role="status">Checking collections and items…</p>}
+  {error&&<p role="alert">{error}{submitted?' Retry continues the same deletion safely.':''}{canReview&&<button className="library-button" disabled={busy} onClick={()=>{submission.current=undefined;setSubmitted(false);setPlan(undefined);setMode('keep');setRetry(n=>n+1);}}>Review current items</button>}</p>}
  </AppModal>,document.body);
 }

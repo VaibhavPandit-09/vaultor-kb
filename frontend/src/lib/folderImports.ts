@@ -1,3 +1,4 @@
+import { getAcceptedCapabilities } from './connection';
 import api from './api';
 import { convertText, importResource, noteTitle, type ImportRow, type ImportSession, type ImportReference } from './fileImports';
 import { getConnection } from './platform';
@@ -59,8 +60,31 @@ export async function folderJournal(session:ImportSession) {
   const legacy=manifests.find(value=>!value.complete&&(value.signature===legacySignature||value.legacySignature===legacySignature));
   const previous=matching.find(value=>!value.complete)??(legacy?{...legacy,legacyVerification:true}:undefined),completed=matching.find(value=>value.complete);
   const selectedPaths=new Set(session.rows.map(row=>row.path)),selectedDirectories=new Set(session.folder?folderPaths(session):[]);
-  const related=Boolean(completed)||manifests.some(value=>value.rows.some(row=>selectedPaths.has(row.path))||Object.keys(value.directories).some(path=>selectedDirectories.has(path)));
-  return {key:key+':'+crypto.randomUUID(),identity,epoch,signature,previous,completed,related,store};
+  const candidates=manifests.filter(value=>matching.includes(value)||value.rows.some(row=>selectedPaths.has(row.path))||Object.keys(value.directories).some(path=>selectedDirectories.has(path)));
+  const history=candidates.length>0;
+  const live={active:0,trash:0,missing:0,collections:0,missingCollections:0,unknown:false};
+  let lookupProblem='';let resumeBlocked=false;
+  const createdIds=new Set(previous?.rows.filter(row=>row.status==='done').map(row=>row.id));const createdCollections=new Set([...Object.values(previous?.directories??{}).filter(entry=>entry.done).map(entry=>entry.id),...(previous?.destination?[previous.destination.id]:[])]);
+  if(history){
+    const ids=[...new Set(candidates.flatMap(value=>value.rows.filter(row=>matching.includes(value)||selectedPaths.has(row.path)).map(row=>row.id)))];
+    const collections=[...new Set(candidates.flatMap(value=>[...Object.values(value.directories).map(entry=>entry.id),...(value.destination?[value.destination.id]:[])]))];
+    if(getAcceptedCapabilities()?.importPresence!==1){live.unknown=true;lookupProblem='Update the computer sharing this workspace to check earlier imports.';}else if(ids.length>6000||collections.length>6000){live.unknown=true;lookupProblem='This import history is too large to check in one review. Import another copy only if you want new copies.';}
+    else try{
+      for(let offset=0;offset<Math.max(ids.length,collections.length);offset+=200){
+        const batch=ids.slice(offset,offset+200),folders=collections.slice(offset,offset+200);
+        const {data}=await api.post<{items:Record<string,string>;collections:string[]}>('/resources/import-presence',{ids:batch,collections:folders},{connectionEpoch:epoch,headers:{'X-Vaultor-Generation':identity.generation},backgroundDiagnostic:true});
+        if(!data||!Array.isArray(data.collections)||batch.some(id=>!['active','trash','missing'].includes(data.items?.[id]))||data.collections.some(id=>!folders.includes(id)))throw Error('Import review could not verify earlier items');
+        for(const id of batch){live[data.items[id] as 'active'|'trash'|'missing']++;if(data.items[id]==='missing'&&createdIds.has(id))resumeBlocked=true;}
+        if(folders.some(id=>createdCollections.has(id)&&!data.collections.includes(id)))resumeBlocked=true;
+        live.collections+=data.collections.length;live.missingCollections+=folders.length-data.collections.length;
+      }
+    }catch(error){if(epoch!==getConnection().epoch)throw error;const response=(error as {response?:{status:number;data?:{code?:string}}}).response;if(response?.data?.code==='WORKSPACE_GENERATION_CHANGED')throw Error('Workspace changed. Close this review and reselect the source.');live.unknown=true;lookupProblem=response?.status===401||response?.status===403?'Access changed. Reconnect or ask the workspace owner for access.':'Could not reach the earlier items. Check the connection and try again.';}
+  }
+  if(epoch!==getConnection().epoch)throw Error('Connection changed during import review. Reopen it in the original workspace.');
+  const emptyFolderMatch=Boolean(completed)&&completed?.rows.length===0&&live.collections>0&&live.missingCollections===0;
+  const related=history&&(live.unknown||live.active+live.trash>0||emptyFolderMatch&&live.collections>0);
+  const canSkip=Boolean(completed)&&!live.unknown&&(live.active>0||emptyFolderMatch&&live.collections>0)&&live.trash===0&&live.missing===0;
+  return {key:key+':'+crypto.randomUUID(),identity,epoch,signature,previous,completed:canSkip?completed:undefined,exact:Boolean(completed),related,history,live,lookupProblem,resumeBlocked,store};
 }
 /** Chunk digests bound memory for native tickets and large originals. Equal
  * metadata alone never proves byte equality. No original bytes are journaled. */

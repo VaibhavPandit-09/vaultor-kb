@@ -1,6 +1,6 @@
-# Menu, import-history and desktop-chrome audit
+# Historical0.24.0 menu, import-history and desktop-chrome audit
 
-Reviewed 2026-10-29 against master 7bbbc3a and shipped Windows 0.24.0. This is an audit with proposed changes, not an implementation or release claim. The existing [UI philosophy](UI_PHILOSOPHY.md), [imports](../workspace/IMPORTS.md), [Activity](../workspace/ACTIVITY.md), [lifecycle](../workspace/RESOURCE-LIFECYCLE.md) and transfer contracts remain authoritative for current behavior.
+Reviewed 2026-10-29 against master 7bbbc3a and shipped Windows 0.24.0. This records the historical0.24.0 findings. The user subsequently authorized implementation;0.24.1 applies the audited menu/chrome/history/copy refinements. Current topic guides and the [0.24.1 ledger](../desktop/releases/v0.24.1.md) own implemented behavior and actual release status. The proposals below describe the audit-time baseline; they are not a second current behavior contract. The existing [UI philosophy](UI_PHILOSOPHY.md), [imports](../workspace/IMPORTS.md), [Activity](../workspace/ACTIVITY.md), [lifecycle](../workspace/RESOURCE-LIFECYCLE.md) and transfer contracts remain authoritative for current behavior.
 
 ## Evidence and scope
 

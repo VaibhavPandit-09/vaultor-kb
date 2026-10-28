@@ -35,7 +35,7 @@ export default function NoteOrientation({ identity, children, status, tagCount }
   }, []);
   return <div ref={header} className="note-orientation" data-organization-open={disclosure}>
     <div className="note-heading"><div className="note-identity">{identity}</div>
-    <button ref={toggle} className="note-organization-toggle" aria-label={`Organization · ${tagCount} tags`} title={`Organization · ${tagCount} tags`} aria-controls={regionId} aria-expanded={disclosure === 'auto' ? undefined : disclosure === 'open'}
+    <button ref={toggle} className="note-organization-toggle" aria-label={`Tags and collections · ${tagCount} tags`} title={`Tags and collections · ${tagCount} tags`} aria-controls={regionId} aria-expanded={disclosure === 'auto' ? undefined : disclosure === 'open'}
       onClick={() => {
         const next = toggle.current?.getAttribute('aria-expanded') !== 'true';
         mode.current = next ? 'open' : 'closed'; setDisclosure(mode.current);

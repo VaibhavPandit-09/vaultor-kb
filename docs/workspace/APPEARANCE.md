@@ -1,6 +1,6 @@
 # Appearance and OLED
 
-Reviewed 2026-10-28. Settings → Appearance chooses OS, Light, Dark or OLED for this device. OS remains the default and follows the system Light/Dark choice. The sidebar theme control cycles OS → Light → Dark → OLED → OS. Explicit themes do not change when the OS appearance changes.
+Reviewed 2026-10-29. Settings → Appearance chooses System, Light, Dark or OLED for this device. System (stored as os) remains the default and follows the system Light/Dark choice. The sidebar theme control cycles OS → Light → Dark → OLED → OS. Explicit themes do not change when the OS appearance changes.
 
 ## First paint
 
@@ -16,7 +16,7 @@ OLED retains the dark component class but uses data-theme=oled and native color-
 
 ## Transparency and persistence
 
-OLED honors the same saved UI transparency value as Light/Dark:60–100% is panel opacity, with lower values revealing more application context. OLED no longer forces glass alpha1/blur0. Its workspace remains black, while glass dialogs, floating navigation, previews and utility menus use black/neutral raised RGB tokens with the saved alpha and blur. The root `--ui-opacity` updates with local settings. Unfocused note panes have additional depth opacity/brightness and a lower background alpha derived from the slider; focused panes use its direct alpha. Settings describes the control consistently across themes. Original PDF/image pixels remain unchanged. A black translucent surface over a black canvas can look black; overlaying other application content demonstrates the glass effect.
+OLED honors the same saved UI transparency value as Light/Dark:60–100% is panel opacity, with lower values revealing more application context. OLED no longer forces glass alpha1/blur0. Its workspace remains black, while glass dialogs, floating navigation, previews and utility menus use black/neutral raised RGB tokens with the saved alpha and blur. The root `--ui-opacity` updates with local settings. Unfocused note panes have additional depth opacity/brightness and a lower background alpha derived from the slider; focused panes use its direct alpha. Settings0.24.1 labels the slider Opacity:100% is solid, lower values are more transparent. The existing uiTransparency value/schema and60–100% bounds are unchanged. Original PDF/image pixels remain unchanged. A black translucent surface over a black canvas can look black; overlaying other application content demonstrates the glass effect.
 
 The theme is stored in device-specific local settings, outside portable archives. Backend normalization accepts oled without a schema migration; unknown values still normalize to os. Update the connected server to 0.3.2+ for reliable OLED persistence. Updating a remote client does not update its host. Browser access uses the host's UI build. Physical OLED appearance depends on the user's display; screenshots and native computed-color checks do not certify hardware rendering.
 

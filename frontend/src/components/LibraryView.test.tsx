@@ -70,13 +70,13 @@ it('combines collection and tag filtering and scopes selection to the current pa
 });
 it('retains query while opting into content and changing collection destination',async()=>{
  const changeScope=vi.fn();render(<LibraryView section="library" visible tags={[]} collection={{id:'atlas',name:'Atlas',count:100}} onCollection={changeScope} hasNotes={false} onReturn={()=>{}} onOpen={()=>{}}/>);
- const input=screen.getByLabelText('Search resources');fireEvent.change(input,{target:{value:'needle'}});await screen.findByText('Note 0');fireEvent.click(screen.getByRole('button',{name:'Search options'}));
+ const input=screen.getByLabelText('Search items');fireEvent.change(input,{target:{value:'needle'}});await screen.findByText('Note 0');fireEvent.click(screen.getByRole('button',{name:'Search options'}));
  const toggle=screen.getByLabelText('Include saved content');expect((toggle as HTMLInputElement).checked).toBe(false);fireEvent.click(toggle);expect((input as HTMLInputElement).value).toBe('needle');await waitFor(()=>expect((screen.getByLabelText('Sort resources') as HTMLSelectElement).disabled).toBe(true));fireEvent.click(screen.getByRole('button',{name:'Entire workspace'}));expect(changeScope).toHaveBeenCalledWith(null);expect((input as HTMLInputElement).value).toBe('needle');
 });
 it('starts from restored title/content mode and query without restoring bulk selection',()=>{
  const context={query:'saved query',searchMode:'content' as const,type:'note',sort:'title' as const};
  const view=render(<LibraryView section="library" visible tags={[]} hasNotes={false} onOpen={()=>{}} onReturn={()=>{}} initialContext={context}/>);
- expect((view.getByRole('textbox',{name:'Search resources'}) as HTMLInputElement).value).toBe('saved query');
+ expect((view.getByRole('textbox',{name:'Search items'}) as HTMLInputElement).value).toBe('saved query');
  expect(view.queryByText('selected')).toBeNull();
 });
 
@@ -84,7 +84,7 @@ it('attaches compression to the mounted Library scroll owner without replacing s
  const view=render(<LibraryView section="library" visible tags={[]} hasNotes onReturn={()=>{}} onOpen={()=>{}}/>);
  await screen.findByText('Note 0');
  const viewport=view.container.querySelector<HTMLElement>('.library-transform')!;
- const input=screen.getByRole('textbox',{name:'Search resources'}) as HTMLInputElement;
+ const input=screen.getByRole('textbox',{name:'Search items'}) as HTMLInputElement;
  fireEvent.change(input,{target:{value:'research'}});
  await waitFor(()=>expect(browseResources).toHaveBeenLastCalledWith(expect.objectContaining({q:'research'}),expect.any(AbortSignal)));
  await screen.findByText('Note 0');
@@ -95,7 +95,7 @@ it('attaches compression to the mounted Library scroll owner without replacing s
  viewport.scrollTop=160; fireEvent.scroll(viewport);
  expect(document.activeElement).toBe(input);expect(input.selectionStart).toBe(1);input.blur();fireEvent.scroll(viewport);
  await waitFor(()=>expect(Number(viewport.style.getPropertyValue('--library-progress'))).toBeGreaterThan(.9));
- expect(viewport.querySelector('input[aria-label="Search resources"]')).toBe(input);expect(input.selectionStart).toBe(1);
+ expect(viewport.querySelector('input[aria-label="Search items"]')).toBe(input);expect(input.selectionStart).toBe(1);
  fireEvent.click(screen.getByRole('button',{name:/Search and filters applied/}));expect(document.activeElement).toBe(input);
  expect(screen.getAllByRole('listitem')[0]).toBe(row); expect(browseResources).toHaveBeenCalledTimes(queries);
 });
@@ -126,7 +126,7 @@ it('transforms collection identity and actions without duplicating the long titl
  expect(screen.getAllByRole('heading',{name})).toHaveLength(1);
  expect(screen.getAllByText(name).filter(node=>!node.closest('[aria-hidden="true"]'))).toHaveLength(1);
  expect(view.container.querySelector('.collection-transform .library-orientation')?.contains(heading)).toBe(true);
- expect(screen.getByRole('button',{name:'Add resource'})).toBeTruthy();
+ expect(screen.getByRole('button',{name:'Add item'})).toBeTruthy();
  fireEvent.click(screen.getByRole('button',{name:'Library'})); expect(changeScope).toHaveBeenCalledWith(null);
 });
 
