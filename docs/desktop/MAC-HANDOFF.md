@@ -2,9 +2,9 @@
 
 Reviewed 2026-10-29. Complete-platform0.21.0 is published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The0.22.0 release candidate remains a separate pending platform record.0.23.0/0.23.1 Windows-only releases retain their disclosed performance limits. No later Mac build or acceptance is available in this Windows session; the complete-platform stable gate remains open.
 
-## 0.24.2 browse compression candidate
+## 0.24.2 Windows-only browse compression release
 
-Mac access remains unavailable. [The0.24.2 ledger](releases/v0.24.2.md) owns the immutable source and Windows evidence. On native arm64 use that exact tag/version and original signer, rebuild UI/server and qualify the same mounted browse search/filter/paging controls through forward/reverse scroll, wide/narrow layouts, keyboard focus, context disclosure and reduced motion. Windows results do not certify Mac scrolling or native geometry. Add only the absent verified platform pair under RELEASE-PROCESS; preserve published bytes/tags.
+Windows0.24.2 is published at immutable v0.24.2/source`ae0a674a0924d11cde84190865f1bab1189af909`. Mac access remains unavailable. [The0.24.2 ledger](releases/v0.24.2.md) owns the immutable source and Windows evidence. On native arm64 use that exact tag/version and original signer, rebuild UI/server and qualify the same mounted browse search/filter/paging controls through forward/reverse scroll, wide/narrow layouts, keyboard focus, context disclosure and reduced motion. Windows results do not certify Mac scrolling or native geometry. Add only the absent verified platform pair under RELEASE-PROCESS; preserve published bytes/tags.
 
 ## 0.24.1 Windows-only menu and import reliability release
 
