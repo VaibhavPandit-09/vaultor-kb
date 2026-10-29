@@ -2,7 +2,7 @@ import { frameResizeObserver } from './frameResizeObserver';
 import { useEffect, type RefObject } from 'react';
 export function syncLibraryControls(header:HTMLElement){
  const compact=header.dataset.compact==='true',open=header.dataset.tools==='true';
- for(const section of header.querySelectorAll<HTMLElement>('.library-filters,.library-summary,.library-working-context')){section.inert=compact&&!open;section.setAttribute('aria-hidden',String(compact&&!open));}
+ for(const section of header.querySelectorAll<HTMLElement>('.library-filters,.library-summary,.library-working-context')){const hidden=compact&&!open&&section.classList.contains('library-working-context');section.inert=hidden;section.setAttribute('aria-hidden',String(hidden));}
 }
 
 /** One bounded scroll signal. Never owns React, queries, editor or focus state. */
@@ -60,6 +60,8 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
   };
   const measureActions = () => {
     const actions = header.querySelector<HTMLElement>('.library-heading-actions');
+    viewport.style.setProperty('--library-compact-actions-width', `${Math.max(0,(actions?.children.length??0)*35-3)}px`);
+    viewport.style.setProperty('--library-pages-width', header.querySelector('.library-pagination')?'76px':'0px');
     viewport.style.setProperty('--library-actions-width', `${actions?.getBoundingClientRect().width ?? 0}px`);
     const path=header.querySelector<HTMLElement>('.collection-breadcrumb');
     if(path){
@@ -121,6 +123,8 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
     viewport.style.removeProperty('--library-progress');
     viewport.style.removeProperty('--library-title-lines');
     viewport.style.removeProperty('--library-actions-width');
+    viewport.style.removeProperty('--library-compact-actions-width');
+    viewport.style.removeProperty('--library-pages-width');
     titleMeasure?.remove();
     for(const key of ['--collection-title-expanded','--collection-path-progress','--collection-title-progress','--collection-path-space'])viewport.style.removeProperty(key);
     const path=header.querySelector<HTMLElement>('.collection-breadcrumb');if(path){path.inert=false;path.removeAttribute('aria-hidden');}

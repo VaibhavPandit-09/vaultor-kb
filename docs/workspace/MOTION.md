@@ -1,6 +1,6 @@
 # Interaction motion
 
-Reviewed 2026-10-27. Settings → Appearance → Animation feel selects Snappy or Smooth on this device. The interactive Try it comparison is explicit, finite and does not change the preference. There are no decorative loops or cursor-following effects.
+Reviewed 2026-10-29. Settings → Appearance → Animation feel selects Snappy or Smooth on this device. The interactive Try it comparison is explicit, finite and does not change the preference. There are no decorative loops or cursor-following effects.
 
 ## Shared behavior
 
@@ -29,6 +29,8 @@ Pane focus uses an explicit user-requested depth transformation: equal logical w
 PreviewShell owns real geometry across Side/Floating with one viewer ancestor chain. `data-motion-surface="geometry"` bypasses generic entry scaling and exit clones; iframe/image pixels are not transformed to fake resize. Mode changes retain viewer DOM, zoom/scroll, native URL ownership and file-action state. Shared panel timing and CSS retargeting apply; pointer/menu holds protect moving controls and reduced motion uses immediate final bounds. Preview-owned utility menus inherit priority above the preview, so Escape closes them first. [Review evidence and remaining cases](../desktop/releases/v0.13.0.md).
 
 Browse title accent follows the same smoothed compression progress as Note titles, including reversal, pointer/menu holds and reduced-motion endpoints; no independent color timer or duplicated heading exists. Library, Collection detail, Collections, Recent and Pinned share this rule.
+
+Windows0.24.2 keeps the same mounted search, type/presentation filters and result pager visible and interactive throughout browse compression. The title first yields a control lane, then existing controls migrate into it; secondary result text fades while page arrows retain their accessible labels and page tooltip. Wide workspace containers use one compact row; containers at or below940px use two compact rows, with paging beside search rather than crossing it. Space reclaimed by the header is compensated below to preserve scroll travel. Queries, rows, focus/caret and current page remain owned by the existing components. The Details control discloses result text and selection/context actions; it no longer gates search/filter access. Only the collapsed working-context section becomes inert/aria-hidden. Pointer/open-menu/focused-header holds and discrete reduced-motion endpoints retain their existing ownership.
 
 CommandStage retains one body while real height adapts below a stable query anchor. Search loading retains allocation. Deeper/back navigation gets an8px directional cue at shared menu timing (220ms Smooth/75ms Snappy); ordinary query/result changes do not replay it. Height uses the CSS interaction token. Stage replacement/unmount cancels the old cue; runtime reduced-motion/preference changes cancel it through the shared motion boundary. Focus, queries, captured targets and execution do not wait for motion.
 

@@ -31,6 +31,7 @@ Reviewed 2026-10-27 against integrated master, published Windows0.21.0/Mac0.21.0
 
 ## Desktop delivery
 
+- [Windows0.24.2 release](desktop/releases/v0.24.2.md): Search, filters and paging remain available through animated browse-header compression.
 - [Windows0.24.1 release](desktop/releases/v0.24.1.md): Caption overlap, current import inventory and clearer menu actions; qualification and platform status.
 - [Windows0.24.0 release](desktop/releases/v0.24.0.md): Activity, safe repeat imports/all-pages Trash, one-row compact headers and first-paint themes; exact qualification/publication status.
 

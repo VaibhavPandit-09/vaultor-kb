@@ -435,6 +435,10 @@ Latest integrated release qualification: backend120/frontend324/desktop44/mobile
 
 Diagnostic events carry category (layout/ui/application/save/recovery/integrity), severity (info/warning/error/critical) and bounded occurrences. Only exact native ResizeObserver delivery messages without an exception object or source location, from the current document or no filename, become informational layout events, aggregated over10seconds per connection. Other exceptions/rejections remain visible. Render/recovery failures retain critical classification; recoverable request/UI errors use warning. Save errors are explicitly classified by the SaveCoordinator writer. The shared notice reserves critical styling for critical severity and offers Retry saves only for a current genuine failed save; identifiers remain in Details. Recovery storage failures also retain their dedicated recovery warning. Pane/header/breadcrumb geometry observers coalesce layout writes into one cancellable animation frame, deduplicate measurements and preserve existing reading anchors. No correctness depends on motion completion.
 
+## Browse header compression (Windows0.24.2)
+
+LibraryOrientation/useLibraryCompression retain search, filter/presentation and paging controls at every scroll depth for Library, Recent, Pinned, Collections and collection contents. Shared progress first reserves the title/control lanes and then migrates the same controls; wide containers settle into one row, containers at or below940px into two compact rows. Only secondary context is disclosed/inert when closed. Existing query, paging, focus, scroll compensation, pointer/menu holds and reduced-motion behavior remain authoritative. [MOTION.md](workspace/MOTION.md) owns the transformation; [0.24.2](desktop/releases/v0.24.2.md) records qualification/platform status. No resource/API/schema or dependency change.
+
 ## Menu and import reliability (Windows0.24.1)
 
 Desktop caption controls reserve their complete164px footprint plus an8px Activity gap; the measured Activity width also reserves content-action clearance. Native controls remain above application dialogs. Activity compresses to an accessible icon at narrow widths. Native App menu commands route Workspaces and Settings through a whitelisted preload channel; Connections uses centralized dialog focus so Activity remains keyboard reachable. See [desktop](desktop/DESKTOP.md) and [Activity](workspace/ACTIVITY.md).
@@ -444,6 +448,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-10-29 — Persistent browse controls during scroll compression
+
+Corrected the shared compact-header rule that hid all search/filter/result controls behind a disclosure. Existing controls now move into a compact working row or responsive two-row layout. Added focused inertness/retained-node regression coverage and a disposable native five-screen/five-width motion/hit-target check. The29 affected frontend cases pass after updating old disclosure assumptions; TypeScript/production UI, scoped ESLint and embedded server builds pass. The final unmodified installer payload passes native geometry, compact typing, input/focus retention, disclosure, reversal and reduced-motion checks across five screens/five widths; all399 files match staged source. Publication status is recorded in the0.24.2 ledger. No data/authorization/API/dependency architecture change.
 
 ### 2026-10-29 — Menu clarity, caption geometry and current import inventory
 

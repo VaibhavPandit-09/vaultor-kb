@@ -50,7 +50,7 @@ it('keeps Collections search, page and scroll when hidden, with one reachable pa
  view.rerender(<EscapeManagerProvider><CollectionsView {...props} visible={false}/></EscapeManagerProvider>);
  expect(screen.queryByRole('textbox')).toBeNull();expect(api.get).toHaveBeenCalledTimes(requests);viewport.scrollTop=0;
  view.rerender(<EscapeManagerProvider><CollectionsView {...props}/></EscapeManagerProvider>);
- await screen.findByText('Collection 1');fireEvent.click(screen.getByRole('button',{name:'Search, filters and result details'}));expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('topic');
+ await screen.findByText('Collection 1');expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('topic');
  expect(screen.getByText('Page 2 of 3')).toBeTruthy();expect(viewport.scrollTop).toBe(400);
  fireEvent.click(screen.getByText('Collection 1'));expect(props.onOpen).toHaveBeenCalledWith(expect.objectContaining({id:'c1'}));
 });
@@ -66,7 +66,7 @@ it('retains the full Pinned query/page through navigation without changing compa
  view.rerender(<EscapeManagerProvider><PinnedList {...props} visible={false}/></EscapeManagerProvider>);
  expect(screen.queryByRole('heading',{name:'Pinned'})).toBeNull();viewport.scrollTop=0;
  view.rerender(<EscapeManagerProvider><PinnedList {...props}/></EscapeManagerProvider>);
- await screen.findByText('Pinned collection 1');fireEvent.click(screen.getByRole('button',{name:'Search, filters and result details'}));expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('topic');
+ await screen.findByText('Pinned collection 1');expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('topic');
  expect(viewport.scrollTop).toBe(400);expect(screen.getAllByRole('navigation',{name:'Result pages'})).toHaveLength(1);
  view.unmount();
  const compact=render(<EscapeManagerProvider><PinnedList compact {...props}/></EscapeManagerProvider>);

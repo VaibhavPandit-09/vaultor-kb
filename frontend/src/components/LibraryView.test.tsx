@@ -96,7 +96,7 @@ it('attaches compression to the mounted Library scroll owner without replacing s
  expect(document.activeElement).toBe(input);expect(input.selectionStart).toBe(1);input.blur();fireEvent.scroll(viewport);
  await waitFor(()=>expect(Number(viewport.style.getPropertyValue('--library-progress'))).toBeGreaterThan(.9));
  expect(viewport.querySelector('input[aria-label="Search items"]')).toBe(input);expect(input.selectionStart).toBe(1);
- fireEvent.click(screen.getByRole('button',{name:/Search and filters applied/}));expect(document.activeElement).toBe(input);
+ expect(viewport.querySelector<HTMLElement>('.library-filters')?.inert).not.toBe(true);input.focus();expect(document.activeElement).toBe(input);
  expect(screen.getAllByRole('listitem')[0]).toBe(row); expect(browseResources).toHaveBeenCalledTimes(queries);
 });
 

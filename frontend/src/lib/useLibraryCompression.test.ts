@@ -97,3 +97,10 @@ it('keeps keyboard breadcrumb navigation stable through scrolling until focus le
  viewport.scrollTop=160;viewport.dispatchEvent(new Event('scroll'));settle();expect(progress()).toBe(0);expect(document.activeElement).toBe(button);
  button.blur();settle();expect(progress()).toBe(1);expect(nav.inert).toBe(true);
 });
+
+it('keeps the same search, filters and paging interactive at every compression depth',()=>{
+ stop();header.innerHTML='<div class="library-filters"><label><input value="research" /></label><button>Type</button></div><div class="library-summary"><nav class="library-pagination"><button>Next</button></nav></div><div class="library-working-context"><button>Selection action</button></div>';
+ const input=header.querySelector('input')!,filters=header.querySelector<HTMLElement>('.library-filters')!,summary=header.querySelector<HTMLElement>('.library-summary')!,context=header.querySelector<HTMLElement>('.library-working-context')!;
+ stop=attachLibraryCompression(viewport,header);for(const top of [0,40,80,120,160,80,0]){viewport.scrollTop=top;viewport.dispatchEvent(new Event('scroll'));settle();expect(filters.inert).not.toBe(true);expect(summary.inert).not.toBe(true);expect(header.querySelector('input')).toBe(input);expect(input.value).toBe('research');}
+ viewport.scrollTop=160;viewport.dispatchEvent(new Event('scroll'));settle();expect(context.inert).toBe(true);expect(viewport.style.getPropertyValue('--library-pages-width')).toBe('76px');header.dataset.tools='true';viewport.dispatchEvent(new Event('scroll'));settle();expect(context.inert).toBe(false);
+});
