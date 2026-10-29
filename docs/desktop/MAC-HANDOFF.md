@@ -1,10 +1,16 @@
 # Current Mac release qualification handoff
 
-Reviewed 2026-10-29. Complete-platform0.21.0 is published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The0.22.0 release candidate remains a separate pending platform record.0.23.0/0.23.1 Windows-only releases retain their disclosed performance limits. No later Mac build or acceptance is available in this Windows session; the complete-platform stable gate remains open.
+Reviewed 2026-10-29. Complete-platform 0.21.0 remains published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The 0.22.0 release candidate remains a separate pending platform record. 0.23.0/0.23.1 retain disclosed performance limits. 0.24.2 Mac arm64 qualification is completed and the verified Mac pair is published to v0.24.2.
 
-## 0.24.2 Windows-only browse compression release
+## 0.24.2 Mac qualification summary
 
-Windows0.24.2 is published at immutable v0.24.2/source`ae0a674a0924d11cde84190865f1bab1189af909`. Mac access remains unavailable. [The0.24.2 ledger](releases/v0.24.2.md) owns the immutable source and Windows evidence. On native arm64 use that exact tag/version and original signer, rebuild UI/server and qualify the same mounted browse search/filter/paging controls through forward/reverse scroll, wide/narrow layouts, keyboard focus, context disclosure and reduced motion. Windows results do not certify Mac scrolling or native geometry. Add only the absent verified platform pair under RELEASE-PROCESS; preserve published bytes/tags.
+On an arranged Apple Silicon Mac mini (macOS 27.0.0 arm64, Temurin OpenJDK 25+36, Node v22.16.0), verified clean immutable `v0.24.2` source (`ae0a674a0924d11cde84190865f1bab1189af909`). Used matching original private release key from `desktop/cache/release-signing/private.pem` matching `desktop/release-trust.json`. Rebuilt UI, embedded backend JAR, Darwin ABI helper and pinned `darwin-arm64` runtime into original-key `Vaultor-0.24.2-mac-arm64.dmg` (280,589,298 bytes, SHA256 `d170569db89289def67270735ce0ebd15efb4a44d1db4b3522a3d42ab88b247a`) and `.dmg.vaultor.json`. Verified ad-hoc codesign (`codesign --verify --deep --strict`), valid DMG CRC32 checksums (`hdiutil verify`), read-only mount, and Applications symlink.
+
+Native qualification passed:
+- Packaged browse compression qualification (`native-browse-compression-check.mjs` via `chrome-smoke.mjs` with `VAULTOR_BROWSE_COMPRESSION_CHECK=1`): tested all 25 configurations across five browse screens (Library, Recent, Pinned, Collections, Collection) at five window widths (1440, 1000, 680, 600, 440px). Evaluated 250 scroll-driven frames throughout forward/reverse scroll depths. Verified zero overflow (`scrollWidth <= clientWidth`), continuous input identity (`input === window.__compressionInput`), hit-testable controls (search, filters, pagination, heading actions), retained input value and focus across compression transitions, context disclosure opening/closing with Escape key handling, captured 20 motion frames (forward 0-9, reverse 0-9), and prefers-reduced-motion media emulation settling to compact endpoints.
+- Desktop test suite: 120/120 passed, 2 skipped (Windows-specific helper tests).
+- Absent Mac pair uploaded via `npm --prefix desktop run publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.24.2.md`. All four public release assets verified via independent download and digest matching against `desktop/release-trust.json`.
+- Complete-platform Latest remains 0.21.0 per 0.23.0+ large-document limits; 0.4.1+ updaters discover their matching platform pair independently.
 
 ## 0.24.1 Windows-only menu and import reliability release
 
