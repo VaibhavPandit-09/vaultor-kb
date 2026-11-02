@@ -449,6 +449,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-02 — Windows0.25.0 package qualification
+
+Fresh UI/browser/server/native helper/pinned runtime and original-key installer/sidecar pass byte/signature validation. All533 extracted payload files match staging and77 packaged source/UI/script/asset files match source. Minimal extracted-installer startup confirms Library, owned host, protocol3 and desktop/updater0.25.0; the independent host diagnostic label remains desktop-d8. Final installer246374593bytes/SHA2569a2f6851faf7da27e4ee046c205caf4c213f60c76df0ccbf178a5d221c5dd12d; the versioned ledger owns delivery and deferred acceptance. No additional application architecture change. GitHub draft/publication and public-updater checks remain pending; no Mac/Android artifact or detailed UI/install acceptance is claimed.
+
 ### 2026-11-02 — Packaged diagnostic-label qualification correction
 
 The first minimal package probe incorrectly equated the owned host diagnostic label with appVersion. OwnedServer deliberately supplies desktop-d8 independently of the Electron version; corrected the new harness to test that existing contract, while fresh bundle/payload hashes establish release provenance. No product behavior changed. The initial original-key pair/payload are retained privately as rejected qualification evidence; nothing was tagged or published. The harness ships, so a fresh installer is required before rechecking startup.
