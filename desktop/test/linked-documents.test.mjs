@@ -4,7 +4,7 @@ import {LinkedSearch} from '../src/linked/search.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
-import {mkdtemp,mkdir,writeFile,readFile,readdir} from 'node:fs/promises';
+import {mkdtemp,mkdir,writeFile,readFile,readdir,rm} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {LinkedRegistry} from '../src/linked/registry.mjs';
@@ -23,6 +23,29 @@ async function fixture(source='# Guide\n\nText.\n'){
   const registry=new LinkedRegistry({directory:join(privateDir,'sources'),java,classes,protectedRoot:privateDir,applicationRoot:resolve(repository,'desktop'),current:()=>scope,picker:async()=>({canceled:false,filePaths:[root]})});await registry.load(scope);const added=await registry.add(scope),page=await registry.list(scope,{source:added.root});const documents=new LinkedDocuments(registry,{worker}),opened=await documents.open(scope,page.items[0].id);
   return {root,scope,registry,documents,opened,close:async()=>{await documents.dispose();await registry.close();}};
 }
+
+test('native bounded disk graph reconciles external edits and deletion without source rewriting',{skip},async()=>{
+ const source='# Guide\n\n[Other](nested/Other.md#part)\n\n[Again][ref]\n\n[ref]: nested/Other.md\n';
+ const f=await fixture(source),search=new LinkedSearch(f.registry,{worker});
+ try{
+  await mkdir(join(f.root,'nested'));await writeFile(join(f.root,'nested','Other.md'),'# Other\n\n[Back](../guide.md)\n');
+  await search.tick(f.scope);const target=[...f.registry.entries.values()].find(e=>e.relative==='nested/Other.md');
+  const incoming=search.relationships(f.scope,{document:target.id,direction:'incoming',page:0});assert.equal(incoming.totalOccurrences,2);assert.equal(incoming.items[0].id,f.opened.id);
+  assert.equal(search.relationships(f.scope,{document:f.opened.id,direction:'incoming',page:0}).items[0].id,target.id);
+  assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),source);
+  await writeFile(join(f.root,'guide.md'),'# Changed externally\n');search.next=0;await search.tick(f.scope);assert.equal(search.relationships(f.scope,{document:target.id,direction:'incoming',page:0}).totalItems,0);
+  await rm(join(f.root,'nested','Other.md'));search.next=0;await search.tick(f.scope);assert.equal(search.relationships(f.scope,{document:f.opened.id,direction:'incoming',page:0}).totalItems,0);
+  await f.registry.disconnect(f.scope,f.opened.source);assert.equal(search.relationships(f.scope,{document:target.id,direction:'outgoing',page:0}).totalItems,0);
+ }finally{await search.close();await f.close();}
+});
+test('extensionless navigation uses authorized indexed metadata without source-tree traversal',{skip},async()=>{
+ const f=await fixture();try{
+  await mkdir(join(f.root,'nested'));await writeFile(join(f.root,'nested','Next.md'),'# Next\n');
+  const root=await f.registry.list(f.scope,{source:f.opened.source}),directory=root.items.find(e=>e.relative==='nested');
+  await f.registry.list(f.scope,{source:f.opened.source,directory:directory.id});
+  const target=await f.documents.resolveLink(f.scope,{document:f.opened.id,binding:f.opened.binding,href:'nested/Next#part'});assert.equal(target.kind,'document');assert.equal(target.fragment,'part');
+ }finally{await f.close();}
+});
 
 test('near-1 MiB real NTFS source preserves local edits, explicit Save, conflict and restart recovery',{skip},async()=>{
   const block='Technical documentation words with unchanged spelling. '.repeat(12)+'\r\n\r\n';
@@ -113,7 +136,7 @@ test('relative links assign native identities without prior folder browsing and 
 
 test('relative asset reads refuse an outside-root junction and revoked source',{skip},async()=>{const f=await fixture();try{const outside=join(f.root,'..','outside');await mkdir(outside);await writeFile(join(outside,'image.png'),'outside sentinel');if(process.platform==='darwin')await (await import('node:fs/promises')).symlink(outside,join(f.root,'alias'));else await run('cmd.exe',['/d','/c','mklink','/J',join(f.root,'alias'),outside]);const payload={document:f.opened.id,binding:f.opened.binding,href:'alias/image.png'};await assert.rejects(f.documents.resolveLink(f.scope,payload));assert.equal(await readFile(join(outside,'image.png'),'utf8'),'outside sentinel');await f.registry.disconnect(f.scope,f.opened.source);await assert.rejects(f.documents.resolveLink(f.scope,{...payload,href:'missing.png'}),/DISCONNECTED/);}finally{await f.close();}});
 
-test('private linked search indexes disk text, reconciles external writes, and never retains removed source authority',{skip},async()=>{const f=await fixture();try{await mkdir(join(f.root,'nested'));await writeFile(join(f.root,'nested','External.md'),'# Distinctive\n\nNeedle from disk.\n');const search=new LinkedSearch(f.registry);await search.tick(f.scope);let found=search.search(f.scope,{query:'Needle',mode:'content'});assert.equal(found.items.length,1);assert.equal(found.items[0].type,'linked');assert.equal(found.items[0].content.relativePath,'nested/External.md');assert.equal(search.search(f.scope,{query:'Needle',mode:'title'}).items.length,0);assert.ok(search.bytes<=16*1024*1024);assert.equal(Number((await f.registry.native.call('metrics'))[4]),1);await run(process.execPath,['-e',"require('node:fs').writeFileSync(process.argv[1],'Changed external word')",join(f.root,'nested','External.md')]);search.next=0;await search.tick(f.scope);assert.equal(search.search(f.scope,{query:'Needle',mode:'content'}).items.length,0);assert.equal(search.search(f.scope,{query:'Changed external',mode:'content'}).items.length,1);await f.registry.disconnect(f.scope,f.opened.source);assert.equal(search.search(f.scope,{query:'Changed external',mode:'content'}).items.length,0);assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),'# Guide\n\nText.\n');}finally{await f.close();}});
+test('private linked search indexes disk text, reconciles external writes, and never retains removed source authority',{skip},async()=>{const f=await fixture();try{await mkdir(join(f.root,'nested'));await writeFile(join(f.root,'nested','External.md'),'# Distinctive\n\nNeedle from disk.\n');const search=new LinkedSearch(f.registry,{worker});await search.tick(f.scope);let found=search.search(f.scope,{query:'Needle',mode:'content'});assert.equal(found.items.length,1);assert.equal(found.items[0].type,'linked');assert.equal(found.items[0].content.relativePath,'nested/External.md');assert.equal(search.search(f.scope,{query:'Needle',mode:'title'}).items.length,0);assert.ok(search.bytes<=16*1024*1024);assert.equal(Number((await f.registry.native.call('metrics'))[4]),1);await run(process.execPath,['-e',"require('node:fs').writeFileSync(process.argv[1],'Changed external word')",join(f.root,'nested','External.md')]);search.next=0;await search.tick(f.scope);assert.equal(search.search(f.scope,{query:'Needle',mode:'content'}).items.length,0);assert.equal(search.search(f.scope,{query:'Changed external',mode:'content'}).items.length,1);await f.registry.disconnect(f.scope,f.opened.source);assert.equal(search.search(f.scope,{query:'Changed external',mode:'content'}).items.length,0);assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),'# Guide\n\nText.\n');}finally{await f.close();}});
 
 test('fresh owner refusal before publication keeps the candidate retryable and original untouched',{skip},async()=>{const f=await fixture();try{const draft=structuredClone((await f.documents.documents.get(f.opened.id).validator.ready).doc);draft.content[1].content[0].text='Approved local.';await f.documents.protect(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1,draft,source:'# Guide\n\nApproved local.\n'});f.documents.options.owner=async()=>{throw Error('OWNER_CHANGED');};await assert.rejects(f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1}),/OWNER_CHANGED/);assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),'# Guide\n\nText.\n');f.documents.options.owner=undefined;assert.equal((await f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1})).state,'COMMITTED');}finally{await f.close();}});
 test('owner generation change after publication produces recoverable uncertainty rather than success',{skip},async()=>{const f=await fixture();try{const draft=structuredClone((await f.documents.documents.get(f.opened.id).validator.ready).doc);draft.content[1].content[0].text='Protected result.';await f.documents.protect(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1,draft,source:'# Guide\n\nProtected result.\n'});let checks=0;f.documents.options.owner=async()=>{if(++checks===2)throw Error('WORKSPACE_CHANGED');};const receipt=await f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1});assert.equal(receipt.state,'RECOVERY_REQUIRED');assert.ok(receipt.operation);assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),'# Guide\n\nProtected result.\n');const record=await f.registry.native.call('inspect',receipt.operation);assert.equal(Buffer.from(record[0],'base64').toString(),'# Guide\n\nText.\n');assert.equal(Buffer.from(record[1],'base64').toString(),'# Guide\n\nProtected result.\n');assert.notEqual(record[3],'LINKED_ACKNOWLEDGED');await assert.rejects(f.documents.save(f.scope,{document:f.opened.id,binding:f.opened.binding,version:1}),/NOT_VALIDATED/);}finally{await f.close();}});

@@ -1,4 +1,5 @@
 import { MarkdownEngine } from './engine';
+import {markdownRelationships} from './relationships';
 import type { WorkerReply, WorkerRequest } from './protocol';
 import type { JSONContent } from '@tiptap/core';
 let engine: MarkdownEngine | undefined;
@@ -7,6 +8,7 @@ globalThis.onmessage = (event: MessageEvent<WorkerRequest>) => {
   const request = event.data;
   const send = (reply: WorkerReply) => globalThis.postMessage(reply);
   try {
+    if(request.type==='relationships'){send({type:'relationships',...markdownRelationships(request.bytes)});return;}
     if (request.type === 'open') { engine = new MarkdownEngine(request.bytes, request.byteLimit); draft = engine.projection.doc; send({ type: 'ready', doc: draft, source: engine.source }); return; }
     if (!engine) throw new Error('SOURCE_NOT_OPEN');
     if (request.type === 'region') {

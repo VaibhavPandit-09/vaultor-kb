@@ -58,7 +58,7 @@ export class MarkdownSession {
   getSnapshot = () => this.status;
   private emit() { this.listeners.forEach(listener => listener()); }
   private receive(reply: WorkerReply) {
-    if (this.disposed || this.status.state === 'failed') return;
+    if (reply.type==='relationships'||this.disposed || this.status.state === 'failed') return;
     if (reply.type === 'ready' && this.initialDoc) return;
     if (reply.type !== 'ready' && reply.version !== this.inFlight) return;
     clearTimeout(this.timer);

@@ -1,3 +1,4 @@
+import {markdownDestination,markdownPathMatcher} from '../../../desktop/src/linked/path-resolution.mjs';
 import { getAcceptedCapabilities } from './connection';
 import api from './api';
 import { convertText, importResource, noteTitle, type ImportRow, type ImportSession, type ImportReference } from './fileImports';
@@ -27,17 +28,11 @@ export function folderPaths(session:ImportSession) {
 }
 export function referenceResolver(rows:ImportRow[],from:string):(href:string)=>ImportReference|undefined {
   const byPath=new Map(rows.map(r=>[sourcePath(r.path??r.file.name),r]));
+  const match=markdownPathMatcher([...byPath.keys()]);
   return href=>{
-    if(!href||/^(?:[a-z][a-z0-9+.-]*:|\/)/i.test(href))return undefined;
-    if(href.startsWith('#')){const own=byPath.get(sourcePath(from));return own?{id:own.id,type:own.asNote?'note':'file',fragment:href.slice(1)}:undefined;}
-    const [raw,fragment]=href.split('#');if(raw.includes('?'))return undefined;
-    let decoded:string;try{decoded=decodeURIComponent(raw).normalize('NFC');}catch{return undefined;}
-    if((decoded.includes('\\')||[...decoded].some(c=>c.charCodeAt(0)<32))||decoded.startsWith('/'))return undefined;
-    const parts=sourcePath(from).split('/');parts.pop();
-    for(const part of decoded.split('/')){if(part==='.'||!part)continue;if(part==='..'){if(parts.length<=1)return undefined;parts.pop();}else parts.push(part);}
-    const path=parts.join('/');let candidates=byPath.has(path)?[byPath.get(path)!]:[];
-    if(!candidates.length){const paths=/\.[^/]+$/.test(path)?[path]:[path,path+'.md',path+'.markdown',path+'/README.md',path+'/index.md'];candidates=rows.filter(r=>paths.some(p=>p.toLowerCase()===(r.path??r.file.name).normalize('NFC').toLowerCase()));}
-    if(candidates.length!==1)return undefined;const target=candidates[0];
+    const destination=markdownDestination(sourcePath(from),href,1,false);if(!destination)return;
+    const path=match(destination.relative);if(!path)return;
+    const target=byPath.get(path)!,fragment=destination.fragment;
     return {id:target.id,type:target.asNote?'note':'file',image:target.imageValid!==false&&!target.asNote&&/\.(png|jpe?g|gif|webp)$/i.test(target.file.name)&&target.file.size<=20*1024*1024,fragment};
   };
 }

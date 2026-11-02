@@ -1,3 +1,4 @@
+import type {ReferencePage} from '../resourceReferences';
 import api from '../api';
 import {requestLinked} from '../desktop';
 import {getConnection,getPlatform} from '../platform';
@@ -81,6 +82,14 @@ export class LinkedWorkspace{
     if(!this.supported())return {items:[],indexing:false,limited:false,indexed:0};const connectionEpoch=getConnection().epoch;
     const result=await this.request<{items:Resource[];indexing:boolean;limited:boolean;indexed:number}>('search',{query,mode});
     if(result.items.length){const {data}=await api.put<Resource[]>('/resources/linked',result.items.map(item=>({id:item.id,title:item.title,reference:item.content})),{backgroundDiagnostic:true,connectionEpoch});const metadata=new Map(data.map(item=>[item.id,item]));result.items=result.items.map(item=>({...item,...metadata.get(item.id)})).filter(item=>!item.trashedAt);for(const item of result.items)this.metadata.set(item.id,item);}
+    return result;
+  };
+  references=async(id:string,direction:string,page:number)=>{
+    const connectionEpoch=getConnection().epoch;
+    const result=await this.request<ReferencePage>('relationships',{document:id,direction,page});
+    const rows=[];
+    for(const item of result.items){const resource=await this.request<Resource>('metadata',{document:item.id});rows.push({id:item.id,title:resource.title,reference:resource.content});}
+    if(rows.length){const {data}=await api.put<Resource[]>('/resources/linked',rows,{backgroundDiagnostic:true,connectionEpoch});for(const item of data)this.metadata.set(item.id,item);const active=new Set(data.filter(item=>!item.trashedAt).map(item=>item.id));result.items=result.items.filter(item=>active.has(item.id));}
     return result;
   };
   async reconcile(){

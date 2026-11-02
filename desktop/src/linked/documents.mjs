@@ -1,3 +1,4 @@
+import {matchMarkdownPath} from './path-resolution.mjs';
 import {combineVersions} from './merge.mjs';
 import {randomUUID} from 'node:crypto';
 import {Validator} from './validator.mjs';
@@ -66,6 +67,8 @@ export class LinkedDocuments {
   async check(request,p){const d=this.state(request,p.document,p.binding);const reply=await this.registry.native.call('check',d.document);this.registry.check(request);return {state:reply[0],dirty:reply[1]==='true',disk:reply[2]?{identity:reply[2],revision:reply[3],bytes:new Uint8Array(Buffer.from(reply[5],'base64')),size:Number(reply[6])}:null};}
   async resolveLink(request,p){
     const d=this.state(request,p.document,p.binding),target=relativeDestination(d.entry.relative,p.href);
+    const paths=[...this.registry.entries.values()].filter(e=>e.root===d.source&&e.available!==false&&!e.unsupported&&!e.directory).map(e=>e.relative);
+    const matched=matchMarkdownPath(paths,target.relative);target.relative=matched??target.relative;
     if(target.relative===d.entry.relative)return {kind:'document',id:d.id,fragment:target.fragment};
     const root=this.registry.roots.get(d.source),cap=await this.registry.grant(root);this.registry.check(request);
     if(/\.(md|markdown)$/i.test(target.relative)){

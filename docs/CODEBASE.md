@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-10-29. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-11-02. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -184,7 +184,7 @@ backend/
 
 SQLite uses Hibernate ddl-auto=update with hibernate.hbm2ddl.jdbc_metadata_extraction_strategy=individually; there is no versioned migration framework. Individual inspection is required because existing SQLite FTS5/shadow tables expose untyped columns that crash Hibernate grouped metadata extraction on restart. Keep schema updates enabled and leave the derived search tables/data intact. Resource DTOs omit internal file paths and expose note content as a JSON object (never a JSON-encoded string). Linked resources instead contain a strict metadata-only linkedDocument/version1 descriptor (source UUID/name and relative Markdown path), never source bytes, absolute roots or filesystem grants. LinkedReferences idempotently registers these UUIDs, preserving collection/tag/pin memberships; managed note updates refuse linked resources. Entity persistence still stores content as text. Dates use LocalDateTime without a timezone suffix. Opening a resource updates only lastOpenedAt through a metadata SQL write; it does not change updatedAt or hydrate/save its document. Some tag mutations can still change updatedAt, so it is not strictly a content timestamp. Import preserves archived IDs on replacement and allocates new IDs on merge.
 
-ResourceService saves the note and rebuilds outgoing link relationships transactionally. LinkExtractionService extracts resourceLink/image attrs.resourceId; table sourceResourceId is checked/remapped by DocumentService but is not a backlink edge. The former replace-links-and-delete and hard-delete routes are retired (405). Trash retains incoming labels and placements without rewriting referring notes; permanent deletion runs only through revision-checked durable cleanup in Trash. The read-only integrity API reports missing targets. Tag names trim/lowercase and unify case-insensitively; default colors are deterministic. FileStorageService confines paths to its configured directory.
+ResourceService saves the note and rebuilds outgoing link relationships transactionally. Unreleased consistency refinement adds an owner-local linked Markdown graph through the existing bounded disk index and Links and mentions surface. Shared relative-path matching serves folder imports and linked graph/navigation metadata; linked bodies and edges never enter backend relationships or portable archives. Native identities/confinement and explicit Save remain authoritative. LinkExtractionService extracts resourceLink/image attrs.resourceId; table sourceResourceId is checked/remapped by DocumentService but is not a backlink edge. The former replace-links-and-delete and hard-delete routes are retired (405). Trash retains incoming labels and placements without rewriting referring notes; permanent deletion runs only through revision-checked durable cleanup in Trash. The read-only integrity API reports missing targets. Tag names trim/lowercase and unify case-insensitively; default colors are deterministic. FileStorageService confines paths to its configured directory.
 
 ## Backend and API contracts
 
@@ -448,6 +448,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-02 — Linked Markdown relationship consistency (unreleased)
+
+Confirmed that relative native navigation existed but linked URLs never fed managed JSON relationships. Added bounded worker extraction of parsed links/reference definitions, shared path matching and an owner-local graph/backlink projection in Links and mentions, including partial-coverage disclosure. External edits/deletion invalidate indexed edges; external renames retain the existing new-identity contract. No source rewriting, database/schema/archive/API protocol or Save/recovery architecture change. Focused imported/linked equivalence and graph/security tests pass; nine affected native Save/conflict/recovery/link/asset/index cases plus two new native graph/indexed-navigation cases pass. Frontend production compilation passes; broader UI/final validation is recorded with later phases. No release/version bump, merge or Android change is authorized for this branch.
 
 ### 2026-10-29 — Persistent browse controls during scroll compression
 
