@@ -451,6 +451,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-02 — Windows0.25.2 package qualification
+
+Final packaged real single-click fixture and minimal startup pass, with keyboard/scoped relative/HTTPS navigation, source-byte preservation, owned host/protocol3 and app/updater0.25.2. Fresh production build, original-key signature/size/SHA256, all534 extracted payload and78 packaged source comparisons pass. Installer246377510bytes/SHA256ff2036ef27d4160d626ee43e44f1a7bc387841b4c6dacd707128feb3b9864f4e. No additional architecture change. Draft/public updater verification pending; no Mac/Android artifact or runtime acceptance claimed.
+
 ### 2026-11-02 — Single-click Windows fixture timing
 
 The initial packaged fixture clicked an entering pane before its geometry settled and missed the next link. Waiting350ms before sampling pointer coordinates corrects that test-only timing assumption. The unchanged production UI then passes real single-click root/nested/encoded/HTTPS navigation, Tab/Enter and read-only reference links, with graph indexing disabled and exact source bytes retained. Lint, TypeScript and fresh UI/server builds pass. Rebuilding the package includes the corrected harness; final package/startup qualification remains pending. No additional application architecture change.
