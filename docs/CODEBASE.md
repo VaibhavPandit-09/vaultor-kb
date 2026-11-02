@@ -451,6 +451,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-02 — Windows0.25.1 build preparation
+
+Merged the targeted hyperlink fix into master after confirming the repository has no required PR/check route. Desktop package/lock versions are0.25.1; original trust, protocol and Android versions remain unchanged. Focused frontend29/29, native42/42 and updater/publication14/14 pass; lint and TypeScript pass. Fresh versioned production UI/server/package, signature and minimal packaged startup gates remain pending. No additional architecture change; no Mac build or acceptance is claimed.
+
 ### 2026-11-02 — Linked Markdown hyperlink rendering and activation
 
 Inline linked Markdown already projected real link marks, but ordinary anchors lacked editor styling. Added scoped theme-token underline/hover/focus styles without changing managed chips, and a shared linked-editor/preview activation boundary for explicit mouse and keyboard navigation. Explicit native target metadata registration lets unopened Markdown files navigate before graph indexing; unknown ordinary managed IDs retain their fast path. Source projection/serialization, native grants, Save and recovery are unchanged. Editable reference-style links stay protected; preview reference links work; wikilinks remain unsupported. Focused frontend29/29 and native authorization/link/Save/recovery42/42 pass; lint, TypeScript and production build pass. A disposable Windows rendered fixture confirms anchors, settled light/dark/OLED contrast >=4.5:1, Ctrl+click, nested/encoded paths/fragments, Tab/Enter, HTTPS and read-only reference activation with indexing disabled and every source byte unchanged. No Mac runtime claim. Windows-only0.25.1 release qualification is tracked in its ledger.
