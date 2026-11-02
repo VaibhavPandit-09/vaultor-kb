@@ -2,7 +2,9 @@
 
 Reviewed 2026-11-02. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
 
-Current Windows x64 and Mac arm64 release: [0.24.2](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.24.2), published2026-10-29 with both platform installer/original-key-sidecar pairs. The [release ledger](releases/v0.24.2.md) records packaged browse-compression qualification on both platforms, Windows public updater staging and public asset verification. Earlier large-document performance limits remain; this is not universal1MiB usability certification. The consistency refinement branch is unreleased and does not provide a new installer.
+Current Windows x64 release: [0.25.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.25.0), Consistency & Refinement, published2026-11-02 with an original-key installer/sidecar pair. The [release ledger](releases/v0.25.0.md) records final automated checks, payload verification and minimal packaged startup. Detailed Windows UI/functional and installer acceptance is user-owned.
+
+Current Mac arm64 release remains [0.24.2](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.24.2), with its existing [packaged/publication evidence](releases/v0.24.2.md). No0.25.0 Mac artifact was built or published; macOS acceptance is explicitly deferred and user-owned. Android downloads are unchanged. Earlier large-document performance limits remain; no universal1MiB usability certification is implied.
 
 Installed Windows0.4.1+: **Updates → Check for updates → Update and restart**. Mac: **Updates → Download and install**, then fully quit and replace Vaultor.app using the verified DMG, retaining app data. Advanced signed-sidecar import remains available. Mac replacement remains manual; do not treat downloaded bytes as proof of successful installation.
 
@@ -24,7 +26,7 @@ Use the [Vaultor GitHub Releases page](https://github.com/VaibhavPandit-09/vault
 
 For manual/offline import, keep each installer and its signed sidecar in the **same folder**, with their exact original names. Do not download source-code assets for installation. No Java or Docker is needed on a device running a packaged desktop app. Unsigned personal OS installers are separate from the app's Ed25519-signed update manifests: the latter verify update identity and bytes, but do not remove SmartScreen or Gatekeeper prompts.
 
-**Windows:** use published [0.24.2](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.24.2), retaining prior integrated features and the documented large-Markdown limitations. Installed0.4.1+: Updates → Check for updates → Update and restart. Platform-pair discovery is independent of GitHub’s global latest flag; verify the displayed version/platform. Preserve app data.
+**Windows:** use published [0.25.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.25.0), retaining prior integrated features and the documented large-Markdown limitations. Installed0.4.1+: Updates → Check for updates → Update and restart. Platform-pair discovery is independent of GitHub’s global latest flag; verify the displayed version/platform. Preserve app data.
 
 **Mac arm64:** use published [0.24.2](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.24.2). Fully quit, mount its DMG and replace Vaultor.app in Applications, preserving data. It includes protocol3, full Reviews, collection navigation polish and recursive folder import capabilities. Native ad-hoc codesigning and Gatekeeper consent apply.
 

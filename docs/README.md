@@ -2,7 +2,7 @@
 
 Start with [CODEBASE.md](CODEBASE.md) for the current product, source map, architecture, contracts and limitations. Agents read [AGENTS.md](../AGENTS.md) and the [development workflow](development/AI_DEVELOPMENT_WORKFLOW.md) before changes. UI work additionally reads the design contracts below. [Root README](../README.md) and [mobile README](../mobile/README.md) are short discovery entry points; [.github release checklist](../.github/RELEASE_CHECKLIST.md) delegates to the release process.
 
-Reviewed 2026-11-02 against the0.24.2 implementation/release ledgers and GitHub metadata: Windows x64 and Mac arm64 0.24.2 are published; GitHub Latest remains0.21.0; Androidalpha.28/code32 is unchanged. The consistency refinement branch is implemented but unreleased; topic guides mark its behavior explicitly. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
+Reviewed 2026-11-02: Windows x64 0.25.0 Consistency & Refinement and Mac arm64 0.24.2 are published; GitHub Latest remains0.21.0; Androidalpha.28/code32 is unchanged. Mac acceptance of the0.25.0 milestone is explicitly deferred and user-owned; no new Mac artifact is published. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
 
 ## Architecture and security
 
@@ -31,7 +31,7 @@ Reviewed 2026-11-02 against the0.24.2 implementation/release ledgers and GitHub 
 
 ## Desktop delivery
 
-- [Windows0.25.0 release preparation](desktop/releases/v0.25.0.md): Consistency/relationships/unified import, final integrity checks, Windows-only publication and user-owned Windows/macOS acceptance.
+- [Windows0.25.0 release](desktop/releases/v0.25.0.md): Consistency/relationships/unified import, final integrity checks, Windows-only publication and user-owned detailed Windows/macOS acceptance.
 
 - [Windows/Mac0.24.2 release](desktop/releases/v0.24.2.md): Search, filters and paging remain available through animated browse-header compression.
 - [Windows0.24.1 release](desktop/releases/v0.24.1.md): Caption overlap, current import inventory and clearer menu actions; qualification and platform status.
