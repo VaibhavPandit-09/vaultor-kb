@@ -31,6 +31,7 @@ Reviewed 2026-11-02: Windows x64 0.25.1 linked-hyperlink patch and Mac arm64 0.2
 
 ## Desktop delivery
 
+- [Windows0.25.2 release](desktop/releases/v0.25.2.md): Single-click linked Markdown navigation; Windows-only qualification.
 - [Windows0.25.1 release](desktop/releases/v0.25.1.md): Linked Markdown hyperlink rendering/activation fix; Windows-only publication and verification.
 - [Windows0.25.0 release](desktop/releases/v0.25.0.md): Consistency/relationships/unified import, final integrity checks, Windows-only publication and user-owned detailed Windows/macOS acceptance.
 

@@ -4,8 +4,8 @@ import {markdownLinkKind,revealMarkdownHeading} from '../../lib/linked/linkNavig
 import {linkedError} from '../../lib/linked/errors';
 import AppModal from '../modals/AppModal';
 
-/** Links keep their source URLs; editor clicks select text, explicit activation follows. */
-export default function LinkedMarkdownLinks({documentId,relative,resolve,onNavigate,onError,editable=true,children}:{documentId:string;relative:string;resolve:(href:string)=>Promise<LinkedTarget>;onNavigate?:(id:string,newPane:boolean,fragment:string)=>Promise<void>;onError:(error:string)=>void;editable?:boolean;children:ReactNode}){
+/** Links keep their source URLs; single click and focused Enter use the same authorized activation. */
+export default function LinkedMarkdownLinks({documentId,relative,resolve,onNavigate,onError,children}:{documentId:string;relative:string;resolve:(href:string)=>Promise<LinkedTarget>;onNavigate?:(id:string,newPane:boolean,fragment:string)=>Promise<void>;onError:(error:string)=>void;children:ReactNode}){
   const root=useRef<HTMLDivElement>(null),active=useRef(true);
   const [asset,setAsset]=useState<{url:string;name:string;mime:string}>();
   useEffect(()=>{active.current=true;return()=>{active.current=false;};},[]);
@@ -21,7 +21,7 @@ export default function LinkedMarkdownLinks({documentId,relative,resolve,onNavig
     if(!anchor||!event.currentTarget.contains(anchor))return;
     if('key' in event&&event.key!=='Enter')return;
     event.preventDefault();event.stopPropagation();
-    if('key' in event?event.repeat:editable&&!event.ctrlKey&&!event.metaKey)return;
+    if('key' in event&&event.repeat)return;
     const href=anchor.getAttribute('href')??'',kind=markdownLinkKind(relative,href);
     if(kind==='external')window.open(href,'_blank','noopener,noreferrer');
     else if(kind==='local')void follow(href,event.shiftKey);
