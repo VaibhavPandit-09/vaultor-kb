@@ -8,6 +8,22 @@ import { NativeFiles, fileApiPath } from '../src/files.mjs';
 import { DesktopTransport } from '../src/transport.mjs';
 import { HostingPreferences } from '../src/hosting.mjs';
 
+test('native drops classify mixed folders/files, preserve empty directories and roll back failed acquisition',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'vaultor-drop-'));await mkdir(join(root,'docs'));await mkdir(join(root,'docs','empty'));await writeFile(join(root,'docs','a.md'),'[B](b.md)');await writeFile(join(root,'b.md'),'# B');
+ const files=new NativeFiles({directory:join(root,'cache'),owner:()=>({token:'one'}),dialogs:{}});
+ try{
+  const items=await files.dropped({token:'one',paths:[join(root,'docs'),join(root,'b.md')]});
+  assert.ok(items.some(item=>item.directory&&item.relativePath==='Dropped items/docs/empty'));
+  assert.ok(items.some(item=>item.relativePath==='Dropped items/b.md'));
+  assert.ok(items.every(item=>!('path' in item)));
+  const file=items.find(item=>item.name==='a.md');assert.equal(Buffer.from(await files.read({token:'one',id:file.id,offset:0,length:100})).toString(),'[B](b.md)');
+  const count=files.picked.size;await assert.rejects(files.dropped({token:'one',paths:[join(root,'docs'),join(root,'docs')]}),/colliding/);assert.equal(files.picked.size,count);
+  await assert.rejects(files.dropped({token:'wrong',paths:[join(root,'docs')]}),/Connection/);
+  await assert.rejects(files.dropped({token:'one',paths:['../relative']}),/local files/);
+  assert.equal(await readFile(join(root,'docs','a.md'),'utf8'),'[B](b.md)');
+ }finally{await files.reset();await rm(root,{recursive:true,force:true});}
+});
+
 test('native saves cancel without fetching; failed writes retain destination; retry uses same endpoint', async () => {
   const root=await mkdtemp(join(tmpdir(),'vaultor-files-'));let cancelled=true,calls=0;
   const target=join(root,'note.md');await writeFile(target,'original');
