@@ -2,11 +2,11 @@
 
 Reviewed 2026-11-02. Complete-platform 0.21.0 remains published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The 0.22.0 release candidate remains a separate pending platform record. 0.23.0/0.23.1 retain disclosed performance limits. 0.24.2 Mac arm64 qualification is completed and the verified Mac pair is published to v0.24.2.
 
-Windows-only0.25.1 is published; [its ledger](releases/v0.25.1.md) owns delivery and actual acceptance.
+Windows-only0.25.2 is published; [its ledger](releases/v0.25.2.md) owns delivery and actual acceptance.
 
-## 0.25 milestone and 0.25.1 patch — explicitly deferred
+## 0.25 milestone and 0.25.2 patch — explicitly deferred
 
-The user authorized Windows x64 only and owns later macOS runtime acceptance. No0.25.x Mac build, installer, runtime test or publication is authorized in this release task. Existing0.24.2 Mac downloads remain unchanged. This deferral does not block the Windows-only non-latest release. Use the immutable v0.25.1 source for a future separately authorized Mac qualification; never imply Windows checks certify it or replace historical artifacts.
+The user authorized Windows x64 only and owns later macOS runtime acceptance. No0.25.x Mac build, installer, runtime test or publication is authorized in this release task. Existing0.24.2 Mac downloads remain unchanged. This deferral does not block the Windows-only non-latest release. Use the immutable v0.25.2 source for a future separately authorized Mac qualification; never imply Windows checks certify it or replace historical artifacts.
 
 ## 0.24.2 Mac qualification summary
 

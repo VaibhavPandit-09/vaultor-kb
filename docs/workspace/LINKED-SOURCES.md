@@ -1,6 +1,6 @@
 # Linked external folders
 
-Reviewed 2026-11-02. Windows0.25.1 is published; Mac0.24.2 remains published and acceptance of this milestone on macOS is explicitly deferred and user-owned. Publication and native evidence remain in the versioned release ledgers.
+Reviewed 2026-11-02. Windows0.25.2 is published; Mac0.24.2 remains published and acceptance of this milestone on macOS is explicitly deferred and user-owned. Publication and native evidence remain in the versioned release ledgers.
 
 ## Link instead of import
 
