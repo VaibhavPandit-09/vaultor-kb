@@ -2,9 +2,9 @@
 
 Reviewed 2026-11-02. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
 
-Current Windows x64 release: [0.25.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.25.0), Consistency & Refinement, published2026-11-02 with an original-key installer/sidecar pair. The [release ledger](releases/v0.25.0.md) records final automated checks, payload verification and minimal packaged startup. Detailed Windows UI/functional and installer acceptance is user-owned.
+Current Windows x64 release: [0.25.1](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.25.1), linked Markdown hyperlink patch, published2026-11-02 with an original-key installer/sidecar pair. The [release ledger](releases/v0.25.1.md) records final automated checks, payload verification and minimal packaged startup. Detailed Windows UI/functional and installer acceptance is user-owned.
 
-Current Mac arm64 release remains [0.24.2](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.24.2), with its existing [packaged/publication evidence](releases/v0.24.2.md). No0.25.0 Mac artifact was built or published; macOS acceptance is explicitly deferred and user-owned. Android downloads are unchanged. Earlier large-document performance limits remain; no universal1MiB usability certification is implied.
+Current Mac arm64 release remains [0.24.2](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.24.2), with its existing [packaged/publication evidence](releases/v0.24.2.md). No0.25.x Mac artifact was built or published; macOS acceptance is explicitly deferred and user-owned. Android downloads are unchanged. Earlier large-document performance limits remain; no universal1MiB usability certification is implied.
 
 Installed Windows0.4.1+: **Updates → Check for updates → Update and restart**. Mac: **Updates → Download and install**, then fully quit and replace Vaultor.app using the verified DMG, retaining app data. Advanced signed-sidecar import remains available. Mac replacement remains manual; do not treat downloaded bytes as proof of successful installation.
 
