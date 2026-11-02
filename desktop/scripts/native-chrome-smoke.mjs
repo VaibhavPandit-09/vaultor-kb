@@ -17,8 +17,10 @@ export async function runChromeSmoke(window, directory, owned, updates) {
     assert.equal(bootstrap.ok,true);assert.equal(bootstrap.value.desktopBuild,app.getVersion());
     assert.equal(status.ok,true);assert.equal(status.value.currentVersion,app.getVersion());assert.equal(status.value.source,'github');
     const response=await fetch(owned.address+'/api/capabilities',{headers:{'X-Vaultor-Owner':owned.accessKey,'X-Vaultor-Protocol':'3'}});assert.ok(response.ok);
-    const capabilities=await response.json();assert.equal(capabilities.serverBuild,app.getVersion());assert.equal(capabilities.apiProtocolVersion,3);
-    console.log('Packaged startup passed: Library, bundled server/build, protocol3 and updater identity '+app.getVersion()+'.');return;
+    // OwnedServer uses a diagnostic host-build label independent of the app
+    // version. Release provenance is established by the verified bundle hashes.
+    const capabilities=await response.json();assert.equal(capabilities.serverBuild,'desktop-d8');assert.equal(capabilities.apiProtocolVersion,3);
+    console.log('Packaged startup passed: Library, bundled host, protocol3 and desktop/updater identity '+app.getVersion()+'.');return;
   }
   if(process.env.VAULTOR_REFINEMENT_CHECK==='1'){const {runRefinementCheck}=await import('./native-refinement-check.mjs');await runRefinementCheck(window,directory);return;}
   if(process.env.VAULTOR_BROWSE_COMPRESSION_CHECK==='1'){const {runBrowseCompressionCheck}=await import('./native-browse-compression-check.mjs');await runBrowseCompressionCheck(window,directory,owned);return;}
