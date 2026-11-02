@@ -60,3 +60,11 @@ it('cancelled or disposed reference queries cannot register metadata or resume i
  }
  expect(api.put).not.toHaveBeenCalled();expect(api.post).not.toHaveBeenCalled();
 });
+
+it('explicit native link targets obtain metadata before opening without an index/search prerequisite',async()=>{
+ const {workspace,calls}=fixture();workspace.supported=()=>true;const resource={id:'unseen',type:'linked',title:'API.md',revision:'revision',content:{type:'linkedDocument',version:1,sourceId:'source',sourceName:'Docs',relativePath:'Backend/API.md'},tags:[],createdAt:'',updatedAt:''};
+ workspace.request=vi.fn(async operation=>{calls.push(operation);if(operation==='metadata')return resource;throw Error('Unexpected '+operation);}) as LinkedRequest;vi.mocked(api.put).mockResolvedValue({data:resource});
+ expect(await workspace.describe('unseen')).toBeNull();expect(calls).toEqual([]);
+ expect(await workspace.describe('unseen',true)).toEqual(resource);expect(calls).toEqual(['metadata']);expect(api.put).toHaveBeenCalledWith('/resources/linked/unseen',{title:'API.md',reference:resource.content},expect.anything());
+ expect(await workspace.describe('unseen',true)).toEqual(resource);expect(calls).toEqual(['metadata']);workspace.dispose();
+});

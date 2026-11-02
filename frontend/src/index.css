@@ -457,6 +457,18 @@ button[aria-busy='true'] { cursor:progress; }
 @container journey (max-width:520px) { .journey-neighbor, .journey-current { max-width:140px; } .journey-extras .library-button { font-size:.7rem; padding:.35rem; } }
 @media (prefers-reduced-motion:reduce) { .journey-trail, .journey-viewport { animation:none !important; } }
 
+/* Ordinary linked Markdown URLs are marks, not managed resource-link chips. */
+.tiptap a.markdown-link[href]:not([href=""]), [aria-label="Read-only Markdown preview"] a.markdown-link {
+  color:color-mix(in srgb,var(--accent) 60%,var(--text-primary)); font-weight:inherit;
+  text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:.18em;
+  cursor:pointer; transition:color var(--motion-interaction) var(--motion-ease),text-decoration-color var(--motion-interaction) var(--motion-ease);
+}
+.tiptap a.markdown-link:hover, [aria-label="Read-only Markdown preview"] a.markdown-link:hover {
+  color:color-mix(in srgb,var(--accent) 45%,var(--text-primary)); text-decoration-thickness:2px;
+}
+.tiptap a.markdown-link:focus-visible, [aria-label="Read-only Markdown preview"] a.markdown-link:focus-visible {
+  outline:2px solid var(--accent); outline-offset:3px; border-radius:2px;
+}
 /* Resource links are inline references, not form controls. Keep keyboard focus explicit. */
 .resource-link-node { display:inline; vertical-align:baseline; }
 .tiptap .resource-link-chip { display:inline-flex; align-items:baseline; gap:.32em; max-width:100%; margin:0 .1em; padding:.06em .38em; border:0; border-radius:.45em; background:color-mix(in srgb, var(--text-tertiary) 9%, transparent); color:var(--text-primary); font:inherit; line-height:1.45; text-align:left; cursor:pointer; text-decoration:none; transition:background-color 140ms ease, color 140ms ease; box-shadow:none; }
