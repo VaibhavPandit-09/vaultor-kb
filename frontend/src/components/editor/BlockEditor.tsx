@@ -144,7 +144,7 @@ function BlockEditor({
         undoRedo: false,
         underline: false,
         heading: { levels: integration?.headingLevels ?? [1, 2, 3] },
-        ...(integration ? { link: { openOnClick: false } } : {}),
+        ...(integration ? { link: { openOnClick: false, HTMLAttributes: { class: 'markdown-link', tabindex: 0 } } } : {}),
       }),
       CodeBlockLowlight.extend({
         addProseMirrorPlugins() {

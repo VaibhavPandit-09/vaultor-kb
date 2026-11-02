@@ -1,3 +1,4 @@
+import {revealMarkdownHeading} from './linkNavigation';
 import type {Editor} from '@tiptap/core';
 import {MarkdownSession} from '../markdown/session';
 import {SharedNoteDocuments} from '../sharedNoteDocuments';
@@ -12,15 +13,10 @@ export class LinkedDocument{
   private fragment='';
   focusFragment(fragment:string){this.fragment=fragment;this.restoreFragment();}
   restoreFragment(){
-    if(!this.fragment)return;let desired:string;try{desired=decodeURIComponent(this.fragment);}catch{return;}
-    for(const editor of this.editors){
-      const slugs=new Map<string,number>();
-      for(const heading of editor.view.dom.querySelectorAll<HTMLElement>('h1,h2,h3,h4,h5,h6')){
-        const base=(heading.textContent??'').trim().toLowerCase().replace(/[^\p{L}\p{N}\p{M}\s_-]/gu,'').replace(/\s/g,'-'),count=slugs.get(base)??0;slugs.set(base,count+1);
-        if((count?base+'-'+count:base)===desired){heading.scrollIntoView({block:'start'});this.fragment='';return;}
-      }
-    }
+    if(!this.fragment)return;
+    for(const editor of this.editors)if(revealMarkdownHeading(editor.view.dom,this.fragment)){this.fragment='';return;}
   }
+
   sourceDraft?:SourceDraft;
   private listeners=new Set<()=>void>();
   private state:State={dirty:false,protecting:false,saving:false,protectedVersion:-1,notice:'',error:'',conflict:false,recovery:false,available:true};
