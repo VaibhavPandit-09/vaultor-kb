@@ -18,7 +18,8 @@ export async function runLinkedLinkCheck(window,directory){
  dialog.showOpenDialog=async()=>({canceled:false,filePaths:[root]});LinkedSearch.prototype.tick=async function(request){this.registry.check(request);};
  const external=[];wc.setWindowOpenHandler(({url})=>{external.push(url);return {action:'deny'};});
  const openIndex=async()=>{await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Index.md').click()`);await wait(`${active}?.querySelector('.tiptap h1')?.textContent==='Index'`,'Index editor');};
- const clickLink=async label=>{const point=await evaluate(`(()=>{const a=[...${active}.querySelectorAll('a.markdown-link')].find(a=>a.textContent===${JSON.stringify(label)});a.scrollIntoView({block:'center'});const r=a.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);wc.sendInputEvent({type:'mouseDown',...point,button:'left',clickCount:1,modifiers:[]});wc.sendInputEvent({type:'mouseUp',...point,button:'left',clickCount:1,modifiers:[]});};
+ // Measure pointer coordinates after pane/scroll motion settles.
+ const clickLink=async label=>{const point=await evaluate(`(async()=>{const a=[...${active}.querySelectorAll('a.markdown-link')].find(a=>a.textContent===${JSON.stringify(label)});a.scrollIntoView({block:'center'});await new Promise(resolve=>setTimeout(resolve,350));const r=a.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);wc.sendInputEvent({type:'mouseDown',...point,button:'left',clickCount:1,modifiers:[]});wc.sendInputEvent({type:'mouseUp',...point,button:'left',clickCount:1,modifiers:[]});};
  try{
   window.setSize(1320,850);window.show();window.focus();await evaluate(`document.querySelector('[aria-label="Link folder"]').click()`);
   await wait(`[...document.querySelectorAll('button')].some(b=>b.getAttribute('aria-expanded')==='false'&&b.textContent.includes('Docs'))`,'Source grant');

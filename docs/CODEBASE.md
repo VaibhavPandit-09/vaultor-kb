@@ -451,6 +451,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-02 — Single-click Windows fixture timing
+
+The initial packaged fixture clicked an entering pane before its geometry settled and missed the next link. Waiting350ms before sampling pointer coordinates corrects that test-only timing assumption. The unchanged production UI then passes real single-click root/nested/encoded/HTTPS navigation, Tab/Enter and read-only reference links, with graph indexing disabled and exact source bytes retained. Lint, TypeScript and fresh UI/server builds pass. Rebuilding the package includes the corrected harness; final package/startup qualification remains pending. No additional application architecture change.
+
 ### 2026-11-02 — Single-click linked Markdown navigation
 
 Removed the modifier requirement from the existing shared anchor activation handler. Ordinary clicks now use the same URL policy, native resolver, source grant and pane navigation as keyboard/modified activation. Removed the obsolete editable/preview switch; Shift still opens a new pane and repeated Enter remains ignored. No serialization, Save/recovery, filesystem authority, graph or architecture change. Focused frontend26/26 pass, including actual mounted ordinary/HTTPS/encoded/nested links, non-link clicks, Enter, modifiers, byte-exact source, explicit Save and Undo. Lint passes; fresh production and Windows-only0.25.2 package qualification remain pending. Mac runtime acceptance remains deferred.
