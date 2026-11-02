@@ -29,7 +29,7 @@ export class NativeFiles {
     if(directory)return this.pickTree(result.filePaths[0],token);
     if (result.filePaths.length > 50) throw new Error('Select at most 50 files at once.');
     for(const [id,file] of this.picked) if(file.created<Date.now()-3600000) this.picked.delete(id);
-    const regularSelections=[...this.picked.values()].filter(file=>!file.canonical).length;
+    const regularSelections=[...this.picked.values()].filter(file=>!file.canonical||file.regular).length;
     if(regularSelections+result.filePaths.length>200||this.picked.size+result.filePaths.length>4000) throw new Error('Too many retained file selections. Reconnect before choosing more files.');
     const descriptors = [];
     for (const path of result.filePaths) {
@@ -55,6 +55,31 @@ export class NativeFiles {
     for(const [id,file] of this.picked)if(file.created<Date.now()-3600000)this.picked.delete(id);
     if(this.picked.size+tickets.length>4000)throw new Error('Too many retained selections. Reconnect before selecting another folder.');
     for(const [id,file] of tickets)this.picked.set(id,file);return descriptors;
+  }
+  async dropped({token,paths}) {
+    this.connection(token);
+    if(!Array.isArray(paths)||!paths.length||paths.length>50||paths.some(path=>typeof path!=='string'||!isAbsolute(path)))throw Error('Drop up to 50 local files or folders.');
+    const previous=new Set(this.picked.keys()),items=[];let bytes=0;
+    try{
+      const info=await Promise.all(paths.map(path=>lstat(path)));
+      if(info.some(item=>item.isSymbolicLink()||!item.isDirectory()&&!item.isFile()))throw Error('Drop regular files or folders, not links or special entries.');
+      const folders=info.some(item=>item.isDirectory()),mixed=folders&&paths.length>1;
+      if(!folders&&[...this.picked.values()].filter(file=>!file.canonical||file.regular).length+paths.length>200)throw Error('Too many retained file selections. Reconnect before choosing more files.');
+      for(let i=0;i<paths.length;i++){
+        this.connection(token);
+        if(info[i].isDirectory())items.push(...await this.pickTree(paths[i],token));
+        else{
+          if(info[i].size>this.limit)throw Error('Selected file exceeds the desktop limit.');
+          const id=randomUUID();this.picked.set(id,{path:paths[i],regular:!folders,canonical:await realpath(paths[i]),token,size:info[i].size,modified:info[i].mtimeMs,created:Date.now()});
+          items.push({id,name:basename(paths[i]),relativePath:folders?basename(paths[i]):undefined,size:info[i].size,lastModified:info[i].mtimeMs});
+        }
+        if(items.length>2000||this.picked.size>4000)throw Error('Drop at most 2,000 entries.');
+      }
+      if(mixed){for(const item of items)item.relativePath='Dropped items/'+item.relativePath;items.unshift({name:'Dropped items',relativePath:'Dropped items',directory:true});}
+      const names=new Set();for(const item of items){const name=(item.relativePath??item.name).normalize('NFC');if(names.has(name))throw Error('Dropped entries have colliding names. Import them separately.');names.add(name);bytes+=item.size??0;}
+      if(items.length>2000||bytes>2*1024*1024*1024)throw Error('Drop at most 2,000 entries and 2 GiB.');
+      this.connection(token);return items;
+    }catch(error){for(const id of this.picked.keys())if(!previous.has(id))this.picked.delete(id);throw error;}
   }
   async selected(id, token) {
     this.connection(token); const file = this.picked.get(id);

@@ -1,3 +1,6 @@
+import api from '../api';
+import type {ReferencePage} from '../resourceReferences';
+vi.mock('../api',()=>({default:{put:vi.fn(),post:vi.fn()}}));
 import {afterEach,expect,it,vi} from 'vitest';
 import type {Editor,JSONContent} from '@tiptap/core';
 import {LinkedWorkspace} from './workspace';
@@ -9,7 +12,7 @@ class WorkerStub{
   postMessage(r:WorkerRequest){queueMicrotask(()=>{if(this.closed)return;let data:WorkerReply;if(r.type==='open'){this.engine=new MarkdownEngine(r.bytes);this.draft=this.engine.projection.doc;data={type:'ready',source:this.engine.source,doc:this.engine.projection.doc};}else if(r.type==='edit'||r.type==='splice'){this.draft=r.type==='edit'?r.doc:{type:'doc',content:[...this.draft.content!.slice(0,r.from),...r.blocks,...this.draft.content!.slice(r.from+r.remove)]};data={type:'result',version:r.version,result:this.engine.apply(this.draft),historyBytes:0};}else throw Error('Unused source operation');this.onmessage?.({data} as MessageEvent<WorkerReply>);});}
   terminate(){this.closed=true;}
 }
-afterEach(()=>vi.unstubAllGlobals());
+afterEach(()=>{vi.unstubAllGlobals();vi.clearAllMocks();});
 function fixture(){vi.stubGlobal('Worker',WorkerStub);const workspace=new LinkedWorkspace(()=>({id:'workspace',generation:'generation'})),calls:string[]=[],drafts=new Map<string,{document:JSONContent;source?:string;version:number}>();
   workspace.request=(async(operation,p={})=>{calls.push(operation);const id=String(p.document);
     if(operation==='open'){const saved=drafts.get(id);const source='Paragraph '+id+'.\n';return {id,source:'root',binding:id+'-binding',identity:id+'-inode',revision:'sha',name:id+'.md',relative:id+'.md',bytes:new TextEncoder().encode(source),size:source.length,readonlyReason:'',seed:saved?new TextEncoder().encode(saved.source??source):undefined,visual:saved?{schema:'G3_VISUAL_1',document:saved.document}:undefined,nativeVersion:saved?.version} satisfies Opened;}
@@ -37,3 +40,23 @@ it('cancelled source reauthorization keeps the existing protected document and n
 it('read-only previews refresh same-object external changes without acquiring a Save candidate',async()=>{const {workspace,calls}=fixture();try{const opened:Opened={id:'large',source:'root',binding:'old-preview',identity:'inode',revision:'old',bytes:new Uint8Array(),size:300000,name:'Large.md',relative:'Large.md',readonlyReason:'LARGE_DOCUMENT'},fresh={...opened,binding:'fresh-preview',revision:'new',ticket:'fresh-review'};workspace.previews.set(opened.id,opened);workspace.request=(async operation=>{calls.push(operation);if(operation==='prepare-refresh'||operation==='commit-refresh')return fresh;if(operation==='close-documents')return;throw Error('Unexpected '+operation);}) as LinkedRequest;await workspace.refreshPreview(opened);expect(workspace.previews.get('large')?.revision).toBe('new');expect(workspace.documents.size).toBe(0);expect(calls).not.toContain('protect');expect(calls).not.toContain('save');}finally{await workspace.close();}});
 
 it('managed or unknown navigation does not allocate native linked requests',async()=>{const {workspace,calls}=fixture();workspace.supported=()=>true;await expect(workspace.describe('ordinary-managed-note')).resolves.toBeNull();expect(calls).toEqual([]);await workspace.close();});
+
+it('reference refresh registers once, then reads batch state without recreating purged or trashed references',async()=>{
+ const workspace=new LinkedWorkspace(()=>({id:'workspace',generation:'generation'}));
+ const entry={id:'linked',title:'Linked',type:'linked',available:true,trashed:false,noteLinks:1,fileLinks:0,images:0,otherLinks:0,occurrences:[]};
+ const page:ReferencePage={items:[entry],page:0,size:30,totalItems:1,totalPages:1,totalOccurrences:1,sourceRevision:''};
+ const request=vi.fn(async(operation:string)=>operation==='relationships'?structuredClone(page):{id:'linked',title:'Linked',content:{type:'linkedDocument'}});workspace.request=request as LinkedRequest;
+ vi.mocked(api.put).mockResolvedValue({data:[{id:'linked',title:'Linked',type:'linked',revision:'revision',content:{type:'linkedDocument'}}]});
+ for(const state of ['active','trash','missing']){vi.mocked(api.post).mockResolvedValue({data:{items:{linked:state}}});const result=await workspace.references('target','incoming',0);expect(result.items[0]).toMatchObject({available:state==='active',trashed:state==='trash'});}
+ expect(api.put).toHaveBeenCalledTimes(1);expect(request.mock.calls.filter(([operation])=>operation==='metadata')).toHaveLength(1);expect(api.post).toHaveBeenCalledTimes(3);
+});
+it('cancelled or disposed reference queries cannot register metadata or resume in a new workspace',async()=>{
+ for(const dispose of [false,true]){
+  const workspace=new LinkedWorkspace(()=>({id:'workspace',generation:'generation'}));let finish!:(page:ReferencePage)=>void;
+  workspace.request=vi.fn(()=>new Promise<ReferencePage>(resolve=>{finish=resolve;})) as LinkedRequest;
+  const controller=new AbortController(),pending=workspace.references('target','incoming',0,controller.signal);
+  if(dispose)workspace.dispose();else controller.abort();finish({items:[],page:0,size:30,totalItems:0,totalPages:0,totalOccurrences:0,sourceRevision:''});
+  await expect(pending).rejects.toThrow();expect(workspace.metadata.size).toBe(0);
+ }
+ expect(api.put).not.toHaveBeenCalled();expect(api.post).not.toHaveBeenCalled();
+});

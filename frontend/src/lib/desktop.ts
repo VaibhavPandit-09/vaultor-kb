@@ -72,6 +72,7 @@ export interface DesktopBridge {
   cancel(id: string): Promise<Result<void>>;
   copyResourceImage?(value: { token: string; resourceId: string }): Promise<Result<void>>;
   writeClipboard(text: string): Promise<Result<void>>;
+  dropFiles?(token:string,files:File[]):Promise<Result<NativeSelection[]>>;
   pickFiles?(value: { token: string; accept: string; multiple: boolean; directory?: boolean }): Promise<Result<NativeSelection[]>>;
   readFile?(value: { token: string; id: string; offset: number; length: number }): Promise<Result<Uint8Array>>;
   beginSave?(value: { token: string; filename: string }): Promise<Result<{ id?: string; outcome?: 'cancelled' }>>;
@@ -106,6 +107,14 @@ export async function pickDesktopFiles(accept: string, multiple: boolean, direct
   const bridge = window.vaultorDesktop!;
   const selectionToken=desktopToken;
   const items = unwrap(await bridge.pickFiles!({ token: selectionToken, accept, multiple, directory }));
+  return nativeImportFiles(items,selectionToken);
+}
+export async function dropDesktopFiles(files:File[]){
+  const selectionToken=desktopToken;const items=unwrap(await window.vaultorDesktop!.dropFiles!(selectionToken,files));
+  return nativeImportFiles(items,selectionToken);
+}
+function nativeImportFiles(items:NativeSelection[],selectionToken:string){
+  const bridge=window.vaultorDesktop!;
   const files = items.filter(item=>!item.directory).map(item => {
     const extension = item.name.split('.').at(-1)?.toLowerCase() || '';
     const types: Record<string, string> = { pdf: 'application/pdf', md: 'text/markdown', txt: 'text/plain', csv: 'text/csv', tsv: 'text/tab-separated-values', zip: 'application/zip', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', json: 'application/json' };

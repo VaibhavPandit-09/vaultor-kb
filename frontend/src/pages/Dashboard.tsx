@@ -1,3 +1,5 @@
+import ImportSourceModal from '../components/modals/ImportSourceModal';
+import {dropDesktopFiles} from '../lib/desktop';
 import {linkedError} from '../lib/linked/errors';
 import OpenNotes from '../components/OpenNotes';
 import ResourceReferences from '../components/ResourceReferences';
@@ -43,7 +45,7 @@ import { createPortal, flushSync } from 'react-dom';
 import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import {
   Plus,
-  ChevronDown,
+  Ellipsis,
   Search,
   Sun,
   Moon,
@@ -226,8 +228,9 @@ export default function Dashboard() {
 
   const [fileImport, setFileImport] = useState<ImportSession | null>(null);
   const importBusy = useRef(false);
+  const [importAcquire,setImportAcquire]=useState(false),[importAcquireError,setImportAcquireError]=useState('');
   const importReturnFocus=useRef<HTMLElement|null>(null),importButton=useRef<HTMLButtonElement>(null);
-  const restoreImportFocus=useCallback(()=>{requestAnimationFrame(()=>{const source=importReturnFocus.current;const destination=source?.isConnected&&source.getClientRects().length&&!source.closest('[hidden],[inert]')?source:importButton.current;if(destination?.getClientRects().length&&!destination.closest('[hidden],[inert]'))focusWithoutScroll(destination);});},[]);
+  const restoreImportFocus=useCallback(()=>{requestAnimationFrame(()=>{const source=importReturnFocus.current;const destination=[source,importButton.current,document.getElementById('sidebar-trigger')].find(element=>element?.isConnected&&element.getClientRects().length&&!element.closest('[hidden],[inert],[aria-hidden="true"]'));if(destination)focusWithoutScroll(destination);});},[]);
   const latestNoteContentRef = useRef<string | null>(null);
   const commandPalettePreviewRef = useRef<PreviewSnapshot | null>(null);
   const titleEditDismissRef = useRef<'save' | 'cancel' | null>(null);
@@ -609,19 +612,24 @@ export default function Dashboard() {
     setResourceDetails(current => current[resource.id] ? { ...current, [resource.id]: resource } : current);
   }, []);
 
-  const beginImport = useCallback(async (editor?: Editor, range?: Range, mode?: ImportSession['mode'], folder = false) => {
+  const beginImport = useCallback(async (editor?: Editor, range?: Range, mode?: ImportSession['mode'], folder = false, dropped?:File[]) => {
     if (importBusy.current) return;
     importBusy.current = true; setUploadPending(true);
     const target = editor && range ? captureImportTarget(editor, range) : undefined;
+    const selectionFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    const restoreSelectionFocus=()=>{if(importAcquire&&selectionFocus?.isConnected)requestAnimationFrame(()=>focusWithoutScroll(selectionFocus));else restoreImportFocus();};
     try {
       const accept = mode === 'markdown' ? '.md,.markdown,.txt' : mode === 'csv' ? '.csv,.tsv,.txt' : '';
-      const files = await pickFiles(accept, !target, folder);
-      if (!files.length&&!files.directories?.length) { target?.dispose(); importBusy.current = false; if (target && !target.editor.isDestroyed) target.editor.commands.focus(undefined, { scrollIntoView: false }); else restoreImportFocus(); return; }
-      setFileImport({...await prepareImport(files, target, mode),collection:!target&&libraryVisible&&collection?{id:collection.id,name:collection.name}:undefined});
-    } catch (error) { target?.dispose(); importBusy.current = false; if(target&&!target.editor.isDestroyed)target.editor.commands.focus(undefined,{scrollIntoView:false});else restoreImportFocus(); reportError('file.import.prepare', error); }
+      const epoch=getConnection().epoch;
+      const files:File[]&{directories?:string[];emptyFoldersUnavailable?:boolean} = dropped ? window.vaultorDesktop?.dropFiles ? await dropDesktopFiles(dropped) : dropped : await pickFiles(accept, !target, folder);
+      if(epoch!==getConnection().epoch)throw Error('Connection changed. Reselect the source.');
+      if (!files.length&&!files.directories?.length) { target?.dispose(); importBusy.current = false; if (target && !target.editor.isDestroyed) target.editor.commands.focus(undefined, { scrollIntoView: false }); else restoreSelectionFocus(); return; }
+      const prepared=await prepareImport(files,target,mode);setImportAcquire(false);setImportAcquireError('');
+      setFileImport({...prepared,collection:!target&&libraryVisible&&collection?{id:collection.id,name:collection.name}:undefined});
+    } catch (error) { target?.dispose(); importBusy.current = false; if(target&&!target.editor.isDestroyed)target.editor.commands.focus(undefined,{scrollIntoView:false});else restoreSelectionFocus(); setImportAcquireError(error instanceof Error?error.message:String(error));reportError('file.import.prepare', error); }
     finally { setUploadPending(false); }
-  }, [libraryVisible,collection,restoreImportFocus]);
-  const requestFileUpload = useCallback((event?:{currentTarget?:EventTarget|null}) => { importReturnFocus.current=event?.currentTarget instanceof HTMLElement?event.currentTarget:document.activeElement instanceof HTMLElement?document.activeElement:null; flushSync(() => setCommandPaletteOpen(false)); void beginImport(); }, [beginImport]);
+  }, [libraryVisible,collection,restoreImportFocus,importAcquire]);
+  const requestFileUpload = useCallback((event?:{currentTarget?:EventTarget|null}) => { importReturnFocus.current=event?.currentTarget instanceof HTMLElement?event.currentTarget:document.activeElement instanceof HTMLElement?document.activeElement:null; flushSync(() => setCommandPaletteOpen(false)); setImportAcquireError('');setImportAcquire(true); }, []);
   useEffect(()=>{const resume=(event:Event)=>{const detail=(event as CustomEvent<{task:{epoch:number;workspace:Identity};folder:boolean}>).detail;if(!detail||detail.task.epoch!==getConnection().epoch||!identityRef.current||!sameWorkspace(detail.task.workspace,identityRef.current))return;void beginImport(undefined,undefined,undefined,detail.folder);};window.addEventListener('vaultor:resume-import',resume);return()=>window.removeEventListener('vaultor:resume-import',resume);},[beginImport]);
   const handleRequestMdUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'markdown'); }, [beginImport]);
   const handleRequestCsvUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'csv'); }, [beginImport]);
@@ -1245,20 +1253,12 @@ export default function Dashboard() {
         <button
           onClick={handleCreateNote}
           disabled={createNotePending}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-1.5 text-xs font-medium text-white transition-all hover:bg-primary/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          className="library-button library-button-primary sidebar-new-note"
         >
           {createNotePending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
           New note
-        </button><LibraryPopover label="Create options" trigger={<ChevronDown size={14}/>} className="sidebar-create-menu">{close=><button className="library-button" onClick={()=>{close();collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>}</LibraryPopover>
-        <button
-          ref={importButton}
-          onClick={requestFileUpload}
-          disabled={uploadPending}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-1.5 text-xs font-medium transition-all hover:bg-[var(--surface-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-slate-800"
-        >
-          {uploadPending ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-          Import files
-        </button><LibraryPopover label="Import options" trigger={<ChevronDown size={14}/>} className="sidebar-create-menu">{close=><button className="library-button" disabled={uploadPending} onClick={()=>{close();importReturnFocus.current=importButton.current;void beginImport(undefined,undefined,undefined,true);}}>Import folder</button>}</LibraryPopover>
+        </button><LibraryPopover label="Create options" trigger={<Ellipsis size={14}/>} className="sidebar-create-menu">{close=><button className="library-button" onClick={()=>{close();collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>}</LibraryPopover>
+        <button ref={importButton} aria-haspopup="dialog" aria-expanded={importAcquire||Boolean(fileImport)} onClick={requestFileUpload} disabled={uploadPending} className="library-button sidebar-import"><Upload size={14}/>Import</button>
       </div>
 
       {tagsError && <button className="sidebar-nav text-xs" onClick={() => void fetchTags()}>{tagsError} Retry</button>}
@@ -1378,7 +1378,8 @@ export default function Dashboard() {
       </div>}
       {notice&&<DiagnosticNotice event={notice} saveFailed={saves.failed()} onDetails={()=>setDiagnosticsOpen(true)} onRetrySaves={()=>{void saves.flushAll().catch(()=>{});}} onDismiss={()=>setNotice(null)}/>}
       {reviewTarget!==undefined&&<ReviewInbox key={getConnection().epoch} resource={reviewTarget} onClose={()=>setReviewTarget(undefined)} onOpen={async id=>{await openResourceById(id,{throwOnFailure:true});const issue=paneNavigation.snapshot().issue;if(issue)throw new Error(issue.message);return ()=>{const state=paneNavigation.snapshot();if(state.panes.some(p=>p.id===id&&p.paneId===state.activePaneId))paneNavigation.activate(state.activePaneId!,true);else document.querySelector<HTMLElement>('.preview-shell button')?.focus({preventScroll:true});};}}/>}
-      {referenceTarget&&<ResourceReferences resource={referenceTarget} localNotes={openNotes.filter((p,index,all)=>all.findIndex(other=>other.id===p.id)===index).flatMap(p=>{const draft=saves.latest(p.id)??recovery.current(p.id)?.value;return draft?[{id:p.id,title:draft.title,content:parseNoteContent(draft.content as Resource['content'])}]:[];})} onClose={()=>setReferenceTarget(null)}/>}
+      {importAcquire&&<ImportSourceModal pending={uploadPending} error={importAcquireError} onBrowse={folder=>void beginImport(undefined,undefined,undefined,folder)} onDrop={files=>void beginImport(undefined,undefined,undefined,false,files)} onClose={()=>{setImportAcquire(false);restoreImportFocus();}}/>}
+      {referenceTarget&&<ResourceReferences resource={referenceTarget} linkedReferences={referenceTarget.type==='linked'&&linkedWorkspace.supported()?linkedWorkspace.references:undefined} localNotes={openNotes.filter((p,index,all)=>all.findIndex(other=>other.id===p.id)===index).flatMap(p=>{const draft=saves.latest(p.id)??recovery.current(p.id)?.value;return draft?[{id:p.id,title:draft.title,content:parseNoteContent(draft.content as Resource['content'])}]:[];})} onClose={()=>setReferenceTarget(null)}/>}
       {lifecycleTargets&&<ResourceLifecycleDialog resources={lifecycleTargets} action="trash" onBusy={setDeletePending} onClose={()=>setLifecycleTargets(null)}/>}
 
       <AppModal
@@ -1694,7 +1695,7 @@ export default function Dashboard() {
               <p className="mb-6 text-sm opacity-80">Open the command palette with {isMac ? 'Cmd+K' : 'Ctrl+K'} to jump anywhere fast.</p>
               <div className="flex gap-3">
                 <button onClick={handleCreateNote} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"><Plus size={16} /> New Note</button>
-                <button onClick={requestFileUpload} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-card"><Upload size={16} /> Import files</button>
+                <button onClick={requestFileUpload} className="library-button"><Upload size={16} /> Import</button>
               </div>
             </div>
           ))}

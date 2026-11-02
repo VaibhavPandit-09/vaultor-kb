@@ -47,7 +47,7 @@ function BatchImportModal({session,onClose}:Props){
  },[referenceKey,session,complete]);
  return <AppModal open title={session.folder?'Import folder':'Import files'} widthClassName="max-w-2xl" onClose={()=>{if(!pending)onClose();}} footer={<div className="flex justify-between gap-2">
    <button className="library-button" disabled={pending} onClick={onClose}>Cancel</button>
-   <button className="rounded-lg bg-primary px-3 py-2 text-white disabled:opacity-50" disabled={pending||!context||Boolean(previous&&context.resumeBlocked)} onClick={()=>void apply()}>{pending?'Starting…':previous?'Resume import':context?.completed&&repeat==='skip'?(rows.length?'Skip imported files':'Skip folder'):context?.related?'Import another copy':session.folder?'Import folder':'Import files'}</button>
+   <button className="library-button library-button-primary" disabled={pending||!context||Boolean(previous&&context.resumeBlocked)} onClick={()=>void apply()}>{pending?'Starting…':previous?'Resume import':context?.completed&&repeat==='skip'?(rows.length?'Skip imported files':'Skip folder'):context?.related?'Import another copy':session.folder?'Import folder':'Import files'}</button>
  </div>}>
  <div className="space-y-3">
    <p className="font-medium truncate" title={session.folder?.name}>{session.folder?.name??`${rows.length} selected files`}</p>

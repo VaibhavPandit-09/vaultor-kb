@@ -1,9 +1,16 @@
 /** Derived owner-local memory only. No document bodies enter the resource DB,
  * archives or renderer storage. Bounded work is requested by reconciliation. */
+import {Validator} from './validator.mjs';
+import {linkedRelationships} from './relationships.mjs';
 export class LinkedSearch {
-  constructor(registry){this.registry=registry;this.queue=[];this.pending=[];this.bodies=new Map();this.bytes=0;this.next=0;this.seen=new Set();this.live=new Set();this.scanned=0;this.limited=false;}
+  constructor(registry,{worker=registry.options.worker}={}){this.worker=worker;this.registry=registry;this.queue=[];this.pending=[];this.bodies=new Map();this.bytes=0;this.next=0;this.seen=new Set();this.live=new Set();this.scanned=0;this.limited=false;}
   async tick(request){
     this.registry.check(request);
+    if(this.running)return;
+    this.running=true;
+    try{await this.reconcile(request);}finally{await this.close();this.running=false;}
+  }
+  async reconcile(request){
     if(!this.queue.length&&!this.pending.length){
       if(Date.now()<this.next)return;
       this.queue=[...this.registry.roots.values()].filter(root=>root.enabled!==false).map(root=>({source:root.id,offset:0}));
@@ -20,7 +27,7 @@ export class LinkedSearch {
           if(entry.directory){if(this.queue.length<10000)this.queue.push({source:entry.root,directory:entry.id,offset:0});else this.limited=true;}
           else if(entry.markdown){
             if(++this.scanned>10000){this.limited=true;continue;}
-            if(entry.size>262144)continue;
+            if(entry.size>1048576)continue;
             const key=[entry.identity,entry.size,entry.modified].join(':');
             if(this.bodies.get(entry.id)?.key!==key&&this.pending.length<10000)this.pending.push({id:entry.id,key});
           }
@@ -32,16 +39,24 @@ export class LinkedSearch {
       let fields;
       try{
         const cap=await this.registry.grant(root);fields=await this.registry.native.call('open-linked',cap,entry.relative);this.registry.check(request);
-        if(fields[2]!==entry.identity||Number(fields[6])>262144)continue;
-        const text=new TextDecoder('utf-8',{fatal:true}).decode(Buffer.from(fields[5],'base64')).toLowerCase(),cost=text.length*2+512;
+        if(fields[2]!==entry.identity||Number(fields[6])>1048576)continue;
+        const bytes=Buffer.from(fields[5],'base64'),text=bytes.length<=262144?new TextDecoder('utf-8',{fatal:true}).decode(bytes).toLowerCase():'';
+        let links=[],limited=false;
+        try{this.scanner??=new Validator(this.worker,new Uint8Array());await this.scanner.ready;({links,limited}=await this.scanner.request({type:'relationships',bytes}));}
+        catch{limited=true;await this.close();} // Relationship admission must not remove searchable disk text.
+        this.registry.check(request);
+        const cost=text.length*2+JSON.stringify(links).length*2+512;
         this.drop(entry.id);
+        if(cost>16*1024*1024){this.limited=true;continue;}
         while(this.bytes+cost>16*1024*1024&&this.bodies.size)this.drop(this.bodies.keys().next().value);
-        this.bodies.set(entry.id,{key:job.key,text,cost});this.bytes+=cost;
+        this.bodies.set(entry.id,{key:job.key,text,cost,links,limited});this.bytes+=cost;
       }catch{this.drop(entry.id);}finally{if(fields)await this.registry.native.call('close',fields[0]).catch(()=>{});}
     }
     if(!this.queue.length&&!this.pending.length){this.live=new Set(this.seen);for(const id of this.bodies.keys())if(!this.seen.has(id))this.drop(id);}
   }
   drop(id){const previous=this.bodies.get(id);if(previous){this.bytes-=previous.cost;this.bodies.delete(id);}}
+  relationships(request,{document,direction,page}){this.registry.check(request);const result=linkedRelationships(this.registry,this.bodies,this.live,document,direction,page);return {...result,limited:result.limited||this.limited,indexing:!!(this.queue.length||this.pending.length)};}
+  async close(){await this.scanner?.close();this.scanner=undefined;}
   search(request,{query,mode='title'}){
     this.registry.check(request);if(typeof query!=='string'||query.length>500||!['title','content'].includes(mode))throw Error('LINKED_SEARCH_QUERY');
     const terms=query.trim().toLowerCase().split(/\s+/).filter(Boolean);if(!terms.length)return {items:[],indexing:!!this.queue.length,limited:this.limited,indexed:this.bodies.size};

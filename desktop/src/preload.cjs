@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 contextBridge.exposeInMainWorld('vaultorDesktop', Object.freeze({
   linked:((process.platform==='win32'&&process.arch==='x64')||(process.platform==='darwin'&&process.arch==='arm64'))?value=>ipcRenderer.invoke('desktop:linked',value):undefined,
   copiesList:()=>ipcRenderer.invoke('desktop:copies-list'),
@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld('vaultorDesktop', Object.freeze({
   windowAction: action => ipcRenderer.invoke('desktop:window-action', action),
   onWindowStatus: callback => { const listener=(_event,value)=>callback(value); ipcRenderer.on('desktop:window-status',listener);return()=>ipcRenderer.removeListener('desktop:window-status',listener); },
   onConnections: callback => { const listener=()=>callback();ipcRenderer.on('desktop:connections',listener);return()=>ipcRenderer.removeListener('desktop:connections',listener); },
+  dropFiles: (token,files) => ipcRenderer.invoke('desktop:drop-files',{token,paths:Array.from(files,file=>webUtils.getPathForFile(file))}),
   pickFiles: value => ipcRenderer.invoke('desktop:pick-files', value),
   readFile: value => ipcRenderer.invoke('desktop:read-file', value),
   beginSave: value => ipcRenderer.invoke('desktop:begin-save', value),

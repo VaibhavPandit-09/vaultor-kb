@@ -4,7 +4,7 @@ import {exportLinked} from './exports.mjs';
 import {LinkedRegistry} from './registry.mjs';
 import {LinkedDocuments} from './documents.mjs';
 
-const fields={'reconnect-reference':['document'],'retain-current':['document','binding','version'],'release-recovery':[],'previous-scopes':[],'discard-evidence':['ticket','recoveryScope'],'index':[],search:['query','mode'],'resolve-link':['document','binding','href'],'close-documents':['source'],export:['operation','document','binding','kind','recoveryScope'],recovery:['recoveryScope'],inspect:['operation','recoveryScope'],review:['operation','source'],restore:['ticket'],'metadata-repair':['ticket'],resolve:['ticket'],state:[],add:[],metadata:['document'],'prepare-combination':['document','binding'],'prepare-refresh':['document','binding'],'commit-refresh':['ticket'],'abort-refresh':['ticket'],list:['source','directory','offset','limit'],open:['document'],protect:['document','binding','version','draft','source','session','sourceDraft','editorVersion'],save:['document','binding','version'],source:['document','binding','version','block','expected','text'],check:['document','binding'],chunk:['document','binding','offset'],close:['document','binding'],disconnect:['source'],remove:['source']};
+const fields={relationships:['document','direction','page'],'reconnect-reference':['document'],'retain-current':['document','binding','version'],'release-recovery':[],'previous-scopes':[],'discard-evidence':['ticket','recoveryScope'],'index':[],search:['query','mode'],'resolve-link':['document','binding','href'],'close-documents':['source'],export:['operation','document','binding','kind','recoveryScope'],recovery:['recoveryScope'],inspect:['operation','recoveryScope'],review:['operation','source'],restore:['ticket'],'metadata-repair':['ticket'],resolve:['ticket'],state:[],add:[],metadata:['document'],'prepare-combination':['document','binding'],'prepare-refresh':['document','binding'],'commit-refresh':['ticket'],'abort-refresh':['ticket'],list:['source','directory','offset','limit'],open:['document'],protect:['document','binding','version','draft','source','session','sourceDraft','editorVersion'],save:['document','binding','version'],source:['document','binding','version','block','expected','text'],check:['document','binding'],chunk:['document','binding','offset'],close:['document','binding'],disconnect:['source'],remove:['source']};
 /** One owner-local workspace lifetime. The outer Electron handler authenticates
  * the exact window/main frame; owner() independently verifies the host identity. */
 export class LinkedManager {
@@ -15,7 +15,7 @@ export class LinkedManager {
     if(this.context?.epoch===owner.epoch)return;
     if(this.opening){await this.opening;if(this.context?.epoch===owner.epoch)return;throw Error('LINKED_CONTEXT_CHANGED');}
     if(this.active)throw Error('LINKED_CONTEXT_BUSY');
-    this.opening=(async()=>{await this.recoveryCatalog?.close();await this.documents?.dispose();await this.registry?.close();this.context={...owner};this.registry=new LinkedRegistry({...this.options,current:()=>this.options.current?.(this.context)??(this.options.current?null:this.context)});await this.registry.load(owner);this.documents=new LinkedDocuments(this.registry,{worker:this.options.worker,owner:this.options.owner});this.search=new LinkedSearch(this.registry);this.recoveryCatalog=new RecoveryCatalog(this.registry);})().finally(()=>{this.opening=undefined;});await this.opening;
+    this.opening=(async()=>{await this.search?.close();await this.recoveryCatalog?.close();await this.documents?.dispose();await this.registry?.close();this.context={...owner};this.registry=new LinkedRegistry({...this.options,current:()=>this.options.current?.(this.context)??(this.options.current?null:this.context)});await this.registry.load(owner);this.documents=new LinkedDocuments(this.registry,{worker:this.options.worker,owner:this.options.owner});this.search=new LinkedSearch(this.registry);this.recoveryCatalog=new RecoveryCatalog(this.registry);})().finally(()=>{this.opening=undefined;});await this.opening;
   }
   async reference(request,id,{reconnect=false}={}){
     if(!reconnect&&this.registry.entries.has(id))return this.registry.entries.get(id);
@@ -42,6 +42,7 @@ export class LinkedManager {
     try{
       if(!['state','metadata','close-documents','index','search'].includes(value.operation))await this.registry.ensureNative();
       switch(value.operation){
+        case 'relationships':return this.search.relationships(value,p);
         case 'index':await this.search.tick(value);return {indexed:this.search.bodies.size};
         case 'search':return this.search.search(value,p);
         case 'close-documents':return await this.documents.closeDocuments(value,p);

@@ -216,7 +216,7 @@ else {
       if(action==='stop'){const approved=await requestQuitBarrier(false);if(!approved.success)throw new Error(approved.error);if(files.active.size||files.saves.size||files.dialogPending||copies.active||linked?.active||transport.mutations.size)throw new Error('Finish current file operations first.');await owned.stop();return;}
       throw new Error('Invalid hosting action.');
     });
-    for(const [channel,method] of [['pick-files','pick'],['read-file','read'],['begin-save','begin'],['save-chunk','chunk'],['finish-save','finish'],['cancel-save','cancel'],['file-action','download'],['release-file','release'],['cancel-file','cancelRequest']]) handle('desktop:'+channel,value=>files[method](value));
+    for(const [channel,method] of [['drop-files','dropped'],['pick-files','pick'],['read-file','read'],['begin-save','begin'],['save-chunk','chunk'],['finish-save','finish'],['cancel-save','cancel'],['file-action','download'],['release-file','release'],['cancel-file','cancelRequest']]) handle('desktop:'+channel,value=>files[method](value));
     handle('desktop:quit-reply',value=>{if(!quitWaiter||value?.id!==quitWaiter.id||typeof value.success!=='boolean')throw new Error('Quit request expired.');clearTimeout(quitTimer);quitWaiter.resolve({success:value.success,error:String(value.error||'').slice(0,1000),canKeepDrafts:value.canKeepDrafts===true});quitWaiter=null;});
     const authorizeLocal=async profile=>{
       if(profile.kind!=='local'||profile.source==='bundled')throw new Error('Choose an existing local server.');

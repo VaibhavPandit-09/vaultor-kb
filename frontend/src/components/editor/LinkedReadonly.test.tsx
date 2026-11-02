@@ -1,3 +1,4 @@
+import {LIMITS} from '../../lib/markdown/limits';
 // @vitest-environment jsdom
 import {act,cleanup,fireEvent,render,waitFor} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
@@ -26,7 +27,7 @@ it('formats the actual CODEBASE corpus under read-only admission',()=>{
   const source=readFileSync('../docs/CODEBASE.md','utf8'),f=preview(source);const view=render(<LinkedReadonly {...f}/>);expect(view.getByRole('heading',{name:'Vaultor: living codebase and agent guide'})).toBeTruthy();expect(view.getAllByRole('table').length).toBeGreaterThan(0);expect(view.queryByText('Formatted preview is unavailable for this document. Its source remains intact.')).toBeNull();
 });
 it('over-budget formatted content fails safely into source with no write authority',()=>{
-  const error=vi.spyOn(console,'error').mockImplementation(()=>{});try{const f=preview('# Heading\n\n'+'Paragraph\n\n'.repeat(1600));const view=render(<LinkedReadonly {...f}/>);expect(view.getByText('Formatted preview is unavailable for this document. Its source remains intact.')).toBeTruthy();expect(view.container.querySelector('pre')?.textContent).toBe(new TextDecoder().decode(f.opened.bytes));expect(f.request).not.toHaveBeenCalled();}finally{error.mockRestore();}
+  const error=vi.spyOn(console,'error').mockImplementation(()=>{});try{const f=preview('# Heading\n\n'+'Paragraph\n\n'.repeat(LIMITS.rootBlocks+1));const view=render(<LinkedReadonly {...f}/>);expect(view.getByText('Formatted preview is unavailable for this document. Its source remains intact.')).toBeTruthy();expect(view.container.querySelector('pre')?.textContent).toBe(new TextDecoder().decode(f.opened.bytes));expect(f.request).not.toHaveBeenCalled();}finally{error.mockRestore();}
 });
 it('a stale large-source page cannot overwrite a freshly rebound read-only view',async()=>{
   let finish!:(value:Uint8Array)=>void;const workspace={previewMounted:()=>()=>{},subscribe:()=>()=>{},getSnapshot:()=>0,previewStatus:new Map(),request:async()=>new Promise<Uint8Array>(resolve=>{finish=resolve;})} as unknown as LinkedWorkspace;

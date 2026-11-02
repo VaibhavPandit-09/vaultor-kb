@@ -13,7 +13,7 @@ function mount(ids:string[]=[]) {const applied=vi.fn(),close=vi.fn();render(<Org
 it('uses the shared hierarchy confirmation for collection deletion',async()=>{
   vi.mocked(api.get).mockImplementation(async path=>({data:String(path).endsWith('/deletion-plan')?{fingerprint:'p',collections:[{id:'atlas',name:'Atlas',parentId:null}],managedResources:2,sharedResources:0,linkedReferences:0,referringNotes:0,exclusiveResources:[]}:{items:[atlas],totalItems:1,totalPages:1,page:0}}));
   mount();await screen.findByText('Atlas');fireEvent.click(screen.getByLabelText('Delete Atlas'));expect(api.delete).not.toHaveBeenCalled();
-  await screen.findByText(/2 unique managed resources/);expect(screen.getByRole('radio',{name:/Delete collections only/})).toBeTruthy();
+  await screen.findByText(/2 stored items/);expect(screen.getByRole('radio',{name:/Delete collections only/})).toBeTruthy();
 });
 it('retains bulk selection after failure and retries only the explicit membership change',async()=>{
   vi.mocked(api.post).mockRejectedValueOnce(new Error('Offline')).mockResolvedValueOnce({});const {applied}=mount(['one','two']);

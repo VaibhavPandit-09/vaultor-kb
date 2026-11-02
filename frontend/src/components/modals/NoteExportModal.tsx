@@ -6,7 +6,7 @@ import api from '../../lib/api';
 import { NoteExportController, exportFailure, type ExportFormat, type ExportJob, type GraphPreview } from '../../lib/noteExportController';
 
 const labels: Record<string, string> = { md: 'Markdown (.md)', 'md-assets': 'Markdown + assets (.zip)', pdf: 'PDF (.pdf)', docx: 'Word (.docx)' };
-const button = 'aria-pressed:bg-[var(--surface-3)] aria-pressed:border-primary rounded-xl border border-border px-3 py-2 text-sm hover:bg-[var(--surface-3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50';
+const button = 'library-button aria-pressed:bg-[var(--surface-3)] aria-pressed:border-primary';
 function Progress({ job, manager }: { job: ExportJob; manager: NoteExportController }) {
   const busy = !['error', 'downloaded'].includes(job.stage);
   const status = { saving: 'Saving note…', preparing: 'Preparing export…', downloading: 'Saving export…', downloaded: job.outcome === 'saved' ? 'Saved' : 'Download requested', error: 'Export needs attention' }[job.stage];

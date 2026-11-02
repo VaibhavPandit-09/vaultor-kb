@@ -1,6 +1,6 @@
 # Saved references and resource discovery
 
-Reviewed 2026-10-08; implemented in 0.6.0. Images, PDFs, Audio, Video, Text and Other files are **file categories**, not new resource types. Notes and Files remain the domain model; Collections and Tags remain organization. See [LIBRARY.md](LIBRARY.md), [IMAGES.md](IMAGES.md) and [API.md](../development/API.md).
+Reviewed 2026-11-02.6.0. Images, PDFs, Audio, Video, Text and Other files are **file categories**, not new resource types. Notes and Files remain the domain model; Collections and Tags remain organization. See [LIBRARY.md](LIBRARY.md), [IMAGES.md](IMAGES.md) and [API.md](../development/API.md).
 
 ## Discovery and thumbnails
 
@@ -35,3 +35,7 @@ No database migration, new domain type, protocol bump or archive change is intro
 ## Reference scale correction — 0.7.1
 
 Reference pages compute totals and grouped rows, then retrieve occurrences for all selected IDs in one bounded window query (at most 100 × 20 occurrences). Incoming candidates use the saved relationship ID set rather than a correlated full-resource scan. Traversal happens three times per page, independent of visible row count; it is no longer repeated once per row. Counts, deterministic title/ID ordering, revision/path locators, active-source filtering and unavailable targets are unchanged. No schema/index migration. Atlas's 200-source fixture is measured in SCALE-INTEGRATION.md; small tests retain complete counts and the 20-occurrence bound across two pages.
+
+## Local linked Markdown relationships (unreleased)
+
+On an authorized This computer desktop connection, linked resources add the private indexed disk graph to the same incoming/outgoing view. This graph is separate from backend saved structured-note edges; managed mentions of linked resources remain visible. Coverage, syntax, refresh and bounds are owned by [LINKED-SOURCES](LINKED-SOURCES.md). Occurrences open the linked source document; exact occurrence highlighting is currently managed-note-only. No local body/edge is copied to exports or remote clients.

@@ -282,7 +282,7 @@ Avoid:
 - overshoot unless the motion genuinely benefits from it;
 - different arbitrary easing curves across every feature.
 
-Vaultor should eventually centralize motion tokens just as it centralizes color and spacing tokens.
+Vaultor centralizes motion tokens in the shared motion layer and CSS semantic variables, as it does color and spacing tokens. Reuse them for refinements; [MOTION.md](../workspace/MOTION.md) owns the current implementation.
 
 ---
 
