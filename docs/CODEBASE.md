@@ -449,6 +449,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-02 — Windows0.25.0 version and build preparation
+
+Merged the completed consistency branch into master following the unprotected/no-required-rule route. Desktop package/lock are0.25.0; protocol, archives and original release trust remain unchanged. Final automated checks/build evidence above is reused. Windows-only release preparation is tracked in desktop/releases/v0.25.0.md; fresh package/native startup/signature checks and publication remain pending. Detailed Windows acceptance and all macOS acceptance are explicitly user-owned; no Mac/Android artifact, UI campaign or historical asset replacement is authorized. No additional architecture change.
+
 ### 2026-11-02 — Final integrity and Windows-only release preparation
 
 Reviewed the four consistency commits against current master. Removed recurring linked-reference registrations and up to30 repeated metadata IPC calls per page after initial discovery, reusing the existing read-only batch presence API. Aborted/disposed/changed-workspace queries stop before further metadata work; hidden/busy reference views suspend polling. Graph queries now walk only the target source grant and short-circuit unavailable targets. No filesystem authority, Save/recovery, schema or portable API changes. Synthetic40,000-entry/40,000-edge nine-query samples measured median incoming67.5→50.1ms and outgoing28.6→10.8ms locally; not a general benchmark guarantee. Final frontend607/607, affected desktop68/68, updater/publication21/21 and backend8/8 pass. Original release identity is retained. Minimal packaged startup/build/protocol/updater checks replace broad UI automation for this release; detailed Windows UI and all macOS acceptance are user-owned. No new Mac/Android artifacts are authorized.

@@ -31,6 +31,8 @@ Reviewed 2026-11-02 against the0.24.2 implementation/release ledgers and GitHub 
 
 ## Desktop delivery
 
+- [Windows0.25.0 release preparation](desktop/releases/v0.25.0.md): Consistency/relationships/unified import, final integrity checks, Windows-only publication and user-owned Windows/macOS acceptance.
+
 - [Windows/Mac0.24.2 release](desktop/releases/v0.24.2.md): Search, filters and paging remain available through animated browse-header compression.
 - [Windows0.24.1 release](desktop/releases/v0.24.1.md): Caption overlap, current import inventory and clearer menu actions; qualification and platform status.
 - [Windows0.24.0 release](desktop/releases/v0.24.0.md): Activity, safe repeat imports/all-pages Trash, one-row compact headers and first-paint themes; exact qualification/publication status.
