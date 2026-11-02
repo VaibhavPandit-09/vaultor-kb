@@ -449,6 +449,11 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-02 — Relationship coverage and paging (unreleased)
+
+Extended the existing bounded disk graph to admitted1MiB Markdown while preserving256KiB saved-content search. Parser refusal retains search text; normalized Unicode matching, known-unavailable entries, Trash metadata and combined30-row pagination avoid incorrect graph presentation. Native near-1MiB graph/source preservation and existing search checks pass2/2, graph/refusal checks4/4, path/parser equivalence6/6 and the affected frontend follow-up39/39 pass. Production compilation and lint pass; no source-writing, database, export or authorization contract changed.
+
+
 ### 2026-11-02 — Unified acquisition and action states (unreleased)
 
 One Import dialog now acquires files, folders or native drops before the existing review/Activity pipeline. Windows/macOS picker capabilities stay honest; Link folder remains independent. Native drop traversal preserves empty directories, ownership/epoch/ticket bounds and colliding-name refusal with rollback. Import/export actions reuse shared buttons, pressed/disabled/focus feedback and retained floating-sidebar/focus ownership. No database, import identity, journal, source ownership or Activity architecture changes. Native file/drop regression13/13 and desktop syntax checks pass; production frontend builds pass. Focused acquisition/import/Activity checks and final native visual outcomes are recorded at final validation. No installer or release is produced.

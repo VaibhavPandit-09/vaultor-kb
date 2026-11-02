@@ -89,7 +89,7 @@ export class LinkedWorkspace{
     const result=await this.request<ReferencePage>('relationships',{document:id,direction,page});
     const rows=[];
     for(const item of result.items){const resource=await this.request<Resource>('metadata',{document:item.id});rows.push({id:item.id,title:resource.title,reference:resource.content});}
-    if(rows.length){const {data}=await api.put<Resource[]>('/resources/linked',rows,{backgroundDiagnostic:true,connectionEpoch});for(const item of data)this.metadata.set(item.id,item);const active=new Set(data.filter(item=>!item.trashedAt).map(item=>item.id));result.items=result.items.filter(item=>active.has(item.id));}
+    if(rows.length){const {data}=await api.put<Resource[]>('/resources/linked',rows,{backgroundDiagnostic:true,connectionEpoch});for(const item of data)this.metadata.set(item.id,item);const metadata=new Map(data.map(item=>[item.id,item]));result.items=result.items.map(item=>({...item,available:metadata.has(item.id)&&!metadata.get(item.id)?.trashedAt,trashed:!!metadata.get(item.id)?.trashedAt,revision:metadata.get(item.id)?.revision}));}
     return result;
   };
   async reconcile(){

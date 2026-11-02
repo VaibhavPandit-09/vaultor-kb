@@ -21,6 +21,7 @@ export function markdownPathMatcher(paths){
   const exact=new Map(),folded=new Map();
   for(const path of paths){const key=path.normalize('NFC');for(const [map,name] of [[exact,key],[folded,key.toLowerCase()]]){if(!map.has(name))map.set(name,[]);map.get(name).push(path);}}
   return relative=>{
+    relative=relative.normalize('NFC');
     const direct=exact.get(relative);if(direct)return direct.length===1?direct[0]:undefined;
     const candidates=/\.[^/]+$/.test(relative)?[relative]:[relative,relative+'.md',relative+'.markdown',relative+'/README.md',relative+'/index.md'];
     const matches=new Set(candidates.flatMap(candidate=>folded.get(candidate.toLowerCase())??[]));

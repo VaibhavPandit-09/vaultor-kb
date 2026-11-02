@@ -46,6 +46,15 @@ test('extensionless navigation uses authorized indexed metadata without source-t
   const target=await f.documents.resolveLink(f.scope,{document:f.opened.id,binding:f.opened.binding,href:'nested/Next#part'});assert.equal(target.kind,'document');assert.equal(target.fragment,'part');
  }finally{await f.close();}
 });
+test('near-1MiB relationships retain the smaller saved-content search envelope',{skip},async()=>{
+ const source='# Guide\n\n'+('Large background paragraph. '.repeat(20)+'\n\n').repeat(1600)+'[Other](Other.md)\n';
+ const f=await fixture(source),search=new LinkedSearch(f.registry,{worker});try{
+  assert.ok(Buffer.byteLength(source)>262144&&Buffer.byteLength(source)<=1048576);await writeFile(join(f.root,'Other.md'),'# Other');await search.tick(f.scope);
+  assert.equal(search.relationships(f.scope,{document:f.opened.id,direction:'outgoing',page:0}).totalItems,1);
+  assert.equal(search.search(f.scope,{query:'Large background paragraph',mode:'content'}).items.length,0);
+  assert.equal(await readFile(join(f.root,'guide.md'),'utf8'),source);assert.ok(search.bytes<=16*1024*1024);
+ }finally{await search.close();await f.close();}
+});
 
 test('near-1 MiB real NTFS source preserves local edits, explicit Save, conflict and restart recovery',{skip},async()=>{
   const block='Technical documentation words with unchanged spelling. '.repeat(12)+'\r\n\r\n';

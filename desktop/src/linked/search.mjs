@@ -27,7 +27,7 @@ export class LinkedSearch {
           if(entry.directory){if(this.queue.length<10000)this.queue.push({source:entry.root,directory:entry.id,offset:0});else this.limited=true;}
           else if(entry.markdown){
             if(++this.scanned>10000){this.limited=true;continue;}
-            if(entry.size>262144)continue;
+            if(entry.size>1048576)continue;
             const key=[entry.identity,entry.size,entry.modified].join(':');
             if(this.bodies.get(entry.id)?.key!==key&&this.pending.length<10000)this.pending.push({id:entry.id,key});
           }
@@ -39,10 +39,12 @@ export class LinkedSearch {
       let fields;
       try{
         const cap=await this.registry.grant(root);fields=await this.registry.native.call('open-linked',cap,entry.relative);this.registry.check(request);
-        if(fields[2]!==entry.identity||Number(fields[6])>262144)continue;
-        const bytes=Buffer.from(fields[5],'base64'),text=new TextDecoder('utf-8',{fatal:true}).decode(bytes).toLowerCase();
-        this.scanner??=new Validator(this.worker,new Uint8Array());await this.scanner.ready;
-        const {links,limited}=await this.scanner.request({type:'relationships',bytes});this.registry.check(request);
+        if(fields[2]!==entry.identity||Number(fields[6])>1048576)continue;
+        const bytes=Buffer.from(fields[5],'base64'),text=bytes.length<=262144?new TextDecoder('utf-8',{fatal:true}).decode(bytes).toLowerCase():'';
+        let links=[],limited=false;
+        try{this.scanner??=new Validator(this.worker,new Uint8Array());await this.scanner.ready;({links,limited}=await this.scanner.request({type:'relationships',bytes}));}
+        catch{limited=true;await this.close();} // Relationship admission must not remove searchable disk text.
+        this.registry.check(request);
         const cost=text.length*2+JSON.stringify(links).length*2+512;
         this.drop(entry.id);
         if(cost>16*1024*1024){this.limited=true;continue;}

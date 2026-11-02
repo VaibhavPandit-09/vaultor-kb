@@ -3,7 +3,7 @@ import {markdownDestination,markdownPathMatcher} from './path-resolution.mjs';
 /** A graph over verified, bounded disk snapshots; never a filesystem grant. */
 export function linkedRelationships(registry,bodies,live,id,direction,page=0,size=30){
   if(!['incoming','outgoing'].includes(direction)||!Number.isSafeInteger(page)||page<0)throw Error('LINKED_RELATIONSHIP_QUERY');
-  const available=entry=>entry&&live.has(entry.id)&&!entry.directory&&entry.markdown&&!entry.unsupported&&registry.roots.get(entry.root)?.enabled!==false&&registry.roots.get(entry.root)?.status==='available'&&registry.entryIndex.get(registry.entryKey(entry.root,entry.relative,entry.identity))===entry.id;
+  const available=entry=>entry&&entry.available!==false&&live.has(entry.id)&&!entry.directory&&entry.markdown&&!entry.unsupported&&registry.roots.get(entry.root)?.enabled!==false&&registry.roots.get(entry.root)?.status==='available'&&registry.entryIndex.get(registry.entryKey(entry.root,entry.relative,entry.identity))===entry.id;
   const target=registry.entries.get(id),entries=[...registry.entries.values()].filter(available),paths=new Map();
   for(const entry of entries){if(!paths.has(entry.root))paths.set(entry.root,new Map());paths.get(entry.root).set(entry.relative,entry);}
   const matchers=new Map([...paths].map(([root,items])=>[root,markdownPathMatcher([...items.keys()])]));
