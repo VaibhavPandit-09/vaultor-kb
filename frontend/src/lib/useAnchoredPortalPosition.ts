@@ -31,8 +31,6 @@ export function useAnchoredPortalPosition<T extends HTMLElement>(
   const { top: boundTop = 0, left: boundLeft = 0, right: boundRight = Infinity,
     bottom: boundBottom = Infinity } = options.bounds ?? {};
 
-  const bounded = Boolean(options.bounds);
-
   const updatePosition = useCallback(() => {
     const anchor = anchorRef.current;
     if (!anchor) {
@@ -42,7 +40,7 @@ export function useAnchoredPortalPosition<T extends HTMLElement>(
 
     const rect = anchor.getBoundingClientRect();
     const desiredWidth = Math.max(minWidth, width === 'anchor' ? rect.width : width);
-    const resolvedWidth = bounded ? Math.min(desiredWidth, Math.max(0, Math.min(window.innerWidth, boundRight) - boundLeft - viewportPadding * 2)) : desiredWidth;
+    const resolvedWidth = Math.min(desiredWidth, Math.max(0, Math.min(window.innerWidth, boundRight) - Math.max(0,boundLeft) - viewportPadding * 2));
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const spaceBelow = Math.min(viewportHeight, boundBottom) - rect.bottom - viewportPadding;
@@ -58,13 +56,13 @@ export function useAnchoredPortalPosition<T extends HTMLElement>(
       top: placeAbove ? rect.top - offset : rect.bottom + offset,
       left,
       width: resolvedWidth,
-      maxHeight: Math.max(bounded ? 0 : 120, (placeAbove ? spaceAbove : spaceBelow) - offset),
+      maxHeight: Math.max(0, (placeAbove ? spaceAbove : spaceBelow) - offset),
       placement: placeAbove ? 'top' : 'bottom',
     };
     setPosition(previous => previous && Object.keys(next).every(
       key => previous[key as keyof AnchoredPortalPosition] === next[key as keyof AnchoredPortalPosition],
     ) ? previous : next);
-  }, [anchorRef, width, minWidth, align, offset, viewportPadding, preferredPlacement, boundTop, boundLeft, boundRight, boundBottom, bounded]);
+  }, [anchorRef, width, minWidth, align, offset, viewportPadding, preferredPlacement, boundTop, boundLeft, boundRight, boundBottom]);
 
   useLayoutEffect(() => {
     if (!open) {

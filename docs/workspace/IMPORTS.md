@@ -48,7 +48,7 @@ Workspace-generation admission and captured connection epochs prevent an import 
 
 The previous import modal mounted every file, repeated conversion controls, and displayed every warning in orange. Review now uses summary first, batch choices, bounded details, grouped non-blocking reference issues, and phase progress. Collection movement shares the paged destination picker. Library hierarchy reuses existing rows, orientation and scroll ownership; nesting indentation is capped and ancestor labels truncate with full tooltips/focus access.
 
-Export already has a compact status card with warning details and retains its existing workflow. Diagnostics is an intentionally technical opt-in surface; it needs a separate severity/grouping audit before broader changes. Settings already uses compact categories and optional detail, so no unrelated redesign is included. Disclosure interiors currently use immediate native expansion; the modal and existing browse geometry retain shared motion tokens. No correctness or focus behavior depends on animation completion.
+Export already has a compact status card with warning details and retains its existing workflow. Diagnostics is an intentionally technical opt-in surface; it needs a separate severity/grouping audit before broader changes. Settings already uses compact categories and optional detail, so no unrelated redesign is included. Unreleased disclosure refinements use compact plus/minus summary marks and shared sidebar geometry; native details interiors still expand immediately; the modal and existing browse geometry retain shared motion tokens. No correctness or focus behavior depends on animation completion.
 
 ## Compatibility
 

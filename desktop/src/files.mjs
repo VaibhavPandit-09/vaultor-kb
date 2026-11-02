@@ -76,7 +76,7 @@ export class NativeFiles {
         if(items.length>2000||this.picked.size>4000)throw Error('Drop at most 2,000 entries.');
       }
       if(mixed){for(const item of items)item.relativePath='Dropped items/'+item.relativePath;items.unshift({name:'Dropped items',relativePath:'Dropped items',directory:true});}
-      const names=new Set();for(const item of items){const name=(item.relativePath??item.name).normalize('NFC').toLowerCase();if(names.has(name))throw Error('Dropped entries have colliding names. Import them separately.');names.add(name);bytes+=item.size??0;}
+      const names=new Set();for(const item of items){const name=(item.relativePath??item.name).normalize('NFC');if(names.has(name))throw Error('Dropped entries have colliding names. Import them separately.');names.add(name);bytes+=item.size??0;}
       if(items.length>2000||bytes>2*1024*1024*1024)throw Error('Drop at most 2,000 entries and 2 GiB.');
       this.connection(token);return items;
     }catch(error){for(const id of this.picked.keys())if(!previous.has(id))this.picked.delete(id);throw error;}

@@ -45,7 +45,7 @@ import { createPortal, flushSync } from 'react-dom';
 import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import {
   Plus,
-  ChevronDown,
+  Ellipsis,
   Search,
   Sun,
   Moon,
@@ -616,17 +616,19 @@ export default function Dashboard() {
     if (importBusy.current) return;
     importBusy.current = true; setUploadPending(true);
     const target = editor && range ? captureImportTarget(editor, range) : undefined;
+    const selectionFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    const restoreSelectionFocus=()=>{if(importAcquire&&selectionFocus?.isConnected)requestAnimationFrame(()=>focusWithoutScroll(selectionFocus));else restoreImportFocus();};
     try {
       const accept = mode === 'markdown' ? '.md,.markdown,.txt' : mode === 'csv' ? '.csv,.tsv,.txt' : '';
       const epoch=getConnection().epoch;
       const files:File[]&{directories?:string[];emptyFoldersUnavailable?:boolean} = dropped ? window.vaultorDesktop?.dropFiles ? await dropDesktopFiles(dropped) : dropped : await pickFiles(accept, !target, folder);
       if(epoch!==getConnection().epoch)throw Error('Connection changed. Reselect the source.');
-      if (!files.length&&!files.directories?.length) { target?.dispose(); importBusy.current = false; if (target && !target.editor.isDestroyed) target.editor.commands.focus(undefined, { scrollIntoView: false }); else restoreImportFocus(); return; }
+      if (!files.length&&!files.directories?.length) { target?.dispose(); importBusy.current = false; if (target && !target.editor.isDestroyed) target.editor.commands.focus(undefined, { scrollIntoView: false }); else restoreSelectionFocus(); return; }
       const prepared=await prepareImport(files,target,mode);setImportAcquire(false);setImportAcquireError('');
       setFileImport({...prepared,collection:!target&&libraryVisible&&collection?{id:collection.id,name:collection.name}:undefined});
-    } catch (error) { target?.dispose(); importBusy.current = false; if(target&&!target.editor.isDestroyed)target.editor.commands.focus(undefined,{scrollIntoView:false});else restoreImportFocus(); setImportAcquireError(error instanceof Error?error.message:String(error));reportError('file.import.prepare', error); }
+    } catch (error) { target?.dispose(); importBusy.current = false; if(target&&!target.editor.isDestroyed)target.editor.commands.focus(undefined,{scrollIntoView:false});else restoreSelectionFocus(); setImportAcquireError(error instanceof Error?error.message:String(error));reportError('file.import.prepare', error); }
     finally { setUploadPending(false); }
-  }, [libraryVisible,collection,restoreImportFocus]);
+  }, [libraryVisible,collection,restoreImportFocus,importAcquire]);
   const requestFileUpload = useCallback((event?:{currentTarget?:EventTarget|null}) => { importReturnFocus.current=event?.currentTarget instanceof HTMLElement?event.currentTarget:document.activeElement instanceof HTMLElement?document.activeElement:null; flushSync(() => setCommandPaletteOpen(false)); setImportAcquireError('');setImportAcquire(true); }, []);
   useEffect(()=>{const resume=(event:Event)=>{const detail=(event as CustomEvent<{task:{epoch:number;workspace:Identity};folder:boolean}>).detail;if(!detail||detail.task.epoch!==getConnection().epoch||!identityRef.current||!sameWorkspace(detail.task.workspace,identityRef.current))return;void beginImport(undefined,undefined,undefined,detail.folder);};window.addEventListener('vaultor:resume-import',resume);return()=>window.removeEventListener('vaultor:resume-import',resume);},[beginImport]);
   const handleRequestMdUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'markdown'); }, [beginImport]);
@@ -1255,7 +1257,7 @@ export default function Dashboard() {
         >
           {createNotePending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
           New note
-        </button><LibraryPopover label="Create options" trigger={<ChevronDown size={14}/>} className="sidebar-create-menu">{close=><button className="library-button" onClick={()=>{close();collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>}</LibraryPopover>
+        </button><LibraryPopover label="Create options" trigger={<Ellipsis size={14}/>} className="sidebar-create-menu">{close=><button className="library-button" onClick={()=>{close();collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>}</LibraryPopover>
         <button ref={importButton} aria-haspopup="dialog" aria-expanded={importAcquire||Boolean(fileImport)} onClick={requestFileUpload} disabled={uploadPending} className="library-button sidebar-import"><Upload size={14}/>Import</button>
       </div>
 

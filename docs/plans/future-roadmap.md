@@ -1,10 +1,10 @@
 # Deferred work and remaining qualification
 
-Reviewed 2026-10-23. W1–W3/R1–R10 engineering is integrated and released for the available Windows/Android platforms. No active implementation plan remains. This document parks unresolved work and future ideas; none is implementation authorization. [CODEBASE](../CODEBASE.md) describes what exists, topic guides own contracts, and [R10 evidence](../development/qualification/R10.md) owns measurements and unqualified cases.
+Reviewed 2026-11-02. W1–W3/R1–R10 engineering is integrated and released for the available Windows/Android platforms. No active implementation plan remains. This document parks unresolved work and future ideas; none is implementation authorization. [CODEBASE](../CODEBASE.md) describes what exists, topic guides own contracts, and [R10 evidence](../development/qualification/R10.md) owns measurements and unqualified cases.
 
 ## Remaining platform and acceptance work
 
-- Current integrated Mac arm64 build/install/update qualification is unavailable; [MAC-HANDOFF.md](../desktop/MAC-HANDOFF.md) owns exact immutable-source gates. Published Mac0.13.0 lacks Reviews and archive4–6. Do not claim a current Mac installer or downgrade newer workspace data into it.
+- Windows x64 and Mac arm64 0.24.2 are published with packaged browse-compression and public-asset evidence in [the release ledger](../desktop/releases/v0.24.2.md). GitHub Latest remains0.21.0. The unreleased consistency refinement still requires Mac runtime validation; [MAC-HANDOFF.md](../desktop/MAC-HANDOFF.md) owns platform gates. Mac Intel/Linux desktop, broader filesystem/hardware and any unperformed install-over/uninstall tests remain unqualified.
 - User-owned Samsung S24 Ultra/One UI motion/haptic quality, real touch/keyboard/SAF/clipboard providers, physical OLED, OEM lifecycle/battery and real Wi-Fi/LAN remain unqualified. Agents never access/pair the phone. Emulator wiring/temporal geometry is not hardware acceptance.
 - Spoken TalkBack/focus traversal, actual split-screen, subjective predictive Back and exhaustive PDF/layout/theme/accent combinations remain unqualified. A narrow runtime geometry test is not split-screen acceptance; the R10 TalkBack automation probe captured no focus events and did not pass experience acceptance.
 
