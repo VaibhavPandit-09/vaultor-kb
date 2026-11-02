@@ -451,6 +451,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-02 — Windows0.25.1 package qualification
+
+Fresh versioned production build, original-key signature/size/SHA256, all534 extracted payload and78 packaged source comparisons pass. Minimal extracted-installer startup confirms Library, owned host, protocol3 and desktop/updater0.25.1. Updater/publication14/14 pass. Installer246378337bytes/SHA256dd1025c1c7015cb7fcc2e2acdd1be7b251aacbfe2b0968e41097a12e908b2928. No additional architecture change. Draft/publication and production updater checks remain pending; no Mac/Android artifact or acceptance is claimed.
+
 ### 2026-11-02 — Windows0.25.1 build preparation
 
 Merged the targeted hyperlink fix into master after confirming the repository has no required PR/check route. Desktop package/lock versions are0.25.1; original trust, protocol and Android versions remain unchanged. Focused frontend29/29, native42/42 and updater/publication14/14 pass; lint and TypeScript pass. Fresh versioned production UI/server/package, signature and minimal packaged startup gates remain pending. No additional architecture change; no Mac build or acceptance is claimed.
