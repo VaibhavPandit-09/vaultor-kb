@@ -449,6 +449,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-02 — Final integrity and Windows-only release preparation
+
+Reviewed the four consistency commits against current master. Removed recurring linked-reference registrations and up to30 repeated metadata IPC calls per page after initial discovery, reusing the existing read-only batch presence API. Aborted/disposed/changed-workspace queries stop before further metadata work; hidden/busy reference views suspend polling. Graph queries now walk only the target source grant and short-circuit unavailable targets. No filesystem authority, Save/recovery, schema or portable API changes. Synthetic40,000-entry/40,000-edge nine-query samples measured median incoming67.5→50.1ms and outgoing28.6→10.8ms locally; not a general benchmark guarantee. Final frontend607/607, affected desktop68/68, updater/publication21/21 and backend8/8 pass. Original release identity is retained. Minimal packaged startup/build/protocol/updater checks replace broad UI automation for this release; detailed Windows UI and all macOS acceptance are user-owned. No new Mac/Android artifacts are authorized.
+
 ### 2026-11-02 — Relationship coverage and paging (unreleased)
 
 Extended the existing bounded disk graph to admitted1MiB Markdown while preserving256KiB saved-content search. Parser refusal retains search text; normalized Unicode matching, known-unavailable entries, Trash metadata and combined30-row pagination avoid incorrect graph presentation. Native near-1MiB graph/source preservation and existing search checks pass2/2, graph/refusal checks4/4, path/parser equivalence6/6 and the affected frontend follow-up39/39 pass. Production compilation and lint pass; no source-writing, database, export or authorization contract changed.

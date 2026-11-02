@@ -9,19 +9,20 @@ import AppModal from './modals/AppModal';
 import {BrowsePagination} from './BrowseLayout';
 import {localReferences,type LocalReference,type ReferenceEntry,type ReferencePage,type ReferenceOccurrence} from '../lib/resourceReferences';
 async function fetchReferences(key:string,signal:AbortSignal){const [id,direction,page]=JSON.parse(key);return (await api.get<ReferencePage>('/resources/'+id+'/references',{params:{direction,page,size:30},signal,backgroundDiagnostic:true})).data;}
-export default function ResourceReferences({resource,localNotes=[],linkedReferences,onClose}:{resource:Pick<Resource,'id'|'title'>&{type?:string};linkedReferences?:(id:string,direction:string,page:number)=>Promise<ReferencePage>;localNotes?:LocalReference[];onClose:()=>void}) {
+export default function ResourceReferences({resource,localNotes=[],linkedReferences,onClose}:{resource:Pick<Resource,'id'|'title'>&{type?:string};linkedReferences?:(id:string,direction:string,page:number,signal?:AbortSignal)=>Promise<ReferencePage>;localNotes?:LocalReference[];onClose:()=>void}) {
  const [direction,setDirection]=useState('incoming'),[page,setPage]=useState(0),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const focus=useRestoreFocusOnClose(),captured=useRef(false);if(!captured.current){focus.captureFocus();captured.current=true;}
  const fetch=useCallback(async(key:string,signal:AbortSignal)=>{
-   const saved=await fetchReferences(key,signal);if(!linkedReferences)return saved;
-   const [id,direction,page]=JSON.parse(key),offset=Math.max(0,page*30-saved.totalItems),nativePage=Math.floor(offset/30),native=await linkedReferences(id,direction,nativePage);
+   const saved=await fetchReferences(key,signal);signal.throwIfAborted();if(!linkedReferences)return saved;
+   const [id,direction,page]=JSON.parse(key),offset=Math.max(0,page*30-saved.totalItems),nativePage=Math.floor(offset/30),native=await linkedReferences(id,direction,nativePage,signal);
    const slots=30-saved.items.length,local=native.items.slice(offset%30,offset%30+slots);
-   if(local.length<slots&&nativePage+1<native.totalPages){const next=await linkedReferences(id,direction,nativePage+1);local.push(...next.items.slice(0,slots-local.length));}
+   if(local.length<slots&&nativePage+1<native.totalPages){const next=await linkedReferences(id,direction,nativePage+1,signal);local.push(...next.items.slice(0,slots-local.length));}
    const totalItems=saved.totalItems+native.totalItems;
    return {...saved,items:[...saved.items,...local],totalItems,totalOccurrences:saved.totalOccurrences+native.totalOccurrences,totalPages:Math.ceil(totalItems/30),limited:native.limited,indexing:native.indexing};
  },[linkedReferences]);
  const result=useRetainedQuery(JSON.stringify([resource.id,direction,page]),true,'resources',fetch);
- useEffect(()=>{if(!linkedReferences||result.loading||result.refreshing)return;const timer=setTimeout(result.retry,5000);return()=>clearTimeout(timer);},[linkedReferences,result.loading,result.refreshing,result.retry]);
+ const {loading:referenceLoading,refreshing:referenceRefreshing,retry:retryReferences}=result;
+ useEffect(()=>{if(!linkedReferences||referenceLoading||referenceRefreshing||busy)return;const refresh=()=>{if(document.visibilityState!=='hidden')retryReferences();};const timer=setTimeout(refresh,5000);document.addEventListener('visibilitychange',refresh);return()=>{clearTimeout(timer);document.removeEventListener('visibilitychange',refresh);};},[linkedReferences,referenceLoading,referenceRefreshing,retryReferences,busy]);
  const local=direction==='incoming'?localReferences(localNotes,resource.id):localNotes.filter(n=>n.id===resource.id);
  const root=useRef<HTMLDivElement>(null);
  useEffect(()=>{root.current?.querySelector<HTMLButtonElement>('button')?.focus();},[]);

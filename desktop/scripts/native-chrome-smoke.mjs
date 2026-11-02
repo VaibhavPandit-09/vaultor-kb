@@ -11,6 +11,15 @@ export async function runChromeSmoke(window, directory, owned, updates) {
   const evaluate = code => window.webContents.executeJavaScript(code);
   const wait = async (code, label) => { for (let i = 0; i < 500; i++) { if (await evaluate(code).catch(() => false)) return; await new Promise(r => setTimeout(r, 100)); } throw new Error(label + ': ' + await evaluate('document.body.innerText')); };
   await wait("Boolean(document.querySelector('.library-view'))", 'Local workspace');
+  if(process.env.VAULTOR_RELEASE_STARTUP_CHECK==='1'){
+    assert.equal(owned.status,'ready');
+    const bootstrap=await evaluate('window.vaultorDesktop.bootstrap()'),status=await evaluate('window.vaultorDesktop.updatesStatus()');
+    assert.equal(bootstrap.ok,true);assert.equal(bootstrap.value.desktopBuild,app.getVersion());
+    assert.equal(status.ok,true);assert.equal(status.value.currentVersion,app.getVersion());assert.equal(status.value.source,'github');
+    const response=await fetch(owned.address+'/api/capabilities',{headers:{'X-Vaultor-Owner':owned.accessKey,'X-Vaultor-Protocol':'3'}});assert.ok(response.ok);
+    const capabilities=await response.json();assert.equal(capabilities.serverBuild,app.getVersion());assert.equal(capabilities.apiProtocolVersion,3);
+    console.log('Packaged startup passed: Library, bundled server/build, protocol3 and updater identity '+app.getVersion()+'.');return;
+  }
   if(process.env.VAULTOR_REFINEMENT_CHECK==='1'){const {runRefinementCheck}=await import('./native-refinement-check.mjs');await runRefinementCheck(window,directory);return;}
   if(process.env.VAULTOR_BROWSE_COMPRESSION_CHECK==='1'){const {runBrowseCompressionCheck}=await import('./native-browse-compression-check.mjs');await runBrowseCompressionCheck(window,directory,owned);return;}
   if(process.env.VAULTOR_UX_RELIABILITY_CHECK==='1'){const {runUxReliabilityCheck}=await import('./native-ux-reliability-check.mjs');await runUxReliabilityCheck(window,directory,owned);return;}

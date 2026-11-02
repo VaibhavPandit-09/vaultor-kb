@@ -84,12 +84,25 @@ export class LinkedWorkspace{
     if(result.items.length){const {data}=await api.put<Resource[]>('/resources/linked',result.items.map(item=>({id:item.id,title:item.title,reference:item.content})),{backgroundDiagnostic:true,connectionEpoch});const metadata=new Map(data.map(item=>[item.id,item]));result.items=result.items.map(item=>({...item,...metadata.get(item.id)})).filter(item=>!item.trashedAt);for(const item of result.items)this.metadata.set(item.id,item);}
     return result;
   };
-  references=async(id:string,direction:string,page:number)=>{
-    const connectionEpoch=getConnection().epoch;
-    const result=await this.request<ReferencePage>('relationships',{document:id,direction,page});
+  references=async(id:string,direction:string,page:number,signal?:AbortSignal)=>{
+    const connectionEpoch=getConnection().epoch,lifetime=this.lifetime,identity=this.identity();
+    if(!identity)throw Error('Wait for workspace restoration.');
+    const check=()=>{signal?.throwIfAborted();const current=this.identity();if(connectionEpoch!==getConnection().epoch||lifetime!==this.lifetime||current?.id!==identity.id||current.generation!==identity.generation)throw Error('Linked reference query superseded.');};
+    const config={connectionEpoch,signal,backgroundDiagnostic:true,headers:{'X-Vaultor-Generation':identity.generation}};
+    check();const result=await this.request<ReferencePage>('relationships',{document:id,direction,page});check();
     const rows=[];
-    for(const item of result.items){const resource=await this.request<Resource>('metadata',{document:item.id});rows.push({id:item.id,title:resource.title,reference:resource.content});}
-    if(rows.length){const {data}=await api.put<Resource[]>('/resources/linked',rows,{backgroundDiagnostic:true,connectionEpoch});for(const item of data)this.metadata.set(item.id,item);const metadata=new Map(data.map(item=>[item.id,item]));result.items=result.items.map(item=>({...item,available:metadata.has(item.id)&&!metadata.get(item.id)?.trashedAt,trashed:!!metadata.get(item.id)?.trashedAt,revision:metadata.get(item.id)?.revision}));}
+    for(const item of result.items){
+      if(this.metadata.get(item.id)?.revision)continue;
+      const resource=await this.request<Resource>('metadata',{document:item.id});check();
+      rows.push({id:item.id,title:resource.title,reference:resource.content});
+    }
+    if(rows.length){const {data}=await api.put<Resource[]>('/resources/linked',rows,config);check();for(const item of data)this.metadata.set(item.id,item);}
+    if(result.items.length){
+      // Read-only batch state, including Trash/purge, without re-registering known
+      // references or broadcasting a resource mutation on every polling cycle.
+      const {data}=await api.post<{items:Record<string,string>}>('/resources/import-presence',{ids:result.items.map(item=>item.id),collections:[]},config);check();
+      result.items=result.items.map(item=>({...item,available:data.items[item.id]==='active',trashed:data.items[item.id]==='trash',revision:this.metadata.get(item.id)?.revision}));
+    }
     return result;
   };
   async reconcile(){

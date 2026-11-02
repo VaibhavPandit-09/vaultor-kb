@@ -37,6 +37,14 @@ test('a replaced identity or duplicate basename cannot repoint an old edge',()=>
  f.bodies.get('1').links[0].href='../a.md';f.registry.entryIndex.delete(f.registry.entryKey('root','a.md','inode0'));
  assert.equal(linkedRelationships(f.registry,f.bodies,f.live,'1','outgoing').totalItems,0);
 });
+test('queries ignore unrelated grants and stop before enumeration for unavailable targets',()=>{
+ const f=fixture(),foreign={id:'foreign',root:'other',relative:'a.md',name:'Other',identity:'foreign',size:20,modified:'now',markdown:true};
+ f.registry.roots.set('other',{enabled:true,status:'available'});f.registry.entries.set(foreign.id,foreign);f.live.add(foreign.id);f.registry.entryIndex.set(f.registry.entryKey('other','a.md','foreign'),foreign.id);
+ f.bodies.set('foreign',{key:'foreign:20:now',get links(){throw Error('Unrelated source walked');}});
+ assert.equal(linkedRelationships(f.registry,f.bodies,f.live,'0','incoming').limited,false);
+ f.registry.entries.values=()=>{throw Error('Unavailable query enumerated');};
+ assert.equal(linkedRelationships(f.registry,f.bodies,f.live,'missing','outgoing').totalItems,0);
+});
 test('relationship-parser refusal preserves existing content search with partial graph coverage',async()=>{
  const f=fixture(),entry=f.registry.entries.get('0');
  Object.assign(f.registry,{options:{},check:()=>{},list:async()=>({items:[entry],more:false}),grant:async()=> 'cap',native:{call:async command=>command==='open-linked'?['view','epoch',entry.identity,'hash','metadata',Buffer.from('# Searchable needle').toString('base64'),'20']:[]}});
