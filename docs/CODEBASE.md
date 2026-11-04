@@ -457,6 +457,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-05 — D2 source ledger and review handoff
+
+Recorded implementation7c727b4 and the exact scoped validation/acceptance gaps in the initiative tracker. D1 Windows review is accepted; D2 physical interaction review remains pending and native drag-out is deferred. Documentation-only ledger update, no architectural effect; unchanged passing checks reused and staged whitespace check passed. Master and released versions remain unchanged.
+
 ### 2026-11-05 — Desktop selection and organization (unreleased D2 branch)
 
 Recorded user acceptance of D1 and implemented page-scoped selection, shared bulk organization and internal/external drag-in. Captured source scope is retained through membership, pin, hierarchy and lifecycle requests; no backend/resource schema, protocol, Android or recovery architecture change. Corrected the context-only tag trigger's hidden display. Mixed Trash selection restores only available items and routes selected permanent deletion through the existing explicit group review. Current passing focused evidence covers110 tests across19 files, including corrected fixture/targeted reruns; production TypeScript/Vite/desktop UI build, full lint and final affected-file lint passed. Windows disposable smoke passed selection/ranges, pin/unpin, additive membership, tags, cancellation, protected Trash/Restore, hierarchy refusal, native folder review and600px layout. Wide destination and narrow selection frames were inspected. Internal drags were DOM-dispatched in real Electron and external folder delivery used Chromium filesystem drag data; physical gesture/motion acceptance and macOS remain unverified. Native drag-out is explicitly deferred. No versions/installers/tags/releases created.

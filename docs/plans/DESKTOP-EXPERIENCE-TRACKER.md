@@ -134,7 +134,7 @@ Associated source commit: `19d9c54` — compact history, shared resource command
 
 ## D2 validation and handoff (2026-11-05)
 
-- Baseline accepted8480a70; clean branch codex/desktop-experience-d2, no other branch integration. Implementation commit pending ledger.
+- Baseline accepted8480a70; clean branch codex/desktop-experience-d2, no other branch integration. Implementation commit7c727b4; this follow-up documentation commit records its exact identity.
 - Production TypeScript/Vite build and fresh desktop/ui passed. Existing chunk/dynamic-import/Browserslist warnings only; no dependency/version changes.
 - Full frontend lint passed without warnings; changed scope/visibility/Trash files also passed targeted final lint. Native smoke script syntax passed.
 - Focused integration:18 files /106 tests, initially102 passed and4 failed. A batch fixture omitted command metadata/outer Escape provider and an older membership assertion omitted scope config; corrected batch3 and manager4 reruns passed. Added lifecycle generation and context-only visibility regressions passed (17 affected tests across4 files), and mixed cleanup-pending Restore and selected purge-review regressions2 passed. Effective current passing coverage:110 distinct tests across19 files, reusing unchanged evidence. Final CSS-override visibility case1 passed independently;2 unrelated cases skipped in that targeted rerun.
@@ -145,4 +145,4 @@ Associated source commit: `19d9c54` — compact history, shared resource command
 
 ## Resume here
 
-D1 Windows review is accepted. D2 engineering/routing checks are recorded above; D2 is IN PROGRESS pending user physical/visual review, with D2.4b explicitly DEFERRED. D2.5 runtime gesture acceptance remains honest. Review branch source/ledger, then continue to D3 only after the next acceptance/continue instruction. Do not repeat unchanged passing checks. No automatic integration, version bumps, installers, tags or releases.
+D1 Windows review is accepted. D2 engineering/routing checks are recorded above; D2 is IN PROGRESS pending user physical/visual review, with D2.4b explicitly DEFERRED. D2.5 runtime gesture acceptance remains honest. Review implementation7c727b4 on codex/desktop-experience-d2, then continue to D3 only after the next acceptance/continue instruction. Do not repeat unchanged passing checks. No automatic integration, version bumps, installers, tags or releases.
