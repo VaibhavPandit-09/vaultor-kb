@@ -20,3 +20,13 @@ export function insertDroppedLinks(target:ImportTarget,resources:Resource[]){
  target.insert(resources.flatMap(resource=>[{type:'resourceLink',attrs:{resourceId:resource.id,label:resource.title,type:resource.type}},{type:'text',text:' '}]));
  target.editor.view.focus();
 }
+
+/** Pointer-only feedback: no selection/document transactions and no editor ownership. */
+export class EditorDropCaret {
+ private element:HTMLDivElement|null=null;
+ private frame:number|null=null;
+ private point:{target:EditorDropTarget;x:number;y:number}|null=null;
+ show(target:EditorDropTarget,x:number,y:number){this.point={target,x,y};this.refresh();}
+ refresh(){if(!this.point||this.frame!==null)return;this.frame=requestAnimationFrame(()=>{this.frame=null;const point=this.point;if(!point||!canInsertDrop(point.target)||!point.target.editor.view.dom.isConnected){this.clear();return;}const position=point.target.editor.view.posAtCoords({left:point.x,top:point.y})?.pos;if(position===undefined){this.clear();return;}const rect=point.target.editor.view.coordsAtPos(position);if(!this.element){this.element=document.createElement('div');this.element.className='resource-drop-caret';this.element.setAttribute('aria-hidden','true');document.body.append(this.element);}Object.assign(this.element.style,{left:rect.left+'px',top:rect.top+'px',height:Math.max(14,rect.bottom-rect.top)+'px'});});}
+ clear(){if(this.frame!==null)cancelAnimationFrame(this.frame);this.frame=null;this.point=null;this.element?.remove();this.element=null;}
+}

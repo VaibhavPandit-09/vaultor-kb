@@ -45,10 +45,10 @@ export default function SidebarFrame({ floating, open, focusMode, pinned, onReve
     const observer = new MutationObserver(() => { if (held && !pointer) release(); });
     observer.observe(root, { subtree: true, attributes: true, attributeFilter: ['aria-expanded'] });
     root.addEventListener('pointerdown', down, true);
-    document.addEventListener('pointerup', release, true); document.addEventListener('pointercancel', release, true); window.addEventListener('blur', release);
+    document.addEventListener('pointerup', release, true); document.addEventListener('pointercancel', release, true); document.addEventListener('dragend', release, true); document.addEventListener('drop', release, true); window.addEventListener('blur', release);
     return () => {
       cancelAnimationFrame(frame); observer.disconnect(); clear(); root.removeEventListener('pointerdown', down, true);
-      document.removeEventListener('pointerup', release, true); document.removeEventListener('pointercancel', release, true); window.removeEventListener('blur', release);
+      document.removeEventListener('pointerup', release, true); document.removeEventListener('pointercancel', release, true); document.removeEventListener('dragend', release, true); document.removeEventListener('drop', release, true); window.removeEventListener('blur', release);
     };
   }, []);
   useEffect(() => {
@@ -67,12 +67,12 @@ export default function SidebarFrame({ floating, open, focusMode, pinned, onReve
     root.addEventListener('mouseenter', enter); root.addEventListener('mouseleave', schedule);
     root.addEventListener('focusin', clear); root.addEventListener('focusout', schedule);
     root.addEventListener('pointerdown', down, true);
-    document.addEventListener('pointerup', release, true); document.addEventListener('pointercancel', release, true);
+    document.addEventListener('pointerup', release, true); document.addEventListener('pointercancel', release, true); document.addEventListener('dragend', release, true); document.addEventListener('drop', release, true);
     window.addEventListener('blur', release);
     return () => {
       clear(); observer.disconnect(); root.removeEventListener('mouseenter', enter); root.removeEventListener('mouseleave', schedule);
       root.removeEventListener('focusin', clear); root.removeEventListener('focusout', schedule); root.removeEventListener('pointerdown', down, true);
-      document.removeEventListener('pointerup', release, true); document.removeEventListener('pointercancel', release, true); window.removeEventListener('blur', release);
+      document.removeEventListener('pointerup', release, true); document.removeEventListener('pointercancel', release, true); document.removeEventListener('dragend', release, true); document.removeEventListener('drop', release, true); window.removeEventListener('blur', release);
     };
   }, [floating, open, focusMode, pinned]);
   return <>

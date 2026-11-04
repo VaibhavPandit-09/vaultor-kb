@@ -1,6 +1,6 @@
 import { GripVertical } from 'lucide-react';
 import {DesktopDragContext as Context,INTERNAL_DRAG,dropIntent,useDesktopInteraction,useDropTarget,type DragPayload,type DragContext,type DropTarget,type DragSurface,type DragContent} from '../lib/desktopInteraction';
-import {canInsertDrop,captureEditorDrop,editorDropTarget,insertDroppedLinks} from '../lib/editorDrop';
+import {EditorDropCaret,canInsertDrop,captureEditorDrop,editorDropTarget,insertDroppedLinks} from '../lib/editorDrop';
 import {useAnchoredPortalPosition} from '../lib/useAnchoredPortalPosition';
 import {createPortal} from 'react-dom';
 import {useOrganizationPage,type OrganizationItem} from '../lib/organization';
@@ -15,13 +15,15 @@ type Props={children:ReactNode;generation?:string;sourceKey:string;openResourceI
 export function DesktopInteractionProvider({children,generation,sourceKey,onPane,onImport,openResourceIds=[],onResolveResources=async resources=>resources,onArrangeSession,onReorderSession,onDragSourceChange,visibleSessionIds=[]}:Props){
  const [external,setExternal]=useState(false),[payload,setPayload]=useState<DragPayload|null>(null),[message,setMessage]=useState(''),[error,setError]=useState(false),[busy,setBusy]=useState(false);
  const latestSource=useRef(sourceKey);useLayoutEffect(()=>{latestSource.current=sourceKey;},[sourceKey]);
+ const caret=useMemo(()=>new EditorDropCaret(),[]);
  const editorFeedback=useRef<HTMLElement|null>(null);
- const clearEditorFeedback=useCallback(()=>{if(editorFeedback.current){delete editorFeedback.current.dataset.dropState;delete editorFeedback.current.dataset.dropIntent;delete editorFeedback.current.dataset.paneDropEdge;editorFeedback.current=null;}},[]);
+ const clearEditorFeedback=useCallback(()=>{caret.clear();if(editorFeedback.current){delete editorFeedback.current.dataset.dropState;delete editorFeedback.current.dataset.dropIntent;delete editorFeedback.current.dataset.paneDropEdge;editorFeedback.current=null;}},[caret]);
  const running=useRef(false),edge=useRef<{element:HTMLElement;y:number}|null>(null);
  const openedIds=useMemo(()=>new Set(openResourceIds),[openResourceIds]),scope={epoch:getConnection().epoch,generation};
  const report=(text:string,failure=false)=>{if(latestSource.current!==sourceKey)return;setMessage(text);setError(failure);};
  const cancel=useCallback(()=>{clearEditorFeedback();setPayload(null);setExternal(false);edge.current=null;},[clearEditorFeedback]);
  useEffect(()=>()=>clearEditorFeedback(),[sourceKey,clearEditorFeedback]);
+ useEffect(()=>{if(!message||error||busy)return;const timer=setTimeout(()=>setMessage(''),3000);return()=>clearTimeout(timer);},[message,error,busy]);
  useEscapeLayer({active:Boolean(payload)||external,priority:600,close:cancel,restoreFocusOnEscape:false});
  const [previousSource,setPreviousSource]=useState(sourceKey);
  if(previousSource!==sourceKey){setPreviousSource(sourceKey);setPayload(null);setExternal(false);setMessage('');}
@@ -30,13 +32,13 @@ export function DesktopInteractionProvider({children,generation,sourceKey,onPane
   if(!payload&&!external)return;
   const end=(event:Event)=>{if(event.type!=='blur'||event.target===window)cancel();};
   window.addEventListener('dragend',end);window.addEventListener('drop',end);window.addEventListener('blur',end);
-  let frame=0;const tick=()=>{const value=edge.current;if(value){const rect=value.element.getBoundingClientRect(),distance=value.y-rect.top,bottom=rect.bottom-value.y;value.element.scrollTop+=distance<36?-Math.ceil((36-distance)/4):bottom<36?Math.ceil((36-bottom)/4):0;}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);
+  let frame=0;const tick=()=>{const value=edge.current;if(value){const rect=value.element.getBoundingClientRect(),distance=value.y-rect.top,bottom=rect.bottom-value.y;const previous=value.element.scrollTop;value.element.scrollTop+=distance<36?-Math.ceil((36-distance)/4):bottom<36?Math.ceil((36-bottom)/4):0;if(value.element.scrollTop!==previous)caret.refresh();}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);
   return()=>{cancelAnimationFrame(frame);window.removeEventListener('dragend',end);window.removeEventListener('drop',end);window.removeEventListener('blur',end);};
- },[payload,external,cancel]);
+ },[payload,external,cancel,caret]);
  const start:DragContext['start']=(event,content,onDrop)=>{
   if(running.current){event.preventDefault();return;}
   if(content.kind==='resources')try{boundedResources(content.resources);}catch{event.preventDefault();return;}
-  const ticket=crypto.randomUUID();event.dataTransfer.effectAllowed=content.kind==='collection'||content.kind==='session'?'move':'copy';event.dataTransfer.setData(INTERNAL_DRAG,ticket);
+  const ticket=crypto.randomUUID();event.dataTransfer.effectAllowed=content.kind==='collection'||content.kind==='session'?'move':content.kind==='resources'&&content.session?'copyMove':'copy';event.dataTransfer.setData(INTERNAL_DRAG,ticket);
   const preview=document.createElement('div');preview.className='resource-drag-preview';preview.textContent=content.kind==='collection'?content.collection.name:content.kind==='resources'?content.resources.length===1?content.resources[0].title:content.resources.length+' resources':content.kind==='tag'?content.name:content.title;
   document.body.append(preview);event.dataTransfer.setDragImage?.(preview,12,12);setTimeout(()=>preview.remove(),0);
   const surface=event.currentTarget.closest('.palette-shell')?'palette':event.currentTarget.closest('.library-view')?'browse':'other';
@@ -57,7 +59,9 @@ export function DesktopInteractionProvider({children,generation,sourceKey,onPane
     else if(target.kind==='pane'){if(!onArrangeSession)throw new Error('Pane arrangement is unavailable.');await onArrangeSession(current.sessionId,target.paneId,target.edge);}
    }else if(current.kind==='tag'&&target.kind==='resource'){const resources=await onResolveResources([target.resource],current.scope);requireCommandScope(current.scope);if(latestSource.current!==current.sourceKey)throw Error('Workspace changed.');await changeMembership(resources.map(resource=>resource.id),'tag',current.id,'add',current.scope);}
    else if(current.kind==='collection'&&target.kind==='collection')await reparentCollection(current.collection,target.collection,current.scope);
-   else if(current.kind==='resources'){
+   else if(current.kind==='resources'&&current.session&&(target.kind==='session-order'||target.kind==='pane')){
+    if(target.kind==='session-order')onReorderSession?.(current.session.sessionId,target.sessionId);else{if(!onArrangeSession)throw Error('Pane arrangement is unavailable.');await onArrangeSession(current.session.sessionId,target.paneId,target.edge);}
+   }else if(current.kind==='resources'){
     const resources=await onResolveResources(current.resources,current.scope);requireCommandScope(current.scope);if(latestSource.current!==current.sourceKey)throw new Error('Workspace changed.');boundedResources(resources);if(resources.length!==current.resources.length||resources.some((resource,index)=>resource.id!==current.resources[index].id))throw Error('Resource identity changed. Start the drag again.');
     if(target.kind==='editor'&&insertion){if(!canInsertDrop(target.target))throw new Error('The editor became read-only.');insertDroppedLinks(insertion,resources);}
     else if(target.kind==='collection'||target.kind==='tag')await changeMembership(resources.map(item=>item.id),target.kind,target.kind==='collection'?target.collection.id:target.id,'add',current.scope);
@@ -84,9 +88,9 @@ export function DesktopInteractionProvider({children,generation,sourceKey,onPane
  };
  return <Context.Provider value={{payload,external,markExternal:()=>setExternal(true),start,cancel,drop,importFiles,scroll,stopScroll:()=>{edge.current=null;},scope,openedIds,report,visibleSessionIds,arrangeSession:async(id,target,edge)=>{if(!onArrangeSession)throw Error('Pane arrangement is unavailable.');await onArrangeSession(id,target,edge);}}}>
   <div className="desktop-interaction-root" onDragOverCapture={event=>{
-   clearEditorFeedback();if(!payload||!event.dataTransfer.types.includes(INTERNAL_DRAG)||!body(event))return;
+   if(!payload||!event.dataTransfer.types.includes(INTERNAL_DRAG)||!body(event)){clearEditorFeedback();return;}
    event.preventDefault();event.stopPropagation();const target=editorTarget(event),intent=target&&dropIntent(payload,target);event.dataTransfer.dropEffect=intent?payload.kind==='session'?'move':'copy':'none';
-   const element=event.target instanceof Element?event.target.closest<HTMLElement>('.ProseMirror'):null;if(element){editorFeedback.current=element;element.dataset.dropState=intent?'valid':'invalid';element.dataset.dropIntent=intent||'Requires an editable Vaultor note';if(target?.kind==='pane'&&target.edge)element.dataset.paneDropEdge=target.edge;}scroll(event);
+   const element=event.target instanceof Element?event.target.closest<HTMLElement>('.ProseMirror'):null;if(editorFeedback.current!==element)clearEditorFeedback();if(element){editorFeedback.current=element;element.dataset.dropState=intent?'valid':'invalid';element.dataset.dropIntent=intent||'Requires an editable Vaultor note';if(target?.kind==='pane'&&target.edge)element.dataset.paneDropEdge=target.edge;else delete element.dataset.paneDropEdge;}if(target?.kind==='editor'&&intent)caret.show(target.target,event.clientX,event.clientY);else caret.clear();scroll(event);
   }} onDropCapture={event=>{
    if(!body(event))return;
    if(payload&&event.dataTransfer.types.includes(INTERNAL_DRAG)){const target=editorTarget(event);if(target)void drop(event,target);else{event.preventDefault();event.stopPropagation();cancel();report('Drop inside an editable Vaultor note.',true);}return;}
@@ -101,14 +105,15 @@ export function DesktopInteractionProvider({children,generation,sourceKey,onPane
    if(!event.dataTransfer.types.includes('Files')||payload)return;event.preventDefault();setExternal(true);event.dataTransfer.dropEffect=busy?'none':'copy';
   }} onDrop={event=>{if(event.dataTransfer.types.includes('Files')&&!payload&&!event.defaultPrevented)importFiles(event);}}>
    {children}{external&&<div className="organization-external-drop" aria-hidden="true"><span>Drop files or folders to review an import</span></div>}
-   {message&&<div className="organization-drop-status" role={error?'alert':'status'}><span>{message}</span>{!busy&&<button aria-label="Dismiss organization status" onClick={()=>setMessage('')}>×</button>}</div>}
+   {message&&<div className="organization-drop-status" data-motion-surface="notice" data-motion-key="desktop-drop-status" role={error?'alert':'status'}><span>{message}</span>{!busy&&<button aria-label="Dismiss organization status" onClick={()=>setMessage('')}>×</button>}</div>}
   </div>
  </Context.Provider>;
 }
 export function PaneDropTarget({paneId,resource,...props}:Omit<HTMLAttributes<HTMLDivElement>,'resource'>&{paneId:string;resource?:Resource}){
  const drag=useDesktopInteraction(),[edge,setEdge]=useState<'before'|'after'|'swap'>('swap');
+ const arranging=drag?.payload?.kind==='session'||drag?.payload?.kind==='resources'&&Boolean(drag.payload.session);
  const drop=useDropTarget(drag?.payload?.kind==='tag'&&resource?{kind:'resource',resource}:{kind:'pane',paneId,edge});
- return <div {...props} data-pane-id={paneId} {...drop} data-pane-drop-edge={drag?.payload?.kind==='session'&&drop['data-drop-state']==='valid'?edge:undefined} onDragOver={event=>{if(drag?.payload?.kind==='session'){const rect=event.currentTarget.getBoundingClientRect();const next=event.clientX<rect.left+Math.min(48,rect.width*.2)?'before':event.clientX>rect.right-Math.min(48,rect.width*.2)?'after':'swap';if(next!==edge)setEdge(next);}drop.onDragOver(event);}}/>;
+ return <div {...props} data-pane-id={paneId} {...drop} data-pane-drop-edge={arranging&&drop['data-drop-state']==='valid'?edge:undefined} onDragOver={event=>{if(arranging){const rect=event.currentTarget.getBoundingClientRect();const next=event.clientX<rect.left+Math.min(48,rect.width*.2)?'before':event.clientX>rect.right-Math.min(48,rect.width*.2)?'after':'swap';if(next!==edge)setEdge(next);}drop.onDragOver(event);}}/>;
 }
 export function SessionDragHandle({session}:{session:Extract<DragContent,{kind:'session'}>}){
  const drag=useDesktopInteraction();

@@ -1183,10 +1183,15 @@ body:not(:has(.desktop-shell)) .app-root { padding-top:40px; }
 /* D2 extension: source surfaces stay mounted while the drag reaches a note. */
 .palette-overlay[data-dragging='true'] { pointer-events:none; background:transparent!important; }
 .palette-overlay[data-dragging='true'] .palette-shell { opacity:.12; }
-.workspace-view[data-drag-shelf='true'] { display:block; position:absolute; left:0; top:52px; bottom:0; width:min(320px,42%); height:auto; z-index:70; border-right:1px solid var(--border-strong); background:var(--surface-2); box-shadow:4px 0 12px #0002; }
-.workspace-view[data-drag-shelf='true'] .library-view { height:100%; }
+.workspace-view[data-drag-source-retained='true'] { display:block; position:absolute; inset:0; width:100%; height:100%; opacity:0; pointer-events:none; }
+.workspace-view[data-drag-source-retained='true'] .library-view { height:100%; }
 .pane-arrange-handle { position:absolute; top:3px; right:4px; z-index:5; display:flex; align-items:center; justify-content:center; width:24px; height:22px; border-radius:6px; color:var(--text-tertiary); cursor:grab; }
 .pane-arrange-handle:hover { background:var(--surface-3); color:var(--text-primary); }
 .pane-arrange-handle:focus-visible { outline:2px solid var(--primary); outline-offset:1px; }
 [data-pane-drop-edge='before'] { box-shadow:inset 5px 0 var(--primary); }
 [data-pane-drop-edge='after'] { box-shadow:inset -5px 0 var(--primary); }
+
+.resource-drop-caret { position:fixed; width:2px; background:var(--primary); pointer-events:none; z-index:85; border-radius:1px; }
+.ProseMirror[data-drop-intent]::after { display:none; }
+[data-drag-reveal="waiting"] { box-shadow:inset 2px 0 color-mix(in srgb,var(--primary) 45%,transparent); }
+[data-drag-reveal="ready"] { box-shadow:inset 2px 0 var(--primary); }

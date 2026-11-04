@@ -74,3 +74,8 @@ it('holds interrupted sidebar geometry through pointer click and an open portal,
  await act(async()=>menu.setAttribute('aria-expanded','false')); act(flush);
  expect(panel.style.transition).toBe(''); expect(allocation.style.width).toBe('');
 });
+
+it.each(['drop','dragend'])('releases held sidebar geometry on native %s even without pointerup',async type=>{
+ let next=0;const frames=new Map<number,FrameRequestCallback>();vi.stubGlobal('requestAnimationFrame',(callback:FrameRequestCallback)=>{frames.set(++next,callback);return next;});vi.stubGlobal('cancelAnimationFrame',(id:number)=>frames.delete(id));const flush=()=>{for(let i=0;i<2;i++){const queued=[...frames.values()];frames.clear();queued.forEach(callback=>callback(16));}};
+ render(<Frame/>);const panel=screen.getByRole('complementary') as HTMLElement,allocation=panel.parentElement!;vi.spyOn(allocation,'getBoundingClientRect').mockReturnValue({width:220} as DOMRect);fireEvent.pointerDown(screen.getByRole('button',{name:'Menu'}));expect(allocation.style.width).toBe('220px');fireEvent(document,new Event(type,{bubbles:true}));act(flush);expect(panel.style.transition).toBe('');expect(allocation.style.width).toBe('');
+});
