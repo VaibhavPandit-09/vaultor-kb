@@ -453,6 +453,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-04 — Desktop initiative source ledger
+
+Recorded validated D1 implementation commit19d9c54 in the authoritative tracker; feature branch remains separate from master and personal/native platform acceptance stays explicit. Documentation-only change, no architectural effect; prior passing checks reused and staged whitespace check passed.
+
 ### 2026-11-04 — Native desktop foundation (unreleased feature branch)
 
 Audited master5003a91 and established the D1–D4 tracker. Replaced all-visit horizontal journey presentation with bounded current/neighbor context and full History; underlying visits/save/restore contracts are unchanged. Added shared context invocation, capability-aware resource commands, palette convergence and native text editing menus. No backend/resource schema, authorization, recovery protocol or Android architecture change. Validation: 83 focused frontend tests across14 files passed; native text-menu unit tests2 passed. Production TypeScript/Vite/desktop UI build passed; full lint had no errors, and the reported Dashboard dependency warnings were corrected with clean targeted lint. Final Windows Electron smoke passed for eight visits, full History/Forward,600px compression, edge placement, keyboard/source focus, shared split, secondary-pointer nonactivation and real editable-pointer native menu dispatch. Three final dark-theme layout screenshots were inspected; macOS, broader surface/native appearance and user motion/feel acceptance remain unverified. No versions/installers/tags/releases requested.

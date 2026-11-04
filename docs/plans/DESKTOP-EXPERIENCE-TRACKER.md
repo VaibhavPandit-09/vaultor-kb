@@ -108,7 +108,7 @@ D4 completion: coherent mouse/keyboard/touchpad workflows and supported OS integ
 | Visual inspection | Final dark-theme wide/narrow/edge-menu PNGs from vaultor-chrome-native-uV9MdG inspected. No motion/physical pointer feel/macOS/light/high-contrast acceptance claimed. |
 | Desktop syntax | node --check main.mjs and native-desktop-experience-check.mjs passed; native text-menu tests2 passed. |
 
-Associated source commits: implementation commit is recorded in the follow-up documentation ledger below. Baseline `5003a91` is not an implementation commit.
+Associated source commit: `19d9c54` — compact history, shared resource command/context invocation, native text menus, regression/smoke coverage and tracker/living documentation. This follow-up documentation commit records the exact implementation identity. Baseline `5003a91` is not an implementation commit. Branch: `codex/desktop-experience-d1`; master is unchanged.
 
 ## Platform status and known decisions
 
