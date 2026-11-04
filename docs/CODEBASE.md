@@ -457,6 +457,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-05 — D2 acceptance-fix source ledger
+
+Recorded acceptance-fix implementation770d1f8 in the authoritative tracker. Documentation-only follow-up with no additional architectural effect; reused qualified test/build/native evidence and checked staged whitespace. D2 still requires user acceptance; branch remains separate from master and D3/releases/Android remain untouched.
+
 ### 2026-11-05 — D2 user acceptance fixes (awaiting acceptance)
 
 Fixed permanent local success feedback, session-only Open Notes payloads, unstable hover cleanup/focus/new-pane behavior, visible Library shelf and missing insertion caret. Extended existing resource payloads with optional session identity; stable hover reveals existing panes without focus requests, while original sources remain mounted/unpainted. Reused shared notice exit motion for3second success expiry; sidebar holds release on native drag completion. Source/authorization, resource ownership, Save/Undo/recovery and Activity pipelines remain intact. Validation:91 effective focused tests across9 files with affected reruns; full/affected lint, TypeScript/production fresh desktop UI, syntax and disposable Windows extension smoke (vaultor-chrome-native-rYMajH) passed. Physical/compact/floating/theme/motion acceptance remains user-owned; inactive hover creates no pane. No master, version/release, D3 or Android work.
