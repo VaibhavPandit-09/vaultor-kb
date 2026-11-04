@@ -18,6 +18,8 @@ Splitting is deliberate: use **Open in another pane** on an inactive session's m
 
 Files remain temporary side/modal previews, never note sessions or journey visits, and retain source-focus restoration. Unsupported resource kinds stay identifiable without guessed editing/preview behavior.
 
+Internal resource drops accept one resource per target pane and use that pane as the source of the existing linked-navigation transaction. Save barriers, visit positions and existing-session deduplication remain authoritative; dropping never creates extra top-level windows or silently duplicates an already open current destination. Files still use the temporary preview path. [Library](LIBRARY.md) owns selection, drag intent and organization behavior.
+
 ## Journeys and navigation transactions
 
 A new direct session starts a journey. An ordinary linked note navigates within its source session, extending that session's path; Back/Forward returns within it. If a destination already has an open session, that session is focused instead, preserving both paths. A deliberate new linked pane copies the source path/positions with fresh visit IDs. Independent explicitly split journeys can later revisit the same resource through history; the existing shared-document layer safely supports those distinct historical views. Direct opens deduplicate current resources and hydration canonicalizes legacy duplicate current destinations.

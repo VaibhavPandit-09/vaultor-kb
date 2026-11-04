@@ -64,9 +64,9 @@ it('combines collection and tag filtering and scopes selection to the current pa
   render(<LibraryView section="library" visible tags={['topic']} collection={{id:'atlas',name:'Atlas',count:100}} hasNotes={false} onReturn={()=>{}} onOpen={()=>{}}/>);
   await screen.findByText('Note 0');
   expect(browseResources).toHaveBeenCalledWith(expect.objectContaining({collection:'atlas',tags:['topic']}),expect.any(AbortSignal));
-  fireEvent.click(screen.getByLabelText('Select Note 0'));expect(screen.getByText('1 selected')).toBeTruthy();
-  expect(screen.queryByText('Select visible resources')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Select page'}));expect(screen.getByText('100 selected')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button',{name:'Next'}));await waitFor(()=>expect(screen.queryByText('100 selected')).toBeNull());
+  fireEvent.click(screen.getByLabelText('Select Note 0'));expect(screen.getByText('1 selected on this page')).toBeTruthy();
+  expect(screen.queryByText('Select visible resources')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Select page'}));expect(screen.getByText('100 selected on this page')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button',{name:'Next'}));await waitFor(()=>expect(screen.queryByText('100 selected on this page')).toBeNull());
 });
 it('retains query while opting into content and changing collection destination',async()=>{
  const changeScope=vi.fn();render(<LibraryView section="library" visible tags={[]} collection={{id:'atlas',name:'Atlas',count:100}} onCollection={changeScope} hasNotes={false} onReturn={()=>{}} onOpen={()=>{}}/>);
@@ -111,7 +111,7 @@ it('keeps one pager in the working context and starts a new page at its first re
  viewport.scrollTop=2500; fireEvent.scroll(viewport);
  fireEvent.click(screen.getByRole('button',{name:'Next'}));
  await screen.findByText('Note 100'); expect(viewport.scrollTop).toBe(0);
- expect(screen.queryByText('1 selected')).toBeNull();
+ expect(screen.queryByText('1 selected on this page')).toBeNull();
  expect(screen.getByRole('navigation',{name:'Result pages'})).toBe(pager);
  expect(screen.getByRole('button',{name:'Previous'}).hasAttribute('disabled')).toBe(false);
 });

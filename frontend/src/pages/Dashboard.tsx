@@ -1,3 +1,4 @@
+import { DesktopInteractionProvider, PaneDropTarget, TagDropTarget, NavigationDropButton, CollectionDropButton } from '../components/DesktopInteraction';
 import ImportSourceModal from '../components/modals/ImportSourceModal';
 import {dropDesktopFiles} from '../lib/desktop';
 import {linkedError} from '../lib/linked/errors';
@@ -1245,7 +1246,7 @@ export default function Dashboard() {
       <div className="sidebar-primary px-3 py-3 space-y-1">
         <div className="flex items-center gap-1"><button className="sidebar-nav" onClick={openCommandPalette}><Search size={16} />Search workspace<span className="ml-auto text-xs opacity-60">{resolvedShortcuts.commandPalette.replace('Mod', isMac ? '⌘' : 'Ctrl').replaceAll('+', ' ')}</span></button><SidebarCustomization preferences={sidebarPreferences} onChange={updateSidebarPreferences} status={settingsSaveStatus} onRetry={retrySettingsSave}/><button className="browse-icon-button sidebar-pin-toggle" aria-label={isFloatingSidebarMode ? (floatingSidebarPinned ? 'Unpin navigation' : 'Pin navigation') : 'Collapse sidebar'} aria-pressed={isFloatingSidebarMode ? floatingSidebarPinned : undefined} onClick={toggleSidebar}>{isFloatingSidebarMode && !floatingSidebarPinned ? <PanelLeftOpen size={16}/> : <PanelLeftClose size={16}/>}</button></div>
         <button className="sidebar-nav" onClick={()=>setReviewTarget(null)}><MessageSquare size={16}/>Review inbox</button>
-        {([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }, { id: 'trash', label: 'Trash', Icon: Trash2 }] as const).map(({ id, label, Icon }) => <button key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</button>)}
+        {([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }, { id: 'trash', label: 'Trash', Icon: Trash2 }] as const).map(({ id, label, Icon }) => id==='collections'?<CollectionDropButton key={id} className="sidebar-nav" aria-current={libraryVisible&&librarySection===id?'page':undefined} onOpen={()=>{setCollection(null);showLibrary(id);}}><Icon size={16}/>{label}</CollectionDropButton>:<NavigationDropButton target={id==='trash'?{kind:'trash'}:id==='favorites'?{kind:'pinned'}:null} key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</NavigationDropButton>)}
         {openNotes.length > 0 && <button className="sidebar-nav" onClick={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }}><FileText size={16} />Open notes<span className="ml-auto text-xs opacity-60">{openNotes.length}</span></button>}
       </div>
       <div className="sidebar-create-actions flex gap-1.5 px-3 pb-2">
@@ -1295,7 +1296,7 @@ export default function Dashboard() {
         )}
         <div className="flex flex-wrap gap-1.5">
           {filteredTags.map((tag) => (
-            <span
+            <TagDropTarget tagId={tag.id} name={tag.name}
               key={tag.id}
               data-tag-target={tag.id}
               className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-[0.01em] transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
@@ -1323,7 +1324,7 @@ export default function Dashboard() {
               >
                 <X size={10} />
               </button>
-            </span>
+            </TagDropTarget>
           ))}
           {filteredTags.length === 0 && <span className="text-[10px] text-slate-400">No tags</span>}
         </div>
@@ -1356,6 +1357,7 @@ export default function Dashboard() {
 
   if(!sessionReady)return <main className={`flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} items-center justify-center bg-background text-text`}><div role="status">{bootError||'Restoring workspace…'}{bootError&&<button className="library-button ml-3" onClick={()=>setBootAttempt(v=>v+1)}>Retry</button>}</div></main>;
   return (
+    <DesktopInteractionProvider openResourceIds={openNotes.map(note=>note.id)} generation={identityRef.current?.generation} sourceKey={JSON.stringify([getConnection().epoch,identityRef.current?.id,identityRef.current?.generation])} onPane={(resource,paneId)=>openResourceById(resource.id,{sourcePaneId:paneId,destination:'here',intent:'link',throwOnFailure:true})} onImport={files=>{setImportAcquire(true);void beginImport(undefined,undefined,undefined,false,files);}}>
     <div className={`app-root flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen ? 'command-open pointer-events-none' : ''}`}>
 
       <CommandPaletteModal searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined}
@@ -1431,7 +1433,7 @@ export default function Dashboard() {
           <div className="workspace-view h-full" hidden={!libraryVisible}>
             <CollectionsView mode={settings.local.collectionView} onModeChange={value=>updateLocalSetting('collectionView',value)} key={'collections:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={libraryVisible&&librarySection==='collections'} onOpen={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
             <PinnedList key={'pins:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={libraryVisible&&librarySection==='favorites'} onResource={id=>void openResourceById(id)} onCollection={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
-            {librarySection==='trash'?<TrashView hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'||librarySection==='favorites'?null:<LibraryView searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined} key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
+            {librarySection==='trash'?<TrashView key={identityRef.current?.generation} visible={libraryVisible} hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'||librarySection==='favorites'?null:<LibraryView searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined} key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="workspace-view h-full" hidden={libraryVisible}>
           <div className="flex h-full min-h-0 flex-col">
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
@@ -1441,7 +1443,7 @@ export default function Dashboard() {
           <div className="min-h-0 flex-1 relative">
             <WorkspacePaneLayout transparency={uiTransparency} paneIds={openWorkspaceNotes.map(note => note.slotId!)} focusedId={openWorkspaceNotes.find(note=>note.paneId===activePaneId)?.slotId ?? null} animationMode={localSettings.animationMode}>
               {openWorkspaceNotes.map((note, index) => (
-                <div
+                <PaneDropTarget paneId={note.paneId}
                   key={note.paneId}
                   data-note-pane={note.id}
                   data-pane-id={note.paneId}
@@ -1678,7 +1680,7 @@ export default function Dashboard() {
                       </div>
                     )}
                   </JourneyViewport>
-                </div>
+                </PaneDropTarget>
               ))}
             </WorkspacePaneLayout>
           {openWorkspaceNotes.length === 0 && (activeResourceLoading ? (
@@ -1725,6 +1727,7 @@ export default function Dashboard() {
       {previewResourceLoading && <PreviewShell mode={effectivePreviewMode} transparency={uiTransparency} label="Loading preview" loading onClose={()=>dismissPreview()}><div className="m-auto text-sm text-[var(--text-secondary)]" role="status">Loading preview…</div></PreviewShell>}
 
     </div>
+    </DesktopInteractionProvider>
   );
 }
 

@@ -1,3 +1,4 @@
+import { useDropTarget } from '../lib/desktopInteraction';
 import { MotionIndicator } from './MotionFeedback';
 import { useEffect, useMemo, type ReactNode, type MouseEvent } from 'react';
 import { Settings2 } from 'lucide-react';
@@ -11,7 +12,8 @@ import ResourceTypeFilter from './ResourceTypeFilter';
 
 export function SidebarSection({ name, preferences, onChange, onViewAll, children }: { name: SidebarSectionName; preferences: Preferences; onChange: (value: Preferences) => void; onViewAll?: () => void; children: ReactNode }) {
   const title = name[0].toUpperCase() + name.slice(1), expanded = !preferences[name].collapsed;
-  return <section className="sidebar-section" aria-label={title} hidden={!preferences[name].visible}>
+  const drop=useDropTarget(name==='pinned'?{kind:'pinned'}:null,()=>{if(!expanded)onChange({...preferences,[name]:{...preferences[name],collapsed:false}});});
+  return <section {...drop} className="sidebar-section" aria-label={title} hidden={!preferences[name].visible}>
     <header className="sidebar-section-heading"><button aria-expanded={expanded} aria-controls={'sidebar-'+name} onClick={()=>onChange({...preferences,[name]:{...preferences[name],collapsed:expanded}})}><DisclosureIndicator expanded={expanded}/>{title}</button><div className="sidebar-section-tools">{name!=='tags'&&expanded&&<ResourceTypeFilter compact label={'Filter '+title.toLowerCase()+' type'} collections={name==='pinned'} value={preferences[name].type} onChange={type=>onChange({...preferences,[name]:{...preferences[name],type}})}/>} {onViewAll&&<button onClick={onViewAll}>View all</button>}</div></header>
     <div className="sidebar-disclosure" data-expanded={expanded} aria-hidden={!expanded} inert={!expanded}><div id={'sidebar-'+name} className="sidebar-disclosure-content"><MotionIndicator/>{children}</div></div>
   </section>;

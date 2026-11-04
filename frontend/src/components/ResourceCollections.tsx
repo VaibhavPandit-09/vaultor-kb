@@ -1,3 +1,5 @@
+import { useDesktopInteraction } from '../lib/desktopInteraction';
+import { changeMembership, commandScope, commandConfig } from '../lib/resourceBatchCommands';
 import { useFormKeyboard } from '../lib/useFormKeyboard';
 import { useEffect, useRef, useState } from 'react';
 import { useRestoreFocusOnClose } from '../lib/useRestoreFocusOnClose';
@@ -9,6 +11,7 @@ import { collectionPath, organizationChanged, useOrganizationPage, type Organiza
 import { organizationError, useMemberships, type Membership } from '../lib/organizationControls';
 
 export function CollectionPicker({resourceIds,onClose,onCreated,parentId=null}:{parentId?:string|null;resourceIds:string[];onClose:()=>void;onCreated?:(item:OrganizationItem)=>void}) {
+ const interaction=useDesktopInteraction();const [scope]=useState(()=>interaction?.scope??commandScope());
  const [query,setQuery]=useState(''),[search,setSearch]=useState(''),[page,setPage]=useState(0);
  const result=useOrganizationPage('collection',search,page,true,false,30,resourceIds.length?null:parentId??''),membership=useMemberships(resourceIds);
  const [overrides,setOverrides]=useState<Record<string,Membership>>({}),[pending,setPending]=useState<string[]>([]),[errors,setErrors]=useState<Record<string,string>>({});
@@ -19,11 +22,11 @@ export function CollectionPicker({resourceIds,onClose,onCreated,parentId=null}:{
  const items=[...selected,...(result.data?.items??[]).filter(item=>!selected.some(value=>value.id===item.id)).map(item=>({...item,selectedCount:members.get(item.id)?.selectedCount??0}))];
  async function toggle(item:Membership){if(running.current.has(item.id))return;running.current.add(item.id);setPending(v=>[...v,item.id]);setErrors(v=>({...v,[item.id]:''}));const adding=item.selectedCount!==resourceIds.length;
  setOverrides(v=>({...v,[item.id]:{...item,selectedCount:adding?resourceIds.length:0}}));
- try{await api.post('/organization/memberships',{resourceIds,kind:'collection',targetId:item.id,action:adding?'add':'remove'},{backgroundDiagnostic:true});organizationChanged('collection',resourceIds);}
+ try{await changeMembership(resourceIds,'collection',item.id,adding?'add':'remove',scope);}
  catch(e){setOverrides(v=>({...v,[item.id]:item}));setErrors(v=>({...v,[item.id]:organizationError(e)}));}
  finally{running.current.delete(item.id);setPending(v=>v.filter(id=>id!==item.id));}}
  async function create(){if(running.current.has('create')||!query.trim())return;if(exact&&creation.current.name!==query.trim()){setErrors(v=>({...v,create:'A collection with this name already exists. Choose another name.'}));return;}running.current.add('create');setPending(v=>[...v,'create']);setErrors(v=>({...v,create:''}));const name=query.trim();if(creation.current.name!==name)creation.current={name,id:crypto.randomUUID()};
- try{const {data}=await api.put<OrganizationItem>('/collections/creations/'+creation.current.id,{name,resourceIds,...(parentId?{parentId}:{})},{backgroundDiagnostic:true});setOverrides(v=>({...v,[data.id]:{...data,selectedCount:resourceIds.length}}));organizationChanged('collection',resourceIds.length?resourceIds:undefined);setQuery('');creation.current={name:'',id:''};onCreated?.(data);}
+ try{const {data}=await api.put<OrganizationItem>('/collections/creations/'+creation.current.id,{name,resourceIds,...(parentId?{parentId}:{})},commandConfig(scope));setOverrides(v=>({...v,[data.id]:{...data,selectedCount:resourceIds.length}}));organizationChanged('collection',resourceIds.length?resourceIds:undefined);setQuery('');creation.current={name:'',id:''};onCreated?.(data);}
  catch(e){setErrors(v=>({...v,create:organizationError(e)}));}finally{running.current.delete('create');setPending(v=>v.filter(id=>id!=='create'));}}
  const form=useFormKeyboard(create);
  const exact=(search===query.trim()&&Boolean(result.data?.exactMatch));

@@ -23,3 +23,8 @@ it('keeps text editing context separate and nested rows choose only their own ac
  fireEvent.contextMenu(screen.getByRole('textbox'));expect(screen.queryByRole('menu')).toBeNull();
  fireEvent.contextMenu(screen.getByText('Child'));await screen.findByRole('menu');expect(screen.queryByText('Parent action')).toBeNull();expect(screen.getByText('Child action')).toBeTruthy();
 });
+
+it('context-only markers stay hidden even when their button class has a display rule',()=>{
+ const view=render(<EscapeManagerProvider><span data-tag-target><style>{'.library-button { display:inline-flex }'}</style><button>Tag</button><LibraryPopover contextOnly contextTarget="[data-tag-target]" label="Tag actions">{()=> <button>Delete tag</button>}</LibraryPopover></span></EscapeManagerProvider>);
+ const marker=view.container.querySelector<HTMLButtonElement>('button[hidden]');expect(getComputedStyle(marker!).display).toBe('none');fireEvent.contextMenu(screen.getByText('Tag'));expect(screen.getByRole('menu')).toBeTruthy();
+});

@@ -1,3 +1,5 @@
+import { ResourceSelectionContext, useResourceSelection } from '../lib/resourceSelection';
+import ResourceBatchActions from './ResourceBatchActions';
 import {useLinkedSearch,type LinkedSearchProvider} from '../lib/linked/search';
 import CollectionBreadcrumb from './CollectionBreadcrumb';
 import { CollectionChildren } from './OrganizationViews';
@@ -23,7 +25,6 @@ import type { OrganizationItem } from '../lib/organization';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Search, RefreshCw, Route, Plus } from 'lucide-react';
 import ResourceTypeFilter from './ResourceTypeFilter';
-import { requestResourceAction } from '../lib/resourceActions';
 import { filterLabel } from '../lib/resourceKinds';
 import { useResourcePage } from '../lib/useResourcePage';
 
@@ -38,8 +39,8 @@ export default function LibraryView({ searchLinked,section, visible, tags, onOpe
   const [pickerIds,setPickerIds]=useState<string[]|null>(null),[adding,setAdding]=useState(false);
   const detail=useRetainedQuery(collection?.id??'',visible&&Boolean(collection),'collections',collectionDetails);
   const currentCollection=detail.data??collection;
-  const [manager, setManager] = useState<'manage' | 'bulk' | null>(null);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [manager, setManager] = useState<'manage' | null>(null);
+
   const [exporting,setExporting]=useState(false);
   const [searchMode,setSearchMode]=useState<SearchMode>(initialContext.searchMode);
   const [query, setQuery] = useState(initialContext.query), [search, setSearch] = useState(initialContext.query);
@@ -60,18 +61,15 @@ export default function LibraryView({ searchLinked,section, visible, tags, onOpe
   const totalItems = result.data?.totalItems ?? 0, loading = result.loading;
   const retry = result.retry;
   const viewKey=JSON.stringify([page,search,searchMode,type,sort,scopeKey]);
-  const [previousView,setPreviousView]=useState(viewKey);
-  if(previousView!==viewKey){setPreviousView(viewKey);setSelected([]);}
-  useEffect(()=>{onSelectionChange?.(items.filter(item=>selected.includes(item.id)));},[items,selected,onSelectionChange]);
-  const [selectionRows,setSelectionRows]=useState(items);
-  if(selectionRows!==items){setSelectionRows(items);setSelected(previous=>previous.filter(id=>items.some(item=>item.id===id)));}
+  const selection=useResourceSelection(items,viewKey,visible),selected=selection.ids;
+  useEffect(()=>{onSelectionChange?.(selection.resources);},[selection.resources,onSelectionChange]);
   const title = section === 'favorites' ? 'Pinned' : section === 'recent' ? 'Recently opened' : 'Library';
-  return <section ref={viewport} data-motion-surface="page" data-motion-key={section+':'+(collection?.id??'')} data-motion-list={!query && page===0} data-motion-ready={Boolean(result.data)&&!loading} className={transformLibrary ? "library-view library-transform" + (collection ? " collection-transform" : section==='recent' ? " recent-transform" : "") : "library-view"} aria-label={title}>
+  return <ResourceSelectionContext.Provider value={{...selection,collection:currentCollection}}><section onKeyDown={selection.onKeyDown} ref={viewport} data-motion-surface="page" data-motion-key={section+':'+(collection?.id??'')} data-motion-list={!query && page===0} data-motion-ready={Boolean(result.data)&&!loading} className={transformLibrary ? "library-view library-transform" + (collection ? " collection-transform" : section==='recent' ? " recent-transform" : "") : "library-view"} aria-label={title}>
     <LibraryOrientation selectionActive={selected.length>0} enabled={transformLibrary} active={visible} viewport={viewport} filterSummary={query||tags.length||type!=='all'?'Search and filters applied: '+[query,...tags,type!=='all'?filterLabel(type):''].filter(Boolean).join(', '):undefined} context={<>
     {detail.error&&<p role="alert">{detail.error}<button className="library-button" onClick={detail.retry}>Retry collection</button></p>}
     {searchMode==='content'&&Boolean(search)&&<SearchCoverage coverage={result.data?.fileCoverage} onRefresh={retry}/>}
     {(tags.length>0||type!=='all'||(sort!=='updated'&&section!=='recent'))&&<div className="flex gap-2 flex-wrap">{type!=='all'&&<button className="collection-chip" onClick={()=>setType('all')}>{filterLabel(type)} ×</button>}{tags.map(tag=><button className="collection-chip" key={tag} onClick={()=>onTagsChange(tags.filter(t=>t!==tag))}>{tag} ×</button>)}{sort!=='updated'&&section!=='recent'&&<button className="collection-chip" onClick={()=>setSort('updated')}>{sort==='title'?'Title A–Z':'Recently opened'} ×</button>}</div>}
-    {selected.length>0&&<div className="flex flex-wrap items-center gap-2 text-sm"><span>{selected.length} selected</span><button className="library-button" onClick={()=>setExporting(true)}>Export selection…</button><button className="library-button" onClick={()=>setSelected(items.map(item=>item.id))}>Select page</button><button className="library-button" onClick={()=>{organizationFocus.captureFocus();setManager('bulk');}}>Tags / manage</button><button className="library-button" onClick={()=>{organizationFocus.captureFocus();setPickerIds(selected);}}>Add to collection</button><button className="library-button text-red-500" onClick={()=>void requestResourceAction('trash',items.filter(item=>selected.includes(item.id)))}>Move to Trash…</button><button className="library-button" onClick={()=>setSelected([])}>Clear selection</button></div>}
+    {selected.length>0&&<div className="flex flex-wrap items-center gap-2 text-sm"><span role="status" aria-live="polite">{selected.length} selected on this page</span><button className="library-button" onClick={()=>setExporting(true)}>Export selection…</button><button className="library-button" onClick={selection.selectAll}>Select page</button><ResourceBatchActions resources={selection.resources} collection={currentCollection}/><button className="library-button" onClick={selection.clear}>Clear selection</button></div>}
     </>}>
     {currentCollection&&<CollectionBreadcrumb collection={currentCollection} onCollection={onCollection}/>}
     <BrowseHeading title={currentCollection?.name??title} kicker={currentCollection?'COLLECTION':'YOUR WORKSPACE'} actions={<>{currentCollection&&<><LibraryPopover label="Collection path" trigger={<Route size={16}/>}>
@@ -87,7 +85,7 @@ export default function LibraryView({ searchLinked,section, visible, tags, onOpe
     </LibraryOrientation>
     {currentCollection&&(currentCollection.childCount??0)>0&&<CollectionChildren key={currentCollection.id} parent={currentCollection.id} count={currentCollection.childCount} onOpen={onCollection}/>}
     <BrowseGroup label={currentCollection?"Direct resources":"Resources"} count={totalItems} loading={loading} error={result.error} retry={retry}>
-      {items.map(resource=><BrowseResourceRow key={resource.id} resource={resource} onOpen={onOpen} recent={section==='recent'} contentMode={searchMode==='content'} selected={selected.includes(resource.id)} onSelect={checked=>setSelected(previous=>checked?[...previous,resource.id]:previous.filter(id=>id!==resource.id))} onCollections={id=>{organizationFocus.captureFocus();setPickerIds([id]);}}/>)}
+      {items.map(resource=><BrowseResourceRow key={resource.id} resource={resource} onOpen={onOpen} recent={section==='recent'} contentMode={searchMode==='content'} selected={selected.includes(resource.id)}  onCollections={id=>{organizationFocus.captureFocus();setPickerIds([id]);}}/>)}
     </BrowseGroup>{!transformLibrary&&<BrowsePagination page={page} totalPages={totalPages} loading={loading} onPage={setPage}/>}
     {!!linkedItems.length&&<BrowseGroup label="Linked folders" count={linkedItems.length} loading={false} error={linked.error}><p role="status" className="browse-feedback">{linked.data.indexing?'Indexing linked folders…':linked.data.limited?'Showing up to50 matching linked files; narrow the search.':'Original files remain in their linked folders.'}</p>{linkedItems.map(resource=><BrowseResourceRow key={resource.id} resource={resource} onOpen={onOpen} contentMode={searchMode==='content'}/>)}</BrowseGroup>}
     {!loading && !linkedItems.length && totalItems===0 && !result.error && <div className="browse-empty">{currentCollection?.count===0&&!search&&type==='all'&&!tags.length ? (currentCollection.childCount?'Choose a child collection above, or use Add item to assign resources here.':'This collection is empty. Add an item or create a subcollection from More.') : !search&&type==='all'&&!tags.length&&!currentCollection ? section === 'favorites' ? 'Pin resources to keep them here.' : section === 'recent' ? 'Recently opened resources will appear here.' : 'Your Library is empty. Create a note or import files from the sidebar.' : 'No resources match these filters.'}{type!=='all'&&<button className="library-button" onClick={()=>{setType('all');setPage(0);}}>Clear type filter</button>}{page>0&&<button className="library-button" onClick={()=>setPage(0)}>Back to first page</button>}</div>}
@@ -96,6 +94,6 @@ export default function LibraryView({ searchLinked,section, visible, tags, onOpe
     {managingCollection&&currentCollection&&<CollectionManagement collection={currentCollection} onClose={()=>{setManagingCollection(false);organizationFocus.restoreFocus();}} onChanged={onCollection}/>}
     {pickerIds&&<CollectionPicker resourceIds={pickerIds} onClose={()=>{setPickerIds(null);organizationFocus.restoreFocus();}}/>}
     {adding&&currentCollection&&<AddExistingResources collection={currentCollection} onOpen={onOpenCreated??onOpen} onImport={onImport??(()=>{})} onClose={restore=>{setAdding(false);if(restore!==false)organizationFocus.restoreFocus();}}/>}
-    {manager && <OrganizationManager onClose={() => {setManager(null);organizationFocus.restoreFocus();}} tags={tags} onTag={name => onTagsChange(tags.includes(name) ? tags.filter(tag => tag !== name) : [...tags,name])} onTagRenamed={(oldName,newName) => onTagsChange(tags.flatMap(tag => tag === oldName ? newName ? [newName] : [] : [tag]))} onCollection={onCollection} selectedCollection={collection} resourceIds={manager === 'bulk' ? selected : []} onApplied={() => { setSelected([]);setManager(null);organizationFocus.restoreFocus(); }} />}
-  </section>;
+    {manager && <OrganizationManager onClose={() => {setManager(null);organizationFocus.restoreFocus();}} tags={tags} onTag={name => onTagsChange(tags.includes(name) ? tags.filter(tag => tag !== name) : [...tags,name])} onTagRenamed={(oldName,newName) => onTagsChange(tags.flatMap(tag => tag === oldName ? newName ? [newName] : [] : [tag]))} onCollection={onCollection} selectedCollection={collection} resourceIds={[]} onApplied={() => { selection.clear();setManager(null);organizationFocus.restoreFocus(); }} />}
+  </section></ResourceSelectionContext.Provider>;
 }

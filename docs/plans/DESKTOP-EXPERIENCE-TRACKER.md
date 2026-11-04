@@ -1,6 +1,6 @@
 # Native Desktop Experience — master tracker
 
-Reviewed 2026-11-04. Authoritative progress and resumption record for D1–D4. Phase 0 is complete; D1 engineering is Windows-validated with user acceptance pending; subsequent milestones retain the roadmap below. No Android feature development, independent windows, framework migration, backend rewrite or visual-identity redesign.
+Reviewed 2026-11-05. Authoritative progress and resumption record for D1–D4. D1 is accepted for the reviewed Windows scope (user: “Verified. Continue”, 2026-11-05). D2 is IN PROGRESS; D3–D4 retain the roadmap below. No Android feature development, independent windows, framework migration, backend rewrite or visual-identity redesign. macOS native acceptance remains unverified.
 
 ## Baseline and working rules
 
@@ -40,26 +40,35 @@ Menus: right-click opens at pointer; ContextMenu/Shift+F10 opens at focused targ
 | ID / priority | Status | Work, acceptance and validation | Locations / dependencies |
 | --- | --- | --- | --- |
 | P0 / P0 | COMPLETE | Audit and tracker established; roadmap, source map, dependencies and honest acceptance states. Documentation/source review completed. | This tracker; docs index/CODEBASE |
-| D1.1 / P0 | VALIDATED | Bounded current/neighbor history + full History; no horizontal overflow at narrow widths; duplicate visits/unavailable entries/branching/restoration unchanged. Component history + pane/session regressions; Windows wide/narrow smoke; user feel review. | JourneyBar, index.css; PaneNavigation/JourneyViewport unchanged. Depends P0. |
-| D1.2 / P0 | VALIDATED | Extend existing stable resource command IDs with labels/icons/capability/confirmation metadata; shared executor for open/split/rename/references/exports/Trash/pin/download/copy title. Existing coordinators retain review, save, error and authority. Test unsupported/linked/Trash refusal and propagated failures. | lib/resourceActions, ResourceActions, Dashboard. Depends P0. |
-| D1.3a / P1 | VALIDATED | Right-click + keyboard menus on Library/Recent/Pinned resource rows, collection hierarchy, pinned collections, Open Notes, Trash, tags, linked source management, note chrome/preview surface and browse background. Exact ellipsis content, safe handoffs, viewport placement, focus and cancellation. Component + Electron smoke; user acceptance pending. | LibraryPopover, ResourceActions, OrganizationViews, OpenNotes, TrashView, LinkedSources, LibraryView, SidebarItem, Dashboard. Depends D1.2. |
-| D1.3b / P1 | VALIDATED | Native editable/selected text context menus with Electron capability flags; application menus avoid text inputs/editor selections. Existing table-specific menus retained. Browser uses existing browser text behavior. Windows real editable-pointer event reached the native menu; macOS native acceptance unverified. | desktop/src/text-menu.mjs, main.mjs; focused native template tests. Depends D1.3a. |
-| D1.4 / P1 | VALIDATED | Resource ellipsis/right-click share execution; palette rename/Trash/export use same coordinator. Navigation buttons/shortcuts already share PaneNavigation; pins already share favorite helper. Focused regression/source review passed; remaining clipboard/OS adapters are D3 work. | Dashboard, commandPalette, resourceActions, PinButton. Depends D1.2/3. |
-| D1 acceptance / P0 | IN PROGRESS | Production build/lint, focused command/context/history/focus and existing pane/session/lifecycle regressions; one bounded disposable Windows native smoke with narrow placement. User visual/feel acceptance; macOS explicitly unverified. D1 cannot be COMPLETE before these criteria. | See validation ledger below. Depends all D1 tasks. |
+| D1.1 / P0 | COMPLETE | Bounded current/neighbor history + full History; no horizontal overflow at narrow widths; duplicate visits/unavailable entries/branching/restoration unchanged. Component history + pane/session regressions; Windows wide/narrow smoke; user feel review. | JourneyBar, index.css; PaneNavigation/JourneyViewport unchanged. Depends P0. |
+| D1.2 / P0 | COMPLETE | Extend existing stable resource command IDs with labels/icons/capability/confirmation metadata; shared executor for open/split/rename/references/exports/Trash/pin/download/copy title. Existing coordinators retain review, save, error and authority. Test unsupported/linked/Trash refusal and propagated failures. | lib/resourceActions, ResourceActions, Dashboard. Depends P0. |
+| D1.3a / P1 | COMPLETE | Right-click + keyboard menus on Library/Recent/Pinned resource rows, collection hierarchy, pinned collections, Open Notes, Trash, tags, linked source management, note chrome/preview surface and browse background. Exact ellipsis content, safe handoffs, viewport placement, focus and cancellation. Component + Electron smoke; user acceptance received 2026-11-05. | LibraryPopover, ResourceActions, OrganizationViews, OpenNotes, TrashView, LinkedSources, LibraryView, SidebarItem, Dashboard. Depends D1.2. |
+| D1.3b / P1 | COMPLETE | Native editable/selected text context menus with Electron capability flags; application menus avoid text inputs/editor selections. Existing table-specific menus retained. Browser uses existing browser text behavior. Windows real editable-pointer event reached the native menu; macOS native acceptance unverified. | desktop/src/text-menu.mjs, main.mjs; focused native template tests. Depends D1.3a. |
+| D1.4 / P1 | COMPLETE | Resource ellipsis/right-click share execution; palette rename/Trash/export use same coordinator. Navigation buttons/shortcuts already share PaneNavigation; pins already share favorite helper. Focused regression/source review passed; remaining clipboard/OS adapters are D3 work. | Dashboard, commandPalette, resourceActions, PinButton. Depends D1.2/3. |
+| D1 acceptance / P0 | COMPLETE | Production build/lint, focused command/context/history/focus and existing pane/session/lifecycle regressions; one bounded disposable Windows native smoke with narrow placement. User visual/feel acceptance; macOS explicitly unverified. Reviewed Windows scope accepted; macOS remains unverified. | See validation ledger below. Depends all D1 tasks. |
 
 D1 completion: modern bounded journey; preserved history/save/restore semantics; useful menus across major surfaces; meaningful command convergence; consistent keyboard/mouse/focus; no data-integrity regression. Remaining unimplemented or unvalidated scope must stay explicit, not folded into COMPLETE.
 
 ## D2 — Selection & Drag-and-Drop
 
-All tasks NOT STARTED. Start only after D1 acceptance/any separately agreed stage boundary. No broad backend rewrites or new DnD dependency assumed.
+D1 accepted 2026-11-05. Branch `codex/desktop-experience-d2` starts from accepted D1 source `8480a70`; no integration into master or unrelated branch/worktree changes. No dependencies or backend schema changes. D2 implementation has passed focused automated and Windows runtime checks; physical interaction review remains user-owned; native drag-out is separately DEFERRED.
 
-| ID / priority | Detailed scope and acceptance | Dependencies / source |
-| --- | --- | --- |
-| D2.1 / P0 | Audit activation vs selection per surface; shared scoped selection controller, toggle/range/select-all/clear, distinguish opened/focused/selected. Define filter/sort/page/deletion pruning and announcements. Test ranges/stale IDs/input exclusion; retain ordinary single-click navigation. | D1; LibraryView/TrashView/useResourcePage/state |
-| D2.2 / P1 | Bulk collection membership/tag/pin/Trash/restore through supported operations. Define mixed capability intersection, partial success, failed-target retention and workspace-generation rejection. Disposable mutation/failure tests. | D2.1, D1 commands; ResourceCollections/OrganizationManager/ResourceLifecycleDialog |
-| D2.3 / P1 | Resource(s) → collection ADDS membership, → tag applies, → Pinned pins, → pane opens; collections reparent through hierarchy validation. Trash invokes protected review. Reject cycles/invalid sources/stale sessions. Test cancellation, multi-membership, hierarchy failures. | D2.1/2; existing membership APIs/PaneNavigation |
-| D2.4 / P2 | Files/folders drop into existing import review/native tickets; distinguish external acquisition from internal organization. Investigate safe Electron drag-out exported copies without source path exposure; refuse unsupported platforms/capabilities. | D2.3, import/export security; desktop files/preload |
-| D2.5 / P1 | Shared bounded drag state/preview, intent labels, valid/invalid feedback, edge scrolling, delayed hierarchy expansion, Escape/cleanup and keyboard alternatives. Floating/narrow sidebars and reduced motion. Runtime interaction checks, no pointer-move scans/permission calls. | D2.3/4; sidebar/portal/motion utilities |
+D2 interaction specification: ordinary resource clicks still open; modifiers/checkboxes enter loaded-page selection and reveal compact count/Export/Organize/Clear controls in existing compression geometry. Selected rows have a subtle fill/accent edge, focus has its own outline and opened resources have a small marker. Trash title clicks select because there is no direct opening. Ranges use current displayed order; criteria/page/hidden changes clear, refresh/deletion prunes. Ctrl/Cmd+A excludes text controls and portals; Escape follows centralized ownership. Selection is capped at100 and never enumerates the workspace or restores from sessions.
+
+Drag snapshots the selection or just the unselected dragged resource. Only an opaque ticket enters DataTransfer; resource summaries remain bounded in memory. Targets advertise add/tag/pin/open/review/move intent with valid/invalid feedback. Collection hover opens bounded destinations/children while retaining source rows. A drop consumes the ticket before dispatch; cancellation clears timers, edge scrolling and feedback. Source epoch/generation admit commands; late results cannot report success in another source. Internal editor drops are intercepted before insertion; existing editor image/text drags remain independent. Static feedback uses the same reduced-motion endpoints and shared utility motion; no permanent floating toolbar or second page scroll owner.
+
+Implemented locations: `lib/resourceSelection.ts`, `resourceBatchCommands.ts`, `desktopInteraction.ts`; `DesktopInteraction.tsx`, `ResourceBatchActions.tsx`; existing Library/Pinned/Trash/resource/collection/tag/sidebar/pane controls. Membership and reparent dialogs share the same command helpers as drops. Membership is one atomic host request; pin batches retain per-item failures and remove only completed IDs from the current selection. Lifecycle uses existing review/save/revision/recovery paths with captured scope headers.
+
+Scope decisions: source trees, Open Notes and compact sidebar shortcuts retain direct-navigation behavior and single-resource dragging. Collection entries are organizational destinations, not resource selections. The secondary linked-folder index remains navigation-only; primary resource-page linked references can be organized without moving external originals. A selected-row context menu targets the selection; an unselected clicked resource keeps single-target actions.
+
+| ID / priority | Status | Detailed scope and acceptance | Dependencies / source |
+| --- | --- | --- | --- |
+| D2.1 / P0 | VALIDATED | Audit activation vs selection per surface; shared scoped selection controller, toggle/range/select-all/clear, distinguish opened/focused/selected. Define filter/sort/page/deletion pruning and announcements. Test ranges/stale IDs/input exclusion; retain ordinary single-click navigation. | D1; LibraryView/TrashView/useResourcePage/state |
+| D2.2 / P1 | VALIDATED | Bulk collection membership/tag/pin/Trash/restore through supported operations. Define mixed capability intersection, partial success, failed-target retention and workspace-generation rejection. Disposable mutation/failure tests. | D2.1, D1 commands; ResourceCollections/OrganizationManager/ResourceLifecycleDialog |
+| D2.3 / P1 | VALIDATED | Resource(s) → collection ADDS membership, → tag applies, → Pinned pins, → pane opens; collections reparent through hierarchy validation. Trash invokes protected review. Reject cycles/invalid sources/stale sessions. Test cancellation, multi-membership, hierarchy failures. | D2.1/2; existing membership APIs/PaneNavigation |
+| D2.4a / P2 | VALIDATED | files/folders drop into existing import review/native tickets, with external hover feedback. Browser folder drops direct users to Browse folder rather than flatten paths. Existing editor/modal handlers retain acquisition ownership. | D2.3, import/export security; desktop files/preload |
+| D2.4b / P3 | DEFERRED | [Electron supports native drag-out](https://www.electronjs.org/docs/latest/tutorial/native-file-drag-drop/), but needs ready filesystem copies at drag start. The inspected export/open/save bridge has no approved prepared-export drag ticket. Exposing managed/linked source paths or renderer paths would bypass that boundary. D3.2 can add receipt-bound prepared copies and OS acceptance; normal approved exports/downloads remain available. | desktop/files.mjs and preload inspected; no new privileged bridge |
+| D2.5 / P1 | IMPLEMENTED | Shared bounded drag state/preview, intent labels, valid/invalid feedback, edge scrolling, delayed hierarchy expansion, Escape/cleanup and keyboard alternatives. Floating/narrow sidebars and reduced motion. Shared primitive/routing checks passed; physical edge-scroll/hover/floating-sidebar feel remains unverified. No pointer-move scans/permission calls. | D2.3/4; sidebar/portal/motion utilities |
 
 D2 completion: common organization via coherent selection/DnD; membership, authorization and lifecycle/recovery invariants proven; partial failures actionable; keyboard alternatives available; platform evidence recorded.
 
@@ -93,7 +102,7 @@ All tasks NOT STARTED; depends D1–D3 behavior being stable.
 
 D4 completion: coherent mouse/keyboard/touchpad workflows and supported OS integrations; responsive density/motion/accessibility reviewed, no known material durability regressions; deferred platform acceptance remains explicit.
 
-## Validation and commits
+## D1 validation and commits (historical evidence)
 
 | Check | Actual outcome |
 | --- | --- |
@@ -112,21 +121,28 @@ Associated source commit: `19d9c54` — compact history, shared resource command
 
 ## Platform status and known decisions
 
-- Windows: production build, automated checks, disposable Electron smoke and three dark-theme layout screenshots passed; personal visual/interaction acceptance remains user-owned. No installer/release generated by explicit task instruction.
+- Windows: production build, automated checks, disposable Electron smoke and three dark-theme layout screenshots passed; D1 user acceptance is recorded; D2 physical/visual interaction acceptance remains user-owned. No installer/release generated by explicit task instruction.
 - macOS: shared source preserved; native behavior, DPI and motion unverified. Do not claim acceptance.
 - Browser: shared component tests and production build passed; no separate browser end-to-end session. Native text menu is Electron-only.
 - Android: out of scope; unchanged.
 - User owns visual quality/interaction feel review. Static/component checks cannot certify this.
 - Internal resource links need a defined supported routing/clipboard format; no guessed URL scheme. Metadata copy currently limited to title.
 - Linked source trees keep source-specific commands; no managed rename/export/reveal fiction. Text/PDF embedded viewers retain their own context behavior.
-- Resource selection context menus currently target the clicked resource, not a bulk selection. D2 owns multi-target semantics.
+- Selected-row context menus now target that selection; unselected clicked resources retain single-target actions.
 - Menus use flat action sets; submenus deferred until justified by actual command density.
 - Runtime validation must inspect duplicate native/app menus, dialog handoff, edge placement, narrow title visibility and stale source behavior. Keep any discovered gaps here.
 
+## D2 validation and handoff (2026-11-05)
+
+- Baseline accepted8480a70; clean branch codex/desktop-experience-d2, no other branch integration. Implementation commit pending ledger.
+- Production TypeScript/Vite build and fresh desktop/ui passed. Existing chunk/dynamic-import/Browserslist warnings only; no dependency/version changes.
+- Full frontend lint passed without warnings; changed scope/visibility/Trash files also passed targeted final lint. Native smoke script syntax passed.
+- Focused integration:18 files /106 tests, initially102 passed and4 failed. A batch fixture omitted command metadata/outer Escape provider and an older membership assertion omitted scope config; corrected batch3 and manager4 reruns passed. Added lifecycle generation and context-only visibility regressions passed (17 affected tests across4 files), and mixed cleanup-pending Restore and selected purge-review regressions2 passed. Effective current passing coverage:110 distinct tests across19 files, reusing unchanged evidence. Final CSS-override visibility case1 passed independently;2 unrelated cases skipped in that targeted rerun.
+- Windows native: VAULTOR_DESKTOP_SELECTION_CHECK=1 node scripts/chrome-smoke.mjs passed against real disposable owned host and fresh desktop UI. Tested6 resources,3-item range, bulk pin/unpin,2-resource add membership while retaining the original membership, tag application, Escape cancellation, protected Trash/Restore, hierarchy move/descendant refusal, native folder ticket/import review and600px overflow. Internal drags use DOM-dispatched DataTransfer in real Electron; external folder uses Chromium filesystem drag data through the real main bridge. This is not certification of physical Explorer dragging or gesture feel.
+- Runtime iterations corrected a heading selector (AppModal h3) and waited for previous drag cleanup/browser event processing before native folder delivery; final two runs passed. Final scoped lifecycle header flow and hidden tag trigger assertion passed in vaultor-chrome-native-m9g21c. Later cleanup-only Restore filtering and selected purge-review routing passed2 focused component regressions; final production build includes it. Do not repeat unrelated passed native flows for that safe filtering change.
+- Visual review: final wide destination-shelf and600px selected-list frames inspected. Found/fixed D1 context-only tag button display overriding hidden; final tag is compact and the marker stays hidden even under author button display rules. Static frames do not certify motion or physical touchpad/drag feel.
+- No backend business logic/schema/protocol, Android, native privilege or release changes. Mac runtime, separate browser end-to-end, real native drag-out, high-contrast and full physical/reduced-motion/floating-hover acceptance remain unverified/deferred.
+
 ## Resume here
 
-D1 engineering is VALIDATED on Windows, not COMPLETE: user visual/interaction review and explicit platform acceptance/defer decisions remain. Review the feature branch before integration. Native acceptance beyond the tested resource/session/text paths (tags, linked-source management, every collection/Trash variation), real context-menu OS appearance, reduced-motion feel and macOS remain bounded gaps; shared primitive/component coverage is not a claim of those walkthroughs.
-
-Do not repeat unchanged passing integration checks. Native iterations first corrected a wrong760px compression assumption, then exposed/fixed selector specificity overriding neighbor hiding; final600px run passed. Source review also protected secondary pointer presses from pane activation. Scope remains Phase0 + D1. Next engineering milestone after D1 review is D2.1 selection semantics, then D2.2 bulk commands.
-
-Review D1 against the acceptance gaps above; then integrate only through the documented authorized procedure. D2–D4 remain NOT STARTED. Do not bump versions or publish automatically.
+D1 Windows review is accepted. D2 engineering/routing checks are recorded above; D2 is IN PROGRESS pending user physical/visual review, with D2.4b explicitly DEFERRED. D2.5 runtime gesture acceptance remains honest. Review branch source/ledger, then continue to D3 only after the next acceptance/continue instruction. Do not repeat unchanged passing checks. No automatic integration, version bumps, installers, tags or releases.

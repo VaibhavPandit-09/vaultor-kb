@@ -1,4 +1,6 @@
-import { useEffect,useRef,useState } from 'react';
+import { useDesktopInteraction } from '../lib/desktopInteraction';
+import { commandScope } from '../lib/resourceBatchCommands';
+import { useEffect,useRef,useState,useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import type { Resource } from '../types';
 import api from '../lib/api';
@@ -9,9 +11,11 @@ import AppModal from './modals/AppModal';
 export type LifecycleItem={operationId:string;resourceId:string;action:'trash'|'restore'|'purge';revision:string};
 export type LifecycleResult={resourceId:string;status:string;detail:string;warnings:string[]};
 export default function ResourceLifecycleDialog({resources,action,onClose,onCompleted,onBusy}:{resources:Resource[];action:LifecycleItem['action'];onClose:()=>void;onCompleted?:(ids:string[])=>void;onBusy?:(busy:boolean)=>void}) {
+ const interaction=useDesktopInteraction();const [scope]=useState(()=>interaction?.scope??commandScope());
+ const scoped=useMemo(()=>({connectionEpoch:scope.epoch,...(scope.generation?{headers:{'X-Vaultor-Generation':scope.generation}}:{})}),[scope]);
  const [remaining,setRemaining]=useState(resources),[errors,setErrors]=useState<Record<string,string>>({}),[draftFailures,setDraftFailures]=useState<string[]>([]),[usage,setUsage]=useState<Record<string,number>>({}),[usageError,setUsageError]=useState(''),[usageRetry,setUsageRetry]=useState(0),[busy,setBusy]=useState(false),[warnings,setWarnings]=useState<string[]>([]);
  const running=useRef(false),requests=useRef(new Map<string,LifecycleItem>()),epoch=useRef(getConnection().epoch);
- useEffect(()=>{const controller=new AbortController();setUsageError('');void Promise.all(resources.map(async r=>{const {data}=await api.get<{sources:number}>('/resources/'+r.id+'/usage',{signal:controller.signal,backgroundDiagnostic:true});return [r.id,data.sources] as const;})).then(rows=>setUsage(Object.fromEntries(rows))).catch(()=>{if(!controller.signal.aborted)setUsageError('Usage could not be checked. Retry before continuing.');});return()=>controller.abort();},[resources,usageRetry]);
+ useEffect(()=>{const controller=new AbortController();setUsageError('');void Promise.all(resources.map(async r=>{const {data}=await api.get<{sources:number}>('/resources/'+r.id+'/usage',{signal:controller.signal,backgroundDiagnostic:true,...scoped});return [r.id,data.sources] as const;})).then(rows=>setUsage(Object.fromEntries(rows))).catch(()=>{if(!controller.signal.aborted)setUsageError('Usage could not be checked. Retry before continuing.');});return()=>controller.abort();},[resources,usageRetry,scoped]);
  const noun=action==='trash'?'Move to Trash':action==='restore'?'Restore':'Delete permanently';
  async function perform(keepDraft=false) {
   if(running.current||usageError||remaining.some(r=>usage[r.id]===undefined))return;running.current=true;setBusy(true);onBusy?.(true);setDraftFailures([]);
@@ -23,11 +27,11 @@ export default function ResourceLifecycleDialog({resources,action,onClose,onComp
      if(action==='trash')try {await requestResourceAction(keepDraft?'retain-draft':'prepare-trash',[resource]);}catch(e){retained.push(resource.id);throw e;}
      let item=requests.current.get(resource.id);
      if(!item) {
-      if(resource.cleanupPending)item=(await api.get<LifecycleItem>('/resources/'+resource.id+'/lifecycle-pending',{backgroundDiagnostic:true})).data;
-      else {const fresh=action==='trash'?(await api.get<Resource>('/resources/'+resource.id+'/summary',{backgroundDiagnostic:true})).data:resource;if(!fresh.revision)throw new Error('Reload this resource before continuing.');item={operationId:crypto.randomUUID(),resourceId:resource.id,action,revision:fresh.revision};}
+      if(resource.cleanupPending)item=(await api.get<LifecycleItem>('/resources/'+resource.id+'/lifecycle-pending',{backgroundDiagnostic:true,...scoped})).data;
+      else {const fresh=action==='trash'?(await api.get<Resource>('/resources/'+resource.id+'/summary',{backgroundDiagnostic:true,...scoped})).data:resource;if(!fresh.revision)throw new Error('Reload this resource before continuing.');item={operationId:crypto.randomUUID(),resourceId:resource.id,action,revision:fresh.revision};}
       requests.current.set(resource.id,item);
      }
-     const {data}=await api.put<LifecycleResult[]>('/resources/lifecycle',[item],{backgroundDiagnostic:true});const result=data[0];
+     const {data}=await api.put<LifecycleResult[]>('/resources/lifecycle',[item],{backgroundDiagnostic:true,...scoped});const result=data[0];
      if(!result||!['trashed','restored','purged'].includes(result.status))throw new Error(result?.detail||'The action did not finish. Retry to continue safely.');
      if(epoch.current!==getConnection().epoch)throw new Error('Connection changed. Check the previous workspace when reconnecting.');
      setWarnings(previous=>[...previous,...result.warnings]);completed.push(resource.id);

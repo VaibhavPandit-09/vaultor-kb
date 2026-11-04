@@ -1,3 +1,5 @@
+import ResourceBatchActions from './ResourceBatchActions';
+import { useSelection } from '../lib/resourceSelection';
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MoreHorizontal } from 'lucide-react';
@@ -13,11 +15,13 @@ import { useFormKeyboard } from '../lib/useFormKeyboard';
 
 export default function ResourceActions({resource}:{resource:Resource}) {
  const focus=useRestoreFocusOnClose(),[dialog,setDialog]=useState<'rename'|'collection'|'tags'|null>(null),[name,setName]=useState(resource.title),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const selection=useSelection();
  const capabilities=supportedResourceActions(resource);
  const running=useRef(false);
  async function work(task:()=>Promise<unknown>,close?:()=>void) {if(running.current)return;running.current=true;setBusy(true);setError('');try{await task();close?.();}catch(e){setError(e instanceof Error?e.message:'Resource action failed. Retry.');}finally{running.current=false;setBusy(false);}}
  const done=()=>{setDialog(null);focus.restoreFocus();};
  const form=useFormKeyboard(()=>void work(()=>executeResourceCommand('rename',resource,name.trim()),done));
+ if(selection&&selection.ids.includes(resource.id)&&selection.resources.length>1)return <ResourceBatchActions resources={selection.resources} collection={selection.collection} contextResource={resource}/>;
  return <><LibraryPopover contextTarget=".library-row,.sidebar-shortcut,.workspace-note-pane,.preview-shell" label={'Actions for '+resource.title} trigger={<MoreHorizontal size={17}/>} className="browse-icon-button">{close=><>
  {capabilities.open?<button className="library-button" disabled={busy} onClick={()=>void work(()=>executeResourceCommand('open',resource),close)}>{resourceKind(resource.type).action}</button>:<p className="text-xs">Opening this resource type is unsupported.</p>}
  {capabilities.open&&resource.type!=='file'&&<button className="library-button" disabled={busy} onClick={()=>void work(()=>executeResourceCommand('open-another',resource),close)}>{resourceCommands['open-another'].title}</button>}

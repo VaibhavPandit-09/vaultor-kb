@@ -1,3 +1,4 @@
+import { INTERNAL_DRAG } from '../lib/desktopInteraction';
 import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { SidebarVisibility } from '../lib/sidebarVisibility';
 import { PanelLeft } from 'lucide-react';
@@ -55,7 +56,7 @@ export default function SidebarFrame({ floating, open, focusMode, pinned, onReve
     if (!root || !floating || !open || focusMode || pinned) return;
     let timer: ReturnType<typeof setTimeout> | undefined, pointer = false;
     const held = () => pointer || root.matches(':hover') || root.contains(document.activeElement)
-      || Boolean(root.querySelector('[aria-haspopup][aria-expanded="true"]'));
+      || Boolean(root.querySelector('[aria-haspopup][aria-expanded="true"],[data-drop-state]'));
     const clear = () => { clearTimeout(timer); };
     const schedule = () => { clear(); timer = setTimeout(() => { if (!held()) callbacks.current.onHide(); }, 180); };
     const enter = () => clear();
@@ -77,8 +78,8 @@ export default function SidebarFrame({ floating, open, focusMode, pinned, onReve
   return <>
     <button ref={launcher} id="sidebar-trigger" className="sidebar-edge-toggle" hidden={open}
       aria-label={focusMode ? 'Show navigation and exit focus mode' : 'Toggle sidebar'} aria-controls="workspace-sidebar" aria-expanded={open}
-      onClick={onToggle}><PanelLeft size={18}/></button>
-    {floating && !focusMode && <div className="sidebar-reveal-edge" onMouseEnter={onReveal} aria-hidden="true"/>}
+      onDragEnter={event=>{if(event.dataTransfer.types.includes(INTERNAL_DRAG)&&!focusMode)onReveal();}} onClick={onToggle}><PanelLeft size={18}/></button>
+    {floating && !focusMode && <div className="sidebar-reveal-edge" onMouseEnter={onReveal} onDragEnter={event=>{if(event.dataTransfer.types.includes(INTERNAL_DRAG))onReveal();}} aria-hidden="true"/>}
     <div className="sidebar-allocation" data-floating={floating} data-open={open}>
       <aside ref={panel} id="workspace-sidebar" aria-label="Workspace navigation" aria-hidden={!open} inert={!open}
         className="sidebar-surface" style={surfaceStyle}
