@@ -457,6 +457,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-05 — D2 extension source and qualification ledger
+
+Recorded extension source b41e11a and final Windows extension smoke (vaultor-chrome-native-3Sp8ew),114 effective passing focused tests across15 files, final affected/routing reruns, TypeScript/production build, lint correction and syntax/whitespace checks. Documentation-only follow-up; no additional architectural effect. D2 remains awaiting user acceptance; D3, master, versions/releases and Android remain untouched.
+
 ### 2026-11-05 — D2 application-wide drag extension (awaiting acceptance)
 
 Extended the shared scoped controller with palette/linked sources, managed editor link insertion, captured collection imports, retry-safe single-file inline review, tags and stable Open Notes/pane arrangement. Added mapped editor adapters, source-preserving browse/palette handoff, generation guards and an unfocused stale-snapshot regression fix; existing resource/authorization/recovery/native privilege boundaries remain unchanged. Current engineering evidence:114 focused tests across15 files with corrected fixture reruns; TypeScript, production UI/desktop build and lint passed at checkpoints. Disposable Windows Electron proved pane editor/draft identity, palette links/Undo/Redo browse hover insertion and real filesystem collection-destination review/Cancel without creation; final refinement checks are recorded in the tracker. Physical Windows interaction acceptance remains user-owned, Mac unverified; native drag-out and folder/multi-file inline insertion deferred. No master integration, version/release or Android change.
