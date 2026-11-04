@@ -3,8 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, expect, it, vi } from 'vitest';
 import { EscapeManagerProvider } from '../lib/escape/EscapeManagerProvider';
 import { DesktopInteractionProvider, TagDropTarget, PaneDropTarget } from './DesktopInteraction';
-import { INTERNAL_DRAG, dropIntent, useDesktopInteraction, type DragPayload } from '../lib/desktopInteraction';
-vi.mock('../lib/resourceBatchCommands',()=>({boundedResources:vi.fn(),changeMembership:vi.fn(),pinResources:vi.fn(),reparentCollection:vi.fn()}));
+import { INTERNAL_DRAG, dropIntent, useDesktopInteraction, useDropTarget, type DragPayload } from '../lib/desktopInteraction';
+vi.mock('../lib/resourceBatchCommands',()=>({boundedResources:vi.fn(),changeMembership:vi.fn(),pinResources:vi.fn(),reparentCollection:vi.fn(),requireCommandScope:vi.fn()}));
 vi.mock('../lib/resourceActions',()=>({requestResourceAction:vi.fn()}));
 import { changeMembership } from '../lib/resourceBatchCommands';
 import type { Resource } from '../types';
@@ -31,9 +31,35 @@ it('Escape, source changes and forged tickets cannot execute a drop',async()=>{
  data=transfer();fireEvent.dragStart(screen.getByText('Drag A'),{dataTransfer:data});view.rerender(<Harness source="two"/>);fireEvent.drop(screen.getByText('Target tag'),{dataTransfer:data});expect(changeMembership).not.toHaveBeenCalled();
  data=transfer();fireEvent.dragStart(screen.getByText('Drag A'),{dataTransfer:data});data.setData(INTERNAL_DRAG,'forged');fireEvent.drop(screen.getByText('Target tag'),{dataTransfer:data});expect(changeMembership).not.toHaveBeenCalled();
 });
-it('internal editor drop opens the target pane and never reaches editor insertion handlers',async()=>{
- const pane=vi.fn(async()=>{}),insert=vi.fn();render(<Harness onPane={pane}/>);const editor=screen.getByText('Editor');editor.addEventListener('drop',insert);const data=transfer();fireEvent.dragStart(screen.getByText('Drag A'),{dataTransfer:data});fireEvent.drop(editor,{dataTransfer:data});await waitFor(()=>expect(pane).toHaveBeenCalledWith(resource,'pane'));expect(insert).not.toHaveBeenCalled();
+it('pane chrome opens a resource while leaving native editor insertion handlers alone',async()=>{
+ const pane=vi.fn(async()=>{}),insert=vi.fn();render(<Harness onPane={pane}/>);const editor=screen.getByText('Editor').parentElement!;editor.addEventListener('drop',insert);const data=transfer();fireEvent.dragStart(screen.getByText('Drag A'),{dataTransfer:data});fireEvent.drop(editor,{dataTransfer:data});await waitFor(()=>expect(pane).toHaveBeenCalledWith(resource,'pane'));
 });
 it('external files enter import review and never use internal organization commands',()=>{
- const imports=vi.fn();render(<Harness onImport={imports}/>);const file=new File(['data'],'example.txt',{type:'text/plain'});fireEvent.drop(screen.getByText('Target tag'),{dataTransfer:{types:['Files'],files:[file],items:[]}});expect(imports).toHaveBeenCalledWith([file]);expect(changeMembership).not.toHaveBeenCalled();
+ const imports=vi.fn();render(<Harness onImport={imports}/>);const file=new File(['data'],'example.txt',{type:'text/plain'});fireEvent.drop(screen.getByText('Target tag'),{dataTransfer:{types:['Files'],files:[file],items:[]}});expect(imports).toHaveBeenCalledWith([file],undefined);expect(changeMembership).not.toHaveBeenCalled();
+});
+
+function CollectionTarget(){const drop=useDropTarget({kind:'collection',collection:{id:'collection-id',name:'Destination',count:0}});return <div {...drop}>Collection destination</div>;}
+function TagSource(){const drag=useDesktopInteraction();return <button draggable onDragStart={event=>drag?.start(event,{kind:'tag',id:'topic',name:'Topic'})}>Drag topic</button>;}
+it('external collection drops preserve the explicit destination for review',()=>{
+ const imports=vi.fn();render(<EscapeManagerProvider><DesktopInteractionProvider sourceKey="one" onPane={vi.fn()} onImport={imports}><CollectionTarget/></DesktopInteractionProvider></EscapeManagerProvider>);const file=new File(['data'],'example.pdf'),data={types:['Files'],files:[file],items:[]};fireEvent.dragOver(screen.getByText('Collection destination'),{dataTransfer:data});expect(screen.getByText('Collection destination').getAttribute('data-drop-state')).toBe('valid');fireEvent.drop(screen.getByText('Collection destination'),{dataTransfer:data});expect(imports).toHaveBeenCalledWith([file],expect.objectContaining({id:'collection-id'}));expect(changeMembership).not.toHaveBeenCalled();
+});
+it('tag sources apply to the target resource through the shared scoped membership command',async()=>{
+ render(<EscapeManagerProvider><DesktopInteractionProvider sourceKey="one" onPane={vi.fn()} onImport={vi.fn()}><TagSource/><PaneDropTarget paneId="p" resource={resource}>Resource target</PaneDropTarget></DesktopInteractionProvider></EscapeManagerProvider>);const data=transfer();fireEvent.dragStart(screen.getByText('Drag topic'),{dataTransfer:data});fireEvent.drop(screen.getByText('Resource target'),{dataTransfer:data});await waitFor(()=>expect(changeMembership).toHaveBeenCalledWith(['a'],'tag','topic','add',expect.anything()));
+});
+it('the editor capture path inserts a link and prevents duplicate native insertion; source change discards pending resolution',async()=>{
+ const {Editor}=await import('@tiptap/core'),{default:StarterKit}=await import('@tiptap/starter-kit'),{ResourceLinkExtension}=await import('./editor/ResourceLinkExtension'),{registerEditorDrop}=await import('../lib/editorDrop');
+ const editor=new Editor({element:document.createElement('div'),extensions:[StarterKit,ResourceLinkExtension.extend({addNodeView(){return null;}})],content:'<p>abc</p>'});await new Promise(resolve=>setTimeout(resolve,0));vi.spyOn(editor.view,'posAtCoords').mockReturnValue({pos:2,inside:0});vi.spyOn(editor.view,'coordsAtPos').mockReturnValue({left:0,right:0,top:0,bottom:0});const unregister=registerEditorDrop({editor,managed:true,resource});const pane=vi.fn(),native=vi.fn();
+ let resolve!:(resources:Resource[])=>void;const resolveResources=vi.fn(()=>new Promise<Resource[]>(done=>{resolve=done;}));
+ const view=(source:string)=><EscapeManagerProvider><DesktopInteractionProvider sourceKey={source} onPane={pane} onImport={vi.fn()} onResolveResources={resolveResources}><Source/><div data-testid="host"/></DesktopInteractionProvider></EscapeManagerProvider>;
+ const result=render(view('one'));screen.getByTestId('host').append(editor.view.dom);editor.view.dom.addEventListener('drop',native);
+ try{let data=transfer();fireEvent.dragStart(screen.getByText('Drag A'),{dataTransfer:data});fireEvent.drop(editor.view.dom,{dataTransfer:data});expect(native).not.toHaveBeenCalled();resolve([resource]);await waitFor(()=>expect(editor.getJSON().content![0].content!.some(node=>node.type==='resourceLink')).toBe(true));expect(pane).not.toHaveBeenCalled();editor.commands.undo();expect(editor.getText()).toBe('abc');
+ data=transfer();fireEvent.dragStart(screen.getByText('Drag A'),{dataTransfer:data});fireEvent.drop(editor.view.dom,{dataTransfer:data});result.rerender(view('two'));resolve([resource]);await waitFor(()=>expect(resolveResources).toHaveBeenCalledTimes(2));await new Promise(resolve=>setTimeout(resolve,0));expect(editor.getText()).toBe('abc');
+ }finally{unregister();editor.destroy();}
+});
+
+it('external editor drop reviews one file at the pointer, refuses multiple files/read-only, and leaves native image dragging alone',async()=>{
+ const {Editor}=await import('@tiptap/core'),{default:StarterKit}=await import('@tiptap/starter-kit'),{registerEditorDrop}=await import('../lib/editorDrop');
+ const editor=new Editor({element:document.createElement('div'),extensions:[StarterKit],content:'<p>abc</p>'});await new Promise(resolve=>setTimeout(resolve,0));vi.spyOn(editor.view,'posAtCoords').mockReturnValue({pos:2,inside:0});const importFile=vi.fn(),unregister=registerEditorDrop({editor,managed:true,resource,importFile}),native=vi.fn();
+ render(<EscapeManagerProvider><DesktopInteractionProvider sourceKey="one" onPane={vi.fn()} onImport={vi.fn()}><div data-testid="external-host"/></DesktopInteractionProvider></EscapeManagerProvider>);screen.getByTestId('external-host').append(editor.view.dom);editor.view.dom.addEventListener('drop',native);
+ try{const file=new File(['data'],'source.pdf',{type:'application/pdf'}),data={types:['Files'],files:[file],items:[],getData:()=>''};fireEvent.drop(editor.view.dom,{dataTransfer:data});expect(importFile).toHaveBeenCalledWith(editor,2,[file]);expect(native).not.toHaveBeenCalled();expect(editor.getText()).toBe('abc');importFile.mockClear();fireEvent.drop(editor.view.dom,{dataTransfer:{...data,files:[file,file]}});expect(importFile).not.toHaveBeenCalled();editor.setEditable(false);fireEvent.drop(editor.view.dom,{dataTransfer:data});expect(importFile).not.toHaveBeenCalled();editor.setEditable(true);fireEvent.drop(editor.view.dom,{dataTransfer:{...data,files:[new File(['image'],'source.png',{type:'image/png'})]}});expect(native).toHaveBeenCalledOnce();expect(importFile).not.toHaveBeenCalled();}finally{unregister();editor.destroy();}
 });

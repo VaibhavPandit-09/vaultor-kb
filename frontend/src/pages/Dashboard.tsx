@@ -1,4 +1,6 @@
-import { DesktopInteractionProvider, PaneDropTarget, TagDropTarget, NavigationDropButton, CollectionDropButton } from '../components/DesktopInteraction';
+import type { DragSurface } from '../lib/desktopInteraction';
+import { commandConfig, requireCommandScope } from '../lib/resourceBatchCommands';
+import { DesktopInteractionProvider, PaneDropTarget, TagDropTarget, NavigationDropButton, CollectionDropButton, TagDragButton, SessionDragHandle } from '../components/DesktopInteraction';
 import ImportSourceModal from '../components/modals/ImportSourceModal';
 import {dropDesktopFiles} from '../lib/desktop';
 import {linkedError} from '../lib/linked/errors';
@@ -168,6 +170,7 @@ export default function Dashboard() {
   const [loadingResourceIds, setLoadingResourceIds] = useState<string[]>([]);
 
   const [tagSearch, setTagSearch] = useState('');
+  const [desktopDragSource,setDesktopDragSource]=useState<DragSurface|null>(null);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -613,9 +616,10 @@ export default function Dashboard() {
     setResourceDetails(current => current[resource.id] ? { ...current, [resource.id]: resource } : current);
   }, []);
 
-  const beginImport = useCallback(async (editor?: Editor, range?: Range, mode?: ImportSession['mode'], folder = false, dropped?:File[]) => {
+  const beginImport = useCallback(async (editor?: Editor, range?: Range, mode?: ImportSession['mode'], folder = false, dropped?:File[],destination?:OrganizationItem) => {
     if (importBusy.current) return;
     importBusy.current = true; setUploadPending(true);
+    const importIdentity=identityRef.current;
     const target = editor && range ? captureImportTarget(editor, range) : undefined;
     const selectionFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;
     const restoreSelectionFocus=()=>{if(importAcquire&&selectionFocus?.isConnected)requestAnimationFrame(()=>focusWithoutScroll(selectionFocus));else restoreImportFocus();};
@@ -625,8 +629,8 @@ export default function Dashboard() {
       const files:File[]&{directories?:string[];emptyFoldersUnavailable?:boolean} = dropped ? window.vaultorDesktop?.dropFiles ? await dropDesktopFiles(dropped) : dropped : await pickFiles(accept, !target, folder);
       if(epoch!==getConnection().epoch)throw Error('Connection changed. Reselect the source.');
       if (!files.length&&!files.directories?.length) { target?.dispose(); importBusy.current = false; if (target && !target.editor.isDestroyed) target.editor.commands.focus(undefined, { scrollIntoView: false }); else restoreSelectionFocus(); return; }
-      const prepared=await prepareImport(files,target,mode);setImportAcquire(false);setImportAcquireError('');
-      setFileImport({...prepared,collection:!target&&libraryVisible&&collection?{id:collection.id,name:collection.name}:undefined});
+      const prepared=await prepareImport(files,target,mode);if(epoch!==getConnection().epoch||importIdentity&&(!identityRef.current||!sameWorkspace(importIdentity,identityRef.current)))throw Error('Workspace changed during import preparation.');setImportAcquire(false);setImportAcquireError('');
+      setFileImport({...prepared,sourceGeneration:importIdentity?.generation,collection:!target?(destination??(libraryVisible&&collection?{id:collection.id,name:collection.name}:undefined)):undefined});
     } catch (error) { target?.dispose(); importBusy.current = false; if(target&&!target.editor.isDestroyed)target.editor.commands.focus(undefined,{scrollIntoView:false});else restoreSelectionFocus(); setImportAcquireError(error instanceof Error?error.message:String(error));reportError('file.import.prepare', error); }
     finally { setUploadPending(false); }
   }, [libraryVisible,collection,restoreImportFocus,importAcquire]);
@@ -634,6 +638,7 @@ export default function Dashboard() {
   useEffect(()=>{const resume=(event:Event)=>{const detail=(event as CustomEvent<{task:{epoch:number;workspace:Identity};folder:boolean}>).detail;if(!detail||detail.task.epoch!==getConnection().epoch||!identityRef.current||!sameWorkspace(detail.task.workspace,identityRef.current))return;void beginImport(undefined,undefined,undefined,detail.folder);};window.addEventListener('vaultor:resume-import',resume);return()=>window.removeEventListener('vaultor:resume-import',resume);},[beginImport]);
   const handleRequestMdUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'markdown'); }, [beginImport]);
   const handleRequestCsvUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'csv'); }, [beginImport]);
+  const handleRequestFileDrop=useCallback((editor:Editor,range:Range,files:File[])=>{setImportAcquireError('');setImportAcquire(true);void beginImport(editor,range,'link',false,files);},[beginImport]);
   const handleRequestLinkUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'link'); }, [beginImport]);
   useEffect(() => () => { fileImport?.target?.dispose(); }, [fileImport]);
   const closeFileImport = () => {
@@ -1281,7 +1286,7 @@ export default function Dashboard() {
       <div className="border-t border-border" />
 
       <div className="sidebar-secondary min-h-0 flex-1 overflow-y-auto py-2" style={{overflowAnchor:'none'}}>
-        <OpenNotes sessions={openNotes} panes={visibleNotes} activeId={!libraryVisible ? activePaneId : null} onOpen={id => void openResourceById(id)} onSplit={id => void openResourceById(id, {destination:'new'})} onClose={id => void paneNavigation.closeSession(id)} onCloseOthers={id => void paneNavigation.closeOthers(id)} canSplit={visibleNotes.length < workspaceSettings.maxOpenNotes}/>
+        <OpenNotes sessions={openNotes} panes={visibleNotes} activeId={!libraryVisible ? activePaneId : null} onOpen={id => void openResourceById(id)} onSplit={id => void openResourceById(id, {destination:'new'})} onClose={id => void paneNavigation.closeSession(id)} onCloseOthers={id => void paneNavigation.closeOthers(id)} onReorder={paneNavigation.reorderSession} onReveal={async sessionId=>{try{if(paneNavigation.snapshot().panes.some(pane=>pane.paneId===sessionId)){paneNavigation.activate(sessionId,true);setLibraryVisible(false);}else await paneNavigation.arrangeSession(sessionId);}catch(error){setSessionMessage(error instanceof Error?error.message:'Cannot show this note.');}}} canSplit={visibleNotes.length < workspaceSettings.maxOpenNotes}/>
         <SidebarSection name="pinned" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('favorites')}><PinnedList compact filterType={sidebarPreferences.pinned.type} activeId={!libraryVisible?currentResourceId??undefined:undefined} visible={sidebarVisible&&sidebarPreferences.pinned.visible&&!sidebarPreferences.pinned.collapsed} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></SidebarSection>
         <SidebarSection name="recent" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('recent')}><SidebarRecent type={sidebarPreferences.recent.type} enabled={sidebarVisible&&sidebarPreferences.recent.visible&&!sidebarPreferences.recent.collapsed} activeId={!libraryVisible?currentResourceId??undefined:undefined} onOpen={id=>void openResourceById(id)} onDelete={(id,event)=>void handleDeleteResource(id,event)} onResources={setResources}/>{recencyError&&<button className="sidebar-nav text-xs" onClick={()=>recency.retry()}>{recencyError} Retry</button>}</SidebarSection>
       <SidebarSection name="tags" preferences={sidebarPreferences} onChange={updateSidebarPreferences}><div className="flex flex-col px-3 py-2">
@@ -1303,7 +1308,7 @@ export default function Dashboard() {
               style={getTagPillStyle(tag.color, resolvedTheme)}
             >
               <LibraryPopover contextOnly contextTarget="[data-tag-target]" label={'Actions for tag '+tag.name}>{close=><><button className="library-button" onClick={()=>{close();dispatch(toggleSelectedTag(tag.name));setLibraryVisible(true);}}>Toggle tag filter</button><button className="library-button text-red-500" onClick={()=>{close();setTagDeleteModal({id:tag.id,name:tag.name});}}>Delete tag…</button></>}</LibraryPopover>
-              <button onClick={() => { dispatch(toggleSelectedTag(tag.name)); setLibraryVisible(true); }} className="cursor-pointer text-inherit">{tag.name}</button>
+              <TagDragButton tagId={tag.id} name={tag.name} onClick={() => { dispatch(toggleSelectedTag(tag.name)); setLibraryVisible(true); }} className="cursor-pointer text-inherit">{tag.name}</TagDragButton>
               <label
                 className="relative inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-inherit opacity-55 transition-opacity hover:opacity-100"
                 title="Change color"
@@ -1357,8 +1362,8 @@ export default function Dashboard() {
 
   if(!sessionReady)return <main className={`flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} items-center justify-center bg-background text-text`}><div role="status">{bootError||'Restoring workspace…'}{bootError&&<button className="library-button ml-3" onClick={()=>setBootAttempt(v=>v+1)}>Retry</button>}</div></main>;
   return (
-    <DesktopInteractionProvider openResourceIds={openNotes.map(note=>note.id)} generation={identityRef.current?.generation} sourceKey={JSON.stringify([getConnection().epoch,identityRef.current?.id,identityRef.current?.generation])} onPane={(resource,paneId)=>openResourceById(resource.id,{sourcePaneId:paneId,destination:'here',intent:'link',throwOnFailure:true})} onImport={files=>{setImportAcquire(true);void beginImport(undefined,undefined,undefined,false,files);}}>
-    <div className={`app-root flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen ? 'command-open pointer-events-none' : ''}`}>
+    <DesktopInteractionProvider visibleSessionIds={visibleNotes.map(note=>note.paneId)} onDragSourceChange={setDesktopDragSource} onArrangeSession={paneNavigation.arrangeSession} onReorderSession={paneNavigation.reorderSession} onResolveResources={async(resources,scope)=>{if(scope.generation!==identityRef.current?.generation)throw Error('Workspace changed.');const result:Resource[]=[];for(const resource of resources){requireCommandScope(scope);if(resource.type==='linked')await linkedWorkspace.describe(resource.id,true);const {data}=await api.get<Resource>('/resources/'+resource.id+'/summary',commandConfig(scope));if(data.trashedAt)throw Error('This resource is in Trash.');result.push(data);}return result;}} openResourceIds={openNotes.map(note=>note.id)} generation={identityRef.current?.generation} sourceKey={JSON.stringify([getConnection().epoch,identityRef.current?.id,identityRef.current?.generation])} onPane={(resource,paneId)=>openResourceById(resource.id,{sourcePaneId:paneId,destination:'here',intent:'link',throwOnFailure:true})} onImport={(files,destination)=>{setImportAcquire(true);void beginImport(undefined,undefined,undefined,false,files,destination);}}>
+    <div className={`app-root flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen && !desktopDragSource ? 'command-open pointer-events-none' : ''}`}>
 
       <CommandPaletteModal searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined}
         open={commandPaletteOpen}
@@ -1430,10 +1435,10 @@ export default function Dashboard() {
           <div className="workspace-compact-controls">
             {!libraryVisible && openWorkspaceNotes.length>1 && <label className="workspace-pane-switcher">Pane <select aria-label="Focused pane" value={activePaneId ?? ''} onChange={event=>activateOpenNote(event.target.value)}>{openWorkspaceNotes.map((note,index)=><option key={note.paneId} value={note.paneId}>{index+1} · {note.resource?.title ?? 'Untitled note'}</option>)}</select></label>}
           </div>
-          <div className="workspace-view h-full" hidden={!libraryVisible}>
-            <CollectionsView mode={settings.local.collectionView} onModeChange={value=>updateLocalSetting('collectionView',value)} key={'collections:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={libraryVisible&&librarySection==='collections'} onOpen={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
-            <PinnedList key={'pins:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={libraryVisible&&librarySection==='favorites'} onResource={id=>void openResourceById(id)} onCollection={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
-            {librarySection==='trash'?<TrashView key={identityRef.current?.generation} visible={libraryVisible} hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'||librarySection==='favorites'?null:<LibraryView searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined} key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
+          <div className="workspace-view h-full" data-drag-shelf={!libraryVisible&&desktopDragSource==='browse'||undefined} hidden={!libraryVisible&&desktopDragSource!=='browse'}>
+            <CollectionsView mode={settings.local.collectionView} onModeChange={value=>updateLocalSetting('collectionView',value)} key={'collections:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={(libraryVisible||desktopDragSource==='browse')&&librarySection==='collections'} onOpen={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
+            <PinnedList key={'pins:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={(libraryVisible||desktopDragSource==='browse')&&librarySection==='favorites'} onResource={id=>void openResourceById(id)} onCollection={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
+            {librarySection==='trash'?<TrashView key={identityRef.current?.generation} visible={libraryVisible} hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'||librarySection==='favorites'?null:<LibraryView searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined} key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible||desktopDragSource==='browse'} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="workspace-view h-full" hidden={libraryVisible}>
           <div className="flex h-full min-h-0 flex-col">
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
@@ -1443,7 +1448,7 @@ export default function Dashboard() {
           <div className="min-h-0 flex-1 relative">
             <WorkspacePaneLayout transparency={uiTransparency} paneIds={openWorkspaceNotes.map(note => note.slotId!)} focusedId={openWorkspaceNotes.find(note=>note.paneId===activePaneId)?.slotId ?? null} animationMode={localSettings.animationMode}>
               {openWorkspaceNotes.map((note, index) => (
-                <PaneDropTarget paneId={note.paneId}
+                <PaneDropTarget resource={note.resource??undefined} paneId={note.paneId}
                   key={note.paneId}
                   data-note-pane={note.id}
                   data-pane-id={note.paneId}
@@ -1456,6 +1461,7 @@ export default function Dashboard() {
                   )}
 
                   <JourneyViewport visitId={note.history[note.cursor].visitId} initialPosition={paneNavigation.position(note.history[note.cursor].visitId)} direction={note.transition} animationMode={localSettings.animationMode} onPosition={position => paneNavigation.recordPosition(note.paneId, note.history[note.cursor].visitId, position)}>
+                  <SessionDragHandle session={{kind:'session',sessionId:note.paneId,resourceId:note.id,title:note.title,visible:true,canAdd:visibleNotes.length<workspaceSettings.maxOpenNotes}}/>
                   <NoteOrientation key={note.history[note.cursor].visitId} tagCount={note.resource?.tags?.length ?? 0} identity={
                     <div className="flex flex-wrap items-center gap-2">
                     <div className="min-w-0 flex-[1_1_10rem]">
@@ -1662,7 +1668,7 @@ export default function Dashboard() {
                         content={parseNoteContent(note.resource.content)}
                         autosaveDelay={0}
                         isActive={!libraryVisible && note.paneId === activePaneId}
-                        interactionLocked={commandPaletteOpen || libraryVisible || Boolean(note.resource.trashedAt)}
+                        interactionLocked={(commandPaletteOpen && !desktopDragSource) || libraryVisible || Boolean(note.resource.trashedAt)}
                         shouldRestoreFocus={!libraryVisible && paneState.focusPaneId === note.paneId}
                         selectionRestoreKey={note.history[note.cursor].visitId}
                         savedSelection={note.selection ?? null}
@@ -1672,7 +1678,7 @@ export default function Dashboard() {
                         onUpdate={(json) => handleContentUpdate(note.id, json)}
                         onRequestMdUpload={handleRequestMdUpload}
                         onRequestCsvUpload={handleRequestCsvUpload}
-                        onRequestLinkUpload={handleRequestLinkUpload}
+                        onRequestFileDrop={handleRequestFileDrop} onRequestLinkUpload={handleRequestLinkUpload}
                       /></ErrorBoundary>
                     ) : (
                       <div className="flex h-full items-center justify-center text-sm text-slate-400">

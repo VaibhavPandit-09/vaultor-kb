@@ -109,6 +109,7 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
   document.addEventListener('keyup', release, true);
   pointerDown.current = down;
   document.addEventListener('pointerup', up, true); document.addEventListener('pointercancel', up, true);
+  document.addEventListener('dragend', up, true);document.addEventListener('drop', up, true);
   element.addEventListener('wheel', cancelAnchor, { passive: true });
   element.addEventListener('keydown', cancelAnchor, true); element.addEventListener('focusin', focusIn, true);
   window.addEventListener('blur', up);
@@ -117,6 +118,7 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
    document.removeEventListener('keyup', release, true);
    pointerDown.current = null;
    document.removeEventListener('pointerup', up, true); document.removeEventListener('pointercancel', up, true);
+   document.removeEventListener('dragend',up,true);document.removeEventListener('drop',up,true);
    element.removeEventListener('wheel', cancelAnchor); element.removeEventListener('keydown', cancelAnchor, true);
    element.removeEventListener('focusin', focusIn, true); window.removeEventListener('blur', up);
   };
@@ -128,7 +130,7 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
    const target = !live || (!entered.includes(id) && !reduced) ? 0 : compact || paneIds.length === 1 ? Math.min(available, paneIds.length === 1 ? 896 : available) : available / paneIds.length;
    const gap = live && entered.includes(id) && !compact && paneIds.length > 1 ? 8 : 0;
    return <div key={id} className={`workspace-pane-slot${live ? '' : ' workspace-pane-ghost'}`} data-slot-id={id} data-focused={active} data-entering={!settled.includes(id)} hidden={live && compact && !active} inert={!live || (compact && !active)} aria-hidden={!live || (compact && !active) ? true : undefined}
-    style={{ '--pane-width': `${target}px`, '--pane-gap': `${gap}px` } as CSSProperties}>
+    style={{ order:live?paneIds.indexOf(id):slots.indexOf(id), '--pane-width': `${target}px`, '--pane-gap': `${gap}px` } as CSSProperties}>
     {live && (mounted.includes(id) || ready.includes(id)) ? nodeById.get(id) : null}
    </div>;
   })}

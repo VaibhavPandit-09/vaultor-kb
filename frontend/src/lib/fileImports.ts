@@ -91,7 +91,7 @@ export async function importResource(id: string, file: File, doc?: JSONContent, 
 }
 
 export type ImportRow = { path?:string; imageValid?:boolean; sourceText?:string; destinationId?:string; resolved?:boolean; revision?:string; id: string; file: File; kind: ImportKind; asNote: boolean; doc?: JSONContent; warnings: string[]; parseError?: string; status: 'ready' | 'pending' | 'done' | 'failed'; error?: string; started?: boolean };
-export type ImportSession = { sourceEpoch?:number;collection?: {id:string;name:string}; rows: ImportRow[]; target?: ImportTarget; mode?: 'markdown' | 'csv' | 'link'; folder?: {name:string;directories:string[];emptyFoldersUnavailable?:boolean} };
+export type ImportSession = { sourceEpoch?:number;sourceGeneration?:string;collection?: {id:string;name:string}; rows: ImportRow[]; target?: ImportTarget; mode?: 'markdown' | 'csv' | 'link'; folder?: {name:string;directories:string[];emptyFoldersUnavailable?:boolean} };
 export async function prepareImport(files: File[] & {directories?:string[];emptyFoldersUnavailable?:boolean}, target?: ImportTarget, mode?: ImportSession['mode']): Promise<ImportSession> {
   const sourceEpoch=getConnection().epoch;
   if(files.length>2000||files.reduce((n,f)=>n+f.size,0)>2*1024*1024*1024)throw new Error('Select at most 2,000 files and 2 GiB.');

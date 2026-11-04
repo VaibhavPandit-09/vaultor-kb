@@ -18,7 +18,7 @@ export function captureImportTarget(editor: Editor, initial: Range) {
   editor.on('transaction', map);
   const dispose = () => editor.off('transaction', map);
   const assertValid = () => {
-    if (!valid || editor.isDestroyed || !editor.isInitialized) throw new Error('The original insertion location changed or its note was closed. Cancel and start the import again.');
+    if (!valid || editor.isDestroyed || !editor.isInitialized || !editor.isEditable) throw new Error('The original insertion location changed or its note was closed. Cancel and start the import again.');
   };
   return {
     editor, dispose, assertValid,

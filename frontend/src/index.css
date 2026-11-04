@@ -1180,3 +1180,13 @@ body:not(:has(.desktop-shell)) .app-root { padding-top:40px; }
 .organization-external-drop span { padding:6px 10px; border-radius:8px; background:var(--surface-3); color:var(--text-primary); font-size:13px; }
 .collection-drop-browser { max-height:min(480px,70vh); }
 .resource-open-dot { display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--primary); margin-left:6px; vertical-align:middle; }
+/* D2 extension: source surfaces stay mounted while the drag reaches a note. */
+.palette-overlay[data-dragging='true'] { pointer-events:none; background:transparent!important; }
+.palette-overlay[data-dragging='true'] .palette-shell { opacity:.12; }
+.workspace-view[data-drag-shelf='true'] { display:block; position:absolute; left:0; top:52px; bottom:0; width:min(320px,42%); height:auto; z-index:70; border-right:1px solid var(--border-strong); background:var(--surface-2); box-shadow:4px 0 12px #0002; }
+.workspace-view[data-drag-shelf='true'] .library-view { height:100%; }
+.pane-arrange-handle { position:absolute; top:3px; right:4px; z-index:5; display:flex; align-items:center; justify-content:center; width:24px; height:22px; border-radius:6px; color:var(--text-tertiary); cursor:grab; }
+.pane-arrange-handle:hover { background:var(--surface-3); color:var(--text-primary); }
+.pane-arrange-handle:focus-visible { outline:2px solid var(--primary); outline-offset:1px; }
+[data-pane-drop-edge='before'] { box-shadow:inset 5px 0 var(--primary); }
+[data-pane-drop-edge='after'] { box-shadow:inset -5px 0 var(--primary); }

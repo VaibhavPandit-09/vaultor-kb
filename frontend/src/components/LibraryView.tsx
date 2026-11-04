@@ -1,3 +1,4 @@
+import { useDropTarget } from '../lib/desktopInteraction';
 import { ResourceSelectionContext, useResourceSelection } from '../lib/resourceSelection';
 import ResourceBatchActions from './ResourceBatchActions';
 import {useLinkedSearch,type LinkedSearchProvider} from '../lib/linked/search';
@@ -39,6 +40,7 @@ export default function LibraryView({ searchLinked,section, visible, tags, onOpe
   const [pickerIds,setPickerIds]=useState<string[]|null>(null),[adding,setAdding]=useState(false);
   const detail=useRetainedQuery(collection?.id??'',visible&&Boolean(collection),'collections',collectionDetails);
   const currentCollection=detail.data??collection;
+  const collectionDrop=useDropTarget(currentCollection?{kind:'collection',collection:currentCollection}:null);
   const [manager, setManager] = useState<'manage' | null>(null);
 
   const [exporting,setExporting]=useState(false);
@@ -64,7 +66,7 @@ export default function LibraryView({ searchLinked,section, visible, tags, onOpe
   const selection=useResourceSelection(items,viewKey,visible),selected=selection.ids;
   useEffect(()=>{onSelectionChange?.(selection.resources);},[selection.resources,onSelectionChange]);
   const title = section === 'favorites' ? 'Pinned' : section === 'recent' ? 'Recently opened' : 'Library';
-  return <ResourceSelectionContext.Provider value={{...selection,collection:currentCollection}}><section onKeyDown={selection.onKeyDown} ref={viewport} data-motion-surface="page" data-motion-key={section+':'+(collection?.id??'')} data-motion-list={!query && page===0} data-motion-ready={Boolean(result.data)&&!loading} className={transformLibrary ? "library-view library-transform" + (collection ? " collection-transform" : section==='recent' ? " recent-transform" : "") : "library-view"} aria-label={title}>
+  return <ResourceSelectionContext.Provider value={{...selection,collection:currentCollection}}><section {...collectionDrop} onKeyDown={selection.onKeyDown} ref={viewport} data-motion-surface="page" data-motion-key={section+':'+(collection?.id??'')} data-motion-list={!query && page===0} data-motion-ready={Boolean(result.data)&&!loading} className={transformLibrary ? "library-view library-transform" + (collection ? " collection-transform" : section==='recent' ? " recent-transform" : "") : "library-view"} aria-label={title}>
     <LibraryOrientation selectionActive={selected.length>0} enabled={transformLibrary} active={visible} viewport={viewport} filterSummary={query||tags.length||type!=='all'?'Search and filters applied: '+[query,...tags,type!=='all'?filterLabel(type):''].filter(Boolean).join(', '):undefined} context={<>
     {detail.error&&<p role="alert">{detail.error}<button className="library-button" onClick={detail.retry}>Retry collection</button></p>}
     {searchMode==='content'&&Boolean(search)&&<SearchCoverage coverage={result.data?.fileCoverage} onRefresh={retry}/>}

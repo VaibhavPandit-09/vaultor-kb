@@ -1,3 +1,4 @@
+import { getConnection } from '../../lib/platform';
 import { useRef, useState } from 'react';
 import AppModal from './AppModal';
 import { importResource, type ImportRow, type ImportSession } from '../../lib/fileImports';
@@ -17,12 +18,14 @@ export default function FileImportModal({ session, onClose, onResource }: { sess
         try {
           const needsDocument = session.target ? session.mode !== 'link' : row.asNote;
           if (needsDocument && (!row.doc || row.parseError)) throw new Error(row.parseError || 'Cannot read this document.');
+          if(session.sourceEpoch!==undefined&&session.sourceEpoch!==getConnection().epoch)throw Error('Workspace changed. Reselect the file.');
           session.target?.assertValid();
           update(row.id, { started: true });
           if (session.target) {
             let content = row.doc?.content ?? [];
             if (session.mode === 'csv' || session.mode === 'link') {
-              const resource = await importResource(row.id, row.file);
+              const resource = await importResource(row.id,row.file,undefined,undefined,undefined,session.sourceGeneration?{generation:session.sourceGeneration,epoch:session.sourceEpoch??getConnection().epoch}:undefined);
+              if(session.sourceEpoch!==undefined&&session.sourceEpoch!==getConnection().epoch)throw Error('Workspace changed. Imported file remains in its original workspace.');
               onResource(resource);
               if (session.mode === 'link') content = [{ type: 'resourceLink', attrs: { resourceId: resource.id, label: resource.title, type: 'file' } }, { type: 'text', text: ' ' }];
               else content = content.map(node => node.type === 'table' ? { ...node, attrs: { ...node.attrs, sourceResourceId: resource.id, sourceResourceTitle: resource.title, sourceResourceType: 'file' } } : node);

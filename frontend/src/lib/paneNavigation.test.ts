@@ -200,3 +200,15 @@ describe('open sessions independent of visible panes', () => {
     expect(nav.snapshot().panes[0].id).toBe('F'); expect(nav.snapshot().sessions).toHaveLength(2);
   });
 });
+
+it('reorders sessions and swaps dirty panes without saving, remount IDs or new visits',async()=>{
+ const {nav,dep}=setup();await nav.open('A');await nav.open('B',{destination:'new'});const before=nav.snapshot(),[a,b]=before.panes;
+ nav.recordPosition(a.paneId,a.history[0].visitId,{scrollTop:412,selection:{from:2,to:3}});dep.save.mockRejectedValue(new Error('dirty offline'));dep.save.mockClear();dep.load.mockClear();
+ nav.reorderSession(b.paneId,a.paneId);expect(nav.snapshot().sessions.map(p=>p.id)).toEqual(['B','A']);expect(nav.snapshot().panes).toBe(before.panes);
+ await nav.arrangeSession(a.paneId,b.paneId);expect(nav.snapshot().panes.map(p=>p.id)).toEqual(['B','A']);expect(nav.snapshot().panes[1].slotId).toBe(a.slotId);expect(nav.snapshot().panes[1].history).toBe(a.history);expect(nav.position(a.history[0].visitId).scrollTop).toBe(412);expect(dep.save).not.toHaveBeenCalled();expect(dep.load).not.toHaveBeenCalled();expect(nav.snapshot().focusPaneId).toBe(a.paneId);
+ await nav.arrangeSession(a.paneId,b.paneId,'before');expect(nav.snapshot().panes.map(p=>p.id)).toEqual(['A','B']);
+});
+it('inactive-note arrangement refuses capacity and cannot publish across workspace reset',async()=>{
+ const {nav,dep}=setup();await nav.open('A');await nav.open('B');const a=nav.snapshot().sessions.find(p=>p.id==='A')!;dep.max=1;dep.save.mockClear();await expect(nav.arrangeSession(a.paneId)).rejects.toThrow('All panes');expect(nav.snapshot().panes.map(p=>p.id)).toEqual(['B']);expect(dep.save).not.toHaveBeenCalled();
+ dep.max=3;let finish!:(value:Resource)=>void;dep.load.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));const pending=nav.arrangeSession(a.paneId);nav.reset();finish(note('A'));await expect(pending).rejects.toThrow('changed');expect(nav.snapshot().sessions).toEqual([]);
+});

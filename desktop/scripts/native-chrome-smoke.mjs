@@ -11,6 +11,7 @@ export async function runChromeSmoke(window, directory, owned, updates) {
   const evaluate = code => window.webContents.executeJavaScript(code);
   const wait = async (code, label) => { for (let i = 0; i < 500; i++) { if (await evaluate(code).catch(() => false)) return; await new Promise(r => setTimeout(r, 100)); } throw new Error(label + ': ' + await evaluate('document.body.innerText')); };
   await wait("Boolean(document.querySelector('.library-view'))", 'Local workspace');
+  if(process.env.VAULTOR_DESKTOP_D2_EXTENSION_CHECK==='1'){const {runDesktopD2ExtensionCheck}=await import('./native-desktop-d2-extension-check.mjs');await runDesktopD2ExtensionCheck(window,directory,owned);return;}
   if(process.env.VAULTOR_DESKTOP_SELECTION_CHECK==='1'){const {runDesktopSelectionCheck}=await import('./native-desktop-selection-check.mjs');await runDesktopSelectionCheck(window,directory,owned);return;}
   if(process.env.VAULTOR_DESKTOP_EXPERIENCE_CHECK==='1'){const {runDesktopExperienceCheck}=await import('./native-desktop-experience-check.mjs');await runDesktopExperienceCheck(window,directory,owned);return;}
   if(process.env.VAULTOR_LINKED_LINK_CHECK==='1'){const {runLinkedLinkCheck}=await import('./native-linked-link-check.mjs');await runLinkedLinkCheck(window,directory);return;}

@@ -68,3 +68,9 @@ it('explicit native link targets obtain metadata before opening without an index
  expect(await workspace.describe('unseen',true)).toEqual(resource);expect(calls).toEqual(['metadata']);expect(api.put).toHaveBeenCalledWith('/resources/linked/unseen',{title:'API.md',reference:resource.content},expect.anything());
  expect(await workspace.describe('unseen',true)).toEqual(resource);expect(calls).toEqual(['metadata']);workspace.dispose();
 });
+
+it('lazy linked metadata retains identity and generation, refusing publication after a workspace switch',async()=>{
+ let identity={id:'workspace',generation:'generation'};const workspace=new LinkedWorkspace(()=>identity);workspace.supported=()=>true;const resource={id:'same-linked-id',title:'External',type:'linked',revision:'revision',content:'reference-only'};
+ workspace.request=vi.fn(async()=>resource) as LinkedRequest;vi.mocked(api.put).mockResolvedValue({data:resource});await expect(workspace.describe(resource.id,true)).resolves.toMatchObject({id:resource.id});expect(api.put).toHaveBeenCalledWith('/resources/linked/'+resource.id,{title:resource.title,reference:resource.content},expect.objectContaining({headers:{'X-Vaultor-Generation':'generation'}}));
+ vi.mocked(api.put).mockClear();let finish!:(value:typeof resource)=>void;workspace.request=(()=>new Promise<typeof resource>(resolve=>{finish=resolve;})) as LinkedRequest;const pending=workspace.describe('another-linked-id',true);identity={id:'other',generation:'other-generation'};finish(resource);await expect(pending).rejects.toThrow('Workspace changed');expect(api.put).not.toHaveBeenCalled();
+});
