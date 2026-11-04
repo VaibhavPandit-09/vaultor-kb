@@ -18,6 +18,10 @@ Reviewed 2026-11-02: Windows x64 0.25.2 single-click Markdown patch and Mac arm6
 - [Menu and copy audit,2026-10-29](design/MENU-UX-AUDIT-2026-10-29.md): Source/screenshot findings on Activity/window overlap, stale import history and wording across menus; historical baseline and rationale for the0.24.1 fixes.
 - [ANDROID_UI_PHILOSOPHY](design/ANDROID_UI_PHILOSOPHY.md): Android extension: hybrid UI, reader, Back, platform adaptation and restrained semantic haptics.
 
+## Native desktop initiative
+
+- [Desktop experience tracker](plans/DESKTOP-EXPERIENCE-TRACKER.md): Authoritative D1–D4 audit, task dependencies, acceptance, validation, commit and platform status. Feature-branch work is unreleased; D2–D4 remain planned.
+
 ## Development and validation
 
 - [AI_DEVELOPMENT_WORKFLOW](development/AI_DEVELOPMENT_WORKFLOW.md): Repository-wide AI efficiency policy, risk-based verification/evidence reuse, master-centered work, integration/protections and immutable recovery points.

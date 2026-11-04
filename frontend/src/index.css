@@ -424,6 +424,8 @@ button[aria-busy='true'] { cursor:progress; }
 .library-button:focus-visible, .organization-input:focus-visible, [aria-label="Search and commands"] button:focus-visible, [aria-label="Search and commands"] input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 .library-popover { display:flex; flex-direction:column; gap:12px; overflow:auto; padding:14px; border:1px solid var(--border-strong); border-radius:14px; background:var(--surface-3); color:var(--text-primary); box-shadow:0 16px 40px #0004; }
+.library-popover.application-menu { gap:2px; padding:5px; border-radius:10px; }
+.application-menu .library-button { justify-content:flex-start; width:100%; border-color:transparent; text-align:left; padding:6px 9px; border-radius:6px; }
 .collection-add-option { display:flex; align-items:center; gap:10px; width:100%; padding:10px; border-radius:9px; }
 .collection-add-option[aria-selected="true"], .collection-add-option:hover { background:var(--surface-hover); }
 .collection-add-option:focus-visible, .library-popover button:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
@@ -435,10 +437,10 @@ button[aria-busy='true'] { cursor:progress; }
 .journey-icon:hover:not(:disabled), .journey-trail button:hover:not(:disabled) { background:var(--surface-3); color:var(--text-primary); }
 .journey-icon:disabled { opacity:.3; }
 .journey-bar button:focus-visible, .journey-popover button:focus-visible { outline:2px solid var(--accent, #3b82f6); outline-offset:2px; }
-.journey-trail { display:flex; align-items:center; gap:.15rem; min-width:0; flex:1; overflow-x:auto; scrollbar-width:thin; animation:journey-fade 200ms ease-out; }
+.journey-trail { display:flex; align-items:center; gap:.15rem; min-width:0; flex:1; overflow:hidden; }
 .journey-trail li { display:flex; align-items:center; min-width:0; gap:.2rem; }
-.journey-neighbor { flex:0 0 auto; max-width:180px; }
-.journey-current { flex:0 0 auto; max-width:220px; font-weight:600; color:var(--text-primary); }
+.journey-neighbor { flex:0 1 140px; overflow:hidden; }
+.journey-current { flex:1 1 140px; overflow:hidden; font-weight:600; color:var(--text-primary); }
 .journey-divider { flex-shrink:0; opacity:.4; }
 .journey-trail button { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:.35rem .5rem; border-radius:8px; font-size:.82rem; min-width:0; }
 .journey-trail button[aria-current] { background:var(--surface-3); }
@@ -454,7 +456,7 @@ button[aria-busy='true'] { cursor:progress; }
 @keyframes journey-fade { from { opacity:.65; } to { opacity:1; } }
 @keyframes journey-forward { from { opacity:.65; transform:translateX(8px); } to { opacity:1; transform:translateX(0); } }
 @keyframes journey-back { from { opacity:.65; transform:translateX(-8px); } to { opacity:1; transform:translateX(0); } }
-@container journey (max-width:520px) { .journey-neighbor, .journey-current { max-width:140px; } .journey-extras .library-button { font-size:.7rem; padding:.35rem; } }
+@container journey (max-width:640px) { .journey-trail .journey-neighbor, .journey-current .journey-divider { display:none; } .journey-extras .library-button { font-size:.7rem; padding:.35rem; } }
 @media (prefers-reduced-motion:reduce) { .journey-trail, .journey-viewport { animation:none !important; } }
 
 /* Ordinary linked Markdown URLs are marks, not managed resource-link chips. */

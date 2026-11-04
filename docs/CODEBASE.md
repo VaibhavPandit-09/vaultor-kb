@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-11-02. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-11-04. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -361,6 +361,8 @@ Supported PNG/JPEG/WebP/GIF previews allow 20 MiB and 40 megapixels, inspecting 
 
 Supported renderers: PDF iframe using an blob URL, image original with Fit/Actual size/zoom, Markdown via ReactMarkdown + remark-gfm, CSV table (first 500 rows), code via Prism with line numbers/oneDark, and plain text. CSV rendering uses a header row. Unknown formats get fallback; spreadsheets are stored but have no native spreadsheet renderer. Fetches are abortable, ignore stale results and revoke blob URLs; Retry preview remounts the renderer.
 
+Resource application menus now share pointer/ContextMenu/Shift+F10 invocation with existing ellipsis content through LibraryPopover. Context targets are the nearest resource row, collection row, session, source-management row, tag, note pane/preview or browse background. Inputs, contenteditable text and ordinary links keep their text/viewer behavior. Action menus use compact surface styling, viewport-clamped placement, arrow/Home/End navigation, centralized Escape, source restoration and dialog portal registration. Flat menus are deliberate; no unsupported filesystem or internal-link commands are exposed. Electron's text-menu module supplies standard editable/selected-text roles using Chromium capability flags, with no new IPC privileges. ResourceActions uses the extended resourceActions command catalogue/executor (stable IDs, labels/icons, availability and confirmation metadata); Dashboard keeps the authoritative save/navigation/lifecycle/export coordination. Palette rename/Trash/export callbacks converge there; existing pin buttons already share the favorite mutation. The [desktop experience tracker](plans/DESKTOP-EXPERIENCE-TRACKER.md) owns remaining D1 acceptance and the D2–D4 roadmap. This branch is unreleased by explicit initiative instruction.
+
 ## Settings and keyboard behavior
 
 Opening new notes retains persisted fill/reuse values and defaults, with compact “Fill, then replace” / “Reuse focused pane” labels and the full explanation in the description. Shared choice controls wrap/reorganize within their available width, preserving radio keyboard/focus behavior and theme accents.
@@ -450,6 +452,11 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-04 — Native desktop foundation (unreleased feature branch)
+
+Audited master5003a91 and established the D1–D4 tracker. Replaced all-visit horizontal journey presentation with bounded current/neighbor context and full History; underlying visits/save/restore contracts are unchanged. Added shared context invocation, capability-aware resource commands, palette convergence and native text editing menus. No backend/resource schema, authorization, recovery protocol or Android architecture change. Validation: 83 focused frontend tests across14 files passed; native text-menu unit tests2 passed. Production TypeScript/Vite/desktop UI build passed; full lint had no errors, and the reported Dashboard dependency warnings were corrected with clean targeted lint. Final Windows Electron smoke passed for eight visits, full History/Forward,600px compression, edge placement, keyboard/source focus, shared split, secondary-pointer nonactivation and real editable-pointer native menu dispatch. Three final dark-theme layout screenshots were inspected; macOS, broader surface/native appearance and user motion/feel acceptance remain unverified. No versions/installers/tags/releases requested.
+
 
 ### 2026-11-02 — Windows0.25.2 published and updater verified
 

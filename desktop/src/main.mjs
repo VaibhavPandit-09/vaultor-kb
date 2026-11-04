@@ -2,6 +2,7 @@ import { deviceAppearance,windowBackground } from './appearance.mjs';
 import {linkedPublicError} from './linked/errors.mjs';
 import {linkedReferenceReader} from './linked/references.mjs';
 import { app, BrowserWindow, protocol, ipcMain, Menu, shell, clipboard, ClipboardItem, dialog, Tray, nativeImage, Notification, powerMonitor, safeStorage, nativeTheme } from 'electron';
+import { textMenuTemplate } from './text-menu.mjs';
 import { randomUUID } from 'node:crypto';
 import { readFile,readdir,stat,writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -281,6 +282,10 @@ else {
       if (smokeDirectory) window.webContents.on('console-message', event => { if (event.level === 'error' || event.level === 'warning') console.error('Renderer:', event.message); });
       window.webContents.on('will-navigate', (event, url) => { if (url !== UI_ORIGIN + '/') { event.preventDefault(); try { void shell.openExternal(externalAddress(url)); } catch { /* Reject internal/custom/file destinations. */ } } });
       window.webContents.setWindowOpenHandler(({ url }) => { try { void shell.openExternal(externalAddress(url)); } catch { /* Blob previews stay in app; native file opening is D4. */ } return { action: 'deny' }; });
+      window.webContents.on('context-menu', (_event, params) => {
+        const template = textMenuTemplate(params);
+        if (template.length) Menu.buildFromTemplate(template).popup({ window });
+      });
       window.webContents.on('will-attach-webview', event => event.preventDefault());
       window.webContents.on('will-prevent-unload', event => {
         const choice = dialog.showMessageBoxSync(window, { type: 'warning', buttons: ['Keep editing', 'Close'], defaultId: 0, cancelId: 0, message: 'Changes are still pending.', detail: 'Keep editing to save them. Closing relies on any recovery records already written.' });

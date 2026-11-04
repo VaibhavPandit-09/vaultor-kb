@@ -1,15 +1,14 @@
-import { frameResizeObserver } from '../lib/frameResizeObserver';
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowRight, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronRight, History } from 'lucide-react';
 import type { Pane } from '../lib/paneNavigation';
 import { useAnchoredPortalPosition } from '../lib/useAnchoredPortalPosition';
+import { historyShortcuts, formatShortcutKeys } from '../lib/shortcuts';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../lib/escape/escape';
 
 export default function JourneyBar({ pane, motion, animationMode, onJump, children }: {
   children?: ReactNode; pane: Pane; motion: 'back' | 'forward' | 'replace' | 'switch'; animationMode: 'smooth' | 'snappy'; onJump: (index: number) => void;
 }) {
-  const trail = useRef<HTMLOListElement>(null);
   const [open, setOpen] = useState(false);
   const anchor = useRef<HTMLButtonElement>(null), panel = useRef<HTMLDivElement>(null);
   const { position } = useAnchoredPortalPosition(open, anchor, { width: 320, minWidth: 200, align: 'start', offset: 8 });
@@ -28,20 +27,17 @@ export default function JourneyBar({ pane, motion, animationMode, onJump, childr
   }, [open]);
   const go = (index: number) => { if (open) close(); onJump(index); };
   const current = pane.history[pane.cursor];
-  useLayoutEffect(() => {
-    const element=trail.current;if(!element)return;
-    const reveal=()=>{const selected=element.querySelector<HTMLElement>('[aria-current="step"]');if(!selected)return;const bounds=element.getBoundingClientRect(),item=selected.getBoundingClientRect();if(item.right>bounds.right)element.scrollLeft+=item.right-bounds.right;else if(item.left<bounds.left)element.scrollLeft-=bounds.left-item.left;};
-    reveal();const observer=frameResizeObserver(reveal);observer.observe(element);return()=>observer.disconnect();
-  },[pane.paneId,current.visitId]);
+  // Presentation is bounded; indices and visit IDs still belong to the full journey.
+  const contextStart = Math.max(0, Math.min(pane.cursor - 1, pane.history.length - 3));
   return <nav aria-label="Note journey" className="journey-bar" data-speed={animationMode}>
     <div className="journey-controls">
-      <button className="journey-icon" aria-label="Journey back" title="Previous journey step" disabled={!pane.history[pane.cursor - 1] || pane.history[pane.cursor - 1].unavailable} onClick={() => go(pane.cursor - 1)}><ArrowLeft size={16} /></button>
-      <button className="journey-icon" aria-label="Journey forward" title="Next journey step" disabled={!pane.history[pane.cursor + 1] || pane.history[pane.cursor + 1].unavailable} onClick={() => go(pane.cursor + 1)}><ArrowRight size={16} /></button>
-      <button ref={anchor} className="journey-icon" aria-label="Show full journey" title={`${pane.cursor + 1} of ${pane.history.length} steps`} aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen(value => !value)}><MoreHorizontal size={17} /></button>
+      <button className="journey-icon" aria-label="Journey back" title={'Previous visit · '+formatShortcutKeys(historyShortcuts().back).join(' ')} disabled={!pane.history[pane.cursor - 1] || pane.history[pane.cursor - 1].unavailable} onClick={() => go(pane.cursor - 1)}><ArrowLeft size={16} /></button>
+      <button className="journey-icon" aria-label="Journey forward" title={'Next visit · '+formatShortcutKeys(historyShortcuts().forward).join(' ')} disabled={!pane.history[pane.cursor + 1] || pane.history[pane.cursor + 1].unavailable} onClick={() => go(pane.cursor + 1)}><ArrowRight size={16} /></button>
+      <button ref={anchor} className="journey-icon" aria-label="Show full journey" title={`History · ${pane.cursor + 1} of ${pane.history.length} visits`} aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen(value => !value)}><History size={17} /></button>
     </div>
-    <ol ref={trail} key={pane.paneId + ':' + current.visitId} className="journey-trail" data-motion={motion}>
-      {pane.history.map((entry, index) => ({ entry, index })).map(({ entry, index }) => <li key={entry.visitId} className={index === pane.cursor ? 'journey-current' : 'journey-neighbor'}>
-        {index > 0 && <ChevronRight size={13} aria-hidden="true" className="journey-divider" />}
+    <ol className="journey-trail" data-motion={motion}>
+      {pane.history.slice(contextStart, contextStart + 3).map((entry, offset) => ({ entry, index: contextStart + offset })).map(({ entry, index }) => <li key={entry.visitId} className={index === pane.cursor ? 'journey-current' : 'journey-neighbor'}>
+        {index > contextStart && <ChevronRight size={13} aria-hidden="true" className="journey-divider" />}
         <button title={entry.title + (entry.unavailable ? ' · Unavailable' : '')} aria-current={index === pane.cursor ? 'step' : undefined} disabled={entry.unavailable} onClick={() => go(index)}>{entry.title || 'Untitled note'}{entry.unavailable && ' · Unavailable'}</button>
       </li>)}
     </ol>

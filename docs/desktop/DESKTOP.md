@@ -8,6 +8,8 @@ Windows0.24.1 keeps one integrated top edge: fixed menu/minimize/maximize/close/
 
 Connections uses the shared dialog focus scope, including the global Activity trigger/popover. Tab/Shift-Tab, Escape and trigger restoration remain centralized. Sharing is the user-facing name of the existing hosting tab. Removing a saved connection retires its profile identity and keeps files/drafts/import history; it does not delete a workspace.
 
+Standard editable/selected text uses Electron's native context menu with capability-checked Undo/Redo/Cut/Copy/Paste/Select all. Application resource contexts use Vaultor menus shared with ellipsis; they do not expose browser navigation, raw paths or new IPC. The native template lives in desktop/src/text-menu.mjs; source capability/ownership boundaries remain unchanged. The [desktop experience tracker](../plans/DESKTOP-EXPERIENCE-TRACKER.md) records unreleased status and platform evidence.
+
 ## Development launch
 
 From the repository root:

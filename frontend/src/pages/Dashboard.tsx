@@ -14,7 +14,7 @@ import {revealReference} from '../lib/referenceNavigation';
 import ResourceActions from '../components/ResourceActions';
 import ResourceLifecycleDialog from '../components/ResourceLifecycleDialog';
 import TrashView from '../components/TrashView';
-import { RESOURCE_ACTION_EVENT, type ActionRequest } from '../lib/resourceActions';
+import { RESOURCE_ACTION_EVENT, requestResourceAction, supportedResourceActions, type ActionRequest } from '../lib/resourceActions';
 import { hasPendingImages } from '../lib/noteImages';
 import { SidebarSection, SidebarCustomization, SidebarRecent } from '../components/SidebarSections';
 import { inspectWorkspaceDeparture } from '../lib/workspaceDeparture';
@@ -753,12 +753,13 @@ export default function Dashboard() {
       if(!pane||saves.latest(resource.id)||recovery.current(resource.id)||latest.revision!==anchor.revision||!await revealReference(pane.paneId,resource.id,anchor.path,anchor.targetId))setSessionMessage('Opened the source note. Its occurrence may have moved; locate the link or image in the current content.');
       return;
     }
-    if(request.action==='open'){await openResourceById(resource.id);return;}
+    if(request.action==='open'||request.action==='open-another'){if(!supportedResourceActions(resource).open)throw new Error('Opening this resource is unsupported.');await openResourceById(resource.id,{throwOnFailure:true,...(request.action==='open-another'?{destination:'new' as const}:{})});return;}
     if(request.action==='trash'){setLifecycleTargets(request.resources);return;}
-    if(request.action==='export'){setNoteExport({id:resource.id,title:resource.title});return;}
+    if(request.action==='export'){if(!supportedResourceActions(resource).export)throw new Error('Exporting this resource is unsupported.');setNoteExport({id:resource.id,title:resource.title});return;}
     if(request.action==='prepare-export'){for(const selected of request.resources)if(selected.type==='note')await exportSaveRef.current(selected.id);return;}
     if(request.action==='restored'){paneNavigation.markAvailable(resource.id);resourcesChanged([resource.id],true);return;}
     if(request.action==='rename'){
+      if(!supportedResourceActions(resource).rename)throw new Error('Renaming this resource is unsupported.');
       if(resource.type==='note')await renameResource(resource.id,request.value??'');
       else {const {data:fresh}=await api.get<Resource>('/resources/'+resource.id+'/summary');await api.patch('/resources/'+resource.id+'/title',{title:request.value},{headers:{'If-Match':'"'+fresh.revision+'"'}});resourcesChanged([resource.id]);}return;
     }
@@ -1183,7 +1184,7 @@ export default function Dashboard() {
     hasUnsavedChanges,
     openCollection:item=>{setPaletteSelection([]);setCollection(item);setLibrarySection('library');setLibraryVisible(true);dispatch(clearSelectedTags());dismissPreview({restoreFocus:false});},
     openLibrary:section=>{setPaletteSelection([]);setCollection(null);setLibrarySection(section);setLibraryVisible(true);dismissPreview({restoreFocus:false});},
-    exportResource:resource=>setNoteExport({id:resource.id,title:resource.title}),
+    exportResource:resource=>requestResourceAction('export',[resource]),
     openDiagnostics:()=>setDiagnosticsOpen(true),
     previewResource,
     openNotes: openNotes
@@ -1202,19 +1203,17 @@ export default function Dashboard() {
     openSettings: openSettingsModal,
     closeActiveNote,
     closePreview: () => dismissPreview(),
-    openDeleteFlow: async (resourceId:string)=>{await handleDeleteResource(resourceId);},
-    renameResource,
+    openDeleteFlow: async (resourceId:string)=>{const {data}=await api.get<Resource>('/resources/'+resourceId+'/summary');await requestResourceAction('trash',[data]);},
+    renameResource:async(resourceId,title)=>{const {data}=await api.get<Resource>('/resources/'+resourceId+'/summary');await requestResourceAction('rename',[data],title);},
   }), [
     libraryVisible,paletteTarget,paletteSelection,collection,dispatch,hasUnsavedChanges,
     closeActiveNote,
     dismissPreview,
-    handleDeleteResource,
     openResourceById,
     openSettingsModal,
     openShortcutsModal,
     openNotes, resourceDetails,
     previewResource,
-    renameResource,
     requestFileUpload,
     resources,
     sidebarCollapsedForContext,
@@ -1298,9 +1297,11 @@ export default function Dashboard() {
           {filteredTags.map((tag) => (
             <span
               key={tag.id}
+              data-tag-target={tag.id}
               className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-[0.01em] transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
               style={getTagPillStyle(tag.color, resolvedTheme)}
             >
+              <LibraryPopover contextOnly contextTarget="[data-tag-target]" label={'Actions for tag '+tag.name}>{close=><><button className="library-button" onClick={()=>{close();dispatch(toggleSelectedTag(tag.name));setLibraryVisible(true);}}>Toggle tag filter</button><button className="library-button text-red-500" onClick={()=>{close();setTagDeleteModal({id:tag.id,name:tag.name});}}>Delete tag…</button></>}</LibraryPopover>
               <button onClick={() => { dispatch(toggleSelectedTag(tag.name)); setLibraryVisible(true); }} className="cursor-pointer text-inherit">{tag.name}</button>
               <label
                 className="relative inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-inherit opacity-55 transition-opacity hover:opacity-100"
@@ -1445,7 +1446,7 @@ export default function Dashboard() {
                   data-note-pane={note.id}
                   data-pane-id={note.paneId}
                   data-focused={note.paneId === activePaneId}
-                  onPointerDownCapture={() => { if (note.paneId !== activePaneId) activateOpenNote(note.paneId); }}
+                  onPointerDownCapture={event => { if (event.button === 0 && note.paneId !== activePaneId) activateOpenNote(note.paneId); }}
                   className="workspace-note-pane relative flex h-full min-w-0 w-full flex-col overflow-hidden rounded-[1.35rem] bg-card shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
                 >
                   {index > 0 && (

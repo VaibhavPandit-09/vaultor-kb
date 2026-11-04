@@ -25,10 +25,10 @@ export default function OpenNotes({ sessions, panes, activeId, onOpen, onSplit, 
         <button className="sidebar-nav min-w-0 flex-1" aria-current={activeId === session.paneId ? 'page' : undefined} onClick={()=>onOpen(session.id)} title={title}>
           <span className="truncate">{title}</span>{paneIndex >= 0 && <span className="ml-auto shrink-0 text-[10px] opacity-60">Pane {paneIndex+1}</span>}
         </button>
-        <LibraryPopover label={'Session actions for '+title} trigger={<MoreHorizontal size={13}/>}>
+        <LibraryPopover contextTarget="[data-open-session]" label={'Session actions for '+title} trigger={<MoreHorizontal size={13}/>}>
           {close => <>
             {paneIndex < 0 && <button className="library-button" disabled={!canSplit} onClick={()=>{close();onSplit(session.id);}}>Open in another pane</button>}
-            <button className="library-button" onClick={()=>{close();onCloseOthers(session.paneId);}}>Close other notes</button>
+            <button className="library-button" onClick={()=>{close();onCloseOthers(session.paneId);}}>Close other notes</button><button className="library-button" onClick={()=>{close();onClose(session.paneId);}}>Close note</button>
           </>}
         </LibraryPopover>
         <button className="rounded p-1 text-slate-400 hover:text-foreground focus-visible:outline-primary" aria-label={'Close '+title} onClick={()=>onClose(session.paneId)}><X size={13}/></button>
