@@ -1,4 +1,5 @@
-import { canDragResource, useDesktopInteraction } from '../../lib/desktopInteraction';
+import {ResourceDropSurface} from '../DesktopInteraction';
+import { useDragItems,canDragResource, useDesktopInteraction } from '../../lib/desktopInteraction';
 import {useLinkedSearch,type LinkedSearchProvider} from '../../lib/linked/search';
 import CommandStage from '../CommandStage';
 import SearchCoverage from '../SearchCoverage';
@@ -44,6 +45,7 @@ export default function CommandPaletteModal({open,onClose,context,searchLinked}:
  useEffect(()=>{if(open){const frame=requestAnimationFrame(()=>input.current?.focus());return()=>cancelAnimationFrame(frame);}},[open,stack.length,mode]);
  const selecting=entry?.step.id==='delete-select';
  const resources=useResourcePage({q:search,size:50,sort:search.trim()?'title':'recent',searchMode,collection:searchCollection?.id},open&&((mode==='search'&&!entry)||selecting));
+ const resourceItems=useDragItems(resources.data?.items??[]);
  const linked=useLinkedSearch(searchLinked,search,searchMode,open&&mode==='search'&&!entry&&!searchCollection);
  const collections=useOrganizationPage('collection',search,0,open&&mode==='search'&&!entry&&!searchCollection&&searchMode==='title'&&Boolean(search.trim()),false,20);
  const pins=usePins('',0,30,open&&mode==='search'&&!search.trim()&&!entry&&!searchCollection);
@@ -74,13 +76,13 @@ export default function CommandPaletteModal({open,onClose,context,searchLinked}:
  let items:Result[]=[];
  if(entry)items=entry.step.getItems(entry.step.type==='input'?currentQuery:search,scope);
  else if(mode==='commands')items=[...createRootStep({...scope,resources:[]},null,{}).getItems(search,{...scope,resources:[]}),...extra.filter(item=>!search||((item.title+' '+(item.subtitle??'')).toLowerCase().includes(search.toLowerCase())))];
- else if(search.trim()||searchCollection)items=[...(resources.data?.items??[]).map(r=>resourceItem(r,'Resources')),...(!searchCollection&&searchMode==='title'?collections.data?.items??[]:[]).map(c=>({...action('collection-'+c.id,c.name,()=>captured.openCollection?.(c),`${c.count} resources`),kind:'collection',section:'Collections'}))];
+ else if(search.trim()||searchCollection)items=[...resourceItems.map(r=>resourceItem(r,'Resources')),...(!searchCollection&&searchMode==='title'?collections.data?.items??[]:[]).map(c=>({...action('collection-'+c.id,c.name,()=>captured.openCollection?.(c),`${c.count} resources`),kind:'collection',section:'Collections'}))];
  else {
   const seen=new Set<string>();const add=(item:Result)=>{if(!seen.has(item.id)){seen.add(item.id);items.push(item);}};
   captured.openNotes.forEach(r=>add(resourceItem(r,'Open')));
   if(captured.previewResource)add(resourceItem(captured.previewResource,'Open'));
   (pins.data?.items??[]).forEach(p=>{if(p.entityKind==='collection')add({...action('collection-'+p.id,p.name,async()=>{const {data}=await api.get('/collections/'+p.id,{backgroundDiagnostic:true});captured.openCollection?.(data);},'Collection'),kind:'collection',section:'Pinned'});else add(resourceItem(p.resource??{id:p.id,type:p.resourceType,title:p.name,favorite:true,tags:[],createdAt:'',updatedAt:''},'Pinned'));});
-  (resources.data?.items??[]).slice(0,20).forEach(r=>add(resourceItem(r,'Recent')));
+  resourceItems.slice(0,20).forEach(r=>add(resourceItem(r,'Recent')));
  }
  if(!entry&&mode==='search'&&search.trim()&&!searchCollection){const known=new Set(items.map(item=>item.id));items.push(...linked.data.items.map(r=>resourceItem(r,'Linked folders')).filter(item=>!known.has(item.id)));}
  const searchPending=((mode==='search'&&!entry)||selecting)&&currentQuery.trim()!==search.trim();
@@ -115,7 +117,7 @@ export default function CommandPaletteModal({open,onClose,context,searchLinked}:
  {!entry&&mode==='search'&&search.trim()&&((resources.data?.totalItems??0)>50||(!searchCollection&&searchMode==='title'&&(collections.data?.totalItems??0)>20))&&<p className="px-4 pb-2 text-xs text-[var(--text-secondary)]">Showing the first matches. Refine your search or open Library for all results.</p>}
  {error&&<p role="alert" className="px-4 py-2 text-sm text-red-500">{error} Your input is retained; retry the action.</p>}
  {failure&&<p role="alert" className="px-4 py-2 text-sm">{failure}<button className="library-button" onClick={()=>{resources.retry();collections.retry();pins.retry();}}>Retry search</button></p>}
- <div id="palette-results" role="listbox" aria-label="Results" aria-busy={busy} className="palette-results p-2"><MotionIndicator value={selected?.id??''}/>{items.map((item,index)=>{const Icon=item.kind==='collection'?collectionKind.icon:item.resource?resourcePresentation(item.resource).icon:item.kind?resourceKind(item.kind).icon:Command;return <div key={item.id}>{item.section!==items[index-1]?.section&&<p className="px-3 py-1 text-xs text-[var(--text-tertiary)]">{item.section}</p>}<div draggable={Boolean(item.resource&&canDragResource(item.resource))} onDragStart={event=>{if(!item.resource||!canDragResource(item.resource)){event.preventDefault();return;}drag?.start(event,{kind:'resources',resources:[item.resource]},()=>onClose({restoreFocus:false,restorePreview:false}));}} onDragEnd={()=>drag?.cancel()} role="option" id={'palette-option-'+item.id} aria-selected={item.id===selected?.id} className="palette-result flex gap-3 rounded-lg px-3 py-2 cursor-pointer" onMouseEnter={()=>setSelectedId(item.id)} onClick={()=>void execute(item)}><Icon className="shrink-0 mt-1" size={17}/><div className="min-w-0"><p className="truncate text-sm font-medium">{item.title}</p><p className="text-xs text-[var(--text-secondary)] truncate">{searchMode==='content'&&item.resource?.searchSnippet?.text?<SearchExcerpt snippet={item.resource.searchSnippet}/>:item.subtitle}</p></div></div></div>;})}{!items.length&&<p className="p-4 text-sm">{(searchPending||resources.loading)&&mode==='search'?'Searching…':'No matches. Try different words.'}</p>}</div>
+ <div id="palette-results" role="listbox" aria-label="Results" aria-busy={busy} className="palette-results p-2"><MotionIndicator value={selected?.id??''}/>{items.map((item,index)=>{const Icon=item.kind==='collection'?collectionKind.icon:item.resource?resourcePresentation(item.resource).icon:item.kind?resourceKind(item.kind).icon:Command;return <div key={item.id}>{item.section!==items[index-1]?.section&&<p className="px-3 py-1 text-xs text-[var(--text-tertiary)]">{item.section}</p>}<ResourceDropSurface resource={item.resource} draggable={Boolean(item.resource&&canDragResource(item.resource))} onDragStart={event=>{if(!item.resource||!canDragResource(item.resource)){event.preventDefault();return;}drag?.start(event,{kind:'resources',resources:[item.resource]},()=>onClose({restoreFocus:false,restorePreview:false}));}} onDragEnd={()=>drag?.cancel()} role="option" id={'palette-option-'+item.id} aria-selected={item.id===selected?.id} className="palette-result flex gap-3 rounded-lg px-3 py-2 cursor-pointer" onMouseEnter={()=>setSelectedId(item.id)} onClick={()=>void execute(item)}><Icon className="shrink-0 mt-1" size={17}/><div className="min-w-0"><p className="truncate text-sm font-medium">{item.title}</p><p className="text-xs text-[var(--text-secondary)] truncate">{searchMode==='content'&&item.resource?.searchSnippet?.text?<SearchExcerpt snippet={item.resource.searchSnippet}/>:item.subtitle}</p></div></ResourceDropSurface></div>;})}{!items.length&&<p className="p-4 text-sm">{(searchPending||resources.loading)&&mode==='search'?'Searching…':'No matches. Try different words.'}</p>}</div>
  </CommandStage>
  </div></div>,document.body)}</>;
 }

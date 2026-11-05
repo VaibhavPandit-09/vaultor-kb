@@ -29,8 +29,8 @@ export async function runDesktopSelectionCheck(window,directory,owned){
  await button('Organize selection');await wait("document.querySelector('.library-popover')?.textContent.includes('Unpin selection')");await button('Unpin selection');
  await wait("document.querySelectorAll('.library-row[data-selected=true]').length===0");for(const note of notes.slice(0,3))assert.equal((await request('/resources/'+note.id+'/summary')).favorite,false);
  await select(notes[0].id,{ctrlKey:true});await select(notes[1].id,{ctrlKey:true});await start(notes[0].id);
- await evaluate("[...document.querySelectorAll('.sidebar-primary button')].find(b=>b.textContent.trim()==='Collections').dispatchEvent(new DragEvent('dragenter',{bubbles:true,dataTransfer:window.__selectionDrag}))");
- await wait(`document.querySelector('[aria-label="Collection drop destinations"] button[title=${JSON.stringify(target.name)}]')`);
+ await evaluate("[...document.querySelectorAll('.sidebar-primary button')].find(b=>b.textContent.trim()==='Collections').dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,clientX:90,clientY:150,dataTransfer:window.__selectionDrag}))");
+ await wait(`document.querySelector('[aria-label="Collection drop destinations"] button[data-collection-destination="${target.id}"]')`);
  const destination=`[aria-label="Collection drop destinations"] button[title=${JSON.stringify(target.name)}]`;
  await over(destination);await delay(250);await writeFile(join(directory,'desktop-drop-destination.png'),(await wc.capturePage()).toPNG());await drop(destination);
  await wait("!document.querySelector('[aria-label=\"Collection drop destinations\"]')");

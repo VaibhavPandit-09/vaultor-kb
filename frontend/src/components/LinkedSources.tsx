@@ -1,4 +1,4 @@
-import { canDragResource, useDesktopInteraction, useDropTarget } from '../lib/desktopInteraction';
+import { canDragResource, useDragItems, useDesktopInteraction, useDropTarget } from '../lib/desktopInteraction';
 import type { Resource } from '../types';
 import DisclosureIndicator from './DisclosureIndicator';
 import {linkedError} from '../lib/linked/errors';
@@ -30,6 +30,7 @@ export default function LinkedSources({workspace,onOpen}:{workspace:LinkedWorksp
 }
 function Directory({workspace,source,id,label,onOpen,depth=0}:{workspace:LinkedWorkspace;source:string;id?:string;label:string;onOpen:(entry:Entry)=>void;depth?:number}){
   const [open,setOpen]=useState(false),[items,setItems]=useState<Entry[]>([]),[more,setMore]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[offset,setOffset]=useState(0);
+  const displayed=useDragItems(items);
   const listing=useRef({busy:false,offset:0});
   const load=async(offset=0)=>{if(listing.current.busy)return;listing.current.busy=true;setBusy(true);setError('');try{const page=await workspace.request<{items:Entry[];more:boolean}>('list',{source,directory:id,offset,limit:200});listing.current.offset=offset;setOffset(offset);setItems(page.items);setMore(page.more);}catch(failure){setError(linkedError(failure));}finally{listing.current.busy=false;setBusy(false);}};
   const toggle=()=>{setOpen(value=>!value);if(!open&&!items.length)void load();};
@@ -41,7 +42,7 @@ function Directory({workspace,source,id,label,onOpen,depth=0}:{workspace:LinkedW
     });
   },[open,source,id,workspace]);
   return <div><button className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-card" aria-expanded={open} onClick={toggle}><ChevronDown size={12} className={open?'':'sidebar-disclosure-closed'}/><Folder size={14}/><span className="truncate">{label}</span></button>
-    {open&&<div className="pl-3">{items.map(entry=>entry.directory&&!entry.unsupported&&depth<31?<Directory key={entry.id} workspace={workspace} source={source} id={entry.id} label={entry.name} onOpen={onOpen} depth={depth+1}/>:<LinkedEntry key={entry.id} workspace={workspace} entry={entry} onOpen={onOpen}/>)}{busy&&<p role="status" className="browse-feedback">Loading…</p>}{error&&<p role="alert" className="browse-feedback">{error}<button onClick={()=>void load(offset)}>Retry</button></p>}{(offset>0||more)&&<div className="flex items-center gap-2"><button className="library-button" disabled={busy||offset===0} onClick={()=>void load(Math.max(0,offset-200))}>Previous</button><span className="text-xs text-muted">{offset+1}–{offset+items.length}</span><button className="library-button" disabled={busy||!more} onClick={()=>void load(offset+200)}>Next</button></div>}</div>}
+    {open&&<div className="pl-3">{displayed.map(entry=>entry.directory&&!entry.unsupported&&depth<31?<Directory key={entry.id} workspace={workspace} source={source} id={entry.id} label={entry.name} onOpen={onOpen} depth={depth+1}/>:<LinkedEntry key={entry.id} workspace={workspace} entry={entry} onOpen={onOpen}/>)}{busy&&<p role="status" className="browse-feedback">Loading…</p>}{error&&<p role="alert" className="browse-feedback">{error}<button onClick={()=>void load(offset)}>Retry</button></p>}{(offset>0||more)&&<div className="flex items-center gap-2"><button className="library-button" disabled={busy||offset===0} onClick={()=>void load(Math.max(0,offset-200))}>Previous</button><span className="text-xs text-muted">{offset+1}–{offset+items.length}</span><button className="library-button" disabled={busy||!more} onClick={()=>void load(offset+200)}>Next</button></div>}</div>}
   </div>;
 }
 

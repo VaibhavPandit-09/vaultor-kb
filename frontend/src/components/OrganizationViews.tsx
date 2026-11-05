@@ -1,4 +1,4 @@
-import { useDesktopInteraction, useDropTarget } from '../lib/desktopInteraction';
+import { useDesktopInteraction, useDragItems, useDropTarget } from '../lib/desktopInteraction';
 import { ResourceSelectionContext, useResourceSelection } from '../lib/resourceSelection';
 import ResourceBatchActions from './ResourceBatchActions';
 import { useRestoreFocusOnClose } from '../lib/useRestoreFocusOnClose';
@@ -72,11 +72,12 @@ export function PinnedList({compact=false,visible=true,filterType='all',activeId
  useEffect(()=>{if(query===search)return;const timer=setTimeout(()=>{setSearch(query);setPage(0);},180);return()=>clearTimeout(timer);},[query,search]);
  const type=compact?filterType:kind;
  const result=usePins(search,compact?0:page,compact?12:100,visible,type);
+ const pinnedItems=useDragItems(result.data?.items??[]);
  const count=result.data?.totalItems??0;
  const totalPages=useBrowsePagination(viewport,JSON.stringify([search,type]),page,result.data?.totalPages,!compact,visible);
- const selection=useResourceSelection((result.data?.items??[]).flatMap(item=>item.resource?[item.resource]:[]),JSON.stringify([search,type,page]),visible&&!compact);
+ const selection=useResourceSelection(pinnedItems.flatMap(item=>item.resource?[item.resource]:[]),JSON.stringify([search,type,page]),visible&&!compact);
  const choose=(value:string)=>{setKind(value);setPage(0);};
- const rows=result.data?.items.map(item=>{
+ const rows=pinnedItems.map(item=>{
   const isCollection=item.entityKind==='collection';
   const collection=item.collection??{id:item.id,name:item.name,count:item.count,favorite:true};
   const resource:Resource=item.resource??{id:item.id,type:item.entityKind==='resource'?item.resourceType:'',title:item.name,favorite:true,tags:[],createdAt:'',updatedAt:''};

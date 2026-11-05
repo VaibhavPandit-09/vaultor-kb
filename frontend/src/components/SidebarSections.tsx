@@ -1,6 +1,6 @@
-import { useDropTarget } from '../lib/desktopInteraction';
+import { useDesktopInteraction,useDragItems,useDropTarget } from '../lib/desktopInteraction';
 import { MotionIndicator } from './MotionFeedback';
-import { useEffect, useMemo, type ReactNode, type MouseEvent } from 'react';
+import { useEffect, useMemo, useState, type ReactNode, type MouseEvent } from 'react';
 import { Settings2 } from 'lucide-react';
 import DisclosureIndicator from './DisclosureIndicator';
 import { normalizeSidebarSections, sidebarSectionNames, type SidebarSections as Preferences, type SidebarSectionName } from '../lib/sidebarPreferences';
@@ -11,8 +11,10 @@ import LibraryPopover from './LibraryPopover';
 import ResourceTypeFilter from './ResourceTypeFilter';
 
 export function SidebarSection({ name, preferences, onChange, onViewAll, children }: { name: SidebarSectionName; preferences: Preferences; onChange: (value: Preferences) => void; onViewAll?: () => void; children: ReactNode }) {
-  const title = name[0].toUpperCase() + name.slice(1), expanded = !preferences[name].collapsed;
-  const drop=useDropTarget(name==='pinned'?{kind:'pinned'}:null,()=>{if(!expanded)onChange({...preferences,[name]:{...preferences[name],collapsed:false}});});
+  const drag=useDesktopInteraction(),[revealed,setRevealed]=useState<string|null>(null);
+  const title = name[0].toUpperCase() + name.slice(1), expanded = !preferences[name].collapsed||Boolean(drag?.payload&&revealed===drag.payload.ticket);
+  const canExplore=drag?.payload?.kind==='resources'||drag?.payload?.kind==='tag';
+  const drop=useDropTarget(name==='pinned'&&drag?.payload?.kind==='resources'?{kind:'pinned'}:!expanded&&canExplore?{kind:'discovery',id:'section-'+name,label:'Expand '+title}:null,!expanded?()=>{if(drag?.payload)setRevealed(drag.payload.ticket);}:undefined);
   return <section {...drop} className="sidebar-section" aria-label={title} hidden={!preferences[name].visible}>
     <header className="sidebar-section-heading"><button aria-expanded={expanded} aria-controls={'sidebar-'+name} onClick={()=>onChange({...preferences,[name]:{...preferences[name],collapsed:expanded}})}><DisclosureIndicator expanded={expanded}/>{title}</button><div className="sidebar-section-tools">{name!=='tags'&&expanded&&<ResourceTypeFilter compact label={'Filter '+title.toLowerCase()+' type'} collections={name==='pinned'} value={preferences[name].type} onChange={type=>onChange({...preferences,[name]:{...preferences[name],type}})}/>} {onViewAll&&<button onClick={onViewAll}>View all</button>}</div></header>
     <div className="sidebar-disclosure" data-expanded={expanded} aria-hidden={!expanded} inert={!expanded}><div id={'sidebar-'+name} className="sidebar-disclosure-content"><MotionIndicator/>{children}</div></div>
@@ -23,7 +25,7 @@ export function SidebarCustomization({ preferences, onChange, status='saved', on
 }
 export function SidebarRecent({ enabled, type='all', activeId, onOpen, onDelete, onResources }: { enabled: boolean; type?:string; activeId?: string; onOpen: (id: string) => void; onDelete: (id: string, event: MouseEvent) => void; onResources: (items: Resource[]) => void }) {
   const result = useResourcePage({type,sort:'recent',size:12},enabled);
-  const resources = useMemo(()=>result.data?.items??[],[result.data]);
+  const resources = useDragItems(useMemo(()=>result.data?.items??[],[result.data]));
   useEffect(()=>{if(enabled)onResources(resources);},[resources,enabled,onResources]);
   return <div data-motion-list="true" data-motion-ready={Boolean(result.data)&&!result.loading}>{result.loading&&<p className="browse-feedback">Loading…</p>}{result.error&&<p role="alert" className="browse-feedback">{result.error}<button onClick={result.retry}>Retry</button></p>}{resources.map(resource=><SidebarItem key={resource.id} resource={resource} isActive={activeId===resource.id} onClick={()=>onOpen(resource.id)} onDelete={event=>onDelete(resource.id,event)}/>)}{!result.loading&&!resources.length&&!result.error&&<p className="browse-feedback">{type==='all'?'Opened resources appear here.':'No recently opened resources of this type.'}</p>}</div>;
 }

@@ -1,4 +1,4 @@
-import { useDropTarget } from '../lib/desktopInteraction';
+import { useDragItems,useDropTarget } from '../lib/desktopInteraction';
 import { ResourceSelectionContext, useResourceSelection } from '../lib/resourceSelection';
 import ResourceBatchActions from './ResourceBatchActions';
 import {useLinkedSearch,type LinkedSearchProvider} from '../lib/linked/search';
@@ -57,9 +57,9 @@ export default function LibraryView({ searchLinked,section, visible, tags, onOpe
   const criteria = { collection: collection?.id, q: search, searchMode, sort: section === 'recent' ? 'recent' as const : sort, tags, favorites: section === 'favorites' };
   const result = useResourcePage({ ...criteria, type, page, size: 100 }, visible);
   const totalPages = useBrowsePagination(viewport, JSON.stringify({...criteria,type}), page, result.data?.totalPages, transformLibrary, visible);
-  const items = useMemo(() => result.data?.items ?? [], [result.data]);
+  const items = useDragItems(useMemo(() => result.data?.items ?? [], [result.data]));
   const linked=useLinkedSearch(searchLinked,search,searchMode,visible&&section==='library'&&!collection&&!tags.length&&(type==='all'||type==='linked')&&page===0);
-  const linkedItems=linked.data.items.filter(item=>!items.some(existing=>existing.id===item.id));
+  const linkedItems=useDragItems(linked.data.items.filter(item=>!items.some(existing=>existing.id===item.id)));
   const totalItems = result.data?.totalItems ?? 0, loading = result.loading;
   const retry = result.retry;
   const viewKey=JSON.stringify([page,search,searchMode,type,sort,scopeKey]);
