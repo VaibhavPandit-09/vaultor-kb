@@ -459,6 +459,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-05 — Universal D2 source and acceptance ledger
+
+Recorded implementation89a4f53 and final runtime vaultor-chrome-native-4JUjk4 in the tracker. Documentation-only follow-up; no additional architectural effect. Reused qualified tests/build/native evidence and checked staged whitespace. D2 remains awaiting user acceptance; master, versions/releases, Android and D3 remain unchanged.
+
 ### 2026-11-05 — Universal D2 destinations and drag-aware sidebar (awaiting acceptance)
 
 Replaced surface-specific hover and portaled collection destinations with one hover lease, guarded normal navigation from every managed note row, source/session snapshots and a fixed-allocation sidebar collection browser. Resource titles share semantics; explicit grips reorder/arrange. One inline guidance owner, title suppression and gap-aware scrolling replace competing labels. Cancelled/failed Save navigation cannot commit; cancelled clean reads respect workspace epoch and drafts. Resource ownership, authorization, import/Activity and editor recovery remain intact. Validation:133 effective tests across16 files with affected reruns, full lint, TypeScript/production UI and observable Windows journeys passed; final affected reruns/build and runtime provenance (vaultor-chrome-native-4JUjk4) are recorded in the tracker. The nested fixture was corrected to use actual parent assignment. Static wide/narrow review is bounded; physical/theme/motion acceptance remains user-owned. No D3/master/release/version/Android change.
