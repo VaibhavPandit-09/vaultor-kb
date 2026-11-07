@@ -40,7 +40,7 @@ function collectionKeys(event:KeyboardEvent<HTMLElement>) {
  }else return;
  event.preventDefault();event.stopPropagation();next?.focus();
 }
-export function CollectionRow({item,onOpen,depth=0,hierarchy=false}:{item:OrganizationItem;onOpen:(item:OrganizationItem)=>void;depth?:number;hierarchy?:boolean}) {
+export function CollectionRow({item,onOpen,depth=0,hierarchy=false,enabled=true}:{item:OrganizationItem;onOpen:(item:OrganizationItem)=>void;depth?:number;hierarchy?:boolean;enabled?:boolean}) {
  const [expanded,setExpanded]=useState(false),[managing,setManaging]=useState(false),[creating,setCreating]=useState(false);
  const focus=useRestoreFocusOnClose();const Icon=collectionKind.icon;
  const drag=useDesktopInteraction(),drop=useDropTarget({kind:'collection',collection:item},()=>{if(hierarchy&&item.childCount)setExpanded(true);});
@@ -49,20 +49,20 @@ export function CollectionRow({item,onOpen,depth=0,hierarchy=false}:{item:Organi
    {hierarchy&&(item.childCount?<button type="button" className="library-button" data-collection-toggle aria-label={`${expanded?'Collapse':'Expand'} ${item.name}`} aria-expanded={expanded} onClick={()=>setExpanded(!expanded)}><ChevronRight size={15} style={{transform:expanded?'rotate(90deg)':undefined}}/></button>:<span className="collection-tree-spacer"/>)}
    <button type="button" draggable onDragStart={event=>drag?.start(event,{kind:'collection',collection:item})} onDragEnd={()=>drag?.cancel()} className="library-resource" data-collection-open aria-label={'Open '+collectionPath(item)} title={collectionPath(item)} onClick={()=>onOpen(item)}><Icon size={19}/><span><strong>{item.name}</strong><small>{parent?parent+' · ':''}{item.count} direct {item.count===1?'resource':'resources'}{item.childCount?` · ${item.childCount} ${item.childCount===1?'collection':'collections'}`:''}</small></span></button>
    <div className="browse-row-actions"><PinButton id={item.id} name={item.name} favorite={item.favorite} entity="collection"/><LibraryPopover contextTarget=".library-row" label={'Manage '+collectionPath(item)} trigger="⋯">{close=><><button className="library-button" onClick={()=>{close();focus.captureFocus();setCreating(true);}}>New subcollection</button><button className="library-button" onClick={()=>{close();focus.captureFocus();setManaging(true);}}>Manage collection…</button></>}</LibraryPopover></div>
- </div>{hierarchy&&expanded&&<div className="collection-branch" style={{paddingLeft:depth<4?16:0}}><CollectionChildren parent={item.id} onOpen={onOpen} depth={depth+1}/></div>}
+ </div>{hierarchy&&expanded&&<div className="collection-branch" style={{paddingLeft:depth<4?16:0}}><CollectionChildren parent={item.id} onOpen={onOpen} depth={depth+1} enabled={enabled}/></div>}
  {managing&&<CollectionManagement collection={item} onChanged={()=>{}} onClose={()=>{setManaging(false);focus.restoreFocus();}}/>}
  {creating&&<CollectionPicker resourceIds={[]} parentId={item.id} onClose={()=>{setCreating(false);focus.restoreFocus();}} onCreated={created=>{setCreating(false);onOpen(created);}}/>}
  </div>;
 }
-export function CollectionChildren({parent,onOpen,depth=0,count}:{parent:string;onOpen:(item:OrganizationItem)=>void;depth?:number;count?:number}) {
- const [page,setPage]=useState(0);const result=useOrganizationPage('collection','',page,true,false,30,parent);
- const rows=<div className="collection-directory" role="list" aria-label="Child collections" onKeyDown={collectionKeys}>{result.data?.items.map(item=><CollectionRow key={item.id} item={item} onOpen={onOpen} depth={depth} hierarchy/>)}</div>;
+export function CollectionChildren({parent,onOpen,depth=0,count,enabled=true}:{parent:string;onOpen:(item:OrganizationItem)=>void;depth?:number;count?:number;enabled?:boolean}) {
+ const [page,setPage]=useState(0);const result=useOrganizationPage('collection','',page,enabled,false,30,parent);
+ const rows=<div className="collection-directory" role="list" aria-label="Child collections" onKeyDown={collectionKeys}>{result.data?.items.map(item=><CollectionRow key={item.id} item={item} onOpen={onOpen} depth={depth} hierarchy enabled={enabled}/>)}</div>;
  return <section className={count===undefined?'collection-branch-page':'browse-group collection-children-group'} aria-label={count===undefined?undefined:'Child collections'}>
  {count!==undefined&&<header className="browse-group-heading"><h2>Child collections <span>{count}</span></h2></header>}
  {result.loading&&!result.data&&<p role="status" className="browse-feedback">Loading child collections…</p>}
  {result.error&&<p role="alert">{result.error}<button onClick={result.retry}>Retry</button></p>}{rows}<BrowsePagination page={page} totalPages={result.data?.totalPages??0} loading={result.loading} onPage={setPage}/></section>;
 }
-export function PinnedList({compact=false,visible=true,filterType='all',activeId,onResource,onCollection,onReturn,hasNotes=false}:{compact?:boolean;visible?:boolean;filterType?:string;activeId?:string;onResource:(id:string)=>void;onCollection:(item:OrganizationItem)=>void;onViewAll?:()=>void;onReturn?:()=>void;hasNotes?:boolean}) {
+export function PinnedList({compact=false,limit=12,visible=true,filterType='all',activeId,onResource,onCollection,onReturn,hasNotes=false}:{compact?:boolean;limit?:number;visible?:boolean;filterType?:string;activeId?:string;onResource:(id:string)=>void;onCollection:(item:OrganizationItem)=>void;onViewAll?:()=>void;onReturn?:()=>void;hasNotes?:boolean}) {
  const focus=useRestoreFocusOnClose();
  const viewport=useRef<HTMLDivElement>(null);
  const [pickerIds,setPickerIds]=useState<string[]|null>(null);
@@ -71,7 +71,7 @@ export function PinnedList({compact=false,visible=true,filterType='all',activeId
  const [query,setQuery]=useState(''),[search,setSearch]=useState(''),[page,setPage]=useState(0),[kind,setKind]=useState('all');
  useEffect(()=>{if(query===search)return;const timer=setTimeout(()=>{setSearch(query);setPage(0);},180);return()=>clearTimeout(timer);},[query,search]);
  const type=compact?filterType:kind;
- const result=usePins(search,compact?0:page,compact?12:100,visible,type);
+ const result=usePins(search,compact?0:page,compact?limit:100,visible,type);
  const pinnedItems=useDragItems(result.data?.items??[]);
  const count=result.data?.totalItems??0;
  const totalPages=useBrowsePagination(viewport,JSON.stringify([search,type]),page,result.data?.totalPages,!compact,visible);

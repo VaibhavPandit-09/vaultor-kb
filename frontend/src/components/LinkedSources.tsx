@@ -1,3 +1,4 @@
+import {BrowsePagination} from './BrowseLayout';
 import { canDragResource, useDragItems, useDesktopInteraction, useDropTarget } from '../lib/desktopInteraction';
 import type { Resource } from '../types';
 import DisclosureIndicator from './DisclosureIndicator';
@@ -9,40 +10,47 @@ import LinkedRecovery from './LinkedRecovery';
 import type {LinkedWorkspace} from '../lib/linked/workspace';
 import type {Entry,Source} from '../lib/linked/types';
 
-export default function LinkedSources({workspace,onOpen}:{workspace:LinkedWorkspace;onOpen:(entry:Entry)=>void}){
+export default function LinkedSources({workspace,onOpen,compact=false,active=true,onBrowse}:{workspace:LinkedWorkspace;onOpen:(entry:Entry)=>void;compact?:boolean;active?:boolean;onBrowse?:()=>void}){
   const [sources,setSources]=useState<Source[]>([]),[error,setError]=useState(''),[pending,setPending]=useState(false),[expanded,setExpanded]=useState(true),[revision,setRevision]=useState(0);
-  const [recovery,setRecovery]=useState(false);
+  const [recovery,setRecovery]=useState(false),[query,setQuery]=useState(''),[page,setPage]=useState(0);
+  const drag=useDesktopInteraction();
+  const filtered=sources.filter(source=>source.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+  const shown=compact?sources.slice(0,8):filtered.slice(page*20,page*20+20);
   const lifetime=useSyncExternalStore(workspace.subscribe,workspace.getContextVersion),sourceVersion=useSyncExternalStore(workspace.subscribe,workspace.getSourcesVersion);
+  useEffect(()=>{setSources([]);setError('');setRecovery(false);},[workspace,lifetime]);
+  const observedVersion=useRef(sourceVersion);
   const refresh=async()=>{setSources((await workspace.sources()).sources);};
-  useEffect(()=>{let active=true;setSources([]);setError('');setRecovery(false);if(workspace.supported())void workspace.sources().then(value=>{if(active)setSources(value.sources);}).catch(failure=>{if(active)setError(linkedError(failure));});return()=>{active=false;};},[workspace,lifetime]);
-  useEffect(()=>{if(!sourceVersion||!workspace.supported())return;let active=true;void workspace.sources().then(value=>{if(active){setSources(value.sources);setRevision(revision=>revision+1);}}).catch(failure=>{if(active)setError(linkedError(failure));});return()=>{active=false;};},[workspace,sourceVersion]);
+  useEffect(()=>{let live=true;if(active&&workspace.supported())void workspace.sources().then(value=>{if(live)setSources(value.sources);}).catch(failure=>{if(live)setError(linkedError(failure));});return()=>{live=false;};},[workspace,lifetime,active]);
+  useEffect(()=>{if(!active||!sourceVersion||sourceVersion===observedVersion.current||!workspace.supported())return;observedVersion.current=sourceVersion;let live=true;void workspace.sources().then(value=>{if(live){setSources(value.sources);setRevision(revision=>revision+1);}}).catch(failure=>{if(live)setError(linkedError(failure));});return()=>{live=false;};},[workspace,sourceVersion,active]);
   if(!workspace.supported())return null;
   const add=async()=>{setPending(true);setError('');try{await workspace.flush();const result=await workspace.request<{root?:string}>('add');if(result.root&&sources.some(source=>source.id===result.root))await workspace.reopen(result.root);await refresh();setExpanded(true);setRevision(value=>value+1);}catch(failure){setError(linkedError(failure));}finally{setPending(false);}};
   return <section className="sidebar-section" aria-label="Linked sources">
     <header className="sidebar-section-heading"><button aria-expanded={expanded} onClick={()=>setExpanded(!expanded)}><DisclosureIndicator expanded={expanded}/>Linked sources</button><div className="sidebar-section-tools"><button onClick={()=>setRecovery(true)}>Recovery</button><button className="browse-icon-button" aria-label="Link folder" title="Link folder" disabled={pending} onClick={()=>void add()}><FolderPlus size={15}/></button></div></header>
     <div className="sidebar-disclosure" data-expanded={expanded} aria-hidden={!expanded} inert={!expanded}><div className="sidebar-disclosure-content">
       {!sources.length&&<p className="browse-feedback">Link a local Markdown folder. Files stay in their original location.</p>}
-      {sources.map(source=><div key={source.id}><div data-linked-source={source.id} className="flex items-start gap-1"><div className="min-w-0 flex-1"><Directory key={source.id+revision} workspace={workspace} source={source.id} label={source.name+(source.enabled?'':' (disconnected)')} onOpen={onOpen}/></div><LibraryPopover contextTarget="[data-linked-source]" label={'Manage '+source.name} trigger="…" className="browse-icon-button">{close=><><p className="browse-feedback">Files remain externally owned.</p><button className="library-button" onClick={()=>{void workspace.flush().then(()=>workspace.request('disconnect',{source:source.id})).then(refresh).then(()=>setRevision(value=>value+1)).catch(failure=>setError(linkedError(failure)));close();}}>Disconnect</button><button className="library-button" onClick={()=>{close();void add();}}>Link or reconnect folder</button><button className="library-button" onClick={()=>{close();void workspace.flush().then(()=>workspace.request('remove',{source:source.id})).then(refresh).catch(failure=>setError(linkedError(failure)));}}>Remove source · keep files</button></>}</LibraryPopover></div></div>)}
+      {!compact&&<input aria-label="Find linked root" className="organization-input w-full" placeholder="Find a linked folder…" value={query} onChange={event=>{setQuery(event.target.value);setPage(0);}}/>}
+      {shown.map(source=><div key={source.id}><div data-linked-source={source.id} className="flex items-start gap-1"><div className="min-w-0 flex-1"><>{compact?<button className="sidebar-nav" disabled={Boolean(drag?.payload)} onClick={onBrowse}><Folder size={14}/><span className="truncate">{source.name}</span></button>:<Directory active={active} key={source.id+revision} workspace={workspace} source={source.id} label={source.name+(source.enabled?'':' (disconnected)')} onOpen={onOpen}/>}</></div><LibraryPopover contextTarget="[data-linked-source]" label={'Manage '+source.name} trigger="…" className="browse-icon-button">{close=><><p className="browse-feedback">Files remain externally owned.</p><button className="library-button" onClick={()=>{void workspace.flush().then(()=>workspace.request('disconnect',{source:source.id})).then(refresh).then(()=>setRevision(value=>value+1)).catch(failure=>setError(linkedError(failure)));close();}}>Disconnect</button><button className="library-button" onClick={()=>{close();void add();}}>Link or reconnect folder</button><button className="library-button" onClick={()=>{close();void workspace.flush().then(()=>workspace.request('remove',{source:source.id})).then(refresh).catch(failure=>setError(linkedError(failure)));}}>Remove source · keep files</button></>}</LibraryPopover></div></div>)}
+      {compact?<button className="library-button" disabled={Boolean(drag?.payload)} onClick={onBrowse}>Browse linked sources · {sources.length}</button>:<BrowsePagination page={page} totalPages={Math.ceil(filtered.length/20)} loading={false} onPage={setPage}/>}
       {error&&<p role="alert" className="browse-feedback">{error.replace(/^Error: /,'')}<button onClick={()=>void refresh().then(()=>setError('')).catch(failure=>setError(linkedError(failure)))}>Retry</button></p>}
     </div></div>
     {recovery&&<LinkedRecovery workspace={workspace} onClose={()=>setRecovery(false)}/>}
   </section>;
 }
-function Directory({workspace,source,id,label,onOpen,depth=0}:{workspace:LinkedWorkspace;source:string;id?:string;label:string;onOpen:(entry:Entry)=>void;depth?:number}){
+function Directory({workspace,source,id,label,onOpen,depth=0,active=true}:{workspace:LinkedWorkspace;source:string;id?:string;label:string;onOpen:(entry:Entry)=>void;depth?:number;active?:boolean}){
   const [open,setOpen]=useState(false),[items,setItems]=useState<Entry[]>([]),[more,setMore]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[offset,setOffset]=useState(0);
   const displayed=useDragItems(items);
   const listing=useRef({busy:false,offset:0});
   const load=async(offset=0)=>{if(listing.current.busy)return;listing.current.busy=true;setBusy(true);setError('');try{const page=await workspace.request<{items:Entry[];more:boolean}>('list',{source,directory:id,offset,limit:200});listing.current.offset=offset;setOffset(offset);setItems(page.items);setMore(page.more);}catch(failure){setError(linkedError(failure));}finally{listing.current.busy=false;setBusy(false);}};
   const toggle=()=>{setOpen(value=>!value);if(!open&&!items.length)void load();};
   useEffect(()=>{
-    if(!open)return;
+    if(!open||!active)return;
     return workspace.observeDirectory(source+':'+(id??''),async()=>{
       if(listing.current.busy)return;listing.current.busy=true;
       try{const page=await workspace.request<{items:Entry[];more:boolean}>('list',{source,directory:id,offset:listing.current.offset,limit:200});setItems(previous=>JSON.stringify(previous)===JSON.stringify(page.items)?previous:page.items);setMore(page.more);setError('');}catch(failure){if(!String(failure).includes('LINKED_SOURCE_BUSY'))setError(linkedError(failure));}finally{listing.current.busy=false;}
     });
-  },[open,source,id,workspace]);
+  },[open,source,id,workspace,active]);
   return <div><button className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-card" aria-expanded={open} onClick={toggle}><ChevronDown size={12} className={open?'':'sidebar-disclosure-closed'}/><Folder size={14}/><span className="truncate">{label}</span></button>
-    {open&&<div className="pl-3">{displayed.map(entry=>entry.directory&&!entry.unsupported&&depth<31?<Directory key={entry.id} workspace={workspace} source={source} id={entry.id} label={entry.name} onOpen={onOpen} depth={depth+1}/>:<LinkedEntry key={entry.id} workspace={workspace} entry={entry} onOpen={onOpen}/>)}{busy&&<p role="status" className="browse-feedback">Loading…</p>}{error&&<p role="alert" className="browse-feedback">{error}<button onClick={()=>void load(offset)}>Retry</button></p>}{(offset>0||more)&&<div className="flex items-center gap-2"><button className="library-button" disabled={busy||offset===0} onClick={()=>void load(Math.max(0,offset-200))}>Previous</button><span className="text-xs text-muted">{offset+1}–{offset+items.length}</span><button className="library-button" disabled={busy||!more} onClick={()=>void load(offset+200)}>Next</button></div>}</div>}
+    {open&&<div className="pl-3">{displayed.map(entry=>entry.directory&&!entry.unsupported&&depth<31?<Directory active={active} key={entry.id} workspace={workspace} source={source} id={entry.id} label={entry.name} onOpen={onOpen} depth={depth+1}/>:<LinkedEntry key={entry.id} workspace={workspace} entry={entry} onOpen={onOpen}/>)}{busy&&<p role="status" className="browse-feedback">Loading…</p>}{error&&<p role="alert" className="browse-feedback">{error}<button onClick={()=>void load(offset)}>Retry</button></p>}{(offset>0||more)&&<div className="flex items-center gap-2"><button className="library-button" disabled={busy||offset===0} onClick={()=>void load(Math.max(0,offset-200))}>Previous</button><span className="text-xs text-muted">{offset+1}–{offset+items.length}</span><button className="library-button" disabled={busy||!more} onClick={()=>void load(offset+200)}>Next</button></div>}</div>}
   </div>;
 }
 

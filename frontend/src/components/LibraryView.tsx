@@ -29,7 +29,7 @@ import ResourceTypeFilter from './ResourceTypeFilter';
 import { filterLabel } from '../lib/resourceKinds';
 import { useResourcePage } from '../lib/useResourcePage';
 
-export type LibrarySection = 'library' | 'recent' | 'favorites' | 'collections' | 'trash';
+export type LibrarySection = 'library' | 'recent' | 'favorites' | 'collections' | 'trash' | 'tags' | 'sources';
 async function collectionDetails(id:string,signal:AbortSignal) {return (await api.get<OrganizationItem>('/collections/'+id,{signal,backgroundDiagnostic:true})).data;}
 
 export default function LibraryView({ searchLinked,section, visible, tags, onOpen, onReturn, hasNotes, collection = null, onCollection = () => {}, onTagsChange = () => {}, onImport, onOpenCreated, onSelectionChange, hasUnsavedChanges=false, initialContext=defaultLibrary, onContextChange }: { searchLinked?:LinkedSearchProvider;initialContext?: LibraryContext; onContextChange?: (value: LibraryContext) => void; onSelectionChange?:(items:Resource[])=>void; hasUnsavedChanges?:boolean; onImport?:()=>void; onOpenCreated?:(id:string)=>Promise<void>; collection?: OrganizationItem | null; onCollection?: (item: OrganizationItem | null) => void; onTagsChange?: (tags: string[]) => void; section: LibrarySection; visible: boolean; tags: string[]; onOpen: (id: string) => void | Promise<void>; onReturn: () => void; hasNotes: boolean }) {

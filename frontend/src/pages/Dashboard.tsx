@@ -1,6 +1,10 @@
+import SourcesBrowser from '../components/SourcesBrowser';
+import {QuickTags,TagsBrowser} from '../components/TagsBrowser';
+import AdaptiveNavigator from '../components/AdaptiveNavigator';
+import {defaultNavigator,normalizeNavigator,rememberNavigatorTag,type NavigatorState} from '../lib/navigator';
 import type { DragSurface } from '../lib/desktopInteraction';
 import { commandConfig, requireCommandScope } from '../lib/resourceBatchCommands';
-import { DesktopInteractionProvider, PaneDropTarget, TagDropTarget, NavigationDropButton, CollectionDropButton, SidebarDragNavigation, SidebarDragGuidance, SidebarOpenNotesShortcut, TagDragButton, SessionDragHandle } from '../components/DesktopInteraction';
+import { DesktopInteractionProvider, PaneDropTarget, NavigationDropButton, CollectionDropButton, SidebarDragNavigation, SidebarDragGuidance, SessionDragHandle } from '../components/DesktopInteraction';
 import ImportSourceModal from '../components/modals/ImportSourceModal';
 import {dropDesktopFiles} from '../lib/desktop';
 import {linkedError} from '../lib/linked/errors';
@@ -42,7 +46,7 @@ import { watchChanges, type RemoteChange } from '../lib/changeFeed';
 import { organizationChanged, collectionDeletionDestination } from '../lib/organization';
 import ResourceCollections, { CollectionPicker } from '../components/ResourceCollections';
 import PinButton from '../components/PinButton';
-import { PinnedList, CollectionsView } from '../components/OrganizationViews';
+import { PinnedList, CollectionsView, CollectionChildren } from '../components/OrganizationViews';
 import type { OrganizationItem } from '../lib/organization';
 import { createPortal, flushSync } from 'react-dom';
 import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
@@ -62,7 +66,6 @@ import {
   UploadCloud,
   DownloadCloud,
   X,
-  FileText,
   Upload,
   Loader2,
   Command,
@@ -70,7 +73,6 @@ import {
   Settings2,
   PanelLeftClose,
   PanelLeftOpen,
-  Palette,
   MessageSquare,
 } from 'lucide-react';
 import api from '../lib/api';
@@ -100,7 +102,6 @@ import { pickFiles } from '../lib/filePicker';
 import { captureImportTarget } from '../lib/importTarget';
 import DiagnosticNotice from '../components/DiagnosticNotice';
 import { reportError } from '../lib/diagnostics';
-import AppModal from '../components/modals/AppModal';
 import CommandPaletteModal from '../components/modals/CommandPaletteModal';
 import ShortcutsModal from '../components/modals/ShortcutsModal';
 import SettingsModal from '../components/modals/SettingsModal';
@@ -117,7 +118,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../state/hooks';
 import { ESCAPE_PRIORITIES, focusWithoutScroll, useEscapeLayer } from '../lib/escape/escape';
 import { useSettings } from '../lib/settings';
-import { generateTagColor, getTagColorInputValue, getTagPillStyle } from '../lib/tagColors';
+import { generateTagColor, getTagPillStyle } from '../lib/tagColors';
 import { getGlassPanelStyle } from '../lib/transparency';
 
 
@@ -137,6 +138,7 @@ export default function Dashboard() {
   const [libraryVisible, setLibraryVisible] = useState(true);
   const [librarySection, setLibrarySection] = useState<LibrarySection>('library');
   const [libraryContext, setLibraryContext] = useState(defaultLibrary);
+  const [navigatorState,setNavigatorState]=useState<NavigatorState>(defaultNavigator);
   const [sessionReady, setSessionReady] = useState(false), [sessionError, setSessionError] = useState(''), [sessionMessage, setSessionMessage] = useState('');
   const [bootError, setBootError] = useState(''), [bootAttempt, setBootAttempt] = useState(0);
   const [recoveryRecords, setRecoveryRecords] = useState<RecoveryRecord[]>([]), [recoveryOpen, setRecoveryOpen] = useState(false);
@@ -169,7 +171,6 @@ export default function Dashboard() {
   const [reviewTarget,setReviewTarget]=useState<Pick<Resource,'id'|'title'|'revision'>|null|undefined>(undefined);
   const [loadingResourceIds, setLoadingResourceIds] = useState<string[]>([]);
 
-  const [tagSearch, setTagSearch] = useState('');
   const [desktopDragSource,setDesktopDragSource]=useState<DragSurface|null>(null);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -224,11 +225,10 @@ export default function Dashboard() {
   const [createNotePending, setCreateNotePending] = useState(false);
   const [uploadPending, setUploadPending] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
-  const [tagDeletePending, setTagDeletePending] = useState(false);
+  const [tagManagementPending,setTagManagementPending]=useState(false);
   const [tagAddPending, setTagAddPending] = useState(false);
 
   const [lifecycleTargets,setLifecycleTargets]=useState<Resource[]|null>(null);
-  const [tagDeleteModal, setTagDeleteModal] = useState<{ id: string; name: string } | null>(null);
 
   const [fileImport, setFileImport] = useState<ImportSession | null>(null);
   const importBusy = useRef(false);
@@ -397,7 +397,9 @@ export default function Dashboard() {
     setTagPickerSelectedIndex(0);
   }, [tagInputValue, tagPickerOpenNoteId]);
 
-  const tagsEnabled = (sidebarVisible && localSettings.sidebarSections.tags.visible && !localSettings.sidebarSections.tags.collapsed) || Boolean(tagPickerOpenNoteId);
+  const tagsEnabled = Boolean(tagPickerOpenNoteId);
+  const [tagQuery,setTagQuery]=useState('');
+  useEffect(()=>{const timer=setTimeout(()=>setTagQuery(tagInputValue.trim()),180);return()=>clearTimeout(timer);},[tagInputValue]);
   const tagGeneration = useRef(0);
   const tagRequest = useRef<AbortController | null>(null);
   const fetchTags = useCallback(async () => {
@@ -406,10 +408,10 @@ export default function Dashboard() {
     const controller = new AbortController(); tagRequest.current = controller;
     const generation = ++tagGeneration.current;
     try {
-      const {data} = await api.get('/tags', {backgroundDiagnostic:true,signal:controller.signal});
-      if (generation === tagGeneration.current) {setTags(data || []);setTagsError('');}
+      const {data} = await api.get('/tags/browse', {params:{q:tagQuery,size:30},backgroundDiagnostic:true,signal:controller.signal});
+      if (generation === tagGeneration.current) {setTags(data.items || []);setTagsError('');}
     } catch { if (!controller.signal.aborted && generation === tagGeneration.current) setTagsError('Could not refresh tags.'); }
-  }, [tagsEnabled]);
+  }, [tagsEnabled,tagQuery]);
   const fetchData = useCallback(async () => { await fetchTags(); }, [fetchTags]);
   const cancelSidebarRequests = useCallback(() => { tagGeneration.current++; tagRequest.current?.abort(); }, []);
 
@@ -893,33 +895,6 @@ export default function Dashboard() {
     }
   }, [fetchData, fetchResourceDetails, tags]);
 
-  const handleTagColorChange = useCallback(async (tagId: string, color: string) => {
-    const normalizedColor = color.trim().toLowerCase();
-    const targetTag = tags.find((tag) => tag.id === tagId);
-    if (!targetTag || !normalizedColor) {
-      return;
-    }
-
-    setTags((current) => updateTagColorInList(current, tagId, normalizedColor));
-    setResources((current) => updateTagColorInResources(current, tagId, normalizedColor));
-    setResourceDetails((current) => updateTagColorInResourceMap(current, tagId, normalizedColor));
-
-    try {
-      const { data } = await api.put(`/tags/${tagId}/color`, { color: normalizedColor });
-      const nextTag = data as Tag;
-      setTags((current) => replaceTagInList(current, nextTag));
-      setResources((current) => replaceTagInResources(current, nextTag));
-      setResourceDetails((current) => replaceTagInResourceMap(current, nextTag));
-      organizationChanged('tag');
-    } catch (error) {
-      console.error(error);
-      await fetchData();
-      if (activeResource) {
-        await fetchResourceDetails(activeResource.id);
-      }
-    }
-  }, [activeResource, fetchData, fetchResourceDetails, tags]);
-
   const handleTagPickerSelect = useCallback(async (tagName: string) => {
     if (!tagPickerOpenNoteId || tagAddPending) {
       return;
@@ -947,24 +922,6 @@ export default function Dashboard() {
     }
   };
 
-  const executeDeleteTag = async () => {
-    if (!tagDeleteModal) return;
-    setTagDeletePending(true);
-    try {
-      await api.delete(`/tags/${tagDeleteModal.id}`);
-      dispatch(removeSelectedTag(tagDeleteModal.name));
-      organizationChanged('tag');
-      if (activeResource) {
-        await fetchResourceDetails(activeResource.id);
-      }
-      setTagDeleteModal(null);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setTagDeletePending(false);
-    }
-  };
-
   const handleFileDownload = useCallback(async () => {
     if (!activeResource || activeResource.type !== 'file') return;
     return await saveApiFile(`/resources/${activeResource.id}/download`, activeResource.title || 'download');
@@ -981,7 +938,7 @@ export default function Dashboard() {
     const identity=(await api.get<Identity>('/workspace/identity')).data;
     await linkedWorkspace.flush();await linkedWorkspace.closeNativeDocuments();identityRef.current=identity;linkedWorkspace.dispose();recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));
     setNoteExport(null);setTitleEditState(null);
-    setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
+    setLibrarySection('library');setLibraryContext(defaultLibrary);setNavigatorState(defaultNavigator);dispatch(clearSelectedTags());
     saves.clear();
     workspaceEpoch.current++; resourceLoadVersions.current.clear(); paneNavigation.reset(); setResourceDetails({}); dismissPreview({ restoreFocus: false });
     dispatch(setCurrentResourceId(null));
@@ -1039,7 +996,7 @@ export default function Dashboard() {
       setResourceDetails(details);
       if(snapshot&&restored) {
         paneNavigation.restore(restored.panes,restored.activePaneId,snapshot.positions,restored.sessions);
-        setLibraryVisible(snapshot.library.visible||!restored.panes.length);setLibrarySection(snapshot.library.section);setCollection(snapshot.library.collection);setLibraryContext(snapshot.library.context);
+        setLibraryVisible(snapshot.library.visible||!restored.panes.length);setLibrarySection(snapshot.library.section);setCollection(snapshot.library.collection);setLibraryContext(snapshot.library.context);setNavigatorState(normalizeNavigator(snapshot.library.navigator));
         dispatch(clearSelectedTags());snapshot.library.tags.forEach(tag=>dispatch(toggleSelectedTag(tag)));
         dispatch(setCurrentResourceId(restored.panes.find(p=>p.paneId===restored.activePaneId)?.id??null));
         setSessionMessage(restored.messages.join(' '));
@@ -1048,12 +1005,12 @@ export default function Dashboard() {
     }).catch(()=>{if(!cancelled){bootWork.current=null;setBootError('Could not restore this workspace. Retry when the server is available.');}});
     return ()=>{cancelled=true;};
   },[bootAttempt,workspaceLoaded,sessionReady,localStore,recovery,saves,paneNavigation,dispatch,workspaceSettings.maxOpenNotes,workspaceSettings.autosaveDelay,linkedWorkspace]);
-  const sessionView = useRef({visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext});
+  const sessionView = useRef({visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext,navigator:navigatorState});
   useEffect(() => registerConnectionBarrier(async keepDrafts => {
     if (!sessionReady || !identityRef.current) throw new SwitchBlockedError('Wait for session restoration before leaving the workspace.');
     await linkedWorkspace.flush();
     if (hasPendingImages()) throw new SwitchBlockedError('Wait for image uploads to finish before leaving this workspace.');
-    if (transferMode || uploadPending || importBusy.current || fileImport || createNotePending || deletePending || tagDeletePending || tagAddPending || noteExport) throw new SwitchBlockedError('Finish or dismiss the current operation before leaving the workspace.');
+    if (transferMode || uploadPending || importBusy.current || fileImport || createNotePending || deletePending || tagManagementPending || tagAddPending || noteExport) throw new SwitchBlockedError('Finish or dismiss the current operation before leaving the workspace.');
     const currentIdentity = await inspectWorkspaceDeparture({
       desktop: getPlatform().kind === 'desktop', keepDrafts,
       unsavedNotes: () => saves.dirty() || recovery.dirty() || Boolean(titleEditState && titleEditState.value !== titleEditState.original),
@@ -1075,8 +1032,8 @@ export default function Dashboard() {
       const identity = identityRef.current;
       await sessionPersistence.current?.save({ version: 2, identity, ...paneNavigation.exportSession(), library: sessionView.current }, true);
     } catch { throw new SwitchBlockedError('Recovery storage is unavailable. Keep this workspace open until storage succeeds.'); }
-  }), [sessionReady, transferMode, uploadPending, fileImport, createNotePending, deletePending, tagDeletePending, tagAddPending, noteExport, titleEditState, commitTitleEditing, saves, flushSettings, settingsSaveStatus, recovery, paneNavigation,linkedWorkspace]);
-  useEffect(()=>{sessionView.current={visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext};},[libraryVisible,librarySection,collection,filters.selectedTags,libraryContext]);
+  }), [sessionReady, transferMode, uploadPending, fileImport, createNotePending, deletePending, tagManagementPending, tagAddPending, noteExport, titleEditState, commitTitleEditing, saves, flushSettings, settingsSaveStatus, recovery, paneNavigation,linkedWorkspace]);
+  useEffect(()=>{sessionView.current={visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext,navigator:navigatorState};},[libraryVisible,librarySection,collection,filters.selectedTags,libraryContext,navigatorState]);
   useEffect(()=>{
     if(!sessionReady)return;
     let last='';
@@ -1179,7 +1136,6 @@ export default function Dashboard() {
     if(created){recovery.observe(created);setResourceDetails(previous=>({...previous,[created!.id]:created!}));resourcesChanged([created.id]);setRecoveryOpen(false);await openResourceById(created.id,{throwOnFailure:true});}
   };
 
-  const filteredTags = tags.filter((tag) => tag.name.toLowerCase().includes(tagSearch.toLowerCase()));
   const openWorkspaceNotes = useMemo(() => visibleNotes.map((note) => {
     const resource = resourceDetails[note.id] ?? null;
     const metadata = resources.find((entry) => entry.id === note.id) ?? null;
@@ -1256,13 +1212,13 @@ export default function Dashboard() {
   const sidebarPreferences = localSettings.sidebarSections;
   const updateSidebarPreferences = (value: typeof sidebarPreferences) => updateLocalSetting('sidebarSections', value);
   const openCollection = (item:OrganizationItem) => {showLibrary('library');dispatch(clearSelectedTags());setCollection(item);};
+  const navigatorTagProps={onBusy:setTagManagementPending,state:navigatorState,onState:setNavigatorState,selectedIds:libraryVisible?paletteSelection.map(resource=>resource.id):[],onUsed:(tag:OrganizationItem)=>{setNavigatorState(state=>rememberNavigatorTag(state,tag.id));setTags(current=>[{id:tag.id,name:tag.name,color:tag.color??generateTagColor(tag.name)},...current.filter(item=>item.id!==tag.id)].slice(0,128));},onFilter:(tag:OrganizationItem)=>{showLibrary('library');setCollection(null);dispatch(toggleSelectedTag(tag.name));},onChanged:(tag:Tag|null,previous?:OrganizationItem)=>{if(previous&&(!tag||tag.name!==previous.name)){const selected=filters.selectedTags.includes(previous.name);dispatch(removeSelectedTag(previous.name));if(selected&&tag)dispatch(toggleSelectedTag(tag.name));}if(tag){setTags(current=>[tag,...current.filter(item=>item.id!==tag.id)].slice(0,128));setResources(current=>replaceTagInResources(current,tag));setResourceDetails(current=>replaceTagInResourceMap(current,tag));}else if(previous){setResources(current=>current.map(resource=>({...resource,tags:resource.tags.filter(tag=>tag.id!==previous.id)})));setResourceDetails(current=>Object.fromEntries(Object.entries(current).map(([id,resource])=>[id,{...resource,tags:resource.tags.filter(tag=>tag.id!==previous.id)}])));setTags(current=>current.filter(item=>item.id!==previous.id));setNavigatorState(state=>({...state,quickTags:state.quickTags.filter(id=>id!==previous.id),recentTags:state.recentTags.filter(id=>id!==previous.id)}));}}};
   const sidebarContent = (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="sidebar-primary px-3 py-3 space-y-1">
         <div className="flex items-center gap-1"><button className="sidebar-nav" onClick={openCommandPalette}><Search size={16} />Search workspace<span className="ml-auto text-xs opacity-60">{resolvedShortcuts.commandPalette.replace('Mod', isMac ? '⌘' : 'Ctrl').replaceAll('+', ' ')}</span></button><SidebarCustomization preferences={sidebarPreferences} onChange={updateSidebarPreferences} status={settingsSaveStatus} onRetry={retrySettingsSave}/><button className="browse-icon-button sidebar-pin-toggle" aria-label={isFloatingSidebarMode ? (floatingSidebarPinned ? 'Unpin navigation' : 'Pin navigation') : 'Collapse sidebar'} aria-pressed={isFloatingSidebarMode ? floatingSidebarPinned : undefined} onClick={toggleSidebar}>{isFloatingSidebarMode && !floatingSidebarPinned ? <PanelLeftOpen size={16}/> : <PanelLeftClose size={16}/>}</button></div>
         <SidebarDragGuidance><button className="sidebar-nav" onClick={()=>setReviewTarget(null)}><MessageSquare size={16}/>Review inbox</button></SidebarDragGuidance>
-        <SidebarDragNavigation>{([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }, { id: 'trash', label: 'Trash', Icon: Trash2 }] as const).map(({ id, label, Icon }) => id==='collections'?<CollectionDropButton key={id} className="sidebar-nav" aria-current={libraryVisible&&librarySection===id?'page':undefined} onOpen={()=>{setCollection(null);showLibrary(id);}}><Icon size={16}/>{label}</CollectionDropButton>:<NavigationDropButton target={id==='trash'?{kind:'trash'}:id==='favorites'?{kind:'pinned'}:null} key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</NavigationDropButton>)}</SidebarDragNavigation>
-        <SidebarOpenNotesShortcut count={openNotes.length} onOpen={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }}><FileText size={16} />Open notes</SidebarOpenNotesShortcut>
+        <SidebarDragNavigation>{([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }, { id: 'tags', label: 'Tags', Icon: TagIcon }, { id: 'sources', label: 'Sources', Icon: Folder }, { id: 'trash', label: 'Trash', Icon: Trash2 }] as const).map(({ id, label, Icon }) => id==='collections'?<CollectionDropButton key={id} className="sidebar-nav" aria-current={libraryVisible&&librarySection===id?'page':undefined} onOpen={()=>{setCollection(null);showLibrary(id);}}><Icon size={16}/>{label}</CollectionDropButton>:<NavigationDropButton target={id==='trash'?{kind:'trash'}:id==='favorites'?{kind:'pinned'}:null} key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</NavigationDropButton>)}</SidebarDragNavigation>
       </div>
       <div className="sidebar-create-actions flex gap-1.5 px-3 pb-2">
         <button
@@ -1295,58 +1251,10 @@ export default function Dashboard() {
 
       <div className="border-t border-border" />
 
-      <div className="sidebar-secondary min-h-0 flex-1 overflow-y-auto py-2" style={{overflowAnchor:'none'}}>
-        <OpenNotes resources={resourceDetails} sessions={openNotes} panes={visibleNotes} activeId={!libraryVisible ? activePaneId : null} onOpen={id => void openResourceById(id)} onSplit={id => void openResourceById(id, {destination:'new'})} onClose={id => void paneNavigation.closeSession(id)} onCloseOthers={id => void paneNavigation.closeOthers(id)} onReorder={paneNavigation.reorderSession} canSplit={visibleNotes.length < workspaceSettings.maxOpenNotes}/>
-        <SidebarSection name="pinned" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('favorites')}><PinnedList compact filterType={sidebarPreferences.pinned.type} activeId={!libraryVisible?currentResourceId??undefined:undefined} visible={sidebarVisible&&sidebarPreferences.pinned.visible&&(!sidebarPreferences.pinned.collapsed||Boolean(desktopDragSource))} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></SidebarSection>
-        <SidebarSection name="recent" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('recent')}><SidebarRecent type={sidebarPreferences.recent.type} enabled={sidebarVisible&&sidebarPreferences.recent.visible&&(!sidebarPreferences.recent.collapsed||Boolean(desktopDragSource))} activeId={!libraryVisible?currentResourceId??undefined:undefined} onOpen={id=>void openResourceById(id)} onDelete={(id,event)=>void handleDeleteResource(id,event)} onResources={setResources}/>{recencyError&&<button className="sidebar-nav text-xs" onClick={()=>recency.retry()}>{recencyError} Retry</button>}</SidebarSection>
-      <SidebarSection name="tags" preferences={sidebarPreferences} onChange={updateSidebarPreferences}><div className="flex flex-col px-3 py-2">
-        {tags.length > 3 && (
-          <input
-            type="text"
-            placeholder="Search tags..."
-            className="mb-1.5 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2.5 py-1.5 text-[11px] text-[var(--text-primary)] outline-none transition-all duration-150 placeholder:text-[var(--text-tertiary)] hover:border-[var(--border-strong)] focus:border-primary focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]"
-            value={tagSearch}
-            onChange={(event) => setTagSearch(event.target.value)}
-          />
-        )}
-        <div className="flex flex-wrap gap-1.5">
-          {filteredTags.map((tag) => (
-            <TagDropTarget tagId={tag.id} name={tag.name}
-              key={tag.id}
-              data-tag-target={tag.id}
-              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-[0.01em] transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
-              style={getTagPillStyle(tag.color, resolvedTheme)}
-            >
-              <LibraryPopover contextOnly contextTarget="[data-tag-target]" label={'Actions for tag '+tag.name}>{close=><><button className="library-button" onClick={()=>{close();dispatch(toggleSelectedTag(tag.name));setLibraryVisible(true);}}>Toggle tag filter</button><button className="library-button text-red-500" onClick={()=>{close();setTagDeleteModal({id:tag.id,name:tag.name});}}>Delete tag…</button></>}</LibraryPopover>
-              <TagDragButton tagId={tag.id} name={tag.name} onClick={() => { dispatch(toggleSelectedTag(tag.name)); setLibraryVisible(true); }} className="cursor-pointer text-inherit">{tag.name}</TagDragButton>
-              <label
-                className="relative inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-inherit opacity-55 transition-opacity hover:opacity-100"
-                title="Change color"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <Palette size={9} />
-                <input
-                  type="color"
-                  value={getTagColorInputValue(tag.color)}
-                  onChange={(event) => void handleTagColorChange(tag.id, event.target.value)}
-                  className="absolute inset-0 cursor-pointer opacity-0"
-                />
-              </label>
-              <button
-                onClick={() => setTagDeleteModal({ id: tag.id, name: tag.name })}
-                className="text-inherit opacity-40 transition-opacity hover:text-red-500 hover:opacity-100"
-                title="Delete tag"
-              >
-                <X size={10} />
-              </button>
-            </TagDropTarget>
-          ))}
-          {filteredTags.length === 0 && <span className="text-[10px] text-slate-400">No tags</span>}
-        </div>
-      </div></SidebarSection>
-      <LinkedSources workspace={linkedWorkspace} onOpen={entry=>{void openResourceById(entry.id);}}/>
-      </div>
-
+      <AdaptiveNavigator key={getConnection().epoch+':'+identityRef.current?.id+':'+identityRef.current?.generation} state={navigatorState} onChange={setNavigatorState} editing={!libraryVisible&&Boolean(activeNoteId)} selected={libraryVisible?paletteSelection.length:0} destination={libraryVisible?librarySection:undefined}>{(view,active)=>view==='sessions'?<OpenNotes resources={resourceDetails} sessions={openNotes} panes={visibleNotes} activeId={!libraryVisible ? activePaneId : null} onOpen={id => void openResourceById(id)} onSplit={id => void openResourceById(id, {destination:'new'})} onClose={id => void paneNavigation.closeSession(id)} onCloseOthers={id => void paneNavigation.closeOthers(id)} onReorder={paneNavigation.reorderSession} canSplit={visibleNotes.length < workspaceSettings.maxOpenNotes}/>:view==='shortcuts'?<>
+        <SidebarSection name="pinned" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('favorites')}><PinnedList compact limit={6} filterType={sidebarPreferences.pinned.type} activeId={!libraryVisible?currentResourceId??undefined:undefined} visible={active&&sidebarVisible&&sidebarPreferences.pinned.visible&&(!sidebarPreferences.pinned.collapsed||Boolean(desktopDragSource))} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></SidebarSection>
+        <SidebarSection name="recent" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('recent')}><SidebarRecent limit={6} type={sidebarPreferences.recent.type} enabled={active&&sidebarVisible&&sidebarPreferences.recent.visible&&(!sidebarPreferences.recent.collapsed||Boolean(desktopDragSource))} activeId={!libraryVisible?currentResourceId??undefined:undefined} onOpen={id=>void openResourceById(id)} onDelete={(id,event)=>void handleDeleteResource(id,event)} onResources={setResources}/>{recencyError&&<button className="sidebar-nav text-xs" onClick={()=>recency.retry()}>{recencyError} Retry</button>}</SidebarSection>
+      </>:view==='collections'?<CollectionChildren parent="" enabled={active&&sidebarVisible} onOpen={openCollection}/>:view==='tags'?<QuickTags {...navigatorTagProps} enabled={active&&sidebarVisible} onBrowse={()=>showLibrary('tags')}/>:<LinkedSources compact active={active&&sidebarVisible} workspace={linkedWorkspace} onBrowse={()=>showLibrary('sources')} onOpen={entry=>{void openResourceById(entry.id);}}/>}</AdaptiveNavigator>
 
       <DesktopConnectionButton/>
       <div className="flex items-center justify-between border-t border-border bg-background/80 p-2">
@@ -1400,37 +1308,6 @@ export default function Dashboard() {
       {referenceTarget&&<ResourceReferences resource={referenceTarget} linkedReferences={referenceTarget.type==='linked'&&linkedWorkspace.supported()?linkedWorkspace.references:undefined} localNotes={openNotes.filter((p,index,all)=>all.findIndex(other=>other.id===p.id)===index).flatMap(p=>{const draft=saves.latest(p.id)??recovery.current(p.id)?.value;return draft?[{id:p.id,title:draft.title,content:parseNoteContent(draft.content as Resource['content'])}]:[];})} onClose={()=>setReferenceTarget(null)}/>}
       {lifecycleTargets&&<ResourceLifecycleDialog resources={lifecycleTargets} action="trash" onBusy={setDeletePending} onClose={()=>setLifecycleTargets(null)}/>}
 
-      <AppModal
-        open={Boolean(tagDeleteModal)}
-        onClose={() => {
-          if (!tagDeletePending) setTagDeleteModal(null);
-        }}
-        title="Delete Tag"
-        description="Delete this tag from all resources in Vaultor?"
-        footer={
-          <>
-            <button
-              onClick={() => setTagDeleteModal(null)}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-background"
-              disabled={tagDeletePending}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={executeDeleteTag}
-              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-60"
-              disabled={tagDeletePending}
-            >
-              {tagDeletePending ? 'Deleting...' : 'Delete Tag'}
-            </button>
-          </>
-        }
-      >
-        <p className="text-sm text-slate-500">
-          {tagDeleteModal?.name ? `"${tagDeleteModal.name}" will be removed everywhere it appears.` : ''}
-        </p>
-      </AppModal>
-
       <div className="relative flex min-h-0 flex-1">
         <SidebarFrame floating={isFloatingSidebarMode} open={sidebarVisible} focusMode={workspaceSettings.focusMode} pinned={floatingSidebarPinned} surfaceStyle={isFloatingSidebarMode ? getGlassPanelStyle(uiTransparency, 16, 'canvas') : undefined}
           onReveal={() => setFloatingSidebarHovered(true)} onHide={() => setFloatingSidebarHovered(false)} onToggle={toggleSidebar}>
@@ -1448,7 +1325,9 @@ export default function Dashboard() {
           <div className="workspace-view h-full" aria-hidden={!libraryVisible||undefined} inert={!libraryVisible&&desktopDragSource!=='browse'} data-drag-source-retained={!libraryVisible&&desktopDragSource==='browse'||undefined} hidden={!libraryVisible&&desktopDragSource!=='browse'}>
             <CollectionsView mode={settings.local.collectionView} onModeChange={value=>updateLocalSetting('collectionView',value)} key={'collections:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={(libraryVisible||desktopDragSource==='browse')&&librarySection==='collections'} onOpen={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
             <PinnedList key={'pins:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={(libraryVisible||desktopDragSource==='browse')&&librarySection==='favorites'} onResource={id=>void openResourceById(id)} onCollection={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
-            {librarySection==='trash'?<TrashView key={identityRef.current?.generation} visible={libraryVisible} hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'||librarySection==='favorites'?null:<LibraryView searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined} key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible||desktopDragSource==='browse'} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
+            <TagsBrowser key={'tags:'+identityRef.current?.id+':'+identityRef.current?.generation} {...navigatorTagProps} visible={libraryVisible&&librarySection==='tags'} onReturn={()=>showLibrary('library')}/>
+            <SourcesBrowser key={'sources:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={libraryVisible&&librarySection==='sources'} workspace={linkedWorkspace} onReturn={()=>showLibrary('library')} onOpen={id=>void openResourceById(id)}/>
+            {librarySection==='trash'?<TrashView key={identityRef.current?.generation} visible={libraryVisible} hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'||librarySection==='favorites'||librarySection==='tags'||librarySection==='sources'?null:<LibraryView searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined} key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible||desktopDragSource==='browse'} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="workspace-view h-full" hidden={libraryVisible}>
           <div className="flex h-full min-h-0 flex-col">
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
@@ -1859,20 +1738,6 @@ function mergeTagIntoList(tags: Tag[], nextTag: Tag) {
   return [...tags, nextTag].sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function replaceTagInList(tags: Tag[], nextTag: Tag) {
-  return tags
-    .map((tag) => (tag.id === nextTag.id ? nextTag : tag))
-    .sort((left, right) => left.name.localeCompare(right.name));
-}
-
-function updateTagColorInList(tags: Tag[], tagId: string, color: string) {
-  return tags.map((tag) => (
-    tag.id === tagId
-      ? { ...tag, color }
-      : tag
-  ));
-}
-
 function attachTagToResourceList(resources: Resource[], resourceId: string, nextTag: Tag) {
   return resources.map((resource) => (
     resource.id === resourceId
@@ -1909,31 +1774,6 @@ function replaceTagInResourceMap(resources: Record<string, Resource>, nextTag: T
     {
       ...resource,
       tags: resource.tags?.map((tag) => (tag.id === nextTag.id ? nextTag : tag)) ?? [],
-    },
-  ]));
-}
-
-function updateTagColorInResources(resources: Resource[], tagId: string, color: string) {
-  return resources.map((resource) => ({
-    ...resource,
-    tags: resource.tags?.map((tag) => (
-      tag.id === tagId
-        ? { ...tag, color }
-        : tag
-    )) ?? [],
-  }));
-}
-
-function updateTagColorInResourceMap(resources: Record<string, Resource>, tagId: string, color: string) {
-  return Object.fromEntries(Object.entries(resources).map(([resourceId, resource]) => [
-    resourceId,
-    {
-      ...resource,
-      tags: resource.tags?.map((tag) => (
-        tag.id === tagId
-          ? { ...tag, color }
-          : tag
-      )) ?? [],
     },
   ]));
 }

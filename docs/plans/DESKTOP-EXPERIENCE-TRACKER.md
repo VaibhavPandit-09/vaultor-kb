@@ -1,6 +1,6 @@
 # Native Desktop Experience — master tracker
 
-Reviewed 2026-11-05. Authoritative progress and resumption record for D1–D4. D1 is accepted for the reviewed Windows scope (user: “Verified. Continue”, 2026-11-05). D2 is IN PROGRESS / AWAITING USER ACCEPTANCE; D3–D4 retain the roadmap below. No Android feature development, independent windows, framework migration, backend rewrite or visual-identity redesign. macOS native acceptance remains unverified.
+Reviewed 2026-11-07. Authoritative progress and resumption record for D1–D2, S, then D3–D4. D1 is accepted for the reviewed Windows scope (user: “Verified. Continue”, 2026-11-05). D2 is IN PROGRESS / AWAITING USER ACCEPTANCE; D3–D4 retain the roadmap below. No Android feature development, independent windows, framework migration, backend rewrite or visual-identity redesign. macOS native acceptance remains unverified.
 
 ## Baseline and working rules
 
@@ -153,6 +153,65 @@ Remaining acceptance: physical initiation/dwell/editor handoff, caret perception
 - Commit references: original D2 implementation7c727b4 / ledger099ba5c; extension implementation **b41e11a** contains D2.6–D2.9 code, tests, native extension smoke and current topic documentation. This follow-up ledger records that immutable source identity. No master integration, version/dependency bump, installer, release, Android change or D3 work.
 
 D2 completion: common organization via coherent selection/DnD; membership, authorization and lifecycle/recovery invariants proven; partial failures actionable; keyboard alternatives available; platform evidence recorded.
+
+## S — Adaptive Workspace Navigator / Sidebar Evolution
+
+Authorized2026-11-07 on codex/desktop-experience-d2 after D2 engineering and before D3. D2 and S remain awaiting final Windows acceptance. No master integration, versions/releases, Android, independent windows or framework migration.
+
+S1 audit: stable primary routes/search/commands, New/Import, workspace/footer, SidebarFrame, PaneNavigation/session persistence, resource rows, scoped commands and the D2 hover lease already work and remain authoritative. The bottleneck is competing presentation: duplicated Open Notes navigation; session rows with four permanent controls; Pinned/Recent/Tags/Linked trees stacked in one scroll; full GET /tags tied to sidebar visibility; and filesystem trees permanently sharing shortcut space. Existing APIs already page resource/pins/collections/tags and list linked directories in200-entry pages. Tag rename/color/delete/membership are supported; favorite/merge/hierarchy are not tag domain contracts.
+
+Architecture: stable navigation/actions/footer surround one working region with Sessions, Quick access, Collections, Tags and Sources categories. Auto is an explicit preference derived from browsing/editing/selection; manual category always wins. Focus alone never overrides a manual choice. Source-specific view/quick-tag IDs/scroll positions extend the existing scoped v2 session view, normalized with bounds; no drag/hover state is persisted. Gesture-local category discovery retains the origin panel in its unchanged viewport and keeps resource orders/session counts frozen. One painted working scroll owner at a time avoids nested lists. Collection discovery reuses D2 within its existing allocation; native/sidebar actions remain shared.
+
+| Region | Browsing | Editing | Organizing | Dragging |
+| --- | --- | --- | --- | --- |
+| Primary navigation | Stable Library/Recent/Collections/Pinned/Tags/Review/Trash and search | Same | Same | Existing specific targets and inline intent; no layout switching |
+| New / Import | Always available | Same | Captured collection/import destination | Stable allocation; no hidden action |
+| Working region Auto | Compact Pinned/Recent | Open sessions | Collections, with Tags readily selectable | Freeze baseline; explicit stable category hover is temporary; source panel stays mounted/in place |
+| Explicit working category | User choice persists | Never overridden by focus | User choice persists | Temporary discovery restores choice after completion |
+| Footer / workspace | Always available | Same | Same | Existing source-switch barriers and cancellation |
+
+| Stage | Status | Delivery / acceptance |
+| --- | --- | --- |
+| S1 audit/contracts | IMPLEMENTED | Current owners/API inventory above; preserve resource/Save/grant authority. |
+| S2 core region/state | IMPLEMENTED / VALIDATED; awaiting user acceptance | One contextual region, stable routes/actions/footer; workspace-scoped restoration and drag retention. |
+| S3 sessions/quick access/tags | IMPLEMENTED / VALIDATED; awaiting user acceptance | Remove duplication; compact secondary session controls; bounded Quick tags plus paged full Tags browser using supported operations. |
+| S4 sources/drag | IMPLEMENTED / VALIDATED; awaiting user acceptance | Compact registered roots and full protected browser/index; same D2 admission/hover/caret and stable source panels. |
+| S5 refinement/qualification | IMPLEMENTED / VALIDATED; awaiting user acceptance | Keyboard/focus/narrow/floating, scale0/5/50/500/2000+, persistence and bounded Windows journeys; no acceptance claim. |
+
+Backend scope: extend the existing read-only tag browse with whitelisted global sort and bounded ID lookup for quick access, preserving old default calls. No tag favorite schema, merge, hierarchy or new mutation protocol. Bulk application is existing one-tag-to-selected-resources atomic membership; destructive multi-tag batches/merge are deferred.
+
+S delivery and state contract:
+
+- Primary routes/search/commands, New/Import and workspace/utilities stay outside the working scroll owner. Short-height containers compact primary routes into two columns; this responds to geometry, never to a gesture. Working categories use accessible manual-activation tabs (arrows/Home/End; Enter/Space), named panels and an explicit Auto control. Manual view wins over focus, selection and navigation. During drag, a stable900ms shared hover can discover another category; origin DOM/order/viewport/scroll remain retained until completion, Escape, blur or scope cancellation. No extra hover timer/controller/portal.
+- Auto: browsing→Quick access; editing→Open notes; loaded selection→Collections; dedicated Collections/Tags/Sources views→matching category. There is no automatic sidebar navigation or editor insertion. A note row remains reveal-only and uses normal guarded PaneNavigation before an actual editor drop/caret transaction.
+- Sessions has every open session, title search, active/visible/inactive distinctions and hover/focus-revealed secondary controls. Resource title and explicit arrangement grip retain separate shared D2 payloads. No arbitrary session cap, new session manager, dirty-editor close/reopen or history change.
+- Quick access shows6 mixed Pinned and6 chronological Recent entries with full-view routes. Existing visibility/collapse/type preferences apply to these groups. Tags is an explicit category rather than a hidden third quick group; legacy settings remain compatible. Selected tag filters stay visible independently.
+- Quick tags render8 targets: chosen IDs first, then recent explicit use, then usage fallback; at most8 chosen/8 recent IDs persist. Search requests8; ID lookup requests at most24. Full Tags pages50 with global name/descending/usage sort, counts, colors, create/rename/color/delete, context menus and atomic Apply to current selection or explicit loaded-page resources. Picker pages30; supported batch maximum100 is preserved. Tag mutations report pending state into the existing workspace-departure barrier and retain captured command scope; failure remains actionable. Tag favorites are local quick-access preferences, not an invented domain schema. Merge, hierarchy and destructive multi-tag bulk remain unsupported.
+- Sources sidebar mounts at most8 root shortcuts and no directory tree. Full browser pages20 roots, filters names, uses the existing private title index (50-result bound), and reuses lazy200-entry directories/depth32. Hidden directory observers pause and stable expansion survives ordinary navigation. Root metadata is fetched as the existing root inventory; no new filesystem API, grants, physical moves or broad path access.
+- State: optional normalized navigator data in existing scoped v2 library snapshot; old snapshots remain valid. Per-category scroll/selected category and bounded tag IDs restore. Session/tag/source filters, source paging and expansion remain component-local across normal navigation; source identity remounts clear them. Restart does not restore these filters/private tree branches. Hover/drag/reveal state never persists. Off-page root branches can unmount. Root shortcuts currently open the full Sources browser rather than deep-linking to a chosen directory; Browse all is disabled during drag to preserve main-list sources.
+
+| Visible source / state | Collections / tag / Pinned / protected Trash | Eligible note row → editor | Pane / arrangement | S integration status |
+| --- | --- | --- | --- | --- |
+| Sessions resource title | Same shared resource commands | Shared reveal, then actual-position link | Supported single-resource opening | Implemented / engineering validated; physical acceptance pending |
+| Sessions arrangement grip | Unsupported by design: explicit arrangement payload | Unsupported by design | Existing order/swap/edge/capacity rules | Preserved; dirty/save/session regression passed |
+| Quick Pinned resources / Recent | Same shared resource commands; Recent stays chronological | Same reveal regardless listing | Same single-resource opening | Implemented / native journey validated; acceptance pending |
+| Full Library/Recent/Pinned/collection/search results | Existing D2 selection/admission | Shared reveal/link; list row never inserts | Existing pane semantics | Preserved; no source-specific restrictions added |
+| Collection row / pinned collection | Existing reparent hierarchy checks; collection is not a resource | Unsupported by design | Unsupported by design | Reused bounded collection rows; hover expands branches |
+| Quick/full tag row | Tag itself is metadata, not a resource | Tag→resource applies metadata, not a link | Unsupported by design | Shared tag payload/drop targets; explicit Apply alternative |
+| Authorized linked document in full browser/index | Existing D2 resolution, grant/capability checks | Linked document may be source; linked Markdown is not an editable managed-note reveal target | Existing linked opening restrictions | Reused authorized rows/index; filesystem ownership unchanged |
+| Category tab / collapsed collection | Discovery only | No arbitrary insertion | No implicit pane creation | Temporary shared hover; origin retained; Escape/scope cleanup |
+| Read-only/trashed/unknown target | Actual capability/lifecycle rules | Refuse unsupported insertion | Existing admission | Unsupported combinations remain explicit D2 restrictions |
+
+Validation and acceptance ledger (2026-11-07):
+
+- Frontend relevant integration:105 tests/12 files passed (navigator, tag browser, shared D2 controller, sessions/recovery, hover, pane navigation, shared documents, selection, scoped commands and existing organization/editor coverage matched by Vitest). Final focused refinements: navigator/tags/linked9 passed; scale/sidebar11 passed; preserved linked paging + new lifecycle/root tests3 passed. Unchanged evidence reused; overlapping focused reruns are not additional distinct tests. Scale UI scenarios0/5/50/500/2005 assert at most50 full-browser rows, with8 quick targets.
+- Backend OrganizationServiceTest:2 passed; disposable2005-tag global order/paging/search/ID/count checks plus pre-existing atomic organization/portability regression. Desktop-profile backend production JAR built. No data/schema or authorization migration.
+- TypeScript, frontend/desktop production UI build, lint, native script syntax and whitespace checks: final results recorded at implementation commit. Existing Vite large-chunk/dynamic-import and stale Browserslist notices remain non-fatal; no dependency churn.
+- Isolated Windows Electron run vaultor-chrome-native-4a582449 passed: Sessions resource→collection through category discovery with retained source; Recent→note reveal→caret→resource link; live editor identity/dirty text preserved; quick8/full50 tags; chosen category restored after reload; narrow floating category→collection drop and complete success/caret/retained-panel cleanup. Short floating viewport measured136px high with bounds8–296 matching sidebar8–296. One wide capture inspected; no extensive screenshot campaign or macOS acceptance claim.
+- Default bundle replacement hit Windows EPERM because the current development runtime is in use. Fresh staged backend/runtime and fresh UI were qualified from a disposable app copy without terminating the running app. Default development bundle must be refreshed after that app closes (existing prepare-server workflow); code/UI are committed, no installer/release was created.
+- Performance observations are bounded-work checks, not latency benchmarks: quick tags8, browser50, resources/pins6 each, roots8/20, directory pages200, hidden query/observer suspension; pointer movement uses existing shared leases and no full tag scan. All sessions remain addressable/filterable without a new cap. Extremely deep/large private-tree physical feel, long-session visual density and high-concurrency timing remain user/runtime acceptance work.
+- Remaining Windows acceptance: fixed/floating/short/narrow/wide sidebar, keyboard tab/category discovery, dozens of sessions,500+ real tags, deep collections/linked folders, drag auto-scroll boundaries, cancellation during navigation, fast pass-over, reduced motion/themes, read-only target refusal and Save/recovery failure UX. Existing D2 authorization/import/cancellation protections remain covered by their prior ledger; S does not claim a fresh external-import qualification.
+- Commits: read-only tag API59176e3; navigator implementation and final source ledger follow. S and D2 are IMPLEMENTED / engineering validated / AWAITING USER ACCEPTANCE, never COMPLETE on the user's behalf. D3 stays NOT STARTED.
 
 ## D3 — Operating System Integration
 
