@@ -262,6 +262,8 @@ Branch `codex/desktop-experience-d3` starts from fetched, clean, synchronized D2
 - Existing reviewed export/save/import/native picker flows remain authoritative. No arbitrary path IPC, linked source path reveal or new source grant. Default-open is extension-gated; Reveal still exposes only the prepared copy.
 - Authoritative verified workspace identity now binds the existing PlatformConnection workspace/generation fields without replacing epoch/editor sessions; command and clipboard requests preserve generation admission.
 
+Implementation commit: **67194de** (D3 native adapters, command/editor integration, atomic membership API, admission fix, tests and living contracts). Branch derives from accepted D2/S `8d5f4d1`; master remains `5003a91`. This source ledger is a documentation-only follow-up; no acceptance or release is implied.
+
 ### D3 validation ledger
 
 - Frontend:48/48 across8 clipboard/platform/selection/command/batch/drag files;61/61 across4 editor-drop/pane/session-recovery/Save files. Includes mapped link position, undo/redo, ordinary text, read-only refusal, stale selection events and generation binding without session replacement.

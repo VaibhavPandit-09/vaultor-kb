@@ -469,6 +469,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-08 — D3 source and qualification ledger
+
+Recorded implementation `67194de`, accepted D2/S parent `8d5f4d1`, exact automated/Windows smoke boundaries and outstanding native linked-source/physical shell acceptance in the master tracker. Documentation-only follow-up with no additional architectural effect; existing passing evidence reused and whitespace checked. D3 remains awaiting user acceptance; no master/release/version/Android change.
+
 ### 2026-11-08 — D3 operating-system integration (awaiting acceptance)
 
 D2/S Windows interaction acceptance recorded separately from incomplete linked-source native qualification. D3 extends shared commands/selection with scoped native resource clipboard, atomic collection-membership moves, editor resource-link paste, prepared managed-file export copies, Activity taskbar/notifications and resource-list keyboard conventions. Main retains identities/paths; preload exposes narrow receipt operations. Verified workspace identity fills existing generation fields without replacing editor/session ownership. LinkedManager admission waits pending initialization; actual native authorization/tree/open/drag still fails NATIVE_HOST_CLOSED with JOURNAL_OWNER_LOCK diagnostic, so remains incomplete. Validation:109 frontend,24 distinct native and3 backend checks passed; full lint, TypeScript/production UI and desktop-server build passed. Disposable Windows clipboard/editor/autosave/membership/taskbar/window API smoke passed; shell delegates were intercepted, physical Explorer/default-app and visual notification acceptance remain user-owned. The tracker records exact runtime boundaries. No master/release/version/Android change.
