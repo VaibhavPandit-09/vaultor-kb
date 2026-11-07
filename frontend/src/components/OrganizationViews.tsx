@@ -23,7 +23,7 @@ function collectionKeys(event:KeyboardEvent<HTMLElement>) {
  const target=(event.target as HTMLElement).closest<HTMLElement>('[data-collection-open]');
  if(!target)return;
  const row=target.closest<HTMLElement>('[data-collection-row]')!;
- const rows=[...event.currentTarget.querySelectorAll<HTMLElement>('[data-collection-open]')];
+ const rows=[...(event.currentTarget.closest('[data-collection-tree-root]')??event.currentTarget).querySelectorAll<HTMLElement>('[data-collection-open]')];
  const index=rows.indexOf(target);let next:HTMLElement|undefined;
  if(event.key==='ArrowDown')next=rows[Math.min(rows.length-1,index+1)];
  else if(event.key==='ArrowUp')next=rows[Math.max(0,index-1)];
@@ -47,7 +47,7 @@ export function CollectionRow({item,onOpen,depth=0,hierarchy=false,enabled=true}
  const parent=item.ancestors?.map(a=>a.name).join(' / ');
  return <div role="listitem" data-collection-row={item.id}><div className="library-row" {...drop}>
    {hierarchy&&(item.childCount?<button type="button" className="library-button" data-collection-toggle aria-label={`${expanded?'Collapse':'Expand'} ${item.name}`} aria-expanded={expanded} onClick={()=>setExpanded(!expanded)}><ChevronRight size={15} style={{transform:expanded?'rotate(90deg)':undefined}}/></button>:<span className="collection-tree-spacer"/>)}
-   <button type="button" draggable onDragStart={event=>drag?.start(event,{kind:'collection',collection:item})} onDragEnd={()=>drag?.cancel()} className="library-resource" data-collection-open aria-label={'Open '+collectionPath(item)} title={collectionPath(item)} onClick={()=>onOpen(item)}><Icon size={19}/><span><strong>{item.name}</strong><small>{parent?parent+' · ':''}{item.count} direct {item.count===1?'resource':'resources'}{item.childCount?` · ${item.childCount} ${item.childCount===1?'collection':'collections'}`:''}</small></span></button>
+   <button type="button" draggable onDragStart={event=>drag?.start(event,{kind:'collection',collection:item})} onDragEnd={()=>drag?.cancel()} className="library-resource" data-collection-open aria-label={'Open '+collectionPath(item)} title={collectionPath(item)} onClick={()=>onOpen(item)}><Icon size={19}/><span><strong>{item.name}</strong><span className="collection-compact-count" title={item.count+' direct resources · '+(item.childCount??0)+' child collections'} aria-label={item.count+' direct resources'}>{item.count}</span><small>{parent?parent+' · ':''}{item.count} direct {item.count===1?'resource':'resources'}{item.childCount?` · ${item.childCount} ${item.childCount===1?'collection':'collections'}`:''}</small></span></button>
    <div className="browse-row-actions"><PinButton id={item.id} name={item.name} favorite={item.favorite} entity="collection"/><LibraryPopover contextTarget=".library-row" label={'Manage '+collectionPath(item)} trigger="⋯">{close=><><button className="library-button" onClick={()=>{close();focus.captureFocus();setCreating(true);}}>New subcollection</button><button className="library-button" onClick={()=>{close();focus.captureFocus();setManaging(true);}}>Manage collection…</button></>}</LibraryPopover></div>
  </div>{hierarchy&&expanded&&<div className="collection-branch" style={{paddingLeft:depth<4?16:0}}><CollectionChildren parent={item.id} onOpen={onOpen} depth={depth+1} enabled={enabled}/></div>}
  {managing&&<CollectionManagement collection={item} onChanged={()=>{}} onClose={()=>{setManaging(false);focus.restoreFocus();}}/>}
@@ -57,7 +57,7 @@ export function CollectionRow({item,onOpen,depth=0,hierarchy=false,enabled=true}
 export function CollectionChildren({parent,onOpen,depth=0,count,enabled=true}:{parent:string;onOpen:(item:OrganizationItem)=>void;depth?:number;count?:number;enabled?:boolean}) {
  const [page,setPage]=useState(0);const result=useOrganizationPage('collection','',page,enabled,false,30,parent);
  const rows=<div className="collection-directory" role="list" aria-label="Child collections" onKeyDown={collectionKeys}>{result.data?.items.map(item=><CollectionRow key={item.id} item={item} onOpen={onOpen} depth={depth} hierarchy enabled={enabled}/>)}</div>;
- return <section className={count===undefined?'collection-branch-page':'browse-group collection-children-group'} aria-label={count===undefined?undefined:'Child collections'}>
+ return <section data-collection-tree-root={depth===0||undefined} className={count===undefined?'collection-branch-page':'browse-group collection-children-group'} aria-label={count===undefined?undefined:'Child collections'}>
  {count!==undefined&&<header className="browse-group-heading"><h2>Child collections <span>{count}</span></h2></header>}
  {result.loading&&!result.data&&<p role="status" className="browse-feedback">Loading child collections…</p>}
  {result.error&&<p role="alert">{result.error}<button onClick={result.retry}>Retry</button></p>}{rows}<BrowsePagination page={page} totalPages={result.data?.totalPages??0} loading={result.loading} onPage={setPage}/></section>;

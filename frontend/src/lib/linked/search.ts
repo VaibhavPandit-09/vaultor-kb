@@ -10,5 +10,5 @@ export function useLinkedSearch(provider:LinkedSearchProvider|undefined,query:st
     const load=async()=>{if(running)return;running=true;try{const data=await provider(query,mode);if(active)setValue({query,mode,data,error:''});}catch{if(active)setValue({query,mode,data:empty,error:'Linked search is unavailable. Your files are unchanged.'});}finally{running=false;}};
     void load();const timer=setInterval(()=>void load(),2000);return()=>{active=false;clearInterval(timer);};
   },[provider,query,mode,enabled]);
-  return enabled&&value?.query===query&&value.mode===mode?value:{data:empty,error:''};
+  return enabled&&value?.query===query&&value.mode===mode?{...value,loading:false}:{data:empty,error:'',loading:Boolean(enabled&&provider&&query.trim())};
 }
