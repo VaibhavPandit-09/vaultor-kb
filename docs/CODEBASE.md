@@ -465,6 +465,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-08 — S refinement source ledger
+
+Recorded implementation de48a31 and branch push, final20/20 affected tag/source cases, passing lint/TypeScript/desktop production UI build and the unresolved isolated NATIVE_HOST_CLOSED acceptance gap. Documentation-only change with no additional architectural effect; unchanged validation reused and staged whitespace checked. S/D2 remain awaiting user acceptance; no master integration or D3.
+
 ### 2026-11-08 — S final acceptance refinements
 
 Restored direct sidebar linked-tree exploration with shared scoped search, retained expansion, unique observer ownership and D2 source continuity. Clarified icon/category/page semantics; corrected tag first-use/search/error states and first creation; refined session/collection density and keyboard traversal. Existing grant, resource, session, Save/recovery and scoped mutation owners remain. Affected frontend regression and focused reruns passed, including Tags13/13 and LinkedSources7/7; lint, TypeScript and production desktop UI build passed. Windows first-tag smoke passed, but the isolated private file service returned NATIVE_HOST_CLOSED before folder authorization; native tree/drop/narrow completion remains unvalidated, with no security workaround. Exact qualification gaps are recorded in the S tracker; acceptance stays user-owned. No backend/Android/version/release/master/D3 changes.
