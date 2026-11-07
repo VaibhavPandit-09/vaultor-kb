@@ -1,10 +1,12 @@
+import {getConnection} from '../lib/platform';
+import {isMac} from '../lib/shortcuts';
 import ResourceBatchActions from './ResourceBatchActions';
 import { useSelection } from '../lib/resourceSelection';
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MoreHorizontal } from 'lucide-react';
 import type { Resource } from '../types';
-import { executeResourceCommand,resourceCommands,supportedResourceActions } from '../lib/resourceActions';
+import { executeResourceCommand,resourceCommandEnabled,resourceCommands,supportedResourceActions } from '../lib/resourceActions';
 import { resourceKind } from '../lib/resourceKinds';
 import LibraryPopover from './LibraryPopover';
 import { CollectionPicker } from './ResourceCollections';
@@ -15,10 +17,10 @@ import { useFormKeyboard } from '../lib/useFormKeyboard';
 
 export default function ResourceActions({resource}:{resource:Resource}) {
  const focus=useRestoreFocusOnClose(),[dialog,setDialog]=useState<'rename'|'collection'|'tags'|null>(null),[name,setName]=useState(resource.title),[error,setError]=useState(''),[busy,setBusy]=useState(false);
- const selection=useSelection();
+ const selection=useSelection(),renderEpoch=getConnection().epoch;
  const capabilities=supportedResourceActions(resource);
  const running=useRef(false);
- async function work(task:()=>Promise<unknown>,close?:()=>void) {if(running.current)return;running.current=true;setBusy(true);setError('');try{await task();close?.();}catch(e){setError(e instanceof Error?e.message:'Resource action failed. Retry.');}finally{running.current=false;setBusy(false);}}
+ async function work(task:()=>Promise<unknown>,close?:()=>void) {if(running.current)return;running.current=true;setBusy(true);setError('');try{if(renderEpoch!==getConnection().epoch)throw Error('Workspace changed. Reopen the resource actions.');await task();close?.();}catch(e){setError(e instanceof Error?e.message:'Resource action failed. Retry.');}finally{running.current=false;setBusy(false);}}
  const done=()=>{setDialog(null);focus.restoreFocus();};
  const form=useFormKeyboard(()=>void work(()=>executeResourceCommand('rename',resource,name.trim()),done));
  if(selection&&selection.ids.includes(resource.id)&&selection.resources.length>1)return <ResourceBatchActions resources={selection.resources} collection={selection.collection} contextResource={resource}/>;
@@ -30,6 +32,8 @@ export default function ResourceActions({resource}:{resource:Resource}) {
  <button className="library-button" onClick={()=>{close();focus.captureFocus();setDialog('collection');}}>Add to collection…</button>
  <button className="library-button" onClick={()=>{close();focus.captureFocus();setDialog('tags');}}>Manage tags…</button>
  <button className="library-button" disabled={busy} onClick={()=>void work(()=>executeResourceCommand('pin',resource),close)}>{resource.favorite?'Unpin':'Pin'}</button>
+ {resourceCommandEnabled('copy-resources',resource)&&<><button className="library-button" disabled={busy} onClick={()=>void work(()=>executeResourceCommand('copy-resources',resource),close)}>Copy resource <kbd>{isMac?'⌘C':'Ctrl+C'}</kbd></button><button className="library-button" disabled={busy} onClick={()=>void work(()=>executeResourceCommand('copy-links',resource),close)}>Copy resource link</button></>}
+ {resourceCommandEnabled('export-copy',resource)&&<button className="library-button" disabled={busy} onClick={()=>void work(()=>executeResourceCommand('export-copy',resource),close)}>Export copy for Explorer…</button>}
  <button className="library-button" disabled={busy} onClick={()=>void work(()=>executeResourceCommand('copy-title',resource),close)}>Copy title</button>
  {capabilities.export&&<button className="library-button" onClick={()=>void work(()=>executeResourceCommand('export',resource),close)}>Export note…</button>}
  {capabilities.download&&<button className="library-button" disabled={busy} onClick={()=>void work(()=>executeResourceCommand('download',resource),close)}>Download original</button>}

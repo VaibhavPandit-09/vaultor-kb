@@ -2,7 +2,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import axios, { type AxiosAdapter } from 'axios';
-import { configureConnection, getPlatform, transport, validateApiPath, openConnectionStream, type PlatformServices } from './platform';
+import { configureConnection, bindWorkspaceIdentity,getConnection, getPlatform, transport, validateApiPath, openConnectionStream, type PlatformServices } from './platform';
 import { ensureCompatible, validateCapabilities,requireBackgroundOperations } from './connection';
 import { flushDiagnostics, getLocalDiagnostics, reportError } from './diagnostics';
 import ConnectionGate from '../components/ConnectionGate';
@@ -110,3 +110,5 @@ it('browser downloads request a file, detach their anchor, and release the URL',
   try { expect(await browser.saveBlob(new Blob(['hello']), 'note.md')).toBe('requested'); expect(click).toHaveBeenCalledOnce(); expect(document.querySelector('a[download]')).toBeNull(); vi.advanceTimersByTime(1000); expect(create).toHaveBeenCalledOnce(); expect(revoke).toHaveBeenCalledWith('blob:test'); }
   finally { vi.useRealTimers(); }
 });
+
+it('verified workspace identity binds command generation without replacing session epoch or platform',()=>{configureConnection({profileId:'desktop',kind:'local'},browser);const epoch=getConnection().epoch,platform=getPlatform();bindWorkspaceIdentity({id:'workspace',generation:'replacement'});expect(getConnection()).toMatchObject({epoch,workspaceId:'workspace',generation:'replacement'});expect(getPlatform()).toBe(platform);});

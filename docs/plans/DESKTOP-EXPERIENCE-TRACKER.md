@@ -1,6 +1,6 @@
 # Native Desktop Experience — master tracker
 
-Reviewed 2026-11-08. Authoritative progress and resumption record for D1–D2, S, then D3–D4. D1 is accepted for the reviewed Windows scope (user: “Verified. Continue”, 2026-11-05). D2 is IN PROGRESS / AWAITING USER ACCEPTANCE; D3–D4 retain the roadmap below. No Android feature development, independent windows, framework migration, backend rewrite or visual-identity redesign. macOS native acceptance remains unverified.
+Reviewed 2026-11-08. Authoritative progress and resumption record for D1–D2, S, then D3–D4. D1 is accepted for the reviewed Windows scope (user: “Verified. Continue”, 2026-11-05). D2 and S are accepted for Windows visual/interaction experience (user,2026-11-08, D2 tip `8d5f4d1`). Native linked-source qualification remains incomplete separately. D3 is IMPLEMENTED / AWAITING WINDOWS ACCEPTANCE; D4 remains planned. Historical unaccepted findings below are retained as dated evidence, superseded only for that reviewed interaction scope. No Android feature development, independent windows, framework migration, backend rewrite or visual-identity redesign. macOS native acceptance remains unverified.
 
 ## Baseline and working rules
 
@@ -156,6 +156,8 @@ D2 completion: common organization via coherent selection/DnD; membership, autho
 
 ## S — Adaptive Workspace Navigator / Sidebar Evolution
 
+Current acceptance transition (2026-11-08): user accepted S/D2 Windows interaction experience at `8d5f4d1`. Historical implementation findings below remain intact; native linked-source qualification is separately incomplete in D3.0.
+
 Authorized2026-11-07 on codex/desktop-experience-d2 after D2 engineering and before D3. D2 and S remain awaiting final Windows acceptance. No master integration, versions/releases, Android, independent windows or framework migration.
 
 S1 audit: stable primary routes/search/commands, New/Import, workspace/footer, SidebarFrame, PaneNavigation/session persistence, resource rows, scoped commands and the D2 hover lease already work and remain authoritative. The bottleneck is competing presentation: duplicated Open Notes navigation; session rows with four permanent controls; Pinned/Recent/Tags/Linked trees stacked in one scroll; full GET /tags tied to sidebar visibility; and filesystem trees permanently sharing shortcut space. Existing APIs already page resource/pins/collections/tags and list linked directories in200-entry pages. Tag rename/color/delete/membership are supported; favorite/merge/hierarchy are not tag domain contracts.
@@ -237,7 +239,41 @@ Implementation de48a31 pushed to origin/codex/desktop-experience-d2. Final affec
 
 ## D3 — Operating System Integration
 
-All tasks NOT STARTED; reuse Electron bridge and authoritative Activity state.
+Branch `codex/desktop-experience-d3` starts from fetched, clean, synchronized D2 tip `8d5f4d1`; master is unchanged. D1/D2/S are the accepted interaction foundation. D3 implementation awaits user acceptance; no release/version/installer/Android/D4 work.
+
+### D3 current implementation and native qualification
+
+| Workstream | Status and contract | Evidence / remaining acceptance |
+| --- | --- | --- |
+| D3.0 | Partial native qualification. LinkedManager now awaits pending registry initialization before same-context admission or private-owner dispatch. No grants/owner locks bypassed. | Admission regression passes. Bounded original and fixed disposable native runs still fail before folder grant with NATIVE_HOST_CLOSED; temporary diagnostic reports IOException,JOURNAL_OWNER_LOCK at initialization. This establishes an ownership conflict, not a fully proven lifecycle/environment root cause. Linked-source authorize/tree/open/drag remains INCOMPLETE; D2/S interaction acceptance does not certify it. |
+| D3.1 | Implemented. Main retains bounded resource identities for10minutes; OS clipboard contains only opaque receipt, safe labels and a marker. Copy/paste adds collection membership. Cut is offered only from a named collection; one transactional move removes only that source membership, preserving every other membership. Cut receipt consumed only after success. | Scoped token/workspace/generation and fresh summaries required. Foreign/stale/replaced/trashed resources rejected. Links paste existing Tiptap resourceLink JSON at mapped selection in one undo transaction; no new URL scheme or cross-app routing promise. Text controls, editor native C/X/V and custom shortcuts retain priority. Browser keeps normal text behavior. |
+| D3.2 | Implemented incremental safe managed-file workflow: resource menu/palette → Prepare export copy → drag copy / Reveal copy / default-open eligible copy. Main downloads through protected pipeline; renderer receives receipt/filename/expiry only. | Five-minute action lease; source revision, generation, regular-file/size/SHA256 checks repeated before action. Cancellation removes unhanded staging. Max8 active receipts,512MiB shared cache budget,256 retained directories; handed copies survive UI closure and are reclaimed after24h on subsequent preparation. No internal/external original path exposed. Physical Explorer drop/default-app experience awaits user acceptance. |
+| D3.3 | Implemented Activity projection, coalesced200ms, max200 tasks, bounded main snapshot. Comparable measured units aggregate; unknown/mixed units indeterminate; attention/error, paused and idle clear are explicit. | No second task registry/polling. Native update deduplication, source reset and window cleanup covered. Real Windows taskbar API smoke recorded below; minimized perceptual review remains user-owned. |
+| D3.4 | Implemented background Activity notifications: attention transitions or completed operations running at least30seconds. Foreground/restored/cancelled/preview events suppressed; transition dedup and bounded handles. | Generic notification with existing Activity title; OS availability/preferences respected. Click focuses existing window/Activity only if source token unchanged. No workspace or resource navigation from notification. OS visual delivery remains user acceptance. |
+| D3.5 | Implemented resource-list C/X/V, F2 rename, Delete protected Trash, and matching resource/context/palette commands/help. Collection menu offers paste. | Existing selection owner, text selection, input/IME/portal exclusions and custom bindings authoritative. Search/open/panes/Escape/import/export retain existing centralized paths; no duplicate global clipboard handler. |
+| D3.6 | Existing single-window native frame controls/tray/close/Quit/Save barriers retained after audit. No demonstrated need for server/window architecture replacement. | Bounded maximize/restore/resize/editor identity runtime check. Physical Snap, DPI, multi-monitor, modal focus, minimized taskbar/notifications and tray interaction require Windows acceptance. macOS native acceptance deferred. |
+| D3.7 | DEFERRED: Jump Lists/New note shell actions require single-instance intent/routing contract; print/PDF enhancement needs document presentation/print contract and adds no essential D3 capability. | Existing exports/print behavior unchanged. D4 untouched. |
+
+### D3 restrictions and security decisions
+
+- Clipboard never copies document bodies, credentials, protected paths or privileged references. Current process receipts cannot be reused after restart/source replacement; external apps receive labels, not invented Vaultor URLs. Resource text selection stays native.
+- Cut means **move membership from this collection to that collection**; no global Cut, filesystem move, duplication, unrelated membership removal or editor Cut-link insertion. Failed atomic moves leave receipt and source intact.
+- Native drag-out supports one available managed file after explicit preparation. Notes use existing document exports; linked originals and multi-file drag-out are deferred until safe export/authorization contracts support them. This is deliberately an exported copy, not a physical move. Opening the copy cannot save back to Vaultor.
+- Existing reviewed export/save/import/native picker flows remain authoritative. No arbitrary path IPC, linked source path reveal or new source grant. Default-open is extension-gated; Reveal still exposes only the prepared copy.
+- Authoritative verified workspace identity now binds the existing PlatformConnection workspace/generation fields without replacing epoch/editor sessions; command and clipboard requests preserve generation admission.
+
+### D3 validation ledger
+
+- Frontend:48/48 across8 clipboard/platform/selection/command/batch/drag files;61/61 across4 editor-drop/pane/session-recovery/Save files. Includes mapped link position, undo/redo, ordinary text, read-only refusal, stale selection events and generation binding without session replacement.
+- Native:24/24 distinct cases across6 files (resource clipboard, prepared exports, Activity, linked admission, existing file and linked-owner boundaries); final affected9/9 rerun after concurrent-copy guard. Covers invalid/stale/foreign/expired scopes, cancellation/tamper/revision checks, source preservation, retained handed copies and notification deduplication.
+- Backend:3/3 OrganizationServiceTest cases passed, including atomic membership-move validation/rollback and unrelated membership preservation; production desktop-profile clean package passed. Injected transfer failure in this suite is expected rollback coverage.
+- Full frontend ESLint passed; TypeScript and production Vite/desktop UI build passed; desktop syntax checks and whitespace passed. No dependency/version changes.
+- Actual Windows Electron44 check passed in disposable `vaultor-chrome-native-026d8e77`: real list-focused Ctrl+C via renderer, scoped OS clipboard, editor link paste/undo/redo plus ordinary text and backend autosave; atomic cut with retained unrelated membership; prepared-copy bytes/receipt IPC and original preservation; real setProgressBar calls/clear; one OS Notification dispatch with dedup; native maximize/restore and600px resize retaining editor identity. Prior clipboard restored using fresh ClipboardItems (Electron44 API requirement). Result JSON retained locally; no credentials or user workspace mutated.
+- Shell Reveal/default-open/startDrag delegates were intercepted; their only argument was the verified prepared copy. This does **not** certify physical Explorer drop, default-app launch, notification visual delivery, minimized taskbar appearance, Snap/DPI/monitor/tray feel or macOS native behavior. These remain acceptance items. Subsequent isolated copy-concurrency/crash-cleanup safeguards use passing focused tests/syntax; unchanged runtime evidence reused.
+
+ Runtime smoke uses a fresh disposable workspace and production UI/server. Explorer/default-app delegates are intercepted to verify their prepared-copy arguments; that is not a physical Explorer drag qualification. No macOS or release acceptance implied. D3 remains awaiting user Windows review.
+
+Original roadmap/dependencies (implementation status is authoritative above):
 
 | ID / priority | Detailed scope and acceptance | Dependencies / source |
 | --- | --- | --- |

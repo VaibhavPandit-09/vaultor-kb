@@ -1,4 +1,6 @@
-import { registerEditorDrop } from '../../lib/editorDrop';
+import {pasteResourceLinks} from '../../lib/resourceClipboard';
+import {reportError} from '../../lib/diagnostics';
+import { registerEditorDrop,editorDropTarget } from '../../lib/editorDrop';
 import {registerReferenceView} from '../../lib/referenceNavigation';
 import { ManagedImage } from './ManagedImage';
 import ImagePicker from './ImagePicker';
@@ -197,6 +199,7 @@ function BlockEditor({
         return true;
       },
       handlePaste: (view, event) => {
+        const clipboardTarget=editorDropTarget(view.dom);if(clipboardTarget&&pasteResourceLinks(clipboardTarget.editor,event,clipboardTarget.managed,error=>reportError('resource.clipboard',error)))return true;
         if (event.clipboardData) {
           const files = clipboardImages(event.clipboardData);
           if (integration && (files.length || /<img\b/i.test(event.clipboardData.getData('text/html')))) { event.preventDefault(); integration.unsupported('This paste contains unsupported images. Your document is unchanged; use targeted Markdown source or paste text.'); return true; }

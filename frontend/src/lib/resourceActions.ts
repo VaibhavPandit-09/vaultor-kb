@@ -1,12 +1,16 @@
+import {copyResources} from './resourceClipboard';
 import type { Resource } from '../types';
 import { getConnection } from './platform';
 import { resourceKind } from './resourceKinds';
 import { setResourceFavorite } from './resourceBrowse';
 import { getPlatform, saveApiFile } from './platform';
 import { Copy, Download, ExternalLink, Pencil, Pin, Trash2, Network, Columns2 } from 'lucide-react';
-export type ResourceAction = 'open'|'open-another'|'references'|'reference-open'|'rename'|'export'|'prepare-export'|'trash'|'prepare-trash'|'retain-draft'|'removed'|'restored';
+export type ResourceAction = 'export-copy'|'open'|'open-another'|'references'|'reference-open'|'rename'|'export'|'prepare-export'|'trash'|'prepare-trash'|'retain-draft'|'removed'|'restored';
 /** Small resource command catalogue; coordinators continue to own safety/confirmation. */
 export const resourceCommands = {
+ 'copy-resources':{title:'Copy resource',icon:Copy,confirmation:'none'},
+ 'copy-links':{title:'Copy resource link',icon:Copy,confirmation:'none'},
+ 'export-copy':{title:'Export copy for Explorer…',icon:Download,confirmation:'review'},
  open: { title:'Open', icon:ExternalLink, confirmation:'none' },
  'open-another': { title:'Open in another pane', icon:Columns2, confirmation:'none' },
  references: { title:'Links and mentions…', icon:Network, confirmation:'none' },
@@ -20,11 +24,14 @@ export const resourceCommands = {
 export type ResourceCommandId = keyof typeof resourceCommands;
 export function resourceCommandEnabled(id:ResourceCommandId,resource:Resource) {
  if(resource.trashedAt)return false;
+ if(id==='copy-resources'||id==='copy-links')return Boolean(getPlatform().resourceClipboard);
+ if(id==='export-copy')return resource.type==='file'&&Boolean(getPlatform().prepareExportCopy);
  const capabilities=supportedResourceActions(resource);
  return id==='open-another'?resourceKind(resource.type).mode==='editor':id==='copy-title'||id==='references'?true:capabilities[id];
 }
 export async function executeResourceCommand(id:ResourceCommandId,resource:Resource,value?:string) {
  if(!resourceCommandEnabled(id,resource))throw new Error('This action is unavailable for this resource.');
+ if(id==='copy-resources'||id==='copy-links'){await copyResources([resource],id==='copy-links'?'links':'copy');return;}
  if(id==='pin'){await setResourceFavorite(resource.id,value===undefined?!resource.favorite:value==='true');return;}
  if(id==='copy-title'){await getPlatform().writeClipboard(resource.title);return;}
  if(id==='download'){if(await saveApiFile('/resources/'+resource.id+'/raw',resource.title)==='cancelled')throw new Error('Download cancelled. Try again.');return;}

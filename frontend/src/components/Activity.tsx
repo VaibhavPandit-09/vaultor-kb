@@ -5,7 +5,7 @@ import LibraryPopover from './LibraryPopover';
 import { activityPhase,activityNeedsSource,dismissActivity,pauseActivity,resumeActivity,restoreActivity,useActivity } from '../lib/activity';
 import api from '../lib/api';
 import type { Identity } from '../lib/sessionStore';
-import { getConnection } from '../lib/platform';
+import { getConnection,getPlatform } from '../lib/platform';
 import { saveActivityOutput } from '../lib/transferActivity';
 import '../lib/trashActivity';
 import { reportError } from '../lib/diagnostics';
@@ -16,10 +16,12 @@ export default function Activity(){
  const scope=useTopDialogScope(),chrome=useRef<HTMLDivElement>(null);
  useLayoutEffect(()=>{const element=chrome.current;if(!element)return;const shell=element.closest<HTMLElement>('.desktop-shell');if(!shell)return;const measure=()=>shell.style.setProperty('--desktop-activity-width',element.getBoundingClientRect().width+'px');measure();const observer=new ResizeObserver(measure);observer.observe(element);return()=>{observer.disconnect();shell.style.removeProperty('--desktop-activity-width');};},[]);
  useLayoutEffect(()=>{const element=chrome.current;if(!element||!scope)return;scope.portals.add(element);return()=>{scope.portals.delete(element);};},[scope]);
- const tasks=useActivity(),source=getConnection().profileId;
+ const tasks=useActivity(),source=getConnection().profileId,nativeEpoch=getConnection().epoch;
  const current=tasks.filter(task=>task.source===source),count=current.filter(task=>task.state!=='complete'||Boolean(task.warnings)).length;
  const shown=[...current.filter(task=>task.state!=='complete'||Boolean(task.warnings)),...current.filter(task=>task.state==='complete'&&!task.warnings).slice(0,10)];
  useEffect(()=>{void api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true}).then(({data})=>restoreActivity(data)).catch(error=>reportError('activity.restore',error));void api.get<{id:string;name:string}[]>('/workspaces',{backgroundDiagnostic:true}).then(({data})=>{if(Array.isArray(data))setNames(Object.fromEntries(data.filter(row=>typeof row.name==='string').map(row=>[row.id,row.name])));}).catch(()=>{});},[]);
+ useEffect(()=>{const platform=getPlatform();if(!platform.publishActivity)return;const selected=tasks.filter(task=>task.source===source).sort((a,b)=>Number(b.state==='running')-Number(a.state==='running')||b.updated-a.updated).slice(0,200).map(({id,title,kind,state,phase,done,total,unit})=>({id,title:title.slice(0,200),kind,state,phase:phase.slice(0,200),done,total,unit}));const timer=setTimeout(()=>{void platform.publishActivity?.(selected).catch(error=>reportError('activity.native',error));},200);return()=>clearTimeout(timer);},[tasks,source,nativeEpoch]);
+ useEffect(()=>getPlatform().onActivityOpen?.(()=>{const button=chrome.current?.querySelector<HTMLButtonElement>('[aria-haspopup]');if(button?.getAttribute('aria-expanded')!=='true')button?.click();}),[]);
  return <DialogFocusContext.Provider value={scope}><div ref={chrome} className="activity-chrome"><LibraryPopover priority={4000} zIndex={3300} label={count?`Activity · ${count} need attention or are in progress`:'Activity'} trigger={<><ActivityIcon size={16}/><span className="activity-label">Activity</span>{count>0&&<strong>{count>99?'99+':count}</strong>}</>}>
   {close=> <><h2 className="text-sm font-semibold">Activity</h2>{current.some(task=>task.state==='complete'&&!task.warnings)&&<button className="library-button" onClick={()=>void Promise.all(current.filter(task=>task.state==='complete'&&!task.warnings).map(task=>dismissActivity(task.id))).catch(error=>reportError('activity.dismiss',error))}>Clear finished tasks</button>}{!current.length&&<p className="text-sm text-[var(--text-secondary)]">No recent tasks.</p>}{shown.map(task=><section key={task.id} className="activity-task" aria-label={task.title}>
    <strong className="block text-sm truncate" title={task.title}>{task.title}</strong><small>{names[task.workspace.id]??(task.workspace.id===getConnection().workspaceId?workspace?.name:undefined)??'Workspace'}{workspace?.server?' · '+workspace.server:''}</small>

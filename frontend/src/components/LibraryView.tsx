@@ -63,7 +63,7 @@ export default function LibraryView({ searchLinked,section, visible, tags, onOpe
   const totalItems = result.data?.totalItems ?? 0, loading = result.loading;
   const retry = result.retry;
   const viewKey=JSON.stringify([page,search,searchMode,type,sort,scopeKey]);
-  const selection=useResourceSelection(items,viewKey,visible),selected=selection.ids;
+  const selection=useResourceSelection(items,viewKey,visible,currentCollection),selected=selection.ids;
   useEffect(()=>{onSelectionChange?.(selection.resources);},[selection.resources,onSelectionChange]);
   const title = section === 'favorites' ? 'Pinned' : section === 'recent' ? 'Recently opened' : 'Library';
   return <ResourceSelectionContext.Provider value={{...selection,collection:currentCollection}}><section {...collectionDrop} onKeyDown={selection.onKeyDown} ref={viewport} data-motion-surface="page" data-motion-key={section+':'+(collection?.id??'')} data-motion-list={!query && page===0} data-motion-ready={Boolean(result.data)&&!loading} className={transformLibrary ? "library-view library-transform" + (collection ? " collection-transform" : section==='recent' ? " recent-transform" : "") : "library-view"} aria-label={title}>

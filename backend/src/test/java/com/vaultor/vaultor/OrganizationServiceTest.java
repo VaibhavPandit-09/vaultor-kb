@@ -36,6 +36,18 @@ class OrganizationServiceTest {
         while(System.nanoTime()<until) {TransferService.Operation op;try{op=transfers.get(id);}catch(org.springframework.web.server.ResponseStatusException busy){if(busy.getStatusCode().value()!=409||!"Workspace maintenance is in progress. Retry shortly.".equals(busy.getReason()))throw busy;Thread.sleep(25);continue;}if(Set.of("SUCCEEDED","FAILED").contains(op.status())) {assertEquals(expected,op.status(),op.detail());return;}Thread.sleep(25);}
         fail("Transfer timeout");
     }
+    @Test void clipboardMovePreservesOtherMembershipsAndFailsAtomically() {
+        String one=service.createNote("Move one","{}").getId(),two=service.createNote("Move two","{}").getId();
+        var source=org.save(null,new CollectionInput("Clipboard source",false));var target=org.save(null,new CollectionInput("Clipboard target",false));var other=org.save(null,new CollectionInput("Clipboard other",false));
+        org.bulk(new BulkInput(List.of(one,two),"collection",source.id(),"add"));org.bulk(new BulkInput(List.of(one),"collection",other.id(),"add"));
+        assertThrows(IllegalArgumentException.class,()->org.moveMemberships(new MembershipMove(List.of(one,"missing"),source.id(),target.id())));
+        assertEquals(2,org.get(source.id()).count());assertEquals(0,org.get(target.id()).count());
+        org.moveMemberships(new MembershipMove(List.of(one,two),source.id(),target.id()));assertEquals(0,org.get(source.id()).count());assertEquals(2,org.get(target.id()).count());assertEquals(1,org.get(other.id()).count());
+        assertThrows(IllegalArgumentException.class,()->org.moveMemberships(new MembershipMove(List.of(one),source.id(),target.id())));
+        assertThrows(IllegalArgumentException.class,()->org.moveMemberships(new MembershipMove(List.of(one),target.id(),target.id())));
+        assertTrue(resources.existsById(one));assertTrue(resources.existsById(two));
+        jdbc.update("delete from resource_collections where resource_id in (?,?)",one,two);jdbc.update("delete from resources where id in (?,?)",one,two);collections.deleteAllById(List.of(source.id(),target.id(),other.id()));
+    }
     @Test void tagBrowserIsBoundedSearchableAndGloballySorted() {
         String prefix="NavigatorScale-";
         try {

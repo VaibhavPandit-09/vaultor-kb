@@ -20,7 +20,7 @@ Reviewed 2026-11-02: Windows x64 0.25.2 single-click Markdown patch and Mac arm6
 
 ## Native desktop initiative
 
-- [Desktop experience tracker](plans/DESKTOP-EXPERIENCE-TRACKER.md): Authoritative D1–D4 audit, task dependencies, acceptance, validation, commit and platform status. Feature-branch work is unreleased; D1 Windows review is accepted, D2 is in progress and D3–D4 remain planned. Includes S: Adaptive Workspace Navigator and final acceptance refinements between D2 and D3; acceptance remains user-owned.
+- [Desktop experience tracker](plans/DESKTOP-EXPERIENCE-TRACKER.md): Authoritative D1–D4 and S audit, Windows D2/S interaction acceptance, D3 native implementation/qualification boundaries, task dependencies, acceptance, validation, commit and platform status. Feature-branch work is unreleased; D1/D2/S Windows interaction review is accepted. D3 is implemented awaiting Windows acceptance, linked-source native qualification remains incomplete, and D4 remains planned.
 
 ## Development and validation
 

@@ -1,10 +1,12 @@
+import {copyResources} from '../../lib/resourceClipboard';
+import {getPlatform} from '../../lib/platform';
 import {ResourceDropSurface} from '../DesktopInteraction';
 import { useDragItems,canDragResource, useDesktopInteraction } from '../../lib/desktopInteraction';
 import {useLinkedSearch,type LinkedSearchProvider} from '../../lib/linked/search';
 import CommandStage from '../CommandStage';
 import SearchCoverage from '../SearchCoverage';
 import { MotionIndicator } from '../MotionFeedback';
-import {requestResourceAction} from '../../lib/resourceActions';
+import {requestResourceAction,executeResourceCommand,resourceCommandEnabled} from '../../lib/resourceActions';
 import { collectionKind, resourceKind, resourceDescription,resourcePresentation } from '../../lib/resourceKinds';
 import ResourceSearchOptions from '../ResourceSearchOptions';
 import LibraryPopover from '../LibraryPopover';
@@ -55,6 +57,8 @@ export default function CommandPaletteModal({open,onClose,context,searchLinked}:
  function handoff(kind:'collection'|'tag',ids:string[]){setOrganization({kind,ids});onClose({restoreFocus:false,restorePreview:false});}
  const action=(id:string,title:string,work:()=>void|Promise<void>,subtitle?:string):Result=>({id,title,subtitle,section:'Commands',onSelect:()=>({type:'execute',action:work})});
  function actionStep(resource:Resource):CommandStep {return {id:'actions-'+resource.id,type:'select',title:'Actions · '+resource.title,placeholder:'Filter actions…',getItems:filter=>[
+   ...(resourceCommandEnabled('copy-resources',resource)?[action('resource-copy','Copy resource',()=>executeResourceCommand('copy-resources',resource),resource.title),action('link-copy','Copy resource link',()=>executeResourceCommand('copy-links',resource),resource.title)]:[]),
+     ...(resourceCommandEnabled('export-copy',resource)?[action('explorer-copy','Export copy for Explorer…',()=>executeResourceCommand('export-copy',resource),resource.title)]:[]),
    action('membership','Add to collection',()=>handoff('collection',[resource.id]),resource.title),
    action('pin',resource.favorite?'Unpin':'Pin',()=>setResourceFavorite(resource.id,!resource.favorite),resource.title),
    action('tags','Manage tags',()=>handoff('tag',[resource.id]),resource.title),
@@ -70,6 +74,7 @@ export default function CommandPaletteModal({open,onClose,context,searchLinked}:
   action('diagnostics','Open Diagnostics',()=>captured.openDiagnostics?.()),
  ];
  const targets=captured.selectedResources?.length?captured.selectedResources:captured.targetResource?[captured.targetResource]:[];
+ if(targets.length&&getPlatform().resourceClipboard)extra.push(action('copy-selection','Copy selected resources',async()=>{await copyResources(targets);}),action('copy-selection-links','Copy selected resource links',async()=>{await copyResources(targets,'links');}));
  if(targets.length){extra.push(action('organize','Add target to collection',()=>handoff('collection',targets.map(r=>r.id)),targets.map(r=>r.title).join(', ')),action('target-tags','Manage target tags',()=>handoff('tag',targets.map(r=>r.id)),targets.map(r=>r.title).join(', ')));}
  if(targets.length===1)extra.push({id:'target-actions',title:'Actions for '+targets[0].title,subtitle:'Explicit target',onSelect:async()=>({type:'push',step:actionStep((await api.get<Resource>('/resources/'+targets[0].id+'/summary',{backgroundDiagnostic:true})).data)})});
  function resourceItem(resource:Resource,section:string):Result {return {id:'resource-'+resource.id,title:resource.title,subtitle:resourceDescription(resource),resource,kind:resource.type,section,onSelect:()=>({type:'execute',action:()=>captured.openResource(resource.id)})};}

@@ -1,3 +1,5 @@
+import ResourceRenameDialog from '../components/ResourceRenameDialog';
+import NativeExportCopy from '../components/NativeExportCopy';
 import SourcesBrowser from '../components/SourcesBrowser';
 import {QuickTags,TagsBrowser} from '../components/TagsBrowser';
 import AdaptiveNavigator from '../components/AdaptiveNavigator';
@@ -77,7 +79,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import api from '../lib/api';
-import { getConnection, getPlatform, saveApiFile, openApiFile } from '../lib/platform';
+import { getConnection, bindWorkspaceIdentity, getPlatform, saveApiFile, openApiFile } from '../lib/platform';
 import { registerConnectionBarrier, SwitchBlockedError,consumeLocalArchiveImport } from '../lib/desktop';
 import LibraryView, { type LibrarySection } from '../components/LibraryView';
 import { resourcesChanged } from '../lib/resourceBrowse';
@@ -183,6 +185,8 @@ export default function Dashboard() {
   const [tagInputValue, setTagInputValue] = useState('');
   const [tagPickerSelectedIndex, setTagPickerSelectedIndex] = useState(0);
 
+  const [nativeExport,setNativeExport]=useState<{resource:Resource;epoch:number;generation?:string}|null>(null);
+  const [renameRequest,setRenameRequest]=useState<{resource:Resource;epoch:number;generation?:string}|null>(null);
   const [noteExport, setNoteExport] = useState<{ id: string; title: string } | null>(null);
   const [transferMode, setTransferMode] = useState<'export' | 'import' | null>(null);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
@@ -773,12 +777,14 @@ export default function Dashboard() {
       return;
     }
     if(request.action==='open'||request.action==='open-another'){if(!supportedResourceActions(resource).open)throw new Error('Opening this resource is unsupported.');await openResourceById(resource.id,{throwOnFailure:true,...(request.action==='open-another'?{destination:'new' as const}:{})});return;}
+    if(request.action==='export-copy'){if(resource.type!=='file')throw Error('Prepare native copies from managed files.');setNativeExport({resource,epoch:getConnection().epoch,generation:getConnection().generation});return;}
     if(request.action==='trash'){setLifecycleTargets(request.resources);return;}
     if(request.action==='export'){if(!supportedResourceActions(resource).export)throw new Error('Exporting this resource is unsupported.');setNoteExport({id:resource.id,title:resource.title});return;}
     if(request.action==='prepare-export'){for(const selected of request.resources)if(selected.type==='note')await exportSaveRef.current(selected.id);return;}
     if(request.action==='restored'){paneNavigation.markAvailable(resource.id);resourcesChanged([resource.id],true);return;}
     if(request.action==='rename'){
       if(!supportedResourceActions(resource).rename)throw new Error('Renaming this resource is unsupported.');
+      if(request.value===undefined){setRenameRequest({resource,epoch:getConnection().epoch,generation:getConnection().generation});return;}
       if(resource.type==='note')await renameResource(resource.id,request.value??'');
       else {const {data:fresh}=await api.get<Resource>('/resources/'+resource.id+'/summary');await api.patch('/resources/'+resource.id+'/title',{title:request.value},{headers:{'If-Match':'"'+fresh.revision+'"'}});resourcesChanged([resource.id]);}return;
     }
@@ -937,7 +943,7 @@ export default function Dashboard() {
   const afterImport = async () => {
     identityCheckVersion.current++;
     const identity=(await api.get<Identity>('/workspace/identity')).data;
-    await linkedWorkspace.flush();await linkedWorkspace.closeNativeDocuments();identityRef.current=identity;linkedWorkspace.dispose();recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));
+    await linkedWorkspace.flush();await linkedWorkspace.closeNativeDocuments();bindWorkspaceIdentity(identity);identityRef.current=identity;linkedWorkspace.dispose();recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));
     setNoteExport(null);setTitleEditState(null);
     setLibrarySection('library');setLibraryContext(defaultLibrary);setNavigatorState(defaultNavigator);dispatch(clearSelectedTags());
     saves.clear();
@@ -955,7 +961,7 @@ export default function Dashboard() {
     let cancelled = false;
     const work = bootWork.current ??= (async () => {
       const identity = (await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;
-      identityRef.current=identity;
+      bindWorkspaceIdentity(identity);identityRef.current=identity;
       const tab = await claimTab();
       const persistence = new SessionPersistence(localStore,tab.id,setSessionError); sessionPersistence.current = persistence;
       let snapshot: SessionSnapshot | undefined, records: RecoveryRecord[] = [];
@@ -987,7 +993,7 @@ export default function Dashboard() {
       const isolated:RecoveryRecord[]=[];
       for(const record of unresolved){try{isolated.push(record.tabId===tab.id?await recovery.isolate(record):record);}catch{isolated.push(record);setSessionError('Could not separate recovery drafts in local storage. Keep this tab open.');}}
       if(cancelled)return;
-      identityRef.current = identity; recovery.configure(identity,tab.id);
+      bindWorkspaceIdentity(identity);identityRef.current = identity; recovery.configure(identity,tab.id);
       Object.values(details).forEach(resource=>recovery.observe(resource));
       for(const {record,resource} of recoverable) {
         recovery.observe(resource);
@@ -1048,7 +1054,7 @@ export default function Dashboard() {
       await linkedWorkspace.flush();await linkedWorkspace.closeNativeDocuments();workspaceEpoch.current++;resourceLoadVersions.current.clear();setReferenceTarget(null);setReviewTarget(undefined);dispatch(setCurrentResourceId(null));
       setCommandPaletteOpen(false);setFileImport(null);setTagPickerOpenNoteId(null);setLifecycleTargets(null);setRecoveryOpen(false);setTransferMode(null);
       saves.clear();paneNavigation.reset();setResourceDetails({});setPreviewResourceId(null);setPreviewResourceType(null);setNoteExport(null);setTitleEditState(null);setLibraryVisible(true);setCollection(null);setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
-      identityRef.current=identity;linkedWorkspace.dispose();recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));setSessionMessage('The workspace was replaced. Previous drafts are available as separate recovery copies.');notifyResourceChange({kind:'workspace'});
+      bindWorkspaceIdentity(identity);identityRef.current=identity;linkedWorkspace.dispose();recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));setSessionMessage('The workspace was replaced. Previous drafts are available as separate recovery copies.');notifyResourceChange({kind:'workspace'});
     }}catch{/* Offline checks must not interrupt editing. */}};
     window.addEventListener('vaultor:identity-check',check);window.addEventListener('focus',check);
     return()=>{stopped=true;window.removeEventListener('vaultor:identity-check',check);window.removeEventListener('focus',check);};
@@ -1306,6 +1312,8 @@ export default function Dashboard() {
       {notice&&<DiagnosticNotice event={notice} saveFailed={saves.failed()} onDetails={()=>setDiagnosticsOpen(true)} onRetrySaves={()=>{void saves.flushAll().catch(()=>{});}} onDismiss={()=>setNotice(null)}/>}
       {reviewTarget!==undefined&&<ReviewInbox key={getConnection().epoch} resource={reviewTarget} onClose={()=>setReviewTarget(undefined)} onOpen={async id=>{await openResourceById(id,{throwOnFailure:true});const issue=paneNavigation.snapshot().issue;if(issue)throw new Error(issue.message);return ()=>{const state=paneNavigation.snapshot();if(state.panes.some(p=>p.id===id&&p.paneId===state.activePaneId))paneNavigation.activate(state.activePaneId!,true);else document.querySelector<HTMLElement>('.preview-shell button')?.focus({preventScroll:true});};}}/>}
       {importAcquire&&<ImportSourceModal pending={uploadPending} error={importAcquireError} onBrowse={folder=>void beginImport(undefined,undefined,undefined,folder)} onDrop={files=>void beginImport(undefined,undefined,undefined,false,files)} onClose={()=>{setImportAcquire(false);restoreImportFocus();}}/>}
+      {renameRequest?.epoch===getConnection().epoch&&renameRequest.generation===getConnection().generation&&<ResourceRenameDialog resource={renameRequest.resource} onClose={()=>setRenameRequest(null)}/>}
+      {nativeExport?.epoch===getConnection().epoch&&nativeExport.generation===getConnection().generation&&<NativeExportCopy key={getConnection().epoch} resource={nativeExport.resource} onClose={()=>setNativeExport(null)}/>}
       {referenceTarget&&<ResourceReferences resource={referenceTarget} linkedReferences={referenceTarget.type==='linked'&&linkedWorkspace.supported()?linkedWorkspace.references:undefined} localNotes={openNotes.filter((p,index,all)=>all.findIndex(other=>other.id===p.id)===index).flatMap(p=>{const draft=saves.latest(p.id)??recovery.current(p.id)?.value;return draft?[{id:p.id,title:draft.title,content:parseNoteContent(draft.content as Resource['content'])}]:[];})} onClose={()=>setReferenceTarget(null)}/>}
       {lifecycleTargets&&<ResourceLifecycleDialog resources={lifecycleTargets} action="trash" onBusy={setDeletePending} onClose={()=>setLifecycleTargets(null)}/>}
 

@@ -1,3 +1,4 @@
+import type {ResourceClipboardData,PreparedExportCopy,NativeActivityTask} from './nativeContracts';
 import type {WorkspaceTransferReceipt,WorkspaceCopyJob} from './workspaceTransfers';
 import axios, { type AxiosAdapter } from 'axios';
 import { configureConnection, getPlatform, getConnection } from './platform';
@@ -19,6 +20,15 @@ type NativePart = { name: string; fileId: string; filename: string; type: string
 type NativeSelection = { relativePath?:string; directory?:boolean; id: string; name: string; size: number; lastModified: number };
 export type WireRequest = { id: string; token: string; path: string; method: string; timeout: number; headers: Record<string, string>; body?: { kind: 'text'; value: string } | { kind: 'multipart'; parts: (Part | NativePart)[] } };
 export interface DesktopBridge {
+  resourceCopy?(value:{token:string;ids:string[];mode:'copy'|'cut'|'links';collection?:string;generation?:string}):Promise<Result<number>>;
+  resourceRead?(value:{token:string}):Promise<Result<ResourceClipboardData|null>>;
+  resourceConsume?(value:{token:string;receipt:string}):Promise<Result<void>>;
+  cancelExportCopy?(value:{token:string;requestId:string}):Promise<Result<void>>;
+  prepareExportCopy?(value:{token:string;id:string;requestId:string;generation?:string}):Promise<Result<PreparedExportCopy>>;
+  exportCopyAction?(value:{token:string;receipt:string;action:'reveal'|'open'|'drag'}):Promise<Result<void>>;
+  releaseExportCopy?(value:{token:string;receipt:string}):Promise<Result<void>>;
+  activityState?(value:{token:string;tasks:NativeActivityTask[]}):Promise<Result<void>>;
+  onActivityOpen?(callback:()=>void):()=>void;
   appearance?(theme:string):Promise<Result<void>>;
   linked?(value:{token:string;workspace:string;generation:string;operation:string;payload:Record<string,unknown>}):Promise<Result<unknown>>;
   copiesList?():Promise<Result<WorkspaceCopyJob[]>>;
@@ -179,6 +189,12 @@ export function activateDesktop(state: DesktopState) {
     finally{signal?.removeEventListener('abort',cancel);}
   };
   configureConnection({ profileId: profile.id, kind: profile.kind, hostId: profile.hostId, workspaceId: profile.workspaceId }, { ...previous, kind: 'desktop', request: nativeAdapter(bridge, state.token), writeClipboard: async text => { unwrap(await bridge.writeClipboard(text)); },
+    resourceClipboard:bridge.resourceCopy&&bridge.resourceRead&&bridge.resourceConsume?{copy:async(ids,mode,collection)=>unwrap(await bridge.resourceCopy!({token:state.token,ids,mode,collection,generation:getConnection().generation})),read:async()=>unwrap(await bridge.resourceRead!({token:state.token})),consume:async receipt=>{unwrap(await bridge.resourceConsume!({token:state.token,receipt}));}}:undefined,
+    prepareExportCopy:bridge.prepareExportCopy?async(id,signal)=>{signal?.throwIfAborted();const requestId=crypto.randomUUID(),cancel=()=>{void bridge.cancelExportCopy?.({token:state.token,requestId}).catch(()=>{});};signal?.addEventListener('abort',cancel,{once:true});try{const copy=unwrap(await bridge.prepareExportCopy!({token:state.token,id,requestId,generation:getConnection().generation}));if(signal?.aborted){void bridge.releaseExportCopy?.({token:state.token,receipt:copy.receipt});signal.throwIfAborted();}return copy;}finally{signal?.removeEventListener('abort',cancel);}}:undefined,
+    exportCopyAction:bridge.exportCopyAction?async(receipt,action)=>{unwrap(await bridge.exportCopyAction!({token:state.token,receipt,action}));}:undefined,
+    releaseExportCopy:bridge.releaseExportCopy?async receipt=>{unwrap(await bridge.releaseExportCopy!({token:state.token,receipt}));}:undefined,
+    publishActivity:bridge.activityState?async tasks=>{unwrap(await bridge.activityState!({token:state.token,tasks}));}:undefined,
+    onActivityOpen:bridge.onActivityOpen,
     ...(bridge.stream && bridge.onStream ? {stream:async (path:string,signal:AbortSignal,receive:(data:unknown)=>void)=>{
       const id=crypto.randomUUID();const remove=bridge.onStream!(event=>{if(event.id===id && !signal.aborted)receive(event.closed?{kind:'disconnected'}:event.data);});
       const close=()=>{remove();void bridge.cancel(id).catch(()=>{});signal.removeEventListener('abort',close);};signal.addEventListener('abort',close,{once:true});

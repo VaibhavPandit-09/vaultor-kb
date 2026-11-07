@@ -41,3 +41,8 @@ it('completion removes only completed IDs without overwriting a newer selection'
  act(()=>result.current.pick('a',{ctrlKey:true,metaKey:false,shiftKey:false}));const previous=result.current.remove;
  act(()=>result.current.pick('b',{ctrlKey:true,metaKey:false,shiftKey:false}));act(()=>previous(['a']));expect(result.current.ids).toEqual(['b']);
 });
+
+it('resource clipboard belongs to selected list rows and leaves text fields native',async()=>{
+ const {getPlatform,configureConnection}=await import('./platform');const previous=getPlatform(),copy=vi.fn(async()=>1),read=vi.fn(async()=>null);configureConnection({profileId:'clipboard-test',kind:'local',generation:'g'},{...previous,resourceClipboard:{copy,read,consume:async()=>{}}});
+ try{render(<EscapeManagerProvider><List/></EscapeManagerProvider>);fireEvent.click(screen.getByLabelText('Select a'));fireEvent.keyDown(screen.getByLabelText('Search'),{key:'c',ctrlKey:true});expect(copy).not.toHaveBeenCalled();fireEvent.keyDown(screen.getByLabelText('Select a'),{key:'c',ctrlKey:true});expect(copy).toHaveBeenCalledWith(['a'],'copy',undefined);configureConnection({profileId:'changed',kind:'local'},previous);fireEvent.keyDown(screen.getByLabelText('Select a'),{key:'c',ctrlKey:true});expect(copy).toHaveBeenCalledTimes(1);}finally{configureConnection({profileId:'browser',kind:'browser'},previous);}
+});
