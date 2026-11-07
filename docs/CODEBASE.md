@@ -465,6 +465,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-07 — Navigator source and qualification ledger
+
+Recorded API59176e3 and navigator3be158f, successful branch push, final focused checks/lint/TypeScript/production UI build and isolated Windows runtime evidence in the authoritative tracker. Documentation-only ledger: no additional architectural effect. Reused passing implementation evidence and checked staged whitespace; S/D2 user acceptance remains pending.
+
 ### 2026-11-07 — Bounded tag discovery API
 
 Extended read-only tag browsing with global sort and bounded ID lookup for S. OrganizationServiceTest:2 passed, including disposable2005-tag paging/search/sort/ID/count coverage and existing atomic organization/portability checks. Desktop-profile backend production JAR built successfully; replacing the active default runtime bundle was blocked by a Windows file lock. Fresh staged bundle was used for isolated native validation. No data schema, permissions, versions/releases, Android or master integration change.
