@@ -36,6 +36,23 @@ class OrganizationServiceTest {
         while(System.nanoTime()<until) {TransferService.Operation op;try{op=transfers.get(id);}catch(org.springframework.web.server.ResponseStatusException busy){if(busy.getStatusCode().value()!=409||!"Workspace maintenance is in progress. Retry shortly.".equals(busy.getReason()))throw busy;Thread.sleep(25);continue;}if(Set.of("SUCCEEDED","FAILED").contains(op.status())) {assertEquals(expected,op.status(),op.detail());return;}Thread.sleep(25);}
         fail("Transfer timeout");
     }
+    @Test void tagBrowserIsBoundedSearchableAndGloballySorted() {
+        String prefix="NavigatorScale-";
+        try {
+            for(int i=0;i<2005;i++)jdbc.update("insert into tags(id,name,color) values(?,?,?)",prefix+i,prefix+String.format("%04d",i),"#64748b");
+            assertEquals(0,org.tags("NavigatorAbsent-",0,50,"name",null).totalItems());
+            for(int size:List.of(5,50,100)) {var page=org.tags(prefix,0,size,"name",null);assertEquals(size,page.items().size());assertEquals(2005,page.totalItems());}
+            var last=org.tags(prefix,40,50,"name",null);assertEquals(5,last.items().size());assertEquals(prefix+"2000",last.items().getFirst().name());
+            assertEquals(prefix+"2004",org.tags(prefix,0,50,"name-desc",null).items().getFirst().name());
+            String resource=service.createNote("Tag scale fixture","{}").getId();
+            try {org.bulk(new BulkInput(List.of(resource),"tag",prefix+"1000","add"));assertEquals(prefix+"1000",org.tags(prefix,0,8,"usage",null).items().getFirst().id());assertEquals(1,org.tags("",0,24,"name",List.of(prefix+"1000")).items().getFirst().count());jdbc.update("update resources set trashed_at='2026-11-07T00:00:00Z' where id=?",resource);assertEquals(0,org.tags("",0,24,"name",List.of(prefix+"1000")).items().getFirst().count());}
+            finally {jdbc.update("delete from resource_tags where resource_id=?",resource);jdbc.update("delete from resources where id=?",resource);}
+            assertEquals(2,org.tags("",0,24,"name",List.of(prefix+"1",prefix+"2")).totalItems());
+            assertThrows(IllegalArgumentException.class,()->org.tags("",0,30,"name; delete from tags",null));
+            assertThrows(IllegalArgumentException.class,()->org.tags("",0,30,"name",Collections.nCopies(25,prefix+"1")));
+            assertThrows(IllegalArgumentException.class,()->org.tags("",0,30,"name",List.of(prefix+"1",prefix+"1")));
+        } finally {jdbc.update("delete from tags where id like ?",prefix+"%");}
+    }
     @Test void organizationIsAtomicPortableAndNonDestructive() throws Exception {
         String one=service.createNote("First","{\"type\":\"doc\",\"content\":[]}").getId();
         String two=service.createNote("Second","{\"type\":\"doc\",\"content\":[]}").getId();

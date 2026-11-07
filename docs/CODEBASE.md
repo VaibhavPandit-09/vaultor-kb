@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-11-05. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-11-07. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -363,6 +363,8 @@ Supported renderers: PDF iframe using an blob URL, image original with Fit/Actua
 
 Resource application menus now share pointer/ContextMenu/Shift+F10 invocation with existing ellipsis content through LibraryPopover. Context targets are the nearest resource row, collection row, session, source-management row, tag, note pane/preview or browse background. Inputs, contenteditable text and ordinary links keep their text/viewer behavior. Action menus use compact surface styling, viewport-clamped placement, arrow/Home/End navigation, centralized Escape, source restoration and dialog portal registration. Flat menus are deliberate; no unsupported filesystem or internal-link commands are exposed. Electron's text-menu module supplies standard editable/selected-text roles using Chromium capability flags, with no new IPC privileges. ResourceActions uses the extended resourceActions command catalogue/executor (stable IDs, labels/icons, availability and confirmation metadata); Dashboard keeps the authoritative save/navigation/lifecycle/export coordination. Palette rename/Trash/export callbacks converge there; existing pin buttons already share the favorite mutation. The [desktop experience tracker](plans/DESKTOP-EXPERIENCE-TRACKER.md) records accepted D1 Windows scope and current D2–D4 progress. This branch is unreleased by explicit initiative instruction.
 
+GET /tags/browse retains its name/page defaults and adds whitelisted name/name-desc/usage sort plus optional1–24 distinct IDs for bounded quick-access metadata lookup. Active-resource counts exclude Trash. Queries remain workspace-routed, parameterized and read-only; no schema, mutation or authorization changes. This supports the pending Adaptive Navigator without fetching every tag.
+
 ## Settings and keyboard behavior
 
 Desktop organization now shares `resourceSelection` across Library/Recent/collection contents, Pinned resources and Trash. Modifier/checkbox selection, displayed-order ranges, scoped Select All and Escape stay within the loaded page (100 maximum); ordinary resource clicks still open. Criteria/page/hidden changes clear selection, and refresh/deletion prunes it. Text inputs and portaled dialogs retain their own selection. `ResourceBatchActions` groups organization, pins and protected Trash; selected-row context menus share that selection. `resourceBatchCommands` coordinates existing membership/reparent/favorite operations with captured connection epoch/generation and partial pin outcomes; lifecycle reviews also retain captured scope headers. Backend schema, authorization and recovery transactions are unchanged.
@@ -458,6 +460,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-07 — Bounded tag discovery API
+
+Extended read-only tag browsing with global sort and bounded ID lookup for S. OrganizationServiceTest:2 passed, including disposable2005-tag paging/search/sort/ID/count coverage and existing atomic organization/portability checks. Desktop-profile backend production JAR built successfully; replacing the active default runtime bundle was blocked by a Windows file lock. Fresh staged bundle was used for isolated native validation. No data schema, permissions, versions/releases, Android or master integration change.
 
 ### 2026-11-05 — Universal D2 source and acceptance ledger
 

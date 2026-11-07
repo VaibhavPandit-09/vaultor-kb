@@ -22,5 +22,5 @@ public class OrganizationController {
     @PutMapping("/collections/{id}/parent") public CollectionDto move(@PathVariable String id,@RequestBody MoveInput input) {return service.move(id,input);}
     @DeleteMapping("/collections/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable String id) {service.delete(id);}
     @PostMapping("/organization/memberships") @ResponseStatus(HttpStatus.NO_CONTENT) public void bulk(@RequestBody BulkInput input) {service.bulk(input);}
-    @GetMapping("/tags/browse") public ApiDtos.PageDto<TagSummary> tags(@RequestParam(defaultValue="") String q,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="50") int size) {return service.tags(q,page,size);}
+    @GetMapping("/tags/browse") public ApiDtos.PageDto<TagSummary> tags(@RequestParam(defaultValue="") String q,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="50") int size,@RequestParam(defaultValue="name") String sort,@RequestParam(required=false) java.util.List<String> ids) {return service.tags(q,page,size,sort,ids);}
 }

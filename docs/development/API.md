@@ -139,7 +139,7 @@ All routes participate in the workspace mutation gate, return X-Request-ID and u
 | POST /api/collections | createCollection | {name,favorite?}; 201; unique normalized name |
 | PUT /api/collections/{id} | updateCollection | {name,favorite?}; omitted favorite preserves current value |
 | DELETE /api/collections/{id} | deleteCollection | 204; removes only collection/memberships, never resources |
-| GET /api/tags/browse | browseTags | q/page/size (1–100); metadata page with id/name/color/count |
+| GET /api/tags/browse | browseTags | q/page/size (1–100), sort=name/name-desc/usage, optional comma-separated ids (1–24 distinct); metadata page with id/name/color/active-resource count |
 | POST /api/tags | createTag | {name}; 201; returns existing normalized tag if present |
 | PUT /api/tags/{id}/name | renameTag | {name}; preserves memberships/color; duplicate name returns 409 |
 | POST /api/organization/memberships | changeMemberships | {resourceIds,kind,targetId,action}; 204; atomic, idempotent add/remove |
