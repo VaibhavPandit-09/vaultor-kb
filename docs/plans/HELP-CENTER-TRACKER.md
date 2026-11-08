@@ -16,7 +16,7 @@ The initial checkpoint was unreleased; the user subsequently authorized Windows 
 
 User-owned acceptance: Windows presentation/readability, preferred topic grouping, real keyboard/focus experience and ordinary workflows; native Mac Help check and assistive technology remain unclaimed. Existing product limitations remain in canonical technical guides and user troubleshooting; this is a broad practical inventory, not an exhaustive editor/OS shortcut specification.
 
-## Validation record
+## Validation record (original development checkpoint)
 
 - Root Help validator: 16/16 positive/negative tests pass, including stale/missing packaged-byte checks. Source links/headings/categories/platform/status/version formats, required screen mappings and all evidence paths validate.
 - Frontend production build (TypeScript + Vite), full lint and desktop syntax checks pass. Existing large-chunk/dynamic-import/Browserslist warnings remain. Desktop copy and release packaging now refuse stale bundled Help; the production build emits all 15 articles/catalogue/provenance.
@@ -25,3 +25,7 @@ User-owned acceptance: Windows presentation/readability, preferred topic groupin
 - Windows production-equivalent Electron check passes on disposable owned workspace, freshly built desktop/ui and existing bundled server/runtime: application-menu IPC, contextual editor/Settings, eight required searches with renderer network disabled, shared current shortcuts, copy, safe read-only markup, narrow table width, retained mounted note/draft and actual Settings Help search focus. Wide/narrow dark screenshots visually reviewed. Final runtime directory: `%TEMP%/vaultor-chrome-native-vfVDIR`. An Electron GPU shutdown diagnostic followed the passing run; no failed assertion.
 - Help state/search tests also verify no fetch and dirty-editor DOM/value preservation, Back/search history, unknown context fallback and safe internal/external destination admission. Existing AppModal tests cover focus containment/restoration; new Settings test verifies yielding and trigger restoration.
 - No installed-app installer qualification, native Mac/browser UI, light-theme visual pass, assistive-technology certification or user acceptance was claimed. No backend/Docker/API smoke was needed for separate application-owned content. No release or version bump.
+
+## Published Windows delivery
+
+Windows-only 0.27.0 is published from immutable v0.27.0 / 7b7cf824e5f637b0918c49e8518b11054b1211f1. Exact-source documentation reconciliation,17 validator/40 focused frontend/15 release cases, fresh packaged Help/Save/PDF/restart, installer payload/source matching and original-key public updater download verification pass; [the release ledger](../desktop/releases/v0.27.0.md) owns full outcomes and remaining acceptance. Mac remains0.26.0, Android unchanged, global Latest0.21.0 and master unchanged.
