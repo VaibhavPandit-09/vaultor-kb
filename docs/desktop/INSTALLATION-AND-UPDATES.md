@@ -2,11 +2,9 @@
 
 Reviewed 2026-11-08. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
 
-Current Windows x64 release: [0.26.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.26.0), complete Desktop Experience integration, published2026-11-08 with the original-key installer/sidecar pair. The [release ledger](releases/v0.26.0.md) records fresh packaged startup/restart/journal/linked-source/draft-recovery checks, actual isolated0.25.2 upgrade and public updater download/Ready verification. D1/D2/S interaction scope is accepted; D3/D4 subjective Windows and detailed installer acceptance remains user-owned.
+Current Windows x64 and Mac arm64 release: [0.26.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.26.0), complete Desktop Experience integration, published 2026-11-08 with verified original-key installer/sidecar pairs for both platforms. The [release ledger](releases/v0.26.0.md) records Windows and macOS packaged startup, desktop experience, navigator refinement, contextual command menu refinement, browse compression, and public updater delivery verification. Android downloads are unchanged. Earlier large-document performance limits remain; no universal 1MiB usability certification is implied.
 
-Current Mac arm64 release remains [0.24.2](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.24.2), with its existing [packaged/publication evidence](releases/v0.24.2.md). No0.25.x/0.26.0 Mac artifact was built or published; macOS acceptance is explicitly deferred and user-owned. Android downloads are unchanged. Earlier large-document performance limits remain; no universal1MiB usability certification is implied.
-
-Installed Windows0.4.1+: **Updates → Check for updates → Update and restart**. Mac: **Updates → Download and install**, then fully quit and replace Vaultor.app using the verified DMG, retaining app data. Advanced signed-sidecar import remains available. Mac replacement remains manual; do not treat downloaded bytes as proof of successful installation.
+Installed Windows 0.4.1+: **Updates → Check for updates → Update and restart**. Mac: **Updates → Download and install**, then fully quit and replace Vaultor.app using the verified DMG, retaining app data. Advanced signed-sidecar import remains available. Mac replacement remains manual; do not treat downloaded bytes as proof of successful installation.
 
 GitHub Latest remains [0.21.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.21.0). Windows and Mac updaters select their own newest stable complete platform pair independently of Latest. Androidalpha.28/code32 is unchanged; no APK reinstall or data clear is required.
 
@@ -19,16 +17,16 @@ Use the [Vaultor GitHub Releases page](https://github.com/VaibhavPandit-09/vault
 | Device | Required files for in-app updating | Current support |
 | --- | --- | --- |
 | Windows x64 | None to select from 0.4.1+: Update and restart fetches both internally. First/transition install: EXE. Offline import: EXE + signed sidecar. | Silent in-app update/restart and installer tested |
-| macOS Apple Silicon | `Vaultor-VERSION-mac-arm64.dmg` and the same filename plus `.vaultor.json` | Release DMG and packaged runtime verified (0.24.2); manual DMG replacement for updates |
+| macOS Apple Silicon | `Vaultor-VERSION-mac-arm64.dmg` and the same filename plus `.vaultor.json` | Release DMG and packaged runtime verified (0.26.0); manual DMG replacement for updates |
 | macOS Intel | None | No supported desktop package |
 | Ubuntu/Linux | None | Desktop packaging is deferred; browser access and Docker server are available |
 | Android | Vaultor-Android-VERSION.apk from its separate Android prerelease | Install over the existing signed app; do not uninstall/clear data. See docs/android/ANDROID.md |
 
 For manual/offline import, keep each installer and its signed sidecar in the **same folder**, with their exact original names. Do not download source-code assets for installation. No Java or Docker is needed on a device running a packaged desktop app. Unsigned personal OS installers are separate from the app's Ed25519-signed update manifests: the latter verify update identity and bytes, but do not remove SmartScreen or Gatekeeper prompts.
 
-**Windows:** use published [0.25.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.25.0), retaining prior integrated features and the documented large-Markdown limitations. Installed0.4.1+: Updates → Check for updates → Update and restart. Platform-pair discovery is independent of GitHub’s global latest flag; verify the displayed version/platform. Preserve app data.
+**Windows:** use published [0.26.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.26.0), retaining prior integrated features and the documented large-Markdown limitations. Installed 0.4.1+: Updates → Check for updates → Update and restart. Platform-pair discovery is independent of GitHub’s global latest flag; verify the displayed version/platform. Preserve app data.
 
-**Mac arm64:** use published [0.24.2](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.24.2). Fully quit, mount its DMG and replace Vaultor.app in Applications, preserving data. It includes protocol3, full Reviews, collection navigation polish and recursive folder import capabilities. Native ad-hoc codesigning and Gatekeeper consent apply.
+**Mac arm64:** use published [0.26.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.26.0). Fully quit, mount its DMG and replace Vaultor.app in Applications, preserving data. It includes complete Desktop Experience integration (D1–D4), protocol 3, full Reviews, adaptive sidebar, contextual command menus, browse compression and recursive folder import capabilities. Native ad-hoc codesigning and Gatekeeper consent apply.
 
 **Android:** [alpha.28/code32](../android/releases/0.1.0-alpha.28.md) installs over earlier alphas without clearing data. Install a compatible0.16 host first for imports/full5/partial6; its in-app update requires explicit Android permission/consent and original-signer verification. [Android setup](../android/ANDROID.md) owns exact requirements.
 

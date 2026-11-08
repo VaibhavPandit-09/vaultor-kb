@@ -1,12 +1,23 @@
 # Current Mac release qualification handoff
 
-Reviewed 2026-11-02. Complete-platform 0.21.0 remains published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The 0.22.0 release candidate remains a separate pending platform record. 0.23.0/0.23.1 retain disclosed performance limits. 0.24.2 Mac arm64 qualification is completed and the verified Mac pair is published to v0.24.2.
+Reviewed 2026-11-08. Complete-platform 0.21.0 remains published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The 0.22.0 release candidate remains a separate pending platform record. 0.23.0/0.23.1 retain disclosed performance limits. 0.24.2 Mac arm64 qualification is completed. 0.26.0 Mac arm64 qualification is completed and the verified Mac pair is published to v0.26.0.
 
-Windows-only0.25.2 is published; [its ledger](releases/v0.25.2.md) owns delivery and actual acceptance.
+Windows-only 0.25.2 is published; [its ledger](releases/v0.25.2.md) owns delivery and actual acceptance.
 
-## 0.26 Desktop Experience — explicitly deferred
+## 0.26.0 Mac qualification summary
 
-Windows-only0.26.0 is published from immutable v0.26.0 / 4352b9c17929b7240d4ee44bfef03cd201709369. No Mac build, installer, runtime test or publication is authorized by this Windows finalization. Existing Mac0.24.2 assets and Latest0.21.0 remain unchanged. Future separately authorized native Mac qualification must use this exact tag, original update signing identity and current release process; preserve pending macOS source authorization/recovery, shortcuts, native operations and installation acceptance. Windows tests do not certify macOS. If code repairs are needed, use a new version rather than changing the immutable tag. [0.26.0 ledger](releases/v0.26.0.md).
+On an arranged Apple Silicon Mac mini (macOS 27.0.1 arm64, Temurin OpenJDK 25+36, Node v22.16.0), verified clean immutable `v0.26.0` source (`4352b9c17929b7240d4ee44bfef03cd201709369`). Used matching original private release key from `desktop/cache/release-signing/private.pem` matching `desktop/release-trust.json`. Rebuilt UI (`npm --prefix desktop run build`), embedded backend JAR (`npm --prefix desktop run prepare-server`), Darwin ABI helper (`libvaultor-files.dylib`) and pinned `darwin-arm64` runtime into original-key `Vaultor-0.26.0-mac-arm64.dmg` (280,708,400 bytes, SHA256 `c2cf13f7912c3ed37a8a01f05a6fa072b05dc53fc83aef1adecbe469e243f372`) and `.dmg.vaultor.json` (SHA256 `8d6f9e9e3495c89b59c723935116af144b473dc05a98c59490e13a8c700f5318`). Verified ad-hoc codesign (`codesign --verify --deep --strict desktop/releases/mac-arm64/Vaultor.app`), valid DMG CRC32 checksums (`hdiutil verify`), read-only mount, and Applications symlink.
+
+Native qualification passed:
+- Desktop test suite: 143 passed, 0 failed, 2 skipped (Windows-specific helpers), including all 34 linked documents tests and native channel test with canonicalized APFS TMPDIR.
+- Packaged release startup qualification (`VAULTOR_RELEASE_STARTUP_CHECK=1`): Library, bundled host, protocol3 and desktop/updater identity 0.26.0 verified.
+- Packaged Desktop Experience (D1) qualification (`VAULTOR_DESKTOP_EXPERIENCE_CHECK=1`): eight visits, bounded history, edge menu, keyboard focus, native text menu.
+- Packaged Adaptive Sidebar / Navigator Refinement qualification (`VAULTOR_NAVIGATOR_REFINEMENT_CHECK=1`): zero-tag states/first creation, three-level sidebar grant/tree/open, editor draft retained, category state, linked→tag through shared drag with fixed source geometry, file bytes unchanged, narrow floating bounds and cleanup.
+- Packaged Contextual Command Menu Refinement qualification (`VAULTOR_D3_MENU_REFINEMENT=1`): 36px computed tree, 7-level hierarchy/keyboard, contextual rename/create/membership preservation, D2 hover/Escape source continuity, narrow floating overflow and menu placement.
+- Packaged browse compression qualification (`VAULTOR_BROWSE_COMPRESSION_CHECK=1`): tested all 25 configurations across five browse screens (Library, Recent, Pinned, Collections, Collection) at five window widths (1440, 1000, 680, 600, 440px). Evaluated 250 scroll-driven frames throughout forward/reverse scroll depths. Verified zero overflow (`scrollWidth <= clientWidth`), continuous input identity (`input === window.__compressionInput`), hit-testable controls (search, filters, pagination, heading actions), retained input value and focus across compression transitions, context disclosure opening/closing with Escape key handling, and prefers-reduced-motion media emulation.
+- Absent Mac pair uploaded via `npm --prefix desktop run publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.26.0.md`.
+- All four public release assets (Windows EXE + sidecar and Mac DMG + sidecar) verified via independent download and digest matching against `desktop/release-trust.json`.
+- Complete-platform Latest remains 0.21.0 per 0.23.0+ large-document limits; 0.4.1+ updaters discover their matching platform pair independently. [0.26.0 ledger](releases/v0.26.0.md).
 
 ## 0.25 milestone and 0.25.2 patch — explicitly deferred
 
