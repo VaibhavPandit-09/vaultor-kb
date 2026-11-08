@@ -1,3 +1,4 @@
+import type {ResourceClipboardService,PreparedExportCopy,NativeActivityTask} from './nativeContracts';
 import axios, { type AxiosAdapter, type InternalAxiosRequestConfig } from 'axios';
 import { RequestSlots } from './requestSlots';
 
@@ -5,6 +6,12 @@ export type ConnectionIdentity = { profileId: string; kind: 'browser' | 'local' 
 export type DownloadOutcome = 'requested' | 'saved' | 'cancelled';
 /** A desktop adapter must validate paths in main, propagate cancellation and never retry mutations. */
 export interface PlatformServices {
+  resourceClipboard?:ResourceClipboardService;
+  prepareExportCopy?:(id:string,signal?:AbortSignal)=>Promise<PreparedExportCopy>;
+  exportCopyAction?:(receipt:string,action:'reveal'|'open'|'drag')=>Promise<void>;
+  releaseExportCopy?:(receipt:string)=>Promise<void>;
+  publishActivity?:(tasks:NativeActivityTask[])=>Promise<void>;
+  onActivityOpen?:(callback:()=>void)=>()=>void;
   kind: 'browser' | 'desktop';
   request: AxiosAdapter;
   saveBlob(blob: Blob, filename: string): Promise<DownloadOutcome>;
@@ -83,6 +90,8 @@ export async function openApiFile(path: string, filename: string) {
 export function configureConnection(next: ConnectionIdentity, services: PlatformServices) {
   lifetime.abort(); lifetime = new AbortController(); identity = { ...next }; platform = services; epoch++;
 }
+/** Bind an already verified workspace identity without changing connection transport or editor lifetime. */
+export function bindWorkspaceIdentity(value:{id:string;generation:string}) {identity={...identity,workspaceId:value.id,generation:value.generation};}
 export function validateApiPath(path: string) {
   const decoded = decodeURIComponent(path);
   if (!/^\/[a-zA-Z0-9]/.test(decoded) || /[\\#]/.test(decoded) || /(^|\/)\.\.?($|\/|\?)/.test(decoded)) throw new Error('Invalid API path.');

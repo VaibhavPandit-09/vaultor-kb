@@ -12,8 +12,8 @@ export class LinkedManager {
   async ensure(request){
     if(this.closing)throw Error('LINKED_CONTEXT_CLOSING');const owner=await this.options.owner(request);
     if(!owner||owner.kind!=='owned-local'||owner.mainFrame!==true||owner.token!==request.token||owner.workspace!==request.workspace||owner.generation!==request.generation)throw Error('LINKED_LOCAL_OWNER_REQUIRED');
-    if(this.context?.epoch===owner.epoch)return;
     if(this.opening){await this.opening;if(this.context?.epoch===owner.epoch)return;throw Error('LINKED_CONTEXT_CHANGED');}
+    if(this.context?.epoch===owner.epoch)return;
     if(this.active)throw Error('LINKED_CONTEXT_BUSY');
     this.opening=(async()=>{await this.search?.close();await this.recoveryCatalog?.close();await this.documents?.dispose();await this.registry?.close();this.context={...owner};this.registry=new LinkedRegistry({...this.options,current:()=>this.options.current?.(this.context)??(this.options.current?null:this.context)});await this.registry.load(owner);this.documents=new LinkedDocuments(this.registry,{worker:this.options.worker,owner:this.options.owner});this.search=new LinkedSearch(this.registry);this.recoveryCatalog=new RecoveryCatalog(this.registry);})().finally(()=>{this.opening=undefined;});await this.opening;
   }
@@ -35,6 +35,7 @@ export class LinkedManager {
     const allowed=fields[value.operation],p=value.payload??{};
     if(!allowed||!p||Array.isArray(p)||typeof p!=='object'||Object.keys(p).some(key=>!allowed.includes(key)))throw Error('INVALID_LINKED_FIELDS');
     if(this.active>=8)throw Error('LINKED_BUSY');
+    if(this.opening)await this.opening;
     if(['retain-current','protect','inspect','recovery','previous-scopes','release-recovery','export','discard-evidence'].includes(value.operation)&&this.documents&&this.options.privateOwner?.(value,this.context))this.registry.check(value);
     else await this.ensure(value);
     if(this.closing||this.active>=8)throw Error('LINKED_BUSY');this.active++;

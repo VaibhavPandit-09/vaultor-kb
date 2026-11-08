@@ -127,3 +127,4 @@ it('loads a body for a visible historical fallback while hidden sessions need on
  const restored=await restoreSession(state,1,detail,summary);
  expect(summary).toHaveBeenCalledWith('fallback');expect(detail).toHaveBeenCalledWith('fallback');expect(restored.resources.fallback.content).toBeDefined();
 });
+it('navigator preferences restore with session identity and old snapshots remain compatible',async()=>{const store=memory(),persistence=new SessionPersistence(store,'navigator',vi.fn());const value=snapshot();value.library.section='tags';value.library.navigator={view:'tags',quickTags:['tag'],recentTags:[],scroll:{tags:120}};await persistence.save(value,true);expect((await persistence.load(identity))?.library.navigator).toEqual(value.library.navigator);expect(await persistence.load({...identity,generation:'new-generation'})).toBeUndefined();});

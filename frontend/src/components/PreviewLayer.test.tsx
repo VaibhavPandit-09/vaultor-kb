@@ -9,7 +9,7 @@ import { EscapeManagerProvider } from '../lib/escape/EscapeManagerProvider';
 import api from '../lib/api';
 import { loadImage } from '../lib/noteImages';
 import type { Resource } from '../types';
-vi.mock('../lib/settings',()=>({useSettings:()=>({settings:{local:{uiTransparency:.65}}})}));
+vi.mock('../lib/settings',()=>({useOptionalSettings:()=>null,useSettings:()=>({settings:{local:{uiTransparency:.65}}})}));
 vi.mock('../lib/api',()=>({default:{get:vi.fn()}}));
 vi.mock('../lib/platform',()=>({getPlatform:()=>({kind:'browser'})}));
 vi.mock('../lib/noteImages',()=>({IMAGE_BYTES:20*1024*1024,loadImage:vi.fn()}));

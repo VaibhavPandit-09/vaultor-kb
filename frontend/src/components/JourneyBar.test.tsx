@@ -9,12 +9,12 @@ vi.mock('../lib/useAnchoredPortalPosition', () => ({ useAnchoredPortalPosition: 
 vi.stubGlobal('ResizeObserver', class {observe() {} disconnect() {}});
 afterEach(cleanup);
 const pane: Pane = { paneId: 'p', id: 'r3', cursor: 3, history: Array.from({ length: 8 }, (_, i) => ({ visitId: 'v' + i, resourceId: 'r' + i, title: 'Note ' + i, unavailable: i === 1 })) };
-it('shows the complete path, exposes every visit, and restores overflow focus on Escape', async () => {
+it('bounds inline context, exposes every visit in History, and restores focus on Escape', async () => {
   const jump = vi.fn();
   render(<EscapeManagerProvider><JourneyBar pane={pane} motion="forward" animationMode="smooth" onJump={jump} /></EscapeManagerProvider>);
   expect(screen.getByRole('button', { name: 'Note 3' }).getAttribute('aria-current')).toBe('step');
-  expect(screen.getByRole('button', { name: 'Note 0' })).toBeTruthy();
-  expect(screen.getByRole('button', { name: 'Note 7' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Note 0' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Note 7' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Show full journey' }));
   const dialog = screen.getByRole('dialog');
   expect(within(dialog).getAllByRole('button')).toHaveLength(8);

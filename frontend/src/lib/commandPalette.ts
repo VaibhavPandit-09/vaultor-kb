@@ -51,7 +51,7 @@ export type CommandContext = {
   hasUnsavedChanges?: boolean;
   openCollection?: (item:import('./organization').OrganizationItem)=>void;
   openLibrary?: (section:'library'|'collections'|'favorites')=>void;
-  exportResource?: (resource:Resource)=>void;
+  exportResource?: (resource:Resource)=>void|Promise<void>;
   openDiagnostics?: ()=>void;
   resources: Resource[];
   activeNote: Resource | null;

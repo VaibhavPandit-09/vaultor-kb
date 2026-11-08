@@ -41,7 +41,7 @@ export class LinkedWorkspace{
   async describe(id:string,linkedTarget=false){
     if(!this.supported())return null;
     const known=this.metadata.get(id);if(!known&&!linkedTarget)return null;if(known?.revision)return known;
-    const connectionEpoch=getConnection().epoch;const value=await this.request<Resource|null>('metadata',{document:id});if(!value)return null;const {data}=await api.put<Resource>('/resources/linked/'+id,{title:value.title,reference:value.content},{backgroundDiagnostic:true,connectionEpoch});this.metadata.set(id,data);return data;
+    const connectionEpoch=getConnection().epoch,identity=this.identity();if(!identity)throw Error('Wait for workspace restoration.');const value=await this.request<Resource|null>('metadata',{document:id});if(getConnection().epoch!==connectionEpoch||this.identity()?.id!==identity.id||this.identity()?.generation!==identity.generation)throw Error('Workspace changed.');if(!value)return null;const {data}=await api.put<Resource>('/resources/linked/'+id,{title:value.title,reference:value.content},{backgroundDiagnostic:true,connectionEpoch,headers:{'X-Vaultor-Generation':identity.generation}});if(getConnection().epoch!==connectionEpoch||this.identity()?.id!==identity.id||this.identity()?.generation!==identity.generation)throw Error('Workspace changed.');this.metadata.set(id,data);return data;
   }
   remember(entry:Entry){const resource:Resource={id:entry.id,type:'linked',title:entry.name,tags:[],content:null,size:entry.size,createdAt:'',updatedAt:''};if(!this.metadata.get(entry.id)?.revision)this.metadata.set(entry.id,resource);return this.metadata.get(entry.id)!;}
   async open(id:string){

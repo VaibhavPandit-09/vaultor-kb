@@ -161,10 +161,16 @@ public class OrganizationService {
         c.setParentId(input.parentId());c.setNormalizedName(normalized);collections.saveAndFlush(c);return get(id);
     }
     @Transactional(readOnly=true)
-    public PageDto<TagSummary> tags(String q,int page,int size) {
-        paging(page,size);String pattern=query(q);
-        long total=jdbc.queryForObject("select count(*) from tags where lower(name) like ? escape '!'",Long.class,pattern);
-        var items=jdbc.query("select t.id,t.name,t.color,(select count(*) from resource_tags rt join resources active on active.id=rt.resource_id where active.trashed_at is null and rt.tag_id=t.id) from tags t where lower(t.name) like ? escape '!' order by t.name,t.id limit ? offset ?",(rs,n)->new TagSummary(rs.getString(1),rs.getString(2),rs.getString(3),rs.getLong(4)),pattern,size,(long)page*size);
+    public PageDto<TagSummary> tags(String q,int page,int size) { return tags(q,page,size,"name",null); }
+    @Transactional(readOnly=true)
+    public PageDto<TagSummary> tags(String q,int page,int size,String sort,List<String> ids) {
+        paging(page,size);
+        String order=switch(sort==null?"name":sort) {case "name"->"t.name,t.id";case "name-desc"->"t.name desc,t.id";case "usage"->"usage_count desc,t.name,t.id";default->throw new IllegalArgumentException("Unsupported tag sort");};
+        var args=new java.util.ArrayList<Object>();args.add(query(q));String where="lower(t.name) like ? escape '!'";
+        if(ids!=null){if(ids.isEmpty()||ids.size()>24||new java.util.HashSet<>(ids).size()!=ids.size()||ids.stream().anyMatch(id->id==null||id.isBlank()||id.length()>200))throw new IllegalArgumentException("Choose 1–24 distinct tag IDs");where+=" and t.id in ("+String.join(",",java.util.Collections.nCopies(ids.size(),"?"))+")";args.addAll(ids);}
+        long total=jdbc.queryForObject("select count(*) from tags t where "+where,Long.class,args.toArray());
+        args.add(size);args.add((long)page*size);
+        var items=jdbc.query("select t.id,t.name,t.color,coalesce(used.n,0) usage_count from tags t left join (select rt.tag_id,count(*) n from resource_tags rt join resources active on active.id=rt.resource_id where active.trashed_at is null group by rt.tag_id) used on used.tag_id=t.id where "+where+" order by "+order+" limit ? offset ?",(rs,n)->new TagSummary(rs.getString(1),rs.getString(2),rs.getString(3),rs.getLong(4)),args.toArray());
         return new PageDto<>(items,page,size,total,(int)((total+size-1)/size));
     }
     @Transactional
@@ -181,6 +187,16 @@ public class OrganizationService {
     @Transactional public void delete(String id) {
         var plan=deletions.plan(id);
         deletions.apply(id,UUID.randomUUID().toString(),new CollectionDeletionService.Input(plan.fingerprint(),"keep",Map.of()));
+    }
+    public record MembershipMove(List<String> resourceIds,String sourceId,String targetId) {}
+    /** A cut transfers one named membership only; every precondition precedes the writes. */
+    @Transactional public void moveMemberships(MembershipMove input) {
+        var ids=input.resourceIds();
+        if(ids==null||ids.isEmpty()||ids.size()>100||ids.stream().anyMatch(Objects::isNull)||new HashSet<>(ids).size()!=ids.size())throw new IllegalArgumentException("Choose 1–100 distinct resources");
+        if(input.sourceId()==null||input.targetId()==null||input.sourceId().equals(input.targetId()))throw new IllegalArgumentException("Choose a different destination collection");
+        for(String collection:List.of(input.sourceId(),input.targetId()))if(!collections.existsById(collection))throw new NoSuchElementException("Collection no longer exists");
+        for(String id:ids)if(jdbc.queryForObject("select count(*) from resources r join resource_collections rc on rc.resource_id=r.id where r.id=? and r.trashed_at is null and rc.collection_id=?",Long.class,id,input.sourceId())!=1)throw new IllegalArgumentException("The cut selection changed. Copy or cut it again from its collection.");
+        for(String id:ids){jdbc.update("insert or ignore into resource_collections(resource_id,collection_id) values(?,?)",id,input.targetId());jdbc.update("delete from resource_collections where resource_id=? and collection_id=?",id,input.sourceId());}
     }
     @Transactional public void bulk(BulkInput input) {
         if(input.resourceIds()==null || input.resourceIds().isEmpty() || input.resourceIds().size()>100 || input.resourceIds().stream().anyMatch(Objects::isNull)) throw new IllegalArgumentException("Select 1–100 resource IDs");

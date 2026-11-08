@@ -70,5 +70,6 @@ export class NoteRecovery {
     await this.chain;await this.store.get('storage-probe');
     for(const record of this.records.values()) await this.store.put(record.key,record);
   }
+  acknowledgedRevision(id:string) { return this.revisions.get(id); }
   current(id: string) { return this.records.get(id); }
 }

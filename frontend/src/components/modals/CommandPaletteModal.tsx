@@ -1,8 +1,12 @@
+import {copyResources} from '../../lib/resourceClipboard';
+import {getPlatform} from '../../lib/platform';
+import {ResourceDropSurface} from '../DesktopInteraction';
+import { useDragItems,canDragResource, useDesktopInteraction } from '../../lib/desktopInteraction';
 import {useLinkedSearch,type LinkedSearchProvider} from '../../lib/linked/search';
 import CommandStage from '../CommandStage';
 import SearchCoverage from '../SearchCoverage';
 import { MotionIndicator } from '../MotionFeedback';
-import {requestResourceAction} from '../../lib/resourceActions';
+import {requestResourceAction,executeResourceCommand,resourceCommandEnabled} from '../../lib/resourceActions';
 import { collectionKind, resourceKind, resourceDescription,resourcePresentation } from '../../lib/resourceKinds';
 import ResourceSearchOptions from '../ResourceSearchOptions';
 import LibraryPopover from '../LibraryPopover';
@@ -30,6 +34,7 @@ type Entry={step:CommandStep;query:string;parentSelectedId:string};
 type Result=CommandItem & {resource?:Resource;kind?:string};
 interface Props {searchLinked?:LinkedSearchProvider;open:boolean;onClose:(options?:{restorePreview?:boolean;restoreFocus?:boolean})=>void;context:CommandContext;}
 export default function CommandPaletteModal({open,onClose,context,searchLinked}:Props) {
+ const drag=useDesktopInteraction(),dragging=drag?.payload?.surface==='palette';
  const [wasOpen,setWasOpen]=useState(false),[captured,setCaptured]=useState(context);
  const [query,setQuery]=useState(''),[search,setSearch]=useState(''),[mode,setMode]=useState<'search'|'commands'>('search'),[stack,setStack]=useState<Entry[]>([]);
  const [searchMode,setSearchMode]=useState<SearchMode>('title'),[searchCollection,setSearchCollection]=useState<OrganizationItem|null>(null);
@@ -42,6 +47,7 @@ export default function CommandPaletteModal({open,onClose,context,searchLinked}:
  useEffect(()=>{if(open){const frame=requestAnimationFrame(()=>input.current?.focus());return()=>cancelAnimationFrame(frame);}},[open,stack.length,mode]);
  const selecting=entry?.step.id==='delete-select';
  const resources=useResourcePage({q:search,size:50,sort:search.trim()?'title':'recent',searchMode,collection:searchCollection?.id},open&&((mode==='search'&&!entry)||selecting));
+ const resourceItems=useDragItems(resources.data?.items??[]);
  const linked=useLinkedSearch(searchLinked,search,searchMode,open&&mode==='search'&&!entry&&!searchCollection);
  const collections=useOrganizationPage('collection',search,0,open&&mode==='search'&&!entry&&!searchCollection&&searchMode==='title'&&Boolean(search.trim()),false,20);
  const pins=usePins('',0,30,open&&mode==='search'&&!search.trim()&&!entry&&!searchCollection);
@@ -51,6 +57,8 @@ export default function CommandPaletteModal({open,onClose,context,searchLinked}:
  function handoff(kind:'collection'|'tag',ids:string[]){setOrganization({kind,ids});onClose({restoreFocus:false,restorePreview:false});}
  const action=(id:string,title:string,work:()=>void|Promise<void>,subtitle?:string):Result=>({id,title,subtitle,section:'Commands',onSelect:()=>({type:'execute',action:work})});
  function actionStep(resource:Resource):CommandStep {return {id:'actions-'+resource.id,type:'select',title:'Actions · '+resource.title,placeholder:'Filter actions…',getItems:filter=>[
+   ...(resourceCommandEnabled('copy-resources',resource)?[action('resource-copy','Copy resource',()=>executeResourceCommand('copy-resources',resource),resource.title),action('link-copy','Copy resource link',()=>executeResourceCommand('copy-links',resource),resource.title)]:[]),
+     ...(resourceCommandEnabled('export-copy',resource)?[action('explorer-copy','Export copy for Explorer…',()=>executeResourceCommand('export-copy',resource),resource.title),action('explorer-reveal','Reveal exported copy…',()=>executeResourceCommand('reveal-copy',resource),resource.title),action('system-open','Open exported copy in default app…',()=>executeResourceCommand('open-copy',resource),resource.title)]:[]),
    action('membership','Add to collection',()=>handoff('collection',[resource.id]),resource.title),
    action('pin',resource.favorite?'Unpin':'Pin',()=>setResourceFavorite(resource.id,!resource.favorite),resource.title),
    action('tags','Manage tags',()=>handoff('tag',[resource.id]),resource.title),
@@ -66,19 +74,20 @@ export default function CommandPaletteModal({open,onClose,context,searchLinked}:
   action('diagnostics','Open Diagnostics',()=>captured.openDiagnostics?.()),
  ];
  const targets=captured.selectedResources?.length?captured.selectedResources:captured.targetResource?[captured.targetResource]:[];
+ if(targets.length&&getPlatform().resourceClipboard)extra.push(action('copy-selection','Copy selected resources',async()=>{await copyResources(targets);}),action('copy-selection-links','Copy selected resource links',async()=>{await copyResources(targets,'links');}));
  if(targets.length){extra.push(action('organize','Add target to collection',()=>handoff('collection',targets.map(r=>r.id)),targets.map(r=>r.title).join(', ')),action('target-tags','Manage target tags',()=>handoff('tag',targets.map(r=>r.id)),targets.map(r=>r.title).join(', ')));}
  if(targets.length===1)extra.push({id:'target-actions',title:'Actions for '+targets[0].title,subtitle:'Explicit target',onSelect:async()=>({type:'push',step:actionStep((await api.get<Resource>('/resources/'+targets[0].id+'/summary',{backgroundDiagnostic:true})).data)})});
  function resourceItem(resource:Resource,section:string):Result {return {id:'resource-'+resource.id,title:resource.title,subtitle:resourceDescription(resource),resource,kind:resource.type,section,onSelect:()=>({type:'execute',action:()=>captured.openResource(resource.id)})};}
  let items:Result[]=[];
  if(entry)items=entry.step.getItems(entry.step.type==='input'?currentQuery:search,scope);
  else if(mode==='commands')items=[...createRootStep({...scope,resources:[]},null,{}).getItems(search,{...scope,resources:[]}),...extra.filter(item=>!search||((item.title+' '+(item.subtitle??'')).toLowerCase().includes(search.toLowerCase())))];
- else if(search.trim()||searchCollection)items=[...(resources.data?.items??[]).map(r=>resourceItem(r,'Resources')),...(!searchCollection&&searchMode==='title'?collections.data?.items??[]:[]).map(c=>({...action('collection-'+c.id,c.name,()=>captured.openCollection?.(c),`${c.count} resources`),kind:'collection',section:'Collections'}))];
+ else if(search.trim()||searchCollection)items=[...resourceItems.map(r=>resourceItem(r,'Resources')),...(!searchCollection&&searchMode==='title'?collections.data?.items??[]:[]).map(c=>({...action('collection-'+c.id,c.name,()=>captured.openCollection?.(c),`${c.count} resources`),kind:'collection',section:'Collections'}))];
  else {
   const seen=new Set<string>();const add=(item:Result)=>{if(!seen.has(item.id)){seen.add(item.id);items.push(item);}};
   captured.openNotes.forEach(r=>add(resourceItem(r,'Open')));
   if(captured.previewResource)add(resourceItem(captured.previewResource,'Open'));
   (pins.data?.items??[]).forEach(p=>{if(p.entityKind==='collection')add({...action('collection-'+p.id,p.name,async()=>{const {data}=await api.get('/collections/'+p.id,{backgroundDiagnostic:true});captured.openCollection?.(data);},'Collection'),kind:'collection',section:'Pinned'});else add(resourceItem(p.resource??{id:p.id,type:p.resourceType,title:p.name,favorite:true,tags:[],createdAt:'',updatedAt:''},'Pinned'));});
-  (resources.data?.items??[]).slice(0,20).forEach(r=>add(resourceItem(r,'Recent')));
+  resourceItems.slice(0,20).forEach(r=>add(resourceItem(r,'Recent')));
  }
  if(!entry&&mode==='search'&&search.trim()&&!searchCollection){const known=new Set(items.map(item=>item.id));items.push(...linked.data.items.map(r=>resourceItem(r,'Linked folders')).filter(item=>!known.has(item.id)));}
  const searchPending=((mode==='search'&&!entry)||selecting)&&currentQuery.trim()!==search.trim();
@@ -95,8 +104,8 @@ export default function CommandPaletteModal({open,onClose,context,searchLinked}:
  const failure=((mode==='search'&&!entry)||selecting)?resources.error||(!searchCollection&&searchMode==='title'&&search.trim()?collections.error:'')||(!searchCollection&&!search.trim()?pins.error:''):'';
  const closeOrganization=()=>{setOrganization(null);onClose({restorePreview:false,restoreFocus:true});};
  const dialog=organization?.kind==='collection'?<CollectionPicker resourceIds={organization.ids} onClose={closeOrganization} onCreated={organization.ids.length?undefined:closeOrganization}/>:organization?<OrganizationManager initialKind="tag" resourceIds={organization.ids} onClose={closeOrganization} onApplied={closeOrganization} tags={[]} onTag={()=>{}} onTagRenamed={()=>{}} onCollection={()=>{}}/>:null;
- return <>{dialog}{open&&createPortal(<div className="palette-overlay" style={getOverlayStyle(transparency,.3)} onClick={()=>{if(!running.current)onClose();}}>
- <div role="dialog" aria-modal="true" aria-label="Search and commands" data-motion-surface="command" data-motion-key="command-palette" className="palette-shell" style={getGlassPanelStyle(transparency,20)} onClick={e=>e.stopPropagation()} onKeyDown={e=>{
+ return <>{dialog}{open&&createPortal(<div className="palette-overlay" data-dragging={dragging||undefined} style={getOverlayStyle(transparency,.3)} onClick={()=>{if(!running.current)onClose();}}>
+ <div role="dialog" aria-modal={dragging?undefined:true} aria-label="Search and commands" data-motion-surface="command" data-motion-key="command-palette" className="palette-shell" style={getGlassPanelStyle(transparency,20)} onClick={e=>e.stopPropagation()} onKeyDown={e=>{
   e.stopPropagation();if(e.key!=='Tab'||!(e.target instanceof HTMLElement)||!e.currentTarget.contains(e.target))return;
   const controls=[...e.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex="0"]')].filter(node=>!node.closest('[hidden],[inert]')&&node.getClientRects().length);
   const first=controls[0],last=controls.at(-1);
@@ -113,7 +122,7 @@ export default function CommandPaletteModal({open,onClose,context,searchLinked}:
  {!entry&&mode==='search'&&search.trim()&&((resources.data?.totalItems??0)>50||(!searchCollection&&searchMode==='title'&&(collections.data?.totalItems??0)>20))&&<p className="px-4 pb-2 text-xs text-[var(--text-secondary)]">Showing the first matches. Refine your search or open Library for all results.</p>}
  {error&&<p role="alert" className="px-4 py-2 text-sm text-red-500">{error} Your input is retained; retry the action.</p>}
  {failure&&<p role="alert" className="px-4 py-2 text-sm">{failure}<button className="library-button" onClick={()=>{resources.retry();collections.retry();pins.retry();}}>Retry search</button></p>}
- <div id="palette-results" role="listbox" aria-label="Results" aria-busy={busy} className="palette-results p-2"><MotionIndicator value={selected?.id??''}/>{items.map((item,index)=>{const Icon=item.kind==='collection'?collectionKind.icon:item.resource?resourcePresentation(item.resource).icon:item.kind?resourceKind(item.kind).icon:Command;return <div key={item.id}>{item.section!==items[index-1]?.section&&<p className="px-3 py-1 text-xs text-[var(--text-tertiary)]">{item.section}</p>}<div role="option" id={'palette-option-'+item.id} aria-selected={item.id===selected?.id} className="palette-result flex gap-3 rounded-lg px-3 py-2 cursor-pointer" onMouseEnter={()=>setSelectedId(item.id)} onClick={()=>void execute(item)}><Icon className="shrink-0 mt-1" size={17}/><div className="min-w-0"><p className="truncate text-sm font-medium">{item.title}</p><p className="text-xs text-[var(--text-secondary)] truncate">{searchMode==='content'&&item.resource?.searchSnippet?.text?<SearchExcerpt snippet={item.resource.searchSnippet}/>:item.subtitle}</p></div></div></div>;})}{!items.length&&<p className="p-4 text-sm">{(searchPending||resources.loading)&&mode==='search'?'Searching…':'No matches. Try different words.'}</p>}</div>
+ <div id="palette-results" role="listbox" aria-label="Results" aria-busy={busy} className="palette-results p-2"><MotionIndicator value={selected?.id??''}/>{items.map((item,index)=>{const Icon=item.kind==='collection'?collectionKind.icon:item.resource?resourcePresentation(item.resource).icon:item.kind?resourceKind(item.kind).icon:Command;return <div key={item.id}>{item.section!==items[index-1]?.section&&<p className="px-3 py-1 text-xs text-[var(--text-tertiary)]">{item.section}</p>}<ResourceDropSurface resource={item.resource} draggable={Boolean(item.resource&&canDragResource(item.resource))} onDragStart={event=>{if(!item.resource||!canDragResource(item.resource)){event.preventDefault();return;}drag?.start(event,{kind:'resources',resources:[item.resource]},()=>onClose({restoreFocus:false,restorePreview:false}));}} onDragEnd={()=>drag?.cancel()} role="option" id={'palette-option-'+item.id} aria-selected={item.id===selected?.id} className="palette-result flex gap-3 rounded-lg px-3 py-2 cursor-pointer" onMouseEnter={()=>setSelectedId(item.id)} onClick={()=>void execute(item)}><Icon className="shrink-0 mt-1" size={17}/><div className="min-w-0"><p className="truncate text-sm font-medium">{item.title}</p><p className="text-xs text-[var(--text-secondary)] truncate">{searchMode==='content'&&item.resource?.searchSnippet?.text?<SearchExcerpt snippet={item.resource.searchSnippet}/>:item.subtitle}</p></div></ResourceDropSurface></div>;})}{!items.length&&<p className="p-4 text-sm">{(searchPending||resources.loading)&&mode==='search'?'Searching…':'No matches. Try different words.'}</p>}</div>
  </CommandStage>
  </div></div>,document.body)}</>;
 }

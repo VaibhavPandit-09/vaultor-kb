@@ -11,6 +11,16 @@ export async function runChromeSmoke(window, directory, owned, updates) {
   const evaluate = code => window.webContents.executeJavaScript(code);
   const wait = async (code, label) => { for (let i = 0; i < 500; i++) { if (await evaluate(code).catch(() => false)) return; await new Promise(r => setTimeout(r, 100)); } throw new Error(label + ': ' + await evaluate('document.body.innerText')); };
   await wait("Boolean(document.querySelector('.library-view'))", 'Local workspace');
+  if(process.env.VAULTOR_RELEASE_INTEGRITY_CHECK==='1'){const {runReleaseIntegrityCheck}=await import('./native-release-integrity-check.mjs');await runReleaseIntegrityCheck(window,directory,owned);return;}
+  if(process.env.VAULTOR_DESKTOP_D4_CHECK==='1'){const {runD4Check}=await import('./native-d4-check.mjs');await runD4Check(window,directory,owned);return;}
+  if(process.env.VAULTOR_D3_MENU_REFINEMENT==='1'){const {runMenuRefinementCheck}=await import('./native-menu-refinement-check.mjs');await runMenuRefinementCheck(window,directory,owned);return;}
+  if(process.env.VAULTOR_DESKTOP_D3_CHECK==='1'){const {runD3Check}=await import('./native-d3-check.mjs');await runD3Check(window,directory,owned);return;}
+  if(process.env.VAULTOR_NAVIGATOR_REFINEMENT_CHECK==='1'){const {runNavigatorRefinementCheck}=await import('./native-navigator-refinement-check.mjs');await runNavigatorRefinementCheck(window,directory,owned);return;}
+  if(process.env.VAULTOR_NAVIGATOR_CHECK==='1'){const {runNavigatorCheck}=await import('./native-navigator-check.mjs');await runNavigatorCheck(window,directory,owned);return;}
+  if(process.env.VAULTOR_DESKTOP_D2_UNIVERSAL_CHECK==='1'){const {runUniversalDragCheck}=await import('./native-universal-drag-check.mjs');await runUniversalDragCheck(window,directory,owned);return;}
+  if(process.env.VAULTOR_DESKTOP_D2_EXTENSION_CHECK==='1'){const {runDesktopD2ExtensionCheck}=await import('./native-desktop-d2-extension-check.mjs');await runDesktopD2ExtensionCheck(window,directory,owned);return;}
+  if(process.env.VAULTOR_DESKTOP_SELECTION_CHECK==='1'){const {runDesktopSelectionCheck}=await import('./native-desktop-selection-check.mjs');await runDesktopSelectionCheck(window,directory,owned);return;}
+  if(process.env.VAULTOR_DESKTOP_EXPERIENCE_CHECK==='1'){const {runDesktopExperienceCheck}=await import('./native-desktop-experience-check.mjs');await runDesktopExperienceCheck(window,directory,owned);return;}
   if(process.env.VAULTOR_LINKED_LINK_CHECK==='1'){const {runLinkedLinkCheck}=await import('./native-linked-link-check.mjs');await runLinkedLinkCheck(window,directory);return;}
   if(process.env.VAULTOR_RELEASE_STARTUP_CHECK==='1'){
     assert.equal(owned.status,'ready');

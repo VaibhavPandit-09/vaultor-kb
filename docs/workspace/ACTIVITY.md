@@ -31,3 +31,9 @@ Only HTTP409 with exact code `WORKSPACE_BUSY` is expected admission busy. The se
 New background export/merge and Trash snapshot APIs require advertised `backgroundOperations:1`; older protocol3 hosts remain readable but these commands refuse with an Update connected host message. Update the host to0.24.0 before using them. API/minimum-client protocol3 and archive schemas remain unchanged.
 
 Browser storage remains best effort outside strict admission/journal writes. Clearing it removes renderer task/source recognition metadata. There is no automatic source reacquisition, cross-tab distributed queue, background execution after the whole app exits, or arbitrary filesystem-job restart. Preview files may require reselection when a host receipt cannot prove staging. Restored failed tasks remain explicit review/retry states. Large archive phases can still temporarily make host reads busy; Activity does not remove host integrity locks. [Imports](IMPORTS.md), [resource lifecycle](RESOURCE-LIFECYCLE.md) and [transfers](WORKSPACE-TRANSFERS.md) own the exact operation safety contracts.
+
+## Desktop OS projection
+
+The renderer publishes a coalesced200ms snapshot of at most200 existing Activity tasks, prioritizing active work; Electron main validates current source token and bounded fields. No second operation registry is introduced. Comparable measured units aggregate; mixed or unknown units remain indeterminate. Attention/paused/idle have explicit taskbar states, deduplicated updates and source/window cleanup.
+
+Native notifications are for background attention transitions and completion after at least30seconds running. Foreground, restored history, preview and cancelled work are silent; repeated transitions deduplicate. Availability/preferences belong to the OS. Notification click checks source identity, focuses the existing window and opens Activity, without resource/workspace navigation. In-app Activity and cancellation remain authoritative.

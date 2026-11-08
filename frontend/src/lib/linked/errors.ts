@@ -4,6 +4,7 @@ export function linkedError(value:unknown){
   if(/COMBINATION_OVERLAP/.test(detail))return 'These changes overlap or share a boundary. Keep or export your protected draft, reload the external file, and reapply the desired edits.';
   if(/COMBINATION_SOURCE_REFUSED|COMBINATION_REQUIRES_VALIDATED|COMBINATION_READONLY/.test(detail))return 'These versions cannot be combined safely. Keep or export your draft and review the external file.';
   if(/REFRESH_DISK_CHANGED|REFRESH_EXPIRED/.test(detail))return 'The external file changed again or this review expired. Compare the current versions again.';
+  if(/JOURNAL_OWNER_LOCK/.test(detail))return 'Another local file service owns this workspace’s recovery journal. Close the other Vaultor instance, then reopen Vaultor. Do not remove recovery files or locks.';
   if(/JOURNAL_(?:QUOTA|OPERATION_LIMIT)|RECOVERY_LIMIT/.test(detail))return 'Recovery storage is full. Export and resolve retained drafts before saving.';
   if(/CARRIER_|RECOVERY_VOLUME_UNAVAILABLE|SOURCE_VOLUME_UNAVAILABLE/.test(detail))return 'The source volume or its private recovery folder is unavailable or needs setup. Reconnect the same drive and review Linked sources; protected drafts remain in Recovery.';
   if(/SOURCE_REMOVED|SOURCE_DISCONNECTED|SOURCE_UNAVAILABLE|ROOT_REVOKED|ROOT_REPLACED|SOURCE_REVOKED/.test(detail))return 'This linked folder is unavailable. Reconnect it from Linked sources; your protected drafts remain in Recovery.';

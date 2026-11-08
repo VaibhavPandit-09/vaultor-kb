@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { Ellipsis, Maximize, Minimize2, Minus, Plug, X } from 'lucide-react';
+import { Ellipsis, Maximize, Minimize2, Minus, Plug, Layers, X } from 'lucide-react';
 import { unwrap } from '../lib/desktop';
 
 import { WorkspaceSelectionContext } from '../lib/workspaceSelection';
@@ -7,7 +7,7 @@ import { DesktopConnectionContext } from '../lib/desktopConnectionContext';
 export function DesktopConnectionButton() {
   const connection = useContext(DesktopConnectionContext);
   const workspace=useContext(WorkspaceSelectionContext);
-  if(workspace)return <div className="flex items-center min-w-0"><button className="desktop-connection-button flex-1 min-w-0" onClick={workspace.open} title={workspace.server+' · Switch workspace'}><Plug size={15}/><span className="truncate">{workspace.name}</span></button>{connection&&<button className="p-2 rounded-lg hover:bg-card" aria-label="Connections and sharing" title={connection.name+' · Connections and sharing'} onClick={connection.open}><Ellipsis size={16}/></button>}</div>;
+  if(workspace)return <div className="flex items-center min-w-0"><button className="desktop-connection-button flex-1 min-w-0" onClick={workspace.open} title={workspace.server+' · Switch workspace'}><Layers size={15}/><span className="truncate">{workspace.name}</span></button>{connection&&<button className="p-2 rounded-lg hover:bg-card" aria-label="Connections and sharing" title={connection.name+' · Connections and sharing'} onClick={connection.open}><Plug size={16}/></button>}</div>;
   if (!connection) return null;
   return <button className="desktop-connection-button" onClick={connection.open} title="Connections and sharing"><Plug size={15}/><span className="truncate">{connection.name}</span><span className={connection.online ? 'desktop-online' : 'desktop-offline'} aria-label={connection.online ? 'Connected' : 'Connection interrupted'}/></button>;
 }

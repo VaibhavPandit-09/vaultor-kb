@@ -13,6 +13,8 @@ Resource rows, sidebar shortcuts, note headers and file previews share an Action
 
 Trash has one bounded, metadata-only title-search list, 100 rows per UI page, checkbox selection, Restore and confirmed Delete permanently. Normal Library, Recent, pins, resource pickers, title/content search and membership counts exclude Trash. Tags and empty collections themselves remain discoverable. Nothing is automatically purged.
 
+Desktop Trash selection also supports modifier/range clicks and scoped Select All through the shared resource selection controller. A selected-row context menu targets that selected group; an unselected row keeps its individual target. Restore excludes cleanup-pending items, labels a mixed selection as Restore available selection, and leaves unsupported items selected in Trash. Permanent deletion still opens the explicit existing lifecycle review for the selected group, including reuse of pending cleanup identities; a context click never bypasses confirmation. Usage, fresh revisions and lifecycle writes retain the command's captured workspace generation and connection epoch. [Library](LIBRARY.md) owns the general selection/drag contract.
+
 ## Empty Trash snapshots
 
 Empty Trash… is a discoverable secondary header action. Its separate confirmation reviews the exact total across every page, regardless of search/type filters, distinct saved referencing-note count and ownership consequences. Linked external originals are never deleted. New arrivals after snapshot creation are excluded. The approval click durably creates an Activity task before sending confirmation; navigation/minimization remain available.

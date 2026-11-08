@@ -1,3 +1,5 @@
+import {getPlatform} from '../../lib/platform';
+import {isMac} from '../../lib/shortcuts';
 import { Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { getShortcutCategories } from '../../lib/shortcuts';
@@ -13,7 +15,7 @@ interface ShortcutsModalProps {
 export default function ShortcutsModal({ open, onClose, restoreFocusOnClose = true }: ShortcutsModalProps) {
   const [query, setQuery] = useState('');
   const { resolvedShortcuts } = useSettings();
-  const shortcuts = useMemo(() => getShortcutCategories(resolvedShortcuts), [resolvedShortcuts]);
+  const shortcuts = useMemo(() => [...getShortcutCategories(resolvedShortcuts),...(getPlatform().resourceClipboard?[{category:'Desktop resources (list focus)',items:[{description:'Copy resource identities',keys:[isMac?'⌘':'Ctrl','C']},{description:'Cut only from the current collection',keys:[isMac?'⌘':'Ctrl','X']},{description:'Paste into a collection',keys:[isMac?'⌘':'Ctrl','V']},{description:'Rename selected resource',keys:['F2']},{description:'Review moving selected resources to Trash',keys:['Delete']}]}]:[])], [resolvedShortcuts]);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();

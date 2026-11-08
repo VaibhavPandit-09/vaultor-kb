@@ -15,10 +15,10 @@ export class NativeChannel {
     this.ready=new Promise((resolve,reject)=>this.pending.set(0,{resolve,reject,timer:setTimeout(()=>this.fail(new Error('NATIVE_START_TIMEOUT')),30000)}));
     this.child.stdout.setEncoding('utf8');this.child.stdout.on('data',chunk=>{
       this.buffer+=chunk;if(this.buffer.length>16*1024*1024)return this.fail(new Error('NATIVE_FRAME_LIMIT'));
-      let end;while((end=this.buffer.indexOf('\n'))>=0){const fields=decode(this.buffer.slice(0,end).replace(/\r$/,''));this.buffer=this.buffer.slice(end+1);const id=Number(fields.shift()),pending=this.pending.get(id);if(!pending)return this.fail(new Error('NATIVE_SEQUENCE'));this.pending.delete(id);clearTimeout(pending.timer);if(fields[0]==='ERROR')pending.reject(linkedPublicError(new Error(fields[1])));else pending.resolve(fields.slice(1));}
+      let end;while((end=this.buffer.indexOf('\n'))>=0){const fields=decode(this.buffer.slice(0,end).replace(/\r$/,''));this.buffer=this.buffer.slice(end+1);const id=Number(fields.shift()),pending=this.pending.get(id);if(!pending)return this.fail(new Error('NATIVE_SEQUENCE'));this.pending.delete(id);clearTimeout(pending.timer);if(id===0){this.startDiagnostic='';this.startFailure=undefined;}if(fields[0]==='ERROR')pending.reject(linkedPublicError(new Error(fields[1])));else pending.resolve(fields.slice(1));}
     });
-    this.child.stderr.on('data',()=>{this.nativeDiagnostics=(this.nativeDiagnostics??0)+1;}); // Never forward payloads/credentials.
-    this.child.on('error',error=>this.fail(error));this.child.on('exit',()=>this.fail(new Error('NATIVE_HOST_CLOSED')));
+    this.child.stderr.on('data',chunk=>{this.nativeDiagnostics=(this.nativeDiagnostics??0)+1;if(this.pending.has(0)){this.startDiagnostic=((this.startDiagnostic??'')+chunk.toString()).slice(-4096);const failure=this.startDiagnostic.match(/java\.io\.IOException: (JOURNAL_OWNER_LOCK|JOURNAL_SCOPE|PRIVATE_INIT)(?:\r?\n|$)/);if(failure)this.startFailure=failure[1];}}); // Never forward payloads/credentials.
+    this.child.on('error',error=>this.fail(error));this.child.on('exit',()=>this.fail(new Error(this.startFailure??'NATIVE_HOST_CLOSED')));
     this.child.stdin.on('error',error=>this.fail(error));
     this.child.stdin.write(encode(['INIT-G3',workspace,generation,privateRoot,protectedRoot,this.validation.toString('base64'),this.consent.toString('base64'),applicationRoot,...protectedPaths]));
   }
@@ -27,7 +27,7 @@ export class NativeChannel {
     const id=++this.sequence,frame=encode([id,command,...fields]);if(Buffer.byteLength(frame)>16*1024*1024)throw new Error('NATIVE_FRAME_LIMIT');
     return new Promise((resolve,reject)=>{const timer=setTimeout(()=>this.fail(new Error('NATIVE_TIMEOUT')),30000);this.pending.set(id,{resolve,reject,timer});this.child.stdin.write(frame);});
   }
-  fail(error){if(this.closed)return;this.closed=true;for(const pending of this.pending.values()){clearTimeout(pending.timer);pending.reject(error);}this.pending.clear();this.validation.fill(0);this.consent.fill(0);this.child.kill();}
+  fail(error){if(this.closed)return;this.closed=true;for(const pending of this.pending.values()){clearTimeout(pending.timer);pending.reject(error);}this.pending.clear();this.validation.fill(0);this.consent.fill(0);this.startDiagnostic='';this.child.kill();}
   async close(){
     if(this.child.exitCode!==null||this.child.signalCode!==null)return;
     let timer;const exited=new Promise(resolve=>this.child.once('exit',resolve));

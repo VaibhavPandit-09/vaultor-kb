@@ -18,6 +18,10 @@ Reviewed 2026-11-02: Windows x64 0.25.2 single-click Markdown patch and Mac arm6
 - [Menu and copy audit,2026-10-29](design/MENU-UX-AUDIT-2026-10-29.md): Source/screenshot findings on Activity/window overlap, stale import history and wording across menus; historical baseline and rationale for the0.24.1 fixes.
 - [ANDROID_UI_PHILOSOPHY](design/ANDROID_UI_PHILOSOPHY.md): Android extension: hybrid UI, reader, Back, platform adaptation and restrained semantic haptics.
 
+## Native desktop initiative
+
+- [Desktop experience tracker](plans/DESKTOP-EXPERIENCE-TRACKER.md): Authoritative D1–D4 and S audit, Windows D2/S interaction acceptance, D3 native implementation/qualification boundaries, task dependencies, acceptance, validation, commit and platform status. Feature-branch work is unreleased; D1/D2/S Windows interaction review is accepted. D3 and D4 are implemented awaiting Windows acceptance. D4 records current passing native linked-source workflows separately from the historical journal-owner incident and pending packaged-startup release gate.
+
 ## Development and validation
 
 - [AI_DEVELOPMENT_WORKFLOW](development/AI_DEVELOPMENT_WORKFLOW.md): Repository-wide AI efficiency policy, risk-based verification/evidence reuse, master-centered work, integration/protections and immutable recovery points.
@@ -30,6 +34,8 @@ Reviewed 2026-11-02: Windows x64 0.25.2 single-click Markdown patch and Mac arm6
 - [SCALE-INTEGRATION](development/SCALE-INTEGRATION.md): Historical0.7.1 scale/fault results; compare only under stated conditions.
 
 ## Desktop delivery
+
+- [Windows0.26.0 release](desktop/releases/v0.26.0.md): Desktop Experience consolidation, mandatory packaged/public gates and platform status.
 
 - [Windows0.25.2 release](desktop/releases/v0.25.2.md): Single-click linked Markdown navigation; Windows-only publication and verification.
 - [Windows0.25.1 release](desktop/releases/v0.25.1.md): Linked Markdown hyperlink rendering/activation fix; Windows-only publication and verification.

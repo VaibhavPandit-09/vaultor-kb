@@ -1,3 +1,6 @@
+import {pasteResourceLinks} from '../../lib/resourceClipboard';
+import {reportError} from '../../lib/diagnostics';
+import { registerEditorDrop,editorDropTarget } from '../../lib/editorDrop';
 import {registerReferenceView} from '../../lib/referenceNavigation';
 import { ManagedImage } from './ManagedImage';
 import ImagePicker from './ImagePicker';
@@ -70,6 +73,7 @@ interface BlockEditorProps {
   onRequestMdUpload: (editor: Editor, range: NoteSelection) => void;
   onRequestCsvUpload: (editor: Editor, range: NoteSelection) => void;
   onRequestLinkUpload: (editor: Editor, range: NoteSelection) => void;
+  onRequestFileDrop?: (editor:Editor,range:NoteSelection,files:File[])=>void;
 }
 
 export interface NoteSelection {
@@ -96,7 +100,7 @@ function BlockEditor({
   savedSelection, selectionRestoreKey,
   onRequestMdUpload,
   onRequestCsvUpload,
-  onRequestLinkUpload,
+  onRequestLinkUpload, onRequestFileDrop,
 }: BlockEditorProps) {
   const editorEscapeId = useId();
   const initialSelectionRestored = useRef(false);
@@ -119,6 +123,7 @@ function BlockEditor({
 
   const [imagePicker, setImagePicker] = useState<{ position: number; replaceId?: string }>();
   const invalidContent = useRef(false);
+  const observedContent = useRef<string|null>(null);
   const [contentError, setContentError] = useState(false);
   // EditorContent first attaches the plain PM DOM, then installs React node
   // views. Keep that intermediate tree out of layout until its child mount
@@ -194,6 +199,7 @@ function BlockEditor({
         return true;
       },
       handlePaste: (view, event) => {
+        const clipboardTarget=editorDropTarget(view.dom);if(clipboardTarget&&pasteResourceLinks(clipboardTarget.editor,event,clipboardTarget.managed,error=>reportError('resource.clipboard',error)))return true;
         if (event.clipboardData) {
           const files = clipboardImages(event.clipboardData);
           if (integration && (files.length || /<img\b/i.test(event.clipboardData.getData('text/html')))) { event.preventDefault(); integration.unsupported('This paste contains unsupported images. Your document is unchanged; use targeted Markdown source or paste text.'); return true; }
@@ -508,6 +514,16 @@ function BlockEditor({
   }, []);
 
 
+  useEffect(()=>{
+    if(!editor)return;
+    let unregister:(()=>void)|undefined;
+    const mounted=()=>{unregister?.();unregister=registerEditorDrop({editor,managed:!integration,resource:{id:noteId,title:noteTitle,type:integration?'linked':'note',tags:[],createdAt:'',updatedAt:''},importFile:onRequestFileDrop?(target,position,files)=>onRequestFileDrop(target,{from:position,to:position},files):undefined});};
+    const unmounted=()=>{unregister?.();unregister=undefined;};
+    editor.on('mount',mounted);editor.on('create',mounted);editor.on('unmount',unmounted);
+    if(editor.isInitialized)mounted();
+    return()=>{editor.off('mount',mounted);editor.off('create',mounted);editor.off('unmount',unmounted);unmounted();};
+  },[editor,integration,noteId,noteTitle,onRequestFileDrop]);
+
   useEffect(() => {
     if (!editor) {
       return;
@@ -518,13 +534,18 @@ function BlockEditor({
   }, [editor, interactionLocked]);
 
   useEffect(() => {
-    if (integration || !editor || invalidContent.current || !content || editor.isFocused) {
+    if (integration || !editor || invalidContent.current || !content) {
       return;
     }
 
     const parsed = parseInitialContent(content);
-    const current = JSON.stringify(editor.getJSON());
     const incoming = JSON.stringify(parsed);
+    // A fresh prop object containing the same saved snapshot is not a reload.
+    // Drops/imports may edit an unfocused view before its parent publishes the update.
+    if (observedContent.current === incoming) return;
+    observedContent.current = incoming;
+    if (editor.isFocused) return;
+    const current = JSON.stringify(editor.getJSON());
     if (current !== incoming) {
       editor.view.dispatch(editor.state.tr.setMeta(tableViewKey, { reset: true }));
       let doc;
@@ -642,6 +663,7 @@ const MemoizedBlockEditor = memo(BlockEditor, (prev, next) => (
   && prev.onFocusRestored === next.onFocusRestored
   && prev.onRequestMdUpload === next.onRequestMdUpload
   && prev.onRequestCsvUpload === next.onRequestCsvUpload
+  && prev.onRequestFileDrop === next.onRequestFileDrop
   && prev.onRequestLinkUpload === next.onRequestLinkUpload
 ));
 

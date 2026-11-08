@@ -15,8 +15,8 @@ import {promisify} from 'node:util';
 const run=promisify(execFile);
 const repository=fileURLToPath(new URL('../../',import.meta.url)),assets=resolve(repository,'frontend/dist/assets');
 const worker=process.env.VAULTOR_MARKDOWN_WORKER??(existsSync(assets)?join(assets,(await readdir(assets)).find(name=>/^markdown\.worker-.*\.js$/.test(name))??'missing'):'missing');
-const java=resolve(repository,process.platform==='darwin'?'desktop/bundle/runtime/bin/java':'desktop/bundle/runtime/bin/java.exe'),classes=resolve(repository,process.platform==='darwin'?'native/linked-markdown/build-mac':'native/linked-markdown/build');
-const skip=!['win32','darwin'].includes(process.platform)||!existsSync(java)||!existsSync(worker)||!existsSync(join(classes,'vaultor/linked/LinkedHost.class'));
+const java=process.env.VAULTOR_BUILD_BUNDLE?join(process.env.VAULTOR_BUILD_BUNDLE,process.platform==='win32'?'runtime/bin/java.exe':'runtime/bin/java'):resolve(repository,process.platform==='darwin'?'desktop/bundle/runtime/bin/java':'desktop/bundle/runtime/bin/java.exe'),classes=process.env.VAULTOR_BUILD_BUNDLE?join(process.env.VAULTOR_BUILD_BUNDLE,'linked-files.jar'):resolve(repository,process.platform==='darwin'?'native/linked-markdown/build-mac':'native/linked-markdown/build');
+const skip=!['win32','darwin'].includes(process.platform)||!existsSync(java)||!existsSync(worker)||!(classes.endsWith('.jar')?existsSync(classes):existsSync(join(classes,'vaultor/linked/LinkedHost.class')));
 async function fixture(source='# Guide\n\nText.\n'){
   const dir=await mkdtemp(join(repository,'native/linked-markdown/.scratch/documents-')),root=join(dir,'source'),privateDir=join(dir,'private');await mkdir(root);await mkdir(privateDir);await writeFile(join(root,'guide.md'),source);
   const scope={token:'local-token',workspace:'workspace',generation:'generation',epoch:'epoch',kind:'owned-local',mainFrame:true};

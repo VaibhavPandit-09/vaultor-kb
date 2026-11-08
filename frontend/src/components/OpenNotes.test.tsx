@@ -25,3 +25,7 @@ it('finds sessions without another scroll container and keeps a filter editable 
  result.rerender(<OpenNotes {...props} sessions={sessions.slice(0,2)}/>);
  expect(screen.getByLabelText('Find open note')).toBeTruthy();expect(screen.getByText('No matching open notes')).toBeTruthy();
 });
+
+it('offers keyboard ordering against the full session order while filtering',()=>{
+ const reorder=vi.fn();render(<OpenNotes sessions={sessions} panes={[]} activeId={null} canSplit onOpen={vi.fn()} onClose={vi.fn()} onSplit={vi.fn()} onCloseOthers={vi.fn()} onReorder={reorder}/>);fireEvent.change(screen.getByLabelText('Find open note'),{target:{value:'Note 3'}});fireEvent.click(screen.getByText('Move earlier in Open Notes'));expect(reorder).toHaveBeenCalledWith('s3','s2');fireEvent.click(screen.getByText('Move later in Open Notes'));expect(reorder).toHaveBeenLastCalledWith('s3','s5');
+});

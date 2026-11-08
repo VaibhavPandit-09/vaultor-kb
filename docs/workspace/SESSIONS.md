@@ -14,6 +14,10 @@ Snapshots are written on changed-state polling every 500 ms, with a best-effort 
 
 A sessionStorage tab token identifies refreshes. Web Locks prevent duplicated tabs (which can inherit sessionStorage) from claiming the same session record. A fresh tab seeds its own layout from the last saved session; the shared latest pointer does not modify other tabs' snapshots. Without Web Locks, each load claims a new independent token and seeds from the previous record. Tab recovery journals are separate. Drafts from another tab are offered as separate copies, never automatically written to their originals or deleted by this tab.
 
+## Server-read reconciliation during Save
+
+Dashboard captures the recovery owner's acknowledged revision before fetching an open note. If that revision advances while the read is in flight, only metadata is reconciled; the fetched body cannot replace the live shared document. Pending drafts likewise keep their body. A running/queued conditional Save determines actual conflict outcome, avoiding an external-change warning for our own notification before its acknowledgement. Failed Saves and staged title drafts still retain conflict/recovery warnings. Fresh reads started after acknowledgement continue normal clean-document reconciliation. No Save condition, draft retention, undo or editor identity is bypassed.
+
 ## Durable drafts and conflicts
 
 `NoteRecovery` journals each pending title/content edit with an edit UUID, save version, original server revision, workspace generation and retry-safe recovered-copy ID. It also journals title text before Enter/blur submission; Escape cancels that staged title while preserving pending body edits. `SaveCoordinator` still debounces and serializes server writes. Successful responses acknowledge exactly the version written; newer pending edits remain journaled and receive the returned base revision. An older response cannot clear newer edits or rebase a replaced workspace. A cleared coordinator stops subsequent queued writes.

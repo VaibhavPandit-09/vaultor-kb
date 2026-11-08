@@ -1,3 +1,5 @@
+import { useDesktopInteraction } from '../lib/desktopInteraction';
+import { changeMembership, commandScope, commandConfig } from '../lib/resourceBatchCommands';
 import CollectionDeletionDialog from './CollectionDeletionDialog';
 import PinButton from './PinButton';
 import { useFormKeyboard } from '../lib/useFormKeyboard';
@@ -16,6 +18,7 @@ export default function OrganizationManager({onClose,onCollection,onTag,tags,res
   const running=useRef(false), nameInput=useRef<HTMLInputElement>(null);
  const results=useOrganizationPage(kind,search,page);
   useEffect(()=>{const timer=setTimeout(()=>{setSearch(query);setPage(0);},200);return()=>clearTimeout(timer);},[query]);
+  const interaction=useDesktopInteraction();const [scope]=useState(()=>interaction?.scope??commandScope());
   async function action(work:()=>Promise<void>) {
     if(running.current)return;running.current=true;
     setBusy(true);setError('');setMessage('');
@@ -26,14 +29,14 @@ export default function OrganizationManager({onClose,onCollection,onTag,tags,res
   async function save() {
     if(!name.trim())return;
     await action(async()=>{
-      if(kind==='collection') {const {data}=await api[editing?'put':'post'](editing?`/collections/${editing.id}`:'/collections',{name,favorite:editing?.favorite??false});if(editing && selectedCollection?.id===editing.id)onCollection(data);}
-      else if(editing) {const {data}=await api.put(`/tags/${editing.id}/name`,{name});onTagRenamed(editing.name,data.name);}
-      else await api.post('/tags',{name});
+      if(kind==='collection') {const {data}=await api[editing?'put':'post'](editing?`/collections/${editing.id}`:'/collections',{name,favorite:editing?.favorite??false},commandConfig(scope));if(editing && selectedCollection?.id===editing.id)onCollection(data);}
+      else if(editing) {const {data}=await api.put(`/tags/${editing.id}/name`,{name},commandConfig(scope));onTagRenamed(editing.name,data.name);}
+      else await api.post('/tags',{name},commandConfig(scope));
       setName('');setEditing(null);setMessage('Saved.');
     });
   }
   const form=useFormKeyboard(save);
-  function bulk(item:OrganizationItem,change:'add'|'remove') {void action(async()=>{await api.post('/organization/memberships',{resourceIds,kind,targetId:item.id,action:change});setMessage(`${change==='add'?'Added to':'Removed from'} ${item.name}.`);onApplied();});}
+  function bulk(item:OrganizationItem,change:'add'|'remove') {void action(async()=>{await changeMembership(resourceIds,kind,item.id,change,scope);setMessage(`${change==='add'?'Added to':'Removed from'} ${item.name}.`);onApplied();});}
   return <AppModal open title={resourceIds.length?`Organize ${resourceIds.length} selected items`:'Collections and tags'} description="Collections group items by topic. Tags describe them across collections." onClose={()=>{if(!busy)onClose();}} widthClassName="max-w-2xl">
     <div className="organization-manager">
       <div className="flex gap-2"><button disabled={busy} className="library-button" aria-pressed={kind==='collection'} onClick={()=>switchKind('collection')}><Folder size={16}/>Collections</button><button disabled={busy} className="library-button" aria-pressed={kind==='tag'} onClick={()=>switchKind('tag')}><Tag size={16}/>Tags</button></div>

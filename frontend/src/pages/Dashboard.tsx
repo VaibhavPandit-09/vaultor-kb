@@ -1,3 +1,15 @@
+import {renameManagedFile} from '../lib/resourceActions';
+import {noteReconciliation} from '../lib/noteReconciliation';
+import {CollectionCommandsContext} from '../lib/collectionCommands';
+import ResourceRenameDialog from '../components/ResourceRenameDialog';
+import NativeExportCopy from '../components/NativeExportCopy';
+import SourcesBrowser from '../components/SourcesBrowser';
+import {QuickTags,TagsBrowser} from '../components/TagsBrowser';
+import AdaptiveNavigator from '../components/AdaptiveNavigator';
+import {defaultNavigator,normalizeNavigator,rememberNavigatorTag,type NavigatorState} from '../lib/navigator';
+import type { DragSurface } from '../lib/desktopInteraction';
+import {commandScope, commandConfig, requireCommandScope } from '../lib/resourceBatchCommands';
+import { DesktopInteractionProvider, PaneDropTarget, NavigationDropButton, CollectionDropButton, SidebarDragNavigation, SidebarDragGuidance, SessionDragHandle } from '../components/DesktopInteraction';
 import ImportSourceModal from '../components/modals/ImportSourceModal';
 import {dropDesktopFiles} from '../lib/desktop';
 import {linkedError} from '../lib/linked/errors';
@@ -14,7 +26,7 @@ import {revealReference} from '../lib/referenceNavigation';
 import ResourceActions from '../components/ResourceActions';
 import ResourceLifecycleDialog from '../components/ResourceLifecycleDialog';
 import TrashView from '../components/TrashView';
-import { RESOURCE_ACTION_EVENT, type ActionRequest } from '../lib/resourceActions';
+import { RESOURCE_ACTION_EVENT, requestResourceAction, supportedResourceActions, type ActionRequest } from '../lib/resourceActions';
 import { hasPendingImages } from '../lib/noteImages';
 import { SidebarSection, SidebarCustomization, SidebarRecent } from '../components/SidebarSections';
 import { inspectWorkspaceDeparture } from '../lib/workspaceDeparture';
@@ -39,7 +51,7 @@ import { watchChanges, type RemoteChange } from '../lib/changeFeed';
 import { organizationChanged, collectionDeletionDestination } from '../lib/organization';
 import ResourceCollections, { CollectionPicker } from '../components/ResourceCollections';
 import PinButton from '../components/PinButton';
-import { PinnedList, CollectionsView } from '../components/OrganizationViews';
+import { PinnedList, CollectionsView, CollectionChildren } from '../components/OrganizationViews';
 import type { OrganizationItem } from '../lib/organization';
 import { createPortal, flushSync } from 'react-dom';
 import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
@@ -55,11 +67,11 @@ import {
   Clock,
   Pin,
   Folder,
+  FolderSymlink,
   Trash2,
   UploadCloud,
   DownloadCloud,
   X,
-  FileText,
   Upload,
   Loader2,
   Command,
@@ -67,11 +79,10 @@ import {
   Settings2,
   PanelLeftClose,
   PanelLeftOpen,
-  Palette,
   MessageSquare,
 } from 'lucide-react';
 import api from '../lib/api';
-import { getConnection, getPlatform, saveApiFile, openApiFile } from '../lib/platform';
+import { getConnection, bindWorkspaceIdentity, getPlatform, saveApiFile, openApiFile } from '../lib/platform';
 import { registerConnectionBarrier, SwitchBlockedError,consumeLocalArchiveImport } from '../lib/desktop';
 import LibraryView, { type LibrarySection } from '../components/LibraryView';
 import { resourcesChanged } from '../lib/resourceBrowse';
@@ -97,7 +108,6 @@ import { pickFiles } from '../lib/filePicker';
 import { captureImportTarget } from '../lib/importTarget';
 import DiagnosticNotice from '../components/DiagnosticNotice';
 import { reportError } from '../lib/diagnostics';
-import AppModal from '../components/modals/AppModal';
 import CommandPaletteModal from '../components/modals/CommandPaletteModal';
 import ShortcutsModal from '../components/modals/ShortcutsModal';
 import SettingsModal from '../components/modals/SettingsModal';
@@ -114,7 +124,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../state/hooks';
 import { ESCAPE_PRIORITIES, focusWithoutScroll, useEscapeLayer } from '../lib/escape/escape';
 import { useSettings } from '../lib/settings';
-import { generateTagColor, getTagColorInputValue, getTagPillStyle } from '../lib/tagColors';
+import { generateTagColor, getTagPillStyle } from '../lib/tagColors';
 import { getGlassPanelStyle } from '../lib/transparency';
 
 
@@ -134,6 +144,7 @@ export default function Dashboard() {
   const [libraryVisible, setLibraryVisible] = useState(true);
   const [librarySection, setLibrarySection] = useState<LibrarySection>('library');
   const [libraryContext, setLibraryContext] = useState(defaultLibrary);
+  const [navigatorState,setNavigatorState]=useState<NavigatorState>(defaultNavigator);
   const [sessionReady, setSessionReady] = useState(false), [sessionError, setSessionError] = useState(''), [sessionMessage, setSessionMessage] = useState('');
   const [bootError, setBootError] = useState(''), [bootAttempt, setBootAttempt] = useState(0);
   const [recoveryRecords, setRecoveryRecords] = useState<RecoveryRecord[]>([]), [recoveryOpen, setRecoveryOpen] = useState(false);
@@ -166,7 +177,7 @@ export default function Dashboard() {
   const [reviewTarget,setReviewTarget]=useState<Pick<Resource,'id'|'title'|'revision'>|null|undefined>(undefined);
   const [loadingResourceIds, setLoadingResourceIds] = useState<string[]>([]);
 
-  const [tagSearch, setTagSearch] = useState('');
+  const [desktopDragSource,setDesktopDragSource]=useState<DragSurface|null>(null);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -177,6 +188,8 @@ export default function Dashboard() {
   const [tagInputValue, setTagInputValue] = useState('');
   const [tagPickerSelectedIndex, setTagPickerSelectedIndex] = useState(0);
 
+  const [nativeExport,setNativeExport]=useState<{resource:Resource;epoch:number;generation?:string;intent?:'reveal'|'open'}|null>(null);
+  const [renameRequest,setRenameRequest]=useState<{resource:Resource;epoch:number;generation?:string}|null>(null);
   const [noteExport, setNoteExport] = useState<{ id: string; title: string } | null>(null);
   const [transferMode, setTransferMode] = useState<'export' | 'import' | null>(null);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
@@ -217,14 +230,14 @@ export default function Dashboard() {
     return () => { window.removeEventListener('vaultor:error', error); window.removeEventListener('beforeunload', unload); };
   }, [saves,recovery]);
 
+  const importCollection=useRef<OrganizationItem|undefined>(undefined);
   const [createNotePending, setCreateNotePending] = useState(false);
   const [uploadPending, setUploadPending] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
-  const [tagDeletePending, setTagDeletePending] = useState(false);
+  const [tagManagementPending,setTagManagementPending]=useState(false);
   const [tagAddPending, setTagAddPending] = useState(false);
 
   const [lifecycleTargets,setLifecycleTargets]=useState<Resource[]|null>(null);
-  const [tagDeleteModal, setTagDeleteModal] = useState<{ id: string; name: string } | null>(null);
 
   const [fileImport, setFileImport] = useState<ImportSession | null>(null);
   const importBusy = useRef(false);
@@ -393,7 +406,9 @@ export default function Dashboard() {
     setTagPickerSelectedIndex(0);
   }, [tagInputValue, tagPickerOpenNoteId]);
 
-  const tagsEnabled = (sidebarVisible && localSettings.sidebarSections.tags.visible && !localSettings.sidebarSections.tags.collapsed) || Boolean(tagPickerOpenNoteId);
+  const tagsEnabled = Boolean(tagPickerOpenNoteId);
+  const [tagQuery,setTagQuery]=useState('');
+  useEffect(()=>{const timer=setTimeout(()=>setTagQuery(tagInputValue.trim()),180);return()=>clearTimeout(timer);},[tagInputValue]);
   const tagGeneration = useRef(0);
   const tagRequest = useRef<AbortController | null>(null);
   const fetchTags = useCallback(async () => {
@@ -402,10 +417,10 @@ export default function Dashboard() {
     const controller = new AbortController(); tagRequest.current = controller;
     const generation = ++tagGeneration.current;
     try {
-      const {data} = await api.get('/tags', {backgroundDiagnostic:true,signal:controller.signal});
-      if (generation === tagGeneration.current) {setTags(data || []);setTagsError('');}
+      const {data} = await api.get('/tags/browse', {params:{q:tagQuery,size:30},backgroundDiagnostic:true,signal:controller.signal});
+      if (generation === tagGeneration.current) {setTags(data.items || []);setTagsError('');}
     } catch { if (!controller.signal.aborted && generation === tagGeneration.current) setTagsError('Could not refresh tags.'); }
-  }, [tagsEnabled]);
+  }, [tagsEnabled,tagQuery]);
   const fetchData = useCallback(async () => { await fetchTags(); }, [fetchTags]);
   const cancelSidebarRequests = useCallback(() => { tagGeneration.current++; tagRequest.current?.abort(); }, []);
 
@@ -478,6 +493,16 @@ export default function Dashboard() {
     });
   }, [resourceDetails, openNotes, fetchResourceDetails, saves, openPreview, markOpened, dismissPreview, dispatch, workspaceSettings.maxOpenNotes, workspaceSettings.noteOpening]);
   const openResourceById = useCallback((id: string, options?: OpenIntent) => paneNavigation.open(id, options), [paneNavigation]);
+  const revealDragNote=useCallback(async(resource:Resource,admitted:()=>boolean)=>{
+    const epoch=workspaceEpoch.current;
+    try{
+      await openResourceById(resource.id,{focus:false,managedOnly:true,allowCommit:admitted,throwOnFailure:true});
+      if(admitted()&&!paneNavigation.snapshot().panes.some(pane=>pane.id===resource.id))throw Error(paneNavigation.snapshot().issue?.message??'This note could not be opened.');
+    }finally{
+      // A cancelled hover may finish a read, but must not retain an unopened clean body.
+      if(epoch===workspaceEpoch.current&&!paneNavigation.snapshot().panes.some(pane=>pane.id===resource.id)&&!saves.latest(resource.id)&&!recovery.current(resource.id))setResourceDetails(previous=>previous[resource.id]?.type==='note'&&previous[resource.id].content!=null?{...previous,[resource.id]:{...previous[resource.id],content:undefined}}:previous);
+    }
+  },[openResourceById,paneNavigation,saves,recovery]);
   const openLinkedResource = useCallback((request: LinkedResourceIntent) => { void paneNavigation.open(request.resourceId, request); }, [paneNavigation]);
   const activateOpenNote = useCallback((paneId: string, options?: { focus?: boolean }) => {
     const pane = paneNavigation.snapshot().panes.find(p => p.paneId === paneId); if (!pane) return;
@@ -587,20 +612,22 @@ export default function Dashboard() {
   const handleBackNavigation = useCallback(() => paneNavigation.history(-1), [paneNavigation]);
   const handleForwardNavigation = useCallback(() => paneNavigation.history(1), [paneNavigation]);
 
-  const handleCreateNote = useCallback(async () => {
+  const handleCreateNote = useCallback(async (destination?:string) => {
     if (createNotePending) return;
     setCreateNotePending(true);
+    const scope=commandScope();
     try {
       const { data } = await api.post('/resources', {
         type: 'note',
-        collectionId: libraryVisible ? collection?.id : undefined,
+        collectionId: destination??(libraryVisible ? collection?.id : undefined),
         title: 'Untitled Note',
         content: { type: 'doc', content: [] },
-      });
+      },commandConfig(scope));
+      requireCommandScope(scope);
       resourcesChanged([data.id], true);
-      openResourceById(data.id);
+      await openResourceById(data.id);
     } catch (error) {
-      console.error(error);
+      console.error(error);if(destination)throw error;
     } finally {
       setCreateNotePending(false);
     }
@@ -612,9 +639,10 @@ export default function Dashboard() {
     setResourceDetails(current => current[resource.id] ? { ...current, [resource.id]: resource } : current);
   }, []);
 
-  const beginImport = useCallback(async (editor?: Editor, range?: Range, mode?: ImportSession['mode'], folder = false, dropped?:File[]) => {
+  const beginImport = useCallback(async (editor?: Editor, range?: Range, mode?: ImportSession['mode'], folder = false, dropped?:File[],destination?:OrganizationItem) => {
     if (importBusy.current) return;
     importBusy.current = true; setUploadPending(true);
+    const importIdentity=identityRef.current;
     const target = editor && range ? captureImportTarget(editor, range) : undefined;
     const selectionFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;
     const restoreSelectionFocus=()=>{if(importAcquire&&selectionFocus?.isConnected)requestAnimationFrame(()=>focusWithoutScroll(selectionFocus));else restoreImportFocus();};
@@ -624,15 +652,16 @@ export default function Dashboard() {
       const files:File[]&{directories?:string[];emptyFoldersUnavailable?:boolean} = dropped ? window.vaultorDesktop?.dropFiles ? await dropDesktopFiles(dropped) : dropped : await pickFiles(accept, !target, folder);
       if(epoch!==getConnection().epoch)throw Error('Connection changed. Reselect the source.');
       if (!files.length&&!files.directories?.length) { target?.dispose(); importBusy.current = false; if (target && !target.editor.isDestroyed) target.editor.commands.focus(undefined, { scrollIntoView: false }); else restoreSelectionFocus(); return; }
-      const prepared=await prepareImport(files,target,mode);setImportAcquire(false);setImportAcquireError('');
-      setFileImport({...prepared,collection:!target&&libraryVisible&&collection?{id:collection.id,name:collection.name}:undefined});
+      const prepared=await prepareImport(files,target,mode);if(epoch!==getConnection().epoch||importIdentity&&(!identityRef.current||!sameWorkspace(importIdentity,identityRef.current)))throw Error('Workspace changed during import preparation.');setImportAcquire(false);setImportAcquireError('');
+      setFileImport({...prepared,sourceGeneration:importIdentity?.generation,collection:!target?(destination??(libraryVisible&&collection?{id:collection.id,name:collection.name}:undefined)):undefined});
     } catch (error) { target?.dispose(); importBusy.current = false; if(target&&!target.editor.isDestroyed)target.editor.commands.focus(undefined,{scrollIntoView:false});else restoreSelectionFocus(); setImportAcquireError(error instanceof Error?error.message:String(error));reportError('file.import.prepare', error); }
     finally { setUploadPending(false); }
   }, [libraryVisible,collection,restoreImportFocus,importAcquire]);
-  const requestFileUpload = useCallback((event?:{currentTarget?:EventTarget|null}) => { importReturnFocus.current=event?.currentTarget instanceof HTMLElement?event.currentTarget:document.activeElement instanceof HTMLElement?document.activeElement:null; flushSync(() => setCommandPaletteOpen(false)); setImportAcquireError('');setImportAcquire(true); }, []);
+  const requestFileUpload = useCallback((event?:{currentTarget?:EventTarget|null}) => { importReturnFocus.current=event?.currentTarget instanceof HTMLElement?event.currentTarget:document.activeElement instanceof HTMLElement?document.activeElement:null; flushSync(() => setCommandPaletteOpen(false)); importCollection.current=undefined;setImportAcquireError('');setImportAcquire(true); }, []);
   useEffect(()=>{const resume=(event:Event)=>{const detail=(event as CustomEvent<{task:{epoch:number;workspace:Identity};folder:boolean}>).detail;if(!detail||detail.task.epoch!==getConnection().epoch||!identityRef.current||!sameWorkspace(detail.task.workspace,identityRef.current))return;void beginImport(undefined,undefined,undefined,detail.folder);};window.addEventListener('vaultor:resume-import',resume);return()=>window.removeEventListener('vaultor:resume-import',resume);},[beginImport]);
   const handleRequestMdUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'markdown'); }, [beginImport]);
   const handleRequestCsvUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'csv'); }, [beginImport]);
+  const handleRequestFileDrop=useCallback((editor:Editor,range:Range,files:File[])=>{importCollection.current=undefined;setImportAcquireError('');setImportAcquire(true);void beginImport(editor,range,'link',false,files);},[beginImport]);
   const handleRequestLinkUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'link'); }, [beginImport]);
   useEffect(() => () => { fileImport?.target?.dispose(); }, [fileImport]);
   const closeFileImport = () => {
@@ -753,14 +782,17 @@ export default function Dashboard() {
       if(!pane||saves.latest(resource.id)||recovery.current(resource.id)||latest.revision!==anchor.revision||!await revealReference(pane.paneId,resource.id,anchor.path,anchor.targetId))setSessionMessage('Opened the source note. Its occurrence may have moved; locate the link or image in the current content.');
       return;
     }
-    if(request.action==='open'){await openResourceById(resource.id);return;}
+    if(request.action==='open'||request.action==='open-another'){if(!supportedResourceActions(resource).open)throw new Error('Opening this resource is unsupported.');await openResourceById(resource.id,{throwOnFailure:true,...(request.action==='open-another'?{destination:'new' as const}:{})});return;}
+    if(request.action==='export-copy'){if(resource.type!=='file')throw Error('Prepare native copies from managed files.');setNativeExport({resource,epoch:getConnection().epoch,generation:getConnection().generation,intent:request.value==='reveal'||request.value==='open'?request.value:undefined});return;}
     if(request.action==='trash'){setLifecycleTargets(request.resources);return;}
-    if(request.action==='export'){setNoteExport({id:resource.id,title:resource.title});return;}
+    if(request.action==='export'){if(!supportedResourceActions(resource).export)throw new Error('Exporting this resource is unsupported.');setNoteExport({id:resource.id,title:resource.title});return;}
     if(request.action==='prepare-export'){for(const selected of request.resources)if(selected.type==='note')await exportSaveRef.current(selected.id);return;}
     if(request.action==='restored'){paneNavigation.markAvailable(resource.id);resourcesChanged([resource.id],true);return;}
     if(request.action==='rename'){
+      if(!supportedResourceActions(resource).rename)throw new Error('Renaming this resource is unsupported.');
+      if(request.value===undefined){setRenameRequest({resource,epoch:getConnection().epoch,generation:getConnection().generation});return;}
       if(resource.type==='note')await renameResource(resource.id,request.value??'');
-      else {const {data:fresh}=await api.get<Resource>('/resources/'+resource.id+'/summary');await api.patch('/resources/'+resource.id+'/title',{title:request.value},{headers:{'If-Match':'"'+fresh.revision+'"'}});resourcesChanged([resource.id]);}return;
+      else {await renameManagedFile(resource,request.value??'');resourcesChanged([resource.id]);}return;
     }
     if(request.action==='prepare-trash'){if(resource.type==='linked')await linkedWorkspace.documents.get(resource.id)?.flush();else await exportSaveRef.current(resource.id);return;}
     if(request.action==='retain-draft'){
@@ -876,33 +908,6 @@ export default function Dashboard() {
     }
   }, [fetchData, fetchResourceDetails, tags]);
 
-  const handleTagColorChange = useCallback(async (tagId: string, color: string) => {
-    const normalizedColor = color.trim().toLowerCase();
-    const targetTag = tags.find((tag) => tag.id === tagId);
-    if (!targetTag || !normalizedColor) {
-      return;
-    }
-
-    setTags((current) => updateTagColorInList(current, tagId, normalizedColor));
-    setResources((current) => updateTagColorInResources(current, tagId, normalizedColor));
-    setResourceDetails((current) => updateTagColorInResourceMap(current, tagId, normalizedColor));
-
-    try {
-      const { data } = await api.put(`/tags/${tagId}/color`, { color: normalizedColor });
-      const nextTag = data as Tag;
-      setTags((current) => replaceTagInList(current, nextTag));
-      setResources((current) => replaceTagInResources(current, nextTag));
-      setResourceDetails((current) => replaceTagInResourceMap(current, nextTag));
-      organizationChanged('tag');
-    } catch (error) {
-      console.error(error);
-      await fetchData();
-      if (activeResource) {
-        await fetchResourceDetails(activeResource.id);
-      }
-    }
-  }, [activeResource, fetchData, fetchResourceDetails, tags]);
-
   const handleTagPickerSelect = useCallback(async (tagName: string) => {
     if (!tagPickerOpenNoteId || tagAddPending) {
       return;
@@ -930,24 +935,6 @@ export default function Dashboard() {
     }
   };
 
-  const executeDeleteTag = async () => {
-    if (!tagDeleteModal) return;
-    setTagDeletePending(true);
-    try {
-      await api.delete(`/tags/${tagDeleteModal.id}`);
-      dispatch(removeSelectedTag(tagDeleteModal.name));
-      organizationChanged('tag');
-      if (activeResource) {
-        await fetchResourceDetails(activeResource.id);
-      }
-      setTagDeleteModal(null);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setTagDeletePending(false);
-    }
-  };
-
   const handleFileDownload = useCallback(async () => {
     if (!activeResource || activeResource.type !== 'file') return;
     return await saveApiFile(`/resources/${activeResource.id}/download`, activeResource.title || 'download');
@@ -962,9 +949,9 @@ export default function Dashboard() {
   const afterImport = async () => {
     identityCheckVersion.current++;
     const identity=(await api.get<Identity>('/workspace/identity')).data;
-    await linkedWorkspace.flush();await linkedWorkspace.closeNativeDocuments();identityRef.current=identity;linkedWorkspace.dispose();recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));
+    await linkedWorkspace.flush();await linkedWorkspace.closeNativeDocuments();bindWorkspaceIdentity(identity);identityRef.current=identity;linkedWorkspace.dispose();recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));
     setNoteExport(null);setTitleEditState(null);
-    setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
+    setLibrarySection('library');setLibraryContext(defaultLibrary);setNavigatorState(defaultNavigator);dispatch(clearSelectedTags());
     saves.clear();
     workspaceEpoch.current++; resourceLoadVersions.current.clear(); paneNavigation.reset(); setResourceDetails({}); dismissPreview({ restoreFocus: false });
     dispatch(setCurrentResourceId(null));
@@ -980,7 +967,7 @@ export default function Dashboard() {
     let cancelled = false;
     const work = bootWork.current ??= (async () => {
       const identity = (await api.get<Identity>('/workspace/identity',{backgroundDiagnostic:true})).data;
-      identityRef.current=identity;
+      bindWorkspaceIdentity(identity);identityRef.current=identity;
       const tab = await claimTab();
       const persistence = new SessionPersistence(localStore,tab.id,setSessionError); sessionPersistence.current = persistence;
       let snapshot: SessionSnapshot | undefined, records: RecoveryRecord[] = [];
@@ -1012,7 +999,7 @@ export default function Dashboard() {
       const isolated:RecoveryRecord[]=[];
       for(const record of unresolved){try{isolated.push(record.tabId===tab.id?await recovery.isolate(record):record);}catch{isolated.push(record);setSessionError('Could not separate recovery drafts in local storage. Keep this tab open.');}}
       if(cancelled)return;
-      identityRef.current = identity; recovery.configure(identity,tab.id);
+      bindWorkspaceIdentity(identity);identityRef.current = identity; recovery.configure(identity,tab.id);
       Object.values(details).forEach(resource=>recovery.observe(resource));
       for(const {record,resource} of recoverable) {
         recovery.observe(resource);
@@ -1022,7 +1009,7 @@ export default function Dashboard() {
       setResourceDetails(details);
       if(snapshot&&restored) {
         paneNavigation.restore(restored.panes,restored.activePaneId,snapshot.positions,restored.sessions);
-        setLibraryVisible(snapshot.library.visible||!restored.panes.length);setLibrarySection(snapshot.library.section);setCollection(snapshot.library.collection);setLibraryContext(snapshot.library.context);
+        setLibraryVisible(snapshot.library.visible||!restored.panes.length);setLibrarySection(snapshot.library.section);setCollection(snapshot.library.collection);setLibraryContext(snapshot.library.context);setNavigatorState(normalizeNavigator(snapshot.library.navigator));
         dispatch(clearSelectedTags());snapshot.library.tags.forEach(tag=>dispatch(toggleSelectedTag(tag)));
         dispatch(setCurrentResourceId(restored.panes.find(p=>p.paneId===restored.activePaneId)?.id??null));
         setSessionMessage(restored.messages.join(' '));
@@ -1031,12 +1018,12 @@ export default function Dashboard() {
     }).catch(()=>{if(!cancelled){bootWork.current=null;setBootError('Could not restore this workspace. Retry when the server is available.');}});
     return ()=>{cancelled=true;};
   },[bootAttempt,workspaceLoaded,sessionReady,localStore,recovery,saves,paneNavigation,dispatch,workspaceSettings.maxOpenNotes,workspaceSettings.autosaveDelay,linkedWorkspace]);
-  const sessionView = useRef({visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext});
+  const sessionView = useRef({visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext,navigator:navigatorState});
   useEffect(() => registerConnectionBarrier(async keepDrafts => {
     if (!sessionReady || !identityRef.current) throw new SwitchBlockedError('Wait for session restoration before leaving the workspace.');
     await linkedWorkspace.flush();
     if (hasPendingImages()) throw new SwitchBlockedError('Wait for image uploads to finish before leaving this workspace.');
-    if (transferMode || uploadPending || importBusy.current || fileImport || createNotePending || deletePending || tagDeletePending || tagAddPending || noteExport) throw new SwitchBlockedError('Finish or dismiss the current operation before leaving the workspace.');
+    if (transferMode || uploadPending || importBusy.current || fileImport || createNotePending || deletePending || tagManagementPending || tagAddPending || noteExport) throw new SwitchBlockedError('Finish or dismiss the current operation before leaving the workspace.');
     const currentIdentity = await inspectWorkspaceDeparture({
       desktop: getPlatform().kind === 'desktop', keepDrafts,
       unsavedNotes: () => saves.dirty() || recovery.dirty() || Boolean(titleEditState && titleEditState.value !== titleEditState.original),
@@ -1058,8 +1045,8 @@ export default function Dashboard() {
       const identity = identityRef.current;
       await sessionPersistence.current?.save({ version: 2, identity, ...paneNavigation.exportSession(), library: sessionView.current }, true);
     } catch { throw new SwitchBlockedError('Recovery storage is unavailable. Keep this workspace open until storage succeeds.'); }
-  }), [sessionReady, transferMode, uploadPending, fileImport, createNotePending, deletePending, tagDeletePending, tagAddPending, noteExport, titleEditState, commitTitleEditing, saves, flushSettings, settingsSaveStatus, recovery, paneNavigation,linkedWorkspace]);
-  useEffect(()=>{sessionView.current={visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext};},[libraryVisible,librarySection,collection,filters.selectedTags,libraryContext]);
+  }), [sessionReady, transferMode, uploadPending, fileImport, createNotePending, deletePending, tagManagementPending, tagAddPending, noteExport, titleEditState, commitTitleEditing, saves, flushSettings, settingsSaveStatus, recovery, paneNavigation,linkedWorkspace]);
+  useEffect(()=>{sessionView.current={visible:libraryVisible,section:librarySection,collection,tags:filters.selectedTags,context:libraryContext,navigator:navigatorState};},[libraryVisible,librarySection,collection,filters.selectedTags,libraryContext,navigatorState]);
   useEffect(()=>{
     if(!sessionReady)return;
     let last='';
@@ -1073,7 +1060,7 @@ export default function Dashboard() {
       await linkedWorkspace.flush();await linkedWorkspace.closeNativeDocuments();workspaceEpoch.current++;resourceLoadVersions.current.clear();setReferenceTarget(null);setReviewTarget(undefined);dispatch(setCurrentResourceId(null));
       setCommandPaletteOpen(false);setFileImport(null);setTagPickerOpenNoteId(null);setLifecycleTargets(null);setRecoveryOpen(false);setTransferMode(null);
       saves.clear();paneNavigation.reset();setResourceDetails({});setPreviewResourceId(null);setPreviewResourceType(null);setNoteExport(null);setTitleEditState(null);setLibraryVisible(true);setCollection(null);setLibrarySection('library');setLibraryContext(defaultLibrary);dispatch(clearSelectedTags());
-      identityRef.current=identity;linkedWorkspace.dispose();recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));setSessionMessage('The workspace was replaced. Previous drafts are available as separate recovery copies.');notifyResourceChange({kind:'workspace'});
+      bindWorkspaceIdentity(identity);identityRef.current=identity;linkedWorkspace.dispose();recovery.configure(identity,recovery.tabId);setRecoveryRecords(await recovery.all(identity).catch(()=>{setSessionError('Recovery storage could not be read. Previous drafts remain in local storage.');return [];}));setSessionMessage('The workspace was replaced. Previous drafts are available as separate recovery copies.');notifyResourceChange({kind:'workspace'});
     }}catch{/* Offline checks must not interrupt editing. */}};
     window.addEventListener('vaultor:identity-check',check);window.addEventListener('focus',check);
     return()=>{stopped=true;window.removeEventListener('vaultor:identity-check',check);window.removeEventListener('focus',check);};
@@ -1117,13 +1104,15 @@ export default function Dashboard() {
         enqueue(async()=>{
         if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
         const detail = paneNavigation.snapshot().panes.some(p=>p.id===id);
+        const startedRevision=recovery.acknowledgedRevision(id);
         await api.get<Resource>('/resources/'+id+(detail?'':'/summary'),reconcileConfig).then(({data})=>{
           if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
           if(data.type==='linked'){const known=linkedWorkspace.metadata.get(id);linkedWorkspace.metadata.set(id,{...known,...data});setResourceDetails(previous=>({...previous,[id]:{...previous[id],...data}}));paneNavigation.markAvailable(id);return;}
           paneNavigation.markAvailable(id);
           const draft=recovery.current(id);
-          if(draft || saves.latest(id)) {
-            if(draft && draft.baseRevision!==data.revision){setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);setSessionMessage(events.some(event=>event.origin==='import')?'Import finalized this saved note. Your draft is retained; review it before saving.':'A note changed on another device. Your draft is retained; review it before saving.');}
+          const decision=noteReconciliation(startedRevision,recovery.acknowledgedRevision(id),data.revision,draft?.baseRevision,Boolean(saves.latest(id)),saves.status(id)==='saving');
+          if(decision.preserve) {
+            if(draft && decision.conflict){setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);setSessionMessage(events.some(event=>event.origin==='import')?'Import finalized this saved note. Your draft is retained; review it before saving.':'A note changed on another device. Your draft is retained; review it before saving.');}
             setResourceDetails(prev=>prev[id]?{...prev,[id]:{...prev[id],tags:data.tags,collections:data.collections,favorite:data.favorite}}:prev);
             return;
           }
@@ -1162,7 +1151,6 @@ export default function Dashboard() {
     if(created){recovery.observe(created);setResourceDetails(previous=>({...previous,[created!.id]:created!}));resourcesChanged([created.id]);setRecoveryOpen(false);await openResourceById(created.id,{throwOnFailure:true});}
   };
 
-  const filteredTags = tags.filter((tag) => tag.name.toLowerCase().includes(tagSearch.toLowerCase()));
   const openWorkspaceNotes = useMemo(() => visibleNotes.map((note) => {
     const resource = resourceDetails[note.id] ?? null;
     const metadata = resources.find((entry) => entry.id === note.id) ?? null;
@@ -1183,7 +1171,7 @@ export default function Dashboard() {
     hasUnsavedChanges,
     openCollection:item=>{setPaletteSelection([]);setCollection(item);setLibrarySection('library');setLibraryVisible(true);dispatch(clearSelectedTags());dismissPreview({restoreFocus:false});},
     openLibrary:section=>{setPaletteSelection([]);setCollection(null);setLibrarySection(section);setLibraryVisible(true);dismissPreview({restoreFocus:false});},
-    exportResource:resource=>setNoteExport({id:resource.id,title:resource.title}),
+    exportResource:resource=>requestResourceAction('export',[resource]),
     openDiagnostics:()=>setDiagnosticsOpen(true),
     previewResource,
     openNotes: openNotes
@@ -1202,19 +1190,17 @@ export default function Dashboard() {
     openSettings: openSettingsModal,
     closeActiveNote,
     closePreview: () => dismissPreview(),
-    openDeleteFlow: async (resourceId:string)=>{await handleDeleteResource(resourceId);},
-    renameResource,
+    openDeleteFlow: async (resourceId:string)=>{const {data}=await api.get<Resource>('/resources/'+resourceId+'/summary');await requestResourceAction('trash',[data]);},
+    renameResource:async(resourceId,title)=>{const {data}=await api.get<Resource>('/resources/'+resourceId+'/summary');await requestResourceAction('rename',[data],title);},
   }), [
     libraryVisible,paletteTarget,paletteSelection,collection,dispatch,hasUnsavedChanges,
     closeActiveNote,
     dismissPreview,
-    handleDeleteResource,
     openResourceById,
     openSettingsModal,
     openShortcutsModal,
     openNotes, resourceDetails,
     previewResource,
-    renameResource,
     requestFileUpload,
     resources,
     sidebarCollapsedForContext,
@@ -1241,23 +1227,23 @@ export default function Dashboard() {
   const sidebarPreferences = localSettings.sidebarSections;
   const updateSidebarPreferences = (value: typeof sidebarPreferences) => updateLocalSetting('sidebarSections', value);
   const openCollection = (item:OrganizationItem) => {showLibrary('library');dispatch(clearSelectedTags());setCollection(item);};
+  const navigatorTagProps={onBusy:setTagManagementPending,state:navigatorState,onState:setNavigatorState,selectedIds:libraryVisible?paletteSelection.map(resource=>resource.id):[],onUsed:(tag:OrganizationItem)=>{setNavigatorState(state=>rememberNavigatorTag(state,tag.id));setTags(current=>[{id:tag.id,name:tag.name,color:tag.color??generateTagColor(tag.name)},...current.filter(item=>item.id!==tag.id)].slice(0,128));},onFilter:(tag:OrganizationItem)=>{showLibrary('library');setCollection(null);dispatch(clearSelectedTags());dispatch(toggleSelectedTag(tag.name));},onChanged:(tag:Tag|null,previous?:OrganizationItem)=>{if(previous&&(!tag||tag.name!==previous.name)){const selected=filters.selectedTags.includes(previous.name);dispatch(removeSelectedTag(previous.name));if(selected&&tag)dispatch(toggleSelectedTag(tag.name));}if(tag){setTags(current=>[tag,...current.filter(item=>item.id!==tag.id)].slice(0,128));setResources(current=>replaceTagInResources(current,tag));setResourceDetails(current=>replaceTagInResourceMap(current,tag));}else if(previous){setResources(current=>current.map(resource=>({...resource,tags:resource.tags.filter(tag=>tag.id!==previous.id)})));setResourceDetails(current=>Object.fromEntries(Object.entries(current).map(([id,resource])=>[id,{...resource,tags:resource.tags.filter(tag=>tag.id!==previous.id)}])));setTags(current=>current.filter(item=>item.id!==previous.id));setNavigatorState(state=>({...state,quickTags:state.quickTags.filter(id=>id!==previous.id),recentTags:state.recentTags.filter(id=>id!==previous.id)}));}}};
   const sidebarContent = (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="sidebar-primary px-3 py-3 space-y-1">
         <div className="flex items-center gap-1"><button className="sidebar-nav" onClick={openCommandPalette}><Search size={16} />Search workspace<span className="ml-auto text-xs opacity-60">{resolvedShortcuts.commandPalette.replace('Mod', isMac ? '⌘' : 'Ctrl').replaceAll('+', ' ')}</span></button><SidebarCustomization preferences={sidebarPreferences} onChange={updateSidebarPreferences} status={settingsSaveStatus} onRetry={retrySettingsSave}/><button className="browse-icon-button sidebar-pin-toggle" aria-label={isFloatingSidebarMode ? (floatingSidebarPinned ? 'Unpin navigation' : 'Pin navigation') : 'Collapse sidebar'} aria-pressed={isFloatingSidebarMode ? floatingSidebarPinned : undefined} onClick={toggleSidebar}>{isFloatingSidebarMode && !floatingSidebarPinned ? <PanelLeftOpen size={16}/> : <PanelLeftClose size={16}/>}</button></div>
-        <button className="sidebar-nav" onClick={()=>setReviewTarget(null)}><MessageSquare size={16}/>Review inbox</button>
-        {([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }, { id: 'trash', label: 'Trash', Icon: Trash2 }] as const).map(({ id, label, Icon }) => <button key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</button>)}
-        {openNotes.length > 0 && <button className="sidebar-nav" onClick={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }}><FileText size={16} />Open notes<span className="ml-auto text-xs opacity-60">{openNotes.length}</span></button>}
+        <SidebarDragGuidance><button className="sidebar-nav" onClick={()=>setReviewTarget(null)}><MessageSquare size={16}/>Review inbox</button></SidebarDragGuidance>
+        <SidebarDragNavigation>{([{ id: 'library', label: 'Library', Icon: Library }, { id: 'recent', label: 'Recent', Icon: Clock }, { id: 'collections', label: 'Collections', Icon: Folder }, { id: 'favorites', label: 'Pinned', Icon: Pin }, { id: 'tags', label: 'Tags', Icon: TagIcon }, { id: 'sources', label: 'Sources', Icon: FolderSymlink }, { id: 'trash', label: 'Trash', Icon: Trash2 }] as const).map(({ id, label, Icon }) => id==='collections'?<CollectionDropButton key={id} className="sidebar-nav" aria-current={libraryVisible&&librarySection===id?'page':undefined} onOpen={()=>{setCollection(null);showLibrary(id);}}><Icon size={16}/>{label}</CollectionDropButton>:<NavigationDropButton target={id==='trash'?{kind:'trash'}:id==='favorites'?{kind:'pinned'}:null} key={id} className="sidebar-nav" aria-current={libraryVisible && librarySection === id ? 'page' : undefined} onClick={() => {setCollection(null);showLibrary(id);}}><Icon size={16} />{label}</NavigationDropButton>)}</SidebarDragNavigation>
       </div>
       <div className="sidebar-create-actions flex gap-1.5 px-3 pb-2">
         <button
-          onClick={handleCreateNote}
+          onClick={()=>void handleCreateNote()}
           disabled={createNotePending}
           className="library-button library-button-primary sidebar-new-note"
         >
           {createNotePending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
           New note
-        </button><LibraryPopover label="Create options" trigger={<Ellipsis size={14}/>} className="sidebar-create-menu">{close=><button className="library-button" onClick={()=>{close();collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>}</LibraryPopover>
+        </button><LibraryPopover menu label="Create options" trigger={<Ellipsis size={14}/>} className="sidebar-create-menu">{close=><button className="library-button" onClick={()=>{close();collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>}</LibraryPopover>
         <button ref={importButton} aria-haspopup="dialog" aria-expanded={importAcquire||Boolean(fileImport)} onClick={requestFileUpload} disabled={uploadPending} className="library-button sidebar-import"><Upload size={14}/>Import</button>
       </div>
 
@@ -1280,56 +1266,10 @@ export default function Dashboard() {
 
       <div className="border-t border-border" />
 
-      <div className="sidebar-secondary min-h-0 flex-1 overflow-y-auto py-2" style={{overflowAnchor:'none'}}>
-        <OpenNotes sessions={openNotes} panes={visibleNotes} activeId={!libraryVisible ? activePaneId : null} onOpen={id => void openResourceById(id)} onSplit={id => void openResourceById(id, {destination:'new'})} onClose={id => void paneNavigation.closeSession(id)} onCloseOthers={id => void paneNavigation.closeOthers(id)} canSplit={visibleNotes.length < workspaceSettings.maxOpenNotes}/>
-        <SidebarSection name="pinned" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('favorites')}><PinnedList compact filterType={sidebarPreferences.pinned.type} activeId={!libraryVisible?currentResourceId??undefined:undefined} visible={sidebarVisible&&sidebarPreferences.pinned.visible&&!sidebarPreferences.pinned.collapsed} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></SidebarSection>
-        <SidebarSection name="recent" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('recent')}><SidebarRecent type={sidebarPreferences.recent.type} enabled={sidebarVisible&&sidebarPreferences.recent.visible&&!sidebarPreferences.recent.collapsed} activeId={!libraryVisible?currentResourceId??undefined:undefined} onOpen={id=>void openResourceById(id)} onDelete={(id,event)=>void handleDeleteResource(id,event)} onResources={setResources}/>{recencyError&&<button className="sidebar-nav text-xs" onClick={()=>recency.retry()}>{recencyError} Retry</button>}</SidebarSection>
-      <SidebarSection name="tags" preferences={sidebarPreferences} onChange={updateSidebarPreferences}><div className="flex flex-col px-3 py-2">
-        {tags.length > 3 && (
-          <input
-            type="text"
-            placeholder="Search tags..."
-            className="mb-1.5 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2.5 py-1.5 text-[11px] text-[var(--text-primary)] outline-none transition-all duration-150 placeholder:text-[var(--text-tertiary)] hover:border-[var(--border-strong)] focus:border-primary focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]"
-            value={tagSearch}
-            onChange={(event) => setTagSearch(event.target.value)}
-          />
-        )}
-        <div className="flex flex-wrap gap-1.5">
-          {filteredTags.map((tag) => (
-            <span
-              key={tag.id}
-              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-[0.01em] transition-all duration-150 ease-out hover:-translate-y-px hover:brightness-105 hover:saturate-125"
-              style={getTagPillStyle(tag.color, resolvedTheme)}
-            >
-              <button onClick={() => { dispatch(toggleSelectedTag(tag.name)); setLibraryVisible(true); }} className="cursor-pointer text-inherit">{tag.name}</button>
-              <label
-                className="relative inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-inherit opacity-55 transition-opacity hover:opacity-100"
-                title="Change color"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <Palette size={9} />
-                <input
-                  type="color"
-                  value={getTagColorInputValue(tag.color)}
-                  onChange={(event) => void handleTagColorChange(tag.id, event.target.value)}
-                  className="absolute inset-0 cursor-pointer opacity-0"
-                />
-              </label>
-              <button
-                onClick={() => setTagDeleteModal({ id: tag.id, name: tag.name })}
-                className="text-inherit opacity-40 transition-opacity hover:text-red-500 hover:opacity-100"
-                title="Delete tag"
-              >
-                <X size={10} />
-              </button>
-            </span>
-          ))}
-          {filteredTags.length === 0 && <span className="text-[10px] text-slate-400">No tags</span>}
-        </div>
-      </div></SidebarSection>
-      <LinkedSources workspace={linkedWorkspace} onOpen={entry=>{void openResourceById(entry.id);}}/>
-      </div>
-
+      <AdaptiveNavigator key={getConnection().epoch+':'+identityRef.current?.id+':'+identityRef.current?.generation} state={navigatorState} onChange={setNavigatorState} editing={!libraryVisible&&Boolean(activeNoteId)} selected={libraryVisible?paletteSelection.length:0} destination={libraryVisible?librarySection:undefined}>{(view,active)=>view==='sessions'?<OpenNotes resources={resourceDetails} sessions={openNotes} panes={visibleNotes} activeId={!libraryVisible ? activePaneId : null} onOpen={id => void openResourceById(id)} onSplit={id => void openResourceById(id, {destination:'new'})} onClose={id => void paneNavigation.closeSession(id)} onCloseOthers={id => void paneNavigation.closeOthers(id)} onReorder={paneNavigation.reorderSession} canSplit={visibleNotes.length < workspaceSettings.maxOpenNotes}/>:view==='shortcuts'?<>
+        <SidebarSection name="pinned" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('favorites')}><PinnedList compact limit={6} filterType={sidebarPreferences.pinned.type} activeId={!libraryVisible?currentResourceId??undefined:undefined} visible={active&&sidebarVisible&&sidebarPreferences.pinned.visible&&(!sidebarPreferences.pinned.collapsed||Boolean(desktopDragSource))} onResource={id=>void openResourceById(id)} onCollection={openCollection}/></SidebarSection>
+        <SidebarSection name="recent" preferences={sidebarPreferences} onChange={updateSidebarPreferences} onViewAll={()=>showLibrary('recent')}><SidebarRecent limit={6} type={sidebarPreferences.recent.type} enabled={active&&sidebarVisible&&sidebarPreferences.recent.visible&&(!sidebarPreferences.recent.collapsed||Boolean(desktopDragSource))} activeId={!libraryVisible?currentResourceId??undefined:undefined} onOpen={id=>void openResourceById(id)} onDelete={(id,event)=>void handleDeleteResource(id,event)} onResources={setResources}/>{recencyError&&<button className="sidebar-nav text-xs" onClick={()=>recency.retry()}>{recencyError} Retry</button>}</SidebarSection>
+      </>:view==='collections'?<CollectionChildren parent="" enabled={active&&sidebarVisible} onOpen={openCollection}/>:view==='tags'?<QuickTags managementVisible={libraryVisible&&librarySection==='tags'} {...navigatorTagProps} enabled={active&&sidebarVisible} onBrowse={()=>showLibrary('tags')}/>:<LinkedSources compact active={active&&sidebarVisible} workspace={linkedWorkspace} onBrowse={()=>showLibrary('sources')} onOpen={entry=>{void openResourceById(entry.id);}}/>}</AdaptiveNavigator>
 
       <DesktopConnectionButton/>
       <div className="flex items-center justify-between border-t border-border bg-background/80 p-2">
@@ -1355,7 +1295,8 @@ export default function Dashboard() {
 
   if(!sessionReady)return <main className={`flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} items-center justify-center bg-background text-text`}><div role="status">{bootError||'Restoring workspace…'}{bootError&&<button className="library-button ml-3" onClick={()=>setBootAttempt(v=>v+1)}>Retry</button>}</div></main>;
   return (
-    <div className={`app-root flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen ? 'command-open pointer-events-none' : ''}`}>
+    <CollectionCommandsContext.Provider value={{activeCollectionId:libraryVisible?collection?.id:undefined,newNote:item=>handleCreateNote(item.id||undefined),importFiles:item=>{importReturnFocus.current=document.activeElement instanceof HTMLElement?document.activeElement:null;importCollection.current=item;setImportAcquire(true);void beginImport(undefined,undefined,undefined,false,undefined,item);}}}><DesktopInteractionProvider onRevealResource={revealDragNote} visibleSessionIds={visibleNotes.map(note=>note.paneId)} onDragSourceChange={setDesktopDragSource} onArrangeSession={paneNavigation.arrangeSession} onReorderSession={paneNavigation.reorderSession} onResolveResources={async(resources,scope)=>{if(scope.generation!==identityRef.current?.generation)throw Error('Workspace changed.');const result:Resource[]=[];for(const resource of resources){requireCommandScope(scope);if(resource.type==='linked')await linkedWorkspace.describe(resource.id,true);const {data}=await api.get<Resource>('/resources/'+resource.id+'/summary',commandConfig(scope));if(data.trashedAt)throw Error('This resource is in Trash.');result.push(data);}return result;}} openResourceIds={openNotes.map(note=>note.id)} generation={identityRef.current?.generation} sourceKey={JSON.stringify([getConnection().epoch,identityRef.current?.id,identityRef.current?.generation])} onPane={(resource,paneId)=>openResourceById(resource.id,{sourcePaneId:paneId,destination:'here',intent:'link',throwOnFailure:true})} onImport={(files,destination)=>{importCollection.current=destination;setImportAcquire(true);void beginImport(undefined,undefined,undefined,false,files,destination);}}>
+    <div className={`app-root flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen && !desktopDragSource ? 'command-open pointer-events-none' : ''}`}>
 
       <CommandPaletteModal searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined}
         open={commandPaletteOpen}
@@ -1378,40 +1319,11 @@ export default function Dashboard() {
       </div>}
       {notice&&<DiagnosticNotice event={notice} saveFailed={saves.failed()} onDetails={()=>setDiagnosticsOpen(true)} onRetrySaves={()=>{void saves.flushAll().catch(()=>{});}} onDismiss={()=>setNotice(null)}/>}
       {reviewTarget!==undefined&&<ReviewInbox key={getConnection().epoch} resource={reviewTarget} onClose={()=>setReviewTarget(undefined)} onOpen={async id=>{await openResourceById(id,{throwOnFailure:true});const issue=paneNavigation.snapshot().issue;if(issue)throw new Error(issue.message);return ()=>{const state=paneNavigation.snapshot();if(state.panes.some(p=>p.id===id&&p.paneId===state.activePaneId))paneNavigation.activate(state.activePaneId!,true);else document.querySelector<HTMLElement>('.preview-shell button')?.focus({preventScroll:true});};}}/>}
-      {importAcquire&&<ImportSourceModal pending={uploadPending} error={importAcquireError} onBrowse={folder=>void beginImport(undefined,undefined,undefined,folder)} onDrop={files=>void beginImport(undefined,undefined,undefined,false,files)} onClose={()=>{setImportAcquire(false);restoreImportFocus();}}/>}
+      {importAcquire&&<ImportSourceModal pending={uploadPending} error={importAcquireError} onBrowse={folder=>void beginImport(undefined,undefined,undefined,folder,undefined,importCollection.current)} onDrop={files=>void beginImport(undefined,undefined,undefined,false,files,importCollection.current)} onClose={()=>{setImportAcquire(false);importCollection.current=undefined;restoreImportFocus();}}/>}
+      {renameRequest?.epoch===getConnection().epoch&&renameRequest.generation===getConnection().generation&&<ResourceRenameDialog resource={renameRequest.resource} onClose={()=>setRenameRequest(null)}/>}
+      {nativeExport?.epoch===getConnection().epoch&&nativeExport.generation===getConnection().generation&&<NativeExportCopy key={getConnection().epoch} resource={nativeExport.resource} intent={nativeExport.intent} onClose={()=>setNativeExport(null)}/>}
       {referenceTarget&&<ResourceReferences resource={referenceTarget} linkedReferences={referenceTarget.type==='linked'&&linkedWorkspace.supported()?linkedWorkspace.references:undefined} localNotes={openNotes.filter((p,index,all)=>all.findIndex(other=>other.id===p.id)===index).flatMap(p=>{const draft=saves.latest(p.id)??recovery.current(p.id)?.value;return draft?[{id:p.id,title:draft.title,content:parseNoteContent(draft.content as Resource['content'])}]:[];})} onClose={()=>setReferenceTarget(null)}/>}
       {lifecycleTargets&&<ResourceLifecycleDialog resources={lifecycleTargets} action="trash" onBusy={setDeletePending} onClose={()=>setLifecycleTargets(null)}/>}
-
-      <AppModal
-        open={Boolean(tagDeleteModal)}
-        onClose={() => {
-          if (!tagDeletePending) setTagDeleteModal(null);
-        }}
-        title="Delete Tag"
-        description="Delete this tag from all resources in Vaultor?"
-        footer={
-          <>
-            <button
-              onClick={() => setTagDeleteModal(null)}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-background"
-              disabled={tagDeletePending}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={executeDeleteTag}
-              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-60"
-              disabled={tagDeletePending}
-            >
-              {tagDeletePending ? 'Deleting...' : 'Delete Tag'}
-            </button>
-          </>
-        }
-      >
-        <p className="text-sm text-slate-500">
-          {tagDeleteModal?.name ? `"${tagDeleteModal.name}" will be removed everywhere it appears.` : ''}
-        </p>
-      </AppModal>
 
       <div className="relative flex min-h-0 flex-1">
         <SidebarFrame floating={isFloatingSidebarMode} open={sidebarVisible} focusMode={workspaceSettings.focusMode} pinned={floatingSidebarPinned} surfaceStyle={isFloatingSidebarMode ? getGlassPanelStyle(uiTransparency, 16, 'canvas') : undefined}
@@ -1427,10 +1339,12 @@ export default function Dashboard() {
           <div className="workspace-compact-controls">
             {!libraryVisible && openWorkspaceNotes.length>1 && <label className="workspace-pane-switcher">Pane <select aria-label="Focused pane" value={activePaneId ?? ''} onChange={event=>activateOpenNote(event.target.value)}>{openWorkspaceNotes.map((note,index)=><option key={note.paneId} value={note.paneId}>{index+1} · {note.resource?.title ?? 'Untitled note'}</option>)}</select></label>}
           </div>
-          <div className="workspace-view h-full" hidden={!libraryVisible}>
-            <CollectionsView mode={settings.local.collectionView} onModeChange={value=>updateLocalSetting('collectionView',value)} key={'collections:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={libraryVisible&&librarySection==='collections'} onOpen={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
-            <PinnedList key={'pins:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={libraryVisible&&librarySection==='favorites'} onResource={id=>void openResourceById(id)} onCollection={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
-            {librarySection==='trash'?<TrashView hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'||librarySection==='favorites'?null:<LibraryView searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined} key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
+          <div className="workspace-view h-full" aria-hidden={!libraryVisible||undefined} inert={!libraryVisible&&desktopDragSource!=='browse'} data-drag-source-retained={!libraryVisible&&desktopDragSource==='browse'||undefined} hidden={!libraryVisible&&desktopDragSource!=='browse'}>
+            <CollectionsView mode={settings.local.collectionView} onModeChange={value=>updateLocalSetting('collectionView',value)} key={'collections:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={(libraryVisible||desktopDragSource==='browse')&&librarySection==='collections'} onOpen={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
+            <PinnedList key={'pins:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={(libraryVisible||desktopDragSource==='browse')&&librarySection==='favorites'} onResource={id=>void openResourceById(id)} onCollection={openCollection} hasNotes={openNotes.length>0} onReturn={returnToNotes}/>
+            <TagsBrowser key={'tags:'+identityRef.current?.id+':'+identityRef.current?.generation} {...navigatorTagProps} visible={libraryVisible&&librarySection==='tags'} onReturn={()=>showLibrary('library')}/>
+            <SourcesBrowser key={'sources:'+identityRef.current?.id+':'+identityRef.current?.generation} visible={libraryVisible&&librarySection==='sources'} workspace={linkedWorkspace} onReturn={()=>showLibrary('library')} onOpen={id=>void openResourceById(id)}/>
+            {librarySection==='trash'?<TrashView key={identityRef.current?.generation} visible={libraryVisible} hasNotes={openNotes.length>0} onReturn={returnToNotes} onBusy={setDeletePending}/>:librarySection==='collections'||librarySection==='favorites'||librarySection==='tags'||librarySection==='sources'?null:<LibraryView searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined} key={identityRef.current?.generation} initialContext={libraryContext} onContextChange={setLibraryContext} onSelectionChange={setPaletteSelection} hasUnsavedChanges={saves.dirty()} onImport={requestFileUpload} collection={collection} onCollection={item=>{setCollection(item);setLibrarySection('library');}} onTagsChange={names => {dispatch(clearSelectedTags());names.forEach(name => dispatch(toggleSelectedTag(name)));}} section={librarySection} visible={libraryVisible||desktopDragSource==='browse'} tags={filters.selectedTags} hasNotes={openNotes.length > 0} onReturn={() => { setLibraryVisible(false); if (activePaneId) paneNavigation.activate(activePaneId, true); }} onOpen={id => void openResourceById(id)} />}</div>
           <div className="workspace-view h-full" hidden={libraryVisible}>
           <div className="flex h-full min-h-0 flex-col">
           {!libraryVisible && openNotes.find(p => p.paneId === activePaneId) && <JourneyBar key={activePaneId} pane={openNotes.find(p => p.paneId === activePaneId)!} motion={paneState.motion} animationMode={localSettings.animationMode} onJump={index => void paneNavigation.jump(activePaneId!, index)}>
@@ -1440,12 +1354,12 @@ export default function Dashboard() {
           <div className="min-h-0 flex-1 relative">
             <WorkspacePaneLayout transparency={uiTransparency} paneIds={openWorkspaceNotes.map(note => note.slotId!)} focusedId={openWorkspaceNotes.find(note=>note.paneId===activePaneId)?.slotId ?? null} animationMode={localSettings.animationMode}>
               {openWorkspaceNotes.map((note, index) => (
-                <div
+                <PaneDropTarget resource={note.resource??undefined} paneId={note.paneId}
                   key={note.paneId}
                   data-note-pane={note.id}
                   data-pane-id={note.paneId}
                   data-focused={note.paneId === activePaneId}
-                  onPointerDownCapture={() => { if (note.paneId !== activePaneId) activateOpenNote(note.paneId); }}
+                  onPointerDownCapture={event => { if (event.button === 0 && note.paneId !== activePaneId) activateOpenNote(note.paneId); }}
                   className="workspace-note-pane relative flex h-full min-w-0 w-full flex-col overflow-hidden rounded-[1.35rem] bg-card shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
                 >
                   {index > 0 && (
@@ -1453,6 +1367,7 @@ export default function Dashboard() {
                   )}
 
                   <JourneyViewport visitId={note.history[note.cursor].visitId} initialPosition={paneNavigation.position(note.history[note.cursor].visitId)} direction={note.transition} animationMode={localSettings.animationMode} onPosition={position => paneNavigation.recordPosition(note.paneId, note.history[note.cursor].visitId, position)}>
+                  <SessionDragHandle session={{kind:'session',sessionId:note.paneId,resourceId:note.id,title:note.title,visible:true,canAdd:visibleNotes.length<workspaceSettings.maxOpenNotes}}/>
                   <NoteOrientation key={note.history[note.cursor].visitId} tagCount={note.resource?.tags?.length ?? 0} identity={
                     <div className="flex flex-wrap items-center gap-2">
                     <div className="min-w-0 flex-[1_1_10rem]">
@@ -1659,7 +1574,7 @@ export default function Dashboard() {
                         content={parseNoteContent(note.resource.content)}
                         autosaveDelay={0}
                         isActive={!libraryVisible && note.paneId === activePaneId}
-                        interactionLocked={commandPaletteOpen || libraryVisible || Boolean(note.resource.trashedAt)}
+                        interactionLocked={(commandPaletteOpen && !desktopDragSource) || libraryVisible || Boolean(note.resource.trashedAt)}
                         shouldRestoreFocus={!libraryVisible && paneState.focusPaneId === note.paneId}
                         selectionRestoreKey={note.history[note.cursor].visitId}
                         savedSelection={note.selection ?? null}
@@ -1669,7 +1584,7 @@ export default function Dashboard() {
                         onUpdate={(json) => handleContentUpdate(note.id, json)}
                         onRequestMdUpload={handleRequestMdUpload}
                         onRequestCsvUpload={handleRequestCsvUpload}
-                        onRequestLinkUpload={handleRequestLinkUpload}
+                        onRequestFileDrop={handleRequestFileDrop} onRequestLinkUpload={handleRequestLinkUpload}
                       /></ErrorBoundary>
                     ) : (
                       <div className="flex h-full items-center justify-center text-sm text-slate-400">
@@ -1677,7 +1592,7 @@ export default function Dashboard() {
                       </div>
                     )}
                   </JourneyViewport>
-                </div>
+                </PaneDropTarget>
               ))}
             </WorkspacePaneLayout>
           {openWorkspaceNotes.length === 0 && (activeResourceLoading ? (
@@ -1694,7 +1609,7 @@ export default function Dashboard() {
               <h2 className="mb-2 text-2xl font-semibold text-slate-500">Welcome to Vaultor</h2>
               <p className="mb-6 text-sm opacity-80">Open the command palette with {isMac ? 'Cmd+K' : 'Ctrl+K'} to jump anywhere fast.</p>
               <div className="flex gap-3">
-                <button onClick={handleCreateNote} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"><Plus size={16} /> New Note</button>
+                <button onClick={()=>void handleCreateNote()} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"><Plus size={16} /> New Note</button>
                 <button onClick={requestFileUpload} className="library-button"><Upload size={16} /> Import</button>
               </div>
             </div>
@@ -1724,6 +1639,7 @@ export default function Dashboard() {
       {previewResourceLoading && <PreviewShell mode={effectivePreviewMode} transparency={uiTransparency} label="Loading preview" loading onClose={()=>dismissPreview()}><div className="m-auto text-sm text-[var(--text-secondary)]" role="status">Loading preview…</div></PreviewShell>}
 
     </div>
+    </DesktopInteractionProvider></CollectionCommandsContext.Provider>
   );
 }
 
@@ -1839,20 +1755,6 @@ function mergeTagIntoList(tags: Tag[], nextTag: Tag) {
   return [...tags, nextTag].sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function replaceTagInList(tags: Tag[], nextTag: Tag) {
-  return tags
-    .map((tag) => (tag.id === nextTag.id ? nextTag : tag))
-    .sort((left, right) => left.name.localeCompare(right.name));
-}
-
-function updateTagColorInList(tags: Tag[], tagId: string, color: string) {
-  return tags.map((tag) => (
-    tag.id === tagId
-      ? { ...tag, color }
-      : tag
-  ));
-}
-
 function attachTagToResourceList(resources: Resource[], resourceId: string, nextTag: Tag) {
   return resources.map((resource) => (
     resource.id === resourceId
@@ -1889,31 +1791,6 @@ function replaceTagInResourceMap(resources: Record<string, Resource>, nextTag: T
     {
       ...resource,
       tags: resource.tags?.map((tag) => (tag.id === nextTag.id ? nextTag : tag)) ?? [],
-    },
-  ]));
-}
-
-function updateTagColorInResources(resources: Resource[], tagId: string, color: string) {
-  return resources.map((resource) => ({
-    ...resource,
-    tags: resource.tags?.map((tag) => (
-      tag.id === tagId
-        ? { ...tag, color }
-        : tag
-    )) ?? [],
-  }));
-}
-
-function updateTagColorInResourceMap(resources: Record<string, Resource>, tagId: string, color: string) {
-  return Object.fromEntries(Object.entries(resources).map(([resourceId, resource]) => [
-    resourceId,
-    {
-      ...resource,
-      tags: resource.tags?.map((tag) => (
-        tag.id === tagId
-          ? { ...tag, color }
-          : tag
-      )) ?? [],
     },
   ]));
 }

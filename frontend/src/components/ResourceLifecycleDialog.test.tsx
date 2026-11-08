@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+vi.mock('../lib/desktopInteraction',()=>({useDesktopInteraction:()=>({scope:{epoch:0,generation:'fixture-generation'}})}));
 import { cleanup,fireEvent,render,screen,waitFor } from '@testing-library/react';
 import { afterEach,beforeEach,expect,it,vi } from 'vitest';
 import type { ReactNode } from 'react';
@@ -40,4 +41,11 @@ it('blocks unverified usage and exposes only safe capabilities for unknown kinds
  vi.mocked(api.get).mockRejectedValue(new Error('Offline'));render(<ResourceLifecycleDialog resources={[first]} action="purge" onClose={()=>{}}/>);
  await screen.findByRole('alert');expect((screen.getByRole('button',{name:'Delete permanently'}) as HTMLButtonElement).disabled).toBe(true);expect(api.put).not.toHaveBeenCalled();
  expect(supportedResourceActions({...first,type:'future'})).toMatchObject({open:false,download:false,export:false,rename:false,trash:true});
+});
+
+it('binds usage, fresh revisions and lifecycle mutations to the captured workspace generation',async()=>{
+ vi.mocked(api.put).mockResolvedValue({data:[{resourceId:'one',status:'trashed',warnings:[]}]});render(<ResourceLifecycleDialog resources={[first]} action="trash" onClose={()=>{}}/>);
+ await screen.findByText('Linked from 2 saved notes');fireEvent.click(screen.getByRole('button',{name:'Move to Trash'}));await waitFor(()=>expect(api.put).toHaveBeenCalledOnce());
+ expect(api.get).toHaveBeenCalledWith('/resources/one/summary',expect.objectContaining({connectionEpoch:0,headers:{'X-Vaultor-Generation':'fixture-generation'}}));
+ expect(api.put).toHaveBeenCalledWith('/resources/lifecycle',expect.any(Array),expect.objectContaining({connectionEpoch:0,headers:{'X-Vaultor-Generation':'fixture-generation'}}));
 });

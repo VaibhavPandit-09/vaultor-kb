@@ -104,3 +104,8 @@ it('uses equal layout widths for focus depth and freezes unscaled widths and vis
  fireEvent.pointerDown(a);expect(a.style.width).toBe('600px');expect(a.style.transform).toContain('.965');
  fireEvent.pointerUp(document);tick();tick();expect(a.style.transform).toBe('');
 });
+
+it('reorders visual pane positions while retaining the dirty input, focus and selection in its existing DOM root',()=>{
+ const result=render(view(['a','b']));const input=result.getByLabelText('a') as HTMLInputElement,slot=input.closest('[data-slot-id]');input.value='Unsaved draft';input.focus();input.setSelectionRange(2,8);
+ result.rerender(view(['b','a'],'a'));expect(result.getByLabelText('a')).toBe(input);expect(input.closest('[data-slot-id]')).toBe(slot);expect(input.value).toBe('Unsaved draft');expect(document.activeElement).toBe(input);expect(input.selectionStart).toBe(2);expect((slot as HTMLElement).style.order).toBe('1');expect(result.container.querySelector<HTMLElement>('[data-slot-id="b"]')!.style.order).toBe('0');
+});

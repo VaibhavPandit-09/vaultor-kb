@@ -7,7 +7,7 @@ import type {CommandContext} from '../../lib/commandPalette';
 import type {Resource} from '../../types';
 import api from '../../lib/api';
 vi.mock('../../lib/api',()=>({default:{get:vi.fn(),put:vi.fn(),post:vi.fn()}}));
-vi.mock('../../lib/settings',()=>({useSettings:()=>({settings:{local:{uiTransparency:0,animationMode:'snappy'}}})}));
+vi.mock('../../lib/settings',()=>({useOptionalSettings:()=>null,useSettings:()=>({settings:{local:{uiTransparency:0,animationMode:'snappy'}}})}));
 const note:Resource={id:'one',type:'note',title:'Meeting',tags:[],createdAt:'',updatedAt:''};
 let context:CommandContext;
 beforeEach(()=>{
@@ -17,7 +17,7 @@ beforeEach(()=>{
 afterEach(()=>{cleanup();vi.resetAllMocks();});
 function mount(){const close=vi.fn(),preview=context.openResource;const view=render(<EscapeManagerProvider><CommandPaletteModal open onClose={close} context={context}/></EscapeManagerProvider>);return {...view,close,preview};}
 it('deduplicates Open/Pinned/Recent, leaves Tab alone and never previews highlights',async()=>{
- const {preview}=mount();await screen.findByText('Meeting');await waitFor(()=>expect(screen.getAllByRole('option')).toHaveLength(1));
+ const {preview}=mount();await screen.findByText('Meeting');await waitFor(()=>expect(screen.getAllByRole('option')).toHaveLength(1));expect(screen.getByRole('option').draggable).toBe(true);
  const input=screen.getByRole('combobox');expect(fireEvent.keyDown(input,{key:'Tab'})).toBe(true);expect((input as HTMLInputElement).value).toBe('');fireEvent.keyDown(input,{key:'ArrowDown'});expect(preview).not.toHaveBeenCalled();
 });
 it('retains failed input and retries once, then closes only on success',async()=>{

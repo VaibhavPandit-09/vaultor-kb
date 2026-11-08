@@ -9,7 +9,7 @@ import { spawn } from 'node:child_process';
 import { OwnedServer, verifyBundle } from '../src/owned-server.mjs';
 import { agentAccess } from '../../scripts/agent-access.mjs';
 
-const bundle = fileURLToPath(new URL('../bundle/', import.meta.url));
+const bundle = process.env.VAULTOR_BUILD_BUNDLE ?? fileURLToPath(new URL('../bundle/', import.meta.url));
 const temp = () => mkdtemp(join(tmpdir(), 'vaultor-owned-test-'));
 const wait = async predicate => { for (let n = 0; n < 240; n++) { if (predicate()) return; await new Promise(r => setTimeout(r, 250)); } throw new Error('State did not settle'); };
 const get = async (host, path) => { const response = await fetch(host.address + '/api' + path,{headers:{'X-Vaultor-Owner':host.accessKey}}); assert.equal(response.status, 200); return response.json(); };

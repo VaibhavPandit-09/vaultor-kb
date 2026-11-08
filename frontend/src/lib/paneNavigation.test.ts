@@ -200,3 +200,26 @@ describe('open sessions independent of visible panes', () => {
     expect(nav.snapshot().panes[0].id).toBe('F'); expect(nav.snapshot().sessions).toHaveLength(2);
   });
 });
+
+it('reorders sessions and swaps dirty panes without saving, remount IDs or new visits',async()=>{
+ const {nav,dep}=setup();await nav.open('A');await nav.open('B',{destination:'new'});const before=nav.snapshot(),[a,b]=before.panes;
+ nav.recordPosition(a.paneId,a.history[0].visitId,{scrollTop:412,selection:{from:2,to:3}});dep.save.mockRejectedValue(new Error('dirty offline'));dep.save.mockClear();dep.load.mockClear();
+ nav.reorderSession(b.paneId,a.paneId);expect(nav.snapshot().sessions.map(p=>p.id)).toEqual(['B','A']);expect(nav.snapshot().panes).toBe(before.panes);
+ await nav.arrangeSession(a.paneId,b.paneId);expect(nav.snapshot().panes.map(p=>p.id)).toEqual(['B','A']);expect(nav.snapshot().panes[1].slotId).toBe(a.slotId);expect(nav.snapshot().panes[1].history).toBe(a.history);expect(nav.position(a.history[0].visitId).scrollTop).toBe(412);expect(dep.save).not.toHaveBeenCalled();expect(dep.load).not.toHaveBeenCalled();expect(nav.snapshot().focusPaneId).toBe(a.paneId);
+ await nav.arrangeSession(a.paneId,b.paneId,'before');expect(nav.snapshot().panes.map(p=>p.id)).toEqual(['A','B']);
+});
+it('inactive-note arrangement refuses capacity and cannot publish across workspace reset',async()=>{
+ const {nav,dep}=setup();await nav.open('A');await nav.open('B');const a=nav.snapshot().sessions.find(p=>p.id==='A')!;dep.max=1;dep.save.mockClear();await expect(nav.arrangeSession(a.paneId)).rejects.toThrow('All panes');expect(nav.snapshot().panes.map(p=>p.id)).toEqual(['B']);expect(dep.save).not.toHaveBeenCalled();
+ dep.max=3;let finish!:(value:Resource)=>void;dep.load.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));const pending=nav.arrangeSession(a.paneId);nav.reset();finish(note('A'));await expect(pending).rejects.toThrow('changed');expect(nav.snapshot().sessions).toEqual([]);
+});
+
+it('hover navigation reuses inactive session/history through the ordinary dirty-source Save barrier',async()=>{
+ const {nav,dep}=setup();dep.max=1;await nav.open('A');const a=nav.snapshot().sessions[0];await nav.open('B');const b=nav.snapshot().sessions.find(p=>p.id==='B')!;await nav.open('A');dep.save.mockClear();const before=nav.snapshot();let saved!:()=>void;dep.save.mockImplementationOnce(()=>new Promise<void>(resolve=>{saved=resolve;}));
+ const pending=nav.open('B',{focus:false,managedOnly:true,allowCommit:()=>true,throwOnFailure:true});await Promise.resolve();expect(dep.save).toHaveBeenCalledWith('A');expect(nav.snapshot().panes).toBe(before.panes);saved();await pending;expect(nav.snapshot().panes[0].paneId).toBe(b.paneId);expect(nav.snapshot().panes[0].history).toBe(b.history);expect(nav.snapshot().sessions.find(p=>p.id==='A')?.history).toBe(a.history);expect(nav.snapshot().focusPaneId).toBeNull();
+});
+it('cancelling reveal while Save is pending cannot switch panes or create a late session',async()=>{
+ const {nav,dep}=setup();dep.max=1;await nav.open('A');const before=nav.snapshot();let valid=true,saved!:()=>void;dep.save.mockImplementationOnce(()=>new Promise<void>(resolve=>{saved=resolve;}));const pending=nav.open('B',{focus:false,allowCommit:()=>valid,managedOnly:true});await Promise.resolve();valid=false;saved();await pending;expect(nav.snapshot().panes).toBe(before.panes);expect(nav.snapshot().sessions).toBe(before.sessions);expect(nav.snapshot().issue).toBeNull();
+});
+it('reveal refuses linked/preview targets and failed saves without replacing the original document',async()=>{
+ const {nav,dep}=setup();dep.max=1;await nav.open('A');dep.load.mockResolvedValueOnce({...note('external'),type:'linked'});await expect(nav.open('external',{managedOnly:true,allowCommit:()=>true,throwOnFailure:true})).rejects.toThrow('editable Vaultor');expect(dep.save).not.toHaveBeenCalled();expect(dep.preview).not.toHaveBeenCalled();dep.save.mockRejectedValueOnce(Error('Save refused'));await expect(nav.open('B',{managedOnly:true,allowCommit:()=>true,throwOnFailure:true})).rejects.toThrow('Save refused');expect(nav.snapshot().panes[0].id).toBe('A');expect(nav.snapshot().sessions.map(p=>p.id)).toEqual(['A']);expect(nav.snapshot().issue).toBeNull();
+});

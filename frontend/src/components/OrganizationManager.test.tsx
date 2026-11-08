@@ -20,7 +20,7 @@ it('retains bulk selection after failure and retries only the explicit membershi
   await screen.findByText('Atlas');fireEvent.click(screen.getByText('Add'));
   await screen.findByText('Change failed. Your selection is retained; try again.');expect(applied).not.toHaveBeenCalled();
   fireEvent.click(screen.getByText('Add'));await waitFor(()=>expect(applied).toHaveBeenCalledOnce());
-  expect(api.post).toHaveBeenLastCalledWith('/organization/memberships',{resourceIds:['one','two'],kind:'collection',targetId:'atlas',action:'add'});
+  expect(api.post).toHaveBeenLastCalledWith('/organization/memberships',{resourceIds:['one','two'],kind:'collection',targetId:'atlas',action:'add'},expect.objectContaining({connectionEpoch:0}));
 });
 it('keeps a rejected collection name available for correction',async()=>{
   vi.mocked(api.post).mockRejectedValueOnce({response:{data:{detail:'A collection with this name already exists'}}});mount();

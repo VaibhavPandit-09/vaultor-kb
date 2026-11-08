@@ -139,7 +139,7 @@ All routes participate in the workspace mutation gate, return X-Request-ID and u
 | POST /api/collections | createCollection | {name,favorite?}; 201; unique normalized name |
 | PUT /api/collections/{id} | updateCollection | {name,favorite?}; omitted favorite preserves current value |
 | DELETE /api/collections/{id} | deleteCollection | 204; removes only collection/memberships, never resources |
-| GET /api/tags/browse | browseTags | q/page/size (1–100); metadata page with id/name/color/count |
+| GET /api/tags/browse | browseTags | q/page/size (1–100), sort=name/name-desc/usage, optional comma-separated ids (1–24 distinct); metadata page with id/name/color/active-resource count |
 | POST /api/tags | createTag | {name}; 201; returns existing normalized tag if present |
 | PUT /api/tags/{id}/name | renameTag | {name}; preserves memberships/color; duplicate name returns 409 |
 | POST /api/organization/memberships | changeMemberships | {resourceIds,kind,targetId,action}; 204; atomic, idempotent add/remove |
@@ -265,3 +265,7 @@ Folder clients plan validated relative source paths locally; no endpoint interpr
 PUT /resources/imports/{id}/relationships takes title, original (serialized original Tiptap JSON), resolvedContent (serialized resolved JSON), and optional collectionId. Original fingerprint must match the UUID receipt. Current title/content must remain unchanged, targets must exist and be active, and content/backlinks/finalization hash commit together. Same resolved hash replays without overwriting subsequent edits; different resolution or user edits return conflict/precondition failure. No note revision bypass for ordinary editing is introduced.
 
 Protocol3 remains. Full/partial hierarchy archives are7/8; flat exports remain5/6. Androidalpha.28 continues live reads and host-generated exports. Its checkpoint1/offline exporter cannot retain hierarchy, so new checkpoints containing nested collection nodes fail explicitly with COMPANION_HIERARCHY_UNSUPPORTED; existing downloads and flat selections remain supported. A future companion update must retain parent metadata and schema8 before this boundary can be removed.
+
+## Atomic collection membership move
+
+POST /organization/membership-moves accepts resourceIds (1–100 distinct active IDs), sourceId and targetId (distinct existing collections). Every source membership is validated before transaction writes. It adds target membership and removes only the specified source membership, preserving other memberships/content; any validation failure rolls back all changes. Existing workspace routing/generation, authorization and organization-change notifications apply. Desktop clipboard Cut is the current caller.

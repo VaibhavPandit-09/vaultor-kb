@@ -6,7 +6,7 @@ export class ResourceUnavailableError extends Error {}
 const visit = (resource: Resource): Visit => ({ visitId: crypto.randomUUID(), resourceId: resource.id, title: resource.title });
 // paneId remains the session ID for v1 compatibility; slotId belongs only to a visible assignment.
 export type Pane = { paneId: string; slotId?: string; id: string; selection?: { from: number; to: number }; history: Visit[]; cursor: number; transition?: 'forward' | 'back' | 'replace' };
-export type OpenIntent = { sourcePaneId?: string; destination?: 'here' | 'new'; intent?: 'direct' | 'link' | 'history'; historyIndex?: number; focus?: boolean; throwOnFailure?: boolean };
+export type OpenIntent = { sourcePaneId?: string; destination?: 'here' | 'new'; intent?: 'direct' | 'link' | 'history'; historyIndex?: number; focus?: boolean; throwOnFailure?: boolean; allowCommit?:()=>boolean; managedOnly?:boolean };
 export type NavigationIssue = { message: string; id: string; options: OpenIntent; limit?: boolean; closePaneId?: string; closeSession?: boolean; unavailable?: boolean };
 type State = { sessions: Pane[]; panes: Pane[]; activePaneId: string | null; issue: NavigationIssue | null; focusPaneId: string | null; motion: 'forward' | 'back' | 'replace' | 'switch' };
 type Dependencies = { load: (id: string) => Promise<Resource | null>; save: (id: string) => Promise<void>; preview: (resource: Resource, sourcePaneId?: string) => void; committed: (id: string, focus: boolean) => void; max: number; behavior: 'fill' | 'replace'; capacity?: () => number };
@@ -43,6 +43,33 @@ export class PaneNavigation {
   activate = (paneId: string, focus = false) => { this.focusSequence++; if (this.state.panes.some(p => p.paneId === paneId)) this.patch({ activePaneId: paneId, ...(paneId !== this.state.activePaneId ? { motion: 'switch' as const } : {}), ...(focus ? { focusPaneId: paneId } : {}) }); };
   focusHandled = (paneId: string) => { if (this.state.focusPaneId === paneId) this.patch({ focusPaneId: null }); };
   dismissIssue = () => this.patch({ issue: null });
+  /** Reorder lightweight sessions without touching assignments, documents or visit history. */
+  reorderSession = (sessionId:string,beforeId:string|null) => {
+    const session=this.state.sessions.find(item=>item.paneId===sessionId);
+    if(!session||sessionId===beforeId||beforeId&&!this.state.sessions.some(item=>item.paneId===beforeId))return;
+    const sessions=this.state.sessions.filter(item=>item!==session),index=beforeId?sessions.findIndex(item=>item.paneId===beforeId):sessions.length;
+    sessions.splice(index,0,session);this.patch({sessions});
+  };
+  /** Rearrange existing editor roots; never replace/close a dirty target to make room. */
+  arrangeSession = async(sessionId:string,targetId?:string,edge:'before'|'after'|'swap'='swap') => {
+    const session=this.state.sessions.find(item=>item.paneId===sessionId);if(!session)throw new Error('This open note is no longer available.');
+    const previous=new Set(this.state.panes.map(item=>item.paneId)),epoch=this.epoch;
+    if(targetId&&!previous.has(targetId))throw new Error('The target pane is no longer available.');
+    if(sessionId===targetId)return;
+    if(!previous.has(sessionId)){
+      if(previous.size>=this.dependencies().max)throw new Error('All panes are in use. Close a pane before showing another note.');
+      const resource=await this.dependencies().load(session.id);
+      if(epoch!==this.epoch||!this.state.sessions.includes(session))throw new Error('The note changed while arranging panes.');
+      if(!resource||resource.trashedAt)throw new Error('This note is unavailable.');
+      if(this.state.panes.length>=this.dependencies().max)throw new Error('All panes are in use.');
+    }
+    const visible=this.state.panes.map(item=>item.paneId),sourceIndex=visible.indexOf(sessionId),targetIndex=targetId?visible.indexOf(targetId):visible.length;
+    if(targetId&&targetIndex<0)throw new Error('The target pane closed.');
+    if(edge==='swap'&&sourceIndex>=0&&targetId){[visible[sourceIndex],visible[targetIndex]]=[visible[targetIndex],visible[sourceIndex]];}
+    else {if(sourceIndex>=0)visible.splice(sourceIndex,1);const index=targetId?visible.indexOf(targetId):visible.length;visible.splice(index+(targetId&&edge!=='before'?1:0),0,sessionId);}
+    this.commit(this.state.sessions,visible,sessionId,{motion:'switch',focusPaneId:sessionId});
+    this.focusSequence++;this.dependencies().committed(session.id,true);
+  };
   reset = () => { this.epoch++; this.requests.clear(); this.unavailable.clear(); this.patch({ sessions: [], panes: [], activePaneId: null, focusPaneId: null, issue: null }); };
   exportSession = () => ({ sessions: this.state.sessions, panes: this.state.panes, activePaneId: this.state.activePaneId, positions: Object.fromEntries(this.positions) });
   restore = (panes: Pane[], activePaneId: string | null, positions: Record<string, ReadingPosition>, sessions = panes) => {
@@ -122,11 +149,12 @@ export class PaneNavigation {
     const epoch = this.epoch, resourceVersion = this.unavailable.get(id);
     const key = sourcePaneId ?? 'workspace', token = ++this.sequence;
     this.requests.set(key, token);
-    const valid = () => this.epoch === epoch && this.unavailable.get(id) === resourceVersion && this.requests.get(key) === token && (!source || this.state.panes.some(p => p.paneId === source.paneId && p.id === source.id));
+    const valid = () => options.allowCommit?.()!==false && this.epoch === epoch && this.unavailable.get(id) === resourceVersion && this.requests.get(key) === token && (!source || this.state.panes.some(p => p.paneId === source.paneId && p.id === source.id));
     this.patch({ issue: null });
     try {
       const resource = await dep.load(id);
       if (!valid()) return;
+      if(options.managedOnly&&resource?.type!=='note')throw new Error('This destination is not an editable Vaultor note.');
       if (resource?.trashedAt) throw new ResourceUnavailableError('This note is in Trash.');
       if (!resource) throw new Error('Resource could not be loaded.');
       if (resourceKind(resource.type).mode === 'unsupported') throw new Error('This resource type is not supported by this app: '+resource.type);
@@ -176,7 +204,7 @@ export class PaneNavigation {
       if (!valid()) return;
       const unavailable = error instanceof ResourceUnavailableError;
       if (unavailable) this.markUnavailable(id);
-      this.patch({ issue: { unavailable, message: error instanceof Error ? error.message : 'Navigation failed', id, options: { ...options, sourcePaneId } } });
+      if(!options.allowCommit)this.patch({ issue: { unavailable, message: error instanceof Error ? error.message : 'Navigation failed', id, options: { ...options, sourcePaneId } } });
       if (options.throwOnFailure) throw error;
     }
   };

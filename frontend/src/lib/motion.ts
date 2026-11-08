@@ -37,7 +37,7 @@ export function enterCommandStage(element: HTMLElement, direction: number) {
 /** Removed surfaces leave a short visual copy only. No handlers, focus or semantics survive. */
 export function exitSurface(element: HTMLElement, rect: DOMRect) {
   if (kind(element) === 'geometry') return;
-  const profile = motionProfile(); if (!profile.exit || !element.animate || !rect.width || !rect.height || kind(element) === 'page' || kind(element) === 'category') return;
+  const profile = motionProfile(); if (!profile.exit || !element.animate || !rect.width || !rect.height || kind(element) === 'page' || kind(element) === 'category' || kind(element) === 'menu') return;
   const id = owner(element); ghosts.get(id)?.remove();
   const ghost = element.cloneNode(true) as HTMLElement;
   ghost.dataset.motionGhost = ''; ghost.inert = true; ghost.setAttribute('aria-hidden', 'true');
@@ -70,7 +70,7 @@ export function installMotion() {
     if (!seen.has(element) || replay) { seen.add(element); enterSurface(element, type); }
     // These surfaces never create exit ghosts (see exitSurface). Measuring
     // them can synchronously lay out an entire editor before its mount settles.
-    if (type !== 'page' && type !== 'category' && type !== 'geometry') {
+    if (type !== 'page' && type !== 'category' && type !== 'geometry' && type !== 'menu') {
       active.add(element); rects.set(element, element.getBoundingClientRect());
     } else { active.delete(element); rects.delete(element); }
     if(element.matches('[data-motion-list]'))reveal(element);
