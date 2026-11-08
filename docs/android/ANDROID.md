@@ -2,6 +2,10 @@
 
 Reviewed 2026-10-23. Current published APK: **0.1.0-alpha.28 / versionCode32**, package com.vaultor.app, original signer, minAPI36/target37, protocol3, production diagnostics disabled. Use [Windows0.16.1](../desktop/releases/v0.16.1.md) for the current compatible host; imports/partial6 need the0.16 host contracts, Reviews need reviews:1 and downloads companionSnapshots:1. Install the host first, then the [Android prerelease](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.28) over the existing app. Never uninstall/clear data as an upgrade or repair procedure. [Alpha.28 ledger](releases/0.1.0-alpha.28.md) owns exact artifact evidence; [R10 qualification](../development/qualification/R10.md) records completed integration/scale checks and unqualified physical/platform cases. W1–W3/R1–R10 engineering is complete; no next sprint is implicitly authorized.
 
+## Mandatory documentation reconciliation
+
+Before any Android publication, follow [the exact-source documentation gate](../development/HELP-DOCUMENTATION.md#exact-source-release-reconciliation-mandatory): review the Android platform delta, reconcile relevant user Help/catalogue/platform versions/What’s New and developer contracts, validate applicable documentation and record the outcome in release qualification. Do not imply Android in-app Help or desktop editing exists. No-user-change releases may record unchanged Help after explicit review.
+
 ## Responsibilities and authority
 
 Android is a source-bound reader and collecting/Review companion, without a local Java host or independently writable workspace. React Native0.87.1/React19.2.3 owns product UI/motion; thin Kotlin owns pinned transport, protected credentials, stores, platform files/updates and semantic haptics. Restricted reader/media WebViews construct safe DOM from structured documents; no editable Tiptap engine mounts. build:editor is a compatibility command for generating reader assets. Unknown nodes retain original JSON and show a fallback; CSP/navigation restrictions prevent arbitrary scripts, HTML, styles, credential access and remote image fetching.

@@ -12,6 +12,10 @@ The user has authorized agents to own necessary version bumps, checks, packaging
 - Use patch for compatible fixes/polish, minor for compatible new capabilities, and an explicitly reviewed major release for breaking contracts. Assess API protocol compatibility separately; do not increment protocol just because the app version changes.
 - Release Windows x64 and Mac arm64 from the same source commit and version. Unsupported Linux/Mac Intel/Android packages are not promised. A partial platform release must be explicitly labeled and must not be advertised as a complete Windows/Mac release.
 
+## Mandatory exact-source documentation gate
+
+Follow [Help documentation reconciliation](../development/HELP-DOCUMENTATION.md#exact-source-release-reconciliation-mandatory) for every publication. Review the actual delta since each platform's preceding release; reconcile catalogue, Help, availability/version metadata, What's New, CODEBASE and engineering guides. Validate links/metadata and source-to-bundle hashes, confirm release notes and record results in qualification. Documentation commits alone are not evidence of reconciliation. Do not publish user-facing changes with materially missing/outdated/misleading Help. A no-user-change release may record unchanged Help after explicit review.
+
 ## Before building
 
 1. Read relevant CODEBASE sections, inspect `git status`, current version, original public key, latest GitHub release/tag and local artifacts. Review the actual requested change and docs. Never overwrite unrelated work or recreate the original private key.

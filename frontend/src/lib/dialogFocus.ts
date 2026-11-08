@@ -13,6 +13,11 @@ function sourceFor(node:Element|null){
  return node;
 }
 const top=()=>activeScopes.filter(scope=>scope.root.current?.isConnected).sort((a,b)=>a.depth-b.depth).at(-1);
+/** Legacy utility surfaces must yield containment to a centrally managed child dialog. */
+export function dialogOwnsFocusOutside(root: HTMLElement | null) {
+ const owner=top()?.root.current;
+ return Boolean(owner && root && !root.contains(owner));
+}
 /** The single global Activity control explicitly joins the deepest dialog,
  * including its anchored portal, without weakening other modal focus bounds. */
 export function useTopDialogScope(){return useSyncExternalStore(listener=>{scopeListeners.add(listener);return()=>scopeListeners.delete(listener);},()=>top()??null);}

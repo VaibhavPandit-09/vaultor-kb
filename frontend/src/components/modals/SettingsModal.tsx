@@ -6,6 +6,7 @@ import { SHORTCUT_ACTIONS, formatShortcutKeys, shortcutFromKeyboardEvent, type S
 import { useSettings } from '../../lib/settings';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
 import { useRestoreFocusOnClose } from '../../lib/useRestoreFocusOnClose';
+import { dialogOwnsFocusOutside } from '../../lib/dialogFocus';
 import { getGlassPanelStyle, getOverlayStyle } from '../../lib/transparency';
 
 type Category = 'appearance' | 'workspace' | 'layout' | 'keyboard';
@@ -19,11 +20,11 @@ const categories = [
 ];
 const accents = { blue: '#3b82f6', purple: '#8b5cf6', green: '#22c55e', orange: '#f97316', red: '#ef4444', teal: '#14b8a6', pink: '#ec4899', cyan: '#06b6d4' } as const;
 
-export default function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  return open ? <SettingsWindow onClose={onClose} /> : null;
+export default function SettingsModal({ open, onClose, onHelp }: { open: boolean; onClose: () => void; onHelp?: () => void }) {
+  return open ? <SettingsWindow onClose={onClose} onHelp={onHelp} /> : null;
 }
 
-function SettingsWindow({ onClose }: { onClose: () => void }) {
+function SettingsWindow({ onClose, onHelp }: { onClose: () => void; onHelp?: () => void }) {
   const { settings, saveStatus, retrySave, resolvedShortcuts, shortcutPlatformLabel,
     updateWorkspaceSetting, updateLocalSetting, setCustomShortcut, resetShortcut,
     resetWorkspaceSettings, resetLocalSettings, resetAllSettings } = useSettings();
@@ -66,6 +67,7 @@ function SettingsWindow({ onClose }: { onClose: () => void }) {
   // Contain focus in the active settings surface, including the nested confirmation.
   useEffect(() => {
     const contain = (event: FocusEvent) => {
+      if (dialogOwnsFocusOutside(root.current)) return;
       const boundary = confirmation.current ?? root.current;
       if (boundary && event.target instanceof Node && !boundary.contains(event.target)) {
         (reset ? cancel.current : search.current)?.focus({ preventScroll: true });
@@ -135,7 +137,7 @@ function SettingsWindow({ onClose }: { onClose: () => void }) {
         <header className="settings-header">
           <div className="settings-title"><h2 id={titleId}>Settings</h2><span role="status" aria-live="polite" className={saveStatus === 'failed' ? 'settings-error' : 'settings-save-status'}>{saveStatus === 'saving' ? 'Saving…' : saveStatus === 'failed' ? <>Not saved <button type="button" onClick={retrySave}>Retry</button></> : 'Saved'}</span></div>
           <label className="settings-search"><Search size={17} /><input ref={search} aria-label="Search settings" placeholder="Search settings…" value={query} onChange={event => setQuery(event.target.value)} />{query && <button type="button" aria-label="Clear settings search" onClick={() => { setQuery(''); search.current?.focus(); }}><X size={15} /></button>}</label>
-          <div className="settings-header-actions"><button type="button" ref={more} aria-label="Settings options" aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(value => !value)}><MoreHorizontal size={19} /></button><button type="button" aria-label="Close settings" onClick={onClose}><X size={19} /></button>
+          <div className="settings-header-actions">{onHelp && <button type="button" onClick={onHelp} aria-label="Help with settings">Help</button>}<button type="button" ref={more} aria-label="Settings options" aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(value => !value)}><MoreHorizontal size={19} /></button><button type="button" aria-label="Close settings" onClick={onClose}><X size={19} /></button>
             {menuOpen && <div ref={menu} className="settings-options" role="menu" aria-label="Settings options" onKeyDown={event => {
               const items = [...(menu.current?.querySelectorAll<HTMLButtonElement>('button') ?? [])];
               const index = items.indexOf(document.activeElement as HTMLButtonElement);

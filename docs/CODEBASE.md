@@ -242,6 +242,14 @@ PreviewShell now owns one fixed ancestor chain for Side↔Floating, interpolatin
 
 OLED now honors the saved60–100% opacity value and glass blur, using black canvas and neutral raised color tokens. The global `--ui-opacity` follows local settings for utility menus; pane surfaces also use the saved value, with inactive peers more transparent. No schema/device persistence changes or global theme-transition redesign. [Appearance](workspace/APPEARANCE.md) owns exact semantics.
 
+## Bundled user Help (unreleased after 0.26.0)
+
+Official Help is application-owned content in `docs/help/`, separate from resources and every Save/recovery/Trash/export/search workflow. `catalogue.json` owns stable capability IDs, article paths, categories/tasks, screen mappings, platform status and evidenced version baselines; Markdown owns usage prose. `lib/help.ts` eagerly bundles content and builds a local metadata/body index once. Help search includes current resolved shortcut text; both shortcut surfaces share `getShortcutCategories`.
+
+`HelpCenter.tsx` uses AppModal's existing focus/Escape/surface behavior with local history, home/search/article states, outline/related links and safe read-only ReactMarkdown/GFM. No raw HTML, embedded images, privileged commands or filesystem paths are admitted. Internal links resolve only catalogued Markdown/heading targets; external credential-free HTTP(S) anchors use existing browser/Electron policy. Opening Help leaves editors mounted. Entry points are application menu, Settings, Activity, palette and one sidebar contextual action; unknown context falls back home.
+
+Vite validates Help and emits original articles/catalogue plus SHA-256 provenance in `help/`; its JS embeds the same source for network-free runtime reading. Existing desktop recursive UI copy includes these assets. `scripts/validate-help.mjs` and negative tests validate metadata/references and optionally source-to-dist hashes. [Help governance](development/HELP-DOCUMENTATION.md) owns mandatory same-change and exact-source platform release reconciliation. Current released desktop baseline is Windows/Mac arm64 0.26.0 and Android alpha.28/code32; Help itself is unreleased and does not add Android UI. Native Mac/assistive technology and Windows subjective acceptance remain separate gates.
+
 ## Editor and content contracts
 
 `BlockEditor` composes StarterKit (with custom code block), headings 1-3, placeholder, Lowlight code block React node view, resizable tables, highlight, nested tasks, underline, slash commands, resource links, managed resource-backed images, and symbol replacement. Existing marks include bold, italic, strike, inline code, underline, and highlight.
@@ -468,6 +476,11 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-08 — Offline Help and documentation governance (development branch)
+
+Added 15 user articles, 42 capability entries, read-only offline Help/search/context entry points and shared live shortcut reference. Added bundled source/provenance validation and mandatory exact-source Help plus developer-doc release gate. Existing resource, autosave, recovery and native authority architecture is unchanged; Help content has separate application ownership. Validation: 16 Help validator tests, focused Help/search/dialog/palette checks, lint, TypeScript/production build and Windows production-equivalent offline smoke pass. Initial broader timeout/native-graph failures passed targeted rechecks; the packaging allowlist failure was fixed. Details and unperformed Mac/assistive-technology/user acceptance are in the [Help tracker](plans/HELP-CENTER-TRACKER.md). No version bump, installer, release or master merge.
+
 
 ### 2026-11-08 — Windows0.26.0 published and publicly verified
 

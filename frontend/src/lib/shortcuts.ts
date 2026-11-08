@@ -269,7 +269,7 @@ export function formatShortcutKeys(shortcut: string): string[] {
     });
 }
 
-export function getShortcutCategories(bindings: ShortcutBindingMap): ShortcutCategory[] {
+export function getShortcutCategories(bindings: ShortcutBindingMap, resourceClipboard = false): ShortcutCategory[] {
   const grouped = shortcutActionMeta.reduce<Record<string, ShortcutItem[]>>((accumulator, item) => {
     const bucket = accumulator[item.category] ?? [];
     bucket.push({
@@ -285,6 +285,13 @@ export function getShortcutCategories(bindings: ShortcutBindingMap): ShortcutCat
     const existing = dynamicCategories.find(item => item.category === group.category);
     if (existing) existing.items.push(...group.items); else dynamicCategories.push(group);
   }
+  if (resourceClipboard) dynamicCategories.push({ category: 'Desktop resources (list focus)', items: [
+    { description: 'Copy resource identities', keys: [modKey, 'C'] },
+    { description: 'Cut only from the current collection', keys: [modKey, 'X'] },
+    { description: 'Paste into a collection', keys: [modKey, 'V'] },
+    { description: 'Rename selected resource', keys: ['F2'] },
+    { description: 'Review moving selected resources to Trash', keys: ['Delete'] },
+  ] });
   return dynamicCategories;
 }
 

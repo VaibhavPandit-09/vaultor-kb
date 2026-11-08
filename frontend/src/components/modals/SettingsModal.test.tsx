@@ -3,6 +3,7 @@ import { StrictMode, useState } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import SettingsModal from './SettingsModal';
+import HelpCenter from './HelpCenter';
 import { SettingsProvider, type SettingsDocument } from '../../lib/settings';
 import { EscapeManagerProvider } from '../../lib/escape/EscapeManagerProvider';
 import { mergeSettingsPatch, type SettingsPatch } from '../../lib/settingsPatch';
@@ -22,6 +23,24 @@ function Harness() {
   const [open, setOpen] = useState(false);
   return <EscapeManagerProvider><SettingsProvider><button onClick={() => setOpen(true)}>Open settings</button><SettingsModal open={open} onClose={() => setOpen(false)} /></SettingsProvider></EscapeManagerProvider>;
 }
+function HelpHandoff() {
+  const [help, setHelp] = useState(false);
+  return <EscapeManagerProvider><SettingsProvider>
+    <SettingsModal open onClose={() => {}} onHelp={() => setHelp(true)} />
+    <HelpCenter open={help} topic="settings" onClose={() => setHelp(false)} />
+  </SettingsProvider></EscapeManagerProvider>;
+}
+it('yields focus to Help and restores its settings trigger', async () => {
+  const rectangles = vi.spyOn(HTMLElement.prototype, 'getClientRects').mockImplementation(() => [{ width: 10, height: 10 }] as unknown as DOMRectList);
+  render(<HelpHandoff />);
+  const trigger = screen.getByRole('button', { name: 'Help with settings' });
+  trigger.focus(); fireEvent.click(trigger);
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Search Help')));
+  fireEvent.keyDown(window, { key: 'Escape' });
+  await waitFor(() => expect(screen.queryByLabelText('Search Help')).toBeNull());
+  expect(document.activeElement).toBe(trigger);
+  rectangles.mockRestore();
+});
 async function open() {
   render(<StrictMode><Harness /></StrictMode>); await waitFor(() => expect(api.get).toHaveBeenCalled());
   screen.getByText('Open settings').focus(); fireEvent.click(screen.getByText('Open settings'));

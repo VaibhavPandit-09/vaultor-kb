@@ -111,6 +111,8 @@ import { reportError } from '../lib/diagnostics';
 import CommandPaletteModal from '../components/modals/CommandPaletteModal';
 import ShortcutsModal from '../components/modals/ShortcutsModal';
 import SettingsModal from '../components/modals/SettingsModal';
+import HelpCenter from '../components/modals/HelpCenter';
+import { contextualHelp } from '../lib/help';
 import { isMac, shortcutMatchesEvent } from '../lib/shortcuts';
 import type { CommandContext } from '../lib/commandPalette';
 
@@ -180,6 +182,7 @@ export default function Dashboard() {
   const [desktopDragSource,setDesktopDragSource]=useState<DragSurface|null>(null);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [help, setHelp] = useState<{topic:string}|null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [previewResourceId, setPreviewResourceId] = useState<string | null>(null);
   const [previewResourceType, setPreviewResourceType] = useState<ResourceType | null>(null);
@@ -588,7 +591,15 @@ export default function Dashboard() {
     setSettingsOpen(true);
   }, [settingsModalFocus]);
 
-  useEffect(()=>window.vaultorDesktop?.onAppCommand?.(command=>{if(command==='settings')openSettingsModal();}),[openSettingsModal]);
+  const openHelp = useCallback((contextual = false) => {
+    setHelp({topic: contextual ? contextualHelp(libraryVisible ? librarySection : 'editor') : ''});
+  }, [libraryVisible, librarySection]);
+  useEffect(() => {
+    const listener = (event: Event) => setHelp({topic: contextualHelp(typeof (event as CustomEvent).detail === 'string' ? (event as CustomEvent<string>).detail : '')});
+    window.addEventListener('vaultor:help', listener);
+    return () => window.removeEventListener('vaultor:help', listener);
+  }, []);
+  useEffect(()=>window.vaultorDesktop?.onAppCommand?.(command=>{if(command==='settings')openSettingsModal();else if(command==='help')openHelp();}),[openSettingsModal,openHelp]);
 
   const closeSettingsModal = useCallback(() => {
     setSettingsOpen(false);
@@ -1188,6 +1199,7 @@ export default function Dashboard() {
     toggleSidebar,
     openShortcuts: openShortcutsModal,
     openSettings: openSettingsModal,
+    openHelp,
     closeActiveNote,
     closePreview: () => dismissPreview(),
     openDeleteFlow: async (resourceId:string)=>{const {data}=await api.get<Resource>('/resources/'+resourceId+'/summary');await requestResourceAction('trash',[data]);},
@@ -1198,6 +1210,7 @@ export default function Dashboard() {
     dismissPreview,
     openResourceById,
     openSettingsModal,
+    openHelp,
     openShortcutsModal,
     openNotes, resourceDetails,
     previewResource,
@@ -1278,6 +1291,7 @@ export default function Dashboard() {
           <button onClick={() => setTransferMode('import')} title="Import workspace" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary"><UploadCloud size={16} /></button>
         </div>
         <div className="flex items-center gap-0.5">
+          <button onClick={()=>openHelp(true)} className="rounded-lg p-1.5 text-slate-400 hover:bg-card hover:text-primary" title="Help for this screen" aria-label="Help for this screen">?</button>
           <button onClick={openShortcutsModal} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-card hover:text-primary" title="Shortcuts">
             <Command size={16} />
           </button>
@@ -1303,8 +1317,9 @@ export default function Dashboard() {
         onClose={closeCommandPalette}
         context={commandPaletteContext}
       />
+      <HelpCenter open={help!==null} topic={help?.topic??''} onClose={()=>setHelp(null)} />
       <ShortcutsModal open={shortcutsOpen} onClose={closeShortcutsModal} />
-      <ErrorBoundary region="settings"><SettingsModal open={settingsOpen} onClose={closeSettingsModal} /></ErrorBoundary>
+      <ErrorBoundary region="settings"><SettingsModal open={settingsOpen} onClose={closeSettingsModal} onHelp={()=>setHelp({topic:contextualHelp('settings')})} /></ErrorBoundary>
 
       {fileImport && <ErrorBoundary region="file import"><FileImportModal session={fileImport} onClose={closeFileImport} onResource={syncUploadedResource} onDestination={item=>{setCollection(item);setLibrarySection('library');setLibraryVisible(true);}} /></ErrorBoundary>}
       <ErrorBoundary region="note export"><NoteExportModal key={(identityRef.current?.id ?? "") + ":" + (identityRef.current?.generation ?? "")} flushNote={id => exportSaveRef.current(id)} noteId={noteExport?.id} title={noteExport?.title ?? ""} flush={async () => { if (noteExport) await exportSaveRef.current(noteExport.id); }} onClose={() => setNoteExport(null)} /></ErrorBoundary>

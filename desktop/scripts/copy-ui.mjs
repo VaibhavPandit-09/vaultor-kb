@@ -1,8 +1,10 @@
 import { cp, mkdir, rename, access, mkdtemp, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 const root=fileURLToPath(new URL('../',import.meta.url)), source=fileURLToPath(new URL('../../frontend/dist/',import.meta.url));
 await access(join(source,'index.html'));
+execFileSync(process.execPath,[fileURLToPath(new URL('../../scripts/validate-help.mjs',import.meta.url)),'--dist',source],{stdio:'inherit'});
 const cache=join(root,'cache');await mkdir(cache,{recursive:true});
 const staging=await mkdtemp(join(cache,'ui-'));
 await cp(source,staging,{recursive:true});

@@ -330,6 +330,7 @@ else {
       { label: 'Updates…', click: () => window?.webContents.send('desktop:updates-open') },
       ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
       {label:'Workspaces…',click:()=>window?.webContents.send('desktop:app-command','workspaces')},
+      {label:'Help Center…',click:()=>window?.webContents.send('desktop:app-command','help')},
       {label:'Settings…',click:()=>window?.webContents.send('desktop:app-command','settings')},
       {type:'separator'},
       { role: 'editMenu' },

@@ -64,6 +64,7 @@ export type CommandContext = {
   toggleSidebar: () => void;
   openShortcuts: () => void;
   openSettings: () => void;
+  openHelp?: (contextual?: boolean) => void;
   closeActiveNote: () => void;
   closePreview: () => void;
   openDeleteFlow: (resourceId: string) => void | Promise<void>;
@@ -212,6 +213,20 @@ const commandDefinitions: CommandDefinition[] = [
     title: 'Open shortcuts',
     keywords: ['keyboard', 'shortcuts', 'help'],
     getInitialStep: (context) => ({ type: 'execute', action: () => context.openShortcuts() }),
+  },
+  {
+    id: 'open_help',
+    title: 'Open Help Center',
+    keywords: ['help', 'documentation', 'features', 'guide'],
+    isAvailable: context => Boolean(context.openHelp),
+    getInitialStep: context => ({ type: 'execute', action: () => context.openHelp?.() }),
+  },
+  {
+    id: 'context_help',
+    title: 'Help for this screen',
+    keywords: ['help', 'context', 'guide'],
+    isAvailable: context => Boolean(context.openHelp),
+    getInitialStep: context => ({ type: 'execute', action: () => context.openHelp?.(true) }),
   },
   {
     id: 'open_settings',

@@ -2,6 +2,8 @@
   "name": "vaultor-local-tools",
   "private": true,
   "scripts": {
-    "perf:test": "node desktop/scripts/perf-test.mjs"
+    "perf:test": "node desktop/scripts/perf-test.mjs",
+    "help:validate": "node scripts/validate-help.mjs",
+    "help:test": "node --test scripts/validate-help.test.mjs"
   }
 }

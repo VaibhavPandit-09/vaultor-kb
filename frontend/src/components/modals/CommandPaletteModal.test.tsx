@@ -16,6 +16,14 @@ beforeEach(()=>{
 });
 afterEach(()=>{cleanup();vi.resetAllMocks();});
 function mount(){const close=vi.fn(),preview=context.openResource;const view=render(<EscapeManagerProvider><CommandPaletteModal open onClose={close} context={context}/></EscapeManagerProvider>);return {...view,close,preview};}
+it('hands Help and contextual Help to the registered navigation callback', async () => {
+ context.openHelp=vi.fn(); const {close}=mount();
+ fireEvent.click(screen.getByRole('button',{name:'Commands'}));
+ fireEvent.change(screen.getByRole('combobox'),{target:{value:'Help Center'}});
+ fireEvent.click(await screen.findByRole('option',{name:/Open Help Center/}));
+ await waitFor(()=>expect(context.openHelp).toHaveBeenCalledWith());
+ expect(close).toHaveBeenCalled();
+});
 it('deduplicates Open/Pinned/Recent, leaves Tab alone and never previews highlights',async()=>{
  const {preview}=mount();await screen.findByText('Meeting');await waitFor(()=>expect(screen.getAllByRole('option')).toHaveLength(1));expect(screen.getByRole('option').draggable).toBe(true);
  const input=screen.getByRole('combobox');expect(fireEvent.keyDown(input,{key:'Tab'})).toBe(true);expect((input as HTMLInputElement).value).toBe('');fireEvent.keyDown(input,{key:'ArrowDown'});expect(preview).not.toHaveBeenCalled();

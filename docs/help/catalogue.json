@@ -1,0 +1,2078 @@
+{
+  "schemaVersion": 1,
+  "reviewed": "2026-11-08",
+  "baseline": {
+    "windows": "0.26.0",
+    "macos": "0.26.0",
+    "android": "0.1.0-alpha.28"
+  },
+  "areas": [
+    "Getting started",
+    "Library",
+    "Editor",
+    "Navigation",
+    "Desktop",
+    "Search",
+    "Linked Sources",
+    "Transfers",
+    "Recovery",
+    "Settings",
+    "Platforms"
+  ],
+  "articles": [
+    {
+      "id": "getting-started",
+      "title": "Getting started",
+      "path": "getting-started.md",
+      "area": "Getting started"
+    },
+    {
+      "id": "library",
+      "title": "Library and organization",
+      "path": "library.md",
+      "area": "Library"
+    },
+    {
+      "id": "notes",
+      "title": "Notes, editing and links",
+      "path": "notes.md",
+      "area": "Editor"
+    },
+    {
+      "id": "navigation",
+      "title": "Panes, Open Notes and history",
+      "path": "navigation.md",
+      "area": "Navigation"
+    },
+    {
+      "id": "interactions",
+      "title": "Selection, clipboard and dragging",
+      "path": "interactions.md",
+      "area": "Desktop"
+    },
+    {
+      "id": "search",
+      "title": "Search and command palette",
+      "path": "search.md",
+      "area": "Search"
+    },
+    {
+      "id": "linked-sources",
+      "title": "Linked sources and external Markdown",
+      "path": "linked-sources.md",
+      "area": "Linked Sources"
+    },
+    {
+      "id": "transfers",
+      "title": "Importing, exporting and workspaces",
+      "path": "transfers.md",
+      "area": "Transfers"
+    },
+    {
+      "id": "recovery",
+      "title": "Trash, drafts and recovery",
+      "path": "recovery.md",
+      "area": "Recovery"
+    },
+    {
+      "id": "desktop",
+      "title": "Desktop tools, Activity and updates",
+      "path": "desktop.md",
+      "area": "Desktop"
+    },
+    {
+      "id": "settings",
+      "title": "Settings and appearance",
+      "path": "settings.md",
+      "area": "Settings"
+    },
+    {
+      "id": "shortcuts",
+      "title": "Keyboard shortcuts",
+      "path": "shortcuts.md",
+      "area": "Navigation"
+    },
+    {
+      "id": "platforms",
+      "title": "Platform support and Android companion",
+      "path": "platforms.md",
+      "area": "Platforms"
+    },
+    {
+      "id": "troubleshooting",
+      "title": "Troubleshooting and limitations",
+      "path": "troubleshooting.md",
+      "area": "Recovery"
+    },
+    {
+      "id": "whats-new",
+      "title": "What's New",
+      "path": "whats-new.md",
+      "area": "Getting started"
+    }
+  ],
+  "context": {
+    "library": "library",
+    "recent": "library",
+    "favorites": "library",
+    "collections": "library",
+    "tags": "library",
+    "sources": "linked-sources",
+    "editor": "notes",
+    "activity": "desktop",
+    "settings": "settings",
+    "trash": "recovery",
+    "workspaces": "navigation",
+    "preview": "transfers",
+    "review": "platforms"
+  },
+  "features": [
+    {
+      "id": "resource-browse",
+      "name": "Browse notes and files",
+      "description": "Find resources type title filter recent pinned",
+      "article": "library",
+      "areas": [
+        "Library"
+      ],
+      "screens": [
+        "Library"
+      ],
+      "tasks": [
+        "Find resources type title filter recent pinned"
+      ],
+      "keywords": [
+        "Find",
+        "resources",
+        "type",
+        "title",
+        "filter",
+        "recent",
+        "pinned"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "available",
+          "verifiedVersion": "0.1.0-alpha.28"
+        }
+      },
+      "limitations": [
+        "Android browsing is read-only; original editing and organization writes are unavailable."
+      ],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/LibraryView.tsx"
+      ]
+    },
+    {
+      "id": "collections",
+      "name": "Manage nested collections and memberships",
+      "description": "Organize resources add remove membership hierarchy delete collection",
+      "article": "library",
+      "areas": [
+        "Library"
+      ],
+      "screens": [
+        "Collections"
+      ],
+      "tasks": [
+        "Organize resources add remove membership hierarchy delete collection"
+      ],
+      "keywords": [
+        "Organize",
+        "resources",
+        "add",
+        "remove",
+        "membership",
+        "hierarchy",
+        "delete",
+        "collection"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/CollectionManagement.tsx"
+      ]
+    },
+    {
+      "id": "tags",
+      "name": "Manage tags and colors",
+      "description": "Create apply remove tags bulk tag",
+      "article": "library",
+      "areas": [
+        "Library"
+      ],
+      "screens": [
+        "Tags"
+      ],
+      "tasks": [
+        "Create apply remove tags bulk tag"
+      ],
+      "keywords": [
+        "Create",
+        "apply",
+        "remove",
+        "tags",
+        "bulk",
+        "tag"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/TagsBrowser.tsx"
+      ]
+    },
+    {
+      "id": "pins",
+      "name": "Manage Pinned and Recent desktop navigation",
+      "description": "Pin resources collections recent openings quick access",
+      "article": "library",
+      "areas": [
+        "Library"
+      ],
+      "screens": [
+        "Pinned"
+      ],
+      "tasks": [
+        "Pin resources collections recent openings quick access"
+      ],
+      "keywords": [
+        "Pin",
+        "resources",
+        "collections",
+        "recent",
+        "openings",
+        "quick",
+        "access"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/OrganizationViews.tsx"
+      ]
+    },
+    {
+      "id": "note-edit",
+      "name": "Managed note editing",
+      "description": "Create edit autosave notes formatting headings lists tasks",
+      "article": "notes",
+      "areas": [
+        "Editor"
+      ],
+      "screens": [
+        "Editor"
+      ],
+      "tasks": [
+        "Create edit autosave notes formatting headings lists tasks"
+      ],
+      "keywords": [
+        "Create",
+        "edit",
+        "autosave",
+        "notes",
+        "formatting",
+        "headings",
+        "lists",
+        "tasks"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/editor/BlockEditor.tsx"
+      ]
+    },
+    {
+      "id": "slash",
+      "name": "Slash commands and symbols",
+      "description": "Insert block code quote divider symbol punctuation",
+      "article": "notes",
+      "areas": [
+        "Editor"
+      ],
+      "screens": [
+        "Editor"
+      ],
+      "tasks": [
+        "Insert block code quote divider symbol punctuation"
+      ],
+      "keywords": [
+        "Insert",
+        "block",
+        "code",
+        "quote",
+        "divider",
+        "symbol",
+        "punctuation"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/editor/SlashMenu.tsx"
+      ]
+    },
+    {
+      "id": "resource-links",
+      "name": "Resource links and mentions",
+      "description": "Link two documents drag note into another note insert link backlinks relationships",
+      "article": "notes",
+      "areas": [
+        "Editor"
+      ],
+      "screens": [
+        "Editor"
+      ],
+      "tasks": [
+        "Link two documents drag note into another note insert link backlinks relationships"
+      ],
+      "keywords": [
+        "Link",
+        "two",
+        "documents",
+        "drag",
+        "note",
+        "into",
+        "another",
+        "note",
+        "insert",
+        "link",
+        "backlinks",
+        "relationships"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/editor/ResourceLinkView.tsx"
+      ]
+    },
+    {
+      "id": "images",
+      "name": "Managed images",
+      "description": "Paste drop image caption alt width alignment remove placement",
+      "article": "notes",
+      "areas": [
+        "Editor"
+      ],
+      "screens": [
+        "Editor"
+      ],
+      "tasks": [
+        "Paste drop image caption alt width alignment remove placement"
+      ],
+      "keywords": [
+        "Paste",
+        "drop",
+        "image",
+        "caption",
+        "alt",
+        "width",
+        "alignment",
+        "remove",
+        "placement"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/editor/ManagedImage.tsx"
+      ]
+    },
+    {
+      "id": "tables",
+      "name": "Tables and expanded editing",
+      "description": "Table row column filter merge split copy export CSV",
+      "article": "notes",
+      "areas": [
+        "Editor"
+      ],
+      "screens": [
+        "Editor"
+      ],
+      "tasks": [
+        "Table row column filter merge split copy export CSV"
+      ],
+      "keywords": [
+        "Table",
+        "row",
+        "column",
+        "filter",
+        "merge",
+        "split",
+        "copy",
+        "export",
+        "CSV"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/editor/TableControls.tsx"
+      ]
+    },
+    {
+      "id": "panes",
+      "name": "Viewing panes",
+      "description": "Open in another pane move notes between panes split focus maximum",
+      "article": "navigation",
+      "areas": [
+        "Navigation"
+      ],
+      "screens": [
+        "Editor"
+      ],
+      "tasks": [
+        "Open in another pane move notes between panes split focus maximum"
+      ],
+      "keywords": [
+        "Open",
+        "in",
+        "another",
+        "pane",
+        "move",
+        "notes",
+        "between",
+        "panes",
+        "split",
+        "focus",
+        "maximum"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/paneNavigation.ts"
+      ]
+    },
+    {
+      "id": "sessions",
+      "name": "Open Notes and session restoration",
+      "description": "Close session return to notes restore restart workspace",
+      "article": "navigation",
+      "areas": [
+        "Navigation"
+      ],
+      "screens": [
+        "Open Notes"
+      ],
+      "tasks": [
+        "Close session return to notes restore restart workspace"
+      ],
+      "keywords": [
+        "Close",
+        "session",
+        "return",
+        "to",
+        "notes",
+        "restore",
+        "restart",
+        "workspace"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/OpenNotes.tsx"
+      ]
+    },
+    {
+      "id": "history",
+      "name": "Back Forward and History",
+      "description": "Navigate journey reading position history",
+      "article": "navigation",
+      "areas": [
+        "Navigation"
+      ],
+      "screens": [
+        "Editor"
+      ],
+      "tasks": [
+        "Navigate journey reading position history"
+      ],
+      "keywords": [
+        "Navigate",
+        "journey",
+        "reading",
+        "position",
+        "history"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/paneNavigation.ts"
+      ]
+    },
+    {
+      "id": "workspace",
+      "name": "Workspaces and connections",
+      "description": "Switch local remote server approval workspace session management",
+      "article": "navigation",
+      "areas": [
+        "Navigation"
+      ],
+      "screens": [
+        "Workspaces"
+      ],
+      "tasks": [
+        "Switch local remote server approval workspace session management"
+      ],
+      "keywords": [
+        "Switch",
+        "local",
+        "remote",
+        "server",
+        "approval",
+        "workspace",
+        "session",
+        "management"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/pages/Dashboard.tsx"
+      ]
+    },
+    {
+      "id": "search",
+      "name": "Title and saved-content search",
+      "description": "Search notes PDF UTF-8 file content coverage filters",
+      "article": "search",
+      "areas": [
+        "Search"
+      ],
+      "screens": [
+        "Library"
+      ],
+      "tasks": [
+        "Search notes PDF UTF-8 file content coverage filters"
+      ],
+      "keywords": [
+        "Search",
+        "notes",
+        "PDF",
+        "UTF-8",
+        "file",
+        "content",
+        "coverage",
+        "filters"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/resourceSearch.ts"
+      ]
+    },
+    {
+      "id": "palette",
+      "name": "Command palette",
+      "description": "Commands actions search workspace keyboard",
+      "article": "search",
+      "areas": [
+        "Search"
+      ],
+      "screens": [
+        "Command palette"
+      ],
+      "tasks": [
+        "Commands actions search workspace keyboard"
+      ],
+      "keywords": [
+        "Commands",
+        "actions",
+        "search",
+        "workspace",
+        "keyboard"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/commandPalette.ts"
+      ]
+    },
+    {
+      "id": "selection",
+      "name": "Page-scoped multi-selection",
+      "description": "Select multiple notes delete multiple notes checkbox range bulk actions select page",
+      "article": "interactions",
+      "areas": [
+        "Desktop"
+      ],
+      "screens": [
+        "Library"
+      ],
+      "tasks": [
+        "Select multiple notes delete multiple notes checkbox range bulk actions select page"
+      ],
+      "keywords": [
+        "Select",
+        "multiple",
+        "notes",
+        "delete",
+        "multiple",
+        "notes",
+        "checkbox",
+        "range",
+        "bulk",
+        "actions",
+        "select",
+        "page"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/resourceSelection.ts"
+      ]
+    },
+    {
+      "id": "context-menus",
+      "name": "Context menus",
+      "description": "Right click Shift+F10 ContextMenu resource actions",
+      "article": "interactions",
+      "areas": [
+        "Desktop"
+      ],
+      "screens": [
+        "Library"
+      ],
+      "tasks": [
+        "Right click Shift+F10 ContextMenu resource actions"
+      ],
+      "keywords": [
+        "Right",
+        "click",
+        "Shift+F10",
+        "ContextMenu",
+        "resource",
+        "actions"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/ResourceActions.tsx"
+      ]
+    },
+    {
+      "id": "drag",
+      "name": "Internal drag and drop",
+      "description": "Drag and drop note into another note resource link collection tag pinned trash",
+      "article": "interactions",
+      "areas": [
+        "Desktop"
+      ],
+      "screens": [
+        "Library"
+      ],
+      "tasks": [
+        "Drag and drop note into another note resource link collection tag pinned trash"
+      ],
+      "keywords": [
+        "Drag",
+        "and",
+        "drop",
+        "note",
+        "into",
+        "another",
+        "note",
+        "resource",
+        "link",
+        "collection",
+        "tag",
+        "pinned",
+        "trash"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/desktopInteraction.ts"
+      ]
+    },
+    {
+      "id": "clipboard",
+      "name": "Resource clipboard",
+      "description": "Copy resource cut paste collection membership copy resource link",
+      "article": "interactions",
+      "areas": [
+        "Desktop"
+      ],
+      "screens": [
+        "Library"
+      ],
+      "tasks": [
+        "Copy resource cut paste collection membership copy resource link"
+      ],
+      "keywords": [
+        "Copy",
+        "resource",
+        "cut",
+        "paste",
+        "collection",
+        "membership",
+        "copy",
+        "resource",
+        "link"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "unsupported"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/resourceClipboard.ts"
+      ]
+    },
+    {
+      "id": "prepared-copies",
+      "name": "Native prepared file copies",
+      "description": "Export file reveal Explorer default app drag out filesystem",
+      "article": "desktop",
+      "areas": [
+        "Desktop"
+      ],
+      "screens": [
+        "File preview"
+      ],
+      "tasks": [
+        "Export file reveal Explorer default app drag out filesystem"
+      ],
+      "keywords": [
+        "Export",
+        "file",
+        "reveal",
+        "Explorer",
+        "default",
+        "app",
+        "drag",
+        "out",
+        "filesystem"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "unsupported"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "desktop/src/prepared-exports.mjs"
+      ]
+    },
+    {
+      "id": "activity",
+      "name": "Background Activity",
+      "description": "Progress task pause resume retry import export trash background",
+      "article": "desktop",
+      "areas": [
+        "Desktop"
+      ],
+      "screens": [
+        "Activity"
+      ],
+      "tasks": [
+        "Progress task pause resume retry import export trash background"
+      ],
+      "keywords": [
+        "Progress",
+        "task",
+        "pause",
+        "resume",
+        "retry",
+        "import",
+        "export",
+        "trash",
+        "background"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/activity.ts"
+      ]
+    },
+    {
+      "id": "native-activity",
+      "name": "OS progress and notifications",
+      "description": "Taskbar notifications background completion attention",
+      "article": "desktop",
+      "areas": [
+        "Desktop"
+      ],
+      "screens": [
+        "Activity"
+      ],
+      "tasks": [
+        "Taskbar notifications background completion attention"
+      ],
+      "keywords": [
+        "Taskbar",
+        "notifications",
+        "background",
+        "completion",
+        "attention"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "unsupported"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "desktop/src/native-activity.mjs"
+      ]
+    },
+    {
+      "id": "linked-source",
+      "name": "Local linked Markdown",
+      "description": "Linked markdown external folder explicit save original source authorization",
+      "article": "linked-sources",
+      "areas": [
+        "Linked Sources"
+      ],
+      "screens": [
+        "Linked Sources"
+      ],
+      "tasks": [
+        "Linked markdown external folder explicit save original source authorization"
+      ],
+      "keywords": [
+        "Linked",
+        "markdown",
+        "external",
+        "folder",
+        "explicit",
+        "save",
+        "original",
+        "source",
+        "authorization"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "unsupported"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [
+        "Requires supported local owner filesystem access."
+      ],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/linked/workspace.ts"
+      ]
+    },
+    {
+      "id": "linked-links",
+      "name": "Markdown links and disk relationships",
+      "description": "Relative links Markdown hyperlink mentions disk graph",
+      "article": "linked-sources",
+      "areas": [
+        "Linked Sources"
+      ],
+      "screens": [
+        "Linked Sources"
+      ],
+      "tasks": [
+        "Relative links Markdown hyperlink mentions disk graph"
+      ],
+      "keywords": [
+        "Relative",
+        "links",
+        "Markdown",
+        "hyperlink",
+        "mentions",
+        "disk",
+        "graph"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "unsupported"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [
+        "Requires supported local owner filesystem access."
+      ],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/editor/LinkedMarkdownLinks.tsx"
+      ]
+    },
+    {
+      "id": "linked-recovery",
+      "name": "Linked conflict and private recovery",
+      "description": "Recover external file compare conflict export validated visual draft",
+      "article": "linked-sources",
+      "areas": [
+        "Linked Sources"
+      ],
+      "screens": [
+        "Linked Sources"
+      ],
+      "tasks": [
+        "Recover external file compare conflict export validated visual draft"
+      ],
+      "keywords": [
+        "Recover",
+        "external",
+        "file",
+        "compare",
+        "conflict",
+        "export",
+        "validated",
+        "visual",
+        "draft"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "unsupported"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [
+        "Requires supported local owner filesystem access."
+      ],
+      "related": [],
+      "evidence": [
+        "desktop/src/linked/documents.mjs"
+      ]
+    },
+    {
+      "id": "import",
+      "name": "File and folder import",
+      "description": "Import folder files Markdown TXT original relative links resume",
+      "article": "transfers",
+      "areas": [
+        "Transfers"
+      ],
+      "screens": [
+        "Import"
+      ],
+      "tasks": [
+        "Import folder files Markdown TXT original relative links resume"
+      ],
+      "keywords": [
+        "Import",
+        "folder",
+        "files",
+        "Markdown",
+        "TXT",
+        "original",
+        "relative",
+        "links",
+        "resume"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/importActivity.ts"
+      ]
+    },
+    {
+      "id": "note-export",
+      "name": "Note exports",
+      "description": "Export Markdown PDF Word DOCX asset ZIP linked notes",
+      "article": "transfers",
+      "areas": [
+        "Transfers"
+      ],
+      "screens": [
+        "Editor"
+      ],
+      "tasks": [
+        "Export Markdown PDF Word DOCX asset ZIP linked notes"
+      ],
+      "keywords": [
+        "Export",
+        "Markdown",
+        "PDF",
+        "Word",
+        "DOCX",
+        "asset",
+        "ZIP",
+        "linked",
+        "notes"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/modals/NoteExportModal.tsx"
+      ]
+    },
+    {
+      "id": "workspace-transfer",
+      "name": "Workspace ZIP and partial exports",
+      "description": "Backup merge replace import as new local copy export selected",
+      "article": "transfers",
+      "areas": [
+        "Transfers"
+      ],
+      "screens": [
+        "Workspaces"
+      ],
+      "tasks": [
+        "Backup merge replace import as new local copy export selected"
+      ],
+      "keywords": [
+        "Backup",
+        "merge",
+        "replace",
+        "import",
+        "as",
+        "new",
+        "local",
+        "copy",
+        "export",
+        "selected"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/transferActivity.ts"
+      ]
+    },
+    {
+      "id": "file-preview",
+      "name": "File previews and original download",
+      "description": "Preview PDF image text audio video CSV download original",
+      "article": "transfers",
+      "areas": [
+        "Transfers"
+      ],
+      "screens": [
+        "File preview"
+      ],
+      "tasks": [
+        "Preview PDF image text audio video CSV download original"
+      ],
+      "keywords": [
+        "Preview",
+        "PDF",
+        "image",
+        "text",
+        "audio",
+        "video",
+        "CSV",
+        "download",
+        "original"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/FilePreview.tsx"
+      ]
+    },
+    {
+      "id": "trash",
+      "name": "Trash Restore and permanent deletion",
+      "description": "Recover deleted note delete multiple notes restore empty trash purge",
+      "article": "recovery",
+      "areas": [
+        "Recovery"
+      ],
+      "screens": [
+        "Trash"
+      ],
+      "tasks": [
+        "Recover deleted note delete multiple notes restore empty trash purge"
+      ],
+      "keywords": [
+        "Recover",
+        "deleted",
+        "note",
+        "delete",
+        "multiple",
+        "notes",
+        "restore",
+        "empty",
+        "trash",
+        "purge"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/TrashView.tsx"
+      ]
+    },
+    {
+      "id": "draft-recovery",
+      "name": "Managed drafts and save conflicts",
+      "description": "Unsaved draft recovery revision conflict autosave undo",
+      "article": "recovery",
+      "areas": [
+        "Recovery"
+      ],
+      "screens": [
+        "Editor"
+      ],
+      "tasks": [
+        "Unsaved draft recovery revision conflict autosave undo"
+      ],
+      "keywords": [
+        "Unsaved",
+        "draft",
+        "recovery",
+        "revision",
+        "conflict",
+        "autosave",
+        "undo"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/sessionStore.ts"
+      ]
+    },
+    {
+      "id": "settings",
+      "name": "Settings and customization",
+      "description": "Configure appearance layout workspace keyboard reset search settings",
+      "article": "settings",
+      "areas": [
+        "Settings"
+      ],
+      "screens": [
+        "Settings"
+      ],
+      "tasks": [
+        "Configure appearance layout workspace keyboard reset search settings"
+      ],
+      "keywords": [
+        "Configure",
+        "appearance",
+        "layout",
+        "workspace",
+        "keyboard",
+        "reset",
+        "search",
+        "settings"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/modals/SettingsModal.tsx"
+      ]
+    },
+    {
+      "id": "theme-motion",
+      "name": "Themes and reduced motion",
+      "description": "Theme accent transparency animation motion preferences",
+      "article": "settings",
+      "areas": [
+        "Settings"
+      ],
+      "screens": [
+        "Settings"
+      ],
+      "tasks": [
+        "Theme accent transparency animation motion preferences"
+      ],
+      "keywords": [
+        "Theme",
+        "accent",
+        "transparency",
+        "animation",
+        "motion",
+        "preferences"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/motion.ts"
+      ]
+    },
+    {
+      "id": "shortcuts",
+      "name": "Keyboard shortcut reference",
+      "description": "Keyboard shortcuts Ctrl+Shift Cmd+Shift hotkey focus keybindings",
+      "article": "shortcuts",
+      "areas": [
+        "Navigation"
+      ],
+      "screens": [
+        "Settings"
+      ],
+      "tasks": [
+        "Keyboard shortcuts Ctrl+Shift Cmd+Shift hotkey focus keybindings"
+      ],
+      "keywords": [
+        "Keyboard",
+        "shortcuts",
+        "Ctrl+Shift",
+        "Cmd+Shift",
+        "hotkey",
+        "focus",
+        "keybindings"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/lib/shortcuts.ts"
+      ]
+    },
+    {
+      "id": "updates",
+      "name": "Verified application updates",
+      "description": "Update restart installer signed sidecar check version",
+      "article": "desktop",
+      "areas": [
+        "Desktop"
+      ],
+      "screens": [
+        "Updates"
+      ],
+      "tasks": [
+        "Update restart installer signed sidecar check version"
+      ],
+      "keywords": [
+        "Update",
+        "restart",
+        "installer",
+        "signed",
+        "sidecar",
+        "check",
+        "version"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "unsupported"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "desktop/src/updates.mjs"
+      ]
+    },
+    {
+      "id": "diagnostics",
+      "name": "Diagnostics and search coverage",
+      "description": "Troubleshoot failed search index retry rebuild request ID",
+      "article": "troubleshooting",
+      "areas": [
+        "Recovery"
+      ],
+      "screens": [
+        "Diagnostics"
+      ],
+      "tasks": [
+        "Troubleshoot failed search index retry rebuild request ID"
+      ],
+      "keywords": [
+        "Troubleshoot",
+        "failed",
+        "search",
+        "index",
+        "retry",
+        "rebuild",
+        "request",
+        "ID"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/modals/DiagnosticsPanel.tsx"
+      ]
+    },
+    {
+      "id": "reviews",
+      "name": "Review evidence and triage",
+      "description": "Read original review inbox resolve dismiss evidence quote Android capture",
+      "article": "platforms",
+      "areas": [
+        "Platforms"
+      ],
+      "screens": [
+        "Review"
+      ],
+      "tasks": [
+        "Read original review inbox resolve dismiss evidence quote Android capture"
+      ],
+      "keywords": [
+        "Read",
+        "original",
+        "review",
+        "inbox",
+        "resolve",
+        "dismiss",
+        "evidence",
+        "quote",
+        "Android",
+        "capture"
+      ],
+      "availability": {
+        "windows": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "macos": {
+          "status": "available",
+          "verifiedVersion": "0.26.0"
+        },
+        "browser": {
+          "status": "available"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/ReviewInbox.tsx"
+      ]
+    },
+    {
+      "id": "android-reader",
+      "name": "Android reader and media",
+      "description": "Home Library Review outline find appearance media reading",
+      "article": "platforms",
+      "areas": [
+        "Platforms"
+      ],
+      "screens": [
+        "Android"
+      ],
+      "tasks": [
+        "Home Library Review outline find appearance media reading"
+      ],
+      "keywords": [
+        "Home",
+        "Library",
+        "Review",
+        "outline",
+        "find",
+        "appearance",
+        "media",
+        "reading"
+      ],
+      "availability": {
+        "windows": {
+          "status": "unsupported"
+        },
+        "macos": {
+          "status": "unsupported"
+        },
+        "browser": {
+          "status": "unsupported"
+        },
+        "android": {
+          "status": "available",
+          "verifiedVersion": "0.1.0-alpha.28"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "mobile/src/ReaderView.tsx"
+      ]
+    },
+    {
+      "id": "android-offline",
+      "name": "Android retained offline reading",
+      "description": "Download verified checkpoint offline search retained originals source locks",
+      "article": "platforms",
+      "areas": [
+        "Platforms"
+      ],
+      "screens": [
+        "Android"
+      ],
+      "tasks": [
+        "Download verified checkpoint offline search retained originals source locks"
+      ],
+      "keywords": [
+        "Download",
+        "verified",
+        "checkpoint",
+        "offline",
+        "search",
+        "retained",
+        "originals",
+        "source",
+        "locks"
+      ],
+      "availability": {
+        "windows": {
+          "status": "unsupported"
+        },
+        "macos": {
+          "status": "unsupported"
+        },
+        "browser": {
+          "status": "unsupported"
+        },
+        "android": {
+          "status": "available",
+          "verifiedVersion": "0.1.0-alpha.28"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "docs/android/OFFLINE.md"
+      ]
+    },
+    {
+      "id": "android-review",
+      "name": "Android protected Review capture and delivery",
+      "description": "Flag quote review queue keep draft deliver captured source",
+      "article": "platforms",
+      "areas": [
+        "Platforms"
+      ],
+      "screens": [
+        "Android"
+      ],
+      "tasks": [
+        "Flag quote review queue keep draft deliver captured source"
+      ],
+      "keywords": [
+        "Flag",
+        "quote",
+        "review",
+        "queue",
+        "keep",
+        "draft",
+        "deliver",
+        "captured",
+        "source"
+      ],
+      "availability": {
+        "windows": {
+          "status": "unsupported"
+        },
+        "macos": {
+          "status": "unsupported"
+        },
+        "browser": {
+          "status": "unsupported"
+        },
+        "android": {
+          "status": "available",
+          "verifiedVersion": "0.1.0-alpha.28"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "docs/android/REVIEW-SYNC.md"
+      ]
+    },
+    {
+      "id": "android-transfers",
+      "name": "Android import export and APK updates",
+      "description": "Save share partial export import APK signed update",
+      "article": "platforms",
+      "areas": [
+        "Platforms"
+      ],
+      "screens": [
+        "Android"
+      ],
+      "tasks": [
+        "Save share partial export import APK signed update"
+      ],
+      "keywords": [
+        "Save",
+        "share",
+        "partial",
+        "export",
+        "import",
+        "APK",
+        "signed",
+        "update"
+      ],
+      "availability": {
+        "windows": {
+          "status": "unsupported"
+        },
+        "macos": {
+          "status": "unsupported"
+        },
+        "browser": {
+          "status": "unsupported"
+        },
+        "android": {
+          "status": "available",
+          "verifiedVersion": "0.1.0-alpha.28"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "docs/android/EXPORTS-AND-CONNECTIONS.md"
+      ]
+    },
+    {
+      "id": "help",
+      "name": "Offline Help Center",
+      "description": "Help documentation feature catalogue search instructions read only",
+      "article": "getting-started",
+      "areas": [
+        "Getting started"
+      ],
+      "screens": [
+        "Help"
+      ],
+      "tasks": [
+        "Help documentation feature catalogue search instructions read only"
+      ],
+      "keywords": [
+        "Help",
+        "documentation",
+        "feature",
+        "catalogue",
+        "search",
+        "instructions",
+        "read",
+        "only"
+      ],
+      "availability": {
+        "windows": {
+          "status": "development"
+        },
+        "macos": {
+          "status": "development"
+        },
+        "browser": {
+          "status": "development"
+        },
+        "android": {
+          "status": "unsupported"
+        }
+      },
+      "limitations": [],
+      "related": [],
+      "evidence": [
+        "frontend/src/components/modals/HelpCenter.tsx"
+      ]
+    }
+  ]
+}

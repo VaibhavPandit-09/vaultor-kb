@@ -2,6 +2,7 @@
 
 Read [the agent-owned release process](../docs/desktop/RELEASE-PROCESS.md) before preparing an installed-app change. [Installation and updates](../docs/desktop/INSTALLATION-AND-UPDATES.md) is the user procedure.
 
+- Exact-source user Help AND developer documentation reconciled against the preceding relevant platform release; catalogue, availability, What’s New, links and bundled hashes verified and recorded under [the documentation gate](../docs/development/HELP-DOCUMENTATION.md). No materially misleading/missing Help.
 - Version and lockfile agree; UI and bundled server rebuilt from the intended release commit.
 - Original release key preserved; only public trust and signed artifact metadata published.
 - Focused checks/native platform results recorded honestly, with disposable storage.

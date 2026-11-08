@@ -43,6 +43,10 @@ Preserve all approved product/UI contracts unless a change is explicitly authori
 
 For narrow UI fixes read applicable UI_PHILOSOPHY.md sections; substantial interaction redesigns require the complete contract; Android-facing work also requires ANDROID_UI_PHILOSOPHY.md. Major interaction changes require explicit authorization and meaningful user review. Milestone, integration and release authorization do not authorize a redesign. Electron is authoritative for desktop runtime; browser/Vite is supplementary. Inspect motion in motion. Emulator evidence cannot certify physical Samsung/OEM/tactile quality, TalkBack speech or real-LAN behavior. Do not self-certify unperformed platform checks.
 
+## User Help maintenance
+
+Evaluate Help applicability for every user-facing change and update affected articles/catalogue in the same change, alongside technical contracts. [HELP-DOCUMENTATION.md](HELP-DOCUMENTATION.md) owns the exact-source development/release reconciliation and handoff procedure. Documentation tests do not replace factual implementation review. Record Help changes or an explicit unchanged result and outstanding gaps.
+
 ## Release and recovery points
 
 Finish release qualification before tagging. Follow RELEASE-PROCESS.md and Android's separate release contract: deliberate version/lock bumps, fresh UI/server/runtime as needed, original signing identity, native checks and verified installer/sidecar pairs. Reconcile old branch release metadata without downgrading current versions or republishing historical bytes.

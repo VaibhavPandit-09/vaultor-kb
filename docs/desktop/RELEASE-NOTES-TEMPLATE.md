@@ -24,4 +24,8 @@ State the minimum protocol/capability requirements, whether coordinated client/h
 
 ## Validation
 
+### Documentation reconciliation
+
+Record the previous relevant platform release and exact source delta reviewed; affected Help articles/catalogue entries, availability and What's New; reconciled CODEBASE/engineering guides; metadata/link and bundled-source hash checks. Confirm release notes match supported behavior and disclose gaps. If no user-facing changes, record the explicit unchanged Help applicability review. Follow [the mandatory gate](../development/HELP-DOCUMENTATION.md).
+
 List actual compilation, focused tests, package verification and native checks; explicitly state unperformed checks. Include installer size/checksum from the signed manifest when publishing. Never publish user diagnostics containing credentials or workspace data.

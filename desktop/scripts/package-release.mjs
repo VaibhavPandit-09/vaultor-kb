@@ -1,10 +1,12 @@
 import {build,Platform,Arch} from 'electron-builder';
+import { execFileSync } from 'node:child_process';
 import {readFile,writeFile,stat,access} from 'node:fs/promises';
 import {createReadStream} from 'node:fs';
 import {createHash,sign,verify} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {join,basename,resolve,sep} from 'node:path';
 import {verifyBundle} from '../src/owned-server.mjs';
+execFileSync(process.execPath,[fileURLToPath(new URL('../../scripts/validate-help.mjs',import.meta.url)),'--dist',fileURLToPath(new URL('../ui/',import.meta.url))],{stdio:'inherit'});
 const root=fileURLToPath(new URL('../',import.meta.url));
 if(!((process.platform==='win32'&&process.arch==='x64')||(process.platform==='darwin'&&process.arch==='arm64')))throw new Error('Build Windows x64 or Mac Apple Silicon on that OS.');
 const bundle=process.env.VAULTOR_BUILD_BUNDLE?resolve(process.env.VAULTOR_BUILD_BUNDLE):join(root,'bundle');

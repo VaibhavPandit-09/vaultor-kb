@@ -6,6 +6,10 @@ Read the relevant sections of [docs/CODEBASE.md](docs/CODEBASE.md) before making
 
 All agents and platforms follow [the authoritative efficiency workflow](docs/development/AI_DEVELOPMENT_WORKFLOW.md#efficient-exploration-and-verification). Inspect Git state first, search symbols and read bounded relevant sections. Reuse unchanged evidence; do not repeat passing checks after unrelated edits or reread unchanged references after compaction. Classify risk, run focused checks during implementation and the relevant broader regression once at final integration. Preserve content-loss, authorization, native-platform and release gates. Investigate evidenced risks, refuse unsupported configurations safely, avoid unrelated refactors and long reports, and continue autonomously within authorized scope. Record actual checks and gaps; never invent token savings. These rules apply to Windows, macOS, Android and future environments.
 
+## Mandatory user Help and documentation governance
+
+Every user-facing change requires an applicability review and, when affected, same-change updates to the Feature Catalogue and user Help alongside technical documentation. Follow [Help documentation ownership](docs/development/HELP-DOCUMENTATION.md). Every release publisher must reconcile BOTH Help and developer documentation against the exact platform release delta, validate bundled Help, update availability/What's New and record results in qualification. Do not publish materially missing, outdated or misleading Help. Completion reports name affected topics/catalogue entries, technical updates, validation and remaining gaps; an explicit unchanged applicability result is valid.
+
 ## Required maintenance workflow
 
 1. Inspect the current code and working tree before editing. Preserve unrelated work.
