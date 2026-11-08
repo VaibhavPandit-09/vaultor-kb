@@ -2,7 +2,7 @@
 
 Start with [CODEBASE.md](CODEBASE.md) for the current product, source map, architecture, contracts and limitations. Agents read [AGENTS.md](../AGENTS.md) and the [development workflow](development/AI_DEVELOPMENT_WORKFLOW.md) before changes. UI work additionally reads the design contracts below. [Root README](../README.md) and [mobile README](../mobile/README.md) are short discovery entry points; [.github release checklist](../.github/RELEASE_CHECKLIST.md) delegates to the release process.
 
-Reviewed 2026-11-02: Windows x64 0.25.2 single-click Markdown patch and Mac arm64 0.24.2 are published; GitHub Latest remains0.21.0; Androidalpha.28/code32 is unchanged. Mac acceptance of the0.25 milestone/patch is explicitly deferred and user-owned; no new Mac artifact is published. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
+Reviewed 2026-11-08: Windows x64 0.26.0 Desktop Experience consolidation and Mac arm64 0.24.2 are published; GitHub Latest remains0.21.0; Androidalpha.28/code32 is unchanged. Mac acceptance of0.25/0.26 is explicitly deferred and user-owned; no new Mac artifact is published. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
 
 ## Architecture and security
 
@@ -20,7 +20,7 @@ Reviewed 2026-11-02: Windows x64 0.25.2 single-click Markdown patch and Mac arm6
 
 ## Native desktop initiative
 
-- [Desktop experience tracker](plans/DESKTOP-EXPERIENCE-TRACKER.md): Authoritative D1–D4 and S audit, Windows D2/S interaction acceptance, D3 native implementation/qualification boundaries, task dependencies, acceptance, validation, commit and platform status. Feature-branch work is unreleased; D1/D2/S Windows interaction review is accepted. D3 and D4 are implemented awaiting Windows acceptance. D4 records current passing native linked-source workflows separately from the historical journal-owner incident and pending packaged-startup release gate.
+- [Desktop experience tracker](plans/DESKTOP-EXPERIENCE-TRACKER.md): Authoritative D1–D4 and S audit, Windows D2/S interaction acceptance, D3 native implementation/qualification boundaries, task dependencies, acceptance, validation, commit and platform status. Complete D1–D4/S history is integrated into master and published Windows-only0.26.0. D1/D2/S Windows interaction review is accepted; D3/D4 subjective Windows acceptance remains pending. Fresh actual packaged startup/restart/journal/source/draft-recovery gates pass; historical journal-owner provenance remains unproven.
 
 ## Development and validation
 
@@ -35,7 +35,7 @@ Reviewed 2026-11-02: Windows x64 0.25.2 single-click Markdown patch and Mac arm6
 
 ## Desktop delivery
 
-- [Windows0.26.0 release](desktop/releases/v0.26.0.md): Desktop Experience consolidation, mandatory packaged/public gates and platform status.
+- [Windows0.26.0 release](desktop/releases/v0.26.0.md): Desktop Experience consolidation; packaged native/recovery, isolated upgrade and original-key public updater qualification pass.
 
 - [Windows0.25.2 release](desktop/releases/v0.25.2.md): Single-click linked Markdown navigation; Windows-only publication and verification.
 - [Windows0.25.1 release](desktop/releases/v0.25.1.md): Linked Markdown hyperlink rendering/activation fix; Windows-only publication and verification.

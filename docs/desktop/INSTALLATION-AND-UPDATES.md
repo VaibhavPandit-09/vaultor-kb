@@ -1,10 +1,10 @@
 # Install and update Vaultor on each device
 
-Reviewed 2026-11-02. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
+Reviewed 2026-11-08. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
 
-Current Windows x64 release: [0.25.2](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.25.2), single-click Markdown navigation patch, published2026-11-02 with an original-key installer/sidecar pair. The [release ledger](releases/v0.25.2.md) records final automated checks, payload verification and minimal packaged startup. Detailed Windows UI/functional and installer acceptance is user-owned.
+Current Windows x64 release: [0.26.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.26.0), complete Desktop Experience integration, published2026-11-08 with the original-key installer/sidecar pair. The [release ledger](releases/v0.26.0.md) records fresh packaged startup/restart/journal/linked-source/draft-recovery checks, actual isolated0.25.2 upgrade and public updater download/Ready verification. D1/D2/S interaction scope is accepted; D3/D4 subjective Windows and detailed installer acceptance remains user-owned.
 
-Current Mac arm64 release remains [0.24.2](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.24.2), with its existing [packaged/publication evidence](releases/v0.24.2.md). No0.25.x Mac artifact was built or published; macOS acceptance is explicitly deferred and user-owned. Android downloads are unchanged. Earlier large-document performance limits remain; no universal1MiB usability certification is implied.
+Current Mac arm64 release remains [0.24.2](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.24.2), with its existing [packaged/publication evidence](releases/v0.24.2.md). No0.25.x/0.26.0 Mac artifact was built or published; macOS acceptance is explicitly deferred and user-owned. Android downloads are unchanged. Earlier large-document performance limits remain; no universal1MiB usability certification is implied.
 
 Installed Windows0.4.1+: **Updates → Check for updates → Update and restart**. Mac: **Updates → Download and install**, then fully quit and replace Vaultor.app using the verified DMG, retaining app data. Advanced signed-sidecar import remains available. Mac replacement remains manual; do not treat downloaded bytes as proof of successful installation.
 

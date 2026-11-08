@@ -4,6 +4,10 @@ Reviewed 2026-11-02. Complete-platform 0.21.0 remains published as Latest; its l
 
 Windows-only0.25.2 is published; [its ledger](releases/v0.25.2.md) owns delivery and actual acceptance.
 
+## 0.26 Desktop Experience — explicitly deferred
+
+Windows-only0.26.0 is published from immutable v0.26.0 / 4352b9c17929b7240d4ee44bfef03cd201709369. No Mac build, installer, runtime test or publication is authorized by this Windows finalization. Existing Mac0.24.2 assets and Latest0.21.0 remain unchanged. Future separately authorized native Mac qualification must use this exact tag, original update signing identity and current release process; preserve pending macOS source authorization/recovery, shortcuts, native operations and installation acceptance. Windows tests do not certify macOS. If code repairs are needed, use a new version rather than changing the immutable tag. [0.26.0 ledger](releases/v0.26.0.md).
+
 ## 0.25 milestone and 0.25.2 patch — explicitly deferred
 
 The user authorized Windows x64 only and owns later macOS runtime acceptance. No0.25.x Mac build, installer, runtime test or publication is authorized in this release task. Existing0.24.2 Mac downloads remain unchanged. This deferral does not block the Windows-only non-latest release. Use the immutable v0.25.2 source for a future separately authorized Mac qualification; never imply Windows checks certify it or replace historical artifacts.
