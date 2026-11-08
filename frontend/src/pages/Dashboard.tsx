@@ -1243,7 +1243,7 @@ export default function Dashboard() {
         >
           {createNotePending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
           New note
-        </button><LibraryPopover label="Create options" trigger={<Ellipsis size={14}/>} className="sidebar-create-menu">{close=><button className="library-button" onClick={()=>{close();collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>}</LibraryPopover>
+        </button><LibraryPopover menu label="Create options" trigger={<Ellipsis size={14}/>} className="sidebar-create-menu">{close=><button className="library-button" onClick={()=>{close();collectionCreationFocus.captureFocus();setNewCollectionOpen(true);}}><Plus size={15}/>New collection</button>}</LibraryPopover>
         <button ref={importButton} aria-haspopup="dialog" aria-expanded={importAcquire||Boolean(fileImport)} onClick={requestFileUpload} disabled={uploadPending} className="library-button sidebar-import"><Upload size={14}/>Import</button>
       </div>
 

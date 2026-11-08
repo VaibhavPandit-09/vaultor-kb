@@ -55,12 +55,12 @@ export function CollectionRow({item,onOpen,depth=0,hierarchy=false,enabled=true}
  </div>;
 }
 export function CollectionChildren({parent,onOpen,depth=0,count,enabled=true}:{parent:string;onOpen:(item:OrganizationItem)=>void;depth?:number;count?:number;enabled?:boolean}) {
- const [page,setPage]=useState(0);const result=useOrganizationPage('collection','',page,enabled,false,30,parent);
+ const [page,setPage]=useState(0),[creating,setCreating]=useState(false);const focus=useRestoreFocusOnClose(),drag=useDesktopInteraction();const result=useOrganizationPage('collection','',page,enabled,false,30,parent);
  const rows=<div className="collection-directory" role="list" aria-label="Child collections" onKeyDown={collectionKeys}>{result.data?.items.map(item=><CollectionRow key={item.id} item={item} onOpen={onOpen} depth={depth} hierarchy enabled={enabled}/>)}</div>;
  return <section data-collection-tree-root={depth===0||undefined} className={count===undefined?'collection-branch-page':'browse-group collection-children-group'} aria-label={count===undefined?undefined:'Child collections'}>
  {count!==undefined&&<header className="browse-group-heading"><h2>Child collections <span>{count}</span></h2></header>}
  {result.loading&&!result.data&&<p role="status" className="browse-feedback">Loading child collections…</p>}
- {result.error&&<p role="alert">{result.error}<button onClick={result.retry}>Retry</button></p>}{rows}<BrowsePagination page={page} totalPages={result.data?.totalPages??0} loading={result.loading} onPage={setPage}/></section>;
+ {result.error&&<p role="alert">{result.error}<button onClick={result.retry}>Retry</button></p>}{rows}{!result.loading&&!result.error&&result.data?.items.length===0&&<div className="browse-feedback"><p>{parent?'No child collections.':'No collections yet.'}</p>{!parent&&<button className="library-button" disabled={Boolean(drag?.payload)} onClick={()=>{focus.captureFocus();setCreating(true);}}>New collection</button>}</div>}{creating&&<CollectionPicker resourceIds={[]} onClose={()=>{setCreating(false);focus.restoreFocus();}} onCreated={item=>{setCreating(false);onOpen(item);}}/>}<BrowsePagination page={page} totalPages={result.data?.totalPages??0} loading={result.loading} onPage={setPage}/></section>;
 }
 export function PinnedList({compact=false,limit=12,visible=true,filterType='all',activeId,onResource,onCollection,onReturn,hasNotes=false}:{compact?:boolean;limit?:number;visible?:boolean;filterType?:string;activeId?:string;onResource:(id:string)=>void;onCollection:(item:OrganizationItem)=>void;onViewAll?:()=>void;onReturn?:()=>void;hasNotes?:boolean}) {
  const focus=useRestoreFocusOnClose();

@@ -19,12 +19,12 @@ function HarnessContent(){const selection=useResourceSelection(items,'page');ret
 function Harness(){return <EscapeManagerProvider><HarnessContent/></EscapeManagerProvider>;}
 it('pin partial failures retain only failed selections and show actionable feedback',async()=>{
  vi.mocked(pinResources).mockResolvedValueOnce({completed:['a'],failed:[{id:'b',title:'b',detail:'Unavailable'}]});
- render(<Harness/>);fireEvent.click(screen.getByText('Select both'));fireEvent.click(screen.getByRole('button',{name:'Organize selection'}));fireEvent.click(await screen.findByRole('button',{name:'Pin selection'}));
+ render(<Harness/>);fireEvent.click(screen.getByText('Select both'));fireEvent.click(screen.getByRole('button',{name:'Organize selection'}));fireEvent.click(await screen.findByRole('menuitem',{name:'Pin selection'}));
  await waitFor(()=>expect(screen.getByRole('status').textContent).toBe('b'));expect(screen.getAllByRole('alert').some(node=>node.textContent?.includes('1 failed'))).toBe(true);
 });
 it('atomic membership refusal retains the selection without silently removing surviving memberships',async()=>{
  vi.mocked(changeMembership).mockRejectedValueOnce(new Error('Resource no longer available'));
- render(<Harness/>);fireEvent.click(screen.getByText('Select both'));fireEvent.click(screen.getByRole('button',{name:'Organize selection'}));fireEvent.click(await screen.findByRole('button',{name:'Remove from Col'}));
+ render(<Harness/>);fireEvent.click(screen.getByText('Select both'));fireEvent.click(screen.getByRole('button',{name:'Organize selection'}));fireEvent.click(await screen.findByRole('menuitem',{name:'Remove from Col'}));
  await screen.findAllByText('Resource no longer available');expect(screen.getByRole('status').textContent).toBe('a,b');expect(changeMembership).toHaveBeenCalledWith(['a','b'],'collection','col','remove',{epoch:0});
 });
 it('right-click on a selected resource exposes the same protected multi-target Trash coordinator',async()=>{

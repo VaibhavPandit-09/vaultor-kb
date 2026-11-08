@@ -7,7 +7,7 @@ import type {CommandContext} from '../../lib/commandPalette';
 import type {Resource} from '../../types';
 import api from '../../lib/api';
 vi.mock('../../lib/api',()=>({default:{get:vi.fn(),put:vi.fn(),post:vi.fn()}}));
-vi.mock('../../lib/settings',()=>({useSettings:()=>({settings:{local:{uiTransparency:0,animationMode:'snappy'}}})}));
+vi.mock('../../lib/settings',()=>({useOptionalSettings:()=>null,useSettings:()=>({settings:{local:{uiTransparency:0,animationMode:'snappy'}}})}));
 const note:Resource={id:'one',type:'note',title:'Meeting',tags:[],createdAt:'',updatedAt:''};
 let context:CommandContext;
 beforeEach(()=>{

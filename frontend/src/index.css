@@ -1329,4 +1329,14 @@ body:not(:has(.desktop-shell)) .app-root { padding-top:40px; }
 @media(hover:none) { .linked-result > button[aria-haspopup] { opacity:1; } }
 
 .application-menu .library-button { background:transparent; box-shadow:none; }
-.application-menu .library-button:hover { background:var(--surface-hover); }
+.application-menu .library-button:hover:not(:disabled) { background:var(--surface-hover); }
+
+.native-export-name { overflow-wrap:anywhere; min-width:0; }
+.native-export-actions .library-button { white-space:normal; max-width:100%; }
+
+/* Compress orientation at short desktop heights; keep the working region and footer usable. */
+@container (max-height:520px) {
+ .sidebar-primary { padding-block:4px; }
+ .sidebar-primary .sidebar-navigation-items .sidebar-nav { min-height:26px; padding-block:3px; }
+ .navigator-scope { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+}

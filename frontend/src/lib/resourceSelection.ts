@@ -43,8 +43,8 @@ export function useResourceSelection(items:Resource[], viewKey:string, enabled=t
   }
   if(enabled&&getPlatform().resourceClipboard&&(event.ctrlKey||event.metaKey)&&!event.altKey&&!event.shiftKey&&!(window.getSelection()?.toString()&&event.currentTarget.contains(window.getSelection()?.anchorNode??null))){
    const key=event.key.toLowerCase(),selected=items.filter(resource=>ids.includes(resource.id));
-   if((key==='c'||key==='x')&&selected.length&&!selected.some(resource=>resource.trashedAt)){event.preventDefault();event.stopPropagation();void copyResources(selected,key==='x'?'cut':'copy',collection?.id).then(count=>interaction?.report(count+' resources '+(key==='x'?'cut from this collection; paste to move membership.':'copied.'),false)).catch(error=>interaction?.report(error instanceof Error?error.message:'Clipboard failed.',true));return;}
-   if(key==='v'&&collection){event.preventDefault();event.stopPropagation();void pasteResources(collection.id).then(count=>interaction?.report(count+' resources pasted.',false)).catch(error=>interaction?.report(error instanceof Error?error.message:'Paste failed.',true));return;}
+   if((key==='c'||key==='x')&&selected.length&&!selected.some(resource=>resource.trashedAt)){event.preventDefault();event.stopPropagation();void copyResources(selected,key==='x'?'cut':'copy',collection?.id).then(count=>interaction?.report(count+' '+(count===1?'resource':'resources')+' '+(key==='x'?'cut from this collection; paste to move membership.':'copied.'),false)).catch(error=>interaction?.report(error instanceof Error?error.message:'Clipboard failed.',true));return;}
+   if(key==='v'&&collection){event.preventDefault();event.stopPropagation();void pasteResources(collection.id).then(count=>interaction?.report(count+' '+(count===1?'resource':'resources')+' pasted.',false)).catch(error=>interaction?.report(error instanceof Error?error.message:'Paste failed.',true));return;}
   }
   if((event.ctrlKey||event.metaKey)&&!event.altKey&&event.key.toLowerCase()==='a'){event.preventDefault();event.stopPropagation();set({ids:order.slice(0,100),anchor:order[0]??null});}
  };

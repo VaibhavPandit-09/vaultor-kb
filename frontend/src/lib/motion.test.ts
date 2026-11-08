@@ -54,3 +54,5 @@ it('keeps command entrance free of overshoot and cancels stage motion when reduc
  document.documentElement.dataset.animation='snappy';await flush();expect(stage.cancel).toHaveBeenCalled();
  vi.mocked(window.matchMedia).mockReturnValue({matches:true} as MediaQueryList);const calls=vi.mocked(content.animate).mock.calls.length;enterCommandStage(content,1);expect(content.animate).toHaveBeenCalledTimes(calls);
 });
+
+it('a menu-to-dialog handoff never leaves an exiting menu clone over the new target',()=>{setup();const menu=document.createElement('div');menu.className='library-popover';menu.innerHTML='<button>Rename</button>';document.body.append(menu);enterSurface(menu,'menu');menu.remove();exitSurface(menu,{top:5,left:5,width:280,height:400} as DOMRect);expect(document.querySelector('[data-motion-ghost]')).toBeNull();});

@@ -54,7 +54,7 @@ export default function LinkedSources({workspace,onOpen,compact=false,active=tru
  return <section className="linked-browser" aria-label="Linked sources">
   <header className="linked-tools"><span>{compact?'Folders':'Registered folders'}</span><div>
    <button className="browse-icon-button" aria-label="Link folder" title="Link folder" disabled={pending||dragging} onClick={()=>void add()}><FolderPlus size={14}/></button>
-   <LibraryPopover label="Source tools" trigger={<MoreHorizontal size={14}/>} className="browse-icon-button">{close=><>
+   <LibraryPopover menu label="Source tools" trigger={<MoreHorizontal size={14}/>} className="browse-icon-button">{close=><>
     {onBrowse&&<button className="library-button" disabled={dragging} onClick={()=>{close();onBrowse();}}>Manage sources…</button>}
     <button className="library-button" disabled={dragging} onClick={()=>{close();setRecovery(true);}}>Linked file recovery…</button>
    </>}</LibraryPopover>
