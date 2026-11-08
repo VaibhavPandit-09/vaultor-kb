@@ -1,3 +1,5 @@
+import api from './api';
+import {commandScope,commandConfig,requireCommandScope} from './resourceBatchCommands';
 import {copyResources} from './resourceClipboard';
 import type { Resource } from '../types';
 import { getConnection } from './platform';
@@ -50,4 +52,13 @@ export function requestResourceAction(action:ResourceAction,resources:Resource[]
 export function supportedResourceActions(resource:Resource) {
  const mode=resourceKind(resource.type).mode;
  return {open:mode!=='unsupported',export:mode==='editor'&&resource.type!=='linked',download:mode==='preview',rename:mode!=='unsupported'&&resource.type!=='linked',organize:true,pin:true,trash:true};
+}
+
+/** One scoped conditional file-title operation; the note coordinator keeps its own Save/draft path. */
+export async function renameManagedFile(resource:Resource,title:string){
+ if(resource.type!=='file'||resource.trashedAt||!title.trim()||title.trim().length>500)throw Error('Choose an available managed file and a valid name.');
+ const scope=commandScope(),config=commandConfig(scope);requireCommandScope(scope);
+ const {data:fresh}=await api.get<Resource>('/resources/'+resource.id+'/summary',config);requireCommandScope(scope);
+ if(fresh.id!==resource.id||fresh.type!=='file'||fresh.trashedAt||!fresh.revision)throw Error('This file is unavailable. Refresh before renaming.');
+ const {data}=await api.patch<Resource>('/resources/'+resource.id+'/title',{title:title.trim()},{...config,headers:{...config.headers,'If-Match':'"'+fresh.revision+'"'}});requireCommandScope(scope);return data;
 }

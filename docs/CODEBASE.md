@@ -469,6 +469,11 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-08 — D4 integrity boundaries
+
+Protected asynchronous open-note reads crossing Save acknowledgement, retained genuine failed/staged draft conflicts, and bound managed-file rename to captured source/generation plus fresh If-Match. Read-only recovery revision access preserves existing Save/undo/journal ownership. Focused Save/recovery/reconciliation and stale-source command checks passed; broader D4 validation continues separately. No backend/schema/main/preload authority change.
+
+
 ### 2026-11-08 — D3 refinement source ledger
 
 Recorded implementation `6bfb5e2` and exact test/runtime boundaries in the authoritative tracker. Documentation-only follow-up; no additional architectural effect. Passing evidence reused and whitespace checked. D3 remains awaiting user acceptance and native linked-source qualification remains incomplete.

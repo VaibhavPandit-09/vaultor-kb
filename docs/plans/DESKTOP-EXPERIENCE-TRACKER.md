@@ -1,6 +1,6 @@
 # Native Desktop Experience — master tracker
 
-Reviewed 2026-11-08. Authoritative progress and resumption record for D1–D2, S, then D3–D4. D1 is accepted for the reviewed Windows scope (user: “Verified. Continue”, 2026-11-05). D2 and S are accepted for Windows visual/interaction experience (user,2026-11-08, D2 tip `8d5f4d1`). Native linked-source qualification remains incomplete separately. D3 is IMPLEMENTED / AWAITING WINDOWS ACCEPTANCE; D4 remains planned. Historical unaccepted findings below are retained as dated evidence, superseded only for that reviewed interaction scope. No Android feature development, independent windows, framework migration, backend rewrite or visual-identity redesign. macOS native acceptance remains unverified.
+Reviewed 2026-11-08. Authoritative progress and resumption record for D1–D2, S, then D3–D4. D1 is accepted for the reviewed Windows scope (user: “Verified. Continue”, 2026-11-05). D2 and S are accepted for Windows visual/interaction experience (user,2026-11-08, D2 tip `8d5f4d1`). Native linked-source qualification remains incomplete separately. D3 is IMPLEMENTED / AWAITING WINDOWS ACCEPTANCE; D4 is IN PROGRESS on codex/desktop-experience-d4 from verified D3 52379a7. Historical unaccepted findings below are retained as dated evidence, superseded only for that reviewed interaction scope. No Android feature development, independent windows, framework migration, backend rewrite or visual-identity redesign. macOS native acceptance remains unverified.
 
 ## Baseline and working rules
 
@@ -330,7 +330,7 @@ Validation ledger:
 
 ## D4 — Desktop Experience Audit & Refinement
 
-All tasks NOT STARTED; depends D1–D3 behavior being stable.
+D4 is in progress from clean, synchronized D3 52379a7. Save/read acknowledgement and scoped file-rename integrity fixes are implemented with focused regression coverage. D3 acceptance is still pending; master/other worktrees are unchanged. Remaining interaction, native and readiness qualification is recorded as work progresses.
 
 | ID / priority | Detailed scope and acceptance | Dependencies / source |
 | --- | --- | --- |

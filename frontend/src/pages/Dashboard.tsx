@@ -1,3 +1,5 @@
+import {renameManagedFile} from '../lib/resourceActions';
+import {noteReconciliation} from '../lib/noteReconciliation';
 import {CollectionCommandsContext} from '../lib/collectionCommands';
 import ResourceRenameDialog from '../components/ResourceRenameDialog';
 import NativeExportCopy from '../components/NativeExportCopy';
@@ -790,7 +792,7 @@ export default function Dashboard() {
       if(!supportedResourceActions(resource).rename)throw new Error('Renaming this resource is unsupported.');
       if(request.value===undefined){setRenameRequest({resource,epoch:getConnection().epoch,generation:getConnection().generation});return;}
       if(resource.type==='note')await renameResource(resource.id,request.value??'');
-      else {const {data:fresh}=await api.get<Resource>('/resources/'+resource.id+'/summary');await api.patch('/resources/'+resource.id+'/title',{title:request.value},{headers:{'If-Match':'"'+fresh.revision+'"'}});resourcesChanged([resource.id]);}return;
+      else {await renameManagedFile(resource,request.value??'');resourcesChanged([resource.id]);}return;
     }
     if(request.action==='prepare-trash'){if(resource.type==='linked')await linkedWorkspace.documents.get(resource.id)?.flush();else await exportSaveRef.current(resource.id);return;}
     if(request.action==='retain-draft'){
@@ -1102,13 +1104,15 @@ export default function Dashboard() {
         enqueue(async()=>{
         if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
         const detail = paneNavigation.snapshot().panes.some(p=>p.id===id);
+        const startedRevision=recovery.acknowledgedRevision(id);
         await api.get<Resource>('/resources/'+id+(detail?'':'/summary'),reconcileConfig).then(({data})=>{
           if(epoch!==workspaceEpoch.current || resourceLoadVersions.current.get(id)!==version)return;
           if(data.type==='linked'){const known=linkedWorkspace.metadata.get(id);linkedWorkspace.metadata.set(id,{...known,...data});setResourceDetails(previous=>({...previous,[id]:{...previous[id],...data}}));paneNavigation.markAvailable(id);return;}
           paneNavigation.markAvailable(id);
           const draft=recovery.current(id);
-          if(draft || saves.latest(id)) {
-            if(draft && draft.baseRevision!==data.revision){setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);setSessionMessage(events.some(event=>event.origin==='import')?'Import finalized this saved note. Your draft is retained; review it before saving.':'A note changed on another device. Your draft is retained; review it before saving.');}
+          const decision=noteReconciliation(startedRevision,recovery.acknowledgedRevision(id),data.revision,draft?.baseRevision,Boolean(saves.latest(id)),saves.status(id)==='saving');
+          if(decision.preserve) {
+            if(draft && decision.conflict){setRecoveryRecords(items=>[...items.filter(r=>r.key!==draft.key),draft]);setSessionMessage(events.some(event=>event.origin==='import')?'Import finalized this saved note. Your draft is retained; review it before saving.':'A note changed on another device. Your draft is retained; review it before saving.');}
             setResourceDetails(prev=>prev[id]?{...prev,[id]:{...prev[id],tags:data.tags,collections:data.collections,favorite:data.favorite}}:prev);
             return;
           }
