@@ -1,8 +1,21 @@
 # Current Mac release qualification handoff
 
-Reviewed 2026-11-08. Complete-platform 0.21.0 remains published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The 0.22.0 release candidate remains a separate pending platform record. 0.23.0/0.23.1 retain disclosed performance limits. 0.24.2 Mac arm64 qualification is completed. 0.26.0 Mac arm64 qualification is completed and the verified Mac pair is published to v0.26.0.
+Reviewed 2026-11-08. Complete-platform 0.21.0 remains published as Latest; its ledger records the explicit remaining Windows-runtime waiver. The 0.22.0 release candidate remains a separate pending platform record. 0.23.0/0.23.1 retain disclosed performance limits. 0.24.2 Mac arm64 qualification is completed. 0.26.0 Mac arm64 qualification is completed. 0.27.0 Mac arm64 qualification is completed and the verified Mac pair is published to v0.27.0.
 
 Windows-only 0.25.2 is published; [its ledger](releases/v0.25.2.md) owns delivery and actual acceptance.
+
+## 0.27.0 Mac qualification summary
+
+On Apple Silicon (macOS arm64, Temurin OpenJDK 25+36, Node v22.16.0), verified clean immutable `v0.27.0` source (`7b7cf824e5f637b0918c49e8518b11054b1211f1`). Used matching original private release key from `desktop/cache/release-signing/private.pem` matching `desktop/release-trust.json`. Rebuilt UI (`npm --prefix desktop run build`), embedded backend JAR (`npm --prefix desktop run prepare-server`), Darwin ABI helper (`libvaultor-files.dylib`) and pinned `darwin-arm64` runtime into original-key `Vaultor-0.27.0-mac-arm64.dmg` (280,750,080 bytes, SHA256 `e0f9a227c834c76a00d24eb507347c11b825360cad1e7dbe984705b1094ccf65`) and `.dmg.vaultor.json` (401 bytes, SHA256 `8d6e157cfd850ab4016e3d2432bf5a64d8a0264eb41ccf2ce4564a5da2e4586f`). Verified ad-hoc codesign (`codesign --verify --deep --strict desktop/releases/mac-arm64/Vaultor.app`), valid DMG CRC32 checksums (`hdiutil verify`), read-only mount, and Applications symlink.
+
+Native qualification passed:
+- Desktop test suite: 143 passed, 0 failed, 2 skipped (Windows-specific helpers), including all 34 linked documents tests and native channel test with canonicalized APFS TMPDIR.
+- Root Help validator tests: 17 passed, 0 failed (`node scripts/validate-help.test.mjs`).
+- Packaged release startup qualification (`VAULTOR_RELEASE_STARTUP_CHECK=1`): Library, bundled host, protocol3 and desktop/updater identity 0.27.0 verified.
+- Packaged Help smoke qualification (`VAULTOR_HELP_CHECK=1`): verified on disposable owned workspace (`vaultor-chrome-native-MaOsxj`), application menu IPC, contextual editor/Settings, eight required searches with renderer network disabled, live shortcuts, copy, narrow table layout, read-only rendering, retained mounted draft, and Settings Help focus.
+- Absent Mac pair uploaded via `npm --prefix desktop run publish:release -- --publish --add-platform --notes docs/desktop/releases/v0.27.0.md`.
+- All four public release assets (Windows EXE + sidecar and Mac DMG + sidecar) verified via independent download and digest matching against `desktop/release-trust.json`.
+- Complete-platform Latest remains 0.21.0 per 0.23.0+ large-document limits; 0.4.1+ updaters discover their matching platform pair independently. [0.27.0 ledger](releases/v0.27.0.md).
 
 ## 0.26.0 Mac qualification summary
 
@@ -19,9 +32,6 @@ Native qualification passed:
 - All four public release assets (Windows EXE + sidecar and Mac DMG + sidecar) verified via independent download and digest matching against `desktop/release-trust.json`.
 - Complete-platform Latest remains 0.21.0 per 0.23.0+ large-document limits; 0.4.1+ updaters discover their matching platform pair independently. [0.26.0 ledger](releases/v0.26.0.md).
 
-## 0.27.0 Help — Windows published, Mac deferred
-
-The user explicitly selected Windows now / Mac later. No configured native Mac connection is available in this Windows session. Mac remains at published 0.26.0; no 0.27.0 DMG is claimed. The source implements Help but explicitly marks Mac Help as development/unqualified. Windows 0.27.0 is published from immutable `v0.27.0` / `7b7cf824e5f637b0918c49e8518b11054b1211f1` on `codex/help-feature-catalogue`; its [release ledger](releases/v0.27.0.md) owns exact source, checks and publication status. Before a future Mac delivery, obtain native Apple Silicon access, reconcile Help availability/platform prose, build fresh UI/server/original-key DMG and perform packaged Help/Save/restart plus signing/mount checks. Source changes after v0.27.0 require a new version; do not publish misleading Mac Help metadata through an absent-platform retry. No historical assets/tags may change.
 
 ## 0.25 milestone and 0.25.2 patch — explicitly deferred
 

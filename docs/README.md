@@ -2,11 +2,11 @@
 
 Start with [CODEBASE.md](CODEBASE.md) for the current product, source map, architecture, contracts and limitations. Agents read [AGENTS.md](../AGENTS.md) and the [development workflow](development/AI_DEVELOPMENT_WORKFLOW.md) before changes. UI work additionally reads the design contracts below. [Root README](../README.md) and [mobile README](../mobile/README.md) are short discovery entry points; [.github release checklist](../.github/RELEASE_CHECKLIST.md) delegates to the release process.
 
-Reviewed 2026-11-08: Windows x64 0.27.0 Help and Mac arm64 0.26.0 Desktop Experience are published; GitHub Latest remains 0.21.0; Android alpha.28/code32 is unchanged. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
+Reviewed 2026-11-08: Windows x64 and macOS Apple Silicon 0.27.0 Help are published; GitHub Latest remains 0.21.0; Android alpha.28/code32 is unchanged. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
 
 ## User Help
 
-Published Windows 0.27.0 Help, exact-source qualification and verified public delivery are tracked in [the release ledger](desktop/releases/v0.27.0.md); Mac remains at its verified 0.26.0 release pending native access.
+Published Windows x64 and macOS Apple Silicon 0.27.0 Help, exact-source qualification and verified public delivery are tracked in [the release ledger](desktop/releases/v0.27.0.md).
 
 - [Help catalogue and articles](help/getting-started.md): offline user tasks; [catalogue](help/catalogue.json) indexes capabilities and platform baselines.
 - [Help documentation governance](development/HELP-DOCUMENTATION.md): mandatory development and exact-source release reconciliation, validation and handoff.

@@ -2,7 +2,7 @@
 
 Reviewed 2026-11-08. This is the user-facing installation and update procedure. [UPDATES.md](UPDATES.md) owns package verification, backups and recovery internals; [RELEASE-PROCESS.md](RELEASE-PROCESS.md) tells agents how to build and publish releases.
 
-Current Windows x64 release: [0.27.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.27.0), adding offline searchable Help, published 2026-11-08 with verified original-key installer/sidecar and public updater delivery. Mac arm64 remains at [0.26.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.26.0). The [0.27.0 ledger](releases/v0.27.0.md) owns Help qualification, source/provenance and remaining acceptance. The [release ledger](releases/v0.26.0.md) records Windows and macOS packaged startup, desktop experience, navigator refinement, contextual command menu refinement, browse compression, and public updater delivery verification. Android downloads are unchanged. Earlier large-document performance limits remain; no universal 1MiB usability certification is implied.
+Current Windows x64 and macOS Apple Silicon release: [0.27.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.27.0), adding offline searchable Help, published 2026-11-08 with verified original-key installer/sidecar pairs and public updater delivery. The [0.27.0 ledger](releases/v0.27.0.md) owns Help qualification, source/provenance and remaining acceptance. The [0.26.0 release ledger](releases/v0.26.0.md) records Windows and macOS packaged startup, desktop experience, navigator refinement, contextual command menu refinement, browse compression, and public updater delivery verification. Android downloads are unchanged. Earlier large-document performance limits remain; no universal 1MiB usability certification is implied.
 
 Installed Windows 0.4.1+: **Updates → Check for updates → Update and restart**. Mac: **Updates → Download and install**, then fully quit and replace Vaultor.app using the verified DMG, retaining app data. Advanced signed-sidecar import remains available. Mac replacement remains manual; do not treat downloaded bytes as proof of successful installation.
 
@@ -17,7 +17,7 @@ Use the [Vaultor GitHub Releases page](https://github.com/VaibhavPandit-09/vault
 | Device | Required files for in-app updating | Current support |
 | --- | --- | --- |
 | Windows x64 | None to select from 0.4.1+: Update and restart fetches both internally. First/transition install: EXE. Offline import: EXE + signed sidecar. | Silent in-app update/restart and installer tested |
-| macOS Apple Silicon | `Vaultor-VERSION-mac-arm64.dmg` and the same filename plus `.vaultor.json` | Release DMG and packaged runtime verified (0.26.0); manual DMG replacement for updates |
+| macOS Apple Silicon | `Vaultor-VERSION-mac-arm64.dmg` and the same filename plus `.vaultor.json` | Release DMG and packaged runtime verified (0.27.0); manual DMG replacement for updates |
 | macOS Intel | None | No supported desktop package |
 | Ubuntu/Linux | None | Desktop packaging is deferred; browser access and Docker server are available |
 | Android | Vaultor-Android-VERSION.apk from its separate Android prerelease | Install over the existing signed app; do not uninstall/clear data. See docs/android/ANDROID.md |
@@ -26,7 +26,7 @@ For manual/offline import, keep each installer and its signed sidecar in the **s
 
 **Windows:** use published [0.27.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.27.0), retaining prior integrated features and the documented large-Markdown limitations. Installed 0.4.1+: Updates → Check for updates → Update and restart. Platform-pair discovery is independent of GitHub’s global latest flag; verify the displayed version/platform. Preserve app data.
 
-**Mac arm64:** use published [0.26.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.26.0). Fully quit, mount its DMG and replace Vaultor.app in Applications, preserving data. It includes complete Desktop Experience integration (D1–D4), protocol 3, full Reviews, adaptive sidebar, contextual command menus, browse compression and recursive folder import capabilities. Native ad-hoc codesigning and Gatekeeper consent apply.
+**Mac arm64:** use published [0.27.0](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.27.0). Fully quit, mount its DMG and replace Vaultor.app in Applications, preserving data. It includes offline searchable Help, complete Desktop Experience integration (D1–D4), protocol 3, full Reviews, adaptive sidebar, contextual command menus, browse compression and recursive folder import capabilities. Native ad-hoc codesigning and Gatekeeper consent apply.
 
 **Android:** [alpha.28/code32](../android/releases/0.1.0-alpha.28.md) installs over earlier alphas without clearing data. Install a compatible0.16 host first for imports/full5/partial6; its in-app update requires explicit Android permission/consent and original-signer verification. [Android setup](../android/ANDROID.md) owns exact requirements.
 
