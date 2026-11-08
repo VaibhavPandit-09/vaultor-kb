@@ -1,6 +1,6 @@
 import {useContext,useState,useRef} from 'react';
 import {FolderOpen,FilePlus2,FolderPlus,ClipboardPaste,Pin,Pencil,FolderInput,Settings2,Trash2,Upload} from 'lucide-react';
-import type {OrganizationItem} from '../lib/organization';
+import {collectionPath,type OrganizationItem} from '../lib/organization';
 import {commandScope,requireCommandScope} from '../lib/resourceBatchCommands';
 import {getPlatform} from '../lib/platform';
 import {pasteResources} from '../lib/resourceClipboard';
@@ -22,7 +22,7 @@ export default function CollectionActions({item,onOpen,contextTarget='.library-r
  const running=useRef(false);
  const work=async(task:()=>void|Promise<unknown>,close:()=>void)=>{if(running.current)return;running.current=true;setBusy(true);setError('');try{requireCommandScope(scope);await task();close();}catch(failure){setError(failure instanceof Error?failure.message:'Collection action failed.');}finally{running.current=false;setBusy(false);}};
  const done=()=>{setDialog(null);focus.restoreFocus();};
- return <><LibraryPopover contextTarget={contextTarget} contextOnly={contextOnly} label={'Actions for '+item.name} trigger="⋯" className="browse-icon-button">{close=>{
+ return <><LibraryPopover contextTarget={contextTarget} contextOnly={contextOnly} label={'Actions for '+collectionPath(item)} trigger="⋯" className="browse-icon-button">{close=>{
   const show=(next:typeof dialog)=>{requireCommandScope(scope);close();focus.captureFocus();setDialog(next);};
   return <><MenuAction icon={FolderOpen} disabled={busy} onClick={()=>void work(()=>onOpen(item),close)}>Open collection</MenuAction>
    {commands&&<MenuAction icon={FilePlus2} disabled={busy} onClick={()=>void work(()=>commands.newNote(item),close)}>New note here</MenuAction>}

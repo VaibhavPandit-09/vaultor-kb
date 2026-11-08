@@ -469,6 +469,11 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-08 — Final Desktop integration qualification
+
+Preparing Windows-only0.26.0 with explicit integration/publication authorization; D3/D4 subjective acceptance remains pending. Collection action labels include hierarchy paths. Packaged qualification dependencies are explicit and regression-checked; three real launches exercise source authorization, journal restart and genuine dirty recovery without bypasses. Native read-only fixture follows existing1MiB admission. Source validation:723 distinct frontend cases with affected rerun,144 native plus1 packaging check,31 backend, lint/TypeScript/syntax and fresh UI/backend pass. Actual native/package/public gates are recorded in the tracker/versioned ledger. No product architecture, authorization or Android change.
+
+
 ### 2026-11-08 — D4 source and readiness ledger
 
 Recorded integrity implementation `443b443` and interaction/native implementation `a76ab0f`, based on D3 `52379a7`. Documentation-only follow-up with no additional architectural effect; passing evidence reused and whitespace checked. The authoritative tracker separates current Windows linked-source qualification, historical journal-lock provenance, pending user acceptance and packaged-release gates. Master/release/version/Android remain unchanged.

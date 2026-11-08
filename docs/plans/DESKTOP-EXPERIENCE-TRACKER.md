@@ -5,7 +5,7 @@ Reviewed 2026-11-08. Authoritative progress and resumption record for D1–D2, S
 ## Baseline and working rules
 
 - Audited clean `master` / `origin/master` at `5003a91`; fetched remote, zero divergence. Branch `codex/desktop-experience-d1` created at the user's explicit request. Existing unrelated worktrees retained.
-- Desktop version remains 0.25.2. This initiative explicitly excludes automatic versions, installers, tags and releases; no integration into master without completed scope/required checks.
+- Historical milestone restriction: version0.25.2, no release/integration. Superseded by explicit finalization authorization on2026-11-08: qualify, integrate D1–D4/S and publish Windows-only0.26.0 after mandatory gates; D3/D4 acceptance remains pending.
 - Preserve resource-based structured Tiptap JSON, multi-collection membership, shared API/settings/tokens, pane save barriers, private recovery and source/grant boundaries. Commands coordinate existing operations; they do not replace authorization or lifecycle transactions.
 - Status progression: `NOT STARTED → IN PROGRESS → IMPLEMENTED → VALIDATED → COMPLETE`; also `BLOCKED` and `DEFERRED`. IMPLEMENTED means code exists; VALIDATED requires specified automated/runtime evidence; COMPLETE additionally requires acceptance criteria and applicable platform/user review. Compilation alone never qualifies.
 - Medium risk for navigation/commands/focus; native text menus require Electron runtime validation. Lifecycle/backend logic is preserved. Future clipboard/filesystem/lifecycle mutations require high-risk boundary/failure checks.
@@ -426,3 +426,16 @@ Associated source commit: `19d9c54` — compact history, shared resource command
 ## Resume here
 
 D1 Windows review is accepted. Original D2 was not accepted; D2.6–D2.9 now extend application-wide sources, editor/import destinations and stable session/pane arrangement. D2 remains IN PROGRESS / AWAITING USER ACCEPTANCE. Review the updated matrix and acceptance-fix Windows development build, including the three user-reported resolutions above. Do not start D3 until explicit acceptance. Native drag-out and folder/multi-file inline import remain documented deferrals. Reuse unchanged passing evidence. No integration into master, versions/installers/tags/releases or Android changes. Source b41e11a is ready in the fresh Windows development UI; overall D2 acceptance remains pending.
+
+
+## v0.26.0 final integration and release qualification (2026-11-08)
+
+Explicit user authorization extends completed engineering to master integration and Windows publication, without accepting D3/D4 platform or subjective quality. Baseline: clean synchronized D4 914be61, master5003a91, complete22-commit D1–D4/S ancestry, zero divergence/conflicting master changes, version/tag0.26.0 available. Other worktrees preserved. Only deletion protection is configured; no required PR/check route.
+
+Focused cumulative integrity review covers command admission, selection/membership, source tickets/generations, mounted editor ownership, clipboard receipts, prepared copies, Activity cancellation, conditional rename, Save acknowledgement and main/preload boundaries. No new product correctness defect found. Collection action accessible labels now use existing full hierarchy paths; stale test updated for intentional menu semantics. Explicit packaging omitted current qualification dependencies: included them and added a dependency-closure regression. Native read-only test retained an obsolete300KB limit from before conditional1MiB admission; fixture now exceeds the actual SOURCE_LIMIT, preserving read-only, bounded chunk and changed-source assertions.
+
+Source checks: frontend723 distinct cases (initial722pass/1 stale assertion, affected5/5 corrected rerun), Electron144/144 plus packaging regression1/1, backend31/31 across8 classes; lint/TypeScript/syntax and fresh production UI/bundled backend/runtime pass. Final native/package/public results belong in the versioned ledger.
+
+Mandatory pending gates: actual packaged clean startup/shutdown/restart, journal reacquisition/controlled duplicate refusal, linked grant/tree/open/drag/source bytes, real persisted dirty recovery/Save acknowledgement; installer payload correspondence, original-key sidecar and public updater from0.25.2 to Ready. Three-launch fixture uses disposable profiles and genuine editor/IndexedDB recovery records, with no journal deletion or ownership bypass. Historical incident cause remains unproven even after fresh passing checks.
+
+D1/D2/S Windows interaction acceptance remains. D3/D4 engineering complete, subjective acceptance pending. macOS runtime/new artifact deferred; Androidalpha.28/code32 unchanged. Physical drag/Explorer/default-app behavior, menus, taskbar/notifications, themes/motion, Snap/DPI/monitors/tray and detailed installation/upgrade review remain user-owned. [v0.26.0 ledger](../desktop/releases/v0.26.0.md) records final evidence.

@@ -36,7 +36,7 @@ it('switches the same directory to lazy hierarchy, supports arrows and retains s
 it('gives immediate children a labeled group and the same management actions',async()=>{
  render(<EscapeManagerProvider><CollectionChildren parent="docs" count={1} onOpen={()=>{}}/></EscapeManagerProvider>);
  const region=screen.getByRole('region',{name:'Child collections'});expect(within(region).getByRole('heading',{name:'Child collections 1'})).toBeTruthy();
- const manage=await screen.findByRole('button',{name:'Manage Docs / Releases'});manage.focus();fireEvent.click(manage);
- await screen.findByRole('button',{name:'Manage collection…'});fireEvent.keyDown(document,{key:'Escape'});await waitFor(()=>expect(document.activeElement).toBe(manage));
+ const manage=await screen.findByRole('button',{name:'Actions for Docs / Releases'});manage.focus();fireEvent.click(manage);
+ await screen.findByRole('menuitem',{name:'Manage collection…'});fireEvent.keyDown(document,{key:'Escape'});await waitFor(()=>expect(document.activeElement).toBe(manage));
  expect(screen.getByRole('button',{name:'Pin Releases'})).toBeTruthy();
 });
