@@ -469,6 +469,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-08 — D3 refinement source ledger
+
+Recorded implementation `6bfb5e2` and exact test/runtime boundaries in the authoritative tracker. Documentation-only follow-up; no additional architectural effect. Passing evidence reused and whitespace checked. D3 remains awaiting user acceptance and native linked-source qualification remains incomplete.
+
 ### 2026-11-08 — D3 context-menu and collection-tree acceptance refinement
 
 Verified inherited64px minimum height caused oversized sidebar collection rows despite4px padding; sidebar-only rows now36px with border-free siblings, compact counts, hierarchy guides/indentation and current/focus states, preserving Library density. Grouped resource commands add named-membership removal and reviewed native-copy Reveal/Open intents; shared collection menus directly expose creation/import/pin/rename/move/reviewed deletion through existing owners/dialogs. Nested row admission excludes competing background menus and native text; session activation and linked folder/copy menus retain authority. Validation:73 distinct focused frontend cases (15 files with affected reruns),9 native boundary cases, full ESLint, TypeScript/production desktop UI build and syntax/whitespace pass. Disposable Windows computed-style and seven-level/context/drag/floating-menu hit-testing smoke passed; settled narrow capture reviewed. Library guide/tracker own exact contracts, runtime boundaries and remaining physical/theme acceptance. D3 awaits user acceptance; native linked-source NATIVE_HOST_CLOSED/JOURNAL_OWNER_LOCK qualification remains incomplete. No backend/main/preload authority, versions/releases/master/Android/D4 change.

@@ -291,6 +291,8 @@ D3 completion: core desktop conventions work without weaker source, filesystem, 
 
 ### D3 acceptance refinement — collection density and contextual menus (2026-11-08)
 
+Implementation commit **6bfb5e2** includes the tree/menu changes, focused regressions, disposable Windows harness and living documentation. This source-ledger follow-up changes no behavior and reuses the recorded validation.
+
 Status: **implemented; awaiting Windows user acceptance**. D1/D2/S Windows interaction acceptance is unchanged. This is a focused D3 refinement, not S/D4 or a native-host investigation.
 
 Computed-style audit in disposable Windows Electron found parent and child sidebar collection rows at64px (min-height64px), padding4px, gap4px, zero margin, and a remaining sibling border. The navigator had overridden padding but inherited the shared Library minimum height. It was not a separate inter-container margin problem. Sidebar-only collection rows are now36px, margin0/border0, with compact counts, progressive hierarchy indentation/guides, full-path titles, active/focus/hover states and keyboard-reachable secondary controls. Full-page Library resource rows remain at least64px; full-page collection indentation is retained. Query paging, shared hover expansion, edge scrolling and source retention are unchanged.
