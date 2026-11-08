@@ -24,7 +24,7 @@ it('pin partial failures retain only failed selections and show actionable feedb
 });
 it('atomic membership refusal retains the selection without silently removing surviving memberships',async()=>{
  vi.mocked(changeMembership).mockRejectedValueOnce(new Error('Resource no longer available'));
- render(<Harness/>);fireEvent.click(screen.getByText('Select both'));fireEvent.click(screen.getByRole('button',{name:'Organize selection'}));fireEvent.click(await screen.findByRole('button',{name:'Remove from this collection'}));
+ render(<Harness/>);fireEvent.click(screen.getByText('Select both'));fireEvent.click(screen.getByRole('button',{name:'Organize selection'}));fireEvent.click(await screen.findByRole('button',{name:'Remove from Col'}));
  await screen.findAllByText('Resource no longer available');expect(screen.getByRole('status').textContent).toBe('a,b');expect(changeMembership).toHaveBeenCalledWith(['a','b'],'collection','col','remove',{epoch:0});
 });
 it('right-click on a selected resource exposes the same protected multi-target Trash coordinator',async()=>{

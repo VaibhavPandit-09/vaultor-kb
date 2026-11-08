@@ -1302,3 +1302,31 @@ body:not(:has(.desktop-shell)) .app-root { padding-top:40px; }
 .linked-paging { display:flex; align-items:center; flex-wrap:wrap; gap:4px; font-size:10px; color:var(--text-tertiary); }
 .linked-search-results { min-width:0; }
 @media (hover:none) { .session-secondary { pointer-events:auto; } .navigator-panel [data-collection-row] > .library-row .browse-row-actions button { opacity:1; } }
+
+/* Collection hierarchy is a sidebar tree, independent of full-page resource density. */
+.navigator-panel [data-collection-row] > .library-row { min-height:36px; height:36px; padding:2px 4px; margin:0; border:0; gap:3px; }
+.navigator-panel [data-collection-row] > .library-row .library-resource { gap:5px; }
+.navigator-panel .collection-branch { border-left:1px solid var(--border-subtle); margin-left:var(--branch-margin,10px); padding-left:var(--branch-indent,5px)!important; }
+.navigator-panel .collection-tree-spacer { width:23px; flex-shrink:0; }
+.navigator-panel .collection-directory { gap:0; }
+.menu-separator { height:1px; flex-shrink:0; margin:4px 5px; background:var(--border-subtle); }
+.library-popover .menu-action { min-height:30px; display:flex; align-items:center; gap:8px; padding:5px 9px; flex-shrink:0; }
+.menu-icon { width:15px; display:flex; flex-shrink:0; color:var(--text-tertiary); }
+.menu-label { flex:1; min-width:0; overflow-wrap:anywhere; }
+.menu-action kbd { margin-left:auto; white-space:nowrap; font-size:11px; color:var(--text-tertiary); }
+.menu-destructive,.menu-destructive .menu-icon { color:var(--danger,var(--error,#ef4444)); }
+
+.navigator-panel [data-collection-row] > .library-row[data-current=true]:not([data-drop-state]) { background:var(--surface-hover); color:var(--primary); }
+.navigator-panel [data-collection-row] > .library-row .browse-row-actions { opacity:1; }
+.navigator-panel [data-collection-row] > .library-row .browse-row-actions button[aria-haspopup] { opacity:0; }
+.navigator-panel [data-collection-row] > .library-row:is(:hover,:focus-within) .browse-row-actions button[aria-haspopup] { opacity:1; }
+@media(hover:none) { .navigator-panel [data-collection-row] > .library-row .browse-row-actions button[aria-haspopup] { opacity:1; } }
+
+.linked-result { display:flex; align-items:center; min-width:0; }
+.linked-result > .linked-tree-item { flex:1; min-width:0; }
+.linked-result > button[aria-haspopup] { opacity:0; }
+.linked-result:is(:hover,:focus-within) > button[aria-haspopup] { opacity:1; }
+@media(hover:none) { .linked-result > button[aria-haspopup] { opacity:1; } }
+
+.application-menu .library-button { background:transparent; box-shadow:none; }
+.application-menu .library-button:hover { background:var(--surface-hover); }

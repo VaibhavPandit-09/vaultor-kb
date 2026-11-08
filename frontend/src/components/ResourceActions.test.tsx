@@ -26,5 +26,11 @@ it('rename handoff retains failed input, retries the same command, and restores 
 it('linked resources expose reference organization without managed rename/export commands',async()=>{
  render(<EscapeManagerProvider><div className="library-row"><button>Linked row</button><ResourceActions resource={{...resource,type:'linked'}}/></div></EscapeManagerProvider>);
  fireEvent.contextMenu(screen.getByText('Linked row'));await screen.findByRole('menuitem',{name:'Open in another pane'});
- expect(screen.queryByRole('menuitem',{name:'Rename…'})).toBeNull();expect(screen.queryByRole('menuitem',{name:'Export note…'})).toBeNull();expect(screen.getByRole('menuitem',{name:'Move to Trash…'})).toBeTruthy();
+ expect(screen.queryByRole('menuitem',{name:'Rename…'})).toBeNull();expect(screen.queryByRole('menuitem',{name:'Export note…'})).toBeNull();expect(screen.getByRole('menuitem',{name:'Move reference to Trash…'})).toBeTruthy();
+});
+
+it('one resource in a collection offers direct membership removal without deleting or duplicating content',async()=>{
+ const {ResourceSelectionContext,useResourceSelection}=await import('../lib/resourceSelection');const {default:api}=await import('../lib/api');const post=vi.spyOn(api,'post').mockResolvedValue({data:null});
+ function Context(){const selection=useResourceSelection([resource],'collection');return <ResourceSelectionContext.Provider value={{...selection,collection:{id:'docs',name:'docs',count:1}}}><div className="library-row"><button>Member row</button><ResourceActions resource={resource}/></div></ResourceSelectionContext.Provider>;}
+ try{render(<EscapeManagerProvider><Context/></EscapeManagerProvider>);fireEvent.contextMenu(screen.getByText('Member row'));fireEvent.click(await screen.findByRole('menuitem',{name:'Remove from docs'}));await waitFor(()=>expect(post).toHaveBeenCalledWith('/organization/memberships',{resourceIds:['n'],kind:'collection',targetId:'docs',action:'remove'},expect.anything()));expect(post).toHaveBeenCalledTimes(1);}finally{post.mockRestore();}
 });

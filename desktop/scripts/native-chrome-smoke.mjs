@@ -11,6 +11,7 @@ export async function runChromeSmoke(window, directory, owned, updates) {
   const evaluate = code => window.webContents.executeJavaScript(code);
   const wait = async (code, label) => { for (let i = 0; i < 500; i++) { if (await evaluate(code).catch(() => false)) return; await new Promise(r => setTimeout(r, 100)); } throw new Error(label + ': ' + await evaluate('document.body.innerText')); };
   await wait("Boolean(document.querySelector('.library-view'))", 'Local workspace');
+  if(process.env.VAULTOR_D3_MENU_REFINEMENT==='1'){const {runMenuRefinementCheck}=await import('./native-menu-refinement-check.mjs');await runMenuRefinementCheck(window,directory,owned);return;}
   if(process.env.VAULTOR_DESKTOP_D3_CHECK==='1'){const {runD3Check}=await import('./native-d3-check.mjs');await runD3Check(window,directory,owned);return;}
   if(process.env.VAULTOR_NAVIGATOR_REFINEMENT_CHECK==='1'){const {runNavigatorRefinementCheck}=await import('./native-navigator-refinement-check.mjs');await runNavigatorRefinementCheck(window,directory,owned);return;}
   if(process.env.VAULTOR_NAVIGATOR_CHECK==='1'){const {runNavigatorCheck}=await import('./native-navigator-check.mjs');await runNavigatorCheck(window,directory,owned);return;}

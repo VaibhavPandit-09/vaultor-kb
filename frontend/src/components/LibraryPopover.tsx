@@ -27,6 +27,9 @@ export default function LibraryPopover({ label, children, trigger, className, pr
    if(event.defaultPrevented || (event instanceof KeyboardEvent && !(event.key==='ContextMenu'||(event.key==='F10'&&event.shiftKey)))) return;
    const target=event.target instanceof Element?event.target:null;
    // Text selection/editing keeps platform behavior. Nested rows own their own menus.
+   const row=target?.closest('[data-resource-row],[data-collection-row],[data-open-session],[data-linked-directory],[data-linked-file],[data-tag-target],.library-row');
+   if(row&&row!==owner&&owner.contains(row))return;
+   const selection=window.getSelection();if(selection?.toString()&&owner.contains(selection.anchorNode))return;
    if(!target || target.closest(contextTarget)!==owner || target.closest('input,textarea,select,[contenteditable="true"],a[href]')) return;
    event.preventDefault();event.stopPropagation();
    source.current=target.closest<HTMLElement>('button,[tabindex]')??owner.querySelector<HTMLElement>('button:not(:disabled):not([hidden])')??anchor.current;
@@ -42,8 +45,9 @@ export default function LibraryPopover({ label, children, trigger, className, pr
   const frame=requestAnimationFrame(()=>panel.current?.querySelector<HTMLElement>('button:not(:disabled),select,input')?.focus({preventScroll:true}));
   const dismiss=(event:PointerEvent)=>{if(!panel.current?.contains(event.target as Node)&&!anchor.current?.contains(event.target as Node))setOpen(false);};
   const abandon=(event:FocusEvent)=>{if(event.target===window)setOpen(false);};
-  document.addEventListener('pointerdown',dismiss);window.addEventListener('blur',abandon);
-  return()=>{cancelAnimationFrame(frame);document.removeEventListener('pointerdown',dismiss);window.removeEventListener('blur',abandon);};
+  const scrolling=(event:Event)=>{if(!(event.target instanceof Node)||!panel.current?.contains(event.target))setOpen(false);};
+  document.addEventListener('dragstart',scrolling);document.addEventListener('scroll',scrolling,true);document.addEventListener('pointerdown',dismiss);window.addEventListener('blur',abandon);
+  return()=>{document.removeEventListener('dragstart',scrolling);document.removeEventListener('scroll',scrolling,true);cancelAnimationFrame(frame);document.removeEventListener('pointerdown',dismiss);window.removeEventListener('blur',abandon);};
  },[open,contextTarget,position]);
  // Context menus use the measured panel height and clamp both axes at viewport edges.
  useEffect(()=>{

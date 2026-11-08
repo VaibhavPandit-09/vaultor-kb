@@ -58,7 +58,7 @@ export default function CommandPaletteModal({open,onClose,context,searchLinked}:
  const action=(id:string,title:string,work:()=>void|Promise<void>,subtitle?:string):Result=>({id,title,subtitle,section:'Commands',onSelect:()=>({type:'execute',action:work})});
  function actionStep(resource:Resource):CommandStep {return {id:'actions-'+resource.id,type:'select',title:'Actions · '+resource.title,placeholder:'Filter actions…',getItems:filter=>[
    ...(resourceCommandEnabled('copy-resources',resource)?[action('resource-copy','Copy resource',()=>executeResourceCommand('copy-resources',resource),resource.title),action('link-copy','Copy resource link',()=>executeResourceCommand('copy-links',resource),resource.title)]:[]),
-     ...(resourceCommandEnabled('export-copy',resource)?[action('explorer-copy','Export copy for Explorer…',()=>executeResourceCommand('export-copy',resource),resource.title)]:[]),
+     ...(resourceCommandEnabled('export-copy',resource)?[action('explorer-copy','Export copy for Explorer…',()=>executeResourceCommand('export-copy',resource),resource.title),action('explorer-reveal','Reveal exported copy…',()=>executeResourceCommand('reveal-copy',resource),resource.title),action('system-open','Open exported copy in default app…',()=>executeResourceCommand('open-copy',resource),resource.title)]:[]),
    action('membership','Add to collection',()=>handoff('collection',[resource.id]),resource.title),
    action('pin',resource.favorite?'Unpin':'Pin',()=>setResourceFavorite(resource.id,!resource.favorite),resource.title),
    action('tags','Manage tags',()=>handoff('tag',[resource.id]),resource.title),

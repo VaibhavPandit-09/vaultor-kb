@@ -1,3 +1,4 @@
+import {CollectionCommandsContext} from '../lib/collectionCommands';
 import ResourceRenameDialog from '../components/ResourceRenameDialog';
 import NativeExportCopy from '../components/NativeExportCopy';
 import SourcesBrowser from '../components/SourcesBrowser';
@@ -5,7 +6,7 @@ import {QuickTags,TagsBrowser} from '../components/TagsBrowser';
 import AdaptiveNavigator from '../components/AdaptiveNavigator';
 import {defaultNavigator,normalizeNavigator,rememberNavigatorTag,type NavigatorState} from '../lib/navigator';
 import type { DragSurface } from '../lib/desktopInteraction';
-import { commandConfig, requireCommandScope } from '../lib/resourceBatchCommands';
+import {commandScope, commandConfig, requireCommandScope } from '../lib/resourceBatchCommands';
 import { DesktopInteractionProvider, PaneDropTarget, NavigationDropButton, CollectionDropButton, SidebarDragNavigation, SidebarDragGuidance, SessionDragHandle } from '../components/DesktopInteraction';
 import ImportSourceModal from '../components/modals/ImportSourceModal';
 import {dropDesktopFiles} from '../lib/desktop';
@@ -185,7 +186,7 @@ export default function Dashboard() {
   const [tagInputValue, setTagInputValue] = useState('');
   const [tagPickerSelectedIndex, setTagPickerSelectedIndex] = useState(0);
 
-  const [nativeExport,setNativeExport]=useState<{resource:Resource;epoch:number;generation?:string}|null>(null);
+  const [nativeExport,setNativeExport]=useState<{resource:Resource;epoch:number;generation?:string;intent?:'reveal'|'open'}|null>(null);
   const [renameRequest,setRenameRequest]=useState<{resource:Resource;epoch:number;generation?:string}|null>(null);
   const [noteExport, setNoteExport] = useState<{ id: string; title: string } | null>(null);
   const [transferMode, setTransferMode] = useState<'export' | 'import' | null>(null);
@@ -227,6 +228,7 @@ export default function Dashboard() {
     return () => { window.removeEventListener('vaultor:error', error); window.removeEventListener('beforeunload', unload); };
   }, [saves,recovery]);
 
+  const importCollection=useRef<OrganizationItem|undefined>(undefined);
   const [createNotePending, setCreateNotePending] = useState(false);
   const [uploadPending, setUploadPending] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
@@ -608,20 +610,22 @@ export default function Dashboard() {
   const handleBackNavigation = useCallback(() => paneNavigation.history(-1), [paneNavigation]);
   const handleForwardNavigation = useCallback(() => paneNavigation.history(1), [paneNavigation]);
 
-  const handleCreateNote = useCallback(async () => {
+  const handleCreateNote = useCallback(async (destination?:string) => {
     if (createNotePending) return;
     setCreateNotePending(true);
+    const scope=commandScope();
     try {
       const { data } = await api.post('/resources', {
         type: 'note',
-        collectionId: libraryVisible ? collection?.id : undefined,
+        collectionId: destination??(libraryVisible ? collection?.id : undefined),
         title: 'Untitled Note',
         content: { type: 'doc', content: [] },
-      });
+      },commandConfig(scope));
+      requireCommandScope(scope);
       resourcesChanged([data.id], true);
-      openResourceById(data.id);
+      await openResourceById(data.id);
     } catch (error) {
-      console.error(error);
+      console.error(error);if(destination)throw error;
     } finally {
       setCreateNotePending(false);
     }
@@ -651,11 +655,11 @@ export default function Dashboard() {
     } catch (error) { target?.dispose(); importBusy.current = false; if(target&&!target.editor.isDestroyed)target.editor.commands.focus(undefined,{scrollIntoView:false});else restoreSelectionFocus(); setImportAcquireError(error instanceof Error?error.message:String(error));reportError('file.import.prepare', error); }
     finally { setUploadPending(false); }
   }, [libraryVisible,collection,restoreImportFocus,importAcquire]);
-  const requestFileUpload = useCallback((event?:{currentTarget?:EventTarget|null}) => { importReturnFocus.current=event?.currentTarget instanceof HTMLElement?event.currentTarget:document.activeElement instanceof HTMLElement?document.activeElement:null; flushSync(() => setCommandPaletteOpen(false)); setImportAcquireError('');setImportAcquire(true); }, []);
+  const requestFileUpload = useCallback((event?:{currentTarget?:EventTarget|null}) => { importReturnFocus.current=event?.currentTarget instanceof HTMLElement?event.currentTarget:document.activeElement instanceof HTMLElement?document.activeElement:null; flushSync(() => setCommandPaletteOpen(false)); importCollection.current=undefined;setImportAcquireError('');setImportAcquire(true); }, []);
   useEffect(()=>{const resume=(event:Event)=>{const detail=(event as CustomEvent<{task:{epoch:number;workspace:Identity};folder:boolean}>).detail;if(!detail||detail.task.epoch!==getConnection().epoch||!identityRef.current||!sameWorkspace(detail.task.workspace,identityRef.current))return;void beginImport(undefined,undefined,undefined,detail.folder);};window.addEventListener('vaultor:resume-import',resume);return()=>window.removeEventListener('vaultor:resume-import',resume);},[beginImport]);
   const handleRequestMdUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'markdown'); }, [beginImport]);
   const handleRequestCsvUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'csv'); }, [beginImport]);
-  const handleRequestFileDrop=useCallback((editor:Editor,range:Range,files:File[])=>{setImportAcquireError('');setImportAcquire(true);void beginImport(editor,range,'link',false,files);},[beginImport]);
+  const handleRequestFileDrop=useCallback((editor:Editor,range:Range,files:File[])=>{importCollection.current=undefined;setImportAcquireError('');setImportAcquire(true);void beginImport(editor,range,'link',false,files);},[beginImport]);
   const handleRequestLinkUpload = useCallback((editor: Editor, range: Range) => { void beginImport(editor, range, 'link'); }, [beginImport]);
   useEffect(() => () => { fileImport?.target?.dispose(); }, [fileImport]);
   const closeFileImport = () => {
@@ -777,7 +781,7 @@ export default function Dashboard() {
       return;
     }
     if(request.action==='open'||request.action==='open-another'){if(!supportedResourceActions(resource).open)throw new Error('Opening this resource is unsupported.');await openResourceById(resource.id,{throwOnFailure:true,...(request.action==='open-another'?{destination:'new' as const}:{})});return;}
-    if(request.action==='export-copy'){if(resource.type!=='file')throw Error('Prepare native copies from managed files.');setNativeExport({resource,epoch:getConnection().epoch,generation:getConnection().generation});return;}
+    if(request.action==='export-copy'){if(resource.type!=='file')throw Error('Prepare native copies from managed files.');setNativeExport({resource,epoch:getConnection().epoch,generation:getConnection().generation,intent:request.value==='reveal'||request.value==='open'?request.value:undefined});return;}
     if(request.action==='trash'){setLifecycleTargets(request.resources);return;}
     if(request.action==='export'){if(!supportedResourceActions(resource).export)throw new Error('Exporting this resource is unsupported.');setNoteExport({id:resource.id,title:resource.title});return;}
     if(request.action==='prepare-export'){for(const selected of request.resources)if(selected.type==='note')await exportSaveRef.current(selected.id);return;}
@@ -1229,7 +1233,7 @@ export default function Dashboard() {
       </div>
       <div className="sidebar-create-actions flex gap-1.5 px-3 pb-2">
         <button
-          onClick={handleCreateNote}
+          onClick={()=>void handleCreateNote()}
           disabled={createNotePending}
           className="library-button library-button-primary sidebar-new-note"
         >
@@ -1287,7 +1291,7 @@ export default function Dashboard() {
 
   if(!sessionReady)return <main className={`flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} items-center justify-center bg-background text-text`}><div role="status">{bootError||'Restoring workspace…'}{bootError&&<button className="library-button ml-3" onClick={()=>setBootAttempt(v=>v+1)}>Retry</button>}</div></main>;
   return (
-    <DesktopInteractionProvider onRevealResource={revealDragNote} visibleSessionIds={visibleNotes.map(note=>note.paneId)} onDragSourceChange={setDesktopDragSource} onArrangeSession={paneNavigation.arrangeSession} onReorderSession={paneNavigation.reorderSession} onResolveResources={async(resources,scope)=>{if(scope.generation!==identityRef.current?.generation)throw Error('Workspace changed.');const result:Resource[]=[];for(const resource of resources){requireCommandScope(scope);if(resource.type==='linked')await linkedWorkspace.describe(resource.id,true);const {data}=await api.get<Resource>('/resources/'+resource.id+'/summary',commandConfig(scope));if(data.trashedAt)throw Error('This resource is in Trash.');result.push(data);}return result;}} openResourceIds={openNotes.map(note=>note.id)} generation={identityRef.current?.generation} sourceKey={JSON.stringify([getConnection().epoch,identityRef.current?.id,identityRef.current?.generation])} onPane={(resource,paneId)=>openResourceById(resource.id,{sourcePaneId:paneId,destination:'here',intent:'link',throwOnFailure:true})} onImport={(files,destination)=>{setImportAcquire(true);void beginImport(undefined,undefined,undefined,false,files,destination);}}>
+    <CollectionCommandsContext.Provider value={{activeCollectionId:libraryVisible?collection?.id:undefined,newNote:item=>handleCreateNote(item.id||undefined),importFiles:item=>{importReturnFocus.current=document.activeElement instanceof HTMLElement?document.activeElement:null;importCollection.current=item;setImportAcquire(true);void beginImport(undefined,undefined,undefined,false,undefined,item);}}}><DesktopInteractionProvider onRevealResource={revealDragNote} visibleSessionIds={visibleNotes.map(note=>note.paneId)} onDragSourceChange={setDesktopDragSource} onArrangeSession={paneNavigation.arrangeSession} onReorderSession={paneNavigation.reorderSession} onResolveResources={async(resources,scope)=>{if(scope.generation!==identityRef.current?.generation)throw Error('Workspace changed.');const result:Resource[]=[];for(const resource of resources){requireCommandScope(scope);if(resource.type==='linked')await linkedWorkspace.describe(resource.id,true);const {data}=await api.get<Resource>('/resources/'+resource.id+'/summary',commandConfig(scope));if(data.trashedAt)throw Error('This resource is in Trash.');result.push(data);}return result;}} openResourceIds={openNotes.map(note=>note.id)} generation={identityRef.current?.generation} sourceKey={JSON.stringify([getConnection().epoch,identityRef.current?.id,identityRef.current?.generation])} onPane={(resource,paneId)=>openResourceById(resource.id,{sourcePaneId:paneId,destination:'here',intent:'link',throwOnFailure:true})} onImport={(files,destination)=>{importCollection.current=destination;setImportAcquire(true);void beginImport(undefined,undefined,undefined,false,files,destination);}}>
     <div className={`app-root flex ${getPlatform().kind === 'desktop' ? 'h-full' : 'h-screen'} flex-col overflow-hidden bg-background text-foreground ${commandPaletteOpen && !desktopDragSource ? 'command-open pointer-events-none' : ''}`}>
 
       <CommandPaletteModal searchLinked={linkedWorkspace.supported()?linkedWorkspace.search:undefined}
@@ -1311,9 +1315,9 @@ export default function Dashboard() {
       </div>}
       {notice&&<DiagnosticNotice event={notice} saveFailed={saves.failed()} onDetails={()=>setDiagnosticsOpen(true)} onRetrySaves={()=>{void saves.flushAll().catch(()=>{});}} onDismiss={()=>setNotice(null)}/>}
       {reviewTarget!==undefined&&<ReviewInbox key={getConnection().epoch} resource={reviewTarget} onClose={()=>setReviewTarget(undefined)} onOpen={async id=>{await openResourceById(id,{throwOnFailure:true});const issue=paneNavigation.snapshot().issue;if(issue)throw new Error(issue.message);return ()=>{const state=paneNavigation.snapshot();if(state.panes.some(p=>p.id===id&&p.paneId===state.activePaneId))paneNavigation.activate(state.activePaneId!,true);else document.querySelector<HTMLElement>('.preview-shell button')?.focus({preventScroll:true});};}}/>}
-      {importAcquire&&<ImportSourceModal pending={uploadPending} error={importAcquireError} onBrowse={folder=>void beginImport(undefined,undefined,undefined,folder)} onDrop={files=>void beginImport(undefined,undefined,undefined,false,files)} onClose={()=>{setImportAcquire(false);restoreImportFocus();}}/>}
+      {importAcquire&&<ImportSourceModal pending={uploadPending} error={importAcquireError} onBrowse={folder=>void beginImport(undefined,undefined,undefined,folder,undefined,importCollection.current)} onDrop={files=>void beginImport(undefined,undefined,undefined,false,files,importCollection.current)} onClose={()=>{setImportAcquire(false);importCollection.current=undefined;restoreImportFocus();}}/>}
       {renameRequest?.epoch===getConnection().epoch&&renameRequest.generation===getConnection().generation&&<ResourceRenameDialog resource={renameRequest.resource} onClose={()=>setRenameRequest(null)}/>}
-      {nativeExport?.epoch===getConnection().epoch&&nativeExport.generation===getConnection().generation&&<NativeExportCopy key={getConnection().epoch} resource={nativeExport.resource} onClose={()=>setNativeExport(null)}/>}
+      {nativeExport?.epoch===getConnection().epoch&&nativeExport.generation===getConnection().generation&&<NativeExportCopy key={getConnection().epoch} resource={nativeExport.resource} intent={nativeExport.intent} onClose={()=>setNativeExport(null)}/>}
       {referenceTarget&&<ResourceReferences resource={referenceTarget} linkedReferences={referenceTarget.type==='linked'&&linkedWorkspace.supported()?linkedWorkspace.references:undefined} localNotes={openNotes.filter((p,index,all)=>all.findIndex(other=>other.id===p.id)===index).flatMap(p=>{const draft=saves.latest(p.id)??recovery.current(p.id)?.value;return draft?[{id:p.id,title:draft.title,content:parseNoteContent(draft.content as Resource['content'])}]:[];})} onClose={()=>setReferenceTarget(null)}/>}
       {lifecycleTargets&&<ResourceLifecycleDialog resources={lifecycleTargets} action="trash" onBusy={setDeletePending} onClose={()=>setLifecycleTargets(null)}/>}
 
@@ -1601,7 +1605,7 @@ export default function Dashboard() {
               <h2 className="mb-2 text-2xl font-semibold text-slate-500">Welcome to Vaultor</h2>
               <p className="mb-6 text-sm opacity-80">Open the command palette with {isMac ? 'Cmd+K' : 'Ctrl+K'} to jump anywhere fast.</p>
               <div className="flex gap-3">
-                <button onClick={handleCreateNote} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"><Plus size={16} /> New Note</button>
+                <button onClick={()=>void handleCreateNote()} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"><Plus size={16} /> New Note</button>
                 <button onClick={requestFileUpload} className="library-button"><Upload size={16} /> Import</button>
               </div>
             </div>
@@ -1631,7 +1635,7 @@ export default function Dashboard() {
       {previewResourceLoading && <PreviewShell mode={effectivePreviewMode} transparency={uiTransparency} label="Loading preview" loading onClose={()=>dismissPreview()}><div className="m-auto text-sm text-[var(--text-secondary)]" role="status">Loading preview…</div></PreviewShell>}
 
     </div>
-    </DesktopInteractionProvider>
+    </DesktopInteractionProvider></CollectionCommandsContext.Provider>
   );
 }
 

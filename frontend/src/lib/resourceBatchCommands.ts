@@ -23,3 +23,5 @@ export async function reparentCollection(collection:OrganizationItem,destination
  requireCommandScope(scope);if(destination&&(collection.id===destination.id||destination.ancestors?.some(item=>item.id===collection.id)))throw new Error('A collection cannot be placed inside itself or its children.');
  const {data}=await api.put<OrganizationItem>('/collections/'+collection.id+'/parent',{parentId:destination?.id??null},commandConfig(scope));requireCommandScope(scope);organizationChanged('collection');return data;
 }
+
+export async function pinCollection(id:string,favorite:boolean,scope=commandScope()){requireCommandScope(scope);await api.put('/collections/'+id+'/favorite',{favorite},commandConfig(scope));requireCommandScope(scope);organizationChanged('collection');const {notifyResourceChange}=await import('./resourceEvents');notifyResourceChange({kind:'pins',entity:'collection',id,favorite});}
