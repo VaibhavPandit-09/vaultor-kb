@@ -469,6 +469,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-08 — D4 source and readiness ledger
+
+Recorded integrity implementation `443b443` and interaction/native implementation `a76ab0f`, based on D3 `52379a7`. Documentation-only follow-up with no additional architectural effect; passing evidence reused and whitespace checked. The authoritative tracker separates current Windows linked-source qualification, historical journal-lock provenance, pending user acceptance and packaged-release gates. Master/release/version/Android remain unchanged.
+
 ### 2026-11-08 — D4 final desktop refinement (awaiting acceptance)
 
 D4 derives from D3 52379a7, with D3 user/platform acceptance still pending. Open-note reads compare the recovery owner's acknowledged revision across asynchronous fetches to protect live content and avoid own-save conflict notices; file rename captures scope through summary and conditional patch. Menus separate geometry from one-time focus, delegate local accelerators to existing commands, expose standalone action-menu semantics and dismiss on new focus ownership without ghost overlays. Native export reviews serialize actions/expire controls and wrap long names; short-height navigation compression and empty Collections reuse existing sidebar/creation owners. Native initialization exposes only whitelisted safe failure codes, preserving journal locks. Validation:226 distinct focused frontend cases (34 files with affected reruns),29 native cases without skips, lint, TypeScript/production UI, syntax and whitespace pass. Disposable Windows clipboard/editor/organization/import-cancel and real linked grant/tree/open/drag workflows pass; minimum-size region89px, focus/motion/native-dialog review and source preservation checked. Existing living contracts/tracker own exact evidence and the unresolved historical lock provenance/packaged-startup release gate. No backend/schema/main/preload authority, master/release/version/Android change.

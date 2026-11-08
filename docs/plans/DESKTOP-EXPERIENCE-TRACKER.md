@@ -356,7 +356,7 @@ Complete-workflow audit covers A browsing/navigation, B dirty editing/linking/un
 | D4.4 / P2 | IMPLEMENTED / VALIDATED: no exiting menu ghosts over handoff dialogs; no redundant generic menu exit geometry. Shared entrances, notice exits, Snappy/Smooth preferences retained. Actual Smooth handoff and emulated reduced-motion menu endpoints checked. | motion.ts/MOTION.md; no new animation system or identity-changing layout. |
 | D4.5 / P1 | IMPLEMENTED / VALIDATED bounded workflows A–F; integrity fixes for Save/read acknowledgement and scoped file rename. Real linked grant/tree/open/drag, dirty pane swap, link Undo/Redo, tag application, cancelled native import, native clipboard/prepared copies/Activity/window checks pass with boundaries below. Physical feel and release qualification remain pending. | Existing D2 extension, navigator, D3/D4 harnesses plus focused integrity/component regression. |
 
-Integrity implementation: **443b443** (read/Save acknowledgement and source-scoped conditional file rename). The following interaction/native implementation and immutable source ledger retain these changes without master integration.
+Implementation commits: **443b443** (read/Save acknowledgement and source-scoped conditional file rename), **a76ab0f** (D4 interaction, responsive, keyboard, motion, native diagnostics, regressions and living contracts). Both descend from verified D3 **52379a7** on `codex/desktop-experience-d4`; master remains **5003a91**. This documentation-only source ledger reuses recorded passing evidence and checks whitespace; no new behavior, acceptance or release qualification is implied.
 
 ### D4 final validation and native findings
 
