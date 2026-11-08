@@ -58,7 +58,7 @@ function HelpReader({ topic, onClose }: { topic: string; onClose: () => void }) 
       <nav className="help-navigation" aria-label="Help navigation">
         <button type="button" className="library-button" disabled={!history.length} onClick={() => { const previous = history.at(-1); if (previous) { setHistory(value => value.slice(0, -1)); show(previous, true); } }}><ArrowLeft size={15} />Back</button>
         <button type="button" className="library-button" onClick={() => show(location())}><BookOpen size={15} />Help home</button>
-        <span className="help-platform">{platform === 'macos' ? 'Mac Apple Silicon' : platform === 'windows' ? 'Windows' : 'Browser'} · bundled development Help</span>
+        <span className="help-platform">{platform === 'macos' ? 'Mac Apple Silicon' : platform === 'windows' ? 'Windows' : 'Browser'} · Help {catalogue.contentVersion}</span>
       </nav>
       <label className="help-search"><Search size={16} /><input autoFocus aria-label="Search Help" placeholder="Search features, tasks or shortcuts…" value={current.query} onChange={event => setCurrent(value => ({ ...value, query: event.target.value }))} onKeyDown={event => { if (event.key === 'ArrowDown') { event.preventDefault(); root.current?.querySelector<HTMLButtonElement>('[data-help-result]')?.focus(); } }} /></label>
       <h2 ref={heading} tabIndex={-1} className="help-title">{current.query.trim() ? 'Help search results' : article?.title ?? 'How can Vaultor help?'}</h2>

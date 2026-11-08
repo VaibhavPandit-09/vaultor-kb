@@ -242,13 +242,13 @@ PreviewShell now owns one fixed ancestor chain for Side↔Floating, interpolatin
 
 OLED now honors the saved60–100% opacity value and glass blur, using black canvas and neutral raised color tokens. The global `--ui-opacity` follows local settings for utility menus; pane surfaces also use the saved value, with inactive peers more transparent. No schema/device persistence changes or global theme-transition redesign. [Appearance](workspace/APPEARANCE.md) owns exact semantics.
 
-## Bundled user Help (unreleased after 0.26.0)
+## Bundled user Help (Windows 0.27.0)
 
 Official Help is application-owned content in `docs/help/`, separate from resources and every Save/recovery/Trash/export/search workflow. `catalogue.json` owns stable capability IDs, article paths, categories/tasks, screen mappings, platform status and evidenced version baselines; Markdown owns usage prose. `lib/help.ts` eagerly bundles content and builds a local metadata/body index once. Help search includes current resolved shortcut text; both shortcut surfaces share `getShortcutCategories`.
 
 `HelpCenter.tsx` uses AppModal's existing focus/Escape/surface behavior with local history, home/search/article states, outline/related links and safe read-only ReactMarkdown/GFM. No raw HTML, embedded images, privileged commands or filesystem paths are admitted. Internal links resolve only catalogued Markdown/heading targets; external credential-free HTTP(S) anchors use existing browser/Electron policy. Opening Help leaves editors mounted. Entry points are application menu, Settings, Activity, palette and one sidebar contextual action; unknown context falls back home.
 
-Vite validates Help and emits original articles/catalogue plus SHA-256 provenance in `help/`; its JS embeds the same source for network-free runtime reading. Existing desktop recursive UI copy includes these assets. `scripts/validate-help.mjs` and negative tests validate metadata/references and optionally source-to-dist hashes. [Help governance](development/HELP-DOCUMENTATION.md) owns mandatory same-change and exact-source platform release reconciliation. Current released desktop baseline is Windows/Mac arm64 0.26.0 and Android alpha.28/code32; Help itself is unreleased and does not add Android UI. Native Mac/assistive technology and Windows subjective acceptance remain separate gates.
+Vite validates Help and emits original articles/catalogue plus SHA-256 provenance in `help/`; its JS embeds the same source for network-free runtime reading. Existing desktop recursive UI copy includes these assets. `scripts/validate-help.mjs` and negative tests validate metadata/references and optionally source-to-dist hashes. [Help governance](development/HELP-DOCUMENTATION.md) owns mandatory same-change and exact-source platform release reconciliation. The Help release baseline is Windows 0.27.0, Mac arm64 0.26.0 and Android alpha.28/code32; Help is introduced on Windows 0.27.0 and its browser UI. Mac Help remains unqualified development source and no Android Help UI is added. Native Mac/assistive technology and Windows subjective acceptance remain separate gates.
 
 ## Editor and content contracts
 
@@ -476,6 +476,11 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-08 — Windows 0.27.0 Help release preparation
+
+The user authorized release after the no-release development milestone. Bumped desktop package/lock to 0.27.0, assigned the Help content version and Windows introduction metadata, reconciled user articles/What's New/platform baselines, and replaced development reader wording. Mac remains 0.26.0 with Help source unqualified; Android is unchanged. No resource/Save/native authority architecture changes. Validation:17 Help-validator,40 focused frontend and15 release/updater cases pass; fresh UI/server/native package and actual packaged offline Help plus managed Save/PDF/relaunch pass. All568 extracted installer files match the package; original-key sidecar and embedded/browser Help hashes verify. Remaining installation/Mac/subjective checks and publication status are recorded in [the release ledger](desktop/releases/v0.27.0.md); source remains on the Help branch and master is unchanged.
+
 
 ### 2026-11-08 — Offline Help and documentation governance (development branch)
 

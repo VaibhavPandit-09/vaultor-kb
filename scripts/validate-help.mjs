@@ -18,6 +18,7 @@ export function validateHelp(catalogue, files, evidenceExists = path => existsSy
   const check = (condition, message) => { if (!condition) errors.push(message); };
   const unique = (values, label) => check(new Set(values).size === values.length, 'Duplicate ' + label);
   check(catalogue.schemaVersion === 1, 'Unsupported schema');
+  check(version.test(catalogue.contentVersion ?? ''), 'Invalid Help content version');
   check(/^\d{4}-\d{2}-\d{2}$/.test(catalogue.reviewed), 'Invalid review date');
   unique(catalogue.areas, 'area');
   unique(catalogue.articles.map(a => a.id), 'article id');

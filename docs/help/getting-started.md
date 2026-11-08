@@ -19,4 +19,4 @@ Help is bundled read-only application content. Reading or searching it never cre
 
 ## Before you rely on a platform
 
-Check [Platform support](platforms.md). This Help Center is development work after desktop 0.26.0; already installed 0.26.0 apps do not contain it. It does not add Android Help or change Android functionality.
+Check [Platform support](platforms.md). Windows 0.27.0 includes this Help Center. Mac 0.26.0 and Android alpha.28 do not contain it. Android functionality is unchanged.

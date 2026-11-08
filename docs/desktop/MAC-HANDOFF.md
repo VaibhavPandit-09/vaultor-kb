@@ -19,6 +19,10 @@ Native qualification passed:
 - All four public release assets (Windows EXE + sidecar and Mac DMG + sidecar) verified via independent download and digest matching against `desktop/release-trust.json`.
 - Complete-platform Latest remains 0.21.0 per 0.23.0+ large-document limits; 0.4.1+ updaters discover their matching platform pair independently. [0.26.0 ledger](releases/v0.26.0.md).
 
+## 0.27.0 Help — Windows release preparation, Mac blocked
+
+The user explicitly selected Windows now / Mac later. No configured native Mac connection is available in this Windows session. Mac remains at published 0.26.0; no 0.27.0 DMG is claimed. The source implements Help but explicitly marks Mac Help as development/unqualified. Windows 0.27.0 is prepared from `codex/help-feature-catalogue`; its [release ledger](releases/v0.27.0.md) owns exact source, checks and publication status. Before a future Mac delivery, obtain native Apple Silicon access, reconcile Help availability/platform prose, build fresh UI/server/original-key DMG and perform packaged Help/Save/restart plus signing/mount checks. Source changes after v0.27.0 require a new version; do not publish misleading Mac Help metadata through an absent-platform retry. No historical assets/tags may change.
+
 ## 0.25 milestone and 0.25.2 patch — explicitly deferred
 
 The user authorized Windows x64 only and owns later macOS runtime acceptance. No0.25.x Mac build, installer, runtime test or publication is authorized in this release task. Existing0.24.2 Mac downloads remain unchanged. This deferral does not block the Windows-only non-latest release. Use the immutable v0.25.2 source for a future separately authorized Mac qualification; never imply Windows checks certify it or replace historical artifacts.

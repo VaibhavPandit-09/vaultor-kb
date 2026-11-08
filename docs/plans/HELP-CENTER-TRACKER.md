@@ -1,6 +1,6 @@
 # Help Center initiative
 
-Development branch: `codex/help-feature-catalogue`, based on `adbcc96` (remote master 2026-11-08). No version bump, installer, release or automatic merge is authorized. Master stays unchanged.
+Development branch: `codex/help-feature-catalogue`, based on `adbcc96` (remote master 2026-11-08). The original development milestone prohibited versions/installers/releases; the user subsequently authorized “Release it” on 2026-11-08. Windows 0.27.0 preparation is owned by [its release ledger](../desktop/releases/v0.27.0.md); master stays unchanged.
 
 ## Coverage and implementation
 
@@ -12,7 +12,7 @@ Development branch: `codex/help-feature-catalogue`, based on `adbcc96` (remote m
 
 ## Boundaries and acceptance
 
-Help itself is unreleased development functionality. No Android Help renderer or original editing, native platform change, remote docs service or AI search. Browser has no native clipboard/filesystem authority. Catalogue availability uses evidenced release baselines rather than assuming source equals publication. What's New summarizes existing release ledgers.
+The initial checkpoint was unreleased; the user subsequently authorized Windows 0.27.0, with actual release qualification/publication owned by its release ledger. Mac Help remains unqualified development functionality. No Android Help renderer or original editing, native platform change, remote docs service or AI search. Browser has no native clipboard/filesystem authority. Catalogue availability uses evidenced release baselines rather than assuming source equals publication. What's New summarizes existing release ledgers.
 
 User-owned acceptance: Windows presentation/readability, preferred topic grouping, real keyboard/focus experience and ordinary workflows; native Mac Help check and assistive technology remain unclaimed. Existing product limitations remain in canonical technical guides and user troubleshooting; this is a broad practical inventory, not an exhaustive editor/OS shortcut specification.
 

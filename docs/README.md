@@ -6,6 +6,8 @@ Reviewed 2026-11-08: Complete Windows x64 and Mac arm64 0.26.0 Desktop Experienc
 
 ## User Help
 
+Windows 0.27.0 Help release preparation is tracked in [the release ledger](desktop/releases/v0.27.0.md); Mac remains at its verified 0.26.0 release pending native access.
+
 - [Help catalogue and articles](help/getting-started.md): offline user tasks; [catalogue](help/catalogue.json) indexes capabilities and platform baselines.
 - [Help documentation governance](development/HELP-DOCUMENTATION.md): mandatory development and exact-source release reconciliation, validation and handoff.
 - [Help Center tracker](plans/HELP-CENTER-TRACKER.md): development scope, coverage, checks and user acceptance.

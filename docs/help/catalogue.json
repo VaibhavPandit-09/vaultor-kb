@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "reviewed": "2026-11-08",
   "baseline": {
-    "windows": "0.26.0",
+    "windows": "0.27.0",
     "macos": "0.26.0",
     "android": "0.1.0-alpha.28"
   },
@@ -2056,23 +2056,29 @@
       ],
       "availability": {
         "windows": {
-          "status": "development"
+          "status": "available",
+          "introducedVersion": "0.27.0",
+          "verifiedVersion": "0.27.0"
         },
         "macos": {
           "status": "development"
         },
         "browser": {
-          "status": "development"
+          "status": "available",
+          "introducedVersion": "0.27.0"
         },
         "android": {
           "status": "unsupported"
         }
       },
-      "limitations": [],
+      "limitations": [
+        "Windows 0.27.0 includes Help. Mac 0.26.0 and Android alpha.28 do not; a Mac Help release requires native qualification and documentation reconciliation."
+      ],
       "related": [],
       "evidence": [
         "frontend/src/components/modals/HelpCenter.tsx"
       ]
     }
-  ]
+  ],
+  "contentVersion": "0.27.0"
 }

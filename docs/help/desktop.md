@@ -18,6 +18,6 @@ Window hiding/tray behavior retains editors; explicit Quit uses save/recovery an
 
 Open the application **Updates** control. Use the offered verified update and restart workflow, or the advanced signed-pair import. Updates verify the original signing identity and platform/version; checksums alone are not authenticity. Keep the installer and matching signed sidecar together for manual import. Do not uninstall or clear app data merely to update.
 
-Windows x64 and Mac Apple Silicon have separate platform assets. GitHub Latest can lag a platform-specific published release. This Help is a development addition and does not change installed 0.26.0. [What's New](whats-new.md), [Platforms](platforms.md).
+Windows x64 and Mac Apple Silicon have separate platform assets. GitHub Latest can lag a platform-specific published release. Help is included in Windows 0.27.0; older 0.26.0 installations need an update to obtain it. Mac remains at its verified 0.26.0 release. [What's New](whats-new.md), [Platforms](platforms.md).
 
 For official distributions use [Vaultor releases](https://github.com/VaibhavPandit-09/vaultor-kb/releases). Help itself does not need that site or a network connection.

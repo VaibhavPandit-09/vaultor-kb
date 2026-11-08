@@ -15,6 +15,7 @@ for (const [label, mutate] of [
   ['missing article', c => c.features[0].article = 'bogus'],
   ['invalid platform', c => c.features[0].availability.plan9 = { status: 'available' }],
   ['invalid version', c => c.features[0].availability.windows.verifiedVersion = 'future'],
+  ['invalid content version', c => c.contentVersion = 'future'],
   ['broken context', c => c.context.library = 'bogus'],
 ]) test('rejects ' + label, () => { const c = structuredClone(original.catalogue); mutate(c); assert.ok(validateHelp(c, original.files).length); });
 for (const link of ['missing.md', 'notes.md#missing', '../outside.md', 'file:///secret', 'javascript:alert(1)', 'https://user:pass@example.com']) test('rejects link ' + link, () => assert.ok(validateHelp(original.catalogue, { ...original.files, 'notes.md': original.files['notes.md'] + `\n[unsafe](${link})` }).length));

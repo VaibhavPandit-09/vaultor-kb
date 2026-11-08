@@ -14,7 +14,7 @@ function bundledHelp() {
       for (const article of catalogue.articles) files[article.path] = readFileSync(new URL(article.path, helpRoot), 'utf8')
       const hashes = Object.fromEntries(Object.entries(files).map(([path, content]) => [path, createHash('sha256').update(content).digest('hex')]))
       for (const [path, source] of Object.entries(files)) this.emitFile({ type: 'asset' as const, fileName: 'help/' + path, source })
-      this.emitFile({ type: 'asset' as const, fileName: 'help/provenance.json', source: JSON.stringify({ schemaVersion: 1, reviewed: catalogue.reviewed, hashes }) })
+      this.emitFile({ type: 'asset' as const, fileName: 'help/provenance.json', source: JSON.stringify({ schemaVersion: 1, contentVersion: catalogue.contentVersion, reviewed: catalogue.reviewed, hashes }) })
     }
   } satisfies import('vite').Plugin
 }
