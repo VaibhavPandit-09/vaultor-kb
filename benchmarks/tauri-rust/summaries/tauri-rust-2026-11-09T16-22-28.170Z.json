@@ -1,0 +1,538 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "1b197d1c3cabe0d07ef0ef54031c218e3ca9e5e3",
+  "dirty": true,
+  "executableSha256": "d3b6a583f0a551b156cd046d37f7b25b7405f2f2a54e1513ae7265588d74ed46",
+  "timestamp": "2026-11-09T16:22:28.239Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 797.4946,
+      "median": 797.4946,
+      "p95": 797.4946,
+      "max": 797.4946
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 27.69999998807907,
+      "median": 30.099999994039536,
+      "p95": 41.80000001192093,
+      "max": 41.80000001192093
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 12,
+      "min": 1.199999988079071,
+      "median": 2.2000000029802322,
+      "p95": 10.900000005960464,
+      "max": 10.900000005960464
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 2.900000000000091,
+      "median": 4.199999999999818,
+      "p95": 4.299999999999727,
+      "max": 4.300000000000182
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 0.25575308740951563,
+      "median": 0.25575308740951563,
+      "p95": 0.25575308740951563,
+      "max": 0.25575308740951563
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 320.06640625,
+      "median": 320.06640625,
+      "p95": 320.06640625,
+      "max": 320.06640625
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 229.15625,
+      "median": 229.15625,
+      "p95": 229.15625,
+      "max": 229.15625
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 510.34375,
+      "median": 510.34375,
+      "p95": 510.34375,
+      "max": 510.34375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 319.5390625,
+      "median": 319.5390625,
+      "p95": 319.5390625,
+      "max": 319.5390625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 229.15625,
+      "median": 229.15625,
+      "p95": 229.15625,
+      "max": 229.15625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "restart",
+      "iteration": 2,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 550.9996000000392,
+      "median": 550.9996000000392,
+      "p95": 550.9996000000392,
+      "max": 550.9996000000392
+    },
+    {
+      "scenario": "workload",
+      "iteration": 2,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 422.54296875,
+      "median": 422.54296875,
+      "p95": 422.54296875,
+      "max": 422.54296875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 422.54296875,
+      "median": 422.54296875,
+      "p95": 422.54296875,
+      "max": 422.54296875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 209.09765625,
+      "median": 209.09765625,
+      "p95": 209.09765625,
+      "max": 209.09765625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 14.627214978268137,
+      "median": 14.627214978268137,
+      "p95": 14.627214978268137,
+      "max": 14.627214978268137
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 0,
+      "metric": "managed_only_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 422.30859375,
+      "median": 422.30859375,
+      "p95": 422.30859375,
+      "max": 422.30859375
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 0,
+      "metric": "managed_only_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 208.84375,
+      "median": 208.84375,
+      "p95": 208.84375,
+      "max": 208.84375
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 0,
+      "metric": "managed_only_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 146.8984375,
+      "median": 146.8984375,
+      "p95": 146.8984375,
+      "max": 146.8984375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 29.80078125,
+      "median": 29.80078125,
+      "p95": 29.80078125,
+      "max": 29.80078125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 4.40234375,
+      "median": 4.40234375,
+      "p95": 4.40234375,
+      "max": 4.40234375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 6.015625,
+      "median": 6.015625,
+      "p95": 6.015625,
+      "max": 6.015625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 126.5078125,
+      "median": 126.5078125,
+      "p95": 126.5078125,
+      "max": 126.5078125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 31.3203125,
+      "median": 31.3203125,
+      "p95": 31.3203125,
+      "max": 31.3203125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 39.70703125,
+      "median": 39.70703125,
+      "p95": 39.70703125,
+      "max": 39.70703125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 83.8828125,
+      "median": 83.8828125,
+      "p95": 83.8828125,
+      "max": 83.8828125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 31.56640625,
+      "median": 31.56640625,
+      "p95": 31.56640625,
+      "max": 31.56640625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 42.7734375,
+      "median": 42.7734375,
+      "p95": 42.7734375,
+      "max": 42.7734375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 113.65234375,
+      "median": 113.65234375,
+      "p95": 113.65234375,
+      "max": 113.65234375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 67.63671875,
+      "median": 67.63671875,
+      "p95": 67.63671875,
+      "max": 67.63671875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 96.796875,
+      "median": 96.796875,
+      "p95": 96.796875,
+      "max": 96.796875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 58.65234375,
+      "median": 58.65234375,
+      "p95": 58.65234375,
+      "max": 58.65234375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.421875,
+      "median": 10.421875,
+      "p95": 10.421875,
+      "max": 10.421875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 20.9609375,
+      "median": 20.9609375,
+      "p95": 20.9609375,
+      "max": 20.9609375
+    },
+    {
+      "scenario": "linked-registration",
+      "iteration": 1,
+      "metric": "command_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 6.057900000014342,
+      "median": 6.057900000014342,
+      "p95": 6.057900000014342,
+      "max": 6.057900000014342
+    },
+    {
+      "scenario": "linked-pane-motion",
+      "iteration": 1,
+      "metric": "frame_interval",
+      "unit": "ms",
+      "n": 30,
+      "min": 4,
+      "median": 4.199999999999932,
+      "p95": 4.2999999999999545,
+      "max": 4.2999999999999545
+    },
+    {
+      "scenario": "qualification",
+      "iteration": 3,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 549.3620000000228,
+      "median": 549.3620000000228,
+      "p95": 549.3620000000228,
+      "max": 549.3620000000228
+    }
+  ],
+  "checks": [
+    "12 native text inputs saved and read back after process restart",
+    "100-note collection fixture created",
+    "Isolated fixture registered through domain; native folder picker passed in preceding run",
+    "Final review inline-text layout, settled light/dark/two-pane/reduced-motion captures, lazy directory pagination and nested keyboard Enter, normal close/restart"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes."
+  ],
+  "success": true,
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.42",
+    "revision": "@7b1486be4607d53d9f93841b7c776bc525ca74b7",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "linkedFixture": {
+    "smallBytes": 303,
+    "moderateBytes": 154701,
+    "largeBytes": 1048576,
+    "files": 110,
+    "metadataCorrection": "Recipe contains110 Markdown files and one nested directory; original111 counted that directory as a file."
+  },
+  "processBreakdown": [
+    {
+      "phase": "managed_only",
+      "timestamp": "2026-11-09T16:28:13.2134755Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 31248384,
+          "privateWorkingSet": 4616192,
+          "privateBytes": 6307840,
+          "cpuSeconds": 0.15625
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 132653056,
+          "privateWorkingSet": 32841728,
+          "privateBytes": 41635840,
+          "cpuSeconds": 1.046875
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 10289152,
+          "privateWorkingSet": 1626112,
+          "privateBytes": 2715648,
+          "cpuSeconds": 0.03125
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 119173120,
+          "privateWorkingSet": 70922240,
+          "privateBytes": 101498880,
+          "cpuSeconds": 0.21875
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 61501440,
+          "privateWorkingSet": 10928128,
+          "privateBytes": 21979136,
+          "cpuSeconds": 0.265625
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 87957504,
+          "privateWorkingSet": 33099776,
+          "privateBytes": 44851200,
+          "cpuSeconds": 0.140625
+        }
+      ]
+    }
+  ]
+}

@@ -118,8 +118,35 @@ if(m4Runs.length){
   comparison.getRange('A10:H10').format={fill:'#006B75',font:{name:'Arial',size:10,color:'#FFFFFF',bold:true},rowHeight:25};
   comparison.getRange('C11:D17').setNumberFormat('0.00');comparison.getRange('E11:E17').setNumberFormat('0.0%');
 }
+const m5Runs=normalized.filter(r=>r[2]==='m5-managed-notes-v1'&&r[14]==='Y');
+if(m5Runs.length){
+  let comparison;try{comparison=wb.worksheets.getItem('M4 vs M5');}catch{comparison=wb.worksheets.add('M4 vs M5');}
+  const baseline=normalized.findLast(r=>r[2]==='m4-managed-notes-v1'&&r[8]==='settled-idle-5min'&&r[14]==='Y');
+  const candidate=m5Runs.findLast(r=>r[8]==='settled-idle-5min')??m5Runs.at(-1);
+  comparison.showGridLines=false;
+  comparison.getRange('A2:H2').unmerge();comparison.getRange('A2:H2').merge();comparison.getRange('A2').values=[['Vaultor Next · M4 vs M5']];
+  comparison.getRange('A4:B8').values=[['M4 source',baseline?.[4]??'unmeasured'],['M5 source',candidate[4]],['Scenario','settled-idle-5min'],['Dataset',candidate[9]],['Device',candidate[5]]];
+  comparison.getRange('A10:H10').values=[['Metric','Unit','M4 mean','M5 mean','Change','M4 n','M5 n','Direction']];
+  const compareMetrics=[['cpu_one_core_percent','%'],['process_tree_working_set','MiB'],['process_tree_private_bytes','MiB'],['startup_usable','ms'],['note_open','ms'],['input_to_raf','ms'],['scroll_frame_interval','ms']];
+  comparison.getRange('A11:B17').values=compareMetrics;
+  for(let row=11;row<=17;row++){
+    const criteria=(source,experiment)=>`${range('D')},"tauri-rust",${range('E')},$B$${source},${range('C')},"${experiment}",${range('F')},$B$8,${range('I')},$B$6,${range('J')},$B$7,${range('L')},$A${row},${range('O')},"Y",${range('P')},"m1-cdp-v2"`;
+    const count=(s,e)=>`COUNTIFS(${criteria(s,e)})`;
+    const left=count(4,'m4-managed-notes-v1'),right=count(5,'m5-managed-notes-v1');
+    comparison.getRange(`C${row}:H${row}`).formulas=[[`=IF(${left}=0,"",SUMIFS(${range('M')},${criteria(4,'m4-managed-notes-v1')})/${left})`,`=IF(${right}=0,"",SUMIFS(${range('M')},${criteria(5,'m5-managed-notes-v1')})/${right})`,`=IF(COUNT(C${row}:D${row})<2,"",IF(C${row}=0,"",D${row}/C${row}-1))`,`=${left}`,`=${right}`,'']];
+    comparison.getRange(`H${row}`).values=[['lower']];
+  }
+  comparison.getRange('A19:H20').unmerge();comparison.getRange('A19:H20').merge();comparison.getRange('A19').values=[['Five-minute idle follows 30 seconds settling, one 64 KiB note and 100 resources. Change Scenario to managed-note-64k for editing proxies. M5 adds linked sources; this comparison keeps the common managed-note fixture. Linked workloads and accessibility-attached churn are separate. Small samples; no full-product claim.']];
+  comparison.getRange('A2:H20').format.font={name:'Arial',size:10,color:'#14333A'};
+  comparison.getRange('A2').format.font.size=14;
+  comparison.getRange('A4:A17').format.columnWidth=33;comparison.getRange('B4:B17').format.columnWidth=28;comparison.getRange('C10:H17').format.columnWidth=13;
+  comparison.getRange('B4:B8').format.wrapText=true;comparison.getRange('A4:H8').format.rowHeight=34;
+  comparison.getRange('A19:H20').format.wrapText=true;comparison.getRange('A19:H20').format.rowHeight=28;
+  comparison.getRange('A10:H10').format={fill:'#006B75',font:{name:'Arial',size:10,color:'#FFFFFF',bold:true},rowHeight:25};
+  comparison.getRange('C11:D17').setNumberFormat('0.00');comparison.getRange('E11:E17').setNumberFormat('0.0%');
+}
 protocol.getRange('B4').values = [['CSV is canonical and append-only. update-workbook.ps1 refreshes Raw Runs and applies appended invalidations.']];
-protocol.getRange('B13').values = [['Vaultor Next M1–M4 is experimental and unpublished. Legacy development databases are disposable; no migration or installer is required. Future release qualification needs separate authorization.']];
+protocol.getRange('B13').values = [['Vaultor Next M1–M5 is experimental and unpublished. Legacy development databases are disposable; no migration or installer is required. Future release qualification needs separate authorization.']];
 const parity = wb.worksheets.getItem('Parity Gates');
 parity.getRange('A9:F9').values = [['SQLite foundation','New isolated schema, ownership, atomic note saves and restart durability','Critical','M1 focused checks','docs/plans/VAULTOR-NEXT.md','New schema; no legacy migrations.']];
 parity.getRange('D5:F5').values = [['M1 vertical slice','benchmarks/tauri-rust/summaries/','Create/edit/save/reopen; full parity pending.']];
@@ -154,9 +181,29 @@ if(m4Runs.length){
  parity.getRange('D18:F18').values=[['M4 bundled','docs/help/next-foundation.md','Saved-text search, ordering, scope, cursor refresh and keyboard Help.']];
  scenarios.getRange('A28:E32').values=[['search-title-100','Search','Bench note 099;1 result','3 invoke samples;1 visible sample','Visible readiness includes220ms debounce'],['search-title-1000','Search','Search note;899 results','100 mounted summaries','Not a full-document frontend scan'],['search-content-5000','Search','nebula;489 results;collection Paragraph2','3 invoke samples;1 visible sample','Command includes IPC/SQL/serialization'],['search-rapid-5000','Search','Three replacements;latest Search note wins','Native input and rendered ready state','Mocked delayed replies additionally verify stale-result refusal'],['search-churn-5000','Retention','Two rounds,10 opens/panes/queries/pages,30+60s idle','No forcedGC','Different from M3 churn; no direct comparison']];
 }
+if(m5Runs.length){
+ parity.getRange('D6:F6').values=[['M5 scoped Windows','docs/plans/VAULTOR-NEXT.md','Explicit source-preserving Save, conflicts, interrupted evidence;local NTFS/subset limits.']];
+ parity.getRange('D7:F7').values=[['M2/M5 focused checks','docs/plans/VAULTOR-NEXT.md','Managed and linked durable drafts;uncertain source publication never replayed.']];
+ parity.getRange('D8:F8').values=[['M1/M5 focused checks','docs/plans/VAULTOR-NEXT.md','Exclusive workspace ownership;linked source roots cannot overlap workspace storage.']];
+ parity.getRange('D10:F10').values=[['M1–M5 focused checks','docs/plans/VAULTOR-NEXT.md','One Rust authority;no Java or permanent HTTP/helper backend.']];
+ parity.getRange('D4:F4').values=[['M5 scoped Windows inspection','docs/plans/VAULTOR-NEXT.md','Linked tree/editor/review and existing themes/panes; full refinement pending.']];
+ parity.getRange('D18:F18').values=[['M5 bundled','docs/help/next-foundation.md','Explicit linked Save, supported syntax/storage, conflict and recovery limits.']];
+ scenarios.getRange('A34:E38').values=[['linked-open-small/moderate/1mb-readonly','Linked reading','303 /154701 /1048576 bytes;UTF8','3 command samples,1–2 visible samples','Command versus native pointer+motion readiness boundaries differ'],['linked-save-small','Publication','Shared-pane edit;CRLF/BOM/frontmatter/reference preservation','Explicit Ctrl+S through verified receipt','No external autosave;candidate/capture safety tested separately'],['linked-m5-memory','Retention','Two mixed rounds then30+60s idle','Process-private resident/commit and summed working set','Accessibility attached;not equivalent to M4 managed-only idle'],['linked-m5-process-roles','Memory breakdown','Host/browser/renderer/GPU/utility','PerfProc private resident and CIM commit','Shared resident estimate is WS minus privateWS,not unique physical RAM'],['linked-pane-motion','Animation','Native pane transition rAF intervals','Supplemental presentation source','Not compositor or subjective whole-product parity']];
+}
+if(m5Runs.length){scenarios.getRange('A34:E38').format.wrapText=true;scenarios.getRange('A34:E38').format.rowHeight=64;for(const row of [4,6,7,8,10,18]){parity.getRange(`A${row}:F${row}`).format.wrapText=true;parity.getRange(`A${row}:F${row}`).format.rowHeight=58;}wb.worksheets.getItem('M4 vs M5').getRange('A7:H7').format.rowHeight=52;}
 const metricSheet = wb.worksheets.getItem('Metrics');
 metricSheet.getRange('A18:E29').values = metrics.map(m => [m,m.includes('percent')||m.endsWith('_pct')?'%':m.includes('set')||m.includes('bytes')||m.includes('mib')?'MiB':'ms','lower','M1 instrument; see repository benchmark README','Missing values remain blank']);
 wb.recalculate();
+if(m5Runs.length){
+ // Exercise the actual comparison formulas on a small disposable workbook, without recalculating unrelated historical sheets repeatedly.
+ const comparison=wb.worksheets.getItem('M4 vs M5'),controls=comparison.getRange('A4:B8').values;
+ const sources=[controls[0][1],controls[1][1]],dataset=controls[3][1],device=controls[4][1];
+ const qaRows=normalized.filter(r=>r[14]==='Y'&&sources.includes(r[4])&&r[9]===dataset&&r[5]===device&&r[8]==='managed-note-64k'&&r[11]==='note_open'&&['m4-managed-notes-v1','m5-managed-notes-v1'].includes(r[2]));
+ const qa=Workbook.create(),qRaw=qa.worksheets.add('Raw Runs'),q=qa.worksheets.add('M4 vs M5');qRaw.getRange('A5:R'+(qaRows.length+4)).values=qaRows;q.getRange('A4:B8').values=controls;q.getRange('A15:B15').values=comparison.getRange('A15:B15').values;q.getRange('C15:G15').formulas=comparison.getRange('C15:G15').formulas.map(row=>row.map(f=>f.replaceAll('$'+end,'$'+(qaRows.length+4))));
+ q.getRange('B6').values=[['managed-note-64k']];qa.recalculate();const values=q.getRange('C15:G15').values[0];
+ for(let i=0;i<2;i++){const matches=qaRows.filter(r=>r[4]===sources[i]),mean=matches.reduce((n,r)=>n+r[12],0)/matches.length;if(values[i+3]!==matches.length||Math.abs(values[i]-mean)>1e-6)throw Error('M4/M5 editing scenario mean/count mismatch');}
+ console.log('M4/M5 editing means/counts',values);q.getRange('B6').values=[['missing-scenario']];qa.recalculate();const missing=q.getRange('C15:G15').values[0];if(missing[0]!==''||missing[1]!==''||missing[3]!==0||missing[4]!==0)throw Error('Missing scenario must stay blank');console.log('Scenario/missing-data recalculation passed in disposable workbook; delivery default untouched.');
+}
 console.log((await wb.inspect({kind:'table',range:'Dashboard!A11:H23',include:'values',tableMaxRows:13,tableMaxCols:8,maxChars:2400})).ndjson);
 console.log((await wb.inspect({kind:'match',searchTerm:'#REF!|#DIV/0!|#VALUE!|#NAME\\?|#NUM!',options:{useRegex:true,maxResults:10},maxChars:1000})).ndjson);
 if(!process.argv.includes('--data-only')){
@@ -170,6 +217,7 @@ if(m2Runs.length){const image=await wb.render({sheetName:'M1 vs M2',range:'A2:H2
 if(m3Runs.length){const image=await wb.render({sheetName:'M2 vs M3',range:'A2:H20',scale:1});await fs.writeFile(join(root,'raw/workbook-M3.png'),new Uint8Array(await image.arrayBuffer()));console.log((await wb.inspect({kind:'table',range:'M2 vs M3!A10:H17',tableMaxRows:8,tableMaxCols:8,maxChars:1600})).ndjson);}
 if(m4Runs.length){const image=await wb.render({sheetName:'M3 vs M4',range:'A2:H20',scale:1});await fs.writeFile(join(root,'raw/workbook-M4.png'),new Uint8Array(await image.arrayBuffer()));console.log((await wb.inspect({kind:'table',range:'M3 vs M4!A10:H17',tableMaxRows:8,tableMaxCols:8,maxChars:1600})).ndjson);}
 }
+if(m5Runs.length){for(const [sheetName,range]of [['M4 vs M5','A2:H20'],['Scenarios','A34:E38'],['Parity Gates','A4:F10']]){const preview=await wb.render({sheetName,range,scale:1});await fs.writeFile(join(root,'raw','workbook-M5-'+sheetName.replaceAll(' ','-')+'.png'),new Uint8Array(await preview.arrayBuffer()));}console.log((await wb.inspect({kind:'table',range:'M4 vs M5!A10:H17',tableMaxRows:8,tableMaxCols:8,maxChars:1800})).ndjson);}
 await (await SpreadsheetFile.exportXlsx(wb)).save(path);
 await fs.mkdir(join(root,'summaries'),{recursive:true});
 for(const file of await fs.readdir(join(root,'raw'))) {
@@ -178,9 +226,11 @@ for(const file of await fs.readdir(join(root,'raw'))) {
   const report = JSON.parse(await fs.readFile(join(root,'raw',file),'utf8'));
   if(!report.architecture)continue;
   const {architecture,commit,dirty,executableSha256,timestamp,system,dataset,samples,checks,limitations,success,error,runtime,viewport,node,appVersion,instrument,churnRecipeSha256,openProfile} = report;
+  const linkedFixture=report.linkedFixture?.files===111?{...report.linkedFixture,files:110,metadataCorrection:'Recipe contains110 Markdown files and one nested directory; original111 counted that directory as a file.'}:report.linkedFixture;
+  const processBreakdown=report.breakdowns?.map(b=>({phase:b.phase,timestamp:b.timestamp,roles:Object.entries(Object.groupBy(b.processes,p=>p.role)).map(([role,ps])=>({role,processes:ps.length,...Object.fromEntries(['workingSet','privateWorkingSet','privateBytes','cpuSeconds'].map(k=>[k,ps.reduce((n,p)=>n+(p[k]??0),0)]))}))}));
   const groups=new Map();
   for(const sample of samples??[]) {const key=[sample.scenario,sample.iteration,sample.metric].join('/');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(sample);}
   const measurements=[...groups.values()].map(group=>{const first=group[0],values=group.map(s=>s.value).sort((a,b)=>a-b);return {scenario:first.scenario,iteration:first.iteration,metric:first.metric,unit:first.unit,n:values.length,min:values[0],median:(values[Math.floor((values.length-1)/2)]+values[Math.floor(values.length/2)])/2,p95:values[Math.ceil(values.length*.95)-1],max:values.at(-1)};});
-  await fs.writeFile(join(root,'summaries',basename(file)),JSON.stringify({architecture,commit,dirty,executableSha256,timestamp,system,dataset,measurements,checks,limitations,success,error,runtime,viewport,node,appVersion,instrument,churnRecipeSha256,openProfile},null,2)+'\n');
+  await fs.writeFile(join(root,'summaries',basename(file)),JSON.stringify({architecture,commit,dirty,executableSha256,timestamp,system,dataset,measurements,checks,limitations,success,error:report.linkedFixture&&error?error.split('\n')[0]:error,runtime,viewport,node,appVersion,instrument,churnRecipeSha256,openProfile,linkedFixture,processBreakdown},null,2)+'\n');
 }
 console.log(`Refreshed workbook from ${rows.length} canonical records; ${failures.size} invalidated runs.`);

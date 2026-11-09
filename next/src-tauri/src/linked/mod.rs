@@ -12,7 +12,9 @@ use uuid::Uuid;
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Request {
     Sources,
-    Web { url: String },
+    Web {
+        url: String,
+    },
     Register {
         path: String,
     },
@@ -716,9 +718,12 @@ impl Workspace {
 
 pub fn web_url(value: &str) -> Result<String, String> {
     let url = url::Url::parse(value).map_err(|_| "Invalid web link")?;
-    if !matches!(url.scheme(), "http" | "https") || url.host_str().is_none()
-        || !url.username().is_empty() || url.password().is_some()
-        || value.chars().any(|c| c.is_control()) {
+    if !matches!(url.scheme(), "http" | "https")
+        || url.host_str().is_none()
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || value.chars().any(|c| c.is_control())
+    {
         return Err("Only credential-free HTTP(S) web links can open externally".into());
     }
     Ok(url.into())

@@ -1,0 +1,2185 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "2d77f6b8fe9dc806e668dbe51ca73b5d95d57d03",
+  "dirty": true,
+  "executableSha256": "917750e5b7ced42dd0fd2ca87525749bda6b2f419531d50584ab1d8a67fc2b09",
+  "timestamp": "2026-11-09T16:16:58.876Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 702.496,
+      "median": 702.496,
+      "p95": 702.496,
+      "max": 702.496
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 66.09999999403954,
+      "median": 68.59999999403954,
+      "p95": 129.5,
+      "max": 129.5
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 12,
+      "min": 2.0999999940395355,
+      "median": 3.6499999910593033,
+      "p95": 21.5,
+      "max": 21.5
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 4.099999999999909,
+      "median": 8.299999999999727,
+      "p95": 8.399999999999636,
+      "max": 8.400000000000091
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 543.1953125,
+      "median": 543.1953125,
+      "p95": 543.1953125,
+      "max": 543.1953125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 542.265625,
+      "median": 542.265625,
+      "p95": 542.265625,
+      "max": 542.265625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 317.4140625,
+      "median": 317.4140625,
+      "p95": 317.4140625,
+      "max": 317.4140625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 86.89214463840399,
+      "median": 86.89214463840399,
+      "p95": 86.89214463840399,
+      "max": 86.89214463840399
+    },
+    {
+      "scenario": "restart",
+      "iteration": 2,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 871.9283999999989,
+      "median": 871.9283999999989,
+      "p95": 871.9283999999989,
+      "max": 871.9283999999989
+    },
+    {
+      "scenario": "workload",
+      "iteration": 2,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 447.375,
+      "median": 447.375,
+      "p95": 447.375,
+      "max": 447.375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 444.6484375,
+      "median": 444.6484375,
+      "p95": 444.6484375,
+      "max": 444.6484375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 225.2421875,
+      "median": 225.2421875,
+      "p95": 225.2421875,
+      "max": 225.2421875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 50.44843049327354,
+      "median": 50.44843049327354,
+      "p95": 50.44843049327354,
+      "max": 50.44843049327354
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 0,
+      "metric": "managed_only_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 447.44140625,
+      "median": 447.44140625,
+      "p95": 447.44140625,
+      "max": 447.44140625
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 0,
+      "metric": "managed_only_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 228.00390625,
+      "median": 228.00390625,
+      "p95": 228.00390625,
+      "max": 228.00390625
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 0,
+      "metric": "managed_only_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 162.94921875,
+      "median": 162.94921875,
+      "p95": 162.94921875,
+      "max": 162.94921875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 32.12890625,
+      "median": 32.12890625,
+      "p95": 32.12890625,
+      "max": 32.12890625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 4.703125,
+      "median": 4.703125,
+      "p95": 4.703125,
+      "max": 4.703125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 6.8828125,
+      "median": 6.8828125,
+      "p95": 6.8828125,
+      "max": 6.8828125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 141.5703125,
+      "median": 141.5703125,
+      "p95": 141.5703125,
+      "max": 141.5703125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 43.56640625,
+      "median": 43.56640625,
+      "p95": 43.56640625,
+      "max": 43.56640625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 54.76953125,
+      "median": 54.76953125,
+      "p95": 54.76953125,
+      "max": 54.76953125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 86.64453125,
+      "median": 86.64453125,
+      "p95": 86.64453125,
+      "max": 86.64453125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 33.33984375,
+      "median": 33.33984375,
+      "p95": 33.33984375,
+      "max": 33.33984375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 45.0390625,
+      "median": 45.0390625,
+      "p95": 45.0390625,
+      "max": 45.0390625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 118.71484375,
+      "median": 118.71484375,
+      "p95": 118.71484375,
+      "max": 118.71484375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 69.39453125,
+      "median": 69.39453125,
+      "p95": 69.39453125,
+      "max": 69.39453125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 98.796875,
+      "median": 98.796875,
+      "p95": 98.796875,
+      "max": 98.796875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 58.56640625,
+      "median": 58.56640625,
+      "p95": 58.56640625,
+      "max": 58.56640625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.39453125,
+      "median": 10.39453125,
+      "p95": 10.39453125,
+      "max": 10.39453125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 0,
+      "metric": "managed_only_utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.9296875,
+      "median": 19.9296875,
+      "p95": 19.9296875,
+      "max": 19.9296875
+    },
+    {
+      "scenario": "linked-registration",
+      "iteration": 1,
+      "metric": "command_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 8.184900000000198,
+      "median": 8.184900000000198,
+      "p95": 8.184900000000198,
+      "max": 8.184900000000198
+    },
+    {
+      "scenario": "linked-open-small",
+      "iteration": 1,
+      "metric": "command_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 13.282200000001467,
+      "median": 13.282200000001467,
+      "p95": 13.282200000001467,
+      "max": 13.282200000001467
+    },
+    {
+      "scenario": "linked-open-small",
+      "iteration": 2,
+      "metric": "command_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 9.18289999999979,
+      "median": 9.18289999999979,
+      "p95": 9.18289999999979,
+      "max": 9.18289999999979
+    },
+    {
+      "scenario": "linked-open-small",
+      "iteration": 3,
+      "metric": "command_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 8.030699999999342,
+      "median": 8.030699999999342,
+      "p95": 8.030699999999342,
+      "max": 8.030699999999342
+    },
+    {
+      "scenario": "linked-open-small",
+      "iteration": 1,
+      "metric": "visible_ready",
+      "unit": "ms",
+      "n": 2,
+      "min": 60.73609999999826,
+      "median": 107.31905000000006,
+      "p95": 153.90200000000186,
+      "max": 153.90200000000186
+    },
+    {
+      "scenario": "linked-open-moderate",
+      "iteration": 1,
+      "metric": "command_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 109.45370000000185,
+      "median": 109.45370000000185,
+      "p95": 109.45370000000185,
+      "max": 109.45370000000185
+    },
+    {
+      "scenario": "linked-open-moderate",
+      "iteration": 2,
+      "metric": "command_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 34.38090000000011,
+      "median": 34.38090000000011,
+      "p95": 34.38090000000011,
+      "max": 34.38090000000011
+    },
+    {
+      "scenario": "linked-open-moderate",
+      "iteration": 3,
+      "metric": "command_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 38.017500000001746,
+      "median": 38.017500000001746,
+      "p95": 38.017500000001746,
+      "max": 38.017500000001746
+    },
+    {
+      "scenario": "linked-open-moderate",
+      "iteration": 1,
+      "metric": "visible_ready",
+      "unit": "ms",
+      "n": 1,
+      "min": 177.86130000000048,
+      "median": 177.86130000000048,
+      "p95": 177.86130000000048,
+      "max": 177.86130000000048
+    },
+    {
+      "scenario": "linked-open-1mb-readonly",
+      "iteration": 1,
+      "metric": "command_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 257.60859999999957,
+      "median": 257.60859999999957,
+      "p95": 257.60859999999957,
+      "max": 257.60859999999957
+    },
+    {
+      "scenario": "linked-open-1mb-readonly",
+      "iteration": 2,
+      "metric": "command_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 106.88329999999769,
+      "median": 106.88329999999769,
+      "p95": 106.88329999999769,
+      "max": 106.88329999999769
+    },
+    {
+      "scenario": "linked-open-1mb-readonly",
+      "iteration": 3,
+      "metric": "command_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 88.26339999999982,
+      "median": 88.26339999999982,
+      "p95": 88.26339999999982,
+      "max": 88.26339999999982
+    },
+    {
+      "scenario": "linked-open-1mb-readonly",
+      "iteration": 1,
+      "metric": "visible_ready",
+      "unit": "ms",
+      "n": 1,
+      "min": 1235.4205000000002,
+      "median": 1235.4205000000002,
+      "p95": 1235.4205000000002,
+      "max": 1235.4205000000002
+    },
+    {
+      "scenario": "linked-edit-small",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 5,
+      "min": 4.300000011920929,
+      "median": 6.4000000059604645,
+      "p95": 17.399999976158142,
+      "max": 17.399999976158142
+    },
+    {
+      "scenario": "linked-save-small",
+      "iteration": 1,
+      "metric": "visible_receipt",
+      "unit": "ms",
+      "n": 1,
+      "min": 126.96080000000075,
+      "median": 126.96080000000075,
+      "p95": 126.96080000000075,
+      "max": 126.96080000000075
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 1,
+      "metric": "two_linked_panes_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 730.1953125,
+      "median": 730.1953125,
+      "p95": 730.1953125,
+      "max": 730.1953125
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 1,
+      "metric": "two_linked_panes_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 481.19921875,
+      "median": 481.19921875,
+      "p95": 481.19921875,
+      "max": 481.19921875
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 1,
+      "metric": "two_linked_panes_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 405.6484375,
+      "median": 405.6484375,
+      "p95": 405.6484375,
+      "max": 405.6484375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 33.19921875,
+      "median": 33.19921875,
+      "p95": 33.19921875,
+      "max": 33.19921875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.390625,
+      "median": 5.390625,
+      "p95": 5.390625,
+      "max": 5.390625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 8.32421875,
+      "median": 8.32421875,
+      "p95": 8.32421875,
+      "max": 8.32421875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 168.80078125,
+      "median": 168.80078125,
+      "p95": 168.80078125,
+      "max": 168.80078125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 56.1015625,
+      "median": 56.1015625,
+      "p95": 56.1015625,
+      "max": 56.1015625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 68.00390625,
+      "median": 68.00390625,
+      "p95": 68.00390625,
+      "max": 68.00390625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 262.16015625,
+      "median": 262.16015625,
+      "p95": 262.16015625,
+      "max": 262.16015625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 200.6484375,
+      "median": 200.6484375,
+      "p95": 200.6484375,
+      "max": 200.6484375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 218.19921875,
+      "median": 218.19921875,
+      "p95": 218.19921875,
+      "max": 218.19921875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 197.5078125,
+      "median": 197.5078125,
+      "p95": 197.5078125,
+      "max": 197.5078125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 131.5234375,
+      "median": 131.5234375,
+      "p95": 131.5234375,
+      "max": 131.5234375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 164.11328125,
+      "median": 164.11328125,
+      "p95": 164.11328125,
+      "max": 164.11328125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 58.7109375,
+      "median": 58.7109375,
+      "p95": 58.7109375,
+      "max": 58.7109375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.43359375,
+      "median": 10.43359375,
+      "p95": 10.43359375,
+      "max": 10.43359375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 1,
+      "metric": "two_linked_panes_utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.97265625,
+      "median": 19.97265625,
+      "p95": 19.97265625,
+      "max": 19.97265625
+    },
+    {
+      "scenario": "qualification",
+      "iteration": 3,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 864.4501000000018,
+      "median": 864.4501000000018,
+      "p95": 864.4501000000018,
+      "max": 864.4501000000018
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 2,
+      "metric": "before_churn_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 658.6484375,
+      "median": 658.6484375,
+      "p95": 658.6484375,
+      "max": 658.6484375
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 2,
+      "metric": "before_churn_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 441.15234375,
+      "median": 441.15234375,
+      "p95": 441.15234375,
+      "max": 441.15234375
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 2,
+      "metric": "before_churn_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 377.8125,
+      "median": 377.8125,
+      "p95": 377.8125,
+      "max": 377.8125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 32.89453125,
+      "median": 32.89453125,
+      "p95": 32.89453125,
+      "max": 32.89453125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 4.9765625,
+      "median": 4.9765625,
+      "p95": 4.9765625,
+      "max": 4.9765625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 6.72265625,
+      "median": 6.72265625,
+      "p95": 6.72265625,
+      "max": 6.72265625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 121.59375,
+      "median": 121.59375,
+      "p95": 121.59375,
+      "max": 121.59375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 39.54296875,
+      "median": 39.54296875,
+      "p95": 39.54296875,
+      "max": 39.54296875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 47.41015625,
+      "median": 47.41015625,
+      "p95": 47.41015625,
+      "max": 47.41015625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 136.6953125,
+      "median": 136.6953125,
+      "p95": 136.6953125,
+      "max": 136.6953125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 76.00390625,
+      "median": 76.00390625,
+      "p95": 76.00390625,
+      "max": 76.00390625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 88.86328125,
+      "median": 88.86328125,
+      "p95": 88.86328125,
+      "max": 88.86328125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 299.37890625,
+      "median": 299.37890625,
+      "p95": 299.37890625,
+      "max": 299.37890625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 245.55078125,
+      "median": 245.55078125,
+      "p95": 245.55078125,
+      "max": 245.55078125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 275.8359375,
+      "median": 275.8359375,
+      "p95": 275.8359375,
+      "max": 275.8359375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 58.2578125,
+      "median": 58.2578125,
+      "p95": 58.2578125,
+      "max": 58.2578125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.1796875,
+      "median": 10.1796875,
+      "p95": 10.1796875,
+      "max": 10.1796875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 2,
+      "metric": "before_churn_utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.72265625,
+      "median": 19.72265625,
+      "p95": 19.72265625,
+      "max": 19.72265625
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 3,
+      "metric": "round_1_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 737,
+      "median": 737,
+      "p95": 737,
+      "max": 737
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 3,
+      "metric": "round_1_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 516.6484375,
+      "median": 516.6484375,
+      "p95": 516.6484375,
+      "max": 516.6484375
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 3,
+      "metric": "round_1_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 453.640625,
+      "median": 453.640625,
+      "p95": 453.640625,
+      "max": 453.640625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 33.27734375,
+      "median": 33.27734375,
+      "p95": 33.27734375,
+      "max": 33.27734375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.359375,
+      "median": 5.359375,
+      "p95": 5.359375,
+      "max": 5.359375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 7.13671875,
+      "median": 7.13671875,
+      "p95": 7.13671875,
+      "max": 7.13671875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 130.5078125,
+      "median": 130.5078125,
+      "p95": 130.5078125,
+      "max": 130.5078125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 48.14453125,
+      "median": 48.14453125,
+      "p95": 48.14453125,
+      "max": 48.14453125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 56.078125,
+      "median": 56.078125,
+      "p95": 56.078125,
+      "max": 56.078125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 205.31640625,
+      "median": 205.31640625,
+      "p95": 205.31640625,
+      "max": 205.31640625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 142.6640625,
+      "median": 142.6640625,
+      "p95": 142.6640625,
+      "max": 142.6640625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 155.15234375,
+      "median": 155.15234375,
+      "p95": 155.15234375,
+      "max": 155.15234375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 299.8046875,
+      "median": 299.8046875,
+      "p95": 299.8046875,
+      "max": 299.8046875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 245.734375,
+      "median": 245.734375,
+      "p95": 245.734375,
+      "max": 245.734375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 275.9609375,
+      "median": 275.9609375,
+      "p95": 275.9609375,
+      "max": 275.9609375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 58.265625,
+      "median": 58.265625,
+      "p95": 58.265625,
+      "max": 58.265625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.1796875,
+      "median": 10.1796875,
+      "p95": 10.1796875,
+      "max": 10.1796875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 3,
+      "metric": "round_1_utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.72265625,
+      "median": 19.72265625,
+      "p95": 19.72265625,
+      "max": 19.72265625
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 4,
+      "metric": "round_2_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 706.9453125,
+      "median": 706.9453125,
+      "p95": 706.9453125,
+      "max": 706.9453125
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 4,
+      "metric": "round_2_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 470.078125,
+      "median": 470.078125,
+      "p95": 470.078125,
+      "max": 470.078125
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 4,
+      "metric": "round_2_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 396.890625,
+      "median": 396.890625,
+      "p95": 396.890625,
+      "max": 396.890625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 33.19140625,
+      "median": 33.19140625,
+      "p95": 33.19140625,
+      "max": 33.19140625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.2734375,
+      "median": 5.2734375,
+      "p95": 5.2734375,
+      "max": 5.2734375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 7.125,
+      "median": 7.125,
+      "p95": 7.125,
+      "max": 7.125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 159.859375,
+      "median": 159.859375,
+      "p95": 159.859375,
+      "max": 159.859375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 53.16015625,
+      "median": 53.16015625,
+      "p95": 53.16015625,
+      "max": 53.16015625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 69.96484375,
+      "median": 69.96484375,
+      "p95": 69.96484375,
+      "max": 69.96484375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 224.25390625,
+      "median": 224.25390625,
+      "p95": 224.25390625,
+      "max": 224.25390625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 161.5390625,
+      "median": 161.5390625,
+      "p95": 161.5390625,
+      "max": 161.5390625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 173.35546875,
+      "median": 173.35546875,
+      "p95": 173.35546875,
+      "max": 173.35546875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 221.2109375,
+      "median": 221.2109375,
+      "p95": 221.2109375,
+      "max": 221.2109375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 164.94921875,
+      "median": 164.94921875,
+      "p95": 164.94921875,
+      "max": 164.94921875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 197.0859375,
+      "median": 197.0859375,
+      "p95": 197.0859375,
+      "max": 197.0859375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 58.60546875,
+      "median": 58.60546875,
+      "p95": 58.60546875,
+      "max": 58.60546875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.41015625,
+      "median": 10.41015625,
+      "p95": 10.41015625,
+      "max": 10.41015625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 4,
+      "metric": "round_2_utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.94921875,
+      "median": 19.94921875,
+      "p95": 19.94921875,
+      "max": 19.94921875
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 5,
+      "metric": "idle_start_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 563.87890625,
+      "median": 563.87890625,
+      "p95": 563.87890625,
+      "max": 563.87890625
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 5,
+      "metric": "idle_start_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 317.23828125,
+      "median": 317.23828125,
+      "p95": 317.23828125,
+      "max": 317.23828125
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 5,
+      "metric": "idle_start_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 255.15625,
+      "median": 255.15625,
+      "p95": 255.15625,
+      "max": 255.15625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 33.1875,
+      "median": 33.1875,
+      "p95": 33.1875,
+      "max": 33.1875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.2734375,
+      "median": 5.2734375,
+      "p95": 5.2734375,
+      "max": 5.2734375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 7.12890625,
+      "median": 7.12890625,
+      "p95": 7.12890625,
+      "max": 7.12890625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 154.6328125,
+      "median": 154.6328125,
+      "p95": 154.6328125,
+      "max": 154.6328125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 55.0625,
+      "median": 55.0625,
+      "p95": 55.0625,
+      "max": 55.0625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 63.734375,
+      "median": 63.734375,
+      "p95": 63.734375,
+      "max": 63.734375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 148.6953125,
+      "median": 148.6953125,
+      "p95": 148.6953125,
+      "max": 148.6953125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 85.97265625,
+      "median": 85.97265625,
+      "p95": 85.97265625,
+      "max": 85.97265625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 96.734375,
+      "median": 96.734375,
+      "p95": 96.734375,
+      "max": 96.734375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 150.359375,
+      "median": 150.359375,
+      "p95": 150.359375,
+      "max": 150.359375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 96.4375,
+      "median": 96.4375,
+      "p95": 96.4375,
+      "max": 96.4375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 126.21875,
+      "median": 126.21875,
+      "p95": 126.21875,
+      "max": 126.21875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 58.5703125,
+      "median": 58.5703125,
+      "p95": 58.5703125,
+      "max": 58.5703125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.3359375,
+      "median": 10.3359375,
+      "p95": 10.3359375,
+      "max": 10.3359375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 5,
+      "metric": "idle_start_utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.91015625,
+      "median": 19.91015625,
+      "p95": 19.91015625,
+      "max": 19.91015625
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 6,
+      "metric": "idle_end_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 548.453125,
+      "median": 548.453125,
+      "p95": 548.453125,
+      "max": 548.453125
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 6,
+      "metric": "idle_end_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 301.17578125,
+      "median": 301.17578125,
+      "p95": 301.17578125,
+      "max": 301.17578125
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 6,
+      "metric": "idle_end_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 240.23828125,
+      "median": 240.23828125,
+      "p95": 240.23828125,
+      "max": 240.23828125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 33.12890625,
+      "median": 33.12890625,
+      "p95": 33.12890625,
+      "max": 33.12890625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.2109375,
+      "median": 5.2109375,
+      "p95": 5.2109375,
+      "max": 5.2109375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 7.015625,
+      "median": 7.015625,
+      "p95": 7.015625,
+      "max": 7.015625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 155.78125,
+      "median": 155.78125,
+      "p95": 155.78125,
+      "max": 155.78125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 51.984375,
+      "median": 51.984375,
+      "p95": 51.984375,
+      "max": 51.984375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 60.01171875,
+      "median": 60.01171875,
+      "p95": 60.01171875,
+      "max": 60.01171875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 138.890625,
+      "median": 138.890625,
+      "p95": 138.890625,
+      "max": 138.890625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 76.2734375,
+      "median": 76.2734375,
+      "p95": 76.2734375,
+      "max": 76.2734375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 87.1484375,
+      "median": 87.1484375,
+      "p95": 87.1484375,
+      "max": 87.1484375
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 149.296875,
+      "median": 149.296875,
+      "p95": 149.296875,
+      "max": 149.296875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 95.15625,
+      "median": 95.15625,
+      "p95": 95.15625,
+      "max": 95.15625
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 124.546875,
+      "median": 124.546875,
+      "p95": 124.546875,
+      "max": 124.546875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 58.67578125,
+      "median": 58.67578125,
+      "p95": 58.67578125,
+      "max": 58.67578125
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 9.79296875,
+      "median": 9.79296875,
+      "p95": 9.79296875,
+      "max": 9.79296875
+    },
+    {
+      "scenario": "linked-m5-process-roles",
+      "iteration": 6,
+      "metric": "idle_end_utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.28125,
+      "median": 19.28125,
+      "p95": 19.28125,
+      "max": 19.28125
+    },
+    {
+      "scenario": "linked-m5-memory",
+      "iteration": 6,
+      "metric": "idle_cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 32.60834773702068,
+      "median": 32.60834773702068,
+      "p95": 32.60834773702068,
+      "max": 32.60834773702068
+    },
+    {
+      "scenario": "qualification",
+      "iteration": 4,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 752.7776999999915,
+      "median": 752.7776999999915,
+      "p95": 752.7776999999915,
+      "max": 752.7776999999915
+    }
+  ],
+  "checks": [
+    "12 native text inputs saved and read back after process restart",
+    "100-note collection fixture created",
+    "Isolated fixture registered through domain; native folder picker passed in preceding run",
+    "Lazy NTFS tree, small/moderate rich editor and1MiB/unsupported read-only source views",
+    "Shared two-pane typing, no external autosave, explicit byte-exact Save/no-op timestamp, real competing writer refused",
+    "Protected conflict taskkill/recovery/restore/discard, relative Unicode/space link, unavailable source, registration-only removal/restart",
+    "Managed/linked switching, light/dark/reduced-motion native surfaces and bundled Help; bounded two-round memory session"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes."
+  ],
+  "success": true,
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.42",
+    "revision": "@7b1486be4607d53d9f93841b7c776bc525ca74b7",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "linkedFixture": {
+    "smallBytes": 303,
+    "moderateBytes": 154701,
+    "largeBytes": 1048576,
+    "files": 110,
+    "metadataCorrection": "Recipe contains110 Markdown files and one nested directory; original111 counted that directory as a file."
+  },
+  "processBreakdown": [
+    {
+      "phase": "managed_only",
+      "timestamp": "2026-11-09T16:17:14.7467477Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 33689600,
+          "privateWorkingSet": 4931584,
+          "privateBytes": 7217152,
+          "cpuSeconds": 0.65625
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 148447232,
+          "privateWorkingSet": 45682688,
+          "privateBytes": 57430016,
+          "cpuSeconds": 3.1875
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 10293248,
+          "privateWorkingSet": 1626112,
+          "privateBytes": 2711552,
+          "cpuSeconds": 0.03125
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 124481536,
+          "privateWorkingSet": 72765440,
+          "privateBytes": 103596032,
+          "cpuSeconds": 0.375
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 61411328,
+          "privateWorkingSet": 10899456,
+          "privateBytes": 20897792,
+          "cpuSeconds": 0.34375
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 90853376,
+          "privateWorkingSet": 34959360,
+          "privateBytes": 47226880,
+          "cpuSeconds": 0.3125
+        }
+      ]
+    },
+    {
+      "phase": "two_linked_panes",
+      "timestamp": "2026-11-09T16:17:20.3310495Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34811904,
+          "privateWorkingSet": 5652480,
+          "privateBytes": 8728576,
+          "cpuSeconds": 1.046875
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 177000448,
+          "privateWorkingSet": 58826752,
+          "privateBytes": 71307264,
+          "cpuSeconds": 6.953125
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 10293248,
+          "privateWorkingSet": 1626112,
+          "privateBytes": 2711552,
+          "cpuSeconds": 0.03125
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 207101952,
+          "privateWorkingSet": 137912320,
+          "privateBytes": 172085248,
+          "cpuSeconds": 1.015625
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 61562880,
+          "privateWorkingSet": 10940416,
+          "privateBytes": 20942848,
+          "cpuSeconds": 0.390625
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 274894848,
+          "privateWorkingSet": 210395136,
+          "privateBytes": 228798464,
+          "cpuSeconds": 3.546875
+        }
+      ]
+    },
+    {
+      "phase": "before_churn",
+      "timestamp": "2026-11-09T16:17:25.2959364Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34492416,
+          "privateWorkingSet": 5218304,
+          "privateBytes": 7049216,
+          "cpuSeconds": 0.3125
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 127500288,
+          "privateWorkingSet": 41463808,
+          "privateBytes": 49713152,
+          "cpuSeconds": 1.828125
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 10305536,
+          "privateWorkingSet": 1634304,
+          "privateBytes": 2723840,
+          "cpuSeconds": 0.03125
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 313921536,
+          "privateWorkingSet": 257478656,
+          "privateBytes": 289234944,
+          "cpuSeconds": 0.8125
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 61087744,
+          "privateWorkingSet": 10674176,
+          "privateBytes": 20680704,
+          "cpuSeconds": 0.390625
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 143335424,
+          "privateWorkingSet": 79695872,
+          "privateBytes": 93179904,
+          "cpuSeconds": 1.015625
+        }
+      ]
+    },
+    {
+      "phase": "round_1",
+      "timestamp": "2026-11-09T16:17:29.3385107Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34893824,
+          "privateWorkingSet": 5619712,
+          "privateBytes": 7483392,
+          "cpuSeconds": 0.46875
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 136847360,
+          "privateWorkingSet": 50483200,
+          "privateBytes": 58802176,
+          "cpuSeconds": 4.34375
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 10305536,
+          "privateWorkingSet": 1634304,
+          "privateBytes": 2723840,
+          "cpuSeconds": 0.03125
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 314368000,
+          "privateWorkingSet": 257671168,
+          "privateBytes": 289366016,
+          "cpuSeconds": 1.109375
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 61095936,
+          "privateWorkingSet": 10674176,
+          "privateBytes": 20680704,
+          "cpuSeconds": 0.40625
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 215289856,
+          "privateWorkingSet": 149594112,
+          "privateBytes": 162689024,
+          "cpuSeconds": 3.078125
+        }
+      ]
+    },
+    {
+      "phase": "round_2",
+      "timestamp": "2026-11-09T16:17:33.3432408Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34803712,
+          "privateWorkingSet": 5529600,
+          "privateBytes": 7471104,
+          "cpuSeconds": 0.703125
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 167624704,
+          "privateWorkingSet": 55742464,
+          "privateBytes": 73363456,
+          "cpuSeconds": 7.640625
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 10301440,
+          "privateWorkingSet": 1634304,
+          "privateBytes": 2723840,
+          "cpuSeconds": 0.03125
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 231956480,
+          "privateWorkingSet": 172961792,
+          "privateBytes": 206659584,
+          "cpuSeconds": 1.40625
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 61452288,
+          "privateWorkingSet": 10915840,
+          "privateBytes": 20918272,
+          "cpuSeconds": 0.4375
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 235147264,
+          "privateWorkingSet": 169385984,
+          "privateBytes": 181776384,
+          "cpuSeconds": 4.96875
+        }
+      ]
+    },
+    {
+      "phase": "idle_start",
+      "timestamp": "2026-11-09T16:18:04.8201817Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34799616,
+          "privateWorkingSet": 5529600,
+          "privateBytes": 7475200,
+          "cpuSeconds": 1.359375
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 162144256,
+          "privateWorkingSet": 57737216,
+          "privateBytes": 66830336,
+          "cpuSeconds": 16.890625
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 19329024,
+          "privateWorkingSet": 2174976,
+          "privateBytes": 3682304,
+          "cpuSeconds": 0.046875
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 157663232,
+          "privateWorkingSet": 101122048,
+          "privateBytes": 132349952,
+          "cpuSeconds": 1.71875
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 61415424,
+          "privateWorkingSet": 10838016,
+          "privateBytes": 20877312,
+          "cpuSeconds": 0.4375
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 155918336,
+          "privateWorkingSet": 90148864,
+          "privateBytes": 101433344,
+          "cpuSeconds": 5.234375
+        }
+      ]
+    },
+    {
+      "phase": "idle_end",
+      "timestamp": "2026-11-09T16:19:07.3049050Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34738176,
+          "privateWorkingSet": 5464064,
+          "privateBytes": 7356416,
+          "cpuSeconds": 2.8125
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 163348480,
+          "privateWorkingSet": 54509568,
+          "privateBytes": 62926848,
+          "cpuSeconds": 35.453125
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 13295616,
+          "privateWorkingSet": 1908736,
+          "privateBytes": 3325952,
+          "cpuSeconds": 0.046875
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 156549120,
+          "privateWorkingSet": 99778560,
+          "privateBytes": 130596864,
+          "cpuSeconds": 2.046875
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 61526016,
+          "privateWorkingSet": 10268672,
+          "privateBytes": 20217856,
+          "cpuSeconds": 0.453125
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 145637376,
+          "privateWorkingSet": 79978496,
+          "privateBytes": 91381760,
+          "cpuSeconds": 5.25
+        }
+      ]
+    }
+  ]
+}

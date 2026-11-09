@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-11-09. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-11-10. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -479,9 +479,9 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
-### 2026-11-09 — M5 linked external Markdown
+### 2026-11-10 — M5 linked external Markdown
 
-Added linked NTFS registration/tree, shared source-preserving editing, explicit revision-checked publication and durable conflict/interruption review, with independent Rust filesystem and Markdown modules. Experimental Help/catalogue and the migration tracker distinguish these bounds from published Electron behavior. Seven new Rust checks pass; final native/build/benchmark outcomes follow in the tracker. No published version, installer or platform qualification changes.
+Added linked NTFS registration/tree, shared source-preserving editing, explicit revision-checked publication and durable conflict/interruption review, with independent Rust filesystem and Markdown modules. Experimental Help/catalogue and the migration tracker distinguish these bounds from published Electron behavior. Validation: Rust17/17, focused frontend21/21, TypeScript/scoped lint, Help validation/17governance checks and optimized Windows build pass. Actual native acceptance covers the picker, explicit source-preserving Save/conflicts/recovery, panes, directory paging/keyboard, themes and restart. Fresh five-minute CPU0.256%, working set320.1MiB, private229.2MiB; the tracker records source hashes, accessibility-sensitive observations and limitations. No published version, installer or platform qualification changes.
 
 
 ### 2026-11-09 — M4 indexed search and opening work

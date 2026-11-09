@@ -14,10 +14,19 @@ pub const MAX_BYTES: u64 = 1024 * 1024;
 pub fn open_web(url: &str) -> Result<(), String> {
     let verb: Vec<u16> = "open".encode_utf16().chain(Some(0)).collect();
     let target: Vec<u16> = url.encode_utf16().chain(Some(0)).collect();
-    let result = unsafe { windows_sys::Win32::UI::Shell::ShellExecuteW(
-        ptr::null_mut(), verb.as_ptr(), target.as_ptr(), ptr::null(), ptr::null(), 1
-    ) } as isize;
-    if result <= 32 { return Err("System browser dispatch failed".into()); }
+    let result = unsafe {
+        windows_sys::Win32::UI::Shell::ShellExecuteW(
+            ptr::null_mut(),
+            verb.as_ptr(),
+            target.as_ptr(),
+            ptr::null(),
+            ptr::null(),
+            1,
+        )
+    } as isize;
+    if result <= 32 {
+        return Err("System browser dispatch failed".into());
+    }
     Ok(())
 }
 fn err() -> String {

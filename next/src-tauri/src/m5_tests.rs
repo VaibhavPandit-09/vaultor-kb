@@ -357,6 +357,23 @@ fn replaced_missing_readonly_streams_and_real_junction_refuse_publication() {
         .unwrap();
     assert_eq!(doc["editable"], false);
     assert!(doc["reason"].as_str().unwrap().contains("Alternate"));
+    fs::hard_link(
+        outside.path().join("external.md"),
+        source.path().join("alias.md"),
+    )
+    .unwrap();
+    let alias = w
+        .linked(L::Open {
+            source: root.clone(),
+            path: "alias.md".into(),
+        })
+        .unwrap();
+    assert_eq!(alias["editable"], false);
+    assert!(alias["reason"].as_str().unwrap().contains("hardlinks"));
+    assert_eq!(
+        fs::read_to_string(outside.path().join("external.md")).unwrap(),
+        "untouched"
+    );
     let file = source.path().join("old.md");
     fs::write(&file, "Old\n").unwrap();
     let doc = w
