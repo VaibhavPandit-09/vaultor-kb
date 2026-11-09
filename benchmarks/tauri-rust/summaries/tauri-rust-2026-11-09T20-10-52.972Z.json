@@ -1,0 +1,453 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "ffc49797fc87a413c47f82355c44c1fe15aeac7b",
+  "dirty": true,
+  "executableSha256": "6482080678eb31fb0cea4cb8d01766606c015094844b41184401639e638f991d",
+  "timestamp": "2026-11-09T20:10:53.043Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 544.0343,
+      "median": 544.0343,
+      "p95": 544.0343,
+      "max": 544.0343
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 31.599999994039536,
+      "median": 32,
+      "p95": 41.30000001192093,
+      "max": 41.30000001192093
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 12,
+      "min": 3.4000000059604645,
+      "median": 4.800000011920929,
+      "p95": 17.900000005960464,
+      "max": 17.900000005960464
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 4,
+      "median": 4.199999999999818,
+      "p95": 4.200000000000273,
+      "max": 8.5
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 619.046875,
+      "median": 619.046875,
+      "p95": 619.046875,
+      "max": 619.046875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 618.39453125,
+      "median": 618.39453125,
+      "p95": 618.39453125,
+      "max": 618.39453125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 399.3359375,
+      "median": 399.3359375,
+      "p95": 399.3359375,
+      "max": 399.3359375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 10.416666666666666,
+      "median": 10.416666666666666,
+      "p95": 10.416666666666666,
+      "max": 10.416666666666666
+    },
+    {
+      "scenario": "restart",
+      "iteration": 2,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 548.4446000000007,
+      "median": 548.4446000000007,
+      "p95": 548.4446000000007,
+      "max": 548.4446000000007
+    },
+    {
+      "scenario": "workload",
+      "iteration": 2,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 426.203125,
+      "median": 426.203125,
+      "p95": 426.203125,
+      "max": 426.203125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 425.50390625,
+      "median": 425.50390625,
+      "p95": 425.50390625,
+      "max": 425.50390625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 228.203125,
+      "median": 228.203125,
+      "p95": 228.203125,
+      "max": 228.203125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 1.0915123995808593,
+      "median": 1.0915123995808593,
+      "p95": 1.0915123995808593,
+      "max": 1.0915123995808593
+    },
+    {
+      "scenario": "desktop-navigation-m6",
+      "iteration": 1,
+      "metric": "mounted_ready",
+      "unit": "ms",
+      "n": 1,
+      "min": 63.29999998211861,
+      "median": 63.29999998211861,
+      "p95": 63.29999998211861,
+      "max": 63.29999998211861
+    },
+    {
+      "scenario": "desktop-navigation-m6",
+      "iteration": 1,
+      "metric": "transition_complete",
+      "unit": "ms",
+      "n": 1,
+      "min": 287.5,
+      "median": 287.5,
+      "p95": 287.5,
+      "max": 287.5
+    },
+    {
+      "scenario": "desktop-navigation-m6",
+      "iteration": 2,
+      "metric": "mounted_ready",
+      "unit": "ms",
+      "n": 1,
+      "min": 24.599999994039536,
+      "median": 24.599999994039536,
+      "p95": 24.599999994039536,
+      "max": 24.599999994039536
+    },
+    {
+      "scenario": "desktop-navigation-m6",
+      "iteration": 2,
+      "metric": "transition_complete",
+      "unit": "ms",
+      "n": 1,
+      "min": 245.89999997615814,
+      "median": 245.89999997615814,
+      "p95": 245.89999997615814,
+      "max": 245.89999997615814
+    },
+    {
+      "scenario": "desktop-navigation-m6",
+      "iteration": 3,
+      "metric": "mounted_ready",
+      "unit": "ms",
+      "n": 1,
+      "min": 27.099999994039536,
+      "median": 27.099999994039536,
+      "p95": 27.099999994039536,
+      "max": 27.099999994039536
+    },
+    {
+      "scenario": "desktop-navigation-m6",
+      "iteration": 3,
+      "metric": "transition_complete",
+      "unit": "ms",
+      "n": 1,
+      "min": 248,
+      "median": 248,
+      "p95": 248,
+      "max": 248
+    },
+    {
+      "scenario": "desktop-pane-motion-m6",
+      "iteration": 1,
+      "metric": "frame_interval",
+      "unit": "ms",
+      "n": 90,
+      "min": 4,
+      "median": 4.199999999999818,
+      "p95": 4.300000000000182,
+      "max": 8.300000000000182
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 0,
+      "metric": "two_panes_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 668.44140625,
+      "median": 668.44140625,
+      "p95": 668.44140625,
+      "max": 668.44140625
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 0,
+      "metric": "two_panes_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 453.21875,
+      "median": 453.21875,
+      "p95": 453.21875,
+      "max": 453.21875
+    },
+    {
+      "scenario": "desktop-sidebar-motion-m6",
+      "iteration": 1,
+      "metric": "frame_interval",
+      "unit": "ms",
+      "n": 90,
+      "min": 3.899999999999636,
+      "median": 4.199999999999818,
+      "p95": 8.399999999999636,
+      "max": 8.400000000000546
+    },
+    {
+      "scenario": "qualification",
+      "iteration": 3,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 543.0597999999991,
+      "median": 543.0597999999991,
+      "p95": 543.0597999999991,
+      "max": 543.0597999999991
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 1,
+      "metric": "before_churn_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 634.58203125,
+      "median": 634.58203125,
+      "p95": 634.58203125,
+      "max": 634.58203125
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 1,
+      "metric": "before_churn_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 423.73828125,
+      "median": 423.73828125,
+      "p95": 423.73828125,
+      "max": 423.73828125
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 2,
+      "metric": "round_1_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 705.44921875,
+      "median": 705.44921875,
+      "p95": 705.44921875,
+      "max": 705.44921875
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 2,
+      "metric": "round_1_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 475.34765625,
+      "median": 475.34765625,
+      "p95": 475.34765625,
+      "max": 475.34765625
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 3,
+      "metric": "round_2_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 744.59765625,
+      "median": 744.59765625,
+      "p95": 744.59765625,
+      "max": 744.59765625
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 3,
+      "metric": "round_2_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 514.859375,
+      "median": 514.859375,
+      "p95": 514.859375,
+      "max": 514.859375
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 4,
+      "metric": "idle_start_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 634.79296875,
+      "median": 634.79296875,
+      "p95": 634.79296875,
+      "max": 634.79296875
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 4,
+      "metric": "idle_start_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 396.8671875,
+      "median": 396.8671875,
+      "p95": 396.8671875,
+      "max": 396.8671875
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 5,
+      "metric": "idle_end_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 623.28515625,
+      "median": 623.28515625,
+      "p95": 623.28515625,
+      "max": 623.28515625
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 5,
+      "metric": "idle_end_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 391.97265625,
+      "median": 391.97265625,
+      "p95": 391.97265625,
+      "max": 391.97265625
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 5,
+      "metric": "idle_cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 0.6396872185376239,
+      "median": 0.6396872185376239,
+      "p95": 0.6396872185376239,
+      "max": 0.6396872185376239
+    }
+  ],
+  "checks": [
+    "12 native text inputs saved and read back after process restart",
+    "100-note collection fixture created"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes.",
+    "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs."
+  ],
+  "success": false,
+  "error": "Error: invalid args `value` for command `set_size`: invalid value: map, expected map with a single key",
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.42",
+    "revision": "@7b1486be4607d53d9f93841b7c776bc525ca74b7",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "oled"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2"
+}

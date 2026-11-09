@@ -1,0 +1,326 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "ffc49797fc87a413c47f82355c44c1fe15aeac7b",
+  "dirty": true,
+  "executableSha256": "6482080678eb31fb0cea4cb8d01766606c015094844b41184401639e638f991d",
+  "timestamp": "2026-11-09T20:20:53.299Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 538.1917,
+      "median": 538.1917,
+      "p95": 538.1917,
+      "max": 538.1917
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 31.900000005960464,
+      "median": 38.60000002384186,
+      "p95": 47.099999994039536,
+      "max": 47.099999994039536
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 12,
+      "min": 3.0999999940395355,
+      "median": 4.200000017881393,
+      "p95": 17,
+      "max": 17
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 4.099999999999909,
+      "median": 4.199999999999818,
+      "p95": 4.299999999999727,
+      "max": 8.400000000000091
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 621.85546875,
+      "median": 621.85546875,
+      "p95": 621.85546875,
+      "max": 621.85546875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 621.79296875,
+      "median": 621.79296875,
+      "p95": 621.79296875,
+      "max": 621.79296875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 405.25390625,
+      "median": 405.25390625,
+      "p95": 405.25390625,
+      "max": 405.25390625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 12.034659820282412,
+      "median": 12.034659820282412,
+      "p95": 12.034659820282412,
+      "max": 12.034659820282412
+    },
+    {
+      "scenario": "restart",
+      "iteration": 2,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 537.2537000000011,
+      "median": 537.2537000000011,
+      "p95": 537.2537000000011,
+      "max": 537.2537000000011
+    },
+    {
+      "scenario": "workload",
+      "iteration": 2,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 405.3359375,
+      "median": 405.3359375,
+      "p95": 405.3359375,
+      "max": 405.3359375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 405.140625,
+      "median": 405.140625,
+      "p95": 405.140625,
+      "max": 405.140625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 210.46484375,
+      "median": 210.46484375,
+      "p95": 210.46484375,
+      "max": 210.46484375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 1.6825197415649678,
+      "median": 1.6825197415649678,
+      "p95": 1.6825197415649678,
+      "max": 1.6825197415649678
+    },
+    {
+      "scenario": "desktop-navigation-m6",
+      "iteration": 1,
+      "metric": "mounted_ready",
+      "unit": "ms",
+      "n": 1,
+      "min": 69.60000002384186,
+      "median": 69.60000002384186,
+      "p95": 69.60000002384186,
+      "max": 69.60000002384186
+    },
+    {
+      "scenario": "desktop-navigation-m6",
+      "iteration": 1,
+      "metric": "transition_complete",
+      "unit": "ms",
+      "n": 1,
+      "min": 291.80000001192093,
+      "median": 291.80000001192093,
+      "p95": 291.80000001192093,
+      "max": 291.80000001192093
+    },
+    {
+      "scenario": "desktop-navigation-m6",
+      "iteration": 2,
+      "metric": "mounted_ready",
+      "unit": "ms",
+      "n": 1,
+      "min": 27.69999998807907,
+      "median": 27.69999998807907,
+      "p95": 27.69999998807907,
+      "max": 27.69999998807907
+    },
+    {
+      "scenario": "desktop-navigation-m6",
+      "iteration": 2,
+      "metric": "transition_complete",
+      "unit": "ms",
+      "n": 1,
+      "min": 249.69999998807907,
+      "median": 249.69999998807907,
+      "p95": 249.69999998807907,
+      "max": 249.69999998807907
+    },
+    {
+      "scenario": "desktop-navigation-m6",
+      "iteration": 3,
+      "metric": "mounted_ready",
+      "unit": "ms",
+      "n": 1,
+      "min": 25.100000023841858,
+      "median": 25.100000023841858,
+      "p95": 25.100000023841858,
+      "max": 25.100000023841858
+    },
+    {
+      "scenario": "desktop-navigation-m6",
+      "iteration": 3,
+      "metric": "transition_complete",
+      "unit": "ms",
+      "n": 1,
+      "min": 243.90000000596046,
+      "median": 243.90000000596046,
+      "p95": 243.90000000596046,
+      "max": 243.90000000596046
+    },
+    {
+      "scenario": "desktop-pane-motion-m6",
+      "iteration": 1,
+      "metric": "frame_interval",
+      "unit": "ms",
+      "n": 90,
+      "min": 4,
+      "median": 4.199999999999818,
+      "p95": 4.300000000000182,
+      "max": 8.400000000000091
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 0,
+      "metric": "two_panes_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 657.98046875,
+      "median": 657.98046875,
+      "p95": 657.98046875,
+      "max": 657.98046875
+    },
+    {
+      "scenario": "desktop-churn-m6",
+      "iteration": 0,
+      "metric": "two_panes_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 441.82421875,
+      "median": 441.82421875,
+      "p95": 441.82421875,
+      "max": 441.82421875
+    },
+    {
+      "scenario": "desktop-sidebar-motion-m6",
+      "iteration": 1,
+      "metric": "frame_interval",
+      "unit": "ms",
+      "n": 90,
+      "min": 4,
+      "median": 4.199999999999818,
+      "p95": 8.399999999999636,
+      "max": 8.5
+    }
+  ],
+  "checks": [
+    "12 native text inputs saved and read back after process restart",
+    "100-note collection fixture created"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes.",
+    "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.",
+    "The personal M5 app and other desktop apps remain open; only the disposable application process tree is sampled. Background load, power and cache conditions are uncontrolled."
+  ],
+  "success": false,
+  "error": "Error: Timed out: managed protection; Untitled note",
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.42",
+    "revision": "@7b1486be4607d53d9f93841b7c776bc525ca74b7",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "desktopRecipe": {
+    "sha256": "d59fa3122f73c8e303c99d89d6735a9aaf023d38e5445043bc9de29a6d8cc837",
+    "mode": "complete"
+  }
+}

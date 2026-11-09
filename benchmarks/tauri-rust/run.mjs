@@ -22,7 +22,7 @@ const stamp = new Date().toISOString().replaceAll(':', '-');
 const evidence = `benchmarks/tauri-rust/raw/${architecture}-${stamp}.json`;
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', windowsHide: true }).trim();
 const report = { architecture, commit, timestamp: new Date().toISOString(), system: { device: hostname(), os: release(), arch: arch(), cpu: cpus()[0].model, logicalCpus: cpus().length, ramBytes: totalmem() }, folder, samples: [], checks: [], limitations: ['No OS cache flush; first-profile startup is not true cold boot.', 'Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.', 'Process working sets sum shared pages; sampled peak can miss short spikes.'] };
-if(m6)report.limitations.push('M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.');
+if(m6)report.limitations.push('M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.', 'The personal M5 app and other desktop apps remain open; only the disposable application process tree is sampled. Background load, power and cache conditions are uncontrolled.');
 report.dirty = Boolean(execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8', windowsHide: true }).trim());
 const executablePath = process.env.VAULTOR_BENCH_EXECUTABLE || (architecture === 'electron-java' ? join(root,'desktop/node_modules/electron/dist/electron.exe') : join(root,'next/src-tauri/target/release/vaultor-next.exe'));
 report.executableSha256 = createHash('sha256').update(await readFile(executablePath)).digest('hex');
