@@ -79,5 +79,6 @@ export class EditingSession {
     if (this.dirty(id)) throw new Error('Protect or resolve this draft before closing it.');
     clearTimeout(e.timer); clearTimeout(e.deadline); clearTimeout(e.saveTimer); this.entries.delete(id);
   }
+  releaseViews() { for(const entry of this.entries.values())if(entry.protected===entry.sequence)entry.capture=undefined; }
   ids() { return this.entries.keys(); }
 }

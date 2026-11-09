@@ -8,12 +8,13 @@ beforeEach(()=>{vi.useFakeTimers();invoke.mockReset();invoke.mockResolvedValue({
 it('captures efficiently into a durable journal but never publishes on timers or navigation protection',async()=>{
  const session=new LinkedEditingSession(()=>{}),doc=document();session.adopt(doc);const capture=vi.fn(()=>body('Latest'));
  for(let i=0;i<12;i++)session.edit(doc.id,capture);expect(capture).not.toHaveBeenCalled();await vi.advanceTimersByTimeAsync(250);expect(capture).toHaveBeenCalledTimes(1);expect(invoke).toHaveBeenCalledWith({kind:'linked',request:expect.objectContaining({op:'protect',sequence:12})});
+ session.releaseViews();expect(session.snapshot(doc.id)).toEqual(body('Latest'));capture.mockImplementation(()=>{throw Error('Editor destroyed');});
  await vi.advanceTimersByTimeAsync(5000);await session.protectAll();expect(invoke.mock.calls.filter(([r])=>r.request.op==='save')).toHaveLength(0);expect(session.status(doc.id)).toContain('explicit Save');session.forget(doc.id);expect([...session.ids()]).toHaveLength(0);
 });
 it('publishes only explicitly, preserves newer edits across an older receipt and journals them against the new baseline',async()=>{
  const session=new LinkedEditingSession(()=>{}),doc=document();session.adopt(doc);session.edit(doc.id,()=>body('B'));await session.protect(doc.id);
  let release:(v:LinkedDocument)=>void=()=>{};invoke.mockImplementation(async r=>r.request.op==='save'?new Promise<LinkedDocument>(resolve=>{release=resolve;}):{sequence:r.request.sequence});
- const saving=session.save(doc.id);await Promise.resolve();await Promise.resolve();session.edit(doc.id,()=>body('C'));release({...doc,revision:'b',base:'B\n',content:body('B')});await saving;expect(session.dirty(doc.id)).toBe(true);await vi.advanceTimersByTimeAsync(1);expect(invoke.mock.calls.some(([r])=>r.request.op==='protect'&&r.request.revision==='b'&&r.request.content.content[0].content[0].text==='C')).toBe(true);
+ const saving=session.save(doc.id);await Promise.resolve();await Promise.resolve();session.edit(doc.id,()=>body('C'));session.releaseViews();release({...doc,revision:'b',base:'B\n',content:body('B')});await saving;expect(session.dirty(doc.id)).toBe(true);await vi.advanceTimersByTimeAsync(1);expect(invoke.mock.calls.some(([r])=>r.request.op==='protect'&&r.request.revision==='b'&&r.request.content.content[0].content[0].text==='C')).toBe(true);
 });
 it('keeps protected content on conflicts and blocks forgetting an unprotected failed journal',async()=>{
  const session=new LinkedEditingSession(()=>{}),doc=document();session.adopt(doc);session.edit(doc.id,()=>body('User draft'));await session.protect(doc.id);invoke.mockRejectedValue('External revision conflict');await expect(session.save(doc.id)).rejects.toContain('conflict');expect(session.dirty(doc.id)).toBe(true);expect(session.snapshot(doc.id)?.content?.[0].content?.[0].text).toBe('User draft');expect(session.status(doc.id)).toBe('external conflict');

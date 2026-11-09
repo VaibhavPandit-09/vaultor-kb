@@ -68,7 +68,7 @@ At most eight non-overlapping fixed local NTFS roots are supported. Junctions/re
 
 ## Appearance and keyboard
 
-Appearance in the top toolbar offers Light, Dark and OLED black, persisted in the workspace. The window becomes visible after the saved theme is applied. F1 opens or closes this Help. Tab moves between controls; Escape leaves editor focus. The operating system's reduced-motion preference applies to shared motion and theme transitions.
+Appearance in the top toolbar offers Light, Dark and OLED black, persisted in the workspace. The window becomes visible after the saved theme is applied. F1 opens or closes this Help, saving managed edits and protecting linked drafts first. Tab moves between controls; Escape leaves editor focus. The operating system's reduced-motion preference applies to shared motion and theme transitions.
 
 ## Desktop workspace and navigation
 
