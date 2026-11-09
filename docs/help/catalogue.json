@@ -2088,7 +2088,7 @@
     {
       "id": "next-foundation",
       "name": "Vaultor Next foundation",
-      "description": "Separate experimental Windows Tauri application with local Rust and SQLite notes and collections.",
+      "description": "Experimental Windows Tauri notes with protected drafts, explicit conflict review, paginated Library and nested collection memberships.",
       "article": "next-foundation",
       "areas": [
         "Platforms",
@@ -2099,14 +2099,21 @@
         "Vaultor Next"
       ],
       "tasks": [
-        "Create and save a note in the experimental Tauri application"
+        "Create edit and recover a note after an unexpected close",
+        "Review competing saved and protected versions",
+        "Browse thousands of notes and organize collection memberships"
       ],
       "keywords": [
         "Tauri",
         "Rust",
         "SQLite",
         "experimental",
-        "Next"
+        "Next",
+        "recovery",
+        "conflict",
+        "pagination",
+        "hierarchy",
+        "membership"
       ],
       "availability": {
         "windows": {
@@ -2123,12 +2130,16 @@
         }
       },
       "limitations": [
-        "Not included in published releases. No legacy migration, linked files, attachments, search, deletion or crash-draft recovery."
+        "Experimental M2 workspaces only; M1 and Electron data are not migrated.",
+        "Draft protection follows a debounced SQLite receipt; unsent edits are not crash durable.",
+        "No linked files, attachments, search, deletion or imports/exports."
       ],
       "related": [],
       "evidence": [
         "frontend/src/next/NextApp.tsx",
-        "next/src-tauri/src/domain.rs"
+        "next/src-tauri/src/domain.rs",
+        "next/src-tauri/src/editing.rs",
+        "next/src-tauri/src/library.rs"
       ]
     }
   ],

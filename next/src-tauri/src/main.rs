@@ -27,7 +27,7 @@ fn main() {
                         .ok()
                         .and_then(|bytes| serde_json::from_slice::<std::path::PathBuf>(&bytes).ok())
                 })
-                .unwrap_or(data.join("Workspace"));
+                .unwrap_or(data.join("Workspace-M2"));
             app.manage(Worker::start(
                 root,
                 if override_root.is_some() {

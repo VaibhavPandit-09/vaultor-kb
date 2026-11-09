@@ -2,25 +2,37 @@
 
 Reviewed 2026-11-09. Authoritative experimental replacement tracker. Published Windows/macOS 0.27.0 remain Electron/Java. This milestone does not merge, tag or publish releases; Android is on hold.
 
-## Target and milestone 1
+## Target and implemented milestones
 
 Tauri 2 + React/TypeScript + Tiptap + Rust + SQLite. Normal local work uses direct commands, with no HTTP server, JVM or permanent helper process. `next/` owns the native application; `frontend/src/next/` is its separate frontend entry point. Original implementations remain intact as reference and benchmark baseline.
 
-Implemented: isolated workspace creation/opening; exclusive process ownership; SQLite schema 1, WAL/FULL durability and foreign keys; collections; collection-scoped note creation and metadata listing; structured Tiptap documents; revision-checked saves; shared two-pane content/history; workspace theme persistence; saved-note reopening; normal-close save barrier; offline milestone Help.
+M1 completed at `52b84ee`: isolated workspaces, exclusive process ownership, Rust/SQLite persistence, collections, structured Tiptap notes, revision-checked saves, shared panes/history, workspace themes, normal-close save barrier and offline milestone Help.
+
+M2 adds same-database durable drafts, explicit recovery/conflict review, keyset Library pages, nested/renamable collections and atomic identity-based memberships. `editing.rs` and `library.rs` extend the portable domain; the connection still has one storage-thread owner. Schema/marker 2 intentionally refuse M1 data without migration. A new default `Workspace-M2` avoids modifying the M1 default. Previously remembered older paths can be replaced using Open workspace and a new empty folder.
 
 The portable Rust domain has no Tauri types. One storage thread owns SQLite and transactions; async handlers await receipts. No legacy migrations are provided. Nonempty unrelated directories, open workspaces and newer schemas are refused. The default profile has its own application identifier. Explicit benchmark workspace overrides never change the remembered personal workspace.
 
 ## Interaction decisions
 
-The old Dashboard combines HTTP lifecycle, source authority and many unfinished capabilities. The new entry composes retained Tiptap packages, CodeBlockView, symbol rules, shared documents/history, SaveCoordinator, Escape ownership, theme reveal and design tokens without mounting that orchestration. This is an adapted editor composition, not full BlockEditor parity.
+The old Dashboard combines HTTP lifecycle, source authority and many unfinished capabilities. The new entry composes retained Tiptap packages, CodeBlockView, symbol rules, shared documents/history, Escape ownership, theme reveal and design tokens without mounting that orchestration. M2's document-owned EditingSession replaces M1 SaveCoordinator for this entry only. This is an adapted editor composition, not full BlockEditor parity.
 
 Library/collection selection changes the same resource list. Opening a note retains list context. Opening beside gives the existing editor less space; closing restores its bounds with shared motion timings and immediate reduced-motion endpoints. Library and editor scroll independently as separate working regions; no duplicate/sticky header is introduced. Theme uses the shared reveal controller. Navigation and normal close await saves and retain the editor on failure. Correctness never awaits animation.
 
+## M2 editing and Library contracts
+
+One draft per resource lives in the workspace SQLite database, independently of the committed note. It binds base revision, random editor token and monotonic sequence to the exact title/JSON. Protection is requested after 250 ms quiet or 1 second continuous typing; actual durability begins at the SQLite FULL/WAL receipt, not the timer deadline. Autosave follows 1 second quiet. Full JSON is captured for protection, not every keystroke. Two views share the document and journal owner. There is no idle polling.
+
+Save verifies the exact protected evidence and expected note revision; note commit and matching-draft deletion share one transaction. Stale revisions retain the journal. Recovery compares protected and current text/title on demand, supports explicit restore/discard, and can park a draft without blocking other documents or normal closing. Choosing a draft over a competing saved version conditionally rebases against the reviewed revision; no automatic merge. Conflicting or quota-blocked evidence never silently expires. Limits are 64 drafts / 32 MiB of document bodies and 8 MiB per note. Unsynchronized edits and unreached durability receipts cannot survive power loss. Previews cap display at 200,000 characters without truncating storage.
+
+Library reads at most 100 metadata summaries per request and mounts one page. Immutable descending creation sequence plus an anchor high-water mark excludes later insertions during traversal; note edits do not reorder pages. Cursors carry collection scope. Membership changes are live, not a database snapshot, and the owning UI refreshes page one after organization changes. Previous/Next preserve open editors and per-page scroll. No virtualization dependency is needed for bounded 100-row rendering. Full note bodies load only for editing/recovery, not organization.
+
+Collections have parent IDs and sibling-normalized unique names; reparenting rejects cycles. Add/remove/move update the resource/collection join transactionally; resources can have multiple memberships and retain one ID/body. Collection arrows compress/restore the same tree branch; row More/right-click opens inline management. M3 can extend the single-resource organization owner to selection/bulk actions.
+
 ## Boundaries
 
-- Lists cap at 500 notes; serialized notes cap at 8 MiB. Paging, collection hierarchy/membership editing, rename/delete/Trash, tags, pins and search remain future work.
+- Resource deletion/Trash, tags, pins, search, selection and bulk actions remain future work. Collection contents are direct memberships, not recursive descendant aggregation.
 - Linked Markdown remains a product requirement. Linked reading/writing, imports/exports, images/attachments and resource-link commands are not exposed yet.
-- SQLite receipts protect committed notes. Unsent edits can be lost on crash/forced termination. Private crash drafts, conflict comparison and recovery/export must precede important-data adoption. No forced-discard UI exists.
+- Only acknowledged journal/commit bytes are durable. There is no automatic conflict merge or recovery export, and unresolved evidence requires an explicit decision. This experimental app still needs independent copies of important information.
 - Windows only. No installer, signing/updater, macOS, Android or LAN API qualification. Native menus, keyboard customization, slash menus, pane session restoration and full animation parity remain incomplete. Physical IME/accessibility acceptance is unclaimed.
 
 ## Build and run
@@ -35,4 +47,4 @@ Verification covers Rust ownership/transactions/revisions/restart, TypeScript, s
 
 ## Next milestone
 
-Implement durable crash drafts and explicit conflict recovery, then paginated Library and collection membership operations. Extend ordinary/large-note and native keyboard/pane acceptance before linked Markdown. Keep optional networking outside domain ownership; Android remains on hold.
+M3: selection and coherent bulk organization, expanded keyboard/context-menu workflows and measured Library ergonomics. Preserve draft ownership and exact save/recovery gates. Linked external Markdown, imports/exports, media, search, Trash, networking and platform qualification remain separately scoped; Android stays on hold.

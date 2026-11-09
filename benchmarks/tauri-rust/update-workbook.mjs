@@ -30,12 +30,39 @@ const end = Math.max(1004, rows.length + 4);
 // Preserve template calculations while extending their source bounds.
 const range = col=>`'Raw Runs'!$${col}$5:$${col}$${end}`;
 for(let i=12;i<=23;i++) {
-  const criteria = architecture=>`${range('D')},$B$${architecture},${range('F')},$B$7,${range('I')},$B$8,${range('J')},$B$9,${range('L')},$A${i},${range('O')},"Y",${range('P')},$B$10`;
+  const criteria = architecture=>`${range('D')},$B$${architecture},${range('F')},$B$7,${range('I')},$B$8,${range('J')},$B$9,${range('L')},$A${i},${range('O')},"Y",${range('P')},$B$10,${range('E')},"969d5f3c328901c8db27e0f65cb0e1ff3a478562"`;
   const count = a=>`COUNTIFS(${criteria(a)})`;
   dashboard.getRange(`C${i}:G${i}`).formulas = [[`=IF(${count(5)}=0,"",SUMIFS(${range('M')},${criteria(5)})/${count(5)})`,`=IF(${count(6)}=0,"",SUMIFS(${range('M')},${criteria(6)})/${count(6)})`,'',`=${count(5)}`,`=${count(6)}`]];
 }
 dashboard.getRange('E12:E23').formulas = metrics.map((_,i)=>[`=IF(COUNT(C${i+12}:D${i+12})<2,"",IF(C${i+12}=0,"",D${i+12}/C${i+12}-1))`]);
 const protocol = wb.worksheets.getItem('Protocol');
+const m2Runs=normalized.filter(r=>r[2]==='m2-managed-notes-v1'&&r[14]==='Y');
+if(m2Runs.length){
+  let comparison;try{comparison=wb.worksheets.getItem('M1 vs M2');}catch{comparison=wb.worksheets.add('M1 vs M2');}
+  const baseline=normalized.findLast(r=>r[2]==='m1-managed-notes-v2'&&r[8]==='settled-idle-5min'&&r[14]==='Y');
+  const candidate=m2Runs.at(-1);
+  comparison.showGridLines=false;
+  comparison.getRange('A2:H2').merge();comparison.getRange('A2').values=[['Vaultor Next · M1 vs M2']];
+  comparison.getRange('A4:B8').values=[['M1 source',baseline?.[4]??'unmeasured'],['M2 source',candidate[4]],['Scenario','settled-idle-5min'],['Dataset',candidate[9]],['Device',candidate[5]]];
+  comparison.getRange('A10:H10').values=[['Metric','Unit','M1 mean','M2 mean','Change','M1 n','M2 n','Direction']];
+  const compareMetrics=[['cpu_one_core_percent','%'],['process_tree_working_set','MiB'],['process_tree_private_bytes','MiB'],['startup_usable','ms'],['note_open','ms'],['input_to_raf','ms'],['scroll_frame_interval','ms']];
+  comparison.getRange('A11:B17').values=compareMetrics;
+  for(let row=11;row<=17;row++){
+    const criteria=(source,experiment)=>`${range('D')},"tauri-rust",${range('E')},$B$${source},${range('C')},"${experiment}",${range('F')},$B$8,${range('I')},$B$6,${range('J')},$B$7,${range('L')},$A${row},${range('O')},"Y",${range('P')},"m1-cdp-v2"`;
+    const count=(s,e)=>`COUNTIFS(${criteria(s,e)})`;
+    const left=count(4,'m1-managed-notes-v2'),right=count(5,'m2-managed-notes-v1');
+    comparison.getRange(`C${row}:H${row}`).formulas=[[`=IF(${left}=0,"",SUMIFS(${range('M')},${criteria(4,'m1-managed-notes-v2')})/${left})`,`=IF(${right}=0,"",SUMIFS(${range('M')},${criteria(5,'m2-managed-notes-v1')})/${right})`,`=IF(COUNT(C${row}:D${row})<2,"",IF(C${row}=0,"",D${row}/C${row}-1))`,`=${left}`,`=${right}`,'']];
+    comparison.getRange(`H${row}`).values=[['lower']];
+  }
+  comparison.getRange('A19:H20').merge();comparison.getRange('A19').values=[['Five-minute idle follows 30 seconds settling, one 64 KiB note and 100 resources. Change Scenario to managed-note-64k for editing proxies. M2 adds durable draft work; new large-Library/recovery workloads are separate. Small samples; no full-product claim.']];
+  comparison.getRange('A2:H20').format.font={name:'Arial',size:10,color:'#14333A'};
+  comparison.getRange('A2').format.font.size=14;
+  comparison.getRange('A4:A17').format.columnWidth=33;comparison.getRange('B4:B17').format.columnWidth=28;comparison.getRange('C10:H17').format.columnWidth=13;
+  comparison.getRange('B4:B8').format.wrapText=true;comparison.getRange('A4:H8').format.rowHeight=34;
+  comparison.getRange('A19:H20').format.wrapText=true;comparison.getRange('A19:H20').format.rowHeight=28;
+  comparison.getRange('A10:H10').format={fill:'#006B75',font:{name:'Arial',size:10,color:'#FFFFFF',bold:true},rowHeight:25};
+  comparison.getRange('C11:D17').setNumberFormat('0.00');comparison.getRange('E11:E17').setNumberFormat('0.0%');
+}
 protocol.getRange('B4').values = [['CSV is canonical and append-only. update-workbook.ps1 refreshes Raw Runs and applies appended invalidations.']];
 protocol.getRange('B13').values = [['M1 is experimental and unpublished. Legacy development databases are disposable; no migration or installer is required. Future release qualification needs separate authorization.']];
 const parity = wb.worksheets.getItem('Parity Gates');
@@ -61,6 +88,7 @@ for(const [sheetName,range] of [['Raw Runs','K4:O12'],['Protocol','A3:B14'],['Pa
   const image=await wb.render({sheetName,range,scale:1});
   await fs.writeFile(join(root,'raw',`workbook-${sheetName.replaceAll(' ','-')}.png`),new Uint8Array(await image.arrayBuffer()));
 }
+if(m2Runs.length){const image=await wb.render({sheetName:'M1 vs M2',range:'A2:H20',scale:1});await fs.writeFile(join(root,'raw/workbook-M2.png'),new Uint8Array(await image.arrayBuffer()));console.log((await wb.inspect({kind:'table',range:'M1 vs M2!A10:H17',tableMaxRows:8,tableMaxCols:8,maxChars:1600})).ndjson);}
 await (await SpreadsheetFile.exportXlsx(wb)).save(path);
 await fs.mkdir(join(root,'summaries'),{recursive:true});
 for(const file of await fs.readdir(join(root,'raw'))) {

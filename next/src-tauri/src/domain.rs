@@ -19,9 +19,27 @@ pub enum Request {
     Snapshot,
     List {
         collection: Option<String>,
+        cursor: Option<crate::library::Cursor>,
+        limit: Option<u32>,
     },
     CreateCollection {
         name: String,
+        #[serde(rename = "parentId")]
+        parent_id: Option<String>,
+    },
+    UpdateCollection {
+        id: String,
+        name: String,
+        #[serde(rename = "parentId")]
+        parent_id: Option<String>,
+    },
+    Membership {
+        id: String,
+        add: Option<String>,
+        remove: Option<String>,
+    },
+    Memberships {
+        id: String,
     },
     CreateNote {
         title: String,
@@ -35,6 +53,31 @@ pub enum Request {
         revision: i64,
         title: String,
         content: Value,
+        proof: Option<crate::editing::Proof>,
+    },
+    Draft {
+        id: String,
+        #[serde(rename = "baseRevision")]
+        base_revision: i64,
+        token: String,
+        sequence: i64,
+        title: String,
+        content: Value,
+    },
+    Drafts,
+    ReadDraft {
+        id: String,
+    },
+    DiscardDraft {
+        id: String,
+        token: String,
+        sequence: i64,
+    },
+    RebaseDraft {
+        id: String,
+        token: String,
+        sequence: i64,
+        revision: i64,
     },
     Setting {
         key: String,
@@ -42,14 +85,14 @@ pub enum Request {
     },
 }
 pub struct Workspace {
-    db: Connection,
+    pub(crate) db: Connection,
     root: PathBuf,
     _lock: File,
 }
-fn error(e: impl std::fmt::Display) -> String {
+pub(crate) fn error(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
-fn title(value: &str) -> Result<&str, String> {
+pub(crate) fn title(value: &str) -> Result<&str, String> {
     let value = value.trim();
     if value.is_empty() || value.chars().count() > 240 {
         return Err("Name must contain 1–240 characters".into());
@@ -67,8 +110,8 @@ impl Workspace {
         if marker.exists() {
             let metadata: Value =
                 serde_json::from_slice(&fs::read(&marker).map_err(error)?).map_err(error)?;
-            if metadata != json!({"format": "vaultor-next", "version": 1}) {
-                return Err("Unsupported workspace format".into());
+            if metadata != json!({"format": "vaultor-next", "version": 2}) {
+                return Err("M2 requires a new empty workspace or an M2 workspace. M1 data is not migrated.".into());
             }
         } else {
             if fs::read_dir(&root).map_err(error)?.next().is_some() {
@@ -81,7 +124,7 @@ impl Workspace {
                 .map_err(error)?;
             fs::write(
                 &marker,
-                serde_json::to_vec(&json!({"format":"vaultor-next","version":1})).unwrap(),
+                serde_json::to_vec(&json!({"format":"vaultor-next","version":2})).unwrap(),
             )
             .map_err(error)?;
         }
@@ -99,17 +142,19 @@ impl Workspace {
         let version: i64 = db
             .pragma_query_value(None, "user_version", |r| r.get(0))
             .map_err(error)?;
-        if version > 1 {
-            return Err("Workspace was created by a newer Vaultor Next".into());
+        if version != 0 && version != 2 {
+            return Err("Unsupported SQLite workspace version".into());
         }
         db.execute_batch("PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
             BEGIN IMMEDIATE;
-            CREATE TABLE IF NOT EXISTS collections(id TEXT PRIMARY KEY, name TEXT NOT NULL, normalized TEXT NOT NULL UNIQUE);
-            CREATE TABLE IF NOT EXISTS resources(id TEXT PRIMARY KEY, title TEXT NOT NULL, content TEXT NOT NULL CHECK(json_valid(content)), revision INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')));
+            CREATE TABLE IF NOT EXISTS collections(id TEXT PRIMARY KEY, name TEXT NOT NULL, normalized TEXT NOT NULL, parent_id TEXT REFERENCES collections(id));
+            CREATE UNIQUE INDEX IF NOT EXISTS collection_name ON collections(COALESCE(parent_id,''),normalized);
+            CREATE TABLE IF NOT EXISTS resources(seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT NOT NULL UNIQUE, title TEXT NOT NULL, content TEXT NOT NULL CHECK(json_valid(content)), revision INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')));
             CREATE TABLE IF NOT EXISTS memberships(resource_id TEXT NOT NULL REFERENCES resources(id), collection_id TEXT NOT NULL REFERENCES collections(id), PRIMARY KEY(resource_id,collection_id));
             CREATE INDEX IF NOT EXISTS membership_collection ON memberships(collection_id,resource_id);
             CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL CHECK(json_valid(value)));
-            PRAGMA user_version=1; COMMIT;").map_err(error)?;
+            CREATE TABLE IF NOT EXISTS drafts(resource_id TEXT PRIMARY KEY REFERENCES resources(id), base_revision INTEGER NOT NULL, token TEXT NOT NULL, sequence INTEGER NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL CHECK(json_valid(content)), updated_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')));
+            PRAGMA user_version=2; COMMIT;").map_err(error)?;
         Ok(Self {
             db,
             root,
@@ -120,24 +165,18 @@ impl Workspace {
         match request {
             Request::Open { .. } => Err("Open belongs to workspace lifecycle".into()),
             Request::Snapshot => {
-                let mut stmt = self.db.prepare("SELECT id,name FROM collections ORDER BY normalized").map_err(error)?;
-                let collections = stmt.query_map([], |r| Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
+                let mut stmt = self.db.prepare("SELECT id,name,parent_id FROM collections ORDER BY normalized,id").map_err(error)?;
+                let collections = stmt.query_map([], |r| Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"parentId":r.get::<_,Option<String>>(2)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
                 let mut stmt = self.db.prepare("SELECT key,value FROM settings").map_err(error)?;
                 let settings = stmt.query_map([], |r| Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
                 let settings: serde_json::Map<String,Value> = settings.into_iter().map(|(k,v)| Ok((k,serde_json::from_str(&v).map_err(error)?))).collect::<Result<_,String>>()?;
                 Ok(json!({"path":self.root,"collections":collections,"settings":settings}))
             },
-            Request::List { collection } => {
-                let mut stmt = self.db.prepare("SELECT id,title,revision,updated_at FROM resources WHERE (?1 IS NULL OR id IN (SELECT resource_id FROM memberships WHERE collection_id=?1)) ORDER BY updated_at DESC,id LIMIT 500").map_err(error)?;
-                let items = stmt.query_map([collection], |r| Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"revision":r.get::<_,i64>(2)?,"updatedAt":r.get::<_,String>(3)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
-                Ok(json!(items))
-            },
-            Request::CreateCollection { name } => {
-                let name = title(&name)?;
-                let id = Uuid::new_v4().to_string();
-                self.db.execute("INSERT INTO collections(id,name,normalized) VALUES(?1,?2,?3)",params![id,name,name.to_lowercase()]).map_err(error)?;
-                Ok(json!({"id":id,"name":name}))
-            },
+            Request::List { collection, cursor, limit } => self.list(collection, cursor, limit),
+            Request::CreateCollection { name, parent_id } => self.collection(None, name, parent_id),
+            Request::UpdateCollection { id, name, parent_id } => self.collection(Some(id), name, parent_id),
+            Request::Membership { id, add, remove } => self.membership(id, add, remove),
+            Request::Memberships { id } => self.memberships(id),
             Request::CreateNote { title: name, collection } => {
                 let name = title(&name)?;
                 let id = Uuid::new_v4().to_string();
@@ -147,18 +186,15 @@ impl Workspace {
                 tx.commit().map_err(error)?;
                 self.execute(Request::Read { id })
             },
-            Request::Read { id } => self.db.query_row("SELECT id,title,content,revision FROM resources WHERE id=?1", [id], |r| {
+            Request::Read { id } => self.db.query_row("SELECT id,title,content,revision FROM resources WHERE id=?1", [&id], |r| {
                 Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"content":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?}))
-            }).map_err(error).and_then(|mut value| { value["content"] = serde_json::from_str(value["content"].as_str().unwrap()).map_err(error)?; Ok(value) }),
-            Request::Save { id, revision, title: name, content } => {
-                let name = title(&name)?;
-                if content.get("type").and_then(Value::as_str) != Some("doc") || !content.get("content").is_some_and(Value::is_array) { return Err("Expected structured Tiptap document".into()); }
-                let content = serde_json::to_string(&content).map_err(error)?;
-                if content.len() > 8 * 1024 * 1024 { return Err("Note exceeds the 8 MiB foundation limit".into()); }
-                let changed = self.db.execute("UPDATE resources SET title=?1,content=?2,revision=revision+1,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?3 AND revision=?4",params![name,content,id,revision]).map_err(error)?;
-                if changed != 1 { return Err("Note revision conflict. Your unsaved editor is retained; do not overwrite the stored note.".into()); }
-                Ok(json!({"revision":revision+1}))
-            },
+            }).map_err(error).and_then(|mut value| { value["content"] = serde_json::from_str(value["content"].as_str().unwrap()).map_err(error)?; let mut q=self.db.prepare("SELECT collection_id FROM memberships WHERE resource_id=?1 ORDER BY collection_id").map_err(error)?; value["collections"]=json!(q.query_map([&id],|r|r.get::<_,String>(0)).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?); Ok(value) }),
+            Request::Save { id, revision, title, content, proof } => self.save(id, revision, title, content, proof),
+            Request::Draft { id, base_revision, token, sequence, title, content } => self.draft(id,base_revision,token,sequence,title,content),
+            Request::Drafts => self.drafts(),
+            Request::ReadDraft { id } => self.read_draft(id),
+            Request::DiscardDraft { id, token, sequence } => self.discard_draft(id,token,sequence),
+            Request::RebaseDraft { id, token, sequence, revision } => self.rebase_draft(id,token,sequence,revision),
             Request::Setting { key, value } => {
                 if key != "theme" || ![json!("light"),json!("dark"),json!("oled")].contains(&value) { return Err("Unsupported setting".into()); }
                 self.db.execute("INSERT INTO settings VALUES(?1,?2) ON CONFLICT(key) DO UPDATE SET value=excluded.value",params![key,value.to_string()]).map_err(error)?;
@@ -179,11 +215,13 @@ mod tests {
         let c = w
             .execute(Request::CreateCollection {
                 name: "Research".into(),
+                parent_id: None,
             })
             .unwrap();
         assert!(w
             .execute(Request::CreateCollection {
-                name: " research ".into()
+                name: " research ".into(),
+                parent_id: None
             })
             .is_err());
         assert!(w
@@ -205,6 +243,7 @@ mod tests {
             revision: 1,
             title: "Edited".into(),
             content: doc.clone(),
+            proof: None,
         })
         .unwrap();
         assert!(w
@@ -212,7 +251,8 @@ mod tests {
                 id: id.clone(),
                 revision: 1,
                 title: "Stale".into(),
-                content: doc.clone()
+                content: doc.clone(),
+                proof: None
             })
             .is_err());
         w.execute(Request::Setting {
@@ -227,8 +267,12 @@ mod tests {
         assert_eq!(saved["revision"], 2);
         assert_eq!(saved["title"], "Edited");
         assert_eq!(
-            w.execute(Request::List { collection: None })
-                .unwrap()
+            w.execute(Request::List {
+                collection: None,
+                cursor: None,
+                limit: None
+            })
+            .unwrap()["items"]
                 .as_array()
                 .unwrap()
                 .len(),

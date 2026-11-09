@@ -1,15 +1,28 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { JSONContent } from '@tiptap/core';
-export type Note = { id: string; title: string; content: JSONContent; revision: number };
+export type Note = { id: string; title: string; content: JSONContent; revision: number; collections?: string[] };
 export type Summary = Omit<Note, 'content'> & { updatedAt: string };
-export type Snapshot = { path: string; collections: { id: string; name: string }[]; settings: { theme?: 'light' | 'dark' | 'oled' } };
+export type Collection = { id: string; name: string; parentId: string | null };
+export type Cursor = { before: number; anchor: number; scope: string | null };
+export type Page = { items: Summary[]; next: Cursor | null; total: number };
+export type Draft = { id: string; title: string; content: JSONContent; baseRevision: number; token: string; sequence: number };
+export type DraftSummary = Omit<Draft, 'content'>;
+export type Snapshot = { path: string; collections: Collection[]; settings: { theme?: 'light' | 'dark' | 'oled' } };
 type Request =
   | { kind: 'snapshot' }
   | { kind: 'open'; path: string }
-  | { kind: 'list'; collection: string | null }
-  | { kind: 'createCollection'; name: string }
+  | { kind: 'list'; collection: string | null; cursor?: Cursor | null; limit?: number }
+  | { kind: 'createCollection'; name: string; parentId?: string | null }
+  | { kind: 'updateCollection'; id: string; name: string; parentId: string | null }
+  | { kind: 'membership'; id: string; add: string | null; remove: string | null }
+  | { kind: 'memberships'; id: string }
   | { kind: 'createNote'; title: string; collection: string | null }
   | { kind: 'read'; id: string }
-  | { kind: 'save'; id: string; title: string; content: JSONContent; revision: number }
+  | { kind: 'save'; id: string; title: string; content: JSONContent; revision: number; proof?: { token: string; sequence: number } }
+  | ({ kind: 'draft' } & Draft)
+  | { kind: 'drafts' }
+  | { kind: 'readDraft'; id: string }
+  | { kind: 'discardDraft'; id: string; token: string; sequence: number }
+  | { kind: 'rebaseDraft'; id: string; token: string; sequence: number; revision: number }
   | { kind: 'setting'; key: 'theme'; value: string };
 export function command<T>(request: Request): Promise<T> { return invoke<T>('workspace', { request }); }
