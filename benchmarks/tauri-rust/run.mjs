@@ -184,7 +184,7 @@ try {
     if((m2||m3)&&process.argv.includes('--qualify')) {
       const qualify=m3?(await import('./m3-qualify.mjs')).qualifyM3:(await import('./m2-qualify.mjs')).qualifyM2;let iteration=2,activeRun;
       const restart=async(normal=false)=>{
-        if(normal){await evaluate("window.__TAURI_INTERNALS__.invoke('plugin:window|close',{label:'main'})").catch(e=>{if(!/closed|navigated/.test(String(e)))throw e;});for(let i=0;i<100&&child.exitCode===null;i++)await delay(50);assert(child.exitCode!==null,'Normal close must flush and exit');}
+        if(normal){await evaluate("void window.__TAURI_INTERNALS__.invoke('plugin:window|close',{label:'main'});true").catch(e=>{if(!/closed|navigated/.test(String(e)))throw e;});for(let i=0;i<100&&child.exitCode===null;i++)await delay(50);assert(child.exitCode!==null,'Normal close must flush and exit');}
         await quit(); // Kill immediately at the observed draft receipt, before sampler cleanup can allow autosave.
         if(activeRun)await stopSampler(activeRun,iteration);
         activeRun=await launch(++iteration);
