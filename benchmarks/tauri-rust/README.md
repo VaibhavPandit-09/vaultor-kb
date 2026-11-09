@@ -102,6 +102,35 @@ Windows assertions passed for all M3 native selection, menus/focus, transactions
 
 Use `node benchmarks/tauri-rust/run.mjs tauri-rust --m4 --qualify` for Windows search acceptance and the new search/churn scenarios, then `--m4 --idle-five` for a separate untouched common-workload comparison. The100-note/64KiB click-to-editable-end-marker, input/rAF and startup boundaries are unchanged. Search is an added workload under `m4-managed-notes-v1`; no content-search timing is compared to older unindexed navigation.
 
-`--profile-open` is a short external diagnostic only: a MutationObserver counts Library DOM changes over three opens, then disconnects; independent64KiB read commands measure renderer→IPC/SQLite/serialization roundtrip, not isolated SQL. It neither changes ordinary builds nor identifies individual React/Tiptap mount costs. An explicitly retained M3 EXE reproduced a53.7ms median and4243 mutations; the M4 diagnostic measured28.8ms/70 mutations with the same boundaries. Read roundtrips remained around3ms. Profiles are separate exact-source/hash records; final unprofiled measurements own the milestone comparison.
+`--profile-open` is a short external diagnostic only: a MutationObserver counts Library DOM changes over three opens, then disconnects; independent64KiB read commands measure renderer→IPC/SQLite/serialization roundtrip, not isolated SQL. It neither changes ordinary builds nor identifies individual React/Tiptap mount costs. An explicitly retained M3 EXE reproduced a57.0ms median and4243 mutations; the M4 diagnostic measured28.8ms/70 mutations with the same boundaries. Read roundtrips remained around3ms. Profiles are separate exact-source/hash records; final unprofiled measurements own the milestone comparison.
 
 Search fixtures grow from100 to1000 to5000 managed notes using ordinary commands. Added notes contain short structured text and every tenth contains Nebula archive; the two64KiB common documents remain. Query/type/count/size and boundaries are recorded in measurement notes. Three command samples include IPC, SQLite and serialization; visible readiness starts at native insertText and includes220ms debounce. Setup/options are outside the query timing. Collection scope, cursor invalidation, rapid replacement, result keyboard navigation, error/empty states, save/recovery/index restart and theme/Help are checked. The bounded retention session performs two rounds of ten opens, pane cycles, queries and page navigation, then30+60seconds idle without forcedGC. This differs from M3 churn and must not be presented as an equivalent before/after workload. Database+WAL size includes note data as well as the index.
+
+### M4 results
+
+Core/native run: summaries/tauri-rust-2026-11-09T14-10-25.208Z.json. Independent idle run: summaries/tauri-rust-2026-11-09T14-13-21.749Z.json. Both tested committed source595c0ae, EXE SHA-25618f201dd9f6ffa526f99b2cc48fa293b4d3433f5e47389c01f87004d629a995d. The final popup-only MenuAction refinement is source8f344bd, EXE f8b1370fe94ce98a6c05256e00260ad478583d8e202dc38203f32e207cc0c351 (11,366,912bytes); its focused Windows/readiness/restart evidence is summaries/tauri-rust-2026-11-09T14-22-27.456Z.json. The full search/recovery campaign and five-minute window are reused for that presentation-only change. Dirty flags identify benchmark/docs output and driver-only changes; executable hashes distinguish the two builds. No measured value is relabelled as coming from a different executable.
+
+| Comparable observation | M3 independent idle run | M4 independent idle run |
+| --- | ---: | ---: |
+| First-profile startup,1 sample |577.2ms|547.9ms|
+| Restart startup,1 sample |610.8ms|596.2ms|
+| Note opening median,3 samples |57.8ms|31.1ms|
+| Input-to-rAF median,12 samples |2.9ms|1.8ms|
+| Five-minute CPU,one-core scale |0.528%|0.506%|
+| End working set |357.0MiB|471.2MiB|
+| End private bytes |238.8MiB|240.8MiB|
+
+The299.6second sampled span lies within the300second untouched window after30seconds settling. Opening recovered near M2's29.9ms sample; the final presentation-only build also measured27.5ms over3 opens. No statistically established CPU improvement is claimed, and M2's0.173% was lower. Working set increased114.2MiB while private bytes increased2.0MiB: the working-set rise remains unexplained, and cannot be attributed to index allocations or declared harmless from this evidence. No new idle timer, polling loop or concrete retained-document leak was identified in the bounded review. Future milestones should recheck the trend with process breakdown if it persists. Power, OS page residency and cache conditions are uncontrolled; working sets sum shared pages. Workbook comparisons are exact-source arithmetic means/counts; this table uses final-run editing medians.
+
+| New search scenario | Query / results | Command median,3 samples | Visible readiness,1 sample |
+| --- | --- | ---: | ---: |
+|100 titles|`Bench note 099` / 1|2.7ms|285.6ms|
+|1000 titles|Search note /899|2.0ms|250.2ms|
+|5000 title+content|nebula /489|6.6ms|265.2ms|
+|5000 collection content|Paragraph /2|3.0ms|247.5ms|
+
+Visible timings include220ms debounce, CDP delivery and readiness polling; command timings include IPC/serialization and are not isolated SQL timings. Rapid replacement of three queries reached the final result state in294.7ms. Search fixture recipe and growth are bound to the committed qualifier; dataset_sha256 in these rows identifies the common64KiB base document, not a hash of the entire grown database. Exact query strings, counts and sizes are in canonical measurement notes.
+
+The new mixed search/navigation session sampled working set587.8→610.6→629.7MiB, then555.6MiB after30+60seconds idle; private bytes362.8→384.6→403.7→321.0MiB. The separate60second CPU observation was0.717% of one core. Notes+index+WAL occupied8.56MiB at5000notes; this is not isolated index size. This session released memory at idle but does not establish leak freedom and is not comparable to M3's different churn recipe.
+
+Actual Windows checks passed search, ordering/paging, scope exclusion/no-results with an open editor, rapid updates/errors, keyboard ownership, selection/context/bulk no-op, save/taskkill/restore/index cleanup and normal restart. Light/dark/refined-options/reduced-motion captures were reviewed. Existing pane/theme motion owners are unchanged and retain M3 runtime evidence; full motion, physical IME and assistive-technology qualification are unclaimed. Historical CSV records and failed diagnostic attempts remain appended and excluded where invalid.

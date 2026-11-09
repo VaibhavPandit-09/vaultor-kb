@@ -35,6 +35,7 @@ for(let i=12;i<=23;i++) {
   dashboard.getRange(`C${i}:G${i}`).formulas = [[`=IF(${count(5)}=0,"",SUMIFS(${range('M')},${criteria(5)})/${count(5)})`,`=IF(${count(6)}=0,"",SUMIFS(${range('M')},${criteria(6)})/${count(6)})`,'',`=${count(5)}`,`=${count(6)}`]];
 }
 dashboard.getRange('E12:E23').formulas = metrics.map((_,i)=>[`=IF(COUNT(C${i+12}:D${i+12})<2,"",IF(C${i+12}=0,"",D${i+12}/C${i+12}-1))`]);
+dashboard.getRange('A26').values=[['Historical pooled-source aggregates. Use the exact-source M1/M2, M2/M3 and M3/M4 tabs for milestone comparisons; missing metrics remain blank.']];
 const protocol = wb.worksheets.getItem('Protocol');
 const m2Runs=normalized.filter(r=>r[2]==='m2-managed-notes-v1'&&r[14]==='Y');
 if(m2Runs.length){
@@ -148,11 +149,17 @@ scenarios.getRange('A16:E21').values = [
  ['idle','Memory','Short settled period after workload or restart','No pending saves','Not five-minute idle; power uncontrolled'],
  ['workload','Memory','Sampled tree peak over setup/open/edit/scroll','500 ms CIM sampler','Shared pages counted in working set'],
  ['qualification','Correctness','Failures/corrections remain visible','Disposable data','Failed run metrics excluded from Dashboard']];
+if(m4Runs.length){
+ parity.getRange('D4:F4').values=[['M4 scoped Windows inspection','docs/plans/VAULTOR-NEXT.md','Compact search/options plus existing menus/panes/themes; full M6/M7 parity pending.']];
+ parity.getRange('D18:F18').values=[['M4 bundled','docs/help/next-foundation.md','Saved-text search, ordering, scope, cursor refresh and keyboard Help.']];
+ scenarios.getRange('A28:E32').values=[['search-title-100','Search','Bench note 099;1 result','3 invoke samples;1 visible sample','Visible readiness includes220ms debounce'],['search-title-1000','Search','Search note;899 results','100 mounted summaries','Not a full-document frontend scan'],['search-content-5000','Search','nebula;489 results;collection Paragraph2','3 invoke samples;1 visible sample','Command includes IPC/SQL/serialization'],['search-rapid-5000','Search','Three replacements;latest Search note wins','Native input and rendered ready state','Mocked delayed replies additionally verify stale-result refusal'],['search-churn-5000','Retention','Two rounds,10 opens/panes/queries/pages,30+60s idle','No forcedGC','Different from M3 churn; no direct comparison']];
+}
 const metricSheet = wb.worksheets.getItem('Metrics');
 metricSheet.getRange('A18:E29').values = metrics.map(m => [m,m.includes('percent')||m.endsWith('_pct')?'%':m.includes('set')||m.includes('bytes')||m.includes('mib')?'MiB':'ms','lower','M1 instrument; see repository benchmark README','Missing values remain blank']);
 wb.recalculate();
 console.log((await wb.inspect({kind:'table',range:'Dashboard!A11:H23',include:'values',tableMaxRows:13,tableMaxCols:8,maxChars:2400})).ndjson);
 console.log((await wb.inspect({kind:'match',searchTerm:'#REF!|#DIV/0!|#VALUE!|#NAME\\?|#NUM!',options:{useRegex:true,maxResults:10},maxChars:1000})).ndjson);
+if(!process.argv.includes('--data-only')){
 const preview = await wb.render({sheetName:'Dashboard',range:'A4:H23',scale:1});
 await fs.writeFile(join(root,'raw/workbook-after.png'),new Uint8Array(await preview.arrayBuffer()));
 for(const [sheetName,range] of [['Raw Runs','K4:O12'],['Protocol','A3:B14'],['Parity Gates','A4:F10'],['Scenarios','A16:E21'],['Metrics','A18:E24']]) {
@@ -162,6 +169,7 @@ for(const [sheetName,range] of [['Raw Runs','K4:O12'],['Protocol','A3:B14'],['Pa
 if(m2Runs.length){const image=await wb.render({sheetName:'M1 vs M2',range:'A2:H20',scale:1});await fs.writeFile(join(root,'raw/workbook-M2.png'),new Uint8Array(await image.arrayBuffer()));console.log((await wb.inspect({kind:'table',range:'M1 vs M2!A10:H17',tableMaxRows:8,tableMaxCols:8,maxChars:1600})).ndjson);}
 if(m3Runs.length){const image=await wb.render({sheetName:'M2 vs M3',range:'A2:H20',scale:1});await fs.writeFile(join(root,'raw/workbook-M3.png'),new Uint8Array(await image.arrayBuffer()));console.log((await wb.inspect({kind:'table',range:'M2 vs M3!A10:H17',tableMaxRows:8,tableMaxCols:8,maxChars:1600})).ndjson);}
 if(m4Runs.length){const image=await wb.render({sheetName:'M3 vs M4',range:'A2:H20',scale:1});await fs.writeFile(join(root,'raw/workbook-M4.png'),new Uint8Array(await image.arrayBuffer()));console.log((await wb.inspect({kind:'table',range:'M3 vs M4!A10:H17',tableMaxRows:8,tableMaxCols:8,maxChars:1600})).ndjson);}
+}
 await (await SpreadsheetFile.exportXlsx(wb)).save(path);
 await fs.mkdir(join(root,'summaries'),{recursive:true});
 for(const file of await fs.readdir(join(root,'raw'))) {
