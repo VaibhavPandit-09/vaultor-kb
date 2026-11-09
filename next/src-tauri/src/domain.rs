@@ -17,6 +17,9 @@ pub enum Request {
         path: String,
     },
     Snapshot,
+    Linked {
+        request: crate::linked::Request,
+    },
     List {
         collection: Option<String>,
         cursor: Option<crate::library::Cursor>,
@@ -96,7 +99,7 @@ pub enum Request {
 }
 pub struct Workspace {
     pub(crate) db: Connection,
-    root: PathBuf,
+    pub(crate) root: PathBuf,
     _lock: File,
 }
 pub(crate) fn error(e: impl std::fmt::Display) -> String {
@@ -166,6 +169,7 @@ impl Workspace {
             CREATE TABLE IF NOT EXISTS drafts(resource_id TEXT PRIMARY KEY REFERENCES resources(id), base_revision INTEGER NOT NULL, token TEXT NOT NULL, sequence INTEGER NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL CHECK(json_valid(content)), updated_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')));
             PRAGMA user_version=2; COMMIT;").map_err(error)?;
         crate::search::initialize(&mut db)?;
+        crate::linked::initialize(&db)?;
         Ok(Self {
             db,
             root,
@@ -175,6 +179,7 @@ impl Workspace {
     pub fn execute(&mut self, request: Request) -> Result<Value, String> {
         match request {
             Request::Open { .. } => Err("Open belongs to workspace lifecycle".into()),
+            Request::Linked { request } => self.linked(request),
             Request::Snapshot => {
                 let mut stmt = self.db.prepare("SELECT id,name,parent_id FROM collections ORDER BY normalized,id").map_err(error)?;
                 let collections = stmt.query_map([], |r| Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"parentId":r.get::<_,Option<String>>(2)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;

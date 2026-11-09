@@ -13,6 +13,7 @@ vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});
 const rows=(start:number)=>Array.from({length:3},(_,i)=>({id:String(start+i),title:'Note '+(start+i),revision:1,updatedAt:''}));
 function setup(search?:(r:{kind:string;options?:SearchOptions;cursor?:unknown})=>Promise<unknown>){
  invoke.mockReset();invoke.mockImplementation(async(r:{kind:string;cursor?:unknown;id?:string;options?:SearchOptions})=>{
+  if(r.kind==='linked')return [];
   if(r.kind==='search')return search?.(r)??{items:[],next:null,total:0};
   if(r.kind==='snapshot')return {path:'fixture',settings:{theme:'light'},collections:[{id:'destination',name:'Research',parentId:null}]};
   if(r.kind==='drafts')return [];

@@ -2088,7 +2088,7 @@
     {
       "id": "next-foundation",
       "name": "Vaultor Next foundation",
-      "description": "Experimental Windows Tauri notes with indexed saved-note search, protected drafts, page-scoped selection and transactional collection organization.",
+      "description": "Experimental Windows Tauri notes with indexed managed search, protected drafts, collection organization and explicitly saved linked NTFS Markdown.",
       "article": "next-foundation",
       "areas": [
         "Platforms",
@@ -2104,7 +2104,9 @@
         "Browse thousands of notes and organize collection memberships",
         "Select a resource page with Ctrl Shift Space and Ctrl+A",
         "Organize multiple notes using context menus and searchable destinations",
-        "Search saved note titles and content and filter by collection or ordering"
+        "Search saved note titles and content and filter by collection or ordering",
+        "Register external folders and explicitly save source-preserving Markdown",
+        "Review external conflicts and interrupted Save evidence"
       ],
       "keywords": [
         "Tauri",

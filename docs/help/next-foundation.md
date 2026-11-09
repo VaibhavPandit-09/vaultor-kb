@@ -4,7 +4,7 @@ Vaultor Next is a separate Windows development application. It does not replace 
 
 ## Workspaces
 
-The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or an existing M2/M3 workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. No external documents are edited.
+The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or an existing M2–M5 workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. Linked folders are separate from this workspace.
 
 ## Notes and collections
 
@@ -16,7 +16,7 @@ New note creates a note in the selected collection. Select a title to edit it, o
 
 Use a note's More button or right-click a Library row for the organization actions described below. These change placements without copying or deleting note content.
 
-Edit the title or body directly. Markdown typing shortcuts, bold, italic, headings, lists, code blocks, tables and Undo/Redo are supported by the rich-text editor. The foundation has no slash menu, attachments, resource links, imports, search, deletion or linked Markdown editing yet.
+Edit the title or body directly. Markdown typing shortcuts, bold, italic, headings, lists, code blocks, tables and Undo/Redo are supported by the rich-text editor. The foundation has no slash menu, attachments, resource links, imports or deletion yet. Search and linked Markdown use the controls described below.
 
 ## Selecting and organizing a page
 
@@ -38,7 +38,7 @@ Words match prefixes, ignoring case and accents. All words must match; punctuati
 
 Results update after a short typing pause and use pages of at most 100 summaries. Down from the search field focuses results; Enter on a result opens it in the existing pane. Ctrl+A in the field selects text. With list focus, Escape clears selection first, then search and filters. Escape in the editor returns focus to its row. Clear search and filters returns to the prior browse page in the same collection. Opening results keeps the query and result page.
 
-If saved notes or memberships change while paging, refresh starts a new result page instead of silently skipping or repeating rows. No-results and query-error states keep open editors intact. External Markdown, media search and Saved Searches are not available.
+If saved notes or memberships change while paging, refresh starts a new result page instead of silently skipping or repeating rows. No-results and query-error states keep open editors intact. Search covers managed notes only; external Markdown, media search and Saved Searches are not indexed.
 
 ## Saving and recovery
 
@@ -51,5 +51,21 @@ If another writer changes the saved revision, autosave refuses to overwrite it a
 A successful protected save removes only the matching draft, in the same transaction. Recovery holds at most 64 notes / 32 MiB per workspace; reaching the limit refuses new protection rather than evicting old drafts. Review or discard older drafts to free space. There is no timed deletion of unresolved evidence. Notes have an 8 MiB serialized size limit. This remains experimental software; keep independent copies of important information.
 
 ## Appearance and keyboard
+
+## Linked external Markdown (Windows experiment)
+
+Use Link external folder and choose an ordinary local NTFS folder. Registration records location and identity without importing files. Expand folders to browse Markdown; directories load at most 100 entries per page. Right-click a source to refresh or remove its registration. Removal never deletes its files. Up/Down navigate entries; Left/Right collapse/expand, Enter opens, and Shift+F10 opens actions.
+
+Open a file in the existing pane or use Open beside. Both panes share one document, history and protected draft. Ctrl-click a Markdown link, or Ctrl+Enter while in it, navigates within registered folders. HTTP/HTTPS links open the system browser; other protocols are refused. Simple same-document heading fragments scroll within the pane; cross-file fragment positioning and embedded media are not implemented.
+
+The external file remains authoritative. Editing protects a private recovery draft after 250 ms quiet or one second continuous typing, subject to the actual SQLite acknowledgment. It does **not** autosave the external file. Select Save in that pane, or Ctrl+S while that pane owns focus, to publish deliberately. Navigation and normal close protect drafts without publishing. A no-op Save leaves bytes and timestamps unchanged.
+
+Rich editing supports paragraphs, headings, basic inline formatting/links, lists/tasks, ordinary code blocks and simple unaligned tables. UTF-8 BOM, CRLF/LF, frontmatter, reference definitions and unrelated source ranges are retained. Frontmatter is shown separately. Save patches verified source ranges and reparses the result; complex structural changes may be refused instead of reformatting the file. Raw HTML, images, footnotes, extensions and aligned tables use a read-only source view. Rich editing is limited to 256 KiB; reading to 1 MiB.
+
+If the source changes, disappears or is replaced, Save refuses to overwrite it. Review compares protected content with the current source; keep the draft for manual reconciliation or explicitly discard it and reload. There is no force overwrite or automatic merge. After interruption, Linked recovery offers Restore draft or explicit discard. Only acknowledged edits survive a crash.
+
+Publication flushes a same-directory candidate and captures the original before a non-replacing rename. This is not atomic compare-and-swap: another program can occupy the brief path gap. It is left untouched, with original/candidate evidence and the draft retained. Review shows evidence paths. Verify Save outcome acknowledges only an exact original or candidate identity/hash; uncertain outcomes require manual attention and are never replayed. Do not remove evidence files while resolving an interrupted Save.
+
+At most eight non-overlapping fixed local NTFS roots are supported. Junctions/reparse points, cloud placeholders, hardlinks, alternate streams/extended attributes and unsupported metadata are refused or read-only. Ordinary owner/group/DACL, creation time and attributes are checked and transferred; file identity and write time change on a real Save. Optional audit/exotic metadata and concurrent security administration are not qualified. SMB, removable/non-NTFS storage and other platforms are unsupported. Linked drafts have a separate 64-document / 32 MiB bound in the same workspace database; unresolved drafts are never evicted silently. Registration persists, but expanded trees and open panes are not restored automatically.
 
 Appearance switches light and dark themes and persists the choice in the workspace. F1 opens or closes this Help. Tab moves between controls; Escape leaves editor focus. The operating system's reduced-motion preference applies to shared motion and theme transitions.

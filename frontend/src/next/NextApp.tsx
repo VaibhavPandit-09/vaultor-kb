@@ -21,6 +21,11 @@ import SearchBar from './SearchBar';
 import {defaultCriteria,isFiltered,type Criteria} from './searchState';
 import {useStableEvent} from './useStableEvent';
 import type {ListCursor,SearchCursor} from './client';
+import LinkedSources from './LinkedSources';
+import LinkedPane from './LinkedPane';
+import LinkedReview from './LinkedReview';
+import {LinkedEditingSession,linkedCommand} from './linked';
+import type {LinkedSource,LinkedDocument,LinkedDraftSummary,LinkedInspection,LinkedRequest} from './linkedTypes';
 import helpText from '../../../docs/help/next-foundation.md?raw';
 
 export default function NextApp() {
@@ -42,6 +47,12 @@ export default function NextApp() {
   const [drafts,setDrafts]=useState<DraftSummary[]>([]);
   const [review,setReview]=useState<{draft:Draft;saved:Note}>();
   const [,render]=useState(0);
+  const [sources,setSources]=useState<LinkedSource[]>([]),[externalDrafts,setExternalDrafts]=useState<LinkedDraftSummary[]>([]);
+  const [linkedReview,setLinkedReview]=useState<{doc:LinkedDocument;inspection:LinkedInspection;recovering:boolean;beside:boolean}>();
+  const linkedRecoveryRefresh=useRef<()=>Promise<void>>(async()=>{});
+  const [external]=useState(()=>new LinkedEditingSession(persisted=>{render(v=>v+1);if(persisted)void linkedRecoveryRefresh.current().catch(e=>setError(String(e)));}));
+  useEffect(()=>{linkedRecoveryRefresh.current=async()=>{setExternalDrafts(await linkedCommand<LinkedDraftSummary[]>({op:'drafts'}));};},[]);
+
   const [documents]=useState(()=>new SharedNoteDocuments());
   const [theme]=useState(()=>createThemeTransitionController());
   const reviewHandler=useRef<(id:string)=>Promise<void>>(async()=>{});
@@ -62,6 +73,7 @@ export default function NextApp() {
     const target=rows.find(row=>row.dataset.rowOpen===id)??rows[0]??document.querySelector<HTMLElement>('[data-list-focus]');target?.focus({preventScroll:true});
     target?.scrollIntoView?.({block:'nearest'});
   },[]);
+  const focusLinked=useCallback((source:string,path:string)=>{const buttons=[...document.querySelectorAll<HTMLButtonElement>('[data-linked-navigation]')];(buttons.find(button=>button.dataset.linkedSource===source&&button.dataset.linkedPath===path)??buttons.find(button=>button.dataset.linkedSource===source)??document.querySelector<HTMLButtonElement>('[aria-label="Link external folder"]'))?.focus({preventScroll:true});},[]);
   const paths=useMemo(()=>collectionPaths(snapshot?.collections??[]),[snapshot?.collections]);
   const previousPanes=useRef(new Map<Element,DOMRect>());
   useLayoutEffect(()=>{
@@ -72,15 +84,15 @@ export default function NextApp() {
   useLayoutEffect(()=>{if(listElement.current)listElement.current.scrollTop=scrolls.current.get(scopeKey)??0;},[page,scopeKey]);
   const refresh=useCallback(async(reset=true)=>{
     const epoch=++loadEpoch.current;setQueryBusy(false);
-    const [state,list,recovery]=await Promise.all([command<Snapshot>({kind:'snapshot'}),requestPage(currentCollection.current,reset?null:cursorRef.current),command<DraftSummary[]>({kind:'drafts'})]);
-    setSnapshot(state);setDrafts(recovery);theme.apply(state.settings.theme??'light');
+    const [state,list,recovery,linkedSources,linkedRecovery]=await Promise.all([command<Snapshot>({kind:'snapshot'}),requestPage(currentCollection.current,reset?null:cursorRef.current),command<DraftSummary[]>({kind:'drafts'}),linkedCommand<LinkedSource[]>({op:'sources'}),linkedCommand<LinkedDraftSummary[]>({op:'drafts'})]);
+    setSnapshot(state);setDrafts(recovery);setSources(linkedSources);setExternalDrafts(linkedRecovery);theme.apply(state.settings.theme??'light');
     if(epoch!==loadEpoch.current)return;
     setMenu(null);setPage(list);if(reset)setTrail([null]);
   },[theme,requestPage]);
   const run=useCallback(async(action:()=>Promise<void>,flush=true)=>{
     if(operating.current)return;operating.current=true;setBusy(true);setError('');
-    try{if(flush)await session.flushAll();await action();}catch(e){setError(String(e));}finally{operating.current=false;setBusy(false);}
-  },[session]);
+    try{if(flush){await session.flushAll();await external.protectAll();}await action();}catch(e){setError(String(e));}finally{operating.current=false;setBusy(false);}
+  },[session,external]);
   const inspectDraft=useCallback(async(id:string)=>{
     if(session.dirty(id))await session.protect(id);
     const [draft,saved]=await Promise.all([command<Draft>({kind:'readDraft',id}),command<Note>({kind:'read',id})]);
@@ -88,13 +100,13 @@ export default function NextApp() {
   },[session]);
   useEffect(()=>{reviewHandler.current=inspectDraft;},[inspectDraft]);
   useEffect(()=>{void refresh().catch(e=>setError(String(e)));return()=>theme.dispose();},[refresh,theme]);
-  useEffect(()=>{for(const id of session.ids())if(!panes.includes(id)&&!session.dirty(id))session.forget(id);},[panes,session]);
+  useEffect(()=>{for(const id of session.ids())if(!panes.includes(id)&&!session.dirty(id))session.forget(id);for(const id of external.ids())if(!panes.includes(id))external.forget(id);},[panes,session,external]);
   useEffect(()=>{
     let disposed=false,remove:(()=>void)|undefined;
     void getCurrentWindow().onCloseRequested(event=>{event.preventDefault();void run(async()=>{await getCurrentWindow().destroy();});}).then(unlisten=>{if(disposed)unlisten();else remove=unlisten;});
-    const keyboard=(event:globalThis.KeyboardEvent)=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();void run(async()=>{});}if(event.key==='F1'){event.preventDefault();setHelp(v=>!v);}};
+    const keyboard=(event:globalThis.KeyboardEvent)=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();const pane=event.target instanceof Element?event.target.closest<HTMLElement>('[data-note-id]')?.dataset.noteId:undefined;void run(async()=>{if(pane?.startsWith('linked:'))await external.save(pane);});}if(event.key==='F1'){event.preventDefault();setHelp(v=>!v);}};
     window.addEventListener('keydown',keyboard);return()=>{disposed=true;remove?.();window.removeEventListener('keydown',keyboard);};
-  },[run]);
+  },[run,external]);
   const selectCollection=useCallback((id:string|null)=>void run(async()=>{
     const epoch=++loadEpoch.current;setQueryBusy(false);browseContext.current=null;currentCollection.current=id;setCollection(id);setQueryError('');let list:Page;try{list=await requestPage(id);}catch(e){setPage({items:[],next:null,total:0});setTrail([null]);if(isFiltered(criteriaRef.current)){setQueryError(String(e));return;}throw e;}if(epoch!==loadEpoch.current)return;setMenu(null);setNotice('');setPage(list);setTrail([null]);setOrganizing(null);
   }),[run,requestPage]);
@@ -107,6 +119,33 @@ export default function NextApp() {
     setPanes(old=>beside&&old.length?[old[0],id]:[id]);
     setFocusNote(keyboard?id:null);
   }),[run,session,inspectDraft]);
+  const acceptLinked=(doc:LinkedDocument,beside=false)=>{
+    if(!external.get(doc.id)||!external.dirty(doc.id)){if(doc.base.length<=256*1024&&doc.content.content?.length)documents.acceptSaved(doc.id,doc.content);external.adopt(doc);}
+    setPanes(old=>beside&&old.length?[old[0],doc.id]:[doc.id]);setFocusNote(doc.id);
+  };
+  const openLinked=(request:LinkedRequest,beside=false)=>void run(async()=>{
+    const doc=await linkedCommand<LinkedDocument>(request);
+    if(doc.draft&&(!external.get(doc.id)||!external.dirty(doc.id))){setLinkedReview({doc,inspection:doc.current??{current:{}},recovering:true,beside});return;}
+    acceptLinked(doc,beside);
+  });
+  const reviewLinked=(id:string)=>void run(async()=>{
+    await external.protect(id);const doc=external.get(id)!;const content=external.snapshot(id)??doc.content;
+    const inspected=await linkedCommand<LinkedInspection>({op:'inspect',id:doc.documentId});
+    setLinkedReview({doc:{...doc,content,draft:external.dirty(id)?{token:'protected',sequence:1}:null},inspection:inspected,recovering:false,beside:false});
+  });
+  const discardLinked=()=>void run(async()=>{
+    if(!linkedReview)return;const {doc}=linkedReview;
+    if(!external.get(doc.id))external.adopt(doc);
+    if(external.dirty(doc.id))await external.discard(doc.id);else external.forget(doc.id);const latest=await linkedCommand<LinkedDocument>({op:'open',source:doc.sourceId,path:doc.path});
+    if(latest.editable)documents.acceptSaved(doc.id,latest.content);external.adopt(latest);setPanes(old=>old.map(id=>id===doc.id?latest.id:id));if(!panes.includes(doc.id))setPanes([latest.id]);setLinkedReview(undefined);await linkedRecoveryRefresh.current();
+  });
+  const resolveLinked=()=>void run(async()=>{
+    if(!linkedReview)return;const result=await linkedCommand<LinkedDocument>({op:'resolve',id:linkedReview.doc.documentId});
+    documents.acceptSaved(result.id,result.content);external.adopt(result);setLinkedReview(undefined);setPanes(old=>old.includes(result.id)?old:[result.id]);await linkedRecoveryRefresh.current();
+  });
+  const refreshSources=useStableEvent(async()=>{setSources(await linkedCommand<LinkedSource[]>({op:'sources'}));await linkedRecoveryRefresh.current();});
+  const openExternalPath=useStableEvent((source:string,path:string,beside:boolean=false)=>openLinked({op:'open',source,path},beside));
+  const sourceMenu=useStableEvent((label:string,element:HTMLElement,actions:ContextAction[])=>{const rect=element.getBoundingClientRect();setMenu({label,source:element,scope:selectionScope,x:rect.left,y:rect.bottom,actions});});
   const organize=useCallback((ids:string[],mode:OrganizationRequest['mode']='add')=>void run(async()=>{
     setOrganizing({ids:[...ids],source:currentCollection.current,mode});
   }),[run]);
@@ -128,6 +167,7 @@ export default function NextApp() {
   useEffect(()=>{if(!queryBusy){setShowLoading(false);return;}const timer=setTimeout(()=>setShowLoading(true),180);return()=>clearTimeout(timer);},[queryBusy]);
   useEscapeLayer({active:searchFocused||(listOwnsFocus&&isFiltered(criteria)),priority:125,restoreFocusOnEscape:false,close:()=>{if(criteria.query.length||isFiltered(criteria))changeCriteria(defaultCriteria);else focusRow();}});
   const resolve=(choice:'restore'|'discard'|'park')=>void run(async()=>{
+    await external.protectAll();
     if(!review)return;const {draft,saved}=review;
     const alreadyOpen=panes.includes(draft.id);
     if(choice!=='park'&&(alreadyOpen||choice==='restore'))for(const id of session.ids())if(id!==draft.id)await session.flush(id);
@@ -191,16 +231,18 @@ export default function NextApp() {
   };
   return <div className="next-shell" data-ready={!!snapshot} data-total={page.total}>
     <aside className="next-sidebar">
-      <div className="next-brand">Vaultor <span>Next · M4</span></div>
+      <div className="next-brand">Vaultor <span>Next · M5</span></div>
       <button onClick={()=>selectCollection(null)} aria-current={collection===null?'page':undefined}><Library size={17}/>Library</button>
-      <div className="next-section"><span>Collections</span><button aria-label="New collection" disabled={busy} onClick={()=>setForm({name:'',parentId:collection})}><Plus size={16}/></button></div>
+      <div className="next-sidebar-navigation"><div className="next-section"><span>Collections</span><button aria-label="New collection" disabled={busy} onClick={()=>setForm({name:'',parentId:collection})}><Plus size={16}/></button></div>
       <CollectionTree collections={snapshot?.collections??[]} selected={collection} select={selectCollection} menu={collectionMenu}/>
       {form&&<form className="next-collection-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
         if(form.id)await command({kind:'updateCollection',id:form.id,name:form.name,parentId:form.parentId});else await command({kind:'createCollection',name:form.name,parentId:form.parentId});const id=form.id;setForm(null);await refresh(!id);requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>(`[data-collection-open="${id}"]`)?.focus());
       });}}><input aria-label="Collection name" autoFocus value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/><select aria-label="Parent collection" value={form.parentId??''} onChange={e=>setForm({...form,parentId:e.target.value||null})}><option value="">Top level</option>{snapshot?.collections.filter(c=>c.id!==form.id).map(c=><option key={c.id} value={c.id}>{paths.get(c.id)}</option>)}</select><div><button disabled={busy}>{form.id?'Save collection':'Create'}</button><button type="button" onClick={()=>setForm(null)}>Cancel</button></div></form>}
       {drafts.length>0&&<div className="next-recovery-list"><small>Recovery · {drafts.length}</small>{drafts.map(d=><button key={d.id} onClick={()=>void run(()=>inspectDraft(d.id),false)}>{d.title||'Untitled draft'}</button>)}</div>}
+      <LinkedSources sources={sources} active={external.get(panes.at(-1)??'')?external.get(panes.at(-1)!)!.sourceId+':'+external.get(panes.at(-1)!)!.path:''} changed={refreshSources} openDocument={openExternalPath} menu={sourceMenu}/>
+      {externalDrafts.length>0&&<div className="next-recovery-list"><small>Linked Recovery · {externalDrafts.length}</small>{externalDrafts.map(d=><button key={d.id} title={d.path} onClick={()=>openLinked({op:'recover',id:d.id})}>{d.path}{d.status&&d.status!=='draft'?' · '+d.status:''}</button>)}</div>}</div>
       <div className="next-sidebar-bottom">
-        <button disabled={busy} onClick={()=>void run(async()=>{const path=await open({directory:true,multiple:false,title:'Choose an empty folder or Vaultor Next workspace'});if(!path)return;await command({kind:'open',path});browseContext.current=null;restoring.current=null;criteriaRef.current=defaultCriteria;setCriteria(defaultCriteria);for(const id of session.ids())session.forget(id);documents.clear();setPanes([]);currentCollection.current=null;setCollection(null);await refresh();})}><FolderOpen size={17}/>Open workspace</button>
+        <button disabled={busy} onClick={()=>void run(async()=>{const path=await open({directory:true,multiple:false,title:'Choose an empty folder or Vaultor Next workspace'});if(!path)return;await command({kind:'open',path});browseContext.current=null;restoring.current=null;criteriaRef.current=defaultCriteria;setCriteria(defaultCriteria);for(const id of session.ids())session.forget(id);for(const id of external.ids())external.forget(id);documents.clear();setPanes([]);currentCollection.current=null;setCollection(null);await refresh();})}><FolderOpen size={17}/>Open workspace</button>
         <button onClick={e=>{const origin=themeOriginAt(e.currentTarget);void run(async()=>{const value=snapshot?.settings.theme==='dark'?'light':'dark';await command({kind:'setting',key:'theme',value});theme.apply(value,origin);setSnapshot(s=>s&&({...s,settings:{...s.settings,theme:value}}));});}}><Moon size={17}/>Appearance</button>
         <button onClick={()=>setHelp(v=>!v)}><BookOpen size={17}/>Milestone Help</button><small title={snapshot?.path}>{snapshot?.path??'Workspace unavailable'}</small>
       </div>
@@ -209,7 +251,7 @@ export default function NextApp() {
       {(error||session.failed())&&<div role="alert" className="next-error">{error||'A save failed. Your draft is retained; review conflicts or retry.'}<button onClick={()=>void run(refresh)}>Retry saves</button>{panes.some(id=>session.status(id)==='conflict')&&<button onClick={()=>void run(()=>inspectDraft(panes.find(id=>session.status(id)==='conflict')!),false)}>Review versions</button>}</div>}
       {help?<section className="next-help"><button onClick={()=>setHelp(false)}>Close Help</button><ReactMarkdown>{helpText}</ReactMarkdown></section>:<div className={`next-workspace ${panes.length?'has-editor':''}`}>
         <div className="next-library-region"><SearchBar value={criteria} change={changeCriteria} input={searchInput} focused={setSearchFocused} down={()=>{if(!queryBusy)focusRow();}} refresh={()=>{selection.clear();changeCriteria({...criteria});}} pending={showLoading}/>{showLoading&&<div className="sr-only" role="status">Searching saved notes…</div>}{queryError&&<div className="next-search-feedback next-error" role="alert">{queryError}<button onClick={()=>{selection.clear();changeCriteria({...criteria});}}>Refresh results</button></div>}<nav ref={listElement} data-list-focus tabIndex={page.items.length?-1:0} className="next-library" aria-label="Notes" aria-busy={busy||queryBusy} onFocusCapture={()=>setListOwnsFocus(true)} onBlurCapture={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node))setListOwnsFocus(false);}} onKeyDown={listKeys} onContextMenu={e=>{if(!(e.target as Element).closest('.next-resource,input,button')){e.preventDefault();backgroundMenu(e);}}} onScroll={e=>{scrolls.current.set(scopeKey,e.currentTarget.scrollTop);if(scrolls.current.size>64)scrolls.current.delete(scrolls.current.keys().next().value!);}}><div className="next-list-heading"><input ref={selectPage} data-select-resource="page" type="checkbox" aria-label="Select current resource page" checked={!!order.length&&selection.state.ids.length===order.length} disabled={busy||queryBusy||!order.length} onChange={()=>selection.state.ids.length===order.length?selection.clear():selection.all()}/><span>Notes</span><small>Ctrl+A · page</small></div><div role="grid" aria-label="Resource page" aria-multiselectable="true" aria-rowcount={page.items.length}>{page.items.map(item=><ResourceRow key={item.id} item={item} selected={selection.state.ids.includes(item.id)} opened={panes.includes(item.id)} focused={selection.state.focus===item.id} activate={activate} pick={rowPick} focus={selection.focus} open={rowOpen} menu={resourceMenu}/>)}</div>{!page.items.length&&!queryBusy&&!queryError&&<p>{isFiltered(criteria)?"No matching saved notes. Try fewer words or include saved content.":"Create a note to start writing."}{!isFiltered(criteria)&&<button onClick={()=>createNote()}>New note</button>}</p>}</nav><div className="next-pagination"><button disabled={busy||queryBusy||trail.length<=1} onClick={()=>changePage(false)}>Previous</button><span>Page {trail.length}</span><button disabled={busy||queryBusy||!page.next} onClick={()=>changePage(true)}>Next</button></div></div>
-        <div className="next-panes">{panes.map((id,index)=>{const note=session.get(id);if(!note)return null;return <section key={`${index}-${id}`} className="next-pane" aria-label={`Editor pane ${index+1}`}><div className="next-note-bar"><input aria-label={`Note title ${index+1}`} value={note.title} maxLength={240} disabled={busy||!!review||!!organizing} onChange={e=>{session.edit(id,{title:e.target.value});if(!isFiltered(criteria))setPage(p=>({...p,items:p.items.map(item=>item.id===id?{...item,title:e.target.value}:item)}));}}/><span role="status">{session.status(id)}</span><button aria-label="Organize note" onClick={()=>organize([id])}><MoreHorizontal size={16}/></button><button aria-label="Close note" onClick={()=>void run(async()=>{setPanes(old=>old.filter((_,i)=>i!==index));requestAnimationFrame(()=>focusRow(id));})}><X size={16}/></button></div><div className="next-document"><NextEditor note={note} pane={index} documents={documents} locked={busy||!!review||!!organizing} focusWhenReady={focusNote===id&&index===panes.length-1} focusHandled={()=>setFocusNote(null)} leaveFocus={()=>focusRow(id)} changed={capture=>session.edit(id,{capture})}/></div></section>;})}</div>
+        <div className="next-panes">{panes.map((id,index)=>{const linked=external.get(id);if(linked)return <LinkedPane key={`${index}-${id}`} doc={linked} index={index} documents={documents} status={external.status(id)} error={external.error(id)} busy={busy||!!linkedReview} locked={external.locked(id)||!sources.some(source=>source.id===linked.sourceId)} changed={capture=>external.edit(id,capture)} save={()=>void run(async()=>{await external.save(id);})} review={()=>reviewLinked(id)} close={()=>void run(async()=>{await external.protect(id);setPanes(old=>old.filter((_,i)=>i!==index));requestAnimationFrame(()=>focusLinked(linked.sourceId,linked.path));})} beside={()=>openLinked({op:'open',source:linked.sourceId,path:linked.path},true)} follow={href=>{if(/^https?:/i.test(href))void run(async()=>{await linkedCommand({op:'web',url:href});},false);else openLinked({op:'follow',id:linked.documentId,href});}} focusWhenReady={focusNote===id&&index===panes.length-1} focusHandled={()=>setFocusNote(null)} leaveFocus={()=>focusLinked(linked.sourceId,linked.path)}/>;const note=session.get(id);if(!note)return null;return <section key={`${index}-${id}`} className="next-pane" data-note-id={id} aria-label={`Editor pane ${index+1}`}><div className="next-note-bar"><input aria-label={`Note title ${index+1}`} value={note.title} maxLength={240} disabled={busy||!!review||!!organizing||!!linkedReview} onChange={e=>{session.edit(id,{title:e.target.value});if(!isFiltered(criteria))setPage(p=>({...p,items:p.items.map(item=>item.id===id?{...item,title:e.target.value}:item)}));}}/><span role="status">{session.status(id)}</span><button aria-label="Organize note" onClick={()=>organize([id])}><MoreHorizontal size={16}/></button><button aria-label="Close note" onClick={()=>void run(async()=>{setPanes(old=>old.filter((_,i)=>i!==index));requestAnimationFrame(()=>focusRow(id));})}><X size={16}/></button></div><div className="next-document"><NextEditor note={note} pane={index} documents={documents} locked={busy||!!review||!!organizing||!!linkedReview} focusWhenReady={focusNote===id&&index===panes.length-1} focusHandled={()=>setFocusNote(null)} leaveFocus={()=>focusRow(id)} changed={capture=>session.edit(id,{capture})}/></div></section>;})}</div>
       </div>}
-    </main>{organizing&&<OrganizeDialog request={organizing} collections={snapshot?.collections??[]} busy={busy} error={error} close={()=>{setOrganizing(null);requestAnimationFrame(()=>focusRow(selection.state.focus??organizing.ids[0]));}} apply={membership}/>} {review&&<RecoveryReview {...review} busy={busy} close={()=>setReview(undefined)} resolve={resolve}/>} {menu&&menu.scope===selectionScope&&<ContextMenu request={menu} dismiss={()=>setMenu(null)}/>}</div>;
+    </main>{linkedReview&&<LinkedReview {...linkedReview} busy={busy} error={error} close={()=>{setLinkedReview(undefined);}} restore={()=>{acceptLinked(linkedReview.doc,linkedReview.beside);setLinkedReview(undefined);}} discard={discardLinked} resolve={resolveLinked}/>} {organizing&&<OrganizeDialog request={organizing} collections={snapshot?.collections??[]} busy={busy} error={error} close={()=>{setOrganizing(null);requestAnimationFrame(()=>focusRow(selection.state.focus??organizing.ids[0]));}} apply={membership}/>} {review&&<RecoveryReview {...review} busy={busy} close={()=>setReview(undefined)} resolve={resolve}/>} {menu&&menu.scope===selectionScope&&<ContextMenu request={menu} dismiss={()=>setMenu(null)}/>}</div>;
 }

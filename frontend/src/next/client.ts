@@ -1,3 +1,4 @@
+import type {LinkedRequest} from './linkedTypes';
 import { invoke } from '@tauri-apps/api/core';
 import type { JSONContent } from '@tiptap/core';
 export type Note = { id: string; title: string; content: JSONContent; revision: number; collections?: string[] };
@@ -14,6 +15,7 @@ export type DraftSummary = Omit<Draft, 'content'>;
 export type Snapshot = { path: string; collections: Collection[]; settings: { theme?: 'light' | 'dark' | 'oled' } };
 type Request =
   | { kind: 'snapshot' }
+  | { kind: 'linked'; request: LinkedRequest }
   | { kind: 'open'; path: string }
   | { kind: 'list'; collection: string | null; cursor?: ListCursor | null; limit?: number }
   | { kind: 'search'; options: SearchOptions; cursor?: SearchCursor | null; limit?: number }

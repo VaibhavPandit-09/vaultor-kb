@@ -36,7 +36,7 @@ Ordinary title activation opens without an explicit multi-selection. Ctrl/checkb
 
 Right-clicking a selected row preserves the group; an unselected row becomes the sole selection. One context-menu instance uses existing MenuAction presentation, shared motion classes and Escape/portal focus owners, with viewport clamping, keyboard traversal and invoker restoration. There is no menu/listener per row. Resource, collection and blank-space commands expose implemented actions only. Bulk destinations reuse AppModal and a bounded searchable collection picker. Header metadata/actions compress into selected-count/organization mode without a second toolbar or duplicated header. Collection branches transform their existing grid track with inert collapsed descendants and reduced-motion endpoints. Active editors retain their keys across selection and menu work.
 
-## Visual and interaction parity (M1–M4)
+## Visual and interaction parity (M1–M5)
 
 | Surface | Functional parity | Visual parity | Motion parity | Known differences / remaining work |
 | --- | --- | --- | --- | --- |
@@ -48,14 +48,15 @@ Right-clicking a selected row preserves the group; an unselected row becomes the
 | Recovery/conflicts | M2 protected restore/discard/park/reviewed replacement | Compact two-column review | Shared modal motion/focus | Preview cap and durability window remain documented |
 | Themes/accessibility | Light/dark, reduced motion, keyboard ownership | Shared tokens and focus cues | Shared reveal; immediate reduced endpoints | Physical IME/screen-reader and subjective acceptance unclaimed |
 | Search/filtering | M4 indexed saved titles/text, collection scope, ordering and pages | Shared compact search/option surfaces; Windows inspection recorded with results | Focus underline, retained pane/menu/theme motion and reduced endpoints | No fuzzy/external-media search or Saved Searches; basic SQLite title collation, no locale-aware natural sort; full M6/M7 refinement pending |
-| Future M5–M8 areas | Pending, separately scoped | Pending | Pending | Linked Markdown/media/transfers/advanced external search/Trash/network/platform qualification are not implied available |
+| Linked folders/Markdown | M5 lazy native-root tree, shared editing, explicit protected Save/review | Existing compact sidebar/panes/modal tokens; native inspection pending | Structural tree/pane motion and reduced endpoints; native inspection pending | Local fixed NTFS and bounded Markdown subset; no linked FTS/collection integration |
+| Future M6–M8 areas | Pending, separately scoped | Pending | Pending | Media/transfers/advanced external search/Trash/network/platform qualification are not implied available |
 
 Native runtime outcomes and capture limitations are recorded in the benchmark results. This is scoped parity for touched interactions, not a declaration of whole-product or M6 refinement completion.
 
 ## Boundaries
 
 - Resource deletion/Trash, tags, pins and external/media search remain future work. Collection contents are direct memberships, not recursive descendant aggregation. Selection is deliberately limited to the current loaded page.
-- Linked Markdown remains a product requirement. Linked reading/writing, imports/exports, images/attachments and resource-link commands are not exposed yet.
+- M5 exposes linked Markdown through registered local NTFS roots. Imports/exports, images/attachments and managed resource-link commands remain pending.
 - Only acknowledged journal/commit bytes are durable. There is no automatic conflict merge or recovery export, and unresolved evidence requires an explicit decision. This experimental app still needs independent copies of important information.
 - Windows only. No installer, signing/updater, macOS, Android or LAN API qualification. Native menus, keyboard customization, slash menus, pane session restoration and full animation parity remain incomplete. Physical IME/accessibility acceptance is unclaimed.
 
@@ -95,4 +96,14 @@ Search command medians (3 samples each) were2.7ms/100titles,2.0ms/1000titles,6.6
 
 ## Next milestone
 
-Recommended M5: linked external Markdown as a major feature-parity priority, with explicit source authority, revision checks and recovery. Carry forward bounded performance checks without turning search into an open-ended project. Media, transfers, Trash, networking and platform qualification remain separately scoped; Android stays on hold.
+## M5 linked-source contracts
+
+`linked/` owns parsing/verified source-range patches, the Windows handle-bound filesystem adapter, and same-database source/document/draft/Save-intent coordination. React owns one session per logical document using retained Tiptap/history/panes. JSON is captured for debounced protection; there is no external autosave, recursive startup scan, idle polling or retained clean-file cache. Physical replacements acquire different identities; pending Save intents retain the original recovery identity.
+
+Root and parent handles are pinned without delete sharing. Revision checks use physical identity plus SHA-256, never timestamps alone. Reads cap at1MiB; rich editing at256KiB,64 nesting levels/2000 top-level blocks. Directories return100entries while examining at most20,000 per request. The supported syntax and recovery choices are in [experimental Help](../help/next-foundation.md). The complete patched candidate must reparse to the proposed structured document before publication.
+
+Drafts carry hash-verified baseline bytes, editor JSON and token/sequence in SQLite (64documents/32MiB). Explicit Save freezes the proof, checks source identity/hash under a lease, journals intent, stages/flushes a same-directory candidate, captures the original and publishes through a non-replacing handle-relative rename. Owner/group/DACL/inheritance, creation time and ordinary attributes are checked; candidate content/metadata are verified before cleanup. The original inode is never rewritten. Unsupported filesystem metadata is refused; optional audit metadata and concurrent security administration are not qualified.
+
+No atomic-CAS guarantee is claimed. A gap occupant is untouched; failed/uncertain publication keeps original/candidate evidence and protected content. Startup never replays writes. Explicit outcome verification accepts only an exact original or candidate identity/hash; other cases require manual attention. Unsupported visual edits remain journaled even when Save refuses them. Registration removal only deactivates authority and keeps recovery. Managed FTS/collection membership does not include linked files. Native acceptance and benchmark outcomes are recorded below when completed.
+
+Recommended M6: desktop refinement across linked-source states, keyboard/focus and editor capability disclosure. Carry forward bounded memory checks; consider linked organization/search explicitly without copying source bodies into managed notes. Media, transfers, Trash, networking and platform qualification remain separately scoped; Android stays on hold.

@@ -15,6 +15,7 @@ it('journals document edits but does not treat locking and selection as edits',a
   expect(changed).not.toHaveBeenCalled();
   act(()=>{editor.commands.insertContent('actual edit');});expect(changed).toHaveBeenCalledTimes(1);
   mounted.rerender(view(true));await waitFor(()=>expect(editor.isEditable).toBe(false));
+  const protectedContent=editor.getJSON();act(()=>{editor.commands.insertContent('must not change a locked document');});expect(editor.getJSON()).toEqual(protectedContent);expect(changed).toHaveBeenCalledTimes(1);
   mounted.rerender(view(false));await waitFor(()=>expect(editor.isEditable).toBe(true));
   act(()=>{editor.commands.setTextSelection(1);});expect(changed).toHaveBeenCalledTimes(1);
   mounted.unmount();
