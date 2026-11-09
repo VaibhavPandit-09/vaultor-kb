@@ -22,3 +22,22 @@ Each CSV row records source, machine/OS, fixture hash, iteration, unit, validity
 Bulky traces/screenshots/process series are ignored in `raw/`. Git-tracked `summaries/` retains sanitized metadata/measurements/checks with corresponding basenames. Temporary fixture folders remain outside Git for diagnosis. Any cleanup must target the exact disposable folder, never personal data.
 
 Refresh via `update-workbook.ps1 -RuntimeRoot <bundled-workspace-dependencies>`, using the runtime returned by Codex's loader. It uses bundled Artifact Tool, preserves template tabs, imports the entire CSV, normalizes validity and updates Dashboard formulas. Filters select architecture/device/scenario/dataset; blanks mean unmeasured combinations. Future milestones append results and refresh summaries/workbook.
+
+## Milestone 1 observations
+
+Final v2 runs on source `969d5f3`, Windows build 26340, Core Ultra 7 255HX, 20 logical CPUs, 15.4 GiB RAM. Electron 44.5.1/Chromium 152 and Tauri 2.12.5/system WebView2 use production UI; Rust 1.99.1 MSVC builds an 11,108,864-byte optimized executable. JSON summaries record exact executable hash and webview versions. Build outputs are ignored, not installers.
+
+| Metric | Electron/Java | Tauri/Rust |
+| --- | ---: | ---: |
+| First-profile startup (one sample) | 7,751 ms | 619 ms |
+| Restart (one sample; restoration differs) | 7,561 ms | 562 ms |
+| Working set after editing | 1,284 MiB | 500 MiB |
+| Private bytes after editing | 1,141 MiB | 272 MiB |
+| Note-open median (3 samples) | 106.4 ms | 32.4 ms |
+| Input-to-rAF median (12 inputs) | 15.95 ms | 2.35 ms |
+| Input-to-rAF nearest-rank p95 | 56.4 ms | 12.9 ms |
+| Short-idle CPU mean (two observations, one-core scale) | 2.14% | 11.13% |
+
+These are small-sample workflow observations, not full-product improvement claims. Tauri's higher short-idle CPU needs a longer settled-idle investigation; no idle CPU win is claimed. Its small-note shared-pane check sampled 454.9→483.0 MiB for one→two panes, with no equivalent Electron pane-impact sample. Java working set after editing was 338.6 MiB; heap was not collected. True cold OS startup, compositor presentation, long steady idle and full linked-source workflows remain unmeasured.
+
+Actual native checks pass for collection/note creation via UI, Unicode input, JSON save/readback, shared two-pane content, theme reveal sampled across 40 frames, pane motion across 20 frames, reduced-motion endpoints, offline Help, immediate pending-edit normal close/reopen and revision-conflict close refusal. Captures were reviewed. Subjective motion, physical keyboard/IME, full accessibility and full product parity are not certified.

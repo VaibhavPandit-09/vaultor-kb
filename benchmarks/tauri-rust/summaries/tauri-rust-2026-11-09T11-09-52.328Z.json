@@ -1,0 +1,46 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "7fc956fceb6f329fccd42163dafaaf289cd8528e",
+  "timestamp": "2026-11-09T11:09:52.383Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 552.5052999999999,
+      "median": 552.5052999999999,
+      "p95": 552.5052999999999,
+      "max": 552.5052999999999
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 0.19999998807907104,
+      "median": 1.5,
+      "p95": 37.79999998211861,
+      "max": 37.79999998211861
+    }
+  ],
+  "checks": [],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes."
+  ],
+  "success": false,
+  "error": "Error: CDP timeout: Runtime.evaluate"
+}

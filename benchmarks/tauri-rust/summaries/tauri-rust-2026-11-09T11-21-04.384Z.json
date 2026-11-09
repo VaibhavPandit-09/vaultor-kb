@@ -1,0 +1,211 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "7fc956fceb6f329fccd42163dafaaf289cd8528e",
+  "dirty": true,
+  "executableSha256": "c607b113f53379c357d0f1bde5041aac4c553ee7932eb56692e8fe8757685538",
+  "timestamp": "2026-11-09T11:21:04.449Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 567.7443999999999,
+      "median": 567.7443999999999,
+      "p95": 567.7443999999999,
+      "max": 567.7443999999999
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 35.29999998211861,
+      "median": 37.20000001788139,
+      "p95": 40.5,
+      "max": 40.5
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 12,
+      "min": 2.4000000059604645,
+      "median": 2.800000011920929,
+      "p95": 13.200000017881393,
+      "max": 13.200000017881393
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 2.2999999999999545,
+      "median": 4.199999999999818,
+      "p95": 4.299999999999727,
+      "max": 10.099999999999909
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 545.046875,
+      "median": 545.046875,
+      "p95": 545.046875,
+      "max": 545.046875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 535.9375,
+      "median": 535.9375,
+      "p95": 535.9375,
+      "max": 535.9375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 315.265625,
+      "median": 315.265625,
+      "p95": 315.265625,
+      "max": 315.265625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 0.9121424401634559,
+      "median": 0.9121424401634559,
+      "p95": 0.9121424401634559,
+      "max": 0.9121424401634559
+    },
+    {
+      "scenario": "restart",
+      "iteration": 2,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 555.0940999999993,
+      "median": 555.0940999999993,
+      "p95": 555.0940999999993,
+      "max": 555.0940999999993
+    },
+    {
+      "scenario": "workload",
+      "iteration": 2,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 412.0390625,
+      "median": 412.0390625,
+      "p95": 412.0390625,
+      "max": 412.0390625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 412.02734375,
+      "median": 412.02734375,
+      "p95": 412.02734375,
+      "max": 412.02734375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 203.32421875,
+      "median": 203.32421875,
+      "p95": 203.32421875,
+      "max": 203.32421875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 6.0562015503875966,
+      "median": 6.0562015503875966,
+      "p95": 6.0562015503875966,
+      "max": 6.0562015503875966
+    },
+    {
+      "scenario": "qualification",
+      "iteration": 3,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 531.2403000000013,
+      "median": 531.2403000000013,
+      "p95": 531.2403000000013,
+      "max": 531.2403000000013
+    }
+  ],
+  "checks": [
+    "12 native text inputs saved and read back after process restart",
+    "100-note collection fixture created",
+    "UI-created collection and note, Unicode typing, saved JSON readback",
+    "Two panes share live document content",
+    "Dark/light theme, reduced-motion endpoint and bundled Help",
+    "Pane/theme transitions sampled in motion; screenshots retained",
+    "Normal window close flushed saves before restart",
+    "Reopened UI-created note retains Unicode/shared content",
+    "Revision conflict refuses overwrite and blocks normal close while retaining editor"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes."
+  ],
+  "success": true
+}
