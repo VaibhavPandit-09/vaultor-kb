@@ -33,6 +33,25 @@ M2 qualification uses disposable UI-created collections/notes for hierarchy, ren
 
 The generated M1 vs M2 tab filters exact sources and experiment IDs. Historical Electron comparison remains intact. Failed attempts stay in CSV and are excluded from comparison; raw diagnostic bodies are ignored. The migration tracker owns product contracts and deferred M3 scope.
 
+### M2 observations
+
+The final optimized source is `d2106c2` (EXE SHA-256 `a4e088e428f61b52fe361ed24bc1d0b7a20a4baf278aa07bb33410dfafd09a17`,11,269,632bytes). Retained M1 source `52b84ee` uses the unchanged M1 EXE hash recorded in its summary. Both five-minute runs used the same device,1200×820/light rendering,100-note fixture and64KiB editing workload. Each idle result is one300second window after30seconds settling, not a statistical guarantee.
+
+| Comparable observation | Retained M1 | M2 |
+| --- | ---: | ---: |
+| Settled CPU, one-core percent | 0.684% | 0.173% |
+| End-of-idle process-tree working set | 336.8 MiB | 321.1 MiB |
+| End-of-idle process-tree private bytes | 214.1 MiB | 226.2 MiB |
+| Note-open median,3samples | 35.4 ms | 29.9 ms |
+| Input-to-rAF median,12inputs | 2.20 ms | 2.10 ms |
+| First-workspace startup,1sample | 818 ms | 840 ms |
+
+The earlier short-idle CPU spike was mostly a settling/sample-window issue; no permanent idle loop was found. A real event-path defect was fixed: editability changes emitted Tiptap updates and caused phantom saves. M2 disables those emissions, requires doc-changing transactions, defers JSON capture to protection, and avoids parent notifications for every edit. The observations do not isolate each fix causally. Private bytes increased about12MiB with recovery/organization; no universal memory reduction is claimed. Browser/profile caches, OS residency and power are uncontrolled.
+
+M2-only scenarios:1000/5000-note page turns measured15.3/18.2ms with100rows mounted. At5000notes, one/two-pane working sets were611.1/611.5MiB; after eight pane reopen cycles615.4MiB and after eight distinct-note switches587.8MiB. At1000notes the same progression was527.6/538.1/560.9/591.9MiB. These are immediate observations after fixture setup and recovery operations, not settled leak tests; GC/residency and cumulative setup affect them. Do not compare them with the100-note idle memory. Larger fixtures contain metadata/empty ordinary notes plus the original two populated64KiB notes; this establishes Library scalability, not5000simultaneous large-document editing. The dataset hash identifies the shared populated document; scenario names encode fixture size.
+
+Final native assertions pass for100/1000/5000fixtures,50unique metadata cursor pages, UI hierarchy/rename/memberships, normal-close pending edits, forced termination after a durable draft receipt, restore/discard/park and explicit conflict replacement, exact journal cleanup, shared panes and no phantom revisions from navigation. Theme/pane motion was sampled across40/20frames; light/dark, reduced-motion endpoints and bundled M2 Help were exercised and captures reviewed. Physical IME/accessibility and subjective motion acceptance remain unclaimed.
+
 ## Milestone 1 observations
 
 Final v2 runs on source `969d5f3`, Windows build 26340, Core Ultra 7 255HX, 20 logical CPUs, 15.4 GiB RAM. Electron 44.5.1/Chromium 152 and Tauri 2.12.5/system WebView2 use production UI; Rust 1.99.1 MSVC builds an 11,108,864-byte optimized executable. JSON summaries record exact executable hash and webview versions. Build outputs are ignored, not installers.

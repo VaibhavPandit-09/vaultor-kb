@@ -42,7 +42,7 @@ if(m2Runs.length){
   const baseline=normalized.findLast(r=>r[2]==='m1-managed-notes-v2'&&r[8]==='settled-idle-5min'&&r[14]==='Y');
   const candidate=m2Runs.at(-1);
   comparison.showGridLines=false;
-  comparison.getRange('A2:H2').merge();comparison.getRange('A2').values=[['Vaultor Next · M1 vs M2']];
+  comparison.getRange('A2:H2').unmerge();comparison.getRange('A2:H2').merge();comparison.getRange('A2').values=[['Vaultor Next · M1 vs M2']];
   comparison.getRange('A4:B8').values=[['M1 source',baseline?.[4]??'unmeasured'],['M2 source',candidate[4]],['Scenario','settled-idle-5min'],['Dataset',candidate[9]],['Device',candidate[5]]];
   comparison.getRange('A10:H10').values=[['Metric','Unit','M1 mean','M2 mean','Change','M1 n','M2 n','Direction']];
   const compareMetrics=[['cpu_one_core_percent','%'],['process_tree_working_set','MiB'],['process_tree_private_bytes','MiB'],['startup_usable','ms'],['note_open','ms'],['input_to_raf','ms'],['scroll_frame_interval','ms']];
@@ -54,7 +54,7 @@ if(m2Runs.length){
     comparison.getRange(`C${row}:H${row}`).formulas=[[`=IF(${left}=0,"",SUMIFS(${range('M')},${criteria(4,'m1-managed-notes-v2')})/${left})`,`=IF(${right}=0,"",SUMIFS(${range('M')},${criteria(5,'m2-managed-notes-v1')})/${right})`,`=IF(COUNT(C${row}:D${row})<2,"",IF(C${row}=0,"",D${row}/C${row}-1))`,`=${left}`,`=${right}`,'']];
     comparison.getRange(`H${row}`).values=[['lower']];
   }
-  comparison.getRange('A19:H20').merge();comparison.getRange('A19').values=[['Five-minute idle follows 30 seconds settling, one 64 KiB note and 100 resources. Change Scenario to managed-note-64k for editing proxies. M2 adds durable draft work; new large-Library/recovery workloads are separate. Small samples; no full-product claim.']];
+  comparison.getRange('A19:H20').unmerge();comparison.getRange('A19:H20').merge();comparison.getRange('A19').values=[['Five-minute idle follows 30 seconds settling, one 64 KiB note and 100 resources. Change Scenario to managed-note-64k for editing proxies. M2 adds durable draft work; new large-Library/recovery workloads are separate. Small samples; no full-product claim.']];
   comparison.getRange('A2:H20').format.font={name:'Arial',size:10,color:'#14333A'};
   comparison.getRange('A2').format.font.size=14;
   comparison.getRange('A4:A17').format.columnWidth=33;comparison.getRange('B4:B17').format.columnWidth=28;comparison.getRange('C10:H17').format.columnWidth=13;
@@ -69,6 +69,13 @@ const parity = wb.worksheets.getItem('Parity Gates');
 parity.getRange('A9:F9').values = [['SQLite foundation','New isolated schema, ownership, atomic note saves and restart durability','Critical','M1 focused checks','docs/plans/VAULTOR-NEXT.md','New schema; no legacy migrations.']];
 parity.getRange('D5:F5').values = [['M1 vertical slice','benchmarks/tauri-rust/summaries/','Create/edit/save/reopen; full parity pending.']];
 parity.getRange('D7:F7').values = [['Deferred','docs/plans/VAULTOR-NEXT.md','Unsent crash drafts deferred.']];
+if(m2Runs.length){
+  parity.getRange('D4:F4').values=[['M2 sampled','benchmarks/tauri-rust/summaries/','Pane/theme samples; full visual parity pending.']];
+  parity.getRange('D5:F5').values=[['M2 focused checks','benchmarks/tauri-rust/summaries/','Create/edit/save/reopen and shared panes.']];
+  parity.getRange('D7:F7').values=[['M2 focused checks','docs/plans/VAULTOR-NEXT.md','Durable receipts survive crash; unsent edits excluded.']];
+  parity.getRange('D11:F11').values=[['Partial M2','docs/plans/VAULTOR-NEXT.md','Hierarchy/memberships ready; Trash deferred.']];
+  parity.getRange('D18:F18').values=[['M2 bundled','docs/help/next-foundation.md','Experimental Help checked; published app unchanged.']];
+}
 const scenarios = wb.worksheets.getItem('Scenarios');
 scenarios.getRange('A16:E21').values = [
  ['first-profile','Startup','New isolated profile; warm OS cache possible','No app process','Not true cold boot'],

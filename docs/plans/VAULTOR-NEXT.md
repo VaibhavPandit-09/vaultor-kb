@@ -45,6 +45,8 @@ Install stable Rust MSVC, Windows C++ Build Tools/SDK and WebView2. Add the user
 
 Verification covers Rust ownership/transactions/revisions/restart, TypeScript, scoped ESLint, shared save/document/theme tests, Help validation, optimized Windows build and actual native managed-note/restart qualification. CODEBASE and benchmark summaries record actual final outcomes.
 
+M2 source `d2106c2`: Rust6/6, frontend5/5 (including actual Tiptap lock/selection regression), TypeScript/scoped lint, Help validation/17governance cases and optimized Windows build pass. Final native qualification passes protected-draft taskkill/reopen, normal close, conflicts/restore/discard/park, shared panes, hierarchy/membership operations,50metadata pages across5000notes and restart, plus runtime theme/pane samples, reduced motion and bundled Help. Five-minute settled CPU measured0.173% of one logical core versus retained M1's0.684%; private bytes increased modestly. Benchmark README/CSV/workbook own exact values, source hashes, immediate large-Library/churn observations and limitations. No idle loop was identified; phantom saves from editability updates were eliminated. Further settled/churn sampling is needed before claiming absence of leaks or broad performance gains.
+
 ## Next milestone
 
 M3: selection and coherent bulk organization, expanded keyboard/context-menu workflows and measured Library ergonomics. Preserve draft ownership and exact save/recovery gates. Linked external Markdown, imports/exports, media, search, Trash, networking and platform qualification remain separately scoped; Android stays on hold.
