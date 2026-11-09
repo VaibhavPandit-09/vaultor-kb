@@ -1,0 +1,10 @@
+import { createRoot } from 'react-dom/client';
+import { EscapeManagerProvider } from '../lib/escape/EscapeManagerProvider';
+import { installMotion } from '../lib/motion';
+import ErrorBoundary from '../components/ErrorBoundary';
+import '../index.css';
+import './next.css';
+import NextApp from './NextApp';
+const stop = installMotion();
+if (import.meta.hot) import.meta.hot.dispose(stop);
+createRoot(document.getElementById('root')!).render(<EscapeManagerProvider><ErrorBoundary region="Vaultor Next"><NextApp /></ErrorBoundary></EscapeManagerProvider>);

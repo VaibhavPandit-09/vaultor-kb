@@ -1,0 +1,6 @@
+{
+  "identifier": "main",
+  "description": "Local experimental workspace window",
+  "windows": ["main"],
+  "permissions": ["core:default", "core:window:allow-close", "core:window:allow-destroy", "dialog:allow-open"]
+}

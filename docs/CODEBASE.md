@@ -1,8 +1,10 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-11-08. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-11-09. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
+
+**Experimental replacement:** [Vaultor Next milestone 1](plans/VAULTOR-NEXT.md) adds `next/src-tauri/` (Rust domain, single SQLite owner thread, async Tauri commands, exclusive workspace ownership) and `frontend/src/next/` (separate React/Tiptap entry, collections, revision-checked note saves, shared panes, theme and offline milestone Help). It uses an isolated application profile, no Java/HTTP backend, and no legacy migration. Published Electron/Java code and releases remain unchanged; the following existing architecture sections describe that published product. [Benchmark records](../benchmarks/tauri-rust/README.md) distinguish measured workflows from missing parity. No installer/publication, Android or macOS implementation is authorized here.
 
 Vaultor is a personal, locally hosted knowledge workspace. Notes and uploaded files are resources, organized by nested collections and tags and connected through inline links. The desktop restores its selected server/workspace, starting the owned server when needed; browser access uses a local owner handoff or host-approved LAN device session. There are no accounts, master passwords, note lock controls, note/archive encryption, or encrypted archive compatibility. D5 adds owner/device access credentials separately from workspace data. Obsolete credentials stored in an existing database are ignored; startup does not delete resources.
 
@@ -476,6 +478,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-09 — Experimental Tauri/Rust foundation
+
+Added the isolated Windows Tauri application and portable Rust/SQLite domain without removing published Electron/Java. Reused editor/schema components, shared history, save coordination, Escape, design and motion/theme primitives. Help applicability: new experimental `next-foundation` article/catalogue entry, marked development rather than shipped. Added one migration tracker and canonical CSV/generated workbook workflow. Focused Rust 2/2 and save/history/theme frontend 18/18 pass; TypeScript, scoped lint, Help validation and 17/17 governance tests pass. Optimized native Windows application launches without Java; native benchmark verifies managed-note input/save/restart. Final measured values and limitations are in benchmark summaries. Linked-source baseline smoke timed out at native approval; crash-draft recovery and complete product/motion parity remain deferred. No release source/tag/installer changed.
 
 ### 2026-11-08 — macOS Apple Silicon 0.27.0 qualification and publication
 

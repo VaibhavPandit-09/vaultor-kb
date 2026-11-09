@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Vaultor Next",
+  "version": "0.1.0",
+  "identifier": "com.vaultor.next.experimental",
+  "build": {
+    "beforeDevCommand": "npm --prefix ../frontend run next:dev",
+    "devUrl": "http://localhost:5174",
+    "beforeBuildCommand": "npm --prefix ../frontend run next:build",
+    "frontendDist": "../../frontend/dist-next"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Vaultor Next · Experimental",
+        "width": 1200,
+        "height": 820,
+        "minWidth": 760,
+        "minHeight": 540,
+        "url": "next.html"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src ipc: http://ipc.localhost; object-src 'none'; frame-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": false
+  }
+}

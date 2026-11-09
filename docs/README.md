@@ -28,6 +28,8 @@ Published Windows x64 and macOS Apple Silicon 0.27.0 Help, exact-source qualific
 
 ## Native desktop initiative
 
+- [Vaultor Next migration tracker](plans/VAULTOR-NEXT.md): experimental Windows Tauri/Rust/SQLite foundation, build/run and deferred scope; [benchmark records](../benchmarks/tauri-rust/README.md) own comparisons. Published Electron releases remain separate.
+
 - [Desktop experience tracker](plans/DESKTOP-EXPERIENCE-TRACKER.md): Authoritative D1–D4 and S audit, Windows D2/S interaction acceptance, D3 native implementation/qualification boundaries, task dependencies, acceptance, validation, commit and platform status. Complete D1–D4/S history is integrated into master and published Windows-only0.26.0. D1/D2/S Windows interaction review is accepted; D3/D4 subjective Windows acceptance remains pending. Fresh actual packaged startup/restart/journal/source/draft-recovery gates pass; historical journal-owner provenance remains unproven.
 
 ## Development and validation

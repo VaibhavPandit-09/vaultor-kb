@@ -8,10 +8,14 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "next:dev": "vite --config vite.next.config.ts",
+    "next:build": "tsc -b && vite build --config vite.next.config.ts"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.2",
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-dialog": "^2.8.4",
     "@tiptap/extension-blockquote": "3.31.4",
     "@tiptap/extension-bold": "3.31.4",
     "@tiptap/extension-bullet-list": "3.31.4",

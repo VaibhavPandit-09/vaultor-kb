@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "reviewed": "2026-11-08",
+  "reviewed": "2026-11-09",
   "baseline": {
     "windows": "0.27.0",
     "macos": "0.26.0",
@@ -109,6 +109,12 @@
       "title": "What's New",
       "path": "whats-new.md",
       "area": "Getting started"
+    },
+    {
+      "id": "next-foundation",
+      "title": "Vaultor Next experimental foundation",
+      "path": "next-foundation.md",
+      "area": "Platforms"
     }
   ],
   "context": {
@@ -2077,6 +2083,52 @@
       "related": [],
       "evidence": [
         "frontend/src/components/modals/HelpCenter.tsx"
+      ]
+    },
+    {
+      "id": "next-foundation",
+      "name": "Vaultor Next foundation",
+      "description": "Separate experimental Windows Tauri application with local Rust and SQLite notes and collections.",
+      "article": "next-foundation",
+      "areas": [
+        "Platforms",
+        "Library",
+        "Editor"
+      ],
+      "screens": [
+        "Vaultor Next"
+      ],
+      "tasks": [
+        "Create and save a note in the experimental Tauri application"
+      ],
+      "keywords": [
+        "Tauri",
+        "Rust",
+        "SQLite",
+        "experimental",
+        "Next"
+      ],
+      "availability": {
+        "windows": {
+          "status": "development"
+        },
+        "macos": {
+          "status": "deferred"
+        },
+        "browser": {
+          "status": "unsupported"
+        },
+        "android": {
+          "status": "deferred"
+        }
+      },
+      "limitations": [
+        "Not included in published releases. No legacy migration, linked files, attachments, search, deletion or crash-draft recovery."
+      ],
+      "related": [],
+      "evidence": [
+        "frontend/src/next/NextApp.tsx",
+        "next/src-tauri/src/domain.rs"
       ]
     }
   ],

@@ -1,0 +1,65 @@
+import assert from 'node:assert/strict';
+import { writeFile, readFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
+export async function qualify({ evaluate, cdp, wait, output, report, rootPid, folder }) {
+  const memory = async label => {
+    const path=join(folder,`memory-${label}.json`);
+    execFileSync('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',join(import.meta.dirname,'process-sample.ps1'),'-RootPid',String(rootPid),'-Output',path,'-StopFile',join(folder,'never-stop'),'-Once'],{windowsHide:true,stdio:'pipe'});
+    const result=JSON.parse((await readFile(path,'utf8')).replace(/^\uFEFF/,''));
+    report.samples.push({scenario:'pane-qualification',iteration:1,metric:`${label}_working_set`,value:result.workingSet/1048576,unit:'MiB',valid:true,notes:'Single UI-created small note; shared-document pane qualification, no Electron equivalent measured.'});
+  };
+  const click = text => evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(text)}&&!b.disabled).click()`);
+  const input = (label, text) => evaluate(`(()=>{const e=document.querySelector('input[aria-label=${JSON.stringify(label)}]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(text)});e.dispatchEvent(new Event('input',{bubbles:true}))})()`);
+  await evaluate("document.querySelector('button[aria-label=\"New collection\"]').click()");
+  await wait("document.querySelector('input[aria-label=\"Collection name\"]')", 'collection form');
+  await input('Collection name', 'UI acceptance'); await click('Create');
+  await wait("[...document.querySelectorAll('.next-sidebar button')].some(b=>b.textContent==='UI acceptance')", 'collection created');
+  await click('UI acceptance');
+  await wait("document.querySelector('.next-header h1').textContent==='UI acceptance' && document.querySelectorAll('.next-resource').length===0", 'empty scoped collection');
+  await click('New note');
+  await wait("document.querySelector('.next-note-bar input') && document.querySelector('.tiptap')?.contentEditable==='true'", 'new note editable');
+  await input('Note title 1', 'Native UI acceptance');
+  await evaluate("document.querySelector('.tiptap').focus()");
+  await cdp('Input.insertText', {text:'Native editor save and reopen λ'});
+  await wait("document.querySelector('[role=status]')?.textContent==='saved'", 'UI note saved');
+  const state = await evaluate("benchRequest({kind:'list',collection:null})");
+  const note = state.find(n=>n.title==='Native UI acceptance'); assert(note);
+  const saved = await evaluate(`benchRequest({kind:'read',id:'${note.id}'})`);
+  assert(JSON.stringify(saved.content).includes('Native editor save and reopen λ'));
+  await memory('one_pane');
+  await evaluate("window.paneFrames=[];let n=0;function sample(t){const p=document.querySelector('.next-pane');paneFrames.push({t,width:p.getBoundingClientRect().width,animations:document.getAnimations().length});if(++n<20)requestAnimationFrame(sample)};requestAnimationFrame(sample);document.querySelector('[aria-label=\"Open Native UI acceptance beside\"]').click()");
+  await wait("document.querySelectorAll('.tiptap').length===2", 'two panes');
+  await evaluate("document.querySelector('.tiptap').focus()"); await cdp('Input.insertText',{text:' shared'});
+  await wait("[...document.querySelectorAll('.tiptap')].every(e=>e.textContent.includes(' shared'))", 'shared documents');
+  await memory('two_panes');
+  await click('Appearance');
+  await wait("document.documentElement.dataset.theme==='dark'", 'dark theme');
+  const frames = await evaluate("new Promise(r=>{let values=[],n=0;function step(t){values.push({t,theme:document.documentElement.dataset.theme,animations:document.getAnimations().length});if(++n<40)requestAnimationFrame(step);else r(values)}requestAnimationFrame(step)})");
+  const shot = await cdp('Page.captureScreenshot'); await writeFile(join(output,'tauri-native-two-panes.png'),Buffer.from(shot.data,'base64'));
+  await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  await click('Appearance');
+  await wait("document.documentElement.dataset.theme==='light'",'reduced-motion theme');
+  await click('Milestone Help'); await wait("document.querySelector('.next-help h1')",'offline Help'); await click('Close Help');
+  await wait("document.querySelectorAll('.tiptap').length===2",'editors restored after Help');
+  await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+  const shared = await evaluate(`benchRequest({kind:'read',id:'${note.id}'})`);
+  assert(JSON.stringify(shared.content).includes(' shared'));
+  report.motion = {paneFrames:await evaluate('window.paneFrames'),themeFrames:frames};
+  report.checks.push('UI-created collection and note, Unicode typing, saved JSON readback','Two panes share live document content','Dark/light theme, reduced-motion endpoint and bundled Help','Pane/theme transitions sampled in motion; screenshots retained');
+  return note.id;
+}
+export async function conflict({evaluate,cdp,wait,id,report}) {
+  await evaluate(`document.querySelector('.next-resource>button:first-child').click()`);
+  await wait("document.querySelector('.tiptap')?.contentEditable==='true'",'reopened UI note');
+  const saved = await evaluate(`benchRequest({kind:'read',id:'${id}'})`);
+  assert(JSON.stringify(saved.content).includes('Native editor save and reopen λ'));
+  assert(JSON.stringify(saved.content).includes('close barrier'), 'Pending input must survive normal close');
+  await evaluate(`benchRequest({kind:'save',id:'${id}',revision:${saved.revision},title:'External revision',content:${JSON.stringify(saved.content)}})`);
+  await evaluate("document.querySelector('.tiptap').focus()"); await cdp('Input.insertText',{text:' retained conflict'});
+  await wait("document.querySelector('[role=status]')?.textContent==='failed'",'stale-save refusal');
+  await evaluate("window.__TAURI_INTERNALS__.invoke('plugin:window|close',{label:'main'})");
+  await wait("document.querySelector('.next-error')?.textContent.includes('revision conflict')",'close blocked on failed save');
+  assert(await evaluate("document.querySelector('.tiptap').textContent.includes('retained conflict')"));
+  report.checks.push('Normal window close flushed saves before restart','Reopened UI-created note retains Unicode/shared content','Revision conflict refuses overwrite and blocks normal close while retaining editor');
+}
