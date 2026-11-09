@@ -6,7 +6,7 @@ import NextApp from './NextApp';
 import type {SearchOptions} from './client';
 const invoke=vi.hoisted(()=>vi.fn());
 vi.mock('./client',()=>({command:invoke}));
-vi.mock('@tauri-apps/api/window',()=>({getCurrentWindow:()=>({onCloseRequested:async()=>()=>{},destroy:vi.fn()})}));
+vi.mock('@tauri-apps/api/window',()=>({getCurrentWindow:()=>({onCloseRequested:async()=>()=>{},onResized:async()=>()=>{},isMaximized:async()=>false,show:async()=>{},destroy:vi.fn()})}));
 vi.mock('@tauri-apps/plugin-dialog',()=>({open:vi.fn()}));
 vi.mock('./NextEditor',()=>({default:()=> <div contentEditable suppressContentEditableWarning role="textbox" aria-label="Editor body">Editor text</div>}));
 vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});
@@ -39,7 +39,7 @@ it('owns list shortcuts only, clears on pagination and opens the keyboard-focuse
  fireEvent.keyDown(document.activeElement!,{key:' ',code:'Space'});expect(screen.getByText('1 selected · this page only')).toBeTruthy();
  fireEvent.keyDown(document.activeElement!,{key:'a',ctrlKey:true});expect(screen.getByText('3 selected · this page only')).toBeTruthy();
  fireEvent.keyDown(document.activeElement!,{key:'Enter'});await screen.findByRole('textbox',{name:'Editor body'});
- fireEvent.click(screen.getByRole('button',{name:'Clear resource selection'}));const editor=screen.getByRole('textbox',{name:'Editor body'});editor.focus();fireEvent.keyDown(editor,{key:'a',ctrlKey:true});expect(screen.queryByText('3 selected · this page only')).toBeNull();
+ const editor=screen.getByRole('textbox',{name:'Editor body'});editor.focus();fireEvent.keyDown(editor,{key:'a',ctrlKey:true});expect(screen.queryByRole('searchbox',{name:'Search notes'})).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Return to Library'}));await screen.findByRole('button',{name:'Clear resource selection'});fireEvent.click(screen.getByRole('button',{name:'Clear resource selection'}));
  fireEvent.click(screen.getByRole('button',{name:'Next'}));await screen.findByRole('button',{name:'Note 4'});expect(screen.queryByText(/selected · this page only/)).toBeNull();
 });
 it('shares bulk destinations through the context menu and keeps text shortcuts inside its dialog',async()=>{
@@ -66,9 +66,9 @@ it('debounces search, ignores stale replies and keeps text/list shortcut ownersh
 it('opens results without losing query context, restores the prior browse page and reports query failures',async()=>{
  setup(async r=>{if(r.options?.query==='failure')throw Error('Search unavailable');return {items:[{id:'8',title:'Nebula',revision:1,updatedAt:''}],total:1,next:null};});
  await screen.findByRole('button',{name:'Note 1'});fireEvent.click(screen.getByRole('button',{name:'Next'}));await screen.findByRole('button',{name:'Note 4'});
- const search=screen.getByRole('searchbox',{name:'Search notes'});fireEvent.change(search,{target:{value:'neb'}});fireEvent.click(await screen.findByRole('button',{name:'Nebula'}));await screen.findByRole('textbox',{name:'Editor body'});expect((search as HTMLInputElement).value).toBe('neb');
+ const search=screen.getByRole('searchbox',{name:'Search notes'});fireEvent.change(search,{target:{value:'neb'}});fireEvent.click(await screen.findByRole('button',{name:'Nebula'}));await screen.findByRole('textbox',{name:'Editor body'});expect(screen.queryByRole('searchbox')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Return to Library'}));await screen.findByRole('searchbox',{name:'Search notes'});expect((screen.getByRole('searchbox',{name:'Search notes'}) as HTMLInputElement).value).toBe('neb');
  fireEvent.click(screen.getByRole('button',{name:'Clear search and filters'}));await screen.findByRole('button',{name:'Note 4'});expect(screen.getByText('Page 2')).toBeTruthy();
- fireEvent.change(search,{target:{value:'failure'}});await screen.findByText('Error: Search unavailable');expect(screen.queryByRole('button',{name:'Note 4'})).toBeNull();expect(screen.getByRole('textbox',{name:'Editor body'})).toBeTruthy();
+ fireEvent.change(screen.getByRole('searchbox',{name:'Search notes'}),{target:{value:'failure'}});await screen.findByText('Error: Search unavailable');expect(screen.queryByRole('button',{name:'Note 4'})).toBeNull();expect(screen.queryByRole('textbox',{name:'Editor body'})).toBeNull();
 });
 
 it('resets search when changing workspaces without letting query epochs hide new workspace metadata',async()=>{
@@ -77,5 +77,12 @@ it('resets search when changing workspaces without letting query epochs hide new
  const original=invoke.getMockImplementation()!;let switched=false;
  invoke.mockImplementation(async r=>{if(r.kind==='open'){switched=true;return null;}if(switched&&r.kind==='snapshot')return {path:'new-fixture',settings:{theme:'light'},collections:[]};if(switched&&r.kind==='list')return {items:rows(20),total:3,next:null};return original(r);});
  const dialog=await import('@tauri-apps/plugin-dialog');vi.mocked(dialog.open).mockResolvedValue('new-fixture');
- fireEvent.click(screen.getByRole('button',{name:'Open workspace'}));await screen.findByRole('button',{name:'Note 20'});expect(screen.getByText('new-fixture')).toBeTruthy();expect((search as HTMLInputElement).value).toBe('');
+ fireEvent.click(screen.getByRole('button',{name:'Open workspace'}));await screen.findByRole('button',{name:'Note 20'});expect(screen.getAllByText('new-fixture').length).toBeGreaterThan(0);expect((search as HTMLInputElement).value).toBe('');
+});
+
+it('returns through history without retaining hidden editors and preserves the Library search',async()=>{
+ setup();await screen.findByRole('button',{name:'Note 1'});fireEvent.click(screen.getByRole('button',{name:'Note 1'}));await screen.findByRole('textbox',{name:'Editor body'});expect(screen.queryByRole('searchbox',{name:'Search notes'})).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Back'}));await screen.findByRole('searchbox',{name:'Search notes'});expect(screen.queryByRole('textbox',{name:'Editor body'})).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Forward'}));await screen.findByRole('textbox',{name:'Editor body'});fireEvent.click(screen.getByRole('button',{name:'Return to Library'}));await screen.findByRole('button',{name:'Note 1'});
+});
+it('exposes OLED through the real persisted theme command and accessible companion categories',async()=>{
+ setup();await screen.findByRole('button',{name:'Note 1'});fireEvent.click(screen.getByRole('button',{name:'Appearance'}));fireEvent.click(await screen.findByRole('button',{name:'OLED black'}));await waitFor(()=>expect(invoke).toHaveBeenCalledWith({kind:'setting',key:'theme',value:'oled'}));fireEvent.click(screen.getByRole('tab',{name:'Collections'}));expect(screen.getByRole('button',{name:'Research'})).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'Toggle sidebar'}));expect(screen.getByRole('button',{name:'Toggle sidebar'}).getAttribute('aria-expanded')).toBe('false');
 });

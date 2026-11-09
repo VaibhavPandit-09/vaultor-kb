@@ -18,7 +18,10 @@
         "height": 820,
         "minWidth": 760,
         "minHeight": 540,
-        "url": "next.html"
+        "url": "next.html",
+        "decorations": false,
+        "visible": false,
+        "shadow": true
       }
     ],
     "security": {

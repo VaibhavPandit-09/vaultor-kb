@@ -36,22 +36,33 @@ Ordinary title activation opens without an explicit multi-selection. Ctrl/checkb
 
 Right-clicking a selected row preserves the group; an unselected row becomes the sole selection. One context-menu instance uses existing MenuAction presentation, shared motion classes and Escape/portal focus owners, with viewport clamping, keyboard traversal and invoker restoration. There is no menu/listener per row. Resource, collection and blank-space commands expose implemented actions only. Bulk destinations reuse AppModal and a bounded searchable collection picker. Header metadata/actions compress into selected-count/organization mode without a second toolbar or duplicated header. Collection branches transform their existing grid track with inert collapsed descendants and reduced-motion endpoints. Active editors retain their keys across selection and menu work.
 
-## Visual and interaction parity (M1–M5)
+## Feature, visual and motion parity inventory (M1–M6)
 
-| Surface | Functional parity | Visual parity | Motion parity | Known differences / remaining work |
+Original capabilities are checked against the published Help catalogue and current presentation owners, not historical plans. Complete below means the named bounded capability, not complete application parity. M6 native visual results remain pending until the acceptance record below is completed.
+
+| Area / original Electron capability | Next / functional | Visual | Motion | Gaps and target |
 | --- | --- | --- | --- | --- |
-| Workspace/lifecycle | Local Rust workspace, settings and restart | Existing tokens/identity retained | Native startup; no decorative loading mode | Experimental source; no installer/updater/network parity |
-| Library/resource rows | M3 current-page selection, keyboard focus and organization | Compact checkboxes, distinct open/selected/focus cues; shared action styling | Header selection compression, finite hover feedback | Notes only; external search/types/tags/Trash remain pending |
-| Collections | Hierarchy, rename/reparent and bulk memberships | Sidebar guides/indentation and shared menus | Same branch expands/collapses; reduced motion | No drag/drop or full published directory/filter surfaces |
-| Context menus/destinations | Resource/group/collection/background, keyboard and focus owners | Shared MenuAction/popover/AppModal surfaces | Existing utility/menu tokens; viewport-aware placement | React menus inside native WebView2, not OS-native menu APIs |
-| Editor/shared panes | M1/M2 JSON saves, shared history, M3 focus return | Existing Tiptap/theme/code styling retained | Pane geometry and theme reveal retained | Adapted composition; full toolbar/slash/media parity pending |
-| Recovery/conflicts | M2 protected restore/discard/park/reviewed replacement | Compact two-column review | Shared modal motion/focus | Preview cap and durability window remain documented |
-| Themes/accessibility | Light/dark, reduced motion, keyboard ownership | Shared tokens and focus cues | Shared reveal; immediate reduced endpoints | Physical IME/screen-reader and subjective acceptance unclaimed |
-| Search/filtering | M4 indexed saved titles/text, collection scope, ordering and pages | Shared compact search/option surfaces; Windows inspection recorded with results | Focus underline, retained pane/menu/theme motion and reduced endpoints | No fuzzy/external-media search or Saved Searches; basic SQLite title collation, no locale-aware natural sort; full M6/M7 refinement pending |
-| Linked folders/Markdown | M5 lazy native-root tree, shared editing, explicit protected Save/review | Compact source tree, active-path cue, source/status bar and shared review; Windows light/dark inspection passed | Retained structural branch/pane/theme motion, native rAF and reduced endpoints sampled | Local fixed NTFS and bounded Markdown subset; no linked FTS/collection integration |
-| Future M6–M8 areas | Pending, separately scoped | Pending | Pending | Media/transfers/advanced external search/Trash/network/platform qualification are not implied available |
+| Shell: full Library, integrated navigation/chrome | M6 implemented; native acceptance pending | Reconstructed from DesktopChrome/SidebarFrame | Sidebar width/transform, directional workspace continuity | Native tray/Snap-hover/app menu M10 |
+| Sidebar: companion Open notes/Quick access/Collections/Tags/Sources | Partial: four implemented categories, bounded session shortcuts | AdaptiveNavigator structure and shared tokens | Category disclosure, retained tree states | Tags/pins M8; Auto context/floating edge refinement M10 |
+| Library/Collections: pages, hierarchy, memberships | Complete within managed-note model | Full-width compact rows and progressive orientation | Scroll-driven compression; branch geometry | Linked memberships/collection detail metadata M8 |
+| Selection/organization: mouse/keyboard/ranges/context/bulk | Complete current-page transactions | Shared MenuAction/AppModal and focus cues | Retained menu entry/selection feedback | Cross-page selection/bulk lifecycle M8; menu departure refinement M10 |
+| Search: titles/content/types/advanced scope | Partial: managed FTS5, scope/order/keyset pages | Compact original-style search/options | Focus underline, compressed header | Linked/media/type/tag search M8/M9; saved views M10 |
+| Managed editor: rich JSON, history/autosave, recovery | Partial: current Tiptap composition/shared history | Original typography/code/table tokens | Pane transitions/theme reveal | Full toolbar/slash/table/editor parity M9 |
+| Linked Markdown: roots/tree, source-authoritative editing | Partial: local fixed NTFS, verified subset, explicit Save/recovery | Shared sidebar/panes/review | Tree geometry/panes/reveal | Large raw-source presentation and broader syntax M9; advanced reconciliation M10 |
+| Workspace/panes: switching, shared notes, history/focus/layout | Partial: two panes, divider, active pane,32 view routes,12 shortcuts | Reconstructed note workspace | Pane geometry; resize; narrow stacking | Per-pane history, cross-collection historical snapshots/session restoration M10 |
+| Themes/settings: light/dark/OLED, OS/accent/density/motion | Partial: three persisted themes, shared OLED hierarchy | Original theme tokens | Shared origin reveal; reduced endpoints | OS following and other preferences M10 |
+| Recovery/backups: managed drafts, linked evidence, checkpoints | Partial: M2/M5 durable draft and explicit conflict workflows | Shared review/footer entry | Modal/focus transitions | Scheduled backups/checkpoints and recovery export M7/M10 |
+| Tags, pins, Trash/resource lifecycle | Missing; no fake controls | Pending | Pending | M8 |
+| Imports/exports and workspace transfers | Missing | Pending | Pending | M7 |
+| Background Activity/task processing | Missing; toolbar integration slot reserved in composition | Pending | Pending | M7 |
+| Files, images, PDF/media/attachment preview | Missing | Pending | Pending | M9 |
+| Native clipboard, drag/drop, file/resource actions | Partial: ordinary editor text and safe linked navigation | Pending broader parity | Pending | M9 |
+| Help and Review inbox | Partial: bundled experimental Help; recovery is distinct from synced Reviews | Help current; inbox pending | Existing Help/recovery surfaces | Review inbox/read-triage M10 |
+| Desktop integration: windows, tray/updater/installer/file associations | Partial: Tauri drag/resize/minimize/maximize/close | Integrated theme-aware chrome | Native geometry; shared UI reveal | Tray/menu/associations/installer/updater/release qualification M10 |
+| Connections, LAN/mobile, offline companion | Deferred | Pending | Pending | M10 scope decision; no Android/macOS qualification implied |
+| Other confirmed: recent, capture, graph, smart views, shortcuts | Partial: session recent shortcuts only | Pending | Pending | Capture/graph/saved views/shortcut customization M10 |
 
-Native runtime outcomes and capture limitations are recorded in the benchmark results. This is scoped parity for touched interactions, not a declaration of whole-product or M6 refinement completion.
+One authoritative inventory; implementation boundaries and native evidence belong below. Full subjective/product-wide motion and physical accessibility/IME acceptance are not inferred from shared CSS.
 
 ## Boundaries
 
@@ -114,6 +125,14 @@ The new linked workload (303byte/154701byte/1MiB UTF-8 fixtures) measured comman
 
 Process breakdown after that churn: host33.1MiB working set/7.0MiB private commit; WebView browser155.8/60.0, renderer138.9/87.1, GPU149.3/124.5. Total private resident240.2MiB versus548.5MiB summed working set shows a substantial shared-resident component; it is not unique physical RAM or evidence about M4's unmeasured private residency. The accessibility-attached60second CPU sample was32.6%, predominantly browser-process work with a quiet renderer. After releasing that inspection session, a fresh untouched5minute window measured0.256%. This is strong instrumentation-condition sensitivity, not an identified application leak or proven OS/accessibility root cause. No speculative cache, polling or animation removal was introduced. Large raw-source presentation, full Markdown parity, physical IME/accessibility and uncertain-publication repair remain scoped limitations.
 
+## M6 desktop interaction contract
+
+The active main surface is either a full-width Library/collection page or the note workspace. Browse criteria, loaded page, page-scoped selection and bounded scroll map survive opening/returning. A32-entry presentation history stores view routes, not editor documents or old collection/filter snapshots. A12-entry Open notes list and64-entry descriptor map keep identifiers/titles/source paths only. Editors unmount on returning to Library; normal managed flush and linked protection finish first. There are never hidden Tiptap instances kept alive for browse navigation. Panes retain their shared document authority; desktop supports two resizable panes (30–70%), stacked below900px. Pointer resizing writes geometry directly and commits React state on release.
+
+SidebarFrame is reused with an external-toolbar toggle; CompanionNavigator adapts AdaptiveNavigator markup/styles without obsolete query/drag authorities. DesktopToolbar adapts DesktopChrome to direct Tauri commands. Root/window chrome remains fixed; Library, pane and the one painted companion region own scrolling. One header contracts continuously from its resource scroll signal without React frame updates. Original theme/OLED variables, MenuAction/LibraryPopover, motion profiles and reveal controller remain shared. Smooth structural timings are enabled; reduced motion changes geometry immediately. The native window is initially hidden and shown after theme initialization (or a visible startup error), preventing a default light flash. Close still routes through the M2/M5 save/protection barrier.
+
+M6 compile/focused/native results are recorded here after integration. Published Electron functionality/releases remain untouched. The remaining roadmap is M7 transfers/Activity, M8 organization/lifecycle, M9 editor/media/native interactions, M10 confirmed gaps/integration/release qualification.
+
 ## Next milestone
 
-Recommended M6: desktop refinement across linked-source states, keyboard/focus and editor capability disclosure. Carry forward bounded memory checks; consider linked organization/search explicitly without copying source bodies into managed notes. Media, transfers, Trash, networking and platform qualification remain separately scoped; Android stays on hold.
+Recommended M7: imports/exports, workspace transfers and coherent background Activity, retaining Rust-owned transactions and filesystem protection. Follow the inventory for M8–M10 rather than expanding M7 into unrelated editor/organization work. Media, transfers, Trash, networking and platform qualification remain separately scoped; Android stays on hold.

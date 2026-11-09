@@ -44,7 +44,7 @@ If saved notes or memberships change while paging, refresh starts a new result p
 
 Edits are protected after about 250 ms without typing; continuous typing requests protection at least once per second. Disk/processing delays can extend that window. Autosave follows about one second after typing stops. Pending means the newest edit is not yet durable. Draft protected means SQLite has acknowledged it. Saved means the committed note contains it. Ctrl+S, navigation and normal closing flush pending work.
 
-After unexpected termination, protected drafts appear under Recovery in the sidebar. Open one to compare its text and title with the saved note. Restore draft resumes it. Discard draft and use saved explicitly removes the protected evidence. Keep draft for later closes its editor and retains the draft in Recovery. Unrecorded edits cannot survive a crash or power loss.
+After unexpected termination, protected drafts appear in the sidebar footer’s Recovery menu. Open one to compare its text and title with the saved note. Restore draft resumes it. Discard draft and use saved explicitly removes the protected evidence. Keep draft for later closes its editor and retains the draft in Recovery. Unrecorded edits cannot survive a crash or power loss.
 
 If another writer changes the saved revision, autosave refuses to overwrite it and opens the same comparison. Use draft over reviewed saved version is an explicit replacement of that reviewed revision; another concurrent change requires another review. Keep the draft for later if you need manual reconciliation. There is no automatic merge. Both panes stay consistent when a version is chosen.
 
@@ -60,7 +60,7 @@ The external file remains authoritative. Editing protects a private recovery dra
 
 Rich editing supports paragraphs, headings, basic inline formatting/links, lists/tasks, ordinary code blocks and simple unaligned tables. UTF-8 BOM, CRLF/LF, frontmatter, reference definitions and unrelated source ranges are retained. Frontmatter is shown separately. Save patches verified source ranges and reparses the result; complex structural changes may be refused instead of reformatting the file. Raw HTML, images, footnotes, extensions and aligned tables use a read-only source view. Rich editing is limited to 256 KiB; reading to 1 MiB.
 
-If the source changes, disappears or is replaced, Save refuses to overwrite it. Review compares protected content with the current source; keep the draft for manual reconciliation or explicitly discard it and reload. There is no force overwrite or automatic merge. After interruption, Linked recovery offers Restore draft or explicit discard. Only acknowledged edits survive a crash.
+If the source changes, disappears or is replaced, Save refuses to overwrite it. Review compares protected content with the current source; keep the draft for manual reconciliation or explicitly discard it and reload. There is no force overwrite or automatic merge. After interruption, the footer Recovery menu offers Restore draft or explicit discard. Only acknowledged edits survive a crash.
 
 Publication flushes a same-directory candidate and captures the original before a non-replacing rename. This is not atomic compare-and-swap: another program can occupy the brief path gap. It is left untouched, with original/candidate evidence and the draft retained. Review shows evidence paths. Verify Save outcome acknowledges only an exact original or candidate identity/hash; uncertain outcomes require manual attention and are never replayed. Do not remove evidence files while resolving an interrupted Save.
 
@@ -68,4 +68,16 @@ At most eight non-overlapping fixed local NTFS roots are supported. Junctions/re
 
 ## Appearance and keyboard
 
-Appearance switches light and dark themes and persists the choice in the workspace. F1 opens or closes this Help. Tab moves between controls; Escape leaves editor focus. The operating system's reduced-motion preference applies to shared motion and theme transitions.
+Appearance in the top toolbar offers Light, Dark and OLED black, persisted in the workspace. The window becomes visible after the saved theme is applied. F1 opens or closes this Help. Tab moves between controls; Escape leaves editor focus. The operating system's reduced-motion preference applies to shared motion and theme transitions.
+
+## Desktop workspace and navigation
+
+Library and collection contents use the full workspace. Opening a note enters the note workspace; the Library list is not kept as a permanent second column. Use Return to Library or Back in the top toolbar to return with the current query, resource page, selection and scroll position intact. Forward reopens the previous note arrangement. History is limited to 32 view changes in this session and uses the current Library/collection browse context; it does not recreate older collection/filter snapshots.
+
+The sidebar has Search and Library entry points, Collections and Linked sources companion access, and New note. Its working-area tabs show Open notes, Quick access, Collections or Linked sources without changing the main workspace. Open notes keeps up to twelve session shortcuts; it does not keep hidden editors running. Categories support Left/Right/Home/End focus and Enter/Space activation. Toggle sidebar in the toolbar expands or collapses navigation. Recovery counts remain visible in the footer; open Recovery to review protected managed or linked drafts.
+
+Open beside or Split active note uses two shared panes. The active pane has an accent line. Drag the divider, or focus it and use Left/Right, to change the width from 30% to 70%. Narrow windows stack the two panes. Closing a pane keeps the other intact. Closing the last returns to Library. Pane arrangements and Open notes shortcuts are session-only.
+
+Library orientation compresses as its resource list scrolls, reclaiming space while keeping actions available. The shell, window controls and sidebar remain within the window; only the intended list, pane and companion regions scroll. Reduced motion applies independently of appearance.
+
+The top toolbar provides Back/Forward, workspace or note context, Library search, pane controls and Appearance. Drag its central title area to move the window; double-click it to maximize/restore. Minimize, maximize/restore and Close use native window commands. Close protects/saves pending work through the existing barrier. This experiment has no tray-close or full native window-menu/Snap-hover parity yet.

@@ -5,6 +5,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import '../index.css';
 import './next.css';
 import NextApp from './NextApp';
+document.documentElement.dataset.animation='smooth';
 const stop = installMotion();
 if (import.meta.hot) import.meta.hot.dispose(stop);
 createRoot(document.getElementById('root')!).render(<EscapeManagerProvider><ErrorBoundary region="Vaultor Next"><NextApp /></ErrorBoundary></EscapeManagerProvider>);

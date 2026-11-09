@@ -4,18 +4,18 @@ import { SidebarVisibility } from '../lib/sidebarVisibility';
 import { PanelLeft } from 'lucide-react';
 
 /** One sidebar tree across docked, edge-revealed and hidden geometries. */
-export default function SidebarFrame({ floating, open, focusMode, pinned, onReveal, onHide, onToggle, surfaceStyle, children }: {
+export default function SidebarFrame({ floating, open, focusMode, pinned, onReveal, onHide, onToggle, surfaceStyle, externalToggle=false, children }: {
   floating: boolean; open: boolean; focusMode: boolean; pinned: boolean;
-  onReveal: () => void; onHide: () => void; onToggle: () => void; surfaceStyle?: CSSProperties; children: ReactNode;
+  onReveal: () => void; onHide: () => void; onToggle: () => void; surfaceStyle?: CSSProperties; externalToggle?:boolean; children: ReactNode;
 }) {
   const ownsFocus = useRef(false);
   const panel = useRef<HTMLElement>(null), launcher = useRef<HTMLButtonElement>(null);
   const callbacks = useRef({ onReveal, onHide });
   useLayoutEffect(() => { callbacks.current = { onReveal, onHide }; });
   useLayoutEffect(() => {
-    if (!open && (ownsFocus.current || panel.current?.contains(document.activeElement) || panel.current?.querySelector('[aria-haspopup][aria-expanded="true"]'))) launcher.current?.focus({ preventScroll: true });
+    if (!open && (ownsFocus.current || panel.current?.contains(document.activeElement) || panel.current?.querySelector('[aria-haspopup][aria-expanded="true"]'))) (launcher.current??(externalToggle?document.querySelector<HTMLButtonElement>('[data-sidebar-toggle]'):null))?.focus({ preventScroll: true });
     if (!open) ownsFocus.current = false;
-  }, [open]);
+  }, [open,externalToggle]);
   useEffect(() => {
     const root = panel.current, allocation = root?.parentElement, content = root?.querySelector<HTMLElement>('.sidebar-content');
     if (!root || !allocation || !content) return;
@@ -76,9 +76,9 @@ export default function SidebarFrame({ floating, open, focusMode, pinned, onReve
     };
   }, [floating, open, focusMode, pinned]);
   return <>
-    <button ref={launcher} id="sidebar-trigger" className="sidebar-edge-toggle" hidden={open}
+    {!externalToggle&&<button ref={launcher} id="sidebar-trigger" className="sidebar-edge-toggle" hidden={open}
       aria-label={focusMode ? 'Show navigation and exit focus mode' : 'Toggle sidebar'} aria-controls="workspace-sidebar" aria-expanded={open}
-      onDragEnter={event=>{if(event.dataTransfer.types.includes(INTERNAL_DRAG)&&!focusMode)onReveal();}} onClick={onToggle}><PanelLeft size={18}/></button>
+      onDragEnter={event=>{if(event.dataTransfer.types.includes(INTERNAL_DRAG)&&!focusMode)onReveal();}} onClick={onToggle}><PanelLeft size={18}/></button>}
     {floating && !focusMode && <div className="sidebar-reveal-edge" onMouseEnter={onReveal} onDragEnter={event=>{if(event.dataTransfer.types.includes(INTERNAL_DRAG))onReveal();}} aria-hidden="true"/>}
     <div className="sidebar-allocation" data-floating={floating} data-open={open}>
       <aside ref={panel} id="workspace-sidebar" aria-label="Workspace navigation" aria-hidden={!open} inert={!open}

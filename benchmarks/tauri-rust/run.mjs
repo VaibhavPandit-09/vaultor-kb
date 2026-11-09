@@ -14,6 +14,7 @@ const m2 = process.argv.includes('--m2');
 const m3 = process.argv.includes('--m3');
 const m4 = process.argv.includes('--m4');
 const m5 = process.argv.includes('--m5');
+const m6 = process.argv.includes('--m6');
 const folder = await mkdtemp(join(tmpdir(), 'vaultor-next-bench-'));
 const profile = join(folder, 'profile'); await mkdir(profile);
 const port = architecture === 'electron-java' ? 9431 : 9432;
@@ -21,6 +22,7 @@ const stamp = new Date().toISOString().replaceAll(':', '-');
 const evidence = `benchmarks/tauri-rust/raw/${architecture}-${stamp}.json`;
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', windowsHide: true }).trim();
 const report = { architecture, commit, timestamp: new Date().toISOString(), system: { device: hostname(), os: release(), arch: arch(), cpu: cpus()[0].model, logicalCpus: cpus().length, ramBytes: totalmem() }, folder, samples: [], checks: [], limitations: ['No OS cache flush; first-profile startup is not true cold boot.', 'Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.', 'Process working sets sum shared pages; sampled peak can miss short spikes.'] };
+if(m6)report.limitations.push('M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.');
 report.dirty = Boolean(execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8', windowsHide: true }).trim());
 const executablePath = process.env.VAULTOR_BENCH_EXECUTABLE || (architecture === 'electron-java' ? join(root,'desktop/node_modules/electron/dist/electron.exe') : join(root,'next/src-tauri/target/release/vaultor-next.exe'));
 report.executableSha256 = createHash('sha256').update(await readFile(executablePath)).digest('hex');
@@ -67,7 +69,7 @@ async function launch(iteration) {
   const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(VAULTOR_|HOST_|ELECTRON_RUN_AS_NODE|WEBVIEW2_)/.test(k)));
   const executable = executablePath;
   const args = architecture === 'electron-java' ? [join(root, 'desktop'), `--remote-debugging-address=127.0.0.1`, `--remote-debugging-port=${port}`] : [];
-  Object.assign(env, architecture === 'electron-java' ? { VAULTOR_DESKTOP_TEST_DIRECTORY: profile, HOST_NETWORK_PORT: '0', NODE_ENV: 'production' } : { VAULTOR_NEXT_WORKSPACE: join(folder, 'workspace'), WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1` });
+  Object.assign(env, architecture === 'electron-java' ? { VAULTOR_DESKTOP_TEST_DIRECTORY: profile, HOST_NETWORK_PORT: '0', NODE_ENV: 'production' } : { VAULTOR_NEXT_WORKSPACE: join(folder, 'workspace'), ...(m6?{WEBVIEW2_USER_DATA_FOLDER:profile}:{}), WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1` });
   const start = performance.now();
   child = spawn(executable, args, { cwd: root, env, windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
   child.stderr.on('data', data => { report.runtimeLog = ((report.runtimeLog ?? '') + data).slice(-4000); });
@@ -131,6 +133,7 @@ async function quit() {
 try {
   let run = await launch(1);
   if (inspect) {
+    if(process.argv.includes('--reference-m6'))await (await import('./m6-reference.mjs')).referenceM6({evaluate,cdp,wait,output,report});
     console.log(await evaluate('document.body.innerText.slice(0,5000)'));
     await cdp('Page.captureScreenshot').then(async r => writeFile(join(output, 'inspect.png'), Buffer.from(r.data, 'base64')));
     await delay(3000); await stopSampler(run, 1); await quit();
@@ -147,10 +150,12 @@ try {
     await wait(architecture === 'tauri-rust' ? "document.querySelectorAll('.next-resource').length===100" : "document.body.innerText.includes('Bench note')", 'seeded library');
     if (architecture === 'electron-java') await wait("!document.body.innerText.includes('Loading resources')", 'seed list settled');
     const clickTitle = title => architecture === 'tauri-rust'
-      ? `document.querySelectorAll('${m3||m4||m5?'[data-row-open]':'.next-resource>button:first-child'}')`
+      ? `document.querySelectorAll('${m3||m4||m5||m6?'[data-row-open]':'.next-resource>button:first-child'}')`
       : `document.querySelectorAll('[data-resource-id],.resource-card,.resource-row,button')`;
     if(process.argv.includes('--profile-open'))await evaluate(`window.openProfile={mutations:0};window.openObserver=new MutationObserver(records=>openProfile.mutations+=records.length);openObserver.observe(document.querySelector('.next-library'),{subtree:true,attributes:true,childList:true});true`);
     for (let i = 0; i < 3; i++) {
+      if(m6)await evaluate("document.querySelector('[aria-label=\"Return to Library\"]')?.click();true");
+      if(m6)await wait("document.querySelector('[data-row-open]')",'full Library before next open');
       if (architecture === 'electron-java') {
         await evaluate("[...document.querySelectorAll('.sidebar-nav button,button')].find(b=>b.textContent.trim()==='Library'&&!b.closest('[hidden]')).click()");
         await wait("document.querySelector('.workspace-view:not([hidden])') && !document.body.innerText.includes('Loading resources')", 'return to Library');
@@ -185,8 +190,8 @@ try {
     assert(JSON.stringify(saved.content).includes('xxxxxxxxxxxx'), 'Typed content must persist after process restart');
     report.checks.push('12 native text inputs saved and read back after process restart', '100-note collection fixture created');
     await delay(4000); await stopSampler(run, 2);
-    if((m2||m3||m4||m5)&&process.argv.includes('--qualify')) {
-      const qualify=m5?(await import('./m5-qualify.mjs')).qualifyM5:m4?(await import('./m4-qualify.mjs')).qualifyM4:m3?(await import('./m3-qualify.mjs')).qualifyM3:(await import('./m2-qualify.mjs')).qualifyM2;let iteration=2,activeRun;
+    if((m2||m3||m4||m5||m6)&&process.argv.includes('--qualify')) {
+      const qualify=m6?(await import('./m6-qualify.mjs')).qualifyM6:m5?(await import('./m5-qualify.mjs')).qualifyM5:m4?(await import('./m4-qualify.mjs')).qualifyM4:m3?(await import('./m3-qualify.mjs')).qualifyM3:(await import('./m2-qualify.mjs')).qualifyM2;let iteration=2,activeRun;
       const restart=async(normal=false)=>{
         if(normal){await evaluate("void window.__TAURI_INTERNALS__.invoke('plugin:window|close',{label:'main'});true").catch(e=>{if(!/closed|navigated/.test(String(e)))throw e;});for(let i=0;i<100&&child.exitCode===null;i++)await delay(50);assert(child.exitCode!==null,'Normal close must flush and exit');}
         await quit(); // Kill immediately at the observed draft receipt, before sampler cleanup can allow autosave.
@@ -196,7 +201,7 @@ try {
       await qualify({evaluate,cdp,wait,report,output,folder,record,restart,pid:()=>child.pid});
       if(activeRun)await stopSampler(activeRun,iteration);
     }
-    if(!m2&&!m3&&!m4&&!m5&&architecture==='tauri-rust'&&process.argv.includes('--qualify')) {
+    if(!m2&&!m3&&!m4&&!m5&&!m6&&architecture==='tauri-rust'&&process.argv.includes('--qualify')) {
       const {qualify,conflict}=await import('./qualify.mjs');
       const id=await qualify({evaluate,cdp,wait,output,report,rootPid:child.pid,folder});
       await evaluate("document.querySelector('.tiptap').focus()");
@@ -216,7 +221,7 @@ try {
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
-  if (!inspect) for (const s of report.samples) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
-  if (!report.success && !inspect) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
+  if (!inspect) for (const s of report.samples) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
+  if (!report.success && !inspect) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
   console.log(JSON.stringify({ success: report.success, evidence, metrics: report.samples.length, error: report.error }));
 }
