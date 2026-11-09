@@ -56,7 +56,7 @@ function cdp(method, params = {}) {
 }
 async function evaluate(expression) {
   const r = await cdp('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
-  if (r.exceptionDetails) throw Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text);
+  if (r.exceptionDetails) throw Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.exception?.value ?? r.exceptionDetails.text);
   return r.result.value;
 }
 async function wait(expression, label) {

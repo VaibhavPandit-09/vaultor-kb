@@ -50,8 +50,6 @@ If another writer changes the saved revision, autosave refuses to overwrite it a
 
 A successful protected save removes only the matching draft, in the same transaction. Recovery holds at most 64 notes / 32 MiB per workspace; reaching the limit refuses new protection rather than evicting old drafts. Review or discard older drafts to free space. There is no timed deletion of unresolved evidence. Notes have an 8 MiB serialized size limit. This remains experimental software; keep independent copies of important information.
 
-## Appearance and keyboard
-
 ## Linked external Markdown (Windows experiment)
 
 Use Link external folder and choose an ordinary local NTFS folder. Registration records location and identity without importing files. Expand folders to browse Markdown; directories load at most 100 entries per page. Right-click a source to refresh or remove its registration. Removal never deletes its files. Up/Down navigate entries; Left/Right collapse/expand, Enter opens, and Shift+F10 opens actions.
@@ -67,5 +65,7 @@ If the source changes, disappears or is replaced, Save refuses to overwrite it. 
 Publication flushes a same-directory candidate and captures the original before a non-replacing rename. This is not atomic compare-and-swap: another program can occupy the brief path gap. It is left untouched, with original/candidate evidence and the draft retained. Review shows evidence paths. Verify Save outcome acknowledges only an exact original or candidate identity/hash; uncertain outcomes require manual attention and are never replayed. Do not remove evidence files while resolving an interrupted Save.
 
 At most eight non-overlapping fixed local NTFS roots are supported. Junctions/reparse points, cloud placeholders, hardlinks, alternate streams/extended attributes and unsupported metadata are refused or read-only. Ordinary owner/group/DACL, creation time and attributes are checked and transferred; file identity and write time change on a real Save. Optional audit/exotic metadata and concurrent security administration are not qualified. SMB, removable/non-NTFS storage and other platforms are unsupported. Linked drafts have a separate 64-document / 32 MiB bound in the same workspace database; unresolved drafts are never evicted silently. Registration persists, but expanded trees and open panes are not restored automatically.
+
+## Appearance and keyboard
 
 Appearance switches light and dark themes and persists the choice in the workspace. F1 opens or closes this Help. Tab moves between controls; Escape leaves editor focus. The operating system's reduced-motion preference applies to shared motion and theme transitions.

@@ -94,8 +94,6 @@ Compared with M3, final independent-run medians were note opening57.8→31.1ms a
 
 Search command medians (3 samples each) were2.7ms/100titles,2.0ms/1000titles,6.6ms/5000saved-content and3.0ms/collection scope. Corresponding visible readiness250–286ms includes220ms debounce and polling. New two-round search churn rose587.8→629.7MiB working set then fell555.6MiB at idle; private bytes362.8→403.7→321.0MiB. It is not an equivalent M3 workload or leak-free certification. Notes/index/WAL together were8.56MiB at5000notes. No core M4 functional blocker remains. Unicode title ordering uses basic SQLite folding, not locale-aware natural sorting; external/media search and Saved Searches remain out of scope.
 
-## Next milestone
-
 ## M5 linked-source contracts
 
 `linked/` owns parsing/verified source-range patches, the Windows handle-bound filesystem adapter, and same-database source/document/draft/Save-intent coordination. React owns one session per logical document using retained Tiptap/history/panes. JSON is captured for debounced protection; there is no external autosave, recursive startup scan, idle polling or retained clean-file cache. Physical replacements acquire different identities; pending Save intents retain the original recovery identity.
@@ -105,5 +103,7 @@ Root and parent handles are pinned without delete sharing. Revision checks use p
 Drafts carry hash-verified baseline bytes, editor JSON and token/sequence in SQLite (64documents/32MiB). Explicit Save freezes the proof, checks source identity/hash under a lease, journals intent, stages/flushes a same-directory candidate, captures the original and publishes through a non-replacing handle-relative rename. Owner/group/DACL/inheritance, creation time and ordinary attributes are checked; candidate content/metadata are verified before cleanup. The original inode is never rewritten. Unsupported filesystem metadata is refused; optional audit metadata and concurrent security administration are not qualified.
 
 No atomic-CAS guarantee is claimed. A gap occupant is untouched; failed/uncertain publication keeps original/candidate evidence and protected content. Startup never replays writes. Explicit outcome verification accepts only an exact original or candidate identity/hash; other cases require manual attention. Unsupported visual edits remain journaled even when Save refuses them. Registration removal only deactivates authority and keeps recovery. Managed FTS/collection membership does not include linked files. Native acceptance and benchmark outcomes are recorded below when completed.
+
+## Next milestone
 
 Recommended M6: desktop refinement across linked-source states, keyboard/focus and editor capability disclosure. Carry forward bounded memory checks; consider linked organization/search explicitly without copying source bodies into managed notes. Media, transfers, Trash, networking and platform qualification remain separately scoped; Android stays on hold.
