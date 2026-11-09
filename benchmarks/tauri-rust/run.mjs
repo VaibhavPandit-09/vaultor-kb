@@ -12,6 +12,7 @@ if (!['electron-java', 'tauri-rust'].includes(architecture)) throw Error('Usage:
 const inspect = process.argv.includes('--inspect');
 const m2 = process.argv.includes('--m2');
 const m3 = process.argv.includes('--m3');
+const m4 = process.argv.includes('--m4');
 const folder = await mkdtemp(join(tmpdir(), 'vaultor-next-bench-'));
 const profile = join(folder, 'profile'); await mkdir(profile);
 const port = architecture === 'electron-java' ? 9431 : 9432;
@@ -145,8 +146,9 @@ try {
     await wait(architecture === 'tauri-rust' ? "document.querySelectorAll('.next-resource').length===100" : "document.body.innerText.includes('Bench note')", 'seeded library');
     if (architecture === 'electron-java') await wait("!document.body.innerText.includes('Loading resources')", 'seed list settled');
     const clickTitle = title => architecture === 'tauri-rust'
-      ? `document.querySelectorAll('${m3?'[data-row-open]':'.next-resource>button:first-child'}')`
+      ? `document.querySelectorAll('${m3||m4?'[data-row-open]':'.next-resource>button:first-child'}')`
       : `document.querySelectorAll('[data-resource-id],.resource-card,.resource-row,button')`;
+    if(process.argv.includes('--profile-open'))await evaluate(`window.openProfile={mutations:0};window.openObserver=new MutationObserver(records=>openProfile.mutations+=records.length);openObserver.observe(document.querySelector('.next-library'),{subtree:true,attributes:true,childList:true});true`);
     for (let i = 0; i < 3; i++) {
       if (architecture === 'electron-java') {
         await evaluate("[...document.querySelectorAll('.sidebar-nav button,button')].find(b=>b.textContent.trim()==='Library'&&!b.closest('[hidden]')).click()");
@@ -155,6 +157,7 @@ try {
       const opened = await evaluate(`(async()=>{const start=performance.now();const title='Bench note 0${99-i%2}';const candidates=[...${clickTitle()}];const row=candidates.find(e=>e.textContent.trim()===title&&!e.closest('[hidden],[inert]'))||[...document.querySelectorAll('*')].find(e=>e.childElementCount===0&&e.textContent.trim()===title&&!e.closest('[hidden],[inert]'));if(!row)throw Error('Missing '+title);row.click();for(let n=0;n<1200;n++){const dom=document.querySelector('.tiptap');const selected=${architecture === 'tauri-rust' ? "document.querySelector('.next-note-bar input')?.value===title" : "document.querySelector('.note-title[data-active=true]')?.textContent.trim()===title"};if(selected&&dom?.contentEditable==='true'&&dom.textContent.includes('Paragraph 119'))return performance.now()-start;await new Promise(r=>setTimeout(r,10));}throw Error('Editor mount timeout')})()`);
       record('managed-note-64k', 1, 'note_open', opened, 'ms', 'DOM click to end marker mounted; 10ms polling, includes UI work.');
     }
+    if(process.argv.includes('--profile-open')){report.openProfile=await evaluate('openObserver.disconnect();window.openProfile');report.openProfile.readRoundtrips=[];for(let i=0;i<3;i++)report.openProfile.readRoundtrips.push(await evaluate(`(async()=>{const t=performance.now();await window.__TAURI_INTERNALS__.invoke('workspace',{request:{kind:'read',id:'${fixture.ids[99]}'}});return performance.now()-t})()`));console.log(JSON.stringify(report.openProfile));}
     // Real native webview input via CDP, not direct editor insertContent.
     const typing = [];
     await wait("document.querySelector('.tiptap')?.contentEditable==='true'", 'editable unlocked note');
@@ -181,8 +184,8 @@ try {
     assert(JSON.stringify(saved.content).includes('xxxxxxxxxxxx'), 'Typed content must persist after process restart');
     report.checks.push('12 native text inputs saved and read back after process restart', '100-note collection fixture created');
     await delay(4000); await stopSampler(run, 2);
-    if((m2||m3)&&process.argv.includes('--qualify')) {
-      const qualify=m3?(await import('./m3-qualify.mjs')).qualifyM3:(await import('./m2-qualify.mjs')).qualifyM2;let iteration=2,activeRun;
+    if((m2||m3||m4)&&process.argv.includes('--qualify')) {
+      const qualify=m4?(await import('./m4-qualify.mjs')).qualifyM4:m3?(await import('./m3-qualify.mjs')).qualifyM3:(await import('./m2-qualify.mjs')).qualifyM2;let iteration=2,activeRun;
       const restart=async(normal=false)=>{
         if(normal){await evaluate("void window.__TAURI_INTERNALS__.invoke('plugin:window|close',{label:'main'});true").catch(e=>{if(!/closed|navigated/.test(String(e)))throw e;});for(let i=0;i<100&&child.exitCode===null;i++)await delay(50);assert(child.exitCode!==null,'Normal close must flush and exit');}
         await quit(); // Kill immediately at the observed draft receipt, before sampler cleanup can allow autosave.
@@ -192,7 +195,7 @@ try {
       await qualify({evaluate,cdp,wait,report,output,folder,record,restart,pid:()=>child.pid});
       if(activeRun)await stopSampler(activeRun,iteration);
     }
-    if(!m2&&!m3&&architecture==='tauri-rust'&&process.argv.includes('--qualify')) {
+    if(!m2&&!m3&&!m4&&architecture==='tauri-rust'&&process.argv.includes('--qualify')) {
       const {qualify,conflict}=await import('./qualify.mjs');
       const id=await qualify({evaluate,cdp,wait,output,report,rootPid:child.pid,folder});
       await evaluate("document.querySelector('.tiptap').focus()");
@@ -212,7 +215,7 @@ try {
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
-  if (!inspect) for (const s of report.samples) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
+  if (!inspect) for (const s of report.samples) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
   if (!report.success && !inspect) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
   console.log(JSON.stringify({ success: report.success, evidence, metrics: report.samples.length, error: report.error }));
 }

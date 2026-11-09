@@ -22,6 +22,11 @@ pub enum Request {
         cursor: Option<crate::library::Cursor>,
         limit: Option<u32>,
     },
+    Search {
+        options: crate::search::SearchOptions,
+        cursor: Option<crate::search::SearchCursor>,
+        limit: Option<u32>,
+    },
     CreateCollection {
         name: String,
         #[serde(rename = "parentId")]
@@ -142,7 +147,7 @@ impl Workspace {
             .map_err(error)?;
         lock.try_lock_exclusive()
             .map_err(|_| "Workspace is already open in another process".to_string())?;
-        let db = Connection::open(root.join("workspace.sqlite3")).map_err(error)?;
+        let mut db = Connection::open(root.join("workspace.sqlite3")).map_err(error)?;
         db.busy_timeout(Duration::from_secs(3)).map_err(error)?;
         let version: i64 = db
             .pragma_query_value(None, "user_version", |r| r.get(0))
@@ -160,6 +165,7 @@ impl Workspace {
             CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL CHECK(json_valid(value)));
             CREATE TABLE IF NOT EXISTS drafts(resource_id TEXT PRIMARY KEY REFERENCES resources(id), base_revision INTEGER NOT NULL, token TEXT NOT NULL, sequence INTEGER NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL CHECK(json_valid(content)), updated_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')));
             PRAGMA user_version=2; COMMIT;").map_err(error)?;
+        crate::search::initialize(&mut db)?;
         Ok(Self {
             db,
             root,
@@ -178,6 +184,7 @@ impl Workspace {
                 Ok(json!({"path":self.root,"collections":collections,"settings":settings}))
             },
             Request::List { collection, cursor, limit } => self.list(collection, cursor, limit),
+            Request::Search { options, cursor, limit } => self.search(options, cursor, limit),
             Request::CreateCollection { name, parent_id } => self.collection(None, name, parent_id),
             Request::UpdateCollection { id, name, parent_id } => self.collection(Some(id), name, parent_id),
             Request::Membership { id, add, remove } => self.membership(id, add, remove),

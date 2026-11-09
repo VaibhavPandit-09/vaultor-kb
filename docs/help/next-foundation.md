@@ -30,6 +30,16 @@ Add to collection, Move to collection and Remove from this collection use one sh
 
 Collection More/right-click menus provide Open, New note here, New child collection and Rename or move. Collection arrows navigate visible branches; Left/Right collapse or expand. Right-click blank Library space for New note, collection actions, page selection and Refresh. Unimplemented features are not listed.
 
+## Search and filtering
+
+Search notes searches the Library or the selected collection's direct members. Search options switches between titles and titles plus saved content, and between newest-created, recently modified and title A–Z order. It also provides Refresh results.
+
+Words match prefixes, ignoring case and accents. All words must match; punctuation separates words. There are no Boolean, wildcard or fuzzy operators. Queries allow up to 256 characters and 12 words. Only committed text is indexed; pending edits and protected drafts become searchable after saving. Existing M2/M3 notes are indexed automatically on opening the workspace.
+
+Results update after a short typing pause and use pages of at most 100 summaries. Down from the search field focuses results; Enter on a result opens it in the existing pane. Ctrl+A in the field selects text. With list focus, Escape clears selection first, then search and filters. Escape in the editor returns focus to its row. Clear search and filters returns to the prior browse page in the same collection. Opening results keeps the query and result page.
+
+If saved notes or memberships change while paging, refresh starts a new result page instead of silently skipping or repeating rows. No-results and query-error states keep open editors intact. External Markdown, media search and Saved Searches are not available.
+
 ## Saving and recovery
 
 Edits are protected after about 250 ms without typing; continuous typing requests protection at least once per second. Disk/processing delays can extend that window. Autosave follows about one second after typing stops. Pending means the newest edit is not yet durable. Draft protected means SQLite has acknowledged it. Saved means the committed note contains it. Ctrl+S, navigation and normal closing flush pending work.

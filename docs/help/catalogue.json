@@ -2088,7 +2088,7 @@
     {
       "id": "next-foundation",
       "name": "Vaultor Next foundation",
-      "description": "Experimental Windows Tauri notes with protected drafts, page-scoped selection, keyboard/context menus and transactional collection organization.",
+      "description": "Experimental Windows Tauri notes with indexed saved-note search, protected drafts, page-scoped selection and transactional collection organization.",
       "article": "next-foundation",
       "areas": [
         "Platforms",
@@ -2103,7 +2103,8 @@
         "Review competing saved and protected versions",
         "Browse thousands of notes and organize collection memberships",
         "Select a resource page with Ctrl Shift Space and Ctrl+A",
-        "Organize multiple notes using context menus and searchable destinations"
+        "Organize multiple notes using context menus and searchable destinations",
+        "Search saved note titles and content and filter by collection or ordering"
       ],
       "keywords": [
         "Tauri",
@@ -2119,7 +2120,11 @@
         "selection",
         "bulk",
         "keyboard",
-        "context menu"
+        "context menu",
+        "FTS5",
+        "saved content",
+        "search",
+        "sorting"
       ],
       "availability": {
         "windows": {
@@ -2136,9 +2141,9 @@
         }
       },
       "limitations": [
-        "Experimental M2 workspaces only; M1 and Electron data are not migrated.",
+        "Experimental M2/M3 workspaces; M1 and Electron data are not migrated.",
         "Draft protection follows a debounced SQLite receipt; unsent edits are not crash durable.",
-        "No linked files, attachments, search, deletion or imports/exports."
+        "No linked files, attachments, deletion or imports/exports."
       ],
       "related": [],
       "evidence": [
@@ -2148,7 +2153,9 @@
         "next/src-tauri/src/library.rs",
         "frontend/src/next/selection.ts",
         "frontend/src/next/ContextMenu.tsx",
-        "frontend/src/next/OrganizeDialog.tsx"
+        "frontend/src/next/OrganizeDialog.tsx",
+        "next/src-tauri/src/search.rs",
+        "frontend/src/next/SearchBar.tsx"
       ]
     }
   ],
