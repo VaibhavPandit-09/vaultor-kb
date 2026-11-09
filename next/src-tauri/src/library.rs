@@ -128,38 +128,76 @@ impl Workspace {
         add: Option<String>,
         remove: Option<String>,
     ) -> Result<Value, String> {
-        if add.is_some() && add == remove {
-            return Err("Choose a different destination collection".into());
+        self.bulk_membership(vec![id], add, remove)
+    }
+    pub(crate) fn bulk_membership(
+        &mut self,
+        ids: Vec<String>,
+        add: Option<String>,
+        remove: Option<String>,
+    ) -> Result<Value, String> {
+        if ids.is_empty() || ids.len() > 100 {
+            return Err("Choose 1–100 resources from the current page".into());
         }
+        let ids: std::collections::BTreeSet<_> = ids.into_iter().collect();
         if add.is_none() && remove.is_none() {
             return Err("Choose a membership operation".into());
         }
         let tx = self.db.transaction().map_err(error)?;
-        if !tx
-            .query_row(
-                "SELECT EXISTS(SELECT 1 FROM resources WHERE id=?1)",
-                [&id],
-                |r| r.get::<_, bool>(0),
-            )
-            .map_err(error)?
-        {
-            return Err("Resource not found".into());
+        for id in &ids {
+            if !tx
+                .query_row(
+                    "SELECT EXISTS(SELECT 1 FROM resources WHERE id=?1)",
+                    [id],
+                    |r| r.get::<_, bool>(0),
+                )
+                .map_err(error)?
+            {
+                return Err("A selected resource no longer exists; nothing was changed".into());
+            }
         }
-        if let Some(add) = add {
-            tx.execute(
-                "INSERT OR IGNORE INTO memberships VALUES(?1,?2)",
-                params![id, add],
-            )
-            .map_err(error)?;
+        for collection in [&add, &remove].into_iter().flatten() {
+            if !tx
+                .query_row(
+                    "SELECT EXISTS(SELECT 1 FROM collections WHERE id=?1)",
+                    [collection],
+                    |r| r.get::<_, bool>(0),
+                )
+                .map_err(error)?
+            {
+                return Err("Collection no longer exists; nothing was changed".into());
+            }
         }
-        if let Some(remove) = remove {
-            tx.execute(
-                "DELETE FROM memberships WHERE resource_id=?1 AND collection_id=?2",
-                params![id, remove],
-            )
-            .map_err(error)?;
+        let (mut added, mut removed, mut unchanged) = (0, 0, 0);
+        for id in &ids {
+            let mut changes = 0;
+            if add != remove {
+                if let Some(add) = &add {
+                    let n = tx
+                        .execute(
+                            "INSERT OR IGNORE INTO memberships VALUES(?1,?2)",
+                            params![id, add],
+                        )
+                        .map_err(error)?;
+                    added += n;
+                    changes += n;
+                }
+                if let Some(remove) = &remove {
+                    let n = tx
+                        .execute(
+                            "DELETE FROM memberships WHERE resource_id=?1 AND collection_id=?2",
+                            params![id, remove],
+                        )
+                        .map_err(error)?;
+                    removed += n;
+                    changes += n;
+                }
+            }
+            if changes == 0 {
+                unchanged += 1;
+            }
         }
         tx.commit().map_err(error)?;
-        Ok(Value::Null)
+        Ok(json!({"requested":ids.len(),"added":added,"removed":removed,"unchanged":unchanged}))
     }
 }

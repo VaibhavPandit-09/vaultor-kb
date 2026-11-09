@@ -10,6 +10,8 @@ M1 completed at `52b84ee`: isolated workspaces, exclusive process ownership, Rus
 
 M2 adds same-database durable drafts, explicit recovery/conflict review, keyset Library pages, nested/renamable collections and atomic identity-based memberships. `editing.rs` and `library.rs` extend the portable domain; the connection still has one storage-thread owner. Schema/marker 2 intentionally refuse M1 data without migration. A new default `Workspace-M2` avoids modifying the M1 default. Previously remembered older paths can be replaced using Open workspace and a new empty folder.
 
+M3 extends this same schema/domain with page-scoped selection, roving row focus, consistent resource/collection/background menus, searchable bulk destinations and one transactional bulk-membership command. No new database, backend process, framework or migration is introduced.
+
 The portable Rust domain has no Tauri types. One storage thread owns SQLite and transactions; async handlers await receipts. No legacy migrations are provided. Nonempty unrelated directories, open workspaces and newer schemas are refused. The default profile has its own application identifier. Explicit benchmark workspace overrides never change the remembered personal workspace.
 
 ## Interaction decisions
@@ -26,11 +28,32 @@ Save verifies the exact protected evidence and expected note revision; note comm
 
 Library reads at most 100 metadata summaries per request and mounts one page. Immutable descending creation sequence plus an anchor high-water mark excludes later insertions during traversal; note edits do not reorder pages. Cursors carry collection scope. Membership changes are live, not a database snapshot, and the owning UI refreshes page one after organization changes. Previous/Next preserve open editors and per-page scroll. No virtualization dependency is needed for bounded 100-row rendering. Full note bodies load only for editing/recovery, not organization.
 
-Collections have parent IDs and sibling-normalized unique names; reparenting rejects cycles. Add/remove/move update the resource/collection join transactionally; resources can have multiple memberships and retain one ID/body. Collection arrows compress/restore the same tree branch; row More/right-click opens inline management. M3 can extend the single-resource organization owner to selection/bulk actions.
+Collections have parent IDs and sibling-normalized unique names; reparenting rejects cycles. Add/remove/move update the resource/collection join transactionally; resources can have multiple memberships and retain one ID/body. M3 extends this authority to1–100 unique resources per transaction, validating all resource/collection IDs before writes and rolling back on any error. Receipts report actual added/removed/unchanged counts; repeated membership actions are safe no-ops. Other placements and note revisions/content are untouched.
+
+## M3 interaction contract
+
+Ordinary title activation opens without an explicit multi-selection. Ctrl/checkbox toggles, Shift ranges and Ctrl+Shift additive ranges follow displayed resource IDs. One selection/focus/anchor model is scoped by collection and page cursor; page/scope changes clear it, same-page refresh/rename prune to visible IDs, and successful organization clears it. No unloaded resources are selected. Arrow/Home/End move focus; Enter opens only that focused note; Space toggles and Ctrl+A selects the loaded page. DOM target admission confines these shortcuts to the list, never editor text, fields, menus or dialogs. Editor Escape returns to a visible Library row; menu/modal Escape has higher centralized priority than selection.
+
+Right-clicking a selected row preserves the group; an unselected row becomes the sole selection. One context-menu instance uses existing MenuAction presentation, shared motion classes and Escape/portal focus owners, with viewport clamping, keyboard traversal and invoker restoration. There is no menu/listener per row. Resource, collection and blank-space commands expose implemented actions only. Bulk destinations reuse AppModal and a bounded searchable collection picker. Header metadata/actions compress into selected-count/organization mode without a second toolbar or duplicated header. Collection branches transform their existing grid track with inert collapsed descendants and reduced-motion endpoints. Active editors retain their keys across selection and menu work.
+
+## Visual and interaction parity (M1–M3)
+
+| Surface | Functional parity | Visual parity | Motion parity | Known differences / remaining work |
+| --- | --- | --- | --- | --- |
+| Workspace/lifecycle | Local Rust workspace, settings and restart | Existing tokens/identity retained | Native startup; no decorative loading mode | Experimental source; no installer/updater/network parity |
+| Library/resource rows | M3 current-page selection, keyboard focus and organization | Compact checkboxes, distinct open/selected/focus cues; shared action styling | Header selection compression, finite hover feedback | Notes only; full search/types/tags/Trash remain pending |
+| Collections | Hierarchy, rename/reparent and bulk memberships | Sidebar guides/indentation and shared menus | Same branch expands/collapses; reduced motion | No drag/drop or full published directory/filter surfaces |
+| Context menus/destinations | Resource/group/collection/background, keyboard and focus owners | Shared MenuAction/popover/AppModal surfaces | Existing utility/menu tokens; viewport-aware placement | React menus inside native WebView2, not OS-native menu APIs |
+| Editor/shared panes | M1/M2 JSON saves, shared history, M3 focus return | Existing Tiptap/theme/code styling retained | Pane geometry and theme reveal retained | Adapted composition; full toolbar/slash/media parity pending |
+| Recovery/conflicts | M2 protected restore/discard/park/reviewed replacement | Compact two-column review | Shared modal motion/focus | Preview cap and durability window remain documented |
+| Themes/accessibility | Light/dark, reduced motion, keyboard ownership | Shared tokens and focus cues | Shared reveal; immediate reduced endpoints | Physical IME/screen-reader and subjective acceptance unclaimed |
+| Future M4–M8 areas | Pending, separately scoped | Pending | Pending | Linked Markdown/media/transfers/search/Trash/network/platform qualification are not implied available |
+
+Native runtime outcomes and capture limitations are recorded in the benchmark results. This is scoped parity for touched interactions, not a declaration of whole-product or M6 refinement completion.
 
 ## Boundaries
 
-- Resource deletion/Trash, tags, pins, search, selection and bulk actions remain future work. Collection contents are direct memberships, not recursive descendant aggregation.
+- Resource deletion/Trash, tags, pins and search remain future work. Collection contents are direct memberships, not recursive descendant aggregation. Selection is deliberately limited to the current loaded page.
 - Linked Markdown remains a product requirement. Linked reading/writing, imports/exports, images/attachments and resource-link commands are not exposed yet.
 - Only acknowledged journal/commit bytes are durable. There is no automatic conflict merge or recovery export, and unresolved evidence requires an explicit decision. This experimental app still needs independent copies of important information.
 - Windows only. No installer, signing/updater, macOS, Android or LAN API qualification. Native menus, keyboard customization, slash menus, pane session restoration and full animation parity remain incomplete. Physical IME/accessibility acceptance is unclaimed.
@@ -49,4 +72,4 @@ M2 source `d2106c2`: Rust6/6, frontend5/5 (including actual Tiptap lock/selectio
 
 ## Next milestone
 
-M3: selection and coherent bulk organization, expanded keyboard/context-menu workflows and measured Library ergonomics. Preserve draft ownership and exact save/recovery gates. Linked external Markdown, imports/exports, media, search, Trash, networking and platform qualification remain separately scoped; Android stays on hold.
+Recommended M4: Library search/filtering and saved navigation using bounded indexed Rust queries, with explicit document/memory budgets. Preserve draft ownership, page selection boundaries and exact transactional organization. This recommendation does not authorize implementation now. Linked external Markdown, imports/exports, media, Trash, networking and platform qualification remain separately scoped; Android stays on hold.

@@ -38,6 +38,11 @@ pub enum Request {
         add: Option<String>,
         remove: Option<String>,
     },
+    BulkMembership {
+        ids: Vec<String>,
+        add: Option<String>,
+        remove: Option<String>,
+    },
     Memberships {
         id: String,
     },
@@ -176,6 +181,7 @@ impl Workspace {
             Request::CreateCollection { name, parent_id } => self.collection(None, name, parent_id),
             Request::UpdateCollection { id, name, parent_id } => self.collection(Some(id), name, parent_id),
             Request::Membership { id, add, remove } => self.membership(id, add, remove),
+            Request::BulkMembership { ids, add, remove } => self.bulk_membership(ids, add, remove),
             Request::Memberships { id } => self.memberships(id),
             Request::CreateNote { title: name, collection } => {
                 let name = title(&name)?;

@@ -18,7 +18,7 @@ import { SharedHistory, SharedNoteDocuments, isSharedTransaction } from '../lib/
 import { useEscapeLayer, ESCAPE_PRIORITIES } from '../lib/escape/escape';
 import type { Note } from './client';
 const lowlight = createLowlight(common);
-export default function NextEditor({ note, documents, changed, locked, pane }: { note: Note; documents: SharedNoteDocuments; changed: (capture: () => JSONContent) => void; locked: boolean; pane: number }) {
+export default function NextEditor({ note, documents, changed, locked, pane, focusWhenReady, focusHandled, leaveFocus }: { note: Note; documents: SharedNoteDocuments; changed: (capture: () => JSONContent) => void; locked: boolean; pane: number; focusWhenReady?:boolean; focusHandled?:()=>void; leaveFocus?:()=>void }) {
   const callback = useRef(changed);
   useLayoutEffect(() => { callback.current = changed; }, [changed]);
   const invalid = useRef(false);
@@ -44,6 +44,7 @@ export default function NextEditor({ note, documents, changed, locked, pane }: {
   }, [note.id]);
   useEffect(() => { if (!editor) return; return documents.attach(note.id, editor); }, [editor, documents, note.id]);
   useEffect(() => { editor?.setEditable(!locked && !invalid.current, false); }, [editor, locked]);
-  useEscapeLayer({ id: `next-editor-${pane}`, active: focused, priority: ESCAPE_PRIORITIES.editorFocus, restoreFocusOnEscape: false, close: () => editor?.commands.blur() });
+  useEffect(()=>{if(editor&&!locked&&focusWhenReady){editor.commands.focus(undefined,{scrollIntoView:false});focusHandled?.();}},[editor,locked,focusWhenReady,focusHandled]);
+  useEscapeLayer({ id: `next-editor-${pane}`, active: focused, priority: ESCAPE_PRIORITIES.editorFocus, restoreFocusOnEscape: false, close: () => {editor?.commands.blur();leaveFocus?.();} });
   return <div className="editor-workspace">{contentError && <p role="alert">Unsupported note content. Editing is disabled; original JSON is retained.</p>}<EditorContent editor={editor} /></div>;
 }

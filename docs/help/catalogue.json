@@ -2088,7 +2088,7 @@
     {
       "id": "next-foundation",
       "name": "Vaultor Next foundation",
-      "description": "Experimental Windows Tauri notes with protected drafts, explicit conflict review, paginated Library and nested collection memberships.",
+      "description": "Experimental Windows Tauri notes with protected drafts, page-scoped selection, keyboard/context menus and transactional collection organization.",
       "article": "next-foundation",
       "areas": [
         "Platforms",
@@ -2101,7 +2101,9 @@
       "tasks": [
         "Create edit and recover a note after an unexpected close",
         "Review competing saved and protected versions",
-        "Browse thousands of notes and organize collection memberships"
+        "Browse thousands of notes and organize collection memberships",
+        "Select a resource page with Ctrl Shift Space and Ctrl+A",
+        "Organize multiple notes using context menus and searchable destinations"
       ],
       "keywords": [
         "Tauri",
@@ -2113,7 +2115,11 @@
         "conflict",
         "pagination",
         "hierarchy",
-        "membership"
+        "membership",
+        "selection",
+        "bulk",
+        "keyboard",
+        "context menu"
       ],
       "availability": {
         "windows": {
@@ -2139,7 +2145,10 @@
         "frontend/src/next/NextApp.tsx",
         "next/src-tauri/src/domain.rs",
         "next/src-tauri/src/editing.rs",
-        "next/src-tauri/src/library.rs"
+        "next/src-tauri/src/library.rs",
+        "frontend/src/next/selection.ts",
+        "frontend/src/next/ContextMenu.tsx",
+        "frontend/src/next/OrganizeDialog.tsx"
       ]
     }
   ],

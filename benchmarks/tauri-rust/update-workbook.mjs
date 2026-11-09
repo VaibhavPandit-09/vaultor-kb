@@ -63,6 +63,33 @@ if(m2Runs.length){
   comparison.getRange('A10:H10').format={fill:'#006B75',font:{name:'Arial',size:10,color:'#FFFFFF',bold:true},rowHeight:25};
   comparison.getRange('C11:D17').setNumberFormat('0.00');comparison.getRange('E11:E17').setNumberFormat('0.0%');
 }
+const m3Runs=normalized.filter(r=>r[2]==='m3-managed-notes-v1'&&r[14]==='Y');
+if(m3Runs.length){
+  let comparison;try{comparison=wb.worksheets.getItem('M2 vs M3');}catch{comparison=wb.worksheets.add('M2 vs M3');}
+  const baseline=normalized.findLast(r=>r[2]==='m2-managed-notes-v1'&&r[8]==='settled-idle-5min'&&r[14]==='Y');
+  const candidate=m3Runs.at(-1);
+  comparison.showGridLines=false;
+  comparison.getRange('A2:H2').unmerge();comparison.getRange('A2:H2').merge();comparison.getRange('A2').values=[['Vaultor Next · M2 vs M3']];
+  comparison.getRange('A4:B8').values=[['M2 source',baseline?.[4]??'unmeasured'],['M3 source',candidate[4]],['Scenario','settled-idle-5min'],['Dataset',candidate[9]],['Device',candidate[5]]];
+  comparison.getRange('A10:H10').values=[['Metric','Unit','M2 mean','M3 mean','Change','M2 n','M3 n','Direction']];
+  const compareMetrics=[['cpu_one_core_percent','%'],['process_tree_working_set','MiB'],['process_tree_private_bytes','MiB'],['startup_usable','ms'],['note_open','ms'],['input_to_raf','ms'],['scroll_frame_interval','ms']];
+  comparison.getRange('A11:B17').values=compareMetrics;
+  for(let row=11;row<=17;row++){
+    const criteria=(source,experiment)=>`${range('D')},"tauri-rust",${range('E')},$B$${source},${range('C')},"${experiment}",${range('F')},$B$8,${range('I')},$B$6,${range('J')},$B$7,${range('L')},$A${row},${range('O')},"Y",${range('P')},"m1-cdp-v2"`;
+    const count=(s,e)=>`COUNTIFS(${criteria(s,e)})`;
+    const left=count(4,'m2-managed-notes-v1'),right=count(5,'m3-managed-notes-v1');
+    comparison.getRange(`C${row}:H${row}`).formulas=[[`=IF(${left}=0,"",SUMIFS(${range('M')},${criteria(4,'m2-managed-notes-v1')})/${left})`,`=IF(${right}=0,"",SUMIFS(${range('M')},${criteria(5,'m3-managed-notes-v1')})/${right})`,`=IF(COUNT(C${row}:D${row})<2,"",IF(C${row}=0,"",D${row}/C${row}-1))`,`=${left}`,`=${right}`,'']];
+    comparison.getRange(`H${row}`).values=[['lower']];
+  }
+  comparison.getRange('A19:H20').unmerge();comparison.getRange('A19:H20').merge();comparison.getRange('A19').values=[['Five-minute idle follows 30 seconds settling, one 64 KiB note and 100 resources. Change Scenario to managed-note-64k for editing proxies. M3 adds selection and transactional organization. New bulk and mixed-churn scenarios are separate. Small samples; no full-product claim.']];
+  comparison.getRange('A2:H20').format.font={name:'Arial',size:10,color:'#14333A'};
+  comparison.getRange('A2').format.font.size=14;
+  comparison.getRange('A4:A17').format.columnWidth=33;comparison.getRange('B4:B17').format.columnWidth=28;comparison.getRange('C10:H17').format.columnWidth=13;
+  comparison.getRange('B4:B8').format.wrapText=true;comparison.getRange('A4:H8').format.rowHeight=34;
+  comparison.getRange('A19:H20').format.wrapText=true;comparison.getRange('A19:H20').format.rowHeight=28;
+  comparison.getRange('A10:H10').format={fill:'#006B75',font:{name:'Arial',size:10,color:'#FFFFFF',bold:true},rowHeight:25};
+  comparison.getRange('C11:D17').setNumberFormat('0.00');comparison.getRange('E11:E17').setNumberFormat('0.0%');
+}
 protocol.getRange('B4').values = [['CSV is canonical and append-only. update-workbook.ps1 refreshes Raw Runs and applies appended invalidations.']];
 protocol.getRange('B13').values = [['M1 is experimental and unpublished. Legacy development databases are disposable; no migration or installer is required. Future release qualification needs separate authorization.']];
 const parity = wb.worksheets.getItem('Parity Gates');
@@ -76,7 +103,17 @@ if(m2Runs.length){
   parity.getRange('D11:F11').values=[['Partial M2','docs/plans/VAULTOR-NEXT.md','Hierarchy/memberships ready; Trash deferred.']];
   parity.getRange('D18:F18').values=[['M2 bundled','docs/help/next-foundation.md','Experimental Help checked; published app unchanged.']];
 }
+if(m3Runs.length){
+  parity.getRange('D4:F4').values=[['M3 scoped parity','docs/plans/VAULTOR-NEXT.md','Selection, menus, destinations, panes and themes; full M6 parity pending.']];
+  parity.getRange('D11:F11').values=[['M3 transactional bulk','docs/plans/VAULTOR-NEXT.md','Add/move/remove 1–100 identities; other memberships retained; Trash deferred.']];
+  parity.getRange('D18:F18').values=[['M3 bundled','docs/help/next-foundation.md','Page-scoped mouse/keyboard selection and shared organization Help.']];
+}
 const scenarios = wb.worksheets.getItem('Scenarios');
+if(m3Runs.length)scenarios.getRange('A23:E26').values=[
+ ['selection-100','Interaction','Native Ctrl+A from empty selection through rendered receipt','100 mounted rows','rAF is not physical presentation'],
+ ['bulk-add/move/remove','Organization','5/20/100 adds; 100 move/remove through UI receipt','Transactional identity membership','Setup and destination search outside latency'],
+ ['library-5000-m3','Navigation','Three Next transitions in 5,000-note fixture','Page-scoped selection resets','New M3 workload; do not compare to M2 as equivalent'],
+ ['churn-5000-m3','Retention','Three bounded mixed rounds then 30+60 seconds idle','No forced GC; full process tree','Snapshot trend cannot establish leak freedom']];
 scenarios.getRange('A16:E21').values = [
  ['first-profile','Startup','New isolated profile; warm OS cache possible','No app process','Not true cold boot'],
  ['restart','Startup','Same fixture; app-specific session restoration','Prior process exited','Disclose restored-editor differences'],
@@ -96,6 +133,7 @@ for(const [sheetName,range] of [['Raw Runs','K4:O12'],['Protocol','A3:B14'],['Pa
   await fs.writeFile(join(root,'raw',`workbook-${sheetName.replaceAll(' ','-')}.png`),new Uint8Array(await image.arrayBuffer()));
 }
 if(m2Runs.length){const image=await wb.render({sheetName:'M1 vs M2',range:'A2:H20',scale:1});await fs.writeFile(join(root,'raw/workbook-M2.png'),new Uint8Array(await image.arrayBuffer()));console.log((await wb.inspect({kind:'table',range:'M1 vs M2!A10:H17',tableMaxRows:8,tableMaxCols:8,maxChars:1600})).ndjson);}
+if(m3Runs.length){const image=await wb.render({sheetName:'M2 vs M3',range:'A2:H20',scale:1});await fs.writeFile(join(root,'raw/workbook-M3.png'),new Uint8Array(await image.arrayBuffer()));console.log((await wb.inspect({kind:'table',range:'M2 vs M3!A10:H17',tableMaxRows:8,tableMaxCols:8,maxChars:1600})).ndjson);}
 await (await SpreadsheetFile.exportXlsx(wb)).save(path);
 await fs.mkdir(join(root,'summaries'),{recursive:true});
 for(const file of await fs.readdir(join(root,'raw'))) {
@@ -103,10 +141,10 @@ for(const file of await fs.readdir(join(root,'raw'))) {
   if(!rows.some(row=>String(row[16]).endsWith('/'+file)))continue;
   const report = JSON.parse(await fs.readFile(join(root,'raw',file),'utf8'));
   if(!report.architecture)continue;
-  const {architecture,commit,dirty,executableSha256,timestamp,system,dataset,samples,checks,limitations,success,error,runtime,viewport,node,appVersion,instrument} = report;
+  const {architecture,commit,dirty,executableSha256,timestamp,system,dataset,samples,checks,limitations,success,error,runtime,viewport,node,appVersion,instrument,churnRecipeSha256} = report;
   const groups=new Map();
   for(const sample of samples??[]) {const key=[sample.scenario,sample.iteration,sample.metric].join('/');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(sample);}
   const measurements=[...groups.values()].map(group=>{const first=group[0],values=group.map(s=>s.value).sort((a,b)=>a-b);return {scenario:first.scenario,iteration:first.iteration,metric:first.metric,unit:first.unit,n:values.length,min:values[0],median:(values[Math.floor((values.length-1)/2)]+values[Math.floor(values.length/2)])/2,p95:values[Math.ceil(values.length*.95)-1],max:values.at(-1)};});
-  await fs.writeFile(join(root,'summaries',basename(file)),JSON.stringify({architecture,commit,dirty,executableSha256,timestamp,system,dataset,measurements,checks,limitations,success,error,runtime,viewport,node,appVersion,instrument},null,2)+'\n');
+  await fs.writeFile(join(root,'summaries',basename(file)),JSON.stringify({architecture,commit,dirty,executableSha256,timestamp,system,dataset,measurements,checks,limitations,success,error,runtime,viewport,node,appVersion,instrument,churnRecipeSha256},null,2)+'\n');
 }
 console.log(`Refreshed workbook from ${rows.length} canonical records; ${failures.size} invalidated runs.`);

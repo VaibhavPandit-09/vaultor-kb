@@ -5,6 +5,7 @@ export type Summary = Omit<Note, 'content'> & { updatedAt: string };
 export type Collection = { id: string; name: string; parentId: string | null };
 export type Cursor = { before: number; anchor: number; scope: string | null };
 export type Page = { items: Summary[]; next: Cursor | null; total: number };
+export type MembershipReceipt = { requested: number; added: number; removed: number; unchanged: number };
 export type Draft = { id: string; title: string; content: JSONContent; baseRevision: number; token: string; sequence: number };
 export type DraftSummary = Omit<Draft, 'content'>;
 export type Snapshot = { path: string; collections: Collection[]; settings: { theme?: 'light' | 'dark' | 'oled' } };
@@ -15,6 +16,7 @@ type Request =
   | { kind: 'createCollection'; name: string; parentId?: string | null }
   | { kind: 'updateCollection'; id: string; name: string; parentId: string | null }
   | { kind: 'membership'; id: string; add: string | null; remove: string | null }
+  | { kind: 'bulkMembership'; ids: string[]; add: string | null; remove: string | null }
   | { kind: 'memberships'; id: string }
   | { kind: 'createNote'; title: string; collection: string | null }
   | { kind: 'read'; id: string }

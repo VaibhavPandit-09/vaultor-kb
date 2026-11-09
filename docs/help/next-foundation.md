@@ -4,7 +4,7 @@ Vaultor Next is a separate Windows development application. It does not replace 
 
 ## Workspaces
 
-The first launch creates a separate local M2 workspace. Open workspace accepts an empty folder or an M2 workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. No external documents are edited.
+The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or an existing M2/M3 workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. No external documents are edited.
 
 ## Notes and collections
 
@@ -14,9 +14,21 @@ Library shows all notes; a collection shows its direct members. Previous and Nex
 
 New note creates a note in the selected collection. Select a title to edit it, or use Open beside for a second pane. Both views of the same note share content, Undo history and one protected draft.
 
-Use a note's More button or right-click a Library row to organize it. Choose a destination and Add membership to include the same note in another collection. From a collection, Move membership adds the destination and removes the current membership together. Remove from this collection removes that placement only. These actions never duplicate or delete note content.
+Use a note's More button or right-click a Library row for the organization actions described below. These change placements without copying or deleting note content.
 
 Edit the title or body directly. Markdown typing shortcuts, bold, italic, headings, lists, code blocks, tables and Undo/Redo are supported by the rich-text editor. The foundation has no slash menu, attachments, resource links, imports, search, deletion or linked Markdown editing yet.
+
+## Selecting and organizing a page
+
+Click a note title to open it normally; this clears an explicit multi-selection. Ctrl-click toggles notes without opening them. Shift-click selects the displayed range from the anchor; Ctrl+Shift-click adds that range. Checkboxes select without opening. The header reports the selected count, and Organize opens the same actions as right-click. Right-clicking an already selected row keeps the group; right-clicking another row selects that row alone.
+
+When the resource list owns focus, Up/Down and Home/End move focus, Enter opens the focused note, Space toggles selection and Shift+Up/Down extends the range. Ctrl+A selects only the loaded page, at most 100 notes. These shortcuts do not take over editor text, inputs or dialogs. Shift+F10 or the context-menu key opens row actions. Menu arrows/Home/End move through available actions; Escape dismisses the menu first, then clears selection when the list owns focus. Escape from the editor returns focus to its Library row when visible.
+
+Selection is scoped to the current page and collection. Changing either clears it; refresh and collection renaming retain only still-visible selected IDs. Keyboard opening preserves selection on that page. Closing a note returns focus to the list. A successful organization clears selection and reports actual added/removed/unchanged memberships; failure retains the selection for retry.
+
+Add to collection, Move to collection and Remove from this collection use one shared dialog for one or many notes. Type to find a destination; use Down to enter the results, then Enter/Space to choose. Move and Remove appear only when browsing a collection. The entire operation commits together or leaves memberships unchanged. Already-present or absent memberships are safe no-ops; no note content or other memberships are removed.
+
+Collection More/right-click menus provide Open, New note here, New child collection and Rename or move. Collection arrows navigate visible branches; Left/Right collapse or expand. Right-click blank Library space for New note, collection actions, page selection and Refresh. Unimplemented features are not listed.
 
 ## Saving and recovery
 
