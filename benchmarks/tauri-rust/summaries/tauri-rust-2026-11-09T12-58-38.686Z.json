@@ -1,0 +1,336 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "eceb6d10521219907e3c2ef68d80b4d8d0c9a230",
+  "dirty": true,
+  "executableSha256": "a1f2fdff4030314f4162967c448e3cb631babef68a72af76ce8dd7ffffe9995e",
+  "timestamp": "2026-11-09T12:58:38.755Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 845.2470999999999,
+      "median": 845.2470999999999,
+      "p95": 845.2470999999999,
+      "max": 845.2470999999999
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 53.70000001788139,
+      "median": 53.900000005960464,
+      "p95": 63.599999994039536,
+      "max": 63.599999994039536
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 12,
+      "min": 1.5999999940395355,
+      "median": 1.9000000059604645,
+      "p95": 14.800000011920929,
+      "max": 14.800000011920929
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 4.099999999999909,
+      "median": 4.199999999999818,
+      "p95": 4.300000000000182,
+      "max": 4.300000000000182
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 2.135996884891389,
+      "median": 2.135996884891389,
+      "p95": 2.135996884891389,
+      "max": 2.135996884891389
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 318.0078125,
+      "median": 318.0078125,
+      "p95": 318.0078125,
+      "max": 318.0078125
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 288.6171875,
+      "median": 288.6171875,
+      "p95": 288.6171875,
+      "max": 288.6171875
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 560.7421875,
+      "median": 560.7421875,
+      "p95": 560.7421875,
+      "max": 560.7421875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 317.953125,
+      "median": 317.953125,
+      "p95": 317.953125,
+      "max": 317.953125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 288.5859375,
+      "median": 288.5859375,
+      "p95": 288.5859375,
+      "max": 288.5859375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "restart",
+      "iteration": 2,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 598.938599999994,
+      "median": 598.938599999994,
+      "p95": 598.938599999994,
+      "max": 598.938599999994
+    },
+    {
+      "scenario": "workload",
+      "iteration": 2,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 420.06640625,
+      "median": 420.06640625,
+      "p95": 420.06640625,
+      "max": 420.06640625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 419.61328125,
+      "median": 419.61328125,
+      "p95": 419.61328125,
+      "max": 419.61328125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 206.05859375,
+      "median": 206.05859375,
+      "p95": 206.05859375,
+      "max": 206.05859375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 8.613002594033722,
+      "median": 8.613002594033722,
+      "p95": 8.613002594033722,
+      "max": 8.613002594033722
+    },
+    {
+      "scenario": "bulk-add-5",
+      "iteration": 1,
+      "metric": "ui_receipt",
+      "unit": "ms",
+      "n": 1,
+      "min": 63.633800000010524,
+      "median": 63.633800000010524,
+      "p95": 63.633800000010524,
+      "max": 63.633800000010524
+    },
+    {
+      "scenario": "bulk-add-20",
+      "iteration": 1,
+      "metric": "ui_receipt",
+      "unit": "ms",
+      "n": 1,
+      "min": 65.03570000000764,
+      "median": 65.03570000000764,
+      "p95": 65.03570000000764,
+      "max": 65.03570000000764
+    },
+    {
+      "scenario": "selection-100",
+      "iteration": 1,
+      "metric": "select_all_receipt",
+      "unit": "ms",
+      "n": 1,
+      "min": 21.414700000023004,
+      "median": 21.414700000023004,
+      "p95": 21.414700000023004,
+      "max": 21.414700000023004
+    },
+    {
+      "scenario": "selection-100",
+      "iteration": 1,
+      "metric": "frame_interval",
+      "unit": "ms",
+      "n": 39,
+      "min": 4,
+      "median": 4.199999999999989,
+      "p95": 4.300000000000011,
+      "max": 12.5
+    },
+    {
+      "scenario": "bulk-add-100",
+      "iteration": 1,
+      "metric": "ui_receipt",
+      "unit": "ms",
+      "n": 1,
+      "min": 72.68849999998929,
+      "median": 72.68849999998929,
+      "p95": 72.68849999998929,
+      "max": 72.68849999998929
+    },
+    {
+      "scenario": "bulk-move-100",
+      "iteration": 1,
+      "metric": "ui_receipt",
+      "unit": "ms",
+      "n": 1,
+      "min": 70.33189999999013,
+      "median": 70.33189999999013,
+      "p95": 70.33189999999013,
+      "max": 70.33189999999013
+    },
+    {
+      "scenario": "bulk-remove-100",
+      "iteration": 1,
+      "metric": "ui_receipt",
+      "unit": "ms",
+      "n": 1,
+      "min": 116.81329999997979,
+      "median": 116.81329999997979,
+      "p95": 116.81329999997979,
+      "max": 116.81329999997979
+    },
+    {
+      "scenario": "qualification",
+      "iteration": 3,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 559.267600000021,
+      "median": 559.267600000021,
+      "p95": 559.267600000021,
+      "max": 559.267600000021
+    }
+  ],
+  "checks": [
+    "12 native text inputs saved and read back after process restart",
+    "100-note collection fixture created",
+    "Native Ctrl/Shift/Ctrl+Shift/checkbox selection, Shift+arrows, Enter, Space, Ctrl+A page ownership and editor shortcut isolation",
+    "Native right-click preserves groups; Shift+F10/context key, menu navigation, Escape ordering and focus restoration",
+    "Bulk add 5/20/100, move/remove 100, unchanged content/revisions and other memberships; rename/refresh retain valid selection",
+    "M1/M2 normal editing and taskkill protected-draft restore/cleanup"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes."
+  ],
+  "success": false,
+  "error": "Error: Timed out: closed second pane; Vaultor\nNext · M3\nLibrary\nCollections\nBenchmark\nM3 batch 100\nM3 batch 20\nM3 batch 5\nM3 move target\nM3 renamed\nOpen workspace\nAppearance\nMilestone Help\n\\\\?\\C:\\Users\\Vaibhav\\AppData\\Local\\Temp\\vaultor-next-bench-8bN47e\\workspace\nLibrary\n5000 notes · newest created first\nOrganize 0\nClear\nNew note\nNotes\nCtrl+A · page\nChurn 04999\nChurn 04998\nChurn 04997\nChurn 04996\nChurn 04995\nChurn 04994\nChurn 04993\nChurn 04992\nChurn 04991\nChurn 04990\nChurn 04989\nChurn 04988\nChurn 04987\nChurn 04986\nChurn 04985\nChurn 04984\nChurn 04983\nChurn 04982\nChurn 04981\nChurn 04980\nChurn 04979\nChurn 04978\nChurn 04977\nChurn 04976\nChurn 04975\nChurn 04974\nChurn 04973\nChurn 04972\nChurn 04971\nChurn 04970\nChurn 04969\nChurn 04968\nChurn 04967\nChurn 04966\nChurn 04965\nChurn 04964\nChurn 04963\nChurn 04962\nChurn 04961\nChurn 04960\nChurn 04959\nChurn 04958\nChurn 04957\nChurn 04956\nChurn 04955\nChurn 04954\nChurn 04953\nChurn 04952\nChurn 04951\nChurn 04950\nChurn 04947\nChurn 04949\nChurn 04948\nChurn 04946\nChurn 04945\nChurn 04944\nChurn 04943\nChurn 04942\nChurn 04941\nChurn 04940\nChurn 04939\nChurn 04938\nChurn 04937\nChurn 04936\nChurn 04935\nChurn 04934\nChurn 04933\nChurn 04932\nChurn 04931\nChurn 04930\nChurn 04929\nChurn 04928\nChurn 04927\nChurn 04926\nChurn 04925\nChurn 04924\nChurn 04923\nChurn 04922\nChurn 04921\nChurn 04920\nChurn 04919\nChurn 04918\nChurn 04917\nChurn 04916\nChurn 04915\nChurn 04914\nChurn 04913\nChurn 04912\nChurn 04911\nChurn 04910\nChurn 04909\nChurn 04908\nChurn 04907\nChurn 04906\nChurn 04905\nChurn 04904\nChurn 04903\nChurn 04902\nChurn 04901\nChurn 04900\nPrevious\nPage 1\nNext\nsaved\n\n\n\n\nsaved\n\n\n",
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.42",
+    "revision": "@7b1486be4607d53d9f93841b7c776bc525ca74b7",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "churnRecipeSha256": "6b7b87980de0aeb0182a58aded673f09c5fc89094e81790cfff28e16d6c58881"
+}

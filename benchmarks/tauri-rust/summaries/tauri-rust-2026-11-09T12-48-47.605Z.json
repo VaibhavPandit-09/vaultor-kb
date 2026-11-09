@@ -1,0 +1,210 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "77027a47a73ea047652ef0a171e1d87ed32720be",
+  "dirty": true,
+  "executableSha256": "2ac77cb43be381e6152bda8506b856fd7d793dfa8e290ec7f687e8677a3facad",
+  "timestamp": "2026-11-09T12:48:47.672Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 897.7197,
+      "median": 897.7197,
+      "p95": 897.7197,
+      "max": 897.7197
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 53.70000001788139,
+      "median": 54.69999998807907,
+      "p95": 62.29999998211861,
+      "max": 62.29999998211861
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 12,
+      "min": 1.300000011920929,
+      "median": 2.7000000029802322,
+      "p95": 11.900000005960464,
+      "max": 11.900000005960464
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 4,
+      "median": 4.199999999999818,
+      "p95": 4.300000000000182,
+      "max": 4.400000000000091
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 524.53125,
+      "median": 524.53125,
+      "p95": 524.53125,
+      "max": 524.53125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 523.26953125,
+      "median": 523.26953125,
+      "p95": 523.26953125,
+      "max": 523.26953125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 294.69921875,
+      "median": 294.69921875,
+      "p95": 294.69921875,
+      "max": 294.69921875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 1.9610919359899592,
+      "median": 1.9610919359899592,
+      "p95": 1.9610919359899592,
+      "max": 1.9610919359899592
+    },
+    {
+      "scenario": "restart",
+      "iteration": 2,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 610.5192999999999,
+      "median": 610.5192999999999,
+      "p95": 610.5192999999999,
+      "max": 610.5192999999999
+    },
+    {
+      "scenario": "workload",
+      "iteration": 2,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 420.9765625,
+      "median": 420.9765625,
+      "p95": 420.9765625,
+      "max": 420.9765625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 420.5,
+      "median": 420.5,
+      "p95": 420.5,
+      "max": 420.5
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 208.7109375,
+      "median": 208.7109375,
+      "p95": 208.7109375,
+      "max": 208.7109375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 12.079831932773109,
+      "median": 12.079831932773109,
+      "p95": 12.079831932773109,
+      "max": 12.079831932773109
+    }
+  ],
+  "checks": [
+    "12 native text inputs saved and read back after process restart",
+    "100-note collection fixture created"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes."
+  ],
+  "success": false,
+  "error": "Error: Timed out: chosen destination; Vaultor\nNext · M3\nLibrary\nCollections\nBenchmark\nM3 batch 5\nM3 move target\nM3 other\nOpen workspace\nAppearance\nMilestone Help\n\\\\?\\C:\\Users\\Vaibhav\\AppData\\Local\\Temp\\vaultor-next-bench-JK6hz4\\workspace\nLibrary\n5 selected · this page only\nOrganize 5\nClear\nNotes\nCtrl+A · page\nBench note 099\nBench note 098\nBench note 097\nBench note 096\nBench note 095\nBench note 094\nBench note 093\nBench note 092\nBench note 091\nBench note 090\nBench note 089\nBench note 088\nBench note 087\nBench note 086\nBench note 085\nBench note 084\nBench note 083\nBench note 082\nBench note 081\nBench note 080\nBench note 079\nBench note 078\nBench note 077\nBench note 076\nBench note 075\nBench note 074\nBench note 073\nBench note 072\nBench note 071\nBench note 070\nBench note 069\nBench note 068\nBench note 067\nBench note 066\nBench note 065\nBench note 064\nBench note 063\nBench note 062\nBench note 061\nBench note 060\nBench note 059\nBench note 058\nBench note 057\nBench note 056\nBench note 055\nBench note 054\nBench note 053\nBench note 052\nBench note 051\nBench note 050\nBench note 049\nBench note 048\nBench note 047\nBench note 046\nBench note 045\nBench note 044\nBench note 043\nBench note 042\nBench note 041\nBench note 040\nBench note 039\nBench note 038\nBench note 037\nBench note 036\nBench note 035\nBench note 034\nBench note 033\nBench note 032\nBench note 031\nBench note 030\nBench note 029\nBench note 028\nBench note 027\nBench note 026\nBench note 025\nBench note 024\nBench note 023\nBench note 022\nBench note 021\nBench note 020\nBench note 019\nBench note 018\nBench note 017\nBench note 016\nBench note 015\nBench note 014\nBench note 013\nBench note 012\nBench note 011\nBench note 010\nBench note 009\nBench note 008\nBench note 007\nBench note 006\nBench note 005\nBench note 004\nBench note 003\nBench note 002\nBench note 001\nBench note 000\nPrevious\nPage 1\nNext\nAdd to",
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.42",
+    "revision": "@7b1486be4607d53d9f93841b7c776bc525ca74b7",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2"
+}

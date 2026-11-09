@@ -31,7 +31,7 @@ Use `node benchmarks/tauri-rust/run.mjs tauri-rust --m2 --qualify --idle-five`. 
 
 M2 qualification uses disposable UI-created collections/notes for hierarchy, rename, identity-preserving memberships, normal-close pending input, protected-draft taskkill, restore, discard, conflict refusal, parking/restart and explicit reviewed replacement. Larger1000/5000fixtures are seeded through ordinary commands, then exercise UI paging/scroll/editor continuity and metadata-only full cursor walks. One/two-pane and eight-reopen memory observations are separate scenarios; they do not claim settled retention/leak measurements. Recovery restarts are killed/closed before sampler cleanup, so cleanup cannot accidentally permit autosave before the intended crash. M1 and M2 use incompatible experimental schema markers by design; both get fresh workspaces.
 
-The generated M1 vs M2 tab filters exact sources and experiment IDs. Historical Electron comparison remains intact. Failed attempts stay in CSV and are excluded from comparison; raw diagnostic bodies are ignored. The migration tracker owns product contracts and deferred M3 scope.
+The generated M1 vs M2 tab filters exact sources and experiment IDs. Historical Electron comparison remains intact. Failed attempts stay in CSV and are excluded from comparison; raw diagnostic bodies are ignored. The migration tracker owns current product contracts and remaining scope.
 
 ### M2 observations
 
@@ -74,8 +74,26 @@ Actual native checks pass for collection/note creation via UI, Unicode input, JS
 
 ## M3 interaction and retention protocol
 
-Run `node benchmarks/tauri-rust/run.mjs tauri-rust --m3 --qualify --idle-five` against an optimized Windows executable. The common 100-note/64KiB workload, viewport, instrument and five-minute settled-idle method remain unchanged; `m3-managed-notes-v1` identifies the additional interaction code. Compare only matching scenarios/dataset/device. The runner records source, executable SHA-256, dirty state and actual failures; failed attempts remain append-only and are excluded from derived comparisons.
+Run `node benchmarks/tauri-rust/run.mjs tauri-rust --m3 --qualify --idle-five` against an optimized Windows executable. Qualification and idle measurement may also run sequentially as `--m3 --qualify` and `--m3 --idle-five`; final M3 evidence uses this separation. The common 100-note/64KiB workload, viewport, instrument and five-minute settled-idle method remain unchanged; `m3-managed-notes-v1` identifies the additional interaction code. Compare only matching scenarios/dataset/device. The runner records source, executable SHA-256, dirty state and actual failures; failed attempts remain append-only and are excluded from derived comparisons.
 
-M3 qualification uses native CDP pointer/key delivery for Ctrl/Shift/additive ranges, checkboxes, page Select All, editor/dialog shortcut ownership, right-click/keyboard menus and focus return. Bulk add 5/20/100 and move/remove 100 measure Apply through receipt and list refresh, not just SQL duration. Identity, other memberships, revision/content and persisted restart are checked. Protected-draft taskkill/restore remains a focused regression.
+M3 qualification uses native CDP pointer/key delivery for Ctrl/Shift/additive ranges, checkboxes, page Select All, editor/dialog shortcut ownership, right-click/keyboard menus and focus return. Bulk add 5/20/100 and move/remove 100 measure the UI driver action through receipt and list refresh, not just SQL duration. Pointer delivery waits for finite layout motion before targeting a control; these new UI/page proxies include that preparation time and must not be compared directly with M2 DOM-click page latency. Identity, other memberships, revision/content and persisted restart are checked. Protected-draft taskkill/restore remains a focused regression.
 
 A separate 5,000-note mixed-churn scenario runs three rounds of eight note switches, four pane cycles, four selection/menu cycles and page/collection visits, followed by 30 seconds settling and 60 seconds idle. Working set/private bytes are snapshots of the entire app tree, with no forced GC. The recipe hash is in the summary. This bounded observation can expose continuing growth, but cannot certify leak freedom. Light/dark/reduced-motion captures and runtime pane/frame samples cover the touched surfaces; physical input, IME and assistive-technology qualification remain unclaimed.
+
+### M3 results
+
+Validated native interaction evidence: `tauri-rust-2026-11-09T13-11-23.806Z.json`; independent idle/common-workload evidence: `tauri-rust-2026-11-09T13-13-44.630Z.json` (sanitized copies under summaries). Both tested source `2243300`, application implementation `eceb6d1`, optimized EXE SHA-256 `a1f2fdff4030314f4162967c448e3cb631babef68a72af76ce8dd7ffffe9995e`, 11,300,864 bytes. Dirty state records benchmark/docs-only output; product inputs were committed. Device and fixture match M2; power/OS caches remain uncontrolled.
+
+| Comparable observation | M2 | M3 final idle run |
+| --- | ---: | ---: |
+| Five-minute CPU, one-core percent | 0.173% | 0.528% |
+| End working set | 321.1 MiB | 357.0 MiB |
+| End private bytes | 226.2 MiB | 238.8 MiB |
+| Note-open median, 3 samples | 29.9 ms | 57.8 ms |
+| Input-to-rAF median, 12 samples | 2.1 ms | 2.9 ms |
+
+M3 did not improve these observations: CPU, RAM and opening latency increased. The idle sample spans299.0seconds within the untouched300second window. A bounded owner review found no new idle timer, database polling, repeated full-document capture or concrete listener/document leak; no speculative optimization is claimed. Note-opening/render work and the CPU difference merit focused follow-up. The workbook uses exact-source scenario-filtered arithmetic means (and counts); this table uses medians for editing proxies from the final run, so those values deliberately differ.
+
+New workloads: Select All100 took22.4ms with39 rAF intervals (median4.2/max12.5ms); bulk add5/20/100 and move/remove100 UI receipts ranged160.7–179.2ms including motion-settling target preparation. The5,000-note page proxy median was165.0ms under that same driver, not comparable to M2 DOM-click18.2ms. In three mixed-churn rounds working set was596.8→602.0→603.4MiB and private bytes391.7→396.5→397.0MiB; after30+60seconds idle they fell to512.1/281.1MiB. Growth approached a plateau in this bounded session, then released memory; this does not certify leak freedom or represent a comparable M2 workload. Post-churn CPU0.487% is a separate60second observation.
+
+Windows assertions passed for all M3 native selection, menus/focus, transactions, recovery and normal restart paths; light/dark/reduced-motion captures were reviewed and pane geometry sampled in motion. Failed driver attempts remain excluded and historical CSV bytes are preserved. No physical IME, screen-reader, native Excel recalculation or whole-product visual parity is certified.
