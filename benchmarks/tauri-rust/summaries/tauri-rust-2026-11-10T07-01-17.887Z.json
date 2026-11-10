@@ -1,0 +1,224 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "4c337934584c65cf57752133cf09a65e9ff0a506",
+  "dirty": true,
+  "executableSha256": "712a67bc07fb19733db0f5562f48066982abd4daffc709c9f34b0e844c9f43a7",
+  "timestamp": "2026-11-10T07:01:17.969Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 644.2961,
+      "median": 644.2961,
+      "p95": 644.2961,
+      "max": 644.2961
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 78,
+      "median": 93.59999999403954,
+      "p95": 95,
+      "max": 95
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 12,
+      "min": 3.9000000059604645,
+      "median": 10.450000002980232,
+      "p95": 37.80000001192093,
+      "max": 37.80000001192093
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 4,
+      "median": 8.150000000000091,
+      "p95": 16.700000000000273,
+      "max": 41.69999999999982
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 645.3828125,
+      "median": 645.3828125,
+      "p95": 645.3828125,
+      "max": 645.3828125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 643.13671875,
+      "median": 643.13671875,
+      "p95": 643.13671875,
+      "max": 643.13671875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 414.29296875,
+      "median": 414.29296875,
+      "p95": 414.29296875,
+      "max": 414.29296875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 21.802325581395348,
+      "median": 21.802325581395348,
+      "p95": 21.802325581395348,
+      "max": 21.802325581395348
+    },
+    {
+      "scenario": "restart",
+      "iteration": 2,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 780.6941999999999,
+      "median": 780.6941999999999,
+      "p95": 780.6941999999999,
+      "max": 780.6941999999999
+    },
+    {
+      "scenario": "workload",
+      "iteration": 2,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 440.1171875,
+      "median": 440.1171875,
+      "p95": 440.1171875,
+      "max": 440.1171875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 439.69921875,
+      "median": 439.69921875,
+      "p95": 439.69921875,
+      "max": 439.69921875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 235.125,
+      "median": 235.125,
+      "p95": 235.125,
+      "max": 235.125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 1.860672819291456,
+      "median": 1.860672819291456,
+      "p95": 1.860672819291456,
+      "max": 1.860672819291456
+    }
+  ],
+  "checks": [
+    "Native keyboard resource export destination and native archive Save only; file/folder selection was skipped in this supplemental run."
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes.",
+    "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.",
+    "The personal M5 app and other desktop apps remain open; only the disposable application process tree is sampled. Background load, power and cache conditions are uncontrolled."
+  ],
+  "success": true,
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.42",
+    "revision": "@7b1486be4607d53d9f93841b7c776bc525ca74b7",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "transferRecipe": {
+    "sha256": "d85de4f2effdbdb5b5b53f9a600e5dfb86b84bfe649f0ec8d60048bd3a605ace",
+    "mode": "native-output-only",
+    "metadataCorrection": "Original driver check label was too broad; final combined native-picker run separately verifies all picker workflows."
+  },
+  "transferFixture": {
+    "smallFiles": 100,
+    "smallTextBytes": 970,
+    "mixedFiles": 3,
+    "mixedDirectories": 3,
+    "sourceInputs": "Disposable generated text, Markdown and binary fixtures only",
+    "metadataCorrection": "Moderate128MiB workload is generated only in transfer-performance mode; not exercised by native picker acceptance."
+  },
+  "comparisonEligible": true
+}

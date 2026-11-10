@@ -186,3 +186,37 @@ Complete native desktop acceptance passes in `summaries/tauri-rust-2026-11-09T20
 The final mixed session sampled working set622.0→691.3→725.1MiB, then636.7→627.0MiB after30+60seconds idle; private commit420.9→473.8→506.8→410.6→402.5MiB. Memory was released on return to idle, without establishing a long-term plateau or leak freedom. The separate60second CPU observation was0.923% of one core. Editor instances are absent in Library, history/shortcut metadata is bounded, and acknowledged capture closures are released. No concrete unbounded retained-document/listener leak was identified. This workload and profile differ from M5's linked/search churn, so no percentage comparison is made.
 
 The canonical CSV retains failed native/driver attempts and excludes their measurements from workbook aggregates. A managed-pane index key exposed by native acceptance was fixed and regression-tested. Driver-only failures involved readiness before the create lock released and incorrect Tauri size serialization; the complete final run covers the corrected paths. Physical OS drag/Snap-hover, accessibility/IME, full editor parity and whole-product visual/motion qualification remain unclaimed. Personal files were not used; all mutating acceptance ran against disposable storage.
+
+## M7 managed transfers and Activity
+
+Run `node benchmarks/tauri-rust/run.mjs tauri-rust --m7 --idle-five --qualify` for the common baseline plus transfers. Native picker acceptance is separate: use `--m7 --qualify --native-pickers` or `--native-workspaces` and operate only the printed disposable paths. Native waiting allows human dialog interaction; benchmark task receipt polling exists only in this driver. Normal Activity receives coalesced Rust events and has no idle polling worker.
+
+Independent source `47cbbaa` / EXE SHA-256 `ad0f5d65a2b72006361a699569eab4bc55b46ce68db0e4321cae80ca4f1db9ec`: [transfer/performance summary](summaries/tauri-rust-2026-11-10T06-32-05.167Z.json). Windows10.0.26340 x64, Core Ultra7 255HX/20 logical CPUs,16.57GB installed RAM. The personal M6 app and other background work remain untouched. Isolated WebView profiles, uncontrolled power/cache and small samples limit causal comparisons. Accessibility inspection was attached only after this independent run.
+
+| Common workload | M6 | M7 |
+| --- | ---: | ---: |
+| First-profile startup,1 |463.1ms|853.2ms|
+| Restart,1 |517.3ms|538.1ms|
+| Note-opening median,3 |36.5ms|32.8ms|
+| Input-to-rAF median,12 |4.95ms|4.95ms|
+| Five-minute CPU,one-core |0.856%|2.607%|
+| Settled working set |339.1MiB|345.1MiB|
+| Settled private bytes |275.2MiB|303.6MiB|
+
+Both use the common100-note/two~64KiB fixture and the existing event boundaries. CPU/private commit increased; no new polling or perpetual frame loop was found in bounded review. No cause or regression fix is claimed. The workbook's exact-source arithmetic means/counts differ from the medians above. Native acceptance records contain extra instrumentation and are not the independent baseline.
+
+| New M7 workload,1 run each | Rust task duration | Invoke→terminal receipt |
+| --- | ---: | ---: |
+|100 UTF8 files,970–971bytes each|1647ms|1677.0ms|
+|Nested folder,3 mixed files/3directories|42ms|See CSV|
+|16×8MiB original files,128MiB|411ms|451.1ms|
+|One committed64KiB note export|17ms|See CSV|
+|Workspace export,219resources/119originals/~128.1MiB|556ms|584.4ms|
+|Restore as new workspace|411ms|436.5ms|
+|Immediate supported import cancellation|15ms|Not separately measured|
+
+Discovery/hash review precedes execution timing. Task durations exclude queue/renderer readiness; receipt polling is25ms in the driver. Three editor inputs overlapped the running128MiB import: beforeinput→rAF24.1/9.7/7.6ms, a different scenario from common idle editing. Working-set/private-byte peak samples were813.9/562.1MiB, using a500ms process-tree loop plus CIM overhead over transfer/navigation through restart; brief spikes may be missed and shared resident pages are summed. **Live process**, before restart: working set813.9→571.4→583.9MiB and private bytes562.0→310.4→318.3MiB after30+60seconds idle. The60second CPU observation was1.307% of one core. Memory was released; this bounded workload cannot establish long-term stability or leak freedom.
+
+Final application source `4c33793` only fixes review portal placement relative to this measured build. Final EXE SHA-256 `712a67bc07fb19733db0f5562f48066982abd4daffc709c9f34b0e844c9f43a7`. [Native pickers](summaries/tauri-rust-2026-11-10T07-04-42.627Z.json) cover multiple-file/folder reviews, keyboard resource export/native destination, archive Save and digest inspection. [Native workspace sequence](summaries/tauri-rust-2026-11-10T07-21-24.455Z.json) covers archive selection/verified restore review, new parent selection, restored-workspace navigation, creation, existing-folder opening and restart/history. Main qualification also checks duplicate skips, source-byte preservation, no-overwrite failure, corrupt manifest refusal, linked explicit Save and restored external-authority exclusion. Activity light/dark/OLED snapshots and shared motion were inspected; full subjective/native-platform parity remains open.
+
+Historical rows are untouched. `06-21-38.977Z` is explicitly invalidated by an appended row because its retention samples followed restart; it is superseded by the live-process run above. Failed selector/readiness/native-driver attempts remain marked failed and excluded from aggregates. `07-01-17.887Z` was output-only: its original check label overclaimed file/folder coverage; the sanitized summary corrects metadata, while the later combined picker run supplies that evidence. Raw fixture metadata described intended128MiB inputs even in native modes; summaries explicitly exclude that unexercised workload. CSV-prefix verification against M6 confirms append-only history. The generated workbook and sanitized summaries derive from this CSV; bulky raw traces/screenshots stay ignored.

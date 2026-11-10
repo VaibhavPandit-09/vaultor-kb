@@ -1,0 +1,293 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "7fbde52362be53f34af1de1596c517ca26798d32",
+  "dirty": false,
+  "executableSha256": "787fb821e1e901e0cd129bfd5b9d34b666dad0f2e3fed74731d0a5c4e1096597",
+  "timestamp": "2026-11-10T06:19:50.763Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 723.9155999999999,
+      "median": 723.9155999999999,
+      "p95": 723.9155999999999,
+      "max": 723.9155999999999
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 32.5,
+      "median": 33.20000001788139,
+      "p95": 46.099999994039536,
+      "max": 46.099999994039536
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 12,
+      "min": 3.5999999940395355,
+      "median": 5.3499999940395355,
+      "p95": 19.30000001192093,
+      "max": 19.30000001192093
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 4.099999999999909,
+      "median": 4.199999999999818,
+      "p95": 4.300000000000182,
+      "max": 8.400000000000091
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 626.6875,
+      "median": 626.6875,
+      "p95": 626.6875,
+      "max": 626.6875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 626.6015625,
+      "median": 626.6015625,
+      "p95": 626.6015625,
+      "max": 626.6015625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 410.7890625,
+      "median": 410.7890625,
+      "p95": 410.7890625,
+      "max": 410.7890625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 19.144674835061263,
+      "median": 19.144674835061263,
+      "p95": 19.144674835061263,
+      "max": 19.144674835061263
+    },
+    {
+      "scenario": "restart",
+      "iteration": 2,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 584.1875,
+      "median": 584.1875,
+      "p95": 584.1875,
+      "max": 584.1875
+    },
+    {
+      "scenario": "workload",
+      "iteration": 2,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 422.203125,
+      "median": 422.203125,
+      "p95": 422.203125,
+      "max": 422.203125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 421.69921875,
+      "median": 421.69921875,
+      "p95": 421.69921875,
+      "max": 421.69921875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 226.36328125,
+      "median": 226.36328125,
+      "p95": 226.36328125,
+      "max": 226.36328125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 2.133834073062479,
+      "median": 2.133834073062479,
+      "p95": 2.133834073062479,
+      "max": 2.133834073062479
+    },
+    {
+      "scenario": "import-100-small-m7",
+      "iteration": 1,
+      "metric": "command_to_terminal",
+      "unit": "ms",
+      "n": 1,
+      "min": 1499.446100000001,
+      "median": 1499.446100000001,
+      "p95": 1499.446100000001,
+      "max": 1499.446100000001
+    },
+    {
+      "scenario": "import-100-small-m7",
+      "iteration": 1,
+      "metric": "task_duration",
+      "unit": "ms",
+      "n": 1,
+      "min": 1466,
+      "median": 1466,
+      "p95": 1466,
+      "max": 1466
+    },
+    {
+      "scenario": "duplicate-skip-m7",
+      "iteration": 1,
+      "metric": "command_to_terminal",
+      "unit": "ms",
+      "n": 1,
+      "min": 18.285800000001473,
+      "median": 18.285800000001473,
+      "p95": 18.285800000001473,
+      "max": 18.285800000001473
+    },
+    {
+      "scenario": "duplicate-skip-m7",
+      "iteration": 1,
+      "metric": "task_duration",
+      "unit": "ms",
+      "n": 1,
+      "min": 3,
+      "median": 3,
+      "p95": 3,
+      "max": 3
+    },
+    {
+      "scenario": "import-nested-mixed-m7",
+      "iteration": 1,
+      "metric": "command_to_terminal",
+      "unit": "ms",
+      "n": 1,
+      "min": 80.04840000000331,
+      "median": 80.04840000000331,
+      "p95": 80.04840000000331,
+      "max": 80.04840000000331
+    },
+    {
+      "scenario": "import-nested-mixed-m7",
+      "iteration": 1,
+      "metric": "task_duration",
+      "unit": "ms",
+      "n": 1,
+      "min": 44,
+      "median": 44,
+      "p95": 44,
+      "max": 44
+    }
+  ],
+  "checks": [
+    "12 native text inputs saved and read back after process restart",
+    "100-note collection fixture created"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes.",
+    "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.",
+    "The personal M5 app and other desktop apps remain open; only the disposable application process tree is sampled. Background load, power and cache conditions are uncontrolled."
+  ],
+  "success": false,
+  "error": "Error: TypeError: Cannot read properties of null (reading 'click')",
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.42",
+    "revision": "@7b1486be4607d53d9f93841b7c776bc525ca74b7",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "transferRecipe": {
+    "sha256": "760fcd93d2a0b43e26fc18b7f42db337d46533876d9885e10b5233e4655e7e43",
+    "mode": "transfer-performance"
+  },
+  "transferFixture": {
+    "smallFiles": 100,
+    "smallTextBytes": 970,
+    "mixedFiles": 3,
+    "mixedDirectories": 3,
+    "moderateFiles": 16,
+    "moderateFileBytes": 8388608,
+    "moderateBytes": 134217728,
+    "sourceInputs": "Disposable generated text, Markdown and binary fixtures only"
+  },
+  "comparisonEligible": false
+}
