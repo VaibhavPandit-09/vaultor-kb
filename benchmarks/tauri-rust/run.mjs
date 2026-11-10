@@ -27,6 +27,7 @@ const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding:
 const report = { architecture, commit, timestamp: new Date().toISOString(), system: { device: hostname(), os: release(), arch: arch(), cpu: cpus()[0].model, logicalCpus: cpus().length, ramBytes: totalmem() }, folder, samples: [], checks: [], limitations: ['No OS cache flush; first-profile startup is not true cold boot.', 'Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.', 'Process working sets sum shared pages; sampled peak can miss short spikes.'] };
 if(m6)report.limitations.push('M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.', 'Only the disposable application process tree is sampled; background apps, power and cache conditions are uncontrolled. The M8 reference had a coexisting personal process; inspect coexistingPersonalReference for this run.');
 report.coexistingPersonalReference=process.platform==='win32'&&execFileSync('tasklist',['/FI','IMAGENAME eq vaultor-next-m6-running.exe','/FO','CSV','/NH'],{encoding:'utf8',windowsHide:true}).toLowerCase().includes('vaultor-next-m6-running.exe');
+report.nativeInspectionHelperActiveBefore=process.platform==='win32'&&execFileSync('tasklist',['/FI','IMAGENAME eq codex-computer-use.exe','/FO','CSV','/NH'],{encoding:'utf8',windowsHide:true}).toLowerCase().includes('codex-computer-use.exe');
 report.dirty = Boolean(execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8', windowsHide: true }).trim());
 const executablePath = process.env.VAULTOR_BENCH_EXECUTABLE || (architecture === 'electron-java' ? join(root,'desktop/node_modules/electron/dist/electron.exe') : join(root,'next/src-tauri/target/release/vaultor-next.exe'));
 report.executableSha256 = createHash('sha256').update(await readFile(executablePath)).digest('hex');
@@ -223,6 +224,7 @@ try {
     }
     await quit();
   }
+  report.nativeInspectionHelperActiveAfter=process.platform==='win32'&&execFileSync('tasklist',['/FI','IMAGENAME eq codex-computer-use.exe','/FO','CSV','/NH'],{encoding:'utf8',windowsHide:true}).toLowerCase().includes('codex-computer-use.exe');
   report.success = true;
 } catch (e) { report.success = false; report.error = String(e); console.error(e); process.exitCode = 1; }
 finally {

@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-11-10. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-11-11. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -479,9 +479,9 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
-### 2026-11-10 — M9 managed editor and resource interactions
+### 2026-11-11 — M9 managed editor and resource interactions
 
-Reused editor/table/slash presentation with Rust-managed media, saved relationships/backlinks, resource clipboard, collection pointer drag and reviewed Explorer drops. Added revision-checked F2 rename and list-owned Delete. Linked source authority remains unchanged. Toolbar link insertion seeds the same [[ query anchor as the slash command; scoped popup tokens follow the current theme, and deferred activation refuses destroyed editors. Mapped insertion anchors explicitly copy from/to getters rather than spreading ProseMirror Selection instances; a native picker check exposed and a regression test covers this boundary. Focused compilation and31 Rust checks pass at implementation checkpoint; frontend/native/benchmark final evidence is recorded in VAULTOR-NEXT. No published release changed.
+Reused editor/table/slash presentation with Rust-managed media, saved relationships/backlinks, resource clipboard, collection pointer drag and reviewed Explorer drops. Added revision-checked F2 rename and list-owned Delete. Linked source authority remains unchanged. Toolbar link insertion seeds the same [[ query anchor as the slash command; scoped popup tokens follow the current theme, and deferred activation refuses destroyed editors. Mapped insertion anchors explicitly copy from/to getters rather than spreading ProseMirror Selection instances; a native picker check exposed and a regression test covers this boundary. 31 Rust and54 scoped frontend checks,TypeScript/scoped lint,source Help validation and optimized Windows builds pass. Native core and picker/Photos/Explorer scopes are recorded in VAULTOR-NEXT; physical Explorer drop and full Snap/accessibility qualification remain incomplete. Next Help is inline-bundled; its separate Vite entry has no standalone Help provenance directory. Benchmark source/executable separation and remaining gaps are explicit. No published release changed.
 
 
 ### 2026-11-10 — M8 organization and resource lifecycle
