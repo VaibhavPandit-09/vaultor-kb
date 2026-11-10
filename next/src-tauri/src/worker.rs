@@ -50,6 +50,8 @@ impl Worker {
                 let preferences_path=Some(pointer.as_ref().and_then(|p|p.parent()).map(|p|p.join("preferences.json")).unwrap_or_else(||root.join(".profile-preferences.json")));
                 // Failed initialization stays recoverable through an explicit Open request.
                 let mut workspace = Workspace::open(&root);
+                // An explicit test override must establish ownership before it can store metadata.
+                let preferences_owned=pointer.is_some()||workspace.is_ok();
                 for message in receiver {
                     let (request, reply) = match message {
                         Message::Stop => break,
@@ -64,7 +66,7 @@ impl Worker {
                         }
                     };
                     let request = match request {
-                        Request::Preferences {value} => {let _=reply.send(crate::desktop::preferences(preferences_path.as_deref(),value));continue;},
+                        Request::Preferences {value} => {let result=if preferences_owned{crate::desktop::preferences(preferences_path.as_deref(),value)}else{Err("Preferences refused: isolated workspace initialization failed".into())};let _=reply.send(result);continue;},
                         Request::New { path } => {
                             if std::path::Path::new(&path).exists() {
                                 let _ =
@@ -165,6 +167,16 @@ impl Drop for Worker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn isolated_preferences_do_not_write_into_unowned_folders() {
+        let temp=tempfile::tempdir().unwrap();
+        let root=temp.path().join("external");std::fs::create_dir(&root).unwrap();
+        std::fs::write(root.join("original.txt"),"untouched").unwrap();
+        let worker=Worker::start(root.clone(),None).unwrap();
+        assert!(tauri::async_runtime::block_on(worker.call(Request::Preferences{value:Some(serde_json::json!({"theme":"oled"}))})).is_err());
+        assert!(!root.join(".profile-preferences.json").exists());
+        assert_eq!(std::fs::read_to_string(root.join("original.txt")).unwrap(),"untouched");worker.stop();
+    }
     #[test]
     fn active_tasks_block_switch_and_stale_storage_receipts_are_refused() {
         let temp = tempfile::tempdir().unwrap();
