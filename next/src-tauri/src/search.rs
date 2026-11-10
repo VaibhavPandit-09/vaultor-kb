@@ -10,6 +10,10 @@ pub struct SearchOptions {
     pub content: bool,
     pub collection: Option<String>,
     pub order: String,
+    #[serde(default)]
+    pub view: String,
+    #[serde(default)]
+    pub tag: Option<String>,
 }
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -86,31 +90,53 @@ impl Workspace {
                 return Err("Search changed; refresh results to continue paging".into());
             }
         }
-        let (key, sort, comparison) = match options.order.as_str() {
-            "created" => ("r.seq", "r.seq DESC", "r.seq < ?4"),
-            "updated" => (
-                "r.updated_at",
-                "r.updated_at DESC,r.seq DESC",
-                "(r.updated_at < ?4 OR (r.updated_at = ?4 AND r.seq < ?5))",
-            ),
-            "title" => (
-                "lower(r.title)",
-                "lower(r.title),r.seq",
-                "(lower(r.title) > ?4 OR (lower(r.title) = ?4 AND r.seq > ?5))",
-            ),
-            _ => return Err("Unsupported search order".into()),
+        let (key, sort, comparison) = if options.view == "recent" {
+            let k =
+                "printf('%020d',(SELECT opened FROM resource_state s WHERE s.resource_id=r.id))";
+            (k,"(SELECT opened FROM resource_state s WHERE s.resource_id=r.id) DESC,r.seq DESC","(printf('%020d',(SELECT opened FROM resource_state s WHERE s.resource_id=r.id)) < ?4 OR (printf('%020d',(SELECT opened FROM resource_state s WHERE s.resource_id=r.id)) = ?4 AND r.seq < ?5))")
+        } else {
+            match options.order.as_str() {
+                "created" => ("r.seq", "r.seq DESC", "r.seq < ?4"),
+                "updated" => (
+                    "r.updated_at",
+                    "r.updated_at DESC,r.seq DESC",
+                    "(r.updated_at < ?4 OR (r.updated_at = ?4 AND r.seq < ?5))",
+                ),
+                "title" => (
+                    "lower(r.title)",
+                    "lower(r.title),r.seq",
+                    "(lower(r.title) > ?4 OR (lower(r.title) = ?4 AND r.seq > ?5))",
+                ),
+                _ => return Err("Unsupported search order".into()),
+            }
         };
         let filtered = !options.query.trim().is_empty();
         if filtered && tokens.is_empty() {
             return Ok(json!({"items":[],"next":null,"total":0}));
         }
-        let predicate=format!("(?1 IS NULL OR r.id IN (SELECT resource_id FROM memberships WHERE collection_id=?1)) AND {}",if filtered {"r.seq IN (SELECT rowid FROM note_search WHERE note_search MATCH ?2)"}else{"?2 IS NULL"});
+        if !matches!(
+            options.view.as_str(),
+            "" | "library" | "pinned" | "recent" | "trash"
+        ) {
+            return Err("Unknown resource scope".into());
+        }
+        let predicate=format!("(?1 IS NULL OR r.id IN (SELECT resource_id FROM memberships WHERE collection_id=?1)) AND COALESCE((SELECT trashed FROM resource_state s WHERE s.resource_id=r.id),0)=?7 AND (?8 IS NULL OR r.id IN (SELECT resource_id FROM resource_tags WHERE tag_id=?8)) AND (?9!='pinned' OR r.id IN (SELECT resource_id FROM resource_state WHERE pinned=1)) AND (?9!='recent' OR r.id IN (SELECT resource_id FROM resource_state WHERE opened>0)) AND {}",if filtered {"r.seq IN (SELECT rowid FROM note_search WHERE note_search MATCH ?2)"}else{"?2 IS NULL"});
         let expr = if filtered { Some(expression) } else { None };
         let total: i64 = self
             .db
             .query_row(
                 &format!("SELECT count(*) FROM resources r WHERE {predicate}"),
-                params![options.collection, expr],
+                params![
+                    options.collection,
+                    expr,
+                    rusqlite::types::Value::Null,
+                    rusqlite::types::Value::Null,
+                    rusqlite::types::Value::Null,
+                    rusqlite::types::Value::Null,
+                    options.view == "trash",
+                    options.tag,
+                    options.view
+                ],
                 |r| r.get(0),
             )
             .map_err(error)?;
@@ -118,14 +144,14 @@ impl Workspace {
         let sql=format!("SELECT r.seq,r.id,r.title,r.revision,r.updated_at,{key},COALESCE((SELECT kind FROM managed_originals WHERE resource_id=r.id),'note') FROM resources r WHERE {predicate} AND (?3=0 OR {comparison}) ORDER BY {sort} LIMIT ?6");
         let seq = cursor.as_ref().map_or(0, |c| c.seq);
         // Created uses integer comparison, other sorts compare text keys.
-        let pivot = if options.order == "created" {
+        let pivot = if options.order == "created" && options.view != "recent" {
             rusqlite::types::Value::Integer(seq)
         } else {
             rusqlite::types::Value::Text(cursor.as_ref().map_or(String::new(), |c| c.key.clone()))
         };
         let mut stmt = self.db.prepare(&sql).map_err(error)?;
-        let mut rows=stmt.query_map(params![options.collection,expr,cursor.is_some(),pivot,seq,(limit+1) as i64],|r|{
-            let key=if options.order=="created" {r.get::<_,i64>(0)?.to_string()}else{r.get::<_,String>(5)?};
+        let mut rows=stmt.query_map(params![options.collection,expr,cursor.is_some(),pivot,seq,(limit+1) as i64,options.view=="trash",options.tag,options.view],|r|{
+            let key=if options.order=="created" && options.view!="recent" {r.get::<_,i64>(0)?.to_string()}else{r.get::<_,String>(5)?};
             Ok((r.get::<_,i64>(0)?,key,json!({"id":r.get::<_,String>(1)?,"title":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?,"updatedAt":r.get::<_,String>(4)?,"kind":r.get::<_,String>(6)?})))
         }).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
         let more = rows.len() > limit;

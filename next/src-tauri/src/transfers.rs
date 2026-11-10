@@ -58,6 +58,8 @@ pub struct Manifest {
     pub memberships: Vec<(String, String)>,
     pub originals: Vec<Original>,
     pub settings: Value,
+    #[serde(default)]
+    pub organization: crate::organization::Archive,
 }
 #[derive(Clone)]
 struct Input {
@@ -77,6 +79,9 @@ pub struct Plan {
     created: Instant,
 }
 pub enum Job {
+    Purge {
+        ids: Option<Vec<String>>,
+    },
     Import {
         plan: Plan,
         separate: bool,
@@ -98,6 +103,7 @@ pub enum Job {
 impl Job {
     pub fn kind(&self) -> &str {
         match self {
+            Self::Purge { .. } => "resource-purge",
             Self::Import { .. } => "file-import",
             Self::Export { .. } => "resource-export",
             Self::Archive { .. } => "workspace-export",
@@ -106,6 +112,7 @@ impl Job {
     }
     pub fn description(&self) -> String {
         match self {
+            Self::Purge { .. } => "Permanently delete Trash resources".into(),
             Self::Import { plan, .. } => format!("Import {} files", plan.files.len()),
             Self::Export { ids, .. } => format!("Export {} resources", ids.len()),
             Self::Archive { .. } => "Export workspace archive".into(),
@@ -116,6 +123,9 @@ impl Job {
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Request {
+    Purge {
+        ids: Option<Vec<String>>,
+    },
     Tasks,
     DismissPreview {
         token: String,
@@ -221,6 +231,12 @@ impl Transfers {
                         format,
                     },
                 )
+            }
+            Request::Purge { ids } => {
+                if ids.as_ref().is_some_and(|v| v.is_empty() || v.len() > 100) {
+                    return Err("Choose 1–100 resources or Empty Trash".into());
+                }
+                self.activity.submit(root, Job::Purge { ids })
             }
             Request::Archive { destination } => {
                 self.activity.submit(root, Job::Archive { destination })
@@ -512,6 +528,7 @@ pub fn execute(
     ctx: &mut Context,
 ) -> Result<Value, String> {
     match job {
+        Job::Purge { ids } => purge(storage, root, ids, ctx),
         Job::Import { plan, separate } => import(storage, root, plan, separate, ctx),
         Job::Export {
             ids,
@@ -695,12 +712,13 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
     }
     let mut m = Manifest {
         format: "vaultor-next-portable".into(),
-        version: 1,
+        version: 2,
         resources: vec![],
         collections: vec![],
         memberships: vec![],
         originals: vec![],
         settings: json!({}),
+        organization: Default::default(),
     };
     let mut size = 0;
     let mut q =
@@ -744,6 +762,10 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
         .collect::<Result<Vec<_>, _>>()
         .map_err(error)?;
     let selected: HashSet<_> = m.resources.iter().map(|r| r.id.as_str()).collect();
+    m.organization = crate::organization::Archive::capture(
+        &w.db,
+        &m.resources.iter().map(|r| r.id.clone()).collect(),
+    )?;
     m.originals = originals
         .into_iter()
         .filter(|o| selected.contains(o.id.as_str()))
@@ -884,7 +906,7 @@ fn read_manifest(input: &mut File) -> Result<(Manifest, String), String> {
 }
 fn validate(m: &Manifest) -> Result<(), String> {
     if m.format != "vaultor-next-portable"
-        || m.version != 1
+        || ![1, 2].contains(&m.version)
         || m.resources.len() > MAX_ITEMS
         || m.collections.len() > MAX_ITEMS
         || m.originals.len() > MAX_ITEMS
@@ -932,6 +954,7 @@ fn validate(m: &Manifest) -> Result<(), String> {
             return Err("Invalid membership".into());
         }
     }
+    m.organization.validate(&ids)?;
     let mut originals = HashSet::new();
     let mut bytes = 0;
     for o in &m.originals {
@@ -1072,6 +1095,7 @@ fn restore(
     for o in &m.originals {
         insert_original(&tx, o)?;
     }
+    m.organization.restore(&tx)?;
     for (k, v) in m.settings.as_object().unwrap() {
         tx.execute(
             "INSERT INTO settings VALUES(?1,?2)",
@@ -1391,6 +1415,98 @@ mod tests {
         }
     }
     #[test]
+    fn lifecycle_archive_and_cleanup_preserve_source_and_restore_metadata() {
+        let h = Harness::new();
+        let source = h.temp.path().join("original.bin");
+        fs::write(&source, [0, 1, 255, 7]).unwrap();
+        let token = h.review(&source, false);
+        assert_eq!(
+            h.task(Request::Import {
+                token,
+                separate: false
+            })
+            .state,
+            "completed"
+        );
+        let id = h
+            .service
+            .storage
+            .call(&h.root, |w| {
+                let id: String =
+                    w.db.query_row("SELECT id FROM resources", [], |r| r.get(0))
+                        .unwrap();
+                let tag = w.organization(crate::organization::Request::Tag {
+                    id: None,
+                    name: "Retained".into(),
+                    color: "#112233".into(),
+                })?["id"]
+                    .as_str()
+                    .unwrap()
+                    .to_string();
+                w.organization(crate::organization::Request::Tagging {
+                    ids: vec![id.clone()],
+                    tag,
+                    add: true,
+                })?;
+                w.organization(crate::organization::Request::Pin {
+                    ids: vec![id.clone()],
+                    value: true,
+                })?;
+                w.organization(crate::organization::Request::Trash {
+                    ids: vec![id.clone()],
+                    restore: false,
+                })?;
+                Ok(json!(id))
+            })
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string();
+        let archive = h.temp.path().join("lifecycle.vaultor");
+        assert_eq!(
+            h.task(Request::Archive {
+                destination: archive.to_string_lossy().into_owned()
+            })
+            .state,
+            "completed"
+        );
+        let (m, hash) = inspect_archive(&archive, None).unwrap();
+        assert_eq!(m.organization.tags.len(), 1);
+        assert_eq!(m.organization.states[0].1, true);
+        let restored = h.temp.path().join("restored");
+        assert_eq!(
+            h.task(Request::Restore {
+                source: archive.to_string_lossy().into_owned(),
+                destination: restored.to_string_lossy().into_owned(),
+                manifest_hash: hash
+            })
+            .state,
+            "completed"
+        );
+        let purge = h.task(Request::Purge { ids: None });
+        assert_eq!(purge.state, "completed");
+        assert_eq!(purge.result.unwrap()["deleted"], 1);
+        assert!(!original_path(Path::new(&h.root), &id).unwrap().exists());
+        assert_eq!(fs::read(source).unwrap(), [0, 1, 255, 7]);
+        let mut restored = Workspace::open(&restored).unwrap();
+        assert_eq!(
+            restored
+                .organization(crate::organization::Request::Tags {
+                    query: "Retained".into(),
+                    after: None
+                })
+                .unwrap()["items"][0]["count"],
+            0
+        );
+        assert!(original_path(&restored.root, &id).unwrap().exists());
+        restored
+            .organization(crate::organization::Request::Trash {
+                ids: vec![id],
+                restore: true,
+            })
+            .unwrap();
+    }
+    #[test]
     fn managed_import_duplicates_hierarchy_and_archive_roundtrip() {
         let h = Harness::new();
         let source = h.temp.path().join("source");
@@ -1506,12 +1622,13 @@ mod tests {
         assert_eq!(fs::read_to_string(&source).unwrap(), "changed");
         let mut m = Manifest {
             format: "vaultor-next-portable".into(),
-            version: 1,
+            version: 2,
             resources: vec![],
             collections: vec![],
             memberships: vec![],
             originals: vec![],
             settings: json!({}),
+            organization: Default::default(),
         };
         let id = Uuid::new_v4().to_string();
         m.resources.push(Resource {
@@ -1661,4 +1778,88 @@ mod tests {
         );
         engine.shutdown();
     }
+}
+
+fn purge(
+    storage: &Storage,
+    root: &str,
+    ids: Option<Vec<String>>,
+    ctx: &mut Context,
+) -> Result<Value, String> {
+    let candidates = storage.call(root, move |w| {
+        let mut q = w
+            .db
+            .prepare("SELECT resource_id FROM resource_state WHERE trashed=1 ORDER BY resource_id")
+            .map_err(error)?;
+        let all = q
+            .query_map([], |r| r.get::<_, String>(0))
+            .map_err(error)?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(error)?;
+        Ok(json!(all
+            .into_iter()
+            .filter(|id| ids.as_ref().is_none_or(|ids| ids.contains(id)))
+            .collect::<Vec<_>>()))
+    })?;
+    let ids = candidates.as_array().unwrap();
+    let mut removed = 0;
+    let mut issues = vec![];
+    for (index, id) in ids.iter().enumerate() {
+        ctx.check()?;
+        let id = id.as_str().unwrap().to_string();
+        let owned = id.clone();
+        match storage.call(root, move |w| w.purge_one(&owned)) {
+            Ok(_) => removed += 1,
+            Err(e) => issues.push(format!("{id}: {e}")),
+        };
+        ctx.progress(
+            "Deleting eligible managed resources",
+            (index + 1) as u64,
+            Some(ids.len() as u64),
+            0,
+            None,
+        );
+    }
+    // Only UUID paths positively recorded in our committed cleanup journal are eligible.
+    let pending = storage.call(root, |w| {
+        let mut q =
+            w.db.prepare("SELECT id FROM pending_deletions LIMIT 20000")
+                .map_err(error)?;
+        let values = q
+            .query_map([], |r| r.get::<_, String>(0))
+            .map_err(error)?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(error)?;
+        Ok(json!(values))
+    })?;
+    for id in pending.as_array().unwrap() {
+        ctx.check()?;
+        let id = id.as_str().unwrap().to_string();
+        let path = original_path(Path::new(root), &id)?;
+        match fs::symlink_metadata(&path) {
+            Ok(m) => {
+                if reparse(&m) || !m.is_file() {
+                    issues.push(format!("{id}: unsafe file cleanup refused"));
+                    continue;
+                }
+                if let Err(e) = fs::remove_file(&path) {
+                    issues.push(format!("{id}: {e}"));
+                    continue;
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => {
+                issues.push(format!("{id}: {e}"));
+                continue;
+            }
+        }
+        storage.call(root, move |w| {
+            w.db.execute("DELETE FROM pending_deletions WHERE id=?1", [id])
+                .map_err(error)?;
+            Ok(Value::Null)
+        })?;
+    }
+    Ok(
+        json!({"deleted":removed,"protectedOrFailed":issues.len(),"issues":issues,"partial":!issues.is_empty()}),
+    )
 }

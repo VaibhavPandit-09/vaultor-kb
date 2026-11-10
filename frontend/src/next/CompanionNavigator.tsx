@@ -1,6 +1,6 @@
 import {useState,type ReactNode} from 'react';
-import {FileText,Compass,Folder,FolderSymlink} from 'lucide-react';
-const views=[['sessions','Open notes',FileText],['shortcuts','Quick access',Compass],['collections','Collections',Folder],['sources','Linked sources',FolderSymlink]] as const;
+import {FileText,Compass,Folder,FolderSymlink,Tags,Pin,Clock} from 'lucide-react';
+const views=[['sessions','Open notes',FileText],['shortcuts','Quick access',Compass],['collections','Collections',Folder],['tags','Tags',Tags],['pins','Pinned',Pin],['recent','Recents',Clock],['sources','Linked sources',FolderSymlink]] as const;
 export type CompanionView=typeof views[number][0];
 /** AdaptiveNavigator's companion categories, restricted to capabilities present in Next. */
 export default function CompanionNavigator({view,choose,children}:{view:CompanionView;choose:(v:CompanionView)=>void;children:ReactNode}){

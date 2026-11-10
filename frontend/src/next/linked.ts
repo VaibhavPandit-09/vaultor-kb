@@ -9,6 +9,7 @@ export class LinkedEditingSession{
  constructor(changed:(persisted?:boolean)=>void){this.changed=changed;}
  get(id:string){return this.entries.get(id)?.doc;}
  releaseViews(){for(const entry of this.entries.values())if(entry.protected===entry.sequence)entry.capture=undefined;}
+ releaseInactive(active:readonly string[]){const keep=new Set(active);for(const [id,e]of this.entries)if(!keep.has(id)&&!this.dirty(id)&&!e.saving&&!e.protecting&&!e.error&&!e.blocked)this.forget(id);}
  ids(){return this.entries.keys();}
  dirty(id:string){const e=this.entries.get(id);return !!e&&e.sequence!==e.committed;}
  status(id:string){const e=this.entries.get(id);return !e?'unavailable':e.saving?'Saving source…':e.error?e.error.includes('conflict')?'external conflict':e.blocked?'review publication':'Save refused':!this.dirty(id)?'source unchanged':e.protected===e.sequence?'draft protected · explicit Save':'pending · source unchanged';}

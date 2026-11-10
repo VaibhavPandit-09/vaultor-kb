@@ -5,7 +5,7 @@ import {EscapeManagerProvider} from '../lib/escape/EscapeManagerProvider';
 import NextApp from './NextApp';
 import type {SearchOptions} from './client';
 const invoke=vi.hoisted(()=>vi.fn());
-vi.mock('./client',()=>({command:invoke}));
+vi.mock('./client',()=>({command:invoke,org:(request:Record<string,unknown>)=>invoke({kind:'organization',request})}));
 vi.mock('@tauri-apps/api/window',()=>({getCurrentWindow:()=>({onCloseRequested:async()=>()=>{},onResized:async()=>()=>{},isMaximized:async()=>false,show:async()=>{},destroy:vi.fn()})}));
 vi.mock('@tauri-apps/plugin-dialog',()=>({open:vi.fn()}));
 vi.mock('./NextEditor',()=>({default:()=> <div contentEditable suppressContentEditableWarning role="textbox" aria-label="Editor body">Editor text</div>}));
@@ -13,7 +13,7 @@ vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});
 const rows=(start:number)=>Array.from({length:3},(_,i)=>({id:String(start+i),title:'Note '+(start+i),revision:1,updatedAt:''}));
 function setup(search?:(r:{kind:string;options?:SearchOptions;cursor?:unknown})=>Promise<unknown>){
  invoke.mockReset();invoke.mockImplementation(async(r:{kind:string;cursor?:unknown;id?:string;options?:SearchOptions})=>{
-  if(r.kind==='linked')return [];
+  if(r.kind==='linked'||r.kind==='organization')return [];
   if(r.kind==='search')return search?.(r)??{items:[],next:null,total:0};
   if(r.kind==='snapshot')return {path:'fixture',settings:{theme:'light'},collections:[{id:'destination',name:'Research',parentId:null}]};
   if(r.kind==='drafts')return [];

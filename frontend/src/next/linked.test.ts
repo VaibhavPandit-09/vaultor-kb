@@ -23,3 +23,5 @@ it('keeps protected content on conflicts and blocks forgetting an unprotected fa
 it('restores one document owner and exposes pending publication without automatically retrying it',async()=>{
  const session=new LinkedEditingSession(()=>{}),doc={...document(),draft:{token:'original',sequence:4},current:{current:{error:'missing'},publication:{status:'captured',stage:'stage',capture:'capture',originalHash:'old',candidateHash:'next'}}};session.adopt(doc);expect([...session.ids()]).toEqual([doc.id]);expect(session.locked(doc.id)).toBe(true);expect(session.status(doc.id)).toBe('review publication');await session.protectAll();expect(invoke).not.toHaveBeenCalled();
 });
+
+it('releases inactive clean source bodies and keeps protected unsaved source work',async()=>{const s=new LinkedEditingSession(()=>{}),doc=document();s.adopt(doc);s.adopt({...doc,id:'clean'});s.edit(doc.id,()=>body('Draft'));await s.protect(doc.id);s.releaseInactive([]);expect(s.get('clean')).toBeUndefined();expect(s.get(doc.id)).toBeDefined();expect(s.status(doc.id)).toContain('explicit Save');});

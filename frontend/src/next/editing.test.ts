@@ -36,3 +36,5 @@ it('does not discard an old durable draft after protection failure',async()=>{
   const s=new EditingSession(()=>{},()=>{},invoke as unknown as typeof command);s.adopt(note());s.edit('a',{capture:()=>doc('unsent')});
   await expect(s.flushAll()).rejects.toThrow('disk full');expect(s.dirty('a')).toBe(true);expect(s.status('a')).toBe('failed');
 });
+
+it('evicts only inactive clean bodies while keeping shared active views and dirty journals',()=>{vi.useFakeTimers();const s=new EditingSession(()=>{},()=>{});s.adopt(note());s.adopt({...note(),id:'b'});s.adopt({...note(),id:'c'});s.edit('c',{title:'Unsaved'});s.releaseInactive(['a','a']);expect(s.get('a')).toBeDefined();expect(s.get('b')).toBeUndefined();expect(s.get('c')?.title).toBe('Unsaved');s.releaseInactive([]);expect(s.get('a')).toBeUndefined();expect(s.get('c')).toBeDefined();});

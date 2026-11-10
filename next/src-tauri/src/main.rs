@@ -56,7 +56,7 @@ fn main() {
                 })
                 .unwrap_or(data.join("Workspace-M2"));
             let worker = Worker::start(
-                root,
+                root.clone(),
                 if override_root.is_some() {
                     None
                 } else {
@@ -80,6 +80,20 @@ fn main() {
                     let _ = handle.emit("next-activity", tasks);
                 },
             )?;
+            if storage
+                .call(&root.to_string_lossy(), |w| {
+                    let pending: bool = w.pending_cleanup()?;
+                    Ok(serde_json::json!(pending))
+                })
+                .ok()
+                .and_then(|v| v.as_bool())
+                == Some(true)
+            {
+                activity.submit(
+                    root.to_string_lossy().into_owned(),
+                    vaultor_next::transfers::Job::Purge { ids: Some(vec![]) },
+                )?;
+            }
             app.manage(Arc::new(Transfers::new(storage, activity)));
             app.manage(worker);
             Ok(())

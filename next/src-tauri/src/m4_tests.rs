@@ -7,6 +7,8 @@ fn options(q: &str, content: bool, collection: Option<String>, order: &str) -> S
         content,
         collection,
         order: order.into(),
+        view: String::new(),
+        tag: None,
     }
 }
 fn query(w: &Workspace, q: &str, content: bool) -> Value {

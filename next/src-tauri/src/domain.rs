@@ -20,6 +20,9 @@ pub enum Request {
         path: String,
     },
     Snapshot,
+    Organization {
+        request: crate::organization::Request,
+    },
     Linked {
         request: crate::linked::Request,
     },
@@ -174,6 +177,7 @@ impl Workspace {
         crate::transfers::initialize(&db)?;
         crate::search::initialize(&mut db)?;
         crate::linked::initialize(&db)?;
+        crate::organization::initialize(&db)?;
         Ok(Self {
             db,
             root,
@@ -184,6 +188,7 @@ impl Workspace {
         match request {
             Request::Open { .. } | Request::New { .. } => Err("Open belongs to workspace lifecycle".into()),
             Request::Linked { request } => self.linked(request),
+            Request::Organization {request} => self.organization(request),
             Request::Snapshot => {
                 let mut stmt = self.db.prepare("SELECT id,name,parent_id FROM collections ORDER BY normalized,id").map_err(error)?;
                 let collections = stmt.query_map([], |r| Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"parentId":r.get::<_,Option<String>>(2)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
@@ -208,7 +213,7 @@ impl Workspace {
                 tx.commit().map_err(error)?;
                 self.execute(Request::Read { id })
             },
-            Request::Read { id } => self.db.query_row("SELECT id,title,content,revision FROM resources WHERE id=?1", [&id], |r| {
+            Request::Read { id } => self.db.query_row("SELECT id,title,content,revision FROM resources WHERE id=?1 AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=resources.id AND trashed=1)", [&id], |r| {
                 Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"content":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?}))
             }).map_err(error).and_then(|mut value| { value["content"] = serde_json::from_str(value["content"].as_str().unwrap()).map_err(error)?; let mut q=self.db.prepare("SELECT collection_id FROM memberships WHERE resource_id=?1 ORDER BY collection_id").map_err(error)?; value["collections"]=json!(q.query_map([&id],|r|r.get::<_,String>(0)).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?); value["kind"]=self.db.query_row("SELECT kind FROM managed_originals WHERE resource_id=?1",[&id],|r|r.get::<_,String>(0)).map(Value::String).unwrap_or(json!("note")); Ok(value) }),
             Request::Save { id, revision, title, content, proof } => self.save(id, revision, title, content, proof),

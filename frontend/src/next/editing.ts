@@ -80,5 +80,6 @@ export class EditingSession {
     clearTimeout(e.timer); clearTimeout(e.deadline); clearTimeout(e.saveTimer); this.entries.delete(id);
   }
   releaseViews() { for(const entry of this.entries.values())if(entry.protected===entry.sequence)entry.capture=undefined; }
+  releaseInactive(active:readonly string[]) { const keep=new Set(active);for(const [id,e] of this.entries)if(!keep.has(id)&&!this.dirty(id)&&!e.saving&&!e.protection&&!e.error&&!e.conflict)this.forget(id); }
   ids() { return this.entries.keys(); }
 }

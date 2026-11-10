@@ -4,7 +4,7 @@ Vaultor Next is a separate Windows development application. It does not replace 
 
 ## Workspaces
 
-The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or an existing M2–M7 workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. Import and transfers also offers Create local workspace: choose a parent and a new folder name. Finish or cancel Activity tasks before switching. Linked folders are separate from this workspace.
+The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or an existing M2–M8 workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. Import and transfers also offers Create local workspace: choose a parent and a new folder name. Finish or cancel Activity tasks before switching. Linked folders are separate from this workspace.
 
 ## Notes and collections
 
@@ -94,7 +94,7 @@ Each review accepts up to20,000 entries/32folder levels,1GiB per file and10GiB t
 
 ## Portable workspace transfers
 
-Import and transfers or Workspace actions offers Export workspace. Resolve or explicitly discard protected drafts and uncertain linked publication evidence first. Export contains committed managed notes, original files, collections, memberships and supported workspace settings. It excludes linked external contents and registrations, protected drafts, Activity history and machine-specific connections. External folders must be registered again explicitly after restoration.
+Import and transfers or Workspace actions offers Export workspace. Resolve or explicitly discard protected drafts and uncertain linked publication evidence first. Export contains committed managed notes, original files, collections, memberships, tags/assignments, pins, Trash state, managed recency and supported workspace settings. It excludes linked external contents and registrations, protected drafts, Activity history and machine-specific connections. External folders must be registered again explicitly after restoration.
 
 Choose a new `.vaultor` filename. The portable format is versioned and integrity-checked; it is unrelated to Electron archives. Import workspace as new verifies the archive and previews resource, collection and file counts. Choose a parent and a new folder name. Restoration stages and validates a separate workspace before publication and never overwrites an existing workspace. Open restored workspace from its completed Activity entry, or use Open workspace. Merge into an existing workspace is deferred to M10. Portable manifests are limited to32MiB of JSON and20,000 resources; file payloads have the import limits above.
 
@@ -103,3 +103,21 @@ Choose a new `.vaultor` filename. The portable format is versioned and integrity
 Activity in the upper-right toolbar opens a compact anchored panel. Tasks continue while it is closed. Queued/running tasks show actual processed items/bytes, or indeterminate progress when totals are unknown. Completion includes output paths and committed counts; expand Details for failed inputs or errors. Cancel task stops at safe boundaries. Committed import items remain; unpublished export/restore staging is cleaned up. Final verification/publication cannot be interrupted and is labelled accordingly.
 
 The last64 summaries (up to30days) remain across navigation and ordinary restart. Unexpectedly interrupted tasks are marked Interrupted and are never automatically replayed. Review partial imports before retrying; the default duplicate policy helps avoid repeated copies. A forced process termination can leave uniquely named staging/orphan files; do not mistake those for completed exports. No automatic backup or resumable-job guarantee is provided.
+
+## Tags and quick navigation
+
+Choose Tags in the sidebar working region. Search existing tags, browse pages of up to100, and use New tag or Manage tag to name/color/rename/delete one. Deleting a tag removes assignments, never resources. Resource actions → Assign tags opens the searchable picker for the current selection. Existing names appear first; Create and assign appears only when the complete name does not already exist. Assigned indicates all selected resources; a partial count offers assignment to all. Click Assigned to remove from all. Down enters choices, arrows traverse, Enter activates, and Escape closes the picker. Ctrl+A in its input selects text. Newly created tags become available immediately.
+
+Choose a tag to browse its active resources through the ordinary paginated Library. Pinned resources use the same list and selection actions. Pin/unpin from resource menus or note actions; membership/content does not change. The working-region tabs expose Open notes, Quick access, Collections, Tags, Pinned, Recents and Linked sources. Quick access shows six recent entries; Recents retains a compact cross-restart list including linked Markdown. Managed recent writes are throttled within15seconds and never track mere pane focus. Missing linked sources report their existing safe open error. Automatic contextual sidebar switching and full session restoration remain later refinements.
+
+## Trash and permanent deletion
+
+Resource actions → Move to Trash asks for confirmation and saves/protects current editing first. Unresolved managed recovery drafts refuse lifecycle changes. Trash keeps identity, content, tags, pin state and collection memberships; normal Library, tag, pin and search views exclude it. Trash uses the same100-row pages and page-scoped selection. Row activation selects there; contextual Restore returns the selected resources to active browsing. Surviving renamed collections retain their identities. Deleted collections are not recreated; resources remain accessible through Library.
+
+Permanently delete operates only on Trash and asks for confirmation. Empty Trash is one action across all Trash pages, regardless of the current search/page. Activity reports processed resources and protected/failed inputs; eligible resources commit independently and cancellation can leave partial completion. Deletion cannot be undone. Protected drafts are never bypassed.
+
+Metadata removal and managed-file removal are separate durable steps. A committed cleanup receipt retains the exact owned UUID file obligation until removal succeeds. Startup and Empty Trash retry those receipts; failures remain visible in Activity. External linked originals are never candidates. No recursive cleanup of unknown directories or external export stages is performed.
+
+## Deleting a collection hierarchy
+
+Collection actions → Delete hierarchy removes its nested collections while keeping every resource in Library by default. The explicit Trash-exclusive option reviews the hierarchy count and exclusive resource count; resources with another membership outside the hierarchy stay active. A changed review is refused and must be reopened. Collection hierarchy restoration is not implemented. Removing linked-source registration continues to keep its external files.

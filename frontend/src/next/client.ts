@@ -5,7 +5,7 @@ export type Note = { id: string; title: string; content: JSONContent; revision: 
 export type Summary = Omit<Note, 'content'> & { updatedAt: string };
 export type Collection = { id: string; name: string; parentId: string | null };
 export type ListCursor = { before: number; anchor: number; scope: string | null };
-export type SearchOptions = { query: string; content: boolean; collection: string | null; order: 'created'|'updated'|'title' };
+export type SearchOptions = { query: string; content: boolean; collection: string | null; order: 'created'|'updated'|'title';view?:string;tag?:string|null };
 export type SearchCursor = { options: SearchOptions; generation: number; seq: number; key: string };
 export type Cursor = ListCursor | SearchCursor;
 export type Page = { items: Summary[]; next: Cursor | null; total: number };
@@ -15,6 +15,7 @@ export type DraftSummary = Omit<Draft, 'content'>;
 export type Snapshot = { path: string; collections: Collection[]; settings: { theme?: 'light' | 'dark' | 'oled' } };
 type Request =
   | { kind: 'snapshot' }
+  | { kind:'organization'; request:Record<string,unknown> }
   | { kind: 'linked'; request: LinkedRequest }
   | { kind: 'open'|'new'; path: string }
   | { kind: 'list'; collection: string | null; cursor?: ListCursor | null; limit?: number }
@@ -34,3 +35,5 @@ type Request =
   | { kind: 'rebaseDraft'; id: string; token: string; sequence: number; revision: number }
   | { kind: 'setting'; key: 'theme'; value: string };
 export function command<T>(request: Request): Promise<T> { return invoke<T>('workspace', { request }); }
+
+export const org=<T,>(request:Record<string,unknown>)=>command<T>({kind:'organization',request});

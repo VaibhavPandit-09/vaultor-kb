@@ -36,15 +36,15 @@ Ordinary title activation opens without an explicit multi-selection. Ctrl/checkb
 
 Right-clicking a selected row preserves the group; an unselected row becomes the sole selection. One context-menu instance uses existing MenuAction presentation, shared motion classes and Escape/portal focus owners, with viewport clamping, keyboard traversal and invoker restoration. There is no menu/listener per row. Resource, collection and blank-space commands expose implemented actions only. Bulk destinations reuse AppModal and a bounded searchable collection picker. Header metadata/actions compress into selected-count/organization mode without a second toolbar or duplicated header. Collection branches transform their existing grid track with inert collapsed descendants and reduced-motion endpoints. Active editors retain their keys across selection and menu work.
 
-## Feature, visual and motion parity inventory (M1–M7)
+## Feature, visual and motion parity inventory (M1–M8)
 
 Original capabilities are checked against the published Help catalogue and current presentation owners, not historical plans. Complete below means the named bounded capability, not complete application parity. M6 scoped Windows inspection covers the screens and transitions recorded below.
 
 | Area / original Electron capability | Next / functional | Visual | Motion | Gaps and target |
 | --- | --- | --- | --- | --- |
 | Shell: full Library, integrated navigation/chrome | M6 Windows accepted within stated scope | Reconstructed from DesktopChrome/SidebarFrame; compared with native original | Sidebar width/transform, directional workspace continuity | Native tray/Snap-hover/app menu M10 |
-| Sidebar: companion Open notes/Quick access/Collections/Tags/Sources | Partial: four implemented categories, bounded session shortcuts | AdaptiveNavigator structure and shared tokens | Category disclosure, retained tree states | Tags/pins M8; Auto context/floating edge refinement M10 |
-| Library/Collections: pages, hierarchy, memberships | Complete within managed-note model | Full-width compact rows and progressive orientation | Scroll-driven compression; branch geometry | Linked memberships/collection detail metadata M8 |
+| Sidebar: companion Open notes/Quick access/Collections/Tags/Sources | Partial: seven implemented categories, bounded session shortcuts | AdaptiveNavigator structure and shared tokens | Category disclosure, retained tree states | Tags/pins M8; Auto context/floating edge refinement M10 |
+| Library/Collections: pages, hierarchy, memberships | Complete within managed-resource model | Full-width compact rows and progressive orientation | Scroll-driven compression; branch geometry | Linked memberships/collection detail metadata M8 |
 | Selection/organization: mouse/keyboard/ranges/context/bulk | Complete current-page transactions | Shared MenuAction/AppModal and focus cues | Retained menu entry/selection feedback | Cross-page selection/bulk lifecycle M8; menu departure refinement M10 |
 | Search: titles/content/types/advanced scope | Partial: managed FTS5, scope/order/keyset pages | Compact original-style search/options | Focus underline, compressed header | Linked/media/type/tag search M8/M9; saved views M10 |
 | Managed editor: rich JSON, history/autosave, recovery | Partial: current Tiptap composition/shared history | Original typography/code/table tokens | Pane transitions/theme reveal | Full toolbar/slash/table/editor parity M9 |
@@ -53,7 +53,7 @@ Original capabilities are checked against the published Help catalogue and curre
 | Workspace ownership/catalogue and connections | Partial: exclusive local ownership, native open/create, archive restore and SQLite settings | Compact current-workspace/footer transfers menu | Shared picker/modal owners | Multi-workspace catalogue, connection/session switching and host access M10 |
 | Themes/settings: light/dark/OLED, OS/accent/density/motion | Partial: three persisted themes, shared OLED hierarchy | Original theme tokens | Shared origin reveal; reduced endpoints | OS following and other preferences M10 |
 | Recovery/backups: managed drafts, linked evidence, checkpoints | Partial: M2/M5 durable draft and explicit conflict workflows | Shared review/footer entry | Modal/focus transitions | Scheduled backups/checkpoints and recovery export M7/M10 |
-| Tags, pins, Trash/resource lifecycle | Missing; no fake controls | Pending | Pending | M8 |
+| Tags, pins, Trash/resource lifecycle | M8 implemented within managed-resource scope; Windows acceptance pending | Compact shared lists, tag chips, reviews and working-region tabs | Retained shared menus/modal/sidebar motion | Linked organization/full Auto behavior M9/M10; physical accessibility/IME pending |
 | Imports/exports and workspace transfers | M7 Windows accepted within bounded managed/archive model | Centered body-portalled reviews and native pickers inspected | Shared anchored panels/modals; retained focus/Escape owners | Existing-workspace merge M10; advanced formats M9 |
 | Background Activity/task processing | M7 bounded Rust queue, events/cancellation/history | Original compact toolbar panel adapted | Shared panel/progress motion; reduced motion | OS taskbar/notification integration M10 |
 | Resource links/mentions and prepared native copies | Missing except confined relative Markdown navigation | Pending | Pending | M9 |
@@ -70,7 +70,7 @@ One authoritative inventory; implementation boundaries and native evidence belon
 
 ## Boundaries
 
-- Resource deletion/Trash, tags, pins and external/media search remain future work. Collection contents are direct memberships, not recursive descendant aggregation. Selection is deliberately limited to the current loaded page.
+- M8 adds managed deletion/Trash, tags and pins; external/media search remain future work. Collection contents are direct memberships, not recursive descendant aggregation. Selection is deliberately limited to the current loaded page.
 - M5 exposes linked Markdown through registered local NTFS roots. M7 adds managed imports/exports; rich previews, images/attachments and managed resource-link commands remain pending.
 - Only acknowledged journal/commit bytes are durable. There is no automatic conflict merge or recovery export, and unresolved evidence requires an explicit decision. This experimental app still needs independent copies of important information.
 - Windows only. No installer, signing/updater, macOS, Android or LAN API qualification. Native menus, keyboard customization, slash menus, pane session restoration and full animation parity remain incomplete. Physical IME/accessibility acceptance is unclaimed.
@@ -165,6 +165,14 @@ Independent native/performance run `2026-11-10T06-32-05.167Z` uses source `47cbb
 
 Common M6→M7 observations: note-opening median36.5→32.8ms (3 samples), input-to-rAF4.95→4.95ms (12), five-minute one-core CPU0.856→2.607%, working set339.1→345.1MiB, private bytes275.2→303.6MiB. CPU/private-memory regressions remain unresolved; bounded review found no new idle polling or perpetual frame loop, and no causal attribution is claimed. M7 task durations:100 small imports1647ms,128MiB streamed import411ms, workspace export556ms/restore411ms. Three inputs during a running copy reached the next rAF in7.6–24.1ms. Live post-transfer working set813.9→571.4→583.9MiB and private bytes562.0→310.4→318.3MiB after30+60seconds show release, not proof of leak freedom. Sampled peak working set813.9MiB. Exact source/executable/hardware, failed-driver exclusions, sample boundaries and CSV-derived workbook belong to the benchmark README/summaries. No whole-product performance claim.
 
+## M8 organization and lifecycle
+
+M8 implements identity-based tags/colors/counts with100-row server pages, existing-first assignment, bulk pinning, persisted managed/linked Recents, Trash/Restore and reviewed collection deletion. Lifecycle state is separate from note JSON/revisions. Normal searches/listing exclude Trash; filters bind tag/view into existing generation-checked cursors. Recents write only on actual opening and throttle managed repeats15seconds; no focus polling. Shared list selection remains page-scoped. Empty Trash is explicitly all-pages, independently committing eligible resources through Activity.
+
+Purge is serialized behind archive/export tasks so their immutable blob snapshots remain valid. It refuses active resources and unresolved drafts, commits metadata deletion plus a UUID cleanup receipt, then removes that owned managed path outside SQLite. Failure/cancellation can leave pending cleanup, retried on startup or Empty Trash. It never sweeps unknown external staging or deletes linked files. Restore retains identity, tags, pins and surviving memberships; deleted hierarchy is not recreated. Collection deletion defaults to keep resources; optional exclusive Trash preserves outside memberships and rejects a stale generation-bound review. Portable v2 adds validated tags/assignments/lifecycle/managed recency; v1 archives default to empty organization. Linked recency/authority remains machine-local. Full session restoration, automatic contextual sidebar refinement, media/editor parity, OS/Snap, motion gaps and physical accessibility/IME remain M9/M10.
+
+M8 focused checks:27 unique Rust tests and35 scoped frontend checks pass, with TypeScript/scoped lint. Native acceptance/performance qualification pending; do not infer visual completeness from shared styling.
+
 ## Next milestone
 
-Recommended M8: tags, pins and resource lifecycle/Trash with transactional identity-based organization, plus bounded follow-up of idle CPU/private-memory regressions. Future deletion must retain immutable originals while archive/export tasks hold them. Preserve M7 transfer correctness; media/editor parity is M9, workspace merge and desktop/platform refinement M10. Android stays on hold.
+Recommended M9: rich editor/table/media/resource-link parity and continued scoped visual refinement. M10 retains workspace merge, complete session/Auto navigation, native Windows integration and platform qualification. Android stays on hold.
