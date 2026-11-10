@@ -481,7 +481,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-10 — M7 managed transfers and Activity
 
-Added native file/folder review, streamed immutable original copies and bounded transactional resource commits, metadata-only file presentation, selected-resource exports, portable workspace import-as-new/export and event-driven Activity. Existing source files and linked authority remain separate. Updated experimental Help/catalogue and migration/archive contracts. Focused transfer tests and TypeScript compile pass; native/build/benchmark qualification is recorded in the tracker after integration. Workspace merge and full file previews remain deferred.
+Added native file/folder review, streamed immutable original copies and bounded transactional resource commits, metadata-only file presentation, selected-resource exports, portable workspace import-as-new/export and event-driven Activity. Existing source files and linked authority remain separate. Transfer reviews portal to the document body so sidebar transforms cannot constrain modal bounds; the shared focus/Escape owner is retained. Updated experimental Help/catalogue and migration/archive contracts. Focused transfer tests and TypeScript compile pass; native/build/benchmark qualification is recorded in the tracker after integration. Workspace merge and full file previews remain deferred.
 
 
 ### 2026-11-10 — M6 desktop experience reconstruction
