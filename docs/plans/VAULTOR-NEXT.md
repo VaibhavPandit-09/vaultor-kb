@@ -36,7 +36,7 @@ Ordinary title activation opens without an explicit multi-selection. Ctrl/checkb
 
 Right-clicking a selected row preserves the group; an unselected row becomes the sole selection. One context-menu instance uses existing MenuAction presentation, shared motion classes and Escape/portal focus owners, with viewport clamping, keyboard traversal and invoker restoration. There is no menu/listener per row. Resource, collection and blank-space commands expose implemented actions only. Bulk destinations reuse AppModal and a bounded searchable collection picker. Header metadata/actions compress into selected-count/organization mode without a second toolbar or duplicated header. Collection branches transform their existing grid track with inert collapsed descendants and reduced-motion endpoints. Active editors retain their keys across selection and menu work.
 
-## Feature, visual and motion parity inventory (M1–M6)
+## Feature, visual and motion parity inventory (M1–M7)
 
 Original capabilities are checked against the published Help catalogue and current presentation owners, not historical plans. Complete below means the named bounded capability, not complete application parity. M6 scoped Windows inspection covers the screens and transitions recorded below.
 
@@ -54,8 +54,8 @@ Original capabilities are checked against the published Help catalogue and curre
 | Themes/settings: light/dark/OLED, OS/accent/density/motion | Partial: three persisted themes, shared OLED hierarchy | Original theme tokens | Shared origin reveal; reduced endpoints | OS following and other preferences M10 |
 | Recovery/backups: managed drafts, linked evidence, checkpoints | Partial: M2/M5 durable draft and explicit conflict workflows | Shared review/footer entry | Modal/focus transitions | Scheduled backups/checkpoints and recovery export M7/M10 |
 | Tags, pins, Trash/resource lifecycle | Missing; no fake controls | Pending | Pending | M8 |
-| Imports/exports and workspace transfers | Missing | Pending | Pending | M7 |
-| Background Activity/task processing | Missing; toolbar integration slot reserved in composition | Pending | Pending | M7 |
+| Imports/exports and workspace transfers | M7 implemented within bounded managed/archive model | Shared review/native pickers; Windows inspection pending | Shared anchored panels/modals | Existing-workspace merge M10; advanced formats M9 |
+| Background Activity/task processing | M7 bounded Rust queue, events/cancellation/history | Original compact toolbar panel adapted | Shared panel/progress motion; reduced motion | OS taskbar/notification integration M10 |
 | Resource links/mentions and prepared native copies | Missing except confined relative Markdown navigation | Pending | Pending | M9 |
 | Command palette and configurable shortcut/reference surfaces | Partial: direct Library entry, F1/Ctrl+S/list ownership and Alt history; no palette/customization | Pending broader parity | Pending | M10 |
 | Diagnostics/search coverage and OS progress/notifications | Missing | Pending | Pending | Activity/OS progress M7; diagnostics M10 |
@@ -149,6 +149,18 @@ M5→M6 fresh common observations: opening30.1→36.5ms median (3), input-to-rAF
 
 New reference-note navigation measured29.3ms to mount versus251.2ms through completed motion (3 each). Pane/sidebar intervals were4.2ms median/8.4ms max (90 each), not compositor presentation. Mixed desktop churn working set622.0→691.3→725.1→627.0MiB and private commit420.9→473.8→506.8→402.5MiB released at idle without proving a long-term plateau. This differs from M5's workload. Exact fixture/recipe/source hashes, boundaries and failed attempts remain in the append-only CSV/generated workbook and benchmark README.
 
+## M7 transfers and Activity contract
+
+`activity.rs` owns an eight-queued-job, one-at-a-time on-demand worker, real item/byte progress (coalesced to100ms), cancellation checks during64KiB stream chunks, final non-cancellable publication, and64 task summaries retained for30days. No idle polling thread exists. The profile history JSON is atomically replaced and exclusively owned; interrupted tasks become Interrupted and never auto-replay. Event listeners are reference-counted; only Activity/transfer controls observe progress, not the main editor/list. Storage requests remain on the existing actor, bind their expected workspace root and use short transactions. Active/queued tasks prevent workspace switching.
+
+Managed originals are immutable UUID blobs indexed by `managed_originals` (resource ID, initial filename, SHA-256, byte count, kind and relative provenance). Discovery rejects source links/reparse points, workspace overlap, over20,000entries/32levels,1GiB files or10GiB totals. Source bytes stream outside the actor and must match the reviewed hash before publication/metadata commit. Each file commits independently; directory collections reuse normalized sibling names. Filename/hash duplicates skip globally by default without adding a new membership; separate copies require review opt-in. UTF-8 text/supported Markdown <=256KiB become notes; all other bytes remain managed originals. Errors/cancellation can leave committed resources and collections; summaries describe that partial model. Normal failure/cancellation drops owned staging. Forced termination can leave unreferenced blobs or uniquely named output stages; there is no automatic destructive orphan scavenger.
+
+Portable format v1 uses8byte ASCII `VAULTOR1`, little-endian u64 manifest byte length,32byte SHA-256 of the manifest, UTF-8 JSON manifest, then original payloads in inventory order. There are no archive entry paths to extract. UUID inventory, names, hierarchy/cycles, memberships, version, settings, length/count bounds, manifest digest, every original digest and exact EOF are validated. JSON is limited to32MiB/20,000resources; payload limits match import. The single-owner snapshot captures committed notes/revisions/order/timestamps, collections, memberships, originals and supported settings; immutable blobs make later streaming consistent. Protected drafts/linked publication evidence block export. Linked registrations/contents, Activity history and machine connections are excluded; restoration grants no external authority.
+
+Resource exports stage a new directory; archives stage a new file. Outputs never overwrite destinations. Archive publication uses a no-replace hard link (same-volume staging); Windows directory publication uses non-replacing MoveFileW. Restore verifies in a new staged workspace, commits SQLite, runs integrity/checkpoint verification, drops its lock and publishes a new directory. It never overwrites an existing workspace. Source selection/hash/streaming and JSON parsing remain off the storage actor; snapshot construction is bounded. Existing-workspace merge is explicitly M10. Full media previews/native Activity projection remain later work.
+
+M7 native acceptance, exact checks and performance results follow after integration.
+
 ## Next milestone
 
-Recommended M7: imports/exports, workspace transfers and coherent background Activity, retaining Rust-owned transactions and filesystem protection. Follow the inventory for M8–M10 rather than expanding M7 into unrelated editor/organization work. Media, transfers, Trash, networking and platform qualification remain separately scoped; Android stays on hold.
+Recommended M8: tags, pins and resource lifecycle/Trash with transactional identity-based organization. Retain M7 transfer correctness and follow the inventory for M9–M10. Media, transfers, Trash, networking and platform qualification remain separately scoped; Android stays on hold.

@@ -4,19 +4,19 @@ Vaultor Next is a separate Windows development application. It does not replace 
 
 ## Workspaces
 
-The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or an existing M2–M5 workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. Linked folders are separate from this workspace.
+The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or an existing M2–M7 workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. Import and transfers also offers Create local workspace: choose a parent and a new folder name. Finish or cancel Activity tasks before switching. Linked folders are separate from this workspace.
 
 ## Notes and collections
 
 Use New collection in the sidebar, enter a name, choose its parent and select Create. The selected collection is the default parent. Expand or collapse branches with their arrow. Use a collection's More button or right-click it to rename it or change its parent. Names must be unique among siblings; moving a collection inside itself is refused.
 
-Library shows all notes; a collection shows its direct members. Previous and Next load pages of up to 100 summaries, newest-created first. Editing does not reorder notes. Page loading keeps open editors and restores the page's scroll position when returning. New notes and membership changes refresh the first page.
+Library shows managed notes and imported file resources; a collection shows its direct members. Previous and Next load pages of up to 100 summaries, newest-created first. Editing does not reorder notes. Page loading keeps open editors and restores the page's scroll position when returning. New notes and membership changes refresh the first page.
 
 New note creates a note in the selected collection. Select a title to edit it, or use Open beside for a second pane. Both views of the same note share content, Undo history and one protected draft.
 
 Use a note's More button or right-click a Library row for the organization actions described below. These change placements without copying or deleting note content.
 
-Edit the title or body directly. Markdown typing shortcuts, bold, italic, headings, lists, code blocks, tables and Undo/Redo are supported by the rich-text editor. The foundation has no slash menu, attachments, resource links, imports or deletion yet. Search and linked Markdown use the controls described below.
+Edit the title or body directly. Markdown typing shortcuts, bold, italic, headings, lists, code blocks, tables and Undo/Redo are supported by the rich-text editor. The foundation has no slash menu, rich attachment previews, resource links or deletion yet. Search and linked Markdown use the controls described below.
 
 ## Selecting and organizing a page
 
@@ -81,3 +81,25 @@ Open beside or Split active note uses two shared panes. The active pane has an a
 Library orientation compresses as its resource list scrolls, reclaiming space while keeping actions available. The shell, window controls and sidebar remain within the window; only the intended list, pane and companion regions scroll. Reduced motion applies independently of appearance.
 
 The top toolbar provides Back/Forward, workspace or note context, Library search, pane controls and Appearance. Drag its central title area to move the window; double-click it to maximize/restore. Minimize, maximize/restore and Close use native window commands. Close protects/saves pending work through the existing barrier. This experiment has no tray-close or full native window-menu/Snap-hover parity yet.
+
+## Managed imports and exports
+
+Use Import in the sidebar, then Import files or Import folder. Native selection is followed by a review showing destination, counts, sizes, discovery issues and likely duplicates. External originals remain untouched. Folder imports reuse nested collections (including empty folders) below the selected collection or Library. Successful files commit separately: cancellation or failed inputs can leave a partial import, explained in Activity. Links/junctions are skipped; workspace storage cannot be its own source.
+
+By default, an existing original with the same filename and SHA-256 is skipped, even in a different destination; no new membership is added. Choose separate copies in review to intentionally create new resources. Existing resources are never overwritten. UTF-8 text and supported Markdown up to256KiB become editable notes with the initial original bytes retained. Larger, non-UTF-8 or unsupported Markdown and other file types remain managed file resources. Open them for identification and Export original; full previews are planned for M9. Library search includes their filenames, not binary contents.
+
+Right-click one resource or a selected page and choose Export selected resources. Choose Markdown, plain text or imported originals, then a parent and a new output folder name. Non-note files always export original bytes. Note export uses the current committed document; imported original export uses the initial bytes. Unsupported rich structures fail clearly instead of claiming lossless conversion. Output names include resource identity to avoid collisions. Existing destinations are refused.
+
+Each review accepts up to20,000 entries/32folder levels,1GiB per file and10GiB total. Discovery issue details and review rows are bounded to100. Reviews expire after15minutes.
+
+## Portable workspace transfers
+
+Import and transfers or Workspace actions offers Export workspace. Resolve or explicitly discard protected drafts and uncertain linked publication evidence first. Export contains committed managed notes, original files, collections, memberships and supported workspace settings. It excludes linked external contents and registrations, protected drafts, Activity history and machine-specific connections. External folders must be registered again explicitly after restoration.
+
+Choose a new `.vaultor` filename. The portable format is versioned and integrity-checked; it is unrelated to Electron archives. Import workspace as new verifies the archive and previews resource, collection and file counts. Choose a parent and a new folder name. Restoration stages and validates a separate workspace before publication and never overwrites an existing workspace. Open restored workspace from its completed Activity entry, or use Open workspace. Merge into an existing workspace is deferred to M10. Portable manifests are limited to32MiB of JSON and20,000 resources; file payloads have the import limits above.
+
+## Background Activity
+
+Activity in the upper-right toolbar opens a compact anchored panel. Tasks continue while it is closed. Queued/running tasks show actual processed items/bytes, or indeterminate progress when totals are unknown. Completion includes output paths and committed counts; expand Details for failed inputs or errors. Cancel task stops at safe boundaries. Committed import items remain; unpublished export/restore staging is cleaned up. Final verification/publication cannot be interrupted and is labelled accordingly.
+
+The last64 summaries (up to30days) remain across navigation and ordinary restart. Unexpectedly interrupted tasks are marked Interrupted and are never automatically replayed. Review partial imports before retrying; the default duplicate policy helps avoid repeated copies. A forced process termination can leave uniquely named staging/orphan files; do not mistake those for completed exports. No automatic backup or resumable-job guarantee is provided.

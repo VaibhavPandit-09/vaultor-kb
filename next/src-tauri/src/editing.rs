@@ -7,7 +7,7 @@ pub struct Proof {
     pub token: String,
     pub sequence: i64,
 }
-fn document(content: &Value) -> Result<String, String> {
+pub(crate) fn document(content: &Value) -> Result<String, String> {
     if content.get("type").and_then(Value::as_str) != Some("doc")
         || !content.get("content").is_some_and(Value::is_array)
     {
@@ -113,6 +113,10 @@ impl Workspace {
         proof: Option<Proof>,
     ) -> Result<Value, String> {
         let raw_name = name;
+        let file:bool=self.db.query_row("SELECT EXISTS(SELECT 1 FROM managed_originals WHERE resource_id=?1 AND kind='file')",[&id],|r|r.get(0)).map_err(error)?;
+        if file {
+            return Err("Managed file bytes are immutable; use Export original".into());
+        }
         let name = title(&raw_name)?;
         let content = document(&content)?;
         let tx = self.db.transaction().map_err(error)?;

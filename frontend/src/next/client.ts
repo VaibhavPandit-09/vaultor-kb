@@ -1,7 +1,7 @@
 import type {LinkedRequest} from './linkedTypes';
 import { invoke } from '@tauri-apps/api/core';
 import type { JSONContent } from '@tiptap/core';
-export type Note = { id: string; title: string; content: JSONContent; revision: number; collections?: string[] };
+export type Note = { id: string; title: string; content: JSONContent; revision: number; collections?: string[]; kind?: 'note'|'file' };
 export type Summary = Omit<Note, 'content'> & { updatedAt: string };
 export type Collection = { id: string; name: string; parentId: string | null };
 export type ListCursor = { before: number; anchor: number; scope: string | null };
@@ -16,7 +16,7 @@ export type Snapshot = { path: string; collections: Collection[]; settings: { th
 type Request =
   | { kind: 'snapshot' }
   | { kind: 'linked'; request: LinkedRequest }
-  | { kind: 'open'; path: string }
+  | { kind: 'open'|'new'; path: string }
   | { kind: 'list'; collection: string | null; cursor?: ListCursor | null; limit?: number }
   | { kind: 'search'; options: SearchOptions; cursor?: SearchCursor | null; limit?: number }
   | { kind: 'createCollection'; name: string; parentId?: string | null }

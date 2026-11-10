@@ -57,9 +57,9 @@ impl Workspace {
         } else {
             "AND ?3 IS NULL"
         };
-        let sql=format!("SELECT seq,id,title,revision,updated_at FROM resources WHERE seq<?1 AND seq<=?2 {where_clause} ORDER BY seq DESC LIMIT ?4");
+        let sql=format!("SELECT seq,id,title,revision,updated_at,COALESCE((SELECT kind FROM managed_originals WHERE resource_id=resources.id),'note') FROM resources WHERE seq<?1 AND seq<=?2 {where_clause} ORDER BY seq DESC LIMIT ?4");
         let mut stmt = self.db.prepare(&sql).map_err(error)?;
-        let mut rows=stmt.query_map(params![before,anchor,collection,(limit+1) as i64],|r|Ok((r.get::<_,i64>(0)?,json!({"id":r.get::<_,String>(1)?,"title":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?,"updatedAt":r.get::<_,String>(4)?})))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
+        let mut rows=stmt.query_map(params![before,anchor,collection,(limit+1) as i64],|r|Ok((r.get::<_,i64>(0)?,json!({"id":r.get::<_,String>(1)?,"title":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?,"updatedAt":r.get::<_,String>(4)?,"kind":r.get::<_,String>(5)?})))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
         let has_more = rows.len() > limit;
         rows.truncate(limit);
         let next = if has_more {

@@ -1,3 +1,4 @@
+pub mod activity;
 pub mod domain;
 mod editing;
 mod library;
@@ -11,4 +12,5 @@ mod m4_tests;
 #[cfg(test)]
 mod m5_tests;
 mod search;
+pub mod transfers;
 pub mod worker;

@@ -16,6 +16,9 @@ pub enum Request {
     Open {
         path: String,
     },
+    New {
+        path: String,
+    },
     Snapshot,
     Linked {
         request: crate::linked::Request,
@@ -168,6 +171,7 @@ impl Workspace {
             CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL CHECK(json_valid(value)));
             CREATE TABLE IF NOT EXISTS drafts(resource_id TEXT PRIMARY KEY REFERENCES resources(id), base_revision INTEGER NOT NULL, token TEXT NOT NULL, sequence INTEGER NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL CHECK(json_valid(content)), updated_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')));
             PRAGMA user_version=2; COMMIT;").map_err(error)?;
+        crate::transfers::initialize(&db)?;
         crate::search::initialize(&mut db)?;
         crate::linked::initialize(&db)?;
         Ok(Self {
@@ -178,7 +182,7 @@ impl Workspace {
     }
     pub fn execute(&mut self, request: Request) -> Result<Value, String> {
         match request {
-            Request::Open { .. } => Err("Open belongs to workspace lifecycle".into()),
+            Request::Open { .. } | Request::New { .. } => Err("Open belongs to workspace lifecycle".into()),
             Request::Linked { request } => self.linked(request),
             Request::Snapshot => {
                 let mut stmt = self.db.prepare("SELECT id,name,parent_id FROM collections ORDER BY normalized,id").map_err(error)?;
@@ -206,7 +210,7 @@ impl Workspace {
             },
             Request::Read { id } => self.db.query_row("SELECT id,title,content,revision FROM resources WHERE id=?1", [&id], |r| {
                 Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"content":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?}))
-            }).map_err(error).and_then(|mut value| { value["content"] = serde_json::from_str(value["content"].as_str().unwrap()).map_err(error)?; let mut q=self.db.prepare("SELECT collection_id FROM memberships WHERE resource_id=?1 ORDER BY collection_id").map_err(error)?; value["collections"]=json!(q.query_map([&id],|r|r.get::<_,String>(0)).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?); Ok(value) }),
+            }).map_err(error).and_then(|mut value| { value["content"] = serde_json::from_str(value["content"].as_str().unwrap()).map_err(error)?; let mut q=self.db.prepare("SELECT collection_id FROM memberships WHERE resource_id=?1 ORDER BY collection_id").map_err(error)?; value["collections"]=json!(q.query_map([&id],|r|r.get::<_,String>(0)).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?); value["kind"]=self.db.query_row("SELECT kind FROM managed_originals WHERE resource_id=?1",[&id],|r|r.get::<_,String>(0)).map(Value::String).unwrap_or(json!("note")); Ok(value) }),
             Request::Save { id, revision, title, content, proof } => self.save(id, revision, title, content, proof),
             Request::Draft { id, base_revision, token, sequence, title, content } => self.draft(id,base_revision,token,sequence,title,content),
             Request::Drafts => self.drafts(),

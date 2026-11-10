@@ -115,7 +115,7 @@ impl Workspace {
             )
             .map_err(error)?;
         let limit = limit.unwrap_or(100).clamp(1, 100) as usize;
-        let sql=format!("SELECT r.seq,r.id,r.title,r.revision,r.updated_at,{key} FROM resources r WHERE {predicate} AND (?3=0 OR {comparison}) ORDER BY {sort} LIMIT ?6");
+        let sql=format!("SELECT r.seq,r.id,r.title,r.revision,r.updated_at,{key},COALESCE((SELECT kind FROM managed_originals WHERE resource_id=r.id),'note') FROM resources r WHERE {predicate} AND (?3=0 OR {comparison}) ORDER BY {sort} LIMIT ?6");
         let seq = cursor.as_ref().map_or(0, |c| c.seq);
         // Created uses integer comparison, other sorts compare text keys.
         let pivot = if options.order == "created" {
@@ -126,7 +126,7 @@ impl Workspace {
         let mut stmt = self.db.prepare(&sql).map_err(error)?;
         let mut rows=stmt.query_map(params![options.collection,expr,cursor.is_some(),pivot,seq,(limit+1) as i64],|r|{
             let key=if options.order=="created" {r.get::<_,i64>(0)?.to_string()}else{r.get::<_,String>(5)?};
-            Ok((r.get::<_,i64>(0)?,key,json!({"id":r.get::<_,String>(1)?,"title":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?,"updatedAt":r.get::<_,String>(4)?})))
+            Ok((r.get::<_,i64>(0)?,key,json!({"id":r.get::<_,String>(1)?,"title":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?,"updatedAt":r.get::<_,String>(4)?,"kind":r.get::<_,String>(6)?})))
         }).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
         let more = rows.len() > limit;
         rows.truncate(limit);
