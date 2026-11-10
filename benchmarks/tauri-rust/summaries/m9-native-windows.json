@@ -15,11 +15,13 @@
     "Fixed toolbar resource search retained [[M9, showed the existing file before creation, inserted it with Enter and opened its preview through Tab/Enter",
     "Final light popup and compact original-file metadata inspected",
     "Open external copy launched Windows Photos with the independently prepared512x512 PNG; preview window closed",
-    "Reveal prepared copy opened Explorer with independent PNG in earlier native pass; original fixture SHA256 stayed unchanged"
+    "Reveal prepared copy opened Explorer with independent PNG in earlier native pass; original fixture SHA256 stayed unchanged",
+    "Native inspection with the fixed CDP viewport cleared resized the app correctly through keyboard snapping",
+    "Final Explorer prepared-copy folder displayed the PNG without exposing its hidden internal receipt"
   ],
   "limitations": [
-    "Physical Explorer drag-in acceptance could not be completed within the bounded native-layout check; handler remains implemented and requires follow-up",
-    "Native Snap/resizing showed clipping/input-geometry uncertainty; full Snap and accessibility/IME qualification remain M10",
+    "Physical cross-window Explorer drag-in remains unverified: the Computer Use drag API rejected an endpoint outside the source window before executing the gesture",
+    "Earlier resize/clipping uncertainty came from the fixed benchmark viewport; full native drag/Snap-hover,accessibility and IME qualification remain pending",
     "OS drag-out,independent duplication and embedded PDF/Office viewers are not implemented"
   ]
 }

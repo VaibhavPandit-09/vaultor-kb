@@ -1,0 +1,228 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "68307ea0c617070b204bd370957b5f2417adddb9",
+  "dirty": false,
+  "executableSha256": "e5689a3af45349ddbccf2c7782170556b764e916ba173c717062f7e76325cf6b",
+  "timestamp": "2026-11-10T13:59:34.606Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 826.5264999999999,
+      "median": 826.5264999999999,
+      "p95": 826.5264999999999,
+      "max": 826.5264999999999
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 35.10000002384186,
+      "median": 35.5,
+      "p95": 53.900000005960464,
+      "max": 53.900000005960464
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 12,
+      "min": 4.100000023841858,
+      "median": 5.100000008940697,
+      "p95": 20.400000005960464,
+      "max": 20.400000005960464
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 4,
+      "median": 4.199999999999818,
+      "p95": 8.400000000000091,
+      "max": 83.29999999999973
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 713.171875,
+      "median": 713.171875,
+      "p95": 713.171875,
+      "max": 713.171875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 711.46875,
+      "median": 711.46875,
+      "p95": 711.46875,
+      "max": 711.46875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 469.96484375,
+      "median": 469.96484375,
+      "p95": 469.96484375,
+      "max": 469.96484375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 11.171122163506372,
+      "median": 11.171122163506372,
+      "p95": 11.171122163506372,
+      "max": 11.171122163506372
+    },
+    {
+      "scenario": "restart",
+      "iteration": 2,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 619.3978999999999,
+      "median": 619.3978999999999,
+      "p95": 619.3978999999999,
+      "max": 619.3978999999999
+    },
+    {
+      "scenario": "workload",
+      "iteration": 2,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 425.8359375,
+      "median": 425.8359375,
+      "p95": 425.8359375,
+      "max": 425.8359375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 425.625,
+      "median": 425.625,
+      "p95": 425.625,
+      "max": 425.625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 215.41796875,
+      "median": 215.41796875,
+      "p95": 215.41796875,
+      "max": 215.41796875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 2.2425547183351275,
+      "median": 2.2425547183351275,
+      "p95": 2.2425547183351275,
+      "max": 2.2425547183351275
+    },
+    {
+      "scenario": "qualification",
+      "iteration": 3,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 546.5221000000001,
+      "median": 546.5221000000001,
+      "p95": 546.5221000000001,
+      "max": 546.5221000000001
+    }
+  ],
+  "checks": [
+    "12 native text inputs saved and read back after process restart",
+    "100-note collection fixture created"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes.",
+    "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.",
+    "An existing personal Vaultor Next app and other desktop apps remain open; only the disposable application process tree is sampled. Background load, power and cache conditions are uncontrolled."
+  ],
+  "success": false,
+  "error": "Error: TypeError: Cannot read properties of null (reading 'editor')",
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.42",
+    "revision": "@7b1486be4607d53d9f93841b7c776bc525ca74b7",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "editorRecipe": {
+    "sha256": "bb8104591f753396378a0b8fafe12f3eac2ce969d5d7a88042b76893b73ea041",
+    "mode": "managed-editor-native-webview"
+  },
+  "comparisonEligible": false
+}

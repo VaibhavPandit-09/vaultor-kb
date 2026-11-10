@@ -263,3 +263,32 @@ Use `node benchmarks/tauri-rust/run.mjs tauri-rust --m9 --qualify` for the bound
 M9 opening combines draft detection and Read into one SQLite-owner receipt; Recents persistence remains authoritative. New editor/membership churn is a separate workload from M8 organization retention. Individual failed driver runs remain in CSV and are excluded by evidence ID. Early M9 failure-marker rows inherited the M6 experiment label; evidence-based invalidation still applies. The driver now waits for editable editors, focuses/selects actual input fields before text injection and waits for asynchronous native clipboard publication. The actual Windows slash/picker pass additionally exposed a real Selection-getter anchor bug, fixed with a shared helper regression check.
 
 Record coexistence metadata: M8 had the renamed personal M6 reference process open; M9 may not. Shared resident pages, cache/power/background activity and the differing feature workload prevent causal or whole-product improvement claims. Source/executable hashes and separate UI/backend boundaries remain mandatory.
+
+
+### M9 findings (2026-11-11 local time)
+
+Final common source f2e9f6d (application implementation3cdc36e),EXE SHA-256 d68eb2122836321028cda7a5cee939f4cadc891c5c95a72127a621c71a983878: [recorded comparison](summaries/tauri-rust-2026-11-10T18-41-16.286Z.json). Same100-note/two64KiB recipe and event boundaries as M8; M8 had a coexisting personal reference process whereas this run did not. No OS-cache flush or controlled power/background load.
+
+| Metric | M8 reference | M9 final observation |
+| --- | ---: | ---: |
+| First-profile startup,1 |550.1ms|563.7ms|
+| Restart,1 |558.8ms|625.5ms|
+| Note opening median,3 |45.4ms|39.7ms|
+| Input-to-rAF median,12 |4.95ms|4.80ms|
+| Five-minute CPU,one-core scale |1.034%|0.657%|
+| Settled working set |575.7MiB|387.2MiB|
+| Settled private bytes |320.4MiB|323.8MiB|
+
+Opening removed one IPC hop; the entire numerical difference cannot be attributed to it. Warm startup was slower in this single observation. Shared-page residency and private commit are different measures; these samples do not establish whole-product improvement or leak freedom.
+
+Use the workbook's **M8 vs M9** sheet for the exact-source comparison. Its editing scenario uses source-filtered means:41.98→43.70ms opening (6 M8 samples across two runs;3 M9 samples), whereas the table above uses the independent-run medians (3 each). These different aggregates do not establish a uniform latency improvement. The legacy Dashboard retains broad historical architecture filters and mixes milestones/conditions; it is not the current-build comparison.
+
+The first same-executable post-inspection run (ce9de38,[evidence](summaries/tauri-rust-2026-11-10T18-28-56.087Z.json)) measured19.641% one-core CPU,552.9MiB working set,352.7MiB private bytes and79.6ms opening. Windows inspection helpers were observed afterward and exited after resetting the inspection kernel. The unchanged executable's repeated five-minute run measured0.657%,with no Windows inspection helper detected before or after. Browser-process cumulative CPU fell59.6→2.34seconds and Rust-host CPU8.91→0.36seconds. This strongly indicates material inspection overhead; it is not an application-code optimization or a controlled proof of the sole cause. Accessibility-client performance remains a qualification gap. Both observations remain valid historical rows under their exact source/conditions; the comparison workbook defaults to the final source.
+
+An after-window process-role snapshot found7.6MiB private commit in the Rust host,85.9MiB in the renderer,167.1MiB in the GPU process and40.1MiB in the WebView browser. Canonical role rows are grouped/unit-converted from the recorded CIM snapshot; they are not heap allocations or per-role window utilization. Missing counters remain missing.
+
+The new rich-workload run on179f6ba ([scope](summaries/tauri-rust-2026-11-10T17-59-58.391Z.json)) recorded table insertion18.1ms,selected-prose Bold→rAF9.3ms,code input→rAF9.0ms,sibling-preserving link navigation79.1ms,two-resource membership Cut2.56ms,selected-group pointer drop26.2ms and897,388-byte512×512 PNG upload→visible99.8ms (one sample each). UI measurements include driver round trips and differ from backend receipts. Focused verification overlapped early integrated timing; these are small uncontrolled workload observations,not budgets or like-for-like M8 comparisons.
+
+Ten alternating rich/empty note opens and Library returns showed working set761.5→798.0→668.9MiB and private bytes534.2→552.7→416.4MiB after30seconds settling. Inspection tooling remained present in that session; it shows release but does not quantify normal media cost or establish a retention plateau. A longer uninfluenced soak remains later work.
+
+[Actual native scope](summaries/m9-native-windows.json) includes file selection,mapped placement,searchable resource insertion,keyboard navigation,original preview,Windows Photos and Explorer reveal. Physical cross-window Explorer drag-in remains unverified because the automation tool rejects endpoints outside the source window; OS drag-out and full Snap/IME/accessibility remain unqualified. Earlier failed drivers and their invalidated measurements are retained. The CSV is canonical; the workbook and summaries are derived.
