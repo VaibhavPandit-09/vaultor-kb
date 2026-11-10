@@ -35,9 +35,20 @@ impl Workspace {
         }
         crate::transfers::original_path(&self.root, id)
     }
+    fn resource_summaries(&self, ids: &[String]) -> Result<Vec<Value>, String> {
+        if ids.is_empty() || ids.len() > 100 {
+            return Err("Choose1–100 resources".into());
+        }
+        let mut query=self.db.prepare("SELECT title,CASE WHEN EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file') THEN 'file' ELSE 'note' END FROM resources r WHERE id=?1 AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=r.id AND trashed=1)").map_err(error)?;
+        ids.iter().map(|id|query.query_row([id],|row|Ok(json!({"id":id,"title":row.get::<_,String>(0)?,"kind":row.get::<_,String>(1)?}))).map_err(error)).collect()
+    }
     pub fn media(&mut self, r: Value) -> Result<Value, String> {
         let id = r["id"].as_str().unwrap_or("");
         match r["op"].as_str().unwrap_or("") {
+            "summaries" => {
+                let ids: Vec<String> = serde_json::from_value(r["ids"].clone()).map_err(error)?;
+                Ok(json!(self.resource_summaries(&ids)?))
+            }
             "open" => {
                 let draft: bool = self
                     .db
@@ -47,6 +58,10 @@ impl Workspace {
                         |row| row.get(0),
                     )
                     .map_err(error)?;
+                let active:bool=self.db.query_row("SELECT EXISTS(SELECT 1 FROM resources WHERE id=?1 AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=?1 AND trashed=1))",[id],|r|r.get(0)).map_err(error)?;
+                if !active {
+                    return Err("Resource is missing or in Trash; the current note was kept".into());
+                }
                 let note = if draft {
                     Value::Null
                 } else {
@@ -73,11 +88,7 @@ impl Workspace {
                 if ids.is_empty() || ids.len() > 100 {
                     return Err("Choose 1–100 visible resources".into());
                 }
-                let mut resources = vec![];
-                for id in &ids {
-                    let item=self.db.query_row("SELECT title,CASE WHEN EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file') THEN 'file' ELSE 'note' END FROM resources r WHERE id=?1 AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=r.id AND trashed=1)",[id],|row|Ok(json!({"id":id,"title":row.get::<_,String>(0)?,"kind":row.get::<_,String>(1)?}))).map_err(error)?;
-                    resources.push(item);
-                }
+                let resources = self.resource_summaries(&ids)?;
                 let mode = r["mode"].as_str().unwrap_or("copy");
                 if !["copy", "cut", "links"].contains(&mode) {
                     return Err("Invalid clipboard mode".into());
