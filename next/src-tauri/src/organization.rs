@@ -229,7 +229,7 @@ impl Workspace {
                 } else {
                     self.db.execute("INSERT INTO resource_state(resource_id,opened) VALUES(?1,CAST(strftime('%s','now') AS INTEGER)) ON CONFLICT(resource_id) DO UPDATE SET opened=excluded.opened WHERE opened<excluded.opened-15",[id]).map_err(error)?;
                 }
-                Ok(Value::Null)
+                self.organization(Request::Recents)
             }
             Request::Recents => {
                 let mut q=self.db.prepare("SELECT r.id,r.title,NULL,NULL,s.opened FROM resources r JOIN resource_state s ON s.resource_id=r.id WHERE s.trashed=0 AND s.opened>0 UNION ALL SELECT id,title,source,path,opened FROM recent_links ORDER BY 5 DESC,1 LIMIT 12").map_err(error)?;

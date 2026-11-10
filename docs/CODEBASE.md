@@ -481,7 +481,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-10 — M8 organization and resource lifecycle
 
-Added paginated tag CRUD/search/counts and existing-first assignment, bulk tag/pin operations, persistent managed/linked Recents, sidebar organization views, Trash/Restore, Activity-backed purge/Empty Trash and stale-plan-protected hierarchy deletion. Reused page-scoped selection, modal/focus/theme/motion owners. Metadata and managed-file removal are deliberately separate durable steps; unknown staging and external files are not swept. Updated experimental next-foundation Help/catalogue and portable format v2. Validation so far:27 unique Rust tests,35 scoped frontend interaction/picker tests, TypeScript and scoped lint pass. Final optimized native/benchmark results belong in the migration tracker. Published Electron architecture/releases are unchanged.
+Added paginated tag CRUD/search/counts and existing-first assignment, bulk tag/pin operations, persistent managed/linked Recents, sidebar organization views, Trash/Restore, Activity-backed purge/Empty Trash and stale-plan-protected hierarchy deletion. Reused page-scoped selection, modal/focus/theme/motion owners. Metadata and managed-file removal are deliberately separate durable steps; unknown staging and external files are not swept. Updated experimental next-foundation Help/catalogue and portable format v2. Validation so far:27 unique Rust tests,36 scoped frontend interaction/picker tests, TypeScript and scoped lint pass. Final optimized native/benchmark results belong in the migration tracker. Published Electron architecture/releases are unchanged.
 
 ### 2026-11-10 — M7 managed transfers and Activity
 
