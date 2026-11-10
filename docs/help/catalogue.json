@@ -2195,9 +2195,12 @@
         "frontend/src/next/TransferControls.tsx",
         "frontend/src/next/NextActivity.tsx",
         "next/src-tauri/src/organization.rs",
-        "frontend/src/next/Organization.tsx"
+        "frontend/src/next/Organization.tsx",
+        "next/src-tauri/src/media.rs",
+        "frontend/src/next/EditorControls.tsx",
+        "frontend/src/next/MediaView.tsx"
       ]
     }
   ],
-  "contentVersion": "0.27.1-next.m8"
+  "contentVersion": "0.27.1-next.m9"
 }

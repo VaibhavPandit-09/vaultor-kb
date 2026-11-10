@@ -29,6 +29,7 @@ it('shares rich managed blocks and undo between panes without enabling the linke
   await waitFor(()=>expect(editors.filter(e=>e.isInitialized)).toHaveLength(2));
   act(()=>{editors[0].commands.insertContent([{type:'paragraph',content:[{type:'resourceLink',attrs:{resourceId:'target',label:'Target',type:'note'}}]},{type:'codeBlock',attrs:{language:'javascript'},content:[{type:'text',text:'const value = 1;'}]}]);});
   expect(editors[1].getJSON()).toEqual(editors[0].getJSON());expect(editors[0].getJSON().content?.some(n=>n.type==='codeBlock')).toBe(true);
+  let linkPosition=0;editors[0].state.doc.descendants((node,pos)=>{if(node.type.name==='resourceLink')linkPosition=pos;});act(()=>{editors[0].view.focus();editors[0].commands.setNodeSelection(linkPosition);});expect(mounted.container.querySelector<HTMLElement>('.next-editor-tools')?.dataset.selection).toBe('false');
   act(()=>{editors[0].commands.insertTable({rows:2,cols:2,withHeaderRow:true});editors[0].commands.addColumnAfter();});expect(editors[1].getJSON()).toEqual(editors[0].getJSON());
   mounted.unmount();
 });
