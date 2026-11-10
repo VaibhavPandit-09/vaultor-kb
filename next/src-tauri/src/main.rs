@@ -143,14 +143,18 @@ async fn native_resource(
     worker: tauri::State<'_, Worker>,
 ) -> Result<String, String> {
     if action == "clipboardWrite" {
-        vaultor_next::media::clipboard::write(
-            &text.unwrap_or_default(),
-            window.hwnd().map_err(|e| e.to_string())?.0 as isize,
-        )?;
-        return Ok(String::new());
+        let hwnd = window.hwnd().map_err(|e| e.to_string())?.0 as isize;
+        return tauri::async_runtime::spawn_blocking(move || {
+            vaultor_next::media::clipboard::write(&text.unwrap_or_default(), hwnd)?;
+            Ok(String::new())
+        })
+        .await
+        .map_err(|e| e.to_string())?;
     }
     if action == "clipboardRead" {
-        return vaultor_next::media::clipboard::read();
+        return tauri::async_runtime::spawn_blocking(vaultor_next::media::clipboard::read)
+            .await
+            .map_err(|e| e.to_string())?;
     }
     let root = worker.call(Request::Snapshot).await?["path"]
         .as_str()

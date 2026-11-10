@@ -220,7 +220,7 @@ pub fn read_original(path: PathBuf, hash: &str) -> Result<Vec<u8>, String> {
 }
 #[cfg(windows)]
 pub mod clipboard {
-    use std::ptr::null_mut;
+
     #[link(name = "user32")]
     extern "system" {
         fn OpenClipboard(window: *mut core::ffi::c_void) -> i32;
@@ -245,12 +245,25 @@ pub mod clipboard {
             }
         }
     }
+    static ACCESS: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    fn acquire(window: isize) -> Result<Owner, String> {
+        for _ in 0..25 {
+            if unsafe { OpenClipboard(window as *mut core::ffi::c_void) } != 0 {
+                return Ok(Owner);
+            }
+            std::thread::sleep(std::time::Duration::from_millis(8));
+        }
+        Err("Clipboard busy;retry".into())
+    }
     pub fn write(value: &str, window: isize) -> Result<(), String> {
         unsafe {
-            if OpenClipboard(window as *mut core::ffi::c_void) == 0 {
-                return Err("Clipboard busy;retry".into());
+            let _guard = ACCESS
+                .lock()
+                .map_err(|_| "Clipboard unavailable".to_string())?;
+            let _owner = acquire(window)?;
+            if value.len() > 1024 * 1024 {
+                return Err("Clipboard text too large".into());
             }
-            let _owner = Owner;
             let utf: Vec<u16> = value.encode_utf16().chain(Some(0)).collect();
             let data = GlobalAlloc(2, utf.len() * 2);
             if data.is_null() {
@@ -272,10 +285,10 @@ pub mod clipboard {
     }
     pub fn read() -> Result<String, String> {
         unsafe {
-            if OpenClipboard(null_mut()) == 0 {
-                return Err("Clipboard busy;retry".into());
-            }
-            let _owner = Owner;
+            let _guard = ACCESS
+                .lock()
+                .map_err(|_| "Clipboard unavailable".to_string())?;
+            let _owner = acquire(0)?;
             let data = GetClipboardData(13);
             if data.is_null() {
                 return Ok(String::new());
