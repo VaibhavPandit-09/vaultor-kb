@@ -5,6 +5,7 @@ import type { Editor } from '@tiptap/core';
 import { EscapeManagerProvider } from '../lib/escape/EscapeManagerProvider';
 import { SharedNoteDocuments } from '../lib/sharedNoteDocuments';
 import NextEditor from './NextEditor';
+import {captureImportTarget} from '../lib/importTarget';
 it('journals document edits but does not treat locking and selection as edits',async()=>{
   const documents=new SharedNoteDocuments(),changed=vi.fn();let editor!:Editor;
   const prepare=documents.prepare.bind(documents);
@@ -13,6 +14,7 @@ it('journals document edits but does not treat locking and selection as edits',a
   const view=(locked:boolean)=><EscapeManagerProvider><NextEditor note={note} documents={documents} changed={changed} locked={locked} pane={0}/></EscapeManagerProvider>;
   const mounted=render(view(false));await waitFor(()=>expect(editor?.isInitialized).toBe(true));
   expect(changed).not.toHaveBeenCalled();
+  const target=captureImportTarget(editor,editor.state.selection);act(()=>target.insert([{type:'text',text:'mapped anchor'}]));expect(editor.getText()).toContain('mapped anchor');changed.mockClear();
   act(()=>{editor.commands.insertContent('actual edit');});expect(changed).toHaveBeenCalledTimes(1);
   mounted.rerender(view(true));await waitFor(()=>expect(editor.isEditable).toBe(false));
   const protectedContent=editor.getJSON();act(()=>{editor.commands.insertContent('must not change a locked document');});expect(editor.getJSON()).toEqual(protectedContent);expect(changed).toHaveBeenCalledTimes(1);

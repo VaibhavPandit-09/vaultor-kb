@@ -481,7 +481,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-10 — M9 managed editor and resource interactions
 
-Reused editor/table/slash presentation with Rust-managed media, saved relationships/backlinks, resource clipboard, collection pointer drag and reviewed Explorer drops. Added revision-checked F2 rename and list-owned Delete. Linked source authority remains unchanged. Focused compilation and31 Rust checks pass at implementation checkpoint; frontend/native/benchmark final evidence is recorded in VAULTOR-NEXT. No published release changed.
+Reused editor/table/slash presentation with Rust-managed media, saved relationships/backlinks, resource clipboard, collection pointer drag and reviewed Explorer drops. Added revision-checked F2 rename and list-owned Delete. Linked source authority remains unchanged. Mapped insertion anchors explicitly copy from/to getters rather than spreading ProseMirror Selection instances; a native picker check exposed and a regression test covers this boundary. Focused compilation and31 Rust checks pass at implementation checkpoint; frontend/native/benchmark final evidence is recorded in VAULTOR-NEXT. No published release changed.
 
 
 ### 2026-11-10 — M8 organization and resource lifecycle

@@ -6,12 +6,12 @@ import {execFileSync} from 'node:child_process';
 export async function qualifyM9({evaluate,cdp,wait,report,folder,output,record,restart,pid}){
  report.editorRecipe={sha256:createHash('sha256').update(await readFile(new URL(import.meta.url))).digest('hex'),mode:'managed-editor-native-webview'};
  const sleep=ms=>new Promise(r=>setTimeout(r,ms)),call=request=>evaluate(`window.__TAURI_INTERNALS__.invoke('workspace',{request:${JSON.stringify(request)}})`),media=request=>call({kind:'media',request}),org=request=>call({kind:'organization',request});
- const editor="document.querySelector('.tiptap').editor";
+ const editor="document.querySelector('.tiptap')?.editor";
  const click=async label=>{const e=`document.querySelector('[aria-label=${JSON.stringify(label)}]')`;await wait(e,label);await evaluate(`${e}.click();true`);};
  const key=async(key,code,modifiers=0)=>{await cdp('Input.dispatchKeyEvent',{type:'keyDown',key,code,windowsVirtualKeyCode:({a:65,Enter:13,Escape:27,F2:113,c:67,v:86,x:88})[key],modifiers,...(key==='Enter'?{text:'\r'}:{})});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key,code,modifiers:0});};
  const library=async()=>{if(await evaluate("!!document.querySelector('[aria-label=\"Return to Library\"]')"))await click('Return to Library');};
  const search=async text=>{await library();await click('Search notes');await key('a','KeyA',2);await cdp('Input.insertText',{text});await wait("document.querySelector('[aria-label=Notes]')?.getAttribute('aria-busy')==='false'",'search settled');};
- const open=async note=>{await search(note.title);await wait(`document.querySelector('[data-row-open="${note.id}"]')`,'note result');await evaluate(`document.querySelector('[data-row-open="${note.id}"]').click();true`);await wait(`${editor}?.isInitialized`,'editor');};
+ const open=async note=>{await search(note.title);await wait(`document.querySelector('[data-row-open="${note.id}"]')`,'note result');await evaluate(`document.querySelector('[data-row-open="${note.id}"]').click();true`);await wait(`${editor}?.isInitialized&&${editor}?.isEditable`,'editor');};
  const saved=async id=>{for(let i=0;i<120;i++){const note=await call({kind:'read',id});if(note.content.content?.some(n=>n.type==='codeBlock')&&await evaluate("document.querySelector('.next-note-bar [role=status]')?.textContent==='saved'"))return note;await sleep(50);}throw Error('Rich edit not durably saved');};
  const shot=async name=>{await evaluate("Promise.all(document.getAnimations().filter(a=>a.playState==='running'&&a.effect?.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{}))).then(()=>true)");const r=await cdp('Page.captureScreenshot');await writeFile(join(output,name),Buffer.from(r.data,'base64'));};
  const source=await call({kind:'createCollection',name:'M9 Source'}),dest=await call({kind:'createCollection',name:'M9 Destination'}),other=await call({kind:'createCollection',name:'M9 Other'});
@@ -41,4 +41,10 @@ export async function qualifyM9({evaluate,cdp,wait,report,folder,output,record,r
  await memory('before');for(let i=0;i<10;i++){await open(i%2?note:target);await library();}await memory('after');await sleep(30000);await memory('settled');
  await restart(true);await open(note);assert(await evaluate("!!document.querySelector('.tiptap table')&&!!document.querySelector('.managed-image')&&!!document.querySelector('[data-resource-id]')"));assert.equal((await media({op:'backlinks',id:target.id}))[0].id,note.id);
  report.checks.push('Real WebView2 slash/table/code/resource-link editing, shared panes, autosave and restart','Native Windows clipboard text/reference operation and transactional membership Cut preserving other memberships','CDP pointer drag across real Tauri collection targets; F2 revision-checked rename; managed PNG binary IPC and rendering','Light/dark/OLED/reduced-motion runtime surfaces captured; ten-note/pane/navigation churn');report.limitations.push('This run does not physically exercise Explorer external dragging or OS drag-out. Native file picker and external-launch acceptance require a separate observed Windows pass. Independent note duplication and Office/PDF rendering remain deferred.');
+}
+export async function inspectM9({evaluate,report,folder,output}){
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9X8AAAAASUVORK5CYII=','base64');await writeFile(join(folder,'M9-native.png'),png);
+ await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='New note').click();true");
+ console.log(JSON.stringify({nativeM9Fixture:folder}));
+ for(let i=0;i<1200;i++){try{const result=JSON.parse(await readFile(join(folder,'native-result.json'),'utf8'));report.checks.push(...result.checks);report.limitations.push(...(result.limitations??[]));return;}catch(e){if(e.code!=='ENOENT')throw e;}await new Promise(r=>setTimeout(r,500));}throw Error('Native inspection did not finish');
 }

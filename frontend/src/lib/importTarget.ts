@@ -4,7 +4,7 @@ import { closeHistory } from '@tiptap/pm/history';
 
 /** A pending import owns its editor and maps its anchor through unrelated edits. */
 export function captureImportTarget(editor: Editor, initial: Range) {
-  let range = { ...initial };
+  let range = { from:initial.from,to:initial.to };
   const expected = editor.state.doc.textBetween(range.from, range.to);
   let valid = true;
   const map = ({ transaction }: { transaction: Transaction }) => {
