@@ -76,6 +76,7 @@ export const SlashCommandExtension = Extension.create({
             if (event.key === '/') {
               const { from } = view.state.selection;
               setTimeout(() => {
+                if(view.isDestroyed)return;
                 const tr = view.state.tr;
                 tr.setMeta(slashCommandPluginKey, {
                   active: true,

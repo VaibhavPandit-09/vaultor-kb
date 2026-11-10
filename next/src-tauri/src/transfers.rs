@@ -265,7 +265,16 @@ impl Transfers {
 pub fn initialize(db: &rusqlite::Connection) -> Result<(), String> {
     db.execute_batch("CREATE TABLE IF NOT EXISTS managed_originals(resource_id TEXT PRIMARY KEY REFERENCES resources(id),name TEXT NOT NULL,hash TEXT NOT NULL,bytes INTEGER NOT NULL,kind TEXT NOT NULL CHECK(kind IN ('note','file')),provenance TEXT NOT NULL);CREATE INDEX IF NOT EXISTS original_duplicate ON managed_originals(hash,name);").map_err(error)
 }
-fn plain_file(path: &Path) -> Result<File, String> {
+pub fn plain_directory(path: &Path) -> Result<(), String> {
+    for ancestor in path.ancestors() {
+        let m = fs::symlink_metadata(ancestor).map_err(error)?;
+        if !m.is_dir() || reparse(&m) {
+            return Err("Directory must not contain links/reparse points".into());
+        }
+    }
+    Ok(())
+}
+pub fn plain_file(path: &Path) -> Result<File, String> {
     for part in path.ancestors() {
         let m = fs::symlink_metadata(part).map_err(error)?;
         if reparse(&m) {
@@ -513,7 +522,7 @@ fn publish_file(stage: &Path, destination: &Path) -> Result<(), String> {
         .map_err(|e| format!("Cannot publish without overwriting destination: {e}"))?;
     Ok(())
 }
-fn original_path(root: &Path, id: &str) -> Result<PathBuf, String> {
+pub(crate) fn original_path(root: &Path, id: &str) -> Result<PathBuf, String> {
     Uuid::parse_str(id).map_err(error)?;
     let folder = root.join("managed");
     if folder.exists() && reparse(&fs::symlink_metadata(&folder).map_err(error)?) {

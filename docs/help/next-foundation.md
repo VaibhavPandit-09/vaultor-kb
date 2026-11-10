@@ -4,7 +4,7 @@ Vaultor Next is a separate Windows development application. It does not replace 
 
 ## Workspaces
 
-The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or an existing M2–M8 workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. Import and transfers also offers Create local workspace: choose a parent and a new folder name. Finish or cancel Activity tasks before switching. Linked folders are separate from this workspace.
+The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or an existing M2–M9 workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. Import and transfers also offers Create local workspace: choose a parent and a new folder name. Finish or cancel Activity tasks before switching. Linked folders are separate from this workspace.
 
 ## Notes and collections
 
@@ -16,7 +16,23 @@ New note creates a note in the selected collection. Select a title to edit it, o
 
 Use a note's More button or right-click a Library row for the organization actions described below. These change placements without copying or deleting note content.
 
-Edit the title or body directly. Markdown typing shortcuts, bold, italic, headings, lists, code blocks, tables and Undo/Redo are supported by the rich-text editor. The foundation has no slash menu, rich attachment previews, resource links or deletion yet. Search and linked Markdown use the controls described below.
+Edit the title or body directly. Markdown typing shortcuts, bold, italic, headings, lists, code blocks, tables and Undo/Redo are supported by the rich-text editor. Managed notes also offer slash commands, rich table controls, resource links and bounded image previews. Search and linked Markdown use the controls described below.
+
+## Managed rich editor and files
+
+The compact editor controls provide formatting, headings, lists/tasks, quotes, dividers, highlights, web links and Undo/Redo. Type / to choose a block or symbol, or [[ to search existing managed resources and optionally create a linked note. Enter chooses and Escape dismisses. Ctrl-click a resource chip to open it; Ctrl+Shift-click opens it beside. Backlinks lists up to100 saved incoming references after Refresh backlinks; labels are insertion-time text, while navigation uses stable identity. Missing/trashed destinations report an error without replacing the current editor. Unsaved drafts do not enter backlinks or search.
+
+Select a table cell to reveal the existing contextual table toolbar: rows/columns, headers, merge/split, resizing, filters, expanded workspace, and tabular copy/export. Code blocks retain language, syntax and copy controls. Linked external Markdown keeps the M5 supported schema and explicit source-preserving Save; managed image/resource nodes are not enabled there.
+
+Insert image uses a native picker; pasting an image creates a managed original and inserts its identity. PNG/JPEG/GIF are supported, up to20MiB and40million pixels. Width and alternate text are editable; Remove placement removes only the placement, leaving the asset in Library. Images load near the viewport and release decoded URLs outside it. Pending insertion uses a mapped anchor and refuses changed/closed locations. Original bytes remain managed independently; no binary is stored in note JSON.
+
+Opening a managed file shows its original name/size, raster image or UTF-8 text/Markdown/CSV/JSON preview (text up to1MiB). Unsupported types offer metadata and Export original. No HTML/SVG scripts or embedded PDF/Office viewer run. Open external copy and Reveal prepared copy use integrity-verified independent temporary exports, never writable workspace storage. Active formats are not launched. Unchanged prepared copies may be reclaimed by the next preparation; changed copies are retained. The cache refuses further work at8 retained edited copies or256MiB; use Export original for durable user-owned copies. Never rely on a temporary copy as a saved export.
+
+## Resource clipboard and desktop actions
+
+In the focused resource list, Ctrl+C copies resource references. Paste resources here (Ctrl+V) adds memberships to the chosen collection, retaining identity and other placements. Ctrl+X is collection-scoped: pasting moves only that captured source membership. Clipboard receipts are workspace-bound, expire after24hours, and currently require the copying application session. Copy resource links produces ordinary vaultor resource URLs that can be pasted into a managed editor. Cut memberships cannot be pasted as note links. These operations do not create independent content copies; independent resource duplication is not implemented. Editor/input text clipboard shortcuts keep their normal ownership.
+
+Drag a resource row or selected group onto a collection to add memberships; hold Shift when dropping to move only the source collection membership. Library cannot be a move source. Drop-target feedback and Escape cancellation are available. Explorer file/folder drops open the existing managed-import review; originals remain untouched and nothing is registered as a linked source. OS drag-out is not implemented: use Export original or Reveal prepared copy. F2 renames a focused Library resource with revision checks; Delete uses the existing Trash confirmation and draft protections.
 
 ## Selecting and organizing a page
 

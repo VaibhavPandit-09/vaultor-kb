@@ -2,7 +2,7 @@ import {invoke} from '@tauri-apps/api/core';
 import {listen} from '@tauri-apps/api/event';
 import {useSyncExternalStore} from 'react';
 export type Task={id:string;kind:string;title:string;workspace:string;state:'queued'|'running'|'completed'|'failed'|'cancelled'|'interrupted';phase:string;done:number;total:number|null;bytes:number;totalBytes:number|null;started:number|null;finished:number|null;result:Record<string,unknown>|null;error:string|null;cancellable:boolean};
-export type TransferAction={op:'files'|'folder'|'export'|'archive'|'restore'|'new'|'open';ids?:string[];path?:string};
+export type TransferAction={op:'files'|'folder'|'export'|'archive'|'restore'|'new'|'open';ids?:string[];paths?:string[];path?:string};
 export function transfer<T>(request:Record<string,unknown>):Promise<T>{return invoke<T>('transfer',{request});}
 let tasks:Task[]=[],consumers=0,epoch=0,stop:(()=>void)|undefined;
 const listeners=new Set<()=>void>();

@@ -2088,7 +2088,7 @@
     {
       "id": "next-foundation",
       "name": "Vaultor Next foundation",
-      "description": "Experimental Windows Tauri notes with indexed managed search, protected drafts, collection organization, protected linked NTFS Markdown and a full-workspace desktop shell with OLED, companion navigation and shared panes. Managed file/folder copies, resource exports, portable workspace transfers and Rust-owned background Activity are in development. M8 adds tags, pins, persistent Recents, recoverable Trash and Activity-backed permanent deletion.",
+      "description": "Experimental Windows Tauri notes with indexed managed search, protected drafts, collection organization, protected linked NTFS Markdown and a full-workspace desktop shell with OLED, companion navigation and shared panes. Managed file/folder copies, resource exports, portable workspace transfers and Rust-owned background Activity are in development. M8 adds tags, pins, persistent Recents, recoverable Trash and Activity-backed permanent deletion. M9 adds managed rich editor/slash/table controls, image and text previews, stable resource links/backlinks, membership clipboard, collection pointer drops and prepared native copies.",
       "article": "next-foundation",
       "areas": [
         "Platforms",
@@ -2115,7 +2115,11 @@
         "Search existing tags before creating and assign tags to a selected page",
         "Pin resources and return through persistent Recents",
         "Restore resources from Trash or empty all eligible Trash pages",
-        "Delete a collection hierarchy while retaining shared resources"
+        "Delete a collection hierarchy while retaining shared resources",
+        "Insert images and stable resource links into managed notes",
+        "Use slash commands and contextual table controls",
+        "Copy resource memberships and drag selected resources to collections",
+        "Preview managed originals and reveal independent prepared copies"
       ],
       "keywords": [
         "Tauri",
@@ -2147,7 +2151,13 @@
         "Recents",
         "Trash",
         "permanent deletion",
-        "Empty Trash"
+        "Empty Trash",
+        "slash commands",
+        "resource links",
+        "backlinks",
+        "managed images",
+        "clipboard",
+        "drag and drop"
       ],
       "availability": {
         "windows": {

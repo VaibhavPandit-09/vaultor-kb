@@ -1,5 +1,6 @@
+import {ManagedImage as Definition} from './ManagedImageDefinition';
 /* eslint-disable react-refresh/only-export-components -- The Tiptap node owns its React node-view renderer. */
-import { Node, mergeAttributes } from '@tiptap/core';
+
 import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import { useEffect, useRef, useState, useId } from 'react';
 import { ImageIcon, MoreHorizontal } from 'lucide-react';
@@ -52,12 +53,4 @@ function ImagePlacement({ node, selected, updateAttributes, deleteNode, editor, 
     {error && <div className="image-error" role="status">{error}<button onClick={() => setAttempt(value => value + 1)}>Retry</button><button onClick={replace}>Replace</button><button onClick={() => action(() => downloadImage(attrs.resourceId))}>Download original</button></div>}
   </NodeViewWrapper>;
 }
-export const ManagedImage = Node.create({
-  name: 'image', group: 'block', atom: true, draggable: true,
-  addAttributes() { return { resourceId: { default: null }, alt: { default: '' }, caption: { default: '' }, width: { default: 100 }, alignment: { default: 'center' } }; },
-  // External HTML images are not imported or fetched implicitly.
-  parseHTML() { return [{ tag: 'figure[data-vaultor-image]', getAttrs: element => ({ resourceId: element.getAttribute('data-vaultor-image') }) }]; },
-  renderHTML({ HTMLAttributes }) { return ['figure', mergeAttributes({ 'data-vaultor-image': HTMLAttributes.resourceId }, HTMLAttributes), ['figcaption', HTMLAttributes.caption || HTMLAttributes.alt || 'Image']]; },
-  addNodeView() { return ReactNodeViewRenderer(ImagePlacement); },
-  addProseMirrorPlugins() { return [imageUploadPlugin(this.editor)]; },
-});
+export const ManagedImage=Definition.extend({addNodeView(){return ReactNodeViewRenderer(ImagePlacement);},addProseMirrorPlugins(){return [imageUploadPlugin(this.editor)];}});

@@ -1,13 +1,15 @@
+import {captureImportTarget} from '../../lib/importTarget';
 import { flushSync } from 'react-dom';
 type LinkItem = { id: string; title: string; type: 'note' | 'file'; mimeType?:string; virtual: boolean };
 import { useState, useEffect, useCallback } from 'react';
 import { Editor } from '@tiptap/react';
 import { Search } from 'lucide-react';
 import { resourcePresentation,resourceDescription } from '../../lib/resourceKinds';
-import api from '../../lib/api';
-import { resourceLinkPluginKey, type ResourceLinkState } from './ResourceLinkExtension';
+
+import { resourceLinkPluginKey, type ResourceLinkState } from './ResourceLinkDefinition';
 
 interface ResourceLinkMenuProps {
+  service?:{search:(query:string)=>Promise<LinkItem[]>;create:(title:string)=>Promise<LinkItem>};
   editor: Editor;
   range: { from: number; to: number };
   query: string;
@@ -17,30 +19,31 @@ interface ResourceLinkMenuProps {
   onUpdateFiltered: (count: number) => void;
 }
 
-export default function ResourceLinkMenu({ editor, range, query, selectedIndex, onClose, onUpdateFiltered, onRequestFileUpload }: ResourceLinkMenuProps) {
+export default function ResourceLinkMenu({ editor, range, query, selectedIndex, onClose, onUpdateFiltered, onRequestFileUpload,service }: ResourceLinkMenuProps) {
   const [items, setItems] = useState<LinkItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error,setError]=useState('');
 
   useEffect(() => {
     let active = true;
     const fetchResources = async () => {
-      setLoading(true);
+      setLoading(true);setError('');
       try {
-        const { data } = await api.get(`/resources/search?q=${encodeURIComponent(query)}`);
+        const data=service?await service.search(query):(await (await import('../../lib/api')).default.get(`/resources/search?q=${encodeURIComponent(query)}`)).data;
         if (active) {
           const fetchedItems = (data || []).map((r: LinkItem) => ({ ...r, virtual: false }));
           const hasExact = fetchedItems.some((r: LinkItem) => r.title.toLowerCase() === query.trim().toLowerCase());
           
           if (!hasExact && query.trim().length > 0) {
             fetchedItems.push({ id: 'create-note', type: 'note', title: `Create Note "${query}"`, virtual: true });
-            fetchedItems.push({ id: 'create-file', type: 'file', title: `Upload File`, virtual: true });
+            if(!service)fetchedItems.push({ id: 'create-file', type: 'file', title: `Upload File`, virtual: true });
           }
           
           setItems(fetchedItems);
           onUpdateFiltered(fetchedItems.length);
         }
       } catch (e) {
-        console.error('Failed to fetch resources', e);
+        if(active)setError(String(e));
       } finally {
         if (active) setLoading(false);
       }
@@ -51,12 +54,13 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
       active = false;
       clearTimeout(timer);
     };
-  }, [query, onUpdateFiltered]);
+  }, [query, onUpdateFiltered,service]);
 
   const selectItem = useCallback(async (index: number) => {
     const item = items[index];
     if (!item) return;
 
+    const target=captureImportTarget(editor,range);
     let resourceId = item.id;
     let label = item.title;
     let type = item.type;
@@ -65,37 +69,31 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
       if (type === 'file') {
         const current = resourceLinkPluginKey.getState(editor.state) as ResourceLinkState | undefined;
         const insertion = current?.range ?? range;
+        target.dispose();
         flushSync(onClose);
         onRequestFileUpload(editor, insertion);
         return;
       }
       try {
-        const { data } = await api.post('/resources', {
+        const data=service?await service.create(query.trim()):(await (await import('../../lib/api')).default.post('/resources', {
           type: 'note',
           title: query.trim(),
           content: { type: 'doc', content: [] },
-        });
+        })).data;
         resourceId = data.id;
         label = data.title;
         type = data.type;
       } catch (e) {
-        console.error('Failed to create resource inline', e);
+        target.dispose();
+        setError(String(e));
         return;
       }
     }
 
     if (editor) {
-      editor.chain().focus()
-        .deleteRange(range)
-        .insertContent({
-          type: 'resourceLink',
-          attrs: { resourceId, label, type }
-        })
-        .insertContent(' ')
-        .run();
-      onClose();
+      try {target.insert([{type:'resourceLink',attrs:{resourceId,label,type}},{type:'text',text:' '}]);onClose();}catch(e){setError(String(e));}finally{target.dispose();}
     }
-  }, [items, editor, range, query, onClose, onRequestFileUpload]);
+  }, [items, editor, range, query, onClose, onRequestFileUpload,service]);
 
   useEffect(() => {
     const view = editor.view;
@@ -119,6 +117,7 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
         {loading && <span className="animate-pulse">Searching...</span>}
       </div>
       
+      {error&&<p role="alert">{error}</p>}
       {items.length === 0 && !loading && (
         <div className="px-3 py-4 text-center text-sm text-slate-500">
           No resources found

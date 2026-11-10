@@ -16,3 +16,5 @@ pub mod transfers;
 pub mod worker;
 
 mod organization;
+
+pub mod media;

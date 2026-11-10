@@ -6,13 +6,14 @@ import NextApp from './NextApp';
 import type {SearchOptions} from './client';
 const invoke=vi.hoisted(()=>vi.fn());
 vi.mock('./client',()=>({command:invoke,org:(request:Record<string,unknown>)=>invoke({kind:'organization',request})}));
-vi.mock('@tauri-apps/api/window',()=>({getCurrentWindow:()=>({onCloseRequested:async()=>()=>{},onResized:async()=>()=>{},isMaximized:async()=>false,show:async()=>{},destroy:vi.fn()})}));
+vi.mock('@tauri-apps/api/window',()=>({getCurrentWindow:()=>({onCloseRequested:async()=>()=>{},onDragDropEvent:async()=>()=>{},onResized:async()=>()=>{},isMaximized:async()=>false,show:async()=>{},destroy:vi.fn()})}));
 vi.mock('@tauri-apps/plugin-dialog',()=>({open:vi.fn()}));
 vi.mock('./NextEditor',()=>({default:()=> <div contentEditable suppressContentEditableWarning role="textbox" aria-label="Editor body">Editor text</div>}));
 vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});
 const rows=(start:number)=>Array.from({length:3},(_,i)=>({id:String(start+i),title:'Note '+(start+i),revision:1,updatedAt:''}));
 function setup(search?:(r:{kind:string;options?:SearchOptions;cursor?:unknown})=>Promise<unknown>){
- invoke.mockReset();invoke.mockImplementation(async(r:{kind:string;cursor?:unknown;id?:string;options?:SearchOptions})=>{
+ invoke.mockReset();invoke.mockImplementation(async(r:{kind:string;cursor?:unknown;id?:string;options?:SearchOptions;request?:{op:string;id:string}})=>{
+  if(r.kind==='media'&&r.request?.op==='open')return {draft:false,note:{id:r.request.id,title:'Note '+r.request.id,revision:1,content:{type:'doc',content:[{type:'paragraph'}]}}};
   if(r.kind==='linked'||r.kind==='organization')return [];
   if(r.kind==='search')return search?.(r)??{items:[],next:null,total:0};
   if(r.kind==='snapshot')return {path:'fixture',settings:{theme:'light'},collections:[{id:'destination',name:'Research',parentId:null}]};

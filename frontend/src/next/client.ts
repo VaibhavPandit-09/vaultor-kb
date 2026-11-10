@@ -15,6 +15,7 @@ export type DraftSummary = Omit<Draft, 'content'>;
 export type Snapshot = { path: string; collections: Collection[]; settings: { theme?: 'light' | 'dark' | 'oled' } };
 type Request =
   | { kind: 'snapshot' }
+  | {kind:'media';request:Record<string,unknown>}
   | { kind:'organization'; request:Record<string,unknown> }
   | { kind: 'linked'; request: LinkedRequest }
   | { kind: 'open'|'new'; path: string }

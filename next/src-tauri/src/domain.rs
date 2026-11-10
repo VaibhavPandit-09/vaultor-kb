@@ -20,6 +20,9 @@ pub enum Request {
         path: String,
     },
     Snapshot,
+    Media {
+        request: Value,
+    },
     Organization {
         request: crate::organization::Request,
     },
@@ -178,6 +181,7 @@ impl Workspace {
         crate::search::initialize(&mut db)?;
         crate::linked::initialize(&db)?;
         crate::organization::initialize(&db)?;
+        crate::media::initialize(&db)?;
         Ok(Self {
             db,
             root,
@@ -189,6 +193,7 @@ impl Workspace {
             Request::Open { .. } | Request::New { .. } => Err("Open belongs to workspace lifecycle".into()),
             Request::Linked { request } => self.linked(request),
             Request::Organization {request} => self.organization(request),
+            Request::Media {request} => self.media(request),
             Request::Snapshot => {
                 let mut stmt = self.db.prepare("SELECT id,name,parent_id FROM collections ORDER BY normalized,id").map_err(error)?;
                 let collections = stmt.query_map([], |r| Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"parentId":r.get::<_,Option<String>>(2)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;

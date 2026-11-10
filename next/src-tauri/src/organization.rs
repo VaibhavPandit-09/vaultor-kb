@@ -306,6 +306,7 @@ impl Workspace {
     pub(crate) fn purge_one(&mut self, id: &str) -> Result<Value, String> {
         let tx = self.db.transaction().map_err(error)?;
         validate(&tx, &[id.to_string()], true)?;
+        if tx.query_row("SELECT EXISTS(SELECT 1 FROM drafts d,json_tree(d.content) j WHERE j.type='object' AND json_extract(j.value,'$.attrs.resourceId')=?1)",[id],|r|r.get::<_,bool>(0)).map_err(error)?{return Err("Resolve drafts referring to this resource before permanent deletion".into());}
         if !tx
             .query_row(
                 "SELECT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=?1 AND trashed=1)",

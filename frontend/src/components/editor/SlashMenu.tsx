@@ -21,7 +21,7 @@ import {
   Type,
 } from 'lucide-react';
 import { slashCommandPluginKey, type SlashCommandState } from './SlashCommandExtension';
-import { activateResourceLinkSuggestion } from './ResourceLinkExtension';
+import { activateResourceLinkSuggestion } from './ResourceLinkDefinition';
 import { extractSymbolSearchTerm, formatSymbolName, isSymbolSearchQuery, searchSymbols } from '../../lib/symbols';
 
 interface SlashMenuItem {
@@ -247,6 +247,7 @@ export function getFilteredSlashItems(query: string, onUploadMd: (editor: Editor
 }
 
 interface SlashMenuProps {
+  available?:(id:string)=>boolean;
   beforeAction?: (id: string) => boolean;
   editor: Editor;
   range: Range;
@@ -258,6 +259,7 @@ interface SlashMenuProps {
 }
 
 export default function SlashMenu({
+  available,
   beforeAction,
   editor,
   range,
@@ -269,8 +271,8 @@ export default function SlashMenu({
 }: SlashMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const filtered = useMemo(
-    () => getFilteredSlashItems(query, onUploadMd, onUploadCsv),
-    [onUploadCsv, onUploadMd, query],
+    () => getFilteredSlashItems(query, onUploadMd, onUploadCsv).filter(item=>!available||available(item.id)),
+    [onUploadCsv, onUploadMd, query,available],
   );
   const symbolMode = isSymbolSearchQuery(query);
 

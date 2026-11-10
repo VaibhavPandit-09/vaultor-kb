@@ -20,3 +20,13 @@ it('journals document edits but does not treat locking and selection as edits',a
   act(()=>{editor.commands.setTextSelection(1);});expect(changed).toHaveBeenCalledTimes(1);
   mounted.unmount();
 });
+it('shares rich managed blocks and undo between panes without enabling the linked schema',async()=>{
+  const documents=new SharedNoteDocuments(),editors:Editor[]=[];const prepare=documents.prepare.bind(documents);vi.spyOn(documents,'prepare').mockImplementation(value=>{editors.push(value);prepare(value);});
+  const note={id:'rich',title:'Rich',revision:1,content:{type:'doc',content:[{type:'paragraph'}]}};
+  const mounted=render(<EscapeManagerProvider>{[0,1].map(pane=><NextEditor key={pane} note={note} documents={documents} changed={()=>{}} locked={false} pane={pane}/>)}</EscapeManagerProvider>);
+  await waitFor(()=>expect(editors.filter(e=>e.isInitialized)).toHaveLength(2));
+  act(()=>{editors[0].commands.insertContent([{type:'paragraph',content:[{type:'resourceLink',attrs:{resourceId:'target',label:'Target',type:'note'}}]},{type:'codeBlock',attrs:{language:'javascript'},content:[{type:'text',text:'const value = 1;'}]}]);});
+  expect(editors[1].getJSON()).toEqual(editors[0].getJSON());expect(editors[0].getJSON().content?.some(n=>n.type==='codeBlock')).toBe(true);
+  act(()=>{editors[0].commands.insertTable({rows:2,cols:2,withHeaderRow:true});editors[0].commands.addColumnAfter();});expect(editors[1].getJSON()).toEqual(editors[0].getJSON());
+  mounted.unmount();
+});
