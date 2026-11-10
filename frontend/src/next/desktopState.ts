@@ -6,6 +6,7 @@ export const commandDefinitions=[
  ['palette','Command palette','Ctrl+K'],['settings','Settings','Ctrl+,'],['search','Search Library','Ctrl+Shift+F'],
  ['library','Open Library','Ctrl+Shift+L'],['collections','Browse Collections',''],['tags','Browse Tags',''],['sources','Browse Linked Sources',''],
  ['pinned','Pinned resources',''],['recent','Recent resources',''],['trash','Open Trash',''],['new','Create note','Ctrl+N'],
+ ['workspace','Open local workspace',''],['assignTags','Assign tags to current resources',''],['pinResource','Pin current resources',''],['exportResource','Export current resources',''],
  ['back','Navigate Back','Alt+ArrowLeft'],['forward','Navigate Forward','Alt+ArrowRight'],['split','Split active note','Ctrl+Shift+\\'],['closePane','Close active pane','Ctrl+W'],['help','Help','F1'],
 ] as const;
 export type CommandId=typeof commandDefinitions[number][0];
@@ -13,7 +14,7 @@ export type Preferences={theme:'light'|'dark'|'oled'|'system';motion:'smooth'|'f
 export const defaults:Preferences={theme:'system',motion:'smooth',accent:'blue',startup:'library',restoreSession:true,sidebarOpen:true,autoCompanion:true,openBeside:false,focusEditor:true,shortcuts:{}};
 export const accents:Record<string,string>={blue:'#3b82f6',purple:'#8b5cf6',green:'#22c55e',orange:'#f97316',teal:'#14b8a6',pink:'#ec4899'};
 export function binding(id:CommandId,p:Preferences){const configured=p.shortcuts[id];return configured!==undefined&&!protectedKeys.has(configured)&&(configured===''||configured.includes('Ctrl+')||configured.includes('Alt+')||/^F\d+$/.test(configured))?configured:commandDefinitions.find(c=>c[0]===id)![2];}
-export function shortcut(event:Pick<KeyboardEvent,'key'|'ctrlKey'|'metaKey'|'altKey'|'shiftKey'>){if(['Control','Meta','Alt','Shift'].includes(event.key))return '';const key=event.key.length===1?event.key.toUpperCase():event.key;return [event.ctrlKey||event.metaKey?'Ctrl':'',event.altKey?'Alt':'',event.shiftKey?'Shift':'',key].filter(Boolean).join('+');}
+export function shortcut(event:Pick<KeyboardEvent,'key'|'ctrlKey'|'metaKey'|'altKey'|'shiftKey'>){if(['Control','Meta','Alt','Shift'].includes(event.key))return '';const key=event.key==='|'?'\\':event.key.length===1?event.key.toUpperCase():event.key;return [event.ctrlKey||event.metaKey?'Ctrl':'',event.altKey?'Alt':'',event.shiftKey?'Shift':'',key].filter(Boolean).join('+');}
 const protectedKeys=new Set(['Ctrl+A','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+S','Ctrl+Z','Ctrl+Y','Ctrl+B','Ctrl+I','Ctrl+U','Ctrl+F','Ctrl+H','Ctrl+P','Ctrl+Shift+Z','Alt+F4']);
 export function shortcutError(id:CommandId,key:string,p:Preferences){if(!key)return '';if(protectedKeys.has(key)||(!key.includes('Ctrl+')&&!key.includes('Alt+')&&!/^F\d+$/.test(key)))return 'This binding belongs to text editing, lists or Windows.';const other=commandDefinitions.find(c=>c[0]!==id&&binding(c[0],p)===key);return other?`Already used by ${other[1]}.`:'';}
 export type StoredDocument={id:string;source?:string;path?:string};
