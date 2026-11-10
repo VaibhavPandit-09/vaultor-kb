@@ -2164,7 +2164,7 @@
         }
       },
       "limitations": [
-        "Experimental M2/M3 workspaces; M1 and Electron data are not migrated.",
+        "Experimental M2–M8 workspaces; M1 and Electron data are not migrated.",
         "Draft protection follows a debounced SQLite receipt; unsent edits are not crash durable.",
         "Managed original files have no full rich preview. Workspace merge and full rich previews remain deferred.",
         "Transfers are bounded; imports commit per item and can complete partially. External linked contents and drafts are excluded from portable archives."
