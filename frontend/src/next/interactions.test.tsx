@@ -4,6 +4,8 @@ import {afterEach,expect,it,vi} from 'vitest';
 import {EscapeManagerProvider} from '../lib/escape/EscapeManagerProvider';
 import NextApp from './NextApp';
 import type {SearchOptions} from './client';
+const nativeInvoke=vi.hoisted(()=>vi.fn(async()=>''));
+vi.mock('@tauri-apps/api/core',()=>({invoke:nativeInvoke}));
 const invoke=vi.hoisted(()=>vi.fn());
 vi.mock('./client',()=>({command:invoke,org:(request:Record<string,unknown>)=>invoke({kind:'organization',request})}));
 vi.mock('@tauri-apps/api/window',()=>({getCurrentWindow:()=>({onCloseRequested:async()=>()=>{},onDragDropEvent:async()=>()=>{},onResized:async()=>()=>{},isMaximized:async()=>false,show:async()=>{},destroy:vi.fn()})}));
@@ -12,7 +14,8 @@ vi.mock('./NextEditor',()=>({default:()=> <div contentEditable suppressContentEd
 vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});
 const rows=(start:number)=>Array.from({length:3},(_,i)=>({id:String(start+i),title:'Note '+(start+i),revision:1,updatedAt:''}));
 function setup(search?:(r:{kind:string;options?:SearchOptions;cursor?:unknown})=>Promise<unknown>){
- invoke.mockReset();invoke.mockImplementation(async(r:{kind:string;cursor?:unknown;id?:string;options?:SearchOptions;request?:{op:string;id:string}})=>{
+ invoke.mockReset();invoke.mockImplementation(async(r:{kind:string;cursor?:unknown;id?:string;options?:SearchOptions;request?:{op:string;id:string;ids:string[];mode:string}})=>{
+  if(r.kind==='media'&&r.request?.op==='copy')return {receipt:'test-receipt',text:'vaultor://resource/'+r.request.ids.join('\nvaultor://resource/')};
   if(r.kind==='media'&&r.request?.op==='open')return {draft:false,note:{id:r.request.id,title:'Note '+r.request.id,revision:1,content:{type:'doc',content:[{type:'paragraph'}]}}};
   if(r.kind==='linked'||r.kind==='organization')return [];
   if(r.kind==='search')return search?.(r)??{items:[],next:null,total:0};
@@ -91,3 +94,8 @@ it('exposes OLED through the real persisted theme command and accessible compani
 it('returns from Help to the active workspace and lets Library search dismiss Help',async()=>{setup();await screen.findByRole('button',{name:'Note 1'});fireEvent.click(screen.getByRole('button',{name:'Note 1'}));await screen.findByRole('textbox',{name:'Editor body'});fireEvent.click(screen.getByRole('button',{name:'Milestone Help'}));await screen.findByRole('button',{name:'Close Help'});expect(screen.queryByRole('textbox',{name:'Editor body'})).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Close Help'}));await screen.findByRole('textbox',{name:'Editor body'});fireEvent.click(screen.getByRole('button',{name:'Milestone Help'}));await screen.findByRole('button',{name:'Close Help'});fireEvent.click(screen.getByRole('button',{name:'Search Library'}));await screen.findByRole('searchbox',{name:'Search notes'});expect(screen.queryByRole('button',{name:'Close Help'})).toBeNull();});
 
 it('keeps the surviving managed editor mounted when its first sibling closes',async()=>{setup();await screen.findByRole('button',{name:'Note 1'});fireEvent.click(screen.getByRole('button',{name:'Note 1'}));await screen.findByRole('textbox',{name:'Editor body'});fireEvent.click(screen.getByRole('button',{name:'Split active note'}));await waitFor(()=>expect(screen.getAllByRole('textbox',{name:'Editor body'})).toHaveLength(2));const surviving=screen.getAllByRole('textbox',{name:'Editor body'})[1];fireEvent.click(screen.getAllByRole('button',{name:'Close note'})[0]);await waitFor(()=>expect(screen.getAllByRole('textbox',{name:'Editor body'})).toHaveLength(1));expect(screen.getByRole('textbox',{name:'Editor body'})).toBe(surviving);});
+
+it('uses native resource copying only while the Library owns clipboard shortcuts',async()=>{
+ setup();const a=await screen.findByRole('button',{name:'Note 1'});fireEvent.click(a,{ctrlKey:true});fireEvent.click(screen.getByRole('button',{name:'Note 2'}),{ctrlKey:true});a.focus();fireEvent.keyDown(a,{key:'c',ctrlKey:true});await waitFor(()=>expect(invoke).toHaveBeenCalledWith({kind:'media',request:{op:'copy',ids:['1','2'],mode:'copy',collection:null}}));await waitFor(()=>expect(nativeInvoke).toHaveBeenCalledWith('native_resource',expect.objectContaining({action:'clipboardWrite'})));
+ fireEvent.click(a);const editor=await screen.findByRole('textbox',{name:'Editor body'});const copies=invoke.mock.calls.filter(([r])=>r.kind==='media'&&r.request.op==='copy').length;fireEvent.keyDown(editor,{key:'c',ctrlKey:true});fireEvent.keyDown(editor,{key:'v',ctrlKey:true});expect(invoke.mock.calls.filter(([r])=>r.kind==='media'&&r.request.op==='copy')).toHaveLength(copies);
+});
