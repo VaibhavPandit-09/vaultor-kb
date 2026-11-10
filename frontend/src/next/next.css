@@ -95,3 +95,9 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 .next-browse-header .next-header-identity{max-width:300px}.next-browse-header .next-header-identity small{line-height:16px}.next-browse-header .next-search>label{min-width:30px}.next-browse-header .next-search input{min-width:10px}
 [data-compact=true]>.next-browse-header .next-selection-actions button>span{display:none}
 @media(max-width:740px){.next-browse-header{grid-template-columns:minmax(65px,.5fr) minmax(60px,1fr) auto;padding-inline:10px;gap:6px}.next-browse-header h1{font-size:18px}.next-header-actions .next-create-label{display:none}.next-browse-header .next-header-actions{gap:0}.next-header-actions [aria-label='Clear resource selection']{display:none}.next-settings>nav{flex-basis:115px}}
+/* Keep child controls inside the transforming header, including intermediate padding frames. */
+[data-compact=true]>.next-browse-header{height:auto;min-height:52px}
+[data-compact=true]>.next-browse-header .next-search{min-height:32px;height:32px;align-items:center}
+[data-compact=true]>.next-browse-header .next-search>label{padding-block:0}
+[data-compact=true]>.next-browse-header .next-search input{padding-block:4px}
+[data-compact=true]>.next-browse-header .next-search .library-popover-trigger{padding:6px}
