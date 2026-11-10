@@ -1,0 +1,25 @@
+{
+  "source": "3cdc36e",
+  "earlierPickerSource": "179f6ba",
+  "executableSha256": "d68eb2122836321028cda7a5cee939f4cadc891c5c95a72127a621c71a983878",
+  "fixture": {
+    "bytes": 897388,
+    "width": 512,
+    "height": 512,
+    "sha256": "8acae60dd5e58360164a3f522572f47eadb834d22db73cab72dbdc8e02a1b500"
+  },
+  "checks": [
+    "Actual Windows SendInput /table→Enter inserted a table with original contextual controls",
+    "Native Windows image picker selected a deterministic512x512 PNG; mapped insertion rendered inside a table and saved",
+    "A fresh process reopened the same disposable workspace and found the persisted image resource",
+    "Fixed toolbar resource search retained [[M9, showed the existing file before creation, inserted it with Enter and opened its preview through Tab/Enter",
+    "Final light popup and compact original-file metadata inspected",
+    "Open external copy launched Windows Photos with the independently prepared512x512 PNG; preview window closed",
+    "Reveal prepared copy opened Explorer with independent PNG in earlier native pass; original fixture SHA256 stayed unchanged"
+  ],
+  "limitations": [
+    "Physical Explorer drag-in acceptance could not be completed within the bounded native-layout check; handler remains implemented and requires follow-up",
+    "Native Snap/resizing showed clipping/input-geometry uncertainty; full Snap and accessibility/IME qualification remain M10",
+    "OS drag-out,independent duplication and embedded PDF/Office viewers are not implemented"
+  ]
+}

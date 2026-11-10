@@ -137,7 +137,7 @@ async function quit() {
 try {
   let run = await launch(1);
   if (inspect) {
-    if(process.argv.includes('--native-m9'))await (await import('./m9-qualify.mjs')).inspectM9({evaluate,report,folder,output});
+    if(process.argv.includes('--native-m9'))await (await import('./m9-qualify.mjs')).inspectM9({evaluate,wait,report,folder,output});
     if(process.argv.includes('--reference-m6'))await (await import('./m6-reference.mjs')).referenceM6({evaluate,cdp,wait,output,report});
     console.log(await evaluate('document.body.innerText.slice(0,5000)'));
     await cdp('Page.captureScreenshot').then(async r => writeFile(join(output, 'inspect.png'), Buffer.from(r.data, 'base64')));
@@ -189,6 +189,7 @@ try {
       console.log('Five-minute idle window started; no renderer polling or user input.');
       const start=Date.now(); await delay(300000);
       report.idleWindow={start,end:Date.now()};
+      if(m9){const file=join(folder,'m9-idle-roles.json');execFileSync('powershell.exe',['-NoProfile','-File',join(import.meta.dirname,'process-breakdown.ps1'),'-RootPid',String(child.pid),'-Output',file],{windowsHide:true,stdio:'pipe'});const breakdown=JSON.parse((await readFile(file,'utf8')).replace(/^\uFEFF/,''));report.breakdowns=[{phase:'after-untouched-idle-window',...breakdown}];}
     }
     await delay(3500); await stopSampler(run, 1); await quit();
     run = await launch(2);
