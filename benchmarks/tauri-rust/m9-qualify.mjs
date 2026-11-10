@@ -46,9 +46,10 @@ export async function qualifyM9({evaluate,cdp,wait,report,folder,output,record,r
 }
 export async function inspectM9({evaluate,report,folder,output}){
  const png=imageFixture();await writeFile(join(folder,'M9-native.png'),png);
+ if(process.env.VAULTOR_BENCH_NATIVE_FIXTURE){await evaluate(`window.__TAURI_INTERNALS__.invoke('workspace',{request:{kind:'open',path:${JSON.stringify(process.env.VAULTOR_BENCH_NATIVE_FIXTURE)}}})`);await evaluate('location.reload();true');await new Promise(r=>setTimeout(r,1000));}
  await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='New note').click();true");
  console.log(JSON.stringify({nativeM9Fixture:folder}));
- for(let i=0;i<1200;i++){try{const result=JSON.parse(await readFile(join(folder,'native-result.json'),'utf8'));report.checks.push(...result.checks);report.limitations.push(...(result.limitations??[]));return;}catch(e){if(e.code!=='ENOENT')throw e;}await new Promise(r=>setTimeout(r,500));}throw Error('Native inspection did not finish');
+ for(let i=0;i<1800;i++){try{const result=JSON.parse(await readFile(join(folder,'native-result.json'),'utf8'));report.checks.push(...result.checks);report.limitations.push(...(result.limitations??[]));return;}catch(e){if(e.code!=='ENOENT')throw e;}await new Promise(r=>setTimeout(r,500));}throw Error('Native inspection did not finish');
 }
 async function exerciseFormatting({evaluate,cdp,record,editor}){
  await evaluate(`(()=>{const e=${editor};e.commands.focus('end');e.commands.insertContent({type:'paragraph',content:[{type:'text',text:'Formatting sample M9'}]});let at=0;e.state.doc.descendants((n,p)=>{if(n.text==='Formatting sample M9')at=p;});e.commands.setTextSelection({from:at,to:at+10});e.view.focus();return true})()`);

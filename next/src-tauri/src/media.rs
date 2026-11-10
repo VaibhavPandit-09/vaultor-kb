@@ -433,6 +433,22 @@ pub fn prepare_copy(source: &Path, name: &str, expected_hash: &str) -> Result<Pa
         let receipt = json!({"owner":"vaultor-next-v1","name":name,"hash":actual});
         std::fs::write(folder.join(".vaultor-prepared.json"), receipt.to_string())
             .map_err(error)?;
+        #[cfg(windows)]
+        {
+            use std::os::windows::ffi::OsStrExt;
+            let path: Vec<u16> = folder
+                .join(".vaultor-prepared.json")
+                .as_os_str()
+                .encode_wide()
+                .chain(Some(0))
+                .collect();
+            unsafe {
+                windows_sys::Win32::Storage::FileSystem::SetFileAttributesW(
+                    path.as_ptr(),
+                    windows_sys::Win32::Storage::FileSystem::FILE_ATTRIBUTE_HIDDEN,
+                );
+            }
+        }
         Ok(out.clone())
     })();
     if result.is_err() {

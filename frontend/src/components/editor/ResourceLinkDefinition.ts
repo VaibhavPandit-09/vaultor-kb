@@ -104,6 +104,7 @@ addProseMirrorPlugins() {
               
               if (textBefore.endsWith('[')) {
                 setTimeout(() => {
+                  if(view.isDestroyed)return;
                   activateResourceLinkSuggestion(view, { from: from - 1, to: from + 1 });
                 }, 0);
               }

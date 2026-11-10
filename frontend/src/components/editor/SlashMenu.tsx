@@ -194,6 +194,7 @@ const getItems = (onUploadMd: (editor: Editor, range: Range) => void, onUploadCs
       editor.chain().focus().deleteRange(range).insertContent('[[').run();
       const { from } = editor.state.selection;
       setTimeout(() => {
+        if(editor.isDestroyed)return;
         activateResourceLinkSuggestion(editor.view, { from: from - 2, to: from });
       }, 0);
     },

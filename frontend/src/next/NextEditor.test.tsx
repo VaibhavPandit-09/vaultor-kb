@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
-import { act, render, waitFor } from '@testing-library/react';
-import { expect, it, vi } from 'vitest';
+import { act, fireEvent, render, waitFor } from '@testing-library/react';
+import { beforeAll,expect, it, vi } from 'vitest';
 import type { Editor } from '@tiptap/core';
 import { EscapeManagerProvider } from '../lib/escape/EscapeManagerProvider';
 import { SharedNoteDocuments } from '../lib/sharedNoteDocuments';
 import NextEditor from './NextEditor';
+import {resourceLinkPluginKey} from '../components/editor/ResourceLinkDefinition';
 import {captureImportTarget} from '../lib/importTarget';
+// jsdom has no text layout; these tests assert editor state,not popup geometry.
+beforeAll(()=>Object.defineProperties(Range.prototype,{getClientRects:{configurable:true,value:()=>[]},getBoundingClientRect:{configurable:true,value:()=>new DOMRect(0,0,1,16)}}));
 it('journals document edits but does not treat locking and selection as edits',async()=>{
   const documents=new SharedNoteDocuments(),changed=vi.fn();let editor!:Editor;
   const prepare=documents.prepare.bind(documents);
@@ -14,6 +17,7 @@ it('journals document edits but does not treat locking and selection as edits',a
   const view=(locked:boolean)=><EscapeManagerProvider><NextEditor note={note} documents={documents} changed={changed} locked={locked} pane={0}/></EscapeManagerProvider>;
   const mounted=render(view(false));await waitFor(()=>expect(editor?.isInitialized).toBe(true));
   expect(changed).not.toHaveBeenCalled();
+  fireEvent.click(mounted.getByRole('button',{name:'Insert resource link'}));act(()=>{editor.commands.insertContent('M9');});expect(resourceLinkPluginKey.getState(editor.state)).toMatchObject({active:true,query:'M9'});act(()=>{editor.commands.setContent(note.content);editor.view.dispatch(editor.state.tr.setMeta(resourceLinkPluginKey,{active:false,range:null,query:''}));});changed.mockClear();
   const target=captureImportTarget(editor,editor.state.selection);act(()=>target.insert([{type:'text',text:'mapped anchor'}]));expect(editor.getText()).toContain('mapped anchor');changed.mockClear();
   act(()=>{editor.commands.insertContent('actual edit');});expect(changed).toHaveBeenCalledTimes(1);
   mounted.rerender(view(true));await waitFor(()=>expect(editor.isEditable).toBe(false));
