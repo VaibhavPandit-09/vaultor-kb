@@ -12,9 +12,11 @@ export type Page = { items: Summary[]; next: Cursor | null; total: number };
 export type MembershipReceipt = { requested: number; added: number; removed: number; unchanged: number };
 export type Draft = { id: string; title: string; content: JSONContent; baseRevision: number; token: string; sequence: number };
 export type DraftSummary = Omit<Draft, 'content'>;
-export type Snapshot = { path: string; collections: Collection[]; settings: { theme?: 'light' | 'dark' | 'oled' } };
+export type Snapshot = { path: string; collections: Collection[]; settings: { theme?: 'light' | 'dark' | 'oled'; session?: unknown } };
 type Request =
   | { kind: 'snapshot' }
+  | {kind:'preferences';value?:Record<string,unknown>}
+  | {kind:'session';path:string;value:unknown}
   | {kind:'media';request:Record<string,unknown>}
   | { kind:'organization'; request:Record<string,unknown> }
   | { kind: 'linked'; request: LinkedRequest }
@@ -34,7 +36,7 @@ type Request =
   | { kind: 'readDraft'; id: string }
   | { kind: 'discardDraft'; id: string; token: string; sequence: number }
   | { kind: 'rebaseDraft'; id: string; token: string; sequence: number; revision: number }
-  | { kind: 'setting'; key: 'theme'; value: string };
+  | { kind: 'setting'; key: 'theme'|'session'; value: unknown };
 export function command<T>(request: Request): Promise<T> { return invoke<T>('workspace', { request }); }
 
 export const org=<T,>(request:Record<string,unknown>)=>command<T>({kind:'organization',request});

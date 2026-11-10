@@ -1,0 +1,3 @@
+import type {Collection} from './client';
+import {collectionPaths} from './collections';
+export function visibleCollections(collections:Collection[],expanded:Set<string>,query:string){const paths=collectionPaths(collections),children=new Map<string|null,Collection[]>();for(const c of collections){const list=children.get(c.parentId)??[];list.push(c);children.set(c.parentId,list);}const result:{item:Collection;depth:number;children:boolean}[]=[];const walk=(parent:string|null,depth:number)=>{for(const c of children.get(parent)??[]){if(!query||paths.get(c.id)?.toLowerCase().includes(query.toLowerCase()))result.push({item:c,depth,children:children.has(c.id)});if(query||expanded.has(c.id))walk(c.id,depth+1);}};walk(null,0);return result;}

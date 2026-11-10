@@ -1,5 +1,6 @@
 pub mod activity;
 pub mod domain;
+pub mod desktop;
 mod editing;
 mod library;
 mod linked;

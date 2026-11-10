@@ -28,7 +28,7 @@ export function createThemeTransitionController(doc:Document=document){
   if(last===theme&&(active||root.dataset.theme===theme))return;
   const initial=last===undefined;last=theme;interrupt();
   const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)');
-  if(initial||!origin||reduced?.matches||doc.visibilityState==='hidden'||doc.fullscreenElement||!doc.startViewTransition||!root.animate){commit(theme);return;}
+  if(initial||!origin||root.dataset.animation==='reduced'||reduced?.matches||doc.visibilityState==='hidden'||doc.fullscreenElement||!doc.startViewTransition||!root.animate){commit(theme);return;}
   const x=Math.max(0,Math.min(window.innerWidth,origin.x)),y=Math.max(0,Math.min(window.innerHeight,origin.y));
   const radius=Math.hypot(Math.max(x,window.innerWidth-x),Math.max(y,window.innerHeight-y));
   let committed=false;

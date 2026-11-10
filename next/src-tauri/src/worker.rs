@@ -47,6 +47,7 @@ impl Worker {
         let thread = thread::Builder::new()
             .name("vaultor-storage".into())
             .spawn(move || {
+                let preferences_path=Some(pointer.as_ref().and_then(|p|p.parent()).map(|p|p.join("preferences.json")).unwrap_or_else(||root.join(".profile-preferences.json")));
                 // Failed initialization stays recoverable through an explicit Open request.
                 let mut workspace = Workspace::open(&root);
                 for message in receiver {
@@ -63,6 +64,7 @@ impl Worker {
                         }
                     };
                     let request = match request {
+                        Request::Preferences {value} => {let _=reply.send(crate::desktop::preferences(preferences_path.as_deref(),value));continue;},
                         Request::New { path } => {
                             if std::path::Path::new(&path).exists() {
                                 let _ =

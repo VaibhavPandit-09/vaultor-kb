@@ -801,7 +801,7 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
             .collect::<Result<Vec<_>, _>>()
             .map_err(error)?;
         let mut settings =
-            w.db.prepare("SELECT key,value FROM settings")
+            w.db.prepare("SELECT key,value FROM settings WHERE key='theme'")
                 .map_err(error)?;
         let pairs = settings
             .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
@@ -1542,10 +1542,12 @@ mod tests {
             .service
             .storage
             .call(&h.root, |w| {
+                w.execute(crate::domain::Request::Setting{key:"session".into(),value:json!({"version":1,"documents":[]})})?;
                 Ok(serde_json::to_value(snapshot(w, None)?).unwrap())
             })
             .unwrap();
         let m: Manifest = serde_json::from_value(snapshot_value).unwrap();
+        assert!(m.settings.get("session").is_none(),"Portable archives exclude local session metadata");
         assert_eq!(m.collections.len(), 3);
         assert_eq!(m.resources.len(), 2);
         assert_eq!(m.originals.iter().filter(|o| o.kind == "file").count(), 1);

@@ -20,6 +20,8 @@ pub enum Request {
         path: String,
     },
     Snapshot,
+    Session { path:String, value:Value },
+    Preferences { value: Option<Value> },
     Media {
         request: Value,
     },
@@ -228,10 +230,12 @@ impl Workspace {
             Request::DiscardDraft { id, token, sequence } => self.discard_draft(id,token,sequence),
             Request::RebaseDraft { id, token, sequence, revision } => self.rebase_draft(id,token,sequence,revision),
             Request::Setting { key, value } => {
-                if key != "theme" || ![json!("light"),json!("dark"),json!("oled")].contains(&value) { return Err("Unsupported setting".into()); }
+                if !((key == "theme" && [json!("light"),json!("dark"),json!("oled")].contains(&value)) || (key == "session" && value.is_object() && value.to_string().len()<=32768)) { return Err("Unsupported setting".into()); }
                 self.db.execute("INSERT INTO settings VALUES(?1,?2) ON CONFLICT(key) DO UPDATE SET value=excluded.value",params![key,value.to_string()]).map_err(error)?;
                 Ok(Value::Null)
             },
+            Request::Session {path,value} => {if !self.is_path(Path::new(&path)){return Err("Workspace changed; session refused".into());}self.execute(Request::Setting{key:"session".into(),value})},
+            Request::Preferences { .. } => Err("Preferences belong to the application profile".into()),
         }
     }
 }

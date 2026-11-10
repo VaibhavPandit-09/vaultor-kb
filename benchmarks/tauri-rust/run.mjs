@@ -15,10 +15,11 @@ const m2 = process.argv.includes('--m2');
 const m3 = process.argv.includes('--m3');
 const m4 = process.argv.includes('--m4');
 const m5 = process.argv.includes('--m5');
+const m10 = process.argv.includes('--m10');
 const m9 = process.argv.includes('--m9');
 const m8 = process.argv.includes('--m8');
 const m7 = process.argv.includes('--m7');
-const m6 = process.argv.includes('--m6')||m7||m8||m9;
+const m6 = process.argv.includes('--m6')||m7||m8||m9||m10;
 const folder = await mkdtemp(join(tmpdir(), 'vaultor-next-bench-'));
 const profile = join(folder, 'profile'); await mkdir(profile);
 const port = architecture === 'electron-java' ? 9431 : 9432;
@@ -91,7 +92,7 @@ async function launch(iteration) {
     }`);
     await wait("!document.body.innerText.includes('Loading resources')", 'Electron resources usable');
   } else {
-    await wait("document.querySelector('[data-ready=true]') !== null", 'Tauri workspace');
+    await wait(m10?"document.querySelector('[data-ready=true][data-session-ready=true]') !== null":"document.querySelector('[data-ready=true]') !== null", 'Tauri workspace');
     await evaluate("window.benchRequest=request=>window.__TAURI_INTERNALS__.invoke('workspace',{request})");
   }
   record(iteration >= 3 ? 'qualification' : iteration === 1 ? 'first-profile' : 'restart', iteration, 'startup_usable', performance.now() - start, 'ms', 'Process spawn to Library mounted, command bridge ready; 50ms polling; warm OS cache possible.');
@@ -186,7 +187,7 @@ try {
     for(const value of frames) record('managed-note-64k',1,'scroll_frame_interval',value,'ms','rAF intervals during scripted scroll; not compositor presentation.');
     const screenshot = await cdp('Page.captureScreenshot'); await writeFile(join(output, architecture + '-editor.png'), Buffer.from(screenshot.data, 'base64'));
     if(process.argv.includes('--idle-five')) {
-      if(m8||m9)record('settled-idle-5min',1,'activity_history_tasks',(await evaluate("window.__TAURI_INTERNALS__.invoke('transfer',{request:{op:'tasks'}}).then(t=>t.length)")),'count','History count before untouched window; no polling during it.');
+      if(m8||m9||m10)record('settled-idle-5min',1,'activity_history_tasks',(await evaluate("window.__TAURI_INTERNALS__.invoke('transfer',{request:{op:'tasks'}}).then(t=>t.length)")),'count','History count before untouched window; no polling during it.');
       console.log('Settling for 30 seconds before untouched five-minute idle window.');
       await delay(30000);
       console.log('Five-minute idle window started; no renderer polling or user input.');
@@ -201,7 +202,7 @@ try {
     report.checks.push('12 native text inputs saved and read back after process restart', '100-note collection fixture created');
     await delay(4000); await stopSampler(run, 2);
     if((m2||m3||m4||m5||m6)&&process.argv.includes('--qualify')) {
-      const qualify=m9?(await import('./m9-qualify.mjs')).qualifyM9:m8?(await import('./m8-qualify.mjs')).qualifyM8:m7?(await import('./m7-qualify.mjs')).qualifyM7:m6?(await import('./m6-qualify.mjs')).qualifyM6:m5?(await import('./m5-qualify.mjs')).qualifyM5:m4?(await import('./m4-qualify.mjs')).qualifyM4:m3?(await import('./m3-qualify.mjs')).qualifyM3:(await import('./m2-qualify.mjs')).qualifyM2;let iteration=2,activeRun;
+      const qualify=m10?(await import('./m10-qualify.mjs')).qualifyM10:m9?(await import('./m9-qualify.mjs')).qualifyM9:m8?(await import('./m8-qualify.mjs')).qualifyM8:m7?(await import('./m7-qualify.mjs')).qualifyM7:m6?(await import('./m6-qualify.mjs')).qualifyM6:m5?(await import('./m5-qualify.mjs')).qualifyM5:m4?(await import('./m4-qualify.mjs')).qualifyM4:m3?(await import('./m3-qualify.mjs')).qualifyM3:(await import('./m2-qualify.mjs')).qualifyM2;let iteration=2,activeRun;
       const restart=async(normal=false)=>{
         if(normal){await evaluate("void window.__TAURI_INTERNALS__.invoke('plugin:window|close',{label:'main'});true").catch(e=>{if(!/closed|navigated/.test(String(e)))throw e;});for(let i=0;i<100&&child.exitCode===null;i++)await delay(50);assert(child.exitCode!==null,'Normal close must flush and exit');}
         await quit(); // Kill immediately at the observed draft receipt, before sampler cleanup can allow autosave.
@@ -232,7 +233,7 @@ try {
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
-  if (!inspect) for (const s of report.samples) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
-  if (!report.success && !inspect) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
+  if (!inspect) for (const s of report.samples) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
+  if (!report.success && !inspect) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
   console.log(JSON.stringify({ success: report.success, evidence, metrics: report.samples.length, error: report.error }));
 }

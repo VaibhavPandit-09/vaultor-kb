@@ -1,4 +1,5 @@
-export type Destination={kind:'library'}|{kind:'notes';ids:string[]};
+import type {BrowseState} from './desktopState';
+export type Destination={kind:'library'}|{kind:'notes';ids:string[]}|{kind:'browse';browse:BrowseState};
 export type DesktopHistory={entries:Destination[];index:number};
 export const initialHistory:DesktopHistory={entries:[{kind:'library'}],index:0};
 export function visit(history:DesktopHistory,next:Destination):DesktopHistory{

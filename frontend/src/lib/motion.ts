@@ -1,7 +1,7 @@
 /** Shared, finite motion. Never owns focus, editor state or network work. */
 export type MotionKind = 'panel' | 'menu' | 'page' | 'category' | 'notice' | 'side' | 'geometry' | 'command';
 export function motionProfile(mode = document.documentElement.dataset.animation, reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false) {
-  return reduced ? { panel: 0, menu: 0, page: 0, exit: 0, stagger: 0, lift: 0, theme:0 } : mode === 'smooth'
+  return reduced || mode === 'reduced' ? { panel: 0, menu: 0, page: 0, exit: 0, stagger: 0, lift: 0, theme:0 } : mode === 'smooth'
     ? { panel: 280, menu: 220, page: 200, exit: 180, stagger: 24, lift: 2, theme:1100 }
     : { panel: 90, menu: 75, page: 70, exit: 60, stagger: 0, lift: 0, theme:500 };
 }
