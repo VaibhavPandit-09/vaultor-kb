@@ -220,3 +220,38 @@ Discovery/hash review precedes execution timing. Task durations exclude queue/re
 Final application source `4c33793` only fixes review portal placement relative to this measured build. Final EXE SHA-256 `712a67bc07fb19733db0f5562f48066982abd4daffc709c9f34b0e844c9f43a7`. [Native pickers](summaries/tauri-rust-2026-11-10T07-04-42.627Z.json) cover multiple-file/folder reviews, keyboard resource export/native destination, archive Save and digest inspection. [Native workspace sequence](summaries/tauri-rust-2026-11-10T07-21-24.455Z.json) covers archive selection/verified restore review, new parent selection, restored-workspace navigation, creation, existing-folder opening and restart/history. Main qualification also checks duplicate skips, source-byte preservation, no-overwrite failure, corrupt manifest refusal, linked explicit Save and restored external-authority exclusion. Activity light/dark/OLED snapshots and shared motion were inspected; full subjective/native-platform parity remains open.
 
 Historical rows are untouched. `06-21-38.977Z` is explicitly invalidated by an appended row because its retention samples followed restart; it is superseded by the live-process run above. Failed selector/readiness/native-driver attempts remain marked failed and excluded from aggregates. `07-01-17.887Z` was output-only: its original check label overclaimed file/folder coverage; the sanitized summary corrects metadata, while the later combined picker run supplies that evidence. Raw fixture metadata described intended128MiB inputs even in native modes; summaries explicitly exclude that unexercised workload. CSV-prefix verification against M6 confirms append-only history. The generated workbook and sanitized summaries derive from this CSV; bulky raw traces/screenshots stay ignored.
+
+## M8 organization and lifecycle
+
+Use `node benchmarks/tauri-rust/run.mjs tauri-rust --m8 --qualify` for the changed workflow recipe, and `--m8 --idle-five` for the independent common measurement. `--m8 --qualify --m8-presentation-only` checks the final labels/icons/search-clear/focus surfaces separately. All fixtures are generated in a unique temporary workspace; personal documents and the existing personal Next app remain untouched.
+
+Core native qualification passes on application source6062dcb, EXE SHA-256`44e658dfdc7b54308c4782ab471ea665ff4512563f4ad76182aab02b6128ebde`, [summary](summaries/tauri-rust-2026-11-10T12-29-17.218Z.json). It covers tag create/color/rename/delete, keyboard assignment to two resources, tag/pin navigation, Trash/Restore,205-resource all-pages Empty Trash, managed-file source preservation, hierarchy keep-default/shared memberships, portable v2 restore and restart persistence. Final presentation on de8ccc5 passes in [its summary](summaries/tauri-rust-2026-11-10T12-39-18.119Z.json): active tag rename/delete labels,Trash/Pinned headings,sidebar icons/highlights,scope-preserving search clearing,dark/OLED/reduced-motion states. Static native screenshots were inspected; full subjective motion/accessibility/IME qualification remains open.
+
+| New M8 workload, one sample | Receipt time |
+| --- | ---: |
+| Search among1000 tags,99 results |3.49ms|
+| Assign tag to100 resources |6.51ms|
+| Pin100 resources |4.95ms|
+| Trash100 resources |6.29ms|
+| Restore100 resources |5.11ms|
+| Empty Trash205 resources |281ms Rust task;311.1ms confirmation→terminal|
+
+Organization receipts include IPC/SQL/serialization, not rendered readiness. Empty Trash uses25ms task polling only in the driver. The full session then performs two rounds of five note opens/Library returns. Live working set764.1→626.8→618.2MiB and private bytes525.2→378.5→365.8MiB after30+60seconds show release, not proof of long-term stability. Its60second one-core CPU was0.895%. This1000-tag/organization workload differs from M7's128MiB transfer workload and is not a direct retention comparison.
+
+The bounded review found no new idle interval, database polling or perpetual frame loop. Activity workers exit when their queue drains; history/status delivery is event driven. Existing pane cleanup already released inactive clean bodies; M8 consolidates guarded cleanup without claiming a leak fix. Recent recording now returns its compact list in the same receipt, removing an avoidable opening round trip. No specific cause of M7's CPU increase is established. Independent source de8ccc5 / EXE SHA-256`50315ec59e4debbc48435fd42f52af19abe7c0f530aed07fbdb8553a25490377` passes in [the common summary](summaries/tauri-rust-2026-11-10T12-40-00.561Z.json). A final isolated picker-focus patch reuses this baseline because it leaves common workflows unchanged. Fresh Activity history contained0 tasks. Same Windows x64/Core Ultra7 255HX/20logical CPU/~15.4GiB machine,isolated profile,power/cache/background apps uncontrolled; no accessibility inspection/build/workbook authoring in the idle window.
+
+| Common workload | M7 | M8 independent |
+| --- | ---: | ---: |
+| First-profile startup,1 |853.2ms|550.1ms|
+| Restart,1 |538.1ms|558.8ms|
+| Opening median,3 |32.8ms|45.4ms|
+| Input-to-rAF median,12 |4.95ms|4.95ms|
+| Five-minute one-core CPU |2.607%|1.034%|
+| Settled process-tree working set |345.1MiB|575.7MiB|
+| Settled private bytes |303.6MiB|320.4MiB|
+
+Working-set/private-memory and opening regressions are recorded honestly. M8 additionally persists actual Recents on open; one redundant IPC was removed,without isolating its numerical effect. Summed working sets include shared resident pages; no cause for the higher residency or M7 CPU difference is established. Small uncontrolled samples and different post-operation workloads cannot support a leak-freedom or whole-product improvement claim. Workbook values use exact-source means/counts; this text uses independent-run medians.
+
+Failed attempts remain excluded by their evidence path, including initial Enter dispatch without WebView character delivery, missing waits for asynchronous confirmations, fixture metadata requiring reload, and a corrected assertion that initially omitted the fixture's existing Benchmark membership. Earlier failed M8 failure-marker rows inherited an M6 experiment label; their evidence IDs still invalidate the corresponding M8 measurement rows. Historical CSV content is preserved.
+
+Final source0357453,EXE SHA-256`0a2af4f32fdd434df03bb025daf53b3b3f8936208f40b6b312d19d8c1d78af9a`,passes [focus/presentation acceptance](summaries/tauri-rust-2026-11-10T12-51-08.333Z.json). A focused tag option stays focused while its durable assignment is pending. Confirmed picker-query readiness was138.8ms including100ms debounce (1 tag/1 result;one sample). This is a visible UI boundary,distinct from the3.49ms backend1000-tag query. The final change is isolated to the picker and bundled Help text; the de8ccc5 independent common/idle measurement is reused.

@@ -1,0 +1,231 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "03574531f0848b5cf453a721ab95bbe8e4d25311",
+  "dirty": true,
+  "executableSha256": "0a2af4f32fdd434df03bb025daf53b3b3f8936208f40b6b312d19d8c1d78af9a",
+  "timestamp": "2026-11-10T12:51:08.420Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 818.8927,
+      "median": 818.8927,
+      "p95": 818.8927,
+      "max": 818.8927
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 36.5,
+      "median": 49.60000002384186,
+      "p95": 53.599999994039536,
+      "max": 53.599999994039536
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 12,
+      "min": 4.699999988079071,
+      "median": 5.5999999940395355,
+      "p95": 19.600000023841858,
+      "max": 19.600000023841858
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 4.099999999999909,
+      "median": 4.200000000000273,
+      "p95": 12.5,
+      "max": 12.599999999999909
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 680.32421875,
+      "median": 680.32421875,
+      "p95": 680.32421875,
+      "max": 680.32421875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 678.30859375,
+      "median": 678.30859375,
+      "p95": 678.30859375,
+      "max": 678.30859375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 443.96875,
+      "median": 443.96875,
+      "p95": 443.96875,
+      "max": 443.96875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 14.0044814340589,
+      "median": 14.0044814340589,
+      "p95": 14.0044814340589,
+      "max": 14.0044814340589
+    },
+    {
+      "scenario": "restart",
+      "iteration": 2,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 623.6414000000004,
+      "median": 623.6414000000004,
+      "p95": 623.6414000000004,
+      "max": 623.6414000000004
+    },
+    {
+      "scenario": "workload",
+      "iteration": 2,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 434.48828125,
+      "median": 434.48828125,
+      "p95": 434.48828125,
+      "max": 434.48828125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 434.10546875,
+      "median": 434.10546875,
+      "p95": 434.10546875,
+      "max": 434.10546875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 221.7734375,
+      "median": 221.7734375,
+      "p95": 221.7734375,
+      "max": 221.7734375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 2.7306885704299195,
+      "median": 2.7306885704299195,
+      "p95": 2.7306885704299195,
+      "max": 2.7306885704299195
+    },
+    {
+      "scenario": "tag-picker-search-m8",
+      "iteration": 1,
+      "metric": "visible_query_ready",
+      "unit": "ms",
+      "n": 1,
+      "min": 138.83729999999923,
+      "median": 138.83729999999923,
+      "p95": 138.83729999999923,
+      "max": 138.83729999999923
+    }
+  ],
+  "checks": [
+    "12 native text inputs saved and read back after process restart",
+    "100-note collection fixture created",
+    "Final native presentation: active tag rename/delete labels,Trash/Pinned headings,sidebar icons/highlights,clear-search scope retention,keyboard focus through durable assignment,dark/OLED/reduced motion"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes.",
+    "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.",
+    "An existing personal Vaultor Next app and other desktop apps remain open; only the disposable application process tree is sampled. Background load, power and cache conditions are uncontrolled."
+  ],
+  "success": true,
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.42",
+    "revision": "@7b1486be4607d53d9f93841b7c776bc525ca74b7",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "organizationRecipe": {
+    "sha256": "c9f503d433e034296873faf98ed50d54db803773f65b96c4d721ecc77de99928",
+    "tags": 1,
+    "trash": 0,
+    "bulk": 0,
+    "mode": "presentation-only"
+  },
+  "comparisonEligible": true
+}
