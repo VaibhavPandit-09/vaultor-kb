@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-11",
+  "applicationSource": "ec75a7c",
+  "executableSha256": "7d4f8d14fb9ea0cf7bebb642aef1dea2beefff55332833b73158ca5330661226",
+  "sessionAcceptance": {
+    "source": "a16f5674453731449069b7553d7bb7a41c476e14",
+    "executableSha256": "c93c16b9334ba47492a57024464b31fc64d52edd10f36002d702796aef0af53d",
+    "evidence": "tauri-rust-2026-11-10T23-26-07.561Z.json",
+    "checks": [
+      "12 native text inputs saved and read back after process restart",
+      "100-note collection fixture created",
+      "Final primary Collections/Tags/Linked Sources screens and correct active highlights",
+      "Settings OLED/custom Ctrl+Shift+Q and session preferences persist across restart",
+      "Two shared managed panes,active navigation,60-percent divider and pending normal-close save restore without duplicate content",
+      "Five palette/collection/Settings churn rounds then30s idle"
+    ]
+  },
+  "priorPhaseEvidence": {
+    "evidence": "tauri-rust-2026-11-10T23-23-07.881Z.json",
+    "status": "Full run failed at premature session-row activation; these preceding explicit checks completed",
+    "checks": [
+      "Full hierarchy search,collection detail and Back restoring query",
+      "Full tag query and resource scope",
+      "Nested lazy linked source and normal-restart restoration;source hash unchanged",
+      "OLED and captured Ctrl+Shift+Q persisted",
+      "Command query and Enter execution",
+      "Compact header containment,unclipped content,narrow760px no document overflow;expanded return"
+    ]
+  },
+  "observedWindows": [
+    "M10 a16: maximize resized the real window after clearing CDP viewport constraints",
+    "M10 a16: Windows wheel input expanded→compact→expanded Library;single-line title/search/actions inspected",
+    "M10 ec75: native Ctrl+K immediately focused search;typed Settings and Enter navigated to Settings",
+    "M10 ec75: light/dark appearance and keyboard traversal to reduced-motion preference inspected"
+  ],
+  "limitations": [
+    "Scoped acceptance,not full Electron visual/motion parity",
+    "Reference comparison uses existing M6 Electron captures,not a new original-app campaign",
+    "Tag right-click opens its compact management dialog;dedicated tag context-menu refinement pending",
+    "Independent per-pane history,linked tree expansion restoration and resource-page restart preservation remain pending",
+    "Accessibility/IME,full native Snap/tray,advanced editor/media and other M11/M12 inventory remain open",
+    "Viewport override clearing needs a physical resize before geometry captures;white-margin diagnostic is a driver constraint"
+  ]
+}
