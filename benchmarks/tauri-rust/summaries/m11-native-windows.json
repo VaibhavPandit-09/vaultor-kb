@@ -1,0 +1,34 @@
+{
+  "milestone": "M11",
+  "platform": "Windows x64",
+  "source": "e10ee4f",
+  "executableSha256": "72d528bea37817dd60c99e003443c9a0a8ef4a77d350e8d647819ab71e171b98",
+  "commonPerformance": {
+    "source": "dd88e208ada728b625a43da6edb13c6bcbd72583",
+    "executableSha256": "1dc01eb21c5de6872f64d3b8cdcf31eef2255ca43be0a22b69b36c3a291cfb4d",
+    "evidence": "tauri-rust-2026-11-11T04-49-10.863Z.json"
+  },
+  "evidence": {
+    "originalElectron": "electron-java-2026-11-11T01-11-55.776Z.json",
+    "majorScreens": "tauri-rust-2026-11-11T01-18-57.757Z.json",
+    "linkedSaveAndConflict": "tauri-rust-2026-11-11T04-55-56.904Z.json",
+    "finalTrashAndDark": "tauri-rust-2026-11-11T05-09-27.453Z.json"
+  },
+  "passed": [
+    "Original production-equivalent Electron in isolated storage:Library,selection,note,panes,context and light/dark/OLED reference states",
+    "Optimized Tauri:original shared rows/metadata,expanded and single-line compact Library,selection/context,managed note heading,shared panes and OLED/narrow state captures",
+    "Native pointer opened a managed note;native wheel and successive captures inspected header compression;maximize corrected the CDP viewport-reset margin",
+    "Common managed workload:12 native WebView inputs saved and read back after process restart;five bounded Library/header/note/shared-pane rounds",
+    "Linked title band contains explicit Save;typing preserves external bytes before Save;Save commits;competing external revision is refused with draft text retained",
+    "Final executable:Trash omits pin/open-beside and exposes lifecycle menu;Dark theme selected through Appearance persists after renderer reload",
+    "Library geometry consolidation preserves final declarations;focused tests verify retained bounded rows and unmounted editors"
+  ],
+  "limitations": [
+    "Major-screen reconciliation,not full application visual/motion parity",
+    "Initial native driver expired after10minutes;its late typing attempt was inconclusive,not an editing pass",
+    "Final Trash gating and equivalent CSS consolidation follow the common measured executable;no claim that its exact binary was performance-measured",
+    "Churn starts with one pane and ends with two views of one64KiB note;high transient and30s-retained memory remains unresolved",
+    "No full M10 imports/Activity regression campaign repeated;unchanged protections reuse prior native evidence and focused session tests",
+    "Full browser/Settings/linked framing,third panes/history,native Windows Snap/drag-out,accessibility/IME and broad reduced-motion matrix remain pending"
+  ]
+}

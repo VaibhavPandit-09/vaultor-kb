@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "reviewed": "2026-11-10",
+  "reviewed": "2026-11-11",
   "baseline": {
     "windows": "0.27.0",
     "macos": "0.26.0",
