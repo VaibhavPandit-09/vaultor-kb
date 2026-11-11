@@ -14,3 +14,5 @@ it('adapts the original row surface without merging selection, opening and organ
  fireEvent.click(screen.getByRole('button',{name:'Research'}));expect(activate).toHaveBeenCalledWith('note',expect.anything());
  fireEvent.click(screen.getByRole('button',{name:'Open Research beside'}));expect(open).toHaveBeenCalledWith('note',true);
 });
+
+it('shows only the lifecycle context action on a Trash row',()=>{render(<ResourceRow item={{id:'trash',title:'Trashed note',revision:1,updatedAt:''}} trashed selected={false} opened={false} focused pin={vi.fn()} activate={vi.fn()} pick={vi.fn()} menu={vi.fn()} open={vi.fn()} focus={vi.fn()}/>);expect(screen.queryByRole('button',{name:'Pin Trashed note'})).toBeNull();expect(screen.queryByRole('button',{name:'Open Trashed note beside'})).toBeNull();expect(screen.getByRole('button',{name:'Actions for Trashed note'})).toBeTruthy();});

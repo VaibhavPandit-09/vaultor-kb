@@ -335,3 +335,5 @@ The original audit above is retained as the M10 source assessment. Findings are 
 | UI-10, UI-11 | Footer shows workspace name, full path in tooltip; host uses shared original WindowControls. | Compact footer utility strip and native Windows details remain partial. |
 
 Windows evidence and final scope are recorded in VAULTOR-NEXT.md and the sanitized M11 benchmark summary. Source extraction alone does not close visual findings. UI-12 and all unlisted advanced/editor/preview/Settings findings remain pending M12 or their existing later workstream.
+
+UI-43 remains partial: final common opening62.3ms versus M10 42.5ms;initial M11 159.6ms is retained in CSV. Heading-local animation variables and bounded Library lifetime reduce avoidable work. Settled CPU/working set improved in the sample,but private memory and churn remain concerns. See the migration tracker and M10 vs M11 workbook for exact source/conditions;no performance closure is claimed.
