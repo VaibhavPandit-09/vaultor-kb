@@ -131,5 +131,45 @@
     "Settings remains a full destination while original is modal",
     "Original-reference F1 and reload-readiness failures retained in ignored raw evidence;actual Help button subsequently passed",
     "Unchanged imports,exports,Activity,Trash and broad filesystem safeguards reuse earlier milestone evidence"
-  ]
+  ],
+  "implementationSource": "ae397e8f23e642041b806203bc0ed23b91ffb47c",
+  "performanceAndSafetyEvidence": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-11T08-23-59.643Z.json",
+  "finalSafety": [
+    "Durable managed draft persisted before forced termination",
+    "Recovery popover restore committed content and removed obsolete draft",
+    "Competing committed revision was not overwritten;conflicting draft parked"
+  ],
+  "supplementalContainmentProbe": {
+    "evidence": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-11T08-41-16.878Z.json",
+    "canonical": false,
+    "concurrentWorkbookAuthoring": true,
+    "temporaryStyleOverride": true,
+    "results": [
+      {
+        "mode": "inline-size",
+        "ms": 91.4
+      },
+      {
+        "mode": "normal",
+        "ms": 41.4
+      },
+      {
+        "mode": "normal",
+        "ms": 44.6
+      },
+      {
+        "mode": "inline-size",
+        "ms": 41
+      },
+      {
+        "mode": "inline-size",
+        "ms": 49.3
+      },
+      {
+        "mode": "normal",
+        "ms": 39.7
+      }
+    ],
+    "conclusion": "Small noisy diagnostic;no causal performance,CPU or memory claim"
+  }
 }

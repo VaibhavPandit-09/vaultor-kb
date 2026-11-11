@@ -1,0 +1,1370 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "ae397e8f23e642041b806203bc0ed23b91ffb47c",
+  "dirty": false,
+  "executableSha256": "c237f518e6fc74443a5451f675b3fc09e2860550480d59030cf9a5776c3be348",
+  "timestamp": "2026-11-11T08:13:41.128Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "d1f4935febe2eb72eedf35661cf2aa1fb660629181759a4833a205585ed3c580",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 601.3217000000001,
+      "median": 601.3217000000001,
+      "p95": 601.3217000000001,
+      "max": 601.3217000000001
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 3,
+      "min": 47.09999996423721,
+      "median": 70.90000003576279,
+      "p95": 75.90000003576279,
+      "max": 75.90000003576279
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "unit": "ms",
+      "n": 12,
+      "min": 5.5,
+      "median": 6.600000023841858,
+      "p95": 17.200000047683716,
+      "max": 17.200000047683716
+    },
+    {
+      "scenario": "managed-note-64k",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 2.900000000000091,
+      "median": 8.25,
+      "p95": 8.5,
+      "max": 12.5
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "activity_history_tasks",
+      "unit": "count",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 0.8205885993169357,
+      "median": 0.8205885993169357,
+      "p95": 0.8205885993169357,
+      "max": 0.8205885993169357
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 608.796875,
+      "median": 608.796875,
+      "p95": 608.796875,
+      "max": 608.796875
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 353.1328125,
+      "median": 353.1328125,
+      "p95": 353.1328125,
+      "max": 353.1328125
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 713.48828125,
+      "median": 713.48828125,
+      "p95": 713.48828125,
+      "max": 713.48828125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 608.63671875,
+      "median": 608.63671875,
+      "p95": 608.63671875,
+      "max": 608.63671875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 352.90234375,
+      "median": 352.90234375,
+      "p95": 352.90234375,
+      "max": 352.90234375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 0.5025731746542297,
+      "median": 0.5025731746542297,
+      "p95": 0.5025731746542297,
+      "max": 0.5025731746542297
+    },
+    {
+      "scenario": "restart",
+      "iteration": 2,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 744.3932999999961,
+      "median": 744.3932999999961,
+      "p95": 744.3932999999961,
+      "max": 744.3932999999961
+    },
+    {
+      "scenario": "workload",
+      "iteration": 2,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 541.58203125,
+      "median": 541.58203125,
+      "p95": 541.58203125,
+      "max": 541.58203125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 541.46484375,
+      "median": 541.46484375,
+      "p95": 541.46484375,
+      "max": 541.46484375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 314.59375,
+      "median": 314.59375,
+      "p95": 314.59375,
+      "max": 314.59375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 2,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 9.226293852031956,
+      "median": 9.226293852031956,
+      "p95": 9.226293852031956,
+      "max": 9.226293852031956
+    },
+    {
+      "scenario": "opening-boundaries-m12",
+      "iteration": 1,
+      "metric": "independent_read_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 10.200000047683716,
+      "median": 10.200000047683716,
+      "p95": 10.200000047683716,
+      "max": 10.200000047683716
+    },
+    {
+      "scenario": "opening-boundaries-m12",
+      "iteration": 1,
+      "metric": "content",
+      "unit": "ms",
+      "n": 1,
+      "min": 74.09999996423721,
+      "median": 74.09999996423721,
+      "p95": 74.09999996423721,
+      "max": 74.09999996423721
+    },
+    {
+      "scenario": "opening-boundaries-m12",
+      "iteration": 1,
+      "metric": "interactive",
+      "unit": "ms",
+      "n": 1,
+      "min": 74.09999996423721,
+      "median": 74.09999996423721,
+      "p95": 74.09999996423721,
+      "max": 74.09999996423721
+    },
+    {
+      "scenario": "opening-boundaries-m12",
+      "iteration": 1,
+      "metric": "transition_observed_finished",
+      "unit": "ms",
+      "n": 1,
+      "min": 291.89999997615814,
+      "median": 291.89999997615814,
+      "p95": 291.89999997615814,
+      "max": 291.89999997615814
+    },
+    {
+      "scenario": "opening-boundaries-m12",
+      "iteration": 2,
+      "metric": "independent_read_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 6.300000011920929,
+      "median": 6.300000011920929,
+      "p95": 6.300000011920929,
+      "max": 6.300000011920929
+    },
+    {
+      "scenario": "opening-boundaries-m12",
+      "iteration": 2,
+      "metric": "content",
+      "unit": "ms",
+      "n": 1,
+      "min": 58.09999996423721,
+      "median": 58.09999996423721,
+      "p95": 58.09999996423721,
+      "max": 58.09999996423721
+    },
+    {
+      "scenario": "opening-boundaries-m12",
+      "iteration": 2,
+      "metric": "interactive",
+      "unit": "ms",
+      "n": 1,
+      "min": 58.09999996423721,
+      "median": 58.09999996423721,
+      "p95": 58.09999996423721,
+      "max": 58.09999996423721
+    },
+    {
+      "scenario": "opening-boundaries-m12",
+      "iteration": 2,
+      "metric": "transition_observed_finished",
+      "unit": "ms",
+      "n": 1,
+      "min": 275.5999999642372,
+      "median": 275.5999999642372,
+      "p95": 275.5999999642372,
+      "max": 275.5999999642372
+    },
+    {
+      "scenario": "opening-boundaries-m12",
+      "iteration": 3,
+      "metric": "independent_read_roundtrip",
+      "unit": "ms",
+      "n": 1,
+      "min": 5.699999988079071,
+      "median": 5.699999988079071,
+      "p95": 5.699999988079071,
+      "max": 5.699999988079071
+    },
+    {
+      "scenario": "opening-boundaries-m12",
+      "iteration": 3,
+      "metric": "content",
+      "unit": "ms",
+      "n": 1,
+      "min": 55.60000002384186,
+      "median": 55.60000002384186,
+      "p95": 55.60000002384186,
+      "max": 55.60000002384186
+    },
+    {
+      "scenario": "opening-boundaries-m12",
+      "iteration": 3,
+      "metric": "interactive",
+      "unit": "ms",
+      "n": 1,
+      "min": 55.60000002384186,
+      "median": 55.60000002384186,
+      "p95": 55.60000002384186,
+      "max": 55.60000002384186
+    },
+    {
+      "scenario": "opening-boundaries-m12",
+      "iteration": 3,
+      "metric": "transition_observed_finished",
+      "unit": "ms",
+      "n": 1,
+      "min": 273.4000000357628,
+      "median": 273.4000000357628,
+      "p95": 273.4000000357628,
+      "max": 273.4000000357628
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "baseline_js_heap",
+      "unit": "MiB",
+      "n": 1,
+      "min": 12.312061309814453,
+      "median": 12.312061309814453,
+      "p95": 12.312061309814453,
+      "max": 12.312061309814453
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "baseline_dom_nodes",
+      "unit": "count",
+      "n": 1,
+      "min": 5791,
+      "median": 5791,
+      "p95": 5791,
+      "max": 5791
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "baseline_documents",
+      "unit": "count",
+      "n": 1,
+      "min": 1,
+      "median": 1,
+      "p95": 1,
+      "max": 1
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "baseline_listeners",
+      "unit": "count",
+      "n": 1,
+      "min": 1328,
+      "median": 1328,
+      "p95": 1328,
+      "max": 1328
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "baseline_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 521.41796875,
+      "median": 521.41796875,
+      "p95": 521.41796875,
+      "max": 521.41796875
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "baseline_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 289.78125,
+      "median": 289.78125,
+      "p95": 289.78125,
+      "max": 289.78125
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round1_immediate_js_heap",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.962234497070312,
+      "median": 10.962234497070312,
+      "p95": 10.962234497070312,
+      "max": 10.962234497070312
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round1_immediate_dom_nodes",
+      "unit": "count",
+      "n": 1,
+      "min": 5667,
+      "median": 5667,
+      "p95": 5667,
+      "max": 5667
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round1_immediate_documents",
+      "unit": "count",
+      "n": 1,
+      "min": 1,
+      "median": 1,
+      "p95": 1,
+      "max": 1
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round1_immediate_listeners",
+      "unit": "count",
+      "n": 1,
+      "min": 1317,
+      "median": 1317,
+      "p95": 1317,
+      "max": 1317
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round1_immediate_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 971.3046875,
+      "median": 971.3046875,
+      "p95": 971.3046875,
+      "max": 971.3046875
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round1_immediate_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 733.91015625,
+      "median": 733.91015625,
+      "p95": 733.91015625,
+      "max": 733.91015625
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round1_settled_js_heap",
+      "unit": "MiB",
+      "n": 1,
+      "min": 9.166507720947266,
+      "median": 9.166507720947266,
+      "p95": 9.166507720947266,
+      "max": 9.166507720947266
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round1_settled_dom_nodes",
+      "unit": "count",
+      "n": 1,
+      "min": 4193,
+      "median": 4193,
+      "p95": 4193,
+      "max": 4193
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round1_settled_documents",
+      "unit": "count",
+      "n": 1,
+      "min": 1,
+      "median": 1,
+      "p95": 1,
+      "max": 1
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round1_settled_listeners",
+      "unit": "count",
+      "n": 1,
+      "min": 819,
+      "median": 819,
+      "p95": 819,
+      "max": 819
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round1_settled_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 806.84375,
+      "median": 806.84375,
+      "p95": 806.84375,
+      "max": 806.84375
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round1_settled_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 558.6875,
+      "median": 558.6875,
+      "p95": 558.6875,
+      "max": 558.6875
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round2_immediate_js_heap",
+      "unit": "MiB",
+      "n": 1,
+      "min": 13.878334045410156,
+      "median": 13.878334045410156,
+      "p95": 13.878334045410156,
+      "max": 13.878334045410156
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round2_immediate_dom_nodes",
+      "unit": "count",
+      "n": 1,
+      "min": 4844,
+      "median": 4844,
+      "p95": 4844,
+      "max": 4844
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round2_immediate_documents",
+      "unit": "count",
+      "n": 1,
+      "min": 1,
+      "median": 1,
+      "p95": 1,
+      "max": 1
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round2_immediate_listeners",
+      "unit": "count",
+      "n": 1,
+      "min": 2106,
+      "median": 2106,
+      "p95": 2106,
+      "max": 2106
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round2_immediate_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 1022.43359375,
+      "median": 1022.43359375,
+      "p95": 1022.43359375,
+      "max": 1022.43359375
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round2_immediate_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 772.8203125,
+      "median": 772.8203125,
+      "p95": 772.8203125,
+      "max": 772.8203125
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round2_settled_js_heap",
+      "unit": "MiB",
+      "n": 1,
+      "min": 9.345314025878906,
+      "median": 9.345314025878906,
+      "p95": 9.345314025878906,
+      "max": 9.345314025878906
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round2_settled_dom_nodes",
+      "unit": "count",
+      "n": 1,
+      "min": 4193,
+      "median": 4193,
+      "p95": 4193,
+      "max": 4193
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round2_settled_documents",
+      "unit": "count",
+      "n": 1,
+      "min": 1,
+      "median": 1,
+      "p95": 1,
+      "max": 1
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round2_settled_listeners",
+      "unit": "count",
+      "n": 1,
+      "min": 819,
+      "median": 819,
+      "p95": 819,
+      "max": 819
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round2_settled_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 811.921875,
+      "median": 811.921875,
+      "p95": 811.921875,
+      "max": 811.921875
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round2_settled_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 562.00390625,
+      "median": 562.00390625,
+      "p95": 562.00390625,
+      "max": 562.00390625
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round3_immediate_js_heap",
+      "unit": "MiB",
+      "n": 1,
+      "min": 13.724811553955078,
+      "median": 13.724811553955078,
+      "p95": 13.724811553955078,
+      "max": 13.724811553955078
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round3_immediate_dom_nodes",
+      "unit": "count",
+      "n": 1,
+      "min": 4844,
+      "median": 4844,
+      "p95": 4844,
+      "max": 4844
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round3_immediate_documents",
+      "unit": "count",
+      "n": 1,
+      "min": 1,
+      "median": 1,
+      "p95": 1,
+      "max": 1
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round3_immediate_listeners",
+      "unit": "count",
+      "n": 1,
+      "min": 2011,
+      "median": 2011,
+      "p95": 2011,
+      "max": 2011
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round3_immediate_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 1179.87890625,
+      "median": 1179.87890625,
+      "p95": 1179.87890625,
+      "max": 1179.87890625
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round3_immediate_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 961.4453125,
+      "median": 961.4453125,
+      "p95": 961.4453125,
+      "max": 961.4453125
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round3_settled_js_heap",
+      "unit": "MiB",
+      "n": 1,
+      "min": 9.49637222290039,
+      "median": 9.49637222290039,
+      "p95": 9.49637222290039,
+      "max": 9.49637222290039
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round3_settled_dom_nodes",
+      "unit": "count",
+      "n": 1,
+      "min": 4193,
+      "median": 4193,
+      "p95": 4193,
+      "max": 4193
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round3_settled_documents",
+      "unit": "count",
+      "n": 1,
+      "min": 1,
+      "median": 1,
+      "p95": 1,
+      "max": 1
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round3_settled_listeners",
+      "unit": "count",
+      "n": 1,
+      "min": 819,
+      "median": 819,
+      "p95": 819,
+      "max": 819
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round3_settled_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 833.7578125,
+      "median": 833.7578125,
+      "p95": 833.7578125,
+      "max": 833.7578125
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "round3_settled_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 583.9296875,
+      "median": 583.9296875,
+      "p95": 583.9296875,
+      "max": 583.9296875
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "diagnostic_gc_js_heap",
+      "unit": "MiB",
+      "n": 1,
+      "min": 9.454437255859375,
+      "median": 9.454437255859375,
+      "p95": 9.454437255859375,
+      "max": 9.454437255859375
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "diagnostic_gc_dom_nodes",
+      "unit": "count",
+      "n": 1,
+      "min": 4193,
+      "median": 4193,
+      "p95": 4193,
+      "max": 4193
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "diagnostic_gc_documents",
+      "unit": "count",
+      "n": 1,
+      "min": 1,
+      "median": 1,
+      "p95": 1,
+      "max": 1
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "diagnostic_gc_listeners",
+      "unit": "count",
+      "n": 1,
+      "min": 819,
+      "median": 819,
+      "p95": 819,
+      "max": 819
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "diagnostic_gc_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 833.4140625,
+      "median": 833.4140625,
+      "p95": 833.4140625,
+      "max": 833.4140625
+    },
+    {
+      "scenario": "matched-churn-m12",
+      "iteration": 1,
+      "metric": "diagnostic_gc_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 583.25,
+      "median": 583.25,
+      "p95": 583.25,
+      "max": 583.25
+    },
+    {
+      "scenario": "qualification",
+      "iteration": 3,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 733.1273999999976,
+      "median": 733.1273999999976,
+      "p95": 733.1273999999976,
+      "max": 733.1273999999976
+    }
+  ],
+  "checks": [
+    "12 native text inputs saved and read back after process restart",
+    "100-note collection fixture created",
+    "Three matched one-pane churn rounds;distinct notes,session closure,two-pane open/close,organization dismissal;natural30s settles;GC diagnostic separated"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes.",
+    "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.",
+    "Only the disposable application process tree is sampled; background apps, power and cache conditions are uncontrolled. The M8 reference had a coexisting personal process; inspect coexistingPersonalReference for this run.",
+    "Diagnostic GC is not normal application behavior;natural samples remain canonical and separately labelled."
+  ],
+  "success": false,
+  "error": "Error: Timed out: recovery after termination; workspace\nVaultor Next\nActivity\nVaultor Next · experimental\nSearch\nLibrary\nLibrary\nCollections\nLinked sources\nTags\nPinned\nTrash\nNew note\nImport\n\nSidebar working area\n\nQuick access\nAuto\nPinned\nView all\n\nPin resources to keep them here.\n\nRecent\nView all\nBench note 099\nBench note 097\nBench note 096\nBench note 098\nRecovery · 1\nOpen workspace\nSettings\nCommands\nCtrl+K\nHelp Center\nworkspace\nProtected draft awaits Recovery review\nDismiss\n\nYOUR WORKSPACE\n\nLibrary\n0\nClear\nNew note\n100 resources\nTitles only\nSelect this page\nCtrl+A · page\nProtected draft awaits Recovery review\nBench note 099\nNote · Benchmark\n2026-11-11\nBench note 098\nNote · Benchmark\n2026-11-11\nBench note 097\nNote · Benchmark\n2026-11-11\nBench note 096\nNote · Benchmark\n2026-11-11\nBench note 095\nNote · Benchmark\n2026-11-11\nBench note 094\nNote · Benchmark\n2026-11-11\nBench note 093\nNote · Benchmark\n2026-11-11\nBench note 092\nNote · Benchmark\n2026-11-11\nBench note 091\nNote · Benchmark\n2026-11-11\nBench note 090\nNote · Benchmark\n2026-11-11\nBench note 089\nNote · Benchmark\n2026-11-11\nBench note 088\nNote · Benchmark\n2026-11-11\nBench note 087\nNote · Benchmark\n2026-11-11\nBench note 086\nNote · Benchmark\n2026-11-11\nBench note 085\nNote · Benchmark\n2026-11-11\nBench note 084\nNote · Benchmark\n2026-11-11\nBench note 083\nNote · Benchmark\n2026-11-11\nBench note 082\nNote · Benchmark\n2026-11-11\nBench note 081\nNote · Benchmark\n2026-11-11\nBench note 080\nNote · Benchmark\n2026-11-11\nBench note 079\nNote · Benchmark\n2026-11-11\nBench note 078\nNote · Benchmark\n2026-11-11\nBench note 077\nNote · Benchmark\n2026-11-11\nBench note 076\nNote · Benchmark\n2026-11-11\nBench note 075\nNote · Benchmark\n2026-11-11\nBench note 074\nNote · Benchmark\n2026-11-11\nBench note 073\nNote · Benchmark\n2026-11-11\nBench note 072\nNote · Benchmark\n2026-11-11\nBench note 071\nNote · Be",
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.42",
+    "revision": "@7b1486be4607d53d9f93841b7c776bc525ca74b7",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "coexistingPersonalReference": false,
+  "nativeInspectionHelperActiveBefore": false,
+  "editorWeakRefs": {
+    "observed": 13,
+    "alive": 1,
+    "destroyedAlive": 0
+  },
+  "processBreakdown": [
+    {
+      "phase": "baseline",
+      "timestamp": "2026-11-11T08:19:46.2212626Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34234368,
+          "privateWorkingSet": 5144576,
+          "privateBytes": 6914048,
+          "cpuSeconds": 0.15625
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 131252224,
+          "privateWorkingSet": 28729344,
+          "privateBytes": 38547456,
+          "cpuSeconds": 0.96875
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 11431936,
+          "privateWorkingSet": 1720320,
+          "privateBytes": 2818048,
+          "cpuSeconds": 0.015625
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 124207104,
+          "privateWorkingSet": 71626752,
+          "privateBytes": 102047744,
+          "cpuSeconds": 0.65625
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 61308928,
+          "privateWorkingSet": 10764288,
+          "privateBytes": 20770816,
+          "cpuSeconds": 0.21875
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 184311808,
+          "privateWorkingSet": 121200640,
+          "privateBytes": 132759552,
+          "cpuSeconds": 1.921875
+        }
+      ]
+    },
+    {
+      "phase": "round1_immediate",
+      "timestamp": "2026-11-11T08:19:50.0446300Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34279424,
+          "privateWorkingSet": 5189632,
+          "privateBytes": 6967296,
+          "cpuSeconds": 0.21875
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 132739072,
+          "privateWorkingSet": 29630464,
+          "privateBytes": 39518208,
+          "cpuSeconds": 1.359375
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 11431936,
+          "privateWorkingSet": 1720320,
+          "privateBytes": 2818048,
+          "cpuSeconds": 0.015625
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 468611072,
+          "privateWorkingSet": 409026560,
+          "privateBytes": 442261504,
+          "cpuSeconds": 2.28125
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 61333504,
+          "privateWorkingSet": 10784768,
+          "privateBytes": 20795392,
+          "cpuSeconds": 0.25
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 310091776,
+          "privateWorkingSet": 244871168,
+          "privateBytes": 257200128,
+          "cpuSeconds": 5.109375
+        }
+      ]
+    },
+    {
+      "phase": "round1_settled",
+      "timestamp": "2026-11-11T08:20:21.4188347Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34086912,
+          "privateWorkingSet": 4997120,
+          "privateBytes": 6721536,
+          "cpuSeconds": 0.21875
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 138592256,
+          "privateWorkingSet": 29540352,
+          "privateBytes": 39452672,
+          "cpuSeconds": 1.515625
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 14594048,
+          "privateWorkingSet": 2031616,
+          "privateBytes": 3432448,
+          "cpuSeconds": 0.03125
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 420839424,
+          "privateWorkingSet": 363397120,
+          "privateBytes": 394493952,
+          "cpuSeconds": 2.296875
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 64577536,
+          "privateWorkingSet": 10514432,
+          "privateBytes": 20484096,
+          "cpuSeconds": 0.28125
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 173346816,
+          "privateWorkingSet": 108519424,
+          "privateBytes": 121241600,
+          "cpuSeconds": 5.265625
+        }
+      ]
+    },
+    {
+      "phase": "round2_immediate",
+      "timestamp": "2026-11-11T08:20:25.0557932Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34197504,
+          "privateWorkingSet": 5062656,
+          "privateBytes": 6815744,
+          "cpuSeconds": 0.28125
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 138014720,
+          "privateWorkingSet": 28753920,
+          "privateBytes": 38723584,
+          "cpuSeconds": 1.9375
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 14516224,
+          "privateWorkingSet": 1953792,
+          "privateBytes": 3354624,
+          "cpuSeconds": 0.03125
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 480542720,
+          "privateWorkingSet": 421961728,
+          "privateBytes": 454086656,
+          "cpuSeconds": 3.96875
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 64380928,
+          "privateWorkingSet": 10293248,
+          "privateBytes": 20201472,
+          "cpuSeconds": 0.296875
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 340447232,
+          "privateWorkingSet": 274313216,
+          "privateBytes": 287178752,
+          "cpuSeconds": 8.734375
+        }
+      ]
+    },
+    {
+      "phase": "round2_settled",
+      "timestamp": "2026-11-11T08:20:56.3164572Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34185216,
+          "privateWorkingSet": 5046272,
+          "privateBytes": 6787072,
+          "cpuSeconds": 0.28125
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 137777152,
+          "privateWorkingSet": 28545024,
+          "privateBytes": 38465536,
+          "cpuSeconds": 1.96875
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 14516224,
+          "privateWorkingSet": 1953792,
+          "privateBytes": 3354624,
+          "cpuSeconds": 0.03125
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 422993920,
+          "privateWorkingSet": 365543424,
+          "privateBytes": 396668928,
+          "cpuSeconds": 4
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 64294912,
+          "privateWorkingSet": 10207232,
+          "privateBytes": 20103168,
+          "cpuSeconds": 0.296875
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 177594368,
+          "privateWorkingSet": 112062464,
+          "privateBytes": 123924480,
+          "cpuSeconds": 9.015625
+        }
+      ]
+    },
+    {
+      "phase": "round3_immediate",
+      "timestamp": "2026-11-11T08:21:00.6400328Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34217984,
+          "privateWorkingSet": 5074944,
+          "privateBytes": 6922240,
+          "cpuSeconds": 0.296875
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 139870208,
+          "privateWorkingSet": 30633984,
+          "privateBytes": 40587264,
+          "cpuSeconds": 2.328125
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 14516224,
+          "privateWorkingSet": 1953792,
+          "privateBytes": 3354624,
+          "cpuSeconds": 0.03125
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 500719616,
+          "privateWorkingSet": 442871808,
+          "privateBytes": 474615808,
+          "cpuSeconds": 5.375
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 64405504,
+          "privateWorkingSet": 10317824,
+          "privateBytes": 20226048,
+          "cpuSeconds": 0.328125
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 483463168,
+          "privateWorkingSet": 417587200,
+          "privateBytes": 462442496,
+          "cpuSeconds": 12.515625
+        }
+      ]
+    },
+    {
+      "phase": "round3_settled",
+      "timestamp": "2026-11-11T08:21:31.9569921Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34217984,
+          "privateWorkingSet": 5058560,
+          "privateBytes": 6889472,
+          "cpuSeconds": 0.296875
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 138076160,
+          "privateWorkingSet": 28536832,
+          "privateBytes": 38486016,
+          "cpuSeconds": 2.34375
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 14516224,
+          "privateWorkingSet": 1949696,
+          "privateBytes": 3350528,
+          "cpuSeconds": 0.03125
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 444235776,
+          "privateWorkingSet": 386625536,
+          "privateBytes": 417841152,
+          "cpuSeconds": 5.390625
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 64323584,
+          "privateWorkingSet": 10207232,
+          "privateBytes": 20078592,
+          "cpuSeconds": 0.328125
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 178888704,
+          "privateWorkingSet": 113364992,
+          "privateBytes": 125648896,
+          "cpuSeconds": 12.921875
+        }
+      ]
+    },
+    {
+      "phase": "diagnostic_gc",
+      "timestamp": "2026-11-11T08:21:34.2242271Z",
+      "roles": [
+        {
+          "role": "tauri",
+          "processes": 1,
+          "workingSet": 34217984,
+          "privateWorkingSet": 5058560,
+          "privateBytes": 6889472,
+          "cpuSeconds": 0.296875
+        },
+        {
+          "role": "webview-browser",
+          "processes": 1,
+          "workingSet": 138076160,
+          "privateWorkingSet": 28536832,
+          "privateBytes": 38486016,
+          "cpuSeconds": 2.34375
+        },
+        {
+          "role": "crashpad-handler",
+          "processes": 1,
+          "workingSet": 14516224,
+          "privateWorkingSet": 1949696,
+          "privateBytes": 3350528,
+          "cpuSeconds": 0.03125
+        },
+        {
+          "role": "gpu-process",
+          "processes": 1,
+          "workingSet": 444170240,
+          "privateWorkingSet": 386560000,
+          "privateBytes": 417787904,
+          "cpuSeconds": 5.390625
+        },
+        {
+          "role": "utility",
+          "processes": 2,
+          "workingSet": 64323584,
+          "privateWorkingSet": 10207232,
+          "privateBytes": 20078592,
+          "cpuSeconds": 0.328125
+        },
+        {
+          "role": "renderer",
+          "processes": 1,
+          "workingSet": 178593792,
+          "privateWorkingSet": 113065984,
+          "privateBytes": 124989440,
+          "cpuSeconds": 13.015625
+        }
+      ]
+    }
+  ]
+}

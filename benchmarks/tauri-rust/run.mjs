@@ -142,7 +142,7 @@ async function quit() {
 try {
   let run = await launch(1);
   if (inspect) {
-    if(m12){await (await import('./m12-inspect.mjs')).inspectM12({evaluate,cdp,wait,report,folder,output});}
+    if(m12){const inspection=await import('./m12-inspect.mjs');await (process.argv.includes('--probe-containment')?inspection.probeContainment:inspection.inspectM12)({evaluate,cdp,wait,report,folder,output});}
     else if(m11){const inspection=await import('./m11-qualify.mjs');await (process.argv.includes('--linked-only')?inspection.inspectLinkedM11:process.argv.includes('--trash-only')?inspection.inspectTrashM11:inspection.inspectM11)({evaluate,cdp,wait,report,folder,output});}
     if(m10&&process.argv.includes('--final-smoke'))await (await import('./m10-qualify.mjs')).smokeFinal({evaluate,cdp,wait,report});
     if(m10&&process.argv.includes('--native-m10')){await cdp('Emulation.clearDeviceMetricsOverride');

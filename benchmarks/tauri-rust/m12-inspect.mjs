@@ -40,3 +40,14 @@ export async function inspectM12({evaluate,cdp,wait,report,folder,output}){
  report.nativeControl=join(folder,'m12-native.done');console.log('M12 native inspection ready: '+report.nativeControl);
  if(process.argv.includes('--native-m12'))for(let i=0;i<600;i++){try{await readFile(report.nativeControl);break;}catch{}await pause(1000);}
 }
+
+/** Diagnostic A/B only; omitted from canonical comparisons because workbook authoring competes for CPU. */
+export async function probeContainment({evaluate,cdp,wait,report}){
+ const doc={type:'doc',content:Array.from({length:120},(_,i)=>({type:'paragraph',content:[{type:'text',text:'Paragraph '+i+'. Vaultor comparable managed-note benchmark. '+'Writing, reading and organizing knowledge. '.repeat(12)}]}))};
+ const ids=await evaluate(`(async()=>{let ids=[];for(let i=0;i<100;i++){const n=await benchRequest({kind:'createNote',title:'Probe '+String(i).padStart(3,'0'),collection:null});if(i>=98)await benchRequest({kind:'save',id:n.id,title:n.title,revision:n.revision,content:${JSON.stringify(doc)}});ids.push(n.id);}return ids})()`);await cdp('Page.reload');await wait("document.querySelectorAll('[data-row-open]').length===100",'probe Library');const results=[];
+ for(let i=0;i<3;i++)for(const mode of i%2?['normal','inline-size']:['inline-size','normal']){
+  await wait("document.querySelector('.next-sidebar-create')?.disabled===false",'probe barrier');await evaluate("document.querySelector('[aria-label=\"Return to Library\"]')?.click();true");await wait("document.querySelector('.next-library-region:not([hidden]) [data-row-open]')&&document.querySelector('[aria-label=Notes]')?.getAttribute('aria-busy')==='false'",'probe return');await new Promise(r=>setTimeout(r,350));
+  results.push(await evaluate(`(async()=>{const main=document.querySelector('.next-main');main.style.containerType=${JSON.stringify(mode)};const mode=getComputedStyle(main).containerType,start=performance.now();document.querySelector('[data-row-open="${ids[98+i%2]}"]').click();for(let n=0;n<1200;n++){const dom=document.querySelector('.tiptap');if(dom?.contentEditable==='true'&&dom.textContent.includes('Paragraph 119'))return {mode,ms:performance.now()-start};await new Promise(r=>setTimeout(r,10));}throw Error('Probe timeout')})()`));
+ }
+ report.containmentProbe=results;report.limitations.push('Diagnostic only;concurrent workbook authoring;no untouched-idle or RAM claim;temporary renderer style override is not a production build.');report.checks.push('Alternating broad main inline-size containment versus normal;100notes,two64KiB documents,3opens per mode');console.log(JSON.stringify(results));
+}
