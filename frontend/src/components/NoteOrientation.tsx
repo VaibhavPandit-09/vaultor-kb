@@ -18,6 +18,8 @@ export default function NoteOrientation({ identity, children, status, tagCount }
     const update = (progress: number) => {
       // Folded controls have an explicit, always reachable disclosure. Never
       // leave keyboard focus in visually clipped organization controls.
+      const padding=`calc(24px + var(--library-loss) * ${progress})`;
+      if(viewport.style.paddingBottom!==padding)viewport.style.paddingBottom=padding;
       const folded = mode.current === 'closed' || (progress > .001 && mode.current !== 'open');
       content.inert = folded;
       root.dataset.folded = String(mode.current === 'closed' || (progress > .98 && mode.current !== 'open'));
@@ -30,8 +32,8 @@ export default function NoteOrientation({ identity, children, status, tagCount }
     measure();
     const observer = frameResizeObserver(measure);
     if (content.firstElementChild) observer.observe(content.firstElementChild);
-    const stop = attachLibraryCompression(viewport, root, { pinHeaderFocus: true, onProgress: update, observeSubtree: false });
-    return () => { stop(); observer.disconnect(); viewport.style.removeProperty('--note-organization-height'); };
+    const stop = attachLibraryCompression(viewport, root, { pinHeaderFocus: true, onProgress: update, observeSubtree: false, styleTarget:root });
+    return () => { stop(); observer.disconnect(); viewport.style.removeProperty('--note-organization-height'); viewport.style.removeProperty('padding-bottom'); };
   }, []);
   return <div ref={header} className="note-orientation" data-organization-open={disclosure}>
     <div className="note-heading"><div className="note-identity">{identity}</div>

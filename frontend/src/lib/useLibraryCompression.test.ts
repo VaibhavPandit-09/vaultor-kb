@@ -106,3 +106,5 @@ it('keeps the same search, filters and paging interactive at every compression d
 });
 
 it('honors the application reduced-motion preference independently of the OS',()=>{document.documentElement.dataset.animation='reduced';viewport.scrollTop=80;viewport.dispatchEvent(new Event('scroll'));tick();expect(progress()).toBe(1);expect(frames.size).toBe(0);});
+
+it('can scope animated inherited properties to the heading instead of the editor document',()=>{stop();stop=attachLibraryCompression(viewport,header,{styleTarget:header});viewport.scrollTop=160;viewport.dispatchEvent(new Event('scroll'));settle();expect(header.style.getPropertyValue('--library-progress')).toBe('1');expect(viewport.style.getPropertyValue('--library-progress')).toBe('');stop();expect(header.style.getPropertyValue('--library-progress')).toBe('');});

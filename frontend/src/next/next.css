@@ -135,3 +135,9 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 :root[data-animation=reduced] .next-panes[data-count='2']>.next-pane{transform:none!important}
 
 .next-primary-actions .next-sidebar-create{display:flex;align-items:center;justify-content:center;gap:8px;padding:7px 10px;border-radius:7px}
+
+/* Linked framing is retained until its explicit-source controls are reconciled in M12. */
+.next-linked-pane>.next-note-bar{display:flex;align-items:center;flex:none;gap:6px;height:calc(78px - 34px * var(--note-progress));padding:calc(18px - 10px * var(--note-progress)) 22px;border-bottom:1px solid transparent}
+.next-linked-pane>.next-note-bar input{flex:1;min-width:40px;width:100px;font-size:clamp(14px,1.6vw,22px);font-weight:600;letter-spacing:-.4px}
+.next-linked-pane>.next-note-bar>svg{flex:none}.next-linked-pane>.next-note-bar button{flex:none;padding:5px}.next-linked-pane>.next-note-bar [role=status]{font-size:10px;color:var(--subtle-foreground)}
+@media(max-width:900px){.next-linked-pane>.next-note-bar{padding-inline:14px}}

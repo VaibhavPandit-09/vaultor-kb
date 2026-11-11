@@ -6,7 +6,8 @@ export function syncLibraryControls(header:HTMLElement){
 }
 
 /** One bounded scroll signal. Never owns React, queries, editor or focus state. */
-export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElement, options: { pinHeaderFocus?: boolean; onProgress?: (progress: number) => void; observeSubtree?: boolean } = {}) {
+export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElement, options: { pinHeaderFocus?: boolean; onProgress?: (progress: number) => void; observeSubtree?: boolean; styleTarget?:HTMLElement } = {}) {
+  const styleTarget=options.styleTarget??viewport;
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   const isReduced=()=>Boolean(reduced?.matches||document.documentElement.dataset.animation==='reduced');
   let frame = 0, releaseFrame = 0, pointerHeld = false, lastTime = 0;
@@ -22,16 +23,16 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
   let progress = target();
   let compact=false;
   const write = () => {
-    viewport.style.setProperty('--library-progress', String(progress));
+    styleTarget.style.setProperty('--library-progress', String(progress));
     options.onProgress?.(progress);
     // Breadcrumbs withdraw in their own row before the title enters that lane.
-    viewport.style.setProperty('--collection-path-progress', String(Math.min(1,progress/.35)));
-    viewport.style.setProperty('--collection-title-progress', String(Math.max(0,(progress-.35)/.65)));
+    styleTarget.style.setProperty('--collection-path-progress', String(Math.min(1,progress/.35)));
+    styleTarget.style.setProperty('--collection-title-progress', String(Math.max(0,(progress-.35)/.65)));
     const path=header.querySelector<HTMLElement>('.collection-breadcrumb');
     if(path){path.inert=progress>=.35;path.setAttribute('aria-hidden',String(progress>=.35));}
 
     // The second title line is already clipped before its ellipsis changes.
-    viewport.style.setProperty('--library-title-lines', progress > .96 ? '1' : '2');
+    styleTarget.style.setProperty('--library-title-lines', progress > .96 ? '1' : '2');
     compact=progress>(compact?.82:.96);header.dataset.compact=String(compact);syncLibraryControls(header);
   };
   const locked = () => pointerHeld || Boolean(header.querySelector('.collection-breadcrumb')?.contains(document.activeElement)) || (options.pinHeaderFocus && header.contains(document.activeElement)) || Boolean(header.querySelector('[aria-haspopup][aria-expanded="true"]'));
@@ -61,19 +62,19 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
   };
   const measureActions = () => {
     const actions = header.querySelector<HTMLElement>('.library-heading-actions');
-    viewport.style.setProperty('--library-compact-actions-width', `${Math.max(0,(actions?.children.length??0)*35-3)}px`);
-    viewport.style.setProperty('--library-pages-width', header.querySelector('.library-pagination')?'76px':'0px');
-    viewport.style.setProperty('--library-actions-width', `${actions?.getBoundingClientRect().width ?? 0}px`);
+    styleTarget.style.setProperty('--library-compact-actions-width', `${Math.max(0,(actions?.children.length??0)*35-3)}px`);
+    styleTarget.style.setProperty('--library-pages-width', header.querySelector('.library-pagination')?'76px':'0px');
+    styleTarget.style.setProperty('--library-actions-width', `${actions?.getBoundingClientRect().width ?? 0}px`);
     const path=header.querySelector<HTMLElement>('.collection-breadcrumb');
     if(path){
-      viewport.style.setProperty('--collection-path-space',`${path.getBoundingClientRect().height+8}px`);
+      styleTarget.style.setProperty('--collection-path-space',`${path.getBoundingClientRect().height+8}px`);
       const title=header.querySelector<HTMLElement>('h1');
       if(title){
         if(!titleMeasure){titleMeasure=document.createElement('div');titleMeasure.setAttribute('aria-hidden','true');document.body.append(titleMeasure);}
         const font=getComputedStyle(title);
         titleMeasure.style.cssText=`position:fixed;left:-10000px;top:0;visibility:hidden;pointer-events:none;width:${title.clientWidth}px;font-family:${font.fontFamily};font-weight:${font.fontWeight};font-size:28px;line-height:1.25;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-height:70px;`;
         titleMeasure.textContent=title.textContent;
-        viewport.style.setProperty('--collection-title-expanded',`${Math.max(35,Math.min(70,titleMeasure.getBoundingClientRect().height))}px`);
+        styleTarget.style.setProperty('--collection-title-expanded',`${Math.max(35,Math.min(70,titleMeasure.getBoundingClientRect().height))}px`);
       }
     }
 
@@ -121,13 +122,13 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
     header.removeEventListener('focusout', schedule);
     window.removeEventListener('blur', release);
     reduced?.removeEventListener('change', schedule);
-    viewport.style.removeProperty('--library-progress');
-    viewport.style.removeProperty('--library-title-lines');
-    viewport.style.removeProperty('--library-actions-width');
-    viewport.style.removeProperty('--library-compact-actions-width');
-    viewport.style.removeProperty('--library-pages-width');
+    styleTarget.style.removeProperty('--library-progress');
+    styleTarget.style.removeProperty('--library-title-lines');
+    styleTarget.style.removeProperty('--library-actions-width');
+    styleTarget.style.removeProperty('--library-compact-actions-width');
+    styleTarget.style.removeProperty('--library-pages-width');
     titleMeasure?.remove();
-    for(const key of ['--collection-title-expanded','--collection-path-progress','--collection-title-progress','--collection-path-space'])viewport.style.removeProperty(key);
+    for(const key of ['--collection-title-expanded','--collection-path-progress','--collection-title-progress','--collection-path-space'])styleTarget.style.removeProperty(key);
     const path=header.querySelector<HTMLElement>('.collection-breadcrumb');if(path){path.inert=false;path.removeAttribute('aria-hidden');}
     delete header.dataset.compact;syncLibraryControls(header);
 
