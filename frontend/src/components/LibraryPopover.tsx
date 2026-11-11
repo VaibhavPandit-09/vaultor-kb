@@ -45,7 +45,13 @@ export default function LibraryPopover({ label, children, trigger, className, pr
  },[contextTarget]);
  useEffect(() => {
   if(!open)return;
-  const frame=requestAnimationFrame(()=>panel.current?.querySelector<HTMLElement>('button:not(:disabled),select,input')?.focus({preventScroll:true}));
+  const frame=requestAnimationFrame(()=>{
+   const node=panel.current;
+   // A fast follow-up may already own focus or have opened a child portal.
+   // Initial focus must not pull it back and dismiss that child menu.
+   if(!node||node.contains(document.activeElement)||node.querySelector('[aria-haspopup][aria-expanded="true"]'))return;
+   node.querySelector<HTMLElement>('button:not(:disabled),select,input')?.focus({preventScroll:true});
+  });
   const dismiss=(event:PointerEvent)=>{if(!panel.current?.contains(event.target as Node)&&!anchor.current?.contains(event.target as Node))setOpen(false);};
   const transferFocus=(event:FocusEvent)=>{if(isMenu&&event.target instanceof Node&&!panel.current?.contains(event.target)&&!anchor.current?.contains(event.target)&&!source.current?.contains(event.target))setOpen(false);};
   const abandon=(event:FocusEvent)=>{if(event.target===window)setOpen(false);};

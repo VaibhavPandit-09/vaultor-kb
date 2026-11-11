@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {createPortal} from 'react-dom';
+import {createPortal,flushSync} from 'react-dom';
 import AppModal from '../components/modals/AppModal';
 import {command,type Page} from './client';
 import {binding,type CommandId,type Preferences} from './desktopState';
@@ -12,6 +12,8 @@ export default function CommandPalette({commands,preferences,close,openResource}
  const words=query.toLowerCase().trim().split(/\s+/),results=mode==='commands'?commands.filter(c=>c.id!=='palette'&&c.enabled!==false&&words.every(w=>c.label.toLowerCase().includes(w))).sort((a,b)=>Number(b.label.toLowerCase().startsWith(query.toLowerCase()))-Number(a.label.toLowerCase().startsWith(query.toLowerCase()))).map(c=>({id:c.id,label:c.label,hint:binding(c.id,preferences),run:c.run})):page?.items.map(n=>({id:n.id,label:n.title,hint:'Saved resource',run:()=>openResource(n.id)}))??[];
  const selectedId=results[index]?.id;
  useEffect(()=>{if(selectedId)document.getElementById('command-'+selectedId)?.scrollIntoView?.({block:'nearest'});},[selectedId]);
- const execute=(i:number)=>{const item=results[i];if(!item)return;close();item.run();};
+ // Let the shared dialog scope restore its launcher before a command opens
+ // another dialog. Its search input must never become Settings' return target.
+ const execute=(i:number)=>{const item=results[i];if(!item)return;flushSync(close);queueMicrotask(item.run);};
  return createPortal(<AppModal open title="Command palette" escapeLayer="commandPalette" onClose={close} widthClassName="max-w-xl"><div className="next-command-palette"><div className="next-command-modes"><button aria-pressed={mode==='commands'} onClick={()=>{setMode('commands');setIndex(0);}}>Commands</button><button aria-pressed={mode==='resources'} onClick={()=>{setMode('resources');setIndex(0);}}>Resources · saved titles</button></div><input ref={input} autoFocus aria-label={mode==='commands'?'Search commands':'Search resource titles'} role="combobox" aria-expanded aria-controls="next-command-results" aria-activedescendant={results[index]?'command-'+results[index].id:undefined} placeholder={mode==='commands'?'What would you like to do?':'Search saved resource titles…'} value={query} onChange={e=>{setQuery(e.target.value);setIndex(0);setPage(undefined);}} onKeyDown={e=>{if(['ArrowDown','ArrowUp','Enter'].includes(e.key)){e.preventDefault();if(e.key==='Enter')execute(index);else setIndex(i=>Math.max(0,Math.min(results.length-1,i+(e.key==='ArrowDown'?1:-1))));}}}/><div id="next-command-results" role="listbox">{results.map((r,i)=><button role="option" id={'command-'+r.id} aria-selected={i===index} key={r.id} onClick={()=>execute(i)} onPointerMove={()=>setIndex(i)}><span>{r.label}</span><kbd>{r.hint}</kbd></button>)}{!results.length&&<p>{mode==='resources'&&!page&&!error?'Searching saved titles…':'No matching results.'}</p>}</div>{error&&<p role="alert">{error}</p>}</div></AppModal>,document.body);
 }

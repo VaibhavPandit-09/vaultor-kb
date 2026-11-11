@@ -14,10 +14,10 @@ it('journals document edits but does not treat locking and selection as edits',a
   const prepare=documents.prepare.bind(documents);
   vi.spyOn(documents,'prepare').mockImplementation((value,scope)=>{editor=value;prepare(value,scope);});
   const note={id:'a',title:'A',revision:1,content:{type:'doc',content:[{type:'paragraph'}]}};
-  const view=(locked:boolean)=><EscapeManagerProvider><NextEditor note={note} documents={documents} changed={changed} locked={locked} pane={0}/></EscapeManagerProvider>;
+  const view=(locked:boolean)=><EscapeManagerProvider><div className="next-document"><div className="next-note-bar"/><NextEditor note={note} documents={documents} changed={changed} locked={locked} pane={0}/></div></EscapeManagerProvider>;
   const mounted=render(view(false));await waitFor(()=>expect(editor?.isInitialized).toBe(true));
   expect(changed).not.toHaveBeenCalled();
-  fireEvent.click(mounted.getByRole('button',{name:'Insert resource link'}));act(()=>{editor.commands.insertContent('M9');});expect(resourceLinkPluginKey.getState(editor.state)).toMatchObject({active:true,query:'M9'});act(()=>{editor.commands.setContent(note.content);editor.view.dispatch(editor.state.tr.setMeta(resourceLinkPluginKey,{active:false,range:null,query:''}));});changed.mockClear();
+  expect(mounted.getByRole('button',{name:'Note formatting'}).closest('.next-note-bar')).toBeTruthy();fireEvent.click(mounted.getByRole('button',{name:'Note formatting'}));await waitFor(()=>expect(mounted.getByLabelText('Insert resource link')).toBeTruthy());fireEvent.click(mounted.getByRole('button',{name:'Block and link actions'}));await mounted.findByRole('menuitem',{name:'Paragraph'});fireEvent.keyDown(document,{key:'Escape'});await waitFor(()=>expect(mounted.queryByRole('menuitem',{name:'Paragraph'})).toBeNull());expect(changed).not.toHaveBeenCalled();fireEvent.click(mounted.getByLabelText('Insert resource link'));act(()=>{editor.commands.insertContent('M9');});expect(resourceLinkPluginKey.getState(editor.state)).toMatchObject({active:true,query:'M9'});act(()=>{editor.commands.setContent(note.content);editor.view.dispatch(editor.state.tr.setMeta(resourceLinkPluginKey,{active:false,range:null,query:''}));});changed.mockClear();
   const target=captureImportTarget(editor,editor.state.selection);act(()=>target.insert([{type:'text',text:'mapped anchor'}]));expect(editor.getText()).toContain('mapped anchor');changed.mockClear();
   act(()=>{editor.commands.insertContent('actual edit');});expect(changed).toHaveBeenCalledTimes(1);
   mounted.rerender(view(true));await waitFor(()=>expect(editor.isEditable).toBe(false));
@@ -33,7 +33,7 @@ it('shares rich managed blocks and undo between panes without enabling the linke
   await waitFor(()=>expect(editors.filter(e=>e.isInitialized)).toHaveLength(2));
   act(()=>{editors[0].commands.insertContent([{type:'paragraph',content:[{type:'resourceLink',attrs:{resourceId:'target',label:'Target',type:'note'}}]},{type:'codeBlock',attrs:{language:'javascript'},content:[{type:'text',text:'const value = 1;'}]}]);});
   expect(editors[1].getJSON()).toEqual(editors[0].getJSON());expect(editors[0].getJSON().content?.some(n=>n.type==='codeBlock')).toBe(true);
-  let linkPosition=0;editors[0].state.doc.descendants((node,pos)=>{if(node.type.name==='resourceLink')linkPosition=pos;});act(()=>{editors[0].view.focus();editors[0].commands.setNodeSelection(linkPosition);});expect(mounted.container.querySelector<HTMLElement>('.next-editor-tools')?.dataset.selection).toBe('false');
+  let linkPosition=0;editors[0].state.doc.descendants((node,pos)=>{if(node.type.name==='resourceLink')linkPosition=pos;});act(()=>{editors[0].view.focus();editors[0].commands.setNodeSelection(linkPosition);});expect(mounted.container.querySelector('.next-editor-tools[data-selection=true]')).toBeNull();
   act(()=>{editors[0].commands.insertTable({rows:2,cols:2,withHeaderRow:true});editors[0].commands.addColumnAfter();});expect(editors[1].getJSON()).toEqual(editors[0].getJSON());
   mounted.unmount();
 });

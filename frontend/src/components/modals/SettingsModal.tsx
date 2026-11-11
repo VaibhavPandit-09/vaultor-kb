@@ -1,4 +1,4 @@
-import {Choices,SettingsRow} from '../SettingsPresentation';
+import {Choices,SettingsRow,SettingsSurface,NumberRange} from '../SettingsPresentation';
 import {themeOriginAt} from '../../lib/themeTransition';
 import { MotionComparison, MotionIndicator, CategoryMotion } from '../MotionFeedback';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
@@ -8,7 +8,6 @@ import { useSettings } from '../../lib/settings';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../../lib/escape/escape';
 import { useRestoreFocusOnClose } from '../../lib/useRestoreFocusOnClose';
 import { dialogOwnsFocusOutside } from '../../lib/dialogFocus';
-import { getGlassPanelStyle, getOverlayStyle } from '../../lib/transparency';
 
 type Category = 'appearance' | 'workspace' | 'layout' | 'keyboard';
 type Setting = { id: string; label: string; description: string; keywords: string; control: ReactNode };
@@ -125,8 +124,7 @@ function SettingsWindow({ onClose, onHelp }: { onClose: () => void; onHelp?: () 
   const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const shown = groups.filter(group => terms.length || group.id === category).map(group => ({ ...group, settings: group.settings.filter(setting => terms.every(term => `${group.label} ${setting.label} ${setting.description} ${setting.keywords}`.toLowerCase().includes(term))) })).filter(group => group.settings.length);
 
-  return <div className="settings-overlay" style={getOverlayStyle(settings.local.uiTransparency, 0.38)} onClick={onClose}>
-    <div data-motion-surface="panel" data-motion-key="settings" className="settings-window" ref={root} role="dialog" aria-modal="true" aria-labelledby={titleId} style={getGlassPanelStyle(settings.local.uiTransparency, 16, 'canvas')} onClick={event => event.stopPropagation()} onKeyDown={event => {
+  return <SettingsSurface opacity={settings.local.uiTransparency} onClose={onClose} dialogRef={root} aria-labelledby={titleId} onKeyDown={event => {
       if (event.key !== 'Tab') return;
       const boundary = confirmation.current ?? root.current;
       const items = focusable(boundary);
@@ -157,8 +155,7 @@ function SettingsWindow({ onClose, onHelp }: { onClose: () => void; onHelp?: () 
         </div>
       </div>
       {reset && <div className="settings-confirm-overlay"><div ref={confirmation} className="settings-confirm" role="alertdialog" aria-modal="true" aria-labelledby={`${titleId}-reset`} aria-describedby={`${titleId}-reset-description`}><h3 id={`${titleId}-reset`}>{reset.label}?</h3><p id={`${titleId}-reset-description`}>{reset.description}</p><div><button type="button" ref={cancel} onClick={() => { setReset(null); more.current?.focus(); }}>Cancel</button><button type="button" className="settings-confirm-action" onClick={() => { reset.run(); setReset(null); more.current?.focus(); }}>Reset</button></div></div></div>}
-    </div>
-  </div>;
+  </SettingsSurface>;
 }
 
 function capitalize(value: string) { return value.charAt(0).toUpperCase() + value.slice(1); }
@@ -169,15 +166,4 @@ function focusable(root: HTMLElement | null) {
     while (node) { const style = getComputedStyle(node); if (style.display === 'none' || style.visibility === 'hidden') return false; if (node === root) break; node = node.parentElement; }
     return true;
   });
-}
-function NumberRange({ label, value, min, max, step, unit, onChange }: { label: string; value: number; min: number; max: number; step: number; unit: string; onChange: (value: number) => void }) {
-  const errorId=useId();
-  const [draft, setDraft] = useState<string | null>(null);
-  const [error, setError] = useState('');
-  const commit = () => {
-    const number = Number(draft);
-    if (draft === '' || !Number.isFinite(number) || number < min || number > max || Math.abs((number - min) / step - Math.round((number - min) / step)) > 0.001) { setError(`Use ${min}–${max} ${unit}, in steps of ${step}.`); return; }
-    onChange(number); setDraft(null); setError('');
-  };
-  return <div className="settings-range"><div><input type="range" aria-label={label} value={value} min={min} max={max} step={step} onChange={event => { setDraft(null); setError(''); onChange(Number(event.target.value)); }} /><label><input type="number" aria-label={`${label} value`} aria-invalid={Boolean(error)} aria-describedby={error?errorId:undefined} value={draft ?? String(value)} min={min} max={max} step={step} onChange={event => { setDraft(event.target.value); setError(''); }} onBlur={() => { if (draft !== null) commit(); }} onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing && draft !== null) { event.preventDefault(); commit(); } }} /><span>{unit}</span></label></div>{error && <p id={errorId} role="alert" className="settings-error">{error}</p>}</div>;
 }

@@ -4,6 +4,8 @@ Start with [CODEBASE.md](CODEBASE.md) for the current product, source map, archi
 
 Reviewed 2026-11-08: Windows x64 and macOS Apple Silicon 0.27.0 Help are published; GitHub Latest remains 0.21.0; Android alpha.28/code32 is unchanged. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
 
+- [Vaultor Next M13 acceptance](plans/VAULTOR-NEXT-M13.md): original/current Windows screen matrix, checks, representative local evidence and remaining desktop parity.
+
 ## User Help
 
 Published Windows x64 and macOS Apple Silicon 0.27.0 Help, exact-source qualification and verified public delivery are tracked in [the release ledger](desktop/releases/v0.27.0.md).

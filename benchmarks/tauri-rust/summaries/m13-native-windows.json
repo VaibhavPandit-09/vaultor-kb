@@ -1,0 +1,107 @@
+{
+  "milestone": "M13",
+  "status": "partially complete",
+  "sourceBase": "748eea508b440e885279fbf0284565d4c928b6b3",
+  "sourceDirtyAtBuild": true,
+  "executableSha256": "d6ca10b9b7e6a7b0cf6e091531280e041aa14137c3f8ff0d7a699a13902dc0d6",
+  "originalRecord": "electron-java-2026-11-11T11-09-55.107Z.json",
+  "nextRecord": "tauri-rust-2026-11-11T12-14-32.918Z.json",
+  "success": true,
+  "libraryGeometry": {
+    "width": 1200,
+    "height": 820,
+    "sidebar": 288,
+    "headers": 1,
+    "compact": "true",
+    "overflow": false,
+    "header": {
+      "x": 288,
+      "y": 0,
+      "width": 904,
+      "height": 80
+    }
+  },
+  "compactLane": [
+    {
+      "name": "browse-icon-button library-compact-tools",
+      "x": 1128,
+      "y": 40,
+      "right": 1160,
+      "bottom": 72
+    },
+    {
+      "name": "",
+      "x": 320,
+      "y": 42,
+      "right": 460,
+      "bottom": 70
+    },
+    {
+      "name": "library-heading-actions",
+      "x": 1081.666748046875,
+      "y": 39.25,
+      "right": 1120.0000839233398,
+      "bottom": 72.75
+    },
+    {
+      "name": "next-search",
+      "x": 472,
+      "y": 40,
+      "right": 1045,
+      "bottom": 78
+    }
+  ],
+  "opacity": {
+    "original": {
+      "value": "65",
+      "panel": "rgba(255, 255, 255, 0.65)",
+      "blur": "blur(10px)",
+      "wholeWindow": "1"
+    },
+    "next": {
+      "value": "65",
+      "panel": "rgba(255, 255, 255, 0.65)",
+      "blur": "blur(10.4px)",
+      "wholeWindow": "1"
+    }
+  },
+  "settingsGeometry": {
+    "width": 776,
+    "height": 598,
+    "x": 12,
+    "y": 40,
+    "overflow": false,
+    "inside": true
+  },
+  "minimumSettings": {
+    "inside": true,
+    "overflow": false,
+    "rail": "none"
+  },
+  "persistedOpacity": "0.65",
+  "checks": [
+    "Original SidebarShortcut rows render in Next without old API providers;Quick Access pin menu uses Rust unpin and refreshes Library state",
+    "Managed autosave;shared-pane content;Settings retains same two editor DOMs;Escape/focus restoration;opacity65 persisted across reload;single compressed Library header;selection;pane close;sidebar collapse;application menu;palette",
+    "Bundled Next Help renders current floating Settings/60–100% opacity instructions;Escape returns to editor",
+    "Forced termination at durable managed draft;restart Recovery restore and autosave;competing managed revision refused and draft parked;linked bytes unchanged before explicit Save;linked competing bytes refused and text retained",
+    "Equivalent100-note fixture at1200x820/light;original source/document;Library expanded/compact,selection,note,Settings/opacity65,OLED/dark/light,narrow800x650 captures"
+  ],
+  "nativeChecks": [
+    "Fresh non-emulated Windows process: physical Ctrl+, opens Settings without changing Linked Sources context.",
+    "Original and Next floating Settings inspected on Windows.",
+    "Final native maximize fills desktop with controls at right edge and notice below caption."
+  ],
+  "limitations": [
+    "M13 partially complete: whole-screen differences remain; no complete transition fidelity acceptance.",
+    "800x650 and760x540 geometry checks use actual WebView2 rendering with CDP viewport overrides; physical edge-drag resize not certified.",
+    "No canonical performance samples added; no idle/leak/GPU improvement claim.",
+    "Debugger pause at durable-draft receipt controls crash-test timing."
+  ],
+  "validation": {
+    "frontend": "92 tests/17 files pass after lifecycle test waits for busy completion; prior112/20-file broader run passed before last shortcut/error changes",
+    "rust": "desktop::tests2/2 pass",
+    "build": "tsc + production Vite + optimized cargo release pass",
+    "lint": "scoped changed TypeScript pass",
+    "help": "43 features/16 articles validated;17 Help tests pass; native embedded article check pass; published provenance validator cannot validate dist-next (no Help provenance tree)"
+  }
+}

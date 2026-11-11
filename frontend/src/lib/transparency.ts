@@ -11,23 +11,22 @@ export function clampTransparency(value: number) {
 
 export function getGlassPanelStyle(value: number, blurMultiplier = 18, surface: 'panel' | 'canvas' = 'panel') {
   const transparency = clampTransparency(value);
-  const blur = Math.round(Math.max(8, transparency * blurMultiplier));
+  const blur = `max(8px, calc(var(--ui-opacity, ${transparency}) * ${blurMultiplier}px))`;
 
   return {
-    background: `rgba(var(${surface === 'canvas' ? '--card-rgb' : '--panel-rgb, var(--card-rgb)'}), var(--glass-opacity, ${transparency}))`,
-    backdropFilter: `blur(var(--glass-blur, ${blur}px))`,
-    WebkitBackdropFilter: `blur(var(--glass-blur, ${blur}px))`,
+    background: `rgba(var(${surface === 'canvas' ? '--card-rgb' : '--panel-rgb, var(--card-rgb)'}), var(--glass-opacity, var(--ui-opacity, ${transparency})))`,
+    backdropFilter: `blur(var(--glass-blur, ${blur}))`,
+    WebkitBackdropFilter: `blur(var(--glass-blur, ${blur}))`,
   };
 }
 
 export function getOverlayStyle(value: number, baseAlpha = 0.42) {
   const transparency = clampTransparency(value);
-  const overlayAlpha = Math.min(0.7, Math.max(0.22, baseAlpha + ((1 - transparency) * 0.28)));
-  const blur = Math.round(4 + ((1 - transparency) * 10));
+  const blur = `calc(4px + (1 - var(--ui-opacity, ${transparency})) * 10px)`;
 
   return {
-    background: `rgba(var(--overlay-rgb), ${overlayAlpha})`,
-    backdropFilter: `blur(var(--glass-blur, ${blur}px))`,
-    WebkitBackdropFilter: `blur(var(--glass-blur, ${blur}px))`,
+    background: `rgba(var(--overlay-rgb), clamp(.22, calc(${baseAlpha} + (1 - var(--ui-opacity, ${transparency})) * .28), .7))`,
+    backdropFilter: `blur(var(--glass-blur, ${blur}))`,
+    WebkitBackdropFilter: `blur(var(--glass-blur, ${blur}))`,
   };
 }

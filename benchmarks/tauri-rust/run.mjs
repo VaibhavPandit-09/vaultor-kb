@@ -15,8 +15,9 @@ const m2 = process.argv.includes('--m2');
 const m3 = process.argv.includes('--m3');
 const m4 = process.argv.includes('--m4');
 const m5 = process.argv.includes('--m5');
+const m13 = process.argv.includes('--m13');
 const m12 = process.argv.includes('--m12');
-const m11 = process.argv.includes('--m11')||m12;
+const m11 = process.argv.includes('--m11')||m12||m13;
 const m10 = process.argv.includes('--m10')||m11;
 const m9 = process.argv.includes('--m9');
 const m8 = process.argv.includes('--m8');
@@ -134,15 +135,18 @@ async function stopSampler(run, iteration) {
   if (duration > 0) record('idle', iteration, 'cpu_one_core_percent', 100 * (last.cpuSeconds - first.cpuSeconds) / duration, '%', 'Aggregate tree CPU / wall time; 100% = one logical CPU.');
 }
 async function quit() {
-  socket?.close();
   if (child && child.exitCode === null) await new Promise(r => {
     const killer = spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' }); killer.once('exit', r);
   });
+  // Keep a diagnostic pause in force until the owned process is terminated.
+  // Closing DevTools first resumes it and can let autosave defeat crash tests.
+  socket?.close();
 }
 try {
   let run = await launch(1);
   if (inspect) {
-    if(m12){const inspection=await import('./m12-inspect.mjs');await (process.argv.includes('--probe-containment')?inspection.probeContainment:inspection.inspectM12)({evaluate,cdp,wait,report,folder,output});}
+    if(m13||process.argv.includes('--reference-m13'))await (await import('./m13-inspect.mjs')).inspectM13({evaluate,cdp,wait,report,folder,output,reference:architecture==='electron-java',restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
+    else if(m12){const inspection=await import('./m12-inspect.mjs');await (process.argv.includes('--probe-containment')?inspection.probeContainment:inspection.inspectM12)({evaluate,cdp,wait,report,folder,output});}
     else if(m11){const inspection=await import('./m11-qualify.mjs');await (process.argv.includes('--linked-only')?inspection.inspectLinkedM11:process.argv.includes('--trash-only')?inspection.inspectTrashM11:inspection.inspectM11)({evaluate,cdp,wait,report,folder,output});}
     if(m10&&process.argv.includes('--final-smoke'))await (await import('./m10-qualify.mjs')).smokeFinal({evaluate,cdp,wait,report});
     if(m10&&process.argv.includes('--native-m10')){await cdp('Emulation.clearDeviceMetricsOverride');
@@ -153,7 +157,7 @@ try {
     if(process.argv.includes('--reference-m6'))await (await import('./m6-reference.mjs')).referenceM6({evaluate,cdp,wait,output,report});
     if(process.argv.includes('--reference-m12')){
       await evaluate("localStorage.setItem('vaultor-device-presentation-v1',JSON.stringify({...JSON.parse(localStorage.getItem('vaultor-device-presentation-v1')||'{}'),theme:'oled'}));true");await cdp('Page.reload');await wait("document.documentElement.dataset.theme==='oled'&&document.querySelector('[title=Settings]')",'original OLED and application ready');
-      await evaluate("document.querySelector('[title=Settings]').click();true");await wait("document.querySelector('.settings-window')",'original Settings');await delay(600);let image=await cdp('Page.captureScreenshot');await writeFile(join(output,'m12-reference-settings-oled.png'),Buffer.from(image.data,'base64'));
+      await wait("document.querySelector('[title=Settings]')",'original Settings trigger ready');await evaluate("document.querySelector('[title=Settings]').click();true");await wait("document.querySelector('.settings-window')",'original Settings');await delay(600);let image=await cdp('Page.captureScreenshot');await writeFile(join(output,'m12-reference-settings-oled.png'),Buffer.from(image.data,'base64'));
       await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',windowsVirtualKeyCode:27});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',windowsVirtualKeyCode:27});await wait("!document.querySelector('.settings-window')",'original Settings dismissal');await evaluate("document.querySelector('[aria-label=\"Help for this screen\"]').click();true");await wait("document.querySelector('.help-center')",'original Help');await delay(500);image=await cdp('Page.captureScreenshot');await writeFile(join(output,'m12-reference-help-oled.png'),Buffer.from(image.data,'base64'));report.checks.push('Original Electron Settings and Help opened in OLED;capture comparison with shared Rust-backed presentation');
     }
     console.log(await evaluate('document.body.innerText.slice(0,5000)'));

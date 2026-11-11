@@ -219,7 +219,7 @@ Final optimized application source5eaacc3 / EXE SHA-256d6fc84eb9706e57518bbd0b42
 
 ## Next milestones
 
-M11:advanced editor/table/CSV UX,media/file-preview gaps,remaining visual/motion refinement,independent per-pane trails and richer browser/session continuity. M12:relationship graph,linked-source indexing/relationships and advanced reconciliation,resource duplication,Explorer drag-out/native clipboard breadth,Review workflows,larger linked Markdown,workspace merge,diagnostics/OS Activity projection,accessibility/IME and installer/updater qualification. Scheduled backups,capture and smart views require explicit scope. Platform/LAN/mobile work remains separately authorized;Android is on hold. No milestone claims full Electron replacement parity.
+M13 owns core desktop restoration and the screen acceptance register below. Subsequent authorized M14/M15 work should close detailed browser/Help/contextual-editor presentation and remaining journeys, keyboard/accessibility, responsive and motion acceptance. Advanced table/CSV/media, graph, linked indexing/reconciliation, workspace merge and wider native capabilities remain separate scoped work. Installer/updater, platform/LAN/mobile and scheduled backups require their own authorization. Android remains on hold. No milestone claims full Electron replacement parity.
 
 
 ## M11 — Original React presentation reconciliation
@@ -303,3 +303,8 @@ The first full attempt timed out only because the driver waited for a draft row 
 A supplemental renderer-only containment A/B (3opens per mode,100notes,two64KiB docs) observed inline-size91.4/41.0/49.3ms and normal41.4/44.6/39.7ms. It ran during workbook authoring,used a temporary style override and includes a first-open outlier;it is diagnostic only and excluded from CSV comparisons. It does not justify a causal fix or establish an idle/memory effect. The optional --probe-containment recipe remains available for a clean follow-up.
 
 Workbook refresh completed from9350canonical records with53failed/invalidated runs excluded. M11/M12 exact-source editing means63.07/65.80ms and counts3/3 recalculate correctly;the independently reported medians62.3/70.0ms remain distinct. Missing-scenario blanks/counts and formula-error scan pass. Both comparison and matched-churn renders were inspected;one cramped heading was repaired through Artifact Tool without data/formula changes and rechecked. Native Excel recalculation was not performed.
+
+
+## M13 — core desktop restoration and UI acceptance
+
+[The M13 ledger](VAULTOR-NEXT-M13.md) owns the screen matrix, reference procedure, actual checks and remaining differences. M13 extracts the original SettingsSurface/NumberRange for both hosts, floats Next Settings over retained workspace DOM, persists Rust-validated60–100% surface opacity, restores original shell/sidebar/footer proportions and Library chrome clearance, and moves formatting from a permanent document row to a header disclosure/selection surface. Native commands, bounded sessions, shared documents and protected managed/linked writers remain authoritative. Legacy Settings route receipts migrate to Library. No installer, release tag or publication is part of this milestone. Screen and motion acceptance remain separate from implementation; the44 UI findings and156 functional checks are retained.

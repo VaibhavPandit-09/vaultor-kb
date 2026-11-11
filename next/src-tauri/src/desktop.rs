@@ -11,6 +11,7 @@ pub fn validate(value: &Value) -> Result<(), String> {
         let valid = match key.as_str() {
             "theme" => ["light", "dark", "oled", "system"].contains(&v.as_str().unwrap_or("")),
             "motion" => ["smooth", "fast", "reduced"].contains(&v.as_str().unwrap_or("")),
+            "opacity" => v.as_f64().is_some_and(|n| (0.6..=1.0).contains(&n)),
             "accent" => ["blue", "purple", "green", "orange", "teal", "pink"]
                 .contains(&v.as_str().unwrap_or("")),
             "startup" => {
@@ -77,9 +78,12 @@ mod tests {
         let dir = std::env::temp_dir().join(uuid::Uuid::new_v4().to_string());
         fs::create_dir(&dir).unwrap();
         let path = dir.join("preferences.json");
-        let value = json!({"theme":"oled","restoreSession":true,"shortcuts":{"palette":"Ctrl+K"}});
+        let value = json!({"theme":"oled","opacity":0.65,"restoreSession":true,"shortcuts":{"palette":"Ctrl+K"}});
         preferences(Some(&path), Some(value.clone())).unwrap();
         assert_eq!(preferences(Some(&path), None).unwrap(), value);
+        for invalid in [json!(0.59),json!(1.01),json!("0.85"),json!(null)] {
+            assert!(preferences(Some(&path), Some(json!({"opacity":invalid}))).is_err());
+        }
         assert!(preferences(Some(&path), Some(json!({"theme":"invalid"}))).is_err());
         assert_eq!(preferences(Some(&path), None).unwrap(), value);
         fs::remove_dir_all(dir).unwrap();
