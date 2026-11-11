@@ -45,6 +45,20 @@ impl Workspace {
     pub fn media(&mut self, r: Value) -> Result<Value, String> {
         let id = r["id"].as_str().unwrap_or("");
         match r["op"].as_str().unwrap_or("") {
+            "presentation" => {
+                let ids: Vec<String> = serde_json::from_value(r["ids"].clone()).map_err(error)?;
+                if ids.is_empty() || ids.len() > 100 { return Err("Choose 1–100 resources".into()); }
+                let mut tags=self.db.prepare("SELECT t.id,t.name,t.color FROM tags t JOIN resource_tags a ON a.tag_id=t.id WHERE a.resource_id=?1 ORDER BY t.normalized,t.id").map_err(error)?;
+                let mut collections=self.db.prepare("SELECT c.id,c.name FROM collections c JOIN memberships m ON m.collection_id=c.id WHERE m.resource_id=?1 ORDER BY c.name,c.id").map_err(error)?;
+                let mut rows=Vec::with_capacity(ids.len());
+                for id in ids {
+                    let assigned=tags.query_map([&id],|row|Ok(json!({"id":row.get::<_,String>(0)?,"name":row.get::<_,String>(1)?,"color":row.get::<_,String>(2)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
+                    let placements=collections.query_map([&id],|row|Ok(json!({"id":row.get::<_,String>(0)?,"name":row.get::<_,String>(1)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
+                    let pinned:bool=self.db.query_row("SELECT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=?1 AND pinned=1)",[&id],|row|row.get(0)).map_err(error)?;
+                    rows.push(json!({"id":id,"tags":assigned,"collections":placements,"pinned":pinned}));
+                }
+                Ok(json!(rows))
+            }
             "summaries" => {
                 let ids: Vec<String> = serde_json::from_value(r["ids"].clone()).map_err(error)?;
                 Ok(json!(self.resource_summaries(&ids)?))
@@ -471,6 +485,20 @@ mod tests {
             .as_str()
             .unwrap()
             .into()
+    }
+    #[test]
+    fn presentation_is_bounded_metadata_without_document_bodies() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut w = Workspace::open(dir.path()).unwrap();
+        let id = note(&mut w, "Metadata");
+        w.db.execute("INSERT INTO tags(id,name,normalized,color) VALUES('t','Ideas','ideas','#123456')",[]).unwrap();
+        w.db.execute("INSERT INTO resource_tags(resource_id,tag_id) VALUES(?1,'t')",[&id]).unwrap();
+        let rows=w.media(json!({"op":"presentation","ids":[id]})).unwrap();
+        assert_eq!(rows[0]["tags"][0]["name"],"Ideas");
+        assert_eq!(rows[0]["pinned"],false);
+        assert!(rows[0].get("content").is_none());
+        assert!(w.media(json!({"op":"presentation","ids":[]})).is_err());
+        assert!(w.media(json!({"op":"presentation","ids":vec!["x";101]})).is_err());
     }
     #[test]
     fn links_saved_incrementally_restart_trash_and_purge() {

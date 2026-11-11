@@ -146,3 +146,5 @@ Android: [0.1.0-alpha.1](android/releases/0.1.0-alpha.1.md) · [0.1.0-alpha.2](a
 - [Desktop0.19.1 release evidence](desktop/releases/v0.19.1.md): ordinary NTFS tracking-ID admission and formatted read-only Markdown patch.
 
 - [Mac 0.21.0 release](desktop/releases/v0.21.0.md): native APFS linked folders, actual Mac publication evidence and exact-tag Windows/complete-platform handoff.
+
+Experimental frontend acceptance: [Vaultor Next migration tracker](plans/VAULTOR-NEXT.md), [functional parity register](plans/VAULTOR-NEXT-PARITY.csv) and [UI reconciliation audit](plans/VAULTOR-NEXT-UI-AUDIT.md). Published Electron release documentation remains separate.

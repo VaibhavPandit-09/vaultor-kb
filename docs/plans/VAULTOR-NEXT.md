@@ -4,7 +4,7 @@ Reviewed 2026-11-11. Authoritative experimental replacement tracker. Published W
 
 ## Target and implemented milestones
 
-Tauri 2 + React/TypeScript + Tiptap + Rust + SQLite. Normal local work uses direct commands, with no HTTP server, JVM or permanent helper process. `next/` owns the native application; `frontend/src/next/` is its separate frontend entry point. Original implementations remain intact as reference and benchmark baseline.
+Tauri 2 + React/TypeScript + Tiptap + Rust + SQLite. Normal local work uses direct commands, with no HTTP server, JVM or permanent helper process. `next/` owns the native application; `frontend/src/next/` is its separate frontend entry point. Original controllers remain available as reference and benchmark baseline; shared presentation is extracted for both hosts in M11.
 
 M1 completed at `52b84ee`: isolated workspaces, exclusive process ownership, Rust/SQLite persistence, collections, structured Tiptap notes, revision-checked saves, shared panes/history, workspace themes, normal-close save barrier and offline milestone Help.
 
@@ -220,3 +220,24 @@ Final optimized application source5eaacc3 / EXE SHA-256d6fc84eb9706e57518bbd0b42
 ## Next milestones
 
 M11:advanced editor/table/CSV UX,media/file-preview gaps,remaining visual/motion refinement,independent per-pane trails and richer browser/session continuity. M12:relationship graph,linked-source indexing/relationships and advanced reconciliation,resource duplication,Explorer drag-out/native clipboard breadth,Review workflows,larger linked Markdown,workspace merge,diagnostics/OS Activity projection,accessibility/IME and installer/updater qualification. Scheduled backups,capture and smart views require explicit scope. Platform/LAN/mobile work remains separately authorized;Android is on hold. No milestone claims full Electron replacement parity.
+
+
+## M11 — Original React presentation reconciliation
+
+Detailed acceptance registers: [functional parity](VAULTOR-NEXT-PARITY.csv) (156 checks) and [UI audit](VAULTOR-NEXT-UI-AUDIT.md) (44 findings). Imported from the actual Downloads folder without altering the originals. The source audits are hypotheses; M11 updates preserve unresolved findings rather than treating compilation as visual acceptance.
+
+| Owner | Decision and resulting boundary | Remaining work |
+|---|---|---|
+| BrowseLayout / LibraryView | Extract shared BrowsePresentation heading, pagination and row surface; both original and Next consume them. Reuse LibraryOrientation and its compression controller directly. | Resource-type filter and complete original browse sections remain M12. |
+| NoteOrientation / BlockEditor | Reuse original note framing and organization disclosure. Keep NextEditor and shared EditingSession; original editor controls already adapted in M9. | Linked framing and advanced editor controls remain M12/later editor scope. |
+| AdaptiveNavigator / SidebarSections | Extract NavigatorFrame and SidebarSectionSurface for both controllers. Restore five categories and collapsible Pinned/Recent shortcuts. Retain SidebarFrame. | Per-category scroll, sidebar customization and drag discovery remain pending. |
+| DesktopChrome | Extract shared WindowControls; retain Tauri host commands and save-aware close. | Windows Snap/drag/accessibility qualification remains pending. |
+| WorkspaceBrowser / Settings | Retain Rust-backed controllers and full destinations. | Their Next BrowseHeader and visual reconciliation remain M12; no full-app parity claim. |
+
+The application adapter remains the existing command/session/selection services plus presentation.ts: one cancellable-response, bounded 1–100 metadata read for a visible page or open panes. It returns tags, memberships and pin state, never editor bodies. There is no Redux revival, compatibility API, HTTP host or second Save coordinator. Original API-driven PinButton/ResourceActions/ResourceThumbnail are not imported into Next; host callbacks and the pure resource-kind registry supply those slots.
+
+Library header/search/paging now live in one scroll owner and transform without remounting inputs. Next's Library-specific geometry and row overrides are removed; host rules constrain the original compact lane to one line. The default button layout applies only to unclassified legacy controls, allowing classed original primitives to own their presentation. Managed titles, status and close/actions stay reachable while organization folds. Pane focus uses the original inset/depth treatment, with reduced-motion endpoints. The compression controller also honors the app's reduced preference independently of the OS.
+
+M11 focused validation:53 unique frontend cases pass across selection/search/focus, shared rows, navigation, managed/linked editing sessions and original orientation/navigator/sidebar/window tests;1 bounded Rust metadata test passes. TypeScript, scoped lint, bundled Help validation(43 features/16 articles) and optimized Windows build pass. Build warnings retain the existing large JS chunk and mixed static/dynamic legacy API imports; those are not treated as a new backend dependency.
+
+Windows: original production Electron ran in isolated storage with100 notes, light/dark/OLED and Library/selection/note/panes/context references. Optimized Tauri captures show restored two-line rows, collections/tags metadata, title/organization frame, shared panes and five-category Quick Access. Native pointer input opened a managed note; native wheel input and successive captures inspected compression. At1200px, the compact title/search/options/New note/details controls occupy one line, with no list horizontal overflow;800px expanded OLED was inspected. Native maximize clears the CDP device-emulation resize margin. Initial captures exposed and corrected an absolute window-control occlusion and compact-control collision. This is scoped visual acceptance, not whole-app parity or a high-frame-rate motion certification. The native inspection driver expires after10minutes; its late typing attempt did not establish an editing result. Managed editing/restart is verified separately by the common production runner. Linked explicit Save/conflict and unrelated imports/Activity lifecycle reuse unchanged M10 native evidence plus focused session tests; no claim of a fresh full M10 campaign. Existing M6–M10 gaps remain: advanced editor/table/media/CSV, third panes/history, linked framing, native Explorer drag-out/Snap, workspace merge, accessibility/IME and whole-app motion. M12 should finish remaining browser/Settings/linked workspace presentation and contextual controls before expanding feature scope.

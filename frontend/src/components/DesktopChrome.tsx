@@ -1,5 +1,6 @@
+import WindowControls from './WindowControls';
 import { useContext, useEffect, useState } from 'react';
-import { Ellipsis, Maximize, Minimize2, Minus, Plug, Layers, X } from 'lucide-react';
+import { Ellipsis, Plug, Layers } from 'lucide-react';
 import { unwrap } from '../lib/desktop';
 
 import { WorkspaceSelectionContext } from '../lib/workspaceSelection';
@@ -21,12 +22,5 @@ export default function DesktopChrome() {
   }, [bridge]);
   if (!bridge?.windowAction) return null;
   const action = (value: 'menu' | 'minimize' | 'maximize' | 'close') => { setError(''); void bridge.windowAction!(value).then(unwrap).then(s => setMaximized(s.maximized)).catch(e => setError(e.message)); };
-  return <div className="desktop-window-controls" role="group" aria-label="Window controls">
-    <div className="desktop-drag-grip" title="Drag window" onDoubleClick={() => action('maximize')}/>
-    <button aria-label="App menu" title="App menu" onClick={() => action('menu')}><Ellipsis size={16}/></button>
-    <button aria-label="Minimize" title="Minimize" onClick={() => action('minimize')}><Minus size={16}/></button>
-    <button aria-label={maximized ? 'Restore window' : 'Maximize'} title={maximized ? 'Restore window' : 'Maximize'} onClick={() => action('maximize')}>{maximized ? <Minimize2 size={14}/> : <Maximize size={14}/>}</button>
-    <button className="desktop-close" aria-label="Close window" title="Close to tray" onClick={() => action('close')}><X size={17}/></button>
-    {error && <span role="alert" className="desktop-window-error">{error}</span>}
-  </div>;
+  return <WindowControls maximized={maximized} minimize={()=>action('minimize')} maximize={()=>action('maximize')} close={()=>action('close')} closeTitle="Close to tray" error={error} drag={<div className="desktop-drag-grip" title="Drag window" onDoubleClick={()=>action('maximize')}/>} menu={<button aria-label="App menu" title="App menu" onClick={()=>action('menu')}><Ellipsis size={16}/></button>}/>;
 }

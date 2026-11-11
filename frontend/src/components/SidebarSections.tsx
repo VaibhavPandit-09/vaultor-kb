@@ -1,8 +1,8 @@
+import SidebarSectionSurface from './SidebarSectionSurface';
 import { useDesktopInteraction,useDragItems,useDropTarget } from '../lib/desktopInteraction';
 import { MotionIndicator } from './MotionFeedback';
 import { useEffect, useMemo, useState, type ReactNode, type MouseEvent } from 'react';
 import { Settings2 } from 'lucide-react';
-import DisclosureIndicator from './DisclosureIndicator';
 import { normalizeSidebarSections, sidebarSectionNames, type SidebarSections as Preferences, type SidebarSectionName } from '../lib/sidebarPreferences';
 import { useResourcePage } from '../lib/useResourcePage';
 import type { Resource } from '../types';
@@ -15,10 +15,7 @@ export function SidebarSection({ name, preferences, onChange, onViewAll, childre
   const title = name[0].toUpperCase() + name.slice(1), expanded = !preferences[name].collapsed||Boolean(drag?.payload&&revealed===drag.payload.ticket);
   const canExplore=drag?.payload?.kind==='resources'||drag?.payload?.kind==='tag';
   const drop=useDropTarget(name==='pinned'&&drag?.payload?.kind==='resources'?{kind:'pinned'}:!expanded&&canExplore?{kind:'discovery',id:'section-'+name,label:'Expand '+title}:null,!expanded?()=>{if(drag?.payload)setRevealed(drag.payload.ticket);}:undefined);
-  return <section {...drop} className="sidebar-section" aria-label={title} hidden={!preferences[name].visible}>
-    <header className="sidebar-section-heading"><button aria-expanded={expanded} aria-controls={'sidebar-'+name} onClick={()=>onChange({...preferences,[name]:{...preferences[name],collapsed:expanded}})}><DisclosureIndicator expanded={expanded}/>{title}</button><div className="sidebar-section-tools">{name!=='tags'&&expanded&&<ResourceTypeFilter compact label={'Filter '+title.toLowerCase()+' type'} collections={name==='pinned'} value={preferences[name].type} onChange={type=>onChange({...preferences,[name]:{...preferences[name],type}})}/>} {onViewAll&&<button onClick={onViewAll}>View all</button>}</div></header>
-    <div className="sidebar-disclosure" data-expanded={expanded} aria-hidden={!expanded} inert={!expanded}><div id={'sidebar-'+name} className="sidebar-disclosure-content"><MotionIndicator/>{children}</div></div>
-  </section>;
+  return <SidebarSectionSurface {...drop} title={title} expanded={expanded} hidden={!preferences[name].visible} toggle={()=>onChange({...preferences,[name]:{...preferences[name],collapsed:expanded}})} tools={<>{name!=='tags'&&expanded&&<ResourceTypeFilter compact label={'Filter '+title.toLowerCase()+' type'} collections={name==='pinned'} value={preferences[name].type} onChange={type=>onChange({...preferences,[name]:{...preferences[name],type}})}/>} {onViewAll&&<button onClick={onViewAll}>View all</button>}</>}><MotionIndicator/>{children}</SidebarSectionSurface>;
 }
 export function SidebarCustomization({ preferences, onChange, status='saved', onRetry }: { preferences: Preferences; onChange: (value: Preferences) => void; status?: 'saved'|'saving'|'failed'; onRetry?:()=>void }) {
   return <LibraryPopover label="Sidebar options" trigger={<Settings2 size={15}/>} className="browse-icon-button">{()=> <><h2 className="text-sm font-medium">Quick access options</h2>{sidebarSectionNames.filter(name=>name!=='tags').map(name=><label key={name} className="flex gap-2 items-center text-sm"><input type="checkbox" checked={preferences[name].visible} onChange={event=>onChange({...preferences,[name]:{...preferences[name],visible:event.target.checked}})}/>{name[0].toUpperCase()+name.slice(1)}</label>)}<button className="library-button" onClick={()=>onChange(normalizeSidebarSections(undefined))}>Restore defaults</button>{status==='saving'&&<p role="status" className="browse-feedback">Saving settings…</p>}{status==='failed'&&<p role="alert" className="browse-feedback">Settings could not be saved.<button onClick={onRetry}>Retry</button></p>}</>}</LibraryPopover>;

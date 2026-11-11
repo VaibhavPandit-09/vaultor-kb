@@ -17,7 +17,7 @@ beforeEach(() => {
  Object.defineProperties(viewport, { scrollHeight: { value: 1000, configurable: true }, clientHeight: { value: 500, configurable: true } });
  stop = attachLibraryCompression(viewport, header); settle();
 });
-afterEach(() => { stop(); document.body.replaceChildren(); vi.unstubAllGlobals(); });
+afterEach(() => { delete document.documentElement.dataset.animation; stop(); document.body.replaceChildren(); vi.unstubAllGlobals(); });
 it('follows absolute scroll depth and reverses while retaining focus, caret and row nodes', () => {
  const input = document.createElement('input'); input.value = 'research'; header.append(input);
  const row = document.createElement('li'); viewport.append(row); input.focus(); input.setSelectionRange(2, 5);
@@ -104,3 +104,5 @@ it('keeps the same search, filters and paging interactive at every compression d
  stop=attachLibraryCompression(viewport,header);for(const top of [0,40,80,120,160,80,0]){viewport.scrollTop=top;viewport.dispatchEvent(new Event('scroll'));settle();expect(filters.inert).not.toBe(true);expect(summary.inert).not.toBe(true);expect(header.querySelector('input')).toBe(input);expect(input.value).toBe('research');}
  viewport.scrollTop=160;viewport.dispatchEvent(new Event('scroll'));settle();expect(context.inert).toBe(true);expect(viewport.style.getPropertyValue('--library-pages-width')).toBe('76px');header.dataset.tools='true';viewport.dispatchEvent(new Event('scroll'));settle();expect(context.inert).toBe(false);
 });
+
+it('honors the application reduced-motion preference independently of the OS',()=>{document.documentElement.dataset.animation='reduced';viewport.scrollTop=80;viewport.dispatchEvent(new Event('scroll'));tick();expect(progress()).toBe(1);expect(frames.size).toBe(0);});

@@ -1,0 +1,4 @@
+import {useId,type HTMLAttributes,type ReactNode} from 'react';
+import DisclosureIndicator from './DisclosureIndicator';
+/** SidebarSections presentation, without queries, drag or preference ownership. */
+export default function SidebarSectionSurface({title,expanded,toggle,tools,children,...props}:HTMLAttributes<HTMLElement>&{title:string;expanded:boolean;toggle:()=>void;tools?:ReactNode;children:ReactNode}){const id=useId();return <section {...props} className="sidebar-section" aria-label={title}><header className="sidebar-section-heading"><button aria-expanded={expanded} aria-controls={id} onClick={toggle}><DisclosureIndicator expanded={expanded}/>{title}</button><div className="sidebar-section-tools">{tools}</div></header><div className="sidebar-disclosure" data-expanded={expanded} aria-hidden={!expanded} inert={!expanded}><div id={id} className="sidebar-disclosure-content">{children}</div></div></section>;}

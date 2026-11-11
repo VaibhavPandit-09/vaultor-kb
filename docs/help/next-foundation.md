@@ -6,6 +6,12 @@ Vaultor Next is a separate Windows development application. It does not replace 
 
 The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or an existing M2–M10 workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. Import and transfers also offers Create local workspace: choose a parent and a new folder name. Finish or cancel Activity tasks before switching. Linked folders are separate from this workspace.
 
+## Library and note presentation
+
+Library uses the original Vaultor resource-row and transforming-header presentation. Rows show type, collection/tag metadata, date and pin/actions. Scroll to compress the same search and paging controls into one line. The details button exposes page selection in compact mode; Escape clears selection after a contextual menu has closed. Quick Access contains collapsible Pinned and Recent sections; View all opens the complete browser.
+
+Managed-note titles and organization controls use the original scroll-driven note heading. Organization can be expanded explicitly; save status, resource actions and Close remain available in the title band. This reconciliation does not change autosave, recovery or linked Markdown's explicit Save.
+
 ## Notes and collections
 
 Use New collection in the sidebar, enter a name, choose its parent and select Create. The selected collection is the default parent. Expand or collapse branches with their arrow. Use a collection's More button or right-click it to rename it or change its parent. Names must be unique among siblings; moving a collection inside itself is refused.

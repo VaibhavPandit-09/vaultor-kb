@@ -4,15 +4,15 @@ import { syncLibraryControls,useLibraryCompression } from '../lib/useLibraryComp
 import { useEscapeLayer,ESCAPE_PRIORITIES } from '../lib/escape/escape';
 
 /** The same mounted controls change geometry; compact sidebar shortcuts opt out. */
-export default function LibraryOrientation({ enabled, active, viewport, children, context,filterSummary,selectionActive=false }: {
-  enabled: boolean; active: boolean; viewport: RefObject<HTMLElement | null>; children: ReactNode; context: ReactNode;filterSummary?:string;selectionActive?:boolean;
+export default function LibraryOrientation({ enabled, active, viewport, children, context,filterSummary,selectionActive=false,onClearSelection }: {
+  enabled: boolean; active: boolean; viewport: RefObject<HTMLElement | null>; children: ReactNode; context: ReactNode;filterSummary?:string;selectionActive?:boolean;onClearSelection?:()=>void;
 }) {
   const header = useRef<HTMLDivElement>(null);
   const trigger=useRef<HTMLButtonElement>(null),[tools,setTools]=useState(selectionActive);
   const focusRequested=useRef(false),[previousSelection,setPreviousSelection]=useState(selectionActive);
   if(previousSelection!==selectionActive){setPreviousSelection(selectionActive);setTools(selectionActive);}
   useLayoutEffect(()=>{if(header.current){syncLibraryControls(header.current);if(tools&&focusRequested.current)header.current.querySelector<HTMLElement>('.library-working-context button')?.focus();}focusRequested.current=false;},[tools]);
-  useEscapeLayer({active:tools,priority:ESCAPE_PRIORITIES.popover,close:()=>{setTools(false);trigger.current?.focus();},restoreFocusOnEscape:false});
+  useEscapeLayer({active:tools,priority:ESCAPE_PRIORITIES.popover,close:()=>{setTools(false);if(selectionActive&&onClearSelection)onClearSelection();else trigger.current?.focus();},restoreFocusOnEscape:false});
   useLibraryCompression(viewport, header, enabled && active);
   if (!enabled) return <>{children}{context}</>;
   return <div ref={header} className="library-orientation" data-tools={tools}>

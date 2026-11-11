@@ -19,6 +19,7 @@ function setup(search?:(r:{kind:string;options?:SearchOptions;cursor?:unknown})=
   if(r.kind==='media'&&r.request?.op==='copy')return {receipt:'test-receipt',text:'vaultor://resource/'+r.request.ids.join('\nvaultor://resource/')};
   if(r.kind==='media'&&r.request?.op==='open')return {draft:r.request.id==='protected',note:{id:r.request.id,title:'Note '+r.request.id,revision:1,content:{type:'doc',content:[{type:'paragraph'}]}}};
   if(r.kind==='linked'||r.kind==='organization')return [];
+  if(r.kind==='search'&&r.options?.view==='pinned')return {items:[],next:null,total:0};
   if(r.kind==='search')return search?.(r)??{items:[],next:null,total:0};
   if(r.kind==='snapshot')return {path:'fixture',settings:{theme:'light',session:storedSession},collections:[{id:'destination',name:'Research',parentId:null}]};
   if(r.kind==='drafts')return [];
@@ -72,7 +73,7 @@ it('opens results without losing query context, restores the prior browse page a
  setup(async r=>{if(r.options?.query==='failure')throw Error('Search unavailable');return {items:[{id:'8',title:'Nebula',revision:1,updatedAt:''}],total:1,next:null};});
  await screen.findByRole('button',{name:'Note 1'});fireEvent.click(screen.getByRole('button',{name:'Next'}));await screen.findByRole('button',{name:'Note 4'});
  const search=screen.getByRole('searchbox',{name:'Search notes'});fireEvent.change(search,{target:{value:'neb'}});fireEvent.click(await screen.findByRole('button',{name:'Nebula'}));await screen.findByRole('textbox',{name:'Editor body'});expect(screen.queryByRole('searchbox')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Return to Library'}));await screen.findByRole('searchbox',{name:'Search notes'});expect((screen.getByRole('searchbox',{name:'Search notes'}) as HTMLInputElement).value).toBe('neb');
- fireEvent.click(screen.getByRole('button',{name:'Clear search and filters'}));await screen.findByRole('button',{name:'Note 4'});expect(screen.getByText('Page 2')).toBeTruthy();
+ fireEvent.click(screen.getByRole('button',{name:'Clear search and filters'}));await screen.findByRole('button',{name:'Note 4'});expect(screen.getByText('Page 2 of 2')).toBeTruthy();
  fireEvent.change(screen.getByRole('searchbox',{name:'Search notes'}),{target:{value:'failure'}});await screen.findByText('Error: Search unavailable');expect(screen.queryByRole('button',{name:'Note 4'})).toBeNull();expect(screen.queryByRole('textbox',{name:'Editor body'})).toBeNull();
 });
 

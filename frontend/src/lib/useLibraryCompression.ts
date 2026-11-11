@@ -8,6 +8,7 @@ export function syncLibraryControls(header:HTMLElement){
 /** One bounded scroll signal. Never owns React, queries, editor or focus state. */
 export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElement, options: { pinHeaderFocus?: boolean; onProgress?: (progress: number) => void; observeSubtree?: boolean } = {}) {
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+  const isReduced=()=>Boolean(reduced?.matches||document.documentElement.dataset.animation==='reduced');
   let frame = 0, releaseFrame = 0, pointerHeld = false, lastTime = 0;
   let titleMeasure:HTMLElement|undefined;
   let travel = 160;
@@ -42,10 +43,10 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
     lastTime = time;
     // Follow slow scrolling directly; soften a large wheel/trackpad jump.
     const response = document.documentElement.dataset.animation === 'smooth' ? 65 : 35;
-    progress = reduced?.matches ? (goal > (progress >= .5 ? .15 : .35) ? 1 : 0) : progress + (goal - progress) * (1 - Math.exp(-elapsed / response));
-    if (Math.abs(goal - progress) < .001 || reduced?.matches) progress = reduced?.matches ? progress : goal;
+    progress = isReduced() ? (goal > (progress >= .5 ? .15 : .35) ? 1 : 0) : progress + (goal - progress) * (1 - Math.exp(-elapsed / response));
+    if (Math.abs(goal - progress) < .001 || isReduced()) progress = isReduced() ? progress : goal;
     write();
-    if (!reduced?.matches && progress !== goal) frame = requestAnimationFrame(step);
+    if (!isReduced() && progress !== goal) frame = requestAnimationFrame(step);
     else lastTime = 0;
   };
   const schedule = () => { if (!frame) frame = requestAnimationFrame(step); };
@@ -99,7 +100,7 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
   content.observe(viewport, { childList: true, subtree: options.observeSubtree ?? true });
   const actions = header.querySelector<HTMLElement>('.library-heading-actions');
   if (actions) observer.observe(actions);
-  if (reduced?.matches) progress = progress > .25 ? 1 : 0;
+  if (isReduced()) progress = progress > .25 ? 1 : 0;
   write(); observeContent();
   const scroll = () => { measureTravel(); schedule(); };
   viewport.addEventListener('scroll', scroll, { passive: true });
