@@ -95,7 +95,6 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 [data-compact=true]>.next-browse-header .next-search .library-popover-trigger{padding:6px}
 
 /* M11: original Browse/Note orientation owns geometry. Next retains only host adapters. */
-.next-library.library-transform{padding:0 var(--library-inset) calc(24px + var(--library-loss,0px));container-type:inline-size}
 .next-library.library-transform p{padding:0}
 .next-library .library-filters>.next-search{width:100%;min-width:0;padding:0;background:transparent}
 .next-library .library-heading-actions{display:flex;align-items:center;gap:6px}
@@ -110,13 +109,12 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 .next-library .browse-row-actions button{padding:5px;display:flex;align-items:center;justify-content:center}
 .next-document.note-transform{padding:0 clamp(20px,4vw,64px) 40px;--note-organization-height:40px}
 .note-identity>.next-note-bar{display:flex;align-items:center;min-width:0;width:100%;padding:0;border:0;box-shadow:none!important}
-.next-note-bar input{width:100%;min-width:0;flex:1;font-size:calc(28px - 10px * var(--library-progress,0));font-weight:600;letter-spacing:-.6px}
+.note-identity .next-note-bar input{width:100%;min-width:0;flex:1;font-size:calc(28px - 10px * var(--library-progress,0));font-weight:600;letter-spacing:-.6px}
 .next-note-organization{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-block:8px;font-size:11px;color:var(--text-secondary)}
 .next-note-organization button{font-size:11px}.next-document.note-transform .note-orientation{z-index:10}
 @media(max-width:640px){.next-library .library-date{display:none}.next-library .library-row{gap:8px;padding-inline:8px}.next-document.note-transform{padding-inline:16px}}
 
 .next-desktop-toolbar>.desktop-window-controls{position:static;inset:auto;height:100%;border-radius:0;z-index:auto;background:transparent}
-.next-library.library-transform{gap:18px;padding-bottom:calc(24px + var(--library-loss,0px) * var(--library-progress));background:var(--surface-1)}
 .next-library .next-list-heading{margin:0;padding:0;border:0;font-size:11px;min-height:22px}
 .next-library .library-row .resource-thumbnail{width:34px;height:34px;color:var(--text-secondary)}
 .next-library .library-row .resource-thumbnail svg{width:20px;height:20px}
@@ -125,7 +123,7 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 .next-note-organization .tag-pill{padding:3px 7px;border:1px solid var(--border);border-radius:5px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 .next-library-region{container-type:inline-size}
-.next-library.library-transform{container-type:normal;--library-target-title:clamp(72px,16cqi,140px);--library-title-width:var(--library-target-title);--library-target-filter-left:calc(var(--library-target-title) + 12px);--library-target-filter-top:0px;--library-compact-height:40px;--library-expanded-height:168px}
+.next-library.library-transform{padding:0 var(--library-inset) calc(24px + var(--library-loss,0px));container-type:normal;gap:18px;padding-bottom:calc(24px + var(--library-loss,0px) * var(--library-progress));background:var(--surface-1);--library-target-title:clamp(72px,16cqi,140px);--library-title-width:var(--library-target-title);--library-target-filter-left:calc(var(--library-target-title) + 12px);--library-target-filter-top:0px;--library-compact-height:40px;--library-expanded-height:168px}
 .next-library .library-orientation .library-filters{left:calc(var(--library-inset) + var(--library-target-filter-left) * min(1,4 * var(--library-progress)));right:calc(var(--library-inset) + (var(--library-target-actions) + var(--library-pages-width,0px)) * var(--library-lane-progress))}
 .next-library .library-orientation .library-heading-title{flex:1 1 0;max-width:calc((100% - var(--library-actions-width)) * (1 - var(--library-lane-progress)) + var(--library-target-title) * var(--library-lane-progress))}
 .next-panes[data-count='2']>.next-pane{transition:transform var(--motion-panel) var(--motion-ease),opacity var(--motion-panel) var(--motion-ease),box-shadow var(--motion-panel)}
