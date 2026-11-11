@@ -1,0 +1,22 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "5eaacc3ccb2c4594391eca0324a7feeaa0b022d0",
+  "dirty": true,
+  "executableSha256": "d6fc84eb9706e57518bbd0b42727057af01049d83167e3ff6ac118d4586fb216",
+  "timestamp": "2026-11-11T00:01:56.017Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "checks": [
+    "Final optimized executable: managed editor opened; current-workspace reopen preserved live pane/session through the real native picker and Rust Open",
+    "Final palette search autofocus,18 keyboard navigation events/visible selection and Escape dismissal"
+  ],
+  "success": true,
+  "measurementScope": "Native/inspection functional smoke only; launch/memory diagnostics excluded from canonical CSV and comparisons",
+  "recipeSha256": "9721ded5193a17aeb321bc9a6e6823076512e3e764bc0a77a8c6f566d6983700"
+}

@@ -299,3 +299,23 @@ Ten alternating rich/empty note opens and Library returns showed working set761.
 Driver failures remain canonical and are excluded by evidence ID. Corrected drivers wait for navigation/save and query receipts, focus actual controls before key injection, and query an unambiguous command label. A real compact-header containment failure was fixed by allowing intermediate header height and reducing compact input padding. Source a16f567 separately corrects active destination highlights; earlier browser/search/linked results are reused rather than claimed as a complete final-source rerun. The final scoped run covers the changed owners.
 
 Use **M9 vs M10** in the generated workbook for exact-source comparisons. The historical Dashboard mixes conditions. Startup now includes session metadata readiness; restored-editor readiness is a separate metric. Browser/command values include driver round trips and are not backend SQL latency. Bounded churn snapshots do not establish leak freedom. Windows/power/cache/background activity remain uncontrolled; the earlier M9 post-inspection19.641% observation is retained rather than used as a clean baseline.
+
+Final common measurement [e76723d](summaries/tauri-rust-2026-11-10T23-34-12.375Z.json),EXE SHA-2567d4f8d14fb9ea0cf7bebb642aef1dea2beefff55332833b73158ca5330661226,had no inspection helper before/after. The later same-workspace,editor-binding,pane-preference,profile-ownership and Help refinements leave this default-preference common recipe unchanged;their final executable is identified separately in the tracker rather than pretending this older hash is the final build.
+
+| Common workload | M9 | M10 observation |
+| --- | ---: | ---: |
+| First-profile startup,1 |563.7ms|598.8ms|
+| Restart,1 |625.5ms|665.0ms|
+| Opening median,3 |39.7ms|42.5ms|
+| Input-to-rAF median,12 |4.80ms|6.25ms|
+| Five-minute one-core CPU |0.657%|0.940%|
+| Settled working set |387.2MiB|480.5MiB|
+| Settled private bytes |323.8MiB|289.8MiB|
+
+CPU,working set and responsiveness proxies regressed in these small samples;private commit fell. New session writes use a700ms one-shot debounce and navigation/preferences remain event driven;no new polling or demonstrated leak was found. There is no causal attribution or claim of overall improvement. M10 startup includes session-readiness metadata in addition to the prior bridge marker. M9/M10 first profiles,power/cache and background conditions remain uncontrolled.
+
+[Final navigation/session scope](summaries/tauri-rust-2026-11-10T23-26-07.561Z.json) measured Collections57.4ms,Tags17.0ms and Sources14.1ms to matching header DOM (one each),with inspection tooling present. Two restored panes were ready5.3ms after bridge/metadata readiness;this excludes process startup and is not a total restore time. Five palette/collection/Settings rounds showed working set484.8→608.7→568.3MiB and private bytes275.4→388.1→322.4MiB after30seconds. Memory partly released;this is not a plateau or leak-freedom proof.
+
+[Palette focus pass](summaries/tauri-rust-2026-11-10T23-31-13.931Z.json) on ec75a7c recorded8.8ms median command opening→focused input and4.6ms median native text→ranked DOM (3 each). Only these command-palette rows from inspection mode enter canonical CSV;its launch/memory diagnostics are excluded from comparisons. Actual Windows typing/Enter verified the fixed search-focus contract. Static reference comparison and observed wheel compression/re-expansion are scoped in [native acceptance](summaries/m10-native-windows.json);full original visual/motion parity remains open.
+
+Final source5eaacc3,EXE SHA-256d6fc84eb9706e57518bbd0b42727057af01049d83167e3ff6ac118d4586fb216,passes [a separate native functional smoke](summaries/tauri-rust-2026-11-11T00-01-55.924Z.json). Its native picker reopened the current fixture while retaining the editor/session;palette autofocus,visible keyboard selection and Escape passed. Inspection startup/memory diagnostics do not enter canonical comparisons. The generated workbook contains8706 canonical records and52 invalidated runs;actual comparison formulas pass source-filtered mean/count and missing-scenario checks with no formula errors. M9/M10 opening means43.70/47.83ms differ from the independent medians reported above. Two M6 summaries gained only CSV-derived eligibility annotations;historical measurements remain unchanged.

@@ -469,5 +469,6 @@
   "desktopRecipe": {
     "sha256": "3be0268c39db52eb1ee8cf7010a85e6f468f7f9df303977cf5b1f48a56d3f037",
     "mode": "complete"
-  }
+  },
+  "comparisonEligible": true
 }

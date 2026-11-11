@@ -31,7 +31,8 @@
     "M10 a16: maximize resized the real window after clearing CDP viewport constraints",
     "M10 a16: Windows wheel input expanded→compact→expanded Library;single-line title/search/actions inspected",
     "M10 ec75: native Ctrl+K immediately focused search;typed Settings and Enter navigated to Settings",
-    "M10 ec75: light/dark appearance and keyboard traversal to reduced-motion preference inspected"
+    "M10 ec75: light/dark appearance and keyboard traversal to reduced-motion preference inspected",
+    "Final5eaacc3: real native Open workspace picker selected current local workspace and kept its live editor/session intact"
   ],
   "limitations": [
     "Scoped acceptance,not full Electron visual/motion parity",
@@ -40,5 +41,16 @@
     "Independent per-pane history,linked tree expansion restoration and resource-page restart preservation remain pending",
     "Accessibility/IME,full native Snap/tray,advanced editor/media and other M11/M12 inventory remain open",
     "Viewport override clearing needs a physical resize before geometry captures;white-margin diagnostic is a driver constraint"
-  ]
+  ],
+  "finalApplication": {
+    "source": "5eaacc3ccb2c4594391eca0324a7feeaa0b022d0",
+    "executableSha256": "d6fc84eb9706e57518bbd0b42727057af01049d83167e3ff6ac118d4586fb216",
+    "evidence": "tauri-rust-2026-11-11T00-01-55.924Z.json",
+    "checks": [
+      "Final optimized executable: managed editor opened; current-workspace reopen preserved live pane/session through the real native picker and Rust Open",
+      "Final palette search autofocus,18 keyboard navigation events/visible selection and Escape dismissal"
+    ],
+    "recipeSha256": "9721ded5193a17aeb321bc9a6e6823076512e3e764bc0a77a8c6f566d6983700",
+    "nativePicker": "Observed real Windows Select Folder selected the current disposable workspace; no IPC bridge replacement was used."
+  }
 }

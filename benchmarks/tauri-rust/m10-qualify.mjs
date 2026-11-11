@@ -55,3 +55,20 @@ async function qualifySession({evaluate,cdp,wait,report,folder,output,record,res
  report.checks.push('Final primary Collections/Tags/Linked Sources screens and correct active highlights','Settings OLED/custom Ctrl+Shift+Q and session preferences persist across restart','Two shared managed panes,active navigation,60-percent divider and pending normal-close save restore without duplicate content','Five palette/collection/Settings churn rounds then30s idle');
  if(process.argv.includes('--native-m10')){await cdp('Emulation.clearDeviceMetricsOverride');report.nativeControl=join(folder,'m10-native.done');console.log('M10 native inspection ready: '+report.nativeControl);for(let i=0;i<600;i++){try{await readFile(report.nativeControl);break;}catch{}await sleep(1000);}}
 }
+
+export async function smokeFinal({evaluate,cdp,wait,report}){
+ const call=request=>evaluate(`window.__TAURI_INTERNALS__.invoke('workspace',{request:${JSON.stringify(request)}})`);
+ const snapshot=await call({kind:'snapshot'}),note=await call({kind:'createNote',title:'M10 final smoke',collection:null});
+ await evaluate("[...document.querySelectorAll('.sidebar-primary>button')].find(b=>b.textContent.trim()==='Library').click();true");
+ await wait(`document.querySelector('[data-row-open="${note.id}"]')&&document.querySelector('[aria-label=Notes]')?.getAttribute('aria-busy')==='false'`,'final note list');
+ await evaluate(`document.querySelector('[data-row-open="${note.id}"]').click();true`);await wait("document.querySelector('.tiptap')?.editor?.isEditable",'final editor');await wait("document.querySelector('.next-sidebar-create')?.disabled===false",'final editor save barrier');
+ // Tauri's read-only IPC bridge is deliberately not replaced. Select the real native folder.
+ if(!process.argv.includes('--native-reopen'))throw Error('Final reopen smoke requires --native-reopen and the real native picker');
+ await evaluate("[...document.querySelectorAll('.next-workspace-actions button')].find(b=>b.textContent.trim()==='Open workspace').click();true");
+ const marker=join(report.folder,'m10-picker.done');console.log('M10 native reopen picker: '+snapshot.path+'; completion marker: '+marker);for(let i=0;i<600;i++){try{await readFile(marker);break;}catch{}await new Promise(r=>setTimeout(r,1000));}
+ await call({kind:'snapshot'});await wait("document.querySelector('.next-sidebar-create')?.disabled===false",'native reopen finished');assert(await evaluate(`document.querySelector('.next-shell')?.dataset.sessionReady==='true'&&!!document.querySelector('[data-note-id="${note.id}"]')`),'Same workspace keeps live pane and session ownership');
+ const key=async(key,code,modifiers=0)=>{await cdp('Input.dispatchKeyEvent',{type:'keyDown',key,code,modifiers,windowsVirtualKeyCode:key==='k'?75:key==='ArrowDown'?40:27});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key,code,modifiers:0});};
+ await key('k','KeyK',2);await wait("document.activeElement?.getAttribute('aria-label')==='Search commands'",'final palette initial focus');for(let i=0;i<18;i++)await key('ArrowDown','ArrowDown');
+ await wait("(()=>{const o=document.querySelector('[role=option][aria-selected=true]'),l=document.querySelector('[role=listbox]');if(!o||!l)return false;const a=o.getBoundingClientRect(),b=l.getBoundingClientRect();return a.top>=b.top-1&&a.bottom<=b.bottom+1;})()",'keyboard selection scrolled into view');await key('Escape','Escape');await wait("!document.querySelector('[role=dialog]')",'final palette dismissed');
+ report.checks.push('Final optimized executable: managed editor opened; current-workspace reopen preserved live pane/session through the real native picker and Rust Open','Final palette search autofocus,18 keyboard navigation events/visible selection and Escape dismissal');
+}
