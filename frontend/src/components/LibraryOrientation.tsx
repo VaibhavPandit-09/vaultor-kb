@@ -12,7 +12,7 @@ export default function LibraryOrientation({ enabled, active, viewport, children
   const focusRequested=useRef(false),[previousSelection,setPreviousSelection]=useState(selectionActive);
   if(previousSelection!==selectionActive){setPreviousSelection(selectionActive);setTools(selectionActive);}
   useLayoutEffect(()=>{if(header.current){syncLibraryControls(header.current);if(tools&&focusRequested.current)header.current.querySelector<HTMLElement>('.library-working-context button')?.focus();}focusRequested.current=false;},[tools]);
-  useEscapeLayer({active:tools,priority:ESCAPE_PRIORITIES.popover,close:()=>{setTools(false);if(selectionActive&&onClearSelection)onClearSelection();else trigger.current?.focus();},restoreFocusOnEscape:false});
+  useEscapeLayer({active:active&&tools,priority:ESCAPE_PRIORITIES.popover,close:()=>{setTools(false);if(selectionActive&&onClearSelection)onClearSelection();else trigger.current?.focus();},restoreFocusOnEscape:false});
   useLibraryCompression(viewport, header, enabled && active);
   if (!enabled) return <>{children}{context}</>;
   return <div ref={header} className="library-orientation" data-tools={tools}>

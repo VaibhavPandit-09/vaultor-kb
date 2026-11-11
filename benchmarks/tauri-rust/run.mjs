@@ -141,7 +141,7 @@ async function quit() {
 try {
   let run = await launch(1);
   if (inspect) {
-    if(m11)await (await import('./m11-qualify.mjs')).inspectM11({evaluate,cdp,wait,report,folder,output});
+    if(m11){const inspection=await import('./m11-qualify.mjs');await (process.argv.includes('--linked-only')?inspection.inspectLinkedM11:inspection.inspectM11)({evaluate,cdp,wait,report,folder,output});}
     if(m10&&process.argv.includes('--final-smoke'))await (await import('./m10-qualify.mjs')).smokeFinal({evaluate,cdp,wait,report});
     if(m10&&process.argv.includes('--native-m10')){await cdp('Emulation.clearDeviceMetricsOverride');
       for(let i=1;i<=3;i++){const start=performance.now();await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'k',code:'KeyK',windowsVirtualKeyCode:75,modifiers:2});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'k',code:'KeyK',modifiers:0});await wait("document.activeElement?.getAttribute('aria-label')==='Search commands'",'palette search initial focus');record('command-palette-m10',i,'open_to_focused_input',performance.now()-start,'ms','Native WebView key dispatch to focused command input;50ms readiness polling and driver overhead;inspection mode,not common idle.');const query=performance.now();await cdp('Input.insertText',{text:'Open Library'});await wait("document.querySelector('[role=option]')?.textContent.includes('Open Library')",'ranked command');record('command-palette-m10',i,'query_ui_ready',performance.now()-query,'ms','Native text delivery to ranked command DOM;not completed paint/motion.');await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});await wait("!document.querySelector('[role=dialog]')",'palette dismissal');}
@@ -170,7 +170,7 @@ try {
     if(process.argv.includes('--profile-open'))await evaluate(`window.openProfile={mutations:0};window.openObserver=new MutationObserver(records=>openProfile.mutations+=records.length);openObserver.observe(document.querySelector('.next-library'),{subtree:true,attributes:true,childList:true});true`);
     for (let i = 0; i < 3; i++) {
       if(m6)await evaluate("document.querySelector('[aria-label=\"Return to Library\"]')?.click();true");
-      if(m6)await wait("document.querySelector('[data-row-open]')",'full Library before next open');
+      if(m6)await wait("document.querySelector('.next-library-region:not([hidden]) [data-row-open]')&&document.querySelector('[aria-label=Notes]')?.getAttribute('aria-busy')==='false'",'full Library before next open');
       if (architecture === 'electron-java') {
         await evaluate("[...document.querySelectorAll('.sidebar-nav button,button')].find(b=>b.textContent.trim()==='Library'&&!b.closest('[hidden]')).click()");
         await wait("document.querySelector('.workspace-view:not([hidden])') && !document.body.innerText.includes('Loading resources')", 'return to Library');

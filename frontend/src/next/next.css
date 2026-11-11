@@ -141,3 +141,5 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 .next-linked-pane>.next-note-bar input{flex:1;min-width:40px;width:100px;font-size:clamp(14px,1.6vw,22px);font-weight:600;letter-spacing:-.4px}
 .next-linked-pane>.next-note-bar>svg{flex:none}.next-linked-pane>.next-note-bar button{flex:none;padding:5px}.next-linked-pane>.next-note-bar [role=status]{font-size:10px;color:var(--subtle-foreground)}
 @media(max-width:900px){.next-linked-pane>.next-note-bar{padding-inline:14px}}
+
+.next-library-region[hidden]{display:none}

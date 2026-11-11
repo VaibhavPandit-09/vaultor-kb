@@ -12,4 +12,3 @@ export function BrowsePagination({page,totalPages,loading,onPage,compact=false}:
 export function BrowseRowSurface({selection,resource,date,actions,children,...props}:Omit<HTMLAttributes<HTMLDivElement>,'resource'>&{selection?:ReactNode;resource:ReactNode;date?:ReactNode;actions?:ReactNode}){
  return <div {...props} className={['library-row',props.className].filter(Boolean).join(' ')}>{selection}<div className="library-resource" role={props.role==='row'?'gridcell':undefined}>{resource}</div>{date}<div className="browse-row-actions">{actions}</div>{children}</div>;
 }
-
