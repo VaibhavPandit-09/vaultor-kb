@@ -12,3 +12,6 @@ export function BrowsePagination({page,totalPages,loading,onPage,compact=false}:
 export function BrowseRowSurface({selection,resource,date,actions,children,...props}:Omit<HTMLAttributes<HTMLDivElement>,'resource'>&{selection?:ReactNode;resource:ReactNode;date?:ReactNode;actions?:ReactNode}){
  return <div {...props} className={['library-row',props.className].filter(Boolean).join(' ')}>{selection}<div className="library-resource" role={props.role==='row'?'gridcell':undefined}>{resource}</div>{date}<div className="browse-row-actions">{actions}</div>{children}</div>;
 }
+
+/** Original directory view switch, shared without its API controller. */
+export function CollectionDirectorySwitch({value,onChange}:{value:'all'|'hierarchy';onChange:(value:'all'|'hierarchy')=>void}){return <div className="collection-directory-switch" role="group" aria-label="Collection presentation">{(['all','hierarchy'] as const).map(mode=><button type="button" key={mode} className="library-button" aria-pressed={value===mode} onClick={()=>onChange(mode)}>{mode==='all'?'All':'Hierarchy'}</button>)}</div>;}

@@ -1,0 +1,135 @@
+{
+  "date": "2026-11-11",
+  "mode": "Optimized native WebView/CDP checks and inspected captures;one preliminary Windows computer-use navigation input",
+  "runs": [
+    {
+      "evidence": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-11T08-03-12.684Z.json",
+      "architecture": "tauri-rust",
+      "commit": "6c3904c34bff999945b9b418e93e7d753224be0d",
+      "dirty": true,
+      "executableSha256": "d253dc98bf5b941d42e1b9c38cc07605b9707121e7fb67cbf0f8273934400a8b",
+      "success": true,
+      "checks": [
+        "Optimized Windows:single shared compressed Collections header;collection detail;Tags;lazy source tree;linked note orientation and safe format subset;external bytes unchanged until explicit Save;original Settings categories/choices and Help reader;OLED/dark/light and narrow captures;Help Escape",
+        "Linked reopen after managed views;competing external bytes refused,conflicting editor text retained"
+      ],
+      "browserGeometry": {
+        "headers": 1,
+        "compact": "true",
+        "overflow": false,
+        "searchContained": true
+      },
+      "viewport": {
+        "width": 1200,
+        "height": 820,
+        "dpr": 1.0000000298023224,
+        "theme": "light"
+      }
+    },
+    {
+      "evidence": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-11T08-10-04.571Z.json",
+      "architecture": "tauri-rust",
+      "commit": "6c3904c34bff999945b9b418e93e7d753224be0d",
+      "dirty": true,
+      "executableSha256": "c237f518e6fc74443a5451f675b3fc09e2860550480d59030cf9a5776c3be348",
+      "success": true,
+      "checks": [
+        "Final shared header pagination/action geometry and collection breadcrumb lanes inspected"
+      ],
+      "browserGeometry": {
+        "headers": 1,
+        "compact": "true",
+        "overflow": false,
+        "searchContained": true
+      },
+      "compactControls": [
+        {
+          "label": "Result details and selection actions",
+          "x": 1128,
+          "y": 56,
+          "right": 1160,
+          "bottom": 88
+        },
+        {
+          "label": "New collection",
+          "x": 1087.666748046875,
+          "y": 56,
+          "right": 1120.0000839233398,
+          "bottom": 88
+        },
+        {
+          "label": "Previous",
+          "x": 1012,
+          "y": 56,
+          "right": 1044,
+          "bottom": 88
+        },
+        {
+          "label": "Next",
+          "x": 1048,
+          "y": 56,
+          "right": 1080,
+          "bottom": 88
+        }
+      ],
+      "collectionPathGeometry": {
+        "pathBottom": 88,
+        "titleTop": 96
+      },
+      "viewport": {
+        "width": 1200,
+        "height": 820,
+        "dpr": 1.0000000298023224,
+        "theme": "light"
+      }
+    },
+    {
+      "evidence": "benchmarks/tauri-rust/raw/electron-java-2026-11-11T07-45-18.481Z.json",
+      "architecture": "electron-java",
+      "commit": "6c3904c34bff999945b9b418e93e7d753224be0d",
+      "dirty": true,
+      "executableSha256": "49b61a030a520fc36a4b8fa5cce53fb4e935a7bdbbe4b80e9222f598e49cc7fa",
+      "success": true,
+      "checks": [
+        "Original two-document pane workspace opened through its actual contextual action",
+        "Original production Electron launched in isolated profile;100 disposable notes;Library/selection/note/light-dark-OLED/context/collection/source reference captures",
+        "Reference source pane is empty; linked registration and full original keyboard/motion qualification were not repeated"
+      ],
+      "viewport": {
+        "width": 1200,
+        "height": 820,
+        "dpr": 1.0000000298023224,
+        "theme": "light"
+      }
+    },
+    {
+      "evidence": "benchmarks/tauri-rust/raw/electron-java-2026-11-11T08-10-34.197Z.json",
+      "architecture": "electron-java",
+      "commit": "6c3904c34bff999945b9b418e93e7d753224be0d",
+      "dirty": true,
+      "executableSha256": "49b61a030a520fc36a4b8fa5cce53fb4e935a7bdbbe4b80e9222f598e49cc7fa",
+      "success": true,
+      "checks": [
+        "Original Electron Settings and Help opened in OLED;capture comparison with shared Rust-backed presentation"
+      ],
+      "viewport": {
+        "width": 1200,
+        "height": 820,
+        "dpr": 1.0000000298023224,
+        "theme": "light"
+      }
+    }
+  ],
+  "visualReview": [
+    "Expanded/compact Collections and separate collection path/title lanes",
+    "Original Electron OLED Settings/Help compared with shared Next presentation",
+    "OLED,dark,light and narrow Settings",
+    "Tags,Sources,linked note and two managed panes"
+  ],
+  "limitations": [
+    "No claim of complete motion,IME or accessibility qualification",
+    "Settings remains a full destination while original is modal",
+    "Original-reference F1 and reload-readiness failures retained in ignored raw evidence;actual Help button subsequently passed",
+    "Unchanged imports,exports,Activity,Trash and broad filesystem safeguards reuse earlier milestone evidence"
+  ]
+}

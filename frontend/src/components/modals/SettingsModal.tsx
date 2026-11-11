@@ -1,3 +1,4 @@
+import {Choices,SettingsRow} from '../SettingsPresentation';
 import {themeOriginAt} from '../../lib/themeTransition';
 import { MotionComparison, MotionIndicator, CategoryMotion } from '../MotionFeedback';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
@@ -150,7 +151,7 @@ function SettingsWindow({ onClose, onHelp }: { onClose: () => void; onHelp?: () 
           <nav className="settings-rail" aria-label="Settings categories"><MotionIndicator value={category}/>{categories.map(item => <button type="button" key={item.id} aria-current={category === item.id ? 'page' : undefined} onClick={() => { setCategory(item.id); setQuery(''); setRecording(null); }}><item.icon size={17} /><span>{item.label}</span></button>)}</nav>
           <label className="settings-mobile-category">Category<select aria-label="Settings category" value={category} onChange={event => { setCategory(event.target.value as Category); setQuery(''); setRecording(null); }}>{categories.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
           <section ref={content} className="settings-content" aria-label={terms.length ? 'Settings search results' : categories.find(item => item.id === category)?.label}>
-            <CategoryMotion category={terms.length ? "search" : category}>{shown.map(group => <section key={group.id} className="settings-section" aria-labelledby={`${titleId}-${group.id}`}><div className="settings-section-heading"><h3 id={`${titleId}-${group.id}`}>{group.label}</h3><span>{group.scope}</span></div>{group.id === 'keyboard' && <p className="settings-section-note">Select a binding to record a new shortcut.</p>}{group.settings.map(setting => <div className="settings-row" key={setting.id}><div className="settings-row-copy"><h4>{setting.label}</h4>{setting.description && <p aria-live={errors[setting.id as ShortcutAction] ? 'polite' : undefined} className={errors[setting.id as ShortcutAction] ? 'settings-error' : undefined}>{setting.description}</p>}</div><div className="settings-control">{setting.control}</div></div>)}</section>)}
+            <CategoryMotion category={terms.length ? "search" : category}>{shown.map(group => <section key={group.id} className="settings-section" aria-labelledby={`${titleId}-${group.id}`}><div className="settings-section-heading"><h3 id={`${titleId}-${group.id}`}>{group.label}</h3><span>{group.scope}</span></div>{group.id === 'keyboard' && <p className="settings-section-note">Select a binding to record a new shortcut.</p>}{group.settings.map(setting => <SettingsRow key={setting.id} label={setting.label} description={setting.description&&<span aria-live={errors[setting.id as ShortcutAction]?'polite':undefined} className={errors[setting.id as ShortcutAction]?'settings-error':undefined}>{setting.description}</span>}>{setting.control}</SettingsRow>)}</section>)}
             {!shown.length && <div className="settings-empty"><h3>No settings match “{query}”</h3><p>Try theme, saving, sidebar or shortcut.</p><button type="button" className="settings-text-action" onClick={() => { setQuery(''); search.current?.focus(); }}>Clear search</button></div>}
           </CategoryMotion></section>
         </div>
@@ -168,14 +169,6 @@ function focusable(root: HTMLElement | null) {
     while (node) { const style = getComputedStyle(node); if (style.display === 'none' || style.visibility === 'hidden') return false; if (node === root) break; node = node.parentElement; }
     return true;
   });
-}
-function Choices({ label, value, options, onChange }: { label: string; value: string; options: Array<{ value: string; label: string }>; onChange: (value: string,trigger?:HTMLElement) => void }) {
-  return <div role="radiogroup" aria-label={label} className="settings-choices" onKeyDown={event => {
-    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault(); const current = options.findIndex(option => option.value === value);
-    const index = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : (current + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : -1) + options.length) % options.length;
-    const trigger=event.currentTarget.querySelectorAll<HTMLButtonElement>('button')[index];onChange(options[index].value,trigger);trigger?.focus();
-  }}><MotionIndicator axis="horizontal" value={value}/>{options.map(option => <button type="button" role="radio" aria-checked={value === option.value} tabIndex={value === option.value ? 0 : -1} key={option.value} onClick={event => onChange(option.value,event.currentTarget)}>{option.label}</button>)}</div>;
 }
 function NumberRange({ label, value, min, max, step, unit, onChange }: { label: string; value: number; min: number; max: number; step: number; unit: string; onChange: (value: number) => void }) {
   const errorId=useId();

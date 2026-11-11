@@ -197,8 +197,8 @@ impl Workspace {
             Request::Organization {request} => self.organization(request),
             Request::Media {request} => self.media(request),
             Request::Snapshot => {
-                let mut stmt = self.db.prepare("SELECT id,name,parent_id FROM collections ORDER BY normalized,id").map_err(error)?;
-                let collections = stmt.query_map([], |r| Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"parentId":r.get::<_,Option<String>>(2)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
+                let mut stmt = self.db.prepare("SELECT c.id,c.name,c.parent_id,COUNT(CASE WHEN COALESCE(s.trashed,0)=0 THEN m.resource_id END) FROM collections c LEFT JOIN memberships m ON m.collection_id=c.id LEFT JOIN resource_state s ON s.resource_id=m.resource_id GROUP BY c.id ORDER BY c.normalized,c.id").map_err(error)?;
+                let collections = stmt.query_map([], |r| Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"parentId":r.get::<_,Option<String>>(2)?,"count":r.get::<_,i64>(3)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
                 let mut stmt = self.db.prepare("SELECT key,value FROM settings").map_err(error)?;
                 let settings = stmt.query_map([], |r| Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
                 let settings: serde_json::Map<String,Value> = settings.into_iter().map(|(k,v)| Ok((k,serde_json::from_str(&v).map_err(error)?))).collect::<Result<_,String>>()?;
@@ -243,6 +243,20 @@ impl Workspace {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn collection_counts_include_direct_active_memberships_only() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut w = Workspace::open(temp.path()).unwrap();
+        let parent=w.execute(Request::CreateCollection{name:"Parent".into(),parent_id:None}).unwrap();
+        let child=w.execute(Request::CreateCollection{name:"Child".into(),parent_id:Some(parent["id"].as_str().unwrap().into())}).unwrap();
+        let n=w.execute(Request::CreateNote{title:"Note".into(),collection:Some(child["id"].as_str().unwrap().into())}).unwrap();
+        let snapshot=w.execute(Request::Snapshot).unwrap();
+        let count=|id:&Value| snapshot["collections"].as_array().unwrap().iter().find(|c|c["id"]==id["id"]).unwrap()["count"].as_i64().unwrap();
+        assert_eq!(count(&parent),0); assert_eq!(count(&child),1);
+        w.db.execute("INSERT INTO resource_state(resource_id,trashed) VALUES(?1,1)",[n["id"].as_str().unwrap()]).unwrap();
+        let snapshot=w.execute(Request::Snapshot).unwrap();
+        assert!(snapshot["collections"].as_array().unwrap().iter().all(|c|c["count"]==0));
+    }
     #[test]
     fn transactions_revisions_restart_and_ownership() {
         let temp = tempfile::tempdir().unwrap();

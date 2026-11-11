@@ -1,1 +1,0 @@
-export function compressBrowse(root:HTMLElement|null,scrollTop:number){if(!root)return;const progress=Math.max(0,Math.min(1,scrollTop/120));root.style.setProperty('--browse-progress',String(progress));if(scrollTop>100)root.dataset.compact='true';else if(scrollTop<45)root.dataset.compact='false';}

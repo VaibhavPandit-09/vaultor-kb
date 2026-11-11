@@ -15,7 +15,8 @@ const m2 = process.argv.includes('--m2');
 const m3 = process.argv.includes('--m3');
 const m4 = process.argv.includes('--m4');
 const m5 = process.argv.includes('--m5');
-const m11 = process.argv.includes('--m11');
+const m12 = process.argv.includes('--m12');
+const m11 = process.argv.includes('--m11')||m12;
 const m10 = process.argv.includes('--m10')||m11;
 const m9 = process.argv.includes('--m9');
 const m8 = process.argv.includes('--m8');
@@ -141,7 +142,8 @@ async function quit() {
 try {
   let run = await launch(1);
   if (inspect) {
-    if(m11){const inspection=await import('./m11-qualify.mjs');await (process.argv.includes('--linked-only')?inspection.inspectLinkedM11:process.argv.includes('--trash-only')?inspection.inspectTrashM11:inspection.inspectM11)({evaluate,cdp,wait,report,folder,output});}
+    if(m12){await (await import('./m12-inspect.mjs')).inspectM12({evaluate,cdp,wait,report,folder,output});}
+    else if(m11){const inspection=await import('./m11-qualify.mjs');await (process.argv.includes('--linked-only')?inspection.inspectLinkedM11:process.argv.includes('--trash-only')?inspection.inspectTrashM11:inspection.inspectM11)({evaluate,cdp,wait,report,folder,output});}
     if(m10&&process.argv.includes('--final-smoke'))await (await import('./m10-qualify.mjs')).smokeFinal({evaluate,cdp,wait,report});
     if(m10&&process.argv.includes('--native-m10')){await cdp('Emulation.clearDeviceMetricsOverride');
       for(let i=1;i<=3;i++){const start=performance.now();await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'k',code:'KeyK',windowsVirtualKeyCode:75,modifiers:2});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'k',code:'KeyK',modifiers:0});await wait("document.activeElement?.getAttribute('aria-label')==='Search commands'",'palette search initial focus');record('command-palette-m10',i,'open_to_focused_input',performance.now()-start,'ms','Native WebView key dispatch to focused command input;50ms readiness polling and driver overhead;inspection mode,not common idle.');const query=performance.now();await cdp('Input.insertText',{text:'Open Library'});await wait("document.querySelector('[role=option]')?.textContent.includes('Open Library')",'ranked command');record('command-palette-m10',i,'query_ui_ready',performance.now()-query,'ms','Native text delivery to ranked command DOM;not completed paint/motion.');await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape'});await wait("!document.querySelector('[role=dialog]')",'palette dismissal');}
@@ -149,6 +151,11 @@ try {
     if(process.argv.includes('--native-m9'))await cdp('Emulation.clearDeviceMetricsOverride');
     if(process.argv.includes('--native-m9'))await (await import('./m9-qualify.mjs')).inspectM9({evaluate,wait,report,folder,output});
     if(process.argv.includes('--reference-m6'))await (await import('./m6-reference.mjs')).referenceM6({evaluate,cdp,wait,output,report});
+    if(process.argv.includes('--reference-m12')){
+      await evaluate("localStorage.setItem('vaultor-device-presentation-v1',JSON.stringify({...JSON.parse(localStorage.getItem('vaultor-device-presentation-v1')||'{}'),theme:'oled'}));true");await cdp('Page.reload');await wait("document.documentElement.dataset.theme==='oled'&&document.querySelector('[title=Settings]')",'original OLED and application ready');
+      await evaluate("document.querySelector('[title=Settings]').click();true");await wait("document.querySelector('.settings-window')",'original Settings');await delay(600);let image=await cdp('Page.captureScreenshot');await writeFile(join(output,'m12-reference-settings-oled.png'),Buffer.from(image.data,'base64'));
+      await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',windowsVirtualKeyCode:27});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',windowsVirtualKeyCode:27});await wait("!document.querySelector('.settings-window')",'original Settings dismissal');await evaluate("document.querySelector('[aria-label=\"Help for this screen\"]').click();true");await wait("document.querySelector('.help-center')",'original Help');await delay(500);image=await cdp('Page.captureScreenshot');await writeFile(join(output,'m12-reference-help-oled.png'),Buffer.from(image.data,'base64'));report.checks.push('Original Electron Settings and Help opened in OLED;capture comparison with shared Rust-backed presentation');
+    }
     console.log(await evaluate('document.body.innerText.slice(0,5000)'));
     await cdp('Page.captureScreenshot').then(async r => writeFile(join(output, 'inspect.png'), Buffer.from(r.data, 'base64')));
     await delay(3000); await stopSampler(run, 1); await quit();
@@ -208,7 +215,7 @@ try {
     report.checks.push('12 native text inputs saved and read back after process restart', '100-note collection fixture created');
     await delay(4000); await stopSampler(run, 2);
     if((m2||m3||m4||m5||m6)&&process.argv.includes('--qualify')) {
-      const qualify=m11?(await import('./m11-qualify.mjs')).qualifyM11:m10?(await import('./m10-qualify.mjs')).qualifyM10:m9?(await import('./m9-qualify.mjs')).qualifyM9:m8?(await import('./m8-qualify.mjs')).qualifyM8:m7?(await import('./m7-qualify.mjs')).qualifyM7:m6?(await import('./m6-qualify.mjs')).qualifyM6:m5?(await import('./m5-qualify.mjs')).qualifyM5:m4?(await import('./m4-qualify.mjs')).qualifyM4:m3?(await import('./m3-qualify.mjs')).qualifyM3:(await import('./m2-qualify.mjs')).qualifyM2;let iteration=2,activeRun;
+      const qualify=m12?(await import('./m12-qualify.mjs')).qualifyM12:m11?(await import('./m11-qualify.mjs')).qualifyM11:m10?(await import('./m10-qualify.mjs')).qualifyM10:m9?(await import('./m9-qualify.mjs')).qualifyM9:m8?(await import('./m8-qualify.mjs')).qualifyM8:m7?(await import('./m7-qualify.mjs')).qualifyM7:m6?(await import('./m6-qualify.mjs')).qualifyM6:m5?(await import('./m5-qualify.mjs')).qualifyM5:m4?(await import('./m4-qualify.mjs')).qualifyM4:m3?(await import('./m3-qualify.mjs')).qualifyM3:(await import('./m2-qualify.mjs')).qualifyM2;let iteration=2,activeRun;
       const restart=async(normal=false)=>{
         if(normal){await evaluate("void window.__TAURI_INTERNALS__.invoke('plugin:window|close',{label:'main'});true").catch(e=>{if(!/closed|navigated/.test(String(e)))throw e;});for(let i=0;i<100&&child.exitCode===null;i++)await delay(50);assert(child.exitCode!==null,'Normal close must flush and exit');}
         await quit(); // Kill immediately at the observed draft receipt, before sampler cleanup can allow autosave.
@@ -239,7 +246,7 @@ try {
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
-  for (const s of report.samples) if(!inspect||(m10&&s.scenario==='command-palette-m10')) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
-  if (!report.success && !inspect) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
+  for (const s of report.samples) if(!inspect||(m10&&s.scenario==='command-palette-m10')) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
+  if (!report.success && !inspect) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
   console.log(JSON.stringify({ success: report.success, evidence, metrics: report.samples.length, error: report.error }));
 }

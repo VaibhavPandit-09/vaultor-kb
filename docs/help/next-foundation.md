@@ -4,13 +4,15 @@ Vaultor Next is a separate Windows development application. It does not replace 
 
 ## Workspaces
 
-The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or an existing M2–M10 workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. Import and transfers also offers Create local workspace: choose a parent and a new folder name. Finish or cancel Activity tasks before switching. Linked folders are separate from this workspace.
+The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or a supported experimental workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. Import and transfers also offers Create local workspace: choose a parent and a new folder name. Finish or cancel Activity tasks before switching. Linked folders are separate from this workspace.
 
 ## Library and note presentation
 
 Library uses the original Vaultor resource-row and transforming-header presentation. Rows show type, collection/tag metadata, date and pin/actions. Scroll to compress the same search and paging controls into one line. The details button exposes page selection in compact mode; Escape clears selection after a contextual menu has closed. Quick Access contains collapsible Pinned and Recent sections; View all opens the complete browser.
 
-Managed-note titles and organization controls use the original scroll-driven note heading. Organization can be expanded explicitly; save status, resource actions and Close remain available in the title band. This reconciliation does not change autosave, recovery or linked Markdown's explicit Save.
+Collections, Tags and Linked Sources use the same transforming browse header. Collections offers All and Hierarchy; direct active-resource counts exclude Trash. Collection details expose the parent breadcrumb through the details control.
+
+Managed and linked-note titles use the original scroll-driven note heading. Linked notes keep an always-available External source disclosure, explicit Save and source review controls. Organization can be expanded explicitly; save status, resource actions and Close remain available in the title band. This reconciliation does not change autosave, recovery or linked Markdown's explicit Save.
 
 ## Notes and collections
 
@@ -28,7 +30,7 @@ Edit the title or body directly. Markdown typing shortcuts, bold, italic, headin
 
 The compact editor controls provide formatting, headings, lists/tasks, quotes, dividers, highlights, web links and Undo/Redo. Type / to choose a block or symbol, or [[ to search existing managed resources and optionally create a linked note. Enter chooses and Escape dismisses. Ctrl-click a resource chip to open it; Ctrl+Shift-click opens it beside. Backlinks lists up to100 saved incoming references after Refresh backlinks; labels are insertion-time text, while navigation uses stable identity. Missing/trashed destinations report an error without replacing the current editor. Unsaved drafts do not enter backlinks or search.
 
-Select a table cell to reveal the existing contextual table toolbar: rows/columns, headers, merge/split, resizing, filters, expanded workspace, and tabular copy/export. Code blocks retain language, syntax and copy controls. Linked external Markdown keeps the M5 supported schema and explicit source-preserving Save; managed image/resource nodes are not enabled there.
+Select a table cell to reveal the existing contextual table toolbar: rows/columns, headers, merge/split, resizing, filters, expanded workspace, and tabular copy/export. Code blocks retain language, syntax and copy controls. Linked external Markdown keeps the M5 supported schema and explicit source-preserving Save; managed image/resource nodes are not enabled there. Linked-note formatting exposes only supported Markdown actions; underline and highlight are omitted.
 
 Insert image uses a native picker; pasting an image creates a managed original and inserts its identity. PNG/JPEG/GIF are supported, up to20MiB and40million pixels. Width and alternate text are editable; Remove placement removes only the placement, leaving the asset in Library. Images load near the viewport and release decoded URLs outside it. Pending insertion uses a mapped anchor and refuses changed/closed locations. Original bytes remain managed independently; no binary is stored in note JSON.
 
@@ -90,7 +92,7 @@ At most eight non-overlapping fixed local NTFS roots are supported. Junctions/re
 
 ## Appearance and keyboard
 
-Appearance in the top toolbar offers Light, Dark and OLED black, persisted in the workspace. The window becomes visible after the saved theme is applied. F1 opens or closes this Help, saving managed edits and protecting linked drafts first. Tab moves between controls; Escape leaves editor focus. The operating system's reduced-motion preference applies to shared motion and theme transitions.
+Appearance in the top toolbar offers Light, Dark and OLED black, persisted in the workspace. The window becomes visible after the saved theme is applied. F1 opens or closes the searchable Help Center, saving managed edits and protecting linked drafts first. Tab moves between controls; Escape leaves editor focus. The operating system's reduced-motion preference applies to shared motion and theme transitions.
 
 ## Desktop workspace and navigation
 
@@ -110,7 +112,7 @@ The top toolbar provides Back/Forward, search, panes, Activity, Appearance and a
 
 Open Settings from the sidebar, Application menu, command palette or Ctrl+, by default. General controls the default destination and session restoration. Appearance supports system/light/dark/OLED, accent and smooth/fast/reduced motion; system reduced motion always wins. Workspace controls sidebar visibility, Auto/Chosen companion, beside-opening and session restoration. Editor controls focus on open. Files and Application sections describe actual bounds and local storage. Preferences are application-local and survive workspace switching; pane and browser metadata belongs to the workspace. Windows login launch and unsupported editor/file preferences are not offered.
 
-Ctrl+K opens the command palette by default. Commands searches actions; Resources searches up to30 saved title results across Library. These differ from the current Library/collection filter. Arrow keys and Enter navigate/execute, Escape dismisses and restores focus. Keyboard Settings lists the active bindings, supports key capture, detects conflicts and restores defaults. Text editing, Ctrl+S and Windows-reserved bindings are protected. Clear an eligible binding with Backspace during capture; Escape cancels capture. The palette and the active-binding list below this Help article reflect configured bindings. Instructions naming Ctrl+K/Ctrl+, refer to defaults.
+Ctrl+K opens the command palette by default. Commands searches actions; Resources searches up to30 saved title results across Library. These differ from the current Library/collection filter. Arrow keys and Enter navigate/execute, Escape dismisses and restores focus. Keyboard Settings lists the active bindings, supports key capture, detects conflicts and restores defaults. Text editing, Ctrl+S and Windows-reserved bindings are protected. Clear an eligible binding with Backspace during capture; Escape cancels capture. Settings has searchable rows, keyboard-operable choice groups and real Saving/Saved/error feedback. Help Center reuses the original offline reader: search topics, browse areas, follow headings, return with Back, or copy an article. Its Current keyboard shortcuts topic and the palette reflect configured bindings. Only experimental Next instructions are shown; published-only capabilities are excluded. Instructions naming Ctrl+K/Ctrl+, refer to defaults.
 
 ## Managed imports and exports
 

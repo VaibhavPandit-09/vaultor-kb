@@ -1,3 +1,5 @@
+import {headingId,helpExcerpt} from './helpText';
+export {headingId,helpExcerpt};
 import catalogue from '../../../docs/help/catalogue.json';
 
 export { catalogue };
@@ -6,16 +8,9 @@ export type HelpArticle = typeof catalogue.articles[number];
 const raw = import.meta.glob('../../../docs/help/*.md', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
 export const articles = catalogue.articles.map(article => ({ ...article, content: raw['../../../docs/help/' + article.path] ?? '' }));
 export const helpArticle = (id: string) => articles.find(article => article.id === id);
-export function helpExcerpt(content: string) {
-  return (content.split('\n').find(line => line.length > 60 && !line.startsWith('#')) ?? '')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[*_`]/g, '').slice(0, 240);
-}
 export const contextualHelp = (screen: string) => (catalogue.context as Record<string, string>)[screen] ?? '';
 export function requestHelp(screen: string) {
   window.dispatchEvent(new CustomEvent('vaultor:help', { detail: screen }));
-}
-export function headingId(text: string) {
-  return text.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, '').trim().replace(/\s+/g, '-');
 }
 export function helpLink(href: string, current: string): { article: string; hash: string } | { external: string } | null {
   if (/^https?:\/\//i.test(href)) {

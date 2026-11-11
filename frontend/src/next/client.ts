@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import type { JSONContent } from '@tiptap/core';
 export type Note = { id: string; title: string; content: JSONContent; revision: number; collections?: string[]; kind?: 'note'|'file' };
 export type Summary = Omit<Note, 'content'> & { updatedAt: string };
-export type Collection = { id: string; name: string; parentId: string | null };
+export type Collection = { id: string; name: string; parentId: string | null; count?:number };
 export type ListCursor = { before: number; anchor: number; scope: string | null };
 export type SearchOptions = { query: string; content: boolean; collection: string | null; order: 'created'|'updated'|'title';view?:string;tag?:string|null };
 export type SearchCursor = { options: SearchOptions; generation: number; seq: number; key: string };

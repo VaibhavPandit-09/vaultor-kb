@@ -309,8 +309,35 @@ if(m11Runs.length){
   comparison.getRange('A10:H10').format={fill:'#006B75',font:{name:'Arial',size:10,color:'#FFFFFF',bold:true},rowHeight:25};
   comparison.getRange('C11:D17').setNumberFormat('0.00');comparison.getRange('E11:E17').setNumberFormat('0.0%');
 }
+const m12Runs=normalized.filter(r=>r[2]==='m12-managed-notes-v1'&&r[14]==='Y');
+if(m12Runs.length){
+  let comparison;try{comparison=wb.worksheets.getItem('M11 vs M12');}catch{comparison=wb.worksheets.add('M11 vs M12');}
+  const baseline=normalized.findLast(r=>r[2]==='m11-managed-notes-v1'&&r[8]==='settled-idle-5min'&&r[14]==='Y');
+  const candidate=m12Runs.at(-1);
+  comparison.showGridLines=false;
+  comparison.getRange('A2:H2').unmerge();comparison.getRange('A2:H2').merge();comparison.getRange('A2').values=[['Vaultor Next · M11 vs M12']];
+  comparison.getRange('A4:B8').values=[['M11 source',baseline?.[4]??'unmeasured'],['M12 source',candidate[4]],['Scenario','settled-idle-5min'],['Dataset',candidate[9]],['Device',candidate[5]]];
+  comparison.getRange('A10:H10').values=[['Metric','Unit','M11 mean','M12 mean','Change','M11 n','M12 n','Direction']];
+  const compareMetrics=[['cpu_one_core_percent','%'],['process_tree_working_set','MiB'],['process_tree_private_bytes','MiB'],['startup_usable','ms'],['note_open','ms'],['input_to_raf','ms'],['scroll_frame_interval','ms']];
+  comparison.getRange('A11:B17').values=compareMetrics;
+  for(let row=11;row<=17;row++){
+    const criteria=(source,experiment)=>`${range('D')},"tauri-rust",${range('E')},$B${source},${range('C')},"${experiment}",${range('F')},$B$8,${range('I')},$B$6,${range('J')},$B$7,${range('L')},$A${row},${range('O')},"Y",${range('P')},"m1-cdp-v2"`;
+    const count=(s,e)=>`COUNTIFS(${criteria(s,e)})`;
+    const left=count(4,'m11-managed-notes-v1'),right=count(5,'m12-managed-notes-v1');
+    comparison.getRange(`C${row}:H${row}`).formulas=[[`=IF(${left}=0,"",SUMIFS(${range('M')},${criteria(4,'m11-managed-notes-v1')})/${left})`,`=IF(${right}=0,"",SUMIFS(${range('M')},${criteria(5,'m12-managed-notes-v1')})/${right})`,`=IF(COUNT(C${row}:D${row})<2,"",IF(C${row}=0,"",D${row}/C${row}-1))`,`=${left}`,`=${right}`,'']];
+    comparison.getRange(`H${row}`).values=[['lower']];
+  }
+  comparison.getRange('A19:H20').unmerge();comparison.getRange('A19:H20').merge();comparison.getRange('A19').values=[['Common 100-note / 64 KiB fixture. Five-minute idle follows 30 seconds settling; change Scenario to managed-note-64k for editing proxies. M11/M12 use isolated WebView profiles. M12 startup includes restored-session readiness. M12 opening boundaries and matched one-pane churn are separate. Natural settled memory and diagnostic GC remain distinct; no leak-freedom claim. Profile/cache/power/coexistence remain uncontrolled; no whole-product claim.']];
+  comparison.getRange('A2:H20').format.font={name:'Arial',size:10,color:'#14333A'};
+  comparison.getRange('A2').format.font.size=14;
+  comparison.getRange('A4:A17').format.columnWidth=33;comparison.getRange('B4:B17').format.columnWidth=28;comparison.getRange('C10:H17').format.columnWidth=13;
+  comparison.getRange('B4:B8').format.wrapText=true;comparison.getRange('A4:H8').format.rowHeight=34;comparison.getRange('A7:H7').format.rowHeight=52;
+  comparison.getRange('A19:H20').format.wrapText=true;comparison.getRange('A19:H20').format.rowHeight=28;
+  comparison.getRange('A10:H10').format={fill:'#006B75',font:{name:'Arial',size:10,color:'#FFFFFF',bold:true},rowHeight:25};
+  comparison.getRange('C11:D17').setNumberFormat('0.00');comparison.getRange('E11:E17').setNumberFormat('0.0%');
+}
 protocol.getRange('B4').values = [['CSV is canonical and append-only. update-workbook.ps1 refreshes Raw Runs and applies appended invalidations.']];
-protocol.getRange('B13').values = [['Vaultor Next M1–M11 is experimental and unpublished. Legacy development databases are disposable; no migration or installer is required. Future release qualification needs separate authorization.']];
+protocol.getRange('B13').values = [['Vaultor Next M1–M12 is experimental and unpublished. Legacy development databases are disposable; no migration or installer is required. Future release qualification needs separate authorization.']];
 const parity = wb.worksheets.getItem('Parity Gates');
 parity.getRange('A9:F9').values = [['SQLite foundation','New isolated schema, ownership, atomic note saves and restart durability','Critical','M1 focused checks','docs/plans/VAULTOR-NEXT.md','New schema; no legacy migrations.']];
 parity.getRange('D5:F5').values = [['M1 vertical slice','benchmarks/tauri-rust/summaries/','Create/edit/save/reopen; full parity pending.']];
@@ -381,8 +408,8 @@ if(m11Runs.length){scenarios.getRange('A74:E77').values=[['m11-common','Comparab
 const metricSheet = wb.worksheets.getItem('Metrics');
 metricSheet.getRange('A18:E29').values = metrics.map(m => [m,m.includes('percent')||m.endsWith('_pct')?'%':m.includes('set')||m.includes('bytes')||m.includes('mib')?'MiB':'ms','lower','M1 instrument; see repository benchmark README','Missing values remain blank']);
 wb.recalculate();
-for(const [sheetName,experiments] of [['M4 vs M5',['m4-managed-notes-v1','m5-managed-notes-v1']],['M5 vs M6',['m5-managed-notes-v1','m6-managed-notes-v1']],['M6 vs M7',['m6-managed-notes-v1','m7-managed-notes-v1']],['M7 vs M8',['m7-managed-notes-v1','m8-managed-notes-v1']],['M8 vs M9',['m8-managed-notes-v1','m9-managed-notes-v1']],['M9 vs M10',['m9-managed-notes-v1','m10-managed-notes-v1']],['M10 vs M11',['m10-managed-notes-v1','m11-managed-notes-v1']]]){
- if(m11Runs.length&&sheetName!=='M10 vs M11')continue;
+for(const [sheetName,experiments] of [['M4 vs M5',['m4-managed-notes-v1','m5-managed-notes-v1']],['M5 vs M6',['m5-managed-notes-v1','m6-managed-notes-v1']],['M6 vs M7',['m6-managed-notes-v1','m7-managed-notes-v1']],['M7 vs M8',['m7-managed-notes-v1','m8-managed-notes-v1']],['M8 vs M9',['m8-managed-notes-v1','m9-managed-notes-v1']],['M9 vs M10',['m9-managed-notes-v1','m10-managed-notes-v1']],['M10 vs M11',['m10-managed-notes-v1','m11-managed-notes-v1']],['M11 vs M12',['m11-managed-notes-v1','m12-managed-notes-v1']]]){
+ if(m12Runs.length?sheetName!=='M11 vs M12':m11Runs.length&&sheetName!=='M10 vs M11')continue;
  if(!normalized.some(r=>r[2]===experiments[1]&&r[14]==='Y'))continue;
  // Exercise the actual comparison formulas on a small disposable workbook, without recalculating unrelated historical sheets repeatedly.
  const comparison=wb.worksheets.getItem(sheetName),controls=comparison.getRange('A4:B8').values;
@@ -417,6 +444,8 @@ if(m8Runs.length&&!m9Runs.length){
 if(m9Runs.length)parity.getRange('D18:F18').values=[['M9 bundled','docs/help/next-foundation.md','Managed rich editor/media, reference clipboard, prepared copies and explicit native gaps.']];
 if(m11Runs.length){parity.getRange('D4:F4').values=[['M11 scoped Windows comparison','docs/plans/VAULTOR-NEXT-UI-AUDIT.md','Original shared Library/note/sidebar/window presentation;whole-app parity remains partial.']];parity.getRange('D18:F18').values=[['M11 bundled','docs/help/next-foundation.md','Shared orientation,row metadata,Quick Access and retained Save protections.']];}
 wb.recalculate();
+if(m12Runs.length){parity.getRange('D4:F4').values=[['M12 scoped Windows comparison','docs/plans/VAULTOR-NEXT-UI-AUDIT.md','Shared browsers,Settings,Help and linked orientation;full motion/accessibility parity remains open.']];parity.getRange('D18:F18').values=[['M12 bundled','docs/help/next-foundation.md','Original offline reader with Next-only topics/live bindings;linked explicit Save.']];scenarios.getRange('A79:E81').values=[['matched-churn-m12','Retention','Three rounds;distinct notes,session closure,one-pane endpoints','Natural30s settles;DOM/listener/JS/native role samples','DiagnosticGC separately labelled;not ordinary app RAM'],['opening-boundaries-m12','Latency','Independent read versus content/interactivity/transition','rAF-sampled UI and IPC read are separate boundaries','Common10ms note_open remains unchanged'],['m12-idle','Idle','30s settling plus untouched5min window','Inspection helper absent','Uncontrolled power/cache/background activity']];scenarios.getRange('A79:E81').format.wrapText=true;scenarios.getRange('A79:E81').format.rowHeight=64;}
+wb.recalculate();
 await (await SpreadsheetFile.exportXlsx(wb)).save(path);
 await fs.mkdir(join(root,'summaries'),{recursive:true});
 for(const file of await fs.readdir(join(root,'raw'))) {
@@ -424,7 +453,7 @@ for(const file of await fs.readdir(join(root,'raw'))) {
   if(!rows.some(row=>String(row[16]).endsWith('/'+file)))continue;
   const report = JSON.parse(await fs.readFile(join(root,'raw',file),'utf8'));
   if(!report.architecture)continue;
-  const {nativeInspectionHelperActiveBefore,nativeInspectionHelperActiveAfter,editorImage,coexistingPersonalReference,editorRecipe,architecture,commit,dirty,executableSha256,timestamp,system,dataset,samples,limitations,success,error,runtime,viewport,node,appVersion,instrument,churnRecipeSha256,desktopRecipe,organizationRecipe,openProfile} = report;
+  const {nativeInspectionHelperActiveBefore,nativeInspectionHelperActiveAfter,editorImage,coexistingPersonalReference,editorRecipe,architecture,commit,dirty,executableSha256,timestamp,system,dataset,samples,limitations,success,error,runtime,viewport,node,appVersion,instrument,churnRecipeSha256,desktopRecipe,organizationRecipe,openProfile,editorWeakRefs} = report;
   let {checks,transferRecipe,transferFixture}=report;
   if(file==='tauri-rust-2026-11-10T07-01-17.887Z.json'){checks=['Native keyboard resource export destination and native archive Save only; file/folder selection was skipped in this supplemental run.'];transferRecipe={...transferRecipe,mode:'native-output-only',metadataCorrection:'Original driver check label was too broad; final combined native-picker run separately verifies all picker workflows.'};}
   if(transferRecipe?.mode?.startsWith('native-')){const {moderateFiles,moderateFileBytes,moderateBytes,...actual}=transferFixture??{};transferFixture={...actual,metadataCorrection:'Moderate128MiB workload is generated only in transfer-performance mode; not exercised by native picker acceptance.'};}
@@ -433,11 +462,13 @@ for(const file of await fs.readdir(join(root,'raw'))) {
   const groups=new Map();
   for(const sample of samples??[]) {const key=[sample.scenario,sample.iteration,sample.metric].join('/');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(sample);}
   const measurements=[...groups.values()].map(group=>{const first=group[0],values=group.map(s=>s.value).sort((a,b)=>a-b);return {scenario:first.scenario,iteration:first.iteration,metric:first.metric,unit:first.unit,n:values.length,min:values[0],median:(values[Math.floor((values.length-1)/2)]+values[Math.floor(values.length/2)])/2,p95:values[Math.ceil(values.length*.95)-1],max:values.at(-1)};});
-  await fs.writeFile(join(root,'summaries',basename(file)),JSON.stringify({architecture,commit,dirty,executableSha256,timestamp,system,dataset,measurements,checks,limitations,success,error:(report.desktopRecipe||report.editorRecipe||report.linkedFixture||report.transferRecipe||report.organizationRecipe||measurements.some(m=>m.scenario.startsWith('desktop-')))&&error?error.split('\n')[0]:error,runtime,viewport,node,appVersion,instrument,churnRecipeSha256,desktopRecipe,organizationRecipe,editorRecipe,editorImage,coexistingPersonalReference,nativeInspectionHelperActiveBefore,nativeInspectionHelperActiveAfter,transferRecipe,transferFixture,openProfile,linkedFixture,processBreakdown,...((report.desktopRecipe||report.editorRecipe||report.transferRecipe||report.organizationRecipe)?{comparisonEligible:!failures.has('benchmarks/tauri-rust/raw/'+file)}:{})},null,2)+'\n');
+  await fs.writeFile(join(root,'summaries',basename(file)),JSON.stringify({architecture,commit,dirty,executableSha256,timestamp,system,dataset,measurements,checks,limitations,success,error:(report.desktopRecipe||report.editorRecipe||report.linkedFixture||report.transferRecipe||report.organizationRecipe||measurements.some(m=>m.scenario.startsWith('desktop-')))&&error?error.split('\n')[0]:error,runtime,viewport,node,appVersion,instrument,churnRecipeSha256,desktopRecipe,organizationRecipe,editorRecipe,editorImage,coexistingPersonalReference,nativeInspectionHelperActiveBefore,nativeInspectionHelperActiveAfter,transferRecipe,transferFixture,openProfile,editorWeakRefs,linkedFixture,processBreakdown,...((report.desktopRecipe||report.editorRecipe||report.transferRecipe||report.organizationRecipe)?{comparisonEligible:!failures.has('benchmarks/tauri-rust/raw/'+file)}:{})},null,2)+'\n');
 }
 if(m9Runs.length&&!m11Runs.length){for(const [sheetName,range]of [['M8 vs M9','A2:H20'],['Scenarios','A62:E66'],['Parity Gates','A4:F10']]){const preview=await wb.render({sheetName,range,scale:1});await fs.writeFile(join(root,'raw','workbook-M9-'+sheetName.replaceAll(' ','-')+'.png'),new Uint8Array(await preview.arrayBuffer()));}}
 console.log(`Refreshed workbook from ${rows.length} canonical records; ${failures.size} invalidated runs.`);
 
 if(m10Runs.length&&!m11Runs.length){for(const [sheetName,range]of [['M9 vs M10','A2:H20'],['Scenarios','A68:E72']]){const preview=await wb.render({sheetName,range,scale:1});await fs.writeFile(join(root,'raw','workbook-M10-'+sheetName.replaceAll(' ','-')+'.png'),new Uint8Array(await preview.arrayBuffer()));}}
 
-if(m11Runs.length){const preview=await wb.render({sheetName:'M10 vs M11',range:'A2:H20',scale:1});await fs.writeFile(join(root,'raw/workbook-M11.png'),new Uint8Array(await preview.arrayBuffer()));console.log((await wb.inspect({kind:'table',range:'M10 vs M11!A10:H17',tableMaxRows:8,tableMaxCols:8,maxChars:1500})).ndjson);}
+if(m11Runs.length&&!m12Runs.length){const preview=await wb.render({sheetName:'M10 vs M11',range:'A2:H20',scale:1});await fs.writeFile(join(root,'raw/workbook-M11.png'),new Uint8Array(await preview.arrayBuffer()));console.log((await wb.inspect({kind:'table',range:'M10 vs M11!A10:H17',tableMaxRows:8,tableMaxCols:8,maxChars:1500})).ndjson);}
+
+if(m12Runs.length){const preview=await wb.render({sheetName:'M11 vs M12',range:'A2:H20',scale:1});await fs.writeFile(join(root,'raw/workbook-M12.png'),new Uint8Array(await preview.arrayBuffer()));console.log((await wb.inspect({kind:'table',range:'M11 vs M12!A10:H17',tableMaxRows:8,tableMaxCols:8,maxChars:1500})).ndjson);}

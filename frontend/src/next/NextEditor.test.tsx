@@ -12,7 +12,7 @@ beforeAll(()=>Object.defineProperties(Range.prototype,{getClientRects:{configura
 it('journals document edits but does not treat locking and selection as edits',async()=>{
   const documents=new SharedNoteDocuments(),changed=vi.fn();let editor!:Editor;
   const prepare=documents.prepare.bind(documents);
-  vi.spyOn(documents,'prepare').mockImplementation(value=>{editor=value;prepare(value);});
+  vi.spyOn(documents,'prepare').mockImplementation((value,scope)=>{editor=value;prepare(value,scope);});
   const note={id:'a',title:'A',revision:1,content:{type:'doc',content:[{type:'paragraph'}]}};
   const view=(locked:boolean)=><EscapeManagerProvider><NextEditor note={note} documents={documents} changed={changed} locked={locked} pane={0}/></EscapeManagerProvider>;
   const mounted=render(view(false));await waitFor(()=>expect(editor?.isInitialized).toBe(true));
@@ -27,7 +27,7 @@ it('journals document edits but does not treat locking and selection as edits',a
   mounted.unmount();
 });
 it('shares rich managed blocks and undo between panes without enabling the linked schema',async()=>{
-  const documents=new SharedNoteDocuments(),editors:Editor[]=[];const prepare=documents.prepare.bind(documents);vi.spyOn(documents,'prepare').mockImplementation(value=>{editors.push(value);prepare(value);});
+  const documents=new SharedNoteDocuments(),editors:Editor[]=[];const prepare=documents.prepare.bind(documents);vi.spyOn(documents,'prepare').mockImplementation((value,scope)=>{editors.push(value);prepare(value,scope);});
   const note={id:'rich',title:'Rich',revision:1,content:{type:'doc',content:[{type:'paragraph'}]}};
   const mounted=render(<EscapeManagerProvider>{[0,1].map(pane=><NextEditor key={pane} note={note} documents={documents} changed={()=>{}} locked={false} pane={pane}/>)}</EscapeManagerProvider>);
   await waitFor(()=>expect(editors.filter(e=>e.isInitialized)).toHaveLength(2));

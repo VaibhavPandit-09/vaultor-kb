@@ -332,3 +332,12 @@ Final common source dd88e20 / EXE1dc01eb2:opening62.3ms median(3),input-to-rAF6.
 Five M11 rounds ended in two views of the same64KiB note;before had one pane. Working set544.7→1173.0→791.1MiB and private bytes316.2→933.7→547.5MiB(after30s) indicate high transient/retained memory. These are different endpoint views and not equivalent to the M10 palette/browser churn. They do not establish a plateau or leak freedom. M12 should profile matched pane endpoints. Both common runs had no inspection helper before/after;cache,power and competing applications remain uncontrolled. M10's42.5ms opening median remains faster,and private memory/startup also regress in the small sample.
 
 M11 workbook refresh:8910 canonical records,52 historical invalidated runs;M10 vs M11 source/scenario mean/count and missing-data recalculation passed,zero formula errors,and rendered comparison inspected. Git confirms204 appended lines and zero historical deletions from M10;normalized historical CSV prefix is unchanged.
+
+
+## M12 matched-state investigation
+
+Run `node benchmarks/tauri-rust/run.mjs tauri-rust --m12 --idle-five --qualify`. Common100-note/two64KiB end-marker and input-to-rAF boundaries remain unchanged. The qualifier separately records independent IPC/read latency and rAF-sampled content/interactivity/root-transition readiness. These boundaries must not be subtracted or compared as identical measurements.
+
+Three churn rounds open distinct notes,two panes,close the sibling and inactive sessions,dismiss organization,and return to the same Bench099 one-pane state. Natural30s JS heap,DOM/listeners and process-role samples precede diagnostic-only collection/WeakRef inspection. Forced collection never contributes to ordinary idle RAM claims. Recovery/conflict checks follow all memory samples and have separate qualification startup rows. Native inspection uses `--m12 --inspect --native-m12`;`--geometry-only` limits a correction check to shared header/pagination/path lanes. Inspection diagnostics are excluded from canonical comparisons.
+
+The matched M11 baseline uses source6c3904c/EXE72d528be with only benchmark scripts dirty:65.8ms opening median(3),JS heap~9MiB,stable4190nodes/819listeners,and natural settled working set812–819MiB. Diagnostic collection leaves one of13observed editors alive,none destroyed;GPU private commit dominates the retained increase. This bounded observation does not establish leak freedom. Final comparison and exact build are recorded below after measurement.

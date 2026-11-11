@@ -4,8 +4,8 @@ import { ChevronDown } from 'lucide-react';
 import { attachLibraryCompression } from '../lib/useLibraryCompression';
 
 /** Same note identity and organization controls, inside the visit's scroll owner. */
-export default function NoteOrientation({ identity, children, status, tagCount }: {
-  identity: ReactNode; children: ReactNode; status?: ReactNode; tagCount: number;
+export default function NoteOrientation({ identity, children, status, tagCount,organizationLabel }: {
+  identity: ReactNode; children: ReactNode; status?: ReactNode; tagCount: number;organizationLabel?:string;
 }) {
   const header = useRef<HTMLDivElement>(null), organization = useRef<HTMLDivElement>(null);
   const toggle = useRef<HTMLButtonElement>(null), mode = useRef<'auto' | 'open' | 'closed'>('auto');
@@ -37,14 +37,14 @@ export default function NoteOrientation({ identity, children, status, tagCount }
   }, []);
   return <div ref={header} className="note-orientation" data-organization-open={disclosure}>
     <div className="note-heading"><div className="note-identity">{identity}</div>
-    <button ref={toggle} className="note-organization-toggle" aria-label={`Tags and collections · ${tagCount} tags`} title={`Tags and collections · ${tagCount} tags`} aria-controls={regionId} aria-expanded={disclosure === 'auto' ? undefined : disclosure === 'open'}
+    <button ref={toggle} className="note-organization-toggle" aria-label={organizationLabel??`Tags and collections · ${tagCount} tags`} title={organizationLabel??`Tags and collections · ${tagCount} tags`} aria-controls={regionId} aria-expanded={disclosure === 'auto' ? undefined : disclosure === 'open'}
       onClick={() => {
         const next = toggle.current?.getAttribute('aria-expanded') !== 'true';
         mode.current = next ? 'open' : 'closed'; setDisclosure(mode.current);
         if (organization.current) organization.current.inert = !next;
         if (header.current) header.current.dataset.folded = String(!next);
       }}>
-      Organization <span>· {tagCount} {tagCount === 1 ? 'tag' : 'tags'}</span><ChevronDown size={13}/>
+      {organizationLabel??'Organization'} {!organizationLabel&&<span>· {tagCount} {tagCount === 1 ? 'tag' : 'tags'}</span>}<ChevronDown size={13}/>
     </button></div>
     <div ref={organization} id={regionId} className="note-organization"><div>{children}</div></div>
     {status && <div className="note-availability">{status}</div>}

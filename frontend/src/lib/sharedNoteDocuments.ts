@@ -35,13 +35,16 @@ export class SharedNoteDocuments {
       editor.view.dispatch(resetSharedHistory(tr, editor.state));
     }
   }
-  private schema?: Schema;
+  private schemas=new Map<string,Schema>();
   // ProseMirror steps/history contain NodeType identities, so sibling editors must
   // use the same schema instance, selected before their initial state is created.
-  prepare(editor: Editor) {
-    if (!this.schema) this.schema = editor.schema;
-    editor.schema = this.schema;
-    editor.extensionManager.schema = this.schema;
+  prepare(editor: Editor, scope='default') {
+    // Sharing is required within a document family, not across incompatible
+    // managed/linked extension sets. Controllers supply a bounded family key.
+    const schema=this.schemas.get(scope)??editor.schema;
+    this.schemas.set(scope,schema);
+    editor.schema = schema;
+    editor.extensionManager.schema = schema;
   }
   private groups = new Map<string, Set<Editor>>();
   attach(noteId: string, editor: Editor) {

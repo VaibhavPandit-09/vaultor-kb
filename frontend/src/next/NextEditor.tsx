@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { EditorContent, ReactNodeViewRenderer, useEditor } from '@tiptap/react';
 import {Extension,type Editor,type JSONContent} from '@tiptap/core';
 import {Plugin} from '@tiptap/pm/state';
@@ -39,15 +39,18 @@ export default function NextEditor({ note, documents, changed, locked, pane, foc
   const invalid = useRef(false);
   const [contentError, setContentError] = useState(false);
   const [focused, setFocused] = useState(false);
+  // Extensions belong to this view, not to toolbar or Save-status renders.
+  // eslint-disable-next-line react-hooks/refs -- the readonly plugin captures a stable ref and reads it only at dispatch.
+  const extensions=useMemo(()=>[readonlyGate(lockedRef),SourceLink,StarterKit.configure({ codeBlock: false, undoRedo: false, heading: { levels: [1, 2, 3, 4, 5, 6] }, link: false }),
+      CodeBlockLowlight.extend({ addNodeView: () => ReactNodeViewRenderer(CodeBlockView) }).configure({ lowlight }),
+      Placeholder.configure({ placeholder: 'Start writing… Markdown shortcuts work here.' }),
+      ...(managed?[WorkspaceTable.configure({resizable:true}),TableWorkspace,SlashCommandExtension,NextImage,ResourceLinkExtension.extend({addNodeView(){return ({node})=>{const dom=document.createElement('span');dom.className='resource-link-pill';dom.dataset.resourceId=node.attrs.resourceId;dom.textContent=node.attrs.label||'Resource';dom.tabIndex=0;dom.setAttribute('role','link');dom.title='Ctrl+click to open · Ctrl+Shift+click to open beside';return {dom};};}})]:[Table.configure({resizable:true})]), TableRow, TableCell, TableHeader, TaskList, TaskItem.configure({ nested: true }), Highlight, SharedHistory, SymbolSystemExtension],[managed]);
   const editor:Editor|null = useEditor({
     enableContentCheck: true,
     onContentError: ({ editor }) => { invalid.current = true; setContentError(true); editor.setEditable(false, false); },
-    onBeforeCreate: ({ editor }) => documents.prepare(editor),
-    // eslint-disable-next-line react-hooks/refs -- the plugin reads this ref only in transaction dispatch, never during render.
-    extensions: [readonlyGate(lockedRef),SourceLink,StarterKit.configure({ codeBlock: false, undoRedo: false, heading: { levels: [1, 2, 3, 4, 5, 6] }, link: false }),
-      CodeBlockLowlight.extend({ addNodeView: () => ReactNodeViewRenderer(CodeBlockView) }).configure({ lowlight }),
-      Placeholder.configure({ placeholder: 'Start writing… Markdown shortcuts work here.' }),
-      ...(managed?[WorkspaceTable.configure({resizable:true}),TableWorkspace,SlashCommandExtension,NextImage,ResourceLinkExtension.extend({addNodeView(){return ({node})=>{const dom=document.createElement('span');dom.className='resource-link-pill';dom.dataset.resourceId=node.attrs.resourceId;dom.textContent=node.attrs.label||'Resource';dom.tabIndex=0;dom.setAttribute('role','link');dom.title='Ctrl+click to open · Ctrl+Shift+click to open beside';return {dom};};}})]:[Table.configure({resizable:true})]), TableRow, TableCell, TableHeader, TaskList, TaskItem.configure({ nested: true }), Highlight, SharedHistory, SymbolSystemExtension],
+    onBeforeCreate: ({ editor }) => documents.prepare(editor,managed?'next-managed':'next-linked'),
+    extensions,
+    shouldRerenderOnTransaction:false,
     content: note.content,
     editorProps: {
       attributes: { class: 'tiptap outline-none min-h-[50vh]', 'aria-label': `Note body ${pane + 1}` },
@@ -64,5 +67,5 @@ export default function NextEditor({ note, documents, changed, locked, pane, foc
   useEffect(()=>{if(editor&&!locked&&focusWhenReady){editor.commands.focus(undefined,{scrollIntoView:false});focusHandled?.();}},[editor,locked,focusWhenReady,focusHandled]);
   useEscapeLayer({ id: `next-editor-${pane}`, active: focused, priority: ESCAPE_PRIORITIES.editorFocus, restoreFocusOnEscape: false, close: () => {editor?.commands.blur();leaveFocus?.();} });
   const navigate=(href:string)=>{if(!href.startsWith('#')){if(followLink)followLink(href);else openWeb?.(href);return;}let anchor=href.slice(1);try{anchor=decodeURIComponent(anchor);}catch{/* Keep a malformed fragment literal. */}const slug=(value:string)=>value.toLowerCase().trim().replace(/[^\p{Letter}\p{Number}\s-]/gu,'').replace(/\s+/g,'-');const heading=[...(editor?.view.dom.querySelectorAll<HTMLElement>('h1,h2,h3,h4,h5,h6')??[])].find(node=>node.id===anchor||slug(node.textContent??'')===anchor);heading?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});};
-  return <div ref={container} className="editor-workspace" onClickCapture={event=>{const resource=(event.target as Element).closest<HTMLElement>('[data-resource-id]');if(managed&&resource&&(event.ctrlKey||!editor?.isEditable)){event.preventDefault();openResource?.(resource.dataset.resourceId!,event.shiftKey);return;}const link=(event.target as Element).closest<HTMLAnchorElement>('a[href]');if(link&&(event.ctrlKey||!editor?.isEditable)){event.preventDefault();event.stopPropagation();navigate(link.getAttribute('href')!);}}} onKeyDown={event=>{const resource=(event.target as Element).closest<HTMLElement>('[data-resource-id]');if(managed&&resource&&event.key==='Enter'){event.preventDefault();openResource?.(resource.dataset.resourceId!,event.shiftKey);return;}if(event.ctrlKey&&event.key==='Enter'){const href=editor?.getAttributes('link').href;if(typeof href==='string'){event.preventDefault();navigate(href);}}}}>{contentError && <p role="alert">Unsupported note content. Editing is disabled; original JSON is retained.</p>}{managed&&editor&&<EditorControls retrySave={retrySave} saveStatus={saveStatus} editor={editor} container={container} noteId={note.id} openResource={openResource}/>} {operationError&&<p role="alert">{operationError}</p>}<EditorContent editor={editor} /></div>;
+  return <div ref={container} className="editor-workspace" onClickCapture={event=>{const resource=(event.target as Element).closest<HTMLElement>('[data-resource-id]');if(managed&&resource&&(event.ctrlKey||!editor?.isEditable)){event.preventDefault();openResource?.(resource.dataset.resourceId!,event.shiftKey);return;}const link=(event.target as Element).closest<HTMLAnchorElement>('a[href]');if(link&&(event.ctrlKey||!editor?.isEditable)){event.preventDefault();event.stopPropagation();navigate(link.getAttribute('href')!);}}} onKeyDown={event=>{const resource=(event.target as Element).closest<HTMLElement>('[data-resource-id]');if(managed&&resource&&event.key==='Enter'){event.preventDefault();openResource?.(resource.dataset.resourceId!,event.shiftKey);return;}if(event.ctrlKey&&event.key==='Enter'){const href=editor?.getAttributes('link').href;if(typeof href==='string'){event.preventDefault();navigate(href);}}}}>{contentError && <p role="alert">Unsupported note content. Editing is disabled; original JSON is retained.</p>}{editor&&<EditorControls managed={managed} retrySave={retrySave} saveStatus={saveStatus} editor={editor} container={container} noteId={note.id} openResource={openResource}/>} {operationError&&<p role="alert">{operationError}</p>}<EditorContent editor={editor} /></div>;
 }

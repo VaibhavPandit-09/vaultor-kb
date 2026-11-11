@@ -19,7 +19,7 @@ const protectedKeys=new Set(['Ctrl+A','Ctrl+C','Ctrl+X','Ctrl+V','Ctrl+S','Ctrl+
 export function shortcutError(id:CommandId,key:string,p:Preferences){if(!key)return '';if(protectedKeys.has(key)||(!key.includes('Ctrl+')&&!key.includes('Alt+')&&!/^F\d+$/.test(key)))return 'This binding belongs to text editing, lists or Windows.';const other=commandDefinitions.find(c=>c[0]!==id&&binding(c[0],p)===key);return other?`Already used by ${other[1]}.`:'';}
 export type StoredDocument={id:string;source?:string;path?:string};
 export type BrowseState={screen:Screen;collection:string|null;criteria:Criteria};
-export type BrowserMemory={query:string;expanded:string[];page:number};
+export type BrowserMemory={hierarchy?:boolean;query:string;expanded:string[];page:number};
 export type WorkspaceSession={history?:DesktopHistory;remembered?:{id:string;title:string;source?:string;path?:string}[];browsers?:Partial<Record<Screen,BrowserMemory>>;version:1;documents:StoredDocument[];activePane:number;ratio:number;browse:BrowseState;sidebar:boolean;companion:string};
 export function decodeSession(value:unknown):WorkspaceSession|undefined{
  if(!value||typeof value!=='object')return;const s=value as WorkspaceSession;
