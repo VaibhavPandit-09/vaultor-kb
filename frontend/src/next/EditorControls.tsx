@@ -26,7 +26,7 @@ export default function EditorControls({editor,container,noteId,openResource,sav
  const [toolbarHost,setToolbarHost]=useState<HTMLElement|null>(null);
  // The existing note header owns the disclosure; only the controls move, never the editor.
  // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronize an optional mounted header portal target.
- useLayoutEffect(()=>{setToolbarHost(slot.current?.closest('.next-document')?.querySelector<HTMLElement>('.next-note-bar')??null);},[container]);
+ useLayoutEffect(()=>{setToolbarHost(slot.current?.closest('.next-document,.journey-viewport')?.querySelector<HTMLElement>('.next-note-bar')??null);},[container]);
  const [formatOffset,setFormatOffset]=useState({x:0,y:0});
  const lastQuery=useRef('');
  const [,setFormatting]=useState('');

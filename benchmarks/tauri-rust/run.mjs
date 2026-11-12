@@ -2,7 +2,7 @@ import {roleSamples} from './process-role-samples.mjs';
 // Production UI/native runtimes; disposable storage only. No owner credentials leave the renderer.
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, writeFile, appendFile } from 'node:fs/promises';
-import { resolve, join } from 'node:path';
+import { resolve, join, basename } from 'node:path';
 import { tmpdir, cpus, totalmem, hostname, release, arch } from 'node:os';
 import { createHash, randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
@@ -15,9 +15,10 @@ const m2 = process.argv.includes('--m2');
 const m3 = process.argv.includes('--m3');
 const m4 = process.argv.includes('--m4');
 const m5 = process.argv.includes('--m5');
+const m14 = process.argv.includes('--m14');
 const m13 = process.argv.includes('--m13');
 const m12 = process.argv.includes('--m12');
-const m11 = process.argv.includes('--m11')||m12||m13;
+const m11 = process.argv.includes('--m11')||m12||m13||m14;
 const m10 = process.argv.includes('--m10')||m11;
 const m9 = process.argv.includes('--m9');
 const m8 = process.argv.includes('--m8');
@@ -35,6 +36,7 @@ report.coexistingPersonalReference=process.platform==='win32'&&execFileSync('tas
 report.nativeInspectionHelperActiveBefore=process.platform==='win32'&&execFileSync('tasklist',['/FI','IMAGENAME eq codex-computer-use.exe','/FO','CSV','/NH'],{encoding:'utf8',windowsHide:true}).toLowerCase().includes('codex-computer-use.exe');
 report.dirty = Boolean(execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8', windowsHide: true }).trim());
 const executablePath = process.env.VAULTOR_BENCH_EXECUTABLE || (architecture === 'electron-java' ? join(root,'desktop/node_modules/electron/dist/electron.exe') : join(root,'next/src-tauri/target/release/vaultor-next.exe'));
+if(architecture==='electron-java'&&/vaultor[-_]next/i.test(basename(executablePath)))throw Error('Refusing a Vaultor Next executable as an Electron reference;clear VAULTOR_BENCH_EXECUTABLE.');
 report.executableSha256 = createHash('sha256').update(await readFile(executablePath)).digest('hex');
 const delay = ms => new Promise(r => setTimeout(r, ms));
 const csvEscape = v => '"' + String(v ?? '').replaceAll('"', '""') + '"';
@@ -105,6 +107,9 @@ async function launch(iteration) {
   report.appVersion = JSON.parse(await readFile(join(root,architecture==='electron-java'?'desktop/package.json':'next/package.json'),'utf8')).version;
   report.instrument = 'm1-cdp-v2';
   if(iteration>=3)return null; // Recovery restarts need assertions, not a racing second sampler.
+  return startSampler(iteration);
+}
+function startSampler(iteration) {
   const stop = join(folder, `stop-${iteration}`), sampleFile = join(folder, `process-${iteration}.json`);
   sampler = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(import.meta.dirname, 'process-sample.ps1'), '-RootPid', String(child.pid), '-Output', sampleFile, '-StopFile', stop], { windowsHide: true, stdio: ['ignore','ignore','pipe'] });
   sampler.stderr.on('data', data => { report.samplerLog = ((report.samplerLog ?? '') + data).slice(-1500); });
@@ -145,7 +150,8 @@ async function quit() {
 try {
   let run = await launch(1);
   if (inspect) {
-    if(m13||process.argv.includes('--reference-m13'))await (await import('./m13-inspect.mjs')).inspectM13({evaluate,cdp,wait,report,folder,output,reference:architecture==='electron-java',restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
+    if(m14||process.argv.includes('--reference-m14'))await (await import('./m14-inspect.mjs')).inspectM14({evaluate,cdp,wait,report,folder,output,record,reference:architecture==='electron-java',restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
+    else if(m13||process.argv.includes('--reference-m13'))await (await import('./m13-inspect.mjs')).inspectM13({evaluate,cdp,wait,report,folder,output,reference:architecture==='electron-java',restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
     else if(m12){const inspection=await import('./m12-inspect.mjs');await (process.argv.includes('--probe-containment')?inspection.probeContainment:inspection.inspectM12)({evaluate,cdp,wait,report,folder,output});}
     else if(m11){const inspection=await import('./m11-qualify.mjs');await (process.argv.includes('--linked-only')?inspection.inspectLinkedM11:process.argv.includes('--trash-only')?inspection.inspectTrashM11:inspection.inspectM11)({evaluate,cdp,wait,report,folder,output});}
     if(m10&&process.argv.includes('--final-smoke'))await (await import('./m10-qualify.mjs')).smokeFinal({evaluate,cdp,wait,report});
@@ -162,7 +168,10 @@ try {
     }
     console.log(await evaluate('document.body.innerText.slice(0,5000)'));
     await cdp('Page.captureScreenshot').then(async r => writeFile(join(output, 'inspect.png'), Buffer.from(r.data, 'base64')));
-    await delay(3000); await stopSampler(run, 1); await quit();
+    if(m14&&process.argv.includes('--measure-m14')){report.preIdleEndpoint=await evaluate('({editors:document.querySelectorAll(".tiptap").length,portals:document.querySelectorAll(".library-popover,[role=dialog],[role=menu]").length,heap:performance.memory?.usedJSHeapSize})');assert.equal(report.preIdleEndpoint.editors,1);assert.equal(report.preIdleEndpoint.portals,0);if(!run){report.preRestartProcess1=report.process1;run=startSampler(4);}console.log('M14 settling30s before untouched five-minute idle;no renderer polling.');await delay(30000);report.idleWindow={start:Date.now()};await delay(300000);report.idleWindow.end=Date.now();}
+    await delay(3000); await stopSampler(run, 1);
+    if(m14&&report.idleWindow){const points=report.process1.filter(p=>{const t=Date.parse(p.timestamp);return t>=report.idleWindow.start&&t<=report.idleWindow.end;}),first=points[0],last=points.at(-1);assert(points.length>=200,'Idle sampler coverage');record('m14-settled-idle-5min',1,'cpu_one_core_percent',100*(last.cpuSeconds-first.cpuSeconds)/((Date.parse(last.timestamp)-Date.parse(first.timestamp))/1000),'%','Untouched five-minute idle after100-note UI journey fixture;one pane;no renderer polling;uncontrolled coexisting desktop.');record('m14-settled-idle-5min',1,'process_tree_working_set',last.workingSet,'bytes','Final owned process-tree sample;shared pages may double-count.');record('m14-settled-idle-5min',1,'process_tree_private_bytes',last.privateBytes,'bytes','Final owned process-tree sample;not comparable to different fixture endpoints.');}
+    await quit();
   } else {
     const doc = { type: 'doc', content: Array.from({ length: 120 }, (_, i) => ({ type: 'paragraph', content: [{ type: 'text', text: `Paragraph ${i}. Vaultor comparable managed-note benchmark. ` + 'Writing, reading and organizing knowledge. '.repeat(12) }] })) };
     const dataset = createHash('sha256').update(JSON.stringify(doc)).digest('hex'); report.dataset = dataset;
@@ -250,7 +259,7 @@ try {
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
-  for (const s of report.samples) if(!inspect||(m10&&s.scenario==='command-palette-m10')) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
-  if (!report.success && !inspect) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
+  for (const s of report.samples) if(!inspect||(m10&&s.scenario==='command-palette-m10')||(m14&&process.argv.includes('--measure-m14')&&s.scenario.startsWith('m14-'))) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
+  if (!report.success && (!inspect||m14&&process.argv.includes('--measure-m14'))) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,commit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
   console.log(JSON.stringify({ success: report.success, evidence, metrics: report.samples.length, error: report.error }));
 }

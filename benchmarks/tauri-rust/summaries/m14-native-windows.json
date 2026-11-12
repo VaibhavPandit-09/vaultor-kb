@@ -1,0 +1,512 @@
+{
+  "scope": "M14 partial Windows engineering acceptance;not user acceptance or whole-app parity",
+  "evidence": "tauri-rust-2026-11-12T02-17-26.147Z.json",
+  "sourceParent": "37b8999d6dd20dd0648370a2779254a12d812b06",
+  "sourceDirty": true,
+  "executableSha256": "4edfadae40f67dadd753fd684a8c18d8de20c821fc95b7f5236fb0aabad51033",
+  "success": true,
+  "reading": {
+    "top": 680,
+    "selection": 40,
+    "editors": 1
+  },
+  "restartReading": {
+    "top": 680,
+    "selection": 40
+  },
+  "compact": {
+    "compact": "true",
+    "spread": 2.7604141235351562,
+    "overflow": false
+  },
+  "endpoint": {
+    "editors": 1,
+    "heap": 16460747,
+    "portals": 0,
+    "nodes": 3686
+  },
+  "preIdleEndpoint": {
+    "editors": 1,
+    "portals": 0,
+    "heap": 16506856
+  },
+  "nativeResponsiveBuild": "8eedb75811954b8c5ff1bce67ad56f23513c1f873acae1f92baa3aa24eff1944",
+  "nativeResponsive": {
+    "before": {
+      "active": "1",
+      "editors": 2,
+      "panes": [
+        {
+          "width": 533.6500854492188,
+          "visibility": "hidden"
+        },
+        {
+          "width": 547.3333740234375,
+          "visibility": "visible"
+        }
+      ]
+    },
+    "after": {
+      "editors": 1,
+      "portals": 0
+    }
+  },
+  "nativeResetEvidence": "Previous same-controller native pass:appearance reset Cancel/Escape retained65% opacity;confirmed reset restored85%/comfortable while preserving sidebar preferences and returning focus to Settings actions.",
+  "checks": [
+    "Original per-session linked journey A→B→Back restores reading680px/caret40 with one visible editor",
+    "Inactive session reload after restart restores scroll/caret;Open Notes reorder/close-other;shared view typing;closing first pane keeps surviving editor DOM",
+    "Managed Notes/Files filtering/counts;single-line compact Library;note resource actions;formatting disclosure;three independent sessions;Quick Access hide;Chosen mode;density/opacity/themes persist across process restart",
+    "Forced termination at durable managed draft;restart Recovery restore and autosave;competing managed revision refused and draft parked;linked bytes unchanged before explicit Save;linked competing bytes refused and text retained",
+    "Actual embedded M14 Help searches and renders the Open Notes/journey instructions;Escape returns to the existing editor",
+    "Six repeated note navigations settle at one editor and zero open menu/dialog portals;history contains metadata only"
+  ],
+  "motion": {
+    "originalEvidence": "electron-java-2026-11-11T18-24-26.128Z.json",
+    "originalFixtureNotes": 6,
+    "nextFixtureNotes": 100,
+    "matchedPreference": "Smooth",
+    "original": {
+      "frames": 24,
+      "names": [
+        "journey-forward",
+        "journey-back"
+      ],
+      "durations": [
+        "0.2s"
+      ],
+      "easings": [
+        "ease-out"
+      ],
+      "back": [
+        {
+          "ms": 21.499999952316102,
+          "transform": "matrix(1, 0, 0, 1, -8, 0)",
+          "opacity": "0.65",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 96.3999999523162,
+          "transform": "matrix(1, 0, 0, 1, -8, 0)",
+          "opacity": "0.65",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 129.79999995231628,
+          "transform": "matrix(1, 0, 0, 1, -6.41112, 0)",
+          "opacity": "0.719514",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 133.9999999523161,
+          "transform": "matrix(1, 0, 0, 1, -6.16016, 0)",
+          "opacity": "0.730493",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 142.29999995231628,
+          "transform": "matrix(1, 0, 0, 1, -5.67578, 0)",
+          "opacity": "0.751685",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 146.3999999523162,
+          "transform": "matrix(1, 0, 0, 1, -5.44208, 0)",
+          "opacity": "0.761909",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 150.59999995231647,
+          "transform": "matrix(1, 0, 0, 1, -5.20646, 0)",
+          "opacity": "0.772217",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 154.79999995231628,
+          "transform": "matrix(1, 0, 0, 1, -4.97468, 0)",
+          "opacity": "0.782358",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 158.9999999523161,
+          "transform": "matrix(1, 0, 0, 1, -4.74673, 0)",
+          "opacity": "0.792331",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 163.09999995231647,
+          "transform": "matrix(1, 0, 0, 1, -4.52794, 0)",
+          "opacity": "0.801903",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 167.19999995231638,
+          "transform": "matrix(1, 0, 0, 1, -4.31285, 0)",
+          "opacity": "0.811313",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 171.3999999523162,
+          "transform": "matrix(1, 0, 0, 1, -4.09641, 0)",
+          "opacity": "0.820782",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 175.59999995231647,
+          "transform": "matrix(1, 0, 0, 1, -3.88395, 0)",
+          "opacity": "0.830077",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 179.79999995231628,
+          "transform": "matrix(1, 0, 0, 1, -3.67553, 0)",
+          "opacity": "0.839196",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 183.8999999523162,
+          "transform": "matrix(1, 0, 0, 1, -3.47603, 0)",
+          "opacity": "0.847924",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 233.8999999523162,
+          "transform": "matrix(1, 0, 0, 1, -1.39207, 0)",
+          "opacity": "0.939097",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 238.09999995231647,
+          "transform": "matrix(1, 0, 0, 1, -1.25028, 0)",
+          "opacity": "0.9453",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 242.19999995231638,
+          "transform": "matrix(1, 0, 0, 1, -1.1176, 0)",
+          "opacity": "0.951105",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        }
+      ]
+    },
+    "next": {
+      "frames": 24,
+      "names": [
+        "journey-forward",
+        "journey-back"
+      ],
+      "durations": [
+        "0.2s"
+      ],
+      "easings": [
+        "ease-out"
+      ],
+      "back": [
+        {
+          "ms": 19.699999964237122,
+          "transform": "matrix(1, 0, 0, 1, -8, 0)",
+          "opacity": "0.65",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 57.09999996423721,
+          "transform": "matrix(1, 0, 0, 1, -8, 0)",
+          "opacity": "0.65",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 61.29999996423726,
+          "transform": "matrix(1, 0, 0, 1, -7.72145, 0)",
+          "opacity": "0.662187",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 65.4999999642373,
+          "transform": "matrix(1, 0, 0, 1, -7.44763, 0)",
+          "opacity": "0.674166",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 69.59999996423721,
+          "transform": "matrix(1, 0, 0, 1, -7.18566, 0)",
+          "opacity": "0.685628",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 77.89999996423717,
+          "transform": "matrix(1, 0, 0, 1, -6.66901, 0)",
+          "opacity": "0.708231",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 82.09999996423721,
+          "transform": "matrix(1, 0, 0, 1, -6.41395, 0)",
+          "opacity": "0.71939",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 86.39999996423717,
+          "transform": "matrix(1, 0, 0, 1, -6.15702, 0)",
+          "opacity": "0.73063",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 90.4999999642373,
+          "transform": "matrix(1, 0, 0, 1, -5.9159, 0)",
+          "opacity": "0.74118",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 94.59999996423721,
+          "transform": "matrix(1, 0, 0, 1, -5.67848, 0)",
+          "opacity": "0.751566",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 98.79999996423726,
+          "transform": "matrix(1, 0, 0, 1, -5.43908, 0)",
+          "opacity": "0.76204",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 102.9999999642373,
+          "transform": "matrix(1, 0, 0, 1, -5.20351, 0)",
+          "opacity": "0.772346",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 111.29999996423726,
+          "transform": "matrix(1, 0, 0, 1, -4.74926, 0)",
+          "opacity": "0.79222",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 115.4999999642373,
+          "transform": "matrix(1, 0, 0, 1, -4.52513, 0)",
+          "opacity": "0.802025",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 119.59999996423721,
+          "transform": "matrix(1, 0, 0, 1, -4.3101, 0)",
+          "opacity": "0.811433",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 123.79999996423726,
+          "transform": "matrix(1, 0, 0, 1, -4.0937, 0)",
+          "opacity": "0.820901",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 132.19999996423712,
+          "transform": "matrix(1, 0, 0, 1, -3.67292, 0)",
+          "opacity": "0.83931",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 140.39999996423717,
+          "transform": "matrix(1, 0, 0, 1, -3.27801, 0)",
+          "opacity": "0.856587",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        },
+        {
+          "ms": 148.79999996423726,
+          "transform": "matrix(1, 0, 0, 1, -2.89031, 0)",
+          "opacity": "0.873549",
+          "name": "journey-back",
+          "duration": "0.2s",
+          "easing": "ease-out",
+          "editors": 1
+        }
+      ]
+    },
+    "limitation": "24rAF computed-style samples and static frames;not compositor,full interruption or subjective motion certification"
+  },
+  "performance": {
+    "recipe": "M14 everyday100-note fixture;not M12 common64KiB comparison",
+    "noteOpeningMedianMs": 78.22355000000061,
+    "noteOpeningSamples": 6,
+    "idleWindow": {
+      "start": 1794449898007,
+      "end": 1794450198022
+    },
+    "idleSamples": 360,
+    "first": {
+      "workingSetMiB": 590.61328125,
+      "privateMiB": 345.4765625,
+      "processes": 7,
+      "names": [
+        "vaultor-next-m14.exe",
+        "msedgewebview2.exe"
+      ]
+    },
+    "last": {
+      "workingSetMiB": 434.3359375,
+      "privateMiB": 348.33203125,
+      "processes": 7,
+      "names": [
+        "vaultor-next-m14.exe",
+        "msedgewebview2.exe"
+      ]
+    },
+    "processCountRange": [
+      7,
+      8
+    ],
+    "metrics": [
+      {
+        "scenario": "m14-settled-idle-5min",
+        "iteration": 1,
+        "metric": "cpu_one_core_percent",
+        "value": 1.2487000979733232,
+        "unit": "%",
+        "notes": "Untouched five-minute idle after100-note UI journey fixture;one pane;no renderer polling;uncontrolled coexisting desktop.",
+        "valid": true
+      },
+      {
+        "scenario": "m14-settled-idle-5min",
+        "iteration": 1,
+        "metric": "process_tree_working_set",
+        "value": 455434240,
+        "unit": "bytes",
+        "notes": "Final owned process-tree sample;shared pages may double-count.",
+        "valid": true
+      },
+      {
+        "scenario": "m14-settled-idle-5min",
+        "iteration": 1,
+        "metric": "process_tree_private_bytes",
+        "value": 365252608,
+        "unit": "bytes",
+        "notes": "Final owned process-tree sample;not comparable to different fixture endpoints.",
+        "valid": true
+      }
+    ],
+    "nativeInspectionHelperActiveBefore": false,
+    "nativeInspectionHelperActiveAfter": false
+  },
+  "failures": [
+    "tauri-rust-2026-11-11T18-09-35.383Z.json:older executable copied before completed build;no accepted measurements",
+    "tauri-rust-2026-11-11T18-10-06.132Z.json:native hold left two editors;excluded",
+    "tauri-rust-2026-11-11T18-30-39.258Z.json:pre-restart sampler had no final idle coverage;excluded",
+    "tauri-rust-2026-11-11T18-48-25.436Z.json:driver clicked before Library navigation barrier released;excluded"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes.",
+    "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.",
+    "Only the disposable application process tree is sampled; background apps, power and cache conditions are uncontrolled. The M8 reference had a coexisting personal process; inspect coexistingPersonalReference for this run.",
+    "Crash test pauses the renderer after an actual durable-draft receipt,then terminates it before autosave;test-only timing control,not a production change or performance sample.",
+    "M14 visual/motion acceptance remains scoped;this recipe does not establish whole-app fidelity or leak freedom.",
+    "Event-listener counts,matched M12 comparisons,long soak,full motion/IME/accessibility and release gates remain unverified."
+  ]
+}

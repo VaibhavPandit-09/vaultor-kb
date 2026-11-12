@@ -9,6 +9,7 @@ fn options(q: &str, content: bool, collection: Option<String>, order: &str) -> S
         order: order.into(),
         view: String::new(),
         tag: None,
+        kind:None,
     }
 }
 fn query(w: &Workspace, q: &str, content: bool) -> Value {
@@ -148,4 +149,15 @@ fn indexed_search_pages_scopes_and_mutable_order_cursor_invalidation() {
     assert!(w
         .search(options("entry", false, None, "title"), cursor(), None)
         .is_err());
+}
+
+#[test]
+fn resource_kind_filter_is_cursor_bound_and_refuses_unsupported_types(){
+ let dir=tempfile::tempdir().unwrap();let mut w=Workspace::open(dir.path()).unwrap();
+ let n=w.execute(Request::CreateNote{title:"Managed file".into(),collection:None}).unwrap();
+ w.db.execute("INSERT INTO managed_originals VALUES(?1,'sample.txt','hash',0,'file','test')",[n["id"].as_str().unwrap()]).unwrap();
+ w.execute(Request::CreateNote{title:"Managed note".into(),collection:None}).unwrap();
+ let mut o=options("",false,None,"created");o.kind=Some("file".into());let files=w.search(o.clone(),None,None).unwrap();assert_eq!(files["total"],1);assert_eq!(files["items"][0]["id"],n["id"]);
+ o.kind=Some("note".into());assert_eq!(w.search(o.clone(),None,None).unwrap()["total"],1);
+ o.kind=Some("unsupported".into());assert!(w.search(o,None,None).is_err());
 }

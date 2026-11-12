@@ -232,8 +232,8 @@ impl Workspace {
                 self.organization(Request::Recents)
             }
             Request::Recents => {
-                let mut q=self.db.prepare("SELECT r.id,r.title,NULL,NULL,s.opened FROM resources r JOIN resource_state s ON s.resource_id=r.id WHERE s.trashed=0 AND s.opened>0 UNION ALL SELECT id,title,source,path,opened FROM recent_links ORDER BY 5 DESC,1 LIMIT 12").map_err(error)?;
-                let result=q.query_map([],|r|Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"source":r.get::<_,Option<String>>(2)?,"path":r.get::<_,Option<String>>(3)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
+                let mut q=self.db.prepare("SELECT r.id,r.title,NULL,NULL,s.opened,COALESCE((SELECT kind FROM managed_originals o WHERE o.resource_id=r.id),'note') FROM resources r JOIN resource_state s ON s.resource_id=r.id WHERE s.trashed=0 AND s.opened>0 UNION ALL SELECT id,title,source,path,opened,'linked' FROM recent_links ORDER BY 5 DESC,1 LIMIT 12").map_err(error)?;
+                let result=q.query_map([],|r|Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"source":r.get::<_,Option<String>>(2)?,"path":r.get::<_,Option<String>>(3)?,"kind":r.get::<_,String>(5)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
                 Ok(json!(result))
             }
             Request::Trash {
@@ -457,6 +457,7 @@ mod tests {
     fn query(w: &Workspace, view: &str, tag: Option<String>) -> Value {
         w.search(
             crate::search::SearchOptions {
+                kind:None,
                 query: "".into(),
                 content: false,
                 collection: None,

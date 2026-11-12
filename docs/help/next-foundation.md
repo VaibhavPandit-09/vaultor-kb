@@ -8,11 +8,17 @@ The first launch creates a separate local Vaultor Next workspace. Open workspace
 
 ## Library and note presentation
 
-Library uses the original Vaultor resource-row and transforming-header presentation. Rows show type, collection/tag metadata, date and pin/actions. Scroll to compress the same search and paging controls into one line. The details button exposes page selection in compact mode; Escape clears selection after a contextual menu has closed. Quick Access contains collapsible Pinned and Recent sections; View all opens the complete browser.
+Library uses the original Vaultor resource-row and transforming-header presentation. Rows show type, collection/tag metadata, date and pin/actions. Scroll to compress the same search and paging controls into one line. The details button exposes page selection in compact mode; Escape clears selection after a contextual menu has closed. Quick Access contains collapsible Pinned and Recent sections; View all opens the complete browser. Sidebar options shows or hides these groups and restores their defaults. Each group filters Notes or Files independently. Explicit companion choices stay selected until Auto is enabled; changing the companion does not replace the full-workspace browser.
 
 Collections, Tags and Linked Sources use the same transforming browse header. Collections offers All and Hierarchy; direct active-resource counts exclude Trash. Collection details expose the parent breadcrumb through the details control.
 
 Managed and linked-note titles use the original scroll-driven note heading. Linked notes keep an always-available External source disclosure, explicit Save and source review controls. Organization can be expanded explicitly; save status, resource actions and Close remain available in the title band. This reconciliation does not change autosave, recovery or linked Markdown's explicit Save.
+
+## Open Notes and journeys
+
+Open Notes retains sessions displaced from the two visible panes. Reopening a current session preserves its journey. Use its actions to move it earlier/later, close it, close other notes or close all notes. Close pane removes its viewing area while retaining the session. Only visible editors are mounted. Three-pane layout and drag arrangement are not available yet.
+
+Following a managed resource link or linked Markdown relative link extends the active session's journey. Journey Back/Forward and the full journey menu revisit its steps; each visible pane has its own journey. Direct Library and shortcut opens retain independent sessions. Reading scroll and caret restore when revisiting or restarting; Undo is not persisted. Workspace Back/Forward remains available outside a journey. Navigation protects linked drafts without publishing external files; explicit Save is still required.
 
 ## Notes and collections
 
@@ -24,11 +30,11 @@ New note creates a note in the selected collection. Select a title to edit it, o
 
 Use a note's More button or right-click a Library row for the organization actions described below. These change placements without copying or deleting note content.
 
-Edit the title or body directly. Markdown typing shortcuts, bold, italic, headings, lists, code blocks, tables and Undo/Redo are supported by the rich-text editor. Managed notes also offer slash commands, rich table controls, resource links and bounded image previews. Search and linked Markdown use the controls described below.
+Edit the title or body directly. Markdown typing shortcuts, bold, italic, headings, lists, code blocks, tables and Undo/Redo are supported by the rich-text editor. Managed notes also offer slash commands, rich table controls, resource links and bounded image previews. Search and linked Markdown use the controls described below. Filter resource type narrows the complete managed result set to Notes or Files; Search options includes ordering and tag filtering. The tag selector currently lists tags on the loaded page; use the full Tags browser for other tags.
 
 ## Managed rich editor and files
 
-The compact editor controls provide formatting, headings, lists/tasks, quotes, dividers, highlights, web links and Undo/Redo. Type / to choose a block or symbol, or [[ to search existing managed resources and optionally create a linked note. Enter chooses and Escape dismisses. Ctrl-click a resource chip to open it; Ctrl+Shift-click opens it beside. Backlinks lists up to100 saved incoming references after Refresh backlinks; labels are insertion-time text, while navigation uses stable identity. Missing/trashed destinations report an error without replacing the current editor. Unsaved drafts do not enter backlinks or search.
+The compact editor controls provide formatting, headings, lists/tasks, quotes, dividers, highlights, web links and Undo/Redo. Type / to choose a block or symbol, or [[ to search existing managed resources and optionally create a linked note. Enter chooses and Escape dismisses. Click a resource chip to follow it in the current journey; Ctrl-click opens it beside. Backlinks lists up to100 saved incoming references after Refresh backlinks; labels are insertion-time text, while navigation uses stable identity. Missing/trashed destinations report an error without replacing the current editor. Unsaved drafts do not enter backlinks or search.
 
 Select a table cell to reveal the existing contextual table toolbar: rows/columns, headers, merge/split, resizing, filters, expanded workspace, and tabular copy/export. Code blocks retain language, syntax and copy controls. Linked external Markdown keeps the M5 supported schema and explicit source-preserving Save; managed image/resource nodes are not enabled there. Linked-note formatting exposes only supported Markdown actions; underline and highlight are omitted.
 
@@ -155,3 +161,5 @@ Metadata removal and managed-file removal are separate durable steps. A committe
 ## Deleting a collection hierarchy
 
 Collection actions → Delete hierarchy removes its nested collections while keeping every resource in Library by default. The explicit Trash-exclusive option reviews the hierarchy count and exclusive resource count; resources with another membership outside the hierarchy stay active. A changed review is refused and must be reopened. Collection hierarchy restoration is not implemented. Removing linked-source registration continues to keep its external files.
+
+Settings → Appearance includes Density and a manually triggered motion preview. Layout and Sidebar switches fixed/floating navigation and configures Quick Access. Settings actions offers confirmed resets for appearance, sidebar, keyboard or all profile preferences; resets leave documents and drafts unchanged. Settings remains floating and keeps the current editors mounted.

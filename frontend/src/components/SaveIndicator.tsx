@@ -1,8 +1,8 @@
 import { Check, CloudAlert, Loader2 } from 'lucide-react';
 import type { SaveStatus } from '../lib/saveCoordinator';
 
-export default function SaveIndicator({ status, onRetry }: { status: SaveStatus; onRetry: () => void }) {
-  const label = status === 'saving' ? 'Saving…' : status === 'failed' ? 'Save failed — click to retry' : 'All changes saved';
+export default function SaveIndicator({ status, onRetry, statusLabel }: { status: SaveStatus; onRetry: () => void;statusLabel?:string }) {
+  const label = statusLabel ?? (status === 'saving' ? 'Saving…' : status === 'failed' ? 'Save failed — click to retry' : 'All changes saved');
   const Icon = status === 'saving' ? Loader2 : status === 'failed' ? CloudAlert : Check;
   return <div className="group relative shrink-0">
     <button type="button" aria-label={label} title={label} onClick={status === 'failed' ? onRetry : undefined}

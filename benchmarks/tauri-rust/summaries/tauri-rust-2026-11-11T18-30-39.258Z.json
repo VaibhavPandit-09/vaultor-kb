@@ -1,0 +1,210 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "37b8999d6dd20dd0648370a2779254a12d812b06",
+  "dirty": true,
+  "executableSha256": "8eedb75811954b8c5ff1bce67ad56f23513c1f873acae1f92baa3aa24eff1944",
+  "timestamp": "2026-11-11T18:30:39.359Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "c7f4e85eb25ff3d83ce94487df974064e4e7513732d4981ed460685471d56958",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 1325.9676999999997,
+      "median": 1325.9676999999997,
+      "p95": 1325.9676999999997,
+      "max": 1325.9676999999997
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 1022.328125,
+      "median": 1022.328125,
+      "p95": 1022.328125,
+      "max": 1022.328125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 775.31640625,
+      "median": 775.31640625,
+      "p95": 775.31640625,
+      "max": 775.31640625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 561.12890625,
+      "median": 561.12890625,
+      "p95": 561.12890625,
+      "max": 561.12890625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 146.75976138828634,
+      "median": 146.75976138828634,
+      "p95": 146.75976138828634,
+      "max": 146.75976138828634
+    },
+    {
+      "scenario": "qualification",
+      "iteration": 3,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 2,
+      "min": 900.965400000001,
+      "median": 910.0234,
+      "p95": 919.0813999999991,
+      "max": 919.0813999999991
+    },
+    {
+      "scenario": "m14-navigation-churn",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 340.7364000000016,
+      "median": 340.7364000000016,
+      "p95": 340.7364000000016,
+      "max": 340.7364000000016
+    },
+    {
+      "scenario": "m14-navigation-churn",
+      "iteration": 2,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 173.2548999999999,
+      "median": 173.2548999999999,
+      "p95": 173.2548999999999,
+      "max": 173.2548999999999
+    },
+    {
+      "scenario": "m14-navigation-churn",
+      "iteration": 3,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 233.3786,
+      "median": 233.3786,
+      "p95": 233.3786,
+      "max": 233.3786
+    },
+    {
+      "scenario": "m14-navigation-churn",
+      "iteration": 4,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 138.7491000000009,
+      "median": 138.7491000000009,
+      "p95": 138.7491000000009,
+      "max": 138.7491000000009
+    },
+    {
+      "scenario": "m14-navigation-churn",
+      "iteration": 5,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 241.11499999999796,
+      "median": 241.11499999999796,
+      "p95": 241.11499999999796,
+      "max": 241.11499999999796
+    },
+    {
+      "scenario": "m14-navigation-churn",
+      "iteration": 6,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 184.8083000000006,
+      "median": 184.8083000000006,
+      "p95": 184.8083000000006,
+      "max": 184.8083000000006
+    },
+    {
+      "scenario": "m14-settled-frames",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 2.600000000000364,
+      "median": 4.199999999999818,
+      "p95": 4.200000000000728,
+      "max": 5.800000000000182
+    }
+  ],
+  "checks": [
+    "Original per-session linked journey A→B→Back restores reading680px/caret40 with one visible editor",
+    "Inactive session reload after restart restores scroll/caret;Open Notes reorder/close-other;shared view typing;closing first pane keeps surviving editor DOM",
+    "Managed Notes/Files filtering/counts;single-line compact Library;note resource actions;formatting disclosure;three independent sessions;Quick Access hide;Chosen mode;density/opacity/themes persist across process restart",
+    "Forced termination at durable managed draft;restart Recovery restore and autosave;competing managed revision refused and draft parked;linked bytes unchanged before explicit Save;linked competing bytes refused and text retained",
+    "Actual embedded M14 Help searches and renders the Open Notes/journey instructions;Escape returns to the existing editor",
+    "Six repeated note navigations settle at one editor and zero open menu/dialog portals;history contains metadata only"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes.",
+    "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.",
+    "Only the disposable application process tree is sampled; background apps, power and cache conditions are uncontrolled. The M8 reference had a coexisting personal process; inspect coexistingPersonalReference for this run.",
+    "Crash test pauses the renderer after an actual durable-draft receipt,then terminates it before autosave;test-only timing control,not a production change or performance sample.",
+    "M14 visual/motion acceptance remains scoped;this recipe does not establish whole-app fidelity or leak freedom."
+  ],
+  "success": false,
+  "error": "AssertionError [ERR_ASSERTION]: Idle sampler coverage",
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.46",
+    "revision": "@a0c6bd61d7884b3c402a34c67d05100107a9e5e4",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "coexistingPersonalReference": false,
+  "nativeInspectionHelperActiveBefore": true,
+  "comparisonEligible": false
+}

@@ -6,7 +6,7 @@ export class ResourceUnavailableError extends Error {}
 const visit = (resource: Resource): Visit => ({ visitId: crypto.randomUUID(), resourceId: resource.id, title: resource.title });
 // paneId remains the session ID for v1 compatibility; slotId belongs only to a visible assignment.
 export type Pane = { paneId: string; slotId?: string; id: string; selection?: { from: number; to: number }; history: Visit[]; cursor: number; transition?: 'forward' | 'back' | 'replace' };
-export type OpenIntent = { sourcePaneId?: string; destination?: 'here' | 'new'; intent?: 'direct' | 'link' | 'history'; historyIndex?: number; focus?: boolean; throwOnFailure?: boolean; allowCommit?:()=>boolean; managedOnly?:boolean };
+export type OpenIntent = { sessionId?:string; sourcePaneId?: string; destination?: 'here' | 'new'; intent?: 'direct' | 'link' | 'history'; historyIndex?: number; focus?: boolean; throwOnFailure?: boolean; allowCommit?:()=>boolean; managedOnly?:boolean };
 export type NavigationIssue = { message: string; id: string; options: OpenIntent; limit?: boolean; closePaneId?: string; closeSession?: boolean; unavailable?: boolean };
 type State = { sessions: Pane[]; panes: Pane[]; activePaneId: string | null; issue: NavigationIssue | null; focusPaneId: string | null; motion: 'forward' | 'back' | 'replace' | 'switch' };
 type Dependencies = { load: (id: string) => Promise<Resource | null>; save: (id: string) => Promise<void>; preview: (resource: Resource, sourcePaneId?: string) => void; committed: (id: string, focus: boolean) => void; max: number; behavior: 'fill' | 'replace'; capacity?: () => number };
@@ -149,7 +149,7 @@ export class PaneNavigation {
     const epoch = this.epoch, resourceVersion = this.unavailable.get(id);
     const key = sourcePaneId ?? 'workspace', token = ++this.sequence;
     this.requests.set(key, token);
-    const valid = () => options.allowCommit?.()!==false && this.epoch === epoch && this.unavailable.get(id) === resourceVersion && this.requests.get(key) === token && (!source || this.state.panes.some(p => p.paneId === source.paneId && p.id === source.id));
+    const valid = () => (!options.sessionId||this.state.sessions.some(p=>p.paneId===options.sessionId&&p.id===id)) && options.allowCommit?.()!==false && this.epoch === epoch && this.unavailable.get(id) === resourceVersion && this.requests.get(key) === token && (!source || this.state.panes.some(p => p.paneId === source.paneId && p.id === source.id));
     this.patch({ issue: null });
     try {
       const resource = await dep.load(id);
@@ -163,7 +163,7 @@ export class PaneNavigation {
       if (intent === 'link' && destination === 'here' && source?.id === id) return;
       destination=placement();
       // Reopening preserves the existing journey, selection and visit identity.
-      const existing = intent !== 'history' ? this.state.sessions.find(p => p.id === id) : undefined;
+      const existing = intent !== 'history' ? this.state.sessions.find(p => p.id === id&&(!options.sessionId||p.paneId===options.sessionId)) : undefined;
       if (existing) {
         if (source && source.paneId !== existing.paneId && !this.state.panes.some(p => p.paneId === existing.paneId) && destination === 'here') await dep.save(source.id);
         if (!valid()) return;
@@ -181,7 +181,7 @@ export class PaneNavigation {
       if ((!source || destination === 'new') && this.state.panes.length >= this.dependencies().max) {
         this.patch({ issue: { message: 'Pane limit reached', id, options: { ...options, sourcePaneId }, limit: true } }); return;
       }
-      const raced = intent === 'direct' ? this.state.sessions.find(p => p.id === id) : undefined;
+      const raced = intent === 'direct' ? this.state.sessions.find(p => p.id === id&&(!options.sessionId||p.paneId===options.sessionId)) : undefined;
       if (raced) { this.show(raced, sourcePaneId, destination, this.focusSequence === focusToken, options.focus !== false); return; }
       const latestSource = this.state.panes.find(p => p.paneId === sourcePaneId);
       const history = intent === 'history' && latestSource ? latestSource.history.map(v => v.resourceId === id ? { ...v, title: resource.title } : v) : intent === 'link' && latestSource ? [...latestSource.history.slice(0, latestSource.cursor + 1).map(v => ({ ...v })), visit(resource)].slice(-200) : [visit(resource)];

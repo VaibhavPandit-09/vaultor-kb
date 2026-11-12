@@ -11,6 +11,9 @@ pub fn validate(value: &Value) -> Result<(), String> {
         let valid = match key.as_str() {
             "theme" => ["light", "dark", "oled", "system"].contains(&v.as_str().unwrap_or("")),
             "motion" => ["smooth", "fast", "reduced"].contains(&v.as_str().unwrap_or("")),
+            "density" => ["comfortable","compact"].contains(&v.as_str().unwrap_or("")),
+            "sidebarMode" => ["fixed","floating"].contains(&v.as_str().unwrap_or("")),
+            "sidebarSections" => v.as_object().is_some_and(|o| o.len()<=3 && o.iter().all(|(k,s)| ["pinned","recent","tags"].contains(&k.as_str()) && s.as_object().is_some_and(|s| s.len()==3 && s.get("visible").is_some_and(Value::is_boolean) && s.get("collapsed").is_some_and(Value::is_boolean) && s.get("type").is_some_and(|t| ["all","note","file"].contains(&t.as_str().unwrap_or("")))))),
             "opacity" => v.as_f64().is_some_and(|n| (0.6..=1.0).contains(&n)),
             "accent" => ["blue", "purple", "green", "orange", "teal", "pink"]
                 .contains(&v.as_str().unwrap_or("")),

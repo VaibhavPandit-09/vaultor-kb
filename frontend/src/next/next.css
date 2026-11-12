@@ -154,7 +154,7 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 .next-library{min-height:0;overflow:auto;flex:1;padding:0 var(--library-inset) 24px;overscroll-behavior:contain}
 .next-panes{position:relative;display:grid;flex:1;min-width:0;min-height:0;overflow:hidden;padding:12px 16px;background:var(--background);grid-template-columns:minmax(0,100fr) 0px minmax(0,0fr);transition:grid-template-columns var(--motion-panel) var(--motion-ease)}
 .next-pane{--note-progress:0;min-width:0;min-height:0;display:flex;flex-direction:column;transform-origin:center;order:0;border:0;border-radius:22px;overflow:hidden;background:rgba(var(--card-rgb),var(--ui-opacity,.85));backdrop-filter:blur(12px)}
-.next-document{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:12px 16px 24px}
+:is(.next-document,.next-pane>.journey-viewport){flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:12px 16px 24px}
 .next-document>.editor-workspace,.next-document>.next-frontmatter,.next-document>.next-source-preview{max-width:none}
 .next-note-bar{box-shadow:none!important}
 .settings-window{container-type:inline-size}
@@ -179,3 +179,10 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 /* Status/error rows yield to the native caption lane before browsing content. */
 .next-shell[data-notes=false] .next-main:has(>.next-search-feedback,>.next-error) .next-desktop-toolbar{position:relative}
 .next-shell[data-notes=false] .next-main:has(>.next-search-feedback,>.next-error) .vaultor-browser{--library-safe-top:16px}
+
+/* Original journey and session surfaces occupy existing chrome/scroll ownership. */
+.next-desktop-toolbar>.journey-bar{flex:1;min-width:0;border:0;background:transparent}.next-desktop-toolbar .journey-trail{min-width:0}.next-session-list .session-secondary{display:flex}.next-settings .settings-choices button{overflow-wrap:normal;word-break:normal;white-space:normal}.next-settings .settings-choices{min-width:260px}.next-desktop-body .sidebar-allocation[data-floating=true]{width:0}.next-desktop-body .sidebar-allocation[data-floating=true] .sidebar-surface{position:absolute;z-index:60}.next-pane>.journey-viewport{padding:12px 16px 24px}
+@container(max-width:850px){.next-desktop-toolbar .journey-trail{display:none}.next-desktop-toolbar>.journey-bar{flex:0 1 auto}.next-panes[data-count="2"]{grid-template-columns:1fr}.next-panes[data-count="2"]>:is(.next-pane:first-child,.next-pane:nth-child(2)){grid-area:1/1}.next-panes[data-count="2"][data-active-pane="0"]>.next-pane:nth-child(2),.next-panes[data-count="2"][data-active-pane="1"]>.next-pane:first-child{visibility:hidden;pointer-events:none}.next-panes[data-count="2"]>.next-pane-divider{display:none}}
+
+/* WorkspacePaneLayout limits a single reading pane to896px. */
+.next-panes[data-count="1"]{grid-template-columns:minmax(0,896px);justify-content:center}

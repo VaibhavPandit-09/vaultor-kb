@@ -6,8 +6,8 @@ import { useAnchoredPortalPosition } from '../lib/useAnchoredPortalPosition';
 import { historyShortcuts, formatShortcutKeys } from '../lib/shortcuts';
 import { ESCAPE_PRIORITIES, useEscapeLayer } from '../lib/escape/escape';
 
-export default function JourneyBar({ pane, motion, animationMode, onJump, children }: {
-  children?: ReactNode; pane: Pane; motion: 'back' | 'forward' | 'replace' | 'switch'; animationMode: 'smooth' | 'snappy'; onJump: (index: number) => void;
+export default function JourneyBar({ pane, motion, animationMode, onJump, children,backHint,forwardHint }: {
+  backHint?:string;forwardHint?:string;children?: ReactNode; pane: Pane; motion: 'back' | 'forward' | 'replace' | 'switch'; animationMode: 'smooth' | 'snappy'; onJump: (index: number) => void;
 }) {
   const [open, setOpen] = useState(false);
   const anchor = useRef<HTMLButtonElement>(null), panel = useRef<HTMLDivElement>(null);
@@ -31,8 +31,8 @@ export default function JourneyBar({ pane, motion, animationMode, onJump, childr
   const contextStart = Math.max(0, Math.min(pane.cursor - 1, pane.history.length - 3));
   return <nav aria-label="Note journey" className="journey-bar" data-speed={animationMode}>
     <div className="journey-controls">
-      <button className="journey-icon" aria-label="Journey back" title={'Previous visit · '+formatShortcutKeys(historyShortcuts().back).join(' ')} disabled={!pane.history[pane.cursor - 1] || pane.history[pane.cursor - 1].unavailable} onClick={() => go(pane.cursor - 1)}><ArrowLeft size={16} /></button>
-      <button className="journey-icon" aria-label="Journey forward" title={'Next visit · '+formatShortcutKeys(historyShortcuts().forward).join(' ')} disabled={!pane.history[pane.cursor + 1] || pane.history[pane.cursor + 1].unavailable} onClick={() => go(pane.cursor + 1)}><ArrowRight size={16} /></button>
+      <button className="journey-icon" aria-label="Journey back" title={'Previous visit · '+(backHint??formatShortcutKeys(historyShortcuts().back).join(' '))} disabled={!pane.history[pane.cursor - 1] || pane.history[pane.cursor - 1].unavailable} onClick={() => go(pane.cursor - 1)}><ArrowLeft size={16} /></button>
+      <button className="journey-icon" aria-label="Journey forward" title={'Next visit · '+(forwardHint??formatShortcutKeys(historyShortcuts().forward).join(' '))} disabled={!pane.history[pane.cursor + 1] || pane.history[pane.cursor + 1].unavailable} onClick={() => go(pane.cursor + 1)}><ArrowRight size={16} /></button>
       <button ref={anchor} className="journey-icon" aria-label="Show full journey" title={`History · ${pane.cursor + 1} of ${pane.history.length} visits`} aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen(value => !value)}><History size={17} /></button>
     </div>
     <ol className="journey-trail" data-motion={motion}>

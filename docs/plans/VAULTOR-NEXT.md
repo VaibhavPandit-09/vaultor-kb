@@ -308,3 +308,8 @@ Workbook refresh completed from9350canonical records with53failed/invalidated ru
 ## M13 — core desktop restoration and UI acceptance
 
 [The M13 ledger](VAULTOR-NEXT-M13.md) owns the screen matrix, reference procedure, actual checks and remaining differences. M13 extracts the original SettingsSurface/NumberRange for both hosts, floats Next Settings over retained workspace DOM, persists Rust-validated60–100% surface opacity, restores original shell/sidebar/footer proportions and Library chrome clearance, and moves formatting from a permanent document row to a header disclosure/selection surface. Native commands, bounded sessions, shared documents and protected managed/linked writers remain authoritative. Legacy Settings route receipts migrate to Library. No installer, release tag or publication is part of this milestone. Screen and motion acceptance remain separate from implementation; the44 UI findings and156 functional checks are retained.
+
+
+## M14 — everyday interaction restoration
+
+[The M14 ledger](VAULTOR-NEXT-M14.md) records original session/journey/reading and Open Notes adaptation, Rust-backed Quick Access configuration, shared resource chips/Save indicator, Notes/Files filters, density/sidebar/reset controls and narrow workspace presentation. Native and automated results distinguish functional, visual, motion and focus acceptance. M14 is partial: mixed collection pins/discovery, fill/capacity preferences, complete Settings/editor/header breadth and comprehensive motion remain open. M15 should close these daily-use gaps before broader browser/Help/advanced-editor and final performance/release gates. No installer/tag/publication or automatic M15 work is authorized.

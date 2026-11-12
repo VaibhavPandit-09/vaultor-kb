@@ -376,3 +376,17 @@ UI-01/02/03/05/10/11: shell/sidebar CSS ownership reconciled with original propo
 - **UI-52 · P1 — Modifier-only events navigated via unassigned shortcuts.** An empty resolved shortcut matched the first unassigned category command. Empty bindings are ignored; physical Ctrl+, now preserves Sources and focused regressions cover Control/Alt/Shift/Meta alone.
 
 These supplement the44 baseline findings; they are not a claim that52 findings have been visually closed.
+
+
+## M14 interaction reconciliation — 2026-11-12
+
+[The M14 acceptance ledger](VAULTOR-NEXT-M14.md) extends this register with functional/visual/motion/focus distinctions. Existing44 baseline and M13 findings remain; the156-item inventory is preserved, with current-gap annotations only on directly affected rows. Original PaneNavigation/JourneyBar/JourneyViewport/OpenNotes, Quick Access configuration/disclosure, ResourceTypeFilter, ResourceLinkChip, SaveIndicator and Settings/motion primitives are reused over Rust services. No whole-screen or full-motion closure follows from reuse.
+
+- **UI-53 · P1 — Resource chips used different activation/presentation.** The original pure chip is now shared; ordinary click follows the current journey and Ctrl-click opens beside. Native and editor regressions cover the supported path.
+- **UI-54 · P1 — Maximized single-note reading expanded beyond the original bound.** The original896px cap is restored; original/current maximized Windows frames were inspected. Header capability differences remain.
+- **UI-55 · P1 — Workspace and journey arrows/hints conflated ownership.** Note chrome shows the original journey; workspace history remains in the application menu while editing. Default Back/Forward, pane focus and Open Notes cycling are distinct; hints follow Next bindings.
+- **UI-56 · P1 — Duplicate shared views could reactivate the first session.** Optional explicit session identity is supported by the original controller and injected by Next Open Notes. Shared document/writer authority remains singular. Unit/component checks cover independent activation and retained positions.
+- **UI-57 · P1 — Richer journeys could exceed the native receipt ceiling.** Persistence trims metadata/positions within32KiB, with Unicode-byte and cursor validation coverage. No document bodies or durable Undo enter history.
+- **UI-58 · P1 — Narrow pane compression used window width.** Native851px window left two approximately260px readers after the sidebar. The main-workspace container now owns the850px compact threshold. Final native851px-window acceptance shows one547px reader,retained peer and keyboard pane switching;closing a pane leaves one editor/zero overlays. Broader responsive motion remains unverified.
+
+These supplement the52 earlier findings; they do not imply that58 findings are visually closed. Remaining mixed pins, drag discovery/arrangement, complete Settings/editor/header controls, browser-specific work, broad motion/accessibility/IME and performance gates remain explicit.

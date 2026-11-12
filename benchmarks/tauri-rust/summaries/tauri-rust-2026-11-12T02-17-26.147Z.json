@@ -1,0 +1,276 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "37b8999d6dd20dd0648370a2779254a12d812b06",
+  "dirty": true,
+  "executableSha256": "4edfadae40f67dadd753fd684a8c18d8de20c821fc95b7f5236fb0aabad51033",
+  "timestamp": "2026-11-12T02:17:26.743Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "c7f4e85eb25ff3d83ce94487df974064e4e7513732d4981ed460685471d56958",
+  "measurements": [
+    {
+      "scenario": "first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 1130.2329,
+      "median": 1130.2329,
+      "p95": 1130.2329,
+      "max": 1130.2329
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 2,
+      "min": 917.2890625,
+      "median": 937.41015625,
+      "p95": 957.53125,
+      "max": 957.53125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 2,
+      "min": 434.3359375,
+      "median": 695.93359375,
+      "p95": 957.53125,
+      "max": 957.53125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 2,
+      "min": 348.33203125,
+      "median": 528.76953125,
+      "p95": 709.20703125,
+      "max": 709.20703125
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 2,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 2,
+      "min": 0,
+      "median": 59.15735517465828,
+      "p95": 118.31471034931656,
+      "max": 118.31471034931656
+    },
+    {
+      "scenario": "qualification",
+      "iteration": 3,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 2,
+      "min": 658.8327999999983,
+      "median": 689.1715499999991,
+      "p95": 719.5102999999999,
+      "max": 719.5102999999999
+    },
+    {
+      "scenario": "m14-navigation-churn",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 69.41300000000047,
+      "median": 69.41300000000047,
+      "p95": 69.41300000000047,
+      "max": 69.41300000000047
+    },
+    {
+      "scenario": "m14-navigation-churn",
+      "iteration": 2,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 86.98329999999987,
+      "median": 86.98329999999987,
+      "p95": 86.98329999999987,
+      "max": 86.98329999999987
+    },
+    {
+      "scenario": "m14-navigation-churn",
+      "iteration": 3,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 93.1730000000025,
+      "median": 93.1730000000025,
+      "p95": 93.1730000000025,
+      "max": 93.1730000000025
+    },
+    {
+      "scenario": "m14-navigation-churn",
+      "iteration": 4,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 71.16660000000047,
+      "median": 71.16660000000047,
+      "p95": 71.16660000000047,
+      "max": 71.16660000000047
+    },
+    {
+      "scenario": "m14-navigation-churn",
+      "iteration": 5,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 73.46399999999994,
+      "median": 73.46399999999994,
+      "p95": 73.46399999999994,
+      "max": 73.46399999999994
+    },
+    {
+      "scenario": "m14-navigation-churn",
+      "iteration": 6,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 82.98310000000129,
+      "median": 82.98310000000129,
+      "p95": 82.98310000000129,
+      "max": 82.98310000000129
+    },
+    {
+      "scenario": "m14-settled-frames",
+      "iteration": 1,
+      "metric": "scroll_frame_interval",
+      "unit": "ms",
+      "n": 60,
+      "min": 3.400000000000091,
+      "median": 4.199999999999818,
+      "p95": 4.300000000000182,
+      "max": 4.599999999999909
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 1.2487000979733232,
+      "median": 1.2487000979733232,
+      "p95": 1.2487000979733232,
+      "max": 1.2487000979733232
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 434.3359375,
+      "median": 434.3359375,
+      "p95": 434.3359375,
+      "max": 434.3359375
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 348.33203125,
+      "median": 348.33203125,
+      "p95": 348.33203125,
+      "max": 348.33203125
+    },
+    {
+      "scenario": "m14-settled-idle-5min",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 1.2487000979733232,
+      "median": 1.2487000979733232,
+      "p95": 1.2487000979733232,
+      "max": 1.2487000979733232
+    },
+    {
+      "scenario": "m14-settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "bytes",
+      "n": 1,
+      "min": 455434240,
+      "median": 455434240,
+      "p95": 455434240,
+      "max": 455434240
+    },
+    {
+      "scenario": "m14-settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "bytes",
+      "n": 1,
+      "min": 365252608,
+      "median": 365252608,
+      "p95": 365252608,
+      "max": 365252608
+    }
+  ],
+  "checks": [
+    "Original per-session linked journey A→B→Back restores reading680px/caret40 with one visible editor",
+    "Inactive session reload after restart restores scroll/caret;Open Notes reorder/close-other;shared view typing;closing first pane keeps surviving editor DOM",
+    "Managed Notes/Files filtering/counts;single-line compact Library;note resource actions;formatting disclosure;three independent sessions;Quick Access hide;Chosen mode;density/opacity/themes persist across process restart",
+    "Forced termination at durable managed draft;restart Recovery restore and autosave;competing managed revision refused and draft parked;linked bytes unchanged before explicit Save;linked competing bytes refused and text retained",
+    "Actual embedded M14 Help searches and renders the Open Notes/journey instructions;Escape returns to the existing editor",
+    "Six repeated note navigations settle at one editor and zero open menu/dialog portals;history contains metadata only"
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes.",
+    "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.",
+    "Only the disposable application process tree is sampled; background apps, power and cache conditions are uncontrolled. The M8 reference had a coexisting personal process; inspect coexistingPersonalReference for this run.",
+    "Crash test pauses the renderer after an actual durable-draft receipt,then terminates it before autosave;test-only timing control,not a production change or performance sample.",
+    "M14 visual/motion acceptance remains scoped;this recipe does not establish whole-app fidelity or leak freedom."
+  ],
+  "success": true,
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.46",
+    "revision": "@a0c6bd61d7884b3c402a34c67d05100107a9e5e4",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "coexistingPersonalReference": false,
+  "nativeInspectionHelperActiveBefore": false,
+  "nativeInspectionHelperActiveAfter": false,
+  "comparisonEligible": true
+}

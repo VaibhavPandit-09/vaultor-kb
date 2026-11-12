@@ -14,6 +14,8 @@ pub struct SearchOptions {
     pub view: String,
     #[serde(default)]
     pub tag: Option<String>,
+    #[serde(default)]
+    pub kind: Option<String>,
 }
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -120,7 +122,8 @@ impl Workspace {
         ) {
             return Err("Unknown resource scope".into());
         }
-        let predicate=format!("(?1 IS NULL OR r.id IN (SELECT resource_id FROM memberships WHERE collection_id=?1)) AND COALESCE((SELECT trashed FROM resource_state s WHERE s.resource_id=r.id),0)=?7 AND (?8 IS NULL OR r.id IN (SELECT resource_id FROM resource_tags WHERE tag_id=?8)) AND (?9!='pinned' OR r.id IN (SELECT resource_id FROM resource_state WHERE pinned=1)) AND (?9!='recent' OR r.id IN (SELECT resource_id FROM resource_state WHERE opened>0)) AND {}",if filtered {"r.seq IN (SELECT rowid FROM note_search WHERE note_search MATCH ?2)"}else{"?2 IS NULL"});
+        let kind_predicate=match options.kind.as_deref().unwrap_or("all") {"all"=>"1", "note"=>"NOT EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file')", "file"=>"EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file')", _=>return Err("Unsupported resource type".into())};
+        let predicate=format!("(?1 IS NULL OR r.id IN (SELECT resource_id FROM memberships WHERE collection_id=?1)) AND COALESCE((SELECT trashed FROM resource_state s WHERE s.resource_id=r.id),0)=?7 AND (?8 IS NULL OR r.id IN (SELECT resource_id FROM resource_tags WHERE tag_id=?8)) AND (?9!='pinned' OR r.id IN (SELECT resource_id FROM resource_state WHERE pinned=1)) AND (?9!='recent' OR r.id IN (SELECT resource_id FROM resource_state WHERE opened>0)) AND {kind_predicate} AND {}",if filtered {"r.seq IN (SELECT rowid FROM note_search WHERE note_search MATCH ?2)"}else{"?2 IS NULL"});
         let expr = if filtered { Some(expression) } else { None };
         let total: i64 = self
             .db
