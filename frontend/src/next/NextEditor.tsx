@@ -23,7 +23,7 @@ import { SharedHistory, SharedNoteDocuments, isSharedTransaction } from '../lib/
 import { useEscapeLayer, ESCAPE_PRIORITIES } from '../lib/escape/escape';
 import EditorControls from './EditorControls';
 import {NextImage} from './MediaView';
-import {insertImage,pasteLinks} from './media';
+import {native,insertImage,pasteLinks} from './media';
 import {WorkspaceTable} from '../components/editor/WorkspaceTable';
 import {TableWorkspace,handleTablePaste} from '../components/editor/TableWorkspace';
 import {SlashCommandExtension} from '../components/editor/SlashCommandExtension';
@@ -32,6 +32,8 @@ import type { Note } from './client';
 const SourceLink=Link.extend({addAttributes(){return {...this.parent?.(),title:{default:null}};}}).configure({openOnClick:false});
 const readonlyGate=(locked:{current:boolean})=>Extension.create({name:'nextReadonlyGate',addProseMirrorPlugins(){return [new Plugin({filterTransaction:transaction=>!transaction.docChanged||!locked.current||isSharedTransaction(transaction)})];}});
 function NextResourceLinkView({node,editor}:NodeViewProps){const kind=resourceKind(node.attrs.type??'note');return <NodeViewWrapper as="span" className="resource-link-node" contentEditable={false}><ResourceLinkChip label={node.attrs.label} description={kind.label} icon={kind.icon} action={kind.action+' · Ctrl/Cmd-click for another pane'} onOpen={beside=>openResourceLink(editor,node.attrs.resourceId,beside)}/></NodeViewWrapper>;}
+const writeCodeClipboard=(text:string)=>native('clipboardWrite',null,text);
+function NextCodeBlockView(props:NodeViewProps){return <CodeBlockView {...props} writeClipboard={writeCodeClipboard}/>;}
 const lowlight = createLowlight(common);
 export default function NextEditor({ note, documents, changed, locked, pane, focusWhenReady, focusHandled, leaveFocus, followLink, openResource, openWeb, saveStatus="saved", retrySave, initialSelection,positionChanged }: { initialSelection?:{from:number;to:number};positionChanged?:(selection:{from:number;to:number})=>void;note: Note; documents: SharedNoteDocuments; changed: (capture: () => JSONContent) => void; locked: boolean; pane: number; focusWhenReady?:boolean; focusHandled?:()=>void; leaveFocus?:()=>void; followLink?:(href:string)=>void; openResource?:(id:string,beside?:boolean)=>void; openWeb?:(href:string)=>void; retrySave?:()=>void;saveStatus?:'saved'|'saving'|'failed' }) {
   const container=useRef<HTMLDivElement>(null);
@@ -46,7 +48,7 @@ export default function NextEditor({ note, documents, changed, locked, pane, foc
   const [focused, setFocused] = useState(false);
   // Extensions belong to this view, not to toolbar or Save-status renders.
   const extensions=useMemo(()=>[readonlyGate(lockedRef),SourceLink,StarterKit.configure({ codeBlock: false, undoRedo: false, heading: { levels: [1, 2, 3, 4, 5, 6] }, link: false }),
-      CodeBlockLowlight.extend({ addNodeView: () => ReactNodeViewRenderer(CodeBlockView) }).configure({ lowlight }),
+      CodeBlockLowlight.extend({ addNodeView: () => ReactNodeViewRenderer(NextCodeBlockView) }).configure({ lowlight }),
       Placeholder.configure({ placeholder: 'Start writing… Markdown shortcuts work here.' }),
       ...(managed?[WorkspaceTable.configure({resizable:true}),TableWorkspace,SlashCommandExtension,NextImage,ResourceLinkExtension.extend({addNodeView(){return ReactNodeViewRenderer(NextResourceLinkView);}})]:[Table.configure({resizable:true})]), TableRow, TableCell, TableHeader, TaskList, TaskItem.configure({ nested: true }), Highlight, SharedHistory, SymbolSystemExtension],[managed]);
   const editor:Editor|null = useEditor({

@@ -38,3 +38,6 @@ it('does not discard an old durable draft after protection failure',async()=>{
 });
 
 it('evicts only inactive clean bodies while keeping shared active views and dirty journals',()=>{vi.useFakeTimers();const s=new EditingSession(()=>{},()=>{});s.adopt(note());s.adopt({...note(),id:'b'});s.adopt({...note(),id:'c'});s.edit('c',{title:'Unsaved'});s.releaseInactive(['a','a']);expect(s.get('a')).toBeDefined();expect(s.get('b')).toBeUndefined();expect(s.get('c')?.title).toBe('Unsaved');s.releaseInactive([]);expect(s.get('a')).toBeUndefined();expect(s.get('c')).toBeDefined();});
+it('zero-delay autosave still journals before committing and leaves no idle work',async()=>{
+ vi.useFakeTimers();const calls:string[]=[];const invoke=vi.fn(async(r:{kind:string})=>{calls.push(r.kind);return {revision:2};});const session=new EditingSession(()=>{},()=>{},invoke as unknown as typeof command);session.adopt(note());session.setAutosaveDelay(0);session.edit('a',{capture:()=>doc('immediate')});await vi.advanceTimersByTimeAsync(1);expect(calls).toEqual(['draft','save']);expect(session.status('a')).toBe('saved');await vi.advanceTimersByTimeAsync(30000);expect(calls).toEqual(['draft','save']);
+});

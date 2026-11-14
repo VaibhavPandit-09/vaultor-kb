@@ -5,15 +5,15 @@ import { motionProfile } from '../lib/motion';
 import { capturePaneReadingAnchors } from '../lib/paneReadingAnchor';
 
 /** Presentation slots yield real width. Navigation alone owns live editors. */
-export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode, transparency = 1, children }: {
- paneIds: string[]; focusedId: string | null; animationMode: 'smooth' | 'snappy'; transparency?: number; children: ReactNode;
+export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode, weights, transparency = 1, children }: {
+ weights?:number[];paneIds: string[]; focusedId: string | null; animationMode: 'smooth' | 'snappy'; transparency?: number; children: ReactNode;
 }) {
  const root = useRef<HTMLDivElement>(null), held = useRef(false), pointerHeld = useRef(false), pointerDown = useRef<(() => void) | null>(null);
  const restoreAnchor = useRef<((skip?: HTMLElement | null) => void) | null>(null), releaseFrames = useRef<number[]>([]), settleAfter = useRef(0), anchorUntil = useRef(0), ignoredViewport = useRef<HTMLElement | null>(null);
  const [width, setWidth] = useState(0), [reduced, setReduced] = useState(false);
  const [slots, setSlots] = useState(paneIds), [entered, setEntered] = useState(paneIds);
  const [mounted, setMounted] = useState<string[]>([]), [settled, setSettled] = useState<string[]>([]);
- const key = JSON.stringify(paneIds);
+ const key = JSON.stringify(paneIds),weightKey=JSON.stringify(weights);
  const added = paneIds.filter(id => !slots.includes(id));
  if (added.length) setSlots([...slots, ...added]);
  const compact = paneIds.length > sideBySideCapacity(width);
@@ -63,7 +63,7 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
   });
   element.querySelectorAll('.journey-viewport,.note-orientation,.ProseMirror').forEach(viewport => observer.observe(viewport));
   return () => { observer.disconnect(); restoreAnchor.current = null; };
- }, [key, focusedId, width, duration]);
+ }, [key, focusedId, width, duration,weightKey]);
  useEffect(() => {
   const element = root.current; if (!element) return;
   const cancelAnchor = () => { restoreAnchor.current = null; };
@@ -130,7 +130,7 @@ export default function WorkspacePaneLayout({ paneIds, focusedId, animationMode,
    const target = !live || (!entered.includes(id) && !reduced) ? 0 : compact || paneIds.length === 1 ? Math.min(available, paneIds.length === 1 ? 896 : available) : available / paneIds.length;
    const gap = live && entered.includes(id) && !compact && paneIds.length > 1 ? 8 : 0;
    return <div key={id} className={`workspace-pane-slot${live ? '' : ' workspace-pane-ghost'}`} data-slot-id={id} data-focused={active} data-entering={!settled.includes(id)} hidden={live && compact && !active} inert={!live || (compact && !active)} aria-hidden={!live || (compact && !active) ? true : undefined}
-    style={{ order:live?paneIds.indexOf(id):slots.indexOf(id), '--pane-width': `${target}px`, '--pane-gap': `${gap}px` } as CSSProperties}>
+    style={{ order:live?paneIds.indexOf(id):slots.indexOf(id), '--pane-width':weights&&target>0&&!compact&&paneIds.length>1?`calc(${available}px * var(--pane-weight-${paneIds.indexOf(id)},${weights[paneIds.indexOf(id)]/weights.reduce((a,b)=>a+b,0)}))`:`${target}px`, '--pane-gap': `${gap}px` } as CSSProperties}>
     {live && (mounted.includes(id) || ready.includes(id)) ? nodeById.get(id) : null}
    </div>;
   })}

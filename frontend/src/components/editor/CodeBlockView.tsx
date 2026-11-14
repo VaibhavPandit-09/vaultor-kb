@@ -1,3 +1,4 @@
+import {useEscapeLayer} from '../../lib/escape/escape';
 import { NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
 import { createPortal } from 'react-dom';
@@ -37,10 +38,14 @@ const LANGUAGES = [
   { value: 'ini', label: 'INI' },
 ];
 
-export default function CodeBlockView({ node, updateAttributes }: NodeViewProps) {
+export default function CodeBlockView({ node, editor, updateAttributes,writeClipboard }: NodeViewProps&{writeClipboard?:(text:string)=>Promise<unknown>}) {
   const [copied, setCopied] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [langSearch, setLangSearch] = useState('');
+  const alive=useRef(true);
+  const copyTimer=useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
+  useEffect(()=>{alive.current=true;return()=>{alive.current=false;clearTimeout(copyTimer.current);};},[]);
+  useEscapeLayer({active:showLangPicker,priority:350,close:()=>{setShowLangPicker(false);languageTriggerRef.current?.querySelector<HTMLButtonElement>('button')?.focus();},restoreFocusOnEscape:false});
   const codeRef = useRef<HTMLPreElement>(null);
   const languageTriggerRef = useRef<HTMLDivElement>(null);
   const languageMenuRef = useRef<HTMLDivElement>(null);
@@ -55,17 +60,18 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
 
   const handleCopy = useCallback(() => {
     const text = node.textContent;
-    getPlatform().writeClipboard(text).then(() => {
+    (writeClipboard??getPlatform().writeClipboard)(text).then(() => {
+      if(!alive.current)return;
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      clearTimeout(copyTimer.current);copyTimer.current=setTimeout(() => setCopied(false), 2000);
     }).catch(error => reportError('code.copy', error));
-  }, [node]);
+  }, [node,writeClipboard]);
 
   const handleLangSelect = useCallback((lang: string) => {
     updateAttributes({ language: lang });
     setShowLangPicker(false);
-    setLangSearch('');
-  }, [updateAttributes]);
+    setLangSearch('');editor.view.focus();
+  }, [updateAttributes,editor]);
 
   const filteredLangs = LANGUAGES.filter(l =>
     l.label.toLowerCase().includes(langSearch.toLowerCase()) ||
@@ -103,7 +109,7 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
           {/* Language selector */}
           <div ref={languageTriggerRef} className="relative">
             <button
-              onClick={() => setShowLangPicker(!showLangPicker)}
+              aria-label="Code language" aria-haspopup="dialog" aria-expanded={showLangPicker} onClick={() => setShowLangPicker(!showLangPicker)}
               className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-4)] hover:text-[var(--text-primary)]"
               contentEditable={false}
             >
@@ -113,7 +119,7 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
 
             {showLangPicker && langMenuPosition && createPortal(
               <div
-                data-motion-surface="menu" ref={languageMenuRef}
+                role="dialog" aria-label="Code language options" data-motion-surface="menu" ref={languageMenuRef} onKeyDown={event=>{if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;if((event.target as Element).matches('input')&&['Home','End'].includes(event.key))return;event.preventDefault();const buttons=[...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')],index=buttons.indexOf(document.activeElement as HTMLButtonElement),next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(index+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length;buttons[next]?.focus();}}
                 className="overflow-hidden rounded-xl border border-[var(--border-strong)] bg-[var(--surface-raised,var(--surface-2))] shadow-[0_20px_38px_rgba(15,23,42,0.14)]"
                 style={{
                   position: 'fixed',
@@ -127,7 +133,7 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
                 contentEditable={false}
               >
                 <div className="border-b border-[var(--border-subtle)] p-1.5">
-                  <input
+                  <input aria-label="Search code languages"
                     type="text"
                     placeholder="Search..."
                     className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-3)] px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none transition-all duration-150 placeholder:text-[var(--text-tertiary)] hover:border-[var(--border-strong)] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]"
@@ -158,7 +164,7 @@ export default function CodeBlockView({ node, updateAttributes }: NodeViewProps)
 
           {/* Copy button */}
           <button
-            onClick={handleCopy}
+            aria-label="Copy code" onClick={handleCopy}
             className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-4)] hover:text-[var(--text-primary)]"
             contentEditable={false}
           >

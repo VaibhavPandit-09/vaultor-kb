@@ -390,3 +390,15 @@ These supplement the44 baseline findings; they are not a claim that52 findings h
 - **UI-58 · P1 — Narrow pane compression used window width.** Native851px window left two approximately260px readers after the sidebar. The main-workspace container now owns the850px compact threshold. Final native851px-window acceptance shows one547px reader,retained peer and keyboard pane switching;closing a pane leaves one editor/zero overlays. Broader responsive motion remains unverified.
 
 These supplement the52 earlier findings; they do not imply that58 findings are visually closed. Remaining mixed pins, drag discovery/arrangement, complete Settings/editor/header controls, browser-specific work, broad motion/accessibility/IME and performance gates remain explicit.
+
+
+## M15 implementation and candidate qualification — 2026-11-14
+
+[The M15 ledger](VAULTOR-NEXT-M15.md) owns exact checks and executable/source identity. UI-56 now includes keyboard traversal and session-bound editor focus. Original pane geometry replaces the obsolete Next grid/focus transforms; functional implementation is not whole-screen acceptance.
+
+- **UI-59 · P1 — Resource-bound focus could race session switching.** Controller cycling and editor focus requests now use session identity. Shared resource/document ownership stays unchanged. Duplicate-view component and native keyboard checks are recorded in the ledger.
+- **UI-60 · P1 — HTML session grips did not move sessions in native WebView2.** Native file-drop integration consumes HTML drag events. Pointer-based grips retain insertion/swap targets, Escape cancellation and menu ordering alternatives. Native pointer acceptance must be recorded separately from synthetic tests.
+- **UI-61 · P1 — Collection pins and complete taxonomy/file discovery were missing.** Typed collection/resource pins share SQLite organization and paged Pinned/Quick Access. Library tags query the full taxonomy; filename categories have accurate counts. Multiple simultaneous AND-tag filtering remains unsupported.
+- **UI-62 · P1 — Supported Settings behavior lacked root-bound persistence.** Pane capacity/opening/autosave/focus behavior now persists per workspace; presentation/bindings stay installation-scoped. Three panes remain unavailable, without a misleading control.
+
+Remaining individually tracked acceptance: all13 core transitions have not received matched physical motion qualification; full original advanced editor/table/CSV/selection-context capabilities remain incomplete; full accessibility/IME and multi-scale Windows qualification remain open. Current missing capabilities stay in the156-item inventory. User acceptance is pending.

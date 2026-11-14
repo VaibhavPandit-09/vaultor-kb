@@ -122,7 +122,8 @@ impl Workspace {
         ) {
             return Err("Unknown resource scope".into());
         }
-        let kind_predicate=match options.kind.as_deref().unwrap_or("all") {"all"=>"1", "note"=>"NOT EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file')", "file"=>"EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file')", _=>return Err("Unsupported resource type".into())};
+        let kind=options.kind.as_deref().unwrap_or("all");
+        let kind_predicate=match kind {"all"=>"1".to_owned(),"note"=>"NOT EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file')".into(),"file"=>"EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file')".into(),k if crate::file_category::CATEGORIES.contains(&k)=>format!("{}='{k}'",crate::file_category::for_resource("r.id")),_=>return Err("Unsupported resource type".into())};
         let predicate=format!("(?1 IS NULL OR r.id IN (SELECT resource_id FROM memberships WHERE collection_id=?1)) AND COALESCE((SELECT trashed FROM resource_state s WHERE s.resource_id=r.id),0)=?7 AND (?8 IS NULL OR r.id IN (SELECT resource_id FROM resource_tags WHERE tag_id=?8)) AND (?9!='pinned' OR r.id IN (SELECT resource_id FROM resource_state WHERE pinned=1)) AND (?9!='recent' OR r.id IN (SELECT resource_id FROM resource_state WHERE opened>0)) AND {kind_predicate} AND {}",if filtered {"r.seq IN (SELECT rowid FROM note_search WHERE note_search MATCH ?2)"}else{"?2 IS NULL"});
         let expr = if filtered { Some(expression) } else { None };
         let total: i64 = self
@@ -144,7 +145,8 @@ impl Workspace {
             )
             .map_err(error)?;
         let limit = limit.unwrap_or(100).clamp(1, 100) as usize;
-        let sql=format!("SELECT r.seq,r.id,r.title,r.revision,r.updated_at,{key},COALESCE((SELECT kind FROM managed_originals WHERE resource_id=r.id),'note') FROM resources r WHERE {predicate} AND (?3=0 OR {comparison}) ORDER BY {sort} LIMIT ?6");
+        let category=crate::file_category::for_resource("r.id");
+        let sql=format!("SELECT r.seq,r.id,r.title,r.revision,r.updated_at,{key},COALESCE((SELECT kind FROM managed_originals WHERE resource_id=r.id),'note'),{category} FROM resources r WHERE {predicate} AND (?3=0 OR {comparison}) ORDER BY {sort} LIMIT ?6");
         let seq = cursor.as_ref().map_or(0, |c| c.seq);
         // Created uses integer comparison, other sorts compare text keys.
         let pivot = if options.order == "created" && options.view != "recent" {
@@ -155,7 +157,7 @@ impl Workspace {
         let mut stmt = self.db.prepare(&sql).map_err(error)?;
         let mut rows=stmt.query_map(params![options.collection,expr,cursor.is_some(),pivot,seq,(limit+1) as i64,options.view=="trash",options.tag,options.view],|r|{
             let key=if options.order=="created" && options.view!="recent" {r.get::<_,i64>(0)?.to_string()}else{r.get::<_,String>(5)?};
-            Ok((r.get::<_,i64>(0)?,key,json!({"id":r.get::<_,String>(1)?,"title":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?,"updatedAt":r.get::<_,String>(4)?,"kind":r.get::<_,String>(6)?})))
+            Ok((r.get::<_,i64>(0)?,key,json!({"id":r.get::<_,String>(1)?,"title":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?,"updatedAt":r.get::<_,String>(4)?,"kind":r.get::<_,String>(6)?,"fileCategory":r.get::<_,String>(7)?})))
         }).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
         let more = rows.len() > limit;
         rows.truncate(limit);

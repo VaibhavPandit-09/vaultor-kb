@@ -19,3 +19,8 @@ pub mod worker;
 mod organization;
 
 pub mod media;
+
+mod file_category;
+
+#[cfg(test)]
+mod m15_tests;

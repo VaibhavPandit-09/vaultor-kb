@@ -7,6 +7,8 @@ export class EditingSession {
   private changed: (savedId?: string) => void;
   private conflicted: (id: string) => void;
   private invoke: typeof command;
+  private autosaveDelay = 1000;
+  setAutosaveDelay(delay:number) { this.autosaveDelay=Math.max(0,Math.min(1000,delay)); }
   constructor(changed: (savedId?: string) => void, conflicted: (id: string) => void, invoke = command) { this.changed = changed; this.conflicted = conflicted; this.invoke = invoke; }
   get(id: string) { return this.entries.get(id)?.note; }
   status(id: string) {
@@ -28,7 +30,7 @@ export class EditingSession {
     clearTimeout(e.timer); clearTimeout(e.saveTimer);
     e.timer = setTimeout(() => void this.protect(id).catch(() => {}), 250);
     e.deadline ??= setTimeout(() => void this.protect(id).catch(() => {}), 1000);
-    if (!e.conflict) e.saveTimer = setTimeout(() => void this.flush(id).catch(() => {}), 1000);
+    if (!e.conflict) e.saveTimer = setTimeout(() => void this.flush(id).catch(() => {}), this.autosaveDelay);
     if (before !== this.status(id) || patch.title !== undefined) this.changed();
   }
   async protect(id: string, fromSave = false): Promise<void> {

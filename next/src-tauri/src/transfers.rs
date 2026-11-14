@@ -775,6 +775,7 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
         &w.db,
         &m.resources.iter().map(|r| r.id.clone()).collect(),
     )?;
+    if ids.is_some(){m.organization.collection_pins.clear();}
     m.originals = originals
         .into_iter()
         .filter(|o| selected.contains(o.id.as_str()))
@@ -801,7 +802,7 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
             .collect::<Result<Vec<_>, _>>()
             .map_err(error)?;
         let mut settings =
-            w.db.prepare("SELECT key,value FROM settings WHERE key='theme'")
+            w.db.prepare("SELECT key,value FROM settings WHERE key IN ('theme','behavior')")
                 .map_err(error)?;
         let pairs = settings
             .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
@@ -964,6 +965,8 @@ fn validate(m: &Manifest) -> Result<(), String> {
         }
     }
     m.organization.validate(&ids)?;
+    let mut pinned_collections=HashSet::new();
+    if m.organization.collection_pins.len()>20000 || m.organization.collection_pins.iter().any(|id|!collections.contains_key(id)||!pinned_collections.insert(id)){return Err("Invalid pinned collection inventory".into());}
     let mut originals = HashSet::new();
     let mut bytes = 0;
     for o in &m.originals {
@@ -983,13 +986,14 @@ fn validate(m: &Manifest) -> Result<(), String> {
         }
     }
     if !m.settings.is_object()
-        || m.settings.as_object().unwrap().keys().any(|k| k != "theme")
+        || m.settings.as_object().unwrap().keys().any(|k| k != "theme" && k != "behavior")
         || m.settings
             .get("theme")
             .is_some_and(|v| !matches!(v.as_str(), Some("light" | "dark" | "oled")))
     {
         return Err("Unsupported archive settings".into());
     }
+    if let Some(value)=m.settings.get("behavior"){crate::desktop::validate_behavior(value)?;}
     Ok(())
 }
 fn inspect_archive(

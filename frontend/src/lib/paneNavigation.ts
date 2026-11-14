@@ -42,7 +42,26 @@ export class PaneNavigation {
   };
   activate = (paneId: string, focus = false) => { this.focusSequence++; if (this.state.panes.some(p => p.paneId === paneId)) this.patch({ activePaneId: paneId, ...(paneId !== this.state.activePaneId ? { motion: 'switch' as const } : {}), ...(focus ? { focusPaneId: paneId } : {}) }); };
   focusHandled = (paneId: string) => { if (this.state.focusPaneId === paneId) this.patch({ focusPaneId: null }); };
+  /** Keyboard traversal owns a view identity, including duplicate resource views. */
+  cycleSession = async (direction: -1 | 1) => {
+    const { sessions, activePaneId } = this.state;
+    if (!sessions.length) return;
+    const index = sessions.findIndex(p => p.paneId === activePaneId);
+    const next = sessions[(index + direction + sessions.length) % sessions.length];
+    if (this.state.panes.some(p => p.paneId === next.paneId)) {
+      this.activate(next.paneId, true);
+      this.dependencies().committed(next.id, true);
+    } else await this.open(next.id, { sessionId: next.paneId, destination: 'here', focus: true, throwOnFailure: true });
+  };
   dismissIssue = () => this.patch({ issue: null });
+  setCapacity = async (max:number) => {
+    const before=this.state.panes,epoch=this.epoch;
+    const active=before.find(p=>p.paneId===this.state.activePaneId);
+    const keep=before.length<=max?before:(active?[active]:before.slice(0,max));
+    for(const p of before)if(!keep.includes(p))await this.dependencies().save(p.id);
+    if(epoch!==this.epoch||before!==this.state.panes)return;
+    this.commit(this.state.sessions,keep.map(p=>p.paneId));
+  };
   /** Reorder lightweight sessions without touching assignments, documents or visit history. */
   reorderSession = (sessionId:string,beforeId:string|null) => {
     const session=this.state.sessions.find(item=>item.paneId===sessionId);

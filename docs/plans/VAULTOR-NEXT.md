@@ -313,3 +313,8 @@ Workbook refresh completed from9350canonical records with53failed/invalidated ru
 ## M14 — everyday interaction restoration
 
 [The M14 ledger](VAULTOR-NEXT-M14.md) records original session/journey/reading and Open Notes adaptation, Rust-backed Quick Access configuration, shared resource chips/Save indicator, Notes/Files filters, density/sidebar/reset controls and narrow workspace presentation. Native and automated results distinguish functional, visual, motion and focus acceptance. M14 is partial: mixed collection pins/discovery, fill/capacity preferences, complete Settings/editor/header breadth and comprehensive motion remain open. M15 should close these daily-use gaps before broader browser/Help/advanced-editor and final performance/release gates. No installer/tag/publication or automatic M15 work is authorized.
+
+
+## M15 — everyday UI acceptance candidate
+
+[The M15 ledger](VAULTOR-NEXT-M15.md) records supported original Settings, workspace behavior, mixed typed pins and full Pinned browsing, original pane presentation, session-ID cycling/focus, pointer arrangement, paged tag/file filters and contextual editor/header corrections. The existing UI register and156-item inventory remain authoritative. Native and automated evidence distinguish functionality, visual comparison, motion and keyboard acceptance. This is an executable for user evaluation; unresolved transitions and advanced/native parity remain open. No master merge, installer, tag or publication is authorized.

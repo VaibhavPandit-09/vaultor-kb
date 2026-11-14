@@ -18,7 +18,7 @@ Paste/drop supported image bytes, use `/image`, or choose an existing image reso
 
 ## Tables, code and insertion
 
-Select a table in the active pane for Row, Column, Filter, Expand and More. Structural actions have restrictions while filtered. More includes copy/export and confirmed table deletion. Expanded editing keeps the table in context. Code blocks support language selection and copying. Symbol names such as `:alpha:` and supported punctuation patterns convert on space/Enter as applicable.
+Select a table in the active pane for Row, Column, Filter, Expand and More. Structural actions have restrictions while filtered. More includes copy/export and confirmed table deletion. Expanded editing keeps the table in context. Code blocks support language selection and copying. Open the language control to search; Up/Down move through choices and Escape closes the chooser and returns focus to its control. Symbol names such as `:alpha:` and supported punctuation patterns convert on space/Enter as applicable.
 
 Markdown insertion converts content into the current managed note; it is not a lossless external-file editor. CSV insertion also retains an original file resource and inserts a table. Review before inserting; cancellation keeps the command text. XLSX/PDF table export and Google Docs export are not implemented.
 

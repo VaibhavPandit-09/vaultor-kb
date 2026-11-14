@@ -21,6 +21,7 @@ pub enum Request {
     },
     Snapshot,
     Session { path:String, value:Value },
+    Behavior { path:String, value:Value },
     Preferences { value: Option<Value> },
     Media {
         request: Value,
@@ -197,8 +198,8 @@ impl Workspace {
             Request::Organization {request} => self.organization(request),
             Request::Media {request} => self.media(request),
             Request::Snapshot => {
-                let mut stmt = self.db.prepare("SELECT c.id,c.name,c.parent_id,COUNT(CASE WHEN COALESCE(s.trashed,0)=0 THEN m.resource_id END) FROM collections c LEFT JOIN memberships m ON m.collection_id=c.id LEFT JOIN resource_state s ON s.resource_id=m.resource_id GROUP BY c.id ORDER BY c.normalized,c.id").map_err(error)?;
-                let collections = stmt.query_map([], |r| Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"parentId":r.get::<_,Option<String>>(2)?,"count":r.get::<_,i64>(3)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
+                let mut stmt = self.db.prepare("SELECT c.id,c.name,c.parent_id,COUNT(CASE WHEN COALESCE(s.trashed,0)=0 THEN m.resource_id END),COALESCE((SELECT pinned FROM collection_state WHERE collection_id=c.id),0) FROM collections c LEFT JOIN memberships m ON m.collection_id=c.id LEFT JOIN resource_state s ON s.resource_id=m.resource_id GROUP BY c.id ORDER BY c.normalized,c.id").map_err(error)?;
+                let collections = stmt.query_map([], |r| Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"parentId":r.get::<_,Option<String>>(2)?,"count":r.get::<_,i64>(3)?,"pinned":r.get::<_,bool>(4)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
                 let mut stmt = self.db.prepare("SELECT key,value FROM settings").map_err(error)?;
                 let settings = stmt.query_map([], |r| Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
                 let settings: serde_json::Map<String,Value> = settings.into_iter().map(|(k,v)| Ok((k,serde_json::from_str(&v).map_err(error)?))).collect::<Result<_,String>>()?;
@@ -232,6 +233,12 @@ impl Workspace {
             Request::Setting { key, value } => {
                 if !((key == "theme" && [json!("light"),json!("dark"),json!("oled")].contains(&value)) || (key == "session" && value.is_object() && value.to_string().len()<=32768)) { return Err("Unsupported setting".into()); }
                 self.db.execute("INSERT INTO settings VALUES(?1,?2) ON CONFLICT(key) DO UPDATE SET value=excluded.value",params![key,value.to_string()]).map_err(error)?;
+                Ok(Value::Null)
+            },
+            Request::Behavior {path,value} => {
+                if !self.is_path(Path::new(&path)){return Err("Workspace changed; behavior refused".into());}
+                crate::desktop::validate_behavior(&value)?;
+                self.db.execute("INSERT INTO settings VALUES('behavior',?1) ON CONFLICT(key) DO UPDATE SET value=excluded.value",[value.to_string()]).map_err(error)?;
                 Ok(Value::Null)
             },
             Request::Session {path,value} => {if !self.is_path(Path::new(&path)){return Err("Workspace changed; session refused".into());}self.execute(Request::Setting{key:"session".into(),value})},

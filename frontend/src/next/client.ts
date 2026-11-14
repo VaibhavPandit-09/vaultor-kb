@@ -2,8 +2,8 @@ import type {LinkedRequest} from './linkedTypes';
 import { invoke } from '@tauri-apps/api/core';
 import type { JSONContent } from '@tiptap/core';
 export type Note = { id: string; title: string; content: JSONContent; revision: number; collections?: string[]; kind?: 'note'|'file' };
-export type Summary = Omit<Note, 'content'> & { updatedAt: string };
-export type Collection = { id: string; name: string; parentId: string | null; count?:number };
+export type Summary = Omit<Note, 'content'> & { updatedAt: string;fileCategory?:string };
+export type Collection = { id: string; name: string; parentId: string | null; count?:number;pinned?:boolean };
 export type ListCursor = { before: number; anchor: number; scope: string | null };
 export type SearchOptions = { kind?:string|null;query: string; content: boolean; collection: string | null; order: 'created'|'updated'|'title';view?:string;tag?:string|null };
 export type SearchCursor = { options: SearchOptions; generation: number; seq: number; key: string };
@@ -12,11 +12,12 @@ export type Page = { items: Summary[]; next: Cursor | null; total: number };
 export type MembershipReceipt = { requested: number; added: number; removed: number; unchanged: number };
 export type Draft = { id: string; title: string; content: JSONContent; baseRevision: number; token: string; sequence: number };
 export type DraftSummary = Omit<Draft, 'content'>;
-export type Snapshot = { path: string; collections: Collection[]; settings: { theme?: 'light' | 'dark' | 'oled'; session?: unknown } };
+export type Snapshot = { path: string; collections: Collection[]; settings: { behavior?:Partial<import('./desktopState').Preferences>;theme?: 'light' | 'dark' | 'oled'; session?: unknown } };
 type Request =
   | { kind: 'snapshot' }
   | {kind:'preferences';value?:Record<string,unknown>}
   | {kind:'session';path:string;value:unknown}
+  | {kind:'behavior';path:string;value:Record<string,unknown>}
   | {kind:'media';request:Record<string,unknown>}
   | { kind:'organization'; request:Record<string,unknown> }
   | { kind: 'linked'; request: LinkedRequest }

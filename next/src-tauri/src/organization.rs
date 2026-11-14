@@ -38,6 +38,8 @@ pub enum Request {
         path: Option<String>,
     },
     Recents,
+    PinCollection { id:String, value:bool },
+    Pins { query:String, kind:String, offset:usize, limit:usize },
     Trash {
         ids: Vec<String>,
         restore: bool,
@@ -56,6 +58,7 @@ pub(crate) fn initialize(db: &Connection) -> Result<(), String> {
  CREATE TABLE IF NOT EXISTS resource_tags(resource_id TEXT NOT NULL REFERENCES resources(id),tag_id TEXT NOT NULL REFERENCES tags(id),PRIMARY KEY(resource_id,tag_id));
  CREATE INDEX IF NOT EXISTS tag_resources ON resource_tags(tag_id,resource_id);
  CREATE TABLE IF NOT EXISTS resource_state(resource_id TEXT PRIMARY KEY REFERENCES resources(id),trashed INTEGER NOT NULL DEFAULT 0,pinned INTEGER NOT NULL DEFAULT 0,opened INTEGER NOT NULL DEFAULT 0);
+ CREATE TABLE IF NOT EXISTS collection_state(collection_id TEXT PRIMARY KEY REFERENCES collections(id) ON DELETE CASCADE,pinned INTEGER NOT NULL DEFAULT 0);
  CREATE TABLE IF NOT EXISTS recent_links(id TEXT PRIMARY KEY,title TEXT NOT NULL,source TEXT NOT NULL,path TEXT NOT NULL,opened INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS pending_deletions(id TEXT PRIMARY KEY);
  CREATE TRIGGER IF NOT EXISTS lifecycle_draft BEFORE INSERT ON drafts WHEN EXISTS(SELECT 1 FROM resource_state WHERE resource_id=new.resource_id AND trashed=1) BEGIN SELECT RAISE(ABORT,'Resource is in Trash'); END;
@@ -210,6 +213,21 @@ impl Workspace {
                 tx.commit().map_err(error)?;
                 Ok(Value::Null)
             }
+            Request::PinCollection { id,value } => {
+                if !self.db.query_row("SELECT EXISTS(SELECT 1 FROM collections WHERE id=?1)",[&id],|r|r.get::<_,bool>(0)).map_err(error)? {return Err("Collection no longer exists".into());}
+                self.db.execute("INSERT INTO collection_state VALUES(?1,?2) ON CONFLICT(collection_id) DO UPDATE SET pinned=excluded.pinned",params![id,value]).map_err(error)?;
+                Ok(Value::Null)
+            }
+            Request::Pins { query,kind,offset,limit } => {
+                if query.len()>1024 || !["all","note","file","collection"].contains(&kind.as_str())&&!crate::file_category::CATEGORIES.contains(&kind.as_str()) || offset>1000000 || !(1..=100).contains(&limit) {return Err("Unsupported pinned query".into());}
+                let category=crate::file_category::for_resource("r.id");
+                let source=format!(" FROM (SELECT r.id,r.title,r.revision,r.updated_at,{category} file_category,CASE WHEN EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file') THEN 'file' ELSE 'note' END kind FROM resources r JOIN resource_state s ON s.resource_id=r.id WHERE s.pinned=1 AND s.trashed=0 UNION ALL SELECT c.id,c.name title,0 revision,'' updated_at,'' file_category,'collection' kind FROM collections c JOIN collection_state s ON s.collection_id=c.id WHERE s.pinned=1) WHERE (?1='all' OR kind=?1 OR (kind='file' AND file_category=?1)) AND instr(lower(title),lower(?2))>0");
+                let total:i64=self.db.query_row(&format!("SELECT COUNT(*){source}"),params![kind,query],|r|r.get(0)).map_err(error)?;
+                let mut q=self.db.prepare(&format!("SELECT id,title,kind,revision,updated_at,file_category{source} ORDER BY title COLLATE NOCASE,kind,id LIMIT ?3 OFFSET ?4")).map_err(error)?;
+                let items=q.query_map(params![kind,query,limit as i64,offset as i64],|r|Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"kind":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?,"updatedAt":r.get::<_,String>(4)?,"fileCategory":r.get::<_,String>(5)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
+                let next=(offset+items.len() < total as usize).then_some(offset+items.len());
+                Ok(json!({"items":items,"total":total,"next":next}))
+            }
             Request::Recent {
                 id,
                 title,
@@ -337,6 +355,8 @@ impl Workspace {
 #[derive(Default, serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Archive {
+    #[serde(default,skip_serializing_if="Vec::is_empty")]
+    pub collection_pins:Vec<String>,
     pub tags: Vec<(String, String, String)>,
     pub assignments: Vec<(String, String)>,
     pub states: Vec<(String, bool, bool, i64)>,
@@ -378,7 +398,10 @@ impl Archive {
             .into_iter()
             .filter(|(id, _, _, _)| selected.contains(id))
             .collect();
+        let mut q=db.prepare("SELECT collection_id FROM collection_state WHERE pinned=1 ORDER BY collection_id").map_err(error)?;
+        let collection_pins=q.query_map([],|r|r.get(0)).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
         Ok(Self {
+            collection_pins,
             tags,
             assignments,
             states,
@@ -419,6 +442,7 @@ impl Archive {
         Ok(())
     }
     pub fn restore(&self, db: &Connection) -> Result<(), String> {
+        for id in &self.collection_pins { db.execute("INSERT INTO collection_state VALUES(?1,1)",[id]).map_err(error)?; }
         for (id, name, color) in &self.tags {
             db.execute(
                 "INSERT INTO tags VALUES(?1,?2,?3,?4)",

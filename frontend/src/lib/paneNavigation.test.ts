@@ -8,6 +8,21 @@ function setup() {
   return { dep, nav: new PaneNavigation(() => dep) };
 }
 describe('pane navigation commits', () => {
+  it('cycles restored duplicate views by session identity through reorder and sibling close', async () => {
+    const {nav,dep}=setup();
+    const a={paneId:'first',id:'A',cursor:0,history:[{visitId:'v1',resourceId:'A',title:'A'}]};
+    const b={paneId:'second',id:'A',cursor:0,history:[{visitId:'v2',resourceId:'A',title:'A'}]};
+    nav.restore([a,b],'first',{v1:{scrollTop:123,scrollLeft:0},v2:{scrollTop:456,scrollLeft:0}});
+    await nav.cycleSession(1);expect(nav.snapshot().activePaneId).toBe('second');
+    expect(nav.snapshot().focusPaneId).toBe('second');expect(dep.load).not.toHaveBeenCalled();
+    await nav.open('B',{sourcePaneId:'second',intent:'link'});
+    await nav.cycleSession(-1);expect(nav.snapshot().activePaneId).toBe('first');
+    expect(nav.snapshot().panes.map(p=>p.id)).toEqual(['A','B']);
+    nav.reorderSession('second','first');await nav.cycleSession(1);expect(nav.snapshot().activePaneId).toBe('second');
+    await nav.jump('second',0);expect(nav.position('v2').scrollTop).toBe(456);
+    await nav.closeSession('first');expect(nav.snapshot().activePaneId).toBe('second');
+    expect(nav.position('v2').scrollTop).toBe(456);
+  });
   it('retains unavailable visits and reading positions and resolves them after restore',async()=>{
     const {nav}=setup();await nav.open('A');const pane=nav.snapshot().panes[0];
     nav.recordPosition(pane.paneId,pane.history[0].visitId,{scrollTop:123,selection:{from:2,to:2}});
@@ -225,3 +240,9 @@ it('reveal refuses linked/preview targets and failed saves without replacing the
 });
 
 it('resumes an explicitly selected view of a shared document by session identity',async()=>{const {nav}=setup();await nav.open('A');const first=nav.snapshot().panes[0],second={...first,paneId:'second',history:[{visitId:'second-visit',resourceId:'A',title:'A'}]};nav.restore([first,second],first.paneId,{[first.history[0].visitId]:{scrollTop:120,scrollLeft:0,selection:{from:2,to:2}},'second-visit':{scrollTop:640,scrollLeft:0,selection:{from:7,to:7}}},[first,second]);await nav.open('A',{sessionId:'second'});expect(nav.snapshot().activePaneId).toBe('second');expect(nav.position('second-visit').selection?.from).toBe(7);const saved=nav.exportSession();nav.restore([],null,saved.positions,saved.sessions);await nav.open('A',{sessionId:'second'});expect(nav.snapshot().panes[0].paneId).toBe('second');expect(nav.position('second-visit').scrollTop).toBe(640);await nav.open('A',{sessionId:'missing'});expect(nav.snapshot().panes).toHaveLength(1);});
+it('reducing pane capacity protects the displaced document and retains its session',async()=>{
+ const {nav,dep}=setup();await nav.open('A');await nav.open('B',{destination:'new'});const before=nav.snapshot();
+ dep.save.mockRejectedValueOnce(new Error('Draft protection failed'));await expect(nav.setCapacity(1)).rejects.toThrow('Draft protection failed');expect(nav.snapshot().panes).toBe(before.panes);
+ await nav.setCapacity(1);expect(nav.snapshot().panes.map(p=>p.id)).toEqual(['B']);expect(nav.snapshot().sessions.map(p=>p.id)).toEqual(['A','B']);expect(dep.save).toHaveBeenLastCalledWith('A');
+ dep.max=1;await nav.cycleSession(1);expect(nav.snapshot().panes[0].id).toBe('A');
+});
