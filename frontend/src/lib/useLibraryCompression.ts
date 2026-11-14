@@ -2,12 +2,13 @@ import { frameResizeObserver } from './frameResizeObserver';
 import { useEffect, type RefObject } from 'react';
 export function syncLibraryControls(header:HTMLElement){
  const compact=header.dataset.compact==='true',open=header.dataset.tools==='true';
- for(const section of header.querySelectorAll<HTMLElement>('.library-filters,.library-summary,.library-working-context')){const hidden=compact&&!open&&section.classList.contains('library-working-context');section.inert=hidden;section.setAttribute('aria-hidden',String(hidden));}
+ for(const section of header.querySelectorAll<HTMLElement>('.library-filters,.library-summary,.library-working-context')){const hidden=compact&&!open&&section.classList.contains('library-working-context');if(section.inert!==hidden)section.inert=hidden;if(section.getAttribute('aria-hidden')!==String(hidden))section.setAttribute('aria-hidden',String(hidden));}
 }
 
 /** One bounded scroll signal. Never owns React, queries, editor or focus state. */
-export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElement, options: { pinHeaderFocus?: boolean; onProgress?: (progress: number) => void; observeSubtree?: boolean; styleTarget?:HTMLElement } = {}) {
+export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElement, options: { pinHeaderFocus?: boolean; onProgress?: (progress: number) => void; observeSubtree?: boolean; styleTarget?:HTMLElement; geometryTarget?:HTMLElement } = {}) {
   const styleTarget=options.styleTarget??viewport;
+  const geometryTarget=options.geometryTarget??styleTarget;
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   const isReduced=()=>Boolean(reduced?.matches||document.documentElement.dataset.animation==='reduced');
   let frame = 0, releaseFrame = 0, pointerHeld = false, lastTime = 0;
@@ -24,6 +25,8 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
   let compact=false;
   const write = () => {
     styleTarget.style.setProperty('--library-progress', String(progress));
+    styleTarget.style.setProperty('--library-lane-progress',String(Math.min(1,3*progress)));
+    styleTarget.style.setProperty('--library-controls-progress',String(Math.max(0,(progress-.35)/.65)));
     options.onProgress?.(progress);
     // Breadcrumbs withdraw in their own row before the title enters that lane.
     styleTarget.style.setProperty('--collection-path-progress', String(Math.min(1,progress/.35)));
@@ -33,9 +36,16 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
 
     // The second title line is already clipped before its ellipsis changes.
     styleTarget.style.setProperty('--library-title-lines', progress > .96 ? '1' : '2');
-    compact=progress>(compact?.82:.96);header.dataset.compact=String(compact);syncLibraryControls(header);
+    compact=progress>(compact?.82:.96);if(header.dataset.compact!==String(compact))header.dataset.compact=String(compact);syncLibraryControls(header);
   };
-  const locked = () => pointerHeld || Boolean(header.querySelector('.collection-breadcrumb')?.contains(document.activeElement)) || (options.pinHeaderFocus && header.contains(document.activeElement)) || Boolean(header.querySelector('[aria-haspopup][aria-expanded="true"]'));
+  // Pointer-focused mode/action buttons must not freeze wheel compression after
+  // their click. Keep typing and keyboard focus stable; pointerHeld owns clicks.
+  const pinnedFocus = () => {
+    const focused = document.activeElement;
+    return options.pinHeaderFocus && focused instanceof HTMLElement && header.contains(focused)
+      && focused.matches('input,textarea,select,[contenteditable="true"],:focus-visible');
+  };
+  const locked = () => pointerHeld || Boolean(header.querySelector('.collection-breadcrumb')?.contains(document.activeElement)) || pinnedFocus() || Boolean(header.querySelector('[aria-haspopup][aria-expanded="true"]'));
   const step = (time: number) => {
     frame = 0;
     if (locked()) { lastTime = 0; return; }
@@ -67,14 +77,14 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
     styleTarget.style.setProperty('--library-actions-width', `${actions?.getBoundingClientRect().width ?? 0}px`);
     const path=header.querySelector<HTMLElement>('.collection-breadcrumb');
     if(path){
-      styleTarget.style.setProperty('--collection-path-space',`${path.getBoundingClientRect().height+8}px`);
+      geometryTarget.style.setProperty('--collection-path-space',`${path.getBoundingClientRect().height+8}px`);
       const title=header.querySelector<HTMLElement>('h1');
       if(title){
         if(!titleMeasure){titleMeasure=document.createElement('div');titleMeasure.setAttribute('aria-hidden','true');document.body.append(titleMeasure);}
         const font=getComputedStyle(title);
         titleMeasure.style.cssText=`position:fixed;left:-10000px;top:0;visibility:hidden;pointer-events:none;width:${title.clientWidth}px;font-family:${font.fontFamily};font-weight:${font.fontWeight};font-size:28px;line-height:1.25;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-height:70px;`;
         titleMeasure.textContent=title.textContent;
-        styleTarget.style.setProperty('--collection-title-expanded',`${Math.max(35,Math.min(70,titleMeasure.getBoundingClientRect().height))}px`);
+        geometryTarget.style.setProperty('--collection-title-expanded',`${Math.max(35,Math.min(70,titleMeasure.getBoundingClientRect().height))}px`);
       }
     }
 
@@ -128,7 +138,8 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
     styleTarget.style.removeProperty('--library-compact-actions-width');
     styleTarget.style.removeProperty('--library-pages-width');
     titleMeasure?.remove();
-    for(const key of ['--collection-title-expanded','--collection-path-progress','--collection-title-progress','--collection-path-space'])styleTarget.style.removeProperty(key);
+    for(const key of ['--collection-title-expanded','--collection-path-space'])geometryTarget.style.removeProperty(key);
+    for(const key of ['--library-lane-progress','--library-controls-progress','--collection-path-progress','--collection-title-progress'])styleTarget.style.removeProperty(key);
     const path=header.querySelector<HTMLElement>('.collection-breadcrumb');if(path){path.inert=false;path.removeAttribute('aria-hidden');}
     delete header.dataset.compact;syncLibraryControls(header);
 
@@ -137,6 +148,13 @@ export function attachLibraryCompression(viewport: HTMLElement, header: HTMLElem
 
 export function useLibraryCompression(viewport: RefObject<HTMLElement | null>, header: RefObject<HTMLElement | null>, active: boolean) {
   useEffect(() => {
-    if (active && viewport.current && header.current) return attachLibraryCompression(viewport.current, header.current,{pinHeaderFocus:true});
+    const element=viewport.current,heading=header.current;
+    if(!active||!element||!heading)return;
+    const previousPadding=element.style.paddingBottom;
+    const stop=attachLibraryCompression(element,heading,{pinHeaderFocus:true,styleTarget:heading,geometryTarget:element,onProgress:progress=>{
+      // Padding is not inherited: header animation must not restyle every row.
+      element.style.paddingBottom=`calc(24px + var(--library-compression-loss) * ${Math.max(0,(progress-.35)/.65)})`;
+    }});
+    return()=>{stop();element.style.paddingBottom=previousPadding;};
   }, [active, viewport, header]);
 }

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { attachLibraryCompression } from './useLibraryCompression';
+import {act,renderHook} from '@testing-library/react';
+import { attachLibraryCompression,useLibraryCompression } from './useLibraryCompression';
 let viewport: HTMLElement, header: HTMLElement, stop: () => void;
 let frames: Map<number, FrameRequestCallback>, next: number, time: number;
 let reduced: boolean;
@@ -71,6 +72,18 @@ it('pins rename geometry through focused typing, then catches up after blur', ()
  expect(input.selectionStart).toBe(2);
  input.blur(); settle(); expect(progress()).toBe(1);
 });
+it('compresses and reverses after pointer-focused All/Hierarchy buttons without losing their focus',()=>{
+ stop();const button=document.createElement('button');button.textContent='Hierarchy';header.append(button);
+ const matches=button.matches.bind(button);vi.spyOn(button,'matches').mockImplementation(selector=>selector.includes(':focus-visible')?false:matches(selector));
+ stop=attachLibraryCompression(viewport,header,{pinHeaderFocus:true});button.focus();
+ viewport.scrollTop=160;viewport.dispatchEvent(new Event('scroll'));settle();expect(progress()).toBe(1);expect(document.activeElement).toBe(button);
+ viewport.scrollTop=0;viewport.dispatchEvent(new Event('scroll'));settle();expect(progress()).toBe(0);
+});
+it('keeps keyboard-focused header controls steady until focus leaves',()=>{
+ stop();const button=document.createElement('button');header.append(button);vi.spyOn(button,'matches').mockReturnValue(true);
+ stop=attachLibraryCompression(viewport,header,{pinHeaderFocus:true});button.focus();viewport.scrollTop=160;viewport.dispatchEvent(new Event('scroll'));settle();expect(progress()).toBe(0);
+ button.blur();settle();expect(progress()).toBe(1);
+});
 it('recalculates travel after results shrink and after the viewport grows', () => {
  viewport.scrollTop = 80; viewport.dispatchEvent(new Event('scroll')); settle(); expect(progress()).toBe(.5);
  Object.defineProperty(viewport, 'scrollHeight', { value: 580, configurable: true });
@@ -108,3 +121,14 @@ it('keeps the same search, filters and paging interactive at every compression d
 it('honors the application reduced-motion preference independently of the OS',()=>{document.documentElement.dataset.animation='reduced';viewport.scrollTop=80;viewport.dispatchEvent(new Event('scroll'));tick();expect(progress()).toBe(1);expect(frames.size).toBe(0);});
 
 it('can scope animated inherited properties to the heading instead of the editor document',()=>{stop();stop=attachLibraryCompression(viewport,header,{styleTarget:header});viewport.scrollTop=160;viewport.dispatchEvent(new Event('scroll'));settle();expect(header.style.getPropertyValue('--library-progress')).toBe('1');expect(viewport.style.getPropertyValue('--library-progress')).toBe('');stop();expect(header.style.getPropertyValue('--library-progress')).toBe('');});
+
+it('keeps browse animation local to the header while preserving viewport geometry and scroll compensation',()=>{
+ stop();viewport.style.setProperty('--library-progress','0');viewport.style.paddingBottom='12px';
+ const viewportRef={current:viewport},headerRef={current:header};
+ const hook=renderHook(()=>useLibraryCompression(viewportRef,headerRef,true));
+ act(()=>{viewport.scrollTop=160;viewport.dispatchEvent(new Event('scroll'));settle();});
+ expect(header.style.getPropertyValue('--library-progress')).toBe('1');expect(header.style.getPropertyValue('--library-controls-progress')).toBe('1');
+ expect(viewport.style.getPropertyValue('--library-progress')).toBe('0');expect(viewport.style.paddingBottom).toContain('var(--library-compression-loss) * 1');
+ expect(header.style.getPropertyValue('--library-compact-actions-width')).toBe('0px');expect(viewport.style.getPropertyValue('--library-compact-actions-width')).toBe('');
+ hook.unmount();expect(viewport.style.paddingBottom).toBe('12px');expect(header.style.getPropertyValue('--library-progress')).toBe('');
+});

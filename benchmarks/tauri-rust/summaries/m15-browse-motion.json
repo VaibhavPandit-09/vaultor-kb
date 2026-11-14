@@ -1,0 +1,165 @@
+{
+  "timestamp": "2026-11-14T15:22:02.130Z",
+  "executableSha256": "be103b4db6889767022b43b3c279c7348ba2384337b12ca6aa4fc273df6fe58b",
+  "nativeChecks": [
+    "All wheel compression and reversal after mode click",
+    "Hierarchy wheel compression and reversal after mode click",
+    "mode scroll reset and retained hierarchy expansion",
+    "collapse branch",
+    "800px viewport compact All header without horizontal overflow",
+    "800px viewport compact Hierarchy header",
+    "reduced-motion endpoints",
+    "All short-list endpoint with stable overflow",
+    "Hierarchy short-list endpoint with stable overflow",
+    "non-scrolling results stay expanded",
+    "collection resource browser scoped geometry and breadcrumb compression"
+  ],
+  "nativePassed": true,
+  "shortLists": {
+    "All": {
+      "initialOverflow": 129,
+      "end": {
+        "scroll": 128.6666717529297,
+        "overflow": 129,
+        "progress": 0.9974160601002301,
+        "compact": "true",
+        "rows": 12,
+        "width": 904,
+        "scrollWidth": 904,
+        "focus": "All",
+        "keyboardFocus": false
+      }
+    },
+    "Hierarchy": {
+      "initialOverflow": 129,
+      "end": {
+        "scroll": 128.6666717529297,
+        "overflow": 129,
+        "progress": 0.9974160601002301,
+        "compact": "true",
+        "rows": 12,
+        "width": 904,
+        "scrollWidth": 904,
+        "focus": "Hierarchy",
+        "keyboardFocus": false
+      }
+    }
+  },
+  "collectionDetail": {
+    "rows": 25,
+    "progress": 1,
+    "height": 80,
+    "breadcrumbHidden": "true",
+    "rootProgress": ""
+  },
+  "libraryDiagnostic": {
+    "beforeSha256": "3a9761fedcc3b486f93fc7083fba77e902fdf29a2e272cc46feaf6232bc92cbb",
+    "before": [
+      {
+        "metrics": {
+          "RecalcStyleDuration": 0.657628,
+          "LayoutDuration": 0.020168,
+          "TaskDuration": 0.81982,
+          "RecalcStyleCount": 20,
+          "LayoutCount": 11
+        },
+        "maxFrame": 104.09999999999854,
+        "over25ms": 10,
+        "rows": 100
+      },
+      {
+        "metrics": {
+          "RecalcStyleDuration": 0.5546380000000001,
+          "LayoutDuration": 0.016425,
+          "TaskDuration": 0.655504,
+          "RecalcStyleCount": 24,
+          "LayoutCount": 22
+        },
+        "maxFrame": 75,
+        "over25ms": 12,
+        "rows": 100
+      },
+      {
+        "metrics": {
+          "RecalcStyleDuration": 0.654352,
+          "LayoutDuration": 0.007338999999999998,
+          "TaskDuration": 0.8098660000000002,
+          "RecalcStyleCount": 23,
+          "LayoutCount": 12
+        },
+        "maxFrame": 91.5,
+        "over25ms": 11,
+        "rows": 100
+      },
+      {
+        "metrics": {
+          "RecalcStyleDuration": 0.6686859999999999,
+          "LayoutDuration": 0.013856,
+          "TaskDuration": 0.7944840000000002,
+          "RecalcStyleCount": 25,
+          "LayoutCount": 24
+        },
+        "maxFrame": 87.40000000000146,
+        "over25ms": 12,
+        "rows": 100
+      }
+    ],
+    "after": [
+      {
+        "metrics": {
+          "RecalcStyleDuration": 0.129563,
+          "LayoutDuration": 0.036202,
+          "TaskDuration": 0.46342300000000003,
+          "RecalcStyleCount": 61,
+          "LayoutCount": 31
+        },
+        "maxFrame": 20.90000000000009,
+        "over25ms": 0,
+        "rows": 100
+      },
+      {
+        "metrics": {
+          "RecalcStyleDuration": 0.174799,
+          "LayoutDuration": 0.041696,
+          "TaskDuration": 0.433998,
+          "RecalcStyleCount": 111,
+          "LayoutCount": 108
+        },
+        "maxFrame": 16.699999999999818,
+        "over25ms": 0,
+        "rows": 100
+      },
+      {
+        "metrics": {
+          "RecalcStyleDuration": 0.13412799999999997,
+          "LayoutDuration": 0.016126,
+          "TaskDuration": 0.471278,
+          "RecalcStyleCount": 65,
+          "LayoutCount": 35
+        },
+        "maxFrame": 16.800000000000182,
+        "over25ms": 0,
+        "rows": 100
+      },
+      {
+        "metrics": {
+          "RecalcStyleDuration": 0.18841500000000005,
+          "LayoutDuration": 0.030505000000000004,
+          "TaskDuration": 0.43168700000000015,
+          "RecalcStyleCount": 119,
+          "LayoutCount": 115
+        },
+        "maxFrame": 20.699999999999818,
+        "over25ms": 0,
+        "rows": 100
+      }
+    ],
+    "limitations": [
+      "Four alternating wheel sweeps on the same warm disposable100-row page; CDP Performance and requestAnimationFrame diagnostics, not physical input-to-display latency or a general FPS guarantee.",
+      "No matched startup/idle/memory benchmark is claimed; canonical performance CSV/workbook unchanged."
+    ]
+  },
+  "limitations": [
+    "Native WebView2 wheel input through CDP; not a physical trackpad or Windows scaling qualification. Narrow layout uses viewport emulation."
+  ]
+}

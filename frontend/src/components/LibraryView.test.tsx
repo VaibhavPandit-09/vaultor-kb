@@ -94,7 +94,8 @@ it('attaches compression to the mounted Library scroll owner without replacing s
  Object.defineProperties(viewport,{scrollHeight:{value:1000,configurable:true},clientHeight:{value:500,configurable:true}});
  viewport.scrollTop=160; fireEvent.scroll(viewport);
  expect(document.activeElement).toBe(input);expect(input.selectionStart).toBe(1);input.blur();fireEvent.scroll(viewport);
- await waitFor(()=>expect(Number(viewport.style.getPropertyValue('--library-progress'))).toBeGreaterThan(.9));
+ await waitFor(()=>expect(Number(viewport.querySelector<HTMLElement>('.library-orientation')!.style.getPropertyValue('--library-progress'))).toBeGreaterThan(.9));
+ expect(viewport.style.getPropertyValue('--library-progress')).toBe('');
  expect(viewport.querySelector('input[aria-label="Search items"]')).toBe(input);expect(input.selectionStart).toBe(1);
  expect(viewport.querySelector<HTMLElement>('.library-filters')?.inert).not.toBe(true);input.focus();expect(document.activeElement).toBe(input);
  expect(screen.getAllByRole('listitem')[0]).toBe(row); expect(browseResources).toHaveBeenCalledTimes(queries);
