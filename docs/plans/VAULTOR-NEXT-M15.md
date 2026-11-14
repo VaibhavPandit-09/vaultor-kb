@@ -41,3 +41,5 @@ Final follow-ups pass37 overlapping contextual Help cases and5 editor cases,incl
 ## Remaining boundaries
 
 Three panes, full relationship graph/Review Inbox, linked full-text indexing, larger linked editing, advanced table/CSV and new media engines, archive merge, Explorer drag-out, mobile/Mac qualification and production release gates remain separate. Full IME and application-wide accessibility are not certified by this milestone. Any unverified everyday target remains explicitly open at delivery.
+
+Qualification note: source/documentation Git whitespace checks pass. The all-files check flags two retained trailing spaces inside quoted captured failure text in the canonical CSV;the recorded evidence is preserved rather than rewritten. No source-whitespace defect is reported.
