@@ -40,6 +40,12 @@ Final follow-ups pass37 overlapping contextual Help cases and5 editor cases,incl
 
 ## Remaining boundaries
 
+### Startup follow-up — 2026-11-14
+
+The user reported that double-clicking M15 did not open a window. Reproduced ordinary launch exit101: the still-running background M14 instance owned `next-activity.lock`. This was missed by the isolated-profile acceptance runs. Tauri panics inside its setup hook, so handling only the result of `build` was insufficient; the final implementation reports setup errors through a native Windows dialog before exiting. Build-time errors also report natively. No locks are removed and no second owner is admitted. Save linked edits and close the earlier Next version normally before launching M15.
+
+The replacement executable uses the same delivery path above; SHA-256 `339b096949eebb03874690b515c14bde2a3971b267dfaefd1ef1f9d78130d61a`. This follow-up supersedes the earlier executable identity. Native final-binary acceptance observed the exact Activity ownership message, dismissed the dialog, opened Library with an available disposable workspace/profile, closed via the window control, reopened Library, then closed with Alt+F4. M14 was neither stopped nor modified; successful ordinary-profile launch after its closure is not claimed. Focused Rust ownership/refusal/reopen regression passes; TypeScript/Vite, Help43-feature/16-article validation, optimized Windows compilation and scoped whitespace checks pass. No fresh performance claims or benchmark dataset changes. UI-64 and Help/catalogue `next-foundation` record the correction. M15 remains an engineering-partial user acceptance candidate.
+
 Three panes, full relationship graph/Review Inbox, linked full-text indexing, larger linked editing, advanced table/CSV and new media engines, archive merge, Explorer drag-out, mobile/Mac qualification and production release gates remain separate. Full IME and application-wide accessibility are not certified by this milestone. Any unverified everyday target remains explicitly open at delivery.
 
 Qualification note: source/documentation Git whitespace checks pass. The all-files check flags two retained trailing spaces inside quoted captured failure text in the canonical CSV;the recorded evidence is preserved rather than rewritten. No source-whitespace defect is reported.

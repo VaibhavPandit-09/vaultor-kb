@@ -237,10 +237,38 @@ async fn selected_image(path: String) -> Result<tauri::ipc::Response, String> {
     .await
     .map_err(|e| e.to_string())?
 }
+fn startup_failure(error: &impl std::fmt::Display) {
+    let message = format!(
+        "Vaultor Next could not start.\n\n{error}\n\n\
+        If another Vaultor Next version is running (including M14), save any linked-file edits, \
+        close it normally, then open M15 again. Only one version can own this profile at a time. \
+        Do not delete workspace or profile lock files."
+    );
+    // Setup can fail before the hidden webview is ready. Use a native dialog that
+    // does not depend on renderer bootstrap or successfully managed Tauri state.
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
+        let text: Vec<u16> = message.encode_utf16().chain(Some(0)).collect();
+        let title: Vec<u16> = "Vaultor Next — Startup failed"
+            .encode_utf16()
+            .chain(Some(0))
+            .collect();
+        unsafe {
+            MessageBoxW(std::ptr::null_mut(), text.as_ptr(), title.as_ptr(), MB_OK | MB_ICONERROR);
+        }
+    }
+    #[cfg(not(windows))]
+    eprintln!("{message}");
+}
+
 fn main() {
-    tauri::Builder::default()
+    let application = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
+            // Tauri panics on a setup-hook error before build can return it.
+            // Finish unwinding our services, then report before returning to Tauri.
+            let initialization = (|| -> Result<(), Box<dyn std::error::Error>> {
             // This identifier has its own profile; never open the Electron workspace.
             let data = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data)?;
@@ -297,6 +325,12 @@ fn main() {
             app.manage(Arc::new(Transfers::new(storage, activity)));
             app.manage(worker);
             Ok(())
+            })();
+            if let Err(error) = initialization {
+                startup_failure(&error);
+                std::process::exit(1);
+            }
+            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             workspace,
@@ -306,12 +340,18 @@ fn main() {
             native_resource,
             selected_image
         ])
-        .build(tauri::generate_context!())
-        .expect("Vaultor Next initialization failed")
-        .run(|app, event| {
-            if matches!(event, tauri::RunEvent::Exit) {
-                app.state::<Arc<Transfers>>().activity.shutdown();
-                app.state::<Worker>().stop();
-            }
-        });
+        .build(tauri::generate_context!());
+    let application = match application {
+        Ok(application) => application,
+        Err(error) => {
+            startup_failure(&error);
+            std::process::exit(1);
+        }
+    };
+    application.run(|app, event| {
+        if matches!(event, tauri::RunEvent::Exit) {
+            app.state::<Arc<Transfers>>().activity.shutdown();
+            app.state::<Worker>().stop();
+        }
+    });
 }

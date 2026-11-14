@@ -2124,7 +2124,8 @@
         "Configure appearance navigation and keyboard bindings in Settings",
         "Search commands or saved resources in the command palette",
         "Restore protected workspace pane sessions after restart",
-        "Open floating Settings without leaving a note and adjust pane and menu opacity"
+        "Open floating Settings without leaving a note and adjust pane and menu opacity",
+        "Resolve a startup error when an earlier Vaultor Next version still owns the profile"
       ],
       "keywords": [
         "Tauri",

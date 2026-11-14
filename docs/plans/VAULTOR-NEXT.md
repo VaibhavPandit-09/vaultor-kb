@@ -14,6 +14,8 @@ M3 extends this same schema/domain with page-scoped selection, roving row focus,
 
 The portable Rust domain has no Tauri types. One storage thread owns SQLite and transactions; async handlers await receipts. No legacy migrations are provided. Nonempty unrelated directories, open workspaces and newer schemas are refused. The default profile has its own application identifier. Explicit benchmark workspace overrides never change the remembered personal workspace.
 
+Experimental Next versions share that profile and cannot run against it concurrently. Startup failures display a native Windows error dialog before renderer readiness; save linked edits and close the earlier version normally before launching another. See the [M15 follow-up](VAULTOR-NEXT-M15.md) for occupied-profile qualification.
+
 ## Interaction decisions
 
 The old Dashboard combines HTTP lifecycle, source authority and many unfinished capabilities. The new entry composes retained Tiptap packages, CodeBlockView, symbol rules, shared documents/history, Escape ownership, theme reveal and design tokens without mounting that orchestration. M2's document-owned EditingSession replaces M1 SaveCoordinator for this entry only. This is an adapted editor composition, not full BlockEditor parity.

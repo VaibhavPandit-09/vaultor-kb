@@ -4,6 +4,8 @@ Vaultor Next is a separate Windows development application. It does not replace 
 
 ## Workspaces
 
+Only one Vaultor Next version can use the same local profile at a time. Before opening M15, save any linked-file edits and close earlier Next versions such as M14 normally. If startup fails, a Windows dialog displays the error. Close the running version and try again; do not delete workspace or profile lock files.
+
 The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or a supported experimental workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. Import and transfers also offers Create local workspace: choose a parent and a new folder name. Finish or cancel Activity tasks before switching. Linked folders are separate from this workspace.
 
 ## Library and note presentation

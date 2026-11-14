@@ -329,3 +329,24 @@ impl Activity {
 fn saturating_age(timestamp: u64) -> u64 {
     now().saturating_sub(timestamp)
 }
+
+#[cfg(test)]
+mod startup_tests {
+    use super::*;
+
+    #[test]
+    fn profile_lock_refuses_second_owner_and_releases_on_normal_close() {
+        let temp = tempfile::tempdir().unwrap();
+        let worker = crate::worker::Worker::start(temp.path().join("workspace"), None).unwrap();
+        let path = temp.path().join("next-activity.json");
+        let first = Activity::new(path.clone(), worker.storage(), |_| {}).unwrap();
+        let before = fs::read(&path).ok();
+        let second = Activity::new(path.clone(), worker.storage(), |_| {});
+        assert!(matches!(second, Err(ref error) if error.contains("already owned")));
+        assert_eq!(fs::read(&path).ok(), before);
+        first.shutdown();
+        drop(first);
+        let reopened = Activity::new(path, worker.storage(), |_| {}).unwrap();
+        reopened.shutdown();
+    }
+}
