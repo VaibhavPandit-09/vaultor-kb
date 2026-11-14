@@ -2122,6 +2122,7 @@
         "Preview managed originals and reveal independent prepared copies",
         "Browse full Collections Tags and Linked Sources destinations",
         "Scroll Collections in All and Hierarchy modes with a compressing header",
+        "Use trackpad scrolling without shifting browse pages sideways",
         "Configure appearance navigation and keyboard bindings in Settings",
         "Search commands or saved resources in the command palette",
         "Restore protected workspace pane sessions after restart",

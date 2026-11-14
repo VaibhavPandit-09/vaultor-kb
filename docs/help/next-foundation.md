@@ -14,6 +14,8 @@ Library uses the original Vaultor resource-row and transforming-header presentat
 
 Collections, Tags and Linked Sources use the same transforming browse header. Collections offers All and Hierarchy; direct active-resource counts exclude Trash. All lists matching collections across their paths. Hierarchy shows roots and expanded descendants; its count reflects the visible matching rows. Scroll the collection list to compress the header and scroll back to expand it. Switching All/Hierarchy, searching or changing pages returns to the top; expanding a branch keeps your place. Short lists stay expanded when there is nothing to scroll. Collection details expose the parent breadcrumb through the details control.
 
+Browse pages, sidebar lists, Settings and dialogs scroll vertically within their own surface. Diagonal trackpad gestures should not shift the whole page sideways or scroll the workspace behind a dialog. Wide code blocks and tables retain horizontal scrolling inside the block. Long saved-resource titles in the command palette stay within the result row; hover to read the full title.
+
 Managed and linked-note titles use the original scroll-driven note heading. Linked notes keep an always-available External source disclosure, explicit Save and source review controls. Organization can be expanded explicitly; save status, resource actions and Close remain available in the title band. This reconciliation does not change autosave, recovery or linked Markdown's explicit Save.
 
 ## Open Notes and journeys

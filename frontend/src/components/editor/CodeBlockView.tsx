@@ -142,7 +142,7 @@ export default function CodeBlockView({ node, editor, updateAttributes,writeClip
                     autoFocus
                   />
                 </div>
-                <div className="max-h-48 overflow-y-auto p-1">
+                <div className="max-h-48 overflow-y-auto overflow-x-hidden overscroll-none p-1">
                   {filteredLangs.map(lang => (
                     <button
                       key={lang.value}
@@ -184,7 +184,7 @@ export default function CodeBlockView({ node, editor, updateAttributes,writeClip
 
         {/* Code content */}
         <pre ref={codeRef} className="overflow-x-auto bg-[var(--surface-2)] p-4 text-sm leading-relaxed !m-0 !rounded-none !border-0 text-[var(--text-primary)]">
-          <NodeViewContent />
+          <NodeViewContent style={{whiteSpace:'pre'}} />
         </pre>
       </div>
     </NodeViewWrapper>
