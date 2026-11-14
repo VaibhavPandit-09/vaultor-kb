@@ -402,3 +402,5 @@ These supplement the52 earlier findings; they do not imply that58 findings are v
 - **UI-62 · P1 — Supported Settings behavior lacked root-bound persistence.** Pane capacity/opening/autosave/focus behavior now persists per workspace; presentation/bindings stay installation-scoped. Three panes remain unavailable, without a misleading control.
 
 Remaining individually tracked acceptance: all13 core transitions have not received matched physical motion qualification; full original advanced editor/table/CSV/selection-context capabilities remain incomplete; full accessibility/IME and multi-scale Windows qualification remain open. Current missing capabilities stay in the156-item inventory. User acceptance is pending.
+
+- **UI-63 · P1 — Re-selecting an Escape-dismissed text range could keep formatting hidden.** Dismissal now clears when selection moves,allowing the same range to reopen. Focused editor regression and final native acceptance distinguish this from viewport positioning.
