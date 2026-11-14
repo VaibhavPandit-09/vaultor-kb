@@ -4,7 +4,7 @@ import {writeFile,readFile,mkdir} from 'node:fs/promises';
 import {join} from 'node:path';
 export async function inspectM14({evaluate,cdp,wait,report,folder,output,record,reference=false,restart,milestone="m14"}){
  const pause=ms=>new Promise(r=>setTimeout(r,ms));
- const shot=async name=>{await pause(380);const r=await cdp('Page.captureScreenshot');await writeFile(join(output,milestone+'-'+(reference?'original':'next')+'-'+name+'.png'),Buffer.from(r.data,'base64'));};
+ const shot=async name=>{await pause(milestone==='m15'?1300:380);const r=await cdp('Page.captureScreenshot');await writeFile(join(output,milestone+'-'+(reference?'original':'next')+'-'+name+'.png'),Buffer.from(r.data,'base64'));};
  const click=selector=>evaluate('document.querySelector('+JSON.stringify(selector)+').click();true');
  const button=text=>evaluate('[...document.querySelectorAll("button")].find(b=>(b.textContent.trim()==='+JSON.stringify(text)+'||b.title==='+JSON.stringify(text)+')&&!b.closest("[hidden]")).click();true');
  const key=async(key,modifiers=0)=>{await cdp('Input.dispatchKeyEvent',{type:'keyDown',key,modifiers,windowsVirtualKeyCode:key==='Escape'?27:undefined});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key});};
