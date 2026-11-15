@@ -13,6 +13,12 @@ const org=vi.hoisted(()=>vi.fn());vi.mock('./client',()=>({org,command:vi.fn()})
 vi.mock('./media',()=>({media:vi.fn(async()=>[])}));
 vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});
 afterEach(()=>{cleanup();vi.clearAllMocks();});
+it('keeps title editing open for composing Enter, then commits the completed title',()=>{
+ render(<EscapeManagerProvider><NoteTitle active label="Note title" value="Composing" change={()=>{}}/></EscapeManagerProvider>);
+ expect(screen.getByRole('button',{name:'Note title'}).getAttribute('data-active')).toBe('true');fireEvent.click(screen.getByRole('button',{name:'Note title'}));
+ const input=screen.getByRole('textbox',{name:'Note title'});fireEvent.keyDown(input,{key:'Enter',isComposing:true});fireEvent.keyDown(input,{key:'Enter',keyCode:229});expect(screen.getByRole('textbox',{name:'Note title'})).toBe(input);
+ fireEvent.keyDown(input,{key:'Enter'});expect(screen.getByRole('button',{name:'Note title'})).toBeTruthy();
+});
 it('exposes supported workspace controls, accent keyboard traversal and scoped reset',async()=>{
  const saved=vi.fn();function Fixture(){const [value,setValue]=useState<Preferences>({...defaults,autoCompanion:false,opacity:.65});return <DesktopSettingsDialog value={value} save={v=>{saved(v);setValue(v);}} path="fixture" error="" close={()=>{}}/>;}
  render(<EscapeManagerProvider><Fixture/></EscapeManagerProvider>);fireEvent.click(screen.getByRole('button',{name:'Workspace'}));

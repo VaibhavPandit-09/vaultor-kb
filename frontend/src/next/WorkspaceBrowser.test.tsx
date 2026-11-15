@@ -6,6 +6,13 @@ import {EscapeManagerProvider} from '../lib/escape/EscapeManagerProvider';
 import type {Collection} from './client';
 beforeEach(()=>vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}}));
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+vi.mock('./client',()=>({org:vi.fn(async()=>({items:[{id:'tag',name:'Research',color:'#5887ee',count:3}],next:null}))}));
+it('owns tag creation in the single browser header and preserves contextual management',async()=>{
+ render(<EscapeManagerProvider><WorkspaceBrowser kind="tags" collections={[]} sources={[]} revision={0} chooseCollection={()=>{}} collectionMenu={()=>{}} createCollection={()=>{}} chooseTag={()=>{}} tagChanged={()=>{}} sourcesChanged={async()=>{}} openDocument={()=>{}} sourceMenu={()=>{}} remember={()=>{}}/></EscapeManagerProvider>);
+ expect(screen.getAllByRole('button',{name:'New tag'})).toHaveLength(1);expect(screen.getAllByText('Tags')).toHaveLength(1);
+ expect(await screen.findByRole('button',{name:'Show resources tagged Research'})).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'New tag'}));expect(screen.getByRole('dialog',{name:'Create tag'})).toBeTruthy();
+ fireEvent.keyDown(document,{key:'Escape'});expect(screen.queryByRole('dialog')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Manage tag Research'}));expect(screen.getByRole('dialog',{name:'Manage tag'})).toBeTruthy();
+});
 function fixture(collections:Collection[]){return <EscapeManagerProvider><WorkspaceBrowser kind="collections" collections={collections} sources={[]} revision={0} chooseCollection={()=>{}} collectionMenu={()=>{}} createCollection={()=>{}} chooseTag={()=>{}} tagChanged={()=>{}} sourcesChanged={async()=>{}} openDocument={()=>{}} sourceMenu={()=>{}} remember={()=>{}}/></EscapeManagerProvider>;}
 function setup(collections:Collection[]){return render(fixture(collections));}
 const roots=(count:number)=>Array.from({length:count},(_,i)=>({id:String(i),name:'Root '+i,parentId:null}));

@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-11-15. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-11-16. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -488,6 +488,11 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-16 — M17 presentation and input checkpoint
+
+Managed and linked titles now expose the original active-pane title treatment. Managed resource actions put Save status after Export/Pin/organization, retaining pane Close and contextual formatting. The full Tags browser owns one heading and its New tag action in BrowseHeading; the sidebar retains its own section heading. Tag rows have explicit navigation names. Composing Enter/navigation stays with the IME in the Next command palette; title editing also guards legacy composition keyCode229. No domain, persistence or authoritative-document architecture change. Focused title/palette/browser/organization checks pass; TypeScript, scoped lint and native qualification are recorded in the M17 acceptance ledger. Help applies to the experimental Next article; published feature availability is unchanged.
+
 
 ### 2026-11-15 — M16 three-pane implementation checkpoint
 
