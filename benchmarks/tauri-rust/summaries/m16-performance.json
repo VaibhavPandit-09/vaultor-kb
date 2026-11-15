@@ -1,0 +1,325 @@
+{
+  "baseline": {
+    "source": "dd2dff41779fcbfb70a6d5c90654646ccc480b0a",
+    "sha256": "cfb7249e15f9fd849ec7ff03843bad743d9f5abec420a3ad4b7500d5855a54da",
+    "evidence": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-15T16-49-12.286Z.json",
+    "phases": {
+      "one-pane-idle": {
+        "workingSetMiB": 455.27734375,
+        "privateMiB": 359.12890625,
+        "heapMiB": 11.38238525390625,
+        "cpuOneCorePercent": 1.9783847336528895,
+        "roles": {
+          "tauri": {
+            "workingSetMiB": 31.05078125,
+            "privateMiB": 7.55859375
+          },
+          "webview-browser": {
+            "workingSetMiB": 122.51953125,
+            "privateMiB": 39.1796875
+          },
+          "crashpad-handler": {
+            "workingSetMiB": 12.96875,
+            "privateMiB": 2.6171875
+          },
+          "gpu-process": {
+            "workingSetMiB": 95.3984375,
+            "privateMiB": 211.01953125
+          },
+          "utility": {
+            "workingSetMiB": 64.94921875,
+            "privateMiB": 20.19921875
+          },
+          "renderer": {
+            "workingSetMiB": 128.390625,
+            "privateMiB": 78.5546875
+          }
+        }
+      },
+      "two-pane-idle": {
+        "workingSetMiB": 471.94921875,
+        "privateMiB": 641.78125,
+        "heapMiB": 7.0561065673828125,
+        "cpuOneCorePercent": 3.7897502694933527,
+        "roles": {
+          "tauri": {
+            "workingSetMiB": 31.05859375,
+            "privateMiB": 7.5703125
+          },
+          "webview-browser": {
+            "workingSetMiB": 123.29296875,
+            "privateMiB": 39.375
+          },
+          "crashpad-handler": {
+            "workingSetMiB": 21.53515625,
+            "privateMiB": 3.5
+          },
+          "gpu-process": {
+            "workingSetMiB": 106.4921875,
+            "privateMiB": 499.2265625
+          },
+          "utility": {
+            "workingSetMiB": 64.8671875,
+            "privateMiB": 20.12109375
+          },
+          "renderer": {
+            "workingSetMiB": 124.703125,
+            "privateMiB": 71.98828125
+          }
+        }
+      },
+      "settled-one-after-churn": {
+        "workingSetMiB": 494.6171875,
+        "privateMiB": 386.90234375,
+        "heapMiB": 12.859439849853516,
+        "cpuOneCorePercent": 1.2674628210905812,
+        "roles": {
+          "tauri": {
+            "workingSetMiB": 31.17578125,
+            "privateMiB": 7.59375
+          },
+          "webview-browser": {
+            "workingSetMiB": 123.5859375,
+            "privateMiB": 39.640625
+          },
+          "crashpad-handler": {
+            "workingSetMiB": 21.53515625,
+            "privateMiB": 3.5
+          },
+          "gpu-process": {
+            "workingSetMiB": 108.3203125,
+            "privateMiB": 222.65234375
+          },
+          "utility": {
+            "workingSetMiB": 64.9140625,
+            "privateMiB": 20.140625
+          },
+          "renderer": {
+            "workingSetMiB": 145.0859375,
+            "privateMiB": 93.375
+          }
+        }
+      }
+    },
+    "fiveMinute": {
+      "cpu_one_core_percent": {
+        "value": 1.1644431893754323,
+        "unit": "%"
+      },
+      "process_tree_working_set": {
+        "value": 488.83203125,
+        "unit": "MiB"
+      },
+      "process_tree_private_bytes": {
+        "value": 376.66015625,
+        "unit": "MiB"
+      }
+    }
+  },
+  "candidate": {
+    "source": "b6027cbbbfde9c389589307e4625f3db359181f7",
+    "sha256": "315aaaa70148f9bd081926ba9f3e5ac9f69cc4c6b66193c9eccdf4462fb63d86",
+    "evidence": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-15T17-30-57.760Z.json",
+    "phases": {
+      "one-pane-idle": {
+        "workingSetMiB": 460.5703125,
+        "privateMiB": 359.51953125,
+        "heapMiB": 11.007678985595703,
+        "cpuOneCorePercent": 1.5475868899693859,
+        "roles": {
+          "tauri": {
+            "workingSetMiB": 31.375,
+            "privateMiB": 7.32421875
+          },
+          "webview-browser": {
+            "workingSetMiB": 122.63671875,
+            "privateMiB": 39.3515625
+          },
+          "crashpad-handler": {
+            "workingSetMiB": 12.96875,
+            "privateMiB": 2.61328125
+          },
+          "gpu-process": {
+            "workingSetMiB": 100.7265625,
+            "privateMiB": 211.81640625
+          },
+          "utility": {
+            "workingSetMiB": 64.97265625,
+            "privateMiB": 20.23046875
+          },
+          "renderer": {
+            "workingSetMiB": 127.890625,
+            "privateMiB": 78.18359375
+          }
+        }
+      },
+      "two-pane-idle": {
+        "workingSetMiB": 473.453125,
+        "privateMiB": 687.83984375,
+        "heapMiB": 7.108814239501953,
+        "cpuOneCorePercent": 1.5512184115523466,
+        "roles": {
+          "tauri": {
+            "workingSetMiB": 31.39453125,
+            "privateMiB": 7.34375
+          },
+          "webview-browser": {
+            "workingSetMiB": 123.33984375,
+            "privateMiB": 39.45703125
+          },
+          "crashpad-handler": {
+            "workingSetMiB": 21.52734375,
+            "privateMiB": 3.484375
+          },
+          "gpu-process": {
+            "workingSetMiB": 106.37890625,
+            "privateMiB": 544.125
+          },
+          "utility": {
+            "workingSetMiB": 64.87109375,
+            "privateMiB": 20.0859375
+          },
+          "renderer": {
+            "workingSetMiB": 125.94140625,
+            "privateMiB": 73.34375
+          }
+        }
+      },
+      "three-pane-idle": {
+        "workingSetMiB": 442.359375,
+        "privateMiB": 727.359375,
+        "heapMiB": 8.401100158691406,
+        "cpuOneCorePercent": 0.2819379285456514,
+        "roles": {
+          "tauri": {
+            "workingSetMiB": 30.5390625,
+            "privateMiB": 6.84765625
+          },
+          "webview-browser": {
+            "workingSetMiB": 119.96875,
+            "privateMiB": 36.09765625
+          },
+          "crashpad-handler": {
+            "workingSetMiB": 12.96875,
+            "privateMiB": 2.60546875
+          },
+          "gpu-process": {
+            "workingSetMiB": 99.22265625,
+            "privateMiB": 592.3046875
+          },
+          "utility": {
+            "workingSetMiB": 61.26953125,
+            "privateMiB": 19.4453125
+          },
+          "renderer": {
+            "workingSetMiB": 118.390625,
+            "privateMiB": 70.05859375
+          }
+        }
+      },
+      "settled-one-after-churn": {
+        "workingSetMiB": 498.3515625,
+        "privateMiB": 380.62890625,
+        "heapMiB": 8.444087982177734,
+        "cpuOneCorePercent": 2.1130093761269384,
+        "roles": {
+          "tauri": {
+            "workingSetMiB": 31.21875,
+            "privateMiB": 7.55078125
+          },
+          "webview-browser": {
+            "workingSetMiB": 125.85546875,
+            "privateMiB": 37.0625
+          },
+          "crashpad-handler": {
+            "workingSetMiB": 21.56640625,
+            "privateMiB": 3.53515625
+          },
+          "gpu-process": {
+            "workingSetMiB": 111.2734375,
+            "privateMiB": 221.44140625
+          },
+          "utility": {
+            "workingSetMiB": 61.3984375,
+            "privateMiB": 19.609375
+          },
+          "renderer": {
+            "workingSetMiB": 147.0390625,
+            "privateMiB": 91.4296875
+          }
+        }
+      }
+    },
+    "fiveMinute": {
+      "cpu_one_core_percent": {
+        "value": 0.287114869334545,
+        "unit": "%"
+      },
+      "process_tree_working_set": {
+        "value": 515.9765625,
+        "unit": "MiB"
+      },
+      "process_tree_private_bytes": {
+        "value": 803.69140625,
+        "unit": "MiB"
+      }
+    }
+  },
+  "dataset": "a9db5d9548a07cd2c2dee3913d9a8bf19bec4ffc02e05f7dc6f3c74cf2258fc5",
+  "conditions": [
+    "Same3 managed notes/50 paragraphs,isolated first-profile WebView2,1800×1000/DPR1.5 initial one/two/three states",
+    "5s settle/10s untouched role snapshots;Runtime heap without forcedGC;uncontrolled desktop,power and caches",
+    "Final one-editor/zero-popup endpoint after expanded UI fixture;30s settle/five-minute untouched tree sampling",
+    "M16 additionally exercises third view,journeys,viewport/DPR,wide code/table,Settings interruption;full endpoint workload differs fromM15",
+    "Working sets include shared pages;high post-UI private memory remains unresolved;no performance improvement/leak-freedom claim"
+  ],
+  "candidateEndpoint": {
+    "editors": 1,
+    "portals": 0,
+    "nodes": 697
+  },
+  "redoDiagnostic": {
+    "undo": {
+      "focus": "<div contenteditable=\"true\" role=\"textbox\" aria-label=\"Note body 1\" translate=\"no\" class=\"tiptap ProseMirror outline-none min-h-[50vh] ProseMirror-focused\" tabindex=\"0\"><p>M16 A paragraph 0. Reading, ",
+      "editors": [
+        {
+          "focused": true,
+          "redo": true,
+          "selection": 136
+        },
+        {
+          "focused": false,
+          "redo": true,
+          "selection": 11839
+        },
+        {
+          "focused": false,
+          "redo": true,
+          "selection": 11839
+        }
+      ]
+    },
+    "redo": {
+      "focus": "<div contenteditable=\"true\" role=\"textbox\" aria-label=\"Note body 1\" translate=\"no\" class=\"tiptap ProseMirror outline-none min-h-[50vh] ProseMirror-focused\" tabindex=\"0\"><p>M16 A paragraph 0. Reading, ",
+      "editors": [
+        {
+          "focused": true,
+          "redo": false,
+          "marker": true
+        },
+        {
+          "focused": false,
+          "redo": false,
+          "marker": true
+        },
+        {
+          "focused": false,
+          "redo": false,
+          "marker": true
+        }
+      ]
+    }
+  },
+  "failedCandidateEvidence": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-15T17-28-09.495Z.json",
+  "failedCandidateStatus": "Redo timeout not reproduced;cause remains unverified and all failure observations retained"
+}

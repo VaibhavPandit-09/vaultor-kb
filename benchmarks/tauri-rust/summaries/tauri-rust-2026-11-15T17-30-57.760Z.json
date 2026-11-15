@@ -1,0 +1,2259 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "b6027cbbbfde9c389589307e4625f3db359181f7",
+  "executableSourceCommit": "b6027cbbbfde9c389589307e4625f3db359181f7",
+  "dirty": true,
+  "executableSha256": "315aaaa70148f9bd081926ba9f3e5ac9f69cc4c6b66193c9eccdf4462fb63d86",
+  "timestamp": "2026-11-15T17:30:57.829Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "a9db5d9548a07cd2c2dee3913d9a8bf19bec4ffc02e05f7dc6f3c74cf2258fc5",
+  "m16Performance": {
+    "one-pane-idle": {
+      "first": {
+        "timestamp": "2026-11-15T17:31:06.5682023Z",
+        "processes": [
+          {
+            "pid": 33428,
+            "name": "vaultor-next-m16.exe",
+            "role": "tauri",
+            "workingSet": 32915456,
+            "privateBytes": 7725056,
+            "privateWorkingSet": 5873664,
+            "cpuSeconds": 0.15625
+          },
+          {
+            "pid": 36644,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 128499712,
+            "privateBytes": 41213952,
+            "privateWorkingSet": 31752192,
+            "cpuSeconds": 0.515625
+          },
+          {
+            "pid": 7348,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 13598720,
+            "privateBytes": 2740224,
+            "privateWorkingSet": 1658880,
+            "cpuSeconds": 0
+          },
+          {
+            "pid": 10680,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 118702080,
+            "privateBytes": 747192320,
+            "privateWorkingSet": 48816128,
+            "cpuSeconds": 0.859375
+          },
+          {
+            "pid": 39920,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44240896,
+            "privateBytes": 13185024,
+            "privateWorkingSet": 7905280,
+            "cpuSeconds": 0.109375
+          },
+          {
+            "pid": 11104,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23797760,
+            "privateBytes": 8015872,
+            "privateWorkingSet": 3260416,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 18464,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 137981952,
+            "privateBytes": 86757376,
+            "privateWorkingSet": 72790016,
+            "cpuSeconds": 0.5625
+          }
+        ]
+      },
+      "last": {
+        "timestamp": "2026-11-15T17:31:17.6748389Z",
+        "processes": [
+          {
+            "pid": 33428,
+            "name": "vaultor-next-m16.exe",
+            "role": "tauri",
+            "workingSet": 32899072,
+            "privateBytes": 7680000,
+            "privateWorkingSet": 5857280,
+            "cpuSeconds": 0.15625
+          },
+          {
+            "pid": 36644,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 128593920,
+            "privateBytes": 41263104,
+            "privateWorkingSet": 31801344,
+            "cpuSeconds": 0.578125
+          },
+          {
+            "pid": 7348,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 13598720,
+            "privateBytes": 2740224,
+            "privateWorkingSet": 1658880,
+            "cpuSeconds": 0
+          },
+          {
+            "pid": 10680,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 105619456,
+            "privateBytes": 222105600,
+            "privateWorkingSet": 46170112,
+            "cpuSeconds": 0.921875
+          },
+          {
+            "pid": 39920,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44331008,
+            "privateBytes": 13197312,
+            "privateWorkingSet": 7917568,
+            "cpuSeconds": 0.140625
+          },
+          {
+            "pid": 11104,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23797760,
+            "privateBytes": 8015872,
+            "privateWorkingSet": 3260416,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 18464,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 134103040,
+            "privateBytes": 81981440,
+            "privateWorkingSet": 68907008,
+            "cpuSeconds": 0.578125
+          }
+        ]
+      },
+      "heap": {
+        "usedSize": 11542388,
+        "totalSize": 20881408,
+        "embedderHeapUsedSize": 19364336,
+        "backingStorageSize": 2963329
+      }
+    },
+    "two-pane-idle": {
+      "first": {
+        "timestamp": "2026-11-15T17:31:24.4787655Z",
+        "processes": [
+          {
+            "pid": 33428,
+            "name": "vaultor-next-m16.exe",
+            "role": "tauri",
+            "workingSet": 32923648,
+            "privateBytes": 7700480,
+            "privateWorkingSet": 5881856,
+            "cpuSeconds": 0.15625
+          },
+          {
+            "pid": 36644,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 129150976,
+            "privateBytes": 41385984,
+            "privateWorkingSet": 31920128,
+            "cpuSeconds": 0.609375
+          },
+          {
+            "pid": 7348,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 13598720,
+            "privateBytes": 2740224,
+            "privateWorkingSet": 1658880,
+            "cpuSeconds": 0
+          },
+          {
+            "pid": 10680,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 112160768,
+            "privateBytes": 571191296,
+            "privateWorkingSet": 52035584,
+            "cpuSeconds": 1.25
+          },
+          {
+            "pid": 39920,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44339200,
+            "privateBytes": 13209600,
+            "privateWorkingSet": 7925760,
+            "cpuSeconds": 0.140625
+          },
+          {
+            "pid": 11104,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23797760,
+            "privateBytes": 8015872,
+            "privateWorkingSet": 3260416,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 18464,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 149549056,
+            "privateBytes": 95952896,
+            "privateWorkingSet": 83488768,
+            "cpuSeconds": 0.84375
+          }
+        ]
+      },
+      "last": {
+        "timestamp": "2026-11-15T17:31:35.5581828Z",
+        "processes": [
+          {
+            "pid": 33428,
+            "name": "vaultor-next-m16.exe",
+            "role": "tauri",
+            "workingSet": 32919552,
+            "privateBytes": 7700480,
+            "privateWorkingSet": 5881856,
+            "cpuSeconds": 0.15625
+          },
+          {
+            "pid": 36644,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 129331200,
+            "privateBytes": 41373696,
+            "privateWorkingSet": 31883264,
+            "cpuSeconds": 0.609375
+          },
+          {
+            "pid": 7348,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 22573056,
+            "privateBytes": 3653632,
+            "privateWorkingSet": 2170880,
+            "cpuSeconds": 0.015625
+          },
+          {
+            "pid": 10680,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 111546368,
+            "privateBytes": 570556416,
+            "privateWorkingSet": 52035584,
+            "cpuSeconds": 1.25
+          },
+          {
+            "pid": 39920,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44224512,
+            "privateBytes": 13045760,
+            "privateWorkingSet": 7811072,
+            "cpuSeconds": 0.140625
+          },
+          {
+            "pid": 11104,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23797760,
+            "privateBytes": 8015872,
+            "privateWorkingSet": 3260416,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 18464,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 132059136,
+            "privateBytes": 76906496,
+            "privateWorkingSet": 64999424,
+            "cpuSeconds": 1
+          }
+        ]
+      },
+      "heap": {
+        "usedSize": 7454132,
+        "totalSize": 8560640,
+        "embedderHeapUsedSize": 3791496,
+        "backingStorageSize": 1484317
+      }
+    },
+    "three-pane-idle": {
+      "first": {
+        "timestamp": "2026-11-15T17:31:50.9076168Z",
+        "processes": [
+          {
+            "pid": 39768,
+            "name": "vaultor-next-m16.exe",
+            "role": "tauri",
+            "workingSet": 32038912,
+            "privateBytes": 7225344,
+            "privateWorkingSet": 5263360,
+            "cpuSeconds": 0.125
+          },
+          {
+            "pid": 36052,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 125566976,
+            "privateBytes": 37683200,
+            "privateWorkingSet": 27881472,
+            "cpuSeconds": 0.484375
+          },
+          {
+            "pid": 21180,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 13598720,
+            "privateBytes": 2732032,
+            "privateWorkingSet": 1658880,
+            "cpuSeconds": 0.03125
+          },
+          {
+            "pid": 37712,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 110768128,
+            "privateBytes": 623607808,
+            "privateWorkingSet": 51392512,
+            "cpuSeconds": 0.453125
+          },
+          {
+            "pid": 37360,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 40251392,
+            "privateBytes": 12328960,
+            "privateWorkingSet": 7131136,
+            "cpuSeconds": 0.078125
+          },
+          {
+            "pid": 34216,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23924736,
+            "privateBytes": 8056832,
+            "privateWorkingSet": 3293184,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 888,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 127635456,
+            "privateBytes": 77520896,
+            "privateWorkingSet": 65069056,
+            "cpuSeconds": 0.5
+          }
+        ]
+      },
+      "last": {
+        "timestamp": "2026-11-15T17:32:01.9911999Z",
+        "processes": [
+          {
+            "pid": 39768,
+            "name": "vaultor-next-m16.exe",
+            "role": "tauri",
+            "workingSet": 32022528,
+            "privateBytes": 7180288,
+            "privateWorkingSet": 5246976,
+            "cpuSeconds": 0.125
+          },
+          {
+            "pid": 36052,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 125796352,
+            "privateBytes": 37851136,
+            "privateWorkingSet": 28041216,
+            "cpuSeconds": 0.5
+          },
+          {
+            "pid": 21180,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 13598720,
+            "privateBytes": 2732032,
+            "privateWorkingSet": 1658880,
+            "cpuSeconds": 0.03125
+          },
+          {
+            "pid": 37712,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 104042496,
+            "privateBytes": 621076480,
+            "privateWorkingSet": 44675072,
+            "cpuSeconds": 0.453125
+          },
+          {
+            "pid": 37360,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 40321024,
+            "privateBytes": 12333056,
+            "privateWorkingSet": 7135232,
+            "cpuSeconds": 0.09375
+          },
+          {
+            "pid": 34216,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23924736,
+            "privateBytes": 8056832,
+            "privateWorkingSet": 3293184,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 888,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 124141568,
+            "privateBytes": 73461760,
+            "privateWorkingSet": 61575168,
+            "cpuSeconds": 0.5
+          }
+        ]
+      },
+      "heap": {
+        "usedSize": 8809192,
+        "totalSize": 17735680,
+        "embedderHeapUsedSize": 21261960,
+        "backingStorageSize": 1534250
+      }
+    },
+    "settled-one-after-churn": {
+      "first": {
+        "timestamp": "2026-11-15T17:32:12.9813603Z",
+        "processes": [
+          {
+            "pid": 39768,
+            "name": "vaultor-next-m16.exe",
+            "role": "tauri",
+            "workingSet": 32759808,
+            "privateBytes": 7950336,
+            "privateWorkingSet": 5746688,
+            "cpuSeconds": 0.265625
+          },
+          {
+            "pid": 36052,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 132096000,
+            "privateBytes": 39190528,
+            "privateWorkingSet": 29261824,
+            "cpuSeconds": 0.984375
+          },
+          {
+            "pid": 21180,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 13598720,
+            "privateBytes": 2732032,
+            "privateWorkingSet": 1658880,
+            "cpuSeconds": 0.03125
+          },
+          {
+            "pid": 37712,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 121344000,
+            "privateBytes": 510357504,
+            "privateWorkingSet": 60272640,
+            "cpuSeconds": 2.234375
+          },
+          {
+            "pid": 37360,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 40534016,
+            "privateBytes": 12582912,
+            "privateWorkingSet": 7344128,
+            "cpuSeconds": 0.140625
+          },
+          {
+            "pid": 34216,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23924736,
+            "privateBytes": 8056832,
+            "privateWorkingSet": 3293184,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 888,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 186519552,
+            "privateBytes": 128106496,
+            "privateWorkingSet": 117800960,
+            "cpuSeconds": 3.53125
+          }
+        ]
+      },
+      "last": {
+        "timestamp": "2026-11-15T17:32:24.0730334Z",
+        "processes": [
+          {
+            "pid": 39768,
+            "name": "vaultor-next-m16.exe",
+            "role": "tauri",
+            "workingSet": 32735232,
+            "privateBytes": 7917568,
+            "privateWorkingSet": 5726208,
+            "cpuSeconds": 0.265625
+          },
+          {
+            "pid": 36052,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 131969024,
+            "privateBytes": 38862848,
+            "privateWorkingSet": 29024256,
+            "cpuSeconds": 0.984375
+          },
+          {
+            "pid": 21180,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 22614016,
+            "privateBytes": 3706880,
+            "privateWorkingSet": 2211840,
+            "cpuSeconds": 0.0625
+          },
+          {
+            "pid": 37712,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 116678656,
+            "privateBytes": 232198144,
+            "privateWorkingSet": 55562240,
+            "cpuSeconds": 2.3125
+          },
+          {
+            "pid": 37360,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 40456192,
+            "privateBytes": 12505088,
+            "privateWorkingSet": 7266304,
+            "cpuSeconds": 0.140625
+          },
+          {
+            "pid": 34216,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23924736,
+            "privateBytes": 8056832,
+            "privateWorkingSet": 3293184,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 888,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 154181632,
+            "privateBytes": 95870976,
+            "privateWorkingSet": 85434368,
+            "cpuSeconds": 3.65625
+          }
+        ]
+      },
+      "heap": {
+        "usedSize": 8854268,
+        "totalSize": 9871360,
+        "embedderHeapUsedSize": 3710656,
+        "backingStorageSize": 1496390
+      }
+    }
+  },
+  "m16Typography": {
+    "font": "16px",
+    "paragraphLine": "26px"
+  },
+  "m16HeaderGroups": [
+    {
+      "title": {
+        "x": 335.8010559082031,
+        "y": 111.19001007080078,
+        "width": 422.0216369628906,
+        "height": 36.670005798339844,
+        "top": 111.19001007080078,
+        "right": 757.8226928710938,
+        "bottom": 147.86001586914062,
+        "left": 335.8010559082031
+      },
+      "actions": {
+        "x": 563.857666015625,
+        "y": 180.67001342773438,
+        "width": 193.96502685546875,
+        "height": 30.8800048828125,
+        "top": 180.67001342773438,
+        "right": 757.8226928710938,
+        "bottom": 211.55001831054688,
+        "left": 563.857666015625
+      },
+      "formatGrouped": true
+    },
+    {
+      "title": {
+        "x": 829.1292114257812,
+        "y": 111.19001007080078,
+        "width": 422.02166748046875,
+        "height": 36.670005798339844,
+        "top": 111.19001007080078,
+        "right": 1251.15087890625,
+        "bottom": 147.86001586914062,
+        "left": 829.1292114257812
+      },
+      "actions": {
+        "x": 1057.185791015625,
+        "y": 180.67001342773438,
+        "width": 193.965087890625,
+        "height": 30.8800048828125,
+        "top": 180.67001342773438,
+        "right": 1251.15087890625,
+        "bottom": 211.55001831054688,
+        "left": 1057.185791015625
+      },
+      "formatGrouped": true
+    },
+    {
+      "title": {
+        "x": 1314.6640625,
+        "y": 92,
+        "width": 437.328125,
+        "height": 38,
+        "top": 92,
+        "right": 1751.9921875,
+        "bottom": 130,
+        "left": 1314.6640625
+      },
+      "actions": {
+        "x": 1550.9921875,
+        "y": 164,
+        "width": 201,
+        "height": 32,
+        "top": 164,
+        "right": 1751.9921875,
+        "bottom": 196,
+        "left": 1550.9921875
+      },
+      "formatGrouped": true
+    }
+  ],
+  "m16Responsive": [
+    {
+      "width": 900,
+      "height": 650,
+      "dpr": 1,
+      "kind": "CDP viewport/DPR emulation;not Windows display scaling",
+      "overflow": false,
+      "controls": [
+        {
+          "label": "Toggle sidebar",
+          "rect": {
+            "x": 300,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 328,
+            "bottom": 40,
+            "left": 300
+          }
+        },
+        {
+          "label": "Journey back",
+          "rect": {
+            "x": 352,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 382,
+            "bottom": 41,
+            "left": 352
+          }
+        },
+        {
+          "label": "Journey forward",
+          "rect": {
+            "x": 385.1953125,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 415.1953125,
+            "bottom": 41,
+            "left": 385.1953125
+          }
+        },
+        {
+          "label": "Show full journey",
+          "rect": {
+            "x": 418.390625,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 448.390625,
+            "bottom": 41,
+            "left": 418.390625
+          }
+        },
+        {
+          "label": "Search Library",
+          "rect": {
+            "x": 666,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 694,
+            "bottom": 40,
+            "left": 666
+          }
+        },
+        {
+          "label": "Return to Library",
+          "rect": {
+            "x": 696,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 724,
+            "bottom": 40,
+            "left": 696
+          }
+        },
+        {
+          "label": "Application menu",
+          "rect": {
+            "x": 762,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 792,
+            "bottom": 41,
+            "left": 762
+          }
+        }
+      ]
+    },
+    {
+      "width": 1200,
+      "height": 800,
+      "dpr": 1.25,
+      "kind": "CDP viewport/DPR emulation;not Windows display scaling",
+      "overflow": false,
+      "controls": [
+        {
+          "label": "Toggle sidebar",
+          "rect": {
+            "x": 300,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 328,
+            "bottom": 40,
+            "left": 300
+          }
+        },
+        {
+          "label": "Journey back",
+          "rect": {
+            "x": 352,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 382,
+            "bottom": 41,
+            "left": 352
+          }
+        },
+        {
+          "label": "Journey forward",
+          "rect": {
+            "x": 385.1953125,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 415.1953125,
+            "bottom": 41,
+            "left": 385.1953125
+          }
+        },
+        {
+          "label": "Show full journey",
+          "rect": {
+            "x": 418.390625,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 448.390625,
+            "bottom": 41,
+            "left": 418.390625
+          }
+        },
+        {
+          "label": "Search Library",
+          "rect": {
+            "x": 922.2109375,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 950.2109375,
+            "bottom": 40,
+            "left": 922.2109375
+          }
+        },
+        {
+          "label": "Return to Library",
+          "rect": {
+            "x": 952.2109375,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 980.2109375,
+            "bottom": 40,
+            "left": 952.2109375
+          }
+        },
+        {
+          "label": "Application menu",
+          "rect": {
+            "x": 1062,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 1092,
+            "bottom": 41,
+            "left": 1062
+          }
+        }
+      ]
+    },
+    {
+      "width": 1800,
+      "height": 1000,
+      "dpr": 1.5,
+      "kind": "CDP viewport/DPR emulation;not Windows display scaling",
+      "overflow": false,
+      "controls": [
+        {
+          "label": "Toggle sidebar",
+          "rect": {
+            "x": 300,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 328,
+            "bottom": 40,
+            "left": 300
+          }
+        },
+        {
+          "label": "Journey back",
+          "rect": {
+            "x": 352,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 382,
+            "bottom": 41,
+            "left": 352
+          }
+        },
+        {
+          "label": "Journey forward",
+          "rect": {
+            "x": 385.1953125,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 415.1953125,
+            "bottom": 41,
+            "left": 385.1953125
+          }
+        },
+        {
+          "label": "Show full journey",
+          "rect": {
+            "x": 418.390625,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 448.390625,
+            "bottom": 41,
+            "left": 418.390625
+          }
+        },
+        {
+          "label": "Search Library",
+          "rect": {
+            "x": 1522.2109375,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 1550.2109375,
+            "bottom": 40,
+            "left": 1522.2109375
+          }
+        },
+        {
+          "label": "Return to Library",
+          "rect": {
+            "x": 1552.2109375,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 1580.2109375,
+            "bottom": 40,
+            "left": 1552.2109375
+          }
+        },
+        {
+          "label": "Application menu",
+          "rect": {
+            "x": 1662,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 1692,
+            "bottom": 41,
+            "left": 1662
+          }
+        }
+      ]
+    },
+    {
+      "width": 900,
+      "height": 650,
+      "dpr": 2,
+      "kind": "CDP viewport/DPR emulation;not Windows display scaling",
+      "overflow": false,
+      "controls": [
+        {
+          "label": "Toggle sidebar",
+          "rect": {
+            "x": 300,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 328,
+            "bottom": 40,
+            "left": 300
+          }
+        },
+        {
+          "label": "Journey back",
+          "rect": {
+            "x": 352,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 382,
+            "bottom": 41,
+            "left": 352
+          }
+        },
+        {
+          "label": "Journey forward",
+          "rect": {
+            "x": 385.1953125,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 415.1953125,
+            "bottom": 41,
+            "left": 385.1953125
+          }
+        },
+        {
+          "label": "Show full journey",
+          "rect": {
+            "x": 418.390625,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 448.390625,
+            "bottom": 41,
+            "left": 418.390625
+          }
+        },
+        {
+          "label": "Search Library",
+          "rect": {
+            "x": 666,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 694,
+            "bottom": 40,
+            "left": 666
+          }
+        },
+        {
+          "label": "Return to Library",
+          "rect": {
+            "x": 696,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 724,
+            "bottom": 40,
+            "left": 696
+          }
+        },
+        {
+          "label": "Application menu",
+          "rect": {
+            "x": 762,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 792,
+            "bottom": 41,
+            "left": 762
+          }
+        }
+      ]
+    }
+  ],
+  "m16LocalScroll": [
+    {
+      "tag": "PRE",
+      "class": "overflow-x-auto bg-[var(--surface-2)] p-4 text-sm leading-relaxed !m-0 !rounded-none !border-0 text-[var(--text-primary)]",
+      "left": 100,
+      "width": 846,
+      "range": 60848
+    },
+    {
+      "tag": "DIV",
+      "class": "tableWrapper",
+      "left": 100,
+      "width": 848,
+      "range": 1072
+    }
+  ],
+  "m16UndoState": {
+    "focus": "<div contenteditable=\"true\" role=\"textbox\" aria-label=\"Note body 1\" translate=\"no\" class=\"tiptap ProseMirror outline-none min-h-[50vh] ProseMirror-focused\" tabindex=\"0\"><p>M16 A paragraph 0. Reading, ",
+    "editors": [
+      {
+        "focused": true,
+        "redo": true,
+        "selection": 136
+      },
+      {
+        "focused": false,
+        "redo": true,
+        "selection": 11839
+      },
+      {
+        "focused": false,
+        "redo": true,
+        "selection": 11839
+      }
+    ]
+  },
+  "m16RedoState": {
+    "focus": "<div contenteditable=\"true\" role=\"textbox\" aria-label=\"Note body 1\" translate=\"no\" class=\"tiptap ProseMirror outline-none min-h-[50vh] ProseMirror-focused\" tabindex=\"0\"><p>M16 A paragraph 0. Reading, ",
+    "editors": [
+      {
+        "focused": true,
+        "redo": false,
+        "marker": true
+      },
+      {
+        "focused": false,
+        "redo": false,
+        "marker": true
+      },
+      {
+        "focused": false,
+        "redo": false,
+        "marker": true
+      }
+    ]
+  },
+  "measurements": [
+    {
+      "scenario": "m16-startup-first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 492.94950000000006,
+      "median": 492.94950000000006,
+      "p95": 492.94950000000006,
+      "max": 492.94950000000006
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 1.5475868899693859,
+      "median": 1.5475868899693859,
+      "p95": 1.5475868899693859,
+      "max": 1.5475868899693859
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 31.375,
+      "median": 31.375,
+      "p95": 31.375,
+      "max": 31.375
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 7.32421875,
+      "median": 7.32421875,
+      "p95": 7.32421875,
+      "max": 7.32421875
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.5859375,
+      "median": 5.5859375,
+      "p95": 5.5859375,
+      "max": 5.5859375
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 122.63671875,
+      "median": 122.63671875,
+      "p95": 122.63671875,
+      "max": 122.63671875
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 39.3515625,
+      "median": 39.3515625,
+      "p95": 39.3515625,
+      "max": 39.3515625
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 30.328125,
+      "median": 30.328125,
+      "p95": 30.328125,
+      "max": 30.328125
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "crashpad-handler_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 12.96875,
+      "median": 12.96875,
+      "p95": 12.96875,
+      "max": 12.96875
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 2.61328125,
+      "median": 2.61328125,
+      "p95": 2.61328125,
+      "max": 2.61328125
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 1.58203125,
+      "median": 1.58203125,
+      "p95": 1.58203125,
+      "max": 1.58203125
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 100.7265625,
+      "median": 100.7265625,
+      "p95": 100.7265625,
+      "max": 100.7265625
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 211.81640625,
+      "median": 211.81640625,
+      "p95": 211.81640625,
+      "max": 211.81640625
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 44.03125,
+      "median": 44.03125,
+      "p95": 44.03125,
+      "max": 44.03125
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 64.97265625,
+      "median": 64.97265625,
+      "p95": 64.97265625,
+      "max": 64.97265625
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 20.23046875,
+      "median": 20.23046875,
+      "p95": 20.23046875,
+      "max": 20.23046875
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.66015625,
+      "median": 10.66015625,
+      "p95": 10.66015625,
+      "max": 10.66015625
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 127.890625,
+      "median": 127.890625,
+      "p95": 127.890625,
+      "max": 127.890625
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 78.18359375,
+      "median": 78.18359375,
+      "p95": 78.18359375,
+      "max": 78.18359375
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 65.71484375,
+      "median": 65.71484375,
+      "p95": 65.71484375,
+      "max": 65.71484375
+    },
+    {
+      "scenario": "m16-one-pane-idle",
+      "iteration": 1,
+      "metric": "js_heap_used",
+      "unit": "MiB",
+      "n": 1,
+      "min": 11.007678985595703,
+      "median": 11.007678985595703,
+      "p95": 11.007678985595703,
+      "max": 11.007678985595703
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 1.5512184115523466,
+      "median": 1.5512184115523466,
+      "p95": 1.5512184115523466,
+      "max": 1.5512184115523466
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 31.39453125,
+      "median": 31.39453125,
+      "p95": 31.39453125,
+      "max": 31.39453125
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 7.34375,
+      "median": 7.34375,
+      "p95": 7.34375,
+      "max": 7.34375
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.609375,
+      "median": 5.609375,
+      "p95": 5.609375,
+      "max": 5.609375
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 123.33984375,
+      "median": 123.33984375,
+      "p95": 123.33984375,
+      "max": 123.33984375
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 39.45703125,
+      "median": 39.45703125,
+      "p95": 39.45703125,
+      "max": 39.45703125
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 30.40625,
+      "median": 30.40625,
+      "p95": 30.40625,
+      "max": 30.40625
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "crashpad-handler_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 21.52734375,
+      "median": 21.52734375,
+      "p95": 21.52734375,
+      "max": 21.52734375
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 3.484375,
+      "median": 3.484375,
+      "p95": 3.484375,
+      "max": 3.484375
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 2.0703125,
+      "median": 2.0703125,
+      "p95": 2.0703125,
+      "max": 2.0703125
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 106.37890625,
+      "median": 106.37890625,
+      "p95": 106.37890625,
+      "max": 106.37890625
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 544.125,
+      "median": 544.125,
+      "p95": 544.125,
+      "max": 544.125
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 49.625,
+      "median": 49.625,
+      "p95": 49.625,
+      "max": 49.625
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 64.87109375,
+      "median": 64.87109375,
+      "p95": 64.87109375,
+      "max": 64.87109375
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 20.0859375,
+      "median": 20.0859375,
+      "p95": 20.0859375,
+      "max": 20.0859375
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.55859375,
+      "median": 10.55859375,
+      "p95": 10.55859375,
+      "max": 10.55859375
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 125.94140625,
+      "median": 125.94140625,
+      "p95": 125.94140625,
+      "max": 125.94140625
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 73.34375,
+      "median": 73.34375,
+      "p95": 73.34375,
+      "max": 73.34375
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 61.98828125,
+      "median": 61.98828125,
+      "p95": 61.98828125,
+      "max": 61.98828125
+    },
+    {
+      "scenario": "m16-two-pane-idle",
+      "iteration": 1,
+      "metric": "js_heap_used",
+      "unit": "MiB",
+      "n": 1,
+      "min": 7.108814239501953,
+      "median": 7.108814239501953,
+      "p95": 7.108814239501953,
+      "max": 7.108814239501953
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 2,
+      "min": 556.44140625,
+      "median": 565.248046875,
+      "p95": 574.0546875,
+      "max": 574.0546875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 2,
+      "min": 515.734375,
+      "median": 527.06640625,
+      "p95": 538.3984375,
+      "max": 538.3984375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 2,
+      "min": 803.18359375,
+      "median": 934.87109375,
+      "p95": 1066.55859375,
+      "max": 1066.55859375
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 2,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 2,
+      "min": 0,
+      "median": 37.99392097264438,
+      "p95": 75.98784194528876,
+      "max": 75.98784194528876
+    },
+    {
+      "scenario": "m16-startup-restart",
+      "iteration": 3,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 479.9006999999983,
+      "median": 479.9006999999983,
+      "p95": 479.9006999999983,
+      "max": 479.9006999999983
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 0.2819379285456514,
+      "median": 0.2819379285456514,
+      "p95": 0.2819379285456514,
+      "max": 0.2819379285456514
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 30.5390625,
+      "median": 30.5390625,
+      "p95": 30.5390625,
+      "max": 30.5390625
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 6.84765625,
+      "median": 6.84765625,
+      "p95": 6.84765625,
+      "max": 6.84765625
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.00390625,
+      "median": 5.00390625,
+      "p95": 5.00390625,
+      "max": 5.00390625
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 119.96875,
+      "median": 119.96875,
+      "p95": 119.96875,
+      "max": 119.96875
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 36.09765625,
+      "median": 36.09765625,
+      "p95": 36.09765625,
+      "max": 36.09765625
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 26.7421875,
+      "median": 26.7421875,
+      "p95": 26.7421875,
+      "max": 26.7421875
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "crashpad-handler_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 12.96875,
+      "median": 12.96875,
+      "p95": 12.96875,
+      "max": 12.96875
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 2.60546875,
+      "median": 2.60546875,
+      "p95": 2.60546875,
+      "max": 2.60546875
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 1.58203125,
+      "median": 1.58203125,
+      "p95": 1.58203125,
+      "max": 1.58203125
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 99.22265625,
+      "median": 99.22265625,
+      "p95": 99.22265625,
+      "max": 99.22265625
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 592.3046875,
+      "median": 592.3046875,
+      "p95": 592.3046875,
+      "max": 592.3046875
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 42.60546875,
+      "median": 42.60546875,
+      "p95": 42.60546875,
+      "max": 42.60546875
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 61.26953125,
+      "median": 61.26953125,
+      "p95": 61.26953125,
+      "max": 61.26953125
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.4453125,
+      "median": 19.4453125,
+      "p95": 19.4453125,
+      "max": 19.4453125
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 9.9453125,
+      "median": 9.9453125,
+      "p95": 9.9453125,
+      "max": 9.9453125
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 118.390625,
+      "median": 118.390625,
+      "p95": 118.390625,
+      "max": 118.390625
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 70.05859375,
+      "median": 70.05859375,
+      "p95": 70.05859375,
+      "max": 70.05859375
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 58.72265625,
+      "median": 58.72265625,
+      "p95": 58.72265625,
+      "max": 58.72265625
+    },
+    {
+      "scenario": "m16-three-pane-idle",
+      "iteration": 1,
+      "metric": "js_heap_used",
+      "unit": "MiB",
+      "n": 1,
+      "min": 8.401100158691406,
+      "median": 8.401100158691406,
+      "p95": 8.401100158691406,
+      "max": 8.401100158691406
+    },
+    {
+      "scenario": "m16-note-navigation",
+      "iteration": 1,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 153.48010000000068,
+      "median": 153.48010000000068,
+      "p95": 153.48010000000068,
+      "max": 153.48010000000068
+    },
+    {
+      "scenario": "m16-note-navigation",
+      "iteration": 2,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 139.5841999999975,
+      "median": 139.5841999999975,
+      "p95": 139.5841999999975,
+      "max": 139.5841999999975
+    },
+    {
+      "scenario": "m16-note-navigation",
+      "iteration": 3,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 141.4381999999896,
+      "median": 141.4381999999896,
+      "p95": 141.4381999999896,
+      "max": 141.4381999999896
+    },
+    {
+      "scenario": "m16-note-navigation",
+      "iteration": 4,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 139.07009999999718,
+      "median": 139.07009999999718,
+      "p95": 139.07009999999718,
+      "max": 139.07009999999718
+    },
+    {
+      "scenario": "m16-note-navigation",
+      "iteration": 5,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 140.98509999999078,
+      "median": 140.98509999999078,
+      "p95": 140.98509999999078,
+      "max": 140.98509999999078
+    },
+    {
+      "scenario": "m16-note-navigation",
+      "iteration": 6,
+      "metric": "note_open",
+      "unit": "ms",
+      "n": 1,
+      "min": 138.6996999999974,
+      "median": 138.6996999999974,
+      "p95": 138.6996999999974,
+      "max": 138.6996999999974
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 2.1130093761269384,
+      "median": 2.1130093761269384,
+      "p95": 2.1130093761269384,
+      "max": 2.1130093761269384
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 31.21875,
+      "median": 31.21875,
+      "p95": 31.21875,
+      "max": 31.21875
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 7.55078125,
+      "median": 7.55078125,
+      "p95": 7.55078125,
+      "max": 7.55078125
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.4609375,
+      "median": 5.4609375,
+      "p95": 5.4609375,
+      "max": 5.4609375
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 125.85546875,
+      "median": 125.85546875,
+      "p95": 125.85546875,
+      "max": 125.85546875
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 37.0625,
+      "median": 37.0625,
+      "p95": 37.0625,
+      "max": 37.0625
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 27.6796875,
+      "median": 27.6796875,
+      "p95": 27.6796875,
+      "max": 27.6796875
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "crashpad-handler_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 21.56640625,
+      "median": 21.56640625,
+      "p95": 21.56640625,
+      "max": 21.56640625
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 3.53515625,
+      "median": 3.53515625,
+      "p95": 3.53515625,
+      "max": 3.53515625
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 2.109375,
+      "median": 2.109375,
+      "p95": 2.109375,
+      "max": 2.109375
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 111.2734375,
+      "median": 111.2734375,
+      "p95": 111.2734375,
+      "max": 111.2734375
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 221.44140625,
+      "median": 221.44140625,
+      "p95": 221.44140625,
+      "max": 221.44140625
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 52.98828125,
+      "median": 52.98828125,
+      "p95": 52.98828125,
+      "max": 52.98828125
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 61.3984375,
+      "median": 61.3984375,
+      "p95": 61.3984375,
+      "max": 61.3984375
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.609375,
+      "median": 19.609375,
+      "p95": 19.609375,
+      "max": 19.609375
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.0703125,
+      "median": 10.0703125,
+      "p95": 10.0703125,
+      "max": 10.0703125
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 147.0390625,
+      "median": 147.0390625,
+      "p95": 147.0390625,
+      "max": 147.0390625
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 91.4296875,
+      "median": 91.4296875,
+      "p95": 91.4296875,
+      "max": 91.4296875
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 81.4765625,
+      "median": 81.4765625,
+      "p95": 81.4765625,
+      "max": 81.4765625
+    },
+    {
+      "scenario": "m16-settled-one-after-churn",
+      "iteration": 1,
+      "metric": "js_heap_used",
+      "unit": "MiB",
+      "n": 1,
+      "min": 8.444087982177734,
+      "median": 8.444087982177734,
+      "p95": 8.444087982177734,
+      "max": 8.444087982177734
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 0.287114869334545,
+      "median": 0.287114869334545,
+      "p95": 0.287114869334545,
+      "max": 0.287114869334545
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 515.9765625,
+      "median": 515.9765625,
+      "p95": 515.9765625,
+      "max": 515.9765625
+    },
+    {
+      "scenario": "settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 803.69140625,
+      "median": 803.69140625,
+      "p95": 803.69140625,
+      "max": 803.69140625
+    },
+    {
+      "scenario": "m16-settled-idle-5min",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 0.287114869334545,
+      "median": 0.287114869334545,
+      "p95": 0.287114869334545,
+      "max": 0.287114869334545
+    },
+    {
+      "scenario": "m16-settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "bytes",
+      "n": 1,
+      "min": 541040640,
+      "median": 541040640,
+      "p95": 541040640,
+      "max": 541040640
+    },
+    {
+      "scenario": "m16-settled-idle-5min",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "bytes",
+      "n": 1,
+      "min": 842731520,
+      "median": 842731520,
+      "p95": 842731520,
+      "max": 842731520
+    }
+  ],
+  "checks": [
+    "Three same-document views have distinct slots and existing editors survive third-pane creation.",
+    "Native three-view editing shares one autosave revision and journal;Undo/Redo broadcast across views.",
+    "Native first boundary resizes adjacent panes without remounting any editor.",
+    "Native Ctrl+Alt+PageDown/PageUp targets three distinct same-resource sessions;middle-pane link and Back leave sibling journeys unchanged.",
+    "Second native boundary responds to keyboard sizing.",
+    "Three assignments,active session and slot weights restore from the Rust-owned receipt after restart.",
+    "Narrow three-assignment workspace shows one active pane and no unreachable resize boundaries.",
+    "Native capacity3→2→1 retains active view and parks the other sessions in Open Notes.",
+    "Wide code and12-column table retain independent horizontal ranges while the main application remains horizontally contained. Programmatic native scroll-range check;not physical trackpad acceptance.",
+    "Seven native browser surfaces captured with body/main horizontal containment;four emulated viewport/DPR cases reject toolbar overlap;Settings Light/Dark/OLED,Help,palette and Activity captured. These do not certify physical keyboard,IME,touchpad or Windows scaling.",
+    "Emulated reduced motion zeros pane allocation duration;three rapid Settings open/Escape operations settle without retained modal/ghost surfaces. This is interruption correctness,not full subjective motion acceptance."
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes.",
+    "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.",
+    "Only the disposable application process tree is sampled; background apps, power and cache conditions are uncontrolled. The M8 reference had a coexisting personal process; inspect coexistingPersonalReference for this run."
+  ],
+  "success": true,
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.46",
+    "revision": "@a0c6bd61d7884b3c402a34c67d05100107a9e5e4",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "coexistingPersonalReference": false,
+  "nativeInspectionHelperActiveBefore": false,
+  "nativeInspectionHelperActiveAfter": false
+}

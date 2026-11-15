@@ -1,0 +1,995 @@
+{
+  "status": "Engineering partial;ready for scoped user UI evaluation",
+  "applicationSource": "b6027cbbbfde9c389589307e4625f3db359181f7",
+  "executableSha256": "315aaaa70148f9bd081926ba9f3e5ac9f69cc4c6b66193c9eccdf4462fb63d86",
+  "nativeEvidence": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-15T17-21-41.542Z.json",
+  "safetyEvidence": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-15T17-22-45.385Z.json",
+  "originalEvidence": "benchmarks/tauri-rust/raw/electron-java-2026-11-15T17-05-16.461Z.json",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "checks": [
+    "Three same-document views have distinct slots and existing editors survive third-pane creation.",
+    "Native three-view editing shares one autosave revision and journal;Undo/Redo broadcast across views.",
+    "Native first boundary resizes adjacent panes without remounting any editor.",
+    "Native Ctrl+Alt+PageDown/PageUp targets three distinct same-resource sessions;middle-pane link and Back leave sibling journeys unchanged.",
+    "Second native boundary responds to keyboard sizing.",
+    "Three assignments,active session and slot weights restore from the Rust-owned receipt after restart.",
+    "Narrow three-assignment workspace shows one active pane and no unreachable resize boundaries.",
+    "Native capacity3\u00e2\u2020\u20192\u00e2\u2020\u20191 retains active view and parks the other sessions in Open Notes.",
+    "Wide code and12-column table retain independent horizontal ranges while the main application remains horizontally contained. Programmatic native scroll-range check;not physical trackpad acceptance.",
+    "Seven native browser surfaces captured with body/main horizontal containment;four emulated viewport/DPR cases reject toolbar overlap;Settings Light/Dark/OLED,Help,palette and Activity captured. These do not certify physical keyboard,IME,touchpad or Windows scaling.",
+    "Emulated reduced motion zeros pane allocation duration;three rapid Settings open/Escape operations settle without retained modal/ghost surfaces. This is interruption correctness,not full subjective motion acceptance."
+  ],
+  "safetyChecks": [
+    "Original per-session linked journey A\u00e2\u2020\u2019B\u00e2\u2020\u2019Back restores reading680px/caret40 with one visible editor",
+    "Inactive session reload after restart restores scroll/caret;Open Notes reorder/close-other;shared view typing;closing first pane keeps surviving editor DOM",
+    "Managed Notes/Files filtering/counts;single-line compact Library;note resource actions;formatting disclosure;three independent sessions;Quick Access hide;Chosen mode;density/opacity/themes persist across process restart",
+    "Forced termination at durable managed draft;restart Recovery restore and autosave;competing managed revision refused and draft parked;linked bytes unchanged before explicit Save;linked competing bytes refused and text retained",
+    "Actual embedded M14 Help searches and renders the Open Notes/journey instructions;Escape returns to the existing editor",
+    "Six repeated note navigations settle at one editor and zero open menu/dialog portals;history contains metadata only"
+  ],
+  "typography": {
+    "font": "16px",
+    "paragraphLine": "26px"
+  },
+  "headerGroups": [
+    {
+      "title": {
+        "x": 335.8010559082031,
+        "y": 111.19001007080078,
+        "width": 422.0216369628906,
+        "height": 36.670005798339844,
+        "top": 111.19001007080078,
+        "right": 757.8226928710938,
+        "bottom": 147.86001586914062,
+        "left": 335.8010559082031
+      },
+      "actions": {
+        "x": 563.857666015625,
+        "y": 180.67001342773438,
+        "width": 193.96502685546875,
+        "height": 30.8800048828125,
+        "top": 180.67001342773438,
+        "right": 757.8226928710938,
+        "bottom": 211.55001831054688,
+        "left": 563.857666015625
+      },
+      "formatGrouped": true
+    },
+    {
+      "title": {
+        "x": 829.1292114257812,
+        "y": 111.19001007080078,
+        "width": 422.02166748046875,
+        "height": 36.670005798339844,
+        "top": 111.19001007080078,
+        "right": 1251.15087890625,
+        "bottom": 147.86001586914062,
+        "left": 829.1292114257812
+      },
+      "actions": {
+        "x": 1057.185791015625,
+        "y": 180.67001342773438,
+        "width": 193.965087890625,
+        "height": 30.8800048828125,
+        "top": 180.67001342773438,
+        "right": 1251.15087890625,
+        "bottom": 211.55001831054688,
+        "left": 1057.185791015625
+      },
+      "formatGrouped": true
+    },
+    {
+      "title": {
+        "x": 1314.6640625,
+        "y": 92,
+        "width": 437.328125,
+        "height": 38,
+        "top": 92,
+        "right": 1751.9921875,
+        "bottom": 130,
+        "left": 1314.6640625
+      },
+      "actions": {
+        "x": 1550.9921875,
+        "y": 164,
+        "width": 201,
+        "height": 32,
+        "top": 164,
+        "right": 1751.9921875,
+        "bottom": 196,
+        "left": 1550.9921875
+      },
+      "formatGrouped": true
+    }
+  ],
+  "receipt": {
+    "weights": [
+      0.3822160148975791,
+      0.2644506517690875,
+      0.35333333333333333
+    ],
+    "active": 1,
+    "views": [
+      {
+        "session": "e36b3a7e-c54a-42fd-be1d-27a22e466211",
+        "slot": "a5e7e05a-7611-476f-9543-1636182d8887",
+        "resource": "006b4d4a-2e1b-4b9d-8905-1410c31731ab"
+      },
+      {
+        "session": "fe7fa46b-4f82-4933-bac7-e7ba6e321507",
+        "slot": "bde8e827-9595-4792-a4ec-62a9a332a44d",
+        "resource": "006b4d4a-2e1b-4b9d-8905-1410c31731ab"
+      },
+      {
+        "session": "d3f002c3-7915-4f05-828c-e38334400c66",
+        "slot": "8df2b2bc-b553-42db-8136-fa7b0cb665a0",
+        "resource": "006b4d4a-2e1b-4b9d-8905-1410c31731ab"
+      }
+    ]
+  },
+  "responsive": [
+    {
+      "width": 900,
+      "height": 650,
+      "dpr": 1,
+      "kind": "CDP viewport/DPR emulation;not Windows display scaling",
+      "overflow": false,
+      "controls": [
+        {
+          "label": "Toggle sidebar",
+          "rect": {
+            "x": 300,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 328,
+            "bottom": 40,
+            "left": 300
+          }
+        },
+        {
+          "label": "Journey back",
+          "rect": {
+            "x": 352,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 382,
+            "bottom": 41,
+            "left": 352
+          }
+        },
+        {
+          "label": "Journey forward",
+          "rect": {
+            "x": 385.1953125,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 415.1953125,
+            "bottom": 41,
+            "left": 385.1953125
+          }
+        },
+        {
+          "label": "Show full journey",
+          "rect": {
+            "x": 418.390625,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 448.390625,
+            "bottom": 41,
+            "left": 418.390625
+          }
+        },
+        {
+          "label": "Search Library",
+          "rect": {
+            "x": 666,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 694,
+            "bottom": 40,
+            "left": 666
+          }
+        },
+        {
+          "label": "Return to Library",
+          "rect": {
+            "x": 696,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 724,
+            "bottom": 40,
+            "left": 696
+          }
+        },
+        {
+          "label": "Application menu",
+          "rect": {
+            "x": 762,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 792,
+            "bottom": 41,
+            "left": 762
+          }
+        }
+      ]
+    },
+    {
+      "width": 1200,
+      "height": 800,
+      "dpr": 1.25,
+      "kind": "CDP viewport/DPR emulation;not Windows display scaling",
+      "overflow": false,
+      "controls": [
+        {
+          "label": "Toggle sidebar",
+          "rect": {
+            "x": 300,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 328,
+            "bottom": 40,
+            "left": 300
+          }
+        },
+        {
+          "label": "Journey back",
+          "rect": {
+            "x": 352,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 382,
+            "bottom": 41,
+            "left": 352
+          }
+        },
+        {
+          "label": "Journey forward",
+          "rect": {
+            "x": 385.1953125,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 415.1953125,
+            "bottom": 41,
+            "left": 385.1953125
+          }
+        },
+        {
+          "label": "Show full journey",
+          "rect": {
+            "x": 418.390625,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 448.390625,
+            "bottom": 41,
+            "left": 418.390625
+          }
+        },
+        {
+          "label": "Search Library",
+          "rect": {
+            "x": 922.2109375,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 950.2109375,
+            "bottom": 40,
+            "left": 922.2109375
+          }
+        },
+        {
+          "label": "Return to Library",
+          "rect": {
+            "x": 952.2109375,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 980.2109375,
+            "bottom": 40,
+            "left": 952.2109375
+          }
+        },
+        {
+          "label": "Application menu",
+          "rect": {
+            "x": 1062,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 1092,
+            "bottom": 41,
+            "left": 1062
+          }
+        }
+      ]
+    },
+    {
+      "width": 1800,
+      "height": 1000,
+      "dpr": 1.5,
+      "kind": "CDP viewport/DPR emulation;not Windows display scaling",
+      "overflow": false,
+      "controls": [
+        {
+          "label": "Toggle sidebar",
+          "rect": {
+            "x": 300,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 328,
+            "bottom": 40,
+            "left": 300
+          }
+        },
+        {
+          "label": "Journey back",
+          "rect": {
+            "x": 352,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 382,
+            "bottom": 41,
+            "left": 352
+          }
+        },
+        {
+          "label": "Journey forward",
+          "rect": {
+            "x": 385.1953125,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 415.1953125,
+            "bottom": 41,
+            "left": 385.1953125
+          }
+        },
+        {
+          "label": "Show full journey",
+          "rect": {
+            "x": 418.390625,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 448.390625,
+            "bottom": 41,
+            "left": 418.390625
+          }
+        },
+        {
+          "label": "Search Library",
+          "rect": {
+            "x": 1522.2109375,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 1550.2109375,
+            "bottom": 40,
+            "left": 1522.2109375
+          }
+        },
+        {
+          "label": "Return to Library",
+          "rect": {
+            "x": 1552.2109375,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 1580.2109375,
+            "bottom": 40,
+            "left": 1552.2109375
+          }
+        },
+        {
+          "label": "Application menu",
+          "rect": {
+            "x": 1662,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 1692,
+            "bottom": 41,
+            "left": 1662
+          }
+        }
+      ]
+    },
+    {
+      "width": 900,
+      "height": 650,
+      "dpr": 2,
+      "kind": "CDP viewport/DPR emulation;not Windows display scaling",
+      "overflow": false,
+      "controls": [
+        {
+          "label": "Toggle sidebar",
+          "rect": {
+            "x": 300,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 328,
+            "bottom": 40,
+            "left": 300
+          }
+        },
+        {
+          "label": "Journey back",
+          "rect": {
+            "x": 352,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 382,
+            "bottom": 41,
+            "left": 352
+          }
+        },
+        {
+          "label": "Journey forward",
+          "rect": {
+            "x": 385.1953125,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 415.1953125,
+            "bottom": 41,
+            "left": 385.1953125
+          }
+        },
+        {
+          "label": "Show full journey",
+          "rect": {
+            "x": 418.390625,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 448.390625,
+            "bottom": 41,
+            "left": 418.390625
+          }
+        },
+        {
+          "label": "Search Library",
+          "rect": {
+            "x": 666,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 694,
+            "bottom": 40,
+            "left": 666
+          }
+        },
+        {
+          "label": "Return to Library",
+          "rect": {
+            "x": 696,
+            "y": 12,
+            "width": 28,
+            "height": 28,
+            "top": 12,
+            "right": 724,
+            "bottom": 40,
+            "left": 696
+          }
+        },
+        {
+          "label": "Application menu",
+          "rect": {
+            "x": 762,
+            "y": 11,
+            "width": 30,
+            "height": 30,
+            "top": 11,
+            "right": 792,
+            "bottom": 41,
+            "left": 762
+          }
+        }
+      ]
+    }
+  ],
+  "localScroll": [
+    {
+      "tag": "PRE",
+      "class": "overflow-x-auto bg-[var(--surface-2)] p-4 text-sm leading-relaxed !m-0 !rounded-none !border-0 text-[var(--text-primary)]",
+      "left": 100,
+      "width": 846,
+      "range": 60848
+    },
+    {
+      "tag": "DIV",
+      "class": "tableWrapper",
+      "left": 100,
+      "width": 848,
+      "range": 1072
+    }
+  ],
+  "endpoint": {
+    "editors": 1,
+    "portals": 0,
+    "nodes": 698
+  },
+  "motion": {
+    "one-to-two": {
+      "frames": 40,
+      "duration": 649.968,
+      "editorCounts": [
+        1,
+        2
+      ],
+      "slotWidthsAtStart": [
+        634.7421875
+      ],
+      "slotWidthsAtEnd": [
+        698.659912109375,
+        724
+      ]
+    },
+    "two-to-three": {
+      "frames": 40,
+      "duration": 649.9000000000001,
+      "editorCounts": [
+        2,
+        3
+      ],
+      "slotWidthsAtStart": [
+        698.659912109375,
+        724
+      ],
+      "slotWidthsAtEnd": [
+        460.6216125488281,
+        460.62158203125,
+        477.328125
+      ]
+    },
+    "browser-Library": {
+      "frames": 40,
+      "duration": 650.0019999999995,
+      "editorCounts": [
+        0
+      ],
+      "slotWidthsAtStart": [
+        0,
+        0
+      ],
+      "slotWidthsAtEnd": []
+    },
+    "browser-Collections": {
+      "frames": 40,
+      "duration": 650.2999999999993,
+      "editorCounts": [
+        0
+      ],
+      "slotWidthsAtStart": [],
+      "slotWidthsAtEnd": []
+    },
+    "browser-Tags": {
+      "frames": 40,
+      "duration": 650.3340000000007,
+      "editorCounts": [
+        0
+      ],
+      "slotWidthsAtStart": [],
+      "slotWidthsAtEnd": []
+    },
+    "browser-Linked sources": {
+      "frames": 40,
+      "duration": 650.3680000000004,
+      "editorCounts": [
+        0
+      ],
+      "slotWidthsAtStart": [],
+      "slotWidthsAtEnd": []
+    },
+    "browser-Recent": {
+      "frames": 40,
+      "duration": 633.3680000000004,
+      "editorCounts": [
+        0
+      ],
+      "slotWidthsAtStart": [],
+      "slotWidthsAtEnd": []
+    },
+    "browser-Pinned": {
+      "frames": 40,
+      "duration": 650.3340000000007,
+      "editorCounts": [
+        0
+      ],
+      "slotWidthsAtStart": [],
+      "slotWidthsAtEnd": []
+    },
+    "browser-Trash": {
+      "frames": 40,
+      "duration": 650.1700000000001,
+      "editorCounts": [
+        0
+      ],
+      "slotWidthsAtStart": [],
+      "slotWidthsAtEnd": []
+    },
+    "settings-open-900-1": {
+      "frames": 37,
+      "duration": 666.4339999999975,
+      "editorCounts": [
+        1
+      ],
+      "slotWidthsAtStart": [
+        580
+      ],
+      "slotWidthsAtEnd": [
+        580
+      ]
+    },
+    "settings-open-1200-1.25": {
+      "frames": 40,
+      "duration": 649.869999999999,
+      "editorCounts": [
+        1
+      ],
+      "slotWidthsAtStart": [
+        880
+      ],
+      "slotWidthsAtEnd": [
+        880
+      ]
+    },
+    "settings-open-1800-1.5": {
+      "frames": 40,
+      "duration": 649.8379999999997,
+      "editorCounts": [
+        1
+      ],
+      "slotWidthsAtStart": [
+        896
+      ],
+      "slotWidthsAtEnd": [
+        896
+      ]
+    },
+    "settings-open-900-2": {
+      "frames": 41,
+      "duration": 666.8059999999969,
+      "editorCounts": [
+        1
+      ],
+      "slotWidthsAtStart": [
+        580
+      ],
+      "slotWidthsAtEnd": [
+        580
+      ]
+    }
+  },
+  "originalChecks": [
+    "Original native reference opens3 distinct notes via retained Open Notes;Settings and1\u00e2\u2020\u20192\u00e2\u2020\u20193 geometry sampled over650ms.",
+    "Original Electron runtime captured at1200\u00c3\u2014800/DPR1 with equivalent3-note50-paragraph fixture:Library,Collections,Tags,Recent,Pinned,Trash,note andLight/Dark/OLED Settings. Static states only."
+  ],
+  "windowsInputEvidence": "benchmarks/tauri-rust/raw/m16-native-keyboard.json",
+  "images": [
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-activity.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "9d67acf8f657c4af82816631c13e9775c92583998f55f39540640633e4d83e15",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-collections.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "c83402eb63c173cf5bced697361123def4c32b5b4e238a5471a230087b9bb2b2",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-help.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "dd2d41ad044e3997366fb19091caaa81d49ee044a967bec828bef15294be03c3",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-library.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "10ab0c7e909bb174e4b039f0d3d8651d75c09fc7954153d3579e940f84d83020",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-linked-sources.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "fbca7cab42cc86d40ca00b474aea49e2449e7a5872cb285c2efa18dbe13f461c",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-narrow-three-assigned.png",
+      "width": 1350,
+      "height": 975,
+      "sha256": "0ab0da6c1bb1a5fdaed0c09469cd6bd95488429f6fb9ec2fd3cb18f7b15e6667",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-native-maximized.jpg",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "1b49e4679f999b993a1ad910151a79d6472673450476d0b9336a41f850aa4414",
+      "format": "JPEG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-note-1200-1.25.png",
+      "width": 1500,
+      "height": 1000,
+      "sha256": "00830f613e07d6840cdfa4570171e3acf4d9fa7de8c06626644ce2ecf05b359c",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-note-1800-1.5.png",
+      "width": 2700,
+      "height": 1500,
+      "sha256": "31c847cf9f8dcd445f5094e3e1bcbe3bba51bff6dbffc14988008ab1928204ed",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-note-900-1.png",
+      "width": 900,
+      "height": 650,
+      "sha256": "4e1f6bcaf29e975b0026633b2be1549981e3a451f28dbe6cda02a280765e5878",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-note-900-2.png",
+      "width": 1800,
+      "height": 1300,
+      "sha256": "154fbef37adbb9e865260ffea5de5089ffcb7c3b913c2a8c9f733e97d68939ef",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-palette.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "db9f89f2f12d482105bbb6fd1bfaa1444f8d94f04cc71670cdef8fb8447657ba",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-pinned.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "523a80cf32d15a05c25cd1b27ef6a5b1961ad8ab7957b90da1fde559a4c5c78c",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-recent.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "71d154a9c98c34359ee3caff588e08c90d75b19d7e9f5fa624fa1cf78d0e22ab",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-settings-1200-1.25.png",
+      "width": 1500,
+      "height": 1000,
+      "sha256": "d850857cc27e4b333ea7ce4e060a9c7ec5e21af094d712b2a86ed62e98c9c766",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-settings-1800-1.5.png",
+      "width": 2700,
+      "height": 1500,
+      "sha256": "f9e5f05f3edf12f459154de6b752a003f5c63e42685a739932f8bfb0796b5116",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-settings-900-1.png",
+      "width": 900,
+      "height": 650,
+      "sha256": "df526c6beb6732e9680fd6864ad110eda3ab020e1561bf25866a98b34185d98c",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-settings-900-2.png",
+      "width": 1800,
+      "height": 1300,
+      "sha256": "b5b6e0b689d9c57ad4399fa10b391f7ae5d11c342fe521d8d817ef5eedb3d593",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-settings-dark.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "0012adfd6ca6da377e97cc0183364958b4c56e347fb0781957107c8be0f28339",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-settings-light.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "a99281e985eee33ab86686736d5bc764b6e9b00ef68df05a4f3e690027e84376",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-settings-oled.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "2e439bb8e2745e0a6f4caae4cee4b4d53f978055e31ac98ee311a8e1be8b0aa1",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-tags.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "878004d68fb664bffb3ea1a27292b60f44f0edca7f94bfb6ce611c88cd91e950",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-three-pane.png",
+      "width": 2700,
+      "height": 1500,
+      "sha256": "4771b6bc7a28ad0f6d9adc5243321242adfdf76c57d26cb2fefc8e1adf94cb0a",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-trash.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "222918e88114e54cad2e6715a5a87680fbd42498a0bea35260e8f94018924399",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-next-wide-code-table.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "5ff5118cf1b22e227546347847151865a3b4a87c42776987c679a123e3c96ed7",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-original-collections.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "8d4135c98d3e6abbb512c75a2eb30143af0ad98ad91fff782cd56b85a924fb67",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-original-library.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "3314783f0d132e712b3f2bc8d31b40416ec8b3c6e99fe6229c62636a4f505f61",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-original-note-1200-1.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "f5578b3a6ebd4fc36d7d7c5ba4c9315bb32f74be87b49c848779f3f662f5fb15",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-original-pinned.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "ae2035023ae1a4468fd8ce31d162d3f18a41b00c77c77f5e2f20caecbddcfca8",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-original-recent.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "5e3903d3e5c35c513f829a01555efce928c2deae2d1871d5c9496b6d074c244f",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-original-settings-dark.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "b233f5aab29059f4d4e51596f72cf3cd87a9cb8e4248d40e883afe0d380e6c12",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-original-settings-light.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "4e70b0b8ec0d34e4789f676072537e5d3c0dddaa5862919ac36297f649d8a54f",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-original-settings-oled.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "8932e3939a12de1f8ba245017c998ffa2d8f0023c57654ad1115eb1a89359b63",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-original-tags.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "0c018e163de7fecc4bcbbbc1314e7fed58dee0ba35e66276c2ef5c28c5b146a6",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-original-three-pane.png",
+      "width": 2700,
+      "height": 1500,
+      "sha256": "e3688296f31dafc9d8f47863315f9db14728117a57489b32ccc40f54c9cff15f",
+      "format": "PNG"
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m16-original-trash.png",
+      "width": 1200,
+      "height": 800,
+      "sha256": "ae79342a287d4afe15c8c5a50b8f11b30ea6bf8dd8c50a76b81820b30b98c6aa",
+      "format": "PNG"
+    }
+  ],
+  "limitations": [
+    "Physical keyboard/touchpad,language IME,screen-reader speech and Windows scaling not qualified",
+    "Browser captures include empty catalogues;not all populated/detail/transfer/preview states compared",
+    "Full motion parity/reversal/interruption across all application surfaces remains open",
+    "One measured redo timeout not reproduced in earlier functional/diagnostic retry;retained in canonical failures;physical input follow-up remains open",
+    "Geometry and native automated checks are not user acceptance"
+  ],
+  "finalPerformanceEvidence": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-15T17-30-57.760Z.json",
+  "finalWindowsInput": {
+    "source": "b6027cbbbfde9c389589307e4625f3db359181f7",
+    "executableSha256": "315aaaa70148f9bd081926ba9f3e5ac9f69cc4c6b66193c9eccdf4462fb63d86",
+    "input": "Windows SendInput via computer-use;not physical hardware",
+    "checks": [
+      "Ctrl+, opens Settings with search focus;Tab advances to Help with visible focus;Escape closes",
+      "Ctrl+K opens named Command palette and Search commands combobox with visible focus;Escape closes",
+      "Coordinate click on native Settings trigger then Escape returns visible focus to that trigger",
+      "Native maximize repaints full workspace;window controls reachable"
+    ],
+    "uia": "Named dialog,combobox,buttons,editor region/body sampled;UIA click coordinates were unreliable after device emulation;primary screenshot coordinates used. Screen-reader speech not tested.",
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    }
+  }
+}
