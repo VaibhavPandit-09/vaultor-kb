@@ -171,7 +171,7 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 
 /* Original journey and session surfaces occupy existing chrome/scroll ownership. */
 .next-desktop-toolbar>.journey-bar{flex:1;min-width:0;border:0;background:transparent}.next-desktop-toolbar .journey-trail{min-width:0}.next-session-list .session-secondary{display:flex}.next-settings .settings-choices button{overflow-wrap:normal;word-break:normal;white-space:normal}.next-settings .settings-choices{min-width:260px}.next-desktop-body .sidebar-allocation[data-floating=true]{width:0}.next-desktop-body .sidebar-allocation[data-floating=true] .sidebar-surface{position:absolute;z-index:60}.next-pane>.journey-viewport{padding:12px 16px 24px}
-@container(max-width:850px){.next-desktop-toolbar .journey-trail{display:none}.next-desktop-toolbar>.journey-bar{flex:0 1 auto}}
+@container(max-width:850px){.next-desktop-toolbar .journey-trail{display:none}.next-desktop-toolbar>.journey-bar{min-width:126px}}
 
 /* WorkspacePaneLayout limits a single reading pane to896px. */
 /* Host controllers retain documents; the original pane layout owns structural motion. */

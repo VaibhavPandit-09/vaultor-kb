@@ -491,6 +491,8 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-15 — M16 three-pane implementation checkpoint
 
+Native follow-up found the compact workspace toolbar could allocate zero width to its size-contained journey strip. It now reserves the Back/Forward/History controls at narrow widths instead of overlapping adjacent actions. TypeScript/Vite passes; native overlap qualification is recorded in the M16 ledger. No architectural effect. Help/catalogue applicability is unchanged by this layout-only correction; three-pane instructions were updated in the implementation checkpoint.
+
 Extended Next preference/receipt contracts to three assignments over the existing Rust/SQLite owner and original React pane controller. Added explicit duplicate-view split and adjacent insertion, save-protected capacity reduction retaining peers, bounded weight restoration and two shared pointer/keyboard boundaries. No document/schema/recovery ownership change. Focused controller, sizing, receipt, interruption and legacy regressions pass; Rust desktop preference/receipt tests3 pass. TypeScript/Vite builds; native and wider qualification remain in progress in the M16 ledger. Help/catalogue `next-foundation` now describes three views and resizing. No merge, tag, installer or publication.
 
 ### 2026-11-14 — Scroll axis containment and proactive overflow pass
