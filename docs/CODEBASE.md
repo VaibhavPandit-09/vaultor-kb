@@ -495,6 +495,8 @@ Native follow-up found the compact workspace toolbar could allocate zero width t
 
 The dedicated Save shortcut also yields to ongoing composition, legacy229 composition events, AltGraph and already-handled editor events. This brings it into line with command shortcut ownership without changing managed autosave or linked explicit Save. A focused mounted-app regression checks cancellation behavior; physical language/IME qualification remains open. No new user control or Help/catalogue topic is introduced.
 
+Matched native three-pane captures exposed an obsolete `.next-document .tiptap` typography selector: current managed/linked panes inherited13px shell text instead of the original16px editor body. The rule now targets `.next-pane .tiptap`, preserving shared paragraph/code/table styles. This is a presentation-only correction with no persistence/architecture effect. Help/catalogue instructions remain applicable; final artifact qualification is recorded in M16.
+
 Extended Next preference/receipt contracts to three assignments over the existing Rust/SQLite owner and original React pane controller. Added explicit duplicate-view split and adjacent insertion, save-protected capacity reduction retaining peers, bounded weight restoration and two shared pointer/keyboard boundaries. No document/schema/recovery ownership change. Focused controller, sizing, receipt, interruption and legacy regressions pass; Rust desktop preference/receipt tests3 pass. TypeScript/Vite builds; native and wider qualification remain in progress in the M16 ledger. Help/catalogue `next-foundation` now describes three views and resizing. No merge, tag, installer or publication.
 
 ### 2026-11-14 — Scroll axis containment and proactive overflow pass
