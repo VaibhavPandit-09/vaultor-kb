@@ -30,7 +30,7 @@ fn file_filters_use_original_identity_and_reject_unsupported_kind(){
 fn workspace_behavior_is_root_bound_validated_and_persistent(){
  let dir=tempfile::tempdir().unwrap();let mut w=Workspace::open(dir.path()).unwrap();let value=json!({"maxVisiblePanes":1,"noteOpening":"fill","autosaveDelay":0,"focusMode":true});
  w.execute(D::Behavior{path:dir.path().to_string_lossy().into(),value:value.clone()}).unwrap();
- for bad in [json!({"maxVisiblePanes":3}),json!({"autosaveDelay":50}),json!({"opacity":0.6}),json!({"focusMode":"yes"})] {assert!(w.execute(D::Behavior{path:dir.path().to_string_lossy().into(),value:bad}).is_err());}
+ for bad in [json!({"maxVisiblePanes":4}),json!({"autosaveDelay":50}),json!({"opacity":0.6}),json!({"focusMode":"yes"})] {assert!(w.execute(D::Behavior{path:dir.path().to_string_lossy().into(),value:bad}).is_err());}
  assert!(w.execute(D::Behavior{path:dir.path().join("other").to_string_lossy().into(),value:json!({})}).is_err());drop(w);
  let mut w=Workspace::open(dir.path()).unwrap();assert_eq!(w.execute(D::Snapshot).unwrap()["settings"]["behavior"],value);
 }

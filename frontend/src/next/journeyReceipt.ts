@@ -3,9 +3,9 @@ import type {JourneyReceipt,WorkspaceSession} from './desktopState';
 /** Metadata only. Reject malformed visits before the original controller receives them. */
 export function decodeJourneys(value:unknown):JourneyReceipt|undefined{
  if(!value||typeof value!=='object')return;const r=value as JourneyReceipt;
- if(!Array.isArray(r.sessions)||r.sessions.length>64||!Array.isArray(r.panes)||r.panes.length>2)return;
+ if(!Array.isArray(r.sessions)||r.sessions.length>64||!Array.isArray(r.panes)||r.panes.length>3)return;
  const valid=(p:Pane)=>p&&typeof p.paneId==='string'&&p.paneId.length<=200&&typeof p.id==='string'&&p.id.length<=200&&Array.isArray(p.history)&&p.history.length>0&&p.history.length<=200&&Number.isInteger(p.cursor)&&p.cursor>=0&&p.cursor<p.history.length&&p.history[p.cursor].resourceId===p.id&&p.history.every(v=>v&&typeof v.visitId==='string'&&v.visitId.length<=200&&typeof v.resourceId==='string'&&v.resourceId.length<=200&&typeof v.title==='string'&&v.title.length<=240);
- if(!r.sessions.every(valid)||new Set(r.sessions.map(p=>p.paneId)).size!==r.sessions.length||!r.panes.every(p=>valid(p)&&r.sessions.some(s=>s.paneId===p.paneId&&s.id===p.id)))return;
+ if(!r.sessions.every(valid)||new Set(r.sessions.map(p=>p.paneId)).size!==r.sessions.length||!r.panes.every(p=>valid(p)&&(p.slotId===undefined||typeof p.slotId==='string'&&p.slotId.length<=200)&&r.sessions.some(s=>s.paneId===p.paneId&&s.id===p.id))||new Set(r.panes.map(p=>p.paneId)).size!==r.panes.length||new Set(r.panes.map(p=>p.slotId??p.paneId)).size!==r.panes.length)return;
  const positions:Record<string,ReadingPosition>={},keys=new Set(r.sessions.flatMap(p=>p.history.map(v=>v.visitId)));
  for(const [id,p] of Object.entries(r.positions??{})){if(!keys.has(id)||!p||!Number.isFinite(p.scrollTop)||!Number.isFinite(p.scrollLeft))continue;positions[id]={scrollTop:Math.max(0,Math.min(1e7,p.scrollTop)),scrollLeft:Math.max(0,Math.min(1e7,p.scrollLeft)),...(p.selection&&Number.isInteger(p.selection.from)&&Number.isInteger(p.selection.to)&&p.selection.from>=0&&p.selection.to>=p.selection.from?{selection:p.selection}:{})};}
  return {sessions:r.sessions,panes:r.panes,activePaneId:r.panes.some(p=>p.paneId===r.activePaneId)?r.activePaneId:r.panes.at(-1)?.paneId??null,positions};
@@ -14,7 +14,7 @@ export function decodeJourneys(value:unknown):JourneyReceipt|undefined{
 export function boundSession(value:WorkspaceSession):WorkspaceSession{
  const r=value.journeys;let result:WorkspaceSession={...value,remembered:value.remembered?.slice(-24),history:value.history?{entries:value.history.entries.slice(-16),index:Math.max(0,value.history.index-Math.max(0,value.history.entries.length-16))}:undefined};
  if(r){const shown=new Set(r.panes.map(p=>p.paneId));let remaining=96;
- const sessions=[...r.sessions.filter(p=>shown.has(p.paneId)),...r.sessions.filter(p=>!shown.has(p.paneId)).slice(-22)].flatMap(p=>{if(remaining<=0)return [];const start=Math.max(0,p.cursor-Math.min(8,remaining-1)),history=p.history.slice(start,Math.min(p.history.length,start+Math.min(16,remaining))).map(v=>({...v,title:v.title.slice(0,160)}));remaining-=history.length;return [{...p,history,cursor:p.cursor-start}];});
+ const sessions=[...r.sessions.filter(p=>shown.has(p.paneId)),...r.sessions.filter(p=>!shown.has(p.paneId)).slice(-(24-shown.size))].flatMap(p=>{if(remaining<=0)return [];const start=Math.max(0,p.cursor-Math.min(8,remaining-1)),history=p.history.slice(start,Math.min(p.history.length,start+Math.min(16,remaining))).map(v=>({...v,title:v.title.slice(0,160)}));remaining-=history.length;return [{...p,history,cursor:p.cursor-start}];});
  const keys=new Set(sessions.flatMap(p=>p.history.map(v=>v.visitId)));result={...result,journeys:{sessions,panes:r.panes.map(p=>({...sessions.find(s=>s.paneId===p.paneId)!,slotId:p.slotId})),activePaneId:r.activePaneId,positions:Object.fromEntries(Object.entries(r.positions).filter(([id])=>keys.has(id)))}};
  }
  // Browsing receipts can contain long searches/paths. Drop oldest inactive metadata first.

@@ -14,7 +14,7 @@ pub fn validate(value: &Value) -> Result<(), String> {
     }
     for (key, v) in obj {
         let valid = match key.as_str() {
-            "maxVisiblePanes" => matches!(v.as_u64(),Some(1|2)),
+            "maxVisiblePanes" => matches!(v.as_u64(),Some(1|2|3)),
             "noteOpening" => ["fill","reuse"].contains(&v.as_str().unwrap_or("")),
             "autosaveDelay" => v.as_u64().is_some_and(|n| n<=1000 && n%100==0),
             "focusMode" => v.is_boolean(),
@@ -74,6 +74,19 @@ pub fn preferences(path: Option<&Path>, value: Option<Value>) -> Result<Value, S
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn three_pane_behavior_and_layout_receipt_survive_restart() {
+        use crate::domain::{Request,Workspace};
+        let dir=tempfile::tempdir().unwrap();let root=dir.path().to_string_lossy().into_owned();
+        let mut workspace=Workspace::open(dir.path()).unwrap();
+        let behavior=json!({"maxVisiblePanes":3,"noteOpening":"fill","autosaveDelay":1000,"focusMode":false});
+        workspace.execute(Request::Behavior{path:root.clone(),value:behavior.clone()}).unwrap();
+        let receipt=json!({"version":1,"documents":[{"id":"same"},{"id":"same"},{"id":"third"}],"weights":[0.3,0.4,0.3],"activePane":2});
+        workspace.execute(Request::Session{path:root.clone(),value:receipt.clone()}).unwrap();drop(workspace);
+        let mut workspace=Workspace::open(dir.path()).unwrap();let snapshot=workspace.execute(Request::Snapshot).unwrap();
+        assert_eq!(snapshot["settings"]["behavior"],behavior);assert_eq!(snapshot["settings"]["session"],receipt);
+        assert!(workspace.execute(Request::Behavior{path:root,value:json!({"maxVisiblePanes":4})}).is_err());
+    }
     #[test]
     fn workspace_session_receipts_are_root_bound_and_persistent() {
         use crate::domain::{Request, Workspace};

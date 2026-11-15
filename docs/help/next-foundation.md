@@ -20,7 +20,9 @@ Managed and linked-note titles use the original scroll-driven note heading. Link
 
 ## Open Notes and journeys
 
-Open Notes retains sessions displaced from the two visible panes. Reopening a current session preserves its journey. Use its actions to move it earlier/later, close it, close other notes or close all notes. Close pane removes its viewing area while retaining the session. Only assigned pane editors are mounted; narrow windows retain the compact peer. Drag an Arrange handle to reorder Open Notes, or onto a pane to swap viewing positions. The session menu offers Move earlier/later alternatives. Ctrl+Alt+PageUp/PageDown cycles view identities, including two views of the same note. Three-pane layout is not available.
+Open Notes retains sessions displaced from up to three visible panes. Reopening a current session preserves its journey. Use its actions to move it earlier/later, close it, close other notes or close all notes. Close pane removes its viewing area while retaining the session. Only assigned pane editors are mounted; narrow windows show the active pane and retain assigned peers without mounting additional editors for unused capacity. Drag an Arrange handle to reorder Open Notes, or onto a pane to swap viewing positions. The session menu offers Move earlier/later alternatives. Ctrl+Alt+PageUp/PageDown cycles view identities, including multiple views of the same note. Choose one, two or three panes in Workspace settings. Reducing capacity protects edits and keeps displaced sessions in Open Notes.
+
+Resize either boundary by dragging, or Tab to its separator and use Left/Right (Home/End for its bounds). Escape cancels an active drag. Opening beside inserts after the active pane. Layout weights, active pane and independent journeys restore after restart. When the workspace is too narrow for all assigned panes, focus another view through Open Notes or the pane shortcuts; the application does not gain a horizontal scrollbar.
 
 Following a managed resource link or linked Markdown relative link extends the active session's journey. Journey Back/Forward and the full journey menu revisit its steps; each visible pane has its own journey. Direct Library and shortcut opens retain independent sessions. Reading scroll and caret restore when revisiting or restarting; Undo is not persisted. Workspace Back/Forward remains available outside a journey. Navigation protects linked drafts without publishing external files; explicit Save is still required.
 
@@ -30,7 +32,7 @@ Use New collection in the sidebar, enter a name, choose its parent and select Cr
 
 Library shows managed notes and imported file resources; a collection shows its direct members. Previous and Next load pages of up to 100 summaries, newest-created first. Editing does not reorder notes. Page loading keeps open editors and restores the page's scroll position when returning. New notes and membership changes refresh the first page.
 
-New note creates a note in the selected collection. Select a title to edit it, or use Open beside for a second pane. Both views of the same note share content, Undo history and one protected draft.
+New note creates a note in the selected collection. Select a title to edit it, or use Open beside for another pane. All views of the same note share content, Undo history and one protected draft.
 
 Use a note's More button or right-click a Library row for the organization actions described below. These change placements without copying or deleting note content.
 

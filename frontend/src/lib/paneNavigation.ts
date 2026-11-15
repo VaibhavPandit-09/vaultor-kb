@@ -6,7 +6,7 @@ export class ResourceUnavailableError extends Error {}
 const visit = (resource: Resource): Visit => ({ visitId: crypto.randomUUID(), resourceId: resource.id, title: resource.title });
 // paneId remains the session ID for v1 compatibility; slotId belongs only to a visible assignment.
 export type Pane = { paneId: string; slotId?: string; id: string; selection?: { from: number; to: number }; history: Visit[]; cursor: number; transition?: 'forward' | 'back' | 'replace' };
-export type OpenIntent = { sessionId?:string; sourcePaneId?: string; destination?: 'here' | 'new'; intent?: 'direct' | 'link' | 'history'; historyIndex?: number; focus?: boolean; throwOnFailure?: boolean; allowCommit?:()=>boolean; managedOnly?:boolean };
+export type OpenIntent = { newSession?:boolean; sessionId?:string; sourcePaneId?: string; destination?: 'here' | 'new'; intent?: 'direct' | 'link' | 'history'; historyIndex?: number; focus?: boolean; throwOnFailure?: boolean; allowCommit?:()=>boolean; managedOnly?:boolean };
 export type NavigationIssue = { message: string; id: string; options: OpenIntent; limit?: boolean; closePaneId?: string; closeSession?: boolean; unavailable?: boolean };
 type State = { sessions: Pane[]; panes: Pane[]; activePaneId: string | null; issue: NavigationIssue | null; focusPaneId: string | null; motion: 'forward' | 'back' | 'replace' | 'switch' };
 type Dependencies = { load: (id: string) => Promise<Resource | null>; save: (id: string) => Promise<void>; preview: (resource: Resource, sourcePaneId?: string) => void; committed: (id: string, focus: boolean) => void; max: number; behavior: 'fill' | 'replace'; capacity?: () => number };
@@ -54,10 +54,16 @@ export class PaneNavigation {
     } else await this.open(next.id, { sessionId: next.paneId, destination: 'here', focus: true, throwOnFailure: true });
   };
   dismissIssue = () => this.patch({ issue: null });
+  split = async(id=this.state.panes.find(p=>p.paneId===this.state.activePaneId)?.id) => {
+    if(!id)return;
+    if(this.state.panes.length>=this.dependencies().max)throw new Error('All visible panes are in use. Close a pane or increase the pane limit.');
+    await this.open(id,{destination:'new',intent:'link',newSession:true,focus:true,throwOnFailure:true});
+  };
   setCapacity = async (max:number) => {
     const before=this.state.panes,epoch=this.epoch;
     const active=before.find(p=>p.paneId===this.state.activePaneId);
-    const keep=before.length<=max?before:(active?[active]:before.slice(0,max));
+    const retained=new Set((active?[active,...before.filter(p=>p!==active)]:before).slice(0,max));
+    const keep=before.length<=max?before:before.filter(p=>retained.has(p));
     for(const p of before)if(!keep.includes(p))await this.dependencies().save(p.id);
     if(epoch!==this.epoch||before!==this.state.panes)return;
     this.commit(this.state.sessions,keep.map(p=>p.paneId));
@@ -151,6 +157,12 @@ export class PaneNavigation {
   private epoch = 0;
   private sequence = 0;
   private focusSequence = 0;
+  private place(id:string,sourceId:string|undefined,destination:'here'|'new'){
+    const visible=this.state.panes.map(p=>p.paneId),index=visible.indexOf(sourceId??'');
+    if(destination==='here'&&index>=0)visible[index]=id;
+    else visible.splice(index>=0?index+1:visible.length,0,id);
+    return visible;
+  }
   open = async (id: string, options: OpenIntent = {}) => {
     const dep = this.dependencies();
     const sourcePaneId = options.sourcePaneId ?? this.state.activePaneId ?? undefined;
@@ -162,7 +174,7 @@ export class PaneNavigation {
     const placement = () => {
       const latest=this.dependencies();
       const desired=options.destination??(intent==='direct'&&latest.behavior==='fill'&&this.state.panes.length<Math.min(latest.max,latest.capacity?.()??latest.max)?'new':'here');
-      return desired==='new'&&source&&this.state.panes.length>=latest.max?'here':desired;
+      return desired==='new'&&source&&this.state.panes.length>=latest.max&&!options.newSession?'here':desired;
     };
     let destination = placement();
     const epoch = this.epoch, resourceVersion = this.unavailable.get(id);
@@ -182,7 +194,7 @@ export class PaneNavigation {
       if (intent === 'link' && destination === 'here' && source?.id === id) return;
       destination=placement();
       // Reopening preserves the existing journey, selection and visit identity.
-      const existing = intent !== 'history' ? this.state.sessions.find(p => p.id === id&&(!options.sessionId||p.paneId===options.sessionId)) : undefined;
+      const existing = intent !== 'history' && !options.newSession ? this.state.sessions.find(p => p.id === id&&(!options.sessionId||p.paneId===options.sessionId)) : undefined;
       if (existing) {
         if (source && source.paneId !== existing.paneId && !this.state.panes.some(p => p.paneId === existing.paneId) && destination === 'here') await dep.save(source.id);
         if (!valid()) return;
@@ -191,6 +203,7 @@ export class PaneNavigation {
         return;
       }
       if ((!source || destination === 'new') && this.state.panes.length >= dep.max) {
+        if(options.newSession)throw new Error('All visible panes are in use.');
         this.patch({ issue: { message: 'Pane limit reached', id, options: { ...options, sourcePaneId }, limit: true } }); return;
       }
       if (source && destination === 'here') await dep.save(source.id);
@@ -198,9 +211,10 @@ export class PaneNavigation {
       destination=placement();
       // Capacity may have changed while another pane was loading/saving.
       if ((!source || destination === 'new') && this.state.panes.length >= this.dependencies().max) {
+        if(options.newSession)throw new Error('All visible panes are in use.');
         this.patch({ issue: { message: 'Pane limit reached', id, options: { ...options, sourcePaneId }, limit: true } }); return;
       }
-      const raced = intent === 'direct' ? this.state.sessions.find(p => p.id === id&&(!options.sessionId||p.paneId===options.sessionId)) : undefined;
+      const raced = intent === 'direct' && !options.newSession ? this.state.sessions.find(p => p.id === id&&(!options.sessionId||p.paneId===options.sessionId)) : undefined;
       if (raced) { this.show(raced, sourcePaneId, destination, this.focusSequence === focusToken, options.focus !== false); return; }
       const latestSource = this.state.panes.find(p => p.paneId === sourcePaneId);
       const history = intent === 'history' && latestSource ? latestSource.history.map(v => v.resourceId === id ? { ...v, title: resource.title } : v) : intent === 'link' && latestSource ? [...latestSource.history.slice(0, latestSource.cursor + 1).map(v => ({ ...v })), visit(resource)].slice(-200) : [visit(resource)];
@@ -216,7 +230,7 @@ export class PaneNavigation {
       const focus = this.focusSequence === focusToken;
       if (intent === 'direct') pane.paneId = crypto.randomUUID();
       const sessions = intent !== 'direct' && source && destination === 'here' ? this.state.sessions.map(p => p.paneId === source.paneId ? pane : p) : [...this.state.sessions, pane];
-      const visible = source && destination === 'here' ? this.state.panes.map(p => p.paneId === source.paneId ? pane.paneId : p.paneId) : [...this.state.panes.map(p => p.paneId), pane.paneId];
+      const visible = this.place(pane.paneId,sourcePaneId,destination);
       this.commit(sessions, visible, focus ? pane.paneId : this.state.activePaneId, focus ? { motion: transition, focusPaneId: options.focus === false ? null : pane.paneId } : {});
       dep.committed(id, focus);
     } catch (error) {
@@ -233,7 +247,7 @@ export class PaneNavigation {
       if (destination === 'new' && visible.length >= this.dependencies().max) {
         this.patch({ issue: { message: 'All visible panes are in use. Select a note to open here.', id: session.id, options: { destination: 'here' } } }); return;
       }
-      visible = destination === 'here' && visible.includes(sourceId ?? '') ? visible.map(id => id === sourceId ? session.paneId : id) : [...visible, session.paneId];
+      visible = this.place(session.paneId,sourceId,destination);
     }
     const sessions = this.state.sessions.map(p => p.paneId === session.paneId ? { ...p, selection: this.position(p.history[p.cursor].visitId).selection } : p);
     this.commit(sessions, visible, focus ? session.paneId : this.state.activePaneId, focus ? { motion: 'switch', focusPaneId: restoreFocus ? session.paneId : null } : {});

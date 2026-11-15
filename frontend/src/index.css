@@ -1016,6 +1016,12 @@ body:not(:has(.desktop-shell)) .app-root { padding-top:40px; }
 
 /* Real allocation changes preserve editor scale and let neighbors yield space. */
 .workspace-pane-layout { position:relative; z-index:1; display:flex; justify-content:center; height:100%; min-width:0; overflow:hidden; padding:12px 16px; }
+.workspace-pane-dividers{position:absolute;inset:0;z-index:20;pointer-events:none}
+.workspace-pane-divider{position:absolute;top:18px;bottom:18px;width:8px;transform:translateX(-4px);cursor:col-resize;touch-action:none;pointer-events:auto;border-radius:4px}
+.workspace-pane-divider:hover,.workspace-pane-divider:focus-visible{background:color-mix(in srgb,var(--accent) 35%,transparent)}
+.workspace-pane-divider:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.workspace-pane-dividers:empty{display:none}
+.next-panes[data-resizing=true] .workspace-pane-slot{transition:none!important}
 .workspace-pane-slot { flex:0 0 auto; min-width:0; height:100%; overflow:hidden; width:var(--pane-width); margin-inline:var(--pane-gap); transition:width var(--pane-duration) var(--motion-ease), margin-left var(--pane-duration) var(--motion-ease), margin-right var(--pane-duration) var(--motion-ease); }
 .workspace-pane-slot[hidden] { display:none; }
 /* Expand the boundary around an entering document at its reading width. A

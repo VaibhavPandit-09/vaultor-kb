@@ -4,6 +4,8 @@ Reviewed 2026-11-11. Authoritative experimental replacement tracker. Published W
 
 ## Target and implemented milestones
 
+M16 is implementing and qualifying the complete desktop workspace: one/two/three assigned views reuse the original pane controller/layout, share authoritative documents and persist bounded journeys/slot weights. Native, visual/motion, responsive, safety and matched-performance results are maintained in the [M16 acceptance record](VAULTOR-NEXT-M16.md). Implementation is not user acceptance; unresolved findings remain in the existing registers. No merge, tag or publication.
+
 Tauri 2 + React/TypeScript + Tiptap + Rust + SQLite. Normal local work uses direct commands, with no HTTP server, JVM or permanent helper process. `next/` owns the native application; `frontend/src/next/` is its separate frontend entry point. Original controllers remain available as reference and benchmark baseline; shared presentation is extracted for both hosts in M11.
 
 M1 completed at `52b84ee`: isolated workspaces, exclusive process ownership, Rust/SQLite persistence, collections, structured Tiptap notes, revision-checked saves, shared panes/history, workspace themes, normal-close save barrier and offline milestone Help.

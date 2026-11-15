@@ -1,8 +1,10 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-11-14. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-11-15. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
+
+**Next M16 workspace (qualification in progress):** the original PaneNavigation/WorkspacePaneLayout now accept one to three assigned views. Explicit split creates a new session/visit over the existing shared document, inserts beside the active view and retains independent journeys. Root-bound workspace behavior accepts three; v1 session receipts add optional slot weights, retain legacy two-pane ratios and reject colliding assignments. Capacity reduction protects displaced views and retains the active view plus peers without deleting parked sessions. Shared WorkspacePaneDividers changes adjacent slot weights only, preserves reading anchors, offers keyboard bounds and cancels interrupted drags. The original width thresholds compact assigned peers when needed, without mounting editors for unused capacity. Visible metadata remains bounded in the existing32KiB receipt. [M16 qualification](plans/VAULTOR-NEXT-M16.md) owns native, visual, motion, responsive, safety and benchmark evidence; this implementation does not establish user acceptance or close unrelated M15 findings.
 
 Desktop vertical surfaces own one vertical scroll axis: resource browsers, sidebar lists, Settings, Help/dialog bodies, palettes, popovers and Next note panes use `overflow-y:auto`, `overflow-x:hidden` and `overscroll-behavior:none`. The Next document viewport also refuses root overscroll. Fix genuine child overflow as well as edge effects: narrow Library padding derives from the same `--library-inset` as its transforming header, and palette resource labels shrink/ellipsis while retaining full accessible text and a title. Preview bodies follow the vertical contract. Intentional wide code/table/image canvases retain their horizontal ranges with contained edge behavior; code NodeView content uses `white-space:pre`, while ordinary note and Help prose can wrap long tokens. No global wheel cancellation or parent `touch-action:pan-y` policy is used; those would interfere with native editing and nested horizontal blocks. Test both signs of diagonal wheel input, focus-induced scrolling, expanded/compact headers and narrow layouts. CSS containment evidence does not certify physical Precision Touchpad behavior.
 
@@ -486,6 +488,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-15 — M16 three-pane implementation checkpoint
+
+Extended Next preference/receipt contracts to three assignments over the existing Rust/SQLite owner and original React pane controller. Added explicit duplicate-view split and adjacent insertion, save-protected capacity reduction retaining peers, bounded weight restoration and two shared pointer/keyboard boundaries. No document/schema/recovery ownership change. Focused controller, sizing, receipt, interruption and legacy regressions pass; Rust desktop preference/receipt tests3 pass. TypeScript/Vite builds; native and wider qualification remain in progress in the M16 ledger. Help/catalogue `next-foundation` now describes three views and resizing. No merge, tag, installer or publication.
 
 ### 2026-11-14 — Scroll axis containment and proactive overflow pass
 
