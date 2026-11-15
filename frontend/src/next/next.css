@@ -74,6 +74,7 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 .next-resource-open strong{font-size:13px;font-weight:500}.next-resource-open small{font-size:11px;color:var(--text-secondary);margin-top:3px}
 .next-library .browse-row-actions button{padding:5px;display:flex;align-items:center;justify-content:center}
 .next-document.note-transform{padding:0 16px 24px;--note-organization-height:40px}
+.next-note-actions{display:flex;align-items:center;flex:none;gap:4px}
 .note-identity>.next-note-bar{display:flex;align-items:center;min-width:0;width:100%;padding:0;border:0;box-shadow:none!important}
 .note-identity .next-note-bar input{width:100%;min-width:0;flex:1;font-size:calc(24px - 6px * var(--library-progress,0));padding:4px 8px;font-weight:600;letter-spacing:-.4px}
 .next-note-organization{display:block;font-size:11px;color:var(--text-secondary)}
