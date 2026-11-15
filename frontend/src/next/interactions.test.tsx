@@ -14,9 +14,10 @@ vi.mock('./NextEditor',async()=>{const {useEffect,useRef}=await import('react');
 vi.spyOn(HTMLElement.prototype,'clientWidth','get').mockReturnValue(1200);
 vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});
 const rows=(start:number)=>Array.from({length:3},(_,i)=>({id:String(start+i),title:'Note '+(start+i),revision:1,updatedAt:''}));
-function setup(search?:(r:{kind:string;options?:SearchOptions;cursor?:unknown})=>Promise<unknown>,storedSession?:unknown,settings?:{openBeside?:boolean}){
+function setup(search?:(r:{kind:string;options?:SearchOptions;cursor?:unknown})=>Promise<unknown>,storedSession?:unknown,settings?:{openBeside?:boolean},tags:{id:string;name:string;color:string}[]=[]){
  invoke.mockReset();invoke.mockImplementation(async(r:{kind:string;cursor?:unknown;id?:string;options?:SearchOptions;request?:{op:string;id:string;ids:string[];mode:string}})=>{
   if(r.kind==='preferences')return settings??{};
+  if(r.kind==='media'&&r.request?.op==='presentation')return r.request.ids.map(id=>({id,pinned:false,tags,collections:[]}));
   if(r.kind==='media'&&r.request?.op==='copy')return {receipt:'test-receipt',text:'vaultor://resource/'+r.request.ids.join('\nvaultor://resource/')};
   if(r.kind==='media'&&r.request?.op==='open')return {draft:r.request.id==='protected',note:{id:r.request.id,title:'Note '+r.request.id,revision:1,content:{type:'doc',content:[{type:'paragraph'}]}}};
   if(r.kind==='organization'&&r.request?.op==='pins')return {items:[],next:null,total:0};
@@ -151,4 +152,10 @@ it('keyboard cycling focuses duplicate resource views by session identity',async
 });
 it('Settings contextual Help preserves the modal and returns focus on Escape',async()=>{
  setup();await screen.findByRole('button',{name:'Note 1'});fireEvent.click(screen.getByRole('button',{name:'Settings'}));const settings=await screen.findByRole('dialog',{name:'Settings'}),trigger=screen.getByRole('button',{name:'Help with settings'});trigger.focus();fireEvent.click(trigger);await screen.findByRole('dialog',{name:'Help Center'});expect(screen.getByRole('dialog',{name:'Settings'})).toBe(settings);expect(screen.getAllByText('Settings and keyboard commands').length).toBeGreaterThan(0);fireEvent.keyDown(document,{key:'Escape'});await waitFor(()=>expect(screen.queryByRole('dialog',{name:'Help Center'})).toBeNull());expect(screen.getByRole('dialog',{name:'Settings'})).toBe(settings);await waitFor(()=>expect(document.activeElement).toBe(trigger));
+});
+
+it('bounds original styled note tags and removes only the chosen stable assignment',async()=>{
+ const tags=Array.from({length:5},(_,i)=>({id:'tag-'+i,name:'Label '+i,color:'#5887ee'}));setup(undefined,undefined,undefined,tags);fireEvent.click(await screen.findByRole('button',{name:'Note 1'}));
+ const remove=await screen.findByRole('button',{name:'Remove tag Label 0 from note'});expect(screen.getAllByRole('button',{name:/Remove tag .* from note/})).toHaveLength(4);expect(screen.getByRole('button',{name:'Show all note tags'}).textContent).toBe('+1');expect(remove.parentElement?.style.backgroundImage).toContain('linear-gradient');
+ fireEvent.click(remove);await waitFor(()=>expect(invoke).toHaveBeenCalledWith({kind:'organization',request:{op:'tagging',ids:['1'],tag:'tag-0',add:false}}));expect(invoke).not.toHaveBeenCalledWith(expect.objectContaining({kind:'organization',request:expect.objectContaining({op:'deleteTag'})}));
 });
