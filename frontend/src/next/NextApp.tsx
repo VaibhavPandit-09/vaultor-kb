@@ -190,7 +190,7 @@ export default function NextApp() {
   useEffect(()=>{
     let disposed=false,remove:(()=>void)|undefined;
     void getCurrentWindow().onCloseRequested(event=>{event.preventDefault();void run(async()=>{await persistSession();await preferencesQueue.current;await getCurrentWindow().destroy();});}).then(unlisten=>{if(disposed)unlisten();else remove=unlisten;});
-    const keyboard=(event:globalThis.KeyboardEvent)=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();const pane=event.target instanceof Element?event.target.closest<HTMLElement>('[data-note-id]')?.dataset.noteId:undefined;void run(async()=>{if(pane?.startsWith('linked:'))await external.save(pane);});}};
+    const keyboard=(event:globalThis.KeyboardEvent)=>{if(event.defaultPrevented||event.isComposing||event.keyCode===229||event.getModifierState?.('AltGraph'))return;if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();const pane=event.target instanceof Element?event.target.closest<HTMLElement>('[data-note-id]')?.dataset.noteId:undefined;void run(async()=>{if(pane?.startsWith('linked:'))await external.save(pane);});}};
     window.addEventListener('keydown',keyboard);return()=>{disposed=true;remove?.();window.removeEventListener('keydown',keyboard);};
   },[run,external,toggleHelp,persistSession]);
   useEffect(()=>{let disposed=false,remove:(()=>void)|undefined;void getCurrentWindow().onDragDropEvent(event=>{if(event.payload.type==='drop'&&event.payload.paths.length)showTransfer({op:'folder',paths:event.payload.paths});}).then(fn=>{if(disposed)fn();else remove=fn;});return()=>{disposed=true;remove?.();};},[]);
