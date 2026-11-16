@@ -4,6 +4,8 @@ Reviewed 2026-11-15. Authoritative experimental replacement tracker. Published W
 
 ## Target and implemented milestones
 
+M17 continues the scoped candidate with active title/action grouping, original note tag controls, inline collection pins, single Tags heading and IME command ownership. [M17 qualification](VAULTOR-NEXT-M17.md) records workspace/Redo, populated comparison and controlled performance evidence; full engineering/user acceptance remains open.
+
 M16 delivers an engineering-partial workspace acceptance candidate: one/two/three assigned views reuse the original pane controller/layout, share authoritative documents and persist bounded journeys/slot weights. Native, visual/motion, responsive, safety and matched-performance results are maintained in the [M16 acceptance record](VAULTOR-NEXT-M16.md). Implementation is not user acceptance; unresolved findings remain in the existing registers. No merge, tag or publication.
 
 Tauri 2 + React/TypeScript + Tiptap + Rust + SQLite. Normal local work uses direct commands, with no HTTP server, JVM or permanent helper process. `next/` owns the native application; `frontend/src/next/` is its separate frontend entry point. Original controllers remain available as reference and benchmark baseline; shared presentation is extracted for both hosts in M11.

@@ -1,0 +1,2895 @@
+{
+  "architecture": "tauri-rust",
+  "commit": "3b84bf81c86e76d99e8746c9e70d87801846adb8",
+  "executableSourceCommit": "3b84bf81c86e76d99e8746c9e70d87801846adb8",
+  "dirty": true,
+  "executableSha256": "0e691b47265eede1b6bdee99a7e5561fb9539f9e418d4ad044ae78fb237b943c",
+  "timestamp": "2026-11-15T19:38:04.318Z",
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704
+  },
+  "dataset": "f0a8df57171476fe94f6e112376f9a6a7d877ca20d864a5247a8f3998b4c281c",
+  "m17Performance": {
+    "fresh-startup": {
+      "first": {
+        "timestamp": "2026-11-15T19:38:12.6039306Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 34717696,
+            "privateBytes": 8093696,
+            "privateWorkingSet": 5632000,
+            "cpuSeconds": 0.125
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 128364544,
+            "privateBytes": 41373696,
+            "privateWorkingSet": 32772096,
+            "cpuSeconds": 0.65625
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 13598720,
+            "privateBytes": 2744320,
+            "privateWorkingSet": 1662976,
+            "cpuSeconds": 0.015625
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 85954560,
+            "privateBytes": 160890880,
+            "privateWorkingSet": 27893760,
+            "cpuSeconds": 0.390625
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44175360,
+            "privateBytes": 13176832,
+            "privateWorkingSet": 7880704,
+            "cpuSeconds": 0.140625
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23801856,
+            "privateBytes": 8044544,
+            "privateWorkingSet": 3289088,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 93577216,
+            "privateBytes": 47153152,
+            "privateWorkingSet": 35778560,
+            "cpuSeconds": 0.203125
+          }
+        ]
+      },
+      "last": {
+        "timestamp": "2026-11-15T19:38:23.7019575Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 34701312,
+            "privateBytes": 8048640,
+            "privateWorkingSet": 5615616,
+            "cpuSeconds": 0.140625
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 128536576,
+            "privateBytes": 41500672,
+            "privateWorkingSet": 32899072,
+            "cpuSeconds": 0.75
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 13598720,
+            "privateBytes": 2744320,
+            "privateWorkingSet": 1662976,
+            "cpuSeconds": 0.015625
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 84746240,
+            "privateBytes": 159088640,
+            "privateWorkingSet": 27766784,
+            "cpuSeconds": 0.390625
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44273664,
+            "privateBytes": 13197312,
+            "privateWorkingSet": 7901184,
+            "cpuSeconds": 0.15625
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23801856,
+            "privateBytes": 8044544,
+            "privateWorkingSet": 3289088,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 91516928,
+            "privateBytes": 44843008,
+            "privateWorkingSet": 33714176,
+            "cpuSeconds": 0.203125
+          }
+        ]
+      },
+      "heap": {
+        "usedSize": 5822796,
+        "totalSize": 11010048,
+        "embedderHeapUsedSize": 6307656,
+        "backingStorageSize": 1472605
+      }
+    },
+    "one-pane": {
+      "first": {
+        "timestamp": "2026-11-15T19:38:30.8560529Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 35442688,
+            "privateBytes": 8843264,
+            "privateWorkingSet": 6131712,
+            "cpuSeconds": 0.375
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 133091328,
+            "privateBytes": 43089920,
+            "privateWorkingSet": 34516992,
+            "cpuSeconds": 1.53125
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 13598720,
+            "privateBytes": 2744320,
+            "privateWorkingSet": 1662976,
+            "cpuSeconds": 0.015625
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 103505920,
+            "privateBytes": 349515776,
+            "privateWorkingSet": 41521152,
+            "cpuSeconds": 0.859375
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44449792,
+            "privateBytes": 13316096,
+            "privateWorkingSet": 8036352,
+            "cpuSeconds": 0.171875
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23838720,
+            "privateBytes": 8048640,
+            "privateWorkingSet": 3293184,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 126709760,
+            "privateBytes": 77201408,
+            "privateWorkingSet": 64430080,
+            "cpuSeconds": 0.78125
+          }
+        ]
+      },
+      "last": {
+        "timestamp": "2026-11-15T19:38:41.9560414Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 35438592,
+            "privateBytes": 8802304,
+            "privateWorkingSet": 6119424,
+            "cpuSeconds": 0.84375
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 133124096,
+            "privateBytes": 42909696,
+            "privateWorkingSet": 34312192,
+            "cpuSeconds": 2.9375
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 22564864,
+            "privateBytes": 3665920,
+            "privateWorkingSet": 2183168,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 97656832,
+            "privateBytes": 179810304,
+            "privateWorkingSet": 35667968,
+            "cpuSeconds": 1.015625
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44359680,
+            "privateBytes": 13225984,
+            "privateWorkingSet": 7946240,
+            "cpuSeconds": 0.171875
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23838720,
+            "privateBytes": 8048640,
+            "privateWorkingSet": 3293184,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 115941376,
+            "privateBytes": 65294336,
+            "privateWorkingSet": 52596736,
+            "cpuSeconds": 1
+          }
+        ]
+      },
+      "heap": {
+        "usedSize": 6710372,
+        "totalSize": 8036352,
+        "embedderHeapUsedSize": 3477568,
+        "backingStorageSize": 1474239
+      }
+    },
+    "two-same": {
+      "first": {
+        "timestamp": "2026-11-15T19:38:48.8315036Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 35434496,
+            "privateBytes": 8790016,
+            "privateWorkingSet": 6111232,
+            "cpuSeconds": 0.953125
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 138534912,
+            "privateBytes": 47337472,
+            "privateWorkingSet": 39280640,
+            "cpuSeconds": 4.0625
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 22564864,
+            "privateBytes": 3665920,
+            "privateWorkingSet": 2183168,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 106848256,
+            "privateBytes": 489484288,
+            "privateWorkingSet": 43204608,
+            "cpuSeconds": 1.375
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44359680,
+            "privateBytes": 13225984,
+            "privateWorkingSet": 7946240,
+            "cpuSeconds": 0.171875
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23838720,
+            "privateBytes": 8048640,
+            "privateWorkingSet": 3293184,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 125739008,
+            "privateBytes": 72249344,
+            "privateWorkingSet": 60076032,
+            "cpuSeconds": 1.34375
+          }
+        ]
+      },
+      "last": {
+        "timestamp": "2026-11-15T19:39:00.0732889Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 35434496,
+            "privateBytes": 8790016,
+            "privateWorkingSet": 6111232,
+            "cpuSeconds": 1.09375
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 138244096,
+            "privateBytes": 47001600,
+            "privateWorkingSet": 38350848,
+            "cpuSeconds": 4.890625
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 22564864,
+            "privateBytes": 3665920,
+            "privateWorkingSet": 2183168,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 106237952,
+            "privateBytes": 488939520,
+            "privateWorkingSet": 42541056,
+            "cpuSeconds": 1.453125
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44359680,
+            "privateBytes": 13225984,
+            "privateWorkingSet": 7946240,
+            "cpuSeconds": 0.171875
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 23838720,
+            "privateBytes": 8048640,
+            "privateWorkingSet": 3293184,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 124768256,
+            "privateBytes": 71729152,
+            "privateWorkingSet": 59572224,
+            "cpuSeconds": 1.359375
+          }
+        ]
+      },
+      "heap": {
+        "usedSize": 7586076,
+        "totalSize": 10395648,
+        "embedderHeapUsedSize": 8036568,
+        "backingStorageSize": 1526537
+      }
+    },
+    "three-same": {
+      "first": {
+        "timestamp": "2026-11-15T19:39:06.8502366Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 35393536,
+            "privateBytes": 8699904,
+            "privateWorkingSet": 6070272,
+            "cpuSeconds": 1.25
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 145219584,
+            "privateBytes": 50241536,
+            "privateWorkingSet": 40448000,
+            "cpuSeconds": 6.53125
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 16523264,
+            "privateBytes": 3313664,
+            "privateWorkingSet": 1921024,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 108519424,
+            "privateBytes": 509161472,
+            "privateWorkingSet": 44523520,
+            "cpuSeconds": 1.6875
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44310528,
+            "privateBytes": 12824576,
+            "privateWorkingSet": 7430144,
+            "cpuSeconds": 0.203125
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 24064000,
+            "privateBytes": 7925760,
+            "privateWorkingSet": 3207168,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 133419008,
+            "privateBytes": 79282176,
+            "privateWorkingSet": 67526656,
+            "cpuSeconds": 1.921875
+          }
+        ]
+      },
+      "last": {
+        "timestamp": "2026-11-15T19:39:18.0344062Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 35368960,
+            "privateBytes": 8642560,
+            "privateWorkingSet": 6037504,
+            "cpuSeconds": 1.3125
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 143749120,
+            "privateBytes": 48443392,
+            "privateWorkingSet": 40194048,
+            "cpuSeconds": 7.1875
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 16527360,
+            "privateBytes": 3313664,
+            "privateWorkingSet": 1921024,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 108167168,
+            "privateBytes": 508895232,
+            "privateWorkingSet": 44175360,
+            "cpuSeconds": 1.75
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44122112,
+            "privateBytes": 12541952,
+            "privateWorkingSet": 7356416,
+            "cpuSeconds": 0.203125
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 24064000,
+            "privateBytes": 7925760,
+            "privateWorkingSet": 3207168,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 129290240,
+            "privateBytes": 75317248,
+            "privateWorkingSet": 63397888,
+            "cpuSeconds": 1.984375
+          }
+        ]
+      },
+      "heap": {
+        "usedSize": 7985016,
+        "totalSize": 12754944,
+        "embedderHeapUsedSize": 5175688,
+        "backingStorageSize": 1511658
+      }
+    },
+    "three-distinct": {
+      "first": {
+        "timestamp": "2026-11-15T19:39:40.3479734Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 35766272,
+            "privateBytes": 8384512,
+            "privateWorkingSet": 6410240,
+            "cpuSeconds": 2.203125
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 152711168,
+            "privateBytes": 49942528,
+            "privateWorkingSet": 39956480,
+            "cpuSeconds": 17.328125
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 16527360,
+            "privateBytes": 3313664,
+            "privateWorkingSet": 1921024,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 130891776,
+            "privateBytes": 427978752,
+            "privateWorkingSet": 66277376,
+            "cpuSeconds": 6.4375
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44204032,
+            "privateBytes": 12562432,
+            "privateWorkingSet": 7376896,
+            "cpuSeconds": 0.21875
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 24064000,
+            "privateBytes": 7925760,
+            "privateWorkingSet": 3207168,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 164691968,
+            "privateBytes": 106749952,
+            "privateWorkingSet": 95625216,
+            "cpuSeconds": 9.65625
+          }
+        ]
+      },
+      "last": {
+        "timestamp": "2026-11-15T19:39:51.6247670Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 35766272,
+            "privateBytes": 8384512,
+            "privateWorkingSet": 6410240,
+            "cpuSeconds": 2.234375
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 152461312,
+            "privateBytes": 49594368,
+            "privateWorkingSet": 39596032,
+            "cpuSeconds": 17.59375
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 16527360,
+            "privateBytes": 3313664,
+            "privateWorkingSet": 1921024,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 124911616,
+            "privateBytes": 423022592,
+            "privateWorkingSet": 60297216,
+            "cpuSeconds": 6.46875
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44199936,
+            "privateBytes": 12558336,
+            "privateWorkingSet": 7372800,
+            "cpuSeconds": 0.21875
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 24064000,
+            "privateBytes": 7925760,
+            "privateWorkingSet": 3207168,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 162365440,
+            "privateBytes": 106184704,
+            "privateWorkingSet": 93298688,
+            "cpuSeconds": 9.671875
+          }
+        ]
+      },
+      "heap": {
+        "usedSize": 9582612,
+        "totalSize": 26124288,
+        "embedderHeapUsedSize": 9129624,
+        "backingStorageSize": 1530228
+      }
+    },
+    "returned-one-cycle-0": {
+      "first": {
+        "timestamp": "2026-11-15T19:40:14.5746194Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 36032512,
+            "privateBytes": 8757248,
+            "privateWorkingSet": 6647808,
+            "cpuSeconds": 3.578125
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 153337856,
+            "privateBytes": 48431104,
+            "privateWorkingSet": 38330368,
+            "cpuSeconds": 25.609375
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 16527360,
+            "privateBytes": 3313664,
+            "privateWorkingSet": 1921024,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 132456448,
+            "privateBytes": 386420736,
+            "privateWorkingSet": 67158016,
+            "cpuSeconds": 10.765625
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44310528,
+            "privateBytes": 12566528,
+            "privateWorkingSet": 7405568,
+            "cpuSeconds": 0.265625
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 24064000,
+            "privateBytes": 7925760,
+            "privateWorkingSet": 3207168,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 166707200,
+            "privateBytes": 108523520,
+            "privateWorkingSet": 95825920,
+            "cpuSeconds": 15.703125
+          }
+        ]
+      },
+      "last": {
+        "timestamp": "2026-11-15T19:40:25.6678687Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 35799040,
+            "privateBytes": 8441856,
+            "privateWorkingSet": 6414336,
+            "cpuSeconds": 3.609375
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 152920064,
+            "privateBytes": 47964160,
+            "privateWorkingSet": 37912576,
+            "cpuSeconds": 25.703125
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 16494592,
+            "privateBytes": 3256320,
+            "privateWorkingSet": 1888256,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 128184320,
+            "privateBytes": 207187968,
+            "privateWorkingSet": 63004672,
+            "cpuSeconds": 10.859375
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44290048,
+            "privateBytes": 12521472,
+            "privateWorkingSet": 7385088,
+            "cpuSeconds": 0.265625
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 24064000,
+            "privateBytes": 7925760,
+            "privateWorkingSet": 3207168,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 166543360,
+            "privateBytes": 108396544,
+            "privateWorkingSet": 95662080,
+            "cpuSeconds": 15.734375
+          }
+        ]
+      },
+      "heap": {
+        "usedSize": 10537132,
+        "totalSize": 27959296,
+        "embedderHeapUsedSize": 7156440,
+        "backingStorageSize": 1587956
+      }
+    },
+    "returned-one-cycle-1": {
+      "first": {
+        "timestamp": "2026-11-15T19:40:48.0989847Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 36118528,
+            "privateBytes": 9089024,
+            "privateWorkingSet": 6733824,
+            "cpuSeconds": 5.453125
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 153722880,
+            "privateBytes": 48738304,
+            "privateWorkingSet": 38670336,
+            "cpuSeconds": 34.359375
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 16482304,
+            "privateBytes": 3207168,
+            "privateWorkingSet": 1863680,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 136536064,
+            "privateBytes": 446447616,
+            "privateWorkingSet": 70987776,
+            "cpuSeconds": 14.453125
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44298240,
+            "privateBytes": 12533760,
+            "privateWorkingSet": 7393280,
+            "cpuSeconds": 0.34375
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 24064000,
+            "privateBytes": 7925760,
+            "privateWorkingSet": 3207168,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 178106368,
+            "privateBytes": 121884672,
+            "privateWorkingSet": 107192320,
+            "cpuSeconds": 21.28125
+          }
+        ]
+      },
+      "last": {
+        "timestamp": "2026-11-15T19:40:59.2025887Z",
+        "processes": [
+          {
+            "pid": 14532,
+            "name": "vaultor-next-m17.exe",
+            "role": "tauri",
+            "workingSet": 36118528,
+            "privateBytes": 9089024,
+            "privateWorkingSet": 6733824,
+            "cpuSeconds": 5.578125
+          },
+          {
+            "pid": 40764,
+            "name": "msedgewebview2.exe",
+            "role": "webview-browser",
+            "workingSet": 152915968,
+            "privateBytes": 47882240,
+            "privateWorkingSet": 37838848,
+            "cpuSeconds": 34.875
+          },
+          {
+            "pid": 35816,
+            "name": "msedgewebview2.exe",
+            "role": "crashpad-handler",
+            "workingSet": 16482304,
+            "privateBytes": 3207168,
+            "privateWorkingSet": 1863680,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 35460,
+            "name": "msedgewebview2.exe",
+            "role": "gpu-process",
+            "workingSet": 130113536,
+            "privateBytes": 208359424,
+            "privateWorkingSet": 64720896,
+            "cpuSeconds": 14.578125
+          },
+          {
+            "pid": 41296,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 44298240,
+            "privateBytes": 12533760,
+            "privateWorkingSet": 7393280,
+            "cpuSeconds": 0.34375
+          },
+          {
+            "pid": 18804,
+            "name": "msedgewebview2.exe",
+            "role": "utility",
+            "workingSet": 24064000,
+            "privateBytes": 7925760,
+            "privateWorkingSet": 3207168,
+            "cpuSeconds": 0.046875
+          },
+          {
+            "pid": 7740,
+            "name": "msedgewebview2.exe",
+            "role": "renderer",
+            "workingSet": 173101056,
+            "privateBytes": 116994048,
+            "privateWorkingSet": 102191104,
+            "cpuSeconds": 21.3125
+          }
+        ]
+      },
+      "heap": {
+        "usedSize": 11142868,
+        "totalSize": 31891456,
+        "embedderHeapUsedSize": 7949832,
+        "backingStorageSize": 1622480
+      }
+    }
+  },
+  "m17Endpoint": {
+    "editors": 1,
+    "portals": 0,
+    "ghosts": 0,
+    "nodes": 944
+  },
+  "m17Redo": [
+    {
+      "iteration": 0,
+      "target": 0,
+      "undo": 1,
+      "redo": 2,
+      "before": {
+        "focus": 1,
+        "editors": [
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 11851,
+            "destroyed": false
+          },
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 136,
+            "destroyed": false
+          },
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 11851,
+            "destroyed": false
+          }
+        ]
+      },
+      "afterUndo": {
+        "focus": 2,
+        "redo": [
+          true,
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "iteration": 1,
+      "target": 1,
+      "undo": 2,
+      "redo": 0,
+      "before": {
+        "focus": 2,
+        "editors": [
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 11863,
+            "destroyed": false
+          },
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 11863,
+            "destroyed": false
+          },
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 136,
+            "destroyed": false
+          }
+        ]
+      },
+      "afterUndo": {
+        "focus": 0,
+        "redo": [
+          true,
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "iteration": 2,
+      "target": 2,
+      "undo": 0,
+      "redo": 1,
+      "before": {
+        "focus": 0,
+        "editors": [
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 136,
+            "destroyed": false
+          },
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 11875,
+            "destroyed": false
+          },
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 11875,
+            "destroyed": false
+          }
+        ]
+      },
+      "afterUndo": {
+        "focus": 1,
+        "redo": [
+          true,
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "iteration": 3,
+      "target": 0,
+      "undo": 1,
+      "redo": 2,
+      "before": {
+        "focus": 1,
+        "editors": [
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 11887,
+            "destroyed": false
+          },
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 136,
+            "destroyed": false
+          },
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 11887,
+            "destroyed": false
+          }
+        ]
+      },
+      "afterUndo": {
+        "focus": 2,
+        "redo": [
+          true,
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "iteration": 4,
+      "target": 1,
+      "undo": 2,
+      "redo": 0,
+      "before": {
+        "focus": 2,
+        "editors": [
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 11899,
+            "destroyed": false
+          },
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 11899,
+            "destroyed": false
+          },
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 136,
+            "destroyed": false
+          }
+        ]
+      },
+      "afterUndo": {
+        "focus": 0,
+        "redo": [
+          true,
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "iteration": 5,
+      "target": 2,
+      "undo": 0,
+      "redo": 1,
+      "before": {
+        "focus": 0,
+        "editors": [
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 136,
+            "destroyed": false
+          },
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 11911,
+            "destroyed": false
+          },
+          {
+            "undo": true,
+            "redo": false,
+            "selection": 11911,
+            "destroyed": false
+          }
+        ]
+      },
+      "afterUndo": {
+        "focus": 1,
+        "redo": [
+          true,
+          true,
+          true
+        ]
+      }
+    }
+  ],
+  "measurements": [
+    {
+      "scenario": "m17-startup-first-profile",
+      "iteration": 1,
+      "metric": "startup_usable",
+      "unit": "ms",
+      "n": 1,
+      "min": 728.2117000000001,
+      "median": 728.2117000000001,
+      "p95": 728.2117000000001,
+      "max": 728.2117000000001
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 1.1263290683005946,
+      "median": 1.1263290683005946,
+      "p95": 1.1263290683005946,
+      "max": 1.1263290683005946
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 33.09375,
+      "median": 33.09375,
+      "p95": 33.09375,
+      "max": 33.09375
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 7.67578125,
+      "median": 7.67578125,
+      "p95": 7.67578125,
+      "max": 7.67578125
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.35546875,
+      "median": 5.35546875,
+      "p95": 5.35546875,
+      "max": 5.35546875
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 122.58203125,
+      "median": 122.58203125,
+      "p95": 122.58203125,
+      "max": 122.58203125
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 39.578125,
+      "median": 39.578125,
+      "p95": 39.578125,
+      "max": 39.578125
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 31.375,
+      "median": 31.375,
+      "p95": 31.375,
+      "max": 31.375
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "crashpad-handler_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 12.96875,
+      "median": 12.96875,
+      "p95": 12.96875,
+      "max": 12.96875
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 2.6171875,
+      "median": 2.6171875,
+      "p95": 2.6171875,
+      "max": 2.6171875
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 1.5859375,
+      "median": 1.5859375,
+      "p95": 1.5859375,
+      "max": 1.5859375
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 80.8203125,
+      "median": 80.8203125,
+      "p95": 80.8203125,
+      "max": 80.8203125
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 151.71875,
+      "median": 151.71875,
+      "p95": 151.71875,
+      "max": 151.71875
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 26.48046875,
+      "median": 26.48046875,
+      "p95": 26.48046875,
+      "max": 26.48046875
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 64.921875,
+      "median": 64.921875,
+      "p95": 64.921875,
+      "max": 64.921875
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 20.2578125,
+      "median": 20.2578125,
+      "p95": 20.2578125,
+      "max": 20.2578125
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.671875,
+      "median": 10.671875,
+      "p95": 10.671875,
+      "max": 10.671875
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 87.27734375,
+      "median": 87.27734375,
+      "p95": 87.27734375,
+      "max": 87.27734375
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 42.765625,
+      "median": 42.765625,
+      "p95": 42.765625,
+      "max": 42.765625
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 32.15234375,
+      "median": 32.15234375,
+      "p95": 32.15234375,
+      "max": 32.15234375
+    },
+    {
+      "scenario": "m17-fresh-startup",
+      "iteration": 1,
+      "metric": "js_heap_used",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.553050994873047,
+      "median": 5.553050994873047,
+      "p95": 5.553050994873047,
+      "max": 5.553050994873047
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 20.5518018018018,
+      "median": 20.5518018018018,
+      "p95": 20.5518018018018,
+      "max": 20.5518018018018
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 33.796875,
+      "median": 33.796875,
+      "p95": 33.796875,
+      "max": 33.796875
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 8.39453125,
+      "median": 8.39453125,
+      "p95": 8.39453125,
+      "max": 8.39453125
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.8359375,
+      "median": 5.8359375,
+      "p95": 5.8359375,
+      "max": 5.8359375
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 126.95703125,
+      "median": 126.95703125,
+      "p95": 126.95703125,
+      "max": 126.95703125
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 40.921875,
+      "median": 40.921875,
+      "p95": 40.921875,
+      "max": 40.921875
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 32.72265625,
+      "median": 32.72265625,
+      "p95": 32.72265625,
+      "max": 32.72265625
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "crashpad-handler_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 21.51953125,
+      "median": 21.51953125,
+      "p95": 21.51953125,
+      "max": 21.51953125
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 3.49609375,
+      "median": 3.49609375,
+      "p95": 3.49609375,
+      "max": 3.49609375
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 2.08203125,
+      "median": 2.08203125,
+      "p95": 2.08203125,
+      "max": 2.08203125
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 93.1328125,
+      "median": 93.1328125,
+      "p95": 93.1328125,
+      "max": 93.1328125
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 171.48046875,
+      "median": 171.48046875,
+      "p95": 171.48046875,
+      "max": 171.48046875
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 34.015625,
+      "median": 34.015625,
+      "p95": 34.015625,
+      "max": 34.015625
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 65.0390625,
+      "median": 65.0390625,
+      "p95": 65.0390625,
+      "max": 65.0390625
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 20.2890625,
+      "median": 20.2890625,
+      "p95": 20.2890625,
+      "max": 20.2890625
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.71875,
+      "median": 10.71875,
+      "p95": 10.71875,
+      "max": 10.71875
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 110.5703125,
+      "median": 110.5703125,
+      "p95": 110.5703125,
+      "max": 110.5703125
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 62.26953125,
+      "median": 62.26953125,
+      "p95": 62.26953125,
+      "max": 62.26953125
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 50.16015625,
+      "median": 50.16015625,
+      "p95": 50.16015625,
+      "max": 50.16015625
+    },
+    {
+      "scenario": "m17-one-pane",
+      "iteration": 1,
+      "metric": "js_heap_used",
+      "unit": "MiB",
+      "n": 1,
+      "min": 6.399509429931641,
+      "median": 6.399509429931641,
+      "p95": 6.399509429931641,
+      "max": 6.399509429931641
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 9.451165273083081,
+      "median": 9.451165273083081,
+      "p95": 9.451165273083081,
+      "max": 9.451165273083081
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 33.79296875,
+      "median": 33.79296875,
+      "p95": 33.79296875,
+      "max": 33.79296875
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 8.3828125,
+      "median": 8.3828125,
+      "p95": 8.3828125,
+      "max": 8.3828125
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.828125,
+      "median": 5.828125,
+      "p95": 5.828125,
+      "max": 5.828125
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 131.83984375,
+      "median": 131.83984375,
+      "p95": 131.83984375,
+      "max": 131.83984375
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 44.82421875,
+      "median": 44.82421875,
+      "p95": 44.82421875,
+      "max": 44.82421875
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 36.57421875,
+      "median": 36.57421875,
+      "p95": 36.57421875,
+      "max": 36.57421875
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "crashpad-handler_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 21.51953125,
+      "median": 21.51953125,
+      "p95": 21.51953125,
+      "max": 21.51953125
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 3.49609375,
+      "median": 3.49609375,
+      "p95": 3.49609375,
+      "max": 3.49609375
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 2.08203125,
+      "median": 2.08203125,
+      "p95": 2.08203125,
+      "max": 2.08203125
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 101.31640625,
+      "median": 101.31640625,
+      "p95": 101.31640625,
+      "max": 101.31640625
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 466.2890625,
+      "median": 466.2890625,
+      "p95": 466.2890625,
+      "max": 466.2890625
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 40.5703125,
+      "median": 40.5703125,
+      "p95": 40.5703125,
+      "max": 40.5703125
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 65.0390625,
+      "median": 65.0390625,
+      "p95": 65.0390625,
+      "max": 65.0390625
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 20.2890625,
+      "median": 20.2890625,
+      "p95": 20.2890625,
+      "max": 20.2890625
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.71875,
+      "median": 10.71875,
+      "p95": 10.71875,
+      "max": 10.71875
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 118.98828125,
+      "median": 118.98828125,
+      "p95": 118.98828125,
+      "max": 118.98828125
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 68.40625,
+      "median": 68.40625,
+      "p95": 68.40625,
+      "max": 68.40625
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 56.8125,
+      "median": 56.8125,
+      "p95": 56.8125,
+      "max": 56.8125
+    },
+    {
+      "scenario": "m17-two-same",
+      "iteration": 1,
+      "metric": "js_heap_used",
+      "unit": "MiB",
+      "n": 1,
+      "min": 7.234645843505859,
+      "median": 7.234645843505859,
+      "p95": 7.234645843505859,
+      "max": 7.234645843505859
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 7.544259656652361,
+      "median": 7.544259656652361,
+      "p95": 7.544259656652361,
+      "max": 7.544259656652361
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 33.73046875,
+      "median": 33.73046875,
+      "p95": 33.73046875,
+      "max": 33.73046875
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 8.2421875,
+      "median": 8.2421875,
+      "p95": 8.2421875,
+      "max": 8.2421875
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 5.7578125,
+      "median": 5.7578125,
+      "p95": 5.7578125,
+      "max": 5.7578125
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 137.08984375,
+      "median": 137.08984375,
+      "p95": 137.08984375,
+      "max": 137.08984375
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 46.19921875,
+      "median": 46.19921875,
+      "p95": 46.19921875,
+      "max": 46.19921875
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 38.33203125,
+      "median": 38.33203125,
+      "p95": 38.33203125,
+      "max": 38.33203125
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "crashpad-handler_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 15.76171875,
+      "median": 15.76171875,
+      "p95": 15.76171875,
+      "max": 15.76171875
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 3.16015625,
+      "median": 3.16015625,
+      "p95": 3.16015625,
+      "max": 3.16015625
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 1.83203125,
+      "median": 1.83203125,
+      "p95": 1.83203125,
+      "max": 1.83203125
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 103.15625,
+      "median": 103.15625,
+      "p95": 103.15625,
+      "max": 103.15625
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 485.3203125,
+      "median": 485.3203125,
+      "p95": 485.3203125,
+      "max": 485.3203125
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 42.12890625,
+      "median": 42.12890625,
+      "p95": 42.12890625,
+      "max": 42.12890625
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 65.02734375,
+      "median": 65.02734375,
+      "p95": 65.02734375,
+      "max": 65.02734375
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.51953125,
+      "median": 19.51953125,
+      "p95": 19.51953125,
+      "max": 19.51953125
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.07421875,
+      "median": 10.07421875,
+      "p95": 10.07421875,
+      "max": 10.07421875
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 123.30078125,
+      "median": 123.30078125,
+      "p95": 123.30078125,
+      "max": 123.30078125
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 71.828125,
+      "median": 71.828125,
+      "p95": 71.828125,
+      "max": 71.828125
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 60.4609375,
+      "median": 60.4609375,
+      "p95": 60.4609375,
+      "max": 60.4609375
+    },
+    {
+      "scenario": "m17-three-same",
+      "iteration": 1,
+      "metric": "js_heap_used",
+      "unit": "MiB",
+      "n": 1,
+      "min": 7.615104675292969,
+      "median": 7.615104675292969,
+      "p95": 7.615104675292969,
+      "max": 7.615104675292969
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 3.048239780083356,
+      "median": 3.048239780083356,
+      "p95": 3.048239780083356,
+      "max": 3.048239780083356
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 34.109375,
+      "median": 34.109375,
+      "p95": 34.109375,
+      "max": 34.109375
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 7.99609375,
+      "median": 7.99609375,
+      "p95": 7.99609375,
+      "max": 7.99609375
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 6.11328125,
+      "median": 6.11328125,
+      "p95": 6.11328125,
+      "max": 6.11328125
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 145.3984375,
+      "median": 145.3984375,
+      "p95": 145.3984375,
+      "max": 145.3984375
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 47.296875,
+      "median": 47.296875,
+      "p95": 47.296875,
+      "max": 47.296875
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 37.76171875,
+      "median": 37.76171875,
+      "p95": 37.76171875,
+      "max": 37.76171875
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "crashpad-handler_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 15.76171875,
+      "median": 15.76171875,
+      "p95": 15.76171875,
+      "max": 15.76171875
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 3.16015625,
+      "median": 3.16015625,
+      "p95": 3.16015625,
+      "max": 3.16015625
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 1.83203125,
+      "median": 1.83203125,
+      "p95": 1.83203125,
+      "max": 1.83203125
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 119.125,
+      "median": 119.125,
+      "p95": 119.125,
+      "max": 119.125
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 403.42578125,
+      "median": 403.42578125,
+      "p95": 403.42578125,
+      "max": 403.42578125
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 57.50390625,
+      "median": 57.50390625,
+      "p95": 57.50390625,
+      "max": 57.50390625
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 65.1015625,
+      "median": 65.1015625,
+      "p95": 65.1015625,
+      "max": 65.1015625
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.53515625,
+      "median": 19.53515625,
+      "p95": 19.53515625,
+      "max": 19.53515625
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.08984375,
+      "median": 10.08984375,
+      "p95": 10.08984375,
+      "max": 10.08984375
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 154.84375,
+      "median": 154.84375,
+      "p95": 154.84375,
+      "max": 154.84375
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 101.265625,
+      "median": 101.265625,
+      "p95": 101.265625,
+      "max": 101.265625
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 88.9765625,
+      "median": 88.9765625,
+      "p95": 88.9765625,
+      "max": 88.9765625
+    },
+    {
+      "scenario": "m17-three-distinct",
+      "iteration": 1,
+      "metric": "js_heap_used",
+      "unit": "MiB",
+      "n": 1,
+      "min": 9.138690948486328,
+      "median": 9.138690948486328,
+      "p95": 9.138690948486328,
+      "max": 9.138690948486328
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 2.2536734877850897,
+      "median": 2.2536734877850897,
+      "p95": 2.2536734877850897,
+      "max": 2.2536734877850897
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 34.140625,
+      "median": 34.140625,
+      "p95": 34.140625,
+      "max": 34.140625
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 8.05078125,
+      "median": 8.05078125,
+      "p95": 8.05078125,
+      "max": 8.05078125
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 6.1171875,
+      "median": 6.1171875,
+      "p95": 6.1171875,
+      "max": 6.1171875
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 145.8359375,
+      "median": 145.8359375,
+      "p95": 145.8359375,
+      "max": 145.8359375
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 45.7421875,
+      "median": 45.7421875,
+      "p95": 45.7421875,
+      "max": 45.7421875
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 36.15625,
+      "median": 36.15625,
+      "p95": 36.15625,
+      "max": 36.15625
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "crashpad-handler_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 15.73046875,
+      "median": 15.73046875,
+      "p95": 15.73046875,
+      "max": 15.73046875
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 3.10546875,
+      "median": 3.10546875,
+      "p95": 3.10546875,
+      "max": 3.10546875
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 1.80078125,
+      "median": 1.80078125,
+      "p95": 1.80078125,
+      "max": 1.80078125
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 122.24609375,
+      "median": 122.24609375,
+      "p95": 122.24609375,
+      "max": 122.24609375
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 197.58984375,
+      "median": 197.58984375,
+      "p95": 197.58984375,
+      "max": 197.58984375
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 60.0859375,
+      "median": 60.0859375,
+      "p95": 60.0859375,
+      "max": 60.0859375
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 65.1875,
+      "median": 65.1875,
+      "p95": 65.1875,
+      "max": 65.1875
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.5,
+      "median": 19.5,
+      "p95": 19.5,
+      "max": 19.5
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.1015625,
+      "median": 10.1015625,
+      "p95": 10.1015625,
+      "max": 10.1015625
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 158.828125,
+      "median": 158.828125,
+      "p95": 158.828125,
+      "max": 158.828125
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 103.375,
+      "median": 103.375,
+      "p95": 103.375,
+      "max": 103.375
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 91.23046875,
+      "median": 91.23046875,
+      "p95": 91.23046875,
+      "max": 91.23046875
+    },
+    {
+      "scenario": "m17-returned-one-cycle-0",
+      "iteration": 1,
+      "metric": "js_heap_used",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.048992156982422,
+      "median": 10.048992156982422,
+      "p95": 10.048992156982422,
+      "max": 10.048992156982422
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 7.1764679394812685,
+      "median": 7.1764679394812685,
+      "p95": 7.1764679394812685,
+      "max": 7.1764679394812685
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "tauri_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 34.4453125,
+      "median": 34.4453125,
+      "p95": 34.4453125,
+      "max": 34.4453125
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "tauri_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 8.66796875,
+      "median": 8.66796875,
+      "p95": 8.66796875,
+      "max": 8.66796875
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "tauri_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 6.421875,
+      "median": 6.421875,
+      "p95": 6.421875,
+      "max": 6.421875
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "webview-browser_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 145.83203125,
+      "median": 145.83203125,
+      "p95": 145.83203125,
+      "max": 145.83203125
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "webview-browser_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 45.6640625,
+      "median": 45.6640625,
+      "p95": 45.6640625,
+      "max": 45.6640625
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "webview-browser_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 36.0859375,
+      "median": 36.0859375,
+      "p95": 36.0859375,
+      "max": 36.0859375
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "crashpad-handler_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 15.71875,
+      "median": 15.71875,
+      "p95": 15.71875,
+      "max": 15.71875
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 3.05859375,
+      "median": 3.05859375,
+      "p95": 3.05859375,
+      "max": 3.05859375
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "crashpad-handler_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 1.77734375,
+      "median": 1.77734375,
+      "p95": 1.77734375,
+      "max": 1.77734375
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "gpu-process_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 124.0859375,
+      "median": 124.0859375,
+      "p95": 124.0859375,
+      "max": 124.0859375
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "gpu-process_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 198.70703125,
+      "median": 198.70703125,
+      "p95": 198.70703125,
+      "max": 198.70703125
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "gpu-process_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 61.72265625,
+      "median": 61.72265625,
+      "p95": 61.72265625,
+      "max": 61.72265625
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "utility_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 65.1953125,
+      "median": 65.1953125,
+      "p95": 65.1953125,
+      "max": 65.1953125
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "utility_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 19.51171875,
+      "median": 19.51171875,
+      "p95": 19.51171875,
+      "max": 19.51171875
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "utility_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.109375,
+      "median": 10.109375,
+      "p95": 10.109375,
+      "max": 10.109375
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "renderer_workingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 165.08203125,
+      "median": 165.08203125,
+      "p95": 165.08203125,
+      "max": 165.08203125
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "renderer_privateBytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 111.57421875,
+      "median": 111.57421875,
+      "p95": 111.57421875,
+      "max": 111.57421875
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "renderer_privateWorkingSet",
+      "unit": "MiB",
+      "n": 1,
+      "min": 97.45703125,
+      "median": 97.45703125,
+      "p95": 97.45703125,
+      "max": 97.45703125
+    },
+    {
+      "scenario": "m17-returned-one-cycle-1",
+      "iteration": 1,
+      "metric": "js_heap_used",
+      "unit": "MiB",
+      "n": 1,
+      "min": 10.626667022705078,
+      "median": 10.626667022705078,
+      "p95": 10.626667022705078,
+      "max": 10.626667022705078
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 635.671875,
+      "median": 635.671875,
+      "p95": 635.671875,
+      "max": 635.671875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 564.44140625,
+      "median": 564.44140625,
+      "p95": 564.44140625,
+      "max": 564.44140625
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "process_tree_private_bytes",
+      "unit": "MiB",
+      "n": 1,
+      "min": 463.13671875,
+      "median": 463.13671875,
+      "p95": 463.13671875,
+      "max": 463.13671875
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "java_working_set",
+      "unit": "MiB",
+      "n": 1,
+      "min": 0,
+      "median": 0,
+      "p95": 0,
+      "max": 0
+    },
+    {
+      "scenario": "idle",
+      "iteration": 1,
+      "metric": "cpu_one_core_percent",
+      "unit": "%",
+      "n": 1,
+      "min": 12.116486850977747,
+      "median": 12.116486850977747,
+      "p95": 12.116486850977747,
+      "max": 12.116486850977747
+    }
+  ],
+  "checks": [
+    "Six native three-view shared editing/Undo/Redo cycles,rotating editing/Undo/Redo owners;hit-tested clicks and focused-editor/canRedo diagnostics. M16 unfocused timeout is retained,not proven fixed."
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes.",
+    "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1–M5 shared-profile runs.",
+    "Only the disposable application process tree is sampled; background apps, power and cache conditions are uncontrolled. The M8 reference had a coexisting personal process; inspect coexistingPersonalReference for this run."
+  ],
+  "success": true,
+  "runtime": {
+    "protocolVersion": "1.3",
+    "product": "Edg/157.0.4341.46",
+    "revision": "@a0c6bd61d7884b3c402a34c67d05100107a9e5e4",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+    "jsVersion": "15.7.11.4"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1,
+    "theme": "light"
+  },
+  "node": "v24.18.1",
+  "appVersion": "0.1.0",
+  "instrument": "m1-cdp-v2",
+  "coexistingPersonalReference": false,
+  "nativeInspectionHelperActiveBefore": true,
+  "nativeInspectionHelperActiveAfter": true
+}

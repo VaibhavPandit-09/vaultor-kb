@@ -1,0 +1,3357 @@
+{
+  "protocol": "m17-workspace-stability-v1",
+  "runs": [
+    {
+      "evidence": "raw/tauri-rust-2026-11-15T19-28-18.792Z.json",
+      "sourceCommit": "b6027cbbbfde9c389589307e4625f3db359181f7",
+      "executableSha256": "315aaaa70148f9bd081926ba9f3e5ac9f69cc4c6b66193c9eccdf4462fb63d86",
+      "fixture": {
+        "ids": [
+          "2998d1f8-6009-4885-9fad-983dbd403390",
+          "ee5c12f6-4867-4ff9-80c2-c847142edc8b",
+          "340dcda0-c597-481f-affd-5d8ab4f273d8"
+        ],
+        "root": "\\\\?\\C:\\Users\\Vaibhav\\AppData\\Local\\Temp\\vaultor-next-bench-PqlZYE\\workspace",
+        "paragraphs": 50,
+        "width": 1800,
+        "height": 1000,
+        "dpr": 1
+      },
+      "dataset": "f0a8df57171476fe94f6e112376f9a6a7d877ca20d864a5247a8f3998b4c281c",
+      "system": {
+        "device": "LAPTOP-251O7CQC",
+        "os": "10.0.26340",
+        "arch": "x64",
+        "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+        "logicalCpus": 20,
+        "ramBytes": 16573128704
+      },
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.46",
+        "revision": "@a0c6bd61d7884b3c402a34c67d05100107a9e5e4",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.4"
+      },
+      "success": true,
+      "performance": {
+        "fresh-startup": {
+          "first": {
+            "timestamp": "2026-11-15T19:28:28.7768434Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 34459648,
+                "privateBytes": 7372800,
+                "privateWorkingSet": 5439488,
+                "cpuSeconds": 0.109375
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 128012288,
+                "privateBytes": 40898560,
+                "privateWorkingSet": 32452608,
+                "cpuSeconds": 0.671875
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 13594624,
+                "privateBytes": 2719744,
+                "privateWorkingSet": 1654784,
+                "cpuSeconds": 0.015625
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 85704704,
+                "privateBytes": 160051200,
+                "privateWorkingSet": 27676672,
+                "cpuSeconds": 0.359375
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44130304,
+                "privateBytes": 13111296,
+                "privateWorkingSet": 8024064,
+                "cpuSeconds": 0.171875
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24477696,
+                "privateBytes": 8421376,
+                "privateWorkingSet": 3526656,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 96444416,
+                "privateBytes": 50987008,
+                "privateWorkingSet": 39129088,
+                "cpuSeconds": 0.171875
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:28:39.8961065Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 34443264,
+                "privateBytes": 7327744,
+                "privateWorkingSet": 5423104,
+                "cpuSeconds": 0.140625
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 128806912,
+                "privateBytes": 41504768,
+                "privateWorkingSet": 33058816,
+                "cpuSeconds": 0.859375
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 13594624,
+                "privateBytes": 2719744,
+                "privateWorkingSet": 1654784,
+                "cpuSeconds": 0.015625
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 84467712,
+                "privateBytes": 158900224,
+                "privateWorkingSet": 27541504,
+                "cpuSeconds": 0.359375
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44228608,
+                "privateBytes": 13131776,
+                "privateWorkingSet": 7843840,
+                "cpuSeconds": 0.203125
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24477696,
+                "privateBytes": 8421376,
+                "privateWorkingSet": 3526656,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 94052352,
+                "privateBytes": 48197632,
+                "privateWorkingSet": 36732928,
+                "cpuSeconds": 0.171875
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 5796296,
+            "totalSize": 11272192,
+            "embedderHeapUsedSize": 6298736,
+            "backingStorageSize": 1467655
+          }
+        },
+        "one-pane": {
+          "first": {
+            "timestamp": "2026-11-15T19:28:47.2148937Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 35213312,
+                "privateBytes": 8179712,
+                "privateWorkingSet": 5967872,
+                "cpuSeconds": 0.453125
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 134144000,
+                "privateBytes": 43094016,
+                "privateWorkingSet": 34549760,
+                "cpuSeconds": 1.65625
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 13594624,
+                "privateBytes": 2719744,
+                "privateWorkingSet": 1654784,
+                "cpuSeconds": 0.015625
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 106115072,
+                "privateBytes": 341909504,
+                "privateWorkingSet": 42729472,
+                "cpuSeconds": 1.109375
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44384256,
+                "privateBytes": 13225984,
+                "privateWorkingSet": 7954432,
+                "cpuSeconds": 0.203125
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24518656,
+                "privateBytes": 8429568,
+                "privateWorkingSet": 3534848,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 128278528,
+                "privateBytes": 79441920,
+                "privateWorkingSet": 66469888,
+                "cpuSeconds": 0.71875
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:28:58.4309096Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 35188736,
+                "privateBytes": 8134656,
+                "privateWorkingSet": 5951488,
+                "cpuSeconds": 0.515625
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 134537216,
+                "privateBytes": 43335680,
+                "privateWorkingSet": 34754560,
+                "cpuSeconds": 1.984375
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 22581248,
+                "privateBytes": 3641344,
+                "privateWorkingSet": 2179072,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 100823040,
+                "privateBytes": 180510720,
+                "privateWorkingSet": 37466112,
+                "cpuSeconds": 1.1875
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44302336,
+                "privateBytes": 13144064,
+                "privateWorkingSet": 7872512,
+                "cpuSeconds": 0.203125
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24518656,
+                "privateBytes": 8429568,
+                "privateWorkingSet": 3534848,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 116559872,
+                "privateBytes": 65261568,
+                "privateWorkingSet": 53702656,
+                "cpuSeconds": 0.75
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 6684256,
+            "totalSize": 7512064,
+            "embedderHeapUsedSize": 3358976,
+            "backingStorageSize": 1469306
+          }
+        },
+        "two-same": {
+          "first": {
+            "timestamp": "2026-11-15T19:29:05.1809496Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 35438592,
+                "privateBytes": 8761344,
+                "privateWorkingSet": 6197248,
+                "cpuSeconds": 0.71875
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 137973760,
+                "privateBytes": 46411776,
+                "privateWorkingSet": 37933056,
+                "cpuSeconds": 2.96875
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 22581248,
+                "privateBytes": 3641344,
+                "privateWorkingSet": 2179072,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 108933120,
+                "privateBytes": 497463296,
+                "privateWorkingSet": 45072384,
+                "cpuSeconds": 1.421875
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44302336,
+                "privateBytes": 13144064,
+                "privateWorkingSet": 7872512,
+                "cpuSeconds": 0.21875
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24518656,
+                "privateBytes": 8429568,
+                "privateWorkingSet": 3534848,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 130011136,
+                "privateBytes": 76615680,
+                "privateWorkingSet": 65105920,
+                "cpuSeconds": 1.171875
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:29:16.2939943Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 35438592,
+                "privateBytes": 8761344,
+                "privateWorkingSet": 6197248,
+                "cpuSeconds": 0.828125
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 138108928,
+                "privateBytes": 46505984,
+                "privateWorkingSet": 38023168,
+                "cpuSeconds": 3.53125
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 22581248,
+                "privateBytes": 3641344,
+                "privateWorkingSet": 2179072,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 107450368,
+                "privateBytes": 496635904,
+                "privateWorkingSet": 43585536,
+                "cpuSeconds": 1.4375
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44302336,
+                "privateBytes": 13144064,
+                "privateWorkingSet": 7872512,
+                "cpuSeconds": 0.21875
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24518656,
+                "privateBytes": 8429568,
+                "privateWorkingSet": 3534848,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 129150976,
+                "privateBytes": 76619776,
+                "privateWorkingSet": 64716800,
+                "cpuSeconds": 1.203125
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 7564696,
+            "totalSize": 10657792,
+            "embedderHeapUsedSize": 8011344,
+            "backingStorageSize": 1521614
+          }
+        },
+        "three-same": {
+          "first": {
+            "timestamp": "2026-11-15T19:29:23.0275545Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 35278848,
+                "privateBytes": 8585216,
+                "privateWorkingSet": 6033408,
+                "cpuSeconds": 0.984375
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 144625664,
+                "privateBytes": 48480256,
+                "privateWorkingSet": 39874560,
+                "cpuSeconds": 4.78125
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16535552,
+                "privateBytes": 3284992,
+                "privateWorkingSet": 1912832,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 108916736,
+                "privateBytes": 517656576,
+                "privateWorkingSet": 44822528,
+                "cpuSeconds": 1.734375
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44236800,
+                "privateBytes": 12718080,
+                "privateWorkingSet": 7462912,
+                "cpuSeconds": 0.21875
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24752128,
+                "privateBytes": 8310784,
+                "privateWorkingSet": 3452928,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 131846144,
+                "privateBytes": 78540800,
+                "privateWorkingSet": 66625536,
+                "cpuSeconds": 1.578125
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:29:34.1905682Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 35254272,
+                "privateBytes": 8527872,
+                "privateWorkingSet": 6000640,
+                "cpuSeconds": 1.125
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 143458304,
+                "privateBytes": 46964736,
+                "privateWorkingSet": 38338560,
+                "cpuSeconds": 5.59375
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16539648,
+                "privateBytes": 3284992,
+                "privateWorkingSet": 1912832,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 108658688,
+                "privateBytes": 517406720,
+                "privateWorkingSet": 44564480,
+                "cpuSeconds": 1.78125
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44199936,
+                "privateBytes": 12697600,
+                "privateWorkingSet": 7421952,
+                "cpuSeconds": 0.21875
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24752128,
+                "privateBytes": 8310784,
+                "privateWorkingSet": 3452928,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 130301952,
+                "privateBytes": 77357056,
+                "privateWorkingSet": 65081344,
+                "cpuSeconds": 1.578125
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 8024400,
+            "totalSize": 12492800,
+            "embedderHeapUsedSize": 6271432,
+            "backingStorageSize": 1518568
+          }
+        },
+        "three-distinct": {
+          "first": {
+            "timestamp": "2026-11-15T19:29:56.4659828Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 35647488,
+                "privateBytes": 8392704,
+                "privateWorkingSet": 6369280,
+                "cpuSeconds": 2.03125
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 152481792,
+                "privateBytes": 49647616,
+                "privateWorkingSet": 39747584,
+                "cpuSeconds": 15.265625
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16539648,
+                "privateBytes": 3284992,
+                "privateWorkingSet": 1912832,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 132022272,
+                "privateBytes": 478142464,
+                "privateWorkingSet": 66248704,
+                "cpuSeconds": 6.5625
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44199936,
+                "privateBytes": 12562432,
+                "privateWorkingSet": 7376896,
+                "cpuSeconds": 0.234375
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24752128,
+                "privateBytes": 8310784,
+                "privateWorkingSet": 3452928,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 177426432,
+                "privateBytes": 123400192,
+                "privateWorkingSet": 108777472,
+                "cpuSeconds": 9.4375
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:30:07.5656380Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 35647488,
+                "privateBytes": 8392704,
+                "privateWorkingSet": 6369280,
+                "cpuSeconds": 2.09375
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 152498176,
+                "privateBytes": 49606656,
+                "privateWorkingSet": 39706624,
+                "cpuSeconds": 16.171875
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16539648,
+                "privateBytes": 3284992,
+                "privateWorkingSet": 1912832,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 128208896,
+                "privateBytes": 475357184,
+                "privateWorkingSet": 63549440,
+                "cpuSeconds": 6.65625
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44191744,
+                "privateBytes": 12554240,
+                "privateWorkingSet": 7368704,
+                "cpuSeconds": 0.234375
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24752128,
+                "privateBytes": 8310784,
+                "privateWorkingSet": 3452928,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 148332544,
+                "privateBytes": 92942336,
+                "privateWorkingSet": 79675392,
+                "cpuSeconds": 9.59375
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 9465248,
+            "totalSize": 10395648,
+            "embedderHeapUsedSize": 5459032,
+            "backingStorageSize": 1482509
+          }
+        },
+        "returned-one-cycle-0": {
+          "first": {
+            "timestamp": "2026-11-15T19:30:30.5319022Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 35938304,
+                "privateBytes": 8925184,
+                "privateWorkingSet": 6631424,
+                "cpuSeconds": 3.625
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 152981504,
+                "privateBytes": 48025600,
+                "privateWorkingSet": 38035456,
+                "cpuSeconds": 23.890625
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16539648,
+                "privateBytes": 3284992,
+                "privateWorkingSet": 1912832,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 132620288,
+                "privateBytes": 379822080,
+                "privateWorkingSet": 67194880,
+                "cpuSeconds": 10.6875
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44318720,
+                "privateBytes": 12570624,
+                "privateWorkingSet": 7397376,
+                "cpuSeconds": 0.28125
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24752128,
+                "privateBytes": 8310784,
+                "privateWorkingSet": 3452928,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 171778048,
+                "privateBytes": 114397184,
+                "privateWorkingSet": 101412864,
+                "cpuSeconds": 14.8125
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:30:41.7144541Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 35901440,
+                "privateBytes": 8880128,
+                "privateWorkingSet": 6594560,
+                "cpuSeconds": 3.734375
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 152772608,
+                "privateBytes": 47718400,
+                "privateWorkingSet": 37785600,
+                "cpuSeconds": 24.359375
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16502784,
+                "privateBytes": 3223552,
+                "privateWorkingSet": 1875968,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 127393792,
+                "privateBytes": 211804160,
+                "privateWorkingSet": 62169088,
+                "cpuSeconds": 10.859375
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44257280,
+                "privateBytes": 12484608,
+                "privateWorkingSet": 7335936,
+                "cpuSeconds": 0.28125
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24752128,
+                "privateBytes": 8310784,
+                "privateWorkingSet": 3452928,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 171462656,
+                "privateBytes": 114282496,
+                "privateWorkingSet": 101244928,
+                "cpuSeconds": 14.859375
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 10622184,
+            "totalSize": 29007872,
+            "embedderHeapUsedSize": 7286944,
+            "backingStorageSize": 1582808
+          }
+        },
+        "returned-one-cycle-1": {
+          "first": {
+            "timestamp": "2026-11-15T19:31:04.2478383Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 35942400,
+                "privateBytes": 9080832,
+                "privateWorkingSet": 6635520,
+                "cpuSeconds": 5.078125
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 153313280,
+                "privateBytes": 48140288,
+                "privateWorkingSet": 38023168,
+                "cpuSeconds": 31.984375
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16486400,
+                "privateBytes": 3170304,
+                "privateWorkingSet": 1847296,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 139755520,
+                "privateBytes": 494084096,
+                "privateWorkingSet": 71700480,
+                "cpuSeconds": 14.53125
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44503040,
+                "privateBytes": 12771328,
+                "privateWorkingSet": 7389184,
+                "cpuSeconds": 0.328125
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24752128,
+                "privateBytes": 8310784,
+                "privateWorkingSet": 3452928,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 181579776,
+                "privateBytes": 126844928,
+                "privateWorkingSet": 111194112,
+                "cpuSeconds": 20.5
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:31:15.2295823Z",
+            "processes": [
+              {
+                "pid": 16004,
+                "name": "vaultor-next-m16.exe",
+                "role": "tauri",
+                "workingSet": 35942400,
+                "privateBytes": 9084928,
+                "privateWorkingSet": 6635520,
+                "cpuSeconds": 5.203125
+              },
+              {
+                "pid": 36492,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 154488832,
+                "privateBytes": 49364992,
+                "privateWorkingSet": 39415808,
+                "cpuSeconds": 32.625
+              },
+              {
+                "pid": 10692,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16486400,
+                "privateBytes": 3170304,
+                "privateWorkingSet": 1847296,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 30340,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 129728512,
+                "privateBytes": 205639680,
+                "privateWorkingSet": 64311296,
+                "cpuSeconds": 14.640625
+              },
+              {
+                "pid": 39468,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44314624,
+                "privateBytes": 12541952,
+                "privateWorkingSet": 7389184,
+                "cpuSeconds": 0.328125
+              },
+              {
+                "pid": 38856,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24752128,
+                "privateBytes": 8310784,
+                "privateWorkingSet": 3452928,
+                "cpuSeconds": 0.0625
+              },
+              {
+                "pid": 4392,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 176181248,
+                "privateBytes": 121274368,
+                "privateWorkingSet": 105799680,
+                "cpuSeconds": 20.53125
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 11253176,
+            "totalSize": 31629312,
+            "embedderHeapUsedSize": 8051480,
+            "backingStorageSize": 1617316
+          }
+        }
+      },
+      "endpoint": {
+        "editors": 1,
+        "portals": 0,
+        "ghosts": 0,
+        "nodes": 944
+      },
+      "cpuSamples": [
+        {
+          "scenario": "m17-fresh-startup",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 2.248201438848921,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-one-pane",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 4.597227175463623,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-two-same",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 6.467650499415099,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-three-same",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 8.958165367732688,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-three-distinct",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 10.97972972972973,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-returned-one-cycle-0",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 7.125771259948135,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-returned-one-cycle-1",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 8.25213986523402,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "evidence": "raw/tauri-rust-2026-11-15T19-31-19.837Z.json",
+      "sourceCommit": "30c9377698c49fa3fd0fb9bc9a88665cfb94264d",
+      "executableSha256": "70dba7be013eeec4ec5c7015f49624a29e204b9d1c95b0d830337b4549394329",
+      "fixture": {
+        "ids": [
+          "fc19ce52-8db7-47b2-bac9-8b50517665ab",
+          "b89fd064-2fcf-4d23-9683-53fbf3fe5fcc",
+          "9110c530-a618-4ccb-9ab0-e3fad17364ac"
+        ],
+        "root": "\\\\?\\C:\\Users\\Vaibhav\\AppData\\Local\\Temp\\vaultor-next-bench-BL71If\\workspace",
+        "paragraphs": 50,
+        "width": 1800,
+        "height": 1000,
+        "dpr": 1
+      },
+      "dataset": "f0a8df57171476fe94f6e112376f9a6a7d877ca20d864a5247a8f3998b4c281c",
+      "system": {
+        "device": "LAPTOP-251O7CQC",
+        "os": "10.0.26340",
+        "arch": "x64",
+        "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+        "logicalCpus": 20,
+        "ramBytes": 16573128704
+      },
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.46",
+        "revision": "@a0c6bd61d7884b3c402a34c67d05100107a9e5e4",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.4"
+      },
+      "success": true,
+      "performance": {
+        "fresh-startup": {
+          "first": {
+            "timestamp": "2026-11-15T19:31:27.3938451Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 34783232,
+                "privateBytes": 8044544,
+                "privateWorkingSet": 5685248,
+                "cpuSeconds": 0.125
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 129355776,
+                "privateBytes": 41234432,
+                "privateWorkingSet": 31625216,
+                "cpuSeconds": 0.640625
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 13598720,
+                "privateBytes": 2732032,
+                "privateWorkingSet": 1658880,
+                "cpuSeconds": 0
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 85983232,
+                "privateBytes": 161308672,
+                "privateWorkingSet": 29036544,
+                "cpuSeconds": 0.46875
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44154880,
+                "privateBytes": 13148160,
+                "privateWorkingSet": 7852032,
+                "cpuSeconds": 0.109375
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24928256,
+                "privateBytes": 8441856,
+                "privateWorkingSet": 3538944,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 94089216,
+                "privateBytes": 48144384,
+                "privateWorkingSet": 36265984,
+                "cpuSeconds": 0.21875
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:31:38.5054168Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 34766848,
+                "privateBytes": 8003584,
+                "privateWorkingSet": 5668864,
+                "cpuSeconds": 0.171875
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 129466368,
+                "privateBytes": 41299968,
+                "privateWorkingSet": 31690752,
+                "cpuSeconds": 0.734375
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 13598720,
+                "privateBytes": 2732032,
+                "privateWorkingSet": 1658880,
+                "cpuSeconds": 0
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 84766720,
+                "privateBytes": 159498240,
+                "privateWorkingSet": 27820032,
+                "cpuSeconds": 0.46875
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44244992,
+                "privateBytes": 13160448,
+                "privateWorkingSet": 7864320,
+                "cpuSeconds": 0.109375
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24928256,
+                "privateBytes": 8441856,
+                "privateWorkingSet": 3538944,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 91938816,
+                "privateBytes": 45834240,
+                "privateWorkingSet": 34111488,
+                "cpuSeconds": 0.21875
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 5833992,
+            "totalSize": 11534336,
+            "embedderHeapUsedSize": 6307984,
+            "backingStorageSize": 1472389
+          }
+        },
+        "one-pane": {
+          "first": {
+            "timestamp": "2026-11-15T19:31:45.6841419Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35434496,
+                "privateBytes": 8138752,
+                "privateWorkingSet": 6098944,
+                "cpuSeconds": 0.515625
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 136851456,
+                "privateBytes": 44683264,
+                "privateWorkingSet": 34988032,
+                "cpuSeconds": 1.421875
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 13598720,
+                "privateBytes": 2732032,
+                "privateWorkingSet": 1658880,
+                "cpuSeconds": 0
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 105467904,
+                "privateBytes": 323919872,
+                "privateWorkingSet": 42340352,
+                "cpuSeconds": 0.921875
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44433408,
+                "privateBytes": 13291520,
+                "privateWorkingSet": 8011776,
+                "cpuSeconds": 0.125
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24961024,
+                "privateBytes": 8441856,
+                "privateWorkingSet": 3538944,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 126824448,
+                "privateBytes": 77778944,
+                "privateWorkingSet": 64471040,
+                "cpuSeconds": 0.625
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:31:56.7645471Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35409920,
+                "privateBytes": 8097792,
+                "privateWorkingSet": 6082560,
+                "cpuSeconds": 0.578125
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 137179136,
+                "privateBytes": 44797952,
+                "privateWorkingSet": 35078144,
+                "cpuSeconds": 1.671875
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 22573056,
+                "privateBytes": 3649536,
+                "privateWorkingSet": 2179072,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 100421632,
+                "privateBytes": 180895744,
+                "privateWorkingSet": 37244928,
+                "cpuSeconds": 1.046875
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44335104,
+                "privateBytes": 13193216,
+                "privateWorkingSet": 7913472,
+                "cpuSeconds": 0.125
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24961024,
+                "privateBytes": 8441856,
+                "privateWorkingSet": 3538944,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 115433472,
+                "privateBytes": 64618496,
+                "privateWorkingSet": 52039680,
+                "cpuSeconds": 0.828125
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 6690240,
+            "totalSize": 7774208,
+            "embedderHeapUsedSize": 3470416,
+            "backingStorageSize": 1474042
+          }
+        },
+        "two-same": {
+          "first": {
+            "timestamp": "2026-11-15T19:32:03.5040057Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35401728,
+                "privateBytes": 8077312,
+                "privateWorkingSet": 6070272,
+                "cpuSeconds": 0.78125
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 139399168,
+                "privateBytes": 46735360,
+                "privateWorkingSet": 36974592,
+                "cpuSeconds": 2.703125
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 22573056,
+                "privateBytes": 3649536,
+                "privateWorkingSet": 2179072,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 108478464,
+                "privateBytes": 500170752,
+                "privateWorkingSet": 44244992,
+                "cpuSeconds": 1.3125
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44339200,
+                "privateBytes": 13193216,
+                "privateWorkingSet": 7917568,
+                "cpuSeconds": 0.125
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24961024,
+                "privateBytes": 8441856,
+                "privateWorkingSet": 3538944,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 127033344,
+                "privateBytes": 73678848,
+                "privateWorkingSet": 61665280,
+                "cpuSeconds": 1.046875
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:32:14.5880170Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35401728,
+                "privateBytes": 8077312,
+                "privateWorkingSet": 6070272,
+                "cpuSeconds": 0.84375
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 139755520,
+                "privateBytes": 47054848,
+                "privateWorkingSet": 37285888,
+                "cpuSeconds": 2.921875
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 22573056,
+                "privateBytes": 3649536,
+                "privateWorkingSet": 2179072,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 107917312,
+                "privateBytes": 499609600,
+                "privateWorkingSet": 43687936,
+                "cpuSeconds": 1.34375
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44339200,
+                "privateBytes": 13193216,
+                "privateWorkingSet": 7917568,
+                "cpuSeconds": 0.125
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24961024,
+                "privateBytes": 8441856,
+                "privateWorkingSet": 3538944,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 126152704,
+                "privateBytes": 73682944,
+                "privateWorkingSet": 61255680,
+                "cpuSeconds": 1.078125
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 7560020,
+            "totalSize": 10919936,
+            "embedderHeapUsedSize": 8374960,
+            "backingStorageSize": 1526350
+          }
+        },
+        "three-same": {
+          "first": {
+            "timestamp": "2026-11-15T19:32:21.3711038Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35143680,
+                "privateBytes": 7712768,
+                "privateWorkingSet": 5812224,
+                "cpuSeconds": 0.90625
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 143302656,
+                "privateBytes": 50454528,
+                "privateWorkingSet": 40337408,
+                "cpuSeconds": 3.65625
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 22573056,
+                "privateBytes": 3649536,
+                "privateWorkingSet": 1982464,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 110977024,
+                "privateBytes": 498970624,
+                "privateWorkingSet": 46600192,
+                "cpuSeconds": 1.59375
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44380160,
+                "privateBytes": 13234176,
+                "privateWorkingSet": 7585792,
+                "cpuSeconds": 0.125
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24961024,
+                "privateBytes": 8441856,
+                "privateWorkingSet": 3465216,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 139472896,
+                "privateBytes": 86315008,
+                "privateWorkingSet": 73969664,
+                "cpuSeconds": 1.421875
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:32:32.5246981Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35119104,
+                "privateBytes": 7651328,
+                "privateWorkingSet": 5779456,
+                "cpuSeconds": 0.953125
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 146382848,
+                "privateBytes": 48394240,
+                "privateWorkingSet": 38567936,
+                "cpuSeconds": 4
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16543744,
+                "privateBytes": 3297280,
+                "privateWorkingSet": 1916928,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 108711936,
+                "privateBytes": 496738304,
+                "privateWorkingSet": 44130304,
+                "cpuSeconds": 1.65625
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44109824,
+                "privateBytes": 12517376,
+                "privateWorkingSet": 7335936,
+                "cpuSeconds": 0.125
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 25202688,
+                "privateBytes": 8331264,
+                "privateWorkingSet": 3465216,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 128483328,
+                "privateBytes": 74682368,
+                "privateWorkingSet": 62767104,
+                "cpuSeconds": 1.5
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 8039500,
+            "totalSize": 12230656,
+            "embedderHeapUsedSize": 6222320,
+            "backingStorageSize": 1523306
+          }
+        },
+        "three-distinct": {
+          "first": {
+            "timestamp": "2026-11-15T19:32:55.0854727Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35745792,
+                "privateBytes": 8462336,
+                "privateWorkingSet": 6381568,
+                "cpuSeconds": 1.953125
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 155754496,
+                "privateBytes": 49893376,
+                "privateWorkingSet": 39829504,
+                "cpuSeconds": 14.671875
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16543744,
+                "privateBytes": 3297280,
+                "privateWorkingSet": 1916928,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 128253952,
+                "privateBytes": 435310592,
+                "privateWorkingSet": 63049728,
+                "cpuSeconds": 7.34375
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44183552,
+                "privateBytes": 12533760,
+                "privateWorkingSet": 7348224,
+                "cpuSeconds": 0.140625
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 25202688,
+                "privateBytes": 8331264,
+                "privateWorkingSet": 3465216,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 172331008,
+                "privateBytes": 115216384,
+                "privateWorkingSet": 102764544,
+                "cpuSeconds": 9.03125
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:33:06.2080256Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35745792,
+                "privateBytes": 8462336,
+                "privateWorkingSet": 6381568,
+                "cpuSeconds": 2.03125
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 155852800,
+                "privateBytes": 49934336,
+                "privateWorkingSet": 39870464,
+                "cpuSeconds": 15.375
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16543744,
+                "privateBytes": 3297280,
+                "privateWorkingSet": 1916928,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 125964288,
+                "privateBytes": 433872896,
+                "privateWorkingSet": 61005824,
+                "cpuSeconds": 7.375
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44253184,
+                "privateBytes": 12689408,
+                "privateWorkingSet": 7417856,
+                "cpuSeconds": 0.140625
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 25202688,
+                "privateBytes": 8331264,
+                "privateWorkingSet": 3465216,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 146432000,
+                "privateBytes": 90075136,
+                "privateWorkingSet": 77352960,
+                "cpuSeconds": 9.140625
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 9453528,
+            "totalSize": 10133504,
+            "embedderHeapUsedSize": 5775896,
+            "backingStorageSize": 1487245
+          }
+        },
+        "returned-one-cycle-0": {
+          "first": {
+            "timestamp": "2026-11-15T19:33:29.0706833Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35766272,
+                "privateBytes": 8486912,
+                "privateWorkingSet": 6373376,
+                "cpuSeconds": 3.453125
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 156782592,
+                "privateBytes": 48435200,
+                "privateWorkingSet": 38264832,
+                "cpuSeconds": 23.71875
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16543744,
+                "privateBytes": 3297280,
+                "privateWorkingSet": 1916928,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 134135808,
+                "privateBytes": 376803328,
+                "privateWorkingSet": 68689920,
+                "cpuSeconds": 11.796875
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44285952,
+                "privateBytes": 12533760,
+                "privateWorkingSet": 7360512,
+                "cpuSeconds": 0.171875
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 25202688,
+                "privateBytes": 8331264,
+                "privateWorkingSet": 3465216,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 173051904,
+                "privateBytes": 114720768,
+                "privateWorkingSet": 102244352,
+                "cpuSeconds": 14.71875
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:33:40.2374168Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35733504,
+                "privateBytes": 8425472,
+                "privateWorkingSet": 6340608,
+                "cpuSeconds": 3.5625
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 156340224,
+                "privateBytes": 47865856,
+                "privateWorkingSet": 37765120,
+                "cpuSeconds": 24.203125
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16510976,
+                "privateBytes": 3239936,
+                "privateWorkingSet": 1884160,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 127098880,
+                "privateBytes": 208101376,
+                "privateWorkingSet": 61648896,
+                "cpuSeconds": 11.859375
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44265472,
+                "privateBytes": 12488704,
+                "privateWorkingSet": 7340032,
+                "cpuSeconds": 0.171875
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 25202688,
+                "privateBytes": 8331264,
+                "privateWorkingSet": 3465216,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 172232704,
+                "privateBytes": 114286592,
+                "privateWorkingSet": 101416960,
+                "cpuSeconds": 14.71875
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 10593828,
+            "totalSize": 29007872,
+            "embedderHeapUsedSize": 7046072,
+            "backingStorageSize": 1587555
+          }
+        },
+        "returned-one-cycle-1": {
+          "first": {
+            "timestamp": "2026-11-15T19:34:02.6262632Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35790848,
+                "privateBytes": 8560640,
+                "privateWorkingSet": 6397952,
+                "cpuSeconds": 4.921875
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 156905472,
+                "privateBytes": 48328704,
+                "privateWorkingSet": 39456768,
+                "cpuSeconds": 31.96875
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16494592,
+                "privateBytes": 3186688,
+                "privateWorkingSet": 1855488,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 137285632,
+                "privateBytes": 426917888,
+                "privateWorkingSet": 71872512,
+                "cpuSeconds": 15.265625
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44306432,
+                "privateBytes": 12529664,
+                "privateWorkingSet": 7376896,
+                "cpuSeconds": 0.203125
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 25202688,
+                "privateBytes": 8331264,
+                "privateWorkingSet": 3465216,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 176787456,
+                "privateBytes": 122507264,
+                "privateWorkingSet": 105775104,
+                "cpuSeconds": 20.984375
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:34:13.8368996Z",
+            "processes": [
+              {
+                "pid": 36844,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35790848,
+                "privateBytes": 8560640,
+                "privateWorkingSet": 6397952,
+                "cpuSeconds": 5.0625
+              },
+              {
+                "pid": 5052,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 157270016,
+                "privateBytes": 48640000,
+                "privateWorkingSet": 38604800,
+                "cpuSeconds": 32.578125
+              },
+              {
+                "pid": 35712,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16494592,
+                "privateBytes": 3186688,
+                "privateWorkingSet": 1855488,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 38120,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 129568768,
+                "privateBytes": 214134784,
+                "privateWorkingSet": 64077824,
+                "cpuSeconds": 15.34375
+              },
+              {
+                "pid": 28164,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44273664,
+                "privateBytes": 12496896,
+                "privateWorkingSet": 7344128,
+                "cpuSeconds": 0.203125
+              },
+              {
+                "pid": 21056,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 25202688,
+                "privateBytes": 8331264,
+                "privateWorkingSet": 3465216,
+                "cpuSeconds": 0.03125
+              },
+              {
+                "pid": 3048,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 175984640,
+                "privateBytes": 122130432,
+                "privateWorkingSet": 104964096,
+                "cpuSeconds": 21.0625
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 11227824,
+            "totalSize": 31367168,
+            "embedderHeapUsedSize": 7776624,
+            "backingStorageSize": 1622049
+          }
+        }
+      },
+      "endpoint": {
+        "editors": 1,
+        "portals": 0,
+        "ghosts": 0,
+        "nodes": 944
+      },
+      "cpuSamples": [
+        {
+          "scenario": "m17-fresh-startup",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 1.2655237580993521,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-one-pane",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 6.063853790613718,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-two-same",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 3.101317214002165,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-three-same",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 4.9033892226306826,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-three-distinct",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 8.288006832689023,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-returned-one-cycle-0",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 5.876690248052297,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-returned-one-cycle-1",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 8.084299732381801,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "evidence": "raw/tauri-rust-2026-11-15T19-38-04.256Z.json",
+      "sourceCommit": "3b84bf81c86e76d99e8746c9e70d87801846adb8",
+      "executableSha256": "0e691b47265eede1b6bdee99a7e5561fb9539f9e418d4ad044ae78fb237b943c",
+      "fixture": {
+        "ids": [
+          "19f243c3-2c72-4d06-bff9-ada5776758e6",
+          "82f92a17-43ec-4090-a79c-24b90cc01092",
+          "dc8a9b1b-5a24-4000-8653-145b6651fcbd"
+        ],
+        "root": "\\\\?\\C:\\Users\\Vaibhav\\AppData\\Local\\Temp\\vaultor-next-bench-hQD7Yo\\workspace",
+        "paragraphs": 50,
+        "width": 1800,
+        "height": 1000,
+        "dpr": 1
+      },
+      "dataset": "f0a8df57171476fe94f6e112376f9a6a7d877ca20d864a5247a8f3998b4c281c",
+      "system": {
+        "device": "LAPTOP-251O7CQC",
+        "os": "10.0.26340",
+        "arch": "x64",
+        "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+        "logicalCpus": 20,
+        "ramBytes": 16573128704
+      },
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.46",
+        "revision": "@a0c6bd61d7884b3c402a34c67d05100107a9e5e4",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.4"
+      },
+      "success": true,
+      "performance": {
+        "fresh-startup": {
+          "first": {
+            "timestamp": "2026-11-15T19:38:12.6039306Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 34717696,
+                "privateBytes": 8093696,
+                "privateWorkingSet": 5632000,
+                "cpuSeconds": 0.125
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 128364544,
+                "privateBytes": 41373696,
+                "privateWorkingSet": 32772096,
+                "cpuSeconds": 0.65625
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 13598720,
+                "privateBytes": 2744320,
+                "privateWorkingSet": 1662976,
+                "cpuSeconds": 0.015625
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 85954560,
+                "privateBytes": 160890880,
+                "privateWorkingSet": 27893760,
+                "cpuSeconds": 0.390625
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44175360,
+                "privateBytes": 13176832,
+                "privateWorkingSet": 7880704,
+                "cpuSeconds": 0.140625
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 23801856,
+                "privateBytes": 8044544,
+                "privateWorkingSet": 3289088,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 93577216,
+                "privateBytes": 47153152,
+                "privateWorkingSet": 35778560,
+                "cpuSeconds": 0.203125
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:38:23.7019575Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 34701312,
+                "privateBytes": 8048640,
+                "privateWorkingSet": 5615616,
+                "cpuSeconds": 0.140625
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 128536576,
+                "privateBytes": 41500672,
+                "privateWorkingSet": 32899072,
+                "cpuSeconds": 0.75
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 13598720,
+                "privateBytes": 2744320,
+                "privateWorkingSet": 1662976,
+                "cpuSeconds": 0.015625
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 84746240,
+                "privateBytes": 159088640,
+                "privateWorkingSet": 27766784,
+                "cpuSeconds": 0.390625
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44273664,
+                "privateBytes": 13197312,
+                "privateWorkingSet": 7901184,
+                "cpuSeconds": 0.15625
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 23801856,
+                "privateBytes": 8044544,
+                "privateWorkingSet": 3289088,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 91516928,
+                "privateBytes": 44843008,
+                "privateWorkingSet": 33714176,
+                "cpuSeconds": 0.203125
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 5822796,
+            "totalSize": 11010048,
+            "embedderHeapUsedSize": 6307656,
+            "backingStorageSize": 1472605
+          }
+        },
+        "one-pane": {
+          "first": {
+            "timestamp": "2026-11-15T19:38:30.8560529Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35442688,
+                "privateBytes": 8843264,
+                "privateWorkingSet": 6131712,
+                "cpuSeconds": 0.375
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 133091328,
+                "privateBytes": 43089920,
+                "privateWorkingSet": 34516992,
+                "cpuSeconds": 1.53125
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 13598720,
+                "privateBytes": 2744320,
+                "privateWorkingSet": 1662976,
+                "cpuSeconds": 0.015625
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 103505920,
+                "privateBytes": 349515776,
+                "privateWorkingSet": 41521152,
+                "cpuSeconds": 0.859375
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44449792,
+                "privateBytes": 13316096,
+                "privateWorkingSet": 8036352,
+                "cpuSeconds": 0.171875
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 23838720,
+                "privateBytes": 8048640,
+                "privateWorkingSet": 3293184,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 126709760,
+                "privateBytes": 77201408,
+                "privateWorkingSet": 64430080,
+                "cpuSeconds": 0.78125
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:38:41.9560414Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35438592,
+                "privateBytes": 8802304,
+                "privateWorkingSet": 6119424,
+                "cpuSeconds": 0.84375
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 133124096,
+                "privateBytes": 42909696,
+                "privateWorkingSet": 34312192,
+                "cpuSeconds": 2.9375
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 22564864,
+                "privateBytes": 3665920,
+                "privateWorkingSet": 2183168,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 97656832,
+                "privateBytes": 179810304,
+                "privateWorkingSet": 35667968,
+                "cpuSeconds": 1.015625
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44359680,
+                "privateBytes": 13225984,
+                "privateWorkingSet": 7946240,
+                "cpuSeconds": 0.171875
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 23838720,
+                "privateBytes": 8048640,
+                "privateWorkingSet": 3293184,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 115941376,
+                "privateBytes": 65294336,
+                "privateWorkingSet": 52596736,
+                "cpuSeconds": 1
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 6710372,
+            "totalSize": 8036352,
+            "embedderHeapUsedSize": 3477568,
+            "backingStorageSize": 1474239
+          }
+        },
+        "two-same": {
+          "first": {
+            "timestamp": "2026-11-15T19:38:48.8315036Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35434496,
+                "privateBytes": 8790016,
+                "privateWorkingSet": 6111232,
+                "cpuSeconds": 0.953125
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 138534912,
+                "privateBytes": 47337472,
+                "privateWorkingSet": 39280640,
+                "cpuSeconds": 4.0625
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 22564864,
+                "privateBytes": 3665920,
+                "privateWorkingSet": 2183168,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 106848256,
+                "privateBytes": 489484288,
+                "privateWorkingSet": 43204608,
+                "cpuSeconds": 1.375
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44359680,
+                "privateBytes": 13225984,
+                "privateWorkingSet": 7946240,
+                "cpuSeconds": 0.171875
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 23838720,
+                "privateBytes": 8048640,
+                "privateWorkingSet": 3293184,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 125739008,
+                "privateBytes": 72249344,
+                "privateWorkingSet": 60076032,
+                "cpuSeconds": 1.34375
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:39:00.0732889Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35434496,
+                "privateBytes": 8790016,
+                "privateWorkingSet": 6111232,
+                "cpuSeconds": 1.09375
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 138244096,
+                "privateBytes": 47001600,
+                "privateWorkingSet": 38350848,
+                "cpuSeconds": 4.890625
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 22564864,
+                "privateBytes": 3665920,
+                "privateWorkingSet": 2183168,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 106237952,
+                "privateBytes": 488939520,
+                "privateWorkingSet": 42541056,
+                "cpuSeconds": 1.453125
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44359680,
+                "privateBytes": 13225984,
+                "privateWorkingSet": 7946240,
+                "cpuSeconds": 0.171875
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 23838720,
+                "privateBytes": 8048640,
+                "privateWorkingSet": 3293184,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 124768256,
+                "privateBytes": 71729152,
+                "privateWorkingSet": 59572224,
+                "cpuSeconds": 1.359375
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 7586076,
+            "totalSize": 10395648,
+            "embedderHeapUsedSize": 8036568,
+            "backingStorageSize": 1526537
+          }
+        },
+        "three-same": {
+          "first": {
+            "timestamp": "2026-11-15T19:39:06.8502366Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35393536,
+                "privateBytes": 8699904,
+                "privateWorkingSet": 6070272,
+                "cpuSeconds": 1.25
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 145219584,
+                "privateBytes": 50241536,
+                "privateWorkingSet": 40448000,
+                "cpuSeconds": 6.53125
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16523264,
+                "privateBytes": 3313664,
+                "privateWorkingSet": 1921024,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 108519424,
+                "privateBytes": 509161472,
+                "privateWorkingSet": 44523520,
+                "cpuSeconds": 1.6875
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44310528,
+                "privateBytes": 12824576,
+                "privateWorkingSet": 7430144,
+                "cpuSeconds": 0.203125
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24064000,
+                "privateBytes": 7925760,
+                "privateWorkingSet": 3207168,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 133419008,
+                "privateBytes": 79282176,
+                "privateWorkingSet": 67526656,
+                "cpuSeconds": 1.921875
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:39:18.0344062Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35368960,
+                "privateBytes": 8642560,
+                "privateWorkingSet": 6037504,
+                "cpuSeconds": 1.3125
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 143749120,
+                "privateBytes": 48443392,
+                "privateWorkingSet": 40194048,
+                "cpuSeconds": 7.1875
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16527360,
+                "privateBytes": 3313664,
+                "privateWorkingSet": 1921024,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 108167168,
+                "privateBytes": 508895232,
+                "privateWorkingSet": 44175360,
+                "cpuSeconds": 1.75
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44122112,
+                "privateBytes": 12541952,
+                "privateWorkingSet": 7356416,
+                "cpuSeconds": 0.203125
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24064000,
+                "privateBytes": 7925760,
+                "privateWorkingSet": 3207168,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 129290240,
+                "privateBytes": 75317248,
+                "privateWorkingSet": 63397888,
+                "cpuSeconds": 1.984375
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 7985016,
+            "totalSize": 12754944,
+            "embedderHeapUsedSize": 5175688,
+            "backingStorageSize": 1511658
+          }
+        },
+        "three-distinct": {
+          "first": {
+            "timestamp": "2026-11-15T19:39:40.3479734Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35766272,
+                "privateBytes": 8384512,
+                "privateWorkingSet": 6410240,
+                "cpuSeconds": 2.203125
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 152711168,
+                "privateBytes": 49942528,
+                "privateWorkingSet": 39956480,
+                "cpuSeconds": 17.328125
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16527360,
+                "privateBytes": 3313664,
+                "privateWorkingSet": 1921024,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 130891776,
+                "privateBytes": 427978752,
+                "privateWorkingSet": 66277376,
+                "cpuSeconds": 6.4375
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44204032,
+                "privateBytes": 12562432,
+                "privateWorkingSet": 7376896,
+                "cpuSeconds": 0.21875
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24064000,
+                "privateBytes": 7925760,
+                "privateWorkingSet": 3207168,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 164691968,
+                "privateBytes": 106749952,
+                "privateWorkingSet": 95625216,
+                "cpuSeconds": 9.65625
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:39:51.6247670Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35766272,
+                "privateBytes": 8384512,
+                "privateWorkingSet": 6410240,
+                "cpuSeconds": 2.234375
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 152461312,
+                "privateBytes": 49594368,
+                "privateWorkingSet": 39596032,
+                "cpuSeconds": 17.59375
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16527360,
+                "privateBytes": 3313664,
+                "privateWorkingSet": 1921024,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 124911616,
+                "privateBytes": 423022592,
+                "privateWorkingSet": 60297216,
+                "cpuSeconds": 6.46875
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44199936,
+                "privateBytes": 12558336,
+                "privateWorkingSet": 7372800,
+                "cpuSeconds": 0.21875
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24064000,
+                "privateBytes": 7925760,
+                "privateWorkingSet": 3207168,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 162365440,
+                "privateBytes": 106184704,
+                "privateWorkingSet": 93298688,
+                "cpuSeconds": 9.671875
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 9582612,
+            "totalSize": 26124288,
+            "embedderHeapUsedSize": 9129624,
+            "backingStorageSize": 1530228
+          }
+        },
+        "returned-one-cycle-0": {
+          "first": {
+            "timestamp": "2026-11-15T19:40:14.5746194Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 36032512,
+                "privateBytes": 8757248,
+                "privateWorkingSet": 6647808,
+                "cpuSeconds": 3.578125
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 153337856,
+                "privateBytes": 48431104,
+                "privateWorkingSet": 38330368,
+                "cpuSeconds": 25.609375
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16527360,
+                "privateBytes": 3313664,
+                "privateWorkingSet": 1921024,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 132456448,
+                "privateBytes": 386420736,
+                "privateWorkingSet": 67158016,
+                "cpuSeconds": 10.765625
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44310528,
+                "privateBytes": 12566528,
+                "privateWorkingSet": 7405568,
+                "cpuSeconds": 0.265625
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24064000,
+                "privateBytes": 7925760,
+                "privateWorkingSet": 3207168,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 166707200,
+                "privateBytes": 108523520,
+                "privateWorkingSet": 95825920,
+                "cpuSeconds": 15.703125
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:40:25.6678687Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 35799040,
+                "privateBytes": 8441856,
+                "privateWorkingSet": 6414336,
+                "cpuSeconds": 3.609375
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 152920064,
+                "privateBytes": 47964160,
+                "privateWorkingSet": 37912576,
+                "cpuSeconds": 25.703125
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16494592,
+                "privateBytes": 3256320,
+                "privateWorkingSet": 1888256,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 128184320,
+                "privateBytes": 207187968,
+                "privateWorkingSet": 63004672,
+                "cpuSeconds": 10.859375
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44290048,
+                "privateBytes": 12521472,
+                "privateWorkingSet": 7385088,
+                "cpuSeconds": 0.265625
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24064000,
+                "privateBytes": 7925760,
+                "privateWorkingSet": 3207168,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 166543360,
+                "privateBytes": 108396544,
+                "privateWorkingSet": 95662080,
+                "cpuSeconds": 15.734375
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 10537132,
+            "totalSize": 27959296,
+            "embedderHeapUsedSize": 7156440,
+            "backingStorageSize": 1587956
+          }
+        },
+        "returned-one-cycle-1": {
+          "first": {
+            "timestamp": "2026-11-15T19:40:48.0989847Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 36118528,
+                "privateBytes": 9089024,
+                "privateWorkingSet": 6733824,
+                "cpuSeconds": 5.453125
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 153722880,
+                "privateBytes": 48738304,
+                "privateWorkingSet": 38670336,
+                "cpuSeconds": 34.359375
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16482304,
+                "privateBytes": 3207168,
+                "privateWorkingSet": 1863680,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 136536064,
+                "privateBytes": 446447616,
+                "privateWorkingSet": 70987776,
+                "cpuSeconds": 14.453125
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44298240,
+                "privateBytes": 12533760,
+                "privateWorkingSet": 7393280,
+                "cpuSeconds": 0.34375
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24064000,
+                "privateBytes": 7925760,
+                "privateWorkingSet": 3207168,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 178106368,
+                "privateBytes": 121884672,
+                "privateWorkingSet": 107192320,
+                "cpuSeconds": 21.28125
+              }
+            ]
+          },
+          "last": {
+            "timestamp": "2026-11-15T19:40:59.2025887Z",
+            "processes": [
+              {
+                "pid": 14532,
+                "name": "vaultor-next-m17.exe",
+                "role": "tauri",
+                "workingSet": 36118528,
+                "privateBytes": 9089024,
+                "privateWorkingSet": 6733824,
+                "cpuSeconds": 5.578125
+              },
+              {
+                "pid": 40764,
+                "name": "msedgewebview2.exe",
+                "role": "webview-browser",
+                "workingSet": 152915968,
+                "privateBytes": 47882240,
+                "privateWorkingSet": 37838848,
+                "cpuSeconds": 34.875
+              },
+              {
+                "pid": 35816,
+                "name": "msedgewebview2.exe",
+                "role": "crashpad-handler",
+                "workingSet": 16482304,
+                "privateBytes": 3207168,
+                "privateWorkingSet": 1863680,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 35460,
+                "name": "msedgewebview2.exe",
+                "role": "gpu-process",
+                "workingSet": 130113536,
+                "privateBytes": 208359424,
+                "privateWorkingSet": 64720896,
+                "cpuSeconds": 14.578125
+              },
+              {
+                "pid": 41296,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 44298240,
+                "privateBytes": 12533760,
+                "privateWorkingSet": 7393280,
+                "cpuSeconds": 0.34375
+              },
+              {
+                "pid": 18804,
+                "name": "msedgewebview2.exe",
+                "role": "utility",
+                "workingSet": 24064000,
+                "privateBytes": 7925760,
+                "privateWorkingSet": 3207168,
+                "cpuSeconds": 0.046875
+              },
+              {
+                "pid": 7740,
+                "name": "msedgewebview2.exe",
+                "role": "renderer",
+                "workingSet": 173101056,
+                "privateBytes": 116994048,
+                "privateWorkingSet": 102191104,
+                "cpuSeconds": 21.3125
+              }
+            ]
+          },
+          "heap": {
+            "usedSize": 11142868,
+            "totalSize": 31891456,
+            "embedderHeapUsedSize": 7949832,
+            "backingStorageSize": 1622480
+          }
+        }
+      },
+      "endpoint": {
+        "editors": 1,
+        "portals": 0,
+        "ghosts": 0,
+        "nodes": 944
+      },
+      "cpuSamples": [
+        {
+          "scenario": "m17-fresh-startup",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 1.1263290683005946,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-one-pane",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 20.5518018018018,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-two-same",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 9.451165273083081,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-three-same",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 7.544259656652361,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-three-distinct",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 3.048239780083356,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-returned-one-cycle-0",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 2.2536734877850897,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        },
+        {
+          "scenario": "m17-returned-one-cycle-1",
+          "iteration": 1,
+          "metric": "cpu_one_core_percent",
+          "value": 7.1764679394812685,
+          "unit": "%",
+          "notes": "10s untouched interval after5s settling;CIM sampling overhead;no renderer polling or forced GC.",
+          "valid": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "One sample per source/phase;uncontrolled host background,power/cache;no5min idle or preview churn in this protocol",
+    "Harness retains window.m17OldEditors references to three destroyed editor views during return sampling;identical diagnostic condition across sources,but this is not a clean uninstrumented idle/leak qualification",
+    "No renderer polling during10s CPU windows;CIM role boundaries plus CDP heap sampled;no forcedGC",
+    "DOM endpoint has one mounted editor and zero portals;15 lightweight parked sessions after two churn cycles",
+    "No statistically supported improvement or leak-freedom claim;expanded-DPR/GPU retention remains open"
+  ]
+}

@@ -15,11 +15,12 @@ const m2 = process.argv.includes('--m2');
 const m3 = process.argv.includes('--m3');
 const m4 = process.argv.includes('--m4');
 const m5 = process.argv.includes('--m5');
+const m17=process.argv.includes('--m17')||process.argv.includes('--m17-safety');
 const m16=process.argv.includes('--m16')||process.argv.includes('--m16-safety');
-const m15 = process.argv.includes('--m15')||process.argv.includes('--m15-preview-only')||m16;
+const m15 = m17||process.argv.includes('--m15')||process.argv.includes('--m15-preview-only')||m16;
 const m14 = process.argv.includes('--m14')||m15;
-const measureUI=process.argv.includes('--measure-m16')||process.argv.includes('--measure-m14')||process.argv.includes('--measure-m15');
-const uiMilestone=m16?'m16':m15?'m15':'m14';
+const measureUI=process.argv.includes('--measure-m17')||process.argv.includes('--measure-m16')||process.argv.includes('--measure-m14')||process.argv.includes('--measure-m15');
+const uiMilestone=m17?'m17':m16?'m16':m15?'m15':'m14';
 const m13 = process.argv.includes('--m13');
 const m12 = process.argv.includes('--m12');
 const m11 = process.argv.includes('--m11')||m12||m13||m14;
@@ -99,11 +100,15 @@ async function launch(iteration) {
     await evaluate(`window.benchRequest=async(path,method='GET',body)=>{
       const state=(await window.vaultorDesktop.bootstrap()).value;
       const result=await window.vaultorDesktop.request({id:crypto.randomUUID(),token:state.token,path,method,timeout:30000,headers:{'X-Vaultor-Protocol':'3',...(body?{'Content-Type':'application/json'}:{})},...(body?{body:{kind:'text',value:JSON.stringify(body)}}:{})});
-      if(!result.ok)throw Error(result.error.detail);const value=result.value;if(value.status>=400)throw Error(path+' '+value.status+' '+new TextDecoder().decode(new Uint8Array(value.data)));return value.status===204?null:JSON.parse(new TextDecoder().decode(new Uint8Array(value.data)));
+      if(!result.ok)throw Error(result.error.detail);const value=result.value;if(value.status>=400)throw Error(path+' '+value.status+' '+new TextDecoder().decode(new Uint8Array(value.data)));return value.status===204||!value.data.length?null:JSON.parse(new TextDecoder().decode(new Uint8Array(value.data)));
     }`);
     await wait("!document.body.innerText.includes('Loading resources')", 'Electron resources usable');
   } else {
     await wait(m10?"document.querySelector('[data-ready=true][data-session-ready=true]') !== null":"document.querySelector('[data-ready=true]') !== null", 'Tauri workspace');
+    // A busy debugging port must never redirect mutating fixtures into another app.
+    const openedPath=await evaluate("window.__TAURI_INTERNALS__.invoke('workspace',{request:{kind:'snapshot'}}).then(s=>s.path)");
+    const normalizePath=p=>(p.charCodeAt(2)===63?p.slice(4):p).split(String.fromCharCode(92)).join('/').toLowerCase();
+    assert.equal(normalizePath(openedPath),normalizePath(join(folder,'workspace')),'Refusing a debugging target outside this disposable benchmark workspace');
     await evaluate("window.benchRequest=request=>window.__TAURI_INTERNALS__.invoke('workspace',{request})");
   }
   record(m15?uiMilestone+'-startup-'+(iteration===1?'first-profile':'restart'):iteration >= 3 ? 'qualification' : iteration === 1 ? 'first-profile' : 'restart', iteration, 'startup_usable', performance.now() - start, 'ms', 'Process spawn to Library mounted, command bridge ready; 50ms polling; warm OS cache possible.');
@@ -156,7 +161,9 @@ async function quit() {
 try {
   let run = await launch(1);
   if (inspect) {
-    if(process.argv.includes('--m16-safety'))await (await import('./m14-inspect.mjs')).inspectM14({evaluate,cdp,wait,report,folder,output,record,milestone:'m16-safety',restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
+    if(process.argv.includes('--m17-safety'))await (await import('./m17-safety.mjs')).safetyM17({evaluate,cdp,wait,report,folder,restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
+    else if(m17)await (await import('./m17-inspect.mjs')).qualifyM17({evaluate,cdp,wait,report,folder,output,record,architecture,processSnapshot:async()=>{const path=join(folder,'m17-roles.json');execFileSync('powershell.exe',['-NoProfile','-File',join(import.meta.dirname,'process-breakdown.ps1'),'-RootPid',String(child.pid),'-Output',path],{windowsHide:true});return JSON.parse((await readFile(path,'utf8')).replace(/^\uFEFF/,''));},restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
+    else if(process.argv.includes('--m16-safety'))await (await import('./m14-inspect.mjs')).inspectM14({evaluate,cdp,wait,report,folder,output,record,milestone:'m16-safety',restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
     else if(m16)await (await import('./m16-inspect.mjs')).qualifyM16({evaluate,cdp,wait,report,folder,output,record,architecture,baseline:process.argv.includes('--m16-baseline'),measure:measureUI,processSnapshot:async()=>{const path=join(folder,'m16-roles.json');execFileSync('powershell.exe',['-NoProfile','-File',join(import.meta.dirname,'process-breakdown.ps1'),'-RootPid',String(child.pid),'-Output',path],{windowsHide:true});return JSON.parse((await readFile(path,'utf8')).replace(/^\uFEFF/,''));},restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
     else if(m15)await (await import('./m15-inspect.mjs'))[process.argv.includes('--m15-preview-only')?'previewM15':'qualifyM15']({evaluate,cdp,wait,report,folder,output,record,restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
     else if(m14||process.argv.includes('--reference-m14')||process.argv.includes('--reference-m15'))await (await import('./m14-inspect.mjs')).inspectM14({evaluate,cdp,wait,report,folder,output,record:(scenario,...args)=>record(m15?scenario.replace(/^m14-/, 'm15-'):scenario,...args),milestone:m15||process.argv.includes('--reference-m15')?'m15':'m14',reference:architecture==='electron-java',restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
@@ -177,7 +184,7 @@ try {
     }
     console.log(await evaluate('document.body.innerText.slice(0,5000)'));
     await cdp('Page.captureScreenshot').then(async r => writeFile(join(output, 'inspect.png'), Buffer.from(r.data, 'base64')));
-    if(m14&&measureUI){report.preIdleEndpoint=await evaluate('({editors:document.querySelectorAll(".tiptap").length,portals:document.querySelectorAll(".library-popover,[role=dialog],[role=menu]").length,heap:performance.memory?.usedJSHeapSize})');assert.equal(report.preIdleEndpoint.editors,1);assert.equal(report.preIdleEndpoint.portals,0);if(!run){report.preRestartProcess1=report.process1;run=startSampler(4);}console.log(uiMilestone.toUpperCase()+' settling30s before untouched five-minute idle;no renderer polling.');await delay(30000);report.idleWindow={start:Date.now()};await delay(300000);report.idleWindow.end=Date.now();}
+    if(m14&&measureUI&&!m17){report.preIdleEndpoint=await evaluate('({editors:document.querySelectorAll(".tiptap").length,portals:document.querySelectorAll(".library-popover,[role=dialog],[role=menu]").length,heap:performance.memory?.usedJSHeapSize})');assert.equal(report.preIdleEndpoint.editors,1);assert.equal(report.preIdleEndpoint.portals,0);if(!run){report.preRestartProcess1=report.process1;run=startSampler(4);}console.log(uiMilestone.toUpperCase()+' settling30s before untouched five-minute idle;no renderer polling.');await delay(30000);report.idleWindow={start:Date.now()};await delay(300000);report.idleWindow.end=Date.now();}
     await delay(3000); await stopSampler(run, 1);
     if(m14&&report.idleWindow){const points=report.process1.filter(p=>{const t=Date.parse(p.timestamp);return t>=report.idleWindow.start&&t<=report.idleWindow.end;}),first=points[0],last=points.at(-1);assert(points.length>=200,'Idle sampler coverage');record(uiMilestone+'-settled-idle-5min',1,'cpu_one_core_percent',100*(last.cpuSeconds-first.cpuSeconds)/((Date.parse(last.timestamp)-Date.parse(first.timestamp))/1000),'%','Untouched five-minute idle after milestone-specific UI fixture;one pane;no renderer polling;uncontrolled coexisting desktop.');record(uiMilestone+'-settled-idle-5min',1,'process_tree_working_set',last.workingSet,'bytes','Final owned process-tree sample;shared pages may double-count.');record(uiMilestone+'-settled-idle-5min',1,'process_tree_private_bytes',last.privateBytes,'bytes','Final owned process-tree sample;not comparable to different fixture endpoints.');}
     await quit();
@@ -268,7 +275,7 @@ try {
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
-  for (const s of report.samples) if(!inspect||(m10&&s.scenario==='command-palette-m10')||(m14&&measureUI&&s.scenario.startsWith(uiMilestone+'-'))) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
-  if (!report.success && (!inspect||m14&&measureUI)) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
+  for (const s of report.samples) if(!inspect||(m10&&s.scenario==='command-palette-m10')||(m14&&measureUI&&s.scenario.startsWith(uiMilestone+'-'))) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
+  if (!report.success && (!inspect||m14&&measureUI)) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
   console.log(JSON.stringify({ success: report.success, evidence, metrics: report.samples.length, error: report.error }));
 }
