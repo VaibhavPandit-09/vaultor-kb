@@ -120,17 +120,17 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
    Tauri owns drag/Snap/window commands; shared components own row/header geometry. */
 .next-shell{height:100dvh;min-height:0;display:flex;flex-direction:column;background:var(--background);color:var(--foreground);font-size:13px;overflow:hidden;--next-sidebar-width:288px;--desktop-control-width:36px}
 .next-main{position:relative;min-width:0;min-height:0;flex:1;display:flex;flex-direction:column;overflow:hidden;container-type:inline-size}
-.next-desktop-toolbar{height:52px;flex:none;display:flex;align-items:center;padding-right:108px;color:var(--text-secondary);user-select:none;z-index:40}
+.next-desktop-toolbar{height:40px;flex:none;display:flex;align-items:center;gap:4px;padding-right:116px;color:var(--text-secondary);user-select:none;z-index:40}
 .next-toolbar-navigation{display:flex;align-items:center;gap:2px;padding:0 12px}
-.next-title-drag{flex:1;min-width:32px;align-self:stretch;display:flex;align-items:center;gap:8px;font-size:12px;cursor:default}
+.next-title-drag{flex:1;min-width:80px;align-self:stretch;display:flex;align-items:center;gap:8px;font-size:12px;cursor:default}
 .next-title-drag span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:24vw;background:var(--surface-3);padding:6px 9px;border-radius:8px}
-.next-title-drag>svg,.next-title-drag small{display:none}
-.next-window-controls{position:fixed;top:0;right:0;height:34px;margin:0;border:0;z-index:3400}
-.next-window-controls button{width:36px;height:34px;border-radius:0;padding:0}
-.next-shell[data-notes=false] .next-desktop-toolbar{position:absolute;inset:0 0 auto;height:34px;pointer-events:none}
+.next-title-drag>svg{display:block;flex:none;color:var(--text-tertiary)}
+.next-window-controls{position:fixed;top:0;right:0;height:40px;margin:0;border:0;gap:0;z-index:3400}
+.next-window-controls button{width:36px;height:40px;border-radius:0;padding:0}
+.next-shell[data-notes=false] .next-desktop-toolbar{position:absolute;inset:0 0 auto;height:40px;pointer-events:none}
 .next-shell[data-notes=false] .next-desktop-toolbar>*{pointer-events:auto}
-.next-shell[data-notes=false] .next-toolbar-navigation{visibility:hidden}
-.next-shell[data-sidebar=false] .next-toolbar-navigation{visibility:visible}
+.next-shell[data-notes=false] .next-toolbar-navigation{display:none}
+.next-shell[data-sidebar=false] .next-toolbar-navigation{display:flex}
 .next-shell[data-notes=false] .next-title-drag span{display:none}
 .next-shell[data-notes=false] .next-toolbar-actions{padding-right:8px}
 .next-desktop-toolbar .next-appearance-trigger{display:none}
@@ -171,8 +171,8 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 .next-shell[data-notes=false] .next-main:has(>.next-search-feedback,>.next-error) .vaultor-browser{--library-safe-top:16px}
 
 /* Original journey and session surfaces occupy existing chrome/scroll ownership. */
-.next-desktop-toolbar>.journey-bar{flex:1;min-width:0;border:0;background:transparent}.next-desktop-toolbar .journey-trail{min-width:0}.next-session-list .session-secondary{display:flex}.next-settings .settings-choices button{overflow-wrap:normal;word-break:normal;white-space:normal}.next-settings .settings-choices{min-width:260px}.next-desktop-body .sidebar-allocation[data-floating=true]{width:0}.next-desktop-body .sidebar-allocation[data-floating=true] .sidebar-surface{position:absolute;z-index:60}.next-pane>.journey-viewport{padding:12px 16px 24px}
-@container(max-width:850px){.next-desktop-toolbar .journey-trail{display:none}.next-desktop-toolbar>.journey-bar{min-width:126px}}
+.next-desktop-toolbar>.journey-bar{flex:0 1 320px;max-width:45%;min-width:118px;height:40px;padding-inline:6px;border:0;background:transparent}.next-desktop-toolbar .journey-trail{min-width:0}.next-session-list .session-secondary{display:flex}.next-settings .settings-choices button{overflow-wrap:normal;word-break:normal;white-space:normal}.next-settings .settings-choices{min-width:260px}.next-desktop-body .sidebar-allocation[data-floating=true]{width:0}.next-desktop-body .sidebar-allocation[data-floating=true] .sidebar-surface{position:absolute;z-index:60}.next-pane>.journey-viewport{padding:12px 16px 24px}
+@container(max-width:850px){.next-desktop-toolbar .journey-trail{display:none}.next-desktop-toolbar>.journey-bar{min-width:118px}}
 
 /* WorkspacePaneLayout limits a single reading pane to896px. */
 /* Host controllers retain documents; the original pane layout owns structural motion. */
@@ -190,3 +190,19 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 .next-file-preview-content{min-width:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none}
 .next-command-palette [role=option]>span{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .next-command-palette [role=option]>kbd{flex-shrink:0}
+
+/* Caption actions share one lane; remaining caption space always supports native drag. */
+.next-toolbar-actions{gap:4px}.next-toolbar-actions>button,.next-toolbar-actions .next-activity>button{height:30px;min-width:30px;display:flex;align-items:center;justify-content:center;padding:5px 7px}.next-desktop-toolbar button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+@container(max-width:700px){.next-toolbar-actions .next-activity strong{display:none}.next-toolbar-navigation{padding-inline:4px}.next-toolbar-actions [aria-label="Return to Library"]{display:none}}
+
+.next-drop-destinations{display:flex;flex-direction:column;gap:4px;padding:4px 0 8px}.next-drop-destinations>div{padding:10px 8px;border:1px dashed var(--border-strong);border-radius:6px;font-size:12px}.next-shell [data-drop=true]{background:color-mix(in srgb,var(--accent) 16%,var(--surface-2));outline:2px solid var(--accent);outline-offset:-2px}.next-toolbar-actions .next-activity button{height:30px;display:flex;align-items:center}.next-title-drag{padding-inline:8px}.next-title-drag>span{pointer-events:none}
+@container(max-width:700px){.next-toolbar-actions .next-activity button>span{display:none}}
+
+@container(max-width:700px){.next-toolbar-actions [aria-label="Split active note"]{display:none}}
+
+/* Transient pane/root targets overlay the canvas without moving sidebar destinations mid-gesture. */
+.next-drop-destinations{position:fixed;top:44px;left:calc(var(--next-sidebar-width) + 12px);right:12px;z-index:80;flex-direction:row;pointer-events:auto}.next-drop-destinations>div{flex:1;background:var(--surface-3)}.next-shell[data-sidebar=false] .next-drop-destinations{left:12px}
+
+.next-explorer-drop{position:fixed;inset:44px 12px 12px;z-index:90;pointer-events:none;outline:2px dashed var(--accent);outline-offset:-2px;border-radius:12px;background:color-mix(in srgb,var(--accent) 8%,transparent);padding:16px;text-align:center;color:var(--foreground);font-weight:600}
+
+@container(max-width:700px){.next-desktop-toolbar>.journey-bar{flex-basis:40px;min-width:40px;max-width:40px;padding:0}.next-desktop-toolbar .journey-controls{padding:0;border:0}.next-desktop-toolbar .journey-controls>button:nth-child(-n+2){display:none}}

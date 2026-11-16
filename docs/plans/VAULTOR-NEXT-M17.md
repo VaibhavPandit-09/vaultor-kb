@@ -56,3 +56,26 @@ M17 remains engineering-partial for the individual differences and unverified ga
 Classification: **Different** — Tags sort/count/placement,sidebar utilities and collection-detail disclosures. **Intentionally improved** — full Tags creation is owned by its shared transforming header to remove the duplicate section and keep the action reachable during compression. **Unverified** — broad original motion,populated original Sources/Trash and physical input/scaling/speech. No screen or user acceptance is newly marked Accepted merely because original code/styles were reused.
 
 Final driver guard follow-up: `raw/tauri-rust-2026-11-16T03-41-07.013Z.json` passes the same direct native safety checks after disposable-root ownership validation was added. This developer-only guard does not change the delivered executable.
+
+## M17 critical desktop correction follow-up
+
+Scope: the user-reported caption drag, right controls, overflow, effective pane policy and drag/drop defects only. Continue codex/vaultor-next-m1 from be44f230. No M18, merge, tag, installer or publication. Original Electron DesktopChrome/WindowControls, MenuAction/LibraryPopover, PaneNavigation and DesktopInteraction/SidebarItem are the behavioral/presentation references; Next controllers retain Rust domain authority.
+
+Causes and corrections are UI-78–82 in the existing UI audit. Missing preferences now default to fill configured1/2/3 slots; narrow width controls presentation rather than reducing policy capacity. Existing explicit reuse values remain conservative because old receipts cannot distinguish defaults from deliberate choices. Open Notes activation and direct linked opens no longer force replacement. Already-open resources retain original session/visit reuse; explicit pane/link actions override automatic allocation. Rust persists existing workspace behavior and receipts without a migration or new document authority.
+
+| Capability | Electron reference / Next correction | Verification boundary |
+| --- | --- | --- |
+| Caption drag / controls | Persistent Tauri drag grip and unused caption, common40px lane, reserved native controls; narrow actions use overflow | Optimized Windows input and final geometry results recorded below |
+| Application/resource/sidebar/editor menus | Shared MenuAction rows and LibraryPopover keyboard/placement owner; overflow no longer bypasses either | Focused menu regression and native runtime geometry/keyboard |
+| Collection memberships | Existing bulk add/Shift-move,1–100 selected identities, no content copying | Pointer threshold/cancel regression; native input scope below |
+| Tags / Pins | Native pointer targets assign existing tags or pin; companion hover discovery retained | Native input scope below |
+| Pane resource drops | Single managed-resource drop onto pane or temporary slot target; managed Quick Access rows are drag sources | Existing session reuse and save barriers; runtime/Windows scope below |
+| Open Notes | Existing session-ID grips reorder or swap panes; menu earlier/later alternatives retained | Existing M15 evidence plus focused regression; final input scope below |
+| Sidebar shortcut order | Original SidebarItem is a drag source, SidebarSections owns pin/discovery targets; neither defines arbitrary Pinned/Recent reorder | Existing data order retained; no fabricated reorder UI |
+| Collection reparent | Sidebar name drag to parent or temporary Top level; self/descendant targets refused before Rust validation | Existing Rename/reparent menu remains keyboard alternative |
+| Explorer files/folders | Tauri native event paths enter the existing reviewed import; native hover outline is separate from internal pointers | Physical Explorer input result below; synthetic events cannot close this gate |
+| Native drag-out | Still unsupported; prepared integrity-checked copies/Export/Reveal remain available | Tracked gap: substantial Windows OLE drag-source lifecycle, temporary copy lifetime and cancellation need separate Rust/Tauri implementation and physical Explorer acceptance |
+
+Temporary pane/root destinations overlay the canvas without moving sidebar targets mid-drag. Six-pixel resource/collection threshold, nearest-scroll-owner edge scrolling, Escape, pointer cancellation and blur cleanup keep cancellation nonmutating. Multi-selection is admitted for organizational targets and rejected for single-pane targets. There is no Trash/delete target. Source files are never modified by these gestures.
+
+Help applicability: updated experimental next-foundation Desktop window and menus, Open Notes and journeys, Resource clipboard and desktop actions, plus the next-foundation catalogue entry. Published Electron/Android availability remains unchanged. Technical updates: CODEBASE current ownership/history, existing roadmap/UI/functional registers and benchmark-driver usage. Actual final checks and limitations follow below; no benchmark measurements were performed.

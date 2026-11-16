@@ -25,3 +25,13 @@ it('rechecks capacity after load, guards departure saves and retains valid focus
  const {nav,dep}=fixture();await nav.open('A');let release!:(r:Resource)=>void;dep.load.mockImplementationOnce(()=>new Promise(resolve=>{release=resolve;}));const pending=nav.open('B');dep.capacity=()=>1;release(note('B'));await pending;expect(nav.snapshot().panes).toHaveLength(1);expect(dep.save).toHaveBeenCalledWith('A');
  dep.save.mockRejectedValueOnce(new Error('Unsaved'));await nav.open('C');expect(nav.snapshot().panes[0].id).toBe('B');expect(nav.snapshot().issue?.message).toBe('Unsaved');
 });
+
+it('explicit pane targeting overrides fill while visible reuse preserves the visit and reading anchor',async()=>{
+ const {nav}=fixture(3);await nav.open('A');const a=nav.snapshot().panes[0];nav.recordPosition(a.paneId,a.history[0].visitId,{scrollTop:417});
+ await nav.open('B');const b=nav.snapshot().panes[1];await nav.open('A');expect(nav.snapshot().panes).toHaveLength(2);expect(nav.snapshot().activePaneId).toBe(a.paneId);expect(nav.position(a.history[0].visitId).scrollTop).toBe(417);
+ await nav.open('C',{sourcePaneId:b.paneId,destination:'here',intent:'link'});expect(nav.snapshot().panes.map(p=>p.id)).toEqual(['A','C']);expect(nav.snapshot().panes[1].history.map(v=>v.resourceId)).toEqual(['B','C']);
+});
+it('restores sessions and fills remaining configured capacity after restart',async()=>{
+ const {nav}=fixture(3);await nav.open('A');await nav.open('B');const receipt=nav.exportSession();const restored=fixture(3).nav;
+ restored.restore(receipt.panes,receipt.activePaneId,receipt.positions,receipt.sessions);await restored.open('C');expect(restored.snapshot().panes.map(p=>p.id)).toEqual(['A','B','C']);await restored.open('D');expect(restored.snapshot().panes.map(p=>p.id)).toEqual(['A','B','D']);expect(restored.snapshot().sessions).toHaveLength(4);
+});

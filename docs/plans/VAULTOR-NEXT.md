@@ -324,3 +324,7 @@ Workbook refresh completed from9350canonical records with53failed/invalidated ru
 ## M15 — everyday UI acceptance candidate
 
 [The M15 ledger](VAULTOR-NEXT-M15.md) records supported original Settings, workspace behavior, mixed typed pins and full Pinned browsing, original pane presentation, session-ID cycling/focus, pointer arrangement, paged tag/file filters and contextual editor/header corrections. The existing UI register and156-item inventory remain authoritative. Native and automated evidence distinguish functionality, visual comparison, motion and keyboard acceptance. This is an executable for user evaluation; unresolved transitions and advanced/native parity remain open. No master merge, installer, tag or publication is authorized.
+
+## M17 critical desktop correction follow-up
+
+Continue the existing branch; do not begin M18. Caption dragging/alignment, shared menu semantics, default/effective pane placement and high-value pointer drop destinations were corrected in the existing React presentation. Rust commands, draft/revision barriers, external ownership and session authority remain intact. The [M17 follow-up](VAULTOR-NEXT-M17.md#m17-critical-desktop-correction-follow-up) owns the focused capability matrix, exact executable and actual checks/gaps; the UI audit records causes UI-78–82. This is not release qualification. No benchmark observations were added.
