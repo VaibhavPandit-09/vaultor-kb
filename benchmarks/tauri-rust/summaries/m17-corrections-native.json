@@ -1,0 +1,434 @@
+{
+  "date": "2026-11-16",
+  "status": "partial native acceptance; correction implementation delivered",
+  "branch": "codex/vaultor-next-m1",
+  "base": "be44f2301ff4e013818e49a8c08f074aa0245870",
+  "applicationSource": "380bf3ae7b907d8945485f4f64167f7f60f1fea6",
+  "executable": {
+    "path": "C:\\GitDev\\vaultor-kb\\next\\src-tauri\\target\\release\\vaultor-next-m17-corrections.exe",
+    "sha256": "3a1aa0fa31249415897ba6b8823b15c789554454324f1eb5b032e852be1027f4",
+    "bytes": 13647360
+  },
+  "runtime": {
+    "record": "raw/tauri-rust-2026-11-16T04-39-53.031Z.json",
+    "checks": [
+      "Configured 1 pane policy: spare slots filled; occupied active slot replaced; existing session reused; assignments and fill preference survive process restart.",
+      "Configured 2 pane policy: spare slots filled; occupied active slot replaced; existing session reused; assignments and fill preference survive process restart.",
+      "Configured 3 pane policy: spare slots filled; occupied active slot replaced; existing session reused; assignments and fill preference survive process restart.",
+      "Application menu measured distinct rows/shortcut columns; End selects Help; Escape restores its trigger.",
+      "Real Tauri window sizes 760/1200/1800: caption drag width >=80; right controls have disjoint bounds and reserved native-control space."
+    ],
+    "captionGeometry": [
+      {
+        "width": 760,
+        "drag": {
+          "x": 372,
+          "y": 0,
+          "width": 167.33334350585938,
+          "height": 40,
+          "top": 0,
+          "right": 539.3333435058594,
+          "bottom": 40,
+          "left": 372
+        },
+        "controls": {
+          "x": 652,
+          "y": 0,
+          "width": 108,
+          "height": 40,
+          "top": 0,
+          "right": 760,
+          "bottom": 40,
+          "left": 652
+        },
+        "journey": {
+          "x": 328,
+          "y": 0,
+          "width": 40,
+          "height": 40,
+          "top": 0,
+          "right": 368,
+          "bottom": 40,
+          "left": 328
+        },
+        "journeyControls": {
+          "x": 328,
+          "y": 5,
+          "width": 30,
+          "height": 30,
+          "top": 5,
+          "right": 358,
+          "bottom": 35,
+          "left": 328
+        },
+        "journeyButtons": 1,
+        "buttons": [
+          {
+            "label": "Search Library",
+            "x": 543.3333740234375,
+            "y": 5,
+            "width": 30,
+            "height": 30,
+            "top": 5,
+            "right": 573.3333740234375,
+            "bottom": 35,
+            "left": 543.3333740234375
+          },
+          {
+            "label": "Activity",
+            "x": 577.3333740234375,
+            "y": 5,
+            "width": 31.33333396911621,
+            "height": 30,
+            "top": 5,
+            "right": 608.6667079925537,
+            "bottom": 35,
+            "left": 577.3333740234375
+          },
+          {
+            "label": "Application menu",
+            "x": 612.6666870117188,
+            "y": 5,
+            "width": 31.33333396911621,
+            "height": 30,
+            "top": 5,
+            "right": 644.000020980835,
+            "bottom": 35,
+            "left": 612.6666870117188
+          }
+        ]
+      },
+      {
+        "width": 1200,
+        "drag": {
+          "x": 668,
+          "y": 0,
+          "width": 233.5416717529297,
+          "height": 40,
+          "top": 0,
+          "right": 901.5416717529297,
+          "bottom": 40,
+          "left": 668
+        },
+        "controls": {
+          "x": 1092,
+          "y": 0,
+          "width": 108,
+          "height": 40,
+          "top": 0,
+          "right": 1200,
+          "bottom": 40,
+          "left": 1092
+        },
+        "journey": {
+          "x": 344,
+          "y": 0,
+          "width": 320,
+          "height": 40,
+          "top": 0,
+          "right": 664,
+          "bottom": 40,
+          "left": 344
+        },
+        "journeyControls": {
+          "x": 350,
+          "y": 5,
+          "width": 105.0625,
+          "height": 30,
+          "top": 5,
+          "right": 455.0625,
+          "bottom": 35,
+          "left": 350
+        },
+        "journeyButtons": 3,
+        "buttons": [
+          {
+            "label": "Search Library",
+            "x": 905.5416870117188,
+            "y": 5,
+            "width": 30,
+            "height": 30,
+            "top": 5,
+            "right": 935.5416870117188,
+            "bottom": 35,
+            "left": 905.5416870117188
+          },
+          {
+            "label": "Return to Library",
+            "x": 939.5416870117188,
+            "y": 5,
+            "width": 30,
+            "height": 30,
+            "top": 5,
+            "right": 969.5416870117188,
+            "bottom": 35,
+            "left": 939.5416870117188
+          },
+          {
+            "label": "Activity",
+            "x": 973.5416870117188,
+            "y": 5,
+            "width": 75.125,
+            "height": 30,
+            "top": 5,
+            "right": 1048.6666870117188,
+            "bottom": 35,
+            "left": 973.5416870117188
+          },
+          {
+            "label": "Application menu",
+            "x": 1052.666748046875,
+            "y": 3,
+            "width": 31.33333396911621,
+            "height": 30,
+            "top": 3,
+            "right": 1084.0000820159912,
+            "bottom": 33,
+            "left": 1052.666748046875
+          }
+        ]
+      },
+      {
+        "width": 1800,
+        "drag": {
+          "x": 668,
+          "y": 0,
+          "width": 833.5416870117188,
+          "height": 40,
+          "top": 0,
+          "right": 1501.5416870117188,
+          "bottom": 40,
+          "left": 668
+        },
+        "controls": {
+          "x": 1692,
+          "y": 0,
+          "width": 108,
+          "height": 40,
+          "top": 0,
+          "right": 1800,
+          "bottom": 40,
+          "left": 1692
+        },
+        "journey": {
+          "x": 344,
+          "y": 0,
+          "width": 320,
+          "height": 40,
+          "top": 0,
+          "right": 664,
+          "bottom": 40,
+          "left": 344
+        },
+        "journeyControls": {
+          "x": 350,
+          "y": 5,
+          "width": 105.0625,
+          "height": 30,
+          "top": 5,
+          "right": 455.0625,
+          "bottom": 35,
+          "left": 350
+        },
+        "journeyButtons": 3,
+        "buttons": [
+          {
+            "label": "Search Library",
+            "x": 1505.541748046875,
+            "y": 5,
+            "width": 30,
+            "height": 30,
+            "top": 5,
+            "right": 1535.541748046875,
+            "bottom": 35,
+            "left": 1505.541748046875
+          },
+          {
+            "label": "Return to Library",
+            "x": 1539.541748046875,
+            "y": 5,
+            "width": 30,
+            "height": 30,
+            "top": 5,
+            "right": 1569.541748046875,
+            "bottom": 35,
+            "left": 1539.541748046875
+          },
+          {
+            "label": "Activity",
+            "x": 1573.541748046875,
+            "y": 5,
+            "width": 75.125,
+            "height": 30,
+            "top": 5,
+            "right": 1648.666748046875,
+            "bottom": 35,
+            "left": 1573.541748046875
+          },
+          {
+            "label": "Application menu",
+            "x": 1652.666748046875,
+            "y": 5,
+            "width": 31.33333396911621,
+            "height": 30,
+            "top": 5,
+            "right": 1684.0000820159912,
+            "bottom": 35,
+            "left": 1652.666748046875
+          }
+        ]
+      }
+    ]
+  },
+  "safety": {
+    "record": "raw/tauri-rust-2026-11-16T04-31-29.877Z.json",
+    "applicationSource": "87ca65d",
+    "sha256": "b8196ba578619f2541ca7a46dda16cb134994cef48197d4cd9754016d88daa4a",
+    "checks": [
+      "Optimized native managed autosave;durable draft acknowledged before forced termination;restart Recovery review/restore commits content;competing managed revision refuses overwrite and parks draft.",
+      "Optimized native linked source bytes unchanged before explicit Save;publication succeeds for supported plain-text edit;external competing revision refuses overwrite and retains protected text/draft."
+    ],
+    "reuse": "Final source subsequently changes caption CSS and navigation command enabled state only; Rust/editing/protection owners are unchanged."
+  },
+  "windowsInput": {
+    "instrument": "computer-use skill: Windows SendInput/UI Automation; not CDP synthetic pointer events or human hardware certification",
+    "presentationSource": "08e02dd7eda7e24ffedb9dc14d987aff2acbd30f",
+    "presentationSha256": "9004b54347de0afd6e692f6246322109c4aa2d4cf59202f06c122617544ce8eb",
+    "checks": [
+      {
+        "name": "Fast resource-to-available-pane drop",
+        "result": "passed",
+        "observed": "Correction D assigned to pane1; no drag status or target markers remain."
+      },
+      {
+        "name": "Open Notes pointer grip order",
+        "result": "passed",
+        "before": [
+          "correction-0",
+          "correction-1",
+          "correction-2",
+          "correction-3"
+        ],
+        "after": [
+          "correction-3",
+          "correction-0",
+          "correction-1",
+          "correction-2"
+        ],
+        "remainingMarkers": 0
+      },
+      {
+        "name": "Overflow pointer and End/Escape",
+        "result": "passed",
+        "observed": "Separate label/shortcut columns; End reaches Help; Escape restores Application menu trigger."
+      },
+      {
+        "name": "Light/Dark/OLED",
+        "result": "inspected",
+        "observed": "Aligned caption and menu surfaces; native Settings changes effective dataset theme; OLED black captured."
+      },
+      {
+        "name": "Bundled correction Help",
+        "result": "passed",
+        "observed": "F1 -> Desktop window and menus displays updated grip, native controls, narrow overflow and keyboard instructions."
+      },
+      {
+        "name": "Caption double click maximize",
+        "result": "passed",
+        "before": {
+          "width": 1203,
+          "height": 823
+        },
+        "after": {
+          "width": 1707,
+          "height": 1067
+        },
+        "scope": "Window screenshot bounds; actual native maximized state."
+      },
+      {
+        "name": "Native restore control",
+        "result": "passed",
+        "observed": "Returns from maximized to normal1200x820 client bounds; is_maximized false."
+      },
+      {
+        "name": "Caption native movement",
+        "result": "passed with staged-input limitation",
+        "beforeLogical": {
+          "x": 261,
+          "y": 239
+        },
+        "afterLogical": {
+          "x": 341,
+          "y": 289
+        },
+        "beforeCaptureOrigin": {
+          "x": 389,
+          "y": 357
+        },
+        "afterCaptureOrigin": {
+          "x": 509,
+          "y": 432
+        },
+        "observed": "Caption click admits native move loop; subsequent Windows injected drag moves +80,+50 logical pixels. Trusted pointer/mousedown target next-title-drag recorded. Rapid one-call injected drag did not move the window; single continuous human-pointer reliability is not certified."
+      },
+      {
+        "name": "Maximized double-click restore",
+        "result": "unqualified",
+        "observed": "Injected caption double click left the window maximized; restore-control activation succeeds. No attribution to app versus automation timing."
+      },
+      {
+        "name": "Native frame edge resizing",
+        "result": "unqualified",
+        "observed": "Injected attempted corner drag did not change bounds. Actual Tauri set_size checks pass; these do not certify physical edge hit-testing."
+      }
+    ],
+    "earlierInternalPointerEvidence": {
+      "sha256": "ec2c0fe06dfbefe30a9d0ed1cdfb17b4fb169471e5ba7c2a94ffd5519c1e7498",
+      "checks": [
+        "Resource D pointer-drop into Pins commits pin.",
+        "Resource D -> Research commits one membership.",
+        "Resource C -> Verified commits tag assignment.",
+        "Archive -> Research commits parentId; Research -> Archive leaves hierarchy unchanged."
+      ],
+      "reuse": "Same Rust commands and target validation retained; subsequent pointer change revalidates destination at release, covered by focused collection/cancel/pane tests. Final fast pane drop and session order rerun with Windows input."
+    },
+    "explorer": {
+      "result": "unverified: automation unavailable for cross-window endpoint",
+      "source": "Disposable Physical file.txt and Physical folder/Nested.txt; source files retained",
+      "attempt": "Native Explorer file drag to exposed Vaultor region",
+      "toolError": "point (2414, 1349) is over msedgewebview2.exe \"Chrome Legacy Window\", not target window explorer.exe \"explorer-input - File Explorer\"; activate the target or take a fresh screenshot before retrying",
+      "interpretation": "The intended endpoint is necessarily another process; no synthetic browser drop or bypass was substituted. Real Explorer drop/import review was not reached."
+    }
+  },
+  "remaining": [
+    "Physical Explorer file/folder drag-in acceptance.",
+    "Continuous physical caption drag, maximized double-click restore, native edge resize and Snap/Snap-hover reliability matrix.",
+    "Native drag-out: unsupported; requires separately scoped Windows OLE drag-source/copy-lifetime implementation and Explorer acceptance.",
+    "Full native cancellation/multiselection/edge-autoscroll matrix; focused threshold/cancel/invalid-target regressions pass."
+  ],
+  "validation": {
+    "frontend": "116 cases in11-file integrated regression; subsequent affected32-case interaction run passes including new release-time target regression (117 unique cases overall); final four history/caption cases and unavailable-forward assertion pass.",
+    "rust": "cargo test --lib desktop::tests:3 passed.",
+    "typescript": "tsc -b passes through optimized Next build.",
+    "lint": "Scoped ESLint passes for changed frontend source/tests.",
+    "help": "43 features/16 articles;17 governance cases pass. Generated Next JS contains updated article/default prose and native Help article inspected.",
+    "helpPackagingGap": "Generic --dist provenance validation fails: Next Vite config does not emit help/provenance.json; Next embeds next-foundation.md raw. No full catalogue provenance packaging/release claim.",
+    "build": "npm --prefix next run build: optimized Windows executable passes.",
+    "benchmarks": "No comparative campaign or canonical CSV/workbook changes. Incidental harness startup/process samples remain diagnostic only."
+  },
+  "retainedFailures": [
+    {
+      "record": "raw/tauri-rust-2026-11-16T04-19-38.205Z.json",
+      "reason": "Driver set_size used size instead of required value; policy/menu checks had passed."
+    },
+    {
+      "record": "raw/tauri-rust-2026-11-16T04-20-23.316Z.json",
+      "reason": "Inherited CDP viewport override invalidates apparent width samples (all1200); final set_size call also used old key. Final driver clears override and asserts actual innerWidth equals requested native width."
+    },
+    {
+      "record": "raw/tauri-rust-2026-11-16T04-21-34.122Z.json",
+      "reason": "Native pointer pass exposed initial fast pane target miss; corrected by release-time revalidation and new regression. Same pass verifies collections/tags/cycle protection."
+    }
+  ],
+  "release": "No merge, tag, installer or publication."
+}
