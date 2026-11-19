@@ -460,3 +460,8 @@ User acceptance on683f7c6b supersedes the earlier open gates for caption drag/re
 - **UI-85 — Feedback/cancellation:** the old status strip was not a following preview, hover discovery discarded feedback, invalid targets silently failed and a root boolean could swallow unrelated navigation after cancellation. The original preview surface now follows without hit interception, shared target states show validity, refusal text explains invalid drops, continuous active edge scrolling re-hits targets, and a new pointerdown clears compatibility-click suppression. Session arrangement uses the same transport with its original session-ID order/swap policy.
 
 No titlebar/layout/pane-policy/file-drop rewrite, new data authority or unsafe browser imitation of native drag-out. Human physical acceptance remains separate from CDP and SendInput; workflow results and a specific checklist are maintained in [M17 final follow-up](VAULTOR-NEXT-M17.md#m17-final-internal-drag-follow-up).
+
+
+## M18 advanced managed editor
+
+The bounded comparison covered BlockEditor, TableControls/TableDataPanel, WorkspaceTable/TableWorkspace, the original image placement and preview, SlashMenu, and ResourceLinkMenu. Next now uses the original placement and preview components as well as the existing table controls. Only the active managed pane exposes the floating table controls. File review and the image picker retain the invoking editor and insertion anchor. Managed editor resource drops show the original caret and reuse the M17 pointer owner. Native geometry and physical input boundaries are recorded in the [M18 roadmap entry](VAULTOR-NEXT.md#m18-advanced-managed-editor). M17 physical mouse acceptance is still open.

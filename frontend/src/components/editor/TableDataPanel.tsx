@@ -5,7 +5,12 @@ import { describeTable, setTableFilters, tableViewState, tableRows, delimited, e
 import { tableContext } from './tableCommands';
 import { getPlatform } from '../../lib/platform';
 
-export default function TableDataPanel({ editor, mode }: { editor: Editor; mode: 'filter' | 'export' | 'help' }) {
+export type TableOutput = {
+  copy: (text: string) => Promise<unknown>;
+  saveCsv: (text: string, scope: 'visible' | 'all') => Promise<'saved' | 'cancelled' | 'downloaded'>;
+};
+
+export default function TableDataPanel({ editor, mode, output }: { editor: Editor; mode: 'filter' | 'export' | 'help'; output?: TableOutput }) {
   const [column, setColumn] = useState(0);
   const [scope, setScope] = useState<'visible' | 'all'>('visible');
   const [message, setMessage] = useState('');
@@ -28,13 +33,21 @@ export default function TableDataPanel({ editor, mode }: { editor: Editor; mode:
   };
   const rows = () => tableRows(ctx.table, scope === 'visible' ? info.visible : undefined);
   async function copy() {
-    try { await getPlatform().writeClipboard(delimited(rows(), '\t')); setMessage(`Copied ${scope} rows as TSV.`); }
+    try {
+      const text = delimited(rows(), '\t');
+      await (output ? output.copy(text) : getPlatform().writeClipboard(text));
+      setMessage(`Copied ${scope} rows as TSV.`);
+    }
     catch { setMessage('Clipboard access failed. Retry, use Ctrl+C on selected cells, or download CSV.'); }
   }
   async function download() {
-    const blob = new Blob(['\uFEFF' + delimited(rows(), ',', true)], { type: 'text/csv;charset=utf-8' });
-    try { const outcome = await getPlatform().saveBlob(blob, `table-${scope}.csv`); setMessage(outcome === 'cancelled' ? 'Save cancelled.' : outcome==='saved'?`CSV saved for ${scope} rows.`:`CSV download requested for ${scope} rows.`); }
-    catch { setMessage('CSV download failed. Retry.'); }
+    const text = '\uFEFF' + delimited(rows(), ',', true);
+    try {
+      const outcome = await (output ? output.saveCsv(text, scope) : getPlatform().saveBlob(new Blob([text], {type: 'text/csv;charset=utf-8'}), `table-${scope}.csv`));
+      setMessage(outcome === 'cancelled' ? 'Save cancelled.' : outcome === 'saved' ? `CSV saved for ${scope} rows.` : `CSV download requested for ${scope} rows.`);
+    } catch (error) {
+      setMessage(output ? String(error) : 'CSV download failed. Retry.');
+    }
   }
   return <div className="table-data-panel">
     {mode === 'filter' && <>

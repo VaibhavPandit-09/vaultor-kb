@@ -328,3 +328,18 @@ Workbook refresh completed from9350canonical records with53failed/invalidated ru
 ## M17 critical desktop correction follow-up
 
 Continue the existing branch; do not begin M18. Caption dragging/alignment, shared menu semantics, default/effective pane placement and high-value pointer drop destinations were corrected in the existing React presentation. Rust commands, draft/revision barriers, external ownership and session authority remain intact. The [M17 follow-up](VAULTOR-NEXT-M17.md#m17-critical-desktop-correction-follow-up) owns the focused capability matrix, exact executable and actual checks/gaps; the UI audit records causes UI-78–82. This is not release qualification. No benchmark observations were added.
+
+
+## M18 advanced managed editor
+
+Continues from 100c026e on the Next branch. M17 physical mouse acceptance is open. The managed editor reuses the original table, image placement, image preview, slash and resource-link surfaces. Rust owns bounded UTF-8 selection, staged CSV publication and managed originals. The existing Markdown projection and Papa Parse prepare reviewed files off the UI thread. Only editable managed panes can insert advanced content. Selection is mapped while a file is chosen or reviewed, and the resulting note must fit the existing document limit.
+
+| Area | M18 engineering scope | Remaining parity |
+| --- | --- | --- |
+| Tables | Original structural actions, view-local column filters, fullscreen canvas and native complete/visible CSV output. TSV selection and paste use the existing table workspace. | Native fullscreen and menu geometry. Original source-table link for imported CSV. No separate original OR/sort command was found. |
+| Markdown | Reviewed UTF-8 file insertion with editable headings, lists, GFM tables/tasks, links, quotes and code. | General Markdown paste review and constructs refused by the existing projection, including relative images and explicit column alignment. |
+| Images | Managed WebP and PNG/JPEG/GIF, ordered file/paste batches, reuse, mapped placement replacement, original resize/alignment/metadata UI, preview zoom/fit and saved usage. | Per-file upload queue and retry, thumbnail picker fidelity, physical image clipboard and direct Explorer-to-placement. |
+| Editor and resources | Heading controls, reviewed single-file link upload, managed editor-body caret drop in existing pointer transport. | Broader block selection/paste parity and physical multi-pane drop acceptance. |
+| Linked Markdown | Existing schema and explicit Save/conflict checks. Advanced insertion and managed links excluded. | Broader linked conversion deferred. |
+
+Focused engineering checks at implementation checkpoint: 30 frontend cases across 8 files, including schema/linked views, table operations, resource links and Markdown/CSV conversion. Six Rust media and five transfer tests pass, including protected image references. Final executable, benchmark and native evidence follow in this section.

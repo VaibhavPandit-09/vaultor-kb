@@ -94,7 +94,7 @@ export function DesktopInteractionProvider({children,generation,sourceKey,onPane
  const editorTarget=(event:DragEvent):DropTarget|null=>{
   const adapter=editorDropTarget(event.target),pane=event.target instanceof Element?event.target.closest<HTMLElement>('[data-pane-id]'):null;
   if(payload?.kind==='session'){if(!pane?.dataset.paneId)return null;const rect=pane.getBoundingClientRect(),edge=event.clientX<rect.left+Math.min(48,rect.width*.2)?'before':event.clientX>rect.right-Math.min(48,rect.width*.2)?'after':'swap';return {kind:'pane',paneId:pane.dataset.paneId,edge};}
-  if(payload?.kind==='tag'&&adapter)return {kind:'resource',resource:adapter.resource};
+  if(payload?.kind==='tag'&&adapter?.resource)return {kind:'resource',resource:adapter.resource};
   return adapter?{kind:'editor',target:adapter,x:event.clientX,y:event.clientY}:null;
  };
  return <Context.Provider value={{feedback,hover,leave,payload,external,markExternal:owner=>{setExternal(true);updateFeedback({phase:'discovering',owner,label:'Review import into this collection'});},start,cancel,drop,importFiles,scroll,stopScroll:()=>{edge.current=null;},scope,openedIds,report,visibleSessionIds,arrangeSession:async(id,target,edge)=>{if(!onArrangeSession)throw Error('Pane arrangement is unavailable.');await onArrangeSession(id,target,edge);}}}>

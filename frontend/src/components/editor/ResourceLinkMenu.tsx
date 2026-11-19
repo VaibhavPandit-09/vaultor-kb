@@ -9,7 +9,7 @@ import { resourcePresentation,resourceDescription } from '../../lib/resourceKind
 import { resourceLinkPluginKey, type ResourceLinkState } from './ResourceLinkDefinition';
 
 interface ResourceLinkMenuProps {
-  service?:{search:(query:string)=>Promise<LinkItem[]>;create:(title:string)=>Promise<LinkItem>};
+  service?:{upload?:boolean;search:(query:string)=>Promise<LinkItem[]>;create:(title:string)=>Promise<LinkItem>};
   editor: Editor;
   range: { from: number; to: number };
   query: string;
@@ -36,8 +36,8 @@ export default function ResourceLinkMenu({ editor, range, query, selectedIndex, 
           
           if (!hasExact && query.trim().length > 0) {
             fetchedItems.push({ id: 'create-note', type: 'note', title: `Create Note "${query}"`, virtual: true });
-            if(!service)fetchedItems.push({ id: 'create-file', type: 'file', title: `Upload File`, virtual: true });
           }
+          if ((!service && !hasExact && query.trim().length > 0) || service?.upload) fetchedItems.push({ id: 'create-file', type: 'file', title: 'Upload File', virtual: true });
           
           setItems(fetchedItems);
           onUpdateFiltered(fetchedItems.length);

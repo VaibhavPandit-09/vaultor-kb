@@ -522,6 +522,16 @@ fn publish_file(stage: &Path, destination: &Path) -> Result<(), String> {
         .map_err(|e| format!("Cannot publish without overwriting destination: {e}"))?;
     Ok(())
 }
+
+pub fn save_csv_copy(destination: &Path, text: &str) -> Result<(), String> {
+    let parent = destination.parent().filter(|path| path.is_dir()).ok_or("Choose an existing output folder")?;
+    let staged = stage(parent, false)?;
+    let mut file = OpenOptions::new().write(true).open(&staged.0).map_err(error)?;
+    file.write_all(text.as_bytes()).map_err(error)?;
+    file.sync_all().map_err(error)?;
+    drop(file);
+    publish_file(&staged.0, destination)
+}
 pub(crate) fn original_path(root: &Path, id: &str) -> Result<PathBuf, String> {
     Uuid::parse_str(id).map_err(error)?;
     let folder = root.join("managed");
@@ -563,6 +573,7 @@ fn import(
     mapped.insert(vec![], plan.collection.clone());
     let mut issues = plan.issues;
     let mut imported = 0;
+    let mut resource = None;
     let mut skipped = 0;
     let mut bytes = 0;
     let total = plan.files.len() as u64;
@@ -675,9 +686,9 @@ fn import(
             match receipt {
                 Ok(v) if v["skipped"] == true => {
                     fs::remove_file(&target).map_err(error)?;
-                    Ok(false)
+                    Ok(None)
                 }
-                Ok(_) => Ok(true),
+                Ok(_) => Ok(Some(id)),
                 Err(e) => {
                     let _ = fs::remove_file(target);
                     Err(e)
@@ -685,8 +696,11 @@ fn import(
             }
         })();
         match result {
-            Ok(true) => imported += 1,
-            Ok(false) => skipped += 1,
+            Ok(Some(id)) => {
+                imported += 1;
+                if total == 1 { resource = Some(id); }
+            },
+            Ok(None) => skipped += 1,
             Err(e) => {
                 if issues.len() < 100 {
                     issues.push(format!("{}: {e}", input.relative.join("/")));
@@ -702,7 +716,7 @@ fn import(
         bytes,
         Some(total_bytes),
     );
-    Ok(json!({"imported":imported,"skipped":skipped,"issues":issues,"partial":!issues.is_empty()}))
+    Ok(json!({"imported":imported,"resourceId":resource,"skipped":skipped,"issues":issues,"partial":!issues.is_empty()}))
 }
 fn insert_original(db: &rusqlite::Connection, o: &Original) -> Result<(), String> {
     db.execute(

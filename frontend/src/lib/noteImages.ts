@@ -22,13 +22,13 @@ export async function loadImage(id: string, signal: AbortSignal) {
   const { data } = await api.get<Blob>(`/resources/${id}/raw`, { responseType: 'blob', signal });
   const url = URL.createObjectURL(data); return { url, release: () => URL.revokeObjectURL(url) };
 }
-export async function copyImage(id: string) {
+export async function copyImage(id: string, load?: typeof loadImage) {
   const native = getPlatform().copyResourceImage;
-  if (native) return native(id);
+  if (native && !load) return native(id);
   if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') throw new Error('Image clipboard unavailable. Use Download original.');
   // Start clipboard access in the gesture; the PNG promise performs authenticated loading.
   const png = (async () => {
-    const controller = new AbortController(), loaded = await loadImage(id, controller.signal);
+    const controller = new AbortController(), loaded = await (load ?? loadImage)(id, controller.signal);
     try { const image = new Image(); image.src = loaded.url; await image.decode(); const canvas = document.createElement('canvas'); canvas.width = image.naturalWidth; canvas.height = image.naturalHeight; canvas.getContext('2d')!.drawImage(image, 0, 0); return await new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Image conversion failed.')), 'image/png')); }
     finally { loaded.release(); }
   })();

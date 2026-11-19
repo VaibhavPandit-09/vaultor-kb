@@ -2,7 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject, ty
 import { createPortal } from 'react-dom';
 import type { Editor } from '@tiptap/core';
 import { Columns3, Rows3, Trash2, Merge, Split, Undo2, Redo2, Filter, Maximize2, Minimize2, MoreHorizontal, Download, CircleHelp, X, ArrowLeft, CircleAlert } from 'lucide-react';
-import TableDataPanel from './TableDataPanel';
+import TableDataPanel, {type TableOutput} from './TableDataPanel';
 import SaveIndicator from '../SaveIndicator';
 import type { SaveStatus } from '../../lib/saveCoordinator';
 import { describeTable, ensureTableIdentity, tableViewKey, tableViewState } from './TableWorkspace';
@@ -15,7 +15,7 @@ type Geometry = { width: number; available: number; pane: Bounds; table: Bounds;
 type Menu = 'row' | 'column' | 'more' | 'filter' | 'export' | 'help';
 const titles: Record<Menu, string> = { row: 'Row actions', column: 'Column actions', more: 'Table actions', filter: 'Filter rows', export: 'Copy / export', help: 'Table help' };
 
-export default function TableControls({ editor, active, containerRef, noteTitle = 'Note', saveStatus = 'saved', onRetrySave = () => {} }: { editor: Editor; active: boolean; containerRef: RefObject<HTMLDivElement | null>; noteTitle?: string; saveStatus?: SaveStatus; onRetrySave?: () => void }) {
+export default function TableControls({ editor, active, containerRef, output, noteTitle = 'Note', saveStatus = 'saved', onRetrySave = () => {} }: { editor: Editor; active: boolean; output?: TableOutput; containerRef: RefObject<HTMLDivElement | null>; noteTitle?: string; saveStatus?: SaveStatus; onRetrySave?: () => void }) {
   const [, refresh] = useState(0);
   const [geometry, setGeometry] = useState<Geometry | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
@@ -232,7 +232,7 @@ export default function TableControls({ editor, active, containerRef, noteTitle 
           <button type="button" disabled={filtered} title={filtered ? 'Clear filters before deleting the table' : 'Delete table'} className="table-action table-danger" onClick={() => setConfirmDelete(true)}><Trash2 size={15} />Delete table…</button>
           {confirmDelete && <div className="table-delete-confirm" role="alert"><span>Delete this entire table? You can undo this.</span>{button('Delete entire table', () => editor.chain().focus().deleteTable().run())}<button type="button" className="table-action" onClick={() => setConfirmDelete(false)}>Cancel</button></div>}
         </>}
-        {(menu === 'filter' || menu === 'export' || menu === 'help') && <TableDataPanel key={`${ctx.table.attrs.tableId || ctx.pos}-${menu}`} editor={editor} mode={menu} />}
+        {(menu === 'filter' || menu === 'export' || menu === 'help') && <TableDataPanel key={`${ctx.table.attrs.tableId || ctx.pos}-${menu}`} editor={editor} mode={menu} output={output} />}
         {notice && <p role="status" className="table-feedback">{notice}</p>}
       </div>
     </div>}

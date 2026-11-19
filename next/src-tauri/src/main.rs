@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use std::sync::Arc;
 use tauri::{Emitter, Manager};
+use tauri_plugin_dialog::DialogExt;
 use vaultor_next::{
     activity::Activity,
     transfers::{Request as TransferRequest, Transfers},
@@ -91,7 +92,7 @@ async fn attachment(
         return Err("Invalid attachment name".into());
     }
     let Some((_, w, h)) = vaultor_next::media::image_type(&bytes) else {
-        return Err("Paste/select PNG,JPEG or GIF images;other files use Import".into());
+        return Err("Paste/select PNG, JPEG, GIF or WebP images;other files use Import".into());
     };
     if w == 0 || h == 0 || w as u64 * h as u64 > 40_000_000 {
         return Err("Image exceeds40million pixels".into());
@@ -215,6 +216,53 @@ async fn native_resource(
     .map_err(|e| e.to_string())?
 }
 #[tauri::command]
+async fn pick_editor_text(app: tauri::AppHandle, format: String) -> Result<Option<String>, String> {
+    let (label, extensions): (&str, &[&str]) = match format.as_str() {
+        "table" => ("Tabular data", &["csv", "tsv"]),
+        "markdown" => ("Markdown", &["md", "markdown"]),
+        _ => return Err("Unsupported editor import format".into()),
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        use std::io::Read;
+        let Some(selection) = app.dialog().file().add_filter(label, extensions).blocking_pick_file() else {
+            return Ok(None);
+        };
+        let path = selection.into_path().map_err(|e| e.to_string())?;
+        let extension = path.extension().and_then(|v| v.to_str()).unwrap_or_default();
+        if !extensions.iter().any(|value| extension.eq_ignore_ascii_case(value)) {
+            return Err(format!("Choose a {label} file"));
+        }
+        let file = vaultor_next::transfers::plain_file(&path)?;
+        const LIMIT: usize = 1024 * 1024;
+        let mut bytes = Vec::new();
+        file.take((LIMIT + 1) as u64).read_to_end(&mut bytes).map_err(|e| e.to_string())?;
+        if bytes.len() > LIMIT {
+            return Err("Editor file insertion is limited to 1 MiB".into());
+        }
+        String::from_utf8(bytes).map(Some).map_err(|_| "Choose a UTF-8 text file".into())
+    }).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn save_table_csv(app: tauri::AppHandle, text: String, visible: bool) -> Result<bool, String> {
+    if text.len() > 8 * 1024 * 1024 {
+        return Err("CSV export is limited to 8 MiB".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let name = if visible { "table-visible.csv" } else { "table-all.csv" };
+        let Some(selection) = app.dialog().file().add_filter("CSV", &["csv"]).set_file_name(name).blocking_save_file() else {
+            return Ok(false);
+        };
+        let path = selection.into_path().map_err(|e| e.to_string())?;
+        if !path.extension().and_then(|v| v.to_str()).is_some_and(|ext| ext.eq_ignore_ascii_case("csv")) {
+            return Err("Choose a .csv filename".into());
+        }
+        vaultor_next::transfers::save_csv_copy(&path, &text)?;
+        Ok(true)
+    }).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
 async fn selected_image(path: String) -> Result<tauri::ipc::Response, String> {
     tauri::async_runtime::spawn_blocking(move || {
         use std::io::Read;
@@ -227,7 +275,7 @@ async fn selected_image(path: String) -> Result<tauri::ipc::Response, String> {
             .read_to_end(&mut bytes)
             .map_err(|e| e.to_string())?;
         let Some((_, w, h)) = vaultor_next::media::image_type(&bytes) else {
-            return Err("Choose PNG,JPEG or GIF".into());
+            return Err("Choose PNG, JPEG, GIF or WebP".into());
         };
         if w == 0 || h == 0 || w as u64 * h as u64 > 40_000_000 {
             return Err("Image dimensions exceed limit".into());
@@ -338,7 +386,9 @@ fn main() {
             resource_bytes,
             attachment,
             native_resource,
-            selected_image
+            selected_image,
+            pick_editor_text,
+            save_table_csv
         ])
         .build(tauri::generate_context!());
     let application = match application {

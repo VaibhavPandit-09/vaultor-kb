@@ -1,3 +1,4 @@
+import {registerEditorDrop} from '../lib/editorDrop';
 import ResourceLinkChip from '../components/editor/ResourceLinkChip';
 import {resourceKind} from '../lib/resourceKinds';
 import {openResourceLink,registerResourceLinkNavigation} from '../lib/resourceLinkNavigation';
@@ -23,7 +24,7 @@ import { SharedHistory, SharedNoteDocuments, isSharedTransaction } from '../lib/
 import { useEscapeLayer, ESCAPE_PRIORITIES } from '../lib/escape/escape';
 import EditorControls from './EditorControls';
 import {NextImage} from './MediaView';
-import {native,insertImage,pasteLinks} from './media';
+import {native,insertImages,pasteLinks} from './media';
 import {WorkspaceTable} from '../components/editor/WorkspaceTable';
 import {TableWorkspace,handleTablePaste} from '../components/editor/TableWorkspace';
 import {SlashCommandExtension} from '../components/editor/SlashCommandExtension';
@@ -35,7 +36,7 @@ function NextResourceLinkView({node,editor}:NodeViewProps){const kind=resourceKi
 const writeCodeClipboard=(text:string)=>native('clipboardWrite',null,text);
 function NextCodeBlockView(props:NodeViewProps){return <CodeBlockView {...props} writeClipboard={writeCodeClipboard}/>;}
 const lowlight = createLowlight(common);
-export default function NextEditor({ note, documents, changed, locked, pane, focusWhenReady, focusHandled, leaveFocus, followLink, openResource, openWeb, saveStatus="saved", retrySave, initialSelection,positionChanged }: { initialSelection?:{from:number;to:number};positionChanged?:(selection:{from:number;to:number})=>void;note: Note; documents: SharedNoteDocuments; changed: (capture: () => JSONContent) => void; locked: boolean; pane: number; focusWhenReady?:boolean; focusHandled?:()=>void; leaveFocus?:()=>void; followLink?:(href:string)=>void; openResource?:(id:string,beside?:boolean)=>void; openWeb?:(href:string)=>void; retrySave?:()=>void;saveStatus?:'saved'|'saving'|'failed' }) {
+export default function NextEditor({ active=true,note, documents, changed, locked, pane, focusWhenReady, focusHandled, leaveFocus, followLink, openResource, openWeb, saveStatus="saved", retrySave, initialSelection,positionChanged }: { active?:boolean;initialSelection?:{from:number;to:number};positionChanged?:(selection:{from:number;to:number})=>void;note: Note; documents: SharedNoteDocuments; changed: (capture: () => JSONContent) => void; locked: boolean; pane: number; focusWhenReady?:boolean; focusHandled?:()=>void; leaveFocus?:()=>void; followLink?:(href:string)=>void; openResource?:(id:string,beside?:boolean)=>void; openWeb?:(href:string)=>void; retrySave?:()=>void;saveStatus?:'saved'|'saving'|'failed' }) {
   const container=useRef<HTMLDivElement>(null);
   const [operationError,setOperationError]=useState('');
   const managed=!followLink;
@@ -61,7 +62,7 @@ export default function NextEditor({ note, documents, changed, locked, pane, foc
     editorProps: {
       attributes: { class: 'tiptap outline-none min-h-[50vh]', 'aria-label': `Note body ${pane + 1}` },
       handleDrop: (_view, event) => Boolean(event.dataTransfer?.files.length),
-      handlePaste: (view,event) => {if(!managed)return Boolean(event.clipboardData?.files.length);const file=event.clipboardData?.files[0];if(file){event.preventDefault();if(file.type.startsWith('image/'))void insertImage(editor!,file).catch(e=>setOperationError(String(e)));else setOperationError('Use Import files for managed attachments');return true;}return pasteLinks(editor!,event)||handleTablePaste(view,event);},
+      handlePaste: (view,event) => {if(!managed)return Boolean(event.clipboardData?.files.length);const files=Array.from(event.clipboardData?.files??[]);if(files.length){event.preventDefault();if(files.every(file=>file.type.startsWith('image/')))void insertImages(editor!,files).catch(e=>setOperationError(String(e)));else setOperationError('Use Import files for managed attachments');return true;}return pasteLinks(editor!,event)||handleTablePaste(view,event);},
     },
     onUpdate: ({ editor, transaction }) => { if (transaction.docChanged && !invalid.current && !isSharedTransaction(transaction)) callback.current(() => editor.getJSON()); },
     onSelectionUpdate:({editor})=>positionCallback.current?.({from:editor.state.selection.from,to:editor.state.selection.to}),
@@ -70,6 +71,7 @@ export default function NextEditor({ note, documents, changed, locked, pane, foc
   }, [note.id]);
   useEffect(()=>{const handler=(event:Event)=>setOperationError(String((event as CustomEvent).detail));if(!editor)return;editor.view.dom.addEventListener('vaultor-next-editor-error',handler);return()=>editor.view.dom.removeEventListener('vaultor-next-editor-error',handler);},[editor]);
   useEffect(()=>{if(!editor||!managed)return;return registerResourceLinkNavigation(editor,(id,beside)=>openResource?.(id,beside));},[editor,managed,openResource]);
+  useEffect(()=>{if(editor)return registerEditorDrop({editor,managed});},[editor,managed]);
   useEffect(() => { if (!editor) return; return documents.attach(note.id, editor); }, [editor, documents, note.id]);
   useEffect(()=>{if(!editor||!initialSelection)return;const max=editor.state.doc.content.size;editor.commands.setTextSelection({from:Math.max(0,Math.min(max,initialSelection.from)),to:Math.max(0,Math.min(max,initialSelection.to))});
   // Restore once per mounted editor; later selection updates belong to the user.
@@ -79,5 +81,5 @@ export default function NextEditor({ note, documents, changed, locked, pane, foc
   useEffect(()=>{if(editor&&!locked&&focusWhenReady){editor.commands.focus(undefined,{scrollIntoView:false});focusHandled?.();}},[editor,locked,focusWhenReady,focusHandled]);
   useEscapeLayer({ id: `next-editor-${pane}`, active: focused, priority: ESCAPE_PRIORITIES.editorFocus, restoreFocusOnEscape: false, close: () => {editor?.commands.blur();leaveFocus?.();} });
   const navigate=(href:string)=>{if(!href.startsWith('#')){if(followLink)followLink(href);else openWeb?.(href);return;}let anchor=href.slice(1);try{anchor=decodeURIComponent(anchor);}catch{/* Keep a malformed fragment literal. */}const slug=(value:string)=>value.toLowerCase().trim().replace(/[^\p{Letter}\p{Number}\s-]/gu,'').replace(/\s+/g,'-');const heading=[...(editor?.view.dom.querySelectorAll<HTMLElement>('h1,h2,h3,h4,h5,h6')??[])].find(node=>node.id===anchor||slug(node.textContent??'')===anchor);heading?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});};
-  return <div ref={container} className="editor-workspace" onClickCapture={event=>{const resource=(event.target as Element).closest<HTMLElement>('[data-resource-id]');if(managed&&resource&&(event.ctrlKey||!editor?.isEditable)){event.preventDefault();openResource?.(resource.dataset.resourceId!,event.shiftKey);return;}const link=(event.target as Element).closest<HTMLAnchorElement>('a[href]');if(link&&(event.ctrlKey||!editor?.isEditable)){event.preventDefault();event.stopPropagation();navigate(link.getAttribute('href')!);}}} onKeyDown={event=>{const resource=(event.target as Element).closest<HTMLElement>('[data-resource-id]');if(managed&&resource&&event.key==='Enter'){event.preventDefault();openResource?.(resource.dataset.resourceId!,event.shiftKey);return;}if(event.ctrlKey&&event.key==='Enter'){const href=editor?.getAttributes('link').href;if(typeof href==='string'){event.preventDefault();navigate(href);}}}}>{contentError && <p role="alert">Unsupported note content. Editing is disabled; original JSON is retained.</p>}{editor&&<EditorControls managed={managed} retrySave={retrySave} saveStatus={saveStatus} editor={editor} container={container} noteId={note.id} openResource={openResource}/>} {operationError&&<p role="alert">{operationError}</p>}<EditorContent editor={editor} /></div>;
+  return <div ref={container} className="editor-workspace" onClickCapture={event=>{const resource=(event.target as Element).closest<HTMLElement>('[data-resource-id]');if(managed&&resource&&(event.ctrlKey||!editor?.isEditable)){event.preventDefault();openResource?.(resource.dataset.resourceId!,event.shiftKey);return;}const link=(event.target as Element).closest<HTMLAnchorElement>('a[href]');if(link&&(event.ctrlKey||!editor?.isEditable)){event.preventDefault();event.stopPropagation();navigate(link.getAttribute('href')!);}}} onKeyDown={event=>{const resource=(event.target as Element).closest<HTMLElement>('[data-resource-id]');if(managed&&resource&&event.key==='Enter'){event.preventDefault();openResource?.(resource.dataset.resourceId!,event.shiftKey);return;}if(event.ctrlKey&&event.key==='Enter'){const href=editor?.getAttributes('link').href;if(typeof href==='string'){event.preventDefault();navigate(href);}}}}>{contentError && <p role="alert">Unsupported note content. Editing is disabled; original JSON is retained.</p>}{editor&&<EditorControls active={active&&!locked&&!contentError} managed={managed} retrySave={retrySave} saveStatus={saveStatus} editor={editor} container={container} noteId={note.id} openResource={openResource}/>} {operationError&&<p role="alert">{operationError}</p>}<EditorContent editor={editor} className="table-editor-canvas" /></div>;
 }

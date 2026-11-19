@@ -157,6 +157,23 @@ impl Workspace {
     }
 }
 pub fn image_type(bytes: &[u8]) -> Option<(&'static str, u32, u32)> {
+    if bytes.starts_with(b"RIFF") && bytes.get(8..12) == Some(b"WEBP") {
+        let payload = bytes.get(20..)?;
+        let read_24 = |slice: &[u8]| u32::from_le_bytes([slice[0], slice[1], slice[2], 0]);
+        let (width, height) = match bytes.get(12..16)? {
+            b"VP8X" if payload.len() >= 10 => (read_24(&payload[4..7]) + 1, read_24(&payload[7..10]) + 1),
+            b"VP8L" if payload.len() >= 5 && payload[0] == 0x2f => {
+                let bits = u32::from_le_bytes(payload[1..5].try_into().ok()?);
+                ((bits & 0x3fff) + 1, ((bits >> 14) & 0x3fff) + 1)
+            }
+            b"VP8 " if payload.len() >= 10 && payload[3..6] == [0x9d, 0x01, 0x2a] => (
+                (u16::from_le_bytes(payload[6..8].try_into().ok()?) & 0x3fff) as u32,
+                (u16::from_le_bytes(payload[8..10].try_into().ok()?) & 0x3fff) as u32,
+            ),
+            _ => return None,
+        };
+        return Some(("image/webp", width, height));
+    }
     if bytes.starts_with(b"\x89PNG\r\n\x1a\n") && bytes.len() >= 24 {
         return Some((
             "image/png",
@@ -624,6 +641,12 @@ mod tests {
         let w = Workspace::open(&dir.path().join("workspace")).unwrap();
         assert!(w.managed_path("../outside").is_err());
         assert!(prepare_copy(std::path::Path::new("missing"), "../escape", "unused").is_err());
+    }
+    #[test]
+    fn reads_webp_canvas_dimensions_without_transcoding() {
+        let fixture = b"RIFF\x16\0\0\0WEBPVP8X\x0a\0\0\0\x02\0\0\0\x1f\0\0\x0f\0\0";
+        assert_eq!(image_type(fixture), Some(("image/webp", 32, 16)));
+        assert_eq!(image_type(&fixture[..25]), None);
     }
     #[test]
     fn draft_referenced_attachment_cannot_be_purged() {

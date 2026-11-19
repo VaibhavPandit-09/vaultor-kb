@@ -1,3 +1,4 @@
+import ImagePreviewCanvas from './ImagePreviewCanvas';
 import { useState, useEffect, useMemo } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -143,14 +144,11 @@ function PDFViewer({ resource }: { resource: Resource }) {
 }
 
 function ImageViewer({ resource }: { resource: Resource }) {
-  const [zoom, setZoom] = useState<number | 'fit'>('fit'), [naturalWidth, setNaturalWidth] = useState(0);
   const [blobUrl, setBlobUrl] = useState<string>(), [error, setError] = useState('');
   useEffect(() => { const controller = new AbortController(); let active = true, release: (() => void) | undefined; void loadImage(resource.id, controller.signal).then(file => { if (!active) { file.release(); return; } release = file.release; setBlobUrl(file.url); }).catch(error => { if (active) setError(error instanceof Error ? error.message : 'Image preview failed.'); }); return () => { active = false; controller.abort(); release?.(); }; }, [resource.id]);
   if (error) return <FallbackViewer message={error} />;
   if (!blobUrl) return <LoadingSpinner />;
-  return (
-    <div className="bg-background min-h-full"><div className="image-preview-tools"><button onClick={() => setZoom('fit')}>Fit</button><button onClick={() => setZoom(1)}>Actual size</button><button onClick={() => setZoom(value => Math.max(.1, (value === 'fit' ? 1 : value) - .25))}>−</button><button onClick={() => setZoom(value => Math.min(4, (value === 'fit' ? 1 : value) + .25))}>+</button><span>{zoom === 'fit' ? 'Fit' : Math.round(zoom * 100) + '%'}</span></div><div className="image-preview-canvas"><img src={blobUrl} alt={resource.title} onLoad={event => setNaturalWidth(event.currentTarget.naturalWidth)} style={zoom === 'fit' ? {maxWidth:'100%',height:'auto'} : {maxWidth:'none',width:`${naturalWidth * zoom}px`}} /></div></div>
-  );
+  return <ImagePreviewCanvas key={resource.id} url={blobUrl} title={resource.title}/>;
 }
 
 function TextViewer({ resourceId }: { resourceId: string }) {
