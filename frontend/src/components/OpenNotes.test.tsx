@@ -4,6 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import OpenNotes from './OpenNotes';
 import type { Pane } from '../lib/paneNavigation';
 import type { ReactNode } from 'react';
+import {EscapeManagerProvider} from '../lib/escape/EscapeManagerProvider';
 vi.mock('./LibraryPopover',()=>({default:({label,children}:{label:string;children:(close:()=>void)=>ReactNode})=><div aria-label={label}>{children(()=>{})}</div>}));
 afterEach(cleanup);
 const sessions:Pane[]=Array.from({length:7},(_,i)=>({paneId:'s'+i,id:'n'+i,cursor:0,history:[{visitId:'v'+i,resourceId:'n'+i,title:'Note '+i}]}));
@@ -28,4 +29,23 @@ it('finds sessions without another scroll container and keeps a filter editable 
 
 it('offers keyboard ordering against the full session order while filtering',()=>{
  const reorder=vi.fn();render(<OpenNotes sessions={sessions} panes={[]} activeId={null} canSplit onOpen={vi.fn()} onClose={vi.fn()} onSplit={vi.fn()} onCloseOthers={vi.fn()} onReorder={reorder}/>);fireEvent.change(screen.getByLabelText('Find open note'),{target:{value:'Note 3'}});fireEvent.click(screen.getByText('Move earlier in Open Notes'));expect(reorder).toHaveBeenCalledWith('s3','s2');fireEvent.click(screen.getByText('Move later in Open Notes'));expect(reorder).toHaveBeenLastCalledWith('s3','s5');
+});
+
+it('registers managed title drags separately from session arrangement and refuses linked title dragging',()=>{
+ const start=vi.fn(),previous=window.PointerEvent;window.PointerEvent=MouseEvent as typeof PointerEvent;
+ try{render(<OpenNotes sessions={sessions} panes={[]} activeId={null} canSplit onOpen={vi.fn()} onClose={vi.fn()} onSplit={vi.fn()} onCloseOthers={vi.fn()} onResourceDrag={start} canResourceDrag={id=>id!=='n1'}/>);
+ fireEvent.pointerDown(screen.getByTitle('Note 0'),{button:0});expect(start).toHaveBeenCalledWith('n0',expect.anything());
+ fireEvent.pointerDown(screen.getByTitle('Note 1'),{button:0});expect(start).toHaveBeenCalledTimes(1);expect(screen.getByTitle('Note 0').draggable).toBe(false);
+ }finally{window.PointerEvent=previous;}
+});
+
+it('uses pointer session IDs for reordering, refuses self and cancels without reordering',()=>{
+ const reorder=vi.fn(),previous=window.PointerEvent,hit=document.elementFromPoint;window.PointerEvent=MouseEvent as typeof PointerEvent;
+ try{render(<EscapeManagerProvider><OpenNotes nativeArrange sessions={sessions} panes={[]} activeId={null} canSplit onOpen={vi.fn()} onClose={vi.fn()} onSplit={vi.fn()} onCloseOthers={vi.fn()} onReorder={reorder}/></EscapeManagerProvider>);
+ const handle=screen.getByLabelText('Arrange Note 0'),target=document.querySelector<HTMLElement>('[data-session-id="s2"]')!;document.elementFromPoint=()=>target;
+ const begin=()=>{fireEvent.pointerDown(handle,{button:0,clientX:10,clientY:10});fireEvent.pointerMove(handle,{buttons:1,clientX:30,clientY:10});};
+ begin();expect(target.dataset.nextSessionDrop).toBe('before');fireEvent.keyDown(document,{key:'Escape'});fireEvent.pointerUp(handle);expect(reorder).not.toHaveBeenCalled();expect(target.dataset.nextSessionDrop).toBeUndefined();
+ begin();fireEvent.pointerUp(handle,{clientX:30,clientY:10});expect(reorder).toHaveBeenCalledWith('s0','s2');
+ document.elementFromPoint=()=>handle;begin();fireEvent.pointerUp(handle,{clientX:30,clientY:10});expect(reorder).toHaveBeenCalledTimes(1);
+ }finally{window.PointerEvent=previous;document.elementFromPoint=hit;}
 });

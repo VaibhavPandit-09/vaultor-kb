@@ -93,3 +93,39 @@ Physical Explorer verification is **unavailable through the current automation t
 Validation:116 cases across11 focused frontend files pass; the affected32-case interaction run then passes including release-time target revalidation (117unique cases overall). Final four history/caption cases and the unavailable-forward assertion pass. Rust desktop preference/session tests3/3, TypeScript, scoped lint, Help43features/16articles and17governance cases, and optimized Windows build pass. Safety record `raw/tauri-rust-2026-11-16T04-31-29.877Z.json` passes managed acknowledged-draft crash/recovery/autosave/revision refusal and linked explicit Save/external-conflict refusal on application87ca65d; later code changes are caption CSS and navigation command admission only. No Rust/editor/protection changes invalidate that evidence.
 
 Next embeds its experimental article directly: generated JS and native Help verify the changed content. The generic `--dist frontend/dist-next` provenance command fails because this separate Vite config does not emit `help/provenance.json`; full catalogue packaging is not newly claimed. Help sources/governance validate. No comparative benchmark campaign ran and canonical CSV/workbook remain unchanged; incidental runtime-runner samples are diagnostic only. Driver argument/viewport failures and exact source/hash boundaries are retained in [the compact evidence receipt](../../benchmarks/tauri-rust/summaries/m17-corrections-native.json). This record does not mark the correction pass fully complete or replace user acceptance.
+
+
+## M17 final internal drag follow-up
+
+The user passed window dragging/resizing, top-right controls, automatic pane filling and physical Explorer drop-in on the previous candidate. They reported that dragging from a resource title showed no feedback or cancelled. On the optimized baseline, selected title text could start native drag before the six-pixel application threshold. WebView2 then sent pointercancel. Both the Windows-injected baseline attempt and the WebView2 mouse trace reproduced this sequence. The old DOM pointer tests could not exercise native mouse defaults. Separate source-registration gaps affected Open Notes titles, the full Collections browser and pinned collection shortcuts.
+
+The repair prevents native mouse defaults when an eligible source admits the gesture, then uses document pointer listeners and stable capture after threshold. The preview follows the pointer and reports the current action or refusal. Drops resolve their target again at release. Session Arrange grips reuse the transport with their existing session-ID reorder and swap behavior. The existing Rust commands still own organization and navigation commits. Linked-source writes and draft protection stay with their existing owners.
+
+Optimized executable: `next/src-tauri/target/release/vaultor-next-m17-internal-drag.exe`. SHA256 `91c3608b6802df1725d7554a948a30c3b9ddf9465b86ff712c05878a3240dcfd`. The final WebView2 mouse run used the optimized candidate and a disposable workspace. Earlier driver attempts stopped on Windows path normalization and a mouse dispatch that omitted the held button. The corrected run used a fresh fixture. The Windows pointer attempt on the candidate was interrupted before a gesture. Human physical acceptance remains pending.
+
+| Workflow | Starts and highlights | Commit | Persistence evidence |
+| --- | --- | --- | --- |
+| Resource title → collection | Passed with selected title and slow threshold | Membership added | Collection membership checked after renderer reload |
+| Resource → tag | Passed | Tag assigned | Checked after renderer reload |
+| Resource → Pinned | Passed | Resource pinned | Checked after renderer reload |
+| Managed Open Notes title → available pane | Passed | Second view opened | Existing session receipt path retained |
+| Arrange grip → Open Notes reorder | Passed with insertion feedback | Session order visibly changed | Restart still on checklist |
+| Pinned resource shortcut → full Collections row | Passed | Membership added | Checked after renderer reload |
+| Full Collections row → parent | Passed | Parent changed | Checked after renderer reload |
+| Multi-selection → collection | Passed | Both selected IDs added | Rust organization persistence checks and immediate readback |
+| Escape over a valid target | Passed | No membership change, preview and markers cleared, next mouse click opened a note | No write expected |
+
+Arbitrary ordering of Pinned/Recent sidebar shortcuts is unsupported. The original shortcut surfaces expose dragging to destinations without defining custom list order. Linked-source title drags into organization targets are unsupported. Native Explorer drag-out remains a separate Windows OLE and temporary-copy lifetime gap. Use Export original or Reveal prepared copy. Trash remains a separate reviewed command.
+
+### Physical mouse checklist
+
+Use a disposable workspace with two managed notes A and B, two empty collections Source and Destination, one tag Review, and two visible panes allowed. As each gesture crosses the threshold, look for the following preview and a highlight or insertion line at the target.
+
+1. Drag A by its title onto Source. Open Source and confirm A is present. From Source, hold Shift and drop A on Destination. Confirm A appears in Destination and leaves Source.
+2. Drag A onto Review, then onto Pinned. Open those views and check that A appears in both. Open full Collections with Quick Access visible, then drag A from its Pinned shortcut onto Source. Confirm Source gains A.
+3. With one pane open, drag a managed Open Notes title to the available pane target. Confirm a second view opens. Drag the lower Arrange grip above the first row. Confirm Open Notes changes order. Drag the grip onto the other pane and confirm the pane positions swap.
+4. Drag Source from full Collections onto Destination. Confirm Source nests beneath Destination. Then try dragging Destination onto Source. Expect a refusal and the same hierarchy. Try reparenting a pinned collection shortcut onto a valid collection target.
+5. Select A and B in Library. Drag from A onto Destination and confirm both memberships. Try the pair on a pane and confirm it is refused. Start B toward Source, press Escape before releasing, then click B and verify it opens with no new membership. On a long list, hold near the target list edge and verify scrolling tracks the current target.
+6. Close and reopen normally. Confirm membership, tag, pin, hierarchy, and session order. Use the corresponding menu actions to verify a keyboard route remains available.
+
+Validation: 93 distinct focused frontend cases passed across the integration run and the two-case timeout rerun. Four Rust organization tests passed, including persistence and protected-draft guards. TypeScript, scoped lint, optimized Windows build, Help validation (43 features and 16 articles), and 17 Help governance tests passed. This pass did not change the Rust engine or alter published availability. The experimental next-foundation Help and catalogue, CODEBASE, UI audit and parity ledger record the repair and remaining gaps.

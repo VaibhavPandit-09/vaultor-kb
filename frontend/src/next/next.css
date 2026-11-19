@@ -206,3 +206,10 @@ html:has(.next-shell),body:has(.next-shell),#root:has(.next-shell){height:100%;m
 .next-explorer-drop{position:fixed;inset:44px 12px 12px;z-index:90;pointer-events:none;outline:2px dashed var(--accent);outline-offset:-2px;border-radius:12px;background:color-mix(in srgb,var(--accent) 8%,transparent);padding:16px;text-align:center;color:var(--foreground);font-weight:600}
 
 @container next-main (max-width:700px){.next-desktop-toolbar>.journey-bar{flex-basis:40px;min-width:40px;max-width:40px;padding:0}.next-desktop-toolbar .journey-controls{padding:0;border:0}.next-desktop-toolbar .journey-controls>button:nth-child(-n+2){display:none}}
+
+/* Internal gestures own only registered presentation sources, never editor text or native caption/file drops. */
+.next-shell [data-internal-drag-source=true],.next-shell [data-internal-drag-source=true] *{user-select:none;-webkit-user-drag:none}
+.next-shell [data-internal-drag-source=true]{cursor:grab}
+.pointer-drag-preview{pointer-events:none;z-index:5001;max-width:300px;display:flex;flex-direction:column;gap:3px;box-shadow:var(--shadow-md)}
+.pointer-drag-intent{font-size:11px;color:var(--text-secondary);white-space:normal}
+.pointer-drag-preview[data-state=invalid]{border-color:var(--text-tertiary)}

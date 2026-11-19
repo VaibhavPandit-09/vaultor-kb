@@ -383,3 +383,8 @@ The workbook retains its19 sheets. M16 Dashboard compares exact-source M15/M16 o
 ## M17 desktop correction checks
 
 `node benchmarks/tauri-rust/run.mjs tauri-rust --inspect --m17 --m17-corrections` checks configured1/2/3-pane fill/reuse/restart, shared menu row/shortcut geometry and keyboard focus, and actual Tauri window widths760/1200/1800. `--hold-corrections` keeps its disposable window available for a separate Windows input pass until its printed fixture-local marker is written. This does not certify OS drag/Explorer input from CDP. The M17 acceptance record distinguishes injected Windows input from runtime checks. No performance CSV/workbook changes are required.
+
+
+## M17 focused internal drag diagnostic
+
+Launch an optimized candidate with an isolated profile, a disposable `vaultor-next-internal-drag-*/workspace` and a loopback WebView2 debug port. Set `VAULTOR_DRAG_FIXTURE` to that exact workspace and optionally `VAULTOR_BENCH_PORT` (default9452), then run `node benchmarks/tauri-rust/internal-drag.mjs`. The driver refuses a nonmatching root before fixture mutation. It checks browser mouse-default behavior rather than dispatching synthetic DOM PointerEvents; selected-title threshold/cancel, separate source paths, targets and Rust commits are recorded. The raw report retains driver failures. Renderer restart does not establish process-restart persistence; that is a separate receipt. CDP and Windows-injected pointer evidence never certify human physical acceptance. No benchmark campaign or CSV/workbook update.
