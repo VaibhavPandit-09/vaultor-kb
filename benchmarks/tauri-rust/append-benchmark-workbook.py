@@ -55,13 +55,13 @@ def package(destination, delta_path, canonical_path, first):
         rows = [row for row in data if int(row.get('r')) >= 5 and value(row.find(TAG + 'c'), shared)]
         ids = [value(row.find(TAG + 'c'), shared) for row in rows]
         if ids == [record[0] for record in records]:
-            print('Workbook already includes the M18 observations.')
+            print('Workbook already includes the benchmark observations.')
             return
         if ids != [record[0] for record in records[:first]]:
             raise ValueError('Workbook run IDs do not match the canonical historical prefix')
         if any(int(row.get('r')) != offset + 5 for offset, row in enumerate(rows)):
             raise ValueError('Historical workbook rows are not sequential')
-        new_rows = list(ET.fromstring(delta.read(sheet_path(delta, 'M18 Raw Runs'))).find(TAG + 'sheetData'))
+        new_rows = list(ET.fromstring(delta.read(sheet_path(delta, 'New Raw Runs'))).find(TAG + 'sheetData'))
         delta_strings = strings(delta)
         if [value(row.find(TAG + 'c'), delta_strings) for row in new_rows] != [record[0] for record in records[first:]]:
             raise ValueError('The generated additions do not match the canonical tail')
@@ -101,7 +101,7 @@ def package(destination, delta_path, canonical_path, first):
             os.replace(temporary, destination)
         finally:
             temporary.unlink(missing_ok=True)
-    print(f'Saved {len(new_rows)} M18 observations after {first} historical rows.')
+    print(f'Saved {len(new_rows)} benchmark observations after {first} historical rows.')
 
 
 if __name__ == '__main__':

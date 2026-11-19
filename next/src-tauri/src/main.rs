@@ -1,4 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+mod preview;
 use std::sync::Arc;
 use tauri::{Emitter, Manager};
 use tauri_plugin_dialog::DialogExt;
@@ -12,8 +13,12 @@ use vaultor_next::{domain::Request, worker::Worker};
 async fn workspace(
     request: Request,
     state: tauri::State<'_, Worker>,
+    previews: tauri::State<'_, preview::Previews>,
 ) -> Result<serde_json::Value, String> {
-    state.call(request).await
+    let switching = matches!(request, Request::Open { .. } | Request::New { .. });
+    let result = state.call(request).await;
+    if switching && result.is_ok() { previews.clear(); }
+    result
 }
 #[tauri::command]
 async fn transfer(
@@ -41,12 +46,16 @@ async fn transfer(
 #[tauri::command]
 async fn resource_bytes(
     id: String,
+    workspace: Option<String>,
     worker: tauri::State<'_, Worker>,
 ) -> Result<tauri::ipc::Response, String> {
     let root = worker.call(Request::Snapshot).await?["path"]
         .as_str()
         .unwrap()
         .to_string();
+    if workspace.is_some_and(|expected|expected!=root) {
+        return Err("Workspace changed. Open the preview again.".into());
+    }
     let storage = worker.storage();
     tauri::async_runtime::spawn_blocking(move || {
         let info = storage.call(&root, move |w| {
@@ -91,16 +100,28 @@ async fn attachment(
     {
         return Err("Invalid attachment name".into());
     }
-    let Some((_, w, h)) = vaultor_next::media::image_type(&bytes) else {
-        return Err("Paste/select PNG, JPEG, GIF or WebP images;other files use Import".into());
-    };
-    if w == 0 || h == 0 || w as u64 * h as u64 > 40_000_000 {
-        return Err("Image exceeds40million pixels".into());
+    let table_source = request.headers().get("x-editor-table").is_some_and(|v| v == "1");
+    if table_source {
+        if bytes.len() > 1024 * 1024 || std::str::from_utf8(&bytes).is_err() ||
+            !std::path::Path::new(&name).extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("csv") || e.eq_ignore_ascii_case("tsv")) {
+            return Err("Expected a UTF-8 CSV or TSV original, at most 1 MiB".into());
+        }
+    } else {
+        let Some((_, w, h)) = vaultor_next::media::image_type(&bytes) else {
+            return Err("Paste/select PNG, JPEG, GIF or WebP images;other files use Import".into());
+        };
+        if w == 0 || h == 0 || w as u64 * h as u64 > 40_000_000 {
+            return Err("Image exceeds40million pixels".into());
+        }
     }
     let root = worker.call(Request::Snapshot).await?["path"]
         .as_str()
         .unwrap()
         .to_string();
+    if (table_source || request.headers().contains_key("x-workspace")) && request.headers().get("x-workspace").and_then(|v| v.to_str().ok())
+        .and_then(|v| percent_encoding::percent_decode_str(v).decode_utf8().ok()).as_deref() != Some(&root) {
+        return Err("Workspace changed. Choose the table source again.".into());
+    }
     let storage = worker.storage();
     tauri::async_runtime::spawn_blocking(move || {
         use sha2::{Digest, Sha256};
@@ -189,7 +210,8 @@ async fn native_resource(
         if action == "open"
             && !matches!(
                 ext.as_str(),
-                "png" | "jpg" | "jpeg" | "gif" | "webp" | "pdf" | "txt" | "md" | "csv" | "json"
+                "png" | "jpg" | "jpeg" | "gif" | "webp" | "pdf" | "txt" | "md" | "csv" | "tsv" | "json" |
+                "mp3" | "wav" | "ogg" | "opus" | "flac" | "m4a" | "mp4" | "webm"
             )
         {
             return Err("Use Export original for this type;active content is not launched".into());
@@ -216,7 +238,7 @@ async fn native_resource(
     .map_err(|e| e.to_string())?
 }
 #[tauri::command]
-async fn pick_editor_text(app: tauri::AppHandle, format: String) -> Result<Option<String>, String> {
+async fn pick_editor_text(window: tauri::WebviewWindow, format: String) -> Result<Option<serde_json::Value>, String> {
     let (label, extensions): (&str, &[&str]) = match format.as_str() {
         "table" => ("Tabular data", &["csv", "tsv"]),
         "markdown" => ("Markdown", &["md", "markdown"]),
@@ -224,7 +246,7 @@ async fn pick_editor_text(app: tauri::AppHandle, format: String) -> Result<Optio
     };
     tauri::async_runtime::spawn_blocking(move || {
         use std::io::Read;
-        let Some(selection) = app.dialog().file().add_filter(label, extensions).blocking_pick_file() else {
+        let Some(selection) = window.dialog().file().set_parent(&window).add_filter(label, extensions).blocking_pick_file() else {
             return Ok(None);
         };
         let path = selection.into_path().map_err(|e| e.to_string())?;
@@ -239,18 +261,20 @@ async fn pick_editor_text(app: tauri::AppHandle, format: String) -> Result<Optio
         if bytes.len() > LIMIT {
             return Err("Editor file insertion is limited to 1 MiB".into());
         }
-        String::from_utf8(bytes).map(Some).map_err(|_| "Choose a UTF-8 text file".into())
+        let text = String::from_utf8(bytes).map_err(|_| "Choose a UTF-8 text file")?;
+        let name = path.file_name().and_then(|v| v.to_str()).ok_or("Unsupported filename")?;
+        Ok(Some(serde_json::json!({"text":text,"name":name})))
     }).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-async fn save_table_csv(app: tauri::AppHandle, text: String, visible: bool) -> Result<bool, String> {
+async fn save_table_csv(window: tauri::WebviewWindow, text: String, visible: bool) -> Result<bool, String> {
     if text.len() > 8 * 1024 * 1024 {
         return Err("CSV export is limited to 8 MiB".into());
     }
     tauri::async_runtime::spawn_blocking(move || {
         let name = if visible { "table-visible.csv" } else { "table-all.csv" };
-        let Some(selection) = app.dialog().file().add_filter("CSV", &["csv"]).set_file_name(name).blocking_save_file() else {
+        let Some(selection) = window.dialog().file().set_parent(&window).add_filter("CSV", &["csv"]).set_file_name(name).blocking_save_file() else {
             return Ok(false);
         };
         let path = selection.into_path().map_err(|e| e.to_string())?;
@@ -312,6 +336,8 @@ fn startup_failure(error: &impl std::fmt::Display) {
 
 fn main() {
     let application = tauri::Builder::default()
+        .manage(preview::Previews::default())
+        .register_asynchronous_uri_scheme_protocol("vaultor-preview", preview::respond)
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             // Tauri panics on a setup-hook error before build can return it.
@@ -388,7 +414,9 @@ fn main() {
             native_resource,
             selected_image,
             pick_editor_text,
-            save_table_csv
+            save_table_csv,
+            preview::open_media_preview,
+            preview::close_media_preview
         ])
         .build(tauri::generate_context!());
     let application = match application {

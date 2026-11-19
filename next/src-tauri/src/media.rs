@@ -12,13 +12,27 @@ pub(crate) fn initialize(db: &Connection) -> Result<(), String> {
             |r| r.get(0),
         )
         .map_err(error)?;
+    let has_table_sources:bool=db.query_row(
+        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE name='resource_links_save' AND sql LIKE '%sourceResourceId%')",[],|r|r.get(0)
+    ).map_err(error)?;
     db.execute_batch("CREATE TABLE IF NOT EXISTS resource_links(source_id TEXT NOT NULL REFERENCES resources(id),target_id TEXT NOT NULL,kind TEXT NOT NULL,PRIMARY KEY(source_id,target_id,kind));CREATE INDEX IF NOT EXISTS backlinks ON resource_links(target_id,source_id);CREATE TABLE IF NOT EXISTS resource_clipboard(id TEXT PRIMARY KEY,payload TEXT NOT NULL,created INTEGER NOT NULL);
- CREATE TRIGGER IF NOT EXISTS resource_links_save AFTER UPDATE OF content ON resources BEGIN DELETE FROM resource_links WHERE source_id=new.id; INSERT OR IGNORE INTO resource_links SELECT new.id,json_extract(value,'$.attrs.resourceId'),CASE json_extract(value,'$.type') WHEN 'image' THEN 'image' ELSE 'link' END FROM json_tree(new.content) WHERE json_tree.type='object' AND json_extract(value,'$.type') IN ('image','resourceLink') AND json_extract(value,'$.attrs.resourceId') IS NOT NULL;END;
- CREATE TRIGGER IF NOT EXISTS resource_links_new AFTER INSERT ON resources BEGIN INSERT OR IGNORE INTO resource_links SELECT new.id,json_extract(value,'$.attrs.resourceId'),CASE json_extract(value,'$.type') WHEN 'image' THEN 'image' ELSE 'link' END FROM json_tree(new.content) WHERE json_tree.type='object' AND json_extract(value,'$.type') IN ('image','resourceLink') AND json_extract(value,'$.attrs.resourceId') IS NOT NULL;END;
- CREATE TRIGGER IF NOT EXISTS resource_links_delete BEFORE DELETE ON resources BEGIN DELETE FROM resource_links WHERE source_id=old.id; END;
-").map_err(error)?;
-    if !exists {
-        db.execute_batch("INSERT OR IGNORE INTO resource_links SELECT r.id,json_extract(j.value,'$.attrs.resourceId'),CASE json_extract(j.value,'$.type') WHEN 'image' THEN 'image' ELSE 'link' END FROM resources r,json_tree(r.content) j WHERE j.type='object' AND json_extract(j.value,'$.type') IN ('image','resourceLink') AND json_extract(j.value,'$.attrs.resourceId') IS NOT NULL;") .map_err(error)?;
+      CREATE TRIGGER IF NOT EXISTS resource_links_delete BEFORE DELETE ON resources BEGIN DELETE FROM resource_links WHERE source_id=old.id; END;").map_err(error)?;
+    if !has_table_sources {
+        let target = "CASE json_extract(j.value,'$.type') WHEN 'table' THEN json_extract(j.value,'$.attrs.sourceResourceId') ELSE json_extract(j.value,'$.attrs.resourceId') END";
+        let kind = "CASE json_extract(j.value,'$.type') WHEN 'image' THEN 'image' WHEN 'table' THEN 'table' ELSE 'link' END";
+        let predicate = format!("j.type='object' AND json_extract(j.value,'$.type') IN ('image','resourceLink','table') AND typeof({target})='text'");
+        let select = format!("INSERT OR IGNORE INTO resource_links SELECT new.id,{target},{kind} FROM json_tree(new.content) j WHERE {predicate};");
+        let mut sql = format!("SAVEPOINT resource_links_migration;
+          DROP TRIGGER IF EXISTS resource_links_save; DROP TRIGGER IF EXISTS resource_links_new;
+          CREATE TRIGGER resource_links_save AFTER UPDATE OF content ON resources BEGIN DELETE FROM resource_links WHERE source_id=new.id; {select} END;
+          CREATE TRIGGER resource_links_new AFTER INSERT ON resources BEGIN {select} END;");
+        if !exists {
+            sql.push_str(&format!("INSERT OR IGNORE INTO resource_links SELECT r.id,{target},{kind} FROM resources r,json_tree(r.content) j WHERE {predicate};"));
+        } else {
+            sql.push_str(&format!("INSERT OR IGNORE INTO resource_links SELECT r.id,{target},{kind} FROM resources r,json_tree(r.content) j WHERE {predicate} AND json_extract(j.value,'$.type')='table';"));
+        }
+        sql.push_str("RELEASE resource_links_migration;");
+        db.execute_batch(&sql).map_err(error)?;
     }
     Ok(())
 }
@@ -574,6 +588,25 @@ mod tests {
             w.media(json!({"op":"backlinks","id":b})).unwrap(),
             json!([])
         );
+    }
+    #[test]
+    fn table_provenance_survives_restart_and_protects_drafts() {
+        use crate::domain::Request;
+        let dir=tempfile::tempdir().unwrap();
+        let mut w=Workspace::open(dir.path()).unwrap();
+        let note=w.execute(Request::CreateNote{title:"Table note".into(),collection:None}).unwrap();
+        let id=note["id"].as_str().unwrap().to_string();
+        let source=Uuid::new_v4().to_string();
+        w.attach_metadata(source.clone(),"Data.csv".into(),3,"fixture".into()).unwrap();
+        let body=json!({"type":"doc","content":[{"type":"table","attrs":{"sourceResourceId":source,"sourceResourceTitle":"Data.csv"}}]});
+        let saved=w.execute(Request::Save{id:id.clone(),revision:note["revision"].as_i64().unwrap(),title:"Table note".into(),content:body.clone(),proof:None}).unwrap();
+        drop(w);
+        let mut w=Workspace::open(dir.path()).unwrap();
+        assert_eq!(w.media(json!({"op":"backlinks","id":source})).unwrap()[0]["kind"],"table");
+        w.execute(Request::Draft{id:id.clone(),base_revision:saved["revision"].as_i64().unwrap(),token:Uuid::new_v4().to_string(),sequence:1,title:"Table note".into(),content:body}).unwrap();
+        w.organization(crate::organization::Request::Trash{ids:vec![source.clone()],restore:false}).unwrap();
+        assert!(w.purge_one(&source).unwrap_err().contains("drafts"));
+        assert!(w.managed_path(&source).is_err());
     }
     #[test]
     fn clipboard_identity_membership_and_atomic_validation() {

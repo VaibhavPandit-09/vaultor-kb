@@ -375,3 +375,10 @@ For the pending Windows review, use a fresh workspace and retain the exact fixtu
 - In a narrow pane, move between a table cell, text selection and image. Open each contextual control, inspect clipping and tab order, and dismiss with Escape. Use the fullscreen table and return to the note. From [[, choose Upload File, approve a disposable file, and verify the link appears only after import. Drop a managed shortcut on the caret in another managed pane, then repeat with Escape and over a linked pane. Check the cancelled or refused gestures make no edit. Continue to use the existing M17 physical checklist for the organizational targets.
 
 Suggested M19 scope: finish the editor acceptance gaps and profile the approximately 1.2 GiB dense three-view workload before extending previews or linked Markdown.
+
+
+## M19 file previews and editor completion
+
+Implementation starts from 2a7d6938. CSV review adds a managed source copy with the original table source attributes and backlink index. The mapped anchor preserves its insertion position, and protected drafts prevent purging referenced CSVs. Markdown paste review distinguishes clear Markdown from rich HTML, ordinary text, TSV and images. Image preparation retains per-file receipts through retry and only inserts the approved ready set. Existing-image selection previews a managed original before reuse.
+
+PreviewShell now owns both stored placement choices without consuming a note pane. PDF.js replaces the original Chromium PDF iframe with bounded local single-page rendering and a selectable text layer. No document scripts, forms or external links execute. Media playback uses a workspace-scoped Rust range reader. It admits WAV, MP3, Ogg/Opus, FLAC, M4A, MP4 and WebM containers subject to installed WebView2 codec support. Office preview was absent from the original desktop source. Unsupported files retain Reveal and Export prepared-copy paths.

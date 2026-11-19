@@ -21,18 +21,18 @@ async function runAttachment(work:()=>Promise<void>){
  const job=work();pending.add(job);
  try{await job;}finally{pending.delete(job);}
 }
-export async function attachImages(files:File[]){
+export async function attachImages(files:File[],workspace?:string){
  if(files.length>12||files.reduce((bytes,file)=>bytes+file.size,0)>60*1024*1024)throw Error('Choose up to 12 images totaling 60 MiB');
  const images:{id:string;name:string}[]=[];
  for(const file of files){
   if(file.size>20*1024*1024)throw Error('Each image must be at most 20 MiB');
   const bytes=await file.arrayBuffer();
-  images.push(await invoke<{id:string;name:string}>('attachment',bytes,{headers:{'x-file-name':encodeURIComponent(file.name)}}));
+  images.push(await invoke<{id:string;name:string}>('attachment',bytes,{headers:{'x-file-name':encodeURIComponent(file.name),...(workspace?{'x-workspace':encodeURIComponent(workspace)}:{})}}));
  }
  return images;
 }
 export function insertImages(editor:Editor,files:File[]){return commitImages(editor,()=>attachImages(files));}
-export async function original(id:string){const buffer=await invoke<ArrayBuffer>('resource_bytes',{id});const bytes=new Uint8Array(buffer);const mime=bytes[0]===137&&bytes[1]===80?'image/png':bytes[0]===255&&bytes[1]===216?'image/jpeg':bytes[0]===71&&bytes[1]===73?'image/gif':String.fromCharCode(...bytes.subarray(0,4))==='RIFF'&&String.fromCharCode(...bytes.subarray(8,12))==='WEBP'?'image/webp':'text/plain';return {buffer,mime};}
+export async function original(id:string,workspace?:string){const buffer=await invoke<ArrayBuffer>('resource_bytes',{id,workspace});const bytes=new Uint8Array(buffer);const mime=bytes[0]===137&&bytes[1]===80?'image/png':bytes[0]===255&&bytes[1]===216?'image/jpeg':bytes[0]===71&&bytes[1]===73?'image/gif':String.fromCharCode(...bytes.subarray(0,4))==='RIFF'&&String.fromCharCode(...bytes.subarray(8,12))==='WEBP'?'image/webp':'text/plain';return {buffer,mime};}
 let clipboard:{receipt:string;text:string;mode?:string}|undefined;
 export async function copyResources(ids:string[],mode:'copy'|'cut'|'links',collection:string|null){const data=await media<{receipt:string;text:string}>({op:'copy',ids,mode,collection});await native('clipboardWrite',null,data.text);clipboard={receipt:data.receipt,text:data.text,mode};}
 export async function pasteResources(collection:string|null){if(!collection)throw Error('Choose a destination collection');const text=await native('clipboardRead');if(!clipboard||clipboard.text!==text)throw Error('Copy resources in this Vaultor session first');return media({op:'paste',receipt:clipboard.receipt,collection});}

@@ -6,7 +6,7 @@ import EditorImagePicker,{type ImagePickerRequest} from './EditorImagePicker';
 import {Bold,Italic,Underline,Strikethrough,Code,Link,Image,Undo,Redo,MoreHorizontal} from 'lucide-react';
 import LibraryPopover from '../components/LibraryPopover';
 import type {TableOutput} from '../components/editor/TableDataPanel';
-import {prepareEditorFile,type EditorFileReview} from './editorImport';
+import {prepareEditorFile,prepareMarkdownPaste,insertEditorReview,type EditorFileReview} from './editorImport';
 import TableControls from '../components/editor/TableControls';
 import SlashMenu,{getFilteredSlashItems} from '../components/editor/SlashMenu';
 import {slashCommandPluginKey,type SlashCommandState} from '../components/editor/SlashCommandExtension';
@@ -26,7 +26,7 @@ const tableOutput:TableOutput={copy:text=>native('clipboardWrite',null,text),sav
 const service={upload:true,search:findResources,create:async(title:string)=>{const note=await command<Note>({kind:'createNote',title,collection:null});return {id:note.id,title:note.title,type:'note' as const,virtual:false};}};
 export default function EditorControls({active,editor,container,noteId,openResource,saveStatus,retrySave,managed=true}:{active:boolean;managed?:boolean;retrySave?:()=>void;saveStatus:'saved'|'saving'|'failed';editor:Editor;container:RefObject<HTMLDivElement|null>;noteId:string;openResource?:(id:string,beside?:boolean)=>void}){
  const [slash,setSlash]=useState<SlashCommandState|null>(null),[resource,setResource]=useState<ResourceLinkState|null>(null),[selected,setSelected]=useState(0),[position,setPosition]=useState({left:0,top:0}),[format,setFormat]=useState(false),[error,setError]=useState(''),[backlinks,setBacklinks]=useState<{id:string;title:string}[]>([]);const selectedRef=useRef(0),count=useRef(0);
- const [fileReview,setFileReview]=useState<EditorFileReview>(),[readingFile,setReadingFile]=useState(false);
+ const [fileReview,setFileReview]=useState<EditorFileReview>(),[readingFile,setReadingFile]=useState(false),[inserting,setInserting]=useState(false);
  useEffect(()=>()=>{fileReview?.target.dispose();},[fileReview]);
  const importFile=(format:'table'|'markdown')=>(editor:Editor,range:{from:number;to:number})=>{
    if(readingFile||fileReview)return;
@@ -36,11 +36,26 @@ export default function EditorControls({active,editor,container,noteId,openResou
      else if(review)setFileReview(review);
    }).catch(error=>{if(!editor.isDestroyed)setError(String(error));}).finally(()=>setReadingFile(false));
  };
- const closeFileReview=()=>{setFileReview(undefined);editor.commands.focus();};
- const insertReviewedFile=()=>{
-   if(!fileReview)return;
-   try{fileReview.target.insert(fileReview.content,8*1024*1024);closeFileReview();}
-   catch(error){setError(String(error));closeFileReview();}
+ useEffect(()=>{
+   if(!managed)return;
+   const pasted=(event:Event)=>{
+     if(fileReview||readingFile||!editor.isEditable)return;
+     const anchor=captureImportTarget(editor,editor.state.selection);
+     setReadingFile(true);setError('');
+     void prepareMarkdownPaste(anchor,(event as CustomEvent<string>).detail).then(review=>{
+       if(editor.isDestroyed)review.target.dispose();else setFileReview(review);
+     }).catch(error=>{if(!editor.isDestroyed)setError(String(error));}).finally(()=>setReadingFile(false));
+   };
+   editor.view.dom.addEventListener('vaultor:markdown-paste',pasted);
+   return()=>editor.view.dom.removeEventListener('vaultor:markdown-paste',pasted);
+ },[editor,managed,fileReview,readingFile]);
+ const closeFileReview=()=>{if(!inserting){setFileReview(undefined);editor.commands.focus();}};
+ const insertReviewedFile=(plain=false)=>{
+   if(!fileReview||inserting)return;
+   setInserting(true);
+   void insertEditorReview(fileReview,plain).catch(error=>{if(!editor.isDestroyed)setError(String(error));}).finally(()=>{
+     if(!editor.isDestroyed){setInserting(false);setFileReview(undefined);editor.commands.focus();}
+   });
  };
  const uploadMd=importFile('markdown'),uploadCsv=importFile('table');
  const [imageUsage,setImageUsage]=useState<{id:string;title:string}[]>();
@@ -87,14 +102,14 @@ export default function EditorControls({active,editor,container,noteId,openResou
    if(!managed)return;
    const listener=(event:Event)=>{
      if(!editor.isEditable)return;
-     const detail=(event as CustomEvent<{position?:number;replaceId?:string}>).detail;
+     const detail=(event as CustomEvent<{position?:number;replaceId?:string;files?:File[]}>).detail;
      const position=detail?.position;
      const replace=position!==undefined?editor.state.doc.nodeAt(position):null;
      if(detail?.replaceId&&(position===undefined||replace?.type.name!=='image'||replace.attrs.resourceId!==detail.replaceId)){
        setError('The selected image changed. Select it again.');return;
      }
      const range=position===undefined?editor.state.selection:{from:position,to:position};
-     setImagePicker({target:captureImportTarget(editor,range),replace:replace??undefined});
+     setImagePicker({target:captureImportTarget(editor,range),replace:replace??undefined,files:detail?.files});
    };
    editor.view.dom.addEventListener('vaultor:image-picker',listener);
    return()=>editor.view.dom.removeEventListener('vaultor:image-picker',listener);
@@ -105,12 +120,13 @@ export default function EditorControls({active,editor,container,noteId,openResou
  const disclosure=<LibraryPopover label="Note formatting" trigger={<Bold size={15}/>} >{()=> <PopoverPriorityContext value={popupPriority+1}>{controls}</PopoverPriorityContext>}</LibraryPopover>;
  return <><div ref={slot} className="next-editor-toolbar-slot">{format?controls:toolbarHost?createPortal(disclosure,toolbarHost):disclosure}</div>
  {readingFile&&<p role="status">Reading editor file…</p>}
- {fileReview&&createPortal(<AppModal open title={fileReview.format==='table'?'Insert table':'Insert Markdown'} onClose={closeFileReview} footer={<><button onClick={closeFileReview}>Cancel</button><button onClick={insertReviewedFile}>Insert</button></>}>
+ {fileReview&&createPortal(<AppModal open title={fileReview.format==='table'?'Insert table':fileReview.pasted?'Review Markdown paste':'Insert Markdown'} onClose={closeFileReview} footer={<><button disabled={inserting} onClick={closeFileReview}>Cancel</button>{fileReview.pasted&&<button disabled={inserting} onClick={()=>insertReviewedFile(true)}>Paste as text</button>}<button disabled={inserting||!!fileReview.warning} onClick={()=>insertReviewedFile()}>Insert</button></>}>
    <p>{fileReview.format==='table'?fileReview.content[0].content?.length+' rows · '+fileReview.content[0].content?.[0].content?.length+' columns. The first row becomes headers.':fileReview.content.length+' editable blocks will be inserted.'}</p>
-   <p>The selected file stays intact.</p>
+   {fileReview.warning&&<p role="alert">{fileReview.warning}</p>}
+   {fileReview.pasted?<pre className="next-paste-sample">{fileReview.pasted.slice(0,4000)}</pre>:<p>{fileReview.source?'A managed copy of the file will be linked to this table. The selected file stays intact.':'The selected file stays intact.'}</p>}
  </AppModal>,document.body)}
  {imageUsage&&<AppModal open title="Image used in" onClose={()=>setImageUsage(undefined)}>{imageUsage.length?imageUsage.map(note=><button className="library-button" key={note.id} onClick={()=>{setImageUsage(undefined);openResource?.(note.id);}}>{note.title}</button>):<p>No saved notes use this image yet.</p>}</AppModal>}
  {imagePicker&&<EditorImagePicker editor={editor} request={imagePicker} close={()=>{setImagePicker(undefined);editor.commands.focus();}}/>}
- {managed&&<TableControls onRetrySave={retrySave} saveStatus={saveStatus} editor={editor} active={active&&editor.isEditable} containerRef={container} output={tableOutput}/>}
+ {managed&&<TableControls onRetrySave={retrySave} saveStatus={saveStatus} editor={editor} active={active&&editor.isEditable} containerRef={container} output={tableOutput} openSource={openResource}/>}
  {(slash?.range||resource?.range)&&createPortal(<div className="next-editor-suggestion" style={{position:'fixed',left:position.left,top:position.top,zIndex:4000}}>{slash?.range?<SlashMenu editor={editor} range={slash.range} query={slash.query} selectedIndex={selected} onClose={close} onUploadMd={uploadMd} onUploadCsv={uploadCsv}/>:resource?.range?<ResourceLinkMenu editor={editor} range={resource.range} query={resource.query} selectedIndex={selected} service={service} onClose={close} onUpdateFiltered={updateCount} onRequestFileUpload={importResource}/>:null}</div>,document.body)}{error&&<p role="alert">{error}</p>}</>;
 }

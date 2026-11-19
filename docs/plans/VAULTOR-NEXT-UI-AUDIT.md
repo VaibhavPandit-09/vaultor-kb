@@ -465,3 +465,8 @@ No titlebar/layout/pane-policy/file-drop rewrite, new data authority or unsafe b
 ## M18 advanced managed editor
 
 The bounded comparison covered BlockEditor, TableControls/TableDataPanel, WorkspaceTable/TableWorkspace, the original image placement and preview, SlashMenu, and ResourceLinkMenu. Next now uses the original placement and preview components as well as the existing table controls. Only the active managed pane exposes the floating table controls. File review and the image picker retain the invoking editor and insertion anchor. Managed editor resource drops show the original caret and reuse the M17 pointer owner. Native geometry and physical input boundaries are recorded in the [M18 roadmap entry](VAULTOR-NEXT.md#m18-advanced-managed-editor). M17 physical mouse acceptance is still open.
+
+
+## M19 file previews and editor completion
+
+Next uses PreviewShell for Side panel and Floating without consuming an editor pane. The original image zoom surface remains shared. Original desktop FilePreview routes PDF, image, CSV, Markdown, code and text. It contains no Office or audio/video renderer. Next implements bounded local PDF and codec-dependent media. Current native, geometry and performance results are in the [M19 roadmap entry](VAULTOR-NEXT.md#m19-file-previews-and-editor-completion).

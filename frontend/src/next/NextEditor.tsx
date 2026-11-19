@@ -1,3 +1,4 @@
+import {markdownClipboard} from './markdownClipboard';
 import {registerEditorDrop} from '../lib/editorDrop';
 import ResourceLinkChip from '../components/editor/ResourceLinkChip';
 import {resourceKind} from '../lib/resourceKinds';
@@ -24,7 +25,7 @@ import { SharedHistory, SharedNoteDocuments, isSharedTransaction } from '../lib/
 import { useEscapeLayer, ESCAPE_PRIORITIES } from '../lib/escape/escape';
 import EditorControls from './EditorControls';
 import {NextImage} from './MediaView';
-import {native,insertImages,pasteLinks} from './media';
+import {native,pasteLinks} from './media';
 import {WorkspaceTable} from '../components/editor/WorkspaceTable';
 import {TableWorkspace,handleTablePaste} from '../components/editor/TableWorkspace';
 import {SlashCommandExtension} from '../components/editor/SlashCommandExtension';
@@ -62,7 +63,10 @@ export default function NextEditor({ active=true,note, documents, changed, locke
     editorProps: {
       attributes: { class: 'tiptap outline-none min-h-[50vh]', 'aria-label': `Note body ${pane + 1}` },
       handleDrop: (_view, event) => Boolean(event.dataTransfer?.files.length),
-      handlePaste: (view,event) => {if(!managed)return Boolean(event.clipboardData?.files.length);const files=Array.from(event.clipboardData?.files??[]);if(files.length){event.preventDefault();if(files.every(file=>file.type.startsWith('image/')))void insertImages(editor!,files).catch(e=>setOperationError(String(e)));else setOperationError('Use Import files for managed attachments');return true;}return pasteLinks(editor!,event)||handleTablePaste(view,event);},
+      handlePaste: (view,event) => {if(!view.editable)return true;if(!managed)return Boolean(event.clipboardData?.files.length);const files=Array.from(event.clipboardData?.files??[]);if(files.length){event.preventDefault();if(files.every(file=>file.type.startsWith('image/')))view.dom.dispatchEvent(new CustomEvent('vaultor:image-picker',{detail:{files}}));else setOperationError('Use Import files for managed attachments');return true;}if(pasteLinks(editor!,event)||handleTablePaste(view,event))return true;
+        const markdown=event.clipboardData&&!editor?.isActive('codeBlock')&&markdownClipboard(event.clipboardData);
+        if(!markdown)return false;
+        event.preventDefault();view.dom.dispatchEvent(new CustomEvent('vaultor:markdown-paste',{detail:markdown}));return true;},
     },
     onUpdate: ({ editor, transaction }) => { if (transaction.docChanged && !invalid.current && !isSharedTransaction(transaction)) callback.current(() => editor.getJSON()); },
     onSelectionUpdate:({editor})=>positionCallback.current?.({from:editor.state.selection.from,to:editor.state.selection.to}),

@@ -15,7 +15,7 @@ type Geometry = { width: number; available: number; pane: Bounds; table: Bounds;
 type Menu = 'row' | 'column' | 'more' | 'filter' | 'export' | 'help';
 const titles: Record<Menu, string> = { row: 'Row actions', column: 'Column actions', more: 'Table actions', filter: 'Filter rows', export: 'Copy / export', help: 'Table help' };
 
-export default function TableControls({ editor, active, containerRef, output, noteTitle = 'Note', saveStatus = 'saved', onRetrySave = () => {} }: { editor: Editor; active: boolean; output?: TableOutput; containerRef: RefObject<HTMLDivElement | null>; noteTitle?: string; saveStatus?: SaveStatus; onRetrySave?: () => void }) {
+export default function TableControls({ editor, active, containerRef, output, openSource, noteTitle = 'Note', saveStatus = 'saved', onRetrySave = () => {} }: { editor: Editor; active: boolean; output?: TableOutput; openSource?:(id:string)=>void; containerRef: RefObject<HTMLDivElement | null>; noteTitle?: string; saveStatus?: SaveStatus; onRetrySave?: () => void }) {
   const [, refresh] = useState(0);
   const [geometry, setGeometry] = useState<Geometry | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
@@ -221,6 +221,7 @@ export default function TableControls({ editor, active, containerRef, output, no
           <hr />{button('Delete selected columns', () => changeColumns(editor, 'delete'), ctx.right - ctx.left < ctx.map.width, 'Use Delete table to remove the whole table')}
         </>}
         {menu === 'more' && <>
+          {openSource&&ctx.table.attrs.sourceResourceId&&<button type="button" className="table-action" onClick={()=>{close();openSource(ctx.table.attrs.sourceResourceId);}}>Open table source · {ctx.table.attrs.sourceResourceTitle??'CSV'}</button>}
           {button('Merge cells', () => editor.chain().focus().mergeCells().run(), editor.can().mergeCells(), undefined, true, <Merge size={15} />)}
           {button('Split cell', () => editor.chain().focus().splitCell().run(), editor.can().splitCell(), undefined, true, <Split size={15} />)}
           <hr />
