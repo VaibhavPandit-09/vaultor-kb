@@ -1,0 +1,30 @@
+{
+  "executable": "next/src-tauri/target/release/vaultor-next-m18.exe",
+  "sha256": "406322658ec2e94d55dbe0c71a02d0b79d8379b9e5964d20dc79699123890319",
+  "applicationSource": "7de52bc15c97f8ff3c323c68382aeb43239e5234",
+  "runtime": {
+    "editorEvidence": "tauri-rust-2026-11-19T17-36-40.622Z.json",
+    "editorChecks": [
+      "Optimized WebView2 opened prose, 181×12 table, code, repeated image placements and mixed fixtures; received typed input, filtered and cleared without content mutation, pasted TSV, undid/redid edits across three views and read back persisted content after process restart."
+    ],
+    "safetyEvidence": "tauri-rust-2026-11-19T17-40-03.511Z.json",
+    "safetyChecks": [
+      "Optimized native managed autosave;durable draft acknowledged before forced termination;restart Recovery review/restore commits content;competing managed revision refuses overwrite and parks draft.",
+      "Optimized native linked source bytes unchanged before explicit Save;publication succeeds for supported plain-text edit;external competing revision refuses overwrite and retains protected text/draft."
+    ]
+  },
+  "nativePicker": {
+    "input": "Windows computer-use accessibility and injected keys",
+    "workflow": "Upload CSV as Table",
+    "dialogOpened": true,
+    "disposableFilenameSet": true,
+    "submitted": false,
+    "limitation": "Click reported coordinate input geometry is unavailable. Keyboard attempt left the dialog open."
+  },
+  "unverified": [
+    "Human mouse and physical M17 drag acceptance",
+    "Native file review approval and CSV Save dialog",
+    "Image picker and clipboard, physical resize and resource drops",
+    "Native fullscreen geometry and assistive interaction"
+  ]
+}

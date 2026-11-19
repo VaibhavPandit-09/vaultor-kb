@@ -36,6 +36,7 @@ export async function qualifyEditor({evaluate,cdp,wait,report,folder,record,rest
     const saved=await api({kind:'save',id:note.id,revision:note.revision,title:note.title,content:{type:'doc',content}});
     notes.push({...note,revision:saved.revision});
   }
+  await api({kind:'behavior',path:root,value:{maxVisiblePanes:3}});
   await cdp('Page.reload');
   await wait('!!document.querySelector("[data-row-open]")','fixture Library ready');
   assert.equal((await evaluate("window.__TAURI_INTERNALS__.invoke('workspace',{request:{kind:'snapshot'}})")).path,root);
@@ -104,19 +105,12 @@ export async function qualifyEditor({evaluate,cdp,wait,report,folder,record,rest
   })()`);
   record('m18-csv',1,'worker_start_and_convert',csvTiming.parseMs,'ms','181×12 UTF-8 table. Worker startup, conversion and message delivery.');
   record('m18-csv',1,'insert_table_dispatch',csvTiming.insertMs,'ms','Approved fixture simulated by dispatching parsed content to the live editor. Native review and dialog are separate.');
-  const snapshot=await api({kind:'snapshot'});
-  const baseReceipt=snapshot.settings.session;
-  const sessions=Array.from({length:3},(_,i)=>({
-    paneId:'m18-shared-'+i,id:current.id,cursor:0,
-    history:[{visitId:'m18-visit-'+i,resourceId:current.id,title:current.title}],
-  }));
-  await api({kind:'behavior',path:root,value:{maxVisiblePanes:3}});
-  await api({kind:'session',path:root,value:{...baseReceipt,documents:sessions.map(()=>({id:current.id})),activePane:0,journeys:{sessions,panes:sessions,activePaneId:sessions[0].paneId,positions:{}}}});
   await cdp('Emulation.setDeviceMetricsOverride',{width:1800,height:900,deviceScaleFactor:1,mobile:false});
-  await cdp('Page.reload');
-  await wait('document.querySelectorAll(".tiptap").length===3 && [...document.querySelectorAll(".tiptap")].every(e=>e.editor?.isInitialized)','three mixed-note editors');
-  await evaluate("window.benchRequest=request=>window.__TAURI_INTERNALS__.invoke('workspace',{request})");
-  assert.equal((await api({kind:'snapshot'})).path,root);
+  for(const count of [2,3]){
+    await wait("!!document.querySelector('[aria-label=\"Split active note\"]')?.getClientRects().length && document.querySelector('.tiptap')?.editor?.isEditable",'split control ready');
+    await click('[aria-label="Split active note"]');
+    await wait(`document.querySelectorAll(".tiptap").length===${count} && [...document.querySelectorAll(".tiptap")].every(e=>e.editor?.isInitialized && e.editor.isEditable)`,'shared mixed-note editors');
+  }
   const timing=await evalEditor(`
     editor.commands.focus("end");editor.commands.insertContent(${JSON.stringify(marker)});
     const start=performance.now();editor.commands.undo();const undo=performance.now()-start;

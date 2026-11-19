@@ -1,0 +1,314 @@
+{
+  "experiment": "m18-editor-v1",
+  "architecture": "tauri-rust",
+  "commit": "ae13b0255e8555b7ff982f2ad93e9e8d3a72f142",
+  "dirty": true,
+  "executableSourceCommit": "ae13b0255e8555b7ff982f2ad93e9e8d3a72f142",
+  "executableSha256": "b30e40f035334e1450f184a90ee126603e7137a8bb72b31c3914128ddcf67bce",
+  "timestamp": "2026-11-19T17:32:48.659Z",
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "dataset": "738e32b0c6ac5d3b7892547b38368c034eb3036ffbe9ddb2dc8c5f261f82efea",
+  "success": false,
+  "error": "Error: ErrorEvent",
+  "checks": [],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes."
+  ],
+  "observations": [
+    {
+      "scenario": "m18-prose",
+      "iteration": 1,
+      "metric": "open_usable",
+      "value": 119.64690000000019,
+      "unit": "ms",
+      "notes": "CDP click to initialized editor, includes driver polling.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-prose",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "value": 24.0999999998603,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-prose",
+      "iteration": 2,
+      "metric": "input_to_raf",
+      "value": 45.199999999953434,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-prose",
+      "iteration": 3,
+      "metric": "input_to_raf",
+      "value": 10.600000000093132,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-prose",
+      "iteration": 4,
+      "metric": "input_to_raf",
+      "value": 14.799999999813735,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-prose",
+      "iteration": 5,
+      "metric": "input_to_raf",
+      "value": 8.399999999906868,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 1,
+      "metric": "open_usable",
+      "value": 273.7498999999998,
+      "unit": "ms",
+      "notes": "CDP click to initialized editor, includes driver polling.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "value": 14.800000000046566,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 2,
+      "metric": "input_to_raf",
+      "value": 4.600000000093132,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 3,
+      "metric": "input_to_raf",
+      "value": 4,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 4,
+      "metric": "input_to_raf",
+      "value": 4,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 5,
+      "metric": "input_to_raf",
+      "value": 5.300000000046566,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 1,
+      "metric": "apply_filter_transaction",
+      "value": 4.100000000093132,
+      "unit": "ms",
+      "notes": "Explicit view-state transaction and DOM decorations for 2,172 cells. No compositor measurement.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 1,
+      "metric": "tsv_paste_dispatch",
+      "value": 7.100000000093132,
+      "unit": "ms",
+      "notes": "Two-cell synthetic clipboard event in the mounted WebView2 editor.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-code",
+      "iteration": 1,
+      "metric": "open_usable",
+      "value": 125.95239999999967,
+      "unit": "ms",
+      "notes": "CDP click to initialized editor, includes driver polling.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-code",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "value": 12.299999999813735,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-code",
+      "iteration": 2,
+      "metric": "input_to_raf",
+      "value": 5.800000000046566,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-code",
+      "iteration": 3,
+      "metric": "input_to_raf",
+      "value": 4.5,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-code",
+      "iteration": 4,
+      "metric": "input_to_raf",
+      "value": 4.399999999906868,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-code",
+      "iteration": 5,
+      "metric": "input_to_raf",
+      "value": 4.699999999953434,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-image-placements",
+      "iteration": 1,
+      "metric": "open_usable",
+      "value": 78.87530000000015,
+      "unit": "ms",
+      "notes": "CDP click to initialized editor, includes driver polling.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-image-placements",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "value": 10.600000000093132,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-image-placements",
+      "iteration": 2,
+      "metric": "input_to_raf",
+      "value": 4.5,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-image-placements",
+      "iteration": 3,
+      "metric": "input_to_raf",
+      "value": 3.8999999999068677,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-image-placements",
+      "iteration": 4,
+      "metric": "input_to_raf",
+      "value": 2.1000000000931323,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-image-placements",
+      "iteration": 5,
+      "metric": "input_to_raf",
+      "value": 5,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 1,
+      "metric": "open_usable",
+      "value": 169.24699999999984,
+      "unit": "ms",
+      "notes": "CDP click to initialized editor, includes driver polling.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "value": 13.899999999906868,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 2,
+      "metric": "input_to_raf",
+      "value": 6.099999999860302,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 3,
+      "metric": "input_to_raf",
+      "value": 6.300000000046566,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 4,
+      "metric": "input_to_raf",
+      "value": 7.100000000093132,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 5,
+      "metric": "input_to_raf",
+      "value": 16,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    }
+  ]
+}

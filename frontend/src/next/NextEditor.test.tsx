@@ -10,6 +10,28 @@ import {captureImportTarget} from '../lib/importTarget';
 vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});
 // jsdom has no text layout; these tests assert editor state,not popup geometry.
 beforeAll(()=>Object.defineProperties(Range.prototype,{getClientRects:{configurable:true,value:()=>[]},getBoundingClientRect:{configurable:true,value:()=>new DOMRect(0,0,1,16)}}));
+
+it('replaces only the mapped image placement across shared views and undoes without changing the sibling placement',async()=>{
+  const documents=new SharedNoteDocuments(),editors:Editor[]=[],prepare=documents.prepare.bind(documents);
+  vi.spyOn(documents,'prepare').mockImplementation((editor,scope)=>{editors.push(editor);prepare(editor,scope);});
+  const image={type:'image',attrs:{resourceId:'existing-image',width:60,alignment:'right',alt:'Preserved caption'}};
+  const note={id:'replacement-fixture',title:'Placements',revision:1,content:{type:'doc',content:[{type:'paragraph'},image,image]}};
+  vi.stubGlobal('IntersectionObserver',class{observe(){}disconnect(){}});
+  const mounted=render(<EscapeManagerProvider>{[0,1].map(pane=><NextEditor key={pane} pane={pane} note={note} documents={documents} changed={()=>{}} locked={false}/>)}</EscapeManagerProvider>);
+  try{
+    await waitFor(()=>expect(editors.filter(editor=>editor.isInitialized)).toHaveLength(2));
+    const [first,second]=editors;
+    const expected=first.state.doc.child(1),position=first.state.doc.child(0).nodeSize;
+    const target=captureImportTarget(first,{from:position,to:position});
+    act(()=>{second.commands.insertContentAt(1,'A shared edit');});
+    act(()=>target.replaceNode(expected,{resourceId:'replacement-image'}));
+    expect(second.state.doc.child(1).attrs).toMatchObject({resourceId:'replacement-image',width:60,alignment:'right'});
+    expect(second.state.doc.child(2).attrs.resourceId).toBe('existing-image');
+    act(()=>{second.commands.undo();});
+    expect(first.state.doc.child(1).attrs.resourceId).toBe('existing-image');
+    expect(first.getText()).toContain('A shared edit');
+  }finally{mounted.unmount();vi.unstubAllGlobals();vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});}
+});
 it('journals document edits but does not treat locking and selection as edits',async()=>{
   const documents=new SharedNoteDocuments(),changed=vi.fn();let editor!:Editor;
   const prepare=documents.prepare.bind(documents);

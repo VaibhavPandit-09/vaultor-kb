@@ -1,0 +1,369 @@
+{
+  "experiment": "m18-editor-v1",
+  "architecture": "tauri-rust",
+  "commit": "7de52bc15c97f8ff3c323c68382aeb43239e5234",
+  "dirty": true,
+  "executableSourceCommit": "7de52bc15c97f8ff3c323c68382aeb43239e5234",
+  "executableSha256": "406322658ec2e94d55dbe0c71a02d0b79d8379b9e5964d20dc79699123890319",
+  "timestamp": "2026-11-19T17:36:40.687Z",
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "dataset": "738e32b0c6ac5d3b7892547b38368c034eb3036ffbe9ddb2dc8c5f261f82efea",
+  "success": true,
+  "checks": [
+    "Optimized WebView2 opened prose, 181×12 table, code, repeated image placements and mixed fixtures; received typed input, filtered and cleared without content mutation, pasted TSV, undid/redid edits across three views and read back persisted content after process restart."
+  ],
+  "limitations": [
+    "No OS cache flush; first-profile startup is not true cold boot.",
+    "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+    "Process working sets sum shared pages; sampled peak can miss short spikes."
+  ],
+  "observations": [
+    {
+      "scenario": "m18-prose",
+      "iteration": 1,
+      "metric": "open_usable",
+      "value": 110.48379999999997,
+      "unit": "ms",
+      "notes": "CDP click to initialized editor, includes driver polling.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-prose",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "value": 65.30000000004657,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-prose",
+      "iteration": 2,
+      "metric": "input_to_raf",
+      "value": 5.699999999953434,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-prose",
+      "iteration": 3,
+      "metric": "input_to_raf",
+      "value": 10.299999999813735,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-prose",
+      "iteration": 4,
+      "metric": "input_to_raf",
+      "value": 4.099999999860302,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-prose",
+      "iteration": 5,
+      "metric": "input_to_raf",
+      "value": 3.5999999998603016,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 1,
+      "metric": "open_usable",
+      "value": 232.92809999999986,
+      "unit": "ms",
+      "notes": "CDP click to initialized editor, includes driver polling.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "value": 22.300000000046566,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 2,
+      "metric": "input_to_raf",
+      "value": 3.8999999999068677,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 3,
+      "metric": "input_to_raf",
+      "value": 4.7999999998137355,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 4,
+      "metric": "input_to_raf",
+      "value": 4,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 5,
+      "metric": "input_to_raf",
+      "value": 4.399999999906868,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 1,
+      "metric": "apply_filter_transaction",
+      "value": 4.199999999953434,
+      "unit": "ms",
+      "notes": "Explicit view-state transaction and DOM decorations for 2,172 cells. No compositor measurement.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-dense-table",
+      "iteration": 1,
+      "metric": "tsv_paste_dispatch",
+      "value": 6.800000000046566,
+      "unit": "ms",
+      "notes": "Two-cell synthetic clipboard event in the mounted WebView2 editor.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-code",
+      "iteration": 1,
+      "metric": "open_usable",
+      "value": 116.2219,
+      "unit": "ms",
+      "notes": "CDP click to initialized editor, includes driver polling.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-code",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "value": 11.400000000139698,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-code",
+      "iteration": 2,
+      "metric": "input_to_raf",
+      "value": 5.699999999953434,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-code",
+      "iteration": 3,
+      "metric": "input_to_raf",
+      "value": 5.300000000046566,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-code",
+      "iteration": 4,
+      "metric": "input_to_raf",
+      "value": 5.600000000093132,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-code",
+      "iteration": 5,
+      "metric": "input_to_raf",
+      "value": 4.599999999860302,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-image-placements",
+      "iteration": 1,
+      "metric": "open_usable",
+      "value": 79.19750000000022,
+      "unit": "ms",
+      "notes": "CDP click to initialized editor, includes driver polling.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-image-placements",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "value": 7.599999999860302,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-image-placements",
+      "iteration": 2,
+      "metric": "input_to_raf",
+      "value": 3.5,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-image-placements",
+      "iteration": 3,
+      "metric": "input_to_raf",
+      "value": 2.800000000046566,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-image-placements",
+      "iteration": 4,
+      "metric": "input_to_raf",
+      "value": 4.699999999953434,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-image-placements",
+      "iteration": 5,
+      "metric": "input_to_raf",
+      "value": 2.300000000046566,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 1,
+      "metric": "open_usable",
+      "value": 172.79410000000007,
+      "unit": "ms",
+      "notes": "CDP click to initialized editor, includes driver polling.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 1,
+      "metric": "input_to_raf",
+      "value": 13,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 2,
+      "metric": "input_to_raf",
+      "value": 10.599999999860302,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 3,
+      "metric": "input_to_raf",
+      "value": 5.900000000139698,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 4,
+      "metric": "input_to_raf",
+      "value": 6,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 5,
+      "metric": "input_to_raf",
+      "value": 5.300000000046566,
+      "unit": "ms",
+      "notes": "CDP beforeinput to animation frame.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-csv",
+      "iteration": 1,
+      "metric": "worker_start_and_convert",
+      "value": 45.39999999990687,
+      "unit": "ms",
+      "notes": "181×12 UTF-8 table. Worker startup, conversion and message delivery.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-csv",
+      "iteration": 1,
+      "metric": "insert_table_dispatch",
+      "value": 39.800000000046566,
+      "unit": "ms",
+      "notes": "Approved fixture simulated by dispatching parsed content to the live editor. Native review and dialog are separate.",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 1,
+      "metric": "undo_dispatch",
+      "value": 2.5,
+      "unit": "ms",
+      "notes": "",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 1,
+      "metric": "redo_dispatch",
+      "value": 3,
+      "unit": "ms",
+      "notes": "",
+      "valid": true
+    },
+    {
+      "scenario": "m18-mixed",
+      "iteration": 1,
+      "metric": "autosave_readback",
+      "value": 996.3377999999993,
+      "unit": "ms",
+      "notes": "Includes autosave delay and IPC read polling.",
+      "valid": true
+    },
+    {
+      "scenario": "workload",
+      "iteration": 1,
+      "metric": "sampled_peak_working_set",
+      "value": 1233.12890625,
+      "unit": "MiB",
+      "notes": "",
+      "valid": true
+    }
+  ]
+}

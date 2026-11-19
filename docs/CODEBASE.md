@@ -497,7 +497,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-19 — Next M18 managed editor
 
-Reused the table, image and resource-link presentation with native adapters. Updated experimental Help, catalogue, and parity records. The M18 roadmap section records checks and remaining Windows gates.
+Reused the table, image and resource-link presentation with native adapters. Updated experimental Help, catalogue, and parity records. 64 focused frontend and 23 Rust cases, scoped lint, optimized build, and Help governance pass. The M18 roadmap section records native linked/managed safety, the measured three-view workload, and the outstanding picker and physical interaction gates.
 
 ### 2026-11-19 — M17 internal drag follow-up
 

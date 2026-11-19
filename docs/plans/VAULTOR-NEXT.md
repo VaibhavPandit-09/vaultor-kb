@@ -327,7 +327,7 @@ Workbook refresh completed from9350canonical records with53failed/invalidated ru
 
 ## M17 critical desktop correction follow-up
 
-Continue the existing branch; do not begin M18. Caption dragging/alignment, shared menu semantics, default/effective pane placement and high-value pointer drop destinations were corrected in the existing React presentation. Rust commands, draft/revision barriers, external ownership and session authority remain intact. The [M17 follow-up](VAULTOR-NEXT-M17.md#m17-critical-desktop-correction-follow-up) owns the focused capability matrix, exact executable and actual checks/gaps; the UI audit records causes UI-78–82. This is not release qualification. No benchmark observations were added.
+At the M17 correction checkpoint, the scope was limited to the existing branch and reported defects. Caption dragging/alignment, shared menu semantics, default/effective pane placement and high-value pointer drop destinations were corrected in the existing React presentation. Rust commands, draft/revision barriers, external ownership and session authority remain intact. The [M17 follow-up](VAULTOR-NEXT-M17.md#m17-critical-desktop-correction-follow-up) owns the focused capability matrix, exact executable and actual checks/gaps; the UI audit records causes UI-78–82. This is not release qualification. No benchmark observations were added.
 
 
 ## M18 advanced managed editor
@@ -342,4 +342,34 @@ Continues from 100c026e on the Next branch. M17 physical mouse acceptance is ope
 | Editor and resources | Heading controls, reviewed single-file link upload, managed editor-body caret drop in existing pointer transport. | Broader block selection/paste parity and physical multi-pane drop acceptance. |
 | Linked Markdown | Existing schema and explicit Save/conflict checks. Advanced insertion and managed links excluded. | Broader linked conversion deferred. |
 
-Focused engineering checks at implementation checkpoint: 30 frontend cases across 8 files, including schema/linked views, table operations, resource links and Markdown/CSV conversion. Six Rust media and five transfer tests pass, including protected image references. Final executable, benchmark and native evidence follow in this section.
+Focused engineering checks at implementation checkpoint: 30 frontend cases across 8 files, including schema/linked views, table operations, resource links and Markdown/CSV conversion. Six Rust media and five transfer tests pass, including protected image references. Final candidate and observed results follow.
+
+
+The optimized executable is `next/src-tauri/target/release/vaultor-next-m18.exe` (13,818,368 bytes, SHA-256 `406322658ec2e94d55dbe0c71a02d0b79d8379b9e5964d20dc79699123890319`). Application source 7de52bc includes the DOM-free worker resolver. Later changes are benchmark tooling, evidence, and tests. The first recorded attempts caught a Library readiness race in the driver and a production worker import that expected a browser document. A subsequent runner attempted to restore a fixture receipt while navigating and was replaced with the ordinary Split active note action. Sample records from failed runs are retained and excluded.
+
+The final optimized WebView2 driver opened five types of fixture, pasted TSV, filtered the 181×12 table to 90 body rows and cleared without changing JSON, dispatched a CSV table from the bundled worker, used shared Undo/Redo with three views and verified autosave after process restart. [Final benchmark summary](../../benchmarks/tauri-rust/summaries/tauri-rust-2026-11-19T17-36-40.622Z.json). The linked and managed protection recipe passed on the same binary, including durable draft recovery and an external revision conflict that left the external file and protected draft intact. Raw receipt `tauri-rust-2026-11-19T17-40-03.511Z.json`.
+
+| Measurement | Observation | Boundary |
+| --- | --- | --- |
+| Open usable | 79–233 ms | One open each across prose, table, code, image placements and mixed fixtures. Includes driver polling. |
+| Typing | 3.5–6.0 ms median | Five CDP beforeinput-to-animation-frame samples per fixture. |
+| Filter and TSV paste | 4.2 / 6.8 ms | One view-state filter dispatch and one synthetic two-cell paste. |
+| CSV conversion and insertion | 45.4 / 39.8 ms | Worker startup plus conversion and message delivery, then table dispatch. 181×12 cells. |
+| Shared Undo / Redo | 2.5 / 3.0 ms | One dispatch of each with three mounted mixed-note views. |
+| Autosave readback | 996 ms | One event including configured delay and IPC polling. |
+| Peak process-tree working set | 1,233 MiB | Sampled peak across the run. Shared pages may be counted more than once. The image fixture used 18 placements of a small reused original. |
+
+No matched reference run was collected. These are workload observations and do not establish a performance improvement or idle-memory result. Filter/TSV, file conversion, and focus assertions inside WebView2 do not establish physical or OS clipboard acceptance.
+
+The Windows CSV Open dialog appeared and the fixture path was entered through accessibility. The native tool could not activate Open because coordinate geometry was unavailable. It did not complete the dialog with the keyboard attempt. The resulting full CSV/Markdown review path and native Save dialog remain open for human qualification, along with image picker/clipboard, resize gestures, fullscreen controls, resource upload and cross-pane drag. The M17 physical mouse checklist remains open. No unrelated native caption, pane policy or Explorer redesign was performed.
+
+Validation includes 64 distinct focused frontend cases and 23 Rust cases across media, transfer, managed recovery and linked safety, scoped lint, TypeScript via the optimized build, Help sources and 17 Help governance checks. Experimental Help and catalogue describe managed-note eligibility, review limits, CSV formula protection, reference reuse and existing linked protections. Remaining original capabilities stay in the parity ledger.
+
+For the pending Windows review, use a fresh workspace and retain the exact fixture files.
+
+- Start at a paragraph in a managed note. Cancel the CSV picker, then cancel the insertion review. The command and surrounding text should remain each time. Approve a UTF-8 CSV with a quoted delimiter, a multiline value and a short row. Verify the header and padded cells, filter two columns, edit a visible row, clear filters, and confirm the other rows remain. Save full and visible CSV to two new files. Compare their row counts and confirm quotation and formula protection. Reopen the note and confirm the filters are cleared and the edited row persists.
+- Insert a Markdown fixture with headings, a task list, a code block and a GFM table. Confirm the source file stays byte-identical. Try an unsupported relative image and confirm the note does not change.
+- Pick PNG, JPEG, animated GIF and WebP files. Paste another image and reuse one of the existing images in a second note. Resize and align the selected placement, replace it, and check that the other note keeps its original placement. Undo and redo across split views, then restart. Verify fit, actual size, zoom, saved usage, copied PNG and exported original bytes.
+- In a narrow pane, move between a table cell, text selection and image. Open each contextual control, inspect clipping and tab order, and dismiss with Escape. Use the fullscreen table and return to the note. From [[, choose Upload File, approve a disposable file, and verify the link appears only after import. Drop a managed shortcut on the caret in another managed pane, then repeat with Escape and over a linked pane. Check the cancelled or refused gestures make no edit. Continue to use the existing M17 physical checklist for the organizational targets.
+
+Suggested M19 scope: finish the editor acceptance gaps and profile the approximately 1.2 GiB dense three-view workload before extending previews or linked Markdown.

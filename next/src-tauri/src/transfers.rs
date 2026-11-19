@@ -1534,6 +1534,17 @@ mod tests {
             .unwrap();
     }
     #[test]
+    fn csv_export_preserves_existing_destination_and_emits_utf8() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("table-visible.csv");
+        let csv = "\u{feff}Name,Value\r\n雪,\"value, with comma\"\r\n";
+        save_csv_copy(&path, csv).unwrap();
+        assert!(save_csv_copy(&path, "replacement").is_err());
+        assert_eq!(fs::read(&path).unwrap(), csv.as_bytes());
+        assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+    }
+
+    #[test]
     fn managed_import_duplicates_hierarchy_and_archive_roundtrip() {
         let h = Harness::new();
         let source = h.temp.path().join("source");

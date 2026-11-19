@@ -25,15 +25,33 @@ const equal = (a,b) => a instanceof Date && b instanceof Date ? Math.abs(a.getTi
 let unchanged = 0;
 while(unchanged < Math.min(existing.length,normalized.length) && normalized[unchanged].every((v,i)=>equal(existing[unchanged]?.[i],v))) unchanged++;
 console.log(`Compared ${existing.length} bounded existing rows; ${unchanged} match the canonical prefix.`);
-if(unchanged < Math.max(existing.length,normalized.length))raw.getRange(`A${unchanged+5}:R${Math.max(1004,rows.length+4,existing.length+4)}`).clear({ applyTo: 'contents' });
-raw.getRange('A4:R4').values = [headers];
+const appendM18=process.argv.includes('--append-m18');
+if(appendM18&&(existing.slice(unchanged).some(row=>row[0])||rows.slice(unchanged).some(row=>row[2]!=='m18-editor-v1'))){
+  throw Error('M18 append requires an unchanged workbook prefix and only M18 rows in the delta');
+}
+if(!appendM18){
+  if(unchanged < Math.max(existing.length,normalized.length))raw.getRange(`A${unchanged+5}:R${Math.max(1004,rows.length+4,existing.length+4)}`).clear({ applyTo: 'contents' });
+  raw.getRange('A4:R4').values = [headers];
+}
 if(rows.length > unchanged) raw.getRange(`A${unchanged+5}:R${rows.length+4}`).values = normalized.slice(unchanged);
 if(rows.length > unchanged) raw.getRange(`M${unchanged+5}:M${rows.length+4}`).setNumberFormat('0.0');
 if(rows.length>unchanged) raw.getRange(`B${unchanged+5}:B${rows.length+4}`).setNumberFormat('yyyy-mm-dd hh:mm:ss.000');
 console.log(`Raw Runs retained ${unchanged} identical rows; updated ${Math.max(0,rows.length-unchanged)} rows.`);
-raw.getRange('A2').values = [['Generated from benchmark_runs.csv; corrections/failures retained and marked N. Do not edit measurements here.']];
+if(!appendM18)raw.getRange('A2').values = [['Generated from benchmark_runs.csv; corrections/failures retained and marked N. Do not edit measurements here.']];
+if(appendM18){
+  // This workload has no matched comparison. Preserve historical formulas,
+  // comparison controls and sheets while adding its canonical observations.
+  if(rows.length>unchanged){
+    const additions=raw.getRange(`A${unchanged+5}:R${rows.length+4}`).values;
+    if(!normalized.slice(unchanged).every((row,i)=>row.every((value,col)=>equal(additions[i]?.[col],value))))throw Error('M18 append did not round-trip the canonical data');
+  }
+  await (await SpreadsheetFile.exportXlsx(wb)).save(path);
+  console.log(`Saved workbook with ${rows.length} records, including ${rows.length-unchanged} new M18 observations.`);
+  process.exit(0);
+}
 const dashboard = wb.worksheets.getItem('Dashboard');
-const latest = normalized.findLast(r => r[14] === 'Y' && r[9]);
+// M18 is a standalone editor workload without a matched reference. Keep the existing comparison default.
+const latest = normalized.findLast(r => r[14] === 'Y' && r[9] && r[2] !== 'm18-editor-v1');
 const m17Dashboard=latest?.[2]==='m17-workspace-stability-v1';
 const roleDashboard=m17Dashboard||latest?.[2]==='m16-workspace-ui-v1';
 const referenceSource=m17Dashboard?'b6027cbbbfde9c389589307e4625f3db359181f7':'dd2dff41779fcbfb70a6d5c90654646ccc480b0a';
