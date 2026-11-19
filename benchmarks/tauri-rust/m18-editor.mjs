@@ -92,8 +92,8 @@ export async function qualifyEditor({evaluate,cdp,wait,report,folder,record,rest
   assert(workerAsset,'Build the Next UI with its editor import worker');
   const csvSource=table.content.map(row=>row.content.map(cell=>'"'+cell.content[0].content[0].text.replaceAll('"','""')+'"').join(',')).join('\r\n');
   const csvTiming=await evaluate(`(async()=>{
-    const start=performance.now(),worker=new Worker(${JSON.stringify('/assets/'+workerAsset)},{type:'module'});
-    const {content,error}=await new Promise((resolve,reject)=>{worker.onmessage=event=>resolve(event.data);worker.onerror=reject;worker.postMessage({format:'table',source:${JSON.stringify(csvSource)}});});
+    const workerAssetForLog="editorImport.worker";const start=performance.now(),worker=new Worker(${JSON.stringify('/assets/'+workerAsset)},{type:'module'});
+    const {content,error}=await new Promise((resolve,reject)=>{worker.onmessage=event=>resolve(event.data);worker.onerror=event=>reject(new Error(JSON.stringify({message:event.message,filename:event.filename,location:location.href,asset:workerAssetForLog})));worker.postMessage({format:'table',source:${JSON.stringify(csvSource)}});});
     worker.terminate();if(error)throw Error(error);
     const converted=performance.now(),editor=document.querySelector('.tiptap').editor;
     editor.commands.insertContentAt(editor.state.doc.content.size,content,{errorOnInvalidContent:true});
