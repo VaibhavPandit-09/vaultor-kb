@@ -11,7 +11,11 @@
     "safetyChecks": [
       "Optimized native managed autosave;durable draft acknowledged before forced termination;restart Recovery review/restore commits content;competing managed revision refuses overwrite and parks draft.",
       "Optimized native linked source bytes unchanged before explicit Save;publication succeeds for supported plain-text edit;external competing revision refuses overwrite and retains protected text/draft."
-    ]
+    ],
+    "linkDrop": {
+      "evidence": "tauri-rust-2026-11-19T17-49-08.353Z.json",
+      "check": "M18 CDP mouse gesture from an Open Notes title activated the insertion caret in the second pane, linked the resource across three views, and saved the link."
+    }
   },
   "nativePicker": {
     "input": "Windows computer-use accessibility and injected keys",

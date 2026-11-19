@@ -125,6 +125,30 @@ export async function qualifyEditor({evaluate,cdp,wait,report,folder,record,rest
   const save=performance.now();
   await wait(`benchRequest({kind:'read',id:${JSON.stringify(current.id)}}).then(note=>JSON.stringify(note.content).includes("M18 persisted"))`,'autosave readback');
   record('m18-mixed',1,'autosave_readback',performance.now()-save,'ms','Includes autosave delay and IPC read polling.');
+  if(process.argv.includes('--m18-link-drop')){
+    await click('#next-category-sessions');
+    const dragged=notes[1];
+    const points=await evaluate(`(()=>{
+      const source=document.querySelector('[data-open-session="${dragged.id}"] .session-title').getBoundingClientRect();
+      const editor=document.querySelectorAll('.tiptap')[1];
+      const pane=editor.closest('.journey-viewport').getBoundingClientRect();
+      const bounds=editor.getBoundingClientRect();
+      const to={x:bounds.left+Math.min(80,bounds.width/2),y:Math.max(pane.top,bounds.top)+24};
+      if(document.elementFromPoint(to.x,to.y)?.closest('.tiptap')!==editor)throw Error('Target editor is occluded');
+      return {from:{x:source.left+source.width/2,y:source.top+source.height/2},to};
+    })()`);
+    const mouse=async(type,point,buttons)=>cdp('Input.dispatchMouseEvent',{type,button:'left',buttons,...point,...(type==='mouseMoved'?{}:{clickCount:1})});
+    await mouse('mousePressed',points.from,1);
+    for(let i=1;i<=12;i++){
+      await mouse('mouseMoved',{x:points.from.x+(points.to.x-points.from.x)*i/12,y:points.from.y+(points.to.y-points.from.y)*i/12},1);
+    }
+    await wait('!!document.querySelector(".resource-drop-caret") && document.querySelector(".pointer-drag-preview")?.textContent.includes("Insert resource links here")','editor drop caret and preview');
+    await mouse('mouseReleased',points.to,0);
+    const linkCheck=`[...document.querySelectorAll(".tiptap")].every(e=>JSON.stringify(e.editor.getJSON()).includes(${JSON.stringify(dragged.id)}))`;
+    await wait(linkCheck,'linked resource shared through three views');
+    await wait(`benchRequest({kind:'read',id:${JSON.stringify(current.id)}}).then(note=>JSON.stringify(note.content).includes(${JSON.stringify(dragged.id)}))`,'persisted drop link');
+    report.checks.push('M18 CDP mouse gesture from an Open Notes title activated the insertion caret in the second pane, linked the resource across three views, and saved the link.');
+  }
   await restart();
   assert(JSON.stringify((await api({kind:'read',id:current.id})).content).includes('M18 persisted'));
   report.checks.push('Optimized WebView2 opened prose, 181×12 table, code, repeated image placements and mixed fixtures; received typed input, filtered and cleared without content mutation, pasted TSV, undid/redid edits across three views and read back persisted content after process restart.');

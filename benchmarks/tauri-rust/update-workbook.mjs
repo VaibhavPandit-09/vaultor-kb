@@ -2,6 +2,7 @@ import {createHash} from 'node:crypto';
 import fs from 'node:fs/promises';
 import { join, basename, resolve } from 'node:path';
 import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
 import { FileBlob, SpreadsheetFile, Workbook } from '@oai/artifact-tool';
 const root = process.argv[2], path = join(root, 'vaultor_tauri_rust_benchmark_tracker.xlsx');
 const csvText = (await fs.readFile(join(root, 'benchmark_runs.csv'), 'utf8')).replace(/\r\n/g,'\n');
@@ -15,6 +16,16 @@ const values = parsed.data.filter(r => r[0]);
 const [headers, ...rows] = values;
 const failures = new Set(rows.filter(r => ['run_failure','run_invalidated'].includes(r[11])).map(r => r[16]));
 const normalized = rows.map(row => row.map((value, index) => index === 1 ? new Date(value) : index === 12 && value !== '' && value !== null ? Number(value) : index === 10 ? Number(value) : index === 14 ? (['true','Y'].includes(String(value)) && !failures.has(row[16]) ? 'Y' : 'N') : value));
+if(process.argv.includes('--append-m18')){
+  const first=rows.findIndex(row=>row[2]==='m18-editor-v1');
+  if(first<0||rows.slice(first).some(row=>row[2]!=='m18-editor-v1'))throw Error('M18 observations must form the canonical tail');
+  const delta=Workbook.create(),sheet=delta.worksheets.add('M18 Raw Runs');
+  sheet.getRange(`A1:R${rows.length-first}`).values=normalized.slice(first);
+  const chunkPath=join(import.meta.dirname,'m18-rows.xlsx');
+  await (await SpreadsheetFile.exportXlsx(delta)).save(chunkPath);
+  execFileSync(process.argv[4],[join(root,'append-m18-workbook.py'),path,chunkPath,join(root,'benchmark_runs.csv'),String(first)],{stdio:'inherit'});
+  process.exit(0);
+}
 const wb = await SpreadsheetFile.importXlsx(await FileBlob.load(path));
 console.log(`Imported existing workbook; ${rows.length} canonical records parsed without a duplicate workbook.`);
 const raw = wb.worksheets.getItem('Raw Runs');
@@ -25,30 +36,13 @@ const equal = (a,b) => a instanceof Date && b instanceof Date ? Math.abs(a.getTi
 let unchanged = 0;
 while(unchanged < Math.min(existing.length,normalized.length) && normalized[unchanged].every((v,i)=>equal(existing[unchanged]?.[i],v))) unchanged++;
 console.log(`Compared ${existing.length} bounded existing rows; ${unchanged} match the canonical prefix.`);
-const appendM18=process.argv.includes('--append-m18');
-if(appendM18&&(existing.slice(unchanged).some(row=>row[0])||rows.slice(unchanged).some(row=>row[2]!=='m18-editor-v1'))){
-  throw Error('M18 append requires an unchanged workbook prefix and only M18 rows in the delta');
-}
-if(!appendM18){
-  if(unchanged < Math.max(existing.length,normalized.length))raw.getRange(`A${unchanged+5}:R${Math.max(1004,rows.length+4,existing.length+4)}`).clear({ applyTo: 'contents' });
-  raw.getRange('A4:R4').values = [headers];
-}
+if(unchanged < Math.max(existing.length,normalized.length))raw.getRange(`A${unchanged+5}:R${Math.max(1004,rows.length+4,existing.length+4)}`).clear({ applyTo: 'contents' });
+raw.getRange('A4:R4').values = [headers];
 if(rows.length > unchanged) raw.getRange(`A${unchanged+5}:R${rows.length+4}`).values = normalized.slice(unchanged);
 if(rows.length > unchanged) raw.getRange(`M${unchanged+5}:M${rows.length+4}`).setNumberFormat('0.0');
 if(rows.length>unchanged) raw.getRange(`B${unchanged+5}:B${rows.length+4}`).setNumberFormat('yyyy-mm-dd hh:mm:ss.000');
 console.log(`Raw Runs retained ${unchanged} identical rows; updated ${Math.max(0,rows.length-unchanged)} rows.`);
-if(!appendM18)raw.getRange('A2').values = [['Generated from benchmark_runs.csv; corrections/failures retained and marked N. Do not edit measurements here.']];
-if(appendM18){
-  // This workload has no matched comparison. Preserve historical formulas,
-  // comparison controls and sheets while adding its canonical observations.
-  if(rows.length>unchanged){
-    const additions=raw.getRange(`A${unchanged+5}:R${rows.length+4}`).values;
-    if(!normalized.slice(unchanged).every((row,i)=>row.every((value,col)=>equal(additions[i]?.[col],value))))throw Error('M18 append did not round-trip the canonical data');
-  }
-  await (await SpreadsheetFile.exportXlsx(wb)).save(path);
-  console.log(`Saved workbook with ${rows.length} records, including ${rows.length-unchanged} new M18 observations.`);
-  process.exit(0);
-}
+raw.getRange('A2').values = [['Generated from benchmark_runs.csv; corrections/failures retained and marked N. Do not edit measurements here.']];
 const dashboard = wb.worksheets.getItem('Dashboard');
 // M18 is a standalone editor workload without a matched reference. Keep the existing comparison default.
 const latest = normalized.findLast(r => r[14] === 'Y' && r[9] && r[2] !== 'm18-editor-v1');

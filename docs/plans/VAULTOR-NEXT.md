@@ -347,7 +347,7 @@ Focused engineering checks at implementation checkpoint: 30 frontend cases acros
 
 The optimized executable is `next/src-tauri/target/release/vaultor-next-m18.exe` (13,818,368 bytes, SHA-256 `406322658ec2e94d55dbe0c71a02d0b79d8379b9e5964d20dc79699123890319`). Application source 7de52bc includes the DOM-free worker resolver. Later changes are benchmark tooling, evidence, and tests. The first recorded attempts caught a Library readiness race in the driver and a production worker import that expected a browser document. A subsequent runner attempted to restore a fixture receipt while navigating and was replaced with the ordinary Split active note action. Sample records from failed runs are retained and excluded.
 
-The final optimized WebView2 driver opened five types of fixture, pasted TSV, filtered the 181×12 table to 90 body rows and cleared without changing JSON, dispatched a CSV table from the bundled worker, used shared Undo/Redo with three views and verified autosave after process restart. [Final benchmark summary](../../benchmarks/tauri-rust/summaries/tauri-rust-2026-11-19T17-36-40.622Z.json). The linked and managed protection recipe passed on the same binary, including durable draft recovery and an external revision conflict that left the external file and protected draft intact. Raw receipt `tauri-rust-2026-11-19T17-40-03.511Z.json`.
+The final optimized WebView2 driver opened five types of fixture, pasted TSV, filtered the 181×12 table to 90 body rows and cleared without changing JSON, dispatched a CSV table from the bundled worker, used shared Undo/Redo with three views and verified autosave after process restart. [Final benchmark summary](../../benchmarks/tauri-rust/summaries/tauri-rust-2026-11-19T17-36-40.622Z.json). The linked and managed protection recipe passed on the same binary, including durable draft recovery and an external revision conflict that left the external file and protected draft intact. A separate CDP mouse run dragged a managed Open Notes title into the second managed pane, confirmed the insertion caret, and read back the saved resource link shared across three views. [Windows checks](../../benchmarks/tauri-rust/summaries/m18-native-windows.json).
 
 | Measurement | Observation | Boundary |
 | --- | --- | --- |
@@ -358,6 +358,8 @@ The final optimized WebView2 driver opened five types of fixture, pasted TSV, fi
 | Shared Undo / Redo | 2.5 / 3.0 ms | One dispatch of each with three mounted mixed-note views. |
 | Autosave readback | 996 ms | One event including configured delay and IPC polling. |
 | Peak process-tree working set | 1,233 MiB | Sampled peak across the run. Shared pages may be counted more than once. The image fixture used 18 placements of a small reused original. |
+
+The generated workbook appends 113 canonical rows, including 38 valid samples and three invalidated runs. All 10,582 historical rows, 19 sheets, 475 formulas and comparison controls were preserved. The saved package passed a cell-by-cell check of all 2,034 new fields and a formula error scan. Native Excel recalculation was not exercised. [Workbook verification](../../benchmarks/tauri-rust/summaries/m18-workbook-validation.json).
 
 No matched reference run was collected. These are workload observations and do not establish a performance improvement or idle-memory result. Filter/TSV, file conversion, and focus assertions inside WebView2 do not establish physical or OS clipboard acceptance.
 
