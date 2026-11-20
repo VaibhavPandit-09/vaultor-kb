@@ -24,6 +24,8 @@ pub mod worker;
 mod organization;
 
 pub mod media;
+pub mod native_exports;
+pub mod reviews;
 
 mod file_category;
 

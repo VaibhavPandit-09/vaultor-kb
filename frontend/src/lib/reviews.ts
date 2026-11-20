@@ -6,6 +6,7 @@ export type ReviewItem = {
   locator:{kind:'block'|'page'|'resource';path?:string;page?:number}|null;
   author:string;createdAt:string;updatedAt:string;status:ReviewStatus;revision:string;
   availability:'available'|'missing'|'trashed'|'deleting';attachment:'resource'|'attached'|'changed'|'unverified'|'unavailable';
+  currentTitle?:string|null;baseRevision?:number;currentRevision?:number|null;imported?:boolean;
 };
 export type ReviewPage = {items:ReviewItem[];page:number;size:number;totalItems:number;totalPages:number;counts:Record<ReviewStatus,number>;generation:string};
 export type ReviewCreation = {id:string;epoch:number;body:{generation:string;resourceId:string;comment:string;baseRevision?:string}};

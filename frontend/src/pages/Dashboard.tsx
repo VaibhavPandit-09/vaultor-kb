@@ -1436,7 +1436,7 @@ export default function Dashboard() {
                     </div>
                     <div className="ml-auto flex shrink-0 items-center gap-2">
                     {note.resource?.type!=='linked'&&<button type="button" disabled={Boolean(note.resource?.trashedAt)} title="Export note" aria-label={`Export ${note.title}`} className="rounded-lg p-2 text-slate-400 hover:bg-background hover:text-primary" onClick={() => setNoteExport({ id: note.id, title: note.title })}><DownloadCloud size={16} /></button>}
-                    {note.resource?.type!=='linked'&&<ReviewButton resource={note} onOpen={setReviewTarget}/>}<PinButton id={note.id} name={note.title} favorite={note.resource?.favorite}/>{note.resource&&!note.resource.trashedAt&&<ResourceActions resource={note.resource}/>}
+                    {note.resource?.type!=='linked'&&<ReviewButton resource={note} onOpen={()=>setReviewTarget(note)}/>}<PinButton id={note.id} name={note.title} favorite={note.resource?.favorite}/>{note.resource&&!note.resource.trashedAt&&<ResourceActions resource={note.resource}/>}
                     {note.resource?.type!=='linked'&&<SaveIndicator status={saves.status(note.id)} onRetry={() => void saves.flush(note.id).catch(() => {})} />}
                     </div>
                     </div>

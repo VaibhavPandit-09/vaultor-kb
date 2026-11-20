@@ -16,6 +16,8 @@ const m19=process.argv.includes('--m19-preview');
 const m20=process.argv.includes('--m20-linked');
 const m21=process.argv.includes('--m21-discovery');
 const m22=process.argv.includes('--m22-transfers');
+const m23=process.argv.includes('--m23-native');
+const recordM23=m23&&!process.argv.includes('--m23-probe');
 const recordM22=m22&&!process.argv.includes('--m22-probe');
 const recordM21=m21&&!process.argv.includes('--m21-probe');
 const recordM20=m20&&!process.argv.includes('--m20-probe')&&!process.argv.includes('--m20-drag-probe');
@@ -98,7 +100,7 @@ async function launch(iteration) {
   const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(VAULTOR_|HOST_|ELECTRON_RUN_AS_NODE|WEBVIEW2_)/.test(k)));
   const executable = executablePath;
   const args = architecture === 'electron-java' ? [join(root, 'desktop'), `--remote-debugging-address=127.0.0.1`, `--remote-debugging-port=${port}`] : [];
-  Object.assign(env, architecture === 'electron-java' ? { VAULTOR_DESKTOP_TEST_DIRECTORY: profile, HOST_NETWORK_PORT: '0', NODE_ENV: 'production' } : { VAULTOR_NEXT_WORKSPACE: join(folder, 'workspace'), ...(m6||m18||m19||m20||m21||m22?{WEBVIEW2_USER_DATA_FOLDER:profile}:{}), WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1` });
+  Object.assign(env, architecture === 'electron-java' ? { VAULTOR_DESKTOP_TEST_DIRECTORY: profile, HOST_NETWORK_PORT: '0', NODE_ENV: 'production' } : { VAULTOR_NEXT_WORKSPACE: join(folder, 'workspace'), ...(m6||m18||m19||m20||m21||m22||m23?{WEBVIEW2_USER_DATA_FOLDER:profile}:{}), WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1` });
   const start = performance.now();
   child = spawn(executable, args, { cwd: root, env, windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
   child.stderr.on('data', data => { report.runtimeLog = ((report.runtimeLog ?? '') + data).slice(-4000); });
@@ -169,9 +171,46 @@ async function quit() {
   socket?.close();
 }
 try {
+  let m23Fixture;
+  if(m23){
+    assert.equal(architecture,'tauri-rust');
+    assert(inspect,'Use --inspect for the M23 native workload');
+    const fixturePath=process.env.VAULTOR_BENCH_REVIEW_FIXTURE;
+    assert(fixturePath,'Set VAULTOR_BENCH_REVIEW_FIXTURE to the optimized offline fixture executable');
+    report.fixtureExecutableSha256=createHash('sha256').update(await readFile(fixturePath)).digest('hex');
+    m23Fixture=JSON.parse(execFileSync(fixturePath,[join(folder,'workspace')],{encoding:'utf8',windowsHide:true}));
+  }
   let run = await launch(1);
   if (inspect) {
-    if(m22){
+    if(m23){
+      await (await import('./m23-native.mjs')).qualifyM23({evaluate,wait,record,report,folder,fixture:m23Fixture});
+      const idleStart=Date.now();
+      await delay(16_000);
+      await stopSampler(run,1);
+      run=null;
+      const idle=report.process1.filter(point=>Date.parse(point.timestamp)>=idleStart+1_000);
+      if(idle.length>=2){
+        const first=idle[0],last=idle.at(-1),seconds=(Date.parse(last.timestamp)-Date.parse(first.timestamp))/1000;
+        report.idleTraySamples=idle.length;
+        if(seconds>0)record('m23-tray-idle',1,'cpu_one_core_percent',100*(last.cpuSeconds-first.cpuSeconds)/seconds,'%','Short idle observation with tray installed; no CDP commands during the 16-second sample.');
+        record('m23-tray-idle',1,'working_set',last.workingSet/1048576,'MiB','Process tree; shared pages may be counted more than once.');
+        record('m23-tray-idle',1,'private_bytes',last.privateBytes/1048576,'MiB','Process tree at the last idle snapshot.');
+      }
+      const visibleHandle=()=>Number(execFileSync('powershell.exe',['-NoProfile','-Command',`(Get-Process -Id ${child.pid}).MainWindowHandle`],{encoding:'utf8',windowsHide:true}).trim());
+      assert(visibleHandle()>0,'Expected a visible Windows main window before Close');
+      await evaluate("void window.__TAURI_INTERNALS__.invoke('plugin:window|close',{label:'main'});true");
+      await delay(500);
+      assert.equal(child.exitCode,null,'Close keeps the application running');
+      assert.equal(visibleHandle(),0,'Close hides the native window');
+      await evaluate("window.__TAURI_INTERNALS__.invoke('plugin:window|show',{label:'main'})");
+      await evaluate("document.querySelector('[aria-label=\"Application menu\"]').click()");
+      await wait("[...document.querySelectorAll('[role=menuitem]')].some(button=>button.textContent==='Quit Vaultor Next')",'explicit Quit menu command');
+      await evaluate("[...document.querySelectorAll('[role=menuitem]')].find(button=>button.textContent==='Quit Vaultor Next').click()");
+      for(let retry=0;retry<100&&child.exitCode===null;retry++)await delay(50);
+      assert.equal(child.exitCode,0,'Explicit Quit releases the native workspace');
+      report.checks.push('Native window Close hides, re-show retains the application, and Quit exits cleanly');
+    }
+    else if(m22){
       assert.equal(architecture,'tauri-rust');
       const transfers=await import('./m22-transfers.mjs');
       const sustained=process.argv.includes('--m22-sustained');
@@ -362,7 +401,7 @@ try {
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
-  for (const s of report.samples) if(!inspect||recordM22&&s.scenario.startsWith('m22-')||recordM21&&s.scenario.startsWith('m21-')||recordM20&&s.scenario.startsWith('m20-')||recordM19&&s.scenario.startsWith('m19-')||recordM18&&(s.scenario.startsWith('m18-')||s.metric==='sampled_peak_working_set')||(m10&&s.scenario==='command-palette-m10')||(m14&&measureUI&&s.scenario.startsWith(uiMilestone+'-'))) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m22?'m22-transfers-v1':m21?'m21-discovery-v1':m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
-  if (!report.success && (!inspect||recordM22||recordM21||recordM20||recordM19||recordM18||m14&&measureUI)) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m22?'m22-transfers-v1':m21?'m21-discovery-v1':m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
+  for (const s of report.samples) if(!inspect||recordM23&&s.scenario.startsWith('m23-')||recordM22&&s.scenario.startsWith('m22-')||recordM21&&s.scenario.startsWith('m21-')||recordM20&&s.scenario.startsWith('m20-')||recordM19&&s.scenario.startsWith('m19-')||recordM18&&(s.scenario.startsWith('m18-')||s.metric==='sampled_peak_working_set')||(m10&&s.scenario==='command-palette-m10')||(m14&&measureUI&&s.scenario.startsWith(uiMilestone+'-'))) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m23?'m23-native-v1':m22?'m22-transfers-v1':m21?'m21-discovery-v1':m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
+  if (!report.success && (!inspect||recordM23||recordM22||recordM21||recordM20||recordM19||recordM18||m14&&measureUI)) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m23?'m23-native-v1':m22?'m22-transfers-v1':m21?'m21-discovery-v1':m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
   console.log(JSON.stringify({ success: report.success, evidence, metrics: report.samples.length, error: report.error }));
 }

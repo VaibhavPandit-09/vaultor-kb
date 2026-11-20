@@ -25,6 +25,11 @@ pub enum Request {
     Preferences { value: Option<Value> },
     Media {
         request: Value,
+        workspace: Option<String>,
+    },
+    Reviews {
+        path: String,
+        request: crate::reviews::Request,
     },
     Organization {
         request: crate::organization::Request,
@@ -187,6 +192,7 @@ impl Workspace {
         crate::organization::initialize(&db)?;
         crate::media::initialize(&db)?;
         crate::references::initialize(&db)?;
+        crate::reviews::initialize(&db)?;
         Ok(Self {
             db,
             root,
@@ -198,7 +204,16 @@ impl Workspace {
             Request::Open { .. } | Request::New { .. } => Err("Open belongs to workspace lifecycle".into()),
             Request::Linked { request } => self.linked(request),
             Request::Organization {request} => self.organization(request),
-            Request::Media {request} => self.media(request),
+            Request::Media {request,workspace} => {
+                if workspace.is_some_and(|path| !self.is_path(Path::new(&path))) {
+                    return Err("Workspace changed; resource operation refused".into());
+                }
+                self.media(request)
+            },
+            Request::Reviews {path,request} => {
+                if !self.is_path(Path::new(&path)) { return Err("Workspace changed; Review request refused".into()); }
+                self.reviews(request)
+            },
             Request::Snapshot => {
                 let mut stmt = self.db.prepare("SELECT c.id,c.name,c.parent_id,COUNT(CASE WHEN COALESCE(s.trashed,0)=0 AND v.id IS NOT NULL THEN m.resource_id END),COALESCE((SELECT pinned FROM collection_state WHERE collection_id=c.id),0) FROM collections c LEFT JOIN memberships m ON m.collection_id=c.id LEFT JOIN resource_state s ON s.resource_id=m.resource_id LEFT JOIN visible_resources v ON v.id=m.resource_id GROUP BY c.id ORDER BY c.normalized,c.id").map_err(error)?;
                 let collections = stmt.query_map([], |r| Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"parentId":r.get::<_,Option<String>>(2)?,"count":r.get::<_,i64>(3)?,"pinned":r.get::<_,bool>(4)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;

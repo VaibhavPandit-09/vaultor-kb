@@ -2,6 +2,7 @@
 mod conversion;
 mod exports;
 mod portable;
+mod duplication;
 use crate::{
     activity::{Activity, Context},
     domain::{error, Workspace},
@@ -67,6 +68,8 @@ pub struct Manifest {
     pub linked: Vec<portable::Descriptor>,
     #[serde(default)]
     pub organization: crate::organization::Archive,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) reviews: Vec<crate::reviews::Portable>,
 }
 #[derive(Clone)]
 struct Input {
@@ -88,6 +91,9 @@ pub struct Plan {
     created: Instant,
 }
 pub enum Job {
+    Duplicate {
+        ids: Vec<String>,
+    },
     ArchiveSelection {
         ids: Vec<String>,
         collection: Option<String>,
@@ -131,6 +137,7 @@ pub enum Job {
 impl Job {
     pub fn kind(&self) -> &str {
         match self {
+            Self::Duplicate { .. } => "resource-duplicate",
             Self::RebuildFileText => "managed-text-index",
             #[cfg(windows)]
             Self::IndexLinked { .. } => "linked-index",
@@ -145,6 +152,7 @@ impl Job {
     }
     pub fn description(&self) -> String {
         match self {
+            Self::Duplicate { ids } => format!("Duplicate {} resources", ids.len()),
             Self::RebuildFileText => "Rebuild managed file search".into(),
             #[cfg(windows)]
             Self::IndexLinked { .. } => "Index linked Markdown".into(),
@@ -162,6 +170,10 @@ impl Job {
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Request {
+    Duplicate {
+        ids: Vec<String>,
+        workspace: String,
+    },
     ArchiveSelection {
         ids: Vec<String>,
         collection: Option<String>,
@@ -263,6 +275,12 @@ impl Transfers {
     }
     pub fn execute(&self, root: String, request: Request) -> Result<Value, String> {
         match request {
+            Request::Duplicate { ids, workspace } => {
+                if workspace != root || ids.is_empty() || ids.len() > 100 {
+                    return Err("Choose 1–100 managed resources in the current workspace".into());
+                }
+                self.activity.submit(root, Job::Duplicate { ids })
+            }
             Request::RebuildFileText => self.activity.submit(root, Job::RebuildFileText),
             Request::IndexLinked { source } => {
                 #[cfg(windows)]
@@ -377,7 +395,7 @@ impl Transfers {
             Request::InspectArchive { source } => {
                 let (m, hash) = inspect_archive(Path::new(&source), None)?;
                 Ok(
-                    json!({"manifestHash":hash,"resources":m.resources.len(),"collections":m.collections.len(),"files":m.originals.len(),"bytes":m.originals.iter().map(|f|f.bytes).sum::<u64>(),"version":m.version,"partial":m.partial,"linkedDescriptors":m.linked.len()}),
+                    json!({"manifestHash":hash,"resources":m.resources.len(),"collections":m.collections.len(),"files":m.originals.len(),"bytes":m.originals.iter().map(|f|f.bytes).sum::<u64>(),"version":m.version,"partial":m.partial,"linkedDescriptors":m.linked.len(),"reviews":m.reviews.len()}),
                 )
             }
             Request::Restore {
@@ -448,7 +466,7 @@ fn reparse(m: &fs::Metadata) -> bool {
         m.file_type().is_symlink()
     }
 }
-fn copy_hash(
+pub(crate) fn copy_hash(
     mut input: impl Read,
     mut output: impl Write,
     limit: u64,
@@ -472,7 +490,7 @@ fn copy_hash(
     }
     Ok((count, format!("{:x}", hash.finalize())))
 }
-fn component(name: &str) -> Result<(), String> {
+pub(crate) fn component(name: &str) -> Result<(), String> {
     if name.is_empty()
         || name.len() > 255
         || name == "."
@@ -715,6 +733,7 @@ pub fn execute(
     ctx: &mut Context,
 ) -> Result<Value, String> {
     match job {
+        Job::Duplicate { ids } => duplication::duplicate(storage, root, ids, ctx),
         Job::RebuildFileText => crate::file_text::rebuild(storage, root, ctx),
         #[cfg(windows)]
         Job::IndexLinked { source } => crate::linked::inventory::index(storage, ctx, root, source),
@@ -1056,6 +1075,7 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
         originals: vec![],
         settings: json!({}),
         organization: Default::default(),
+        reviews: vec![],
     };
     let mut size = 0;
     let mut q =
@@ -1110,19 +1130,13 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
         .collect::<Result<Vec<_>, _>>()
         .map_err(error)?;
     let selected: HashSet<_> = m.resources.iter().map(|r| r.id.as_str()).collect();
-    m.organization = crate::organization::Archive::capture(
-        &w.db,
-        &m.resources.iter().map(|r| r.id.clone()).collect(),
-    )?;
-    if ids.is_some() {
-        m.organization.collection_pins.clear();
-    }
     m.originals = originals
         .into_iter()
         .filter(|o| selected.contains(o.id.as_str()))
         .collect();
     if ids.is_none() {
         m.linked = portable::capture_descriptors(&w.db)?;
+        if !m.linked.is_empty() { m.version=4; }
         let mut q =
             w.db.prepare("SELECT id,name,parent_id FROM collections ORDER BY id")
                 .map_err(error)?;
@@ -1143,8 +1157,8 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
             .map_err(error)?
             .collect::<Result<Vec<_>, _>>()
             .map_err(error)?;
-        m.memberships
-            .retain(|(id, _)| selected.contains(id.as_str()));
+        let descriptors = m.linked.iter().map(|entry|entry.id.as_str()).collect::<HashSet<_>>();
+        m.memberships.retain(|(id, _)| selected.contains(id.as_str())||descriptors.contains(id.as_str()));
         let mut settings =
             w.db.prepare("SELECT key,value FROM settings WHERE key IN ('theme','behavior')")
                 .map_err(error)?;
@@ -1160,6 +1174,13 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
                 .collect::<Result<_, _>>()?,
         );
     }
+    m.organization = crate::organization::Archive::capture(
+        &w.db,
+        &m.resources.iter().map(|r| r.id.clone()).chain(m.linked.iter().map(|d|d.id.clone())).collect(),
+    )?;
+    if ids.is_some() {
+        m.organization.collection_pins.clear();
+    }
     Ok(m)
 }
 fn archive(
@@ -1170,11 +1191,16 @@ fn archive(
     ctx: &mut Context,
 ) -> Result<Value, String> {
     let data = storage.call(root, move |w| {
-        let manifest = if let Some((ids, collection)) = selection {
+        let mut manifest = if let Some((ids, collection)) = selection {
             portable::selection(w, ids, collection)?
         } else {
             snapshot(w, None)?
         };
+        let selected = manifest.partial.then(|| manifest.resources.iter().map(|r| r.id.as_str()).collect());
+        manifest.reviews = crate::reviews::snapshot(&w.db, selected.as_ref())?;
+        if !manifest.reviews.is_empty() || !manifest.linked.is_empty() {
+            manifest.version = 4;
+        }
         serde_json::to_value(manifest).map_err(error)
     })?;
     let m: Manifest = serde_json::from_value(data).map_err(error)?;
@@ -1266,7 +1292,8 @@ fn read_manifest(input: &mut File) -> Result<(Manifest, String), String> {
 }
 fn validate(m: &Manifest) -> Result<(), String> {
     if m.format != "vaultor-next-portable"
-        || ![1, 2, 3].contains(&m.version)
+        || ![1, 2, 3, 4].contains(&m.version)
+        || (m.version < 4 && !m.reviews.is_empty())
         || (m.version < 3 && (m.partial || !m.linked.is_empty()))
         || (m.partial
             && m.settings
@@ -1315,12 +1342,17 @@ fn validate(m: &Manifest) -> Result<(), String> {
         }
     }
     let mut members = HashSet::new();
+    let mut organized = ids.clone();
+    if m.version>=4 { organized.extend(m.linked.iter().map(|entry|entry.id.clone())); }
     for (r, c) in &m.memberships {
-        if !ids.contains(r) || !collections.contains_key(c) || !members.insert((r, c)) {
+        if !organized.contains(r) || !collections.contains_key(c) || !members.insert((r, c)) {
             return Err("Invalid membership".into());
         }
     }
-    m.organization.validate(&ids)?;
+    m.organization.validate(&organized)?;
+    if m.organization.states.iter().any(|(id,trash,_,_)| *trash && id.starts_with("linked:")) {
+        return Err("A portable linked reference cannot be in Trash".into());
+    }
     let mut pinned_collections = HashSet::new();
     if m.organization.collection_pins.len() > 20000
         || m.organization
@@ -1348,6 +1380,8 @@ fn validate(m: &Manifest) -> Result<(), String> {
             return Err("Archive exceeds 10 GiB".into());
         }
     }
+    let files = m.originals.iter().filter(|file| file.kind == "file").map(|file| file.id.as_str()).collect();
+    crate::reviews::validate_archive(&m.reviews, &ids, &files, m.partial)?;
     if !m.settings.is_object()
         || m.settings
             .as_object()
@@ -1470,6 +1504,7 @@ fn restore(
         )
         .map_err(error)?;
     }
+    portable::store_descriptors(&tx, &m.linked)?;
     for (r, c) in &m.memberships {
         tx.execute("INSERT INTO memberships VALUES(?1,?2)", params![r, c])
             .map_err(error)?;
@@ -1478,7 +1513,7 @@ fn restore(
         insert_original(&tx, o)?;
     }
     m.organization.restore(&tx)?;
-    portable::store_descriptors(&tx, &m.linked)?;
+    crate::reviews::restore(&tx, &m.reviews, None)?;
     for (k, v) in m.settings.as_object().unwrap() {
         tx.execute(
             "INSERT INTO settings VALUES(?1,?2)",
@@ -1507,7 +1542,7 @@ fn restore(
     ctx.committing();
     publish_directory(&staged.0, &destination)?;
     Ok(
-        json!({"path":destination,"resources":m.resources.len(),"files":m.originals.len(),"bytes":bytes}),
+        json!({"path":destination,"resources":m.resources.len(),"files":m.originals.len(),"reviews":m.reviews.len(),"bytes":bytes}),
     )
 }
 fn publish_directory(source: &Path, destination: &Path) -> Result<(), String> {
@@ -1599,11 +1634,15 @@ fn export(
     }
     let zip = format == "markdownZip";
     let manifest = storage.call(root, move |w| {
-        let manifest = if zip {
+        let mut manifest = if zip {
             portable::selection(w, ids, None)?
         } else {
             snapshot(w, Some(&ids))?
         };
+        if zip {
+            let selected = manifest.resources.iter().map(|r|r.id.as_str()).collect();
+            manifest.reviews=crate::reviews::snapshot(&w.db,Some(&selected))?;
+        }
         serde_json::to_value(manifest).map_err(error)
     })?;
     let m: Manifest = serde_json::from_value(manifest).map_err(error)?;
@@ -2189,6 +2228,7 @@ mod tests {
             originals: vec![],
             settings: json!({}),
             organization: Default::default(),
+            reviews: vec![],
         };
         let id = Uuid::new_v4().to_string();
         m.resources.push(Resource {

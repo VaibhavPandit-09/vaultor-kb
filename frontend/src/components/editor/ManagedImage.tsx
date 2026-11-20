@@ -18,6 +18,10 @@ function ImagePlacement({ node, selected, updateAttributes, deleteNode, editor, 
   const escapeId = useId();
   const root = useRef<HTMLDivElement>(null), [url, setUrl] = useState<string>(), [error, setError] = useState(''), [attempt, setAttempt] = useState(0), [more, setMore] = useState(false), [width, setWidth] = useState<number>(), [details, setDetails] = useState(false);
   const attrs = node.attrs as { resourceId: string; alt: string; caption: string; width: number; alignment: string };
+  const [decoded, setDecoded] = useState<{resourceId: string; ratio: number}>();
+  const aspectRatio = service.unloadOffscreen && decoded?.resourceId === attrs.resourceId
+    ? `${decoded.ratio} / 1`
+    : undefined;
   useEscapeLayer({ id: 'image-tools-' + escapeId, active: more || details, priority: ESCAPE_PRIORITIES.popover, close: () => { setMore(false); setDetails(false); } });
   useEffect(() => {
     let controller: AbortController | undefined, active = true, release: (() => void) | undefined;
@@ -52,8 +56,13 @@ function ImagePlacement({ node, selected, updateAttributes, deleteNode, editor, 
     handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', end, { once: true }); handle.addEventListener('pointercancel', cancel, { once: true });
   };
   return <NodeViewWrapper className="managed-image" data-selected={selected} data-alignment={attrs.alignment} contentEditable={false}>
-    <div ref={root} className="managed-image-frame" style={{ width: `${width ?? attrs.width}%` }} tabIndex={0} aria-label={attrs.alt || 'Image in note'}>
-      {url ? <img src={url} alt={attrs.alt} draggable={false} onError={() => setError('Image could not be displayed. Retry or replace it.')} /> : <div className="managed-image-loading"><ImageIcon size={24} />{error ? 'Image unavailable' : 'Loading image…'}</div>}
+    <div ref={root} className="managed-image-frame" style={{ width: `${width ?? attrs.width}%`, aspectRatio }} tabIndex={0} aria-label={attrs.alt || 'Image in note'}>
+      {url ? <img src={url} alt={attrs.alt} draggable={false} onLoad={event => {
+        const {naturalWidth, naturalHeight} = event.currentTarget;
+        if (service.unloadOffscreen && naturalWidth > 0 && naturalHeight > 0) {
+          setDecoded({resourceId: attrs.resourceId, ratio: naturalWidth / naturalHeight});
+        }
+      }} onError={() => setError('Image could not be displayed. Retry or replace it.')} /> : <div className="managed-image-loading" data-sized={Boolean(aspectRatio)}><ImageIcon size={24} />{error ? 'Image unavailable' : 'Loading image…'}</div>}
       <button className="image-resize-handle" onPointerDown={resize} aria-label="Drag to resize image" />
     </div>
     <div className="image-toolbar" role="toolbar" aria-label="Image tools">

@@ -18,7 +18,8 @@ type Request =
   | {kind:'preferences';value?:Record<string,unknown>}
   | {kind:'session';path:string;value:unknown}
   | {kind:'behavior';path:string;value:Record<string,unknown>}
-  | {kind:'media';request:Record<string,unknown>}
+  | {kind:'media';request:Record<string,unknown>;workspace?:string}
+  | {kind:'reviews';path:string;request:Record<string,unknown>}
   | { kind:'organization'; request:Record<string,unknown> }
   | { kind: 'linked'; request: LinkedRequest }
   | { kind: 'open'|'new'; path: string }

@@ -56,8 +56,12 @@ pub(super) fn markdown_zip(
             None,
         );
     }
+    if !manifest.reviews.is_empty() {
+        zip.start_file("reviews.json",SimpleFileOptions::default()).map_err(error)?;
+        serde_json::to_writer(&mut zip,&manifest.reviews).map_err(error)?;
+    }
     zip.finish().map_err(error)?.sync_all().map_err(error)?;
-    Ok(json!({"bytes":fs::metadata(path).map_err(error)?.len(),"issues":issues}))
+    Ok(json!({"bytes":fs::metadata(path).map_err(error)?.len(),"issues":issues,"reviews":manifest.reviews.len()}))
 }
 
 pub(super) fn graph(w: &Workspace, ids: &[String]) -> Result<Value, String> {
@@ -350,14 +354,16 @@ fn xml(value: &str) -> String {
 
 fn word_run(text: &str, style: &str) -> String {
     let lines = text
-        .lines()
-        .map(|line| format!("<w:t xml:space=\"preserve\">{}</w:t>", xml(line)))
+        .split('\n')
+        .map(|line| line.trim_end_matches('\r').split('\t')
+            .map(|text|format!("<w:t xml:space=\"preserve\">{}</w:t>", xml(text)))
+            .collect::<Vec<_>>().join("<w:tab/>"))
         .collect::<Vec<_>>()
         .join("<w:br/>");
     format!("<w:r><w:rPr>{style}</w:rPr>{lines}</w:r>")
 }
 
-fn word_node(node: &Value, issues: &mut Vec<String>) -> Result<String, String> {
+fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>) -> Result<String, String> {
     let kind = node["type"].as_str().ok_or("Invalid editor node")?;
     let attrs = &node["attrs"];
     let children = node["content"].as_array().map(Vec::as_slice).unwrap_or(&[]);
@@ -376,17 +382,20 @@ fn word_node(node: &Value, issues: &mut Vec<String>) -> Result<String, String> {
                 });
             }
         }
-        let mut text = node["text"].as_str().unwrap_or("").to_string();
-        if let Some(href) = node["marks"]
+        let run = word_run(node["text"].as_str().unwrap_or(""), &style);
+        let link = node["marks"]
             .as_array()
             .and_then(|marks| marks.iter().find(|mark| mark["type"] == "link"))
             .and_then(|m| m["attrs"]["href"].as_str())
+            .and_then(|value|url::Url::parse(value).ok())
+            .filter(|url|matches!(url.scheme(),"http"|"https")&&url.username().is_empty()
+                &&url.password().is_none()&&url.host_str().is_some());
+        if let Some(href)=link
         {
-            if href.starts_with("https://") || href.starts_with("http://") {
-                text.push_str(&format!(" ({href})"));
-            }
+            links.push(href.into());
+            return Ok(format!("<w:hyperlink r:id=\"link{}\">{run}</w:hyperlink>",links.len()));
         }
-        return Ok(word_run(&text, &style));
+        return Ok(run);
     }
     if matches!(kind, "resourceLink" | "image") {
         let image = kind == "image";
@@ -404,11 +413,11 @@ fn word_node(node: &Value, issues: &mut Vec<String>) -> Result<String, String> {
             run
         });
     }
-    let inner = children
+    let inner = if matches!(kind,"blockquote"|"codeBlock"|"orderedList"|"bulletList"|"taskList") {String::new()} else {children
         .iter()
-        .map(|child| word_node(child, issues))
+        .map(|child| word_node(child, issues, links))
         .collect::<Result<Vec<_>, _>>()?
-        .concat();
+        .concat()};
     Ok(match kind {
         "doc" | "listItem" | "taskItem" => inner,
         "paragraph" => format!("<w:p>{inner}</w:p>"),
@@ -454,7 +463,7 @@ fn word_node(node: &Value, issues: &mut Vec<String>) -> Result<String, String> {
                     }
                     _ => "• ".into(),
                 };
-                let item = word_node(child, issues)?;
+                let item = word_node(child, issues, links)?;
                 if let Some(body) = item.strip_prefix("<w:p>") {
                     list.push_str("<w:p>");
                     list.push_str(&word_run(&prefix, ""));
@@ -468,9 +477,15 @@ fn word_node(node: &Value, issues: &mut Vec<String>) -> Result<String, String> {
         "table" => {
             format!("<w:tbl><w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/></w:tblPr>{inner}</w:tbl>")
         }
-        "tableRow" => format!("<w:tr>{inner}</w:tr>"),
+        "tableRow" => {
+            let header=if !children.is_empty()&&children.iter().all(|cell|cell["type"]=="tableHeader") {
+                "<w:trPr><w:tblHeader/></w:trPr>"
+            } else {""};
+            format!("<w:tr>{header}{inner}</w:tr>")
+        },
         "tableCell" | "tableHeader" => format!(
-            "<w:tc>{}</w:tc>",
+            "<w:tc><w:tcPr><w:gridSpan w:val=\"{}\"/></w:tcPr>{}</w:tc>",
+            attrs["colspan"].as_u64().unwrap_or(1).clamp(1,1000),
             if inner.is_empty() {
                 "<w:p/>".into()
             } else {
@@ -482,10 +497,11 @@ fn word_node(node: &Value, issues: &mut Vec<String>) -> Result<String, String> {
 }
 
 pub(super) fn docx(file: File, content: &Value, issues: &mut Vec<String>) -> Result<(), String> {
-    let body = word_node(content, issues)?;
+    let mut links=Vec::new();
+    let body = word_node(content, issues,&mut links)?;
     let document = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>{body}
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>{body}
 <w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body></w:document>"#
     );
     let mut output = ZipWriter::new(file);
@@ -498,6 +514,16 @@ pub(super) fn docx(file: File, content: &Value, issues: &mut Vec<String>) -> Res
             .start_file(path, SimpleFileOptions::default())
             .map_err(error)?;
         output.write_all(value.as_bytes()).map_err(error)?;
+    }
+    if !links.is_empty() {
+        output.start_file("word/_rels/document.xml.rels",SimpleFileOptions::default()).map_err(error)?;
+        let mut relations=String::from(r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#);
+        for (index,href) in links.iter().enumerate() {
+            let target=xml(href).replace('"',"&quot;");
+            relations.push_str(&format!(r#"<Relationship Id="link{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="{target}" TargetMode="External"/>"#,index+1));
+        }
+        relations.push_str("</Relationships>");
+        output.write_all(relations.as_bytes()).map_err(error)?;
     }
     output.finish().map_err(error)?.sync_all().map_err(error)
 }
@@ -529,7 +555,14 @@ pub(super) fn pdf(
         if line.is_empty() {
             lines.push(line);
         }
-        lines.extend(line.chunks(80));
+        let mut remaining=line;
+        while remaining.len()>80 {
+            let end = remaining[..80].iter().rposition(|&byte|byte==b' ').filter(|&index|index>=40).map_or(80,|index|index+1);
+            let (wrapped,rest)=remaining.split_at(end);
+            lines.push(wrapped);
+            remaining=rest;
+        }
+        if !remaining.is_empty() {lines.push(remaining);}
     }
     let mut pdf = Pdf::new();
     let pages = Ref::new(2);

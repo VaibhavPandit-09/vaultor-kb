@@ -143,20 +143,28 @@ impl Workspace {
                 if !["copy", "cut", "links"].contains(&mode) {
                     return Err("Invalid clipboard mode".into());
                 }
-                if mode == "cut" && r["collection"].as_str().is_none() {
-                    return Err("Cut requires a source collection".into());
+                if mode == "cut" {
+                    let source = r["collection"].as_str().ok_or("Cut requires a source collection")?;
+                    for id in &ids {
+                        if !self.db.query_row("SELECT EXISTS(SELECT 1 FROM memberships WHERE resource_id=?1 AND collection_id=?2)",
+                            params![id,source], |row|row.get::<_,bool>(0)).map_err(error)? {
+                            return Err("Cut requires all selected memberships in the source collection".into());
+                        }
+                    }
                 }
                 let receipt = Uuid::new_v4().to_string();
-                let payload = json!({"ids":ids,"resources":resources,"mode":mode,"collection":r["collection"]});
-                self.db
-                    .execute("DELETE FROM resource_clipboard", [])
+                let payload = json!({"ids":ids,"mode":mode,"collection":r["collection"]});
+                let tx = self.db.transaction().map_err(error)?;
+                tx.execute("DELETE FROM resource_clipboard WHERE rowid NOT IN (
+                    SELECT rowid FROM resource_clipboard WHERE created>strftime('%s','now')-86400 ORDER BY rowid DESC LIMIT 7)", [])
                     .map_err(error)?;
-                self.db
+                tx
                     .execute(
                         "INSERT INTO resource_clipboard VALUES(?1,?2,strftime('%s','now'))",
                         params![receipt, payload.to_string()],
                     )
                     .map_err(error)?;
+                tx.commit().map_err(error)?;
                 Ok(
                     json!({"receipt":receipt,"resources":resources,"text":resources.iter().map(|r|format!("vaultor://resource/{}",r["id"].as_str().unwrap())).collect::<Vec<_>>().join("\n")}),
                 )
@@ -164,8 +172,10 @@ impl Workspace {
             "clipboard" | "paste" => {
                 let receipt = r["receipt"].as_str().unwrap_or("");
                 let payload:String=self.db.query_row("SELECT payload FROM resource_clipboard WHERE id=?1 AND created>strftime('%s','now')-86400",[receipt],|r|r.get(0)).map_err(|_|"Clipboard belongs to another workspace,was replaced or expired".to_string())?;
-                let data: Value = serde_json::from_str(&payload).map_err(error)?;
+                let mut data: Value = serde_json::from_str(&payload).map_err(error)?;
+                let ids: Vec<String> = serde_json::from_value(data["ids"].clone()).map_err(error)?;
                 if r["op"] == "clipboard" {
+                    data["resources"] = json!(self.resource_summaries(&ids)?);
                     return Ok(data);
                 }
                 let dest = r["collection"]
@@ -179,14 +189,7 @@ impl Workspace {
                 if source.as_deref() == Some(dest) {
                     return Err("Choose another collection for Cut".into());
                 }
-                let ids = serde_json::from_value(data["ids"].clone()).map_err(error)?;
-                let result = self.bulk_membership(ids, Some(dest.into()), source)?;
-                if data["mode"] == "cut" {
-                    self.db
-                        .execute("DELETE FROM resource_clipboard WHERE id=?1", [receipt])
-                        .map_err(error)?;
-                }
-                Ok(result)
+                self.change_memberships(ids, Some(dest.into()), source, (data["mode"]=="cut").then_some(receipt))
             }
             _ => Err("Unknown resource operation".into()),
         }
@@ -306,6 +309,7 @@ pub mod clipboard {
         fn EmptyClipboard() -> i32;
         fn SetClipboardData(format: u32, data: *mut core::ffi::c_void) -> *mut core::ffi::c_void;
         fn GetClipboardData(format: u32) -> *mut core::ffi::c_void;
+        fn RegisterClipboardFormatW(name: *const u16) -> u32;
     }
     #[link(name = "kernel32")]
     extern "system" {
@@ -333,32 +337,101 @@ pub mod clipboard {
         }
         Err("Clipboard busy;retry".into())
     }
+    struct Memory(*mut core::ffi::c_void);
+    impl Memory {
+        unsafe fn new(content: &[u8]) -> Result<Self, String> {
+            let data = Self(GlobalAlloc(2,content.len()));
+            if data.0.is_null() { return Err("Clipboard allocation failed".into()); }
+            let pointer = GlobalLock(data.0);
+            if pointer.is_null() { return Err("Clipboard allocation unavailable".into()); }
+            core::ptr::copy_nonoverlapping(content.as_ptr(),pointer.cast(),content.len());
+            GlobalUnlock(data.0);
+            Ok(data)
+        }
+        unsafe fn publish(mut self, format: u32) -> Result<(), String> {
+            if SetClipboardData(format,self.0).is_null() {
+                return Err("Clipboard write failed".into());
+            }
+            self.0 = std::ptr::null_mut();
+            Ok(())
+        }
+    }
+    impl Drop for Memory {
+        fn drop(&mut self) {
+            if !self.0.is_null() { unsafe { GlobalFree(self.0); } }
+        }
+    }
+
+    fn html_format() -> Result<u32, String> {
+        let name: Vec<u16> = "HTML Format".encode_utf16().chain(Some(0)).collect();
+        let format = unsafe { RegisterClipboardFormatW(name.as_ptr()) };
+        if format == 0 { Err("Windows HTML clipboard is unavailable".into()) } else { Ok(format) }
+    }
+
     pub fn write(value: &str, window: isize) -> Result<(), String> {
+        write_formats(value,window,None)
+    }
+
+    fn write_formats(value: &str, window: isize, html: Option<Vec<u8>>) -> Result<(), String> {
+        if value.len() > 1024 * 1024 {
+            return Err("Clipboard text too large".into());
+        }
         unsafe {
+            let utf: Vec<u16> = value.encode_utf16().chain(Some(0)).collect();
+            let text = Memory::new(core::slice::from_raw_parts(utf.as_ptr().cast(),utf.len()*2))?;
+            let html = html.map(|bytes| Ok::<_,String>((Memory::new(&bytes)?,html_format()?))).transpose()?;
             let _guard = ACCESS
                 .lock()
                 .map_err(|_| "Clipboard unavailable".to_string())?;
             let _owner = acquire(window)?;
-            if value.len() > 1024 * 1024 {
-                return Err("Clipboard text too large".into());
-            }
-            let utf: Vec<u16> = value.encode_utf16().chain(Some(0)).collect();
-            let data = GlobalAlloc(2, utf.len() * 2);
-            if data.is_null() {
-                return Err("Clipboard allocation failed".into());
-            }
-            let ptr = GlobalLock(data);
-            if ptr.is_null() {
-                GlobalFree(data);
-                return Err("Clipboard allocation unavailable".into());
-            }
-            core::ptr::copy_nonoverlapping(utf.as_ptr(), ptr.cast(), utf.len());
-            GlobalUnlock(data);
-            if EmptyClipboard() == 0 || SetClipboardData(13, data).is_null() {
-                GlobalFree(data);
+            if EmptyClipboard() == 0 {
                 return Err("Clipboard write failed".into());
             }
+            text.publish(13)?;
+            if let Some((data,format)) = html { data.publish(format)?; }
             Ok(())
+        }
+    }
+
+    const MARKER: &str = "data-vaultor-clipboard=\"";
+    pub fn write_resources(value: &str, receipt: &str, window: isize) -> Result<(), String> {
+        if !valid_receipt(receipt) || value.is_empty() || value.len() > 8_192 || !value.lines().all(|line|
+            line.strip_prefix("vaultor://resource/").is_some_and(|id|valid_receipt(id.strip_prefix("linked:").unwrap_or(id)))
+        ) {
+            return Err("Invalid resource clipboard receipt or links".into());
+        }
+        let before = "<html><body><!--StartFragment-->";
+        let after = "<!--EndFragment--></body></html>";
+        let fragment = format!("<div {MARKER}{receipt}\">{}</div>",value.replace('\n',"<br>"));
+        let header = |start, end, first, last| format!("Version:1.0\r\nStartHTML:{start:010}\r\nEndHTML:{end:010}\r\nStartFragment:{first:010}\r\nEndFragment:{last:010}\r\n");
+        let start = header(0,0,0,0).len();
+        let first = start + before.len();
+        let last = first + fragment.len();
+        let header = header(start,last+after.len(),first,last);
+        let html = format!("{header}{before}{fragment}{after}\0");
+        write_formats(value,window,Some(html.into_bytes()))
+    }
+
+    fn valid_receipt(receipt: &str) -> bool {
+        uuid::Uuid::parse_str(receipt).is_ok_and(|id|id.to_string()==receipt)
+    }
+
+    pub fn read_resource() -> Result<String, String> {
+        let format = html_format()?;
+        let _guard = ACCESS.lock().map_err(|_| "Clipboard unavailable".to_string())?;
+        let _owner = acquire(0)?;
+        unsafe {
+            let handle = GetClipboardData(format);
+            if handle.is_null() || GlobalSize(handle) > 16_384 { return Ok(String::new()); }
+            let pointer = GlobalLock(handle);
+            if pointer.is_null() { return Err("Clipboard unavailable".into()); }
+            let bytes = core::slice::from_raw_parts(pointer.cast::<u8>(),GlobalSize(handle));
+            let receipt = std::str::from_utf8(bytes.split(|&b|b==0).next().unwrap_or_default()).ok()
+                .and_then(|html|html.split_once(MARKER))
+                .and_then(|(_,after)|after.split_once('"'))
+                .map(|(id,_)|id).filter(|id|valid_receipt(id)).unwrap_or("").to_owned();
+            GlobalUnlock(handle);
+            Ok(receipt)
         }
     }
     pub fn read() -> Result<String, String> {
@@ -424,6 +497,8 @@ pub fn prepare_copy(source: &Path, name: &str, expected_hash: &str) -> Result<Pa
         let Ok(file) = crate::transfers::plain_file(&receipt) else {
             continue;
         };
+        let expired = file.metadata().and_then(|m| m.modified()).ok()
+            .and_then(|stamp|stamp.elapsed().ok()).is_some_and(|age|age.as_secs()>86_400);
         let mut raw = vec![];
         if file.take(4097).read_to_end(&mut raw).is_err() {
             continue;
@@ -448,6 +523,11 @@ pub fn prepare_copy(source: &Path, name: &str, expected_hash: &str) -> Result<Pa
             continue;
         };
         let size = file.metadata().map_err(error)?.len();
+        if !expired {
+            owned = owned.saturating_add(size);
+            retained += 1;
+            continue;
+        }
         let mut hash = Sha256::new();
         let mut buffer = [0u8; 65536];
         loop {

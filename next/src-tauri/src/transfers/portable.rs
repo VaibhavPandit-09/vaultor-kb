@@ -3,7 +3,7 @@ use super::*;
 #[derive(Default, Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Descriptor {
-    id: String,
+    pub(super) id: String,
     title: String,
     label: String,
     path: String,
@@ -83,6 +83,10 @@ pub(super) fn store_descriptors(
             ],
         )
         .map_err(error)?;
+        db.execute(
+            "INSERT INTO resources(id,title,content) VALUES(?1,?2,'{}')",
+            params![entry.id,entry.title],
+        ).map_err(error)?;
     }
     Ok(())
 }
@@ -370,6 +374,7 @@ pub(super) fn merge(
             tx.execute("INSERT INTO resources(id,title,content,revision,updated_at) VALUES(?1,?2,?3,?4,?5)",
                 params![resource.id,resource.title,resource.content.to_string(),resource.revision,resource.updated]).map_err(error)?;
         }
+        store_descriptors(&tx,&manifest.linked)?;
         for (resource,collection) in &manifest.memberships {
             tx.execute("INSERT INTO memberships VALUES(?1,?2)",params![resource,collection]).map_err(error)?;
         }
@@ -394,8 +399,8 @@ pub(super) fn merge(
             *tag=tags[tag].clone();
         }
         manifest.organization.restore(&tx)?;
-        store_descriptors(&tx,&manifest.linked)?;
-        let receipt=json!({"resources":manifest.resources.len(),"collections":manifest.collections.len(),"files":manifest.originals.len(),"linkedDescriptors":manifest.linked.len(),"bytes":bytes,"reused":false});
+        crate::reviews::restore(&tx, &manifest.reviews, Some(&mut ids))?;
+        let receipt=json!({"resources":manifest.resources.len(),"collections":manifest.collections.len(),"files":manifest.originals.len(),"linkedDescriptors":manifest.linked.len(),"reviews":manifest.reviews.len(),"bytes":bytes,"reused":false});
         tx.execute("INSERT INTO transfer_merges VALUES(?1,?2)",params![hash,receipt.to_string()]).map_err(error)?;
         tx.commit().map_err(error)?;
         Ok(receipt)
@@ -446,10 +451,7 @@ pub(super) fn selection(
             return Err("Collection inventory exceeds the archive limit".into());
         }
         let mut query =
-            w.db.prepare(
-                "SELECT resource_id,collection_id FROM memberships
-            WHERE resource_id NOT LIKE 'linked:%' ORDER BY 1,2 LIMIT 200001",
-            )
+            w.db.prepare("SELECT resource_id,collection_id FROM memberships ORDER BY 1,2 LIMIT 200001")
             .map_err(error)?;
         for row in query
             .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
@@ -466,9 +468,10 @@ pub(super) fn selection(
         return Err("Membership inventory exceeds the archive limit".into());
     }
     let scoped = !scope.is_empty();
+    let mut linked = selected.iter().filter(|id|id.starts_with("linked:")).cloned().collect::<HashSet<_>>();
+    selected.retain(|id| !id.starts_with("linked:"));
     let mut waiting = selected.iter().cloned().collect::<Vec<_>>();
     let mut processed = HashSet::new();
-    let mut linked = HashSet::new();
     {
         let mut content=w.db.prepare("SELECT r.content, EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file'), EXISTS(SELECT 1 FROM drafts WHERE resource_id=r.id) FROM resources r WHERE id=?1 AND id NOT LIKE 'linked:%'").map_err(error)?;
         while let Some(id) = waiting.pop() {
@@ -515,10 +518,21 @@ pub(super) fn selection(
         .into_iter()
         .filter(|d| linked.contains(&d.id))
         .collect();
+    let included = manifest.linked.iter().map(|entry|entry.id.clone()).collect::<HashSet<_>>();
+    if requested.iter().any(|id|id.starts_with("linked:")&&!included.contains(id)) {
+        return Err("Selected linked resource has no portable descriptor".into());
+    }
+    if !included.is_empty() {
+        manifest.version=4;
+        let targets = ids.iter().chain(&included).cloned().collect::<HashSet<_>>();
+        manifest.organization = crate::organization::Archive::capture(&w.db,&targets)?;
+        manifest.organization.collection_pins.clear();
+    }
     manifest.memberships = memberships
         .into_iter()
         .filter(|(id, parent)| {
-            (scoped && scope.contains(parent)) || (!scoped && requested.contains(id))
+            (!id.starts_with("linked:")||included.contains(id))
+                && ((scoped && scope.contains(parent)) || (!scoped && requested.contains(id)))
         })
         .collect();
     if !scoped {

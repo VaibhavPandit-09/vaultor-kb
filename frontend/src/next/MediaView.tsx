@@ -44,6 +44,7 @@ function FileContent({id,workspace}:{id:string;workspace?:string}){
     <div className="next-file-actions">
       <button className="library-button" disabled={!info} onClick={()=>run('open')}>Open external copy</button>
       <button className="library-button" disabled={!info} onClick={()=>run('reveal')}>Reveal prepared copy</button>
+      <button className="library-button" disabled={!info} onClick={()=>run('copyPath')}>Copy prepared file path</button>
       <button className="library-button" disabled={!info} onClick={()=>showTransfer({op:'export',ids:[id]})}>Export original…</button>
       {url&&<button className="library-button" onClick={()=>void copyImage(id,loadManagedImage).catch(error=>setError(String(error)))}>Copy image</button>}
     </div>

@@ -35,3 +35,11 @@ Scoped note export packages (Markdown+assets and linked-resource ZIPs) include r
 ## Validation
 
 Actual focused/native/package results and remaining platform limits are recorded in [v0.12](../desktop/releases/v0.12.0.md), [v0.14](../desktop/releases/v0.14.0.md) and [R10 qualification](../development/qualification/R10.md). Use disposable workspaces only; no phone access or personal workspace mutation.
+
+## Vaultor Next
+
+The Rust SQLite owner adds workspace-generation and Review tables to existing Next workspaces. The service checks the submission UUID, target grant, generation, managed resource, locator and captured saved revision. The caller supplies an authorized principal and display label derived from its own trust boundary. That caller must establish workspace and resource access independently of renderer input. The service binds exact retries to the principal fingerprint, resource and evidence, and scopes receipt reads to the same grant. The local Tauri commands expose owner list/status only. A future M24 host can call the same submission and receipt services after TLS, pairing, grant and revocation checks.
+
+The managed-note attachment is verified only for a unique matching quote at the captured revision. File feedback supports resource and PDF page evidence. Reviews for linked files and automatic proposed edits were outside the original triage contract. A status write requires the current workspace generation and Review revision, with safe immediate retry of the completed transition. The transaction updates only the Review. Open editor views, saved content, protected drafts and external Markdown are independent of triage. Renamed, changed, trashed and removed targets retain their evidence.
+
+Next portable v4 is independent of Electron ZIP versions. It keeps the captured numeric saved revision and attribution label as evidence, issues fresh local status validators and marks restored placement unverified. It omits author principal fingerprints, submission receipts and workspace generation. Restore preserves IDs inside the new workspace. Merge remaps IDs, including targets missing from the archive, inside the transfer receipt transaction. Markdown with assets exports evidence only for packaged resources. Import has no authority to submit as an archived author.

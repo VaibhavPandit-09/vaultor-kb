@@ -16,6 +16,8 @@ use uuid::Uuid;
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Request {
     Sources,
+    Archived { workspace: String, after: Option<String> },
+    RebindDescriptor { workspace: String, id: String, path: String },
     Web {
         url: String,
     },
@@ -121,6 +123,100 @@ pub fn initialize(db: &rusqlite::Connection) -> Result<(), String> {
 }
 #[cfg(windows)]
 impl Workspace {
+    fn authorize_linked_root(&mut self, path:String, descriptor:Option<(String,String,String)>) -> Result<Value,String> {
+        let pins = native::pin(Path::new(&path))?;
+        let physical = native::physical(pins.last().unwrap())?;
+        let identity = native::identity(pins.last().unwrap())?;
+        let workspace_pins = native::pin(&self.root)?;
+        let workspace_path = native::physical(workspace_pins.last().unwrap())?;
+        let overlaps = |a: &Path, b: &Path| {
+            let a = a.to_string_lossy().to_lowercase();
+            let b = b.to_string_lossy().to_lowercase();
+            Path::new(&a).starts_with(&b) || Path::new(&b).starts_with(&a)
+        };
+        if overlaps(&workspace_path, &physical) {
+            return Err(
+                "Linked folders must be separate from Vaultor workspace storage".into(),
+            );
+        }
+        let mut q = self
+            .db
+            .prepare("SELECT id,path,identity,active FROM linked_sources")
+            .map_err(error)?;
+        let rows = q
+            .query_map([], |r| {
+                Ok((
+                    r.get::<_, String>(0)?,
+                    r.get::<_, String>(1)?,
+                    r.get::<_, String>(2)?,
+                    r.get::<_, bool>(3)?,
+                ))
+            })
+            .map_err(error)?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(error)?;
+        drop(q);
+        let mut chosen = None;
+        let mut count = 0;
+        for (id, old, old_id, active) in rows {
+            if active {
+                count += 1;
+            }
+            if old_id == identity {
+                chosen = Some((id, active));
+                continue;
+            }
+            if active && overlaps(&physical, Path::new(&old)) {
+                return Err(
+                    "Overlapping linked folders are already covered by an existing source"
+                        .into(),
+                );
+            }
+        }
+        if !chosen.as_ref().is_some_and(|(_, active)| *active) && count >= 8 {
+            return Err("Up to eight linked folders are supported".into());
+        }
+        let id = chosen.map(|(id, _)| id).unwrap_or_else(|| Uuid::new_v4().to_string());
+        let observed = if let Some((_, relative, expected)) = &descriptor {
+            let file = native::read(&physical, &identity, relative, false)?;
+            if file.revision != *expected || inventory::path_key(&physical, &file)? != relative.to_lowercase() {
+                return Err("The selected source has a different path or revision; archived evidence was retained".into());
+            }
+            if native::info(&file.file)?.nNumberOfLinks != 1 || file.reason.is_some() {
+                return Err("The selected file does not meet the linked original ownership policy".into());
+            }
+            let exists:bool=self.db.query_row(
+                "SELECT EXISTS(SELECT 1 FROM linked_documents WHERE (source_id=?1 AND (identity=?2 OR path_key=?3)))",
+                params![id,file.id,relative.to_lowercase()], |r|r.get(0),
+            ).map_err(error)?;
+            if exists {
+                return Err("The chosen file already has a local linked identity; archived identity remains inactive".into());
+            }
+            Some(file)
+        } else {
+            None
+        };
+        let tx = self.db.transaction().map_err(error)?;
+        tx.execute("INSERT INTO linked_sources VALUES(?1,?2,?3,?4,1) ON CONFLICT(id) DO UPDATE SET path=excluded.path,display_path=excluded.display_path,active=1",params![id,physical.to_string_lossy(),path,identity]).map_err(error)?;
+        tx.execute("INSERT INTO linked_grants VALUES(?1,?2) ON CONFLICT(source_id) DO UPDATE SET epoch=excluded.epoch",
+            params![id,Uuid::new_v4().to_string()]).map_err(error)?;
+        tx.execute("UPDATE search_generation SET value=value+1", [])
+            .map_err(error)?;
+        if let (Some((resource,relative,_)),Some(file)) = (descriptor,observed.as_ref()) {
+            let document = resource.strip_prefix("linked:").ok_or("Invalid archived linked identity")?;
+            let title = file.path.file_name().and_then(|s|s.to_str()).ok_or("Invalid linked filename")?;
+            tx.execute("INSERT INTO resources(id,title,content) VALUES(?1,?2,'{}')
+                ON CONFLICT(id) DO UPDATE SET title=excluded.title WHERE title<>excluded.title",
+                params![resource,title]).map_err(error)?;
+            tx.execute("INSERT INTO linked_documents VALUES(?1,?2,?3,?4,?5,?6)",
+                params![document,id,relative,relative.to_lowercase(),file.id,file.revision]).map_err(error)?;
+            tx.execute("INSERT INTO linked_inventory(resource_id,document_id,birth,available) VALUES(?1,?2,?3,1)",
+                params![resource,document,native::birth(&file.file)?]).map_err(error)?;
+            tx.execute("DELETE FROM portable_linked_descriptors WHERE id=?1",[resource]).map_err(error)?;
+        }
+        tx.commit().map_err(error)?;
+        Ok(json!({"id":id,"path":path}))
+    }
     fn linked_root(&self, id: &str) -> Result<(PathBuf, String), String> {
         self.db
             .query_row(
@@ -269,68 +365,25 @@ impl Workspace {
                     .map_err(error)?;
                 Ok(json!(rows))
             }
-            Request::Register { path } => {
-                let pins = native::pin(Path::new(&path))?;
-                let physical = native::physical(pins.last().unwrap())?;
-                let identity = native::identity(pins.last().unwrap())?;
-                let workspace_pins = native::pin(&self.root)?;
-                let workspace_path = native::physical(workspace_pins.last().unwrap())?;
-                let overlaps = |a: &Path, b: &Path| {
-                    let a = a.to_string_lossy().to_lowercase();
-                    let b = b.to_string_lossy().to_lowercase();
-                    Path::new(&a).starts_with(&b) || Path::new(&b).starts_with(&a)
-                };
-                if overlaps(&workspace_path, &physical) {
-                    return Err(
-                        "Linked folders must be separate from Vaultor workspace storage".into(),
-                    );
-                }
-                let mut q = self
-                    .db
-                    .prepare("SELECT id,path,identity,active FROM linked_sources")
-                    .map_err(error)?;
-                let rows = q
-                    .query_map([], |r| {
-                        Ok((
-                            r.get::<_, String>(0)?,
-                            r.get::<_, String>(1)?,
-                            r.get::<_, String>(2)?,
-                            r.get::<_, bool>(3)?,
-                        ))
-                    })
-                    .map_err(error)?
-                    .collect::<Result<Vec<_>, _>>()
-                    .map_err(error)?;
-                drop(q);
-                let mut chosen = None;
-                let mut count = 0;
-                for (id, old, old_id, active) in rows {
-                    if active {
-                        count += 1;
-                    }
-                    if old_id == identity {
-                        chosen = Some(id);
-                        continue;
-                    }
-                    if active && overlaps(&physical, Path::new(&old)) {
-                        return Err(
-                            "Overlapping linked folders are already covered by an existing source"
-                                .into(),
-                        );
-                    }
-                }
-                if chosen.is_none() && count >= 8 {
-                    return Err("Up to eight linked folders are supported".into());
-                }
-                let id = chosen.unwrap_or_else(|| Uuid::new_v4().to_string());
-                let tx = self.db.transaction().map_err(error)?;
-                tx.execute("INSERT INTO linked_sources VALUES(?1,?2,?3,?4,1) ON CONFLICT(id) DO UPDATE SET path=excluded.path,display_path=excluded.display_path,active=1",params![id,physical.to_string_lossy(),path,identity]).map_err(error)?;
-                tx.execute("INSERT INTO linked_grants VALUES(?1,?2) ON CONFLICT(source_id) DO UPDATE SET epoch=excluded.epoch",
-                    params![id,Uuid::new_v4().to_string()]).map_err(error)?;
-                tx.execute("UPDATE search_generation SET value=value+1", [])
-                    .map_err(error)?;
-                tx.commit().map_err(error)?;
-                Ok(json!({"id":id,"path":path}))
+            Request::Register { path } => self.authorize_linked_root(path,None),
+            Request::Archived { workspace, after } => {
+                if !self.is_path(Path::new(&workspace)) { return Err("Workspace changed; request refused".into()); }
+                let mut query=self.db.prepare("SELECT id,title,label,path FROM portable_linked_descriptors
+                    WHERE (?1 IS NULL OR id>?1) ORDER BY id LIMIT 51").map_err(error)?;
+                let mut items=query.query_map([after],|row|Ok(json!({"id":row.get::<_,String>(0)?,
+                    "title":row.get::<_,String>(1)?,"label":row.get::<_,String>(2)?,"path":row.get::<_,String>(3)?})))
+                    .map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
+                let next=if items.len()>50 {items.pop();items.last().map(|item|item["id"].clone())} else {None};
+                Ok(json!({"items":items,"next":next}))
+            }
+            Request::RebindDescriptor { workspace,id,path } => {
+                if !self.is_path(Path::new(&workspace)) { return Err("Workspace changed; rebinding refused".into()); }
+                let (relative,revision):(String,String)=self.db.query_row(
+                    "SELECT path,revision FROM portable_linked_descriptors WHERE id=?1",[&id],
+                    |row|Ok((row.get(0)?,row.get(1)?)),
+                ).optional().map_err(error)?.ok_or("Archived linked reference is unavailable")?;
+                if !inventory::is_markdown(Path::new(&relative)) { return Err("Archived reference is not a Markdown file".into()); }
+                self.authorize_linked_root(path,Some((id,relative,revision)))
             }
             Request::Remove { source } => {
                 let tx = self.db.transaction().map_err(error)?;

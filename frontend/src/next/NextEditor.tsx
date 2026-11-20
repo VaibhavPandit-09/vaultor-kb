@@ -37,7 +37,7 @@ function NextResourceLinkView({node,editor}:NodeViewProps){const kind=resourceKi
 const writeCodeClipboard=(text:string)=>native('clipboardWrite',null,text);
 function NextCodeBlockView(props:NodeViewProps){return <CodeBlockView {...props} writeClipboard={writeCodeClipboard}/>;}
 const lowlight = createLowlight(common);
-export default function NextEditor({ active=true,note, documents, changed, locked, pane, focusWhenReady, focusHandled, leaveFocus, followLink, openResource, openWeb, saveStatus="saved", retrySave, initialSelection,positionChanged }: { active?:boolean;initialSelection?:{from:number;to:number};positionChanged?:(selection:{from:number;to:number})=>void;note: Note; documents: SharedNoteDocuments; changed: (capture: () => JSONContent) => void; locked: boolean; pane: number; focusWhenReady?:boolean; focusHandled?:()=>void; leaveFocus?:()=>void; followLink?:(href:string,beside?:boolean)=>void; openResource?:(id:string,beside?:boolean)=>void; openWeb?:(href:string)=>void; retrySave?:()=>void;saveStatus?:'saved'|'saving'|'failed' }) {
+export default function NextEditor({ active=true,note, workspace, documents, changed, locked, pane, focusWhenReady, focusHandled, leaveFocus, followLink, openResource, openWeb, saveStatus="saved", retrySave, initialSelection,positionChanged }: { workspace?:string;active?:boolean;initialSelection?:{from:number;to:number};positionChanged?:(selection:{from:number;to:number})=>void;note: Note; documents: SharedNoteDocuments; changed: (capture: () => JSONContent) => void; locked: boolean; pane: number; focusWhenReady?:boolean; focusHandled?:()=>void; leaveFocus?:()=>void; followLink?:(href:string,beside?:boolean)=>void; openResource?:(id:string,beside?:boolean)=>void; openWeb?:(href:string)=>void; retrySave?:()=>void;saveStatus?:'saved'|'saving'|'failed' }) {
   const container=useRef<HTMLDivElement>(null);
   const [operationError,setOperationError]=useState('');
   const managed=!followLink;
@@ -63,7 +63,7 @@ export default function NextEditor({ active=true,note, documents, changed, locke
     editorProps: {
       attributes: { class: 'tiptap outline-none min-h-[50vh]', 'aria-label': `Note body ${pane + 1}` },
       handleDrop: (_view, event) => Boolean(event.dataTransfer?.files.length),
-      handlePaste: (view,event) => {if(!view.editable)return true;if(!managed)return Boolean(event.clipboardData?.files.length);const files=Array.from(event.clipboardData?.files??[]);if(files.length){event.preventDefault();if(files.every(file=>file.type.startsWith('image/')))view.dom.dispatchEvent(new CustomEvent('vaultor:image-picker',{detail:{files}}));else setOperationError('Use Import files for managed attachments');return true;}if(pasteLinks(editor!,event)||handleTablePaste(view,event))return true;
+      handlePaste: (view,event) => {if(!view.editable)return true;if(!managed)return Boolean(event.clipboardData?.files.length);const files=Array.from(event.clipboardData?.files??[]);if(files.length){event.preventDefault();if(files.every(file=>file.type.startsWith('image/')))view.dom.dispatchEvent(new CustomEvent('vaultor:image-picker',{detail:{files}}));else setOperationError('Use Import files for managed attachments');return true;}if(pasteLinks(editor!,event,workspace)||handleTablePaste(view,event))return true;
         const markdown=event.clipboardData&&!editor?.isActive('codeBlock')&&markdownClipboard(event.clipboardData);
         if(!markdown)return false;
         event.preventDefault();view.dom.dispatchEvent(new CustomEvent('vaultor:markdown-paste',{detail:markdown}));return true;},
@@ -72,7 +72,7 @@ export default function NextEditor({ active=true,note, documents, changed, locke
     onSelectionUpdate:({editor})=>positionCallback.current?.({from:editor.state.selection.from,to:editor.state.selection.to}),
     onFocus: () => setFocused(true),
     onBlur: () => setFocused(false),
-  }, [note.id]);
+  }, [note.id,workspace]);
   useEffect(()=>{const handler=(event:Event)=>setOperationError(String((event as CustomEvent).detail));if(!editor)return;editor.view.dom.addEventListener('vaultor-next-editor-error',handler);return()=>editor.view.dom.removeEventListener('vaultor-next-editor-error',handler);},[editor]);
   useEffect(()=>{if(!editor||!managed)return;return registerResourceLinkNavigation(editor,(id,beside)=>openResource?.(id,beside));},[editor,managed,openResource]);
   useEffect(()=>{if(editor)return registerEditorDrop({editor,managed});},[editor,managed]);

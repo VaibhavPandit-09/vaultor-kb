@@ -36,5 +36,6 @@ lto = "thin"
 strip = true
 
 [target."cfg(windows)".dependencies]
+windows = { version = "0.62.2", features = ["Win32_System_Com", "Win32_System_Ole", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell_Common"] }
 notify = { git = "https://github.com/notify-rs/notify.git", rev = "d01dc40", default-features = false }
 windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem", "Win32_Foundation", "Win32_Security", "Win32_System_Memory", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }

@@ -2,6 +2,8 @@
 
 Last reviewed: 2026-11-20. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
+Vaultor Next M23 uses one Rust SQLite owner for Review, resource identity, archives and persistent pin order. [Next qualification](plans/VAULTOR-NEXT.md#m23-review-inbox-and-windows-integration) tracks Windows integration and outstanding parity. The [Review boundary](workspace/REVIEWS.md#vaultor-next) defines what the future optional host can reuse.
+
 ## Product and architecture
 
 **Next M21 discovery:** One Rust monitor owns Windows source subscriptions for the active workspace. It coalesces bounded notifications and reconciles individual Markdown paths under the existing NTFS leases. Directory changes, lossy deliveries and reconnect use Activity's whole-source scan. A source-grant epoch and current storage workspace validate publication of each derived receipt. The monitor probes root availability independently of content and withdraws unavailable records. The renderer consumes workspace-scoped index notifications and retains the existing clean reload and dirty recovery workflow. Main source-browser expansion is bounded session state and queues a session write when changed.
@@ -504,6 +506,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-20 — Next M23 Review and Windows integration
+
+The SQLite owner now stores generation-bound Review feedback, revision evidence and triage receipts. Tauri reuses the published Review dialog with a local data source. The transport-independent submitter boundary is described in [Reviews](workspace/REVIEWS.md#vaultor-next). Version 4 portable archives carry Reviews and linked descriptor organization. Binding an inactive descriptor requires an explicit local root and matching revision. Managed duplication, owner-issued native clipboard receipts, copy-only Windows shell drag, Pinned arrangement and shell Activity projection are described and qualified in the [M23 record](plans/VAULTOR-NEXT.md#m23-review-inbox-and-windows-integration). Help and its experimental catalogue entry cover the new workflows. The record keeps exact build, validation and physical acceptance outcomes.
 
 ### 2026-11-20 — Next M22 transfers
 

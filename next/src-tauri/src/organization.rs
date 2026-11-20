@@ -40,6 +40,7 @@ pub enum Request {
     Recents,
     PinCollection { id:String, value:bool },
     Pins { query:String, kind:String, offset:usize, limit:usize },
+    ArrangePin { workspace:String, source:PinKey, target:PinKey, after:bool },
     Trash {
         ids: Vec<String>,
         restore: bool,
@@ -53,12 +54,25 @@ pub enum Request {
         trash: bool,
     },
 }
+
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct PinKey {
+    id: String,
+    collection: bool,
+}
+
 pub(crate) fn initialize(db: &Connection) -> Result<(), String> {
     db.execute_batch("CREATE TABLE IF NOT EXISTS tags(id TEXT PRIMARY KEY,name TEXT NOT NULL,normalized TEXT NOT NULL UNIQUE,color TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS resource_tags(resource_id TEXT NOT NULL REFERENCES resources(id),tag_id TEXT NOT NULL REFERENCES tags(id),PRIMARY KEY(resource_id,tag_id));
  CREATE INDEX IF NOT EXISTS tag_resources ON resource_tags(tag_id,resource_id);
  CREATE TABLE IF NOT EXISTS resource_state(resource_id TEXT PRIMARY KEY REFERENCES resources(id),trashed INTEGER NOT NULL DEFAULT 0,pinned INTEGER NOT NULL DEFAULT 0,opened INTEGER NOT NULL DEFAULT 0);
  CREATE TABLE IF NOT EXISTS collection_state(collection_id TEXT PRIMARY KEY REFERENCES collections(id) ON DELETE CASCADE,pinned INTEGER NOT NULL DEFAULT 0);
+ CREATE TABLE IF NOT EXISTS pin_order(id TEXT NOT NULL,is_collection INTEGER NOT NULL,position INTEGER NOT NULL,PRIMARY KEY(id,is_collection));
+ CREATE TRIGGER IF NOT EXISTS resource_pin_order_unpin AFTER UPDATE OF pinned ON resource_state WHEN new.pinned=0 BEGIN DELETE FROM pin_order WHERE id=new.resource_id AND is_collection=0; END;
+ CREATE TRIGGER IF NOT EXISTS resource_pin_order_remove AFTER DELETE ON resource_state BEGIN DELETE FROM pin_order WHERE id=old.resource_id AND is_collection=0; END;
+ CREATE TRIGGER IF NOT EXISTS collection_pin_order_unpin AFTER UPDATE OF pinned ON collection_state WHEN new.pinned=0 BEGIN DELETE FROM pin_order WHERE id=new.collection_id AND is_collection=1; END;
+ CREATE TRIGGER IF NOT EXISTS collection_pin_order_remove AFTER DELETE ON collection_state BEGIN DELETE FROM pin_order WHERE id=old.collection_id AND is_collection=1; END;
  CREATE TABLE IF NOT EXISTS recent_links(id TEXT PRIMARY KEY,title TEXT NOT NULL,source TEXT NOT NULL,path TEXT NOT NULL,opened INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS pending_deletions(id TEXT PRIMARY KEY);
  CREATE TRIGGER IF NOT EXISTS lifecycle_draft BEFORE INSERT ON drafts WHEN EXISTS(SELECT 1 FROM resource_state WHERE resource_id=new.resource_id AND trashed=1) BEGIN SELECT RAISE(ABORT,'Resource is in Trash'); END;
@@ -111,6 +125,44 @@ fn validate(db: &Connection, ids: &[String], unprotected: bool) -> Result<(), St
     Ok(())
 }
 impl Workspace {
+    fn arrange_pin(&mut self, source: PinKey, target: PinKey, after: bool) -> Result<Value,String> {
+        let tx = self.db.transaction().map_err(error)?;
+        for key in [&source,&target] {
+            let statement = if key.collection {
+                "SELECT EXISTS(SELECT 1 FROM collection_state WHERE collection_id=?1 AND pinned=1)"
+            } else {
+                "SELECT EXISTS(SELECT 1 FROM visible_resources JOIN resource_state s ON resource_id=id
+                    WHERE id=?1 AND s.pinned=1 AND s.trashed=0)"
+            };
+            if !tx.query_row(statement,[&key.id],|row|row.get::<_,bool>(0)).map_err(error)? {
+                return Err("A shortcut is no longer pinned or available".into());
+            }
+        }
+        if source==target {return Ok(Value::Null);}
+        let mut keys = {
+            let mut query=tx.prepare("SELECT p.id,p.is_collection
+                FROM (SELECT r.id,r.title,0 is_collection FROM resources r JOIN resource_state s ON s.resource_id=r.id WHERE s.pinned=1
+                UNION ALL SELECT c.id,c.name,1 FROM collections c JOIN collection_state s ON s.collection_id=c.id WHERE s.pinned=1) p
+                LEFT JOIN pin_order o USING(id,is_collection)
+                ORDER BY o.position IS NULL,o.position,p.title COLLATE NOCASE,p.is_collection,p.id LIMIT 20001").map_err(error)?;
+            let rows=query.query_map([],|row|Ok(PinKey{id:row.get(0)?,collection:row.get(1)?})).map_err(error)?;
+            rows.collect::<Result<Vec<_>,_>>().map_err(error)?
+        };
+        if keys.len()>20_000 {return Err("Custom ordering is limited to 20,000 shortcuts".into());}
+        keys.retain(|key|key!=&source);
+        let index=keys.iter().position(|key|key==&target).ok_or("The destination shortcut is unavailable")?;
+        keys.insert(index+usize::from(after),source);
+        tx.execute("DELETE FROM pin_order",[]).map_err(error)?;
+        {
+            let mut insert=tx.prepare("INSERT INTO pin_order VALUES(?1,?2,?3)").map_err(error)?;
+            for (index,key) in keys.iter().enumerate() {
+                insert.execute(params![key.id,key.collection,index]).map_err(error)?;
+            }
+        }
+        tx.commit().map_err(error)?;
+        Ok(Value::Null)
+    }
+
     pub fn pending_cleanup(&self) -> Result<bool, String> {
         self.db
             .query_row("SELECT EXISTS(SELECT 1 FROM pending_deletions)", [], |r| {
@@ -221,12 +273,20 @@ impl Workspace {
                 self.db.execute("INSERT INTO collection_state VALUES(?1,?2) ON CONFLICT(collection_id) DO UPDATE SET pinned=excluded.pinned",params![id,value]).map_err(error)?;
                 Ok(Value::Null)
             }
+            Request::ArrangePin {workspace,source,target,after} => {
+                if !self.is_path(std::path::Path::new(&workspace)) {
+                    return Err("Workspace changed; shortcut order was retained".into());
+                }
+                self.arrange_pin(source,target,after)
+            }
             Request::Pins { query,kind,offset,limit } => {
                 if query.len()>1024 || !["all","note","file","collection"].contains(&kind.as_str())&&!crate::file_category::CATEGORIES.contains(&kind.as_str()) || offset>1000000 || !(1..=100).contains(&limit) {return Err("Unsupported pinned query".into());}
                 let category=crate::file_category::for_resource("r.id");
                 let source=format!(" FROM (SELECT r.id,r.title,r.revision,r.updated_at,{category} file_category,CASE WHEN r.id LIKE 'linked:%' THEN 'linked' WHEN EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file') THEN 'file' ELSE 'note' END kind FROM visible_resources r JOIN resource_state s ON s.resource_id=r.id WHERE s.pinned=1 AND s.trashed=0 UNION ALL SELECT c.id,c.name title,0 revision,'' updated_at,'' file_category,'collection' kind FROM collections c JOIN collection_state s ON s.collection_id=c.id WHERE s.pinned=1) WHERE (?1='all' OR kind=?1 OR (kind='file' AND file_category=?1)) AND instr(lower(title),lower(?2))>0");
                 let total:i64=self.db.query_row(&format!("SELECT COUNT(*){source}"),params![kind,query],|r|r.get(0)).map_err(error)?;
-                let mut q=self.db.prepare(&format!("SELECT id,title,kind,revision,updated_at,file_category{source} ORDER BY title COLLATE NOCASE,kind,id LIMIT ?3 OFFSET ?4")).map_err(error)?;
+                let mut q=self.db.prepare(&format!("SELECT p.id,title,kind,revision,updated_at,file_category
+                    FROM (SELECT *{source}) p LEFT JOIN pin_order o ON o.id=p.id AND o.is_collection=(p.kind='collection')
+                    ORDER BY o.position IS NULL,o.position,title COLLATE NOCASE,(p.kind='collection'),p.id LIMIT ?3 OFFSET ?4")).map_err(error)?;
                 let items=q.query_map(params![kind,query,limit as i64,offset as i64],|r|Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"kind":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?,"updatedAt":r.get::<_,String>(4)?,"fileCategory":r.get::<_,String>(5)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
                 let next=(offset+items.len() < total as usize).then_some(offset+items.len());
                 Ok(json!({"items":items,"total":total,"next":next}))

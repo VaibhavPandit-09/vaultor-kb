@@ -37,10 +37,30 @@ it('mixed pinned collections navigate as collections and never use resource acti
  fireEvent.click(await screen.findByRole('button',{name:'Collection shortcut'}));expect(collection).toHaveBeenCalledWith('same');expect(open).not.toHaveBeenCalled();fireEvent.click(screen.getByRole('button',{name:'Resource shortcut'}));expect(open).toHaveBeenCalledWith('same');
 });
 it('pointer session arrangement crosses the drag threshold, cancels and swaps by view identity',()=>{
- vi.stubGlobal('PointerEvent',MouseEvent);const a={paneId:'a',id:'same',cursor:0,history:[{visitId:'a1',resourceId:'same',title:'First'}]},b={...a,paneId:'b',history:[{visitId:'b1',resourceId:'same',title:'Second'}]},reorder=vi.fn(),arrange=vi.fn();
+ const a={paneId:'a',id:'same',cursor:0,history:[{visitId:'a1',resourceId:'same',title:'First'}]},b={...a,paneId:'b',history:[{visitId:'b1',resourceId:'same',title:'Second'}]},reorder=vi.fn(),arrange=vi.fn();
  const {unmount}=render(<EscapeManagerProvider><div data-session-pane="b">Pane target</div><OpenNotes nativeArrange onArrange={arrange} sessions={[a,b]} panes={[a,b]} activeId="a" canSplit={false} onOpen={()=>{}} onSplit={()=>{}} onClose={()=>{}} onCloseOthers={()=>{}} onReorder={reorder}/></EscapeManagerProvider>);const target=document.querySelector<HTMLElement>('[data-session-pane]')!;Object.defineProperty(document,'elementFromPoint',{configurable:true,value:()=>target});const grip=screen.getByRole('button',{name:'Arrange First'});
- fireEvent.pointerDown(grip,{button:0,clientX:10,clientY:10});fireEvent.pointerMove(document,{clientX:40,clientY:40});expect(target.dataset.nextSessionDrop).toBe('swap');fireEvent.keyDown(document,{key:'Escape'});fireEvent.pointerUp(document,{clientX:40,clientY:40});expect(arrange).not.toHaveBeenCalled();expect(target.dataset.nextSessionDrop).toBeUndefined();
- fireEvent.pointerDown(grip,{button:0,clientX:10,clientY:10});fireEvent.pointerMove(document,{clientX:40,clientY:40});fireEvent.pointerUp(document,{clientX:40,clientY:40});expect(arrange).toHaveBeenCalledWith('a','b');expect(reorder).not.toHaveBeenCalled();unmount();expect(document.querySelector('[data-next-session-drop]')).toBeNull();
+ const dispatch=(destination:HTMLElement|Document,type:string,position:number,buttons:number,pointerId=7)=>{
+  const event=new MouseEvent(type,{bubbles:true,cancelable:true,button:0,buttons,clientX:position,clientY:position});
+  Object.defineProperty(event,'pointerId',{value:pointerId});
+  fireEvent(destination,event);
+ };
+ dispatch(grip,'pointerdown',10,1);
+ dispatch(document,'pointermove',13,1);
+ dispatch(document,'pointermove',40,1,8);
+ expect(target.dataset.nextSessionDrop).toBeUndefined();
+ dispatch(document,'pointermove',40,1);
+ expect(target.dataset.nextSessionDrop).toBe('swap');
+ fireEvent.keyDown(document,{key:'Escape'});
+ dispatch(document,'pointerup',40,0);
+ expect(arrange).not.toHaveBeenCalled();
+ expect(target.dataset.nextSessionDrop).toBeUndefined();
+ dispatch(grip,'pointerdown',10,1);
+ dispatch(document,'pointermove',40,1);
+ dispatch(document,'pointerup',40,0);
+ expect(arrange).toHaveBeenCalledWith('a','b');
+ expect(reorder).not.toHaveBeenCalled();
+ unmount();
+ expect(document.querySelector('[data-next-session-drop]')).toBeNull();
 });
 
 it('mixed Pinned keyboard menus preserve entity namespace for equal text identities',async()=>{

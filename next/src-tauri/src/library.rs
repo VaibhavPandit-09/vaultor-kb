@@ -137,6 +137,15 @@ impl Workspace {
         add: Option<String>,
         remove: Option<String>,
     ) -> Result<Value, String> {
+        self.change_memberships(ids,add,remove,None)
+    }
+    pub(crate) fn change_memberships(
+        &mut self,
+        ids: Vec<String>,
+        add: Option<String>,
+        remove: Option<String>,
+        cut_receipt: Option<&str>,
+    ) -> Result<Value, String> {
         if ids.is_empty() || ids.len() > 100 {
             return Err("Choose 1–100 resources from the current page".into());
         }
@@ -148,7 +157,8 @@ impl Workspace {
         for id in &ids {
             if !tx
                 .query_row(
-                    "SELECT EXISTS(SELECT 1 FROM visible_resources WHERE id=?1)",
+                    "SELECT EXISTS(SELECT 1 FROM visible_resources WHERE id=?1 AND NOT EXISTS
+                        (SELECT 1 FROM resource_state WHERE resource_id=?1 AND trashed=1))",
                     [id],
                     |r| r.get::<_, bool>(0),
                 )
@@ -171,6 +181,12 @@ impl Workspace {
         }
         let (mut added, mut removed, mut unchanged) = (0, 0, 0);
         for id in &ids {
+            if cut_receipt.is_some() && !tx.query_row(
+                "SELECT EXISTS(SELECT 1 FROM memberships WHERE resource_id=?1 AND collection_id=?2)",
+                params![id,remove], |row|row.get::<_,bool>(0),
+            ).map_err(error)? {
+                return Err("A cut membership is no longer in the source collection; nothing was changed".into());
+            }
             let mut changes = 0;
             if add != remove {
                 if let Some(add) = &add {
@@ -197,6 +213,9 @@ impl Workspace {
             if changes == 0 {
                 unchanged += 1;
             }
+        }
+        if let Some(receipt) = cut_receipt {
+            tx.execute("DELETE FROM resource_clipboard WHERE id=?1",[receipt]).map_err(error)?;
         }
         tx.commit().map_err(error)?;
         Ok(json!({"requested":ids.len(),"added":added,"removed":removed,"unchanged":unchanged}))

@@ -1,11 +1,11 @@
-import {useLayoutEffect,useRef,useState} from 'react';
+import {useLayoutEffect,useRef,useState,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {X,FileText,Maximize2,PanelRight} from 'lucide-react';
 import PreviewShell from '../components/PreviewShell';
 import {DialogFocusContext,useDialogFocus} from '../lib/dialogFocus';
 import {useEscapeLayer,ESCAPE_PRIORITIES} from '../lib/escape/escape';
 import {FileView} from './MediaView';
-export default function FilePreview({id,title,opacity,placement,workspace,close}:{id:string;title:string;opacity:number;placement:'floating'|'side';workspace?:string;close:()=>void}){
+export default function FilePreview({id,title,opacity,placement,workspace,close,reviewAction}:{id:string;title:string;opacity:number;placement:'floating'|'side';workspace?:string;close:()=>void;reviewAction?:ReactNode}){
  const root=useRef<HTMLDivElement>(null),{scope,onKeyDown}=useDialogFocus(root);
  const [expanded,setExpanded]=useState<boolean|null>(null);
  const mode=(expanded??placement==='floating')?'modal':'side';
@@ -17,6 +17,7 @@ export default function FilePreview({id,title,opacity,placement,workspace,close}
        <div className="preview-heading">
          <div className="preview-identity"><FileText size={16}/><h3>{title}</h3></div>
          <div className="preview-actions">
+           {reviewAction}
            <button aria-label={mode==='modal'?'Move preview to the side':'Expand file preview'} onClick={()=>setExpanded(mode==='side')}>{mode==='modal'?<PanelRight size={18}/>:<Maximize2 size={18}/>}</button>
            <button data-preview-close aria-label="Close file preview" onClick={close}><X size={18}/></button>
          </div>

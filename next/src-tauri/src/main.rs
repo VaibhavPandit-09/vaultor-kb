@@ -1,5 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod preview;
+#[cfg(windows)]
+mod windows_drag;
+#[cfg(windows)]
+mod windows_shell;
 use std::sync::Arc;
 use tauri::{Emitter, Manager};
 use tauri_plugin_dialog::DialogExt;
@@ -8,6 +12,19 @@ use vaultor_next::{
     transfers::{Request as TransferRequest, Transfers},
 };
 use vaultor_next::{domain::Request, worker::Worker};
+
+#[cfg(windows)]
+struct TrayAvailable(bool);
+
+#[cfg(windows)]
+#[tauri::command]
+fn close_next(window: tauri::WebviewWindow, quit: bool, tray: tauri::State<'_, TrayAvailable>) -> Result<(), String> {
+    if quit || !tray.0 {
+        window.app_handle().exit(0);
+        return Ok(());
+    }
+    windows_shell::close_to_tray(&window)
+}
 
 #[tauri::command]
 async fn workspace(
@@ -19,7 +36,7 @@ async fn workspace(
     let switching = matches!(request, Request::Open { .. } | Request::New { .. });
     #[cfg(windows)]
     let reconfigure = matches!(&request, Request::Linked { request:
-        vaultor_next::LinkedRequest::Register { .. } | vaultor_next::LinkedRequest::Remove { .. }
+        vaultor_next::LinkedRequest::Register { .. } | vaultor_next::LinkedRequest::RebindDescriptor { .. } | vaultor_next::LinkedRequest::Remove { .. }
     });
     let result = state.call(request).await;
     #[cfg(windows)]
@@ -173,16 +190,26 @@ async fn native_resource(
     id: Option<String>,
     action: String,
     text: Option<String>,
+    receipt: Option<String>,
     worker: tauri::State<'_, Worker>,
 ) -> Result<String, String> {
-    if action == "clipboardWrite" {
-        let hwnd = window.hwnd().map_err(|e| e.to_string())?.0 as isize;
+    let hwnd = window.hwnd().map_err(|e| e.to_string())?.0 as isize;
+    if matches!(action.as_str(),"clipboardWrite" | "clipboardWriteResource") {
         return tauri::async_runtime::spawn_blocking(move || {
-            vaultor_next::media::clipboard::write(&text.unwrap_or_default(), hwnd)?;
+            let text=text.unwrap_or_default();
+            if action=="clipboardWriteResource" {
+                vaultor_next::media::clipboard::write_resources(&text,&receipt.ok_or("Missing resource clipboard receipt")?,hwnd)?;
+            } else {
+                vaultor_next::media::clipboard::write(&text,hwnd)?;
+            }
             Ok(String::new())
         })
         .await
         .map_err(|e| e.to_string())?;
+    }
+    if action == "clipboardReadResource" {
+        return tauri::async_runtime::spawn_blocking(vaultor_next::media::clipboard::read_resource)
+            .await.map_err(|e|e.to_string())?;
     }
     if action == "clipboardRead" {
         return tauri::async_runtime::spawn_blocking(vaultor_next::media::clipboard::read)
@@ -215,7 +242,7 @@ async fn native_resource(
             .and_then(|x| x.to_str())
             .unwrap_or("")
             .to_lowercase();
-        if !matches!(action.as_str(), "open" | "reveal") {
+        if !matches!(action.as_str(), "open" | "reveal" | "copyPath") {
             return Err("Unknown native action".into());
         }
         if action == "open"
@@ -231,6 +258,10 @@ async fn native_resource(
             std::path::Path::new(info["path"].as_str().unwrap()),
             name,info["hash"].as_str().unwrap(),
         )?;
+        if action=="copyPath" {
+            vaultor_next::media::clipboard::write(out.to_str().ok_or("Prepared path is not Unicode")?,hwnd)?;
+            return Ok("Copied the prepared file path".into());
+        }
         if action == "reveal" {
             std::process::Command::new("explorer.exe")
                 .arg(format!("/select,{}", out.display()))
@@ -359,6 +390,10 @@ fn main() {
             std::fs::create_dir_all(&data)?;
             let pointer = data.join("last-workspace.json");
             let override_root = std::env::var_os("VAULTOR_NEXT_WORKSPACE");
+            #[cfg(windows)]
+            app.manage(windows_drag::NativeDrag::new(override_root.as_ref()
+                .and_then(|path| std::path::Path::new(path).parent()).unwrap_or(&data)
+                .join("native-export-copies")));
             let root = override_root
                 .clone()
                 .map(std::path::PathBuf::from)
@@ -378,6 +413,12 @@ fn main() {
             )?;
             let storage = worker.storage();
             let handle = app.handle().clone();
+            #[cfg(windows)]
+            let projection = {
+                let available=app.get_webview_window("main").as_ref().is_some_and(windows_shell::install);
+                app.manage(TrayAvailable(available));
+                Arc::new(std::sync::Mutex::new(windows_shell::ActivityProjection::default()))
+            };
             let activity = Activity::new(
                 override_root
                     .as_ref()
@@ -390,7 +431,17 @@ fn main() {
                     .unwrap_or(data.join("next-activity.json")),
                 storage.clone(),
                 move |tasks| {
-                    let _ = handle.emit("next-activity", tasks);
+                    let _ = handle.emit("next-activity", &tasks);
+                    #[cfg(windows)]
+                    {
+                        let app=handle.clone();
+                        let projection=projection.clone();
+                        let _=handle.run_on_main_thread(move || {
+                            if let Some(window)=app.get_webview_window("main") {
+                                if let Ok(mut projection)=projection.lock() { projection.update(&window,&tasks); }
+                            }
+                        });
+                    }
                 },
             )?;
             if storage
@@ -429,6 +480,14 @@ fn main() {
             resource_bytes,
             attachment,
             native_resource,
+            #[cfg(windows)]
+            close_next,
+            #[cfg(windows)]
+            windows_drag::prepare_drag,
+            #[cfg(windows)]
+            windows_drag::start_drag,
+            #[cfg(windows)]
+            windows_drag::release_drag,
             selected_image,
             pick_editor_text,
             save_table_csv,
