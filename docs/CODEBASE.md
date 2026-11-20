@@ -8,6 +8,8 @@ Vaultor Next M23 uses one Rust SQLite owner for Review, resource identity, archi
 
 Windows desktop generates a stable CA on first enable and uses user-scoped DPAPI for its private key. The listener replaces short-lived leaves in memory when renewal is due. Startup sharing binds the recorded workspace identity and address. Headless and externally configured desktop profiles still use explicit PEM files.
 
+**Next M24-C Android:** `host/mobile.rs` projects the saved Rust workspace into the existing Android protocol 3 reader shapes under a separately negotiated mobile v1 prefix. The Android native bridge pins the owner-verified host CA, stores the approval with the existing Keystore-backed profile, and routes managed reads, reset events, checkpoint jobs and Review requests to that projection. Preparation is serialized through the Rust owner. Checkpoint note bytes and inventory stay bound to a device and a manifest, while originals stream through the host's integrity and grant checks. The separate candidate application ID preserves the published Android app's storage. [Android delivery](android/ANDROID.md) and the [Next host guide](development/NEXT-HOST.md#android-m24-c-projection) own setup and bounds.
+
 ## Product and architecture
 
 **Next M21 discovery:** One Rust monitor owns Windows source subscriptions for the active workspace. It coalesces bounded notifications and reconciles individual Markdown paths under the existing NTFS leases. Directory changes, lossy deliveries and reconnect use Activity's whole-source scan. A source-grant epoch and current storage workspace validate publication of each derived receipt. The monitor probes root availability independently of content and withdraws unavailable records. The renderer consumes workspace-scoped index notifications and retains the existing clean reload and dirty recovery workflow. Main source-browser expansion is bounded session state and queues a session write when changed.
@@ -510,6 +512,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-20 — Next M24-C Android integration
+
+Added the negotiated mobile adapter, CA fingerprint entry, protected approval reuse, managed reading and search, verified offline checkpoints, saved-state resets and M23 Review delivery. Updated Next hosting and Android Help, the Feature Catalogue, platform and trust contracts. Help validation covered 43 features and 16 articles, and all 17 governance tests passed. [M24-C qualification](plans/VAULTOR-NEXT.md#m24-c-android-integration) records artifact and integration evidence.
 
 ### 2026-11-20 — Next M24 Windows managed TLS and startup preference
 

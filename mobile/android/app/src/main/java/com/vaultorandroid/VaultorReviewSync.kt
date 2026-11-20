@@ -67,7 +67,9 @@ class VaultorReviewSync(private val journal:VaultorReviews, private val port:Por
       val synced=records.filter {it.optJSONObject("delivery")?.optString("state")=="synced" && (refresh || due(it))}.sortedBy {it.optJSONObject("delivery")?.optLong("checkedAt") ?: 0L}.take(if(force)256 else 32)
       val admissions=mutableMapOf<String,Exception?>();var delivered=0;var attention=0;var checked=0
       for(item in pending+synced) {
-        val id=item.getString("id");val source=item.getJSONObject("source")
+        val id=item.getString("id")
+        val source=JSONObject(item.getJSONObject("source").toString())
+          .put("resourceId",item.getJSONObject("body").getString("resourceId"))
         val d=JSONObject(item.optJSONObject("delivery")?.toString() ?: "{}")
         val wasSynced=d.optString("state")=="synced" || d.has("receipt")
         var dispatched=false

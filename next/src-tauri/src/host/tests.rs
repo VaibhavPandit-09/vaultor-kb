@@ -10,6 +10,109 @@ use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio_rustls::TlsConnector;
 
+#[tokio::test]
+async fn mobile_projection_keeps_saved_revisions_and_checkpoint_authority() {
+    let fixture = Fixture::new();
+    let identity = Identity::open(&fixture.access, &fixture.ca).unwrap();
+    let worker = Worker::start(fixture.root.clone(), None).unwrap();
+    let collection = worker.call(Request::CreateCollection { name: "Mobile library".into(), parent_id: None }).await.unwrap();
+    let note = worker.call(Request::CreateNote { title: "Visible note".into(), collection: Some(collection["id"].as_str().unwrap().into()) }).await.unwrap();
+    let note_id = note["id"].as_str().unwrap();
+    let worker_storage = worker.storage();
+    let file_id = Uuid::new_v4().to_string();
+    let file = file_id.clone();
+    worker_storage.call_host(&fixture.root,move |ws| {
+        use sha2::{Digest, Sha256};
+        std::fs::create_dir_all(ws.root.join("managed")).unwrap();
+        std::fs::write(ws.new_media_path(&file)?, b"retained bytes").unwrap();
+        ws.attach_metadata(file, "retained.txt".into(), 14, hex::encode(Sha256::digest(b"retained bytes")))
+    }).await.unwrap();
+    let host = Host::new(worker_storage, fixture.root.clone(), identity).await.unwrap();
+    let workspace = host.workspace;
+    let listener = host.clone().listen("127.0.0.1:0".parse().unwrap(), fixture.chain.clone(), fixture.key.clone()).await.unwrap();
+    let client = connector(Some(fixture.authority.clone()));
+    let address = listener.address();
+    let enroll = |nonce: char| json!({"name":"Vaultor Android","kind":"desktop","nonce":nonce.to_string().repeat(64),"fingerprint":host.fingerprint()}).to_string();
+    async fn approve(host: &Host, client: &TlsConnector, address: SocketAddr, enrollment: &str) -> (String,String) {
+        let pending = request(client,address,"POST","/api/pairings","",enrollment).await;
+        assert_eq!(pending.0,200);
+        let p:Value=serde_json::from_str(&pending.2).unwrap();
+        let id=p["id"].as_str().unwrap();
+        let code=p["code"].as_str().unwrap();
+        host.owner_command(&format!("approve {id} {code}")).unwrap();
+        let response=request(client,address,"POST",&format!("/api/pairings/{id}/complete"),
+            &format!("X-Vaultor-Pairing: {}\r\n",p["secret"].as_str().unwrap()),"{}").await;
+        assert_eq!(response.0,200);
+        let receipt:Value=serde_json::from_str(&response.2).unwrap();
+        (receipt["deviceId"].as_str().unwrap().to_owned(),format!("Authorization: Bearer {}\r\n",receipt["credential"].as_str().unwrap()))
+    }
+    let (device,auth)=approve(&host,&client,address,&enroll('c')).await;
+    let (other,other_auth)=approve(&host,&client,address,&enroll('d')).await;
+    let prefix="/api/next/mobile/v1";
+    let route=|path:&str|format!("{prefix}{path}");
+    let call=|method:&'static str,path:String,headers:String,body:String| {
+        let client=&client;
+        async move {request(client,address,method,&path,&headers,&body).await}
+    };
+    let workspace_path=route("/workspace/identity");
+    assert_eq!(call("GET",workspace_path.clone(),"".into(),"".into()).await.0,401);
+    let empty=call("GET",route("/workspaces"),auth.clone(),"".into()).await;
+    assert_eq!((empty.0,empty.2.as_str()),(200,"[]"));
+    assert_eq!(call("GET",workspace_path.clone(),auth.clone(),"".into()).await.0,403);
+    host.owner_command(&format!("grant {device}")).unwrap();
+    host.owner_command(&format!("grant {other}")).unwrap();
+    assert_eq!(call("GET",workspace_path.clone(),format!("{auth}X-Vaultor-Workspace: {}\r\n",Uuid::new_v4()),"".into()).await.0,403);
+    let res=call("GET",route(&format!("/resources/{note_id}")),auth.clone(),"".into()).await;
+    assert_eq!(res.0,200);
+    let saved:Value=serde_json::from_str(&res.2).unwrap();
+    assert_eq!(saved["content"]["type"],"doc");
+    assert_eq!(saved["revision"],"1");
+    assert_eq!(saved["collections"][0]["id"],collection["id"]);
+    let groups=call("GET",route("/collections?size=1"),auth.clone(),"".into()).await;
+    assert_eq!(groups.0,200);
+    assert!(groups.2.contains("Mobile library"));
+    let search=call("GET",route("/resources/query?q=retained.txt&type=file"),auth.clone(),"".into()).await;
+    assert_eq!(search.0,200);
+    assert!(search.2.contains(&file_id));
+
+    let checkpoint_id=Uuid::new_v4();
+    let checkpoint=route(&format!("/companions/{checkpoint_id}"));
+    let selection=json!({"generation":workspace,"scope":"resources","ids":[note_id,file_id],"dependencies":"images","files":"readable"});
+    let prepared=call("PUT",checkpoint.clone(),auth.clone(),selection.to_string()).await;
+    assert_eq!(prepared.0,200,"{}",prepared.2);
+    let ready:Value=serde_json::from_str(&prepared.2).unwrap();
+    assert_eq!(ready["resources"],2);
+    let pin=ready["manifestSha256"].as_str().unwrap();
+    assert_eq!(call("GET",checkpoint.clone(),other_auth.clone(),"".into()).await.0,404);
+    let inventory=format!("{checkpoint}/inventory?page=0&size=25");
+    assert_eq!(call("GET",inventory.clone(),auth.clone(),"".into()).await.0,412);
+    let pinned=format!("{auth}If-Match: \"{pin}\"\r\n");
+    assert_eq!(call("GET",inventory,pinned.clone(),"".into()).await.0,200);
+    let bin=format!("{checkpoint}/payloads/{file_id}.bin");
+    let range=call("GET",bin.clone(),format!("{pinned}Range: bytes=9-\r\n"),"".into()).await;
+    assert_eq!((range.0,range.2.as_str()),(206,"bytes"));
+    let content = json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"New saved revision"}]}]});
+    worker.call(Request::Save { id:note_id.into(),revision:1,title:"Visible note".into(),content,proof:None }).await.unwrap();
+    let retained=call("GET",format!("{checkpoint}/payloads/{note_id}.json"),pinned.clone(),"".into()).await;
+    assert_eq!(retained.0,200);
+    assert!(!retained.2.contains("New saved revision"));
+
+    let operation=Uuid::new_v4();
+    let review_path=route(&format!("/reviews/{operation}/{note_id}"));
+    let input=json!({"generation":workspace,"resourceId":note_id,"baseRevision":"1",
+        "comment":"Captured earlier","quote":"","context":"","locator":{"kind":"resource"}});
+    let sent=call("PUT",review_path.clone(),auth.clone(),input.to_string()).await;
+    assert_eq!(sent.0,200,"{}",sent.2);
+    assert_eq!(sent.2,call("PUT",review_path.clone(),auth.clone(),input.to_string()).await.2);
+    assert_eq!(call("GET",review_path,other_auth.clone(),"".into()).await.0,404);
+    host.owner_command(&format!("withdraw {device}")).unwrap();
+    assert_eq!(call("GET",bin,pinned,"".into()).await.0,403);
+    host.owner_command(&format!("revoke {device}")).unwrap();
+    assert_eq!(call("GET",workspace_path,auth,"".into()).await.0,401);
+    listener.stop().await.unwrap();
+    worker.stop();
+}
+
 #[cfg(all(windows, feature = "desktop"))]
 #[tokio::test]
 async fn managed_identity_survives_leaf_rotation_and_refuses_damaged_keys() {

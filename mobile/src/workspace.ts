@@ -270,7 +270,13 @@ export class MobileWorkspace {
         throw Error('Incompatible host. Update the required client or host.');
       this.patch({ multiWorkspace: caps.multiWorkspace === true });
       if (caps.multiWorkspace === true) await this.refreshWorkspaces();
-      const identity = await this.port.api(host, '/workspace/identity');
+      const identity = await this.port.api(host, '/workspace/identity').catch(e => {
+        if (e instanceof HostError && e.code === 'WORKSPACE_ACCESS_REVOKED' &&
+            !host.workspaceId && caps.nextMobile === 1 &&
+            (this.state.workspaces?.length ?? 0) === 0)
+          throw new HostError(403, 'No workspaces are granted. Grant access in Vaultor Next Settings → Hosting.', e.code);
+        throw e;
+      });
       this.valid(epoch);
       const scope = scopeFor(
         host.hostId,

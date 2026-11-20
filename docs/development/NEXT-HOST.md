@@ -54,7 +54,17 @@ The descriptor and pairing exchange reuse the legacy non-browser shapes. The rem
 | `PUT /workspaces/{workspace}/resources/{id}/review/{operation}` | M23 Review submission. The saved revision, resource and operation UUID must match captured evidence. Identical retries receive the same receipt |
 | `GET /workspaces/{workspace}/resources/{id}/review/{operation}` | The authenticated device's Review receipt |
 
-Linked-source content and protected drafts stay local. The Android reader expects the original protocol 3 DTOs, companion snapshots and Review statuses. The versioned API does not complete that adapter. Browser session cookies and the hosted browser application remain open.
+Linked-source originals and protected drafts stay local. Browser sessions and the hosted browser application remain open.
+
+## Android M24-C projection
+
+The host descriptor advertises `protocol: vaultor-next/1` and `mobileProtocol: 1`. Android preserves the legacy Java protocol 3 route set for its original hosts and uses `/api/next/mobile/v1` for Next protocol 3-shaped DTOs. The public descriptor and pairing paths are shared. Legacy APKs and pre-M24-C Next hosts cannot use this projection. Profile trust requires the out-of-band SHA-256 CA fingerprint for Next enrollment and a matching owner-approved code. The profile pins the CA and checks the connection address through normal TLS on every request. The user can update an address manually under the same CA and host UUID.
+
+The read routes expose the currently hosted granted workspace, managed Library/collection/tag summaries, saved Tiptap documents, FTS and original filename search, managed relationships and ranged originals. Bearer authorization and the optional explicit `X-Vaultor-Workspace` scope are checked by Rust. Empty grants produce an empty workspace list; protected routes distinguish device refusal and grant refusal. Workspace identity and generation share the Rust workspace UUID. Reset events invalidate saved reads and browse state and trigger reconciliation on reconnect. The stream has no replay journal.
+
+Android retains verified checkpoints in its existing native store. Rust prepares short-lived, device-owned snapshots with a pinned SHA-256 manifest. Saved note bytes are fixed at capture. Managed file streams must match the captured length and hash. Changed or missing originals require a fresh checkpoint, preserving the existing active mobile copy. The host admits one preparation at a time and four prepared checkpoints with a 15-minute lifetime. Selection is bounded to 1,000 resources, 12 MiB of accumulated note/inventory data, 64 MiB per original and 2 GiB total. Hosts discard preparation state across restart. Connected imports, companion exports and browser workflows are outside this adapter.
+
+Review submission maps the Android operation UUID, workspace generation, captured revision, resource, original evidence and comment to M23. Rust derives the author from authenticated device approval. Retries and receipts use the same operation and target IDs. See [Android setup and candidate delivery](../android/ANDROID.md) and the [same-Wi-Fi Help procedure](../help/next-foundation.md#connect-android-on-the-same-wi-fi).
 
 ## Docker candidate
 

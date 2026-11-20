@@ -16,7 +16,7 @@ const values = parsed.data.filter(r => r[0]);
 const [headers, ...rows] = values;
 const failures = new Set(rows.filter(r => ['run_failure','run_invalidated'].includes(r[11])).map(r => r[16]));
 const normalized = rows.map(row => row.map((value, index) => index === 1 ? new Date(value) : index === 12 && value !== '' && value !== null ? Number(value) : index === 10 ? Number(value) : index === 14 ? (['true','Y'].includes(String(value)) && !failures.has(row[16]) ? 'Y' : 'N') : value));
-const appendExperiment=process.argv.includes('--append-m24')?'m24-host-v1':process.argv.includes('--append-m23')?'m23-native-v1':process.argv.includes('--append-m22')?'m22-transfers-v1':process.argv.includes('--append-m21')?'m21-discovery-v1':process.argv.includes('--append-m20')?'m20-linked-v1':process.argv.includes('--append-m19')?'m19-previews-v1':process.argv.includes('--append-m18')?'m18-editor-v1':null;
+const appendExperiment=process.argv.includes('--append-m24c')?'m24c-android-v1':process.argv.includes('--append-m24')?'m24-host-v1':process.argv.includes('--append-m23')?'m23-native-v1':process.argv.includes('--append-m22')?'m22-transfers-v1':process.argv.includes('--append-m21')?'m21-discovery-v1':process.argv.includes('--append-m20')?'m20-linked-v1':process.argv.includes('--append-m19')?'m19-previews-v1':process.argv.includes('--append-m18')?'m18-editor-v1':null;
 if(appendExperiment){
   const first=rows.findIndex(row=>row[2]===appendExperiment);
   if(first<0||rows.slice(first).some(row=>row[2]!==appendExperiment))throw Error('The selected experiment must form the canonical tail');

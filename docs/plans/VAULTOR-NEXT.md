@@ -1,6 +1,6 @@
 # Vaultor Next migration tracker
 
-Reviewed 2026-11-15. Authoritative experimental replacement tracker. Published Windows/macOS 0.27.0 remain Electron/Java. This milestone does not merge, tag or publish releases; Android is on hold.
+Reviewed 2026-11-20. Authoritative experimental replacement tracker. Published Windows/macOS 0.27.0 remain Electron/Java. M24-C uses a separate local Android candidate. The branch remains experimental.
 
 ## Target and implemented milestones
 
@@ -559,6 +559,12 @@ Docker Desktop Engine 29.8.1 built and ran the Linux/amd64 image `vaultor-next-h
 Windows x64 build 26340, Core Ultra 7 255HX, 20 logical CPUs, 15.4 GiB RAM, Edge WebView2 157.0.4341.60, Node 24.18.1. The desktop fixture used one default managed note and one isolated WebView2 profile. Each desktop idle window followed two seconds of settling and sampled a single 6.5-second window. Background load and power state were uncontrolled. Shared pages can be counted more than once. These paired snapshots do not estimate sustained overhead. Android, physical LAN, browser, throughput, sustained idle and load contention remain unmeasured. The [canonical benchmark workbook](../../benchmarks/tauri-rust/vaultor_tauri_rust_benchmark_tracker.xlsx) appends 65 observations to 11,850 preserved rows. [Workbook validation](../../benchmarks/tauri-rust/summaries/m24-workbook-validation.json) verified all 1,170 new fields and 475 unchanged formulas.
 
 For M25, measure matched desktop workloads, sustained process-role memory and idle CPU, then compare hosted TLS, streaming, reconnect and contention workloads once the corresponding clients are available. M26 keeps the original functional gates for in-place replacement and verified rollback, Electron archive interoperation, Word/PDF fidelity, PDF discovery/preview, exact linked-occurrence selection and near-1 MiB editing. Maintain separate Windows physical input, visual, motion and accessibility gates, Android/emulator/physical and real-LAN gates, and security and production release gates. Preserve platform-deferred rows and keep cloud synchronization, collaboration and other post-migration capabilities in the new-feature backlog.
+
+### M24-C Android integration
+
+The M24-C Windows host advertises mobile projection v1 in its HTTPS descriptor. A side-by-side Android build reuses the original React Native presentation, Keystore approvals, reader and retained storage. Enter Windows' CA fingerprint for initial trust, compare the per-attempt code, then approve and grant access on Windows. Subsequent requests verify the host CA and address. [Host and protocol contract](../development/NEXT-HOST.md#android-m24-c-projection) · [Same-Wi-Fi instructions](../help/next-foundation.md#connect-android-on-the-same-wi-fi).
+
+The projection serves the current granted workspace, managed saved notes and originals, organization and search, verified retained reading, reset-based reconciliation and revision-bound Review delivery through M23. The published app retains its Java host contract and data. Android LAN discovery, QR, automatic address recovery, the original browser application, browser sessions, remaining host management and physical acceptance remain open. Connected Android import/export parity also remains open.
 
 ### M25 — Comprehensive Performance Optimization
 

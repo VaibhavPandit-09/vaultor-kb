@@ -2,6 +2,7 @@
 //! managed resources only. Neither workspace paths nor desktop commands enter the router.
 mod access;
 mod pairing;
+mod mobile;
 #[cfg(test)]
 mod tests;
 mod transport;
@@ -46,6 +47,7 @@ pub struct Host {
     identity: Arc<Identity>,
     workspace: Uuid,
     enrollment: Arc<Mutex<pairing::Pairing>>,
+    mobile_checkpoints: Arc<Mutex<mobile::Checkpoints>>,
     requests: Arc<Semaphore>,
     streams: Arc<Semaphore>,
     access_changed: tokio::sync::watch::Sender<()>,
@@ -136,6 +138,7 @@ impl Host {
             access: access.into(),
             workspace,
             enrollment: Arc::default(),
+            mobile_checkpoints: Arc::default(),
             identity: identity.into(),
             requests: Arc::new(Semaphore::new(24)),
             streams: Arc::new(Semaphore::new(16)),
@@ -266,6 +269,7 @@ impl Host {
             .route("/api/pairings", post(pairing::enroll))
             .route("/api/pairings/{id}", get(pairing::poll))
             .route("/api/pairings/{id}/complete", post(pairing::complete))
+            .nest("/api/next/mobile/v1", mobile::router())
             .route("/api/next/v1/workspaces", get(workspaces))
             .route(
                 "/api/next/v1/workspaces/{workspace}/resources",
@@ -413,6 +417,15 @@ async fn changes(
     RoutePath(workspace): RoutePath<Uuid>,
     headers: HeaderMap,
 ) -> ApiResult<Response> {
+    change_stream(host, workspace, headers, false).await
+}
+
+async fn change_stream(
+    host: Host,
+    workspace: Uuid,
+    headers: HeaderMap,
+    mobile: bool,
+) -> ApiResult<Response> {
     use axum::response::sse::{Event, Sse};
     let permit = host
         .streams
@@ -425,6 +438,14 @@ async fn changes(
     let mut heartbeat = tokio::time::interval(Duration::from_secs(5));
     heartbeat.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     let end = tokio::time::Instant::now() + Duration::from_secs(120);
+    let reset = move || {
+        let data = if mobile {
+            json!({"kind":"reset","cursor":Uuid::new_v4(),"generation":workspace}).to_string()
+        } else {
+            workspace.to_string()
+        };
+        Event::default().event("reset").data(data)
+    };
     let stream = futures_util::stream::unfold(
         (
             host,
@@ -437,12 +458,12 @@ async fn changes(
         ),
         move |(host, grant, mut updates, mut access_changed, mut heartbeat, permit, first)| async move {
             let event = if first {
-                Event::default().event("reset").data(workspace.to_string())
+                reset()
             } else {
                 tokio::select! {
                     _ = host.stop.cancelled() => return None,
                     _ = tokio::time::sleep_until(end) => return None,
-                    Ok(()) = updates.changed() => Event::default().event("reset").data(workspace.to_string()),
+                    Ok(()) = updates.changed() => reset(),
                     _ = heartbeat.tick() => Event::default().comment("keepalive"),
                     Ok(()) = access_changed.changed() => Event::default().comment("access"),
                 }
@@ -502,7 +523,7 @@ async fn enforce_transport(
 async fn descriptor(State(host): State<Host>) -> Json<Value> {
     Json(
         json!({"hostId": host.identity.id, "fingerprint": host.identity.fingerprint,
-        "protocol": "vaultor-next/1", "pairing": "host-approval", "pairingTtlSeconds":300}),
+        "protocol": "vaultor-next/1", "mobileProtocol": 1, "pairing": "host-approval", "pairingTtlSeconds":300}),
     )
 }
 
@@ -727,6 +748,12 @@ async fn file(
         }
     };
     let size = receipt.length;
+    let expected = receipt.hash.clone();
+    if let Some(pin) = headers.get("x-vaultor-payload-sha256") {
+        if pin.as_bytes() != expected.as_bytes() {
+            return Err(StatusCode::PRECONDITION_FAILED);
+        }
+    }
     let stop = host.stop.clone();
     let opened = tokio::task::spawn_blocking(move || {
         let mut file = crate::transfers::plain_file(&receipt.path)?;
@@ -760,6 +787,7 @@ async fn file(
         .header(header::ACCEPT_RANGES, "bytes")
         .header(header::CONTENT_TYPE, "application/octet-stream")
         .header(header::CONTENT_DISPOSITION, "attachment")
+        .header("x-vaultor-sha256", expected)
         .header(header::CONTENT_LENGTH, length);
     if partial {
         response = response.header(

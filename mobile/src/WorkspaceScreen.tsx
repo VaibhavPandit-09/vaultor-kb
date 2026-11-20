@@ -211,6 +211,7 @@ export default function WorkspaceScreen() {
     [readerPanel, setReaderPanel] = useState<ReaderPanel>(),
     [searchRequest, setSearchRequest] = useState(0),
     [address, setAddress] = useState('https://'),
+    [fingerprint, setFingerprint] = useState(''),
     [code, setCode] = useState(''),
     [inventory, setInventory] = useState<any>(),
     [recoveryError, setRecoveryError] = useState('');
@@ -504,6 +505,7 @@ export default function WorkspaceScreen() {
     );
     return () => completed.remove();
   }, [model]);
+  const feedRevoked = state.connection === 'revoked';
   useEffect(() => {
     const h = state.host;
     if (!initialized || !h) return;
@@ -514,6 +516,7 @@ export default function WorkspaceScreen() {
       });
       return () => listener.remove();
     }
+    if (feedRevoked) return;
     const feed = new ReaderFeed({
       start: cursor => native.startChanges(h.hostId, h.epoch, cursor),
       stop: () => native.stopChanges(),
@@ -526,7 +529,9 @@ export default function WorkspaceScreen() {
       reconcile: () => model.changedFeed(),
       reviews: reviewSync.refresh,
       error: e => {
-        if (!model.snapshot().downloaded) model.report(e);
+        const current = model.snapshot();
+        if (!current.downloaded && current.connection !== 'revoked')
+          model.report(e);
       },
     });
     const events = new NativeEventEmitter(native).addListener(
@@ -562,6 +567,7 @@ export default function WorkspaceScreen() {
     initialized,
     state.host,
     state.localOnly,
+    feedRevoked,
     refreshDownloads,
     reviewSync.refresh,
   ]);
@@ -787,15 +793,28 @@ export default function WorkspaceScreen() {
             onChangeText={setAddress}
             autoCapitalize="none"
             autoCorrect={false}
+            editable={!code}
+          />
+          <Text style={s.secondary}>
+            For Vaultor Next, enter the CA fingerprint from Settings → Hosting.
+          </Text>
+          <TextInput
+            style={s.input}
+            accessibilityLabel="Host CA fingerprint"
+            value={fingerprint}
+            onChangeText={setFingerprint}
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!code}
           />
           <Action
             label="Pair with host"
-            disabled={state.busy}
+            disabled={state.busy || !!code}
             onPress={() =>
               run(async () => {
                 await permission();
                 const r = await parse<{ code: string }>(
-                  native.beginPairing(address),
+                  native.beginVerifiedPairing(address, fingerprint),
                 );
                 setCode(r.code);
               })
@@ -814,14 +833,28 @@ export default function WorkspaceScreen() {
                     const r = await parse<{ state: string }>(
                       native.completePairing(),
                     );
+                    if (r.state === 'REJECTED' || r.state === 'EXPIRED') {
+                      setCode('');
+                      throw Error(r.state === 'REJECTED'
+                        ? 'The host rejected pairing. Start a new request if needed.'
+                        : 'Pairing expired. Start a new request and compare the new code.');
+                    }
                     if (r.state !== 'APPROVED')
                       throw Error('Waiting for matching-code approval.');
                     await model.adopted();
                     setCode('');
+                    setFingerprint('');
                     if (model.snapshot().connection === 'online')
                       closeSources();
                   })
                 }
+              />
+              <Action
+                label="Cancel pairing"
+                onPress={() => run(async () => {
+                  await native.cancelPairing();
+                  setCode('');
+                })}
               />
             </>
           ) : null}

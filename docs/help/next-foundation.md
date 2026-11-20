@@ -188,13 +188,25 @@ Sharing starts off unless you turn on **Start hosting on launch**. This setting 
 
 Use **Refresh devices** to see pending approvals. Compare the pairing codes, approve the device, then grant access to the current workspace. You can withdraw that grant or revoke the device. A device can retain files it already received.
 
-Stop hosting before switching workspaces. Closing to the tray keeps sharing running. Quit ends it. The experimental host serves supported API clients. Android offline reading and browser workspace access still require a compatible published Vaultor host.
+Stop hosting before switching workspaces. Closing to the tray keeps sharing running. Quit ends it. The M24-C Android candidate can connect manually to the matching Next Windows build. Browser workspace access remains separate.
+
+### Connect Android on the same Wi-Fi
+
+1. Launch the M24-C Windows executable with a Vaultor Next workspace. In **Settings → Hosting**, select the private Wi-Fi address and select **Start hosting**. Leave this page open to see the HTTPS address and **CA fingerprint (SHA-256)**.
+2. Install the M24-C Android APK from Files and open **Vaultor Next**. It installs alongside the published Vaultor app and starts with its own approvals, downloads and Review queue. Android may ask you to allow the APK installer and local network access.
+3. Open **Source management**, enter the full HTTPS address including its port, and enter the CA fingerprint displayed by Windows. Tap **Pair with host**.
+4. In Windows select **Refresh devices**. Compare the six-digit codes on both screens. If they match, select **Codes match**, **Approve** and **Grant access** for the current workspace. On Android select **I approved the matching code** and open the workspace in Library.
+5. Open notes or managed originals from Library or search. Use **Offline downloads** to prepare a reading copy. Use **Review** to queue feedback for the current saved revision. The desktop **Review inbox** displays delivered feedback.
+
+For an unreachable host, verify both devices are on the same private Wi-Fi, the host is bound to the Wi-Fi IP, and Windows Firewall allows the chosen executable on the Private network. Guest network isolation or a VPN can block peer traffic. For a changed address, edit the remembered host address and verify the same CA fingerprint. If the identity differs, stop and verify the host before pairing again. Expired pairing needs a fresh code. An approved device with no workspace needs **Grant access** on Windows.
+
+Downloads can remain readable while disconnected. Once the app verifies that a device or workspace grant was revoked, it locks the affected copy. Files previously saved or shared outside Vaultor remain with their recipients. Linked-source originals stay on the host.
 
 ## Review Inbox
 
 Open **Review inbox** in primary navigation or from the Application menu. Managed note and file headers offer the same inbox scoped to that resource. Use the status filter to inspect open, resolved and dismissed feedback. Expand **Original evidence** for a captured quote, context, locator and saved revision. A change to the saved note, Trash or deletion can make the original placement unavailable. The evidence remains readable.
 
-Use **Resolve** after handling a comment, **Dismiss** to close it without further action or **Reopen** to return it to the open list. These actions retain evidence and leave current content and drafts untouched. Restored evidence retains its original attribution label and triage status, with current placement unverified. This experimental Windows app has no paired companion submission connection yet.
+Use **Resolve** after handling a comment, **Dismiss** to close it without further action or **Reopen** to return it to the open list. These actions retain evidence and leave current content and drafts untouched. Restored evidence retains its original attribution label and triage status, with current placement unverified. Paired M24-C Android feedback appears with the host-approved device label.
 
 ## Background Activity
 

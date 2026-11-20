@@ -51,7 +51,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     require(path in listOf("/capabilities","/workspace/identity","/companions/estimate") || path.matches(Regex("/companions/[a-f0-9-]{36}(?:/(?:inventory|coverage)(?:\\?page=[0-9]+&size=[0-9]+)?|/payloads/(?:[a-f0-9-]{36}\\.(?:json|bin)|manifest\\.json|organization\\.json))?")))
     require(method in listOf("GET","PUT","POST","DELETE"))
     val p=selected(a.getString("hostId"),a.getString("epoch"));val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint"))
-    val c=URI(address(p.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection
+    val c=endpoint(p,path).toURL().openConnection() as HttpsURLConnection
     c.sslSocketFactory=context(cert).socketFactory;c.connectTimeout=10000;c.readTimeout=30000;c.instanceFollowRedirects=false;c.requestMethod=method
     c.setRequestProperty("Authorization","Bearer "+p.getString("credential"));c.setRequestProperty("X-Vaultor-Protocol","3")
     c.setRequestProperty("X-Vaultor-Workspace",JSONArray(a.getString("scope")).getString(1));c
@@ -84,7 +84,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   },{a,path,method ->
     require(path.matches(Regex("/resources/(?:imports/)?[a-fA-F0-9-]{36}(?:/(?:raw|thumbnail))?")))
     val p=selected(a.getString("hostId"),a.getString("epoch"));val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint"))
-    val con=URI(address(p.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection
+    val con=endpoint(p,path).toURL().openConnection() as HttpsURLConnection
     con.sslSocketFactory=context(cert).socketFactory;con.connectTimeout=10000;con.readTimeout=30000;con.instanceFollowRedirects=false;con.requestMethod=method
     con.setRequestProperty("Authorization","Bearer "+p.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");if(path!="/capabilities" && p.optString("selectedWorkspaceId").isNotEmpty())con.setRequestProperty("X-Vaultor-Workspace",p.getString("selectedWorkspaceId"));con
   },{a ->
@@ -93,7 +93,8 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     val p=selected(a.getString("hostId"),a.getString("epoch"));val scope=JSONArray(a.getString("scope"));require(scope.length()==3 && scope.getString(0)==a.getString("hostId"))
     val identity=json(request(p,"/workspace/identity",token=a.getString("epoch")))
     require(scope.getString(1)==identity.getString("id") && scope.getString(2)==identity.getString("generation")) {"Workspace changed. Media remains bound to its original source."}
-  },{a,id -> if(a.optBoolean("offline")){companionScope(a);companions.file(a.getString("scope"),id)}else null},{a,path,status,body->companions.observeScopeResponse(a.getString("scope"),path,status,body)},{a->companions.requireAccess(a.getString("scope"))}) }
+  },{a,id -> if(a.optBoolean("offline")){companionScope(a);companions.file(a.getString("scope"),id)}else null},{a,path,status,body->companions.observeScopeResponse(a.getString("scope"),path,status,body)},{a->companions.requireAccess(a.getString("scope"))},
+    {a->selected(a.getString("hostId"),a.getString("epoch")).optBoolean("nextMobile")}) }
   @ReactMethod fun media(action:String,input:String,promise:Promise) {try {require(action in listOf("list","thumbnail","preview","share","open","copy","save")) {"Android reading cannot upload or alter placements. Export legacy recovery instead."};require(input.length<=12000);media.call(action,JSONObject(input),promise)}catch(_:Exception){promise.reject("MEDIA_INPUT","Invalid media request.")}}
   @ReactMethod fun cancelMedia() {media.cancel()}
   private fun utilityChanged(event:String){if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit(event,"changed")}
@@ -252,7 +253,13 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       }
       currentApproval()
       // A captured, approved profile and explicit workspace header; never selected()/activate().
-      val result=try {this@VaultorModule.request(p,path,method,body,scopeCapabilities=true)}
+      val result=try {
+        val route=if(p.optBoolean("nextMobile") && path.startsWith("/reviews/")) {
+          val resource=UUID.fromString(source.getString("resourceId")).toString()
+          "$path/$resource"
+        } else path
+        this@VaultorModule.request(p,route,method,body,scopeCapabilities=true)
+      }
       catch(_:javax.net.ssl.SSLException){throw VaultorReviewSync.Failure("TLS_VERIFICATION_FAILED")}
       catch(_:java.security.GeneralSecurityException){throw VaultorReviewSync.Failure("TLS_VERIFICATION_FAILED")}
       currentApproval()
@@ -329,7 +336,11 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   } }
   private fun net(promise: Promise, worker:java.util.concurrent.ExecutorService=network, action: () -> String) { worker.execute {
     try { promise.resolve(action()) } catch(e:Exception) {
-      promise.reject("VAULTOR_NETWORK",if(e is SSLException) "Host TLS verification failed. Verify its identity." else "Host unavailable, access refused or request cancelled. Reading copies and recovery remain.")
+      promise.reject("VAULTOR_NETWORK",when(e) {
+        is ConnectionRefusal -> e.message
+        is SSLException -> "Host identity or TLS certificate changed. Verify the address and CA fingerprint on the host."
+        else -> "Host unavailable, access refused or request cancelled. Reading copies and recovery remain."
+      })
     }
   } }
   private fun selected(hostId:String, token:String):JSONObject = synchronized(stateLock) {
@@ -357,6 +368,12 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   }
   private fun ca(p: JSONObject): X509Certificate = CertificateFactory.getInstance("X.509")
     .generateCertificate(Base64.decode(p.getString("ca"),Base64.NO_WRAP).inputStream()) as X509Certificate
+  private class ConnectionRefusal(message: String): Exception(message)
+  private fun endpoint(p: JSONObject, path: String): URI {
+    val isPublic = path=="/access/host" || path=="/pairings" || path.startsWith("/pairings/")
+    val prefix = if(p.optBoolean("nextMobile") && !isPublic) "/api/next/mobile/v1" else "/api"
+    return URI(address(p.getString("address"))+prefix+path)
+  }
   private class ReadLane {val sequence=java.util.concurrent.atomic.AtomicLong();@Volatile var connection:HttpsURLConnection?=null}
   private val browseLane=ReadLane()
   private val quickLane=ReadLane()
@@ -366,12 +383,12 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     set(value){browseLane.connection=value}
   private fun request(p: JSONObject, path: String, method: String="GET", body: String?=null, secret: String?=null, revision: String?=null, token:String?=null, multipart:Boolean=false,browse:Long?=null,lane:ReadLane=browseLane,scopeCapabilities:Boolean=false): JSONObject {
     val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint")) { "Host identity changed; explicit pairing is required." }
-    val con=URI(address(p.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection
+    val con=endpoint(p,path).toURL().openConnection() as HttpsURLConnection
     con.sslSocketFactory=context(cert).socketFactory
     con.connectTimeout=10000;con.readTimeout=15000;con.instanceFollowRedirects=false;con.requestMethod=method
     con.setRequestProperty("X-Vaultor-Protocol","3")
     if((path!="/capabilities" || scopeCapabilities) && p.optString("selectedWorkspaceId").isNotEmpty())con.setRequestProperty("X-Vaultor-Workspace",p.getString("selectedWorkspaceId"))
-    if(p.has("credential")) con.setRequestProperty("Authorization","Bearer "+p.getString("credential"))
+    if(p.has("credential") && path!="/access/host") con.setRequestProperty("Authorization","Bearer "+p.getString("credential"))
     if(secret!=null) con.setRequestProperty("X-Vaultor-Pairing",secret)
     if(revision!=null) con.setRequestProperty("If-Match",revision)
     try {
@@ -403,6 +420,20 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     if(current==null || listOf("credential","fingerprint","address").any{current.optString(it)!=p.optString(it)})return
     val value=runCatching{JSONObject(body)}.getOrDefault(JSONObject())
     val source=JSONObject().put("hostId",p.getString("hostId")).put("workspaceId",p.optString("selectedWorkspaceId"))
+    if(p.optBoolean("nextMobile") && path=="/workspace/identity" && status==200 && source.optString("workspaceId").isEmpty()) {
+      val id=value.optString("id")
+      if(id.matches(Regex("[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}"))) synchronized(stateLock) {
+        val state=read()
+        val stored=state.optJSONObject("profiles")?.optJSONObject(p.getString("hostId"))
+        if(stored!=null && stored.optString("selectedWorkspaceId").isEmpty() &&
+          listOf("credential","fingerprint","address").all {stored.optString(it)==p.optString(it)}) {
+          stored.put("selectedWorkspaceId",id)
+          if(state.optString("selected")==p.getString("hostId"))state.put("profile",stored)
+          write(state)
+          source.put("workspaceId",id)
+        }
+      }
+    }
     companions.observeResponse(source,path,status,value)
     if(VaultorSourceAccess.invalidates(path,status,value)) {
       // The evictable saved-note fallback may exist without a retained checkpoint.
@@ -414,7 +445,13 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     require(response.getInt("status") in 200..299) { "Host refused this request (${response.getInt("status")})." }
     return JSONObject(response.getString("body"))
   }
-  @ReactMethod fun beginPairing(input: String, promise: Promise) = net(promise) {
+  internal fun beginPairing(input: String, promise: Promise) = beginVerifiedPairing(input, "", promise)
+  @ReactMethod fun cancelPairing(promise: Promise) = net(promise) {
+    pending=null
+    "{}"
+  }
+  @ReactMethod fun beginVerifiedPairing(input: String, fingerprintInput: String, promise: Promise) = net(promise) {
+    pending=null
     val origin=address(input);val u=URI(origin)
     // Enrollment-only TLS observation: never sends HTTP, credentials or document data.
     var observed: X509Certificate?=null
@@ -431,8 +468,27 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     }
     val cert=observed ?: error("Host did not supply its public authority.")
     val profile=JSONObject().put("address",origin).put("ca",Base64.encodeToString(cert.encoded,Base64.NO_WRAP)).put("fingerprint",fingerprint(cert))
-    val host=json(request(profile,"/access/host"))
-    require(host.getString("fingerprint")==profile.getString("fingerprint"));profile.put("hostId",host.getString("hostId"))
+    val descriptor=request(profile,"/access/host")
+    if(descriptor.getInt("status")!=200)throw ConnectionRefusal("This address does not offer a compatible Vaultor host.")
+    val host=json(descriptor)
+    val next=host.optString("protocol").startsWith("vaultor-next/")
+    if(next && (host.optString("protocol")!="vaultor-next/1" || host.optInt("mobileProtocol")!=1))
+      throw ConnectionRefusal("This Vaultor Next host does not support this Android build.")
+    val expected=fingerprintInput.trim().replace(":","").lowercase()
+    if(next && expected.isEmpty())
+      throw ConnectionRefusal("Enter the CA fingerprint shown in Vaultor Next Settings → Hosting.")
+    if(host.optString("fingerprint")!=profile.getString("fingerprint") ||
+      (expected.isNotEmpty() && expected!=profile.getString("fingerprint")))
+      throw ConnectionRefusal("Host identity differs from the CA fingerprint you entered.")
+    val hostId=runCatching {UUID.fromString(host.getString("hostId")).toString()}.getOrElse {
+      throw ConnectionRefusal("This address does not offer a compatible Vaultor host.")
+    }
+    synchronized(stateLock) {
+      val saved=read().optJSONObject("profiles")?.optJSONObject(hostId)
+      if(saved!=null && saved.optString("fingerprint")!=profile.getString("fingerprint"))
+        throw ConnectionRefusal("A remembered host has a different identity. Verify the host before changing its approval.")
+    }
+    profile.put("hostId",hostId).put("nextMobile",next)
     val nonce=ByteArray(32).also { random.nextBytes(it) }.joinToString("") {"%02x".format(it)}
     val enrollment=json(request(profile,"/pairings","POST",JSONObject().put("name","Vaultor Android").put("kind","desktop").put("nonce",nonce).put("fingerprint",profile.getString("fingerprint")).toString()))
     require(enrollment.getString("hostId")==profile.getString("hostId") && enrollment.getString("fingerprint")==profile.getString("fingerprint"))
@@ -441,8 +497,16 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   }
   @ReactMethod fun completePairing(promise: Promise) = net(promise) {
     val a=pending ?: error("Start pairing first.");val p=a.getJSONObject("profile");val e=a.getJSONObject("enrollment")
-    val status=json(request(p,"/pairings/"+e.getString("id"),secret=e.getString("secret")))
-    if(status.getString("state")!="APPROVED") return@net status.toString()
+    val result=request(p,"/pairings/"+e.getString("id"),secret=e.getString("secret"))
+    if(result.getInt("status")==404) {
+      pending=null
+      return@net JSONObject().put("state","EXPIRED").toString()
+    }
+    val status=json(result)
+    if(status.getString("state")!="APPROVED") {
+      if(status.optString("state") in listOf("REJECTED","EXPIRED"))pending=null
+      return@net status.toString()
+    }
     val done=json(request(p,"/pairings/"+e.getString("id")+"/complete","POST","{}",e.getString("secret")))
     require(done.getString("credential").matches(Regex("[a-f0-9]{64}")));p.put("credential",done.getString("credential"))
     synchronized(stateLock) {val state=read();val profiles=state.optJSONObject("profiles") ?: JSONObject();require(profiles.has(p.getString("hostId")) || profiles.length()<8) {"Remove a remembered host before pairing another."};profiles.optJSONObject(p.getString("hostId"))?.optString("selectedWorkspaceId")?.takeIf {it.isNotEmpty()}?.let {p.put("selectedWorkspaceId",it)};profiles.put(p.getString("hostId"),p);state.put("profiles",profiles);state.put("selected",p.getString("hostId"));state.put("profile",p);write(state);cancelRequests()};pending=null
@@ -602,7 +666,13 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     require(organizationPath(path,method,revision) || (method=="GET" && (path=="/capabilities" || path=="/workspace/identity" || path=="/settings/workspace" || path.matches(Regex("/workspaces(?:/[a-f0-9-]{36})?")) || path.matches(Regex("/resources(?:\\?page=0&size=30&type=note|/$validId)")))) ||
       (method=="GET" && path.matches(Regex("/resources/$validId/summary"))) || (method=="POST" && path.matches(Regex("/resources/$validId/open")) && body==null)) {"Unsupported mobile operation."}
     val p=selected(hostId,token)
-    if(path=="/capabilities") {val h=json(request(p,"/access/host",token=token));require(h.getString("hostId")==hostId && h.getString("fingerprint")==p.getString("fingerprint"))}
+    if(path=="/capabilities") {
+      val h=json(request(p,"/access/host",token=token))
+      if(h.getString("hostId")!=hostId || h.getString("fingerprint")!=p.getString("fingerprint"))
+        throw ConnectionRefusal("Host identity changed. Verify the CA fingerprint on the host.")
+      if(p.optBoolean("nextMobile") && (h.optString("protocol")!="vaultor-next/1" || h.optInt("mobileProtocol")!=1))
+        throw ConnectionRefusal("This Vaultor Next host does not support this Android build.")
+    }
     val result=request(p,path,method,body,revision=revision,token=token,multipart=path.contains("/imports/"))
 
 
@@ -648,8 +718,9 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   @ReactMethod fun startChanges(hostId:String,token:String,cursor:String,promise:Promise)=run(promise) {
     require(cursor.length<=128 && (cursor.isEmpty() || cursor.matches(Regex("[a-zA-Z0-9:-]+"))))
     val p=selected(hostId,token);stream?.disconnect()
-    val con=URI(address(p.getString("address"))+"/api/changes"+if(cursor.isEmpty())"" else "?cursor=$cursor").toURL().openConnection() as HttpsURLConnection
-    con.sslSocketFactory=context(ca(p)).socketFactory;con.connectTimeout=10000;con.readTimeout=20000;con.instanceFollowRedirects=false
+    val con=endpoint(p,"/changes"+if(cursor.isEmpty() || p.optBoolean("nextMobile"))"" else "?cursor=$cursor").toURL().openConnection() as HttpsURLConnection
+    val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint"))
+    con.sslSocketFactory=context(cert).socketFactory;con.connectTimeout=10000;con.readTimeout=20000;con.instanceFollowRedirects=false
     con.setRequestProperty("Authorization","Bearer "+p.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");con.setRequestProperty("Accept","text/event-stream");if(p.optString("selectedWorkspaceId").isNotEmpty())con.setRequestProperty("X-Vaultor-Workspace",p.getString("selectedWorkspaceId"));stream=con
     streams.execute {
       var status=0

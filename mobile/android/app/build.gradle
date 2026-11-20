@@ -88,12 +88,14 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.vaultorandroid"
+    def nextCandidate = providers.gradleProperty("vaultorNextCandidate").orElse("false").get() == "true"
     defaultConfig {
-        applicationId "com.vaultor.app"
+        applicationId nextCandidate ? "com.vaultor.app.next" : "com.vaultor.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 32
-        versionName "0.1.0-alpha.28"
+        versionCode nextCandidate ? 33 : 32
+        versionName nextCandidate ? "0.1.0-m24c.1" : "0.1.0-alpha.28"
+        manifestPlaceholders.vaultorAppLabel = nextCandidate ? "Vaultor Next" : "@string/app_name"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Explicit acceptance builds only. Ordinary release/debug default false.
         def diagnostics = providers.gradleProperty("vaultorDiagnostics").orElse("false").get() == "true"

@@ -33,7 +33,8 @@ class VaultorMedia(private val ctx:ReactApplicationContext,
   private val valid:(JSONObject)->Unit,
   private val retained:(JSONObject,String)->File? = {_,_->null},
   private val observed:(JSONObject,String,Int,JSONObject)->Unit = {_,_,_,_->},
-  private val accessible:(JSONObject)->Unit = {}) : BaseActivityEventListener() {
+  private val accessible:(JSONObject)->Unit = {},
+  private val useOriginalForThumbnail:(JSONObject)->Boolean = {false}) : BaseActivityEventListener() {
   companion object {
     const val IMAGE_LIMIT=20*1024*1024
     const val FILE_LIMIT=64*1024*1024
@@ -110,23 +111,62 @@ class VaultorMedia(private val ctx:ReactApplicationContext,
   }catch(_:Exception){p.reject("MEDIA_PICKER","No compatible picker/camera is available. Use Files instead.")}}}
   private fun bytes(a:JSONObject,id:String,variant:String="raw"):File {
     require(id.matches(Regex("[a-fA-F0-9-]{36}")));valid(a)
-    if(a.optBoolean("offline")) {
-      val original=retained(a,id) ?: error("Original not downloaded. Connect and refresh this companion.")
-      if(variant=="raw")return original
-      image(original.readBytes())
+    val offline=a.optBoolean("offline")
+    val next=!offline && useOriginalForThumbnail(a)
+    if(variant=="thumbnail" && (offline || next)) {
+      val original=bytes(a,id)
+      require(original.length()<=IMAGE_LIMIT){"Images must be at most 20 MiB."}
       val options=BitmapFactory.Options().apply {inJustDecodeBounds=true};BitmapFactory.decodeFile(original.path,options)
-      var sample=1;while(maxOf(options.outWidth,options.outHeight)/sample>512)sample*=2
+      require(options.outWidth>0 && options.outHeight>0 && options.outWidth.toLong()*options.outHeight<=PIXEL_LIMIT)
+      var sample=1;while(maxOf(options.outWidth,options.outHeight)/sample>256)sample*=2
       val bitmap=BitmapFactory.decodeFile(original.path,BitmapFactory.Options().apply {inSampleSize=sample}) ?: error("Image cannot be decoded.")
-      val dest=File(cache,"offline-$id.png");dest.outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,90,it)};bitmap.recycle();return dest
+      return File(Uri.parse(rendered(bitmap)).path ?: error("Image preview unavailable."))
     }
+    if(offline)return retained(a,id) ?: error("Original not downloaded. Connect and refresh this companion.")
     val key=MessageDigest.getInstance("SHA-256").digest((a.getString("scope")+id+variant).toByteArray()).joinToString(""){"%02x".format(it)}
-    val f=File(cache,key);if(f.exists()){f.setLastModified(System.currentTimeMillis());return f}
+    val f=File(cache,key)
+    if(f.exists()){
+      // Next checks that the managed resource still exists before reusing a transient preview.
+      if(next) {
+        val check=connection(a,"/resources/$id","GET")
+        active.add(check)
+        try {
+          val status=check.responseCode
+          if(status !in 200..299){
+            val problem=check.errorStream?.use { it.readNBytes(16385) } ?: byteArrayOf()
+            if(problem.size<=16384) observed(a,"/resources/$id",status,runCatching { JSONObject(String(problem)) }.getOrDefault(JSONObject()))
+            error("Resource unavailable. It may have been removed or access revoked.")
+          }
+        } finally {active.remove(check);check.disconnect()}
+      }
+      f.setLastModified(System.currentTimeMillis())
+      return f
+    }
     val con=connection(a,"/resources/$id/$variant","GET");active.add(con)
+    val part=File(cache,"$key.part")
     try {val status=con.responseCode;if(status !in 200..299){val problem=con.errorStream?.use{it.readNBytes(16385)}?:byteArrayOf();if(problem.size<=16384)observed(a,"/resources/$id/$variant",status,runCatching{JSONObject(String(problem))}.getOrDefault(JSONObject()))};require(status in 200..299) {"Resource unavailable (${con.responseCode}). It may have been removed or access revoked. Retry when connected."};val max=if(variant=="thumbnail")384*1024 else FILE_LIMIT
-      require(con.contentLengthLong<=max);val data=con.inputStream.use {it.readNBytes(max+1)};require(data.size<=max){"Resource exceeds the mobile 64 MiB file limit."};valid(a)
-      while((cache.listFiles()?.sumOf {it.length()} ?: 0)+data.size>96L*1024*1024){val old=cache.listFiles()?.minByOrNull {it.lastModified()} ?: break;old.delete()}
-      f.writeBytes(data);return f
-    }finally {active.remove(con);con.disconnect()}
+      val expected=con.contentLengthLong
+      require(expected<=max){"Resource exceeds the mobile file limit."}
+      var length=0L
+      con.inputStream.use {input->part.outputStream().use {out->
+        val buffer=ByteArray(65536)
+        while(true){
+          val count=input.read(buffer)
+          if(count<0)break
+          length+=count
+          require(length<=max){"Resource exceeds the mobile file limit."}
+          out.write(buffer,0,count)
+        }
+      }}
+      require(expected<0 || length==expected){"File transfer ended early. Retry."}
+      valid(a)
+      while((cache.listFiles()?.sumOf {it.length()} ?: 0)>96L*1024*1024){
+        val old=cache.listFiles()?.filter {it!=part}?.minByOrNull {it.lastModified()} ?: break
+        if(!old.delete())break
+      }
+      check(part.renameTo(f))
+      return f
+    }finally {part.delete();active.remove(con);con.disconnect()}
   }
   private fun rendered(bitmap:Bitmap):String {
     val dest=File(cache,"render-${UUID.randomUUID()}.png");dest.outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,100,it)};bitmap.recycle()

@@ -26,3 +26,5 @@ Capture a Review against a source/revision, protect its quote/context locally, t
 Android supports reviewed import delivery, full/partial exports and native Save/Share where source capabilities allow. Offline exports declare omissions. Pairing uses approved host identity/pinned TLS; no host administration is added. Update using the original-signed increasing-code APK without uninstalling or clearing data. Legacy recovery exports remain separate and never replay retired writes.
 
 No Android in-app Help was implemented by this initiative. The articles here explain Android differences for desktop users; they are not Android UI instructions for new Help controls.
+
+The separate Vaultor Next M24-C test APK can pair manually with the matching experimental Rust host. It has a separate app identity and storage, including retained reading copies and the Review queue. See [Connect Android on the same Wi-Fi](next-foundation.md#connect-android-on-the-same-wi-fi).

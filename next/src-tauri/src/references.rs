@@ -22,6 +22,16 @@ impl Workspace {
         direction: &str,
         page: u64,
     ) -> Result<Value, String> {
+        self.reference_page_for(id, direction, page, false)
+    }
+
+    pub(crate) fn reference_page_for(
+        &self,
+        id: &str,
+        direction: &str,
+        page: u64,
+        managed_only: bool,
+    ) -> Result<Value, String> {
         if page > 10000 || !matches!(direction, "incoming" | "outgoing") {
             return Err("Unsupported reference page".into());
         }
@@ -34,11 +44,16 @@ impl Workspace {
             )
             .map_err(error)?;
         let archived="NOT EXISTS(SELECT 1 FROM resource_state state WHERE state.resource_id=e.source_id AND state.trashed=1)";
-        let (other, filter) = if direction == "incoming" {
+        let (other, mut filter) = if direction == "incoming" {
             ("e.source_id",format!("e.target_id=?1 AND e.source_id IN (SELECT id FROM visible_resources) AND {archived}"))
         } else {
             ("e.target_id", "e.source_id=?1".into())
         };
+        if managed_only {
+            filter.push_str(&format!(" AND {other} IN (
+                SELECT id FROM resources WHERE id NOT LIKE 'linked:%'
+                AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=resources.id AND trashed=1))"));
+        }
         let total: i64 = self
             .db
             .query_row(
