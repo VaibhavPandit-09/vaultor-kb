@@ -182,9 +182,11 @@ impl Workspace {
             PRAGMA user_version=2; COMMIT;").map_err(error)?;
         crate::transfers::initialize(&db)?;
         crate::search::initialize(&mut db)?;
+        crate::file_text::initialize(&db)?;
         crate::linked::initialize(&db)?;
         crate::organization::initialize(&db)?;
         crate::media::initialize(&db)?;
+        crate::references::initialize(&db)?;
         Ok(Self {
             db,
             root,

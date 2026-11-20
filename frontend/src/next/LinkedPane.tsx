@@ -14,7 +14,7 @@ import NoteOrientation from '../components/NoteOrientation';
 import {linkedCommand} from './linked';
 import type {LinkedDocument,LinkedRelationships} from './linkedTypes';
 import type {SharedNoteDocuments} from '../lib/sharedNoteDocuments';
-export default function LinkedPane({active=false,sessionId,doc,index,documents,status,error,busy,locked,changed,save,review,close,beside,follow,organize,openRelated,reload,focusWhenReady,focusHandled,leaveFocus,reading,animationMode='smooth'}:{active?:boolean;sessionId?:string;animationMode?:'smooth'|'snappy';reading?:{visitId:string;position:ReadingPosition;direction?:string;onPosition:(p:Partial<ReadingPosition>)=>void};doc:LinkedDocument;index:number;documents:SharedNoteDocuments;status:string;error?:string;busy:boolean;locked:boolean;changed:(capture:()=>typeof doc.content)=>void;save:()=>void;review:()=>void;close:()=>void;beside:()=>void;organize?:(event:MouseEvent<HTMLElement>)=>void;openRelated?:(id:string)=>void;reload?:()=>void;follow:(href:string,beside?:boolean)=>void;focusWhenReady:boolean;focusHandled:()=>void;leaveFocus:()=>void}){
+export default function LinkedPane({active=false,sessionId,doc,index,documents,status,error,busy,locked,changed,save,review,close,beside,follow,organize,openRelated,reload,liveRevision,focusWhenReady,focusHandled,leaveFocus,reading,animationMode='smooth'}:{active?:boolean;sessionId?:string;animationMode?:'smooth'|'snappy';reading?:{visitId:string;position:ReadingPosition;direction?:string;onPosition:(p:Partial<ReadingPosition>)=>void};doc:LinkedDocument;index:number;documents:SharedNoteDocuments;status:string;error?:string;busy:boolean;locked:boolean;changed:(capture:()=>typeof doc.content)=>void;save:()=>void;review:()=>void;close:()=>void;beside:()=>void;organize?:(event:MouseEvent<HTMLElement>)=>void;openRelated?:(id:string)=>void;reload?:()=>void;liveRevision?:number;follow:(href:string,beside?:boolean)=>void;focusWhenReady:boolean;focusHandled:()=>void;leaveFocus:()=>void}){
  const [references,setReferences]=useState<LinkedRelationships>(),[referenceError,setReferenceError]=useState('');
  const loadReferences=()=>{setReferenceError('');void linkedCommand<LinkedRelationships>({op:'relationships',id:doc.documentId}).then(setReferences).catch(e=>setReferenceError(String(e)));};
  const [showSource,setShowSource]=useState(false);
@@ -39,7 +39,7 @@ export default function LinkedPane({active=false,sessionId,doc,index,documents,s
    const timer=setInterval(()=>void check(),15000);
    window.addEventListener('focus',check);
    return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',check);};
- },[canCheck,active,documentId,revision,path]);
+ },[canCheck,active,documentId,revision,path,liveRevision]);
  useEffect(()=>()=>{if(asset)URL.revokeObjectURL(asset.url);},[asset]);
  const previewAsset=async(href:string)=>{
    setAssetError('');

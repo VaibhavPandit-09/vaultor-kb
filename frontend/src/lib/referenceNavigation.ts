@@ -7,7 +7,7 @@ const views=new Map<string,{noteId:string;editor:Editor}>();
 export function focusReference(editor:Editor,path:string,targetId:string) {
  const indices=path.split('/').filter(Boolean);let node=editor.state.doc,position=-1;
  for(const index of indices){if(!/^\d+$/.test(index)||Number(index)>=node.childCount)return false;const childIndex=Number(index);position+=1;for(let i=0;i<childIndex;i++)position+=node.child(i).nodeSize;node=node.child(childIndex);}
- if(!['resourceLink','image'].includes(node.type.name)||node.attrs.resourceId!==targetId||position<0)return false;
+ if(!['resourceLink','image','table'].includes(node.type.name)||(node.type.name==='table'?node.attrs.sourceResourceId:node.attrs.resourceId)!==targetId||position<0)return false;
  const selection=node.type.spec.selectable!==false?NodeSelection.create(editor.state.doc,position):TextSelection.near(editor.state.doc.resolve(position));
  editor.view.dispatch(editor.state.tr.setSelection(selection).scrollIntoView());editor.commands.focus(undefined,{scrollIntoView:false});return true;
 }

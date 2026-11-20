@@ -22,7 +22,7 @@ fn file_filters_use_original_identity_and_reject_unsupported_kind(){
  let dir=tempfile::tempdir().unwrap();let mut w=Workspace::open(dir.path()).unwrap();create(&mut w);let mut ids=Vec::new();
  for name in ["Photo.PNG","report.PDF","source.txt","sound.mp3","movie.mp4","opaque.bin"] {let id=uuid::Uuid::new_v4().to_string();w.attach_metadata(id.clone(),name.into(),16,"0".repeat(64)).unwrap();ids.push(id);}
  w.db.execute("UPDATE resources SET title='Renamed display' WHERE id=?1",[&ids[1]]).unwrap();
- for kind in ["image","pdf","text","audio","video","other","note"] {let o=SearchOptions{query:"".into(),kind:Some(kind.into()),content:false,collection:None,order:"created".into(),view:"library".into(),tag:None};let p=w.search(o,None,Some(1)).unwrap();assert_eq!(p["total"],1,"{kind}");if kind=="pdf"{assert_eq!(p["items"][0]["fileCategory"],"pdf");assert_eq!(p["items"][0]["title"],"Renamed display");}}
+ for kind in ["image","pdf","text","audio","video","other","note"] {let o=SearchOptions{query:"".into(),kind:Some(kind.into()),content:false,collection:None,order:"created".into(),view:"library".into(),tag:None,tags:vec![],any_tag:false};let p=w.search(o,None,Some(1)).unwrap();assert_eq!(p["total"],1,"{kind}");if kind=="pdf"{assert_eq!(p["items"][0]["fileCategory"],"pdf");assert_eq!(p["items"][0]["title"],"Renamed display");}}
  w.organization(O::Pin{ids,value:true}).unwrap();assert_eq!(pins(&mut w,"image",0,100)["total"],1);assert_eq!(pins(&mut w,"file",0,100)["total"],6);
  assert!(w.organization(O::Pins{query:"".into(),kind:"future".into(),offset:0,limit:10}).is_err());
 }

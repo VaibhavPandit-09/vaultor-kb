@@ -14,6 +14,7 @@ use std::{
 };
 use uuid::Uuid;
 
+static INDEX_READS: std::sync::Mutex<()> = std::sync::Mutex::new(());
 const MAX_ENTRIES: usize = 20_000;
 const MAX_INDEX_BYTES: usize = 256 * 1024;
 const SOURCE_INDEX_BYTES: i64 = 16 * 1024 * 1024;
@@ -101,7 +102,7 @@ pub(super) fn relative_target(path: &str, href: &str) -> Result<String, String> 
 }
 
 impl Workspace {
-    fn linked_grant(&self, source: &str) -> Result<Value, String> {
+    pub(super) fn linked_grant(&self, source: &str) -> Result<Value, String> {
         let (root, identity) = self.linked_root(source)?;
         let epoch: Option<String> = self
             .db
@@ -335,6 +336,8 @@ pub fn index(
     workspace: &str,
     source: String,
 ) -> Result<Value, String> {
+    let _scan = INDEX_READS.lock().map_err(error)?;
+    ctx.check()?;
     let id = source.clone();
     let grant = storage.call(workspace, move |w| w.linked_grant(&id))?;
     let (root, identity, _): (PathBuf, String, Option<String>) =
@@ -463,6 +466,86 @@ pub fn index(
     })
 }
 
+/// Read one notification target under the same lease and grant used for a complete scan.
+pub(super) fn reconcile_path(
+    storage: &Storage,
+    workspace: &str,
+    source: &str,
+    grant: &Value,
+    path: &str,
+) -> Result<bool, String> {
+    let _scan = INDEX_READS.lock().map_err(error)?;
+    let (root, identity, _): (PathBuf, String, Option<String>) =
+        serde_json::from_value(grant.clone()).map_err(error)?;
+    let relative = native::relative(path)?;
+    let key = path.to_lowercase();
+    let (source, grant) = (source.to_string(), grant.clone());
+    match native::read(&root, &identity, path, false) {
+        Ok(file) => {
+            let id = source.clone();
+            let observed_path = relative_path(&root, &file)?;
+            let birth = native::birth(&file.file)?;
+            let revision = file.revision.clone();
+            let carrier = file.id.clone();
+            let current = storage.call(workspace, move |w| {
+                let fresh: bool = w.db.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM linked_documents d JOIN linked_inventory i ON d.id=i.document_id
+                     WHERE d.source_id=?1 AND d.path=?2 AND d.identity=?3 AND i.birth=?4 AND i.indexed_revision=?5 AND i.available=1)",
+                    params![id,observed_path,carrier,birth,revision],|r|r.get(0)).map_err(error)?;
+                Ok(json!(fresh))
+            })?.as_bool().unwrap_or(false);
+            if current {
+                return Ok(false);
+            }
+            let extracted = extract(&file);
+            storage.call(workspace, move |w| {
+                if w.linked_grant(&source)? != grant {
+                    return Err("Source authorization changed".into());
+                }
+                w.observe_linked(&source, &root, &file, Some(("", Some(extracted))))?;
+                Ok(Value::Null)
+            })?;
+            Ok(true)
+        }
+        Err(message) => {
+            let pins = native::pin(&root)?;
+            if native::identity(pins.last().unwrap())? != identity {
+                return Err("Source authorization changed".into());
+            }
+            // Sharing failures, publication gaps and reparse refusals are not reliable deletions.
+            let parent = root.join(relative.parent().unwrap_or(Path::new("")));
+            let parent_pins = native::pin(&parent)?;
+            let parent = native::physical(parent_pins.last().unwrap())?;
+            if !parent.starts_with(&root) {
+                return Err("Source authorization changed".into());
+            }
+            match fs::symlink_metadata(parent.join(relative.file_name().ok_or("Missing filename")?))
+            {
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                _ => return Err(message),
+            }
+            let result = storage.call(workspace, move |w| {
+                if w.linked_grant(&source)? != grant { return Err("Source authorization changed".into()); }
+                let tx=w.db.transaction().map_err(error)?;
+                let ids = {
+                    let mut q=tx.prepare("SELECT d.id FROM linked_documents d JOIN linked_inventory i ON i.document_id=d.id
+                      WHERE d.source_id=?1 AND d.path_key=?2 AND i.available=1 AND d.id NOT IN (SELECT id FROM linked_saves)").map_err(error)?;
+                    let rows=q.query_map(params![source,key],|r|r.get::<_,String>(0)).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
+                    rows
+                };
+                for id in &ids {
+                    Workspace::withdraw_linked_index(&tx,id)?;
+                    tx.execute("UPDATE linked_inventory SET available=0 WHERE document_id=?1",[id]).map_err(error)?;
+                }
+                tx.commit().map_err(error)?;
+                Ok(json!(!ids.is_empty()))
+            })?;
+            drop((pins, parent_pins));
+            Ok(result.as_bool().unwrap_or(false))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -481,6 +564,8 @@ mod tests {
                     order: "title".into(),
                     view: format!("source:{source}"),
                     tag: None,
+                    tags: vec![],
+                    any_tag: false,
                     kind: None,
                 },
                 None,
@@ -652,9 +737,9 @@ mod tests {
         let paragraph = "Ordinary prose with a stable suffix. ".repeat(40);
         let original = format!(
             "# Larger\r\n\r\nStart here.\r\n\r\n{}",
-            format!("{paragraph}\r\n\r\n").repeat(250)
+            format!("{paragraph}\r\n\r\n").repeat(700)
         );
-        assert!(original.len() > 256 * 1024 && original.len() < super::super::markdown::EDIT_BYTES);
+        assert!(original.len() > 950 * 1024 && original.len() < super::super::markdown::EDIT_BYTES);
         let dir = tempfile::tempdir().unwrap();
         let workspace = tempfile::tempdir().unwrap();
         let file = dir.path().join("Larger.md");

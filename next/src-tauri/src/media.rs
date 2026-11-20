@@ -101,6 +101,25 @@ impl Workspace {
                 self.managed_path(id)?;
                 self.db.query_row("SELECT name,bytes,hash,kind FROM managed_originals WHERE resource_id=?1",[id],|row|Ok(json!({"name":row.get::<_,String>(0)?,"bytes":row.get::<_,i64>(1)?,"hash":row.get::<_,String>(2)?,"kind":row.get::<_,String>(3)?}))).map_err(error)
             }
+            "references" => self.reference_page(id,r["direction"].as_str().unwrap_or("incoming"),r["page"].as_u64().unwrap_or(0)),
+            "indexStatus" => self.db.query_row("SELECT
+                (SELECT count(*) FROM managed_originals o JOIN visible_resources r ON r.id=o.resource_id WHERE o.kind='file'
+                    AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=r.id AND trashed=1)),
+                (SELECT count(*) FROM managed_text_receipts f JOIN visible_resources r ON r.id=f.resource_id WHERE f.state='indexed'
+                    AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=r.id AND trashed=1)),
+                (SELECT count(*) FROM linked_inventory i JOIN visible_resources r ON r.id=i.resource_id WHERE i.indexed_revision<>'')",[],
+                |row|Ok(json!({"managedFiles":row.get::<_,i64>(0)?,"indexedFiles":row.get::<_,i64>(1)?,"linkedReceipts":row.get::<_,i64>(2)?}))).map_err(error),
+            "discovery" => {
+                let query=r["query"].as_str().unwrap_or("").trim().to_lowercase();
+                if query.chars().count()>256 { return Err("Search is limited to 256 characters".into()); }
+                if query.is_empty(){return Ok(json!([]));}
+                let mut q=self.db.prepare("SELECT id,name,kind FROM (SELECT id,name,normalized,'collection' kind FROM collections
+                    UNION ALL SELECT id,name,normalized,'tag' kind FROM tags) WHERE instr(normalized,?1)>0
+                    ORDER BY normalized=?1 DESC,normalized,kind,id LIMIT 20").map_err(error)?;
+                let rows=q.query_map([query],|row|Ok(json!({"id":row.get::<_,String>(0)?,"title":row.get::<_,String>(1)?,"kind":row.get::<_,String>(2)?})))
+                    .map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
+                Ok(json!(rows))
+            }
             "backlinks" => {
                 let mut q=self.db.prepare("SELECT r.id,r.title,l.kind FROM resource_links l JOIN visible_resources r ON r.id=l.source_id WHERE l.target_id=?1 AND NOT EXISTS(SELECT 1 FROM resource_state s WHERE s.resource_id=r.id AND s.trashed=1) ORDER BY lower(r.title),r.id LIMIT 100").map_err(error)?;
                 let rows=q.query_map([id],|r|Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"kind":r.get::<_,String>(2)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;

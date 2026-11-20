@@ -491,6 +491,7 @@ mod tests {
                 order: "created".into(),
                 view: view.into(),
                 tag,
+            tags:vec![],any_tag:false,
             },
             None,
             None,

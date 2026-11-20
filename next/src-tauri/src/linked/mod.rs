@@ -3,6 +3,8 @@
 pub mod inventory;
 pub mod markdown;
 #[cfg(windows)]
+pub mod monitor;
+#[cfg(windows)]
 pub mod native;
 use crate::domain::{error, Workspace};
 use rusqlite::{params, OptionalExtension};
@@ -148,27 +150,24 @@ impl Workspace {
         &self,
         id: &str,
         base: String,
-        document: Value,
+        document: Option<Value>,
         reason: Option<String>,
         draft: Option<Value>,
         current: Option<Value>,
     ) -> Result<Value, String> {
         let (source, path, identity, revision) = self.linked_location(id)?;
-        let parsed = if base.len() <= markdown::EDIT_BYTES {
-            Some(markdown::parse(&base))
-        } else {
-            None
-        };
-        let reason = reason
-            .or_else(|| parsed.as_ref().and_then(|p| p.reason.clone()))
-            .or_else(|| {
-                if parsed.is_none() {
-                    Some("Over 512 KiB: source view only (reading limit 1 MiB)".into())
-                } else {
-                    None
-                }
-            });
-        let frontmatter = parsed.map(|p| p.frontmatter).unwrap_or_default();
+        let parsed = markdown::parse(&base);
+        let document = document.unwrap_or(parsed.document);
+        let reason = reason.or(parsed.reason).or_else(|| {
+            if document.to_string().len() > markdown::MAX_DRAFT_BYTES {
+                Some(
+                    "The structured document exceeds the 2 MiB draft limit; use source view".into(),
+                )
+            } else {
+                None
+            }
+        });
+        let frontmatter = parsed.frontmatter;
         Ok(
             json!({"id":format!("linked:{id}"),"documentId":id,"sourceId":source,"path":path,"identity":identity,"revision":revision,"title":Path::new(&path).file_name().unwrap_or_default().to_string_lossy(),"base":base,"content":document,"editable":reason.is_none(),"reason":reason,"frontmatter":frontmatter,"draft":draft,"current":current}),
         )
@@ -211,12 +210,7 @@ impl Workspace {
             )
             .map_err(error)?;
         let base = String::from_utf8(file.bytes).map_err(error)?;
-        let parsed = if base.len() <= markdown::EDIT_BYTES {
-            markdown::parse(&base)
-        } else {
-            markdown::parse("")
-        };
-        self.linked_response(&id, base, parsed.document, file.reason, None, None)
+        self.linked_response(&id, base, None, file.reason, None, None)
     }
     fn linked_recover(&self, id: &str) -> Result<Value, String> {
         let(base,content,token,sequence,state,last_error):(String,String,String,i64,String,Option<String>)=self.db.query_row("SELECT base,content,token,sequence,state,last_error FROM linked_drafts WHERE id=?1",[id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?,r.get(5)?))).map_err(error)?;
@@ -228,7 +222,7 @@ impl Workspace {
         self.linked_response(
             id,
             base,
-            serde_json::from_str(&content).map_err(error)?,
+            Some(serde_json::from_str(&content).map_err(error)?),
             source_reason,
             Some(json!({"token":token,"sequence":sequence,"state":state,"error":last_error})),
             Some(current),
@@ -540,7 +534,7 @@ impl Workspace {
                     return Err("Invalid structured linked draft".into());
                 }
                 let text = content.to_string();
-                if text.len() > 2 * 1024 * 1024 {
+                if text.len() > markdown::MAX_DRAFT_BYTES {
                     return Err("Linked draft exceeds 2 MiB".into());
                 }
                 let tx = self.db.transaction().map_err(error)?;
@@ -672,7 +666,7 @@ impl Workspace {
         let candidate = markdown::patch(&base, &proposed)?;
         if candidate.len() > markdown::EDIT_BYTES {
             return Err(
-                "Save would exceed the 512 KiB linked editing limit. The draft is retained.".into(),
+                "Save would exceed the 1 MiB linked editing limit. The draft is retained.".into(),
             );
         }
         let original = self.linked_read(id, true)?;
@@ -689,7 +683,7 @@ impl Workspace {
                     params![id, token, sequence],
                 )
                 .map_err(error)?;
-            return self.linked_response(id, candidate, proposed, None, None, None);
+            return self.linked_response(id, candidate, Some(proposed), None, None, None);
         }
         let operation = Uuid::new_v4();
         let stage = format!(".vaultor-stage-{operation}");
@@ -767,7 +761,7 @@ impl Workspace {
                 "Save failed or outcome uncertain; retained draft/publication evidence. {e}"
             ));
         }
-        self.linked_response(id, candidate, proposed, None, None, None)
+        self.linked_response(id, candidate, Some(proposed), None, None, None)
     }
     fn linked_resolve(&mut self, id: &str) -> Result<Value, String> {
         let intent:Option<(String,String,String,String,String,Option<String>,String,String,i64)>=self.db.query_row("SELECT status,stage,capture,original_identity,original_hash,candidate_identity,candidate_hash,token,sequence FROM linked_saves WHERE id=?1",[id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?,r.get(5)?,r.get(6)?,r.get(7)?,r.get(8)?))).optional().map_err(error)?;

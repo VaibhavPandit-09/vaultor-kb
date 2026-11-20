@@ -9,6 +9,8 @@ fn options(q: &str, content: bool, collection: Option<String>, order: &str) -> S
         order: order.into(),
         view: String::new(),
         tag: None,
+        tags:vec![],
+        any_tag:false,
         kind:None,
     }
 }

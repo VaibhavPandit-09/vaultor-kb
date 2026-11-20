@@ -4,6 +4,10 @@ Last reviewed: 2026-11-20. This is the current implementation reference. Update 
 
 ## Product and architecture
 
+**Next M21 discovery:** One Rust monitor owns Windows source subscriptions for the active workspace. It coalesces bounded notifications and reconciles individual Markdown paths under the existing NTFS leases. Directory changes, lossy deliveries and reconnect use Activity's whole-source scan. A source-grant epoch and current storage workspace validate publication of each derived receipt. The monitor probes root availability independently of content and withdraws unavailable records. The renderer consumes workspace-scoped index notifications and retains the existing clean reload and dirty recovery workflow. Main source-browser expansion is session state.
+
+Search uses the existing FTS5 table for managed notes, admitted UTF-8 originals and indexed linked Markdown. Managed file extraction is bounded, hash-verified and performed by import or the cancellable rebuild job outside SQLite. Results use plain-text excerpts and UTF-16 highlight offsets. Combined tags are evaluated in SQLite before counts/paging. The original Links and mentions dialog consumes a unified saved-edge view and bounded occurrence pages. Managed occurrence selection revalidates the saved revision and target. See [M21](plans/VAULTOR-NEXT.md#m21-discovery-and-live-source-reconciliation).
+
 **Next M20 linked sources:** Linked Markdown projects a metadata-only row under its existing linked ID into the shared Library, collections, tags, pins and recency. Fixed NTFS file identity and creation time validate continuity independently of path. Confirmed observations reconcile in-root path changes. Same-name replacements retain separate identities and the protected draft stays with its original. Managed draft/save, rename, Trash, purge and portable snapshots exclude linked projections. Revocation withdraws derived search and relationships while retaining local organization and recovery evidence.
 
 Linked indexing uses Activity and one bounded scanner. File leases and extraction run outside the SQLite owner. The owner checks the registration epoch before each receipt. FTS5 shares title and committed-text discovery with managed resources. Refresh matches the observed path, native identity and file hash before reusing extraction receipts, with 20,000 entries and 16 MiB extracted data per source, and 256 KiB of Markdown source per body. Relative links and on-demand raster previews use the same native path authority. The linked editor admits supported UTF-8 up to 512 KiB under its document shape and draft limits, with the existing proof and explicit Save process. [M20 implementation and acceptance](plans/VAULTOR-NEXT.md#m20-linked-markdown-organization-and-indexing).
@@ -500,6 +504,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-20 — Next M21 discovery
+
+Added live source reconciliation, shared saved-file search and excerpts, combined tags, palette scope discovery, and the original references surface over the unified edge view. Rust tests cover Windows create/edit/rename/delete events and shared search and occurrence results. The [M21 record](plans/VAULTOR-NEXT.md#m21-discovery-and-live-source-reconciliation) owns the optimized-build checks, Help applicability and native limitations.
 
 ### 2026-11-20 — Next M20 linked documents
 

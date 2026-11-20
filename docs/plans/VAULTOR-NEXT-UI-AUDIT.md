@@ -480,3 +480,8 @@ UI-29, UI-33 and UI-35 retain the original NoteOrientation and linked explicit S
 
 
 The final Windows run verifies the source browser, larger linked editor, clean reload and conflict notice on the optimized build. A focused CDP mouse pass verifies source-to-Pinned drop and unchanged external bytes. Native directory selection, external Open/Reveal, other linked drop destinations, repeatable physical gesture acceptance, and comparative visual and assistive-technology review remain open.
+
+
+### M21 discovery follow-up
+
+The existing Library rows add bounded plain-text highlights and linked relative paths. Search options retain the original hierarchy and add coverage and combined tag controls. Workspace palette results share existing focus, Escape and pane ownership. Used in / links reuses the original Links and mentions dialog, with bounded paging and explicit related-resource focus. Source reconciliation updates the existing tree and preserves the current page cursor. The main browser stores bounded expansion keys in the workspace session. [Implementation and verification](VAULTOR-NEXT.md#m21-discovery-and-live-source-reconciliation).

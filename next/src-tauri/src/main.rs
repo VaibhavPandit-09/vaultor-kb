@@ -14,9 +14,20 @@ async fn workspace(
     request: Request,
     state: tauri::State<'_, Worker>,
     previews: tauri::State<'_, preview::Previews>,
+    #[cfg(windows)] monitor: tauri::State<'_, vaultor_next::LinkedMonitor>,
 ) -> Result<serde_json::Value, String> {
     let switching = matches!(request, Request::Open { .. } | Request::New { .. });
+    #[cfg(windows)]
+    let reconfigure = matches!(&request, Request::Linked { request:
+        vaultor_next::LinkedRequest::Register { .. } | vaultor_next::LinkedRequest::Remove { .. }
+    });
     let result = state.call(request).await;
+    #[cfg(windows)]
+    if let Ok(value) = &result {
+        if switching || reconfigure {
+            monitor.reconfigure(if switching { value["path"].as_str() } else { None });
+        }
+    }
     if switching && result.is_ok() { previews.clear(); }
     result
 }
@@ -396,6 +407,12 @@ fn main() {
                     vaultor_next::transfers::Job::Purge { ids: Some(vec![]) },
                 )?;
             }
+            #[cfg(windows)]
+            {
+                let handle=app.handle().clone();
+                app.manage(vaultor_next::LinkedMonitor::start(root.canonicalize().unwrap_or(root).to_string_lossy().into_owned(),
+                    storage.clone(),activity.clone(),move |workspace| { let _=handle.emit("next-linked-change",workspace); })?);
+            }
             app.manage(Arc::new(Transfers::new(storage, activity)));
             app.manage(worker);
             Ok(())
@@ -429,6 +446,8 @@ fn main() {
     application.run(|app, event| {
         if matches!(event, tauri::RunEvent::Exit) {
             app.state::<Arc<Transfers>>().activity.shutdown();
+            #[cfg(windows)]
+            app.state::<vaultor_next::LinkedMonitor>().shutdown();
             app.state::<Worker>().stop();
         }
     });

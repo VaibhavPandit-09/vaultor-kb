@@ -79,6 +79,7 @@ pub struct Plan {
     created: Instant,
 }
 pub enum Job {
+    RebuildFileText,
     #[cfg(windows)]
     IndexLinked { source: String },
     Purge {
@@ -105,6 +106,7 @@ pub enum Job {
 impl Job {
     pub fn kind(&self) -> &str {
         match self {
+            Self::RebuildFileText => "managed-text-index",
             #[cfg(windows)]
             Self::IndexLinked { .. } => "linked-index",
             Self::Purge { .. } => "resource-purge",
@@ -116,6 +118,7 @@ impl Job {
     }
     pub fn description(&self) -> String {
         match self {
+            Self::RebuildFileText => "Rebuild managed file search".into(),
             #[cfg(windows)]
             Self::IndexLinked { .. } => "Index linked Markdown".into(),
             Self::Purge { .. } => "Permanently delete Trash resources".into(),
@@ -129,6 +132,7 @@ impl Job {
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Request {
+    RebuildFileText,
     IndexLinked { source: String },
     Purge {
         ids: Option<Vec<String>>,
@@ -182,6 +186,7 @@ impl Transfers {
     }
     pub fn execute(&self, root: String, request: Request) -> Result<Value, String> {
         match request {
+            Request::RebuildFileText => self.activity.submit(root,Job::RebuildFileText),
             Request::IndexLinked { source } => {
                 #[cfg(windows)]
                 return self.activity.submit(root, Job::IndexLinked { source });
@@ -560,6 +565,7 @@ pub fn execute(
     ctx: &mut Context,
 ) -> Result<Value, String> {
     match job {
+        Job::RebuildFileText => crate::file_text::rebuild(storage,root,ctx),
         #[cfg(windows)]
         Job::IndexLinked { source } => crate::linked::inventory::index(storage, ctx, root, source),
         Job::Purge { ids } => purge(storage, root, ids, ctx),
@@ -682,6 +688,7 @@ fn import(
                     }
                 }
             }
+            let extracted = (kind=="file").then(||crate::file_text::extract(&staged.0,&input.name,&hash,base));
             publish_file(&staged.0, &target)?;
             let original = Original {
                 id: id.clone(),
@@ -697,7 +704,7 @@ fn import(
                 .unwrap_or(plan.collection.clone());
             let separate = separate;
             let receipt=storage.call(root,move|w|{let tx=w.db.transaction().map_err(error)?;if !separate {let duplicate:bool=tx.query_row("SELECT EXISTS(SELECT 1 FROM managed_originals WHERE hash=?1 AND name=?2)",params![original.hash,original.name],|r|r.get(0)).map_err(error)?;if duplicate{return Ok(json!({"skipped":true}));}}
-   tx.execute("INSERT INTO resources(id,title,content)VALUES(?1,?2,?3)",params![original.id,original.name.chars().take(240).collect::<String>(),content.to_string()]).map_err(error)?;insert_original(&tx,&original)?;if let Some(parent)=parent{tx.execute("INSERT INTO memberships VALUES(?1,?2)",params![original.id,parent]).map_err(error)?;}tx.commit().map_err(error)?;Ok(json!({"skipped":false}))});
+   tx.execute("INSERT INTO resources(id,title,content)VALUES(?1,?2,?3)",params![original.id,original.name.chars().take(240).collect::<String>(),content.to_string()]).map_err(error)?;insert_original(&tx,&original)?;if let Some((state,body))=extracted {crate::file_text::save(&tx,&original.id,&original.hash,state,body.as_deref())?;}if let Some(parent)=parent{tx.execute("INSERT INTO memberships VALUES(?1,?2)",params![original.id,parent]).map_err(error)?;}tx.commit().map_err(error)?;Ok(json!({"skipped":false}))});
             match receipt {
                 Ok(v) if v["skipped"] == true => {
                     fs::remove_file(&target).map_err(error)?;

@@ -1,5 +1,6 @@
 //! Markdown is parsed in Rust; only verified source patches are publishable.
-pub const EDIT_BYTES: usize = 512 * 1024;
+pub const EDIT_BYTES: usize = 1024 * 1024;
+pub const MAX_DRAFT_BYTES: usize = 2 * 1024 * 1024;
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use serde_json::{json, Value};
 use std::ops::Range;
@@ -631,7 +632,7 @@ pub fn patch(source: &str, proposed: &Value) -> Result<String, String> {
         return Ok(source.into());
     }
     if source.len() > EDIT_BYTES {
-        return Err("Documents over 512 KiB are source-view only".into());
+        return Err("Documents over 1 MiB are source-view only".into());
     }
     let old = parsed.document["content"].as_array().unwrap();
     let new = wanted["content"].as_array().ok_or("Invalid document")?;
