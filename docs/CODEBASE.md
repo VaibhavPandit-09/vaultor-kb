@@ -507,7 +507,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-20 — Next M22 transfers
 
-Added reviewed source-provenance import, local conversion and export, portable selection and transactional archive merge, and protected recovery copies. Next Help and its experimental feature entry describe the version 3 format and output limits. The integrated Rust suite passed 53 checks, including mixed import, exact asset packaging, identity remapping and draft-copy preservation. Help governance passed 17 checks. The [M22 record](plans/VAULTOR-NEXT.md#m22-advanced-transfers-and-recovery) records optimized qualification and remaining parity gaps.
+Added reviewed source-provenance import, local conversion and export, portable selection and transactional archive merge, and protected recovery copies. Next Help and its experimental feature entry describe the version 3 format and output limits. The integrated Rust suite passed 53 checks, including mixed import with Markdown links and images, exact asset packaging, identity remapping and draft-copy preservation. Help governance passed 17 checks. The [M22 record](plans/VAULTOR-NEXT.md#m22-advanced-transfers-and-recovery) records optimized qualification and remaining parity gaps.
 
 ### 2026-11-20 — Next M21 discovery
 

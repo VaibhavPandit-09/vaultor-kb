@@ -265,7 +265,12 @@ fn parse_projection(source: &str, import:bool) -> Parsed {
         root.push(node("paragraph"));
         ranges.push(offset..source.len());
     }
-    let document = normalize(&json!({"type":"doc","content":root})).unwrap_or_else(|_| node("doc"));
+    let parsed = json!({"type":"doc","content":root});
+    let document = if import {
+        parsed
+    } else {
+        normalize(&parsed).unwrap_or_else(|_| node("doc"))
+    };
     Parsed {
         document,
         ranges,

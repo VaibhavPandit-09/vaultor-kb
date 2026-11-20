@@ -223,7 +223,7 @@ M10 common performance on e76723d / EXE7d4f8d14fb9ea0cf7bebb642aef1dea2beefff553
 
 Final optimized application source5eaacc3 / EXE SHA-256d6fc84eb9706e57518bbd0b42727057af01049d83167e3ff6ac118d4586fb216 passes [the final native smoke](../../benchmarks/tauri-rust/summaries/tauri-rust-2026-11-11T00-01-55.924Z.json):real Windows folder selection reopens the current workspace while preserving the live editor/session;palette autofocus,18 arrow events with visible selected result and Escape dismissal pass. Earlier attempted picker stubs did not replace Tauri's read-only bridge;those inspection-driver failures are retained outside canonical performance data. Native source and common benchmark executable hashes are intentionally distinct;unchanged-path evidence is reused. Isolated profile preferences additionally refuse writes after failed workspace ownership initialization.
 
-## Next milestones
+## Historical milestone assignments before M13
 
 M13 owns core desktop restoration and the screen acceptance register below. Subsequent authorized M14/M15 work should close detailed browser/Help/contextual-editor presentation and remaining journeys, keyboard/accessibility, responsive and motion acceptance. Advanced table/CSV/media, graph, linked indexing/reconciliation, workspace merge and wider native capabilities remain separate scoped work. Installer/updater, platform/LAN/mobile and scheduled backups require their own authorization. Android remains on hold. No milestone claims full Electron replacement parity.
 

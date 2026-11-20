@@ -35,23 +35,25 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
   const large=join(folder,'Large');
   await mkdir(nested,{recursive:true});
   await mkdir(large);
-  const note='Unicode café stays readable.\n\n[Read data](asset.bin)\n\n1. First\n2. Second\n';
+  const note='Unicode café stays readable.\n\n[Read data](asset.bin)\n\n![Reviewed image](pixel.png)\n\n1. First\n2. Second\n';
   const asset=Buffer.from([0,7,42,255,3]);
   await writeFile(join(nested,'Summary.md'), '# Imported summary\n\n'+note);
   await writeFile(join(nested,'asset.bin'),asset);
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==','base64');
+  await writeFile(join(nested,'pixel.png'),png);
   const single=join(folder,'Separate.txt');
   await writeFile(single,'An independently selected source file.');
   for(let i=0;i<100;i++)await writeFile(join(nested,'Document '+i+'.txt'),'Managed content '.repeat(64));
   const block=Buffer.alloc(32*1048576,173);
   const payloadHash=createHash('sha256').update(block).digest('hex');
   for(let i=0;i<8;i++)await writeFile(join(large,'Large '+i+'.bin'),block);
-  report.dataset='103 small mixed files and eight 32 MiB managed files';
-  report.transferFixture={smallFiles:103,nestedTextFiles:100,largeFiles:8,largeFileBytes:block.length,hash:payloadHash,collections:['Library input','Nested','Large']};
+  report.dataset='104 small mixed files and eight 32 MiB managed files';
+  report.transferFixture={smallFiles:104,nestedTextFiles:100,largeFiles:8,largeFileBytes:block.length,hash:payloadHash,collections:['Library input','Nested','Large']};
   report.transferRecipe={sha256:createHash('sha256').update(await readFile(new URL(import.meta.url))).digest('hex')};
   const mixed=await importSource('nested-mixed-import',[join(folder,'Library input'),single],'100 small text files, Markdown with relative attachment, binary and independent text file.');
-  assert.equal(mixed.result.imported,103);
+  assert.equal(mixed.result.imported,104);
   const repeated=await importSource('repeat-import',[join(folder,'Library input'),single],'Exact source paths and bytes from the preceding import.');
-  assert.equal(repeated.result.reused,103);
+  assert.equal(repeated.result.reused,104);
   const searchSummary=()=>workspace({kind:'search',options:{query:'Summary',content:false,collection:null,order:'title',view:'library'},limit:30});
   const summaryPage=await searchSummary();
   const summary=summaryPage.items.find(item=>item.title==='Summary.md');
@@ -60,6 +62,7 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
   const found=JSON.stringify(saved.content).match(/"resourceId":"([a-f0-9-]{36})"/);
   assert(found,'Relative Markdown link must resolve to managed attachment');
   const assetId=found[1];
+  assert(saved.content.content.some(node=>node.type==='image'&&node.attrs.alt==='Reviewed image'),'Relative raster image must resolve to a managed image');
   const largeReview=await preview([large]);
   assert.equal(largeReview.files,8);
 
@@ -85,7 +88,7 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
   report.largeWindow={start,end:Date.now()};
   assert.equal(imported.imported,8);
   record('m22-large-import',1,'bytes',8*block.length,'bytes');
-  await wait("document.querySelector('[role=status][aria-label=saved]') || [...document.querySelectorAll('[role=status]')].some(e=>e.textContent==='saved')",'managed edit saved before export');
+  await wait("document.querySelector('[data-save-status=saved]')",'managed edit saved before export');
 
   for(const [format,ids,extension] of [
     ['original',[assetId],'.bin'],['markdown',[summary.id],'.md'],['pdf',[summary.id],'.pdf'],['docx',[summary.id],'.docx'],
@@ -104,21 +107,46 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
     if(format==='docx'||format==='markdownZip')assert.equal(data.subarray(0,2).toString(),'PK');
     if(format==='graph')assert(JSON.parse(data).relationships.some(edge=>edge.target===assetId));
   }
+  const linkedDir=join(folder,'authorized linked fixture');
+  await mkdir(linkedDir);
+  const linkedPath=join(linkedDir,'External.md');
+  const linkedText='# External file\r\n\r\nOriginal source bytes.\r\n';
+  await writeFile(linkedPath,linkedText);
+  const linked=request=>workspace({kind:'linked',request});
+  const source=await linked({op:'register',path:linkedDir});
+  const external=await linked({op:'open',source:source.id,path:'External.md'});
+  const linkedOut=join(folder,'Linked Markdown copy');
+  await submit('linked-markdown-export',{op:'export',ids:[external.id],destination:linkedOut,format:'original'},'Granted current external Markdown; original untouched.');
+  assert.equal(await readFile(join(linkedOut,(await readdir(linkedOut))[0]),'utf8'),linkedText);
+  assert.equal(await readFile(linkedPath,'utf8'),linkedText);
+
   const full=join(folder,'Full.vaultor');
   const subset=join(folder,'Selected.vaultor');
-  await submit('full-archive',{op:'archive',destination:full},'All committed resources including 256 MiB of originals.');
-  await submit('selected-archive',{op:'archiveSelection',ids:[summary.id],collection:null,destination:subset},'One note plus its managed attachment.');
+  await submit('full-archive',{op:'archive',destination:full},'All committed resources including 256 MiB of originals and an inactive linked descriptor.');
+  await submit('selected-archive',{op:'archiveSelection',ids:[summary.id],collection:null,destination:subset},'One note plus its managed attachment and image.');
   const verifiedAt=performance.now();
   const inspected=await transfer({op:'inspectArchive',source:full});
   record('m22-archive-inspect',1,'integrity_preview',performance.now()-verifiedAt,'ms','Verification streams the complete archive.');
+  assert.equal(inspected.linkedDescriptors,1);
+  const fileHandle=await (await import('node:fs/promises')).open(full,'r');
+  try{
+    const header=Buffer.alloc(48);
+    await fileHandle.read(header);
+    const metadata=Buffer.alloc(Number(header.readBigUInt64LE(8)));
+    await fileHandle.read(metadata);
+    const descriptors=JSON.parse(metadata).linked;
+    assert.equal(descriptors[0].path,'External.md');
+    assert(!metadata.toString().includes('authorized linked fixture'));
+    assert(!metadata.toString().includes('Original source bytes.'));
+  }finally{await fileHandle.close();}
   const restored=join(folder,'Restored');
   await submit('archive-restore',{op:'restore',source:full,destination:restored,manifestHash:inspected.manifestHash},'Restore as new, including database integrity check.');
-  assert.equal((await readdir(join(restored,'managed'))).length,111);
+  assert.equal((await readdir(join(restored,'managed'))).length,112);
   const partial=await transfer({op:'inspectArchive',source:subset});
-  assert(partial.partial&&partial.resources===2);
+  assert(partial.partial&&partial.resources===3);
   const merge=()=>({op:'merge',source:subset,manifestHash:partial.manifestHash});
-  const merged=await submit('archive-merge',merge(),'Selected note and managed attachment.');
-  assert.equal(merged.resources,2);
+  const merged=await submit('archive-merge',merge(),'Selected note and two dependencies.');
+  assert.equal(merged.resources,3);
   assert.equal((await submit('archive-merge-repeat',merge(),'Exact digest repeat.')).reused,true);
   const notes=(await searchSummary()).items;
   const added=notes.find(item=>item.id!==summary.id);
@@ -126,6 +154,16 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
   const remapped=JSON.stringify((await workspace({kind:'read',id:added.id})).content).match(/"resourceId":"([a-f0-9-]{36})"/)[1];
   assert.notEqual(remapped,assetId);
   assert((await readFile(join(folder,'workspace','managed',remapped+'.bin'))).equals(asset));
+
+  const latest=await workspace({kind:'read',id:summary.id});
+  const draft={kind:'draft',id:summary.id,title:latest.title,baseRevision:latest.revision,token:'disposable-benchmark',sequence:1,
+    content:{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Protected copy content'}]}]}};
+  await workspace(draft);
+  const recoveryPath=join(folder,'Recovery.json');
+  await submit('protected-draft-export',{op:'exportRecovery',id:summary.id,linked:false,destination:recoveryPath},'Protected managed draft copy keeps saved and protected revisions unchanged.');
+  assert.deepEqual(JSON.parse(await readFile(recoveryPath,'utf8')).document,draft.content);
+  assert.deepEqual((await workspace({kind:'readDraft',id:summary.id})).content,draft.content);
+  assert.equal((await workspace({kind:'read',id:summary.id})).revision,latest.revision);
 
   const newFiles=join(folder,'Interrupted');
   await mkdir(newFiles);
@@ -141,5 +179,5 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
   assert.equal(task.state,'interrupted','Termination must overlap import to qualify recovery');
   record('m22-interrupted-recovery',1,'restart_to_retry_complete',performance.now()-restartedAt,'ms','Termination, restart, source review and completion.');
   await sleep(2000);
-  report.checks.push('Mixed selection, nested imports, source reuse, relative reference conversion, raw file hash, all offered managed export containers, graph and archive verification, restore as new, transactional remapping, idempotent merge, interrupted task reconciliation.');
+  report.checks.push('Mixed selection, nested imports, source reuse, relative reference and image conversion, raw file preservation, managed export containers, graph and archive verification, linked descriptors and original bytes, restore as new, transactional remapping, idempotent merge, recovery-copy preservation and interrupted task reconciliation.');
 }

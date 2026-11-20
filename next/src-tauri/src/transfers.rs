@@ -1774,7 +1774,12 @@ mod tests {
         let note = folder.join("Overview.md");
         let data = [1, 4, 9, 0, 255];
         fs::write(folder.join("asset.bin"), data).unwrap();
-        fs::write(&note, "# Overview\n\n[Read asset](asset.bin)").unwrap();
+        fs::write(folder.join("pixel.png"), [137, 80, 78, 71, 13, 10, 26, 10]).unwrap();
+        fs::write(
+            &note,
+            "# Overview\n\n[Read asset](asset.bin)\n\n![Pixel](pixel.png)",
+        )
+        .unwrap();
         let other = h.temp.path().join("Other.txt");
         fs::write(&other, b"kept as a file").unwrap();
         let preview = h.call(Request::Preview {
@@ -1785,7 +1790,7 @@ mod tests {
             folder: true,
             collection: None,
         });
-        assert_eq!(preview["files"], 3);
+        assert_eq!(preview["files"], 4);
         let imported = h.task(Request::ImportReviewed {
             token: preview["token"].as_str().unwrap().into(),
             separate: false,
@@ -1812,12 +1817,23 @@ mod tests {
                 .unwrap();
             let relation: String = w
                 .query_row(
-                    "SELECT target_id FROM resource_links WHERE source_id=?1",
+                    "SELECT target_id FROM resource_links WHERE source_id=?1 AND kind='link'",
                     [&id],
                     |r| r.get(0),
                 )
                 .unwrap();
             assert_eq!(relation, asset);
+            let content: String = w
+                .query_row("SELECT content FROM resources WHERE id=?1", [&id], |row| {
+                    row.get(0)
+                })
+                .unwrap();
+            let content: Value = serde_json::from_str(&content).unwrap();
+            assert!(content["content"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|node| node["type"] == "image" && node["attrs"]["alt"] == "Pixel"));
             (id, asset, collection)
         };
         let folder_out = h.temp.path().join("markdown");
@@ -1847,7 +1863,7 @@ mod tests {
         assert_eq!(export.state, "completed", "{export:?}");
         let (manifest, hash) = inspect_archive(&archive, None).unwrap();
         assert!(manifest.partial);
-        assert_eq!(manifest.resources.len(), 2);
+        assert_eq!(manifest.resources.len(), 3);
         let merge = || {
             h.task(Request::Merge {
                 source: path.clone(),
@@ -1862,7 +1878,7 @@ mod tests {
         let w = rusqlite::Connection::open(root.join("workspace.sqlite3")).unwrap();
         let remapped: (String, String) = w
             .query_row(
-                "SELECT source_id,target_id FROM resource_links WHERE source_id<>?1",
+                "SELECT source_id,target_id FROM resource_links WHERE source_id<>?1 AND kind='link'",
                 [id],
                 |r| Ok((r.get(0)?, r.get(1)?)),
             )
@@ -1875,7 +1891,7 @@ mod tests {
         assert_eq!(
             w.query_row("SELECT count(*) FROM resources", [], |r| r.get::<_, i64>(0))
                 .unwrap(),
-            5
+            7
         );
     }
 
