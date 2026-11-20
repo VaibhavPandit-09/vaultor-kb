@@ -9,7 +9,7 @@ name = "vaultor_next"
 
 [features]
 default = ["desktop", "host"]
-desktop = ["dep:tauri", "dep:tauri-plugin-dialog", "dep:tauri-build"]
+desktop = ["dep:tauri", "dep:tauri-plugin-dialog", "dep:tauri-build", "dep:if-addrs", "dep:rcgen", "dep:x509-parser", "dep:zeroize"]
 host = ["dep:axum", "dep:axum-server", "dep:futures-util", "dep:getrandom", "dep:hex", "dep:hyper-util", "dep:rustls", "dep:subtle", "dep:tempfile", "dep:time", "tokio/fs", "tokio/io-util", "tokio/macros", "tokio/signal", "dep:tokio-util"]
 
 [[bin]]
@@ -28,6 +28,7 @@ tauri-build = { version = "2", features = [], optional = true }
 [dependencies]
 tauri = { version = "2", features = [], optional = true }
 tauri-plugin-dialog = { version = "2", optional = true }
+if-addrs = { version = "0.15", optional = true }
 rusqlite = { version = "0.37", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -64,6 +65,9 @@ lto = "thin"
 strip = true
 
 [target."cfg(windows)".dependencies]
+rcgen = { version = "0.14", features = ["x509-parser", "zeroize"], optional = true }
+x509-parser = { version = "0.18", optional = true }
+zeroize = { version = "1", optional = true }
 windows = { version = "0.62.2", features = ["Win32_System_Com", "Win32_System_Ole", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell_Common"] }
 notify = { git = "https://github.com/notify-rs/notify.git", rev = "d01dc40", default-features = false }
-windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem", "Win32_Foundation", "Win32_Security", "Win32_System_Memory", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
+windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem", "Win32_Foundation", "Win32_Security", "Win32_Security_Cryptography", "Win32_System_Memory", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }

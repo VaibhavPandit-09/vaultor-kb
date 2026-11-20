@@ -10,6 +10,9 @@ use std::{
 };
 use uuid::Uuid;
 
+#[cfg(all(windows, feature = "desktop"))]
+pub(super) mod automatic;
+
 pub struct Identity {
     pub(super) id: Uuid,
     pub(super) fingerprint: String,
@@ -65,18 +68,19 @@ impl Identity {
     }
 
     pub fn open(access: &Path, ca: &Path) -> Result<Self, Box<dyn std::error::Error>> {
-        let access = access.canonicalize()?;
-        private_directory(&access)?;
+        let certificate = CertificateDer::from_pem_file(ca)?;
+        let (access, lock) = lock_directory(access)?;
+        Self::load(access, lock, certificate)
+    }
+
+    fn load(
+        access: std::path::PathBuf,
+        lock: File,
+        certificate: CertificateDer<'static>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         if !std::fs::symlink_metadata(access.join("grants"))?.is_dir() {
             return Err("Expected an ordinary device grant directory".into());
         }
-        let lock = OpenOptions::new()
-            .create(true)
-            .truncate(false)
-            .read(true)
-            .write(true)
-            .open(access.join("host.lock"))?;
-        fs2::FileExt::try_lock_exclusive(&lock)?;
         let mut bytes = Vec::new();
         File::open(access.join("identity.json"))?
             .take(1025)
@@ -85,7 +89,6 @@ impl Identity {
             return Err("Host identity is damaged".into());
         }
         let IdentityRecord { id, fingerprint } = serde_json::from_slice(&bytes)?;
-        let certificate = CertificateDer::from_pem_file(ca)?;
         if fingerprint != hex::encode(Sha256::digest(certificate.as_ref())) {
             return Err("Host authority changed. Restore the original CA or initialize a separate host identity".into());
         }
@@ -101,6 +104,19 @@ impl Identity {
     pub(super) fn directory(&self) -> &Path {
         &self.directory
     }
+}
+
+fn lock_directory(access: &Path) -> io::Result<(std::path::PathBuf, File)> {
+    private_directory(access)?;
+    let access = access.canonicalize()?;
+    let lock = OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .read(true)
+        .write(true)
+        .open(access.join("host.lock"))?;
+    fs2::FileExt::try_lock_exclusive(&lock)?;
+    Ok((access, lock))
 }
 
 #[derive(Deserialize, Serialize)]

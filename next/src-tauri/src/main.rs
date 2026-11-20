@@ -484,6 +484,15 @@ fn main() {
             }
             app.manage(Arc::new(Transfers::new(storage, activity)));
             app.manage(worker);
+            #[cfg(feature = "host")]
+            {
+                let handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    let hosting = handle.state::<desktop_host::DesktopHost>();
+                    let worker = handle.state::<Worker>();
+                    hosting.resume(&worker).await;
+                });
+            }
             Ok(())
             })();
             if let Err(error) = initialization {

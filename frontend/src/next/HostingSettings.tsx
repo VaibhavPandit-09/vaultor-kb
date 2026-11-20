@@ -2,12 +2,22 @@ import {invoke} from '@tauri-apps/api/core';
 import {useEffect, useState} from 'react';
 import {SettingsRow} from '../components/SettingsPresentation';
 
-type Status = {running: boolean; accessPath: string; address?: string; fingerprint?: string};
+type Status = {
+  running: boolean;
+  accessPath: string;
+  address?: string;
+  fingerprint?: string;
+  addresses: string[];
+  startup: boolean;
+  startupError?: string;
+  certificate?: {expiresAt: number; renewalFailed: boolean};
+};
 type Pairing = {id: string; name: string; code: string; expiresAt: string};
 type Device = {id: string; name: string; workspace: string | null};
 type Command =
   | {op: 'status' | 'stop' | 'pending' | 'devices'}
   | {op: 'start'; address: string}
+  | {op: 'startup'; enabled: boolean}
   | {op: 'decide'; id: string; code: string; approve: boolean}
   | {op: 'grant'; id: string; allow: boolean}
   | {op: 'revoke'; id: string};
@@ -16,7 +26,8 @@ const call = <T,>(command: Command) => invoke<T>('hosting', {command});
 
 export default function HostingSettings() {
   const [status, setStatus] = useState<Status>();
-  const [address, setAddress] = useState('127.0.0.1:8443');
+  const [address, setAddress] = useState('127.0.0.1');
+  const [customAddress, setCustomAddress] = useState('');
   const [pending, setPending] = useState<Pairing[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [matched, setMatched] = useState<string>();
@@ -50,21 +61,42 @@ export default function HostingSettings() {
   return <section className="settings-section">
     <div className="settings-section-heading"><h3>Hosting</h3><span>This computer</span></div>
     {error && <p role="alert" className="settings-error">{error}</p>}
+    {status?.startupError && <p role="alert" className="settings-error">{status.startupError}</p>}
     <SettingsRow label="HTTPS sharing" description={status?.running
       ? `Listening at https://${status.address}. Closing to the tray keeps hosting active.`
-      : 'Sharing is off. Start hosting explicitly after setting up a host certificate.'}>
+      : 'Sharing is off. On Windows, Vaultor sets up the host certificate when you start sharing.'}>
       <button type="button" className="settings-text-action" disabled={busy || !status}
-        onClick={() => void refresh(status?.running ? {op: 'stop'} : {op: 'start', address})}>
+        onClick={() => void refresh(status?.running ? {op: 'stop'} : {op: 'start', address: customAddress || `${address}:8443`})}>
         {status?.running ? 'Stop hosting' : 'Start hosting'}
       </button>
     </SettingsRow>
-    {!status?.running && <SettingsRow label="Listening address" description="Use this computer’s private IP address for LAN access.">
-      <label className="settings-search"><input aria-label="Listening address" value={address}
-        onChange={event => setAddress(event.target.value)} /></label>
+    {!status?.running && <SettingsRow label="Listening address" description="Choose the private address your device can reach. This computer only keeps access local.">
+      <select aria-label="Listening address" value={address} onChange={event => {
+        setAddress(event.target.value);
+        setCustomAddress('');
+      }}>
+        <option value="127.0.0.1">This computer only</option>
+        {status?.addresses.map(ip => <option key={ip} value={ip}>{ip}</option>)}
+      </select>
     </SettingsRow>}
-    {status && <SettingsRow label="Certificate directory" description={status.accessPath}>{null}</SettingsRow>}
+    <SettingsRow label="Start hosting on launch" description="Resume sharing this workspace and address when Vaultor opens.">
+      <button type="button" role="switch" className="settings-switch" aria-label="Start hosting on launch"
+        aria-checked={status?.startup ?? false} disabled={busy || (!status?.running && !status?.startup)}
+        onClick={() => void refresh({op: 'startup', enabled: !status?.startup})}><span /></button>
+    </SettingsRow>
+    {status && <details>
+      <summary>Advanced hosting settings</summary>
+      {!status.running && <SettingsRow label="Custom listening address" description="Specify an IP and port to override the address above.">
+        <label className="settings-search"><input aria-label="Custom listening address" value={customAddress}
+          onChange={event => setCustomAddress(event.target.value)} /></label>
+      </SettingsRow>}
+      <SettingsRow label="Certificate directory" description={status.accessPath}>{null}</SettingsRow>
+    </details>}
     {status?.running && <>
       <SettingsRow label="CA fingerprint (SHA-256)" description={status.fingerprint}>{null}</SettingsRow>
+      {status.certificate && <SettingsRow label="Server certificate" description={status.certificate.renewalFailed
+        ? 'Automatic renewal failed. Vaultor will retry while hosting is active.'
+        : `Renews automatically before ${new Date(status.certificate.expiresAt * 1000).toLocaleDateString()}.`}>{null}</SettingsRow>}
       <SettingsRow label="Devices" description="Compare codes before approving a request, then grant access to this workspace.">
         <button type="button" className="settings-text-action" disabled={busy} onClick={() => void refresh()}>Refresh devices</button>
       </SettingsRow>

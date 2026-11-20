@@ -503,3 +503,5 @@ Review keeps the original modal, retained query, status filter and evidence disc
 ## M24 hosting controls
 
 Hosting uses the existing floating Settings category, grouped rows, keyboard focus and shared layout. The controls distinguish stopped from listening, display the effective address, require a matching-code confirmation for approval and prompt before device revocation. Pairing decisions and grants use the current host and workspace. Pending requests refresh on demand. Original Connections, discovery, browser handoff, host-name controls, and matched visual, motion and accessibility acceptance remain open.
+
+The Windows continuation adds a private IPv4 address selector, a separate start-on-launch switch and certificate status in the same group. Custom bind input and certificate location are under an advanced disclosure. Starting sharing uses the existing explicit action and newly surfaced startup errors leave local editing available.

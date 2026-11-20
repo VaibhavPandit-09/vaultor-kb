@@ -2,7 +2,15 @@
 
 Reviewed 2026-11-20. This workflow applies to the M24 engineering candidate. The published Electron and Android host contracts remain in [Host access](../security/HOST-ACCESS.md) and [Android](../android/ANDROID.md).
 
-## Configure a host
+## Windows desktop
+
+In **Settings → Hosting**, choose a private IPv4 address from the list or leave **This computer only** selected. Start hosting explicitly. Windows generates the host CA and protects its private key with current-user DPAPI in the app profile. The public CA is `ca.pem` in the certificate directory under advanced settings. The leaf key stays in memory. Existing manually configured profiles keep their PEM-based setup. [Windows DPAPI documentation](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata)
+
+The managed listener issues a leaf for the selected IP at startup. The leaf lasts up to 30 days. While running, Vaultor checks hourly and replaces the leaf in the live TLS configuration once the remaining validity reaches seven days. It preserves the CA and host UUID. Upon renewal failure, Vaultor preserves the last valid configuration and retries. A damaged CA or locked key requires restoring the original host profile under its Windows account, or deliberately starting with a separate identity and reapproving devices. Workspace archives exclude host material.
+
+**Start hosting on launch** is an explicit preference for the active workspace and effective address. Vaultor refuses to resume if that workspace changed or the address is unavailable. Select a new address and start hosting again after an IP change. Close to tray leaves hosting active, Quit preserves the opt-in preference, and **Stop hosting** clears it. If Windows Firewall prompts, limit the exception to the private interface and intended peers. Vaultor does not change firewall policy itself.
+
+## Standalone and custom certificate configuration
 
 Use a private, owner-controlled directory separate from the workspace. On Windows use the account's private app-data directory and verify its ACL, including inherited access. On Linux use mode `0700`; limit the PEM private key to the host account. The host expects these files.
 
@@ -23,7 +31,7 @@ $vaultorHost = 'next/src-tauri/target/release/vaultor-next-host.exe'
 
 Set `$vaultorAccess` to the existing private directory and `$vaultorWorkspace` to the workspace path first. The headless process accepts an empty or existing Next workspace and acquires the same exclusive lock as desktop. Windows owner commands run in the foreground process's interactive terminal. On Linux, use `vaultor-next-host owner ACCESS_DIR COMMAND ...` through the private Unix socket.
 
-To run the listener inside the Windows app, use the certificate directory shown in **Settings → Hosting** as `$vaultorAccess`. Initialize it once, enter the IP and port, and select **Start hosting**. To allow private LAN requests, use the host's private IP rather than loopback and provision a certificate for it. Configure any firewall exception explicitly for the private interface and intended peers. Stop hosting before switching workspaces or changing the address. Close to tray keeps an active listener running and Quit stops it. A fresh app launch starts with hosting off.
+For an external certificate on desktop, initialize the certificate directory shown under **Settings → Hosting → Advanced hosting settings** before first starting the listener. Enter the matching IP and port under **Custom listening address**. Stop hosting before switching workspaces or changing the address.
 
 ## Approve a protocol client
 

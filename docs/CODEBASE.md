@@ -6,6 +6,8 @@ Vaultor Next M23 uses one Rust SQLite owner for Review, resource identity, archi
 
 **Next M24 host checkpoint:** The optional Axum/rustls adapter and standalone entry point use the existing Rust workspace owner. Desktop Settings starts and stops the same adapter without changing local Tauri IPC. The active workspace is fixed for a listener and storage operations recheck its generation. Host identity, verifier-indexed device records and workspace grants reside in a separate owner directory. The [host guide](development/NEXT-HOST.md) owns configuration, the versioned API and the client compatibility boundary.
 
+Windows desktop generates a stable CA on first enable and uses user-scoped DPAPI for its private key. The listener replaces short-lived leaves in memory when renewal is due. Startup sharing binds the recorded workspace identity and address. Headless and externally configured desktop profiles still use explicit PEM files.
+
 ## Product and architecture
 
 **Next M21 discovery:** One Rust monitor owns Windows source subscriptions for the active workspace. It coalesces bounded notifications and reconciles individual Markdown paths under the existing NTFS leases. Directory changes, lossy deliveries and reconnect use Activity's whole-source scan. A source-grant epoch and current storage workspace validate publication of each derived receipt. The monitor probes root availability independently of content and withdraws unavailable records. The renderer consumes workspace-scoped index notifications and retains the existing clean reload and dirty recovery workflow. Main source-browser expansion is bounded session state and queues a session write when changed.
@@ -508,6 +510,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-20 — Next M24 Windows managed TLS and startup preference
+
+Added first-use Windows TLS provisioning, verified leaf replacement, automatic renewal, an explicit workspace-bound startup preference and private IPv4 selection in Settings. The Hosting Help and experimental catalogue describe the new workflow. Controlled-time Rust tests covered leaf expiry, renewal, address SAN checks, stable host trust and DPAPI recovery refusal. The Windows Rust suite passed 60 checks. See the [host guide](development/NEXT-HOST.md) for the manual and managed certificate paths.
 
 ### 2026-11-20 — Next M24 experimental Rust host checkpoint
 

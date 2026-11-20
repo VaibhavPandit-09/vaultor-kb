@@ -10,6 +10,96 @@ use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio_rustls::TlsConnector;
 
+#[cfg(all(windows, feature = "desktop"))]
+#[tokio::test]
+async fn managed_identity_survives_leaf_rotation_and_refuses_damaged_keys() {
+    use rustls::pki_types::UnixTime;
+    use time::OffsetDateTime;
+
+    let fixture = tempfile::tempdir().unwrap();
+    let access = fixture.path().join("access");
+    let root = fixture.path().join("workspace");
+    let (identity, authority) = Authority::open(&access).unwrap();
+    let id = identity.id;
+    let trusted = identity.certificate.clone();
+    let fingerprint = identity.fingerprint.clone();
+    let worker = Worker::start(root.clone(), None).unwrap();
+    worker.call(Request::Snapshot).await.unwrap();
+    let host = Host::new(worker.storage(), root, identity).await.unwrap();
+    let ip = "127.0.0.1".parse().unwrap();
+    let now = OffsetDateTime::now_utc();
+    let (first, first_key, expires) = authority.as_ref().unwrap().issue(ip, now).unwrap();
+    let time_at = |time: OffsetDateTime| {
+        UnixTime::since_unix_epoch(Duration::from_secs(time.unix_timestamp() as u64))
+    };
+    assert!(!Authority::needs_renewal(expires, now));
+    assert!(Authority::needs_renewal(
+        expires,
+        expires - time::Duration::days(7)
+    ));
+    assert!(host
+        .tls_config(ip, first.clone(), first_key.clone_key(), time_at(now))
+        .is_ok());
+    assert!(host
+        .tls_config(
+            ip,
+            first.clone(),
+            first_key,
+            time_at(expires + time::Duration::hours(1))
+        )
+        .is_err());
+    let next_ip = "127.0.0.2".parse().unwrap();
+    let next_time = expires - time::Duration::days(7);
+    let (second, second_key, next_expiry) = authority
+        .as_ref()
+        .unwrap()
+        .issue(next_ip, next_time)
+        .unwrap();
+    assert_eq!(first[1], second[1]);
+    assert_ne!(first[0], second[0]);
+    assert!(next_expiry > expires);
+    assert!(host
+        .tls_config(
+            ip,
+            second.clone(),
+            second_key.clone_key(),
+            time_at(next_time)
+        )
+        .is_err());
+    assert!(host
+        .tls_config(next_ip, second, second_key, time_at(next_time))
+        .is_ok());
+
+    let listener = host
+        .clone()
+        .listen_automatic("127.0.0.1:0".parse().unwrap(), authority.unwrap())
+        .await
+        .unwrap();
+    let client = connector(Some(trusted));
+    let response = request(
+        &client,
+        listener.address(),
+        "GET",
+        "/api/access/host",
+        "",
+        "",
+    )
+    .await;
+    assert_eq!(response.0, 200);
+    assert!(response.2.contains(&fingerprint));
+    listener.stop().await.unwrap();
+    drop(host);
+
+    let (reopened, _) = Authority::open(&access).unwrap();
+    assert_eq!(reopened.id, id);
+    assert_eq!(reopened.fingerprint, fingerprint);
+    drop(reopened);
+    let key = access.join("authority.dpapi");
+    std::fs::write(&key, b"damaged").unwrap();
+    assert!(Authority::open(&access).is_err());
+    assert_eq!(std::fs::read(key).unwrap(), b"damaged");
+}
+
 struct Fixture {
     _dir: tempfile::TempDir,
     access: PathBuf,

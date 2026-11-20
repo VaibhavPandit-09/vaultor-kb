@@ -17,7 +17,8 @@ const m20=process.argv.includes('--m20-linked');
 const m21=process.argv.includes('--m21-discovery');
 const m22=process.argv.includes('--m22-transfers');
 const m23=process.argv.includes('--m23-native');
-const m24=process.argv.includes('--m24-host');
+const m24Automatic=process.argv.includes('--m24-automatic-tls');
+const m24=process.argv.includes('--m24-host')||m24Automatic;
 const recordM23=m23&&!process.argv.includes('--m23-probe');
 const recordM22=m22&&!process.argv.includes('--m22-probe');
 const recordM21=m21&&!process.argv.includes('--m21-probe');
@@ -185,10 +186,20 @@ try {
   let run = await launch(1);
   if (inspect) {
     if (m24) {
-      await (await import('./m24-host.mjs')).qualifyHost({evaluate,wait,record,report,folder});
+      const hostChecks = await import('./m24-host.mjs');
+      if (m24Automatic) {
+        await hostChecks.qualifyAutomaticTls({evaluate,wait,report,folder,restart:async()=>{
+          await stopSampler(run,1);
+          run=null;
+          await quit();
+          await launch(3);
+        }});
+      } else {
+        await hostChecks.qualifyHost({evaluate,wait,record,report,folder});
+      }
       await stopSampler(run,1);
       run = null;
-      for (const {phase, start, end} of report.hostBenchWindows) {
+      for (const {phase, start, end} of report.hostBenchWindows ?? []) {
         const points = report.process1.filter(sample => {
           const at = Date.parse(sample.timestamp);
           return at >= start && at <= end;
@@ -409,7 +420,7 @@ try {
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
-  if (m24 && !process.argv.includes('--m24-probe')) {
+  if (m24 && !m24Automatic && !process.argv.includes('--m24-probe')) {
     const samples = report.samples.filter(sample => sample.scenario.startsWith('m24-'));
     if (!report.success) samples.push({scenario:'m24-qualification', iteration:1, metric:'run_failure', notes:'See raw evidence'});
     for (const sample of samples) {

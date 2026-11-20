@@ -182,7 +182,11 @@ In managed or linked draft review, choose **Export protected draft** to write a 
 
 ## Experimental HTTPS hosting
 
-Open **Settings → Hosting** to view the certificate directory and start or stop sharing a workspace. Start requires a configured host certificate for the listening IP. Sharing starts off on each launch. Use **Refresh devices** to see pending approvals. Compare the pairing codes, approve the device, then grant access to the current workspace. You can withdraw that grant or revoke the device. A device can retain files it already received.
+Open **Settings → Hosting**, choose an address, then select **Start hosting**. Choose **This computer only** for local access or select a private IP address that your device can reach. Vaultor for Windows creates a host certificate on first use and renews the server certificate while sharing. Its CA fingerprint stays the same when you stop and start with a different address. For a private network firewall prompt, allow access only for the network and devices you intend to use.
+
+Sharing starts off unless you turn on **Start hosting on launch**. This setting remembers the workspace and address you chose. If the address changes, select the new address and start sharing again. **Stop hosting** also turns off start on launch.
+
+Use **Refresh devices** to see pending approvals. Compare the pairing codes, approve the device, then grant access to the current workspace. You can withdraw that grant or revoke the device. A device can retain files it already received.
 
 Stop hosting before switching workspaces. Closing to the tray keeps sharing running. Quit ends it. The experimental host serves supported API clients. Android offline reading and browser workspace access still require a compatible published Vaultor host.
 

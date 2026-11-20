@@ -1,11 +1,58 @@
 import assert from 'node:assert/strict';
 import {execFileSync, spawn, spawnSync} from 'node:child_process';
 import {createHash, randomBytes} from 'node:crypto';
-import {mkdir, readFile, unlink, writeFile} from 'node:fs/promises';
+import {mkdir, readFile, stat, unlink, writeFile} from 'node:fs/promises';
 import {request} from 'node:https';
 import {join} from 'node:path';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+export async function qualifyAutomaticTls({evaluate, wait, report, folder, restart}) {
+  const access = join(folder, 'host-access');
+  const admin = (op, fields = {}) => evaluate(`window.__TAURI_INTERNALS__.invoke('hosting',{command:${JSON.stringify({op,...fields})}})`);
+  async function descriptor(status, ca) {
+    return new Promise((resolve, reject) => {
+      const url = `https://${status.address}/api/access/host`;
+      const req = request(url, {ca, agent:false}, res => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          try {
+            assert.equal(res.statusCode, 200);
+            resolve(JSON.parse(body));
+          } catch (error) { reject(error); }
+        });
+      });
+      req.setTimeout(4000, () => req.destroy(Error('Managed host timed out')));
+      req.on('error', reject);
+      req.end();
+    });
+  }
+  assert.equal((await admin('status')).running, false);
+  await assert.rejects(stat(access), {code:'ENOENT'});
+  await evaluate("document.querySelector('button[title=Settings]').click()");
+  await evaluate("[...document.querySelectorAll('.settings-rail button')].find(button=>button.textContent.trim()==='Hosting').click()");
+  await wait("[...document.querySelectorAll('button')].some(button=>button.textContent==='Start hosting'&&!button.disabled)", 'Hosting controls ready');
+  const startTime = performance.now();
+  const status = await admin('start', {address:'127.0.0.1:0'});
+  assert(status.running && status.certificate?.expiresAt > Math.floor(Date.now()/1000));
+  await assert.rejects(stat(join(access,'server-key.pem')), {code:'ENOENT'});
+  const ca = await readFile(join(access,'ca.pem'));
+  const first = await descriptor(status, ca);
+  report.firstManagedTlsReadinessMs = performance.now() - startTime;
+  assert.equal(status.fingerprint, first.fingerprint);
+  assert.equal((await admin('startup',{enabled:true})).startup, true);
+  await restart();
+  const restored = await admin('status');
+  assert.equal(restored.running, true);
+  assert.equal(restored.address, status.address);
+  assert.deepEqual(await descriptor(restored, ca), first);
+  const stopped = await admin('stop');
+  assert(!stopped.running && !stopped.startup);
+  await assert.rejects(descriptor(restored, ca), {code:'ECONNREFUSED'});
+  report.checks.push('No certificate created while disabled', 'Native Windows provisioning and verified TLS', 'Pin continuity and opt-in restart', 'Stopping disables the listener and startup preference');
+}
 
 export async function qualifyHost({evaluate, wait, record, report, folder}) {
   const access = join(folder, 'host-access');

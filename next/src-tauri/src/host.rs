@@ -7,6 +7,8 @@ mod tests;
 mod transport;
 
 use crate::{domain::Request, worker::Storage};
+#[cfg(all(windows, feature = "desktop"))]
+pub use access::automatic::Authority;
 use access::Grant;
 pub use access::Identity;
 use axum::{
@@ -55,6 +57,18 @@ pub struct Listener {
     handle: Handle<SocketAddr>,
     stop: CancellationToken,
     task: Option<tokio::task::JoinHandle<io::Result<()>>>,
+    #[cfg(all(windows, feature = "desktop"))]
+    certificates: Option<tokio::sync::watch::Receiver<CertificateStatus>>,
+    #[cfg(all(windows, feature = "desktop"))]
+    maintenance: Option<tokio::task::JoinHandle<()>>,
+}
+
+#[cfg(all(windows, feature = "desktop"))]
+#[derive(Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CertificateStatus {
+    expires_at: i64,
+    renewal_failed: bool,
 }
 
 impl Listener {
@@ -66,9 +80,20 @@ impl Listener {
         self.task.as_ref().is_some_and(|task| !task.is_finished())
     }
 
+    #[cfg(all(windows, feature = "desktop"))]
+    pub fn certificate_status(&self) -> Option<CertificateStatus> {
+        self.certificates
+            .as_ref()
+            .map(|value| value.borrow().clone())
+    }
+
     pub async fn stop(mut self) -> io::Result<()> {
         self.stop.cancel();
         self.handle.shutdown();
+        #[cfg(all(windows, feature = "desktop"))]
+        if let Some(task) = self.maintenance.take() {
+            task.await?;
+        }
         self.task.take().unwrap().await?
     }
 }
@@ -77,10 +102,18 @@ impl Drop for Listener {
     fn drop(&mut self) {
         self.stop.cancel();
         self.handle.shutdown();
+        #[cfg(all(windows, feature = "desktop"))]
+        if let Some(task) = self.maintenance.take() {
+            task.abort();
+        }
     }
 }
 
 impl Host {
+    pub fn workspace_id(&self) -> Uuid {
+        self.workspace
+    }
+
     pub fn fingerprint(&self) -> &str {
         &self.identity.fingerprint
     }
@@ -144,6 +177,75 @@ impl Host {
         chain: PathBuf,
         key: PathBuf,
     ) -> io::Result<Listener> {
+        let socket = Self::bind(address)?;
+        let tls = self.tls(address.ip(), chain, key)?;
+        self.serve(socket, tls).await
+    }
+
+    #[cfg(all(windows, feature = "desktop"))]
+    pub async fn listen_automatic(
+        self,
+        address: SocketAddr,
+        authority: Authority,
+    ) -> io::Result<Listener> {
+        use time::OffsetDateTime;
+        let socket = Self::bind(address)?;
+        let ip = address.ip();
+        let now = OffsetDateTime::now_utc();
+        let (chain, key, mut expires) = authority.issue(ip, now)?;
+        let tls = RustlsConfig::from_config(self.tls_config(
+            ip,
+            chain,
+            key,
+            rustls::pki_types::UnixTime::now(),
+        )?);
+        let mut listener = self.clone().serve(socket, tls.clone()).await?;
+        let stop = listener.stop.clone();
+        let (status, receiver) = tokio::sync::watch::channel(CertificateStatus {
+            expires_at: expires.unix_timestamp(),
+            renewal_failed: false,
+        });
+        listener.certificates = Some(receiver);
+        listener.maintenance = Some(tokio::spawn(async move {
+            // There is no maintenance task while hosting is off.
+            let interval = Duration::from_secs(60 * 60);
+            loop {
+                tokio::select! {
+                    _ = stop.cancelled() => break,
+                    _ = tokio::time::sleep(interval) => {}
+                }
+                let now = OffsetDateTime::now_utc();
+                if !Authority::needs_renewal(expires, now) {
+                    continue;
+                }
+                let candidate = authority
+                    .issue(ip, now)
+                    .and_then(|(chain, key, next_expiry)| {
+                        self.tls_config(ip, chain, key, rustls::pki_types::UnixTime::now())
+                            .map(|config| (config, next_expiry))
+                    });
+                match candidate {
+                    Ok((configuration, next_expiry)) => {
+                        tls.reload_from_config(configuration);
+                        expires = next_expiry;
+                        status.send_replace(CertificateStatus {
+                            expires_at: expires.unix_timestamp(),
+                            renewal_failed: false,
+                        });
+                    }
+                    Err(_) => {
+                        status.send_replace(CertificateStatus {
+                            expires_at: expires.unix_timestamp(),
+                            renewal_failed: true,
+                        });
+                    }
+                }
+            }
+        }));
+        Ok(listener)
+    }
+
+    fn bind(address: SocketAddr) -> io::Result<std::net::TcpListener> {
         if !private(address.ip()) || address.ip().is_unspecified() {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -152,8 +254,11 @@ impl Host {
         }
         let socket = std::net::TcpListener::bind(address)?;
         socket.set_nonblocking(true)?;
+        Ok(socket)
+    }
+
+    async fn serve(self, socket: std::net::TcpListener, tls: RustlsConfig) -> io::Result<Listener> {
         let address = socket.local_addr()?;
-        let tls = self.tls(address.ip(), chain, key)?;
         let handle = Handle::new();
         let stop = self.stop.clone();
         let router = Router::new()
@@ -199,6 +304,10 @@ impl Host {
             handle,
             stop,
             task: Some(task),
+            #[cfg(all(windows, feature = "desktop"))]
+            certificates: None,
+            #[cfg(all(windows, feature = "desktop"))]
+            maintenance: None,
         };
         if tokio::time::timeout(Duration::from_secs(5), listener.handle.listening()).await?
             != Some(address)
@@ -209,17 +318,35 @@ impl Host {
     }
 
     fn tls(&self, ip: IpAddr, chain: PathBuf, key: PathBuf) -> io::Result<RustlsConfig> {
-        use rustls::{
-            client::{danger::ServerCertVerifier, WebPkiServerVerifier},
-            pki_types::{pem::PemObject, CertificateDer, PrivateKeyDer, UnixTime},
-            RootCertStore, ServerConfig,
-        };
+        use rustls::pki_types::{pem::PemObject, CertificateDer, PrivateKeyDer, UnixTime};
         let invalid =
             |e: &dyn std::fmt::Display| io::Error::new(io::ErrorKind::InvalidData, e.to_string());
         let certificates = CertificateDer::pem_file_iter(chain)
             .map_err(|e| invalid(&e))?
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| invalid(&e))?;
+        let key = PrivateKeyDer::from_pem_file(key).map_err(|e| invalid(&e))?;
+        Ok(RustlsConfig::from_config(self.tls_config(
+            ip,
+            certificates,
+            key,
+            UnixTime::now(),
+        )?))
+    }
+
+    fn tls_config(
+        &self,
+        ip: IpAddr,
+        certificates: Vec<rustls::pki_types::CertificateDer<'static>>,
+        key: rustls::pki_types::PrivateKeyDer<'static>,
+        now: rustls::pki_types::UnixTime,
+    ) -> io::Result<Arc<rustls::ServerConfig>> {
+        use rustls::{
+            client::{danger::ServerCertVerifier, WebPkiServerVerifier},
+            RootCertStore, ServerConfig,
+        };
+        let invalid =
+            |e: &dyn std::fmt::Display| io::Error::new(io::ErrorKind::InvalidData, e.to_string());
         let Some((leaf, intermediates)) = certificates.split_first() else {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -247,10 +374,9 @@ impl Host {
                 &intermediates[..intermediates.len() - 1],
                 &ip.into(),
                 &[],
-                UnixTime::now(),
+                now,
             )
             .map_err(|e| invalid(&e))?;
-        let key = PrivateKeyDer::from_pem_file(key).map_err(|e| invalid(&e))?;
         let mut tls = ServerConfig::builder_with_provider(provider)
             .with_safe_default_protocol_versions()
             .map_err(|e| invalid(&e))?
@@ -258,7 +384,7 @@ impl Host {
             .with_single_cert(certificates, key)
             .map_err(|e| invalid(&e))?;
         tls.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
-        Ok(RustlsConfig::from_config(Arc::new(tls)))
+        Ok(Arc::new(tls))
     }
 
     async fn grant(&self, headers: &HeaderMap) -> ApiResult<Grant> {
