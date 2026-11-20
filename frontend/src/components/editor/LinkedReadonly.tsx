@@ -1,5 +1,5 @@
 import {PreviewBoundary} from './LinkedPreviewBudget';
-import {previewBudget} from './linkedPreviewBudget';
+import {previewBudget} from './linkedPreviewLimits';
 import LinkedMarkdownLinks from './LinkedMarkdownLinks';
 import {markdownLinkKind} from '../../lib/linked/linkNavigation';
 import {sourceWindow,SOURCE_PAGE_STEP} from '../../lib/linked/sourceWindow';

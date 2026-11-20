@@ -2,7 +2,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import AppModal from '../components/modals/AppModal';
 import {PreviewBoundary} from '../components/editor/LinkedPreviewBudget';
-import {previewBudget} from '../components/editor/linkedPreviewBudget';
+import {previewBudget} from '../components/editor/linkedPreviewLimits';
 import {markdownLinkKind,revealMarkdownHeading} from '../lib/linked/linkNavigation';
 import JourneyViewport from '../components/JourneyViewport';
 import type {ReadingPosition} from '../lib/paneNavigation';

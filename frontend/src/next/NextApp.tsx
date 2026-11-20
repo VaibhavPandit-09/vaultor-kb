@@ -404,7 +404,7 @@ export default function NextApp() {
     if(collection)actions.push({label:'Cut memberships',hint:'Ctrl+X',run:()=>void run(async()=>{await copyResources(next.ids,'cut',collection);setNotice('Memberships marked for move');},false)});
     actions.push({label:'Assign tags…',run:()=>setTagging([...next.ids])},{label:next.ids.every(id=>forced?.pinned??resourceDetails.get(id)?.pinned)?'Unpin resources':'Pin resources',run:()=>metadata({op:'pin',ids:next.ids,value:!next.ids.every(id=>forced?.pinned??resourceDetails.get(id)?.pinned)})});
     if(!hasLinked)actions.push({label:'Move to Trash…',run:()=>lifecycleChange(next.ids,'trash')},{label:'Export selected resources…',run:()=>showTransfer({op:'export',ids:next.ids})});
-    actions.push({label:`Add ${next.ids.length===1?'resource':next.ids.length+' resources'} to collection…`,icon:FolderPlus,separator:true,run:()=>organize(next.ids,'add')});
+    actions.push({label:`Add ${next.ids.length===1?(hasLinked?'resource':'note'):next.ids.length+(hasLinked?' resources':' notes')} to collection…`,icon:FolderPlus,separator:true,run:()=>organize(next.ids,'add')});
     if(collection)actions.push({label:'Move to collection…',icon:FolderInput,run:()=>organize(next.ids,'move')},{label:'Remove from this collection…',icon:FolderMinus,run:()=>organize(next.ids,'remove')});
     if(!inEditor&&!forced)actions.push({label:'Select this page',icon:CheckSquare,separator:true,hint:'Ctrl+A',run:selection.all},{label:'Clear selection',run:selection.clear});
     showMenu(`${next.ids.length} selected ${next.ids.length===1?'note':'notes'}`,event,actions,source);
