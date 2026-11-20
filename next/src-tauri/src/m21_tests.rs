@@ -123,7 +123,7 @@ fn windows_monitor_reconciles_create_edit_rename_and_delete() {
     let source = temp.path().join("external");
     fs::create_dir(&source).unwrap();
     let worker = Worker::start(path.clone(), None).unwrap();
-    let call = |request| tauri::async_runtime::block_on(worker.call(request)).unwrap();
+    let call = |request| tokio::runtime::Builder::new_current_thread().build().unwrap().block_on(worker.call(request)).unwrap();
     let workspace = call(Request::Snapshot)["path"]
         .as_str()
         .unwrap()

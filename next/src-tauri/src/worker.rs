@@ -19,9 +19,29 @@ enum Message {
 #[derive(Clone)]
 pub struct Storage {
     sender: mpsc::Sender<Message>,
+    #[cfg(feature = "host")]
+    changes: tokio::sync::watch::Sender<u64>,
     pub active: Arc<AtomicUsize>,
 }
 impl Storage {
+    #[cfg(feature = "host")]
+    pub(crate) fn subscribe(&self) -> tokio::sync::watch::Receiver<u64> {
+        self.changes.subscribe()
+    }
+
+    #[cfg(feature = "host")]
+    pub async fn call_host(
+        &self,
+        root: &std::path::Path,
+        operation: impl FnOnce(&mut Workspace) -> Result<serde_json::Value, String> + Send + 'static,
+    ) -> Result<serde_json::Value, String> {
+        let (reply, receipt) = oneshot::channel();
+        self.sender
+            .send(Message::Operation(root.to_string_lossy().into_owned(), Box::new(operation), reply))
+            .map_err(|_| "Storage closed")?;
+        receipt.await.map_err(|_| "Storage closed")?
+    }
+
     pub fn call(
         &self,
         root: &str,
@@ -38,12 +58,34 @@ pub struct Worker {
     sender: Mutex<Option<mpsc::Sender<Message>>>,
     thread: Mutex<Option<thread::JoinHandle<()>>>,
     active: Arc<AtomicUsize>,
+    #[cfg(feature = "host")]
+    changes: tokio::sync::watch::Sender<u64>,
 }
+
+#[cfg(feature = "host")]
+fn search_generation(workspace: &Result<Workspace, String>, changes: &tokio::sync::watch::Sender<u64>) -> Option<i64> {
+    if changes.receiver_count() == 0 {
+        return None;
+    }
+    workspace.as_ref().ok()?.db.query_row("SELECT value FROM search_generation", [], |row| row.get(0)).ok()
+}
+
+#[cfg(feature = "host")]
+fn notify_saved(workspace: &Result<Workspace, String>, changes: &tokio::sync::watch::Sender<u64>, before: Option<i64>) {
+    if search_generation(workspace, changes).is_some_and(|after| Some(after) != before) {
+        changes.send_modify(|sequence| *sequence += 1);
+    }
+}
+
 impl Worker {
     pub fn start(root: PathBuf, pointer: Option<PathBuf>) -> Result<Self, String> {
         let (sender, receiver) = mpsc::channel::<Message>();
         let active = Arc::new(AtomicUsize::new(0));
         let gate = active.clone();
+        #[cfg(feature = "host")]
+        let changes = tokio::sync::watch::Sender::new(0);
+        #[cfg(feature = "host")]
+        let signals = changes.clone();
         let thread = thread::Builder::new()
             .name("vaultor-storage".into())
             .spawn(move || {
@@ -53,6 +95,8 @@ impl Worker {
                 // An explicit test override must establish ownership before it can store metadata.
                 let preferences_owned=pointer.is_some()||workspace.is_ok();
                 for message in receiver {
+                    #[cfg(feature = "host")]
+                    let before = search_generation(&workspace, &signals);
                     let (request, reply) = match message {
                         Message::Stop => break,
                         Message::Request(r, tx) => (r, tx),
@@ -61,6 +105,8 @@ impl Worker {
                                 Ok(w) if w.is_path(std::path::Path::new(&root)) => op(w),
                                 _ => Err("Workspace changed; task refused".into()),
                             };
+                            #[cfg(feature = "host")]
+                            notify_saved(&workspace, &signals, before);
                             let _ = tx.send(result);
                             continue;
                         }
@@ -121,6 +167,8 @@ impl Worker {
                         },
                     };
                     let _ = reply.send(result);
+                    #[cfg(feature = "host")]
+                    notify_saved(&workspace, &signals, before);
                 }
                 // Connection, lock and statements drop together after queued work drains.
             })
@@ -129,6 +177,8 @@ impl Worker {
             sender: Mutex::new(Some(sender)),
             thread: Mutex::new(Some(thread)),
             active,
+            #[cfg(feature = "host")]
+            changes,
         })
     }
     pub async fn call(&self, request: Request) -> Result<serde_json::Value, String> {
@@ -147,6 +197,8 @@ impl Worker {
     pub fn storage(&self) -> Storage {
         Storage {
             sender: self.sender.lock().unwrap().as_ref().unwrap().clone(),
+            #[cfg(feature = "host")]
+            changes: self.changes.clone(),
             active: self.active.clone(),
         }
     }
@@ -167,13 +219,16 @@ impl Drop for Worker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn run<T>(future: impl std::future::Future<Output = T>) -> T {
+        tokio::runtime::Builder::new_current_thread().build().unwrap().block_on(future)
+    }
     #[test]
     fn isolated_preferences_do_not_write_into_unowned_folders() {
         let temp=tempfile::tempdir().unwrap();
         let root=temp.path().join("external");std::fs::create_dir(&root).unwrap();
         std::fs::write(root.join("original.txt"),"untouched").unwrap();
         let worker=Worker::start(root.clone(),None).unwrap();
-        assert!(tauri::async_runtime::block_on(worker.call(Request::Preferences{value:Some(serde_json::json!({"theme":"oled"}))})).is_err());
+        assert!(run(worker.call(Request::Preferences{value:Some(serde_json::json!({"theme":"oled"}))})).is_err());
         assert!(!root.join(".profile-preferences.json").exists());
         assert_eq!(std::fs::read_to_string(root.join("original.txt")).unwrap(),"untouched");worker.stop();
     }
@@ -189,7 +244,7 @@ mod tests {
             .unwrap();
         storage.active.store(1, Ordering::SeqCst);
         let second = temp.path().join("second");
-        let call = |request| tauri::async_runtime::block_on(worker.call(request));
+        let call = |request| run(worker.call(request));
         assert!(call(Request::New {
             path: second.to_string_lossy().into_owned()
         })

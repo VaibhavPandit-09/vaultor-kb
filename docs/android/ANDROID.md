@@ -8,6 +8,8 @@ Before any Android publication, follow [the exact-source documentation gate](../
 
 ## Responsibilities and authority
 
+The experimental [Vaultor Next HTTPS host](../development/NEXT-HOST.md) has versioned Rust read and Review endpoints. This Android build still expects the published protocol 3 workspace, checkpoint and Review contracts. Continue using a compatible published host for the Android reader and retained downloads.
+
 Android is a source-bound reader and collecting/Review companion, without a local Java host or independently writable workspace. React Native0.87.1/React19.2.3 owns product UI/motion; thin Kotlin owns pinned transport, protected credentials, stores, platform files/updates and semantic haptics. Restricted reader/media WebViews construct safe DOM from structured documents; no editable Tiptap engine mounts. build:editor is a compatibility command for generating reader assets. Unknown nodes retain original JSON and show a fallback; CSP/navigation restrictions prevent arbitrary scripts, HTML, styles, credential access and remote image fetching.
 
 The general native apiFor boundary permits GET plus bodyless recency POST only. Separate narrowly scoped adapters admit checkpoint preparation, immutable Review delivery and confirmed collected imports/exports. They never grant original note/title/image-placement/organization/lifecycle writes or desktop Review status changes. Imports create new host resources through exact intent/receipt contracts; Share does not insert into a focused note. Native identity is host/workspace/generation/resource, never a name/address. JSON, files, SSE and asynchronous jobs retain their captured scope/epoch. Pinned TLS and workspace grants apply throughout; no redirects or approval bypass.

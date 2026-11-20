@@ -7,18 +7,33 @@ default-run = "vaultor-next"
 [lib]
 name = "vaultor_next"
 
+[features]
+default = ["desktop", "host"]
+desktop = ["dep:tauri", "dep:tauri-plugin-dialog", "dep:tauri-build"]
+host = ["dep:axum", "dep:axum-server", "dep:futures-util", "dep:getrandom", "dep:hex", "dep:hyper-util", "dep:rustls", "dep:subtle", "dep:tempfile", "dep:time", "tokio/fs", "tokio/io-util", "tokio/macros", "tokio/signal", "dep:tokio-util"]
+
+[[bin]]
+name = "vaultor-next"
+path = "src/main.rs"
+required-features = ["desktop"]
+
+[[bin]]
+name = "vaultor-next-host"
+path = "src/bin/host.rs"
+required-features = ["host"]
+
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2", features = [], optional = true }
 
 [dependencies]
-tauri = { version = "2", features = [] }
-tauri-plugin-dialog = "2"
+tauri = { version = "2", features = [], optional = true }
+tauri-plugin-dialog = { version = "2", optional = true }
 rusqlite = { version = "0.37", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-uuid = { version = "1", features = ["v4"] }
+uuid = { version = "1", features = ["v4", "serde"] }
 fs2 = "0.4"
-tokio = { version = "1", features = ["sync"] }
+tokio = { version = "1", features = ["sync", "rt"] }
 pulldown-cmark = { version = "0.13", default-features = false }
 sha2 = "0.10"
 pdf-writer = "0.15"
@@ -26,9 +41,22 @@ encoding_rs = "0.8"
 zip = { version = "2.4.2", default-features = false }
 percent-encoding = "2"
 url = "2"
+axum = { version = "0.8", optional = true }
+axum-server = { version = "0.8", features = ["tls-rustls-no-provider"], optional = true }
+futures-util = { version = "0.3", optional = true }
+getrandom = { version = "0.4", optional = true }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"], optional = true }
+hex = { version = "0.4", optional = true }
+hyper-util = { version = "0.1", features = ["tokio"], optional = true }
+subtle = { version = "2", optional = true }
+tempfile = { version = "3", optional = true }
+time = { version = "0.3", features = ["formatting"], optional = true }
+tokio-util = { version = "0.7", features = ["rt"], optional = true }
 
 [dev-dependencies]
 tempfile = "3"
+rcgen = "0.14"
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
 
 [profile.release]
 codegen-units = 1

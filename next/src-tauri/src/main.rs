@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod preview;
+#[cfg(feature = "host")]
+mod desktop_host;
 #[cfg(windows)]
 mod windows_drag;
 #[cfg(windows)]
@@ -32,8 +34,20 @@ async fn workspace(
     state: tauri::State<'_, Worker>,
     previews: tauri::State<'_, preview::Previews>,
     #[cfg(windows)] monitor: tauri::State<'_, vaultor_next::LinkedMonitor>,
+    #[cfg(feature = "host")] hosting: tauri::State<'_, desktop_host::DesktopHost>,
 ) -> Result<serde_json::Value, String> {
     let switching = matches!(request, Request::Open { .. } | Request::New { .. });
+    #[cfg(feature = "host")]
+    let _host_gate = if switching {
+        let mut slot = hosting.running.lock().await;
+        if slot.as_ref().is_some_and(|(_, listener)| listener.running()) {
+            return Err("Stop hosting before switching workspaces".into());
+        }
+        desktop_host::DesktopHost::stop(&mut slot).await?;
+        Some(slot)
+    } else {
+        None
+    };
     #[cfg(windows)]
     let reconfigure = matches!(&request, Request::Linked { request:
         vaultor_next::LinkedRequest::Register { .. } | vaultor_next::LinkedRequest::RebindDescriptor { .. } | vaultor_next::LinkedRequest::Remove { .. }
@@ -390,6 +404,10 @@ fn main() {
             std::fs::create_dir_all(&data)?;
             let pointer = data.join("last-workspace.json");
             let override_root = std::env::var_os("VAULTOR_NEXT_WORKSPACE");
+            #[cfg(feature = "host")]
+            app.manage(desktop_host::DesktopHost::new(override_root.as_ref()
+                .and_then(|path| std::path::Path::new(path).parent()).unwrap_or(&data)
+                .join("host-access")));
             #[cfg(windows)]
             app.manage(windows_drag::NativeDrag::new(override_root.as_ref()
                 .and_then(|path| std::path::Path::new(path).parent()).unwrap_or(&data)
@@ -476,6 +494,8 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             workspace,
+            #[cfg(feature = "host")]
+            desktop_host::hosting,
             transfer,
             resource_bytes,
             attachment,
@@ -504,6 +524,12 @@ fn main() {
     };
     application.run(|app, event| {
         if matches!(event, tauri::RunEvent::Exit) {
+            #[cfg(feature = "host")]
+            tauri::async_runtime::block_on(async {
+                let hosting = app.state::<desktop_host::DesktopHost>();
+                let mut slot = hosting.running.lock().await;
+                let _ = desktop_host::DesktopHost::stop(&mut slot).await;
+            });
             app.state::<Arc<Transfers>>().activity.shutdown();
             #[cfg(windows)]
             app.state::<vaultor_next::LinkedMonitor>().shutdown();

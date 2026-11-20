@@ -1,0 +1,8 @@
+**
+!next/
+!next/src-tauri/
+!next/src-tauri/Cargo.toml
+!next/src-tauri/Cargo.lock
+!next/src-tauri/build.rs
+!next/src-tauri/src/
+!next/src-tauri/src/**

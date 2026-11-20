@@ -180,6 +180,12 @@ Vaultor Next `.vaultor` archives contain checksummed plaintext, including origin
 
 In managed or linked draft review, choose **Export protected draft** to write a JSON recovery copy. It contains the draft and its base revision. Linked copies include captured and draft Markdown. The export leaves the draft, saved version and external file in place.
 
+## Experimental HTTPS hosting
+
+Open **Settings → Hosting** to view the certificate directory and start or stop sharing a workspace. Start requires a configured host certificate for the listening IP. Sharing starts off on each launch. Use **Refresh devices** to see pending approvals. Compare the pairing codes, approve the device, then grant access to the current workspace. You can withdraw that grant or revoke the device. A device can retain files it already received.
+
+Stop hosting before switching workspaces. Closing to the tray keeps sharing running. Quit ends it. The experimental host serves supported API clients. Android offline reading and browser workspace access still require a compatible published Vaultor host.
+
 ## Review Inbox
 
 Open **Review inbox** in primary navigation or from the Application menu. Managed note and file headers offer the same inbox scoped to that resource. Use the status filter to inspect open, resolved and dismissed feedback. Expand **Original evidence** for a captured quote, context, locator and saved revision. A change to the saved note, Trash or deletion can make the original placement unavailable. The evidence remains readable.

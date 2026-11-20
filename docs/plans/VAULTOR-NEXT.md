@@ -516,7 +516,9 @@ The workbook preserves 11,597 historical observations and 475 formulas. It adds 
 
 ### M24 — Rust Server, Trusted LAN Hosting & Android Connectivity
 
-Keep local Tauri/Rust operation the default with networking disabled. Add an optional Rust host for a desktop-hosted workspace and headless/Docker deployment, serving a separate compatible browser client and supported Android operations. Bind deliberately, use HTTPS/TLS with trusted device approval and revocation, and enforce workspace permissions and revision checks on the server. Reuse the Rust domain and single storage owner. Cover Android offline reading/downloads, review submission, and explicitly saved changes with safe conflict handling across reconnects. Qualify browser, trusted LAN Android and headless deployment independently. Java and mandatory local HTTP are outside this architecture.
+The engineering checkpoint adds an optional HTTPS listener to the Windows app and the same adapter to a standalone Rust executable. It binds an explicit private address, validates the operator-provisioned chain and IP SAN, and authenticates approved bearer clients with separate workspace grants. It exposes managed resource search and saved notes, bounded file ranges, a reset-based change stream and M23 Review submission and receipts. Local editing remains on Tauri IPC. See the [host setup and protocol guide](../development/NEXT-HOST.md).
+
+The retained M26 parity gates include the original browser UI and cookie/CSRF authority, an Android protocol 3 workspace and checkpoint adapter, mobile Review delivery, persistent opt-in hosting and launch integration, discovery, QR and address recovery, certificate provisioning and renewal UX, and independently tested Android, browser, Docker and real-LAN workflows. This checkpoint does not certify M24 completion. The existing [parity register](VAULTOR-NEXT-PARITY.csv) retains the unrelated functional, native and accessibility work.
 
 ### M25 — Comprehensive Performance Optimization
 

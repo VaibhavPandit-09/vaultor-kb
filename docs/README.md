@@ -25,6 +25,7 @@ Published Windows x64 and macOS Apple Silicon 0.27.0 Help, exact-source qualific
 - [MULTI-DEVICE](architecture/MULTI-DEVICE.md): Saved-change streams, conditional reconciliation and conflict limits.
 - [COMPANIONS](architecture/COMPANIONS.md): Immutable host checkpoints, source authority, hashes/ranges, expiry and bounded manifest cache.
 - [HOST-ACCESS](security/HOST-ACCESS.md): Owner bootstrap, pairing, pinned TLS, approval/revocation and agent access.
+- [Vaultor Next HTTPS host](development/NEXT-HOST.md): Experimental desktop and headless configuration, the versioned API and Docker candidate.
 
 ## Design contracts
 

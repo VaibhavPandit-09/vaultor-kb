@@ -2,6 +2,8 @@
 
 Reviewed 2026-10-04, D7. This document owns host access contracts. D6 implements desktop sharing/discovery, protected remote profiles, pairing/device management and browser trust guidance. No accounts, master passwords or encrypted note/archive storage are introduced.
 
+The published host contracts below apply to Electron/Java. The experimental [Next HTTPS host](../development/NEXT-HOST.md) uses the same matching-code enrollment shape for bearer clients and a separate versioned workspace API. Its private host directory stores a fixed host UUID and CA fingerprint, SHA-256 verifier-indexed approvals and per-workspace grants. The Rust listener verifies the configured chain and bind-IP SAN at startup. Desktop owner commands use native IPC. Standalone commands use a local terminal or private Unix socket. Browser cookie and bootstrap flows are still part of the published host.
+
 ## Connectors and storage
 
 The ordinary HTTP listener binds 127.0.0.1 by default, port 8080 for standalone and an OS-assigned port for Electron. It accepts the main-process `X-Vaultor-Owner` credential or a local owner browser cookie. Every workspace endpoint, static application asset, file, export, diagnostic and SSE stream is protected. Owner management never works through the LAN connector, even with a valid owner key. Access checks precede workspace mutation admission. Forwarded headers do not establish connector ownership.

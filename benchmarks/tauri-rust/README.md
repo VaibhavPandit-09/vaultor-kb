@@ -427,3 +427,11 @@ Run the optimized experimental executable with the existing Windows harness.
 Set the executable and its source commit with the usual benchmark variables. The recipe uses a disposable workspace, a separate linked Markdown source, 104 small inputs and eight 32 MiB managed originals. Discovery timing includes reading and hashing selected sources. Activity timing reports both invocation-to-receipt and the Rust task interval. The responsiveness proxy starts at the editor's beforeinput event and ends at the next animation frame. Process sampling includes the application and its WebView2 processes. The data records the observed overlap with the transfer. It does not establish a physical latency or idle-memory result.
 
 Use --m22-sustained to run the dedicated eight-file, 1 GiB CPU and process-memory sample. Use --m22-probe for diagnostics without adding canonical observations. Refresh the workbook with update-workbook.ps1 -AppendM22 and the bundled workspace runtime. The append path keeps the original comparison sheets and formulas.
+
+## M24 Windows loopback host
+
+Set `VAULTOR_BENCH_EXECUTABLE`, `VAULTOR_BENCH_SOURCE_COMMIT`, `VAULTOR_BENCH_HEADLESS` and `VAULTOR_BENCH_OPENSSL` to the optimized desktop candidate, its source commit, the headless executable and an OpenSSL executable. Run `node benchmarks/tauri-rust/run.mjs tauri-rust --inspect --m24-host`. Use `--m24-probe` for a run that leaves the CSV unchanged.
+
+The harness launches an isolated Windows WebView2 profile and creates one disposable managed note and a short-lived test CA. It compares short disabled and enabled/no-client idle windows in the same desktop process, checks hosted saved-note and search requests through new verified loopback TLS connections, and checks revocation and shutdown. Credential values are excluded from observations. IPC read timing includes CDP dispatch and serialization. This workload provides no Android, real-LAN, physical-input, sustained-idle or matched Electron evidence.
+
+Run `update-workbook.ps1 -AppendM24` with the bundled runtime path to append M24 observations. It preserves the prior workbook rows, formulas and other package parts.

@@ -2,7 +2,9 @@
 
 Last reviewed: 2026-11-20. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
-Vaultor Next M23 uses one Rust SQLite owner for Review, resource identity, archives and persistent pin order. [Next qualification](plans/VAULTOR-NEXT.md#m23-review-inbox-and-windows-integration) tracks Windows integration and outstanding parity. The [Review boundary](workspace/REVIEWS.md#vaultor-next) defines what the future optional host can reuse.
+Vaultor Next M23 uses one Rust SQLite owner for Review, resource identity, archives and persistent pin order. [Next qualification](plans/VAULTOR-NEXT.md#m23-review-inbox-and-windows-integration) tracks Windows integration and outstanding parity. The [Review boundary](workspace/REVIEWS.md#vaultor-next) also serves the optional host.
+
+**Next M24 host checkpoint:** The optional Axum/rustls adapter and standalone entry point use the existing Rust workspace owner. Desktop Settings starts and stops the same adapter without changing local Tauri IPC. The active workspace is fixed for a listener and storage operations recheck its generation. Host identity, verifier-indexed device records and workspace grants reside in a separate owner directory. The [host guide](development/NEXT-HOST.md) owns configuration, the versioned API and the client compatibility boundary.
 
 ## Product and architecture
 
@@ -506,6 +508,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-20 — Next M24 experimental Rust host checkpoint
+
+Added desktop and headless HTTPS entry points, same-owner saved reads and Review submission, and separate CA identity, device approval and workspace grants. Hosting Help and the experimental catalogue now describe the available controls. The [M24 record](plans/VAULTOR-NEXT.md#m24--rust-server-trusted-lan-hosting--android-connectivity) records checks and unfinished Android, browser and release parity.
 
 ### 2026-11-20 — Next M23 Review and Windows integration
 

@@ -20,6 +20,8 @@ mod m5_tests;
 mod search;
 pub mod transfers;
 pub mod worker;
+#[cfg(feature = "host")]
+pub mod host;
 
 mod organization;
 

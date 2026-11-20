@@ -499,3 +499,7 @@ Preserved behaviors include the native picker, save/draft barrier for ordinary t
 ## M23 Review Inbox and native surfaces
 
 Review keeps the original modal, retained query, status filter and evidence disclosure. Evidence expands within its row and uses the existing modal scroll and Escape/focus ownership. Workspace and target entry points open the same surface. Triage changes status while the editor tree stays mounted. Explorer preparation uses the original prepared-copy workflow with a dedicated drag grip and native Windows feedback. Pinned arrangement reuses the six-pixel pointer threshold, insertion line and Escape cancellation, with Up and Down on the grip. Recent keeps opening order. The [M23 record](VAULTOR-NEXT.md#m23-review-inbox-and-windows-integration) distinguishes implementation, Windows checks and pending physical/accessibility acceptance.
+
+## M24 hosting controls
+
+Hosting uses the existing floating Settings category, grouped rows, keyboard focus and shared layout. The controls distinguish stopped from listening, display the effective address, require a matching-code confirmation for approval and prompt before device revocation. Pairing decisions and grants use the current host and workspace. Pending requests refresh on demand. Original Connections, discovery, browser handoff, host-name controls, and matched visual, motion and accessibility acceptance remain open.

@@ -1,0 +1,41 @@
+services:
+  vaultor-next:
+    build:
+      context: ..
+      dockerfile: next/Dockerfile
+    command: ["/data/workspace", "/data/access", "/tls/chain.pem", "/tls/server-key.pem", "/tls/ca.pem", "172.30.244.2:8443"]
+    ports:
+      - "127.0.0.1:8443:8443"
+    volumes:
+      - workspace:/data/workspace
+      - access:/data/access
+      - type: bind
+        source: ${VAULTOR_NEXT_TLS_DIR:?Set VAULTOR_NEXT_TLS_DIR to the private certificate directory}
+        target: /tls
+        read_only: true
+    networks:
+      dedicated:
+        ipv4_address: 172.30.244.2
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "5", "--cacert", "/tls/ca.pem", "https://172.30.244.2:8443/api/access/host"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+    stop_grace_period: 10s
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  workspace:
+  access:
+
+networks:
+  dedicated:
+    ipam:
+      config:
+        - subnet: 172.30.244.0/28

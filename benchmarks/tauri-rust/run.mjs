@@ -17,6 +17,7 @@ const m20=process.argv.includes('--m20-linked');
 const m21=process.argv.includes('--m21-discovery');
 const m22=process.argv.includes('--m22-transfers');
 const m23=process.argv.includes('--m23-native');
+const m24=process.argv.includes('--m24-host');
 const recordM23=m23&&!process.argv.includes('--m23-probe');
 const recordM22=m22&&!process.argv.includes('--m22-probe');
 const recordM21=m21&&!process.argv.includes('--m21-probe');
@@ -100,7 +101,7 @@ async function launch(iteration) {
   const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(VAULTOR_|HOST_|ELECTRON_RUN_AS_NODE|WEBVIEW2_)/.test(k)));
   const executable = executablePath;
   const args = architecture === 'electron-java' ? [join(root, 'desktop'), `--remote-debugging-address=127.0.0.1`, `--remote-debugging-port=${port}`] : [];
-  Object.assign(env, architecture === 'electron-java' ? { VAULTOR_DESKTOP_TEST_DIRECTORY: profile, HOST_NETWORK_PORT: '0', NODE_ENV: 'production' } : { VAULTOR_NEXT_WORKSPACE: join(folder, 'workspace'), ...(m6||m18||m19||m20||m21||m22||m23?{WEBVIEW2_USER_DATA_FOLDER:profile}:{}), WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1` });
+  Object.assign(env, architecture === 'electron-java' ? { VAULTOR_DESKTOP_TEST_DIRECTORY: profile, HOST_NETWORK_PORT: '0', NODE_ENV: 'production' } : { VAULTOR_NEXT_WORKSPACE: join(folder, 'workspace'), ...(m6||m18||m19||m20||m21||m22||m23||m24?{WEBVIEW2_USER_DATA_FOLDER:profile}:{}), WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1` });
   const start = performance.now();
   child = spawn(executable, args, { cwd: root, env, windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
   child.stderr.on('data', data => { report.runtimeLog = ((report.runtimeLog ?? '') + data).slice(-4000); });
@@ -123,7 +124,7 @@ async function launch(iteration) {
     assert.equal(normalizePath(openedPath),normalizePath(join(folder,'workspace')),'Refusing a debugging target outside this disposable benchmark workspace');
     await evaluate("window.benchRequest=request=>window.__TAURI_INTERNALS__.invoke('workspace',{request})");
   }
-  record(m15?uiMilestone+'-startup-'+(iteration===1?'first-profile':'restart'):iteration >= 3 ? 'qualification' : iteration === 1 ? 'first-profile' : 'restart', iteration, 'startup_usable', performance.now() - start, 'ms', 'Process spawn to Library mounted, command bridge ready; 50ms polling; warm OS cache possible.');
+  record(m24?'m24-desktop-disabled':m15?uiMilestone+'-startup-'+(iteration===1?'first-profile':'restart'):iteration >= 3 ? 'qualification' : iteration === 1 ? 'first-profile' : 'restart', iteration, 'startup_usable', performance.now() - start, 'ms', 'Process spawn to Library mounted, command bridge ready; 50ms polling; warm OS cache possible.');
   report.runtime = await cdp('Browser.getVersion').catch(()=>({unavailable:true}));
   report.viewport = await evaluate('({width:innerWidth,height:innerHeight,dpr:devicePixelRatio,theme:document.documentElement.dataset.theme})');
   report.node = process.version;
@@ -171,6 +172,7 @@ async function quit() {
   socket?.close();
 }
 try {
+  if (m24) assert(architecture === 'tauri-rust' && inspect, 'Use tauri-rust --inspect --m24-host');
   let m23Fixture;
   if(m23){
     assert.equal(architecture,'tauri-rust');
@@ -182,7 +184,24 @@ try {
   }
   let run = await launch(1);
   if (inspect) {
-    if(m23){
+    if (m24) {
+      await (await import('./m24-host.mjs')).qualifyHost({evaluate,wait,record,report,folder});
+      await stopSampler(run,1);
+      run = null;
+      for (const {phase, start, end} of report.hostBenchWindows) {
+        const points = report.process1.filter(sample => {
+          const at = Date.parse(sample.timestamp);
+          return at >= start && at <= end;
+        });
+        assert(points.length >= 2, 'Host idle sampler coverage');
+        const first = points[0], last = points.at(-1);
+        const seconds = (Date.parse(last.timestamp) - Date.parse(first.timestamp)) / 1000;
+        record(phase, 1, 'cpu_one_core_percent', 100 * (last.cpuSeconds - first.cpuSeconds) / seconds, '%', `${seconds.toFixed(2)}s sampled idle; 100% = one logical CPU.`);
+        record(phase, 1, 'process_tree_working_set', last.workingSet / 1048576, 'MiB', 'Last owned process-tree sample. Shared pages may be counted more than once.');
+        record(phase, 1, 'process_tree_private_bytes', last.privateBytes / 1048576, 'MiB');
+      }
+    }
+    else if(m23){
       await (await import('./m23-native.mjs')).qualifyM23({evaluate,wait,record,report,folder,fixture:m23Fixture});
       const idleStart=Date.now();
       await delay(16_000);
@@ -388,6 +407,17 @@ try {
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
+  if (m24 && !process.argv.includes('--m24-probe')) {
+    const samples = report.samples.filter(sample => sample.scenario.startsWith('m24-'));
+    if (!report.success) samples.push({scenario:'m24-qualification', iteration:1, metric:'run_failure', notes:'See raw evidence'});
+    for (const sample of samples) {
+      await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [
+        randomUUID(),report.timestamp,'m24-host-v1',architecture,report.executableSourceCommit,hostname(),release(),
+        'uncontrolled',sample.scenario,report.dataset??'',sample.iteration,sample.metric,sample.value,sample.unit,
+        report.success,'m24-cdp-tls-v1',evidence,sample.notes,
+      ].map(csvEscape).join(',')+'\n');
+    }
+  }
   for (const s of report.samples) if(!inspect||recordM23&&s.scenario.startsWith('m23-')||recordM22&&s.scenario.startsWith('m22-')||recordM21&&s.scenario.startsWith('m21-')||recordM20&&s.scenario.startsWith('m20-')||recordM19&&s.scenario.startsWith('m19-')||recordM18&&(s.scenario.startsWith('m18-')||s.metric==='sampled_peak_working_set')||(m10&&s.scenario==='command-palette-m10')||(m14&&measureUI&&s.scenario.startsWith(uiMilestone+'-'))) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m23?'m23-native-v1':m22?'m22-transfers-v1':m21?'m21-discovery-v1':m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
   if (!report.success && (!inspect||recordM23||recordM22||recordM21||recordM20||recordM19||recordM18||m14&&measureUI)) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m23?'m23-native-v1':m22?'m22-transfers-v1':m21?'m21-discovery-v1':m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
   console.log(JSON.stringify({ success: report.success, evidence, metrics: report.samples.length, error: report.error }));
