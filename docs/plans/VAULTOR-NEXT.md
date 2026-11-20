@@ -403,3 +403,27 @@ Registration and explicit refresh use the existing cancellable Activity queue. O
 The parser admits supported UTF-8 Markdown through 512 KiB, with limits on events, text runs, top-level blocks, nesting, table cells and draft JSON. Explicit Save patches and reparses source, verifies disk bytes and revision, and retains the journal on uncertainty. Read-only rendering is bounded and raster preview reads use the same source boundary, with a 2 MiB and 16 million pixel limit. Relative Markdown references use path semantics. An indexed path can become unavailable after a rename if the Markdown link still names the old path. A managed resource link continues to use the stable identity. Linked relationships are bounded and local. Global graph, disjoint edit combination and portable linked recovery exports remain pending.
 
 Richer formatting for unsupported syntax, whole-tree live monitoring, linked browse expansion across restarts and physical Windows interaction remain open. The parity register retains those and prior M17–M19 requirements.
+
+
+### M20 Windows build and verification
+
+Optimized local executable at C:/GitDev/vaultor-kb/next/src-tauri/target/release/vaultor-next-m20.exe, built from 6ebd0765a8d9f72a3d6eb710d60ed8e2f3ae2118. Size 14,643,712 bytes. SHA-256 5d3b297b52830140bf32c06e091c24d966cefd680abeb0ee5fe326d8e34988b9. This is an experimental executable on the ongoing Next branch. Package versions and installer/updater publication are outside this milestone.
+
+The Windows WebView2 run used disposable local NTFS roots and the actual optimized process. Native commands covered each source's registration, nested paging, collection/tag scope, pins, linked references, authorized raster bytes, path refusal, in-root moves, restart persistence, unavailable roots, same-folder reauthorization and revocation. Mounted Tiptap input exercised a 342,031-byte CRLF document, byte-exact verified explicit Save, clean reload and dirty revision conflict with draft recovery retained. A separate focused CDP pointer run pinned an indexed source row without changing the external original. The first combined pointer recipe was intermittent. The existing M17 safety recipe passed managed autosave, forced process termination after a durable draft, restart recovery, competing managed revision refusal, linked explicit Save and linked conflict preservation. [Native runs](../../benchmarks/tauri-rust/summaries/m20-linked-windows.json).
+
+| Measurement | Observation | Scope |
+| --- | ---: | --- |
+| Register source | 6.0 ms and 12.4 ms | One large-root registration and one separate three-document root. IPC round trip. |
+| Initial index | 20.52 s and 93 ms | One complete Activity receipt for each of 2,053 and three Markdown files, with 50 ms polling. |
+| Directory | 5.8 ms root, 89 ms dense folder, 70 ms mounted root | One sample per boundary. Dense folder has 2,048 entries and returns the first 100. |
+| Search | 8.8 ms median | Five source-, collection- and tag-scoped FTS5 IPC queries. |
+| Large Markdown | 185 ms open, 15.5 ms median input, 155 ms Save | One mounted open and verified receipt. Five input-to-animation-frame samples, including a 126 ms first input. |
+| Dense Markdown | 125 ms open | One native/IPC open for a 6,246-byte table with 181 body rows and eight columns. |
+| Reconciliation | 7.95 s move, 7.81 s external edit | One refresh each over the same 2,053 files. Unchanged extraction receipts reused. |
+| Initial indexing process tree | 60.3% of one logical CPU, 480 MiB sampled peak working set | 23 process samples. Working set can count shared pages more than once. |
+
+These observations use an uncontrolled local desktop with no matched Electron run or OS cache flush. They do not establish a relative speedup or resolve prior dense-editor memory observations. The canonical CSV appends 24 valid measurements. The generated workbook retains all 11,475 prior records, 19 sheets and 475 formulas. All 432 new fields match the canonical CSV, while historical data and comparison sheets remain byte-equivalent at the cell and package levels respectively. Native Excel recalculation was not exercised. [Workbook checks](../../benchmarks/tauri-rust/summaries/m20-workbook-validation.json).
+
+Rust suite passed 48 cases. The later case-only index correction passed its three focused Rust cases. Focused frontend regression passed 77 cases, with a final four-case linked pane and Help check. TypeScript, scoped ESLint, 43-feature/16-article Help validation, 17 Help governance cases and optimized Windows build passed. Next embeds its experimental Help article directly in the renderer bundle. The M20 article text was verified in that bundle. The Electron-specific Help dist provenance sidecar is absent from Next's experimental format.
+
+Physical mouse and keyboard acceptance, native folder picker and Explorer actions, original-versus-Next visual and accessibility comparisons, drag insertion into a managed editor, and full workspace-switch interaction acceptance remain open. Automated conflict and restart outcomes do not close these gates. Full automatic source watching, cross-restart folder expansion, multi-tag parity, exact source aliases, linked PDF/inline raster parity and the original 1 MiB editable envelope remain deferred. M21 should extend the shared search and relationship presentation and incremental discovery without widening filesystem authority.

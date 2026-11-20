@@ -1,0 +1,290 @@
+{
+  "linked": {
+    "rawReport": "raw/tauri-rust-2026-11-20T07-03-49.585Z.json",
+    "timestamp": "2026-11-20T07:03:49.658Z",
+    "executableSourceCommit": "6ebd0765a8d9f72a3d6eb710d60ed8e2f3ae2118",
+    "executableSha256": "5d3b297b52830140bf32c06e091c24d966cefd680abeb0ee5fe326d8e34988b9",
+    "checks": [
+      "Native directory paging, source/collection/tag search, multiple reference occurrences, encoded relative navigation, exact raster bytes and root-escape refusal.",
+      "Native editor admitted larger Markdown, used explicit Save with byte-exact CRLF preservation, reloaded a clean external change, and protected a dirty external revision conflict.",
+      "Rename/move and external changes indexed with stable metadata, organization survives process restart, moved-root reauthorization retains identity, revocation hides content and keeps originals and protected drafts."
+    ],
+    "limitations": [
+      "No OS cache flush; first-profile startup is not true cold boot.",
+      "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+      "Process working sets sum shared pages; sampled peak can miss short spikes.",
+      "CDP linked source-to-Pinned pointer drop did not complete on repeat.",
+      "WebView2 CDP and disposable NTFS fixture only. Registration and organization checks invoke the same native commands as the UI; no physical Windows picker, Explorer or accessibility acceptance."
+    ],
+    "dataset": "759697767dd7961213cc36120b2b115a5529b6c8992ba00342b7ff1a344d779b",
+    "fixture": {
+      "markdownFiles": 2053,
+      "unsupportedFiles": 2,
+      "folders": 2,
+      "ordinaryDocumentBytes": 513,
+      "largeBytes": 342031,
+      "denseBytes": 6246,
+      "denseRows": 181,
+      "denseColumns": 8
+    },
+    "runtime": {
+      "protocolVersion": "1.3",
+      "product": "Edg/157.0.4341.60",
+      "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+      "jsVersion": "15.7.11.7"
+    },
+    "indexProcessSamples": 23,
+    "samples": [
+      {
+        "scenario": "m20-register",
+        "iteration": 1,
+        "metric": "ipc_roundtrip_ms",
+        "value": 6.030999999999949,
+        "unit": "ms",
+        "notes": "Native registration of fixed NTFS root, prior to indexing.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-initial-index",
+        "iteration": 1,
+        "metric": "receipt_ready_ms",
+        "value": 20524.2923,
+        "unit": "ms",
+        "notes": "Cancellable Activity submit-to-completion with 50 ms polling. Fixture already on disk.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-small-register",
+        "iteration": 1,
+        "metric": "ipc_roundtrip_ms",
+        "value": 12.390699999999924,
+        "unit": "ms",
+        "notes": "Registration for a separate three-document source.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-small-index",
+        "iteration": 1,
+        "metric": "receipt_ready_ms",
+        "value": 93.23379999999815,
+        "unit": "ms",
+        "notes": "Three Markdown files, 50 ms receipt polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-root-directory",
+        "iteration": 1,
+        "metric": "ipc_roundtrip_ms",
+        "value": 5.823200000002544,
+        "unit": "ms",
+        "notes": "First page of source root.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-dense-directory",
+        "iteration": 1,
+        "metric": "ipc_roundtrip_ms",
+        "value": 89.15070000000196,
+        "unit": "ms",
+        "notes": "First result page from 2,048 entries.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-linked-search",
+        "iteration": 1,
+        "metric": "ipc_roundtrip_ms",
+        "value": 8.961100000000442,
+        "unit": "ms",
+        "notes": "One source, collection and tag scoped FTS5 result.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-linked-search",
+        "iteration": 2,
+        "metric": "ipc_roundtrip_ms",
+        "value": 8.241099999999278,
+        "unit": "ms",
+        "notes": "One source, collection and tag scoped FTS5 result.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-linked-search",
+        "iteration": 3,
+        "metric": "ipc_roundtrip_ms",
+        "value": 8.288900000003196,
+        "unit": "ms",
+        "notes": "One source, collection and tag scoped FTS5 result.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-linked-search",
+        "iteration": 4,
+        "metric": "ipc_roundtrip_ms",
+        "value": 9.442000000002736,
+        "unit": "ms",
+        "notes": "One source, collection and tag scoped FTS5 result.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-linked-search",
+        "iteration": 5,
+        "metric": "ipc_roundtrip_ms",
+        "value": 8.799900000001799,
+        "unit": "ms",
+        "notes": "One source, collection and tag scoped FTS5 result.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-browse-ui",
+        "iteration": 1,
+        "metric": "renderer_ready_ms",
+        "value": 69.97179999999935,
+        "unit": "ms",
+        "notes": "Source root expansion to visible file rows, includes polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-open-large",
+        "iteration": 1,
+        "metric": "renderer_ready_ms",
+        "value": 184.79839999999967,
+        "unit": "ms",
+        "notes": "Large UTF-8 Markdown row to mounted editable Tiptap. Driver polls every 50 ms.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-large-typing",
+        "iteration": 1,
+        "metric": "input_to_raf",
+        "value": 126.09999999403954,
+        "unit": "ms",
+        "notes": "CDP insertText to next animation frame; includes driver delivery.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-large-typing",
+        "iteration": 2,
+        "metric": "input_to_raf",
+        "value": 20.200000002980232,
+        "unit": "ms",
+        "notes": "CDP insertText to next animation frame; includes driver delivery.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-large-typing",
+        "iteration": 3,
+        "metric": "input_to_raf",
+        "value": 15.5,
+        "unit": "ms",
+        "notes": "CDP insertText to next animation frame; includes driver delivery.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-large-typing",
+        "iteration": 4,
+        "metric": "input_to_raf",
+        "value": 8.899999998509884,
+        "unit": "ms",
+        "notes": "CDP insertText to next animation frame; includes driver delivery.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-large-typing",
+        "iteration": 5,
+        "metric": "input_to_raf",
+        "value": 8.699999995529652,
+        "unit": "ms",
+        "notes": "CDP insertText to next animation frame; includes driver delivery.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-save-large",
+        "iteration": 1,
+        "metric": "renderer_receipt_ms",
+        "value": 154.74319999999716,
+        "unit": "ms",
+        "notes": "Explicit pane Save to verified receipt, including candidate reparse and driver polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-open-dense",
+        "iteration": 1,
+        "metric": "ipc_roundtrip_ms",
+        "value": 124.77289999999994,
+        "unit": "ms",
+        "notes": "182 table rows including header, 8 columns. Rust/IPC only.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-rename-reconcile",
+        "iteration": 1,
+        "metric": "receipt_ready_ms",
+        "value": 7945.268299999996,
+        "unit": "ms",
+        "notes": "Refresh of 2,053 Markdown documents after moving one file into a nested directory.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-external-change",
+        "iteration": 1,
+        "metric": "receipt_ready_ms",
+        "value": 7808.137599999995,
+        "unit": "ms",
+        "notes": "Refresh of the same source after one file content change.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-initial-index",
+        "iteration": 1,
+        "metric": "cpu_one_core_percent",
+        "value": 60.343438599970256,
+        "unit": "%",
+        "notes": "Sampled index process-tree CPU delta divided by sampled wall time.",
+        "valid": true
+      },
+      {
+        "scenario": "m20-initial-index",
+        "iteration": 1,
+        "metric": "sampled_peak_working_set",
+        "value": 480.109375,
+        "unit": "MiB",
+        "notes": "Sampled process-tree working set during initial index. Shared pages can be counted more than once.",
+        "valid": true
+      }
+    ]
+  },
+  "safety": {
+    "rawReport": "raw/tauri-rust-2026-11-20T07-05-13.870Z.json",
+    "timestamp": "2026-11-20T07:05:13.925Z",
+    "executableSourceCommit": "6ebd0765a8d9f72a3d6eb710d60ed8e2f3ae2118",
+    "executableSha256": "5d3b297b52830140bf32c06e091c24d966cefd680abeb0ee5fe326d8e34988b9",
+    "checks": [
+      "Optimized native managed autosave;durable draft acknowledged before forced termination;restart Recovery review/restore commits content;competing managed revision refuses overwrite and parks draft.",
+      "Optimized native linked source bytes unchanged before explicit Save;publication succeeds for supported plain-text edit;external competing revision refuses overwrite and retains protected text/draft."
+    ],
+    "limitations": [
+      "No OS cache flush; first-profile startup is not true cold boot.",
+      "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+      "Process working sets sum shared pages; sampled peak can miss short spikes.",
+      "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1\u2013M5 shared-profile runs.",
+      "Only the disposable application process tree is sampled; background apps, power and cache conditions are uncontrolled. The M8 reference had a coexisting personal process; inspect coexistingPersonalReference for this run.",
+      "Crash qualification pauses the renderer after an acknowledged durable draft before terminating the owned process;not a production change,physical crash or performance sample."
+    ]
+  },
+  "drag": {
+    "rawReport": "raw/tauri-rust-2026-11-20T07-06-01.073Z.json",
+    "timestamp": "2026-11-20T07:06:01.136Z",
+    "executableSourceCommit": "6ebd0765a8d9f72a3d6eb710d60ed8e2f3ae2118",
+    "executableSha256": "5d3b297b52830140bf32c06e091c24d966cefd680abeb0ee5fe326d8e34988b9",
+    "checks": [
+      "Native directory paging, source/collection/tag search, multiple reference occurrences, encoded relative navigation, exact raster bytes and root-escape refusal.",
+      "CDP mouse drag from the indexed source browser to Pinned updated Vaultor metadata."
+    ],
+    "limitations": [
+      "No OS cache flush; first-profile startup is not true cold boot.",
+      "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+      "Process working sets sum shared pages; sampled peak can miss short spikes."
+    ]
+  }
+}

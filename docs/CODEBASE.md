@@ -503,7 +503,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-20 — Next M20 linked documents
 
-Shared metadata organization, NTFS continuity, Activity-backed indexing, source-local references and wider linked editing admission. Rust domain and native safety (48 cases), focused frontend (77 cases), and 17 Help governance cases passed. Build and remaining platform gates are in the [M20 acceptance record](plans/VAULTOR-NEXT.md#m20-linked-markdown-organization-and-indexing). Experimental Help and the parity register were reconciled.
+Shared metadata organization, NTFS continuity, Activity-backed indexing, source-local references and wider linked editing admission. Rust domain and native safety (48 cases), focused frontend (77 cases), and 17 Help governance cases passed. The optimized Windows build, linked workflow, focused CDP source-to-Pinned drop and M17 recovery probe passed. Measurements and remaining platform gates are in the [M20 acceptance record](plans/VAULTOR-NEXT.md#m20-linked-markdown-organization-and-indexing). Experimental Help and the parity register were reconciled.
 
 ### 2026-11-20 — Next M19 previews
 

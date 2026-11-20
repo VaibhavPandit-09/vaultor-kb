@@ -477,3 +477,6 @@ Injected desktop checks covered expansion, repeated dismissal and opening beside
 ### M20 linked-source interaction follow-up
 
 UI-29, UI-33 and UI-35 retain the original NoteOrientation and linked explicit Save/recovery actions. Linked rows reuse ResourceRow, contextual menus, tag assignment and the collection membership dialog. Linked source rows and Open Notes reuse M17 pointer transport and its native-drag suppression. Lazy directory pages gain identified rows, with indexing receipts in Activity and a source-scoped Library query. Unavailable registrations retain their position in the tree and expose reauthorization. Formatted read-only Markdown reuses the original preview bounds. Physical pointer, Explorer, native dialogs and accessibility remain separate acceptance gates. See [M20](VAULTOR-NEXT.md#m20-linked-markdown-organization-and-indexing).
+
+
+The final Windows run verifies the source browser, larger linked editor, clean reload and conflict notice on the optimized build. A focused CDP mouse pass verifies source-to-Pinned drop and unchanged external bytes. Native directory selection, external Open/Reveal, other linked drop destinations, repeatable physical gesture acceptance, and comparative visual and assistive-technology review remain open.
