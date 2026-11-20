@@ -522,6 +522,17 @@ The retained parity gates include the original browser UI and cookie/CSRF author
 
 The Windows continuation provisions a stable host CA when sharing is first enabled and protects its key with current-user DPAPI. Leaves are held in memory and renewed in the running listener. Settings presents private IPv4 addresses and a separate start-on-launch switch tied to the workspace and address. IP changes can be handled by stopping the listener and selecting the new address under the same CA. Headless and custom certificate configuration remain available. M24 remains open for the client and discovery requirements above.
 
+Continuation builds use executable source `12a3e3cff996185eeb971d526af3db921636a1f4`.
+
+| Artifact under `next/src-tauri/target/release/` | SHA-256 |
+| --- | --- |
+| `vaultor-next-m24-managed-tls.exe` | `f285a52b64b5cd013f74de8e62a8bc852b3d8b393afca3447c68be3dbbf7cd2f` |
+| `vaultor-next-host.exe` | `a34521332f480d964c7b288336151b3b43b03b90a1732a0045b250637f2ad0f7` |
+
+Windows all-target Rust tests passed 60 cases. Next frontend passed 112 tests, scoped ESLint and the production UI build passed, and Help validated 43 features and 16 articles with 17 governance tests. The managed-certificate test exercised expired-leaf rejection, controlled renewal time, address-specific certificate verification, stable CA trust and damaged-key refusal. The optimized WebView2 loopback probe confirmed no provisioning while off, verified HTTPS on first enable, opt-in restart under the same CA and host UUID, and Stop clearing both the listener and launch preference. The custom-PEM regression also passed with the rebuilt Windows headless executable, including workspace ownership and native Quit. Linux/amd64 Docker image `sha256:1babab6f5986952885b0cd468914c23013dc03116cb5fa737f8f8e170af0aafc` passed pinned loopback TLS, owner-socket pairing, grant persistence across restart and revocation.
+
+First managed Windows activation took 45 ms from Tauri start IPC through a verified descriptor on one disposable loopback run. This includes first-use identity provisioning and cannot be compared directly with the earlier listener-only activation timing. The canonical CSV and workbook retain 11,915 observations and 475 formulas. No representative client or sustained-idle measurements were added in this continuation. Android, physical-device, browser and real-LAN acceptance remain open.
+
 The Windows Rust suite passed 58 checks. The focused host run then passed two checks after adding the checksum gate. The fixture exercised missing trust, unexpected CA change, pairing expiry and source attempt limits, mismatched workspace access, saved reads while a protected draft existed, a verified managed-file range and corrupt-original refusal, idempotent Review receipt, saved-change reset delivery, grant withdrawal during a subscription, revocation, listener shutdown and persistent restart trust. Next frontend regression passed 112 tests. TypeScript, production UI build, scoped ESLint, Help validation (43 features, 16 articles), and 17 Help governance tests passed. The new hosting Help text was verified in the built UI.
 
 The optimized Windows and headless executables were built from `d82b4bd4aaa1e3e50c6514f0e2834c9c131509e6`.

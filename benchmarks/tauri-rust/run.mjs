@@ -131,7 +131,7 @@ async function launch(iteration) {
   report.node = process.version;
   report.appVersion = JSON.parse(await readFile(join(root,architecture==='electron-java'?'desktop/package.json':'next/package.json'),'utf8')).version;
   report.instrument = 'm1-cdp-v2';
-  if(iteration>=3)return null; // Recovery restarts need assertions, not a racing second sampler.
+  if(iteration>=3||m24Automatic)return null; // Short lifecycle probes do not need a process sampler.
   return startSampler(iteration);
 }
 function startSampler(iteration) {

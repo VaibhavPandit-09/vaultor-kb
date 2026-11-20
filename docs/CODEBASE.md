@@ -513,7 +513,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-20 — Next M24 Windows managed TLS and startup preference
 
-Added first-use Windows TLS provisioning, verified leaf replacement, automatic renewal, an explicit workspace-bound startup preference and private IPv4 selection in Settings. The Hosting Help and experimental catalogue describe the new workflow. Controlled-time Rust tests covered leaf expiry, renewal, address SAN checks, stable host trust and DPAPI recovery refusal. The Windows Rust suite passed 60 checks. See the [host guide](development/NEXT-HOST.md) for the manual and managed certificate paths.
+Added first-use Windows TLS provisioning, verified leaf replacement, automatic renewal, an explicit workspace-bound startup preference and private IPv4 selection in Settings. The Hosting Help and experimental catalogue describe the new workflow. Controlled-time Rust tests covered leaf expiry, renewal, address SAN checks, stable host trust and DPAPI recovery refusal. Rust (60 checks), Next frontend (112 checks), Help governance (17 checks), optimized Windows managed and custom TLS, rebuilt standalone and Linux/amd64 Docker loopback passed. See the [host guide](development/NEXT-HOST.md) for the manual and managed certificate paths.
 
 ### 2026-11-20 — Next M24 experimental Rust host checkpoint
 
