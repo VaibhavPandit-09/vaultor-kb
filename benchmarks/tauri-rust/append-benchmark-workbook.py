@@ -57,7 +57,8 @@ def package(destination, delta_path, canonical_path, first):
         if ids == [record[0] for record in records]:
             print('Workbook already includes the benchmark observations.')
             return
-        if ids != [record[0] for record in records[:first]]:
+        historical_count = len(ids)
+        if historical_count < first or ids != [record[0] for record in records[:historical_count]]:
             raise ValueError('Workbook run IDs do not match the canonical historical prefix')
         if any(int(row.get('r')) != offset + 5 for offset, row in enumerate(rows)):
             raise ValueError('Historical workbook rows are not sequential')
@@ -65,9 +66,10 @@ def package(destination, delta_path, canonical_path, first):
         delta_strings = strings(delta)
         if [value(row.find(TAG + 'c'), delta_strings) for row in new_rows] != [record[0] for record in records[first:]]:
             raise ValueError('The generated additions do not match the canonical tail')
+        new_rows = new_rows[historical_count - first:]
         styles = {re.match('[A-Z]+', cell.get('r'))[0]: cell.get('s') for cell in rows[-1]}
         fragments = []
-        for offset, row in enumerate(new_rows, first + 5):
+        for offset, row in enumerate(new_rows, historical_count + 5):
             row.set('r', str(offset))
             for cell in row:
                 column = re.match('[A-Z]+', cell.get('r'))[0]
@@ -86,7 +88,7 @@ def package(destination, delta_path, canonical_path, first):
         markers = list(re.finditer(rb'</(?:[\w.-]+:)?sheetData>', original))
         if len(markers) != 1:
             raise ValueError('Unexpected Raw Runs worksheet structure')
-        if int(data[-1].get('r')) != first + 4:
+        if int(data[-1].get('r')) != historical_count + 4:
             raise ValueError('Raw Runs has formatted or noncanonical rows after the historical prefix')
         marker = markers[0].start()
         updated = original[:marker] + b''.join(fragments) + original[marker:]
@@ -101,7 +103,7 @@ def package(destination, delta_path, canonical_path, first):
             os.replace(temporary, destination)
         finally:
             temporary.unlink(missing_ok=True)
-    print(f'Saved {len(new_rows)} benchmark observations after {first} historical rows.')
+    print(f'Saved {len(new_rows)} benchmark observations after {historical_count} historical rows.')
 
 
 if __name__ == '__main__':
