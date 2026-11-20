@@ -515,7 +515,9 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-20 — Next M24-C Android integration
 
-Added the negotiated mobile adapter, CA fingerprint entry, protected approval reuse, managed reading and search, verified offline checkpoints, saved-state resets and M23 Review delivery. Updated Next hosting and Android Help, the Feature Catalogue, platform and trust contracts. Help validation covered 43 features and 16 articles, and all 17 governance tests passed. [M24-C qualification](plans/VAULTOR-NEXT.md#m24-c-android-integration) records artifact and integration evidence.
+Added the negotiated mobile adapter, CA fingerprint entry, protected approval reuse, managed reading and search, verified offline checkpoints, saved-state resets and M23 Review delivery. Updated Next hosting and Android Help, the Feature Catalogue, platform and trust contracts. Rust all-target tests, Android TypeScript/Jest/reader checks, optimized Windows and Linux host smoke, and API 36 emulator workflows passed within the recorded scope. Help validation covered 43 features and 16 articles, and all 17 governance tests passed. [M24-C qualification](plans/VAULTOR-NEXT.md#m24-c-android-integration) records exact artifacts, evidence and physical gaps.
+
+API 36 device withdrawal exposed a previously loaded Recent title on Home. The Android shell now clears Quick Access, unmounts Library and the reader, and displays the host refusal when a verified access failure arrives. Source management and protected Review evidence remain reachable. The focused Android tests passed 28 cases, including a native lock event arriving before the matching authorization response. The Help instruction to manage access on the host remains applicable.
 
 ### 2026-11-20 — Next M24 Windows managed TLS and startup preference
 

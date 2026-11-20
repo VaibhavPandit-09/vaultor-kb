@@ -126,6 +126,7 @@ export default function WorkspaceScreen() {
   const state = useSyncExternalStore(model.subscribe, model.snapshot),
     latest = useRef(state);
   latest.current = state;
+  const feedRevoked = state.connection === 'revoked';
   const quick = useRef(
       new QuickAccess(
         p => model.quickApi(p),
@@ -460,9 +461,10 @@ export default function WorkspaceScreen() {
     return () => event.remove();
   });
   useLayoutEffect(() => {
-    quick.bind(state.scope);
+    quick.bind(feedRevoked ? '' : state.scope);
     if (
       initialized &&
+      !feedRevoked &&
       state.host &&
       state.scope &&
       !hosts &&
@@ -483,6 +485,7 @@ export default function WorkspaceScreen() {
     reviewing,
     state.view,
     state.browseVersion,
+    feedRevoked,
   ]);
   useEffect(() => {
     const completed = new NativeEventEmitter(native).addListener(
@@ -505,7 +508,6 @@ export default function WorkspaceScreen() {
     );
     return () => completed.remove();
   }, [model]);
-  const feedRevoked = state.connection === 'revoked';
   useEffect(() => {
     const h = state.host;
     if (!initialized || !h) return;
@@ -1064,6 +1066,13 @@ export default function WorkspaceScreen() {
               <View style={[s.content, reviewing && s.hidden]}>
                 {sourceContent}
               </View>
+            ) : feedRevoked ? (
+              <View style={[s.page, reviewing && s.hidden]}>
+                <Text accessibilityRole="alert" style={s.error}>
+                  {state.error || 'Access requires approval from the host.'}
+                </Text>
+                <Action label="Manage sources" onPress={openSources} />
+              </View>
             ) : (
               <View
                 key="workspace-body"
@@ -1118,7 +1127,7 @@ export default function WorkspaceScreen() {
                 />
               </View>
             )}
-            {state.note || resourceMotion.pending ? (
+            {!feedRevoked && (state.note || resourceMotion.pending) ? (
               <View
                 collapsable={false}
                 style={[

@@ -49,6 +49,7 @@ function setup() {
     cache: Record<string, Note> = {};
   let offline = false,
     storageFailure = false,
+    accessFailure: (() => HostError) | undefined,
     generation = 'g1',
     hold: Promise<void> | undefined;
   const port: Port = {
@@ -90,6 +91,7 @@ function setup() {
         return {};
       }
       if (offline) throw Error('Offline');
+      if (path === '/capabilities' && accessFailure) throw accessFailure();
       if (path === '/capabilities')
         return { apiProtocolVersion: 3, minimumClientProtocolVersion: 3 };
       if (path === '/workspace/identity')
@@ -118,6 +120,9 @@ function setup() {
     setOffline: (v: boolean) => {
       offline = v;
     },
+    setAccessFailure: (failure: () => HostError) => {
+      accessFailure = failure;
+    },
     setStorageFailure: (v: boolean) => {
       storageFailure = v;
     },
@@ -137,6 +142,20 @@ test('upgrade reads saved content, retaining uncertain draft without acknowledge
   expect(x.model.state.draft).toBeUndefined();
   expect(x.model.state.recovery).toEqual([x.draft]);
   expect(x.draft.sent?.content).toEqual(doc('uncertain'));
+});
+test('keeps the host refusal when the native source lock arrives first', async () => {
+  const x = setup();
+  await x.model.initialize();
+  await x.model.open(id);
+  x.setAccessFailure(() => {
+    x.model.lockCompanion(x.scope);
+    return new HostError(401, 'Device approval revoked.', 'DEVICE_APPROVAL_REQUIRED');
+  });
+  await x.model.connect();
+  expect(x.model.state.connection).toBe('revoked');
+  expect(x.model.state.error).toBe('Device approval revoked.');
+  expect(x.model.state.note).toBeUndefined();
+  expect(x.model.state.content).toBeUndefined();
 });
 test('editing, creation and recovery-host writes are refused', async () => {
   const x = setup();

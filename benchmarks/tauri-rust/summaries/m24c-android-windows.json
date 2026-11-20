@@ -1,0 +1,124 @@
+{
+  "sourceCommit": "ba156c9b818c8fdce1e53935bd2102cc5a02a865",
+  "windows": {
+    "file": "next/src-tauri/target/release/vaultor-next-m24c.exe",
+    "sha256": "027c2ea80a7edf58fe9738c6bdfc17664a7d86b30391796da1a7ea33b61e753a"
+  },
+  "android": {
+    "file": "mobile/releases/0.1.0-m24c.1/Vaultor-Next-Android-0.1.0-m24c.1-benchmark.apk",
+    "sha256": "e925182e92a3a951c023649fd8891e4f5d099fa4fe7a04f6b3318d3130d8bf00",
+    "applicationId": "com.vaultor.app.next",
+    "version": "0.1.0-m24c.1",
+    "versionCode": 33,
+    "emulator": "API 36 x86_64"
+  },
+  "observedAt": "2026-11-20T16:16:07.152Z",
+  "environment": "Windows 10.0.26340 x64, one API 36 x86_64 emulator, adb reverse over loopback, uncontrolled host load and power",
+  "fixture": "Disposable Rust workspace: rich Android note with one managed PNG, linked note and PDF; one collection, small fixture.",
+  "fixtureSha": "31651f5dfd9cd61c8f0baae634f7f91a9304d66a18688e2bf6ae982361ebf8f3",
+  "samples": [
+    {
+      "metric": "android_cold_activity_start",
+      "value": 1163,
+      "unit": "ms",
+      "iteration": 1,
+      "workload": "m24c-api36-emulator-correlated",
+      "notes": "Android am start -W TotalTime after force-stop."
+    },
+    {
+      "metric": "android_offline_review_reconnect_receipt",
+      "value": 2656.8135,
+      "unit": "ms",
+      "iteration": 1,
+      "workload": "m24c-api36-emulator-correlated",
+      "notes": "Android activity start through observed persisted Review in Rust Inbox, including host query polling."
+    },
+    {
+      "metric": "android_saved_change_ui_observed",
+      "value": 3068.5,
+      "unit": "ms",
+      "iteration": 1,
+      "workload": "m24c-api36-emulator-correlated",
+      "notes": "Desktop saved IPC driver through adb UI hierarchy observation of revised note, including tool and dump overhead."
+    },
+    {
+      "metric": "android_content_search_ui_observed",
+      "value": 7536.1,
+      "unit": "ms",
+      "iteration": 1,
+      "workload": "m24c-api36-emulator-correlated",
+      "notes": "Library input through observed saved-content result, including UI hierarchy dumps and input automation."
+    },
+    {
+      "metric": "saved_note_ipc_round_trip",
+      "value": 6.216,
+      "unit": "ms",
+      "iteration": 1,
+      "workload": "m24c-win-android-connected",
+      "notes": "Local Tauri IPC and CDP receipt while one emulator has an active authorized connection."
+    },
+    {
+      "metric": "saved_note_ipc_round_trip",
+      "value": 3.528,
+      "unit": "ms",
+      "iteration": 2,
+      "workload": "m24c-win-android-connected",
+      "notes": "Local Tauri IPC and CDP receipt while one emulator has an active authorized connection."
+    },
+    {
+      "metric": "saved_note_ipc_round_trip",
+      "value": 3.06,
+      "unit": "ms",
+      "iteration": 3,
+      "workload": "m24c-win-android-connected",
+      "notes": "Local Tauri IPC and CDP receipt while one emulator has an active authorized connection."
+    },
+    {
+      "metric": "saved_note_ipc_round_trip",
+      "value": 3.104,
+      "unit": "ms",
+      "iteration": 4,
+      "workload": "m24c-win-android-connected",
+      "notes": "Local Tauri IPC and CDP receipt while one emulator has an active authorized connection."
+    },
+    {
+      "metric": "saved_note_ipc_round_trip",
+      "value": 2.68,
+      "unit": "ms",
+      "iteration": 5,
+      "workload": "m24c-win-android-connected",
+      "notes": "Local Tauri IPC and CDP receipt while one emulator has an active authorized connection."
+    },
+    {
+      "metric": "host_process_working_set",
+      "value": 22.0859375,
+      "unit": "MiB",
+      "iteration": 1,
+      "workload": "m24c-win-android-connected",
+      "notes": "Windows Rust application process only, excluding WebView2 children."
+    },
+    {
+      "metric": "host_process_private_bytes",
+      "value": 8.2890625,
+      "unit": "MiB",
+      "iteration": 1,
+      "workload": "m24c-win-android-connected",
+      "notes": "Windows Rust application process only, excluding WebView2 children."
+    },
+    {
+      "metric": "host_process_cpu_one_core_percent",
+      "value": 0,
+      "unit": "%",
+      "iteration": 1,
+      "workload": "m24c-win-android-connected",
+      "notes": "One 5.01 s process sample while Android was connected, excluding WebView2. Resolution and uncontrolled load limit interpretation."
+    }
+  ],
+  "workbook": {
+    "historicalObservationsPreserved": 11915,
+    "appendedObservations": 12,
+    "totalObservations": 11927,
+    "unchangedFormulas": 475,
+    "unchangedPackageParts": 25
+  }
+}

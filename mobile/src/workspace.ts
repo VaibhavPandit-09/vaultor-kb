@@ -258,6 +258,7 @@ export class MobileWorkspace {
     const host = this.state.host;
     if (!host) return;
     const epoch = this.epoch;
+    const sourceScope = this.state.scope;
     this.patch({
       connection: this.state.connection === 'online' ? 'online' : 'connecting',
       error: '',
@@ -341,12 +342,20 @@ export class MobileWorkspace {
       } else if (this.state.note) await this.reconcile();
       await this.refreshRecovery();
     } catch (e) {
-      if (epoch !== this.epoch) return;
       const revoked =
         e instanceof HostError &&
         (e.status === 401 ||
           e.status === 403 ||
           e.code === 'WORKSPACE_UNAVAILABLE');
+      // The native lock event can arrive before the matching access response.
+      if (
+        epoch !== this.epoch &&
+        !(revoked &&
+          this.state.connection === 'revoked' &&
+          this.state.host === host &&
+          this.state.scope === sourceScope)
+      )
+        return;
       this.patch({
         connection: revoked ? 'revoked' : 'offline',
         ...(revoked
@@ -354,6 +363,7 @@ export class MobileWorkspace {
               note: undefined,
               content: undefined,
               preview: undefined,
+              navigationRetry: undefined,
               downloaded: false,
               view: 'home' as const,
             }
