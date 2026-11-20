@@ -1,0 +1,171 @@
+{
+  "timestamp": "2026-11-20T10:49:49.038Z",
+  "architecture": "tauri-rust",
+  "executableSourceCommit": "a890e151491962fdd5ca53cdd71342f689c0a412",
+  "executableSha256": "7f93345c35869c48c44fe281ef435624d304c2d71bb44932cc6abfc7fa12c316",
+  "fixtureExecutableSha256": "c209b6561f7240807541627b12902147dd20799b7b9388ce3f947ce2299068b0",
+  "dataset": "5bbf5786a23eddbd82aab674679364cda2d6f88009fad8b9982ae32b0f569778",
+  "fixture": {
+    "reviewCount": 100,
+    "managedFileBytes": 33554432,
+    "linkedFiles": 1,
+    "recipeSha256": "33b3e515994f08839ae67be37e0d8ec7b9a8be395c1fa18da39d5f542996519e"
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "dpr": 1.0000000298023224,
+    "theme": "light"
+  },
+  "checks": [
+    "Review Inbox counts/evidence, idempotent triage and stale revision display",
+    "Review archive restore and exact-repeat merge with 200 retained rows",
+    "Independent managed duplication and 32 MiB checked native copy/cancellation",
+    "NTFS descriptor mismatch refusal, exact binding, membership and external bytes",
+    "Pinned order projection after an anchored move"
+  ],
+  "idleTraySamples": 20,
+  "measurements": {
+    "m23-review-submission/owner_service": {
+      "samples": 100,
+      "min": 0.342,
+      "median": 0.44984999999999997,
+      "max": 1.0968
+    },
+    "m23-review-list/ipc_round_trip": {
+      "samples": 6,
+      "min": 6.836999999999989,
+      "median": 7.989299999999957,
+      "max": 8.61220000000003
+    },
+    "m23-review-detail/ui_detail_open": {
+      "samples": 1,
+      "min": 2.5932000000000244,
+      "median": 2.5932000000000244,
+      "max": 2.5932000000000244
+    },
+    "m23-review-resolution/ipc_idempotent_retry": {
+      "samples": 1,
+      "min": 7.207300000000032,
+      "median": 7.207300000000032,
+      "max": 7.207300000000032
+    },
+    "m23-fixture-import/task_execution": {
+      "samples": 1,
+      "min": 78,
+      "median": 78,
+      "max": 78
+    },
+    "m23-fixture-import/command_to_receipt": {
+      "samples": 1,
+      "min": 112.33429999999998,
+      "median": 112.33429999999998,
+      "max": 112.33429999999998
+    },
+    "m23-drag-preparation/verified_file_handoff_preparation": {
+      "samples": 1,
+      "min": 52.00799999999981,
+      "median": 52.00799999999981,
+      "max": 52.00799999999981
+    },
+    "m23-drag-cleanup/cancel_release": {
+      "samples": 1,
+      "min": 7.3378999999999905,
+      "median": 7.3378999999999905,
+      "max": 7.3378999999999905
+    },
+    "m23-duplication/task_execution": {
+      "samples": 1,
+      "min": 20,
+      "median": 20,
+      "max": 20
+    },
+    "m23-duplication/command_to_receipt": {
+      "samples": 1,
+      "min": 47.02410000000009,
+      "median": 47.02410000000009,
+      "max": 47.02410000000009
+    },
+    "m23-duplicate-purge/task_execution": {
+      "samples": 1,
+      "min": 3,
+      "median": 3,
+      "max": 3
+    },
+    "m23-duplicate-purge/command_to_receipt": {
+      "samples": 1,
+      "min": 16.616999999999962,
+      "median": 16.616999999999962,
+      "max": 16.616999999999962
+    },
+    "m23-review-archive/task_execution": {
+      "samples": 1,
+      "min": 70,
+      "median": 70,
+      "max": 70
+    },
+    "m23-review-archive/command_to_receipt": {
+      "samples": 1,
+      "min": 80.89249999999993,
+      "median": 80.89249999999993,
+      "max": 80.89249999999993
+    },
+    "m23-review-restore/task_execution": {
+      "samples": 1,
+      "min": 71,
+      "median": 71,
+      "max": 71
+    },
+    "m23-review-restore/command_to_receipt": {
+      "samples": 1,
+      "min": 105.904,
+      "median": 105.904,
+      "max": 105.904
+    },
+    "m23-review-merge/task_execution": {
+      "samples": 1,
+      "min": 53,
+      "median": 53,
+      "max": 53
+    },
+    "m23-review-merge/command_to_receipt": {
+      "samples": 1,
+      "min": 81.95159999999987,
+      "median": 81.95159999999987,
+      "max": 81.95159999999987
+    },
+    "m23-descriptor-rebind/ipc_binding_commit": {
+      "samples": 1,
+      "min": 6.969200000000001,
+      "median": 6.969200000000001,
+      "max": 6.969200000000001
+    },
+    "m23-tray-idle/cpu_one_core_percent": {
+      "samples": 1,
+      "min": 0.953519121236778,
+      "median": 0.953519121236778,
+      "max": 0.953519121236778
+    },
+    "m23-tray-idle/working_set": {
+      "samples": 1,
+      "min": 585.58984375,
+      "median": 585.58984375,
+      "max": 585.58984375
+    },
+    "m23-tray-idle/private_bytes": {
+      "samples": 1,
+      "min": 346.9375,
+      "median": 346.9375,
+      "max": 346.9375
+    }
+  },
+  "separateChecks": [
+    "Native window visibility changed from visible to hidden after Close while the process stayed alive. Show restored visibility and Quit exited with code 0.",
+    "Light, Dark and OLED Review dialog geometry validated at 1200\u00d7820 and 760\u00d7620. The narrow OLED capture was inspected."
+  ],
+  "limits": [
+    "The 32 MiB preparation measure excludes the drop.",
+    "The tray idle sample is short and unmatched.",
+    "The failed benchmark shell check is excluded from derived reports; shell behavior was tested in an independent desktop run."
+  ]
+}

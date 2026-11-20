@@ -23,6 +23,12 @@ Bulky traces/screenshots/process series are ignored in `raw/`. Git-tracked `summ
 
 Refresh via `update-workbook.ps1 -RuntimeRoot <bundled-workspace-dependencies>`, using the runtime returned by Codex's loader. It uses bundled Artifact Tool, preserves template tabs, imports the entire CSV, normalizes validity and updates Dashboard formulas. Filters select architecture/device/scenario/dataset; blanks mean unmeasured combinations. Future milestones append results and refresh summaries/workbook.
 
+## M23 Windows Review and native integration
+
+Set `VAULTOR_BENCH_EXECUTABLE` to the retained optimized M23 executable and `VAULTOR_BENCH_REVIEW_FIXTURE` to the optimized `m23_review_fixture` Cargo example. Run `node benchmarks/tauri-rust/run.mjs tauri-rust --inspect --m23-native`. The offline example seeds 100 Reviews through the Rust submission service in a newly created disposable workspace. It times service entry through SQLite commit. The WebView2 driver measures owner IPC and visible evidence expansion, prepares and cancels a 32 MiB drag copy, exercises independent managed duplication and purge, verifies archive restore and merge replay, and qualifies exact-path and exact-revision descriptor binding. A short idle sample measures the process tree after those operations. This records preparation and mounted WebView behavior independently of a physical drop.
+
+Use `-AppendM23` to extend the existing workbook after the M23 observations form the CSV tail. The [milestone record](../../docs/plans/VAULTOR-NEXT.md#m23-review-inbox-and-windows-integration) records source, qualification and remaining physical checks.
+
 ## M2 protocol extension
 
 Use `node benchmarks/tauri-rust/run.mjs tauri-rust --m2 --qualify --idle-five`. The existing runner/instrument is retained. `m2-managed-notes-v1` separates the milestone's saves (now including draft protection) from M1 while preserving the100-note/64KiB workload and input/open/frame measurement boundaries. `VAULTOR_BENCH_EXECUTABLE` selects an explicitly retained executable for the unchanged M1 baseline; its actual SHA-256 is recorded.

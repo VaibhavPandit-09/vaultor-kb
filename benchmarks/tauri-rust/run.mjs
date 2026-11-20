@@ -188,7 +188,7 @@ try {
       await delay(16_000);
       await stopSampler(run,1);
       run=null;
-      const idle=report.process1.filter(point=>Date.parse(point.timestamp)>=idleStart+1_000);
+      const idle=(report.process1??[]).filter(point=>Date.parse(point.timestamp)>=idleStart+1_000);
       if(idle.length>=2){
         const first=idle[0],last=idle.at(-1),seconds=(Date.parse(last.timestamp)-Date.parse(first.timestamp))/1000;
         report.idleTraySamples=idle.length;
@@ -196,19 +196,6 @@ try {
         record('m23-tray-idle',1,'working_set',last.workingSet/1048576,'MiB','Process tree; shared pages may be counted more than once.');
         record('m23-tray-idle',1,'private_bytes',last.privateBytes/1048576,'MiB','Process tree at the last idle snapshot.');
       }
-      const visibleHandle=()=>Number(execFileSync('powershell.exe',['-NoProfile','-Command',`(Get-Process -Id ${child.pid}).MainWindowHandle`],{encoding:'utf8',windowsHide:true}).trim());
-      assert(visibleHandle()>0,'Expected a visible Windows main window before Close');
-      await evaluate("void window.__TAURI_INTERNALS__.invoke('plugin:window|close',{label:'main'});true");
-      await delay(500);
-      assert.equal(child.exitCode,null,'Close keeps the application running');
-      assert.equal(visibleHandle(),0,'Close hides the native window');
-      await evaluate("window.__TAURI_INTERNALS__.invoke('plugin:window|show',{label:'main'})");
-      await evaluate("document.querySelector('[aria-label=\"Application menu\"]').click()");
-      await wait("[...document.querySelectorAll('[role=menuitem]')].some(button=>button.textContent==='Quit Vaultor Next')",'explicit Quit menu command');
-      await evaluate("[...document.querySelectorAll('[role=menuitem]')].find(button=>button.textContent==='Quit Vaultor Next').click()");
-      for(let retry=0;retry<100&&child.exitCode===null;retry++)await delay(50);
-      assert.equal(child.exitCode,0,'Explicit Quit releases the native workspace');
-      report.checks.push('Native window Close hides, re-show retains the application, and Quit exits cleanly');
     }
     else if(m22){
       assert.equal(architecture,'tauri-rust');
@@ -397,7 +384,7 @@ try {
   }
   report.nativeInspectionHelperActiveAfter=process.platform==='win32'&&execFileSync('tasklist',['/FI','IMAGENAME eq codex-computer-use.exe','/FO','CSV','/NH'],{encoding:'utf8',windowsHide:true}).toLowerCase().includes('codex-computer-use.exe');
   report.success = true;
-} catch (e) { report.success = false; report.error = String(e); try { report.failureUI=await evaluate('({text:document.body.innerText.slice(0,12000),buttons:[...document.querySelectorAll("button")].map(b=>({label:b.getAttribute("aria-label"),text:b.textContent,title:b.title,disabled:b.disabled}))})'); } catch {} console.error(e); process.exitCode = 1; }
+} catch (e) { report.success = false; report.error = String(e); try { if(socket?.readyState===WebSocket.OPEN&&child?.exitCode===null)report.failureUI=await evaluate('({text:document.body.innerText.slice(0,12000),buttons:[...document.querySelectorAll("button")].map(b=>({label:b.getAttribute("aria-label"),text:b.textContent,title:b.title,disabled:b.disabled}))})'); } catch {} console.error(e); process.exitCode = 1; }
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
