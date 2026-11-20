@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-11-19. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-11-20. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 ## Product and architecture
 
@@ -497,9 +497,9 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
-### 2026-11-19 — Next M19 previews
+### 2026-11-20 — Next M19 previews
 
-Added CSV source provenance, reviewed Markdown paste, image batch retry, shared preview placement, local PDF and bounded media range access. The existing M19 roadmap entry records verification and remaining native gates.
+Added CSV source provenance, reviewed Markdown paste, image batch retry, shared preview placement, local PDF and bounded media range access. Read-only preview opening preserves editor editability while the save barrier still governs note navigation. Focused frontend and Rust suites, Help validation, optimized Windows build, preview and recovery probes passed. The [M19 roadmap entry](plans/VAULTOR-NEXT.md#m19-file-previews-and-editor-completion) records the matched readiness and memory workload and open physical acceptance.
 
 ### 2026-11-19 — Next M18 managed editor
 

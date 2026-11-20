@@ -109,8 +109,13 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
     record('m19-preview-close',cycle,'content_released_ms',performance.now()-started,'ms','Preview subtree detached. Resource ownership checked separately.');
   };
   for(let cycle=1;cycle<=2;cycle++){
-    await readiness('pdf-first-page',shortcut(files[0].title),'document.querySelector(".next-pdf-text")?.textContent.includes("M19 fixture page 1")',cycle);
-    assert(await evaluate(`(()=>{const canvas=document.querySelector('.next-pdf-page canvas'),pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;return pixels.some((value,i)=>i%4===0&&value<150&&pixels[i+3]>200);})()`),'PDF page contains visible rasterized glyphs');
+    await readiness('pdf-first-page',shortcut(files[0].title),`(()=>{
+      if(!document.querySelector('.next-pdf-text')?.textContent.includes('M19 fixture page 1'))return false;
+      const canvas=document.querySelector('.next-pdf-page canvas');
+      if(!canvas?.width||!canvas.height)return false;
+      const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+      return pixels.some((value,i)=>i%4===0&&value<150&&pixels[i+3]>200);
+    })()`,cycle);
     assert.equal(await evaluate('document.querySelectorAll(".tiptap").length'),3);
     const started=performance.now();
     await evaluate(`[...document.querySelectorAll('.next-pdf button')].find(e=>e.textContent==='Next page').click();true`);
@@ -140,7 +145,10 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
   for(let cycle=1;cycle<=2;cycle++){
     await back();await openRow(notes[1].id);await one();await measure('returned-one-dense',cycle);
   }
-  const beforePaste=await evaluate('JSON.stringify(document.querySelector(".tiptap").editor.getJSON())');
+  // The first transaction may initialize table/column identities on the seeded fixture.
+  const noteContent=`JSON.stringify(document.querySelector('.tiptap').editor.getJSON(),(key,value)=>
+    key==='tableId'||key==='columnIds'?undefined:value)`;
+  const beforePaste=await evaluate(noteContent);
   const pasteMarkdown=`(()=>{
     const view=document.querySelector('.tiptap'),editor=view.editor;
     editor.commands.focus('end');
@@ -149,15 +157,17 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
     return true;
   })()`;
   await evaluate(pasteMarkdown);
-  await wait('!!document.querySelector("[role=dialog][aria-label=\\"Review Markdown paste\\"]") || document.body.innerText.includes("Review Markdown paste")','Markdown review ready');
+  const review='[...document.querySelectorAll("[role=dialog]")].find(e=>e.textContent.includes("Review Markdown paste"))';
+  await wait(`!!(${review})`,'Markdown review ready');
   await evaluate(`[...document.querySelectorAll('[role=dialog] button')].find(e=>e.textContent==='Cancel').click();true`);
-  assert.equal(await evaluate('JSON.stringify(document.querySelector(".tiptap").editor.getJSON())'),beforePaste);
+  await wait(`!(${review}) && document.activeElement?.classList.contains('tiptap')`,'Markdown cancel returned focus');
+  assert(await evaluate(noteContent)===beforePaste,'Markdown cancellation preserves note content');
   await evaluate(pasteMarkdown);
-  await wait('document.body.innerText.includes("Review Markdown paste")','Markdown review reopened');
+  await wait(`[...((${review})?.querySelectorAll('button')??[])].some(e=>e.textContent==='Insert'&&!e.disabled)`,'Markdown review reopened');
   await evaluate(`[...document.querySelectorAll('[role=dialog] button')].find(e=>e.textContent==='Insert').click();true`);
   await wait('document.querySelector(".tiptap h1")?.textContent==="M19 clipboard heading"','structured Markdown inserted');
   await evaluate('document.querySelector(".tiptap").editor.commands.undo();true');
-  assert.equal(await evaluate('JSON.stringify(document.querySelector(".tiptap").editor.getJSON())'),beforePaste);
+  assert(await evaluate(noteContent)===beforePaste,'Markdown undo restores note content');
   if(process.argv.includes('--m19-video')){
     // Render a local, disposable VP8 fixture with the same desktop codec stack.
     const bytes=await evaluate(`(async()=>{
@@ -177,8 +187,8 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
     const task=await transfer({op:'import',token:plan.token,separate:false});
     await wait(`window.__TAURI_INTERNALS__.invoke('transfer',{request:{op:'tasks'}}).then(tasks=>tasks.some(task=>task.id===${JSON.stringify(task.id)}&&task.state==='completed'))`,'video fixture imported');
     await back();
-    const files=await api({kind:'list',collection:null,limit:30});
-    const video=files.items.find(item=>item.title==='M19 motion.webm');
+    const listed=await api({kind:'list',collection:null,limit:30});
+    const video=listed.items.find(item=>item.title==='M19 motion.webm');
     assert(video);
     await openRow(video.id);
     await wait('document.querySelector(".next-playback video")?.videoWidth===128','WebM first frame');

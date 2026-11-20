@@ -1,0 +1,694 @@
+{
+  "fixture": "One prose and three dense 181 x 12 note tables, a three-page PDF, a small raster, and WAV over 2 MiB. The candidate also plays a generated VP8/WebM.",
+  "measurement": "Windows WebView2/CDP with fresh workspaces. Emulated 1800 x 1000, DPR 1, 2.4 s settling per memory snapshot. Readiness ends at decoded content, independent of animation. Process-tree working set can count shared pages more than once.",
+  "baseline": {
+    "rawReport": "tauri-rust-2026-11-19T18-24-13.398Z.json",
+    "timestamp": "2026-11-19T18:24:13.449Z",
+    "sourceCommit": "678f3354b69e35b980649a93ca4c6e59fb042f1f",
+    "executableSha256": "359f0858f9a17fa744b15443a28c14b1ebfe4d0ca9b000e1d972f545c767c14e",
+    "windowsBuild": "10.0.26340",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704,
+    "webView": "Edg/157.0.4341.60",
+    "datasetSha256": "db5e623bf01511a0bd62b51847a5d44b9080774f74586663e04a0cbf04e79fc5",
+    "validCanonicalSamples": 180,
+    "checks": [
+      "Three-page PDF first/next page text, side to floating expansion, repeated raster/PDF cleanup, >2 MiB WAV metadata and range seek, three shared and distinct note panes, and returned one-dense-pane snapshots.",
+      "After switching the Rust owner to a second disposable workspace, stale PDF and media requests for the original workspace were refused."
+    ],
+    "timings": [
+      {
+        "scenario": "m19-pdf-first-page",
+        "iteration": 1,
+        "metric": "content_ready_ms",
+        "milliseconds": 10366.311
+      },
+      {
+        "scenario": "m19-pdf-navigation",
+        "iteration": 1,
+        "metric": "content_ready_ms",
+        "milliseconds": 85.507
+      },
+      {
+        "scenario": "m19-preview-close",
+        "iteration": 1,
+        "metric": "content_released_ms",
+        "milliseconds": 25.397
+      },
+      {
+        "scenario": "m19-raster-ready",
+        "iteration": 1,
+        "metric": "content_ready_ms",
+        "milliseconds": 10389.494
+      },
+      {
+        "scenario": "m19-preview-close",
+        "iteration": 1,
+        "metric": "content_released_ms",
+        "milliseconds": 47.859
+      },
+      {
+        "scenario": "m19-pdf-first-page",
+        "iteration": 2,
+        "metric": "content_ready_ms",
+        "milliseconds": 9736.998
+      },
+      {
+        "scenario": "m19-pdf-navigation",
+        "iteration": 2,
+        "metric": "content_ready_ms",
+        "milliseconds": 71.708
+      },
+      {
+        "scenario": "m19-preview-close",
+        "iteration": 1,
+        "metric": "content_released_ms",
+        "milliseconds": 23.153
+      },
+      {
+        "scenario": "m19-raster-ready",
+        "iteration": 2,
+        "metric": "content_ready_ms",
+        "milliseconds": 8594.194
+      },
+      {
+        "scenario": "m19-preview-close",
+        "iteration": 1,
+        "metric": "content_released_ms",
+        "milliseconds": 26.304
+      },
+      {
+        "scenario": "m19-media-metadata",
+        "iteration": 1,
+        "metric": "content_ready_ms",
+        "milliseconds": 7844.627
+      },
+      {
+        "scenario": "m19-preview-close",
+        "iteration": 1,
+        "metric": "content_released_ms",
+        "milliseconds": 683.587
+      }
+    ],
+    "memorySnapshots": [
+      {
+        "scenario": "m19-fresh",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 42.375,
+          "tauri_privateBytes": 7.402,
+          "webview-browser_workingSet": 118.953,
+          "webview-browser_privateBytes": 38.84,
+          "crashpad-handler_workingSet": 9.98,
+          "crashpad-handler_privateBytes": 2.613,
+          "gpu-process_workingSet": 162.656,
+          "gpu-process_privateBytes": 129.926,
+          "utility_workingSet": 58.984,
+          "utility_privateBytes": 20.156,
+          "renderer_workingSet": 93.582,
+          "renderer_privateBytes": 51.102,
+          "process_tree_working_set": 486.531,
+          "js_heap_used": 6.072
+        }
+      },
+      {
+        "scenario": "m19-one-prose",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 44.898,
+          "tauri_privateBytes": 10.801,
+          "webview-browser_workingSet": 132.449,
+          "webview-browser_privateBytes": 50.012,
+          "crashpad-handler_workingSet": 9.98,
+          "crashpad-handler_privateBytes": 2.613,
+          "gpu-process_workingSet": 370.98,
+          "gpu-process_privateBytes": 337.492,
+          "utility_workingSet": 59.297,
+          "utility_privateBytes": 20.25,
+          "renderer_workingSet": 146,
+          "renderer_privateBytes": 96.957,
+          "process_tree_working_set": 763.605,
+          "js_heap_used": 18.393
+        }
+      },
+      {
+        "scenario": "m19-one-dense",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 45.09,
+          "tauri_privateBytes": 10.852,
+          "webview-browser_workingSet": 169.305,
+          "webview-browser_privateBytes": 86.492,
+          "crashpad-handler_workingSet": 9.98,
+          "crashpad-handler_privateBytes": 2.613,
+          "gpu-process_workingSet": 381.926,
+          "gpu-process_privateBytes": 348.012,
+          "utility_workingSet": 59.316,
+          "utility_privateBytes": 20.27,
+          "renderer_workingSet": 222.117,
+          "renderer_privateBytes": 170.73,
+          "process_tree_working_set": 887.734,
+          "js_heap_used": 14.942
+        }
+      },
+      {
+        "scenario": "m19-three-shared-dense",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 45.047,
+          "tauri_privateBytes": 11.406,
+          "webview-browser_workingSet": 259.805,
+          "webview-browser_privateBytes": 177.121,
+          "crashpad-handler_workingSet": 18.578,
+          "crashpad-handler_privateBytes": 3.512,
+          "gpu-process_workingSet": 488.184,
+          "gpu-process_privateBytes": 453.145,
+          "utility_workingSet": 59.383,
+          "utility_privateBytes": 20.32,
+          "renderer_workingSet": 384.773,
+          "renderer_privateBytes": 334.777,
+          "process_tree_working_set": 1255.77,
+          "js_heap_used": 18.933
+        }
+      },
+      {
+        "scenario": "m19-pdf-open",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 45.043,
+          "tauri_privateBytes": 10.262,
+          "webview-browser_workingSet": 255.316,
+          "webview-browser_privateBytes": 171.488,
+          "crashpad-handler_workingSet": 18.562,
+          "crashpad-handler_privateBytes": 3.496,
+          "gpu-process_workingSet": 780.48,
+          "gpu-process_privateBytes": 746.238,
+          "utility_workingSet": 59.34,
+          "utility_privateBytes": 20.258,
+          "renderer_workingSet": 408.414,
+          "renderer_privateBytes": 357.773,
+          "process_tree_working_set": 1567.156,
+          "js_heap_used": 16.822
+        }
+      },
+      {
+        "scenario": "m19-previews-closed",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 45.102,
+          "tauri_privateBytes": 10.281,
+          "webview-browser_workingSet": 256.754,
+          "webview-browser_privateBytes": 168.258,
+          "crashpad-handler_workingSet": 12.801,
+          "crashpad-handler_privateBytes": 3.211,
+          "gpu-process_workingSet": 510.539,
+          "gpu-process_privateBytes": 475.234,
+          "utility_workingSet": 59.555,
+          "utility_privateBytes": 19.801,
+          "renderer_workingSet": 309.797,
+          "renderer_privateBytes": 254.875,
+          "process_tree_working_set": 1194.547,
+          "js_heap_used": 17.661
+        }
+      },
+      {
+        "scenario": "m19-pdf-open",
+        "iteration": 2,
+        "MiB": {
+          "tauri_workingSet": 44.926,
+          "tauri_privateBytes": 10.027,
+          "webview-browser_workingSet": 267.871,
+          "webview-browser_privateBytes": 178.977,
+          "crashpad-handler_workingSet": 12.805,
+          "crashpad-handler_privateBytes": 3.211,
+          "gpu-process_workingSet": 820.621,
+          "gpu-process_privateBytes": 785.977,
+          "utility_workingSet": 59.395,
+          "utility_privateBytes": 19.57,
+          "renderer_workingSet": 324.039,
+          "renderer_privateBytes": 270.156,
+          "process_tree_working_set": 1529.656,
+          "js_heap_used": 17.207
+        }
+      },
+      {
+        "scenario": "m19-previews-closed",
+        "iteration": 2,
+        "MiB": {
+          "tauri_workingSet": 45.09,
+          "tauri_privateBytes": 10.254,
+          "webview-browser_workingSet": 258.57,
+          "webview-browser_privateBytes": 169.609,
+          "crashpad-handler_workingSet": 12.805,
+          "crashpad-handler_privateBytes": 3.211,
+          "gpu-process_workingSet": 493.902,
+          "gpu-process_privateBytes": 458.746,
+          "utility_workingSet": 59.383,
+          "utility_privateBytes": 19.559,
+          "renderer_workingSet": 317.207,
+          "renderer_privateBytes": 261.609,
+          "process_tree_working_set": 1186.957,
+          "js_heap_used": 17.701
+        }
+      },
+      {
+        "scenario": "m19-media-open",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 44.953,
+          "tauri_privateBytes": 10.07,
+          "webview-browser_workingSet": 265.633,
+          "webview-browser_privateBytes": 175.941,
+          "crashpad-handler_workingSet": 12.805,
+          "crashpad-handler_privateBytes": 3.211,
+          "gpu-process_workingSet": 458.09,
+          "gpu-process_privateBytes": 415.457,
+          "utility_workingSet": 84.117,
+          "utility_privateBytes": 27.867,
+          "renderer_workingSet": 315.672,
+          "renderer_privateBytes": 258.809,
+          "process_tree_working_set": 1181.27,
+          "js_heap_used": 17.147
+        }
+      },
+      {
+        "scenario": "m19-three-distinct-dense",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 45.176,
+          "tauri_privateBytes": 10.586,
+          "webview-browser_workingSet": 255.074,
+          "webview-browser_privateBytes": 161.738,
+          "crashpad-handler_workingSet": 12.805,
+          "crashpad-handler_privateBytes": 3.211,
+          "gpu-process_workingSet": 489.82,
+          "gpu-process_privateBytes": 447.105,
+          "utility_workingSet": 84.484,
+          "utility_privateBytes": 27.848,
+          "renderer_workingSet": 344.035,
+          "renderer_privateBytes": 286.918,
+          "process_tree_working_set": 1231.395,
+          "js_heap_used": 19.022
+        }
+      },
+      {
+        "scenario": "m19-returned-one-dense",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 45.152,
+          "tauri_privateBytes": 12.309,
+          "webview-browser_workingSet": 210.82,
+          "webview-browser_privateBytes": 111.52,
+          "crashpad-handler_workingSet": 12.805,
+          "crashpad-handler_privateBytes": 3.211,
+          "gpu-process_workingSet": 442.43,
+          "gpu-process_privateBytes": 399.539,
+          "utility_workingSet": 84.551,
+          "utility_privateBytes": 27.934,
+          "renderer_workingSet": 344.059,
+          "renderer_privateBytes": 287.684,
+          "process_tree_working_set": 1139.816,
+          "js_heap_used": 15.953
+        }
+      },
+      {
+        "scenario": "m19-returned-one-dense",
+        "iteration": 2,
+        "MiB": {
+          "tauri_workingSet": 45.316,
+          "tauri_privateBytes": 12.234,
+          "webview-browser_workingSet": 210.344,
+          "webview-browser_privateBytes": 111.023,
+          "crashpad-handler_workingSet": 12.805,
+          "crashpad-handler_privateBytes": 3.211,
+          "gpu-process_workingSet": 438.691,
+          "gpu-process_privateBytes": 395.648,
+          "utility_workingSet": 84.559,
+          "utility_privateBytes": 27.891,
+          "renderer_workingSet": 341.32,
+          "renderer_privateBytes": 284.145,
+          "process_tree_working_set": 1133.035,
+          "js_heap_used": 15.745
+        }
+      }
+    ]
+  },
+  "candidate": {
+    "rawReport": "tauri-rust-2026-11-20T05-02-39.733Z.json",
+    "timestamp": "2026-11-20T05:02:39.788Z",
+    "sourceCommit": "96156eedad1b5be523f575ed24fc408ef5114fca",
+    "executableSha256": "24aae526768b22fe4eb6f393d08e1f1ee80ff697e4ae68088291bca9a0e6fe36",
+    "windowsBuild": "10.0.26340",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704,
+    "webView": "Edg/157.0.4341.60",
+    "datasetSha256": "db5e623bf01511a0bd62b51847a5d44b9080774f74586663e04a0cbf04e79fc5",
+    "validCanonicalSamples": 180,
+    "checks": [
+      "A generated 128 × 96 VP8/WebM fixture reached its first frame, played, and released its preview.",
+      "Three-page PDF first/next page text, side to floating expansion, repeated raster/PDF cleanup, >2 MiB WAV metadata and range seek, three shared and distinct note panes, and returned one-dense-pane snapshots.",
+      "After switching the Rust owner to a second disposable workspace, stale PDF and media requests for the original workspace were refused.",
+      "Markdown clipboard review cancelled without a mutation, then converted a heading and undid the insertion."
+    ],
+    "timings": [
+      {
+        "scenario": "m19-pdf-first-page",
+        "iteration": 1,
+        "metric": "content_ready_ms",
+        "milliseconds": 508.26
+      },
+      {
+        "scenario": "m19-pdf-navigation",
+        "iteration": 1,
+        "metric": "content_ready_ms",
+        "milliseconds": 71.236
+      },
+      {
+        "scenario": "m19-preview-close",
+        "iteration": 1,
+        "metric": "content_released_ms",
+        "milliseconds": 19.957
+      },
+      {
+        "scenario": "m19-raster-ready",
+        "iteration": 1,
+        "metric": "content_ready_ms",
+        "milliseconds": 74.813
+      },
+      {
+        "scenario": "m19-preview-close",
+        "iteration": 1,
+        "metric": "content_released_ms",
+        "milliseconds": 21.822
+      },
+      {
+        "scenario": "m19-pdf-first-page",
+        "iteration": 2,
+        "metric": "content_ready_ms",
+        "milliseconds": 209.133
+      },
+      {
+        "scenario": "m19-pdf-navigation",
+        "iteration": 2,
+        "metric": "content_ready_ms",
+        "milliseconds": 78.928
+      },
+      {
+        "scenario": "m19-preview-close",
+        "iteration": 2,
+        "metric": "content_released_ms",
+        "milliseconds": 15.489
+      },
+      {
+        "scenario": "m19-raster-ready",
+        "iteration": 2,
+        "metric": "content_ready_ms",
+        "milliseconds": 79.58
+      },
+      {
+        "scenario": "m19-preview-close",
+        "iteration": 2,
+        "metric": "content_released_ms",
+        "milliseconds": 19.182
+      },
+      {
+        "scenario": "m19-media-metadata",
+        "iteration": 1,
+        "metric": "content_ready_ms",
+        "milliseconds": 136.625
+      },
+      {
+        "scenario": "m19-preview-close",
+        "iteration": 1,
+        "metric": "content_released_ms",
+        "milliseconds": 27.807
+      }
+    ],
+    "memorySnapshots": [
+      {
+        "scenario": "m19-fresh",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 30.32,
+          "tauri_privateBytes": 6.449,
+          "webview-browser_workingSet": 119.012,
+          "webview-browser_privateBytes": 38.555,
+          "crashpad-handler_workingSet": 12.961,
+          "crashpad-handler_privateBytes": 2.598,
+          "gpu-process_workingSet": 146.965,
+          "gpu-process_privateBytes": 123.617,
+          "utility_workingSet": 65.004,
+          "utility_privateBytes": 20.199,
+          "renderer_workingSet": 91.66,
+          "renderer_privateBytes": 46.805,
+          "process_tree_working_set": 465.922,
+          "js_heap_used": 5.982
+        }
+      },
+      {
+        "scenario": "m19-one-prose",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 33.656,
+          "tauri_privateBytes": 9.539,
+          "webview-browser_workingSet": 122.703,
+          "webview-browser_privateBytes": 39.961,
+          "crashpad-handler_workingSet": 12.961,
+          "crashpad-handler_privateBytes": 2.598,
+          "gpu-process_workingSet": 344,
+          "gpu-process_privateBytes": 320.348,
+          "utility_workingSet": 65.477,
+          "utility_privateBytes": 20.484,
+          "renderer_workingSet": 145.797,
+          "renderer_privateBytes": 96.527,
+          "process_tree_working_set": 724.594,
+          "js_heap_used": 16.376
+        }
+      },
+      {
+        "scenario": "m19-one-dense",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 33.539,
+          "tauri_privateBytes": 9.637,
+          "webview-browser_workingSet": 124.461,
+          "webview-browser_privateBytes": 41.27,
+          "crashpad-handler_workingSet": 12.961,
+          "crashpad-handler_privateBytes": 2.598,
+          "gpu-process_workingSet": 449.086,
+          "gpu-process_privateBytes": 425.156,
+          "utility_workingSet": 65.371,
+          "utility_privateBytes": 20.336,
+          "renderer_workingSet": 191.816,
+          "renderer_privateBytes": 137.93,
+          "process_tree_working_set": 877.234,
+          "js_heap_used": 14.979
+        }
+      },
+      {
+        "scenario": "m19-three-shared-dense",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 33.441,
+          "tauri_privateBytes": 9.488,
+          "webview-browser_workingSet": 124.656,
+          "webview-browser_privateBytes": 41.426,
+          "crashpad-handler_workingSet": 12.961,
+          "crashpad-handler_privateBytes": 2.598,
+          "gpu-process_workingSet": 495.602,
+          "gpu-process_privateBytes": 471.879,
+          "utility_workingSet": 65.426,
+          "utility_privateBytes": 20.391,
+          "renderer_workingSet": 322.387,
+          "renderer_privateBytes": 268.156,
+          "process_tree_working_set": 1054.473,
+          "js_heap_used": 17.907
+        }
+      },
+      {
+        "scenario": "m19-pdf-open",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 33.793,
+          "tauri_privateBytes": 9.277,
+          "webview-browser_workingSet": 125.641,
+          "webview-browser_privateBytes": 42.113,
+          "crashpad-handler_workingSet": 12.961,
+          "crashpad-handler_privateBytes": 2.598,
+          "gpu-process_workingSet": 753.848,
+          "gpu-process_privateBytes": 730.352,
+          "utility_workingSet": 65.465,
+          "utility_privateBytes": 20.41,
+          "renderer_workingSet": 343.84,
+          "renderer_privateBytes": 287.836,
+          "process_tree_working_set": 1335.547,
+          "js_heap_used": 21.683
+        }
+      },
+      {
+        "scenario": "m19-previews-closed",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 34,
+          "tauri_privateBytes": 9.488,
+          "webview-browser_workingSet": 126.164,
+          "webview-browser_privateBytes": 42.168,
+          "crashpad-handler_workingSet": 12.961,
+          "crashpad-handler_privateBytes": 2.598,
+          "gpu-process_workingSet": 720.25,
+          "gpu-process_privateBytes": 696.961,
+          "utility_workingSet": 65.465,
+          "utility_privateBytes": 20.41,
+          "renderer_workingSet": 341.289,
+          "renderer_privateBytes": 283.094,
+          "process_tree_working_set": 1300.129,
+          "js_heap_used": 24.367
+        }
+      },
+      {
+        "scenario": "m19-pdf-open",
+        "iteration": 2,
+        "MiB": {
+          "tauri_workingSet": 33.832,
+          "tauri_privateBytes": 9.316,
+          "webview-browser_workingSet": 126.219,
+          "webview-browser_privateBytes": 42.219,
+          "crashpad-handler_workingSet": 12.961,
+          "crashpad-handler_privateBytes": 2.598,
+          "gpu-process_workingSet": 850.035,
+          "gpu-process_privateBytes": 827.09,
+          "utility_workingSet": 65.465,
+          "utility_privateBytes": 20.41,
+          "renderer_workingSet": 355.805,
+          "renderer_privateBytes": 298.5,
+          "process_tree_working_set": 1444.316,
+          "js_heap_used": 26.469
+        }
+      },
+      {
+        "scenario": "m19-previews-closed",
+        "iteration": 2,
+        "MiB": {
+          "tauri_workingSet": 34.023,
+          "tauri_privateBytes": 9.57,
+          "webview-browser_workingSet": 126.441,
+          "webview-browser_privateBytes": 42.219,
+          "crashpad-handler_workingSet": 21.555,
+          "crashpad-handler_privateBytes": 3.484,
+          "gpu-process_workingSet": 818.613,
+          "gpu-process_privateBytes": 795.469,
+          "utility_workingSet": 65.363,
+          "utility_privateBytes": 20.309,
+          "renderer_workingSet": 233.855,
+          "renderer_privateBytes": 174.227,
+          "process_tree_working_set": 1299.852,
+          "js_heap_used": 16.902
+        }
+      },
+      {
+        "scenario": "m19-media-open",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 34.07,
+          "tauri_privateBytes": 9.539,
+          "webview-browser_workingSet": 125.836,
+          "webview-browser_privateBytes": 40.727,
+          "crashpad-handler_workingSet": 21.555,
+          "crashpad-handler_privateBytes": 3.484,
+          "gpu-process_workingSet": 756.051,
+          "gpu-process_privateBytes": 723.613,
+          "utility_workingSet": 93.109,
+          "utility_privateBytes": 28.688,
+          "renderer_workingSet": 241.543,
+          "renderer_privateBytes": 179.422,
+          "process_tree_working_set": 1272.164,
+          "js_heap_used": 17.882
+        }
+      },
+      {
+        "scenario": "m19-three-distinct-dense",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 34.336,
+          "tauri_privateBytes": 9.57,
+          "webview-browser_workingSet": 126.785,
+          "webview-browser_privateBytes": 41.449,
+          "crashpad-handler_workingSet": 21.559,
+          "crashpad-handler_privateBytes": 3.484,
+          "gpu-process_workingSet": 585.012,
+          "gpu-process_privateBytes": 552.684,
+          "utility_workingSet": 93.582,
+          "utility_privateBytes": 28.664,
+          "renderer_workingSet": 456.629,
+          "renderer_privateBytes": 395.738,
+          "process_tree_working_set": 1317.902,
+          "js_heap_used": 31.779
+        }
+      },
+      {
+        "scenario": "m19-returned-one-dense",
+        "iteration": 1,
+        "MiB": {
+          "tauri_workingSet": 34.586,
+          "tauri_privateBytes": 9.789,
+          "webview-browser_workingSet": 126.871,
+          "webview-browser_privateBytes": 41.531,
+          "crashpad-handler_workingSet": 21.559,
+          "crashpad-handler_privateBytes": 3.484,
+          "gpu-process_workingSet": 626.73,
+          "gpu-process_privateBytes": 594.125,
+          "utility_workingSet": 93.594,
+          "utility_privateBytes": 28.691,
+          "renderer_workingSet": 497.984,
+          "renderer_privateBytes": 436.914,
+          "process_tree_working_set": 1401.324,
+          "js_heap_used": 17.174
+        }
+      },
+      {
+        "scenario": "m19-returned-one-dense",
+        "iteration": 2,
+        "MiB": {
+          "tauri_workingSet": 34.289,
+          "tauri_privateBytes": 9.5,
+          "webview-browser_workingSet": 126.953,
+          "webview-browser_privateBytes": 41.613,
+          "crashpad-handler_workingSet": 21.559,
+          "crashpad-handler_privateBytes": 3.484,
+          "gpu-process_workingSet": 583.227,
+          "gpu-process_privateBytes": 550.5,
+          "utility_workingSet": 93.594,
+          "utility_privateBytes": 28.691,
+          "renderer_workingSet": 512.324,
+          "renderer_privateBytes": 451.582,
+          "process_tree_working_set": 1371.945,
+          "js_heap_used": 38.141
+        }
+      }
+    ]
+  },
+  "automatedSafety": {
+    "rawReport": "tauri-rust-2026-11-20T05-03-09.485Z.json",
+    "checks": [
+      "Optimized native managed autosave;durable draft acknowledged before forced termination;restart Recovery review/restore commits content;competing managed revision refuses overwrite and parks draft.",
+      "Optimized native linked source bytes unchanged before explicit Save;publication succeeds for supported plain-text edit;external competing revision refuses overwrite and retains protected text/draft."
+    ]
+  },
+  "invalidatedEvidence": [
+    {
+      "rawReport": "tauri-rust-2026-11-20T04-57-10.206Z.json",
+      "reason": "PDF raster and text readiness probes sampled at different times."
+    },
+    {
+      "rawReport": "tauri-rust-2026-11-20T04-58-20.268Z.json",
+      "reason": "Clipboard driver retried before dialog dismissal completed."
+    },
+    {
+      "rawReport": "tauri-rust-2026-11-20T04-59-43.579Z.json",
+      "reason": "Comparison included lazy table identities created on the fixture first transaction."
+    }
+  ],
+  "limitations": "One complete run of each build with two preview and idle-return repetitions per run. No sustained trend, physical pointer, native clipboard, picker, Office, or codec-matrix qualification."
+}

@@ -470,3 +470,5 @@ The bounded comparison covered BlockEditor, TableControls/TableDataPanel, Worksp
 ## M19 file previews and editor completion
 
 Next uses PreviewShell for Side panel and Floating without consuming an editor pane. The original image zoom surface remains shared. Original desktop FilePreview routes PDF, image, CSV, Markdown, code and text. It contains no Office or audio/video renderer. Next implements bounded local PDF and codec-dependent media. Current native, geometry and performance results are in the [M19 roadmap entry](VAULTOR-NEXT.md#m19-file-previews-and-editor-completion).
+
+Injected desktop checks covered expansion, repeated dismissal and opening beside three live editors. Frontend checks covered Escape and focus return, stale preview cancellation and stored placement. Physical pointer, theme and narrow-window checks remain open. The roadmap preserves open M18 contextual and picker acceptance and the M17 physical drag checklist.

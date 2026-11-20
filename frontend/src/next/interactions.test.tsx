@@ -10,7 +10,7 @@ const invoke=vi.hoisted(()=>vi.fn());
 vi.mock('./client',()=>({command:invoke,org:(request:Record<string,unknown>)=>invoke({kind:'organization',request})}));
 vi.mock('@tauri-apps/api/window',()=>({getCurrentWindow:()=>({onCloseRequested:async()=>()=>{},onDragDropEvent:async()=>()=>{},onResized:async()=>()=>{},isMaximized:async()=>false,show:async()=>{},destroy:vi.fn()})}));
 vi.mock('@tauri-apps/plugin-dialog',()=>({open:vi.fn()}));
-vi.mock('./NextEditor',async()=>{const {useEffect,useRef}=await import('react');return {default:function MockEditor({openResource,focusWhenReady,focusHandled,locked}:{openResource?:(id:string)=>void;focusWhenReady?:boolean;focusHandled?:()=>void;locked?:boolean}){const ref=useRef<HTMLDivElement>(null);useEffect(()=>{if(focusWhenReady&&!locked){ref.current?.focus();focusHandled?.();}},[focusWhenReady,focusHandled,locked]);return <div ref={ref} contentEditable suppressContentEditableWarning role="textbox" aria-label="Editor body">Editor text<button contentEditable={false} onClick={()=>openResource?.('2')}>Follow note 2</button></div>;}};});
+vi.mock('./NextEditor',async()=>{const {useEffect,useRef}=await import('react');return {default:function MockEditor({openResource,focusWhenReady,focusHandled,locked}:{openResource?:(id:string)=>void;focusWhenReady?:boolean;focusHandled?:()=>void;locked?:boolean}){const ref=useRef<HTMLDivElement>(null);useEffect(()=>{if(focusWhenReady&&!locked){ref.current?.focus();focusHandled?.();}},[focusWhenReady,focusHandled,locked]);return <div ref={ref} data-locked={!!locked} contentEditable suppressContentEditableWarning role="textbox" aria-label="Editor body">Editor text<button contentEditable={false} onClick={()=>openResource?.('2')}>Follow note 2</button></div>;}};});
 vi.spyOn(HTMLElement.prototype,'clientWidth','get').mockReturnValue(1200);
 vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});
 const rows=(start:number)=>Array.from({length:3},(_,i)=>({id:String(start+i),title:'Note '+(start+i),revision:1,updatedAt:''}));
@@ -184,4 +184,28 @@ it('drags a selected group from a row icon, refuses a pane and commits the captu
  document.elementFromPoint=()=>document.body;fireEvent.pointerDown(icon,{button:0,clientX:400,clientY:240});fireEvent.pointerMove(icon,{buttons:1,clientX:430,clientY:240});const pane=document.querySelector<HTMLElement>('[data-pane-drop="0"]')!;document.elementFromPoint=()=>pane;fireEvent.pointerMove(icon,{buttons:1,clientX:440,clientY:240});expect(pane.dataset.dropState).toBe('invalid');fireEvent.pointerUp(icon,{clientX:440,clientY:240});expect(invoke.mock.calls.some(([r])=>r.kind==='bulkMembership')).toBe(false);
  document.elementFromPoint=()=>destination;fireEvent.pointerDown(icon,{button:0,clientX:400,clientY:240});fireEvent.pointerMove(icon,{buttons:1,clientX:430,clientY:240});fireEvent.pointerUp(icon,{clientX:430,clientY:240});await waitFor(()=>expect(invoke).toHaveBeenCalledWith({kind:'bulkMembership',ids:['1','2'],add:'destination',remove:null}));
  }finally{window.PointerEvent=previous;document.elementFromPoint=hit;}
+});
+
+it('opening a linked file preview keeps the mounted editor editable and restores its trigger',async()=>{
+ setup();
+ fireEvent.click(await screen.findByRole('button',{name:'Note 1'}));
+ const editor=await screen.findByRole('textbox',{name:'Editor body'});
+ const previous=invoke.getMockImplementation()!;
+ invoke.mockImplementation(async request=>{
+   if(request.kind==='media'&&request.request.op==='summaries')return [{id:'2',title:'fixture.pdf',kind:'file'}];
+   if(request.kind==='media'&&request.request.op==='info')return {name:'fixture.bin',bytes:12};
+   return previous(request);
+ });
+ const locks:string[]=[];
+ const observer=new MutationObserver(records=>records.forEach(record=>locks.push(record.oldValue??'')));
+ observer.observe(editor,{attributes:true,attributeFilter:['data-locked'],attributeOldValue:true});
+ const trigger=screen.getByRole('button',{name:'Follow note 2'});
+ trigger.focus();fireEvent.click(trigger);
+ await screen.findByRole('region',{name:'fixture.pdf'});
+ expect(screen.getByRole('textbox',{name:'Editor body'})).toBe(editor);
+ expect(editor.dataset.locked).toBe('false');
+ expect(locks).not.toContain('true');
+ fireEvent.click(screen.getByRole('button',{name:'Close file preview'}));
+ await waitFor(()=>expect(document.activeElement).toBe(trigger));
+ observer.disconnect();
 });
