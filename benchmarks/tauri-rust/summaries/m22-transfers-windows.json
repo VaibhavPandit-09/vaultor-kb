@@ -1,0 +1,675 @@
+{
+  "transfers": {
+    "rawReport": "raw/tauri-rust-2026-11-20T08-30-15.213Z.json",
+    "timestamp": "2026-11-20T08:30:15.282Z",
+    "executableSourceCommit": "8df3711e25de87e430c866714c7c5820dff6e4e2",
+    "executableSha256": "3f0ec90c9737086bbff358cd9e9777177b47be5b8a9391d19e0cf987fa390f05",
+    "checks": [
+      "Mixed selection, nested imports, source reuse, relative reference and image conversion, raw file preservation, managed export containers, graph and archive verification, linked descriptors and original bytes, restore as new, transactional remapping, idempotent merge, recovery-copy preservation and interrupted task reconciliation."
+    ],
+    "limitations": [
+      "No OS cache flush; first-profile startup is not true cold boot.",
+      "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+      "Process working sets sum shared pages; sampled peak can miss short spikes."
+    ],
+    "dataset": "104 small mixed files and eight 32 MiB managed files",
+    "transferFixture": {
+      "smallFiles": 104,
+      "nestedTextFiles": 100,
+      "largeFiles": 8,
+      "largeFileBytes": 33554432,
+      "hash": "6548056127aead37bf467f0a36ad371926fb6890c3ed5b53c1f180d79247a594",
+      "collections": [
+        "Library input",
+        "Nested",
+        "Large"
+      ]
+    },
+    "transferRecipe": {
+      "sha256": "c35c20e0fb9a3046213edee5c0062626bc3df7e5c3dbd470746c52e790d9c5f3"
+    },
+    "runtime": {
+      "protocolVersion": "1.3",
+      "product": "Edg/157.0.4341.60",
+      "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+      "jsVersion": "15.7.11.7"
+    },
+    "largeProcessSamples": 0,
+    "system": {
+      "device": "LAPTOP-251O7CQC",
+      "os": "10.0.26340",
+      "arch": "x64",
+      "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+      "logicalCpus": 20,
+      "ramBytes": 16573128704
+    },
+    "samples": [
+      {
+        "scenario": "m22-nested-mixed-import",
+        "iteration": 1,
+        "metric": "review_discovery",
+        "value": 103.63750000000005,
+        "unit": "ms",
+        "notes": "100 small text files, Markdown with relative attachment, binary and independent text file. Discovery and source hashing.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-nested-mixed-import",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 352.50710000000004,
+        "unit": "ms",
+        "notes": "100 small text files, Markdown with relative attachment, binary and independent text file. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-nested-mixed-import",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 303,
+        "unit": "ms",
+        "notes": "100 small text files, Markdown with relative attachment, binary and independent text file. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-repeat-import",
+        "iteration": 1,
+        "metric": "review_discovery",
+        "value": 51.89730000000009,
+        "unit": "ms",
+        "notes": "Exact source paths and bytes from the preceding import. Discovery and source hashing.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-repeat-import",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 99.0985999999998,
+        "unit": "ms",
+        "notes": "Exact source paths and bytes from the preceding import. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-repeat-import",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 48,
+        "unit": "ms",
+        "notes": "Exact source paths and bytes from the preceding import. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-editor-during-import",
+        "iteration": 1,
+        "metric": "input_to_animation_frame",
+        "value": 8.300000004470348,
+        "unit": "ms",
+        "notes": "Import still running after animation frame.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-editor-during-import",
+        "iteration": 2,
+        "metric": "input_to_animation_frame",
+        "value": 73.70000000298023,
+        "unit": "ms",
+        "notes": "Import still running after animation frame.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-editor-during-import",
+        "iteration": 3,
+        "metric": "input_to_animation_frame",
+        "value": 5.300000004470348,
+        "unit": "ms",
+        "notes": "Import still running after animation frame.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-large-import",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 496.6471999999999,
+        "unit": "ms",
+        "notes": "Eight 32 MiB originals. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-large-import",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 446,
+        "unit": "ms",
+        "notes": "Eight 32 MiB originals. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-large-import",
+        "iteration": 1,
+        "metric": "bytes",
+        "value": 268435456,
+        "unit": "bytes",
+        "notes": "",
+        "valid": true
+      },
+      {
+        "scenario": "m22-export-original",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 17.105799999999817,
+        "unit": "ms",
+        "notes": "Independent output folder. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-export-original",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 5,
+        "unit": "ms",
+        "notes": "Independent output folder. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-export-markdown",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 46.95859999999993,
+        "unit": "ms",
+        "notes": "Independent output folder. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-export-markdown",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 6,
+        "unit": "ms",
+        "notes": "Independent output folder. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-export-pdf",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 14.43809999999985,
+        "unit": "ms",
+        "notes": "Independent output folder. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-export-pdf",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 4,
+        "unit": "ms",
+        "notes": "Independent output folder. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-export-docx",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 14.122699999999895,
+        "unit": "ms",
+        "notes": "Independent output folder. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-export-docx",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 4,
+        "unit": "ms",
+        "notes": "Independent output folder. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-export-markdownZip",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 47.10120000000006,
+        "unit": "ms",
+        "notes": "Independent output folder. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-export-markdownZip",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 8,
+        "unit": "ms",
+        "notes": "Independent output folder. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-export-graph",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 13.392700000000332,
+        "unit": "ms",
+        "notes": "Independent output folder. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-export-graph",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 4,
+        "unit": "ms",
+        "notes": "Independent output folder. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-linked-markdown-export",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 23.63630000000012,
+        "unit": "ms",
+        "notes": "Granted current external Markdown; original untouched. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-linked-markdown-export",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 4,
+        "unit": "ms",
+        "notes": "Granted current external Markdown; original untouched. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-full-archive",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 1136.4148,
+        "unit": "ms",
+        "notes": "All committed resources including 256 MiB of originals and an inactive linked descriptor. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-full-archive",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 1086,
+        "unit": "ms",
+        "notes": "All committed resources including 256 MiB of originals and an inactive linked descriptor. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-selected-archive",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 47.12790000000041,
+        "unit": "ms",
+        "notes": "One note plus its managed attachment and image. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-selected-archive",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 22,
+        "unit": "ms",
+        "notes": "One note plus its managed attachment and image. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-archive-inspect",
+        "iteration": 1,
+        "metric": "integrity_preview",
+        "value": 184.38659999999982,
+        "unit": "ms",
+        "notes": "Verification streams the complete archive.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-archive-restore",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 779.3683999999994,
+        "unit": "ms",
+        "notes": "Restore as new, including database integrity check. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-archive-restore",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 727,
+        "unit": "ms",
+        "notes": "Restore as new, including database integrity check. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-archive-merge",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 56.818199999999706,
+        "unit": "ms",
+        "notes": "Selected note and two dependencies. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-archive-merge",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 17,
+        "unit": "ms",
+        "notes": "Selected note and two dependencies. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-archive-merge-repeat",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 22.031299999999646,
+        "unit": "ms",
+        "notes": "Exact digest repeat. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-archive-merge-repeat",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 3,
+        "unit": "ms",
+        "notes": "Exact digest repeat. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-protected-draft-export",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 22.195200000000114,
+        "unit": "ms",
+        "notes": "Protected managed draft copy keeps saved and protected revisions unchanged. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-protected-draft-export",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 5,
+        "unit": "ms",
+        "notes": "Protected managed draft copy keeps saved and protected revisions unchanged. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-linked-draft-export",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 18.86160000000018,
+        "unit": "ms",
+        "notes": "Authorized review copies the stored draft and baseline. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-linked-draft-export",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 4,
+        "unit": "ms",
+        "notes": "Authorized review copies the stored draft and baseline. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-distinct-source",
+        "iteration": 1,
+        "metric": "review_discovery",
+        "value": 7.106700000000274,
+        "unit": "ms",
+        "notes": "Same name and bytes from a different source path. Discovery and source hashing.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-distinct-source",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 25.130600000000413,
+        "unit": "ms",
+        "notes": "Same name and bytes from a different source path. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-distinct-source",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 10,
+        "unit": "ms",
+        "notes": "Same name and bytes from a different source path. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-changed-source",
+        "iteration": 1,
+        "metric": "review_discovery",
+        "value": 9.258499999999913,
+        "unit": "ms",
+        "notes": "Same source path with different bytes. Discovery and source hashing.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-changed-source",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 29.181499999999687,
+        "unit": "ms",
+        "notes": "Same source path with different bytes. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-changed-source",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 13,
+        "unit": "ms",
+        "notes": "Same source path with different bytes. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-interrupted-reselection",
+        "iteration": 1,
+        "metric": "review_discovery",
+        "value": 170.6980999999996,
+        "unit": "ms",
+        "notes": "Reselect 256 MiB after terminating the owned process and restarting. Discovery and source hashing.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-interrupted-reselection",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 259.59200000000055,
+        "unit": "ms",
+        "notes": "Reselect 256 MiB after terminating the owned process and restarting. Invoke to terminal receipt with 25 ms polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-interrupted-reselection",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 207,
+        "unit": "ms",
+        "notes": "Reselect 256 MiB after terminating the owned process and restarting. Rust task start to terminal timestamp.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-interrupted-recovery",
+        "iteration": 1,
+        "metric": "restart_to_retry_complete",
+        "value": 1896.0907000000007,
+        "unit": "ms",
+        "notes": "Termination, restart, source review and completion.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-settled",
+        "iteration": 1,
+        "metric": "working_set",
+        "value": 523.24609375,
+        "unit": "MiB",
+        "notes": "Short snapshot after transfer receipts and a two-second settle.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-settled",
+        "iteration": 1,
+        "metric": "private_bytes",
+        "value": 287.59375,
+        "unit": "MiB",
+        "notes": "Short snapshot after transfer receipts and a two-second settle.",
+        "valid": true
+      }
+    ]
+  },
+  "sustainedTransfer": {
+    "rawReport": "raw/tauri-rust-2026-11-20T09-55-12.267Z.json",
+    "timestamp": "2026-11-20T09:55:12.343Z",
+    "executableSourceCommit": "8df3711e25de87e430c866714c7c5820dff6e4e2",
+    "executableSha256": "3f0ec90c9737086bbff358cd9e9777177b47be5b8a9391d19e0cf987fa390f05",
+    "checks": [
+      "Imported one GiB of disposable originals before sampling settled application memory."
+    ],
+    "limitations": [
+      "No OS cache flush; first-profile startup is not true cold boot.",
+      "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+      "Process working sets sum shared pages; sampled peak can miss short spikes."
+    ],
+    "dataset": "Eight 128 MiB managed originals for process sampling",
+    "transferFixture": {
+      "files": 8,
+      "fileBytes": 134217728,
+      "totalBytes": 1073741824
+    },
+    "transferRecipe": {
+      "sha256": "d556c655a13246e0bef3f8f1d1abdf2f804e82a247a6bf620e019e0d8cff18f3"
+    },
+    "runtime": {
+      "protocolVersion": "1.3",
+      "product": "Edg/157.0.4341.60",
+      "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+      "jsVersion": "15.7.11.7"
+    },
+    "largeProcessSamples": 2,
+    "system": {
+      "device": "LAPTOP-251O7CQC",
+      "os": "10.0.26340",
+      "arch": "x64",
+      "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+      "logicalCpus": 20,
+      "ramBytes": 16573128704
+    },
+    "samples": [
+      {
+        "scenario": "m22-sustained-import",
+        "iteration": 1,
+        "metric": "review_discovery",
+        "value": 515.3854000000001,
+        "unit": "ms",
+        "notes": "Discover eight files and read their source digests.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-sustained-import",
+        "iteration": 1,
+        "metric": "command_to_receipt",
+        "value": 1093.62,
+        "unit": "ms",
+        "notes": "Eight 128 MiB originals, with 25 ms receipt polling.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-sustained-import",
+        "iteration": 1,
+        "metric": "task_execution",
+        "value": 1060,
+        "unit": "ms",
+        "notes": "Rust task interval.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-sustained-import",
+        "iteration": 1,
+        "metric": "sampled_peak_working_set",
+        "value": 456.6484375,
+        "unit": "MiB",
+        "notes": "Process tree. May count shared pages more than once.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-sustained-import",
+        "iteration": 1,
+        "metric": "sampled_peak_private_bytes",
+        "value": 228.234375,
+        "unit": "MiB",
+        "notes": "",
+        "valid": true
+      },
+      {
+        "scenario": "m22-sustained-import",
+        "iteration": 1,
+        "metric": "cpu_one_core_percent",
+        "value": 103.72528248587571,
+        "unit": "%",
+        "notes": "Aggregate process tree CPU during the sampled interval.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-settled",
+        "iteration": 1,
+        "metric": "working_set",
+        "value": 490.88671875,
+        "unit": "MiB",
+        "notes": "Short snapshot after transfer receipts and a two-second settle.",
+        "valid": true
+      },
+      {
+        "scenario": "m22-settled",
+        "iteration": 1,
+        "metric": "private_bytes",
+        "value": 250.0859375,
+        "unit": "MiB",
+        "notes": "Short snapshot after transfer receipts and a two-second settle.",
+        "valid": true
+      }
+    ]
+  },
+  "safety": {
+    "rawReport": "raw/tauri-rust-2026-11-20T08-30-31.221Z.json",
+    "timestamp": "2026-11-20T08:30:31.290Z",
+    "executableSourceCommit": "8df3711e25de87e430c866714c7c5820dff6e4e2",
+    "executableSha256": "3f0ec90c9737086bbff358cd9e9777177b47be5b8a9391d19e0cf987fa390f05",
+    "checks": [
+      "Optimized native managed autosave;durable draft acknowledged before forced termination;restart Recovery review/restore commits content;competing managed revision refuses overwrite and parks draft.",
+      "Optimized native linked source bytes unchanged before explicit Save;publication succeeds for supported plain-text edit;external competing revision refuses overwrite and retains protected text/draft."
+    ],
+    "limitations": [
+      "No OS cache flush; first-profile startup is not true cold boot.",
+      "Input-to-rAF is a responsiveness proxy, not physical input-to-presentation.",
+      "Process working sets sum shared pages; sampled peak can miss short spikes.",
+      "M6 uses an isolated WebView2 profile to coexist with a running personal app; first-profile webview caches differ from M1\u2013M5 shared-profile runs.",
+      "Only the disposable application process tree is sampled; background apps, power and cache conditions are uncontrolled. The M8 reference had a coexisting personal process; inspect coexistingPersonalReference for this run.",
+      "Crash qualification pauses the renderer after an acknowledged durable draft before terminating the owned process;not a production change,physical crash or performance sample."
+    ]
+  },
+  "independentOutputChecks": [
+    "PDF parsed with pypdf and yielded expected Unicode text in the supported character set",
+    "DOCX opened with python-docx and retained the expected paragraph",
+    "ZIP link targets were relative, resolved to entries, and retained original bytes",
+    "Restored database passed integrity check. One inactive linked descriptor had zero sources and zero grants."
+  ],
+  "workbook": {
+    "historicalRows": 11536,
+    "appendedRows": 61,
+    "canonicalFieldsChecked": 1098,
+    "historicalCanonicalPrefixUnchanged": true,
+    "comparisonSheetsUnchanged": true,
+    "rawPrefixCellEquivalent": true,
+    "sheets": 19,
+    "formulasPreserved": 475,
+    "savedFormulaErrors": 0
+  }
+}

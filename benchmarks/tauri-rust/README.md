@@ -410,3 +410,14 @@ Run `node benchmarks/tauri-rust/run.mjs tauri-rust --inspect --m20-linked` with 
 ## M21 discovery measurements
 
 Run node benchmarks/tauri-rust/run.mjs tauri-rust --inspect --m21-discovery against the exact optimized executable and source commit. The harness creates a disposable 2,051-document NTFS source, separately measures targeted changes and the full folder-rename scan, and verifies managed/linked search, references, restart and near-1 MiB linked editing. Timing boundaries are listed in the M21 record. The probe option --m21-probe writes local diagnostics without appending the canonical CSV. Refresh the workbook with update-workbook.ps1 -AppendM21 using the bundled runtime path. Existing workbook comparisons remain unchanged.
+
+
+## M22 transfer measurements
+
+Run the optimized experimental executable with the existing Windows harness.
+
+    node benchmarks/tauri-rust/run.mjs tauri-rust --inspect --m22-transfers
+
+Set the executable and its source commit with the usual benchmark variables. The recipe uses a disposable workspace, a separate linked Markdown source, 104 small inputs and eight 32 MiB managed originals. Discovery timing includes reading and hashing selected sources. Activity timing reports both invocation-to-receipt and the Rust task interval. The responsiveness proxy starts at the editor's beforeinput event and ends at the next animation frame. Process sampling includes the application and its WebView2 processes. The data records the observed overlap with the transfer. It does not establish a physical latency or idle-memory result.
+
+Use --m22-sustained to run the dedicated eight-file, 1 GiB CPU and process-memory sample. Use --m22-probe for diagnostics without adding canonical observations. Refresh the workbook with update-workbook.ps1 -AppendM22 and the bundled workspace runtime. The append path keeps the original comparison sheets and formulas.

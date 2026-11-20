@@ -173,20 +173,27 @@ try {
   if (inspect) {
     if(m22){
       assert.equal(architecture,'tauri-rust');
-      await (await import('./m22-transfers.mjs')).qualifyTransfers({evaluate,cdp,wait,report,folder,record,restart:async()=>{
+      const transfers=await import('./m22-transfers.mjs');
+      const sustained=process.argv.includes('--m22-sustained');
+      if(sustained){
+        await transfers.measureLargeTransfer({evaluate,report,folder,record});
+        await stopSampler(run,1);
+        run=null;
+      }else await transfers.qualifyTransfers({evaluate,cdp,wait,report,folder,record,restart:async()=>{
         await quit();
         await stopSampler(run,1);
         run=null;
         await launch(3);
       }});
       const samples=(report.process1??[]).filter(point=>Date.parse(point.timestamp)>=report.largeWindow.start&&Date.parse(point.timestamp)<=report.largeWindow.end);
+      const workload=sustained?'m22-sustained-import':'m22-large-import';
       if(samples.length){
-        record('m22-large-import',1,'sampled_peak_working_set',Math.max(...samples.map(point=>point.workingSet))/1048576,'MiB','Process tree. May count shared pages more than once.');
-        record('m22-large-import',1,'sampled_peak_private_bytes',Math.max(...samples.map(point=>point.privateBytes))/1048576,'MiB');
+        record(workload,1,'sampled_peak_working_set',Math.max(...samples.map(point=>point.workingSet))/1048576,'MiB','Process tree. May count shared pages more than once.');
+        record(workload,1,'sampled_peak_private_bytes',Math.max(...samples.map(point=>point.privateBytes))/1048576,'MiB');
       }
       if(samples.length>=2){
         const first=samples[0],last=samples.at(-1),seconds=(Date.parse(last.timestamp)-Date.parse(first.timestamp))/1000;
-        if(seconds>0)record('m22-large-import',1,'cpu_one_core_percent',100*(last.cpuSeconds-first.cpuSeconds)/seconds,'%','Aggregate process tree CPU during the sampled interval.');
+        if(seconds>0)record(workload,1,'cpu_one_core_percent',100*(last.cpuSeconds-first.cpuSeconds)/seconds,'%','Aggregate process tree CPU during the sampled interval.');
       }
       report.largeProcessSamples=samples.length;
       const settled=join(folder,'m22-settled.json');

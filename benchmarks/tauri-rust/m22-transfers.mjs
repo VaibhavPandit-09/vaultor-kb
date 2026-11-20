@@ -71,7 +71,7 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
   // Search by visible title through the mounted search bar to reach the last page without loading prior editors.
   await evaluate("document.querySelector('.library-filters input').focus();true");
   await cdp('Input.insertText',{text:'Summary'});
-  await wait(row,'imported resource selected by Library search');
+  await wait(row+" && document.querySelector('[aria-label=Notes]')?.getAttribute('aria-busy')==='false'",'settled Library search for the imported note');
   await evaluate(row+'.click();true');
   await wait(editorSelector,'visible managed editor');
   const start=Date.now();
@@ -165,9 +165,33 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
   assert.deepEqual((await workspace({kind:'readDraft',id:summary.id})).content,draft.content);
   assert.equal((await workspace({kind:'read',id:summary.id})).revision,latest.revision);
 
+  await linked({op:'protect',id:external.documentId,revision:external.revision,base:external.base,
+    content:{type:'doc',content:[{type:'heading',attrs:{level:1},content:[{type:'text',text:'External file'}]},
+      {type:'paragraph',content:[{type:'text',text:'Protected linked wording.'}]}]},
+    token:'linked-protected-copy',sequence:1});
+  const linkedRecovery=join(folder,'Linked recovery.json');
+  await submit('linked-draft-export',{op:'exportRecovery',id:external.id,linked:true,destination:linkedRecovery},'Authorized review copies the stored draft and baseline.');
+  const recovery=JSON.parse(await readFile(linkedRecovery,'utf8'));
+  assert(recovery.draftMarkdown.includes('Protected linked wording.'));
+  assert.equal(recovery.baseMarkdown,linkedText);
+  assert.equal(await readFile(linkedPath,'utf8'),linkedText);
+
+  // Repeat with a different path and then changed source bytes. Earlier resources stay intact.
+  const replacement=join(folder,'Another input','Separate.txt');
+  await mkdir(join(folder,'Another input'));
+  await writeFile(replacement,await readFile(single));
+  const distinct=await importSource('distinct-source',[replacement],'Same name and bytes from a different source path.');
+  assert.equal(distinct.result.imported,1);
+  await writeFile(replacement,'New version and unchanged destination.');
+  assert.equal((await importSource('changed-source',[replacement],'Same source path with different bytes.')).result.imported,1);
+
   const newFiles=join(folder,'Interrupted');
   await mkdir(newFiles);
   for(let i=0;i<8;i++)await writeFile(join(newFiles,'Interrupt '+i+'.bin'),block);
+  const cancellation=await preview([newFiles]);
+  const {id:cancelled}=await transfer({op:'import',token:cancellation.token,separate:false});
+  await transfer({op:'cancel',id:cancelled});
+  assert.equal((await finish(cancelled)).state,'cancelled');
   const input=await preview([newFiles]);
   const {id:interrupted}=await transfer({op:'import',token:input.token,separate:false});
   const restartedAt=performance.now();
@@ -180,4 +204,36 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
   record('m22-interrupted-recovery',1,'restart_to_retry_complete',performance.now()-restartedAt,'ms','Termination, restart, source review and completion.');
   await sleep(2000);
   report.checks.push('Mixed selection, nested imports, source reuse, relative reference and image conversion, raw file preservation, managed export containers, graph and archive verification, linked descriptors and original bytes, restore as new, transactional remapping, idempotent merge, recovery-copy preservation and interrupted task reconciliation.');
+}
+
+export async function measureLargeTransfer({evaluate,report,folder,record}){
+  const command=request=>evaluate("window.__TAURI_INTERNALS__.invoke('transfer',{request:"+JSON.stringify(request)+"})");
+  const bytes=128*1048576;
+  const buffer=Buffer.alloc(bytes,141);
+  const source=join(folder,'Sustained import input');
+  await mkdir(source);
+  for(let i=0;i<8;i++)await writeFile(join(source,'Block '+i+'.bin'),buffer);
+  report.dataset='Eight 128 MiB managed originals for process sampling';
+  report.transferFixture={files:8,fileBytes:bytes,totalBytes:8*bytes};
+  report.transferRecipe={sha256:createHash('sha256').update(await readFile(new URL(import.meta.url))).digest('hex')};
+  const discovery=performance.now();
+  const review=await command({op:'preview',paths:[source],folder:true,collection:null});
+  record('m22-sustained-import',1,'review_discovery',performance.now()-discovery,'ms','Discover eight files and read their source digests.');
+  assert.equal(review.bytes,8*bytes);
+  const start=Date.now();
+  const requested=performance.now();
+  const {id}=await command({op:'import',token:review.token,separate:false});
+  let receipt;
+  for(let i=0;i<2400;i++){
+    receipt=(await command({op:'tasks'})).find(row=>row.id===id);
+    if(receipt?.finished)break;
+    await new Promise(resolve=>setTimeout(resolve,25));
+  }
+  report.largeWindow={start,end:Date.now()};
+  assert.equal(receipt?.state,'completed',JSON.stringify(receipt));
+  assert.equal(receipt.result.imported,8);
+  record('m22-sustained-import',1,'command_to_receipt',performance.now()-requested,'ms','Eight 128 MiB originals, with 25 ms receipt polling.');
+  record('m22-sustained-import',1,'task_execution',receipt.finished-receipt.started,'ms','Rust task interval.');
+  await new Promise(resolve=>setTimeout(resolve,2000));
+  report.checks.push('Imported one GiB of disposable originals before sampling settled application memory.');
 }
