@@ -1,4 +1,6 @@
 //! External files remain authoritative. SQLite holds registrations, identity evidence and non-authoritative drafts/intents.
+#[cfg(windows)]
+pub mod inventory;
 pub mod markdown;
 #[cfg(windows)]
 pub mod native;
@@ -25,6 +27,30 @@ pub enum Request {
         source: String,
         path: String,
         after: Option<String>,
+    },
+    Identify {
+        source: String,
+        path: String,
+    },
+    OpenId {
+        id: String,
+    },
+    Location {
+        id: String,
+    },
+    External {
+        id: String,
+        reveal: bool,
+    },
+    Relationships {
+        id: String,
+    },
+    Asset {
+        id: String,
+        href: String,
+    },
+    Check {
+        id: String,
     },
     Open {
         source: String,
@@ -67,7 +93,29 @@ pub fn initialize(db: &rusqlite::Connection) -> Result<(), String> {
     db.execute_batch("CREATE TABLE IF NOT EXISTS linked_sources(id TEXT PRIMARY KEY,path TEXT NOT NULL,display_path TEXT NOT NULL,identity TEXT NOT NULL,active INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS linked_documents(id TEXT PRIMARY KEY,source_id TEXT NOT NULL REFERENCES linked_sources(id),path TEXT NOT NULL,path_key TEXT NOT NULL,identity TEXT NOT NULL,revision TEXT NOT NULL,UNIQUE(source_id,path_key,identity));
  CREATE TABLE IF NOT EXISTS linked_drafts(id TEXT PRIMARY KEY REFERENCES linked_documents(id),revision TEXT NOT NULL,base TEXT NOT NULL,content TEXT NOT NULL,token TEXT NOT NULL,sequence INTEGER NOT NULL,state TEXT NOT NULL DEFAULT 'draft',last_error TEXT,updated_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')));
- CREATE TABLE IF NOT EXISTS linked_saves(id TEXT PRIMARY KEY REFERENCES linked_documents(id),status TEXT NOT NULL,stage TEXT NOT NULL,capture TEXT NOT NULL,original_identity TEXT NOT NULL,original_hash TEXT NOT NULL,candidate_identity TEXT,candidate_hash TEXT NOT NULL,candidate TEXT NOT NULL,token TEXT NOT NULL,sequence INTEGER NOT NULL,error TEXT);").map_err(error)
+ CREATE TABLE IF NOT EXISTS linked_saves(id TEXT PRIMARY KEY REFERENCES linked_documents(id),status TEXT NOT NULL,stage TEXT NOT NULL,capture TEXT NOT NULL,original_identity TEXT NOT NULL,original_hash TEXT NOT NULL,candidate_identity TEXT,candidate_hash TEXT NOT NULL,candidate TEXT NOT NULL,token TEXT NOT NULL,sequence INTEGER NOT NULL,error TEXT);
+ CREATE TABLE IF NOT EXISTS linked_inventory(
+   resource_id TEXT PRIMARY KEY REFERENCES resources(id), document_id TEXT NOT NULL UNIQUE REFERENCES linked_documents(id),
+   birth TEXT NOT NULL, available INTEGER NOT NULL, indexed_revision TEXT NOT NULL DEFAULT '', scan TEXT NOT NULL DEFAULT '', indexed_bytes INTEGER NOT NULL DEFAULT 0);
+ CREATE TABLE IF NOT EXISTS linked_references(document_id TEXT NOT NULL REFERENCES linked_documents(id),path_key TEXT NOT NULL,occurrences INTEGER NOT NULL,PRIMARY KEY(document_id,path_key));
+ CREATE TABLE IF NOT EXISTS linked_index_usage(source_id TEXT PRIMARY KEY REFERENCES linked_sources(id),bytes INTEGER NOT NULL);
+ CREATE TRIGGER IF NOT EXISTS linked_index_quota AFTER UPDATE OF indexed_bytes ON linked_inventory WHEN new.indexed_bytes<>old.indexed_bytes BEGIN
+    INSERT INTO linked_index_usage SELECT source_id,new.indexed_bytes-old.indexed_bytes FROM linked_documents WHERE id=new.document_id
+    ON CONFLICT(source_id) DO UPDATE SET bytes=bytes+excluded.bytes;
+ END;
+ CREATE INDEX IF NOT EXISTS linked_source_path ON linked_documents(source_id,path_key);
+ CREATE INDEX IF NOT EXISTS linked_reference_target ON linked_references(path_key,document_id);
+ CREATE TABLE IF NOT EXISTS linked_grants(source_id TEXT PRIMARY KEY REFERENCES linked_sources(id),epoch TEXT NOT NULL);
+ CREATE INDEX IF NOT EXISTS linked_file_identity ON linked_documents(source_id,identity);
+ CREATE VIEW IF NOT EXISTS visible_resources AS SELECT r.* FROM resources r WHERE r.id NOT LIKE 'linked:%' OR EXISTS(
+   SELECT 1 FROM linked_inventory i JOIN linked_documents d ON d.id=i.document_id JOIN linked_sources s ON s.id=d.source_id
+   WHERE i.resource_id=r.id AND i.available=1 AND s.active=1);
+ CREATE TRIGGER IF NOT EXISTS linked_no_managed_draft BEFORE INSERT ON drafts WHEN new.resource_id LIKE 'linked:%'
+ BEGIN SELECT RAISE(ABORT,'Linked Markdown requires explicit Save'); END;
+ CREATE TRIGGER IF NOT EXISTS linked_no_managed_content BEFORE UPDATE OF content ON resources WHEN new.id LIKE 'linked:%'
+ BEGIN SELECT RAISE(ABORT,'Linked Markdown requires explicit Save'); END;
+ CREATE TRIGGER IF NOT EXISTS linked_index_visibility AFTER UPDATE OF available ON linked_inventory WHEN new.available<>old.available
+ BEGIN UPDATE search_generation SET value=value+1; END;").map_err(error)
 }
 #[cfg(windows)]
 impl Workspace {
@@ -106,7 +154,7 @@ impl Workspace {
         current: Option<Value>,
     ) -> Result<Value, String> {
         let (source, path, identity, revision) = self.linked_location(id)?;
-        let parsed = if base.len() <= 256 * 1024 {
+        let parsed = if base.len() <= markdown::EDIT_BYTES {
             Some(markdown::parse(&base))
         } else {
             None
@@ -115,7 +163,7 @@ impl Workspace {
             .or_else(|| parsed.as_ref().and_then(|p| p.reason.clone()))
             .or_else(|| {
                 if parsed.is_none() {
-                    Some("Over 256 KiB: source view only (reading limit 1 MiB)".into())
+                    Some("Over 512 KiB: source view only (reading limit 1 MiB)".into())
                 } else {
                     None
                 }
@@ -136,25 +184,15 @@ impl Workspace {
         }
         let (root, root_id) = self.linked_root(&source)?;
         let file = native::read(&root, &root_id, &path, false)?;
-        let canonical = native::physical(&file.file)?;
-        let path = canonical
-            .strip_prefix(&root)
-            .map_err(|_| "File is outside the pinned source")?
-            .to_string_lossy()
-            .replace('\\', "/");
-        let key = path.replace('\\', "/").to_lowercase();
-        let pending:Option<String>=self.db.query_row("SELECT n.id FROM linked_documents n JOIN linked_saves s ON s.id=n.id WHERE n.source_id=?1 AND n.path_key=?2",params![source,key],|r|r.get(0)).optional().map_err(error)?;
+        let key = inventory::path_key(&root, &file)?;
+        let pending: Option<String> = self.db.query_row(
+            "SELECT d.id FROM linked_documents d JOIN linked_saves s ON s.id=d.id WHERE d.source_id=?1 AND d.path_key=?2",
+            params![source,key], |r|r.get(0)).optional().map_err(error)?;
         if let Some(id) = pending {
+            drop(file);
             return self.linked_recover(&id);
         }
-        let known:Option<String>=self.db.query_row("SELECT id FROM linked_documents WHERE source_id=?1 AND path_key=?2 AND identity=?3",params![source,key,file.id],|r|r.get(0)).optional().map_err(error)?;
-        let id = known.unwrap_or_else(|| Uuid::new_v4().to_string());
-        self.db
-            .execute(
-                "INSERT INTO linked_documents VALUES(?1,?2,?3,?4,?5,?6) ON CONFLICT(id) DO NOTHING",
-                params![id, source, path, key, file.id, file.revision],
-            )
-            .map_err(error)?;
+        let id = self.observe_linked(&source, &root, &file, None)?;
         if self
             .db
             .query_row(
@@ -173,7 +211,7 @@ impl Workspace {
             )
             .map_err(error)?;
         let base = String::from_utf8(file.bytes).map_err(error)?;
-        let parsed = if base.len() <= 256 * 1024 {
+        let parsed = if base.len() <= markdown::EDIT_BYTES {
             markdown::parse(&base)
         } else {
             markdown::parse("")
@@ -213,10 +251,13 @@ impl Workspace {
                 Ok(Value::Null)
             }
             Request::Sources => {
-                let mut q=self.db.prepare("SELECT id,display_path FROM linked_sources WHERE active=1 ORDER BY display_path,id").map_err(error)?;
+                let mut q=self.db.prepare("SELECT id,display_path,path,identity FROM linked_sources WHERE active=1 ORDER BY display_path,id").map_err(error)?;
                 let rows = q
                     .query_map([], |r| {
-                        Ok(json!({"id":r.get::<_,String>(0)?,"path":r.get::<_,String>(1)?}))
+                        let path: String = r.get(2)?;
+                        let expected: String = r.get(3)?;
+                        let available = native::pin(Path::new(&path)).and_then(|pins|native::identity(pins.last().unwrap())).is_ok_and(|id|id==expected);
+                        Ok(json!({"id":r.get::<_,String>(0)?,"path":r.get::<_,String>(1)?,"available":available}))
                     })
                     .map_err(error)?
                     .collect::<Result<Vec<_>, _>>()
@@ -229,7 +270,12 @@ impl Workspace {
                 let identity = native::identity(pins.last().unwrap())?;
                 let workspace_pins = native::pin(&self.root)?;
                 let workspace_path = native::physical(workspace_pins.last().unwrap())?;
-                if workspace_path.starts_with(&physical) || physical.starts_with(&workspace_path) {
+                let overlaps = |a: &Path, b: &Path| {
+                    let a = a.to_string_lossy().to_lowercase();
+                    let b = b.to_string_lossy().to_lowercase();
+                    Path::new(&a).starts_with(&b) || Path::new(&b).starts_with(&a)
+                };
+                if overlaps(&workspace_path, &physical) {
                     return Err(
                         "Linked folders must be separate from Vaultor workspace storage".into(),
                     );
@@ -261,9 +307,7 @@ impl Workspace {
                         chosen = Some(id);
                         continue;
                     }
-                    if active
-                        && (physical.starts_with(&old) || Path::new(&old).starts_with(&physical))
-                    {
+                    if active && overlaps(&physical, Path::new(&old)) {
                         return Err(
                             "Overlapping linked folders are already covered by an existing source"
                                 .into(),
@@ -274,13 +318,32 @@ impl Workspace {
                     return Err("Up to eight linked folders are supported".into());
                 }
                 let id = chosen.unwrap_or_else(|| Uuid::new_v4().to_string());
-                self.db.execute("INSERT INTO linked_sources VALUES(?1,?2,?3,?4,1) ON CONFLICT(id) DO UPDATE SET path=excluded.path,display_path=excluded.display_path,active=1",params![id,physical.to_string_lossy(),path,identity]).map_err(error)?;
+                let tx = self.db.transaction().map_err(error)?;
+                tx.execute("INSERT INTO linked_sources VALUES(?1,?2,?3,?4,1) ON CONFLICT(id) DO UPDATE SET path=excluded.path,display_path=excluded.display_path,active=1",params![id,physical.to_string_lossy(),path,identity]).map_err(error)?;
+                tx.execute("INSERT INTO linked_grants VALUES(?1,?2) ON CONFLICT(source_id) DO UPDATE SET epoch=excluded.epoch",
+                    params![id,Uuid::new_v4().to_string()]).map_err(error)?;
+                tx.execute("UPDATE search_generation SET value=value+1", [])
+                    .map_err(error)?;
+                tx.commit().map_err(error)?;
                 Ok(json!({"id":id,"path":path}))
             }
             Request::Remove { source } => {
-                self.db
-                    .execute("UPDATE linked_sources SET active=0 WHERE id=?1", [source])
+                let tx = self.db.transaction().map_err(error)?;
+                tx.execute("UPDATE linked_sources SET active=0 WHERE id=?1", [&source])
                     .map_err(error)?;
+                tx.execute("DELETE FROM recent_links WHERE source=?1", [&source])
+                    .map_err(error)?;
+                tx.execute("DELETE FROM linked_references WHERE document_id IN (SELECT id FROM linked_documents WHERE source_id=?1)",[&source]).map_err(error)?;
+                tx.execute("UPDATE note_search SET body='',title='' WHERE rowid IN
+                    (SELECT r.seq FROM resources r JOIN linked_inventory i ON i.resource_id=r.id JOIN linked_documents d ON d.id=i.document_id WHERE d.source_id=?1)",[&source]).map_err(error)?;
+                tx.execute("UPDATE linked_inventory SET available=0,indexed_revision='',indexed_bytes=0 WHERE document_id IN (SELECT id FROM linked_documents WHERE source_id=?1)",[&source]).map_err(error)?;
+                tx.execute("DELETE FROM linked_grants WHERE source_id=?1", [&source])
+                    .map_err(error)?;
+                tx.execute("DELETE FROM resource_clipboard", [])
+                    .map_err(error)?;
+                tx.execute("UPDATE search_generation SET value=value+1", [])
+                    .map_err(error)?;
+                tx.commit().map_err(error)?;
                 Ok(Value::Null)
             }
             Request::Directory {
@@ -344,6 +407,18 @@ impl Workspace {
                 }
                 let more = entries.len() > 100;
                 let mut entries = entries.into_iter().take(100).collect::<Vec<_>>();
+                let mut resource_at = self.db.prepare("SELECT i.resource_id FROM linked_inventory i JOIN linked_documents d ON d.id=i.document_id
+                    WHERE i.available=1 AND d.source_id=?1 AND d.path_key=?2").map_err(error)?;
+                for (_, entry) in &mut entries {
+                    if entry["directory"] == false && entry["blocked"] == false {
+                        let key = entry["path"].as_str().unwrap_or("").to_lowercase();
+                        let id: Option<String> = resource_at
+                            .query_row(params![source, key], |r| r.get(0))
+                            .optional()
+                            .map_err(error)?;
+                        entry["id"] = json!(id);
+                    }
+                }
                 let next = if more {
                     entries.last().map(|e| e.0.clone())
                 } else {
@@ -353,55 +428,82 @@ impl Workspace {
                     json!({"entries":entries.drain(..).map(|e|e.1).collect::<Vec<_>>(),"next":next,"hidden":hidden}),
                 )
             }
+            Request::Identify { source, path } => {
+                let (root, root_id) = self.linked_root(&source)?;
+                if !inventory::is_markdown(Path::new(&path)) {
+                    return Err("Choose a linked Markdown document".into());
+                }
+                let file = native::read(&root, &root_id, &path, false)?;
+                let id = self.observe_linked(&source, &root, &file, None)?;
+                Ok(
+                    json!({"id":format!("linked:{id}"),"title":file.path.file_name().unwrap_or_default().to_string_lossy()}),
+                )
+            }
+            Request::OpenId { id } => {
+                let (source, path, _, _) = self.linked_location(&id)?;
+                let file = self.linked_read(&id, false)?;
+                self.confirm_linked_identity(&id, &file)?;
+                let doc = self.linked_open(source, path)?;
+                if doc["documentId"] != id {
+                    return Err("Linked file was replaced; refresh the source browser".into());
+                }
+                Ok(doc)
+            }
+            Request::Asset { id, href } => {
+                let origin = self.linked_read(&id, false)?;
+                self.confirm_linked_identity(&id, &origin)?;
+                let (source, path, _, _) = self.linked_location(&id)?;
+                let target = inventory::relative_target(&path, &href)?;
+                if !Path::new(&target)
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .is_some_and(|ext| {
+                        ["png", "jpeg", "jpg", "gif", "webp"]
+                            .iter()
+                            .any(|kind| ext.eq_ignore_ascii_case(kind))
+                    })
+                {
+                    return Err("This link is not a supported raster asset".into());
+                }
+                let (root, identity) = self.linked_root(&source)?;
+                let (bytes, mime) = native::read_asset(&root, &identity, &target)?;
+                Ok(
+                    json!({"name":Path::new(&target).file_name().unwrap_or_default().to_string_lossy(),"mime":mime,"bytes":bytes}),
+                )
+            }
+            Request::Check { id } => {
+                let file = self.linked_read(&id, false)?;
+                self.confirm_linked_identity(&id, &file)?;
+                let (_, path, _, _) = self.linked_location(&id)?;
+                Ok(json!({"revision":file.revision,"path":path}))
+            }
+            Request::Relationships { id } => self.linked_relationships(&id),
+            Request::External { id, reveal } => {
+                let file = self.linked_read(&id, false)?;
+                self.confirm_linked_identity(&id, &file)?;
+                let path = file.display_path()?;
+                if reveal {
+                    std::process::Command::new("explorer.exe")
+                        .args(["/select,", &path])
+                        .spawn()
+                        .map_err(error)?;
+                } else {
+                    native::open_external(&path)?;
+                }
+                Ok(Value::Null)
+            }
+            Request::Location { id } => {
+                let file = self.linked_read(&id, false)?;
+                self.confirm_linked_identity(&id, &file)?;
+                Ok(json!({"path": file.display_path()?}))
+            }
             Request::Open { source, path } => self.linked_open(source, path),
             Request::Follow { id, href } => {
-                if href.contains(':') || href.starts_with(['\\', '/']) {
-                    return Err("Only relative links within registered folders are enabled".into());
-                }
-                let decoded =
-                    percent_encoding::percent_decode_str(href.split('#').next().unwrap_or(""))
-                        .decode_utf8()
-                        .map_err(error)?;
+                let file = self.linked_read(&id, false)?;
+                self.confirm_linked_identity(&id, &file)?;
                 let (source, path, _, _) = self.linked_location(&id)?;
-                let (root, _) = self.linked_root(&source)?;
-                let mut target = root.join(Path::new(&path).parent().unwrap_or(Path::new("")));
-                for part in decoded.replace('\\', "/").split('/') {
-                    match part {
-                        "" | "." => {}
-                        ".." => {
-                            if !target.pop() {
-                                return Err("Link escapes registered sources".into());
-                            }
-                        }
-                        _ => {
-                            if part.contains(':') {
-                                return Err("Unsafe link".into());
-                            }
-                            target.push(part)
-                        }
-                    }
-                }
-                let mut q = self
-                    .db
-                    .prepare("SELECT id,path FROM linked_sources WHERE active=1")
-                    .map_err(error)?;
-                let roots = q
-                    .query_map([], |r| {
-                        Ok((
-                            r.get::<_, String>(0)?,
-                            PathBuf::from(r.get::<_, String>(1)?),
-                        ))
-                    })
-                    .map_err(error)?
-                    .collect::<Result<Vec<_>, _>>()
-                    .map_err(error)?;
-                drop(q);
-                for (source, root) in roots {
-                    if let Ok(rel) = target.strip_prefix(root) {
-                        return self.linked_open(source, rel.to_string_lossy().replace('\\', "/"));
-                    }
-                }
-                Err("Link is outside registered folders; register its folder first".into())
+                let target = inventory::relative_target(&path, &href)?;
+                self.linked_open(source, target)
             }
             Request::Protect {
                 id,
@@ -431,7 +533,7 @@ impl Workspace {
                 if captured != revision || native::hash(base.as_bytes()) != revision {
                     return Err("Draft baseline does not match the opened source revision".into());
                 }
-                if base.len() > 256 * 1024 || markdown::parse(&base).reason.is_some() {
+                if base.len() > markdown::EDIT_BYTES || markdown::parse(&base).reason.is_some() {
                     return Err("Unsupported source cannot create an editable draft".into());
                 }
                 if content["type"] != "doc" || !content["content"].is_array() {
@@ -540,6 +642,19 @@ impl Workspace {
             Request::Resolve { id } => self.linked_resolve(&id),
         }
     }
+    fn withdraw_linked_index(tx: &rusqlite::Transaction<'_>, id: &str) -> Result<(), String> {
+        tx.execute("UPDATE note_search SET body='' WHERE rowid=(SELECT seq FROM resources WHERE id='linked:'||?1)",[id]).map_err(error)?;
+        tx.execute("DELETE FROM linked_references WHERE document_id=?1", [id])
+            .map_err(error)?;
+        tx.execute(
+            "UPDATE linked_inventory SET indexed_revision='',indexed_bytes=0 WHERE document_id=?1",
+            [id],
+        )
+        .map_err(error)?;
+        tx.execute("UPDATE search_generation SET value=value+1", [])
+            .map_err(error)?;
+        Ok(())
+    }
     fn linked_save(&mut self, id: &str, token: &str, sequence: i64) -> Result<Value, String> {
         let pending: bool = self
             .db
@@ -555,7 +670,14 @@ impl Workspace {
         let(base,content,revision):(String,String,String)=self.db.query_row("SELECT base,content,revision FROM linked_drafts WHERE id=?1 AND token=?2 AND sequence=?3",params![id,token,sequence],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?))).map_err(|_|"Draft changed; protect the newest edits before Save".to_string())?;
         let proposed: Value = serde_json::from_str(&content).map_err(error)?;
         let candidate = markdown::patch(&base, &proposed)?;
+        if candidate.len() > markdown::EDIT_BYTES {
+            return Err(
+                "Save would exceed the 512 KiB linked editing limit. The draft is retained.".into(),
+            );
+        }
         let original = self.linked_read(id, true)?;
+        self.confirm_linked_identity(id, &original)
+            .map_err(|_| "External identity conflict. Draft retained.".to_string())?;
         let (_, _, identity, _) = self.linked_location(id)?;
         if original.id != identity || original.revision != revision {
             return Err("External revision conflict. Draft retained; inspect the current filesystem version.".into());
@@ -621,6 +743,12 @@ impl Workspace {
             )
             .map_err(error)?;
             tx.execute(
+                "UPDATE linked_inventory SET birth=?2 WHERE document_id=?1",
+                params![id, native::birth(&staged)?],
+            )
+            .map_err(error)?;
+            Self::withdraw_linked_index(&tx, id)?;
+            tx.execute(
                 "DELETE FROM linked_drafts WHERE id=?1 AND token=?2 AND sequence=?3",
                 params![id, token, sequence],
             )
@@ -684,6 +812,12 @@ impl Workspace {
                 params![current.id, current.revision, id],
             )
             .map_err(error)?;
+            tx.execute(
+                "UPDATE linked_inventory SET birth=?2 WHERE document_id=?1",
+                params![id, native::birth(&current.file)?],
+            )
+            .map_err(error)?;
+            Self::withdraw_linked_index(&tx, id)?;
             tx.execute(
                 "DELETE FROM linked_drafts WHERE id=?1 AND token=?2 AND sequence=?3",
                 params![id, token, sequence],

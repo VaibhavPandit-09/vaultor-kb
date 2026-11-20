@@ -198,7 +198,7 @@ impl Workspace {
             Request::Organization {request} => self.organization(request),
             Request::Media {request} => self.media(request),
             Request::Snapshot => {
-                let mut stmt = self.db.prepare("SELECT c.id,c.name,c.parent_id,COUNT(CASE WHEN COALESCE(s.trashed,0)=0 THEN m.resource_id END),COALESCE((SELECT pinned FROM collection_state WHERE collection_id=c.id),0) FROM collections c LEFT JOIN memberships m ON m.collection_id=c.id LEFT JOIN resource_state s ON s.resource_id=m.resource_id GROUP BY c.id ORDER BY c.normalized,c.id").map_err(error)?;
+                let mut stmt = self.db.prepare("SELECT c.id,c.name,c.parent_id,COUNT(CASE WHEN COALESCE(s.trashed,0)=0 AND v.id IS NOT NULL THEN m.resource_id END),COALESCE((SELECT pinned FROM collection_state WHERE collection_id=c.id),0) FROM collections c LEFT JOIN memberships m ON m.collection_id=c.id LEFT JOIN resource_state s ON s.resource_id=m.resource_id LEFT JOIN visible_resources v ON v.id=m.resource_id GROUP BY c.id ORDER BY c.normalized,c.id").map_err(error)?;
                 let collections = stmt.query_map([], |r| Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"parentId":r.get::<_,Option<String>>(2)?,"count":r.get::<_,i64>(3)?,"pinned":r.get::<_,bool>(4)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
                 let mut stmt = self.db.prepare("SELECT key,value FROM settings").map_err(error)?;
                 let settings = stmt.query_map([], |r| Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
@@ -221,7 +221,7 @@ impl Workspace {
                 tx.commit().map_err(error)?;
                 self.execute(Request::Read { id })
             },
-            Request::Read { id } => self.db.query_row("SELECT id,title,content,revision FROM resources WHERE id=?1 AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=resources.id AND trashed=1)", [&id], |r| {
+            Request::Read { id } => self.db.query_row("SELECT id,title,content,revision FROM resources WHERE id=?1 AND id NOT LIKE 'linked:%' AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=resources.id AND trashed=1)", [&id], |r| {
                 Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"content":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?}))
             }).map_err(error).and_then(|mut value| { value["content"] = serde_json::from_str(value["content"].as_str().unwrap()).map_err(error)?; let mut q=self.db.prepare("SELECT collection_id FROM memberships WHERE resource_id=?1 ORDER BY collection_id").map_err(error)?; value["collections"]=json!(q.query_map([&id],|r|r.get::<_,String>(0)).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?); value["kind"]=self.db.query_row("SELECT kind FROM managed_originals WHERE resource_id=?1",[&id],|r|r.get::<_,String>(0)).map(Value::String).unwrap_or(json!("note")); Ok(value) }),
             Request::Save { id, revision, title, content, proof } => self.save(id, revision, title, content, proof),

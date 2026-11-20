@@ -472,3 +472,8 @@ The bounded comparison covered BlockEditor, TableControls/TableDataPanel, Worksp
 Next uses PreviewShell for Side panel and Floating without consuming an editor pane. The original image zoom surface remains shared. Original desktop FilePreview routes PDF, image, CSV, Markdown, code and text. It contains no Office or audio/video renderer. Next implements bounded local PDF and codec-dependent media. Current native, geometry and performance results are in the [M19 roadmap entry](VAULTOR-NEXT.md#m19-file-previews-and-editor-completion).
 
 Injected desktop checks covered expansion, repeated dismissal and opening beside three live editors. Frontend checks covered Escape and focus return, stale preview cancellation and stored placement. Physical pointer, theme and narrow-window checks remain open. The roadmap preserves open M18 contextual and picker acceptance and the M17 physical drag checklist.
+
+
+### M20 linked-source interaction follow-up
+
+UI-29, UI-33 and UI-35 retain the original NoteOrientation and linked explicit Save/recovery actions. Linked rows reuse ResourceRow, contextual menus, tag assignment and the collection membership dialog. Linked source rows and Open Notes reuse M17 pointer transport and its native-drag suppression. Lazy directory pages gain identified rows, with indexing receipts in Activity and a source-scoped Library query. Unavailable registrations retain their position in the tree and expose reauthorization. Formatted read-only Markdown reuses the original preview bounds. Physical pointer, Explorer, native dialogs and accessibility remain separate acceptance gates. See [M20](VAULTOR-NEXT.md#m20-linked-markdown-organization-and-indexing).

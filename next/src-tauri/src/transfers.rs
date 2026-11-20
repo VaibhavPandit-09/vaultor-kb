@@ -79,6 +79,8 @@ pub struct Plan {
     created: Instant,
 }
 pub enum Job {
+    #[cfg(windows)]
+    IndexLinked { source: String },
     Purge {
         ids: Option<Vec<String>>,
     },
@@ -103,6 +105,8 @@ pub enum Job {
 impl Job {
     pub fn kind(&self) -> &str {
         match self {
+            #[cfg(windows)]
+            Self::IndexLinked { .. } => "linked-index",
             Self::Purge { .. } => "resource-purge",
             Self::Import { .. } => "file-import",
             Self::Export { .. } => "resource-export",
@@ -112,6 +116,8 @@ impl Job {
     }
     pub fn description(&self) -> String {
         match self {
+            #[cfg(windows)]
+            Self::IndexLinked { .. } => "Index linked Markdown".into(),
             Self::Purge { .. } => "Permanently delete Trash resources".into(),
             Self::Import { plan, .. } => format!("Import {} files", plan.files.len()),
             Self::Export { ids, .. } => format!("Export {} resources", ids.len()),
@@ -123,6 +129,7 @@ impl Job {
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Request {
+    IndexLinked { source: String },
     Purge {
         ids: Option<Vec<String>>,
     },
@@ -175,6 +182,12 @@ impl Transfers {
     }
     pub fn execute(&self, root: String, request: Request) -> Result<Value, String> {
         match request {
+            Request::IndexLinked { source } => {
+                #[cfg(windows)]
+                return self.activity.submit(root, Job::IndexLinked { source });
+                #[cfg(not(windows))]
+                return Err("Linked indexing requires Windows local NTFS".into());
+            }
             Request::Tasks => Ok(json!(self.activity.list())),
             Request::DismissPreview { token } => {
                 self.plans.lock().unwrap().remove(&token);
@@ -547,6 +560,8 @@ pub fn execute(
     ctx: &mut Context,
 ) -> Result<Value, String> {
     match job {
+        #[cfg(windows)]
+        Job::IndexLinked { source } => crate::linked::inventory::index(storage, ctx, root, source),
         Job::Purge { ids } => purge(storage, root, ids, ctx),
         Job::Import { plan, separate } => import(storage, root, plan, separate, ctx),
         Job::Export {
@@ -745,7 +760,7 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
     };
     let mut size = 0;
     let mut q =
-        w.db.prepare("SELECT id,title,content,revision,updated_at FROM resources ORDER BY seq")
+        w.db.prepare("SELECT id,title,content,revision,updated_at FROM resources WHERE id NOT LIKE 'linked:%' ORDER BY seq")
             .map_err(error)?;
     let mut rows = q.query([]).map_err(error)?;
     while let Some(r) = rows.next().map_err(error)? {

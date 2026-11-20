@@ -81,9 +81,12 @@ fn ids(ids: Vec<String>) -> Result<Vec<String>, String> {
 }
 fn validate(db: &Connection, ids: &[String], unprotected: bool) -> Result<(), String> {
     for id in ids {
+        if unprotected && id.starts_with("linked:") {
+            return Err("Linked originals have no managed Trash lifecycle".into());
+        }
         let exists: bool = db
             .query_row(
-                "SELECT EXISTS(SELECT 1 FROM resources WHERE id=?1)",
+                "SELECT EXISTS(SELECT 1 FROM visible_resources WHERE id=?1)",
                 [id],
                 |r| r.get(0),
             )
@@ -121,7 +124,7 @@ impl Workspace {
                 if query.len() > 256 {
                     return Err("Tag query too long".into());
                 }
-                let mut q=self.db.prepare("SELECT t.id,t.name,t.color,t.normalized,(SELECT count(*) FROM resource_tags a WHERE a.tag_id=t.id AND NOT EXISTS(SELECT 1 FROM resource_state s WHERE s.resource_id=a.resource_id AND s.trashed=1)) FROM tags t WHERE instr(t.normalized,?1)>0 AND (?2 IS NULL OR t.normalized>?2) ORDER BY t.normalized LIMIT 101").map_err(error)?;
+                let mut q=self.db.prepare("SELECT t.id,t.name,t.color,t.normalized,(SELECT count(*) FROM resource_tags a WHERE a.tag_id=t.id AND a.resource_id IN (SELECT id FROM visible_resources) AND NOT EXISTS(SELECT 1 FROM resource_state s WHERE s.resource_id=a.resource_id AND s.trashed=1)) FROM tags t WHERE instr(t.normalized,?1)>0 AND (?2 IS NULL OR t.normalized>?2) ORDER BY t.normalized LIMIT 101").map_err(error)?;
                 let mut rows=q.query_map(params![query.trim().to_lowercase(),after],|r|Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"color":r.get::<_,String>(2)?,"key":r.get::<_,String>(3)?,"count":r.get::<_,i64>(4)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
                 let next = if rows.len() > 100 {
                     rows.truncate(100);
@@ -221,7 +224,7 @@ impl Workspace {
             Request::Pins { query,kind,offset,limit } => {
                 if query.len()>1024 || !["all","note","file","collection"].contains(&kind.as_str())&&!crate::file_category::CATEGORIES.contains(&kind.as_str()) || offset>1000000 || !(1..=100).contains(&limit) {return Err("Unsupported pinned query".into());}
                 let category=crate::file_category::for_resource("r.id");
-                let source=format!(" FROM (SELECT r.id,r.title,r.revision,r.updated_at,{category} file_category,CASE WHEN EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file') THEN 'file' ELSE 'note' END kind FROM resources r JOIN resource_state s ON s.resource_id=r.id WHERE s.pinned=1 AND s.trashed=0 UNION ALL SELECT c.id,c.name title,0 revision,'' updated_at,'' file_category,'collection' kind FROM collections c JOIN collection_state s ON s.collection_id=c.id WHERE s.pinned=1) WHERE (?1='all' OR kind=?1 OR (kind='file' AND file_category=?1)) AND instr(lower(title),lower(?2))>0");
+                let source=format!(" FROM (SELECT r.id,r.title,r.revision,r.updated_at,{category} file_category,CASE WHEN r.id LIKE 'linked:%' THEN 'linked' WHEN EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file') THEN 'file' ELSE 'note' END kind FROM visible_resources r JOIN resource_state s ON s.resource_id=r.id WHERE s.pinned=1 AND s.trashed=0 UNION ALL SELECT c.id,c.name title,0 revision,'' updated_at,'' file_category,'collection' kind FROM collections c JOIN collection_state s ON s.collection_id=c.id WHERE s.pinned=1) WHERE (?1='all' OR kind=?1 OR (kind='file' AND file_category=?1)) AND instr(lower(title),lower(?2))>0");
                 let total:i64=self.db.query_row(&format!("SELECT COUNT(*){source}"),params![kind,query],|r|r.get(0)).map_err(error)?;
                 let mut q=self.db.prepare(&format!("SELECT id,title,kind,revision,updated_at,file_category{source} ORDER BY title COLLATE NOCASE,kind,id LIMIT ?3 OFFSET ?4")).map_err(error)?;
                 let items=q.query_map(params![kind,query,limit as i64,offset as i64],|r|Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"kind":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?,"updatedAt":r.get::<_,String>(4)?,"fileCategory":r.get::<_,String>(5)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
@@ -234,7 +237,7 @@ impl Workspace {
                 source,
                 path,
             } => {
-                if let (Some(source), Some(path)) = (source, path) {
+                if let (false, Some(source), Some(path)) = (id.starts_with("linked:"), source, path) {
                     if id.len() > 200
                         || title.len() > 960
                         || path.len() > 4096
@@ -250,7 +253,7 @@ impl Workspace {
                 self.organization(Request::Recents)
             }
             Request::Recents => {
-                let mut q=self.db.prepare("SELECT r.id,r.title,NULL,NULL,s.opened,COALESCE((SELECT kind FROM managed_originals o WHERE o.resource_id=r.id),'note') FROM resources r JOIN resource_state s ON s.resource_id=r.id WHERE s.trashed=0 AND s.opened>0 UNION ALL SELECT id,title,source,path,opened,'linked' FROM recent_links ORDER BY 5 DESC,1 LIMIT 12").map_err(error)?;
+                let mut q=self.db.prepare("SELECT r.id,r.title,NULL,NULL,s.opened,CASE WHEN r.id LIKE 'linked:%' THEN 'linked' ELSE COALESCE((SELECT kind FROM managed_originals o WHERE o.resource_id=r.id),'note') END FROM visible_resources r JOIN resource_state s ON s.resource_id=r.id WHERE s.trashed=0 AND s.opened>0 UNION ALL SELECT a.id,a.title,a.source,a.path,a.opened,'linked' FROM recent_links a JOIN linked_sources l ON l.id=a.source AND l.active=1 WHERE a.id NOT IN (SELECT id FROM resources) ORDER BY 5 DESC,1 LIMIT 12").map_err(error)?;
                 let result=q.query_map([],|r|Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"source":r.get::<_,Option<String>>(2)?,"path":r.get::<_,Option<String>>(3)?,"kind":r.get::<_,String>(5)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
                 Ok(json!(result))
             }
@@ -308,7 +311,7 @@ impl Workspace {
         if collections.is_empty() {
             return Err("Collection no longer exists".into());
         }
-        let mut q=self.db.prepare("WITH RECURSIVE branch(id) AS (SELECT id FROM collections WHERE id=?1 UNION ALL SELECT c.id FROM collections c JOIN branch b ON c.parent_id=b.id) SELECT DISTINCT resource_id FROM memberships WHERE collection_id IN branch AND resource_id NOT IN (SELECT resource_id FROM memberships WHERE collection_id NOT IN branch) ORDER BY resource_id").map_err(error)?;
+        let mut q=self.db.prepare("WITH RECURSIVE branch(id) AS (SELECT id FROM collections WHERE id=?1 UNION ALL SELECT c.id FROM collections c JOIN branch b ON c.parent_id=b.id) SELECT DISTINCT resource_id FROM memberships WHERE collection_id IN branch AND resource_id NOT LIKE 'linked:%' AND resource_id NOT IN (SELECT resource_id FROM memberships WHERE collection_id NOT IN branch) ORDER BY resource_id").map_err(error)?;
         let exclusive = q
             .query_map([id], |r| r.get::<_, String>(0))
             .map_err(error)?

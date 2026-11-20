@@ -4,6 +4,10 @@ Last reviewed: 2026-11-20. This is the current implementation reference. Update 
 
 ## Product and architecture
 
+**Next M20 linked sources:** Linked Markdown projects a metadata-only row under its existing linked ID into the shared Library, collections, tags, pins and recency. Fixed NTFS file identity and creation time validate continuity independently of path. Confirmed observations reconcile in-root path changes. Same-name replacements retain separate identities and the protected draft stays with its original. Managed draft/save, rename, Trash, purge and portable snapshots exclude linked projections. Revocation withdraws derived search and relationships while retaining local organization and recovery evidence.
+
+Linked indexing uses Activity and one bounded scanner. File leases and extraction run outside the SQLite owner. The owner checks the registration epoch before each receipt. FTS5 shares title and committed-text discovery with managed resources. Refresh uses current file hashes and retained extraction receipts, with 20,000 entries and 16 MiB extracted data per source, and 256 KiB of Markdown source per body. Relative links and on-demand raster previews use the same native path authority. The linked editor admits supported UTF-8 up to 512 KiB under its document shape and draft limits, with the existing proof and explicit Save process. [M20 implementation and acceptance](plans/VAULTOR-NEXT.md#m20-linked-markdown-organization-and-indexing).
+
 **Next M19 previews:** The original PreviewShell keeps the existing workspace mounted in both placements. PDF.js renders one bounded page and selectable text in a lazy module and worker. Canvas and worker resources are released on close. A Rust media capability is bound to an active workspace and managed resource. It hashes the immutable original, resolves only owned identities, limits responses to 2 MiB with four readers, and revokes file handles on dismissal or workspace changes. No Office renderer existed in the original FilePreview. CSV source associations use the existing table attributes, backlinks and draft protection. Markdown paste uses the same bounded worker and mapped review as file insertion. Image preparation retains per-file receipts within the picker for ordered retry and insertion. [M19 qualification](plans/VAULTOR-NEXT.md#m19-file-previews-and-editor-completion).
 
 **Next M18 editor:** The active managed pane owns the original TableControls, WorkspaceTable and TableWorkspace controls. Filters remain view-state metadata and decorations. Tauri supplies native TSV clipboard and atomic new-file CSV export. Rust owns the native text picker and bounded UTF-8 read. A worker uses Papa Parse and the existing Markdown projection to prepare editable blocks for review. The mapped anchor checks the editor and final 8 MiB JSON limit at insertion. Next reuses the managed image placement and preview surfaces with Rust-backed bytes, bounded attachments and scoped replacement. The link picker uses the Rust-reviewed import and successful single-resource receipt. Editor link drops reuse the M17 pointer owner and original insertion caret. Linked Markdown retains its existing schema and explicit Save. See the [M18 record](plans/VAULTOR-NEXT.md#m18-advanced-managed-editor).
@@ -496,6 +500,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-20 — Next M20 linked documents
+
+Shared metadata organization, NTFS continuity, Activity-backed indexing, source-local references and wider linked editing admission. Final checks and remaining platform gates are in the [M20 acceptance record](plans/VAULTOR-NEXT.md#m20-linked-markdown-organization-and-indexing). Experimental Help and the parity register were reconciled.
 
 ### 2026-11-20 — Next M19 previews
 

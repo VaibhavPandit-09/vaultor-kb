@@ -11,7 +11,7 @@ use std::{
 use windows_sys::Win32::{Foundation::*, Security::*, Storage::FileSystem::*};
 pub const MAX_BYTES: u64 = 1024 * 1024;
 
-pub fn open_web(url: &str) -> Result<(), String> {
+pub fn open_external(url: &str) -> Result<(), String> {
     let verb: Vec<u16> = "open".encode_utf16().chain(Some(0)).collect();
     let target: Vec<u16> = url.encode_utf16().chain(Some(0)).collect();
     let result = unsafe {
@@ -28,6 +28,9 @@ pub fn open_web(url: &str) -> Result<(), String> {
         return Err("System browser dispatch failed".into());
     }
     Ok(())
+}
+pub fn open_web(url: &str) -> Result<(), String> {
+    open_external(url)
 }
 fn err() -> String {
     std::io::Error::last_os_error().to_string()
@@ -57,15 +60,20 @@ pub fn identity(f: &File) -> Result<String, String> {
         i.dwVolumeSerialNumber, i.nFileIndexHigh, i.nFileIndexLow
     ))
 }
+pub fn birth(f: &File) -> Result<String, String> {
+    let time = info(f)?.ftCreationTime;
+    Ok(format!(
+        "{:08x}{:08x}",
+        time.dwHighDateTime, time.dwLowDateTime
+    ))
+}
 pub fn physical(f: &File) -> Result<PathBuf, String> {
+    final_path(f, VOLUME_NAME_GUID)
+}
+fn final_path(f: &File, volume_name: u32) -> Result<PathBuf, String> {
     let mut buf = vec![0u16; 32768];
     let n = unsafe {
-        GetFinalPathNameByHandleW(
-            handle(f),
-            buf.as_mut_ptr(),
-            buf.len() as u32,
-            VOLUME_NAME_GUID,
-        )
+        GetFinalPathNameByHandleW(handle(f), buf.as_mut_ptr(), buf.len() as u32, volume_name)
     };
     if n == 0 || n as usize >= buf.len() {
         return Err(err());
@@ -172,12 +180,18 @@ pub struct ReadFile {
     pub revision: String,
     pub reason: Option<String>,
 }
-pub fn read(
+impl ReadFile {
+    pub fn display_path(&self) -> Result<String, String> {
+        let value = final_path(&self.file, 0)?.to_string_lossy().into_owned();
+        Ok(value.strip_prefix(r"\?").unwrap_or(&value).to_string())
+    }
+}
+fn open_source(
     root: &Path,
     root_id: &str,
     relative_path: &str,
     write_lease: bool,
-) -> Result<ReadFile, String> {
+) -> Result<(File, Vec<File>, PathBuf), String> {
     let root_pins = pin(root)?;
     if identity(root_pins.last().unwrap())? != root_id {
         return Err("Linked folder identity changed; choose the folder again".into());
@@ -196,7 +210,7 @@ pub fn read(
         .access_mode(FILE_GENERIC_READ | READ_CONTROL | if write_lease { DELETE } else { 0 })
         .share_mode(FILE_SHARE_READ)
         .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
-    let mut file = options
+    let file = options
         .open(&path)
         .map_err(|e| format!("Source unavailable or busy: {e}"))?;
     let i = info(&file)?;
@@ -210,18 +224,57 @@ pub fn read(
     {
         return Err("Special, reparse or cloud file refused".into());
     }
-    let size = ((i.nFileSizeHigh as u64) << 32) | i.nFileSizeLow as u64;
-    if size > MAX_BYTES {
-        return Err("Linked reading is limited to 1 MiB".into());
+    Ok((file, pins, path))
+}
+
+fn bounded_bytes(file: &mut File, limit: u64) -> Result<Vec<u8>, String> {
+    let info = info(file)?;
+    let size = ((info.nFileSizeHigh as u64) << 32) | info.nFileSizeLow as u64;
+    if size > limit {
+        return Err(format!(
+            "Linked reading is limited to {} MiB",
+            limit / (1024 * 1024)
+        ));
     }
-    let mut bytes = vec![];
-    std::io::Read::by_ref(&mut file)
-        .take(MAX_BYTES + 1)
+    let mut bytes = Vec::with_capacity(size as usize);
+    std::io::Read::by_ref(file)
+        .take(limit + 1)
         .read_to_end(&mut bytes)
-        .map_err(|e| e.to_string())?;
-    if bytes.len() as u64 > MAX_BYTES {
+        .map_err(crate::domain::error)?;
+    if bytes.len() as u64 > limit {
         return Err("Source grew beyond the reading limit".into());
     }
+    Ok(bytes)
+}
+
+pub fn read_asset(
+    root: &Path,
+    root_id: &str,
+    path: &str,
+) -> Result<(Vec<u8>, &'static str), String> {
+    let (mut file, _pins, _) = open_source(root, root_id, path, false)?;
+    let bytes = bounded_bytes(&mut file, 2 * MAX_BYTES)?;
+    let (mime, width, height) = crate::media::image_type(&bytes)
+        .ok_or("Only PNG, JPEG, GIF and WebP linked images are supported")?;
+    if width == 0
+        || height == 0
+        || width > 8192
+        || height > 8192
+        || u64::from(width) * u64::from(height) > 16_000_000
+    {
+        return Err("Linked image exceeds the preview dimensions".into());
+    }
+    Ok((bytes, mime))
+}
+
+pub fn read(
+    root: &Path,
+    root_id: &str,
+    relative_path: &str,
+    write_lease: bool,
+) -> Result<ReadFile, String> {
+    let (mut file, pins, path) = open_source(root, root_id, relative_path, write_lease)?;
+    let bytes = bounded_bytes(&mut file, MAX_BYTES)?;
     std::str::from_utf8(&bytes)
         .map_err(|_| "Only UTF-8 Markdown is supported; source untouched")?;
     let id = identity(&file)?;

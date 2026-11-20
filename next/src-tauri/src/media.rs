@@ -53,7 +53,7 @@ impl Workspace {
         if ids.is_empty() || ids.len() > 100 {
             return Err("Choose1–100 resources".into());
         }
-        let mut query=self.db.prepare("SELECT title,CASE WHEN EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file') THEN 'file' ELSE 'note' END FROM resources r WHERE id=?1 AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=r.id AND trashed=1)").map_err(error)?;
+        let mut query=self.db.prepare("SELECT title,CASE WHEN r.id LIKE 'linked:%' THEN 'linked' WHEN EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file') THEN 'file' ELSE 'note' END FROM visible_resources r WHERE id=?1 AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=r.id AND trashed=1)").map_err(error)?;
         ids.iter().map(|id|query.query_row([id],|row|Ok(json!({"id":id,"title":row.get::<_,String>(0)?,"kind":row.get::<_,String>(1)?}))).map_err(error)).collect()
     }
     pub fn media(&mut self, r: Value) -> Result<Value, String> {
@@ -102,11 +102,14 @@ impl Workspace {
                 self.db.query_row("SELECT name,bytes,hash,kind FROM managed_originals WHERE resource_id=?1",[id],|row|Ok(json!({"name":row.get::<_,String>(0)?,"bytes":row.get::<_,i64>(1)?,"hash":row.get::<_,String>(2)?,"kind":row.get::<_,String>(3)?}))).map_err(error)
             }
             "backlinks" => {
-                let mut q=self.db.prepare("SELECT r.id,r.title,l.kind FROM resource_links l JOIN resources r ON r.id=l.source_id WHERE l.target_id=?1 AND NOT EXISTS(SELECT 1 FROM resource_state s WHERE s.resource_id=r.id AND s.trashed=1) ORDER BY lower(r.title),r.id LIMIT 100").map_err(error)?;
+                let mut q=self.db.prepare("SELECT r.id,r.title,l.kind FROM resource_links l JOIN visible_resources r ON r.id=l.source_id WHERE l.target_id=?1 AND NOT EXISTS(SELECT 1 FROM resource_state s WHERE s.resource_id=r.id AND s.trashed=1) ORDER BY lower(r.title),r.id LIMIT 100").map_err(error)?;
                 let rows=q.query_map([id],|r|Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"kind":r.get::<_,String>(2)?}))).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?;
                 Ok(json!(rows))
             }
             "rename" => {
+                if id.starts_with("linked:") {
+                    return Err("Rename the external original in its source folder".into());
+                }
                 let name = crate::domain::title(r["title"].as_str().unwrap_or(""))?;
                 if self.db.execute("UPDATE resources SET title=?2,revision=revision+1,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?1 AND revision=?3 AND NOT EXISTS(SELECT 1 FROM drafts WHERE resource_id=?1) AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=?1 AND trashed=1)",params![id,name,r["revision"].as_i64().ok_or("Missing expected revision")?]).map_err(error)?!=1{return Err("Resource changed,unavailable or protected by a draft".into())}
                 Ok(Value::Null)

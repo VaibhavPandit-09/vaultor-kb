@@ -1,26 +1,16 @@
+import {PreviewBoundary} from './LinkedPreviewBudget';
+import {previewBudget} from './linkedPreviewBudget';
 import LinkedMarkdownLinks from './LinkedMarkdownLinks';
 import {markdownLinkKind} from '../../lib/linked/linkNavigation';
 import {sourceWindow,SOURCE_PAGE_STEP} from '../../lib/linked/sourceWindow';
 import {linkedError} from '../../lib/linked/errors';
-import {Component,useState,useEffect,useSyncExternalStore,useCallback,useRef,useMemo,type ReactNode} from 'react';
+import {useState,useEffect,useSyncExternalStore,useCallback,useRef,useMemo} from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {LIMITS} from '../../lib/markdown/limits';
 import type {LinkedWorkspace} from '../../lib/linked/workspace';
 import type {Opened} from '../../lib/linked/types';
 const reasons:Record<string,string>={RECOVERY_VOLUME_UNAVAILABLE:'Safe saving requires an available, verified private recovery folder on this NTFS volume. Reconnect the drive or review its setup in Linked sources.',LARGE_DOCUMENT:'Rich-text editing supports documents up to 1 MiB. The original file remains unchanged.',ENCODING_UNSUPPORTED:'This encoding cannot be edited safely. The original bytes remain unchanged.',HARDLINKED_FILE:'This file has multiple hardlinks and is read-only.',SPECIAL_FILE:'This file has filesystem characteristics outside the supported editing contract.',DOCUMENT_SHAPE_LIMIT:'This document is too complex for safe rich-text editing. Its source remains intact.'};
-// Rendering authority is independent of Save admission. Keep parsing/DOM bounded,
-// never execute raw HTML or fetch untrusted Markdown images from the network.
-function previewBudget(){return (tree:unknown)=>{
-  type Node={children?:Node[]};const root=tree as Node,stack=[{node:root,depth:0}];let count=0;
-  if((root.children?.length??0)>LIMITS.rootBlocks)throw Error('PREVIEW_COMPLEXITY_LIMIT');
-  while(stack.length){const {node,depth}=stack.pop()!;if(++count>LIMITS.renderNodes||depth>LIMITS.depth)throw Error('PREVIEW_COMPLEXITY_LIMIT');for(const child of node.children??[])stack.push({node:child,depth:depth+1});}
-};}
-class PreviewBoundary extends Component<{source:string;children:ReactNode},{failed:boolean}>{
-  state={failed:false};
-  static getDerivedStateFromError(){return {failed:true};}
-  render(){return this.state.failed?<><p className="browse-feedback">Formatted preview is unavailable for this document. Its source remains intact.</p><pre className="whitespace-pre-wrap break-words font-mono text-sm">{this.props.source}</pre></>:this.props.children;}
-}
 export default function LinkedReadonly({workspace,opened,onNavigate}:{workspace:LinkedWorkspace;opened:Opened;onNavigate?:(id:string,newPane:boolean,fragment:string)=>Promise<void>}){
   useEffect(()=>workspace.previewMounted(opened.id),[workspace,opened.id]);
   useSyncExternalStore(workspace.subscribe,workspace.getSnapshot);const changed=workspace.previewStatus.get(opened.id);

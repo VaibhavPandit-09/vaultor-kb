@@ -2,7 +2,7 @@ import type {LinkedRequest} from './linkedTypes';
 import { invoke } from '@tauri-apps/api/core';
 import type { JSONContent } from '@tiptap/core';
 export type Note = { id: string; title: string; content: JSONContent; revision: number; collections?: string[]; kind?: 'note'|'file' };
-export type Summary = Omit<Note, 'content'> & { updatedAt: string;fileCategory?:string };
+export type Summary = Omit<Note, 'content'|'kind'> & { updatedAt: string;kind?:'note'|'file'|'linked';fileCategory?:string };
 export type Collection = { id: string; name: string; parentId: string | null; count?:number;pinned?:boolean };
 export type ListCursor = { before: number; anchor: number; scope: string | null };
 export type SearchOptions = { kind?:string|null;query: string; content: boolean; collection: string | null; order: 'created'|'updated'|'title';view?:string;tag?:string|null };

@@ -1,4 +1,5 @@
 //! Markdown is parsed in Rust; only verified source patches are publishable.
+pub const EDIT_BYTES: usize = 512 * 1024;
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use serde_json::{json, Value};
 use std::ops::Range;
@@ -77,9 +78,21 @@ pub fn parse(source: &str) -> Parsed {
         | Options::ENABLE_TASKLISTS
         | Options::ENABLE_FOOTNOTES
         | Options::ENABLE_GFM;
-    for (event, range) in Parser::new_ext(&source[offset..], options).into_offset_iter() {
+    let mut table_cells = 0;
+    for (index, (event, range)) in Parser::new_ext(&source[offset..], options)
+        .into_offset_iter()
+        .enumerate()
+    {
+        if matches!(&event, Event::Start(Tag::TableCell)) {
+            table_cells += 1;
+        }
         let range = (range.start + offset)..(range.end + offset);
-        if stack.len() > 64 || root.len() > 2000 {
+        if stack.len() > 64
+            || root.len() > 2000
+            || index >= 24_000
+            || table_cells > 2000
+            || matches!(&event, Event::Text(text) | Event::Code(text) if text.len() > 16_384)
+        {
             return Parsed {
                 document: node("doc"),
                 ranges: vec![],
@@ -617,8 +630,8 @@ pub fn patch(source: &str, proposed: &Value) -> Result<String, String> {
     if wanted == parsed.document {
         return Ok(source.into());
     }
-    if source.len() > 256 * 1024 {
-        return Err("Documents over 256 KiB are source-view only".into());
+    if source.len() > EDIT_BYTES {
+        return Err("Documents over 512 KiB are source-view only".into());
     }
     let old = parsed.document["content"].as_array().unwrap();
     let new = wanted["content"].as_array().ok_or("Invalid document")?;
