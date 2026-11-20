@@ -146,6 +146,17 @@ impl Workspace {
         let (root, identity) = self.linked_root(&source)?;
         native::read(&root, &identity, &path, lease)
     }
+    pub(crate) fn linked_export_snapshot(&self, id:&str)->Result<Value,String>{
+        let (source,path,identity,_)=self.linked_location(id)?;
+        let granted:bool=self.db.query_row("SELECT EXISTS(SELECT 1 FROM linked_grants WHERE source_id=?1)",
+            [&source],|row|row.get(0)).map_err(error)?;
+        if !granted{return Err("Reauthorize the linked source before exporting".into());}
+        let current=self.linked_read(id,true)?;
+        if current.id!=identity{return Err("Linked file identity changed; reopen it before exporting".into());}
+        let name=Path::new(&path).file_name().and_then(|name|name.to_str()).ok_or("Invalid linked filename")?;
+        let text=String::from_utf8(current.bytes).map_err(error)?;
+        Ok(json!({"name":name,"text":text}))
+    }
     fn linked_response(
         &self,
         id: &str,

@@ -15,6 +15,8 @@ const m18=process.argv.includes('--m18-editor');
 const m19=process.argv.includes('--m19-preview');
 const m20=process.argv.includes('--m20-linked');
 const m21=process.argv.includes('--m21-discovery');
+const m22=process.argv.includes('--m22-transfers');
+const recordM22=m22&&!process.argv.includes('--m22-probe');
 const recordM21=m21&&!process.argv.includes('--m21-probe');
 const recordM20=m20&&!process.argv.includes('--m20-probe')&&!process.argv.includes('--m20-drag-probe');
 const recordM19=m19&&!process.argv.includes('--m19-probe');
@@ -96,7 +98,7 @@ async function launch(iteration) {
   const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(VAULTOR_|HOST_|ELECTRON_RUN_AS_NODE|WEBVIEW2_)/.test(k)));
   const executable = executablePath;
   const args = architecture === 'electron-java' ? [join(root, 'desktop'), `--remote-debugging-address=127.0.0.1`, `--remote-debugging-port=${port}`] : [];
-  Object.assign(env, architecture === 'electron-java' ? { VAULTOR_DESKTOP_TEST_DIRECTORY: profile, HOST_NETWORK_PORT: '0', NODE_ENV: 'production' } : { VAULTOR_NEXT_WORKSPACE: join(folder, 'workspace'), ...(m6||m18||m19||m20||m21?{WEBVIEW2_USER_DATA_FOLDER:profile}:{}), WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1` });
+  Object.assign(env, architecture === 'electron-java' ? { VAULTOR_DESKTOP_TEST_DIRECTORY: profile, HOST_NETWORK_PORT: '0', NODE_ENV: 'production' } : { VAULTOR_NEXT_WORKSPACE: join(folder, 'workspace'), ...(m6||m18||m19||m20||m21||m22?{WEBVIEW2_USER_DATA_FOLDER:profile}:{}), WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1` });
   const start = performance.now();
   child = spawn(executable, args, { cwd: root, env, windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
   child.stderr.on('data', data => { report.runtimeLog = ((report.runtimeLog ?? '') + data).slice(-4000); });
@@ -169,7 +171,31 @@ async function quit() {
 try {
   let run = await launch(1);
   if (inspect) {
-    if(m21){
+    if(m22){
+      assert.equal(architecture,'tauri-rust');
+      await (await import('./m22-transfers.mjs')).qualifyTransfers({evaluate,cdp,wait,report,folder,record,restart:async()=>{
+        await quit();
+        await stopSampler(run,1);
+        run=null;
+        await launch(3);
+      }});
+      const samples=(report.process1??[]).filter(point=>Date.parse(point.timestamp)>=report.largeWindow.start&&Date.parse(point.timestamp)<=report.largeWindow.end);
+      if(samples.length){
+        record('m22-large-import',1,'sampled_peak_working_set',Math.max(...samples.map(point=>point.workingSet))/1048576,'MiB','Process tree. May count shared pages more than once.');
+        record('m22-large-import',1,'sampled_peak_private_bytes',Math.max(...samples.map(point=>point.privateBytes))/1048576,'MiB');
+      }
+      if(samples.length>=2){
+        const first=samples[0],last=samples.at(-1),seconds=(Date.parse(last.timestamp)-Date.parse(first.timestamp))/1000;
+        if(seconds>0)record('m22-large-import',1,'cpu_one_core_percent',100*(last.cpuSeconds-first.cpuSeconds)/seconds,'%','Aggregate process tree CPU during the sampled interval.');
+      }
+      report.largeProcessSamples=samples.length;
+      const settled=join(folder,'m22-settled.json');
+      execFileSync('powershell.exe',['-NoProfile','-File',join(import.meta.dirname,'process-sample.ps1'),'-RootPid',String(child.pid),'-Output',settled,'-StopFile',join(folder,'never'),'-Once'],{windowsHide:true});
+      const snapshot=JSON.parse((await readFile(settled,'utf8')).replace(/^\uFEFF/,''));
+      record('m22-settled',1,'working_set',snapshot.workingSet/1048576,'MiB','Short snapshot after transfer receipts and a two-second settle.');
+      record('m22-settled',1,'private_bytes',snapshot.privateBytes/1048576,'MiB','Short snapshot after transfer receipts and a two-second settle.');
+    }
+    else if(m21){
       assert.equal(architecture,'tauri-rust');
       await (await import('./m21-discovery.mjs')).qualifyDiscovery({evaluate,cdp,wait,report,folder,record,restart:async()=>{
         await stopSampler(run,1);
@@ -329,7 +355,7 @@ try {
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
-  for (const s of report.samples) if(!inspect||recordM21&&s.scenario.startsWith('m21-')||recordM20&&s.scenario.startsWith('m20-')||recordM19&&s.scenario.startsWith('m19-')||recordM18&&(s.scenario.startsWith('m18-')||s.metric==='sampled_peak_working_set')||(m10&&s.scenario==='command-palette-m10')||(m14&&measureUI&&s.scenario.startsWith(uiMilestone+'-'))) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m21?'m21-discovery-v1':m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
-  if (!report.success && (!inspect||recordM21||recordM20||recordM19||recordM18||m14&&measureUI)) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m21?'m21-discovery-v1':m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
+  for (const s of report.samples) if(!inspect||recordM22&&s.scenario.startsWith('m22-')||recordM21&&s.scenario.startsWith('m21-')||recordM20&&s.scenario.startsWith('m20-')||recordM19&&s.scenario.startsWith('m19-')||recordM18&&(s.scenario.startsWith('m18-')||s.metric==='sampled_peak_working_set')||(m10&&s.scenario==='command-palette-m10')||(m14&&measureUI&&s.scenario.startsWith(uiMilestone+'-'))) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m22?'m22-transfers-v1':m21?'m21-discovery-v1':m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
+  if (!report.success && (!inspect||recordM22||recordM21||recordM20||recordM19||recordM18||m14&&measureUI)) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m22?'m22-transfers-v1':m21?'m21-discovery-v1':m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
   console.log(JSON.stringify({ success: report.success, evidence, metrics: report.samples.length, error: report.error }));
 }

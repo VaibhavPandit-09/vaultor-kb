@@ -488,3 +488,10 @@ The existing Library rows add bounded plain-text highlights and linked relative 
 
 
 The optimized WebView2 run verified command-palette results, the original references dialog and focused exploration/dismissal, and restoration of nested source expansion. The links surface retained its shared modal focus contract. Matched original captures, full theme/scale comparison, physical keyboard and assistive-technology acceptance remain open.
+
+
+## M22 transfers and recovery
+
+M22 keeps the existing Import and Workspace menus, centered modal review and Activity panel. Import review shows a stable per-file decision beside the file name and size. Archive review distinguishes a complete archive from a selection and shows item counts and inactive linked descriptors before the user submits restore or merge. Merge keeps the active workspace in view. Protected draft copy is an explicit action on its current recovery surface and reports job admission without changing the review decision. Resource and collection actions expose scoped archives through the same contextual menus.
+
+Preserved behaviors include the native picker, save/draft barrier for ordinary transfers, Escape/focus ownership, bounded review viewport, Activity cancellation and recovery availability. Physical Explorer drag, picker traversal, focus return and high-DPI visual checks remain outside scripted verification.

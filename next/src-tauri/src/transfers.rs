@@ -1,4 +1,7 @@
 //! Immutable managed originals, short actor transactions and streaming versioned archives.
+mod conversion;
+mod exports;
+mod portable;
 use crate::{
     activity::{Activity, Context},
     domain::{error, Workspace},
@@ -58,6 +61,10 @@ pub struct Manifest {
     pub memberships: Vec<(String, String)>,
     pub originals: Vec<Original>,
     pub settings: Value,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub partial: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub linked: Vec<portable::Descriptor>,
     #[serde(default)]
     pub organization: crate::organization::Archive,
 }
@@ -69,6 +76,8 @@ struct Input {
     bytes: u64,
     hash: String,
     duplicate: bool,
+    source_key: String,
+    decision: Option<String>,
 }
 pub struct Plan {
     root: String,
@@ -79,9 +88,25 @@ pub struct Plan {
     created: Instant,
 }
 pub enum Job {
+    ArchiveSelection {
+        ids: Vec<String>,
+        collection: Option<String>,
+        destination: String,
+    },
+    Merge {
+        source: String,
+        manifest_hash: String,
+    },
+    ExportRecovery {
+        id: String,
+        destination: String,
+        linked: bool,
+    },
     RebuildFileText,
     #[cfg(windows)]
-    IndexLinked { source: String },
+    IndexLinked {
+        source: String,
+    },
     Purge {
         ids: Option<Vec<String>>,
     },
@@ -112,7 +137,9 @@ impl Job {
             Self::Purge { .. } => "resource-purge",
             Self::Import { .. } => "file-import",
             Self::Export { .. } => "resource-export",
-            Self::Archive { .. } => "workspace-export",
+            Self::Archive { .. } | Self::ArchiveSelection { .. } => "workspace-export",
+            Self::Merge { .. } => "workspace-merge",
+            Self::ExportRecovery { .. } => "recovery-export",
             Self::Restore { .. } => "workspace-import",
         }
     }
@@ -125,6 +152,9 @@ impl Job {
             Self::Import { plan, .. } => format!("Import {} files", plan.files.len()),
             Self::Export { ids, .. } => format!("Export {} resources", ids.len()),
             Self::Archive { .. } => "Export workspace archive".into(),
+            Self::ArchiveSelection { .. } => "Export selected archive".into(),
+            Self::Merge { .. } => "Merge reviewed archive".into(),
+            Self::ExportRecovery { .. } => "Export protected draft copy".into(),
             Self::Restore { .. } => "Restore workspace as new".into(),
         }
     }
@@ -132,8 +162,25 @@ impl Job {
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Request {
+    ArchiveSelection {
+        ids: Vec<String>,
+        collection: Option<String>,
+        destination: String,
+    },
+    Merge {
+        source: String,
+        #[serde(rename = "manifestHash")]
+        manifest_hash: String,
+    },
+    ExportRecovery {
+        id: String,
+        destination: String,
+        linked: bool,
+    },
     RebuildFileText,
-    IndexLinked { source: String },
+    IndexLinked {
+        source: String,
+    },
     Purge {
         ids: Option<Vec<String>>,
     },
@@ -152,6 +199,11 @@ pub enum Request {
     Import {
         token: String,
         separate: bool,
+    },
+    ImportReviewed {
+        token: String,
+        separate: bool,
+        decisions: HashMap<usize, String>,
     },
     Export {
         ids: Vec<String>,
@@ -184,9 +236,34 @@ impl Transfers {
             plans: Mutex::new(HashMap::new()),
         }
     }
+    fn start_import(
+        &self,
+        root: String,
+        token: String,
+        separate: bool,
+        decisions: HashMap<usize, String>,
+    ) -> Result<Value, String> {
+        let mut plans = self.plans.lock().unwrap();
+        let plan = plans
+            .get_mut(&token)
+            .ok_or("Import review expired; choose source again")?;
+        if plan.root != root || plan.created.elapsed() > Duration::from_secs(900) {
+            return Err("Workspace changed or import review expired".into());
+        }
+        if decisions.iter().any(|(index, choice)| {
+            *index >= plan.files.len() || !matches!(choice.as_str(), "note" | "original" | "skip")
+        }) {
+            return Err("Invalid import review choices".into());
+        }
+        for (index, choice) in decisions {
+            plan.files[index].decision = Some(choice);
+        }
+        let plan = plans.remove(&token).unwrap();
+        self.activity.submit(root, Job::Import { plan, separate })
+    }
     pub fn execute(&self, root: String, request: Request) -> Result<Value, String> {
         match request {
-            Request::RebuildFileText => self.activity.submit(root,Job::RebuildFileText),
+            Request::RebuildFileText => self.activity.submit(root, Job::RebuildFileText),
             Request::IndexLinked { source } => {
                 #[cfg(windows)]
                 return self.activity.submit(root, Job::IndexLinked { source });
@@ -209,7 +286,7 @@ impl Transfers {
             } => {
                 let plan = prepare(&self.storage, &root, paths, folder, collection)?;
                 let token = Uuid::new_v4().to_string();
-                let summary = json!({"token":token,"files":plan.files.len(),"directories":plan.directories.len(),"bytes":plan.files.iter().map(|f|f.bytes).sum::<u64>(),"duplicates":plan.files.iter().filter(|f|f.duplicate).count(),"issues":plan.issues,"items":plan.files.iter().take(100).map(|f|json!({"name":f.relative.join("/"),"bytes":f.bytes,"duplicate":f.duplicate})).collect::<Vec<_>>()});
+                let summary = json!({"token":token,"files":plan.files.len(),"directories":plan.directories.len(),"bytes":plan.files.iter().map(|f|f.bytes).sum::<u64>(),"duplicates":plan.files.iter().filter(|f|f.duplicate).count(),"issues":plan.issues,"items":plan.files.iter().take(100).enumerate().map(|(index,f)|json!({"index":index,"name":f.relative.join("/"),"bytes":f.bytes,"duplicate":f.duplicate,"canConvert":conversion::convertible(&f.name,f.bytes)})).collect::<Vec<_>>()});
                 let mut plans = self.plans.lock().unwrap();
                 plans.retain(|_, p| p.created.elapsed() < Duration::from_secs(900));
                 if plans.len() >= 4 {
@@ -219,17 +296,13 @@ impl Transfers {
                 Ok(summary)
             }
             Request::Import { token, separate } => {
-                let plan = self
-                    .plans
-                    .lock()
-                    .unwrap()
-                    .remove(&token)
-                    .ok_or("Import review expired; choose source again")?;
-                if plan.root != root || plan.created.elapsed() > Duration::from_secs(900) {
-                    return Err("Workspace changed or import review expired".into());
-                }
-                self.activity.submit(root, Job::Import { plan, separate })
+                self.start_import(root, token, separate, HashMap::new())
             }
+            Request::ImportReviewed {
+                token,
+                separate,
+                decisions,
+            } => self.start_import(root, token, separate, decisions),
             Request::Export {
                 ids,
                 destination,
@@ -237,7 +310,10 @@ impl Transfers {
             } => {
                 if ids.is_empty()
                     || ids.len() > 100
-                    || !matches!(format.as_str(), "markdown" | "text" | "original")
+                    || !matches!(
+                        format.as_str(),
+                        "markdown" | "text" | "original" | "markdownZip" | "graph" | "docx" | "pdf"
+                    )
                 {
                     return Err("Choose 1–100 resources and a supported format".into());
                 }
@@ -256,13 +332,52 @@ impl Transfers {
                 }
                 self.activity.submit(root, Job::Purge { ids })
             }
+            Request::ExportRecovery {
+                id,
+                destination,
+                linked,
+            } => self.activity.submit(
+                root,
+                Job::ExportRecovery {
+                    id,
+                    destination,
+                    linked,
+                },
+            ),
+            Request::Merge {
+                source,
+                manifest_hash,
+            } => self.activity.submit(
+                root,
+                Job::Merge {
+                    source,
+                    manifest_hash,
+                },
+            ),
+            Request::ArchiveSelection {
+                ids,
+                collection,
+                destination,
+            } => {
+                if (ids.is_empty() == collection.is_none()) || ids.len() > 100 {
+                    return Err("Choose 1–100 resources or one collection".into());
+                }
+                self.activity.submit(
+                    root,
+                    Job::ArchiveSelection {
+                        ids,
+                        collection,
+                        destination,
+                    },
+                )
+            }
             Request::Archive { destination } => {
                 self.activity.submit(root, Job::Archive { destination })
             }
             Request::InspectArchive { source } => {
                 let (m, hash) = inspect_archive(Path::new(&source), None)?;
                 Ok(
-                    json!({"manifestHash":hash,"resources":m.resources.len(),"collections":m.collections.len(),"files":m.originals.len(),"bytes":m.originals.iter().map(|f|f.bytes).sum::<u64>(),"version":m.version}),
+                    json!({"manifestHash":hash,"resources":m.resources.len(),"collections":m.collections.len(),"files":m.originals.len(),"bytes":m.originals.iter().map(|f|f.bytes).sum::<u64>(),"version":m.version,"partial":m.partial,"linkedDescriptors":m.linked.len()}),
                 )
             }
             Request::Restore {
@@ -281,7 +396,13 @@ impl Transfers {
     }
 }
 pub fn initialize(db: &rusqlite::Connection) -> Result<(), String> {
-    db.execute_batch("CREATE TABLE IF NOT EXISTS managed_originals(resource_id TEXT PRIMARY KEY REFERENCES resources(id),name TEXT NOT NULL,hash TEXT NOT NULL,bytes INTEGER NOT NULL,kind TEXT NOT NULL CHECK(kind IN ('note','file')),provenance TEXT NOT NULL);CREATE INDEX IF NOT EXISTS original_duplicate ON managed_originals(hash,name);").map_err(error)
+    db.execute_batch("CREATE TABLE IF NOT EXISTS managed_originals(resource_id TEXT PRIMARY KEY REFERENCES resources(id),name TEXT NOT NULL,hash TEXT NOT NULL,bytes INTEGER NOT NULL,kind TEXT NOT NULL CHECK(kind IN ('note','file')),provenance TEXT NOT NULL);CREATE INDEX IF NOT EXISTS original_duplicate ON managed_originals(hash,name);
+        CREATE TABLE IF NOT EXISTS import_sources(source_key TEXT NOT NULL,hash TEXT NOT NULL,mode TEXT NOT NULL,
+          resource_id TEXT NOT NULL,PRIMARY KEY(source_key,hash,mode));
+        CREATE TRIGGER IF NOT EXISTS remove_import_provenance AFTER DELETE ON resources
+        BEGIN DELETE FROM import_sources WHERE resource_id=old.id; END;
+        CREATE TABLE IF NOT EXISTS transfer_reserved(id TEXT PRIMARY KEY,hash TEXT NOT NULL);\n        CREATE TABLE IF NOT EXISTS transfer_merges(hash TEXT PRIMARY KEY,receipt TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS portable_linked_descriptors(id TEXT PRIMARY KEY,title TEXT NOT NULL,label TEXT NOT NULL,path TEXT NOT NULL,revision TEXT NOT NULL);").map_err(error)
 }
 pub fn plain_directory(path: &Path) -> Result<(), String> {
     for ancestor in path.ancestors() {
@@ -379,7 +500,7 @@ fn prepare(
     folder: bool,
     collection: Option<String>,
 ) -> Result<Plan, String> {
-    if paths.is_empty() || paths.len() > MAX_ITEMS || folder && paths.len() != 1 {
+    if paths.is_empty() || paths.len() > MAX_ITEMS {
         return Err("Choose files or one folder".into());
     }
     let known = storage.call(root, {
@@ -392,7 +513,8 @@ fn prepare(
                 .map_err(error)?;
             }
             let mut q =
-                w.db.prepare("SELECT name,hash FROM managed_originals")
+                w.db.prepare("SELECT src.source_key,src.hash FROM import_sources src JOIN resources r ON r.id=src.resource_id
+                    WHERE NOT EXISTS(SELECT 1 FROM resource_state s WHERE s.resource_id=r.id AND s.trashed=1)")
                     .map_err(error)?;
             let rows = q
                 .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
@@ -416,6 +538,7 @@ fn prepare(
     };
     let mut pending = vec![];
     let mut seen = HashSet::new();
+    let mut root_names = HashSet::new();
     let workspace = Path::new(root).canonicalize().map_err(error)?;
     for path in paths {
         let p = PathBuf::from(path);
@@ -424,7 +547,13 @@ fn prepare(
             .and_then(|s| s.to_str())
             .ok_or("Invalid source name")?
             .to_string();
-        pending.push((p, vec![name], 0));
+        let mut label = name.clone();
+        let mut index = 2;
+        while !root_names.insert(label.to_lowercase()) {
+            label = format!("{name} ({index})");
+            index += 1;
+        }
+        pending.push((p, vec![label], 0));
     }
     let mut visited = 0;
     let mut total = 0;
@@ -440,6 +569,11 @@ fn prepare(
             let m = fs::symlink_metadata(&path).map_err(error)?;
             if reparse(&m) {
                 return Err("Symbolic links/junctions are skipped".into());
+            }
+            for ancestor in path.ancestors() {
+                if reparse(&fs::symlink_metadata(ancestor).map_err(error)?) {
+                    return Err("Linked ancestors are skipped".into());
+                }
             }
             let full = path.canonicalize().map_err(error)?;
             if full.starts_with(&workspace) || workspace.starts_with(&full) {
@@ -474,8 +608,16 @@ fn prepare(
             if total > MAX_TOTAL {
                 return Err("Import exceeds 10 GiB".into());
             }
-            let name = relative.last().unwrap().clone();
-            let duplicate = known.contains(&(name.clone(), hash.clone()));
+            let name = full
+                .file_name()
+                .and_then(|name| name.to_str())
+                .ok_or("Invalid source name")?
+                .to_owned();
+            let source_key = format!(
+                "{:x}",
+                Sha256::digest(full.to_string_lossy().to_lowercase().as_bytes())
+            );
+            let duplicate = known.contains(&(source_key.clone(), hash.clone()));
             plan.files.push(Input {
                 path: full,
                 relative,
@@ -483,6 +625,8 @@ fn prepare(
                 bytes,
                 hash,
                 duplicate,
+                source_key,
+                decision: None,
             });
             Ok(())
         })();
@@ -542,9 +686,15 @@ fn publish_file(stage: &Path, destination: &Path) -> Result<(), String> {
 }
 
 pub fn save_csv_copy(destination: &Path, text: &str) -> Result<(), String> {
-    let parent = destination.parent().filter(|path| path.is_dir()).ok_or("Choose an existing output folder")?;
+    let parent = destination
+        .parent()
+        .filter(|path| path.is_dir())
+        .ok_or("Choose an existing output folder")?;
     let staged = stage(parent, false)?;
-    let mut file = OpenOptions::new().write(true).open(&staged.0).map_err(error)?;
+    let mut file = OpenOptions::new()
+        .write(true)
+        .open(&staged.0)
+        .map_err(error)?;
     file.write_all(text.as_bytes()).map_err(error)?;
     file.sync_all().map_err(error)?;
     drop(file);
@@ -565,7 +715,7 @@ pub fn execute(
     ctx: &mut Context,
 ) -> Result<Value, String> {
     match job {
-        Job::RebuildFileText => crate::file_text::rebuild(storage,root,ctx),
+        Job::RebuildFileText => crate::file_text::rebuild(storage, root, ctx),
         #[cfg(windows)]
         Job::IndexLinked { source } => crate::linked::inventory::index(storage, ctx, root, source),
         Job::Purge { ids } => purge(storage, root, ids, ctx),
@@ -575,7 +725,21 @@ pub fn execute(
             destination,
             format,
         } => export(storage, root, ids, &destination, &format, ctx),
-        Job::Archive { destination } => archive(storage, root, &destination, ctx),
+        Job::Archive { destination } => archive(storage, root, &destination, None, ctx),
+        Job::ArchiveSelection {
+            ids,
+            collection,
+            destination,
+        } => archive(storage, root, &destination, Some((ids, collection)), ctx),
+        Job::Merge {
+            source,
+            manifest_hash,
+        } => portable::merge(storage, root, &source, &manifest_hash, ctx),
+        Job::ExportRecovery {
+            id,
+            destination,
+            linked,
+        } => portable::recovery(storage, root, id, &destination, linked, ctx),
         Job::Restore {
             source,
             destination,
@@ -627,6 +791,58 @@ fn import(
         })?;
         mapped.insert(directory, Some(value["id"].as_str().unwrap().into()));
     }
+    let candidates = plan
+        .files
+        .iter()
+        .filter(|input| input.decision.as_deref() != Some("skip"))
+        .map(|input| {
+            let mode = conversion::mode(input);
+            (
+                input.relative.join("/"),
+                input.source_key.clone(),
+                input.hash.clone(),
+                mode.to_string(),
+            )
+        })
+        .collect::<Vec<_>>();
+    let id_map=storage.call(root,move |w|{
+        let tx=w.db.transaction().map_err(error)?;
+        let mut ids=HashMap::new();
+        for (path,key,hash,mode) in candidates {
+            let id=if separate { Uuid::new_v4().to_string() } else {
+                let current:Option<String>=tx.query_row("SELECT p.resource_id FROM import_sources p WHERE p.source_key=?1 AND p.hash=?2 AND p.mode=?3
+                    AND NOT EXISTS(SELECT 1 FROM resource_state s WHERE s.resource_id=p.resource_id AND s.trashed=1)",
+                    params![key,hash,mode],|r|r.get(0)).optional().map_err(error)?;
+                if let Some(id)=current {id} else {
+                    let id=Uuid::new_v4().to_string();
+                    tx.execute("INSERT INTO import_sources VALUES(?1,?2,?3,?4) ON CONFLICT(source_key,hash,mode) DO UPDATE SET resource_id=excluded.resource_id",
+                        params![key,hash,mode,id]).map_err(error)?;
+                    id
+                }
+            };
+            if ids.insert(path,id).is_some(){return Err("Ambiguous batch-relative names; choose the inputs separately".into());}
+        }
+        tx.commit().map_err(error)?;
+        Ok(json!(ids))
+    })?;
+    let id_map: HashMap<String, String> = serde_json::from_value(id_map).map_err(error)?;
+    let image_paths = plan
+        .files
+        .iter()
+        .filter(|input| {
+            id_map.contains_key(&input.relative.join("/")) && conversion::image_input(input)
+        })
+        .map(|input| input.relative.join("/"))
+        .collect::<HashSet<_>>();
+    let note_paths = plan
+        .files
+        .iter()
+        .filter(|input| {
+            id_map.contains_key(&input.relative.join("/")) && conversion::mode(input) == "note"
+        })
+        .map(|input| input.relative.join("/"))
+        .collect::<HashSet<_>>();
+    let mut reused = 0;
     for (index, input) in plan.files.into_iter().enumerate() {
         ctx.check()?;
         ctx.progress(
@@ -636,13 +852,60 @@ fn import(
             bytes,
             Some(total_bytes),
         );
-        if input.duplicate && !separate {
+        if input.decision.as_deref() == Some("skip") {
             skipped += 1;
+            continue;
+        }
+        let relative = input.relative.join("/");
+        let id = id_map[&relative].clone();
+        let parent = mapped
+            .get(&input.relative[..input.relative.len() - 1])
+            .cloned()
+            .unwrap_or(plan.collection.clone());
+        let previous = storage
+            .call(root, {
+                let id = id.clone();
+                move |w| {
+                    let active: bool =
+                        w.db.query_row(
+                            "SELECT EXISTS(SELECT 1 FROM resources WHERE id=?1)",
+                            [&id],
+                            |r| r.get(0),
+                        )
+                        .map_err(error)?;
+                    Ok(json!(active))
+                }
+            })?
+            .as_bool()
+            .unwrap_or(false);
+        if previous {
+            let (size, hash) =
+                copy_hash(plain_file(&input.path)?, std::io::sink(), MAX_FILE, |_| {
+                    ctx.check()
+                })?;
+            if size != input.bytes || hash != input.hash {
+                if issues.len() < 100 {
+                    issues.push(format!("{relative}: source changed since review"));
+                }
+                continue;
+            }
+            if let Some(parent) = &parent {
+                let (id, parent) = (id.clone(), parent.clone());
+                storage.call(root, move |w| {
+                    w.db.execute(
+                        "INSERT OR IGNORE INTO memberships VALUES(?1,?2)",
+                        params![id, parent],
+                    )
+                    .map_err(error)?;
+                    Ok(Value::Null)
+                })?;
+            }
+            skipped += 1;
+            reused += 1;
             bytes += input.bytes;
             continue;
         }
         let result = (|| {
-            let id = Uuid::new_v4().to_string();
             let target = original_path(Path::new(root), &id)?;
             let staged = stage(target.parent().unwrap(), false)?;
             let mut out = OpenOptions::new()
@@ -665,31 +928,35 @@ fn import(
             if base != input.bytes || hash != input.hash {
                 return Err("Source changed since review; choose it again".into());
             }
-            let ext = input
-                .path
-                .extension()
-                .and_then(|s| s.to_str())
-                .unwrap_or("")
-                .to_lowercase();
             let mut kind = "file";
             let mut content = json!({"type":"doc","content":[{"type":"paragraph"}]});
-            if input.bytes <= 256 * 1024 && matches!(ext.as_str(), "md" | "markdown" | "txt") {
-                let raw = fs::read(&staged.0).map_err(error)?;
-                if let Ok(text) = std::str::from_utf8(&raw) {
-                    if ext == "txt" {
-                        content = json!({"type":"doc","content":text.split('\n').map(|line|json!({"type":"paragraph","content":if line.is_empty(){vec![]}else{vec![json!({"type":"text","text":line.trim_end_matches('\r')})]}})).collect::<Vec<_>>()});
+            if conversion::mode(&input) == "note" {
+                match conversion::convert(
+                    &staged.0,
+                    &input,
+                    &relative,
+                    &id_map,
+                    &note_paths,
+                    &image_paths,
+                ) {
+                    Ok(doc) => {
+                        content = doc;
                         kind = "note";
-                    } else {
-                        let parsed = crate::linked::markdown::parse(text);
-                        if parsed.reason.is_none() {
-                            content = parsed.document;
-                            kind = "note";
+                    }
+                    Err(reason) => {
+                        if issues.len() < 100 {
+                            issues.push(format!("{relative}: kept original file. {reason}"));
                         }
                     }
                 }
             }
-            let extracted = (kind=="file").then(||crate::file_text::extract(&staged.0,&input.name,&hash,base));
-            publish_file(&staged.0, &target)?;
+            let extracted = (kind == "file")
+                .then(|| crate::file_text::extract(&staged.0, &input.name, &hash, base));
+            ctx.check()?;
+            portable::reserve_originals(storage, root, vec![(id.clone(), input.hash.clone())])?;
+            if !portable::verified_orphan(&target, &input.hash)? {
+                publish_file(&staged.0, &target)?;
+            }
             let original = Original {
                 id: id.clone(),
                 name: input.name.clone(),
@@ -698,30 +965,50 @@ fn import(
                 kind: kind.into(),
                 provenance: input.relative.join("/"),
             };
-            let parent = mapped
-                .get(&input.relative[..input.relative.len() - 1])
-                .cloned()
-                .unwrap_or(plan.collection.clone());
-            let separate = separate;
-            let receipt=storage.call(root,move|w|{let tx=w.db.transaction().map_err(error)?;if !separate {let duplicate:bool=tx.query_row("SELECT EXISTS(SELECT 1 FROM managed_originals WHERE hash=?1 AND name=?2)",params![original.hash,original.name],|r|r.get(0)).map_err(error)?;if duplicate{return Ok(json!({"skipped":true}));}}
-   tx.execute("INSERT INTO resources(id,title,content)VALUES(?1,?2,?3)",params![original.id,original.name.chars().take(240).collect::<String>(),content.to_string()]).map_err(error)?;insert_original(&tx,&original)?;if let Some((state,body))=extracted {crate::file_text::save(&tx,&original.id,&original.hash,state,body.as_deref())?;}if let Some(parent)=parent{tx.execute("INSERT INTO memberships VALUES(?1,?2)",params![original.id,parent]).map_err(error)?;}tx.commit().map_err(error)?;Ok(json!({"skipped":false}))});
+            let receipt = storage.call(root, move |w| {
+                let tx = w.db.transaction().map_err(error)?;
+                tx.execute(
+                    "INSERT INTO resources(id,title,content)VALUES(?1,?2,?3)",
+                    params![
+                        original.id,
+                        original.name.chars().take(240).collect::<String>(),
+                        content.to_string()
+                    ],
+                )
+                .map_err(error)?;
+                insert_original(&tx, &original)?;
+                if let Some((state, body)) = extracted {
+                    crate::file_text::save(
+                        &tx,
+                        &original.id,
+                        &original.hash,
+                        state,
+                        body.as_deref(),
+                    )?;
+                }
+                if let Some(parent) = parent {
+                    tx.execute(
+                        "INSERT INTO memberships VALUES(?1,?2)",
+                        params![original.id, parent],
+                    )
+                    .map_err(error)?;
+                }
+                portable::release_original(&tx, &original.id)?;
+                tx.commit().map_err(error)?;
+                Ok(Value::Null)
+            });
             match receipt {
-                Ok(v) if v["skipped"] == true => {
-                    fs::remove_file(&target).map_err(error)?;
-                    Ok(None)
-                }
                 Ok(_) => Ok(Some(id)),
-                Err(e) => {
-                    let _ = fs::remove_file(target);
-                    Err(e)
-                }
+                Err(e) => Err(e),
             }
         })();
         match result {
             Ok(Some(id)) => {
                 imported += 1;
-                if total == 1 { resource = Some(id); }
-            },
+                if total == 1 {
+                    resource = Some(id);
+                }
+            }
             Ok(None) => skipped += 1,
             Err(e) => {
                 if issues.len() < 100 {
@@ -731,6 +1018,7 @@ fn import(
         }
         bytes += input.bytes;
     }
+    ctx.check()?;
     ctx.progress(
         "Import committed",
         total,
@@ -738,7 +1026,9 @@ fn import(
         bytes,
         Some(total_bytes),
     );
-    Ok(json!({"imported":imported,"resourceId":resource,"skipped":skipped,"issues":issues,"partial":!issues.is_empty()}))
+    Ok(
+        json!({"imported":imported,"resourceId":resource,"skipped":skipped,"reused":reused,"issues":issues,"partial":!issues.is_empty()}),
+    )
 }
 fn insert_original(db: &rusqlite::Connection, o: &Original) -> Result<(), String> {
     db.execute(
@@ -757,7 +1047,9 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
     }
     let mut m = Manifest {
         format: "vaultor-next-portable".into(),
-        version: 2,
+        version: 3,
+        partial: false,
+        linked: vec![],
         resources: vec![],
         collections: vec![],
         memberships: vec![],
@@ -774,6 +1066,17 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
         let id: String = r.get(0).map_err(error)?;
         if ids.is_some_and(|ids| !ids.contains(&id)) {
             continue;
+        }
+        if ids.is_some()
+            && w.db
+                .query_row(
+                    "SELECT EXISTS(SELECT 1 FROM drafts WHERE resource_id=?1)",
+                    [&id],
+                    |row| row.get::<_, bool>(0),
+                )
+                .map_err(error)?
+        {
+            return Err("Review the protected draft before exporting this saved note".into());
         }
         let content: String = r.get(2).map_err(error)?;
         size += content.len();
@@ -811,12 +1114,15 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
         &w.db,
         &m.resources.iter().map(|r| r.id.clone()).collect(),
     )?;
-    if ids.is_some(){m.organization.collection_pins.clear();}
+    if ids.is_some() {
+        m.organization.collection_pins.clear();
+    }
     m.originals = originals
         .into_iter()
         .filter(|o| selected.contains(o.id.as_str()))
         .collect();
     if ids.is_none() {
+        m.linked = portable::capture_descriptors(&w.db)?;
         let mut q =
             w.db.prepare("SELECT id,name,parent_id FROM collections ORDER BY id")
                 .map_err(error)?;
@@ -833,10 +1139,12 @@ fn snapshot(w: &mut Workspace, ids: Option<&[String]>) -> Result<Manifest, Strin
             .map_err(error)?;
         let mut q=w.db.prepare("SELECT resource_id,collection_id FROM memberships ORDER BY resource_id,collection_id").map_err(error)?;
         m.memberships = q
-            .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+            .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get(1)?)))
             .map_err(error)?
             .collect::<Result<Vec<_>, _>>()
             .map_err(error)?;
+        m.memberships
+            .retain(|(id, _)| selected.contains(id.as_str()));
         let mut settings =
             w.db.prepare("SELECT key,value FROM settings WHERE key IN ('theme','behavior')")
                 .map_err(error)?;
@@ -858,10 +1166,16 @@ fn archive(
     storage: &Storage,
     root: &str,
     destination: &str,
+    selection: Option<(Vec<String>, Option<String>)>,
     ctx: &mut Context,
 ) -> Result<Value, String> {
-    let data = storage.call(root, |w| {
-        Ok(serde_json::to_value(snapshot(w, None)?).map_err(error)?)
+    let data = storage.call(root, move |w| {
+        let manifest = if let Some((ids, collection)) = selection {
+            portable::selection(w, ids, collection)?
+        } else {
+            snapshot(w, None)?
+        };
+        serde_json::to_value(manifest).map_err(error)
     })?;
     let m: Manifest = serde_json::from_value(data).map_err(error)?;
     let manifest = serde_json::to_vec(&m).map_err(error)?;
@@ -952,7 +1266,12 @@ fn read_manifest(input: &mut File) -> Result<(Manifest, String), String> {
 }
 fn validate(m: &Manifest) -> Result<(), String> {
     if m.format != "vaultor-next-portable"
-        || ![1, 2].contains(&m.version)
+        || ![1, 2, 3].contains(&m.version)
+        || (m.version < 3 && (m.partial || !m.linked.is_empty()))
+        || (m.partial
+            && m.settings
+                .as_object()
+                .is_some_and(|settings| !settings.is_empty()))
         || m.resources.len() > MAX_ITEMS
         || m.collections.len() > MAX_ITEMS
         || m.originals.len() > MAX_ITEMS
@@ -960,6 +1279,7 @@ fn validate(m: &Manifest) -> Result<(), String> {
     {
         return Err("Unsupported archive version or item limits".into());
     }
+    portable::validate_descriptors(&m.linked)?;
     let mut ids = HashSet::new();
     for r in &m.resources {
         Uuid::parse_str(&r.id).map_err(error)?;
@@ -1001,8 +1321,15 @@ fn validate(m: &Manifest) -> Result<(), String> {
         }
     }
     m.organization.validate(&ids)?;
-    let mut pinned_collections=HashSet::new();
-    if m.organization.collection_pins.len()>20000 || m.organization.collection_pins.iter().any(|id|!collections.contains_key(id)||!pinned_collections.insert(id)){return Err("Invalid pinned collection inventory".into());}
+    let mut pinned_collections = HashSet::new();
+    if m.organization.collection_pins.len() > 20000
+        || m.organization
+            .collection_pins
+            .iter()
+            .any(|id| !collections.contains_key(id) || !pinned_collections.insert(id))
+    {
+        return Err("Invalid pinned collection inventory".into());
+    }
     let mut originals = HashSet::new();
     let mut bytes = 0;
     for o in &m.originals {
@@ -1022,14 +1349,20 @@ fn validate(m: &Manifest) -> Result<(), String> {
         }
     }
     if !m.settings.is_object()
-        || m.settings.as_object().unwrap().keys().any(|k| k != "theme" && k != "behavior")
+        || m.settings
+            .as_object()
+            .unwrap()
+            .keys()
+            .any(|k| k != "theme" && k != "behavior")
         || m.settings
             .get("theme")
             .is_some_and(|v| !matches!(v.as_str(), Some("light" | "dark" | "oled")))
     {
         return Err("Unsupported archive settings".into());
     }
-    if let Some(value)=m.settings.get("behavior"){crate::desktop::validate_behavior(value)?;}
+    if let Some(value) = m.settings.get("behavior") {
+        crate::desktop::validate_behavior(value)?;
+    }
     Ok(())
 }
 fn inspect_archive(
@@ -1145,6 +1478,7 @@ fn restore(
         insert_original(&tx, o)?;
     }
     m.organization.restore(&tx)?;
+    portable::store_descriptors(&tx, &m.linked)?;
     for (k, v) in m.settings.as_object().unwrap() {
         tx.execute(
             "INSERT INTO settings VALUES(?1,?2)",
@@ -1209,40 +1543,123 @@ fn export(
     format: &str,
     ctx: &mut Context,
 ) -> Result<Value, String> {
-    let manifest = storage.call(root, move |w| {
-        Ok(serde_json::to_value(snapshot(w, Some(&ids))?).map_err(error)?)
-    })?;
-    let m: Manifest = serde_json::from_value(manifest).map_err(error)?;
     let destination = PathBuf::from(destination);
     let staged = stage(destination.parent().ok_or("Choose an export parent")?, true)?;
+    let mut issues = Vec::new();
+    if format == "graph" {
+        let graph = storage.call(root, move |w| exports::graph(w, &ids))?;
+        let data = serde_json::to_string_pretty(&graph).map_err(error)?;
+        save_csv_copy(&staged.0.join("Relationships.json"), &data)?;
+        ctx.check()?;
+        ctx.committing();
+        publish_directory(&staged.0, &destination)?;
+        return Ok(
+            json!({"path":destination,"resources":graph["nodes"].as_array().map(Vec::len),"bytes":data.len(),"format":format}),
+        );
+    }
+    if ids.iter().any(|id| id.starts_with("linked:")) {
+        #[cfg(windows)]
+        {
+            if !matches!(format, "markdown" | "original")
+                || ids.iter().any(|id| !id.starts_with("linked:"))
+            {
+                return Err(
+                    "Choose linked Markdown files for a source copy or export relationship data"
+                        .into(),
+                );
+            }
+            let count = ids.len();
+            let mut bytes = 0;
+            for resource in ids {
+                ctx.check()?;
+                let id = resource.strip_prefix("linked:").unwrap().to_owned();
+                Uuid::parse_str(&id).map_err(error)?;
+                let source = storage.call(root, {
+                    let id = id.clone();
+                    move |w| w.linked_export_snapshot(&id)
+                })?;
+                let name = format!(
+                    "{id}-{}",
+                    source["name"].as_str().ok_or("Invalid linked filename")?
+                );
+                component(&name)?;
+                let text = source["text"].as_str().ok_or("Invalid linked snapshot")?;
+                save_csv_copy(&staged.0.join(name), text)?;
+                bytes += text.len();
+            }
+            ctx.check()?;
+            ctx.committing();
+            publish_directory(&staged.0, &destination)?;
+            return Ok(
+                json!({"path":destination,"resources":count,"bytes":bytes,"format":"linkedMarkdown"}),
+            );
+        }
+        #[cfg(not(windows))]
+        return Err("Linked exports require Windows local NTFS".into());
+    }
+    let zip = format == "markdownZip";
+    let manifest = storage.call(root, move |w| {
+        let manifest = if zip {
+            portable::selection(w, ids, None)?
+        } else {
+            snapshot(w, Some(&ids))?
+        };
+        serde_json::to_value(manifest).map_err(error)
+    })?;
+    let m: Manifest = serde_json::from_value(manifest).map_err(error)?;
+    if zip {
+        let mut receipt = exports::markdown_zip(root, &staged.0, &m, ctx)?;
+        ctx.check()?;
+        ctx.committing();
+        publish_directory(&staged.0, &destination)?;
+        receipt["path"] = json!(destination);
+        receipt["format"] = json!(format);
+        receipt["resources"] = json!(m.resources.len());
+        return Ok(receipt);
+    }
     let mut total_bytes = 0;
     for (i, r) in m.resources.iter().enumerate() {
         ctx.check()?;
         let original = m.originals.iter().find(|o| o.id == r.id);
-        let (name, data) = if format == "original" || original.is_some_and(|o| o.kind == "file") {
-            let o = original
-                .ok_or("This resource has no imported original; choose Markdown or text")?;
-            (o.name.clone(), None)
+        let is_original = format == "original" || original.is_some_and(|o| o.kind == "file");
+        let name = if is_original {
+            original
+                .ok_or("This resource has no imported original; choose another format")?
+                .name
+                .clone()
         } else {
-            (
-                format!(
-                    "{}.{}",
-                    safe_name(&r.title),
-                    if format == "text" { "txt" } else { "md" }
-                ),
-                Some(render(&r.content, format == "markdown")?),
-            )
+            let extension = match format {
+                "text" => "txt",
+                "docx" => "docx",
+                "pdf" => "pdf",
+                _ => "md",
+            };
+            format!("{}.{extension}", safe_name(&r.title))
         };
-        let name = format!("{}-{}", &r.id[..8], name);
+        let name = format!("{}-{name}", r.id);
         component(&name)?;
+        let path = staged.0.join(&name);
         let mut out = OpenOptions::new()
             .write(true)
             .create_new(true)
-            .open(staged.0.join(&name))
+            .open(&path)
             .map_err(error)?;
-        if let Some(data) = data {
-            out.write_all(data.as_bytes()).map_err(error)?;
-            total_bytes += data.len() as u64;
+        if !is_original {
+            match format {
+                "docx" => exports::docx(out, &r.content, &mut issues)?,
+                "pdf" => exports::pdf(out, &r.title, &r.content, &mut issues, ctx)?,
+                _ => {
+                    let data = exports::render_document(
+                        &r.content,
+                        format == "markdown",
+                        &HashMap::new(),
+                        &mut issues,
+                    )?;
+                    out.write_all(data.as_bytes()).map_err(error)?;
+                    out.sync_all().map_err(error)?;
+                }
+            }
+            total_bytes += fs::metadata(path).map_err(error)?.len();
         } else {
             let o = original.unwrap();
             let (n, hash) = copy_hash(
@@ -1255,8 +1672,8 @@ fn export(
                 return Err("Managed original integrity mismatch".into());
             }
             total_bytes += n;
+            out.sync_all().map_err(error)?;
         }
-        out.sync_all().map_err(error)?;
         ctx.progress(
             "Exporting resources",
             i as u64 + 1,
@@ -1269,7 +1686,7 @@ fn export(
     ctx.committing();
     publish_directory(&staged.0, &destination)?;
     Ok(
-        json!({"path":destination,"resources":m.resources.len(),"bytes":total_bytes,"format":format}),
+        json!({"path":destination,"resources":m.resources.len(),"bytes":total_bytes,"format":format,"issues":issues}),
     )
 }
 fn safe_name(name: &str) -> String {
@@ -1286,121 +1703,6 @@ fn safe_name(name: &str) -> String {
         .collect();
     value.trim_matches(['.', ' ']).to_string()
 }
-fn render(node: &Value, markdown: bool) -> Result<String, String> {
-    let kind = node["type"].as_str().ok_or("Invalid editor node")?;
-    let children = || -> Result<String, String> {
-        Ok(node["content"]
-            .as_array()
-            .map(|a| {
-                a.iter()
-                    .map(|n| render(n, markdown))
-                    .collect::<Result<Vec<_>, _>>()
-            })
-            .transpose()?
-            .unwrap_or_default()
-            .join(""))
-    };
-    if kind == "codeBlock" {
-        let raw = node["content"]
-            .as_array()
-            .map(|a| {
-                a.iter()
-                    .map(|n| render(n, false))
-                    .collect::<Result<Vec<_>, _>>()
-            })
-            .transpose()?
-            .unwrap_or_default()
-            .join("");
-        if !markdown {
-            return Ok(raw);
-        }
-        let fence = "`".repeat(
-            raw.split(|c| c != '`')
-                .map(str::len)
-                .max()
-                .unwrap_or(0)
-                .max(2)
-                + 1,
-        );
-        return Ok(format!("{fence}\n{raw}\n{fence}\n\n"));
-    }
-    let inner = children()?;
-    Ok(match kind {
-        "doc" => inner,
-        "text" => {
-            let mut text = node["text"].as_str().unwrap_or("").to_string();
-            if markdown {
-                for c in ['\\', '*', '_', '[', ']', '`'] {
-                    text = text.replace(c, &format!("\\{c}"));
-                }
-                if let Some(marks) = node["marks"].as_array() {
-                    for mark in marks {
-                        text = match mark["type"].as_str() {
-                            Some("bold") => format!("**{text}**"),
-                            Some("italic") => format!("*{text}*"),
-                            Some("strike") => format!("~~{text}~~"),
-                            Some("code") => {
-                                return Err(
-                                    "Inline code export is not yet supported; choose plain text"
-                                        .into(),
-                                )
-                            }
-                            Some("link") => {
-                                let href = mark["attrs"]["href"].as_str().unwrap_or("");
-                                if href.contains(['\n', '\r', '<', '>']) {
-                                    return Err("Unsupported link target".into());
-                                }
-                                format!("[{text}](<{href}>)")
-                            }
-                            _ => {
-                                return Err(
-                                    "Unsupported formatting for Markdown; choose plain text".into(),
-                                )
-                            }
-                        };
-                    }
-                }
-            }
-            text
-        }
-        "paragraph" => format!("{inner}\n\n"),
-        "heading" => format!(
-            "{}{inner}\n\n",
-            if markdown {
-                "#".repeat(node["attrs"]["level"].as_u64().unwrap_or(1).clamp(1, 6) as usize) + " "
-            } else {
-                String::new()
-            }
-        ),
-        "hardBreak" => "\n".into(),
-        "horizontalRule" => "---\n\n".into(),
-        "bulletList" | "orderedList" | "taskList" => inner,
-        "listItem" | "taskItem" => {
-            format!("{}{}\n", if markdown { "- " } else { "" }, inner.trim_end())
-        }
-        "blockquote" => {
-            if markdown {
-                inner.lines().map(|l| format!("> {l}\n")).collect()
-            } else {
-                inner
-            }
-        }
-        "codeBlock" => {
-            if markdown {
-                let fence = "`".repeat(inner.chars().filter(|c| *c == '`').count().max(2) + 1);
-                format!("{fence}\n{inner}\n{fence}\n\n")
-            } else {
-                inner
-            }
-        }
-        _ => {
-            return Err(format!(
-                "Export does not support {kind}; original resource remains unchanged"
-            ))
-        }
-    })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1463,6 +1765,178 @@ mod tests {
             self.worker.stop();
         }
     }
+
+    #[test]
+    fn reviewed_import_zip_and_merge_preserve_dependencies_and_identity() {
+        let h = Harness::new();
+        let folder = h.temp.path().join("Source");
+        fs::create_dir(&folder).unwrap();
+        let note = folder.join("Overview.md");
+        let data = [1, 4, 9, 0, 255];
+        fs::write(folder.join("asset.bin"), data).unwrap();
+        fs::write(&note, "# Overview\n\n[Read asset](asset.bin)").unwrap();
+        let other = h.temp.path().join("Other.txt");
+        fs::write(&other, b"kept as a file").unwrap();
+        let preview = h.call(Request::Preview {
+            paths: vec![
+                folder.to_string_lossy().into(),
+                other.to_string_lossy().into(),
+            ],
+            folder: true,
+            collection: None,
+        });
+        assert_eq!(preview["files"], 3);
+        let imported = h.task(Request::ImportReviewed {
+            token: preview["token"].as_str().unwrap().into(),
+            separate: false,
+            decisions: HashMap::from([(0, "original".into())]),
+        });
+        assert_eq!(imported.state, "completed", "{imported:?}");
+        let root = Path::new(&h.root);
+        let (id, asset, collection) = {
+            let w = rusqlite::Connection::open(root.join("workspace.sqlite3")).unwrap();
+            let get = |name: &str| {
+                w.query_row(
+                    "SELECT resource_id FROM managed_originals WHERE name=?1",
+                    [name],
+                    |r| r.get::<_, String>(0),
+                )
+                .unwrap()
+            };
+            let id = get("Overview.md");
+            let asset = get("asset.bin");
+            let collection = w
+                .query_row("SELECT id FROM collections WHERE name='Source'", [], |r| {
+                    r.get::<_, String>(0)
+                })
+                .unwrap();
+            let relation: String = w
+                .query_row(
+                    "SELECT target_id FROM resource_links WHERE source_id=?1",
+                    [&id],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert_eq!(relation, asset);
+            (id, asset, collection)
+        };
+        let folder_out = h.temp.path().join("markdown");
+        let zipped = h.task(Request::Export {
+            ids: vec![id.clone()],
+            destination: folder_out.to_string_lossy().into(),
+            format: "markdownZip".into(),
+        });
+        assert_eq!(zipped.state, "completed", "{zipped:?}");
+        let mut zip =
+            zip::ZipArchive::new(File::open(folder_out.join("Markdown with assets.zip")).unwrap())
+                .unwrap();
+        let mut payload = Vec::new();
+        zip.by_name(&format!("assets/{asset}-asset.bin"))
+            .unwrap()
+            .read_to_end(&mut payload)
+            .unwrap();
+        assert_eq!(payload, data);
+
+        let archive = h.temp.path().join("subset.vaultor");
+        let path = archive.to_string_lossy().into_owned();
+        let export = h.task(Request::ArchiveSelection {
+            ids: vec![],
+            collection: Some(collection),
+            destination: path.clone(),
+        });
+        assert_eq!(export.state, "completed", "{export:?}");
+        let (manifest, hash) = inspect_archive(&archive, None).unwrap();
+        assert!(manifest.partial);
+        assert_eq!(manifest.resources.len(), 2);
+        let merge = || {
+            h.task(Request::Merge {
+                source: path.clone(),
+                manifest_hash: hash.clone(),
+            })
+        };
+        let merged = merge();
+        assert_eq!(merged.state, "completed", "{merged:?}");
+        assert_eq!(merged.result.unwrap()["reused"], false);
+        let repeated = merge();
+        assert_eq!(repeated.result.unwrap()["reused"], true);
+        let w = rusqlite::Connection::open(root.join("workspace.sqlite3")).unwrap();
+        let remapped: (String, String) = w
+            .query_row(
+                "SELECT source_id,target_id FROM resource_links WHERE source_id<>?1",
+                [id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_ne!(remapped.1, asset);
+        assert_eq!(
+            fs::read(original_path(root, &remapped.1).unwrap()).unwrap(),
+            data
+        );
+        assert_eq!(
+            w.query_row("SELECT count(*) FROM resources", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            5
+        );
+    }
+
+    #[test]
+    fn protected_draft_copy_preserves_saved_and_draft_revisions() {
+        let h = Harness::new();
+        let id = h
+            .service
+            .storage
+            .call(&h.root, |w| {
+                w.execute(DomainRequest::CreateNote {
+                    title: "Saved version".into(),
+                    collection: None,
+                })
+            })
+            .unwrap()["id"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        let document = json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Recovered text"}]}]});
+        h.service
+            .storage
+            .call(&h.root, {
+                let id = id.clone();
+                let document = document.clone();
+                move |w| w.draft(id, 1, "fixture".into(), 1, "Draft title".into(), document)
+            })
+            .unwrap();
+        let copy = h.temp.path().join("recovery.json");
+        let result = h.task(Request::ExportRecovery {
+            id: id.clone(),
+            destination: copy.to_string_lossy().into(),
+            linked: false,
+        });
+        assert_eq!(result.state, "completed", "{result:?}");
+        let backup: Value = serde_json::from_reader(File::open(copy).unwrap()).unwrap();
+        assert_eq!(backup["document"], document);
+        assert_eq!(backup["baseRevision"], 1);
+        assert!(backup.get("token").is_none());
+        h.service
+            .storage
+            .call(&h.root, move |w| {
+                let saved: String =
+                    w.db.query_row("SELECT title FROM resources WHERE id=?1", [&id], |r| {
+                        r.get(0)
+                    })
+                    .map_err(error)?;
+                let draft: String =
+                    w.db.query_row(
+                        "SELECT title FROM drafts WHERE resource_id=?1",
+                        [&id],
+                        |r| r.get(0),
+                    )
+                    .map_err(error)?;
+                assert_eq!(saved, "Saved version");
+                assert_eq!(draft, "Draft title");
+                Ok(Value::Null)
+            })
+            .unwrap();
+    }
+
     #[test]
     fn lifecycle_archive_and_cleanup_preserve_source_and_restore_metadata() {
         let h = Harness::new();
@@ -1593,12 +2067,18 @@ mod tests {
             .service
             .storage
             .call(&h.root, |w| {
-                w.execute(crate::domain::Request::Setting{key:"session".into(),value:json!({"version":1,"documents":[]})})?;
+                w.execute(crate::domain::Request::Setting {
+                    key: "session".into(),
+                    value: json!({"version":1,"documents":[]}),
+                })?;
                 Ok(serde_json::to_value(snapshot(w, None)?).unwrap())
             })
             .unwrap();
         let m: Manifest = serde_json::from_value(snapshot_value).unwrap();
-        assert!(m.settings.get("session").is_none(),"Portable archives exclude local session metadata");
+        assert!(
+            m.settings.get("session").is_none(),
+            "Portable archives exclude local session metadata"
+        );
         assert_eq!(m.collections.len(), 3);
         assert_eq!(m.resources.len(), 2);
         assert_eq!(m.originals.iter().filter(|o| o.kind == "file").count(), 1);
@@ -1685,6 +2165,8 @@ mod tests {
         let mut m = Manifest {
             format: "vaultor-next-portable".into(),
             version: 2,
+            partial: false,
+            linked: vec![],
             resources: vec![],
             collections: vec![],
             memberships: vec![],
@@ -1885,10 +2367,10 @@ fn purge(
     // Only UUID paths positively recorded in our committed cleanup journal are eligible.
     let pending = storage.call(root, |w| {
         let mut q =
-            w.db.prepare("SELECT id FROM pending_deletions LIMIT 20000")
+            w.db.prepare("SELECT p.id,r.hash FROM pending_deletions p LEFT JOIN transfer_reserved r ON r.id=p.id WHERE NOT EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=p.id) LIMIT 20000")
                 .map_err(error)?;
         let values = q
-            .query_map([], |r| r.get::<_, String>(0))
+            .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_,Option<String>>(1)?)))
             .map_err(error)?
             .collect::<Result<Vec<_>, _>>()
             .map_err(error)?;
@@ -1896,12 +2378,23 @@ fn purge(
     })?;
     for id in pending.as_array().unwrap() {
         ctx.check()?;
-        let id = id.as_str().unwrap().to_string();
+        let proof = id[1].as_str();
+        let id = id[0].as_str().unwrap().to_string();
         let path = original_path(Path::new(root), &id)?;
         match fs::symlink_metadata(&path) {
             Ok(m) => {
                 if reparse(&m) || !m.is_file() {
                     issues.push(format!("{id}: unsafe file cleanup refused"));
+                    continue;
+                }
+                if plain_directory(path.parent().unwrap()).is_err()
+                    || proof.is_some_and(|hash| {
+                        !portable::verified_orphan(&path, hash).unwrap_or(false)
+                    })
+                {
+                    issues.push(format!(
+                        "{id}: owned transfer cleanup could not verify the file"
+                    ));
                     continue;
                 }
                 if let Err(e) = fs::remove_file(&path) {
@@ -1916,8 +2409,9 @@ fn purge(
             }
         }
         storage.call(root, move |w| {
-            w.db.execute("DELETE FROM pending_deletions WHERE id=?1", [id])
-                .map_err(error)?;
+            let tx = w.db.transaction().map_err(error)?;
+            portable::release_original(&tx, &id)?;
+            tx.commit().map_err(error)?;
             Ok(Value::Null)
         })?;
     }

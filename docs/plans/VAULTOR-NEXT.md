@@ -464,3 +464,30 @@ Both M20 and M21 used similar-sized local fixtures. M20's 7.8–7.9 s measuremen
 Rust passed 50 tests. Focused frontend passed 77 tests, plus TypeScript, scoped lint and the optimized build. Help validation covered 43 features and 16 articles, with 17 governance tests and verification of the embedded M21 text. Experimental Help and catalogue cover live monitoring, saved UTF-8 file search, scopes, coverage, rebuild, references and shape-limited linked editing. The 37 valid benchmark observations preserve 11,499 prior rows, 19 workbook sheets and 475 formulas. All 666 new fields were verified against the canonical CSV. Native Excel recalculation remains untested. [Workbook validation](../../benchmarks/tauri-rust/summaries/m21-workbook-validation.json).
 
 PDF body extraction, linked raster/PDF relationship destinations, exact linked-occurrence selection, broader managed index repair, rebuild cancellation in a mounted UI, full interactive graph rendering, and physical Windows and matched visual/accessibility acceptance remain open. The original Electron code provides an export graph and the saved reference dialog. The Next candidate restores the dialog and bounded relationship exploration. M22 should focus on source-aware imports, remaining conversion/export paths and workspace transfer recovery while preserving managed and linked identity.
+
+
+## M22 advanced transfers and recovery
+
+Original Electron/Java owners confirmed reviewed file/folder conversion and repeat import provenance in FileImportService and ImportMarkdown, portable Markdown/asset ZIP, PDF and Word in NoteExporters and NoteExportGraph, and ZIP restore/merge/replacement in TransferService, ZipWorkspaceExporter and WorkspaceImports. Original archives include bounded versions of whole and selected data, optional reference-only linked descriptors, and a verified replacement checkpoint. Next continues its own native format and local Rust owner. Electron ZIP interoperability, active Review evidence and remote acquisition are separate work.
+
+M22 adds source-path/byte and conversion-mode keys, durable retry identity and per-file decisions. Relative Markdown links and raster images resolve only against the reviewed batch. Resource exports include original bytes, saved Markdown/text, Word, text-layout PDF, Markdown with managed assets, and relationship JSON. The local ZIP writer streams original assets with SHA-256 verification. Linked Markdown copies revalidate the currently granted external identity and read the actual file bytes. Recovery copies export managed Tiptap JSON or protected linked Markdown with its baseline. Publication never replaces an existing output.
+
+The current reader continues to accept portable Next versions 1 and 2. The new writer includes partial scope and inactive linked descriptors with relative paths and fingerprints. Import-as-new validates a staged database. Merge verifies review digest and payload, journals app-owned originals before publication, then commits remapped resource/collection/tag identities, assets, relationships, state and an idempotency receipt in a single owner transaction. Destination settings and existing drafts stay in place. Merge collision behavior is deterministic. Destination data remains unchanged on a failed metadata transaction. Restart retries hash-proven cleanup of unpublished managed originals. Unjournaled staging paths remain outside the automatic cleanup scope.
+
+Open work includes verified in-place replacement and rollback, binding existing descriptors to a newly authorized source, portable Review status, rich-layout/Unicode PDF and embedded Word assets, package collection layout, larger Markdown conversion, full review pagination, legacy ZIP compatibility, PDF body indexing and exact linked-occurrence navigation. Current bounds and user workflow are in [Next Help](../help/next-foundation.md).
+
+### M23 — Native Desktop Integration & Review Inbox
+
+Restore Windows desktop integration and the native Review Inbox, including review capture, queue/status/resolution, managed and linked safety, and migration of the portable Review contract. Qualify native input, accessibility and offline/local workflows. Standalone Windows remains independently usable.
+
+### M24 — Rust Server, Trusted LAN Hosting & Android Connectivity
+
+Keep local Tauri/Rust operation the default with networking disabled. Add an optional Rust host for a desktop-hosted workspace and headless/Docker deployment, serving a separate compatible browser client and supported Android operations. Bind deliberately, use HTTPS/TLS with trusted device approval and revocation, and enforce workspace permissions and revision checks on the server. Reuse the Rust domain and single storage owner. Cover Android offline reading/downloads, review submission, and explicitly saved changes with safe conflict handling across reconnects. Qualify browser, trusted LAN Android and headless deployment independently. Java and mandatory local HTTP are outside this architecture.
+
+### M25 — Comprehensive Performance Optimization
+
+Qualify and optimize local desktop, browser, headless host and Android operation. Measure comparable startup, editing, discovery, synchronization and transfer workloads, sustained CPU/private memory, large content, offline/reconnect and cross-device latency. Keep the canonical benchmark history and record platform/device evidence.
+
+### M26 — Production Qualification & Windows Release
+
+Complete content-loss/recovery, release migration, security, accessibility, physical device, installer/signing, local and hosted platform gates. Reconcile published Help and developer documentation before a separately authorized Windows release.

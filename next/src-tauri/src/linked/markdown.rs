@@ -48,6 +48,12 @@ fn paragraphize(v: &mut Value) {
     v["content"] = json!(out);
 }
 pub fn parse(source: &str) -> Parsed {
+    parse_projection(source,false)
+}
+pub(crate) fn parse_import(source:&str)->Parsed{
+    parse_projection(source,true)
+}
+fn parse_projection(source: &str, import:bool) -> Parsed {
     let mut offset = if source.starts_with('\u{feff}') { 3 } else { 0 };
     let mut reason = if source.contains('\0') {
         Some("NUL-containing source is read-only".into())
@@ -157,6 +163,7 @@ pub fn parse(source: &str) -> Parsed {
                         };
                         json!({"type":"codeBlock","attrs":{"language":language},"content":[]})
                     }
+                    Tag::Image {dest_url,..} if import => json!({"type":"importImage","attrs":{"href":dest_url.as_ref()},"content":[]}),
                     Tag::Table(align) => {
                         if align.iter().any(|a| *a != pulldown_cmark::Alignment::None) {
                             reason = Some("Aligned tables are source-view only".into())

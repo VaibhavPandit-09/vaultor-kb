@@ -25,3 +25,28 @@ it('updates Activity from events without rerendering its parent and exposes canc
  mock.invoke.mockResolvedValue([]);let renders=0;function Parent(){renders++;return <NextActivity/>;}render(<EscapeManagerProvider><Parent/></EscapeManagerProvider>);await waitFor(()=>expect(mock.event).toBeTypeOf('function'));
  const task:Task={id:'one',title:'Import 100 files',kind:'file-import',workspace:'fixture',state:'running',phase:'Copying originals',done:5,total:100,bytes:2048,totalBytes:10240,started:1,finished:null,result:null,error:null,cancellable:true};act(()=>mock.event?.({payload:[task]}));fireEvent.click(screen.getByRole('button',{name:'Activity'}));await screen.findByText('Copying originals');expect((screen.getByRole('progressbar')as HTMLProgressElement).value).toBe(5);fireEvent.click(screen.getByRole('button',{name:'Cancel task'}));await waitFor(()=>expect(mock.invoke).toHaveBeenCalledWith('transfer',{request:{op:'cancel',id:'one'}}));act(()=>mock.event?.({payload:[{...task,state:'failed',phase:'failed',finished:3,cancellable:false,error:'Destination already exists'}]}));expect(screen.queryByRole('button',{name:'Cancel task'})).toBeNull();expect(screen.getByText('Destination already exists')).toBeTruthy();expect(renders).toBe(1);
 });
+
+it('submits explicit file decisions from the reviewed batch',async()=>{
+ mock.open.mockResolvedValue(['C:\\fixture\\sample.md']);
+ mock.invoke.mockImplementation(async(_name:string,args:{request:{op:string}})=>args.request.op==='tasks'?[]:args.request.op==='preview'?{token:'review',files:1,directories:0,bytes:12,duplicates:0,issues:[],items:[{index:0,name:'sample.md',bytes:12,duplicate:false,canConvert:true}]}:{id:'task'});
+ render(<EscapeManagerProvider><TransferControls collection={null} collections={[]} barrier={async f=>f()} switchWorkspace={vi.fn()} committed={vi.fn()}/></EscapeManagerProvider>);
+ act(()=>showTransfer({op:'files'}));
+ fireEvent.change(await screen.findByRole('combobox',{name:'Import choice for sample.md'}),{target:{value:'original'}});
+ fireEvent.click(screen.getByRole('button',{name:'Continue'}));
+ await waitFor(()=>expect(mock.invoke).toHaveBeenCalledWith('transfer',{request:{op:'importReviewed',token:'review',separate:false,decisions:{0:'original'}}}));
+});
+it('merges the verified manifest only after confirmation',async()=>{
+ mock.open.mockResolvedValue('C:\\fixture\\verified.vaultor');
+ mock.invoke.mockImplementation(async(_name:string,args:{request:{op:string}})=>{
+   if(args.request.op==='tasks')return [];
+   if(args.request.op==='inspectArchive')return {manifestHash:'fixed-digest',resources:2,collections:1,files:1,bytes:12,partial:true,linkedDescriptors:1};
+   return {id:'task'};
+ });
+ render(<EscapeManagerProvider><TransferControls collection={null} collections={[]} barrier={async f=>f()} switchWorkspace={vi.fn()} committed={vi.fn()}/></EscapeManagerProvider>);
+ act(()=>showTransfer({op:'merge'}));
+ await screen.findByText(/Selected archive/);
+ expect(mock.invoke).not.toHaveBeenCalledWith('transfer',{request:expect.objectContaining({op:'merge'})});
+ fireEvent.click(screen.getByRole('button',{name:'Continue'}));
+ await waitFor(()=>expect(mock.invoke).toHaveBeenCalledWith('transfer',{request:{op:'merge',source:'C:\\fixture\\verified.vaultor',manifestHash:'fixed-digest'}}));
+ expect(mock.open).toHaveBeenCalledTimes(1);
+});
