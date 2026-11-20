@@ -93,7 +93,13 @@ export default function NextApp() {
   const behaviorWorkspace=useRef('');
   const [paneSizes,setPaneSizes]=useState<Record<string,number>>({});
   const browserMemories=useRef<Partial<Record<Screen,BrowserMemory>>>({});
-  const rememberBrowser=useStableEvent((kind:'collections'|'tags'|'sources',value:BrowserMemory)=>{browserMemories.current[kind]=value;});
+  const rememberBrowser=useStableEvent((kind:'collections'|'tags'|'sources',value:BrowserMemory)=>{
+    browserMemories.current[kind]=value;
+    if(kind==='sources'){
+      clearTimeout(positionWrite.current);
+      positionWrite.current=setTimeout(()=>void persistSession().catch(error=>setError(String(error))),500);
+    }
+  });
   const [savingPreferences,setSavingPreferences]=useState(false);const preferenceGeneration=useRef(0);
   const preferencesRef=useRef(preferences),preferencesQueue=useRef<Promise<unknown>>(Promise.resolve()),sessionValue=useRef<WorkspaceSession|undefined>(undefined);
   preferencesRef.current=preferences;
