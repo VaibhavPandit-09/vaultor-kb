@@ -202,7 +202,7 @@ impl Workspace {
         }
         let tx = self.db.transaction().map_err(error)?;
         let mut matches = tx.prepare(
-            "SELECT d.id,d.path_key,i.indexed_revision FROM linked_documents d LEFT JOIN linked_inventory i ON i.document_id=d.id
+            "SELECT d.id,d.path,i.indexed_revision FROM linked_documents d LEFT JOIN linked_inventory i ON i.document_id=d.id
              WHERE d.source_id=?1 AND d.identity=?2 AND (i.birth=?3 OR (i.birth IS NULL AND d.path_key=?4 AND d.revision=?5)) LIMIT 2")
             .map_err(error)?;
         let known = matches
@@ -220,7 +220,7 @@ impl Workspace {
         if known.len() > 1 {
             return Err("Multiple linked records match this file. Existing organization and drafts were retained".into());
         }
-        let (id, previous_key, indexed) = known
+        let (id, previous_path, indexed) = known
             .into_iter()
             .next()
             .unwrap_or_else(|| (Uuid::new_v4().to_string(), String::new(), None));
@@ -237,8 +237,8 @@ impl Workspace {
         }
         // Multiple hard links do not provide evidence that the original path moved.
         if native::info(&file.file)?.nNumberOfLinks != 1
-            && previous_key != key
-            && !previous_key.is_empty()
+            && previous_path != path
+            && !previous_path.is_empty()
         {
             return Err("Hard-linked file aliases cannot establish rename continuity".into());
         }
@@ -262,7 +262,7 @@ impl Workspace {
                 params![id, scan],
             )
             .map_err(error)?;
-            if indexed.as_deref() != Some(&file.revision) || previous_key != key {
+            if indexed.as_deref() != Some(&file.revision) || previous_path != path {
                 let mut extracted =
                     extracted.ok_or("Linked identity changed during indexing; refresh again")?;
                 let (used, previous): (i64, i64) = tx.query_row(
@@ -311,7 +311,7 @@ impl Workspace {
             }
         } else if indexed
             .as_deref()
-            .is_some_and(|rev| !rev.is_empty() && (rev != file.revision || previous_key != key))
+            .is_some_and(|rev| !rev.is_empty() && (rev != file.revision || previous_path != path))
         {
             tx.execute("UPDATE note_search SET title=?2,body='' WHERE rowid=(SELECT seq FROM resources WHERE id=?1)",params![resource,path]).map_err(error)?;
             tx.execute("DELETE FROM linked_references WHERE document_id=?1", [&id])
@@ -358,7 +358,7 @@ pub fn index(
     }
     let cache_source = source.clone();
     let cached = storage.call(workspace, move |w| {
-        let mut q = w.db.prepare("SELECT d.path_key,i.indexed_revision||':'||d.identity||':'||i.birth FROM linked_inventory i JOIN linked_documents d ON d.id=i.document_id
+        let mut q = w.db.prepare("SELECT d.path_key,i.indexed_revision||':'||d.identity||':'||i.birth||':'||d.path FROM linked_inventory i JOIN linked_documents d ON d.id=i.document_id
             WHERE d.source_id=?1 AND i.available=1 ORDER BY d.path_key LIMIT 20000").map_err(error)?;
         let cached = q.query_map([cache_source], |r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?)))
             .map_err(error)?.collect::<Result<std::collections::HashMap<_,_>,_>>().map_err(error)?;
@@ -404,12 +404,14 @@ pub fn index(
                     skipped += 1;
                     continue;
                 };
-                let key = path_key(&root, &file)?;
+                let path = relative_path(&root, &file)?;
+                let key = path.to_lowercase();
                 let fingerprint = format!(
-                    "{}:{}:{}",
+                    "{}:{}:{}:{}",
                     file.revision,
                     file.id,
-                    native::birth(&file.file)?
+                    native::birth(&file.file)?,
+                    path
                 );
                 let extracted =
                     (cached[&key].as_str() != Some(&fingerprint)).then(|| extract(&file));
@@ -567,6 +569,10 @@ mod tests {
         let case = source_dir.path().join("DRAFT.md");
         fs::rename(&from, &case).unwrap();
         assert_eq!(observe(&mut w, "DRAFT.md"), doc);
+        assert_eq!(
+            text(&w, "rareword", Some(a.clone()), source)["items"][0]["id"],
+            id
+        );
         fs::create_dir(source_dir.path().join("nested")).unwrap();
         let moved = source_dir.path().join("nested/Moved.md");
         fs::rename(&case, &moved).unwrap();
