@@ -436,3 +436,31 @@ The Windows monitor uses the notify Windows backend with the pinned upstream ove
 Unified search adds bounded, strict UTF-8 managed file extraction, a managed file rebuild/coverage command, FTS excerpts, title precedence, ownership and all/any tag filters. Managed PDFs remain title-searchable. The command palette adds collection and tag results. The original Links and mentions dialog consumes the managed and linked edge view, with saved occurrence inspection and bounded focus navigation. Electron has saved-reference inspection and export graph data. The experiment uses those relationship interactions without a new graph canvas.
 
 Linked rich editing removes redundant open parsing and checks serialized draft size during admission. Existing shape, read, revision and protected publication limits remain. The candidate allows up to 1 MiB for sources within the shape and draft limits.
+
+
+### M21 Windows qualification
+
+The optimized executable is C:/GitDev/vaultor-kb/next/src-tauri/target/release/vaultor-next-m21.exe, built from 556fa128a1f1c8b181337a7524ce183f3ddf9ac6. Size 15,079,936 bytes. SHA-256 7c5b4069591eea3915ed50cb236be26319c287b1f5b615e4a7049814581aa55d.
+
+The optimized NTFS/WebView2 run verified automatic creation, edits, deletion, file and folder renames, an independent same-path replacement, a 24-file burst, root loss/restoration, and withdrawal on revocation. It exercised managed CSV body discovery and rebuild, combined tags, safe snippets, managed and linked backlinks, palette collection results, the original reference dialog with related-resource exploration and dismissal, and source-tree expansion after process restart. A separate same-binary M17 safety pass verified managed autosave and durable interrupted-draft recovery, competing managed revision refusal, and linked explicit Save/conflict preservation. [Windows evidence](../../benchmarks/tauri-rust/summaries/m21-discovery-windows.json).
+
+The 1,029,491-byte CRLF prose fixture opened editable. Five inputs, Undo/Redo, explicit Save and exact disk-byte comparison passed. A real external write triggered the clean reload action. A subsequent dirty external change retained the protected editor draft and the competing external bytes. Near-1 MiB dense/table/code/mixed performance remains open. Parsed document shape and the 2 MiB draft cap still determine admission.
+
+| Measurement | Result | Boundary |
+| --- | ---: | --- |
+| Initial automatic index | 18.39 s | One 2,051-file root, registration to complete Activity receipt. |
+| Ordinary single-file convergence | 292–359 ms | One each for creation, modification, rename, deletion, replacement and relative-link refresh. Includes filesystem delivery, debounce, processing and polling. |
+| Folder rename | 305 ms first relevant hit, 7.23 s full scan | One rename. Distinguishes first query visibility from complete fallback. |
+| Burst convergence | 493 ms | One 24-file burst after the folder scan completed. |
+| Global / combined search | 4.27 / 3.98 ms median | Five queries each, with combined collection and two required tags. |
+| Backlinks, palette, relationship dialog | 37 / 187 / 148 ms | One sample each. The latter two include renderer interaction and polling. |
+| Near-1 MiB editor | 296 ms open, 5.4 ms median input, 89.2 ms slowest input | One open, five input-to-frame samples. |
+| Near-1 MiB Undo / Redo / Save | 19 / 20 / 268 ms | One each; Save waits for the explicit native receipt. |
+| Process tree | 485 MiB sampled peak at 72.9% of one logical CPU during initial indexing | 23 process samples across the initial index window. |
+| Settled visible document | 685 MiB working set, 426 MiB private bytes, 0.97% of one logical CPU | Short sample with one large editor visible and a registered idle source. |
+
+Both M20 and M21 used similar-sized local fixtures. M20's 7.8–7.9 s measurements were whole-source refreshes. M21's ordinary file timings cover targeted operations and omit a separate kernel-event timestamp. The 7.23 s M21 folder scan retains the larger workload. Working sets can double-count shared pages. The brief settled sample is not a long idle or memory-retention qualification.
+
+Rust passed 50 tests. Focused frontend passed 77 tests, plus TypeScript, scoped lint and the optimized build. Help validation covered 43 features and 16 articles, with 17 governance tests and verification of the embedded M21 text. Experimental Help and catalogue cover live monitoring, saved UTF-8 file search, scopes, coverage, rebuild, references and shape-limited linked editing. The 37 valid benchmark observations preserve 11,499 prior rows, 19 workbook sheets and 475 formulas. All 666 new fields were verified against the canonical CSV. Native Excel recalculation remains untested. [Workbook validation](../../benchmarks/tauri-rust/summaries/m21-workbook-validation.json).
+
+PDF body extraction, linked raster/PDF relationship destinations, exact linked-occurrence selection, broader managed index repair, rebuild cancellation in a mounted UI, full interactive graph rendering, and physical Windows and matched visual/accessibility acceptance remain open. The original Electron code provides an export graph and the saved reference dialog. The Next candidate restores the dialog and bounded relationship exploration. M22 should focus on source-aware imports, remaining conversion/export paths and workspace transfer recovery while preserving managed and linked identity.

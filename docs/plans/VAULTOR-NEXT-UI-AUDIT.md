@@ -485,3 +485,6 @@ The final Windows run verifies the source browser, larger linked editor, clean r
 ### M21 discovery follow-up
 
 The existing Library rows add bounded plain-text highlights and linked relative paths. Search options retain the original hierarchy and add coverage and combined tag controls. Workspace palette results share existing focus, Escape and pane ownership. Used in / links reuses the original Links and mentions dialog, with bounded paging and explicit related-resource focus. Source reconciliation updates the existing tree and preserves the current page cursor. The main browser stores bounded expansion keys in the workspace session. [Implementation and verification](VAULTOR-NEXT.md#m21-discovery-and-live-source-reconciliation).
+
+
+The optimized WebView2 run verified command-palette results, the original references dialog and focused exploration/dismissal, and restoration of nested source expansion. The links surface retained its shared modal focus contract. Matched original captures, full theme/scale comparison, physical keyboard and assistive-technology acceptance remain open.

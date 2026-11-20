@@ -14,6 +14,8 @@ const inspect = process.argv.includes('--inspect');
 const m18=process.argv.includes('--m18-editor');
 const m19=process.argv.includes('--m19-preview');
 const m20=process.argv.includes('--m20-linked');
+const m21=process.argv.includes('--m21-discovery');
+const recordM21=m21&&!process.argv.includes('--m21-probe');
 const recordM20=m20&&!process.argv.includes('--m20-probe')&&!process.argv.includes('--m20-drag-probe');
 const recordM19=m19&&!process.argv.includes('--m19-probe');
 const recordM18=m18&&!process.argv.includes('--m18-probe');
@@ -94,7 +96,7 @@ async function launch(iteration) {
   const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(VAULTOR_|HOST_|ELECTRON_RUN_AS_NODE|WEBVIEW2_)/.test(k)));
   const executable = executablePath;
   const args = architecture === 'electron-java' ? [join(root, 'desktop'), `--remote-debugging-address=127.0.0.1`, `--remote-debugging-port=${port}`] : [];
-  Object.assign(env, architecture === 'electron-java' ? { VAULTOR_DESKTOP_TEST_DIRECTORY: profile, HOST_NETWORK_PORT: '0', NODE_ENV: 'production' } : { VAULTOR_NEXT_WORKSPACE: join(folder, 'workspace'), ...(m6||m18||m19||m20?{WEBVIEW2_USER_DATA_FOLDER:profile}:{}), WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1` });
+  Object.assign(env, architecture === 'electron-java' ? { VAULTOR_DESKTOP_TEST_DIRECTORY: profile, HOST_NETWORK_PORT: '0', NODE_ENV: 'production' } : { VAULTOR_NEXT_WORKSPACE: join(folder, 'workspace'), ...(m6||m18||m19||m20||m21?{WEBVIEW2_USER_DATA_FOLDER:profile}:{}), WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1` });
   const start = performance.now();
   child = spawn(executable, args, { cwd: root, env, windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
   child.stderr.on('data', data => { report.runtimeLog = ((report.runtimeLog ?? '') + data).slice(-4000); });
@@ -167,7 +169,30 @@ async function quit() {
 try {
   let run = await launch(1);
   if (inspect) {
-    if(m20){
+    if(m21){
+      assert.equal(architecture,'tauri-rust');
+      await (await import('./m21-discovery.mjs')).qualifyDiscovery({evaluate,cdp,wait,report,folder,record,restart:async()=>{
+        await stopSampler(run,1);
+        run=null;
+        await quit();
+        await launch(3);
+      },processSnapshot:async()=>{
+        const path=join(folder,'m21-processes.json');
+        execFileSync('powershell.exe',['-NoProfile','-File',join(import.meta.dirname,'process-breakdown.ps1'),'-RootPid',String(child.pid),'-Output',path],{windowsHide:true});
+        return JSON.parse((await readFile(path,'utf8')).replace(/^\uFEFF/,''));
+      }});
+      const samples=(report.process1??[]).filter(point=>{
+        const at=Date.parse(point.timestamp);
+        return at>=report.indexWindow.start&&at<=report.indexWindow.end;
+      });
+      if(samples.length>=2){
+        const first=samples[0],last=samples.at(-1),seconds=(Date.parse(last.timestamp)-Date.parse(first.timestamp))/1000;
+        record('m21-initial-index',1,'cpu_one_core_percent',100*(last.cpuSeconds-first.cpuSeconds)/seconds,'%','Sampled process-tree CPU in the initial index window.');
+        record('m21-initial-index',1,'sampled_peak_working_set',Math.max(...samples.map(point=>point.workingSet))/1048576,'MiB','Sampled peak can include shared pages.');
+      }
+      report.indexProcessSamples=samples.length;
+    }
+    else if(m20){
       assert.equal(architecture,'tauri-rust');
       await (await import('./m20-linked.mjs')).qualifyLinked({evaluate,cdp,wait,report,folder,record,restart:async()=>{
         await stopSampler(run,1);
@@ -304,7 +329,7 @@ try {
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
-  for (const s of report.samples) if(!inspect||recordM20&&s.scenario.startsWith('m20-')||recordM19&&s.scenario.startsWith('m19-')||recordM18&&(s.scenario.startsWith('m18-')||s.metric==='sampled_peak_working_set')||(m10&&s.scenario==='command-palette-m10')||(m14&&measureUI&&s.scenario.startsWith(uiMilestone+'-'))) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
-  if (!report.success && (!inspect||recordM20||recordM19||recordM18||m14&&measureUI)) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
+  for (const s of report.samples) if(!inspect||recordM21&&s.scenario.startsWith('m21-')||recordM20&&s.scenario.startsWith('m20-')||recordM19&&s.scenario.startsWith('m19-')||recordM18&&(s.scenario.startsWith('m18-')||s.metric==='sampled_peak_working_set')||(m10&&s.scenario==='command-palette-m10')||(m14&&measureUI&&s.scenario.startsWith(uiMilestone+'-'))) await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), [randomUUID(),report.timestamp,m21?'m21-discovery-v1':m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled',s.scenario,report.dataset ?? '',s.iteration,s.metric,s.value,s.unit,s.valid,'m1-cdp-v2',evidence,s.notes].map(csvEscape).join(',')+'\n');
+  if (!report.success && (!inspect||recordM21||recordM20||recordM19||recordM18||m14&&measureUI)) await appendFile(join(import.meta.dirname,'benchmark_runs.csv'), [randomUUID(),report.timestamp,m21?'m21-discovery-v1':m20?'m20-linked-v1':m19?'m19-previews-v1':m18?'m18-editor-v1':m17?'m17-workspace-stability-v1':m16?'m16-workspace-ui-v1':m15?'m15-everyday-ui-v1':m14?'m14-everyday-ui-v1':m12?'m12-managed-notes-v1':m11?'m11-managed-notes-v1':m10?'m10-managed-notes-v1':m9?'m9-managed-notes-v1':m8?'m8-managed-notes-v1':m7?'m7-managed-notes-v1':m6?'m6-managed-notes-v1':m5?'m5-managed-notes-v1':m4?'m4-managed-notes-v1':m3?'m3-managed-notes-v1':m2?'m2-managed-notes-v1':'m1-managed-notes-v2',architecture,report.executableSourceCommit,hostname(),release(),'uncontrolled','qualification',report.dataset ?? '',1,'run_failure','','',false,'m1-cdp-v2',evidence,report.error].map(csvEscape).join(',')+'\n');
   console.log(JSON.stringify({ success: report.success, evidence, metrics: report.samples.length, error: report.error }));
 }

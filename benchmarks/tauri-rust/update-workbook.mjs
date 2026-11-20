@@ -16,7 +16,7 @@ const values = parsed.data.filter(r => r[0]);
 const [headers, ...rows] = values;
 const failures = new Set(rows.filter(r => ['run_failure','run_invalidated'].includes(r[11])).map(r => r[16]));
 const normalized = rows.map(row => row.map((value, index) => index === 1 ? new Date(value) : index === 12 && value !== '' && value !== null ? Number(value) : index === 10 ? Number(value) : index === 14 ? (['true','Y'].includes(String(value)) && !failures.has(row[16]) ? 'Y' : 'N') : value));
-const appendExperiment=process.argv.includes('--append-m20')?'m20-linked-v1':process.argv.includes('--append-m19')?'m19-previews-v1':process.argv.includes('--append-m18')?'m18-editor-v1':null;
+const appendExperiment=process.argv.includes('--append-m21')?'m21-discovery-v1':process.argv.includes('--append-m20')?'m20-linked-v1':process.argv.includes('--append-m19')?'m19-previews-v1':process.argv.includes('--append-m18')?'m18-editor-v1':null;
 if(appendExperiment){
   const first=rows.findIndex(row=>row[2]===appendExperiment);
   if(first<0||rows.slice(first).some(row=>row[2]!==appendExperiment))throw Error('The selected experiment must form the canonical tail');
@@ -49,7 +49,7 @@ console.log(`Raw Runs retained ${unchanged} identical rows; updated ${Math.max(0
 raw.getRange('A2').values = [['Generated from benchmark_runs.csv; corrections/failures retained and marked N. Do not edit measurements here.']];
 const dashboard = wb.worksheets.getItem('Dashboard');
 // M18 is a standalone editor workload without a matched reference. Keep the existing comparison default.
-const latest = normalized.findLast(r => r[14] === 'Y' && r[9] && !['m18-editor-v1','m19-previews-v1','m20-linked-v1'].includes(r[2]));
+const latest = normalized.findLast(r => r[14] === 'Y' && r[9] && !['m18-editor-v1','m19-previews-v1','m20-linked-v1','m21-discovery-v1'].includes(r[2]));
 const m17Dashboard=latest?.[2]==='m17-workspace-stability-v1';
 const roleDashboard=m17Dashboard||latest?.[2]==='m16-workspace-ui-v1';
 const referenceSource=m17Dashboard?'b6027cbbbfde9c389589307e4625f3db359181f7':'dd2dff41779fcbfb70a6d5c90654646ccc480b0a';
