@@ -273,6 +273,24 @@ async fn tls_pairing_scope_saved_reads_review_and_restart() {
     )
     .await;
     assert_eq!((ranged.0, ranged.2.as_str()), (206, "3456"));
+    std::fs::write(
+        fixture.root.join("managed").join(format!("{file_id}.bin")),
+        b"9876543210",
+    )
+    .unwrap();
+    assert_eq!(
+        request(
+            &client,
+            address,
+            "GET",
+            &format!("{base}/files/{file_id}"),
+            &auth,
+            ""
+        )
+        .await
+        .0,
+        404
+    );
     let operation = Uuid::new_v4();
     let review = format!("{base}/resources/{id}/review/{operation}");
     let payload = json!({"id":operation,"resourceId":id,"baseRevision":1,"comment":"Feedback",
@@ -349,6 +367,12 @@ async fn tls_pairing_scope_saved_reads_review_and_restart() {
     listener.stop().await.unwrap();
     assert!(TcpStream::connect(address).await.is_err());
     drop(host);
+    let different_ca = tempfile::tempdir().unwrap();
+    let (changed, _, _, _) = tls_fixture(different_ca.path());
+    assert!(matches!(
+        Identity::open(&fixture.access, &changed),
+        Err(error) if error.to_string().contains("Host authority changed")
+    ));
     let identity = Identity::open(&fixture.access, &fixture.ca).unwrap();
     assert_eq!(host_id, identity.id);
     let host = Host::new(worker.storage(), fixture.root.clone(), identity)

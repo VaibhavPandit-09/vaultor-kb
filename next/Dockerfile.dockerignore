@@ -6,3 +6,4 @@
 !next/src-tauri/build.rs
 !next/src-tauri/src/
 !next/src-tauri/src/**
+next/src-tauri/target/

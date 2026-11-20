@@ -511,7 +511,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-20 — Next M24 experimental Rust host checkpoint
 
-Added desktop and headless HTTPS entry points, same-owner saved reads and Review submission, and separate CA identity, device approval and workspace grants. Hosting Help and the experimental catalogue now describe the available controls. The [M24 record](plans/VAULTOR-NEXT.md#m24--rust-server-trusted-lan-hosting--android-connectivity) records checks and unfinished Android, browser and release parity.
+Added desktop and headless HTTPS entry points, same-owner saved reads and Review submission, and separate CA identity, device approval and workspace grants. Hosting Help and the experimental catalogue now describe the available controls. Rust (58 checks plus the final two focused host checks), Next frontend (112 checks), Help governance (17 checks), production build, optimized Windows/headless loopback and Linux/amd64 Docker pairing/restart passed. The [M24 record](plans/VAULTOR-NEXT.md#m24--rust-server-trusted-lan-hosting--android-connectivity) records benchmarks, checks and unfinished Android, browser and release parity.
 
 ### 2026-11-20 — Next M23 Review and Windows integration
 

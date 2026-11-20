@@ -46,15 +46,15 @@ export async function qualifyHost({evaluate, wait, record, report, folder}) {
     }
   };
   assert.equal((await admin({op: 'status'})).running, false);
-  await idle('m24-desktop-disabled');
   await evaluate("document.querySelector('button[title=Settings]').click()");
   await evaluate("[...document.querySelectorAll('.settings-rail button')].find(button=>button.textContent.trim()==='Hosting').click()");
   await wait("[...document.querySelectorAll('button')].some(button=>button.textContent==='Start hosting'&&!button.disabled)", 'Hosting controls ready');
+  await evaluate(`document.querySelector('[aria-label="Close settings"]').click()`);
+  await idle('m24-desktop-disabled');
   const started = performance.now();
   const status = await admin({op: 'start', address: '127.0.0.1:0'});
   assert.equal(status.running, true);
   record('m24-desktop-enabled', 1, 'host_startup', performance.now() - started, 'ms', 'Native IPC start through effective HTTPS listener.');
-  await evaluate(`document.querySelector('[aria-label="Close settings"]').click()`);
   await idle('m24-desktop-enabled');
 
   const port = Number(status.address.split(':').at(-1));
@@ -156,6 +156,26 @@ export async function qualifyHost({evaluate, wait, record, report, folder}) {
     if (headless.exitCode === null) {
       await new Promise(resolve => { headless.once('exit', resolve); headless.kill(); });
     }
+  }
+
+  try {
+    const running = await admin({op:'start', address:'127.0.0.1:0'});
+    const quitPort = Number(running.address.split(':').at(-1));
+    await assert.rejects(ws({kind:'new', path:join(folder, 'blocked-switch')}), /Stop hosting/);
+    await evaluate("setTimeout(() => void window.__TAURI_INTERNALS__.invoke('close_next',{quit:true}), 250); true");
+    const timeout = Date.now() + 8_000;
+    while (true) {
+      try {
+        await api('GET', '/api/access/host', {port:quitPort});
+      } catch (error) {
+        if (error.code === 'ECONNREFUSED') break;
+        if (error.code !== 'ECONNRESET') throw error;
+      }
+      assert(Date.now() < timeout, 'Explicit Quit must close the listener');
+      await sleep(50);
+    }
+    report.checks.push('Hosting blocked a workspace switch, and explicit native Quit closed the listener');
+  } finally {
     await unlink(join(access, 'server-key.pem'));
   }
 }

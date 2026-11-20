@@ -520,6 +520,33 @@ The engineering checkpoint adds an optional HTTPS listener to the Windows app an
 
 The retained M26 parity gates include the original browser UI and cookie/CSRF authority, an Android protocol 3 workspace and checkpoint adapter, mobile Review delivery, persistent opt-in hosting and launch integration, discovery, QR and address recovery, certificate provisioning and renewal UX, and independently tested Android, browser, Docker and real-LAN workflows. This checkpoint does not certify M24 completion. The existing [parity register](VAULTOR-NEXT-PARITY.csv) retains the unrelated functional, native and accessibility work.
 
+The Windows Rust suite passed 58 checks. The focused host run then passed two checks after adding the checksum gate. The fixture exercised missing trust, unexpected CA change, pairing expiry and source attempt limits, mismatched workspace access, saved reads while a protected draft existed, a verified managed-file range and corrupt-original refusal, idempotent Review receipt, saved-change reset delivery, grant withdrawal during a subscription, revocation, listener shutdown and persistent restart trust. Next frontend regression passed 112 tests. TypeScript, production UI build, scoped ESLint, Help validation (43 features, 16 articles), and 17 Help governance tests passed. The new hosting Help text was verified in the built UI.
+
+The optimized Windows and headless executables were built from `d82b4bd4aaa1e3e50c6514f0e2834c9c131509e6`.
+
+| Artifact under `next/src-tauri/target/release/` | SHA-256 |
+| --- | --- |
+| `vaultor-next-m24.exe` | `b07612f775ec99fd0de8b4d47657a2147611ce7e2e4d6577ee6d20b829d0a788` |
+| `vaultor-next-host.exe` | `3f9e865036064c130628b233e536449f1f661e11e8f2a395b01c497049861004` |
+
+The optimized Windows WebView2 run exercised the Hosting category, started the listener through IPC, completed pairing, read and searched a saved note, withdrew its grant, revoked its device, then stopped the listener and repeated a local IPC read. The explicit native Quit probe refused a workspace switch while hosting and confirmed that Quit closed the listener. A separate headless executable refused to open the desktop-owned workspace. It then started on a disposable empty workspace with verified loopback HTTPS. The harness terminated the standalone process after sampling and did not certify its Windows Ctrl+C shutdown.
+
+Docker Desktop Engine 29.8.1 built and ran the Linux/amd64 image `vaultor-next-host:m24` (image ID `sha256:dc3c1d585d1db34f80b25b307411920ea686b21703059ee0a96d3041a41c7132`). The loopback-only Compose instance ran as UID 10001. A pinned client verified HTTPS, an unauthenticated request was denied, and the private Unix owner socket approved a device and granted workspace access. The host UUID, device approval and workspace grant survived a container restart on the two named volumes. Revocation then denied the same credential. The test used disposable volumes and a newly initialized workspace.
+
+| Windows loopback workload | Measured result |
+| --- | --- |
+| Desktop startup, hosting off | 962.3 ms from process start through the Library and ready IPC |
+| Off/idle and on/idle, no clients | 601.8/599.6 MiB process-tree working set, 348.3/345.0 MiB private bytes, 1.32/0.00% of one logical CPU |
+| Saved-note IPC, off/on | 3.35/3.68 ms median, eight requests each |
+| Host enable and disable | 22.38 ms to start, 6.00 ms to stop and observe refusal |
+| Scripted pairing | 20.58 ms with immediate scripted owner approval |
+| Granted list, saved note and FTS search | 4.32, 4.75 and 5.53 ms respectively, median of 12 fresh verified TLS connections each |
+| Headless, empty disposable workspace | 71.96 ms to HTTPS and 18.56 MiB working set / 3.59 MiB private bytes |
+
+Windows x64 build 26340, Core Ultra 7 255HX, 20 logical CPUs, 15.4 GiB RAM, Edge WebView2 157.0.4341.60, Node 24.18.1. The desktop fixture used one default managed note and one isolated WebView2 profile. Each desktop idle window followed two seconds of settling and sampled a single 6.5-second window. Background load and power state were uncontrolled. Shared pages can be counted more than once. These paired snapshots do not estimate sustained overhead. Android, physical LAN, browser, throughput, sustained idle and load contention remain unmeasured. The [canonical benchmark workbook](../../benchmarks/tauri-rust/vaultor_tauri_rust_benchmark_tracker.xlsx) appends 65 observations to 11,850 preserved rows. [Workbook validation](../../benchmarks/tauri-rust/summaries/m24-workbook-validation.json) verified all 1,170 new fields and 475 unchanged formulas.
+
+For M25, measure matched desktop workloads, sustained process-role memory and idle CPU, then compare hosted TLS, streaming, reconnect and contention workloads once the corresponding clients are available. M26 keeps the original functional gates for in-place replacement and verified rollback, Electron archive interoperation, Word/PDF fidelity, PDF discovery/preview, exact linked-occurrence selection and near-1 MiB editing. Maintain separate Windows physical input, visual, motion and accessibility gates, Android/emulator/physical and real-LAN gates, and security and production release gates. Preserve platform-deferred rows and keep cloud synchronization, collaboration and other post-migration capabilities in the new-feature backlog.
+
 ### M25 — Comprehensive Performance Optimization
 
 Qualify and optimize local desktop, browser, headless host and Android operation. Measure comparable startup, editing, discovery, synchronization and transfer workloads, sustained CPU/private memory, large content, offline/reconnect and cross-device latency. Keep the canonical benchmark history and record platform/device evidence.

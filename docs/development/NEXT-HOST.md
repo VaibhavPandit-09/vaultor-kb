@@ -59,4 +59,4 @@ docker compose -f next/compose.yaml up -d
 docker compose -f next/compose.yaml exec vaultor-next vaultor-next-host owner /data/access pending
 ```
 
-Use the same `owner /data/access` prefix for approvals and grant changes. The provided mapping publishes HTTPS on host loopback. Workspace and private host data use separate named volumes. TLS stays in a read-only mount. Verify Linux runtime and volume behavior before relying on this candidate for persistent data.
+Use the same `owner /data/access` prefix for approvals and grant changes. The provided mapping publishes HTTPS on host loopback. Workspace and private host data use separate named volumes. TLS stays in a read-only mount. The [M24 qualification](../plans/VAULTOR-NEXT.md#m24--rust-server-trusted-lan-hosting--android-connectivity) records verified Linux/amd64 loopback HTTPS and restart persistence with disposable volumes.

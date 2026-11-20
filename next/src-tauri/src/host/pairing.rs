@@ -241,3 +241,33 @@ pub(super) async fn complete(
         _ => Err(StatusCode::CONFLICT),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pending_requests_expire_and_source_attempts_are_bounded() {
+        let mut state = Pairing::default();
+        let id = Uuid::new_v4();
+        state.requests.insert(
+            id,
+            Pending {
+                label: "Fixture".into(),
+                kind: "agent".into(),
+                secret: "unused".into(),
+                code: "123456".into(),
+                deadline: Instant::now(),
+                expires_at: String::new(),
+                decision: Decision::Pending,
+            },
+        );
+        let peer = IpAddr::from([127, 0, 0, 1]);
+        for _ in 0..60 {
+            assert!(state.admit(peer).is_ok());
+        }
+        assert!(!state.requests.contains_key(&id));
+        assert_eq!(state.admit(peer), Err(StatusCode::TOO_MANY_REQUESTS));
+        assert!(state.admit(IpAddr::from([127, 0, 0, 2])).is_ok());
+    }
+}
