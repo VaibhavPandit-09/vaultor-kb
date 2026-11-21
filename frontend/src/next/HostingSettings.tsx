@@ -5,6 +5,7 @@ import {SettingsRow} from '../components/SettingsPresentation';
 
 type Status = {
   running: boolean;
+  recovering?: boolean;
   accessPath: string;
   address?: string;
   fingerprint?: string;
@@ -111,12 +112,20 @@ export default function HostingSettings() {
     {status?.startupError && <p role="alert" className="settings-error">{status.startupError}</p>}
     <SettingsRow label="HTTPS sharing" description={status?.running
       ? `Listening at https://${status.address}. Closing to the tray keeps hosting active.`
-      : 'Sharing is off. On Windows, Vaultor sets up the host certificate when you start sharing.'}>
+      : status?.recovering
+        ? 'Sharing is paused while the selected network is unavailable.'
+        : 'Sharing is off. On Windows, Vaultor sets up the host certificate when you start sharing.'}>
       <button type="button" className="settings-text-action" disabled={busy || !status}
         onClick={() => void refresh(status?.running ? {op: 'stop'} : {op: 'start', address: customAddress || `${address}:8443`, recover: recover && !customAddress && address !== '127.0.0.1'})}>
         {status?.running ? 'Stop hosting' : 'Start hosting'}
       </button>
     </SettingsRow>
+    {status?.recovering && <SettingsRow label="Pending network recovery"
+      description="Stop automatic recovery or choose an address below to resume hosting.">
+      <button type="button" className="settings-text-action" disabled={busy} onClick={() => void refresh({op: 'stop'})}>
+        Stop hosting
+      </button>
+    </SettingsRow>}
     {!status?.running && <SettingsRow label="Listening address" description="Choose the private address your device can reach. This computer only keeps access local.">
       <select aria-label="Listening address" value={address} onChange={event => {
         setAddress(event.target.value);

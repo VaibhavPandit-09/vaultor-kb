@@ -435,6 +435,8 @@ pub async fn hosting(
     };
     let preference = desktop.preference();
     status["startup"] = json!(preference.as_ref().is_ok_and(|value| value.is_some()));
+    status["recovering"] = json!(!status["running"].as_bool().unwrap_or(false)
+        && desktop.recovery.lock().await.is_some());
     status["startupError"] = json!(desktop.startup_error.lock().await.as_ref());
     status["addresses"] = json!(private_addresses());
     Ok(status)
