@@ -57,10 +57,13 @@ pub(super) fn router() -> Router<Host> {
 
 pub(super) fn same_origin(request: &HttpRequest) -> bool {
     let path = request.uri().path();
+    let asset = matches!(*request.method(), Method::GET | Method::HEAD)
+        && path.starts_with("/browser/assets/");
     if !(path == "/api/pairings"
         || path.starts_with("/api/pairings/")
         || path.starts_with("/api/next/browser/v1/")
-        || path == "/api/access/logout")
+        || path == "/api/access/logout"
+        || asset)
     {
         return false;
     }

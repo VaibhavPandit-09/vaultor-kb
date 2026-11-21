@@ -42,6 +42,15 @@ async fn browser_session_checks_origin_csrf_scope_revision_and_logout() {
     assert!(cookie.contains("HttpOnly") && cookie.contains("Secure") && cookie.contains("SameSite=Strict"));
     let pair = cookie.split(';').next().unwrap();
     let credentials = format!("Cookie: {pair}\r\n");
+    let document = request(&client,address,"GET","/",&credentials,"").await;
+    if document.0 == 200 {
+        let assets: Vec<_> = document.2.split('"').filter(|path| path.starts_with("/browser/assets/")).collect();
+        assert!(!assets.is_empty());
+        for asset in assets {
+            assert_eq!(request(&client,address,"GET",asset,&format!("{credentials}{origin}"),"").await.0,200);
+            assert_eq!(request(&client,address,"GET",asset,&format!("{credentials}Origin: https://example.invalid\r\n"),"").await.0,403);
+        }
+    }
     let token = pair.split_once('=').unwrap().1;
     assert_ne!(request(&client,address,"POST",&path,&proof,"{}").await.0,200);
     let browser = "/api/next/browser/v1";
