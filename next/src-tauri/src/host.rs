@@ -1,11 +1,16 @@
 //! Optional HTTPS adapter for the existing SQLite owner. This protocol exposes saved,
 //! managed resources only. Neither workspace paths nor desktop commands enter the router.
 mod access;
+mod browser;
+mod companion;
+mod companion_exports;
 mod pairing;
 mod mobile;
 #[cfg(test)]
 mod tests;
 mod transport;
+#[cfg(feature = "desktop")]
+mod discovery;
 
 use crate::{domain::Request, worker::Storage};
 #[cfg(all(windows, feature = "desktop"))]
@@ -48,9 +53,12 @@ pub struct Host {
     workspace: Uuid,
     enrollment: Arc<Mutex<pairing::Pairing>>,
     mobile_checkpoints: Arc<Mutex<mobile::Checkpoints>>,
+    companion_exports: companion_exports::Exports,
     requests: Arc<Semaphore>,
+    updates: Arc<Semaphore>,
     streams: Arc<Semaphore>,
     access_changed: tokio::sync::watch::Sender<()>,
+    management_changed: tokio::sync::watch::Sender<u64>,
     stop: CancellationToken,
 }
 
@@ -59,6 +67,8 @@ pub struct Listener {
     handle: Handle<SocketAddr>,
     stop: CancellationToken,
     task: Option<tokio::task::JoinHandle<io::Result<()>>>,
+    #[cfg(feature = "desktop")]
+    advertisement: Option<discovery::Advertisement>,
     #[cfg(all(windows, feature = "desktop"))]
     certificates: Option<tokio::sync::watch::Receiver<CertificateStatus>>,
     #[cfg(all(windows, feature = "desktop"))]
@@ -74,6 +84,21 @@ pub struct CertificateStatus {
 }
 
 impl Listener {
+    #[cfg(feature = "desktop")]
+    pub fn discoverable(&self) -> bool {
+        self.advertisement.is_some()
+    }
+
+    #[cfg(feature = "desktop")]
+    pub fn set_discoverable(&mut self, enabled: bool, host: Uuid) -> Result<(), String> {
+        if enabled && self.advertisement.is_none() {
+            self.advertisement = Some(discovery::Advertisement::start(self.address, host)?);
+        } else if !enabled {
+            self.advertisement = None;
+        }
+        Ok(())
+    }
+
     pub fn address(&self) -> SocketAddr {
         self.address
     }
@@ -90,6 +115,8 @@ impl Listener {
     }
 
     pub async fn stop(mut self) -> io::Result<()> {
+        #[cfg(feature = "desktop")]
+        drop(self.advertisement.take());
         self.stop.cancel();
         self.handle.shutdown();
         #[cfg(all(windows, feature = "desktop"))]
@@ -112,6 +139,18 @@ impl Drop for Listener {
 }
 
 impl Host {
+    pub fn host_id(&self) -> Uuid {
+        self.identity.id
+    }
+
+    pub fn management_events(&self) -> tokio::sync::watch::Receiver<u64> {
+        self.management_changed.subscribe()
+    }
+
+    fn management_changed(&self) {
+        self.management_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+    }
+
     pub fn workspace_id(&self) -> Uuid {
         self.workspace
     }
@@ -139,10 +178,13 @@ impl Host {
             workspace,
             enrollment: Arc::default(),
             mobile_checkpoints: Arc::default(),
+            companion_exports: Arc::default(),
             identity: identity.into(),
             requests: Arc::new(Semaphore::new(24)),
+            updates: Arc::new(Semaphore::new(2)),
             streams: Arc::new(Semaphore::new(16)),
             access_changed: tokio::sync::watch::Sender::new(()),
+            management_changed: tokio::sync::watch::Sender::new(0),
             stop: CancellationToken::new(),
         })
     }
@@ -155,12 +197,14 @@ impl Host {
             ["devices"] => Ok(json!(access::devices(&self.access, self.workspace).map_err(crate::domain::error)?)),
             ["approve" | "reject", id, code] => {
                 pending.decide(&self.access, id.parse().map_err(crate::domain::error)?, code, command.trim_start().starts_with("approve"))?;
+                self.management_changed();
                 Ok(Value::Null)
             }
             ["grant" | "withdraw", id] => {
                 let allow = command.trim_start().starts_with("grant");
                 access::set_grant(&self.access, id.parse().map_err(crate::domain::error)?, self.workspace, allow).map_err(crate::domain::error)?;
                 self.access_changed.send_replace(());
+                self.management_changed();
                 Ok(Value::Null)
             }
             ["revoke", id] => {
@@ -168,6 +212,7 @@ impl Host {
                 access::revoke(&self.access, id).map_err(crate::domain::error)?;
                 pending.forget(id);
                 self.access_changed.send_replace(());
+                self.management_changed();
                 Ok(Value::Null)
             }
             _ => Err("Commands: pending, approve ID CODE, reject ID CODE, devices, grant ID, withdraw ID, revoke ID".into()),
@@ -265,6 +310,7 @@ impl Host {
         let handle = Handle::new();
         let stop = self.stop.clone();
         let router = Router::new()
+            .merge(browser::router())
             .route("/api/access/host", get(descriptor))
             .route("/api/pairings", post(pairing::enroll))
             .route("/api/pairings/{id}", get(pairing::poll))
@@ -308,6 +354,8 @@ impl Host {
             handle,
             stop,
             task: Some(task),
+            #[cfg(feature = "desktop")]
+            advertisement: None,
             #[cfg(all(windows, feature = "desktop"))]
             certificates: None,
             #[cfg(all(windows, feature = "desktop"))]
@@ -395,12 +443,15 @@ impl Host {
         if self.stop.is_cancelled() {
             return Err(StatusCode::SERVICE_UNAVAILABLE);
         }
-        let credential = headers
+        let authorization = headers
             .get(header::AUTHORIZATION)
             .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.strip_prefix("Bearer "))
             .ok_or(StatusCode::UNAUTHORIZED)?;
-        access::authenticate(&self.access, credential).await
+        if let Some(credential) = authorization.strip_prefix(browser::INTERNAL_AUTH) {
+            return access::authenticate(&self.access, credential, true).await;
+        }
+        let credential = authorization.strip_prefix("Bearer ").ok_or(StatusCode::UNAUTHORIZED)?;
+        access::authenticate(&self.access, credential, false).await
     }
 
     async fn authorize(&self, headers: &HeaderMap, workspace: Uuid) -> ApiResult<Grant> {
@@ -505,7 +556,9 @@ async fn enforce_transport(
     request: axum::extract::Request,
     next: axum::middleware::Next,
 ) -> Response {
-    if !private(peer.ip()) || request.headers().contains_key(header::ORIGIN) {
+    if !private(peer.ip()) || request.method() == axum::http::Method::OPTIONS ||
+        request.headers().get(header::AUTHORIZATION).is_some_and(|v| v.as_bytes().starts_with(browser::INTERNAL_AUTH.as_bytes())) ||
+        (request.headers().contains_key(header::ORIGIN) && !browser::same_origin(&request)) {
         return StatusCode::FORBIDDEN.into_response();
     }
     let mut response = next.run(request).await;

@@ -115,6 +115,7 @@ impl Pairing {
                         workspaces: Default::default(),
                         device: id,
                         label: pending.label.clone(),
+                        browser_expires: (pending.kind == "browser").then(|| OffsetDateTime::now_utc().unix_timestamp() + super::browser::MAX_AGE),
                     },
                 )
                 .map_err(crate::domain::error)?;
@@ -136,6 +137,7 @@ impl Pairing {
 pub(super) async fn enroll(
     State(host): State<Host>,
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Json(input): Json<Enrollment>,
 ) -> ApiResult<Json<Value>> {
     let mut pairing = host
@@ -147,7 +149,8 @@ pub(super) async fn enroll(
     if label.is_empty()
         || label.chars().count() > 80
         || label.chars().any(char::is_control)
-        || !matches!(input.kind.as_str(), "desktop" | "agent")
+        || !(matches!(input.kind.as_str(), "desktop" | "agent")
+            || input.kind == "browser" && headers.contains_key(axum::http::header::ORIGIN))
         || input.nonce.len() != 64
         || !input
             .nonce
@@ -189,6 +192,7 @@ pub(super) async fn enroll(
             decision: Decision::Pending,
         },
     );
+    host.management_changed();
     Ok(Json(result))
 }
 
@@ -197,7 +201,7 @@ fn lookup(
     peer: SocketAddr,
     id: Uuid,
     headers: &HeaderMap,
-    project: impl FnOnce(&Pending) -> ApiResult<Value>,
+    project: impl FnOnce(&mut Pending) -> ApiResult<Value>,
 ) -> ApiResult<Json<Value>> {
     let mut pairing = host
         .enrollment
@@ -205,11 +209,11 @@ fn lookup(
         .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
     pairing.admit(peer.ip())?;
     let secret = headers
-        .get("x-vaultor-pairing")
+        .get("x-vaultor-pairing").filter(|secret| secret.as_bytes().len() == 64)
         .ok_or(StatusCode::NOT_FOUND)?;
     let pending = pairing
         .requests
-        .get(&id)
+        .get_mut(&id)
         .filter(|p| bool::from(p.secret.as_bytes().ct_eq(secret.as_bytes())))
         .ok_or(StatusCode::NOT_FOUND)?;
     project(pending).map(Json)
@@ -233,13 +237,23 @@ pub(super) async fn complete(
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
     Path(id): Path<Uuid>,
     headers: HeaderMap,
-) -> ApiResult<Json<Value>> {
-    lookup(&host, peer, id, &headers, |p| match &p.decision {
-        Decision::Approved { id, credential } => Ok(json!({
-            "deviceId":id,"credential":credential,"kind":p.kind,
-        })),
+) -> ApiResult<axum::response::Response> {
+    use axum::response::IntoResponse;
+    let mut cookie = None;
+    let value = lookup(&host, peer, id, &headers, |p| match &p.decision {
+        Decision::Approved { id, credential } if p.kind == "browser" => {
+            if !headers.contains_key(axum::http::header::ORIGIN) { return Err(StatusCode::FORBIDDEN); }
+            cookie = Some(super::browser::cookie(credential, super::browser::MAX_AGE)?);
+            let value = json!({"deviceId":id,"kind":"browser"});
+            p.secret.clear();
+            Ok(value)
+        }
+        Decision::Approved { id, credential } => Ok(json!({"deviceId":id,"credential":credential,"kind":p.kind})),
         _ => Err(StatusCode::CONFLICT),
-    })
+    })?;
+    let mut response = value.into_response();
+    if let Some(cookie) = cookie { response.headers_mut().insert(axum::http::header::SET_COOKIE, cookie); }
+    Ok(response)
 }
 
 #[cfg(test)]

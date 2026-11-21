@@ -11,6 +11,69 @@ use tokio::net::TcpStream;
 use tokio_rustls::TlsConnector;
 
 #[tokio::test]
+async fn browser_session_checks_origin_csrf_scope_revision_and_logout() {
+    let fixture = Fixture::new();
+    let identity = Identity::open(&fixture.access, &fixture.ca).unwrap();
+    let worker = Worker::start(fixture.root.clone(), None).unwrap();
+    let note = worker.call(Request::CreateNote { title: "Browser test".into(), collection: None }).await.unwrap();
+    let id = note["id"].as_str().unwrap();
+    let host = Host::new(worker.storage(), fixture.root.clone(), identity).await.unwrap();
+    let listener = host.clone().listen("127.0.0.1:0".parse().unwrap(), fixture.chain.clone(), fixture.key.clone()).await.unwrap();
+    let client = connector(Some(fixture.authority.clone()));
+    let address = listener.address();
+    let origin = format!("Origin: https://{address}\r\n");
+    let enroll = json!({"name":"Browser test","kind":"browser","nonce":"a".repeat(64),"fingerprint":host.fingerprint()}).to_string();
+    assert_eq!(request(&client,address,"POST","/api/pairings","Origin: https://example.invalid\r\n",&enroll).await.0,403);
+    assert_eq!(request(&client,address,"POST","/api/pairings","",&enroll).await.0,400);
+    let pending = request(&client,address,"POST","/api/pairings",&origin,&enroll).await;
+    assert_eq!(pending.0,200,"{}",pending.2);
+    let p:Value = serde_json::from_str(&pending.2).unwrap();
+    let pairing = p["id"].as_str().unwrap();
+    let code = p["code"].as_str().unwrap();
+    assert!(host.owner_command(&format!("approve {pairing} invalid")).is_err());
+    host.owner_command(&format!("approve {pairing} {code}")).unwrap();
+    let path = format!("/api/pairings/{pairing}/complete");
+    let proof = format!("{origin}X-Vaultor-Pairing: {}\r\n",p["secret"].as_str().unwrap());
+    let complete = request(&client,address,"POST",&path,&proof,"{}").await;
+    assert_eq!(complete.0,200,"{}",complete.2);
+    let recorded: Value = serde_json::from_str(&complete.2).unwrap();
+    assert!(recorded["credential"].is_null());
+    let cookie = complete.1.lines().find_map(|line| line.strip_prefix("set-cookie: ")).unwrap();
+    assert!(cookie.contains("HttpOnly") && cookie.contains("Secure") && cookie.contains("SameSite=Strict"));
+    let pair = cookie.split(';').next().unwrap();
+    let credentials = format!("Cookie: {pair}\r\n");
+    let token = pair.split_once('=').unwrap().1;
+    assert_ne!(request(&client,address,"POST",&path,&proof,"{}").await.0,200);
+    let browser = "/api/next/browser/v1";
+    let note = format!("{browser}/resources/{id}");
+    assert_eq!(request(&client,address,"GET",&note,&credentials,"").await.0,403);
+    let device = recorded["deviceId"].as_str().unwrap();
+    host.owner_command(&format!("grant {device}")).unwrap();
+    assert_eq!(request(&client,address,"GET",&note,&credentials,"").await.0,200);
+    assert_eq!(request(&client,address,"GET",&format!("/api/next/v1/workspaces"),&format!("Authorization: Bearer {token}\r\n"),"").await.0,401);
+    let scope = format!("{credentials}X-Vaultor-Workspace: {}\r\n",host.workspace);
+    let edit = format!("{browser}/notes/{id}");
+    let body = json!({"revision":1,"title":"Browser save","content":{"type":"doc","content":[]}}).to_string();
+    assert_eq!(request(&client,address,"PUT",&edit,&format!("{scope}{origin}"),&body).await.0,403);
+    let session = request(&client,address,"GET","/api/access/session",&credentials,"").await;
+    let session:Value = serde_json::from_str(&session.2).unwrap();
+    let csrf = session["csrf"].as_str().unwrap();
+    let signed = format!("{scope}{origin}X-Vaultor-CSRF: {csrf}\r\n");
+    assert_eq!(request(&client,address,"PUT",&edit,&signed,&body).await.0,200);
+    assert_eq!(request(&client,address,"PUT",&edit,&signed,&body).await.0,409);
+    worker.call(Request::Draft { id:id.into(), base_revision:2, token:Uuid::new_v4().to_string(), sequence:1,
+        title:"Protected desktop draft".into(), content:json!({"type":"doc","content":[]}) }).await.unwrap();
+    assert_eq!(request(&client,address,"PUT",&edit,&signed,&body.replace("\"revision\":1","\"revision\":2")).await.0,409);
+    assert!(!request(&client,address,"GET",&note,&credentials,"").await.2.contains("Protected desktop draft"));
+    host.owner_command(&format!("withdraw {device}")).unwrap();
+    assert_eq!(request(&client,address,"GET",&note,&credentials,"").await.0,403);
+    assert_eq!(request(&client,address,"POST","/api/access/logout",&signed,"{}").await.0,204);
+    assert_eq!(request(&client,address,"GET","/api/access/session",&credentials,"").await.0,401);
+    listener.stop().await.unwrap();
+    worker.stop();
+}
+
+#[tokio::test]
 async fn mobile_projection_keeps_saved_revisions_and_checkpoint_authority() {
     let fixture = Fixture::new();
     let identity = Identity::open(&fixture.access, &fixture.ca).unwrap();
@@ -105,7 +168,31 @@ async fn mobile_projection_keeps_saved_revisions_and_checkpoint_authority() {
     assert_eq!(sent.0,200,"{}",sent.2);
     assert_eq!(sent.2,call("PUT",review_path.clone(),auth.clone(),input.to_string()).await.2);
     assert_eq!(call("GET",review_path,other_auth.clone(),"".into()).await.0,404);
+
+    let export_id = Uuid::new_v4();
+    let export = route(&format!("/companions/exports/{export_id}"));
+    let format = json!({"generation":workspace,"scope":"note","format":"md","depth":0,"ids":[note_id]});
+    assert_eq!(call("PUT",export.clone(),String::new(),format.to_string()).await.0,401);
+    assert_eq!(call("PUT",export.clone(),auth.clone(),format.to_string()).await.0,200);
+    let status = format!("{export}?generation={workspace}");
+    assert_eq!(call("GET",status.clone(),other_auth.clone(),String::new()).await.0,404);
+    let mut result = Value::Null;
+    for _ in 0..32 {
+        let response = call("GET",status.clone(),auth.clone(),String::new()).await;
+        assert_eq!(response.0,200);
+        result = serde_json::from_str(&response.2).unwrap();
+        if result["operation"]["status"] != "RUNNING" { break; }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    assert_eq!(result["operation"]["status"],"SUCCEEDED","{result}");
+    assert_eq!(call("PUT",export.clone(),auth.clone(),format.to_string()).await.0,200);
+    assert_eq!(call("PUT",export.clone(),auth.clone(),format.to_string().replace("\"md\"","\"pdf\"")).await.0,409);
+    let derivative = format!("{export}/download?generation={workspace}");
+    let file = call("GET",derivative.clone(),auth.clone(),String::new()).await;
+    assert_eq!(file.0,200);
+    assert!(file.2.contains("New saved revision"));
     host.owner_command(&format!("withdraw {device}")).unwrap();
+    assert_eq!(call("GET",derivative,auth.clone(),String::new()).await.0,403);
     assert_eq!(call("GET",bin,pinned,"".into()).await.0,403);
     host.owner_command(&format!("revoke {device}")).unwrap();
     assert_eq!(call("GET",workspace_path,auth,"".into()).await.0,401);

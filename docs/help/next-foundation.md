@@ -184,23 +184,29 @@ In managed or linked draft review, choose **Export protected draft** to write a 
 
 Open **Settings → Hosting**, choose an address, then select **Start hosting**. Choose **This computer only** for local access or select a private IP address that your device can reach. Vaultor for Windows creates a host certificate on first use and renews the server certificate while sharing. Its CA fingerprint stays the same when you stop and start with a different address. For a private network firewall prompt, allow access only for the network and devices you intend to use.
 
-Sharing starts off unless you turn on **Start hosting on launch**. This setting remembers the workspace and address you chose. If the address changes, select the new address and start sharing again. **Stop hosting** also turns off start on launch.
+Sharing starts off unless you turn on **Start hosting on launch**. For a listed private address, **Recover address changes** can follow a single new address on the selected network interface and subnet. If Vaultor cannot identify a suitable address, select the new address and start hosting again. **Stop hosting** also turns off start on launch.
 
-Use **Refresh devices** to see pending approvals. Compare the pairing codes, approve the device, then grant access to the current workspace. You can withdraw that grant or revoke the device. A device can retain files it already received.
+Pairing requests appear in **Settings → Hosting**. Compare the pairing codes, approve the device, then grant access to the current workspace. You can withdraw that grant or revoke the device. A device can retain files it already received.
 
-Stop hosting before switching workspaces. Closing to the tray keeps sharing running. Quit ends it. The M24-C Android candidate can connect manually to the matching Next Windows build. Browser workspace access remains separate.
+Stop hosting before switching workspaces. Closing to the tray keeps sharing running. Quit ends it.
 
 ### Connect Android on the same Wi-Fi
 
-1. Launch the M24-C Windows executable with a Vaultor Next workspace. In **Settings → Hosting**, select the private Wi-Fi address and select **Start hosting**. Leave this page open to see the HTTPS address and **CA fingerprint (SHA-256)**.
-2. Install the M24-C Android APK from Files and open **Vaultor Next**. It installs alongside the published Vaultor app and starts with its own approvals, downloads and Review queue. Android may ask you to allow the APK installer and local network access.
-3. Open **Source management**, enter the full HTTPS address including its port, and enter the CA fingerprint displayed by Windows. Tap **Pair with host**.
-4. In Windows select **Refresh devices**. Compare the six-digit codes on both screens. If they match, select **Codes match**, **Approve** and **Grant access** for the current workspace. On Android select **I approved the matching code** and open the workspace in Library.
+1. Launch the M24-D Windows candidate with a Vaultor Next workspace. In **Settings → Hosting**, select the private Wi-Fi address and select **Start hosting**. Turn on discovery if you want the host to appear in **Nearby hosts**. Open the pairing QR on Windows.
+2. Install the M24-D Android candidate and open **Vaultor Next**. It uses separate approvals, downloads and Review storage from the published Vaultor app. Android can prompt for local network and camera access.
+3. In **Source management**, select **Scan pairing QR** and scan the code on the host you intend to trust. You can also use a verified HTTPS address and the CA fingerprint in Windows settings if the scanner is unavailable. A nearby advertisement supplies an address only.
+4. Compare the six-digit codes on both screens. If they match, select **Codes match**, **Approve** and **Grant access** on Windows. On Android select **I approved the matching code** and open the workspace in Library.
 5. Open notes or managed originals from Library or search. Use **Offline downloads** to prepare a reading copy. Use **Review** to queue feedback for the current saved revision. The desktop **Review inbox** displays delivered feedback.
 
-For an unreachable host, verify both devices are on the same private Wi-Fi, the host is bound to the Wi-Fi IP, and Windows Firewall allows the chosen executable on the Private network. Guest network isolation or a VPN can block peer traffic. For a changed address, edit the remembered host address and verify the same CA fingerprint. If the identity differs, stop and verify the host before pairing again. Expired pairing needs a fresh code. An approved device with no workspace needs **Grant access** on Windows.
+For an unreachable host, verify both devices are on the same private Wi-Fi, the host is bound to the Wi-Fi IP, and Windows Firewall allows the chosen executable on the Private network. Guest network isolation or a VPN can block peer traffic. Android tries to recover a remembered Next address when the nearby service is available and the pinned identity matches. You can also edit the remembered address yourself. If the identity differs, verify the host before pairing again. Expired pairing needs a fresh code.
 
 Downloads can remain readable while disconnected. Once the app verifies that a device or workspace grant was revoked, it locks the affected copy. Files previously saved or shared outside Vaultor remain with their recipients. Linked-source originals stay on the host.
+
+### Use a browser or transfer saved content
+
+Ask the host owner for the public CA and verify its fingerprint in Hosting. Have your browser or device administrator configure trust for the intended client profile. Open the HTTPS address after the browser accepts the certificate. Use the matching-code page to request approval and a workspace grant. Once granted, you can browse collections, search and open saved notes, preview or download supported managed files, and use **Edit** then **Save** on a saved note. A conflicting revision or a protected desktop draft blocks the save. **Sign out** ends that browser approval.
+
+On Android, **Collected imports** can send a confirmed original or a reviewed text or Markdown conversion to the granted Next workspace. Keep the queued original until you have a receipt. Next connected exports include saved-note Markdown, Markdown with assets, Word and text-layout PDF, and eligible whole-workspace or selected `.vaultor` archives. The legacy workspace ZIP import still needs the original host review workflow. Next archive export excludes Reviews and owner settings and refuses owner-local linked descriptors, Trash or protected selections.
 
 ## Review Inbox
 

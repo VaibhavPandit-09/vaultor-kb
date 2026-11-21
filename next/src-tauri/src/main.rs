@@ -491,6 +491,8 @@ fn main() {
                     let hosting = handle.state::<desktop_host::DesktopHost>();
                     let worker = handle.state::<Worker>();
                     hosting.resume(&worker).await;
+                    let _ = handle.emit("next-host-status", ());
+                    hosting.monitor(&worker, &handle).await;
                 });
             }
             Ok(())

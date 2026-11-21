@@ -1,6 +1,6 @@
 # Vaultor Next migration tracker
 
-Reviewed 2026-11-20. Authoritative experimental replacement tracker. Published Windows/macOS 0.27.0 remain Electron/Java. M24-C uses a separate local Android candidate. The branch remains experimental.
+Reviewed 2026-11-21. Authoritative experimental replacement tracker. Published Windows/macOS 0.27.0 remain Electron/Java. M24-C uses a separate local Android candidate. The branch remains experimental.
 
 ## Target and implemented milestones
 
@@ -583,6 +583,12 @@ The optimized Windows executable uses source `ba156c9b818c8fdce1e53935bd2102cc5a
 **Security and regression.** Rust all-target tests passed 59 library and 2 binary tests. They cover wrong TLS authority, managed-leaf rotation, expiry, approval/grant refusals, workspace scoping, saved versus protected data, integrity-checked files, device-bound checkpoints and Reviews, grants and revocation. Optimized standalone Windows verified its descriptor and anonymous refusal. Linux/amd64 Docker verified TLS, matching-code approval through its owner socket, workspace grants, mobile browsing and estimate, restart identity and grant persistence, withdrawal and revocation. Android TypeScript, 111 Jest checks, 28 focused workspace/offline/feed checks after the access fix, 18 native store and transport-policy tests and the reader runtime checks passed. Help validation covered 43 features and 16 articles, all 17 governance tests passed, and the same-Wi-Fi article was inspected in bundled Windows Help.
 
 **Measurements.** In one API 36 emulator observation, Android reported a 1,163 ms cold activity start. The persisted Review was observed in Rust after 2,657 ms from the Android restart command. Saved-change and search observations took 3,069 ms and 7,536 ms respectively, including UI automation and observation overhead. Local saved-note IPC with an authorized Android connection took 3.10 ms median across five calls. The Windows Rust process sampled 22.1 MiB working set and 8.3 MiB private bytes, with no measurable CPU increase in one five-second window. The figures describe the disposable loopback fixture. Wi-Fi throughput and sustained contention remain unmeasured. The [benchmark summary](../../benchmarks/tauri-rust/summaries/m24c-android-windows.json) records 12 new observations. The workbook retains the previous 11,915 rows and all 475 formulas.
+
+### M24-D — Discovery, QR, browser and transfers
+
+The implementation adds discovery on the selected Windows private interface, expiring QR information and Android pinned address recovery. The embedded React browser supports saved Library browsing, search, note rendering, managed preview and download, and explicit saved-note edits under an approved session. Android connected transfer adapters reuse the Rust managed-original and export authorities. [Host and security contract](../development/NEXT-HOST.md) · [Help](../help/next-foundation.md#connect-android-on-the-same-wi-fi).
+
+Unresolved original parity includes legacy workspace ZIP review/compatibility, Android link-depth export and review coverage, browser creation and organization and local owner handoff, authorized cross-interface recovery, workspace replacement, legacy archive compatibility, export fidelity, PDF functionality and linked-occurrence navigation. Physical Windows interaction, Samsung camera/permission/real-Wi-Fi and DHCP or sleep tests, accessibility and broad security qualification remain separate. macOS qualification and extra deployment platforms remain deferred. Cloud sync and collaborative editing remain future enhancements.
 
 ### M25 — Comprehensive Performance Optimization
 

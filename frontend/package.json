@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "next:dev": "vite --config vite.next.config.ts",
-    "next:build": "tsc -b && vite build --config vite.next.config.ts"
+    "next:build": "tsc -b && vite build --config vite.next.config.ts && npm run next:browser",
+    "next:browser": "vite build --config vite.next-browser.config.ts"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.2",

@@ -125,6 +125,8 @@ pub(super) struct Record {
     pub workspaces: BTreeSet<Uuid>,
     pub device: Uuid,
     pub label: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub browser_expires: Option<i64>,
 }
 
 pub(super) struct Grant {
@@ -132,6 +134,7 @@ pub(super) struct Grant {
     pub(super) label: String,
     pub(super) workspaces: BTreeSet<Uuid>,
     verifier: [u8; 32],
+    browser: bool,
 }
 
 impl Grant {
@@ -140,7 +143,7 @@ impl Grant {
             .join("grants")
             .join(format!("{}.json", hex::encode(self.verifier)));
         read_record(&path)
-            .is_ok_and(|r| r.device == self.device && r.workspaces.contains(&workspace))
+            .is_ok_and(|r| r.live() && r.device == self.device && r.workspaces.contains(&workspace))
     }
 
     pub(super) async fn current(&self, access: &Path, workspace: Uuid) -> bool {
@@ -150,13 +153,21 @@ impl Grant {
     }
 }
 
-pub(super) async fn authenticate(access: &Path, value: &str) -> Result<Grant, StatusCode> {
+pub(super) async fn authenticate(access: &Path, value: &str, browser: bool) -> Result<Grant, StatusCode> {
     if value.len() != 64 || !value.bytes().all(|c| c.is_ascii_hexdigit()) {
         return Err(StatusCode::UNAUTHORIZED);
     }
-    read_grant(access, Sha256::digest(value.as_bytes()).into())
+    let grant = read_grant(access, Sha256::digest(value.as_bytes()).into())
         .await
-        .map_err(|_| StatusCode::UNAUTHORIZED)
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+    if grant.browser != browser { return Err(StatusCode::UNAUTHORIZED); }
+    Ok(grant)
+}
+
+impl Record {
+    fn live(&self) -> bool {
+        self.browser_expires.is_none_or(|expires| time::OffsetDateTime::now_utc().unix_timestamp() < expires)
+    }
 }
 
 fn read_record(path: &Path) -> io::Result<Record> {
@@ -176,11 +187,13 @@ async fn read_grant(access: &Path, verifier: [u8; 32]) -> io::Result<Grant> {
         .join("grants")
         .join(format!("{}.json", hex::encode(verifier)));
     let record = tokio::task::spawn_blocking(move || read_record(&path)).await??;
+    if !record.live() { return Err(io::Error::new(io::ErrorKind::PermissionDenied, "Browser session expired")); }
     Ok(Grant {
         device: record.device,
         label: record.label,
         workspaces: record.workspaces,
         verifier,
+        browser: record.browser_expires.is_some(),
     })
 }
 

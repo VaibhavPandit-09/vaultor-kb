@@ -128,12 +128,25 @@ pub enum Job {
     Archive {
         destination: String,
     },
+    #[cfg(feature = "host")]
+    CompanionArchive {
+        destination: String,
+        selection: Option<(Vec<String>, Option<String>)>,
+    },
+    #[cfg(feature = "host")]
+    CompanionNote {
+        ids: Vec<String>,
+        destination: String,
+        format: String,
+    },
     Restore {
         source: String,
         destination: String,
         manifest_hash: String,
     },
 }
+#[cfg(feature = "host")]
+pub(crate) mod companion;
 impl Job {
     pub fn kind(&self) -> &str {
         match self {
@@ -145,6 +158,10 @@ impl Job {
             Self::Import { .. } => "file-import",
             Self::Export { .. } => "resource-export",
             Self::Archive { .. } | Self::ArchiveSelection { .. } => "workspace-export",
+            #[cfg(feature = "host")]
+            Self::CompanionArchive { .. } => "workspace-export",
+            #[cfg(feature = "host")]
+            Self::CompanionNote { .. } => "resource-export",
             Self::Merge { .. } => "workspace-merge",
             Self::ExportRecovery { .. } => "recovery-export",
             Self::Restore { .. } => "workspace-import",
@@ -161,6 +178,10 @@ impl Job {
             Self::Export { ids, .. } => format!("Export {} resources", ids.len()),
             Self::Archive { .. } => "Export workspace archive".into(),
             Self::ArchiveSelection { .. } => "Export selected archive".into(),
+            #[cfg(feature = "host")]
+            Self::CompanionArchive { .. } => "Prepare companion archive".into(),
+            #[cfg(feature = "host")]
+            Self::CompanionNote { .. } => "Prepare companion note export".into(),
             Self::Merge { .. } => "Merge reviewed archive".into(),
             Self::ExportRecovery { .. } => "Export protected draft copy".into(),
             Self::Restore { .. } => "Restore workspace as new".into(),
@@ -420,7 +441,10 @@ pub fn initialize(db: &rusqlite::Connection) -> Result<(), String> {
         CREATE TRIGGER IF NOT EXISTS remove_import_provenance AFTER DELETE ON resources
         BEGIN DELETE FROM import_sources WHERE resource_id=old.id; END;
         CREATE TABLE IF NOT EXISTS transfer_reserved(id TEXT PRIMARY KEY,hash TEXT NOT NULL);\n        CREATE TABLE IF NOT EXISTS transfer_merges(hash TEXT PRIMARY KEY,receipt TEXT NOT NULL);
-        CREATE TABLE IF NOT EXISTS portable_linked_descriptors(id TEXT PRIMARY KEY,title TEXT NOT NULL,label TEXT NOT NULL,path TEXT NOT NULL,revision TEXT NOT NULL);").map_err(error)
+        CREATE TABLE IF NOT EXISTS portable_linked_descriptors(id TEXT PRIMARY KEY,title TEXT NOT NULL,label TEXT NOT NULL,path TEXT NOT NULL,revision TEXT NOT NULL);").map_err(error)?;
+    #[cfg(feature = "host")]
+    companion::initialize(db)?;
+    Ok(())
 }
 pub fn plain_directory(path: &Path) -> Result<(), String> {
     for ancestor in path.ancestors() {
@@ -743,13 +767,17 @@ pub fn execute(
             ids,
             destination,
             format,
-        } => export(storage, root, ids, &destination, &format, ctx),
-        Job::Archive { destination } => archive(storage, root, &destination, None, ctx),
+        } => export(storage, root, ids, &destination, &format, false, ctx),
+        #[cfg(feature = "host")]
+        Job::CompanionNote { ids, destination, format } => export(storage, root, ids, &destination, &format, true, ctx),
+        Job::Archive { destination } => archive(storage, root, &destination, None, false, ctx),
+        #[cfg(feature = "host")]
+        Job::CompanionArchive { destination, selection } => archive(storage, root, &destination, selection, true, ctx),
         Job::ArchiveSelection {
             ids,
             collection,
             destination,
-        } => archive(storage, root, &destination, Some((ids, collection)), ctx),
+        } => archive(storage, root, &destination, Some((ids, collection)), false, ctx),
         Job::Merge {
             source,
             manifest_hash,
@@ -1188,6 +1216,7 @@ fn archive(
     root: &str,
     destination: &str,
     selection: Option<(Vec<String>, Option<String>)>,
+    remote: bool,
     ctx: &mut Context,
 ) -> Result<Value, String> {
     let data = storage.call(root, move |w| {
@@ -1196,8 +1225,13 @@ fn archive(
         } else {
             snapshot(w, None)?
         };
-        let selected = manifest.partial.then(|| manifest.resources.iter().map(|r| r.id.as_str()).collect());
-        manifest.reviews = crate::reviews::snapshot(&w.db, selected.as_ref())?;
+        if remote {
+            validate_companion_snapshot(w, &manifest)?;
+            manifest.settings = json!({});
+        } else {
+            let selected = manifest.partial.then(|| manifest.resources.iter().map(|r| r.id.as_str()).collect());
+            manifest.reviews = crate::reviews::snapshot(&w.db, selected.as_ref())?;
+        }
         if !manifest.reviews.is_empty() || !manifest.linked.is_empty() {
             manifest.version = 4;
         }
@@ -1570,12 +1604,26 @@ fn publish_directory(source: &Path, destination: &Path) -> Result<(), String> {
         fs::rename(source, destination).map_err(error)
     }
 }
+fn validate_companion_snapshot(w: &Workspace, manifest: &Manifest) -> Result<(), String> {
+    if !manifest.linked.is_empty() || manifest.originals.iter().map(|o| o.bytes).sum::<u64>() > 224 * 1024 * 1024 {
+        return Err("The companion archive exceeds its byte limit or includes owner-local linked descriptors.".into());
+    }
+    let mut q = w.db.prepare("SELECT EXISTS(SELECT 1 FROM visible_resources WHERE id=?1) AND NOT EXISTS(SELECT 1 FROM resource_state WHERE resource_id=?1 AND trashed=1)").map_err(error)?;
+    for resource in &manifest.resources {
+        if !q.query_row([&resource.id], |r| r.get::<_, bool>(0)).map_err(error)? {
+            return Err("The selection includes content outside the companion library.".into());
+        }
+    }
+    Ok(())
+}
+
 fn export(
     storage: &Storage,
     root: &str,
     ids: Vec<String>,
     destination: &str,
     format: &str,
+    remote: bool,
     ctx: &mut Context,
 ) -> Result<Value, String> {
     let destination = PathBuf::from(destination);
@@ -1634,12 +1682,20 @@ fn export(
     }
     let zip = format == "markdownZip";
     let manifest = storage.call(root, move |w| {
+        if remote {
+            let note = ids.first().ok_or("Select a note")?;
+            if w.db.query_row("SELECT EXISTS(SELECT 1 FROM managed_originals WHERE resource_id=?1 AND kind='file')", [note], |r| r.get::<_, bool>(0)).map_err(error)? {
+                return Err("Choose a note for this export format".into());
+            }
+        }
         let mut manifest = if zip {
             portable::selection(w, ids, None)?
         } else {
             snapshot(w, Some(&ids))?
         };
-        if zip {
+        if remote {
+            validate_companion_snapshot(w, &manifest)?;
+        } else if zip {
             let selected = manifest.resources.iter().map(|r|r.id.as_str()).collect();
             manifest.reviews=crate::reviews::snapshot(&w.db,Some(&selected))?;
         }

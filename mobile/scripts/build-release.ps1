@@ -36,9 +36,9 @@ try {
         if ($LASTEXITCODE -ne 0 -or $fingerprints.Count -ne 1 -or $fingerprints[0].Line -notmatch ("certificate SHA-256 digest: " + [regex]::Escape($signer) + '$')) {
             throw 'Next candidate signature verification failed'
         }
-        $destination = Join-Path $mobileRoot 'releases/0.1.0-m24c.1'
+        $destination = Join-Path $mobileRoot 'releases/0.1.0-m24d.1'
         New-Item -ItemType Directory -Path $destination -Force | Out-Null
-        Copy-Item -LiteralPath $apk -Destination (Join-Path $destination 'Vaultor-Next-Android-0.1.0-m24c.1.apk') -Force
+        Copy-Item -LiteralPath $apk -Destination (Join-Path $destination 'Vaultor-Next-Android-0.1.0-m24d.1.apk') -Force
     } else {
         & node (Join-Path $PSScriptRoot verify-apk.mjs)
         if ($LASTEXITCODE -ne 0) { throw 'APK verification failed' }

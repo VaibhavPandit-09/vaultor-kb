@@ -9,9 +9,9 @@ use rusqlite::params;
 use serde_json::Value;
 use std::path::Path;
 
-type MobileResult<T> = Result<T, Problem>;
+pub(super) type MobileResult<T> = Result<T, Problem>;
 
-struct Problem(StatusCode, &'static str, &'static str);
+pub(super) struct Problem(pub(super) StatusCode, pub(super) &'static str, pub(super) &'static str);
 
 impl IntoResponse for Problem {
     fn into_response(self) -> Response {
@@ -73,9 +73,24 @@ pub(super) fn router() -> Router<Host> {
             get(get_review).put(put_review),
         )
         .merge(checkpoints::router())
+        .merge(super::companion::router())
+        .merge(super::companion_exports::router())
 }
 
-fn selected(host: &Host, headers: &HeaderMap) -> MobileResult<Uuid> {
+pub(super) fn browser_reads() -> Router<Host> {
+    Router::new()
+        .route("/workspaces", get(workspace_list))
+        .route("/workspace/identity", get(identity))
+        .route("/resources", get(browse))
+        .route("/resources/query", get(browse))
+        .route("/collections", get(browse))
+        .route("/tags/browse", get(browse))
+        .route("/resources/{id}", get(resource))
+        .route("/resources/{id}/raw", get(original))
+        .route("/changes", get(events))
+}
+
+pub(super) fn selected(host: &Host, headers: &HeaderMap) -> MobileResult<Uuid> {
     match headers.get("x-vaultor-workspace") {
         None => Ok(host.workspace),
         Some(id) => id
@@ -188,7 +203,7 @@ fn mime(name: &str) -> &'static str {
     }
 }
 
-fn summary(workspace: &mut Workspace, id: &str, trashed: bool) -> Result<Value, String> {
+pub(super) fn summary(workspace: &mut Workspace, id: &str, trashed: bool) -> Result<Value, String> {
     let mut item = workspace.db.query_row(
         "SELECT r.title,r.revision,r.updated_at,o.kind,o.name,o.bytes,
           COALESCE(s.pinned,0),datetime(NULLIF(s.opened,0),'unixepoch'),COALESCE(s.trashed,0)

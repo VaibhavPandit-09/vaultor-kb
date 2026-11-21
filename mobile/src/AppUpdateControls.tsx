@@ -14,7 +14,7 @@ import ContextSheet from './ContextSheet';
 import { Action } from './Action';
 import { useThemeStyles } from './ui';
 const native = NativeModules.VaultorNative;
-type Candidate = { hostId: string; name: string; address: string };
+type Candidate = { hostId: string; name: string; address: string; compatibility?: string };
 type Scan = { scanning: boolean; items: Candidate[]; error: string };
 type Update = {
   phase: string;
@@ -34,7 +34,8 @@ export function NearbyHosts({
   choose(address: string): void;
 }) {
   const s = useThemeStyles(styles),
-    [scan, setScan] = useState<Scan>({ scanning: false, items: [], error: '' });
+    [scan, setScan] = useState<Scan>({ scanning: false, items: [], error: '' }),
+    [searched, setSearched] = useState(false);
   async function refresh() {
     try {
       setScan(JSON.parse(await native.nearby('list')));
@@ -70,6 +71,7 @@ export function NearbyHosts({
               else {
                 await permission();
                 await native.nearby('start');
+                setSearched(true);
               }
               await refresh();
             } catch {
@@ -91,10 +93,14 @@ export function NearbyHosts({
           {scan.error}
         </Text>
       ) : null}
+      {searched && !scan.scanning && !scan.error && !scan.items.length ? (
+        <Text style={s.secondary}>No nearby hosts found. Scan a pairing QR or enter an address.</Text>
+      ) : null}
       {scan.items.map(item => (
         <Action
           key={item.hostId + item.address}
-          label={item.name + ' · ' + item.address}
+          label={[item.name, item.address, item.compatibility].filter(Boolean).join(' · ')}
+          disabled={item.compatibility === 'Unsupported Vaultor Next'}
           onPress={() => choose(item.address)}
         />
       ))}

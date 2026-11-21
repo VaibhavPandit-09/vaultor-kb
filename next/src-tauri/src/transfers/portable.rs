@@ -99,6 +99,15 @@ pub(super) fn reserve_originals(
     storage.call(root, move |workspace| {
         let transaction = workspace.db.transaction().map_err(error)?;
         for (id, hash) in originals {
+            reserve_original(&transaction, &id, &hash)?;
+        }
+        transaction.commit().map_err(error)?;
+        Ok(Value::Null)
+    })?;
+    Ok(())
+}
+
+pub(super) fn reserve_original(transaction: &rusqlite::Connection, id: &str, hash: &str) -> Result<(), String> {
             Uuid::parse_str(&id).map_err(error)?;
             let owned: bool = transaction
                 .query_row(
@@ -129,10 +138,6 @@ pub(super) fn reserve_originals(
             transaction
                 .execute("INSERT OR IGNORE INTO pending_deletions VALUES(?1)", [&id])
                 .map_err(error)?;
-        }
-        transaction.commit().map_err(error)?;
-        Ok(Value::Null)
-    })?;
     Ok(())
 }
 

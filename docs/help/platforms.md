@@ -27,4 +27,4 @@ Android supports reviewed import delivery, full/partial exports and native Save/
 
 No Android in-app Help was implemented by this initiative. The articles here explain Android differences for desktop users; they are not Android UI instructions for new Help controls.
 
-The separate Vaultor Next M24-C test APK can pair manually with the matching experimental Rust host. It has a separate app identity and storage, including retained reading copies and the Review queue. See [Connect Android on the same Wi-Fi](next-foundation.md#connect-android-on-the-same-wi-fi).
+The separate Vaultor Next test APK can pair through a verified QR code or manual HTTPS address and CA fingerprint. It has its own app identity, retained reading copies and Review queue. See [Connect Android on the same Wi-Fi](next-foundation.md#connect-android-on-the-same-wi-fi).

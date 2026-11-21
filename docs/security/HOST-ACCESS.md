@@ -6,6 +6,8 @@ The published host contracts below apply to Electron/Java. The experimental [Nex
 
 New Windows Next profiles publish the generated CA, host identity, and DPAPI-protected private key together. Server leaves are short-lived and remain in memory. Managed renewal replaces the Rust TLS configuration only after validating the new leaf chain and exact bind IP under the original CA. It retains the previous configuration on failure. Expired or damaged authorities fail closed. Startup sharing is opt-in and checks the saved workspace identity before binding. Headless, Docker, and existing operator-provisioned profiles still use the manual certificate path.
 
+For experimental Vaultor Next, follow the [Rust host guide](../development/NEXT-HOST.md). It owns the pinned Android address-recovery and QR contracts, the separate HTTPS browser session and the supported bind and certificate configuration.
+
 ## Connectors and storage
 
 The ordinary HTTP listener binds 127.0.0.1 by default, port 8080 for standalone and an OS-assigned port for Electron. It accepts the main-process `X-Vaultor-Owner` credential or a local owner browser cookie. Every workspace endpoint, static application asset, file, export, diagnostic and SSE stream is protected. Owner management never works through the LAN connector, even with a valid owner key. Access checks precede workspace mutation admission. Forwarded headers do not establish connector ownership.

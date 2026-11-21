@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-11-20. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-11-21. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 Vaultor Next M23 uses one Rust SQLite owner for Review, resource identity, archives and persistent pin order. [Next qualification](plans/VAULTOR-NEXT.md#m23-review-inbox-and-windows-integration) tracks Windows integration and outstanding parity. The [Review boundary](workspace/REVIEWS.md#vaultor-next) also serves the optional host.
 
@@ -9,6 +9,8 @@ Vaultor Next M23 uses one Rust SQLite owner for Review, resource identity, archi
 Windows desktop generates a stable CA on first enable and uses user-scoped DPAPI for its private key. The listener replaces short-lived leaves in memory when renewal is due. Startup sharing binds the recorded workspace identity and address. Headless and externally configured desktop profiles still use explicit PEM files.
 
 **Next M24-C Android:** `host/mobile.rs` projects the saved Rust workspace into the existing Android protocol 3 reader shapes under a separately negotiated mobile v1 prefix. The Android native bridge pins the owner-verified host CA, stores the approval with the existing Keystore-backed profile, and routes managed reads, reset events, checkpoint jobs and Review requests to that projection. Preparation is serialized through the Rust owner. Checkpoint note bytes and inventory stay bound to a device and a manifest, while originals stream through the host's integrity and grant checks. The separate candidate application ID preserves the published Android app's storage. [Android delivery](android/ANDROID.md) and the [Next host guide](development/NEXT-HOST.md#android-m24-c-projection) own setup and bounds.
+
+**Next M24-D networking:** Windows optionally advertises its selected private listener over DNS-SD. Recovery is scoped to the selected interface and subnet and keeps the same DPAPI-protected CA. Android scans the local pairing QR and uses an unauthenticated TLS identity probe before updating pinned routes. The browser-only HTTPS adapter uses SameSite cookies, origin and CSRF checks, and revision-bound saved-note writes that preserve local draft ownership. Connected transfers use the Rust managed-original journal and Activity exporters. [Next host guide](development/NEXT-HOST.md) owns the security, transfer and deployment contracts.
 
 ## Product and architecture
 
@@ -512,6 +514,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-21 — Next M24-D network integration
+
+Added Windows discovery, QR and bounded address recovery, a browser-specific HTTPS surface, and Android transfer routes using the existing Rust authority. Updated experimental Hosting, Android transfer and browser Help and Feature Catalogue entries. See the [M24-D ledger](plans/VAULTOR-NEXT.md#m24-d--discovery-qr-browser-and-transfers) for exact checks and remaining gaps.
 
 ### 2026-11-20 — Next M24-C Android integration
 

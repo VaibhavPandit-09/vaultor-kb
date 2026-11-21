@@ -20,6 +20,7 @@ buildNumber.properties
 frontend/node_modules/
 frontend/dist/
 frontend/dist-next/
+frontend/dist-next-browser/
 benchmarks/tauri-rust/raw/
 benchmarks/tauri-rust/*.inspect.ndjson
 frontend/dist-ssr/

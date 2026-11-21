@@ -9,7 +9,7 @@ name = "vaultor_next"
 
 [features]
 default = ["desktop", "host"]
-desktop = ["dep:tauri", "dep:tauri-plugin-dialog", "dep:tauri-build", "dep:if-addrs", "dep:rcgen", "dep:x509-parser", "dep:zeroize"]
+desktop = ["dep:tauri", "dep:tauri-plugin-dialog", "dep:tauri-build", "dep:if-addrs", "dep:rcgen", "dep:x509-parser", "dep:zeroize", "dep:mdns-sd", "dep:qrcode"]
 host = ["dep:axum", "dep:axum-server", "dep:futures-util", "dep:getrandom", "dep:hex", "dep:hyper-util", "dep:rustls", "dep:subtle", "dep:tempfile", "dep:time", "tokio/fs", "tokio/io-util", "tokio/macros", "tokio/signal", "dep:tokio-util"]
 
 [[bin]]
@@ -42,7 +42,7 @@ encoding_rs = "0.8"
 zip = { version = "2.4.2", default-features = false }
 percent-encoding = "2"
 url = "2"
-axum = { version = "0.8", optional = true }
+axum = { version = "0.8", features = ["multipart"], optional = true }
 axum-server = { version = "0.8", features = ["tls-rustls-no-provider"], optional = true }
 futures-util = { version = "0.3", optional = true }
 getrandom = { version = "0.4", optional = true }
@@ -53,6 +53,8 @@ subtle = { version = "2", optional = true }
 tempfile = { version = "3", optional = true }
 time = { version = "0.3", features = ["formatting"], optional = true }
 tokio-util = { version = "0.7", features = ["rt"], optional = true }
+mdns-sd = { version = "0.22.0", optional = true }
+qrcode = { version = "0.14", default-features = false, optional = true }
 
 [dev-dependencies]
 tempfile = "3"

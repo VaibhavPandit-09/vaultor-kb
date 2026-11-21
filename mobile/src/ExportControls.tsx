@@ -149,7 +149,7 @@ export default function ExportControls({
         <Text style={s.secondary}>
           {offline
             ? 'Offline: only verified downloaded content can be included. Full workspace ZIP, PDF and Word need a connected host.'
-            : 'The host prepares the selected saved content. Full ZIP is authoritative; selected packages are explicitly partial.'}
+            : 'The host prepares the selected saved content. Next hosts use the Vaultor archive format for workspace and selected packages.'}
         </Text>
         <View style={s.actions}>
           <Action
@@ -187,7 +187,7 @@ export default function ExportControls({
           ) : null}
             <Action
               disabled={offline}
-              label="Full workspace ZIP"
+              label="Workspace archive"
               active={scope === 'workspace'}
               onPress={() => setScope('workspace')}
             />

@@ -524,6 +524,12 @@ export default function WorkspaceScreen() {
       stop: () => native.stopChanges(),
       reconnect: async () => {
         await model.connect(false);
+        const current = model.snapshot();
+        if (current.connection === 'offline' && !current.localOnly &&
+            current.host?.epoch === h.epoch &&
+            await parse<boolean>(native.recoverAddress(h.hostId))) {
+          await model.adopted();
+        }
         if (model.state.connection !== 'online')
           throw Error('Host unavailable. Reading copies and recovery remain.');
         await refreshDownloads();
@@ -788,6 +794,15 @@ export default function WorkspaceScreen() {
             Add a host
           </Text>
           <NearbyHosts permission={permission} choose={setAddress}/>
+          <Action
+            label="Scan pairing QR"
+            disabled={state.busy || !!code}
+            onPress={() => run(async () => {
+              await permission();
+              const result = await parse<{code: string} | null>(native.scanPairingQr());
+              if (result) setCode(result.code);
+            })}
+          />
           <TextInput
             style={s.input}
             accessibilityLabel="Host HTTPS address"

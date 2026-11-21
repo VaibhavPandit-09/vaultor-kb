@@ -105,7 +105,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   private fun exportAdmission(source:JSONObject){importProfile(source);if(android.os.Build.VERSION.SDK_INT>=37&&ctx.checkSelfPermission(android.Manifest.permission.ACCESS_LOCAL_NETWORK)!=android.content.pm.PackageManager.PERMISSION_GRANTED)error("Local network permission required. Export source is retained.")}
   private fun exportConnection(source:JSONObject,path:String,method:String):HttpsURLConnection {
     require(method in listOf("GET","PUT")&&(path=="/companions/export-capabilities"||path.matches(Regex("/companions/exports/[a-f0-9-]{36}(?:/download)?(?:\\?generation=[a-f0-9-]{36})?"))))
-    exportAdmission(source);val p=importProfile(source);val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint"));val c=URI(address(p.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection;c.sslSocketFactory=context(cert).socketFactory;c.connectTimeout=10000;c.readTimeout=30000;c.instanceFollowRedirects=false;c.requestMethod=method;c.setRequestProperty("Authorization","Bearer "+p.getString("credential"));c.setRequestProperty("X-Vaultor-Protocol","3");c.setRequestProperty("X-Vaultor-Workspace",source.getString("workspaceId"));return c
+    exportAdmission(source);val p=importProfile(source);val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint"));val c=endpoint(p,path).toURL().openConnection() as HttpsURLConnection;c.sslSocketFactory=context(cert).socketFactory;c.connectTimeout=10000;c.readTimeout=30000;c.instanceFollowRedirects=false;c.requestMethod=method;c.setRequestProperty("Authorization","Bearer "+p.getString("credential"));c.setRequestProperty("X-Vaultor-Protocol","3");c.setRequestProperty("X-Vaultor-Workspace",source.getString("workspaceId"));return c
   }
   private val exports by lazy {VaultorExports(ctx,companions,::exportConnection,::exportAdmission,{reviews.snapshot()},{if(ctx.hasActiveReactInstance())ctx.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("VaultorExportsChanged","changed")},localIdentity={importProfile(it);Unit}).also {it.activityProvider={ctx.currentActivity}}}
   @ReactMethod fun companionExports(action:String,input:String,promise:Promise)=run(promise){require(input.length<=12000);val a=JSONObject(input);when(action){
@@ -156,9 +156,9 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     fun approval(){val current=importProfile(source);require(listOf("credential","fingerprint","address").all {current.optString(it)==profile.optString(it)}){"Original source approval changed"}}
     approval()
     if(android.os.Build.VERSION.SDK_INT>=37&&ctx.checkSelfPermission(android.Manifest.permission.ACCESS_LOCAL_NETWORK)!=android.content.pm.PackageManager.PERMISSION_GRANTED)throw VaultorImportDelivery.Refusal("APPROVAL_REQUIRED")
-    val cert=ca(profile);require(fingerprint(cert)==profile.getString("fingerprint"));val con=URI(address(profile.getString("address"))+"/api"+path).toURL().openConnection() as HttpsURLConnection
+    val cert=ca(profile);require(fingerprint(cert)==profile.getString("fingerprint"));val con=endpoint(profile,path).toURL().openConnection() as HttpsURLConnection
     con.sslSocketFactory=context(cert).socketFactory;con.connectTimeout=10000;con.readTimeout=30000;con.instanceFollowRedirects=false;con.requestMethod=if(upload)"PUT" else "GET"
-    con.setRequestProperty("Authorization","Bearer "+profile.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");con.setRequestProperty("X-Vaultor-Workspace",source.getString("workspaceId"))
+    if(path!="/access/host")con.setRequestProperty("Authorization","Bearer "+profile.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");con.setRequestProperty("X-Vaultor-Workspace",source.getString("workspaceId"))
     try {
       if(upload){val intent=row.getJSONObject("intent").toString();val boundary="vaultor-import-"+UUID.randomUUID();val filename=row.getString("filename");val mime=row.getString("mime")
         val prefix=("--$boundary\r\nContent-Disposition: form-data; name=\"intent\"\r\n\r\n$intent\r\n--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"$filename\"\r\nContent-Type: $mime\r\n\r\n").toByteArray();val suffix="\r\n--$boundary--\r\n".toByteArray()
@@ -177,6 +177,8 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       val source=row.getJSONObject("source");val profile=importProfile(source);val host=get("/access/host");require(host.getString("hostId")==source.getString("hostId")&&host.getString("fingerprint")==profile.getString("fingerprint")){"Host identity changed"}
       val identity=get("/workspace/identity");if(identity.getString("id")!=source.getString("workspaceId")||identity.getString("generation")!=source.getString("generation")){try{if(identity.getString("id")==source.getString("workspaceId"))companions.observe(source.getString("hostId"),source.getString("workspaceId"),identity.getString("generation"))}catch(_:Exception){};throw VaultorImportDelivery.Refusal("IMPORT_GENERATION_CHANGED")}
       val capabilities=get("/companions/import-capabilities");if(capabilities.optInt("version")!=1)throw VaultorImportDelivery.Refusal("IMPORT_FORMAT_UNSUPPORTED")
+      if(profile.optBoolean("nextMobile") && row.optString("mode")=="workspaceZip")
+        throw VaultorImportDelivery.Refusal("IMPORT_FORMAT_UNSUPPORTED")
       if(row.getLong("bytes")>capabilities.getLong("maxBytes"))throw VaultorImportDelivery.Refusal("IMPORT_LIMIT")
   }
   private val importDelivery by lazy {VaultorImportDelivery(imports,object:VaultorImportDelivery.Port {
@@ -381,11 +383,12 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
   private var browseConnection:HttpsURLConnection?
     get()=browseLane.connection
     set(value){browseLane.connection=value}
-  private fun request(p: JSONObject, path: String, method: String="GET", body: String?=null, secret: String?=null, revision: String?=null, token:String?=null, multipart:Boolean=false,browse:Long?=null,lane:ReadLane=browseLane,scopeCapabilities:Boolean=false): JSONObject {
+  private fun request(p: JSONObject, path: String, method: String="GET", body: String?=null, secret: String?=null, revision: String?=null, token:String?=null, multipart:Boolean=false,browse:Long?=null,lane:ReadLane=browseLane,scopeCapabilities:Boolean=false,probe:Boolean=false): JSONObject {
     val cert=ca(p);require(fingerprint(cert)==p.getString("fingerprint")) { "Host identity changed; explicit pairing is required." }
     val con=endpoint(p,path).toURL().openConnection() as HttpsURLConnection
     con.sslSocketFactory=context(cert).socketFactory
     con.connectTimeout=10000;con.readTimeout=15000;con.instanceFollowRedirects=false;con.requestMethod=method
+    if(probe){con.connectTimeout=1500;con.readTimeout=1500}
     con.setRequestProperty("X-Vaultor-Protocol","3")
     if((path!="/capabilities" || scopeCapabilities) && p.optString("selectedWorkspaceId").isNotEmpty())con.setRequestProperty("X-Vaultor-Workspace",p.getString("selectedWorkspaceId"))
     if(p.has("credential") && path!="/access/host") con.setRequestProperty("Authorization","Bearer "+p.getString("credential"))
@@ -451,6 +454,23 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     "{}"
   }
   @ReactMethod fun beginVerifiedPairing(input: String, fingerprintInput: String, promise: Promise) = net(promise) {
+    pair(input,fingerprintInput,null)
+  }
+  @ReactMethod fun scanPairingQr(promise: Promise) {
+    ctx.runOnUiQueueThread {
+      try {
+        val activity=ctx.currentActivity as? MainActivity ?: error("Open Source management first.")
+        activity.scanPairingCode { contents ->
+          if(contents==null)promise.resolve("null")
+          else net(promise) {
+            val qr=try {PairingQr.parse(contents)} catch(e:IllegalArgumentException) {throw ConnectionRefusal(e.message ?: "Invalid Vaultor pairing QR.")}
+            pair(qr.address,qr.fingerprint,qr.hostId)
+          }
+        }
+      } catch(_:Exception) {promise.reject("VAULTOR_CAMERA","Camera unavailable. Manual pairing remains available.")}
+    }
+  }
+  private fun pair(input:String, fingerprintInput:String, expectedHost:String?):String {
     pending=null
     val origin=address(input);val u=URI(origin)
     // Enrollment-only TLS observation: never sends HTTP, credentials or document data.
@@ -483,6 +503,8 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     val hostId=runCatching {UUID.fromString(host.getString("hostId")).toString()}.getOrElse {
       throw ConnectionRefusal("This address does not offer a compatible Vaultor host.")
     }
+    if(expectedHost!=null && (!next || hostId!=expectedHost))
+      throw ConnectionRefusal("The pairing QR belongs to another host or protocol.")
     synchronized(stateLock) {
       val saved=read().optJSONObject("profiles")?.optJSONObject(hostId)
       if(saved!=null && saved.optString("fingerprint")!=profile.getString("fingerprint"))
@@ -493,7 +515,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     val enrollment=json(request(profile,"/pairings","POST",JSONObject().put("name","Vaultor Android").put("kind","desktop").put("nonce",nonce).put("fingerprint",profile.getString("fingerprint")).toString()))
     require(enrollment.getString("hostId")==profile.getString("hostId") && enrollment.getString("fingerprint")==profile.getString("fingerprint"))
     pending=JSONObject().put("profile",profile).put("enrollment",enrollment)
-    JSONObject().put("code",enrollment.getString("code")).put("hostId",host.getString("hostId")).put("fingerprint",profile.getString("fingerprint")).toString()
+    return JSONObject().put("code",enrollment.getString("code")).put("hostId",host.getString("hostId")).put("fingerprint",profile.getString("fingerprint")).toString()
   }
   @ReactMethod fun completePairing(promise: Promise) = net(promise) {
     val a=pending ?: error("Start pairing first.");val p=a.getJSONObject("profile");val e=a.getJSONObject("enrollment")
@@ -649,9 +671,52 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     write(state);"{}"
   }
   @ReactMethod fun changeAddress(hostId:String,input:String,promise:Promise)=net(promise) {
-    val captured=epoch;val p=selected(hostId,captured);p.put("address",address(input));val h=json(request(p,"/access/host",token=captured))
+    updateAddress(hostId,epoch,input,false)
+    "{}"
+  }
+  private fun updateAddress(hostId:String,captured:String,input:String,probe:Boolean) {
+    val p=selected(hostId,captured)
+    p.put("address",address(input))
+    val h=json(request(p,"/access/host",token=captured,probe=probe))
     require(h.getString("hostId")==hostId && h.getString("fingerprint")==p.getString("fingerprint"))
-    synchronized(stateLock) {require(captured==epoch);val state=read();state.getJSONObject("profiles").put(hostId,p);write(state);cancelRequests()};"{}"
+    if(p.optBoolean("nextMobile"))require(h.optString("protocol")=="vaultor-next/1" && h.optInt("mobileProtocol")==1)
+    synchronized(stateLock) {
+      require(captured==epoch)
+      val state=read()
+      state.getJSONObject("profiles").put(hostId,p)
+      state.put("profile",p)
+      write(state)
+      cancelRequests()
+    }
+  }
+  private var lastRecoveryAt = -30_000L
+  @ReactMethod fun recoverAddress(hostId:String,promise:Promise)=net(promise) {
+    val now=android.os.SystemClock.elapsedRealtime()
+    if(now-lastRecoveryAt<30_000L)return@net "false"
+    lastRecoveryAt=now
+    val captured=epoch
+    val original=selected(hostId,captured).getString("address")
+    val candidates=VaultorDiscovery(ctx){}
+    candidates.start()
+    try {
+      val deadline=now+3000
+      while(android.os.SystemClock.elapsedRealtime()<deadline && captured==epoch &&
+        ctx.lifecycleState==com.facebook.react.common.LifecycleState.RESUMED) {
+        val items=candidates.snapshot().getJSONArray("items")
+        val matches=(0 until items.length()).map {items.getJSONObject(it)}
+          .filter {it.optString("hostId")==hostId && it.optString("address")!=original}
+          .map {it.getString("address")}.distinct().take(2)
+        if(matches.isNotEmpty()) {
+          for(candidate in matches) {
+            if(runCatching {updateAddress(hostId,captured,candidate,true)}.isSuccess)return@net "true"
+          }
+          return@net "false"
+        }
+        if(!candidates.snapshot().optBoolean("scanning"))break
+        Thread.sleep(150)
+      }
+      "false"
+    } finally {candidates.stop()}
   }
   private fun organizationPath(path:String,method:String,revision:String?):Boolean {
     val id="[a-fA-F0-9-]{36}"

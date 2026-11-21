@@ -1,6 +1,8 @@
 .git
 frontend/node_modules
 frontend/dist
+frontend/dist-next
+frontend/dist-next-browser
 backend/target
 **/data
 **/operations

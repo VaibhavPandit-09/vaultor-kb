@@ -6,6 +6,27 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnable
 import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 class MainActivity : ReactActivity() {
+  private var scanResult: ((String?) -> Unit)? = null
+  private val scanner = registerForActivityResult(com.journeyapps.barcodescanner.ScanContract()) { result ->
+    val callback = scanResult
+    scanResult = null
+    callback?.invoke(result.contents)
+  }
+
+  internal fun scanPairingCode(callback: (String?) -> Unit) {
+    check(scanResult == null)
+    scanResult = callback
+    try {
+      scanner.launch(com.journeyapps.barcodescanner.ScanOptions()
+        .setDesiredBarcodeFormats(com.journeyapps.barcodescanner.ScanOptions.QR_CODE)
+        .setPrompt("Scan the pairing QR from Vaultor Next Hosting")
+        .setBeepEnabled(false)
+        .setBarcodeImageEnabled(false))
+    } catch (e: Exception) {
+      scanResult = null
+      throw e
+    }
+  }
   private var acquisitionId=java.util.UUID.randomUUID().toString()
   override fun onCreate(savedInstanceState:android.os.Bundle?) {
     super.onCreate(savedInstanceState)
