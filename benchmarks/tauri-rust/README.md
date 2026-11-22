@@ -441,3 +441,33 @@ Run `update-workbook.ps1 -AppendM24` with the bundled runtime path to append M24
 ## M24-D network observations
 
 The [M24-D network summary](summaries/m24d-network.json) records nine measured observations from Windows loopback, same-machine DNS-SD and Linux/amd64 Docker with isolated Chromium. Use `update-workbook.ps1 -AppendM24D` with the bundled runtime to append the canonical M24-D tail to a workbook that still ends at M24-C. The append preserves the historical rows, all 475 formulas and unrelated workbook parts.
+
+## M25 comparable Windows workloads
+
+Set `VAULTOR_BENCH_EXECUTABLE` and `VAULTOR_BENCH_SOURCE_COMMIT` to an exact optimized artifact and its full commit. The Electron reference must be the installed or unpacked **packaged** Vaultor app with its adjacent `resources/app` and `resources/bundle` directories. Run the configurations serially with no builds, emulators, inspection helpers or other heavy work during sampling. Omit any fixed `VAULTOR_BENCH_PORT` so that each launch receives a fresh loopback port. The Electron debugger listener must belong to the launched process. The Tauri renderer must report the disposable workspace before any setup command can mutate data.
+
+```powershell
+node benchmarks/tauri-rust/run.mjs electron-java --m25 --idle-five --m25-restarts=10 --m25-title-search
+node benchmarks/tauri-rust/run.mjs tauri-rust --m25 --idle-five --m25-restarts=10 --m25-title-search
+node benchmarks/tauri-rust/run.mjs tauri-rust --m25 --m25-size=512
+node benchmarks/tauri-rust/run.mjs tauri-rust --m25 --m25-size=1020
+```
+
+Run the 512 and 1020 KiB variants against both architectures. On each size the driver seeds 100 managed notes in one collection. Two notes contain identical deterministic ASCII prose sized by serialized Tiptap JSON. Setup writes are outside measured operations. Both apps use one visible pane, reuse behavior, one-second autosave, an emulated 1200 × 820 light viewport and a disposable profile. Retained session details during navigation and restoration can still differ. Repeated opens alternate between the same two notes. They represent warm documents, including any normal application caches. The first-profile result measures initial process startup with a fresh profile and uncontrolled OS caches. The restart results reuse that profile and require a visible ready workspace or editable note. The CDP target stage is measured separately. Neither timer measures a cleared Windows file cache or isolates native window and WebView construction.
+
+The runner excludes the first two opens and first two inputs, then records 20 click-to-usable opens and 100 DOM `beforeinput`-to-rAF samples. Usable means the named pane contains the last paragraph, is editable and reaches the next frame callback. This observes the renderer and cannot establish compositor latency. A direct editor Undo and Redo must change and then restore the complete state. The saved-indicator time includes autosave delay. Restart verification checks the complete prose and all inserted text. Ten distinct exact-title queries follow two search warmups when selected. Search finishes at the sole visible matching result and the subsequent frame callback. Viewport polling, native CDP text delivery and repeated samples from one process limit the interpretation of tail statistics.
+
+`--idle-five` follows the typing and scroll workload with a 30-second settle and five minutes of unattended process sampling. The sampler records descendants, PID creation identity, CPU time, resident working set, private commit and handle counts. Shared resident pages may appear in multiple processes. Process-tree CPU has a 100% one-core denominator and is unavailable for a window whose membership changes. Peaks are sampled and may miss shorter spikes. Physical display refresh, thermal conditions, OS scheduling, OS caches and background load are uncontrolled.
+
+For the protected publication probe, use `tauri-rust --m25 --m25-proof=echo` on M24-D and `--m25-proof=receipt` on M25. Repeat the legacy echo mode on the M25 binary as a same-build control. The probe reports 20 publication acknowledgements after four warmups using near-1 MiB managed prose, with full readback, monotonic revision and cleared-draft checks outside each timer. Draft protection and commit have separate boundaries. For the additional Next-only scopes, use `tauri-rust --m25 --m19-preview --m19-video`, `tauri-rust --m25 --m21-discovery`, and `tauri-rust --m25 --m24-host` with the standalone and OpenSSL variables described above. Only the host scope enables networking. Network ingress uses newly established TLS connections and a disposable CA. The standalone and desktop CPU windows have separate process scopes.
+
+For the separate Linux/amd64 Docker experiment, build or select an exact-source local image. Set `VAULTOR_M25_TEST_IMAGE` to that tag and keep `VAULTOR_BENCH_OPENSSL` set. The driver needs Docker with Linux cgroup v2 and an available private `172.30.245.0/28` subnet. It creates its own volumes and network, provisions test TLS, checks the owner lock and authorization, samples a minute of cgroup idle counters, repeats verified saved-note reads and verifies every byte of concurrent 8 MiB original downloads. It also covers restart identity, grant withdrawal, revocation and graceful SIGTERM. The optional browser driver uses an isolated image named `vaultor-m24d-chromium:local` with Chromium and `certutil`, separate from the host image.
+
+```powershell
+docker build --platform linux/amd64 --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" -t vaultor-next-m25:local -f next/Dockerfile .
+node benchmarks/tauri-rust/m25-docker.mjs --browser
+```
+
+If process membership changes in an idle window, the full-window CPU counter subtraction is invalid. The supplemental rows sum CPU deltas only between adjacent snapshots with identical PID creation identities. Divide by those intervals' span for the conditional percentage or by the entire sampled span for the known contribution over that span. Durations, coverage and the original invalid rows remain available for review.
+
+Use `--m25-probe` for harness debugging without appending the CSV. Canonical rows use `m25-desktop-v1` and `m25-cdp-v1`. Append them with `update-workbook.ps1 -RuntimeRoot <bundled-workspace-dependencies> -AppendM25` and leave historical comparison sheets intact. The [M25 report](../../docs/plans/VAULTOR-NEXT-M25.md) records build identities, matched results and qualification limits.

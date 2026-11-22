@@ -54,11 +54,12 @@ export async function qualifyAutomaticTls({evaluate, wait, report, folder, resta
   report.checks.push('No certificate created while disabled', 'Native Windows provisioning and verified TLS', 'Pin continuity and opt-in restart', 'Stopping disables the listener and startup preference');
 }
 
-export async function qualifyHost({evaluate, wait, record, report, folder}) {
+export async function qualifyHost({evaluate, wait, record, report, folder, sustained = false}) {
   const access = join(folder, 'host-access');
   const host = process.env.VAULTOR_BENCH_HEADLESS;
   const openssl = process.env.VAULTOR_BENCH_OPENSSL;
   assert(host && openssl, 'Set VAULTOR_BENCH_HEADLESS and VAULTOR_BENCH_OPENSSL');
+  if (sustained) report.headlessSha256 = createHash('sha256').update(await readFile(host)).digest('hex');
   await mkdir(access);
   const silent = {cwd: access, stdio: 'ignore', windowsHide: true};
   const opensslRun = (...args) => execFileSync(openssl, args, silent);
@@ -82,9 +83,10 @@ export async function qualifyHost({evaluate, wait, record, report, folder}) {
   report.dataset = createHash('sha256').update('M24: 1 default rich note, isolated Windows WebView2, explicit loopback TLS').digest('hex');
   report.hostBenchWindows = [];
   const idle = async phase => {
-    await sleep(2000);
+    await sleep(sustained ? 5000 : 2000);
+    if (sustained) console.log(`${phase}: three-minute idle observation`);
     const start = Date.now();
-    await sleep(6500);
+    await sleep(sustained ? 180_000 : 6500);
     report.hostBenchWindows.push({phase, start, end: Date.now()});
     for (let i = 1; i <= 8; i++) {
       const before = performance.now();
@@ -152,6 +154,23 @@ export async function qualifyHost({evaluate, wait, record, report, folder}) {
       record('m24-desktop-loopback-client', i, metric, performance.now() - before, 'ms', 'Node client, new verified loopback TLS connection per request.');
     }
   }
+  if (sustained) {
+    const savedPath = `${base}/notes/${note.id}`;
+    for (let i = 0; i < 14; i++) {
+      const batchStart = performance.now();
+      const remote = Array.from({length:4}, () => api('GET', savedPath, auth));
+      const localStart = performance.now();
+      const local = ws({kind:'read',id:note.id}).then(result => {
+        assert.equal(result.revision, 1);
+        return performance.now() - localStart;
+      });
+      const [localMs, ...responses] = await Promise.all([local, ...remote]);
+      assert(responses.every(response => response.status === 200), 'Every concurrent request must succeed');
+      if (i < 2) continue;
+      record('m25-host-concurrent',i-1,'four_remote_reads',performance.now()-batchStart,'ms','Four independent authenticated fresh TLS requests plus one overlapping local IPC read.');
+      record('m25-host-concurrent',i-1,'local_ipc_during_reads',localMs,'ms','Local saved-note read while four loopback reads are in flight.');
+    }
+  }
   await admin({op:'grant', id:device, allow:false});
   assert.equal((await api('GET', `${base}/notes/${note.id}`, auth)).status, 403);
   await admin({op:'revoke', id:device});
@@ -198,6 +217,16 @@ export async function qualifyHost({evaluate, wait, record, report, folder}) {
     const sample = JSON.parse((await readFile(sampleFile, 'utf8')).replace(/^\uFEFF/, ''));
     record('m24-headless-loopback', 1, 'process_tree_working_set', sample.workingSet / 1048576, 'MiB');
     record('m24-headless-loopback', 1, 'process_tree_private_bytes', sample.privateBytes / 1048576, 'MiB');
+    if (sustained) {
+      await sleep(60_000);
+      execFileSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+        join(import.meta.dirname, 'process-sample.ps1'), '-RootPid', String(headless.pid),
+        '-Output', sampleFile, '-StopFile', join(folder, 'headless-stop'), '-Once'], silent);
+      const last = JSON.parse((await readFile(sampleFile, 'utf8')).replace(/^\uFEFF/, ''));
+      assert.equal(last.names.join(), sample.names.join(), 'Stable standalone host process tree');
+      const seconds = (Date.parse(last.timestamp) - Date.parse(sample.timestamp)) / 1000;
+      record('m24-headless-loopback',1,'cpu_one_core_percent',100*(last.cpuSeconds-sample.cpuSeconds)/seconds,'%',`${seconds.toFixed(1)}s idle after verified startup. Windows standalone host only.`);
+    }
     report.checks.push('Headless process rejected an already-owned workspace and served verified TLS from an independent workspace');
   } finally {
     if (headless.exitCode === null) {

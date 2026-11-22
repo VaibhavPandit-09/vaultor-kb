@@ -2,6 +2,8 @@
 
 Reviewed 2026-10-27. This is developer tooling, with no app feature, release, installer or version change.
 
+For Windows cross-runtime managed-note comparisons, use the [M25 packaged Electron and optimized Next protocol](../../benchmarks/tauri-rust/README.md#m25-comparable-windows-workloads). The linked-source suite below has different documents and readiness boundaries and retains its own historical baselines.
+
 From PowerShell in the repository:
 
 ```powershell

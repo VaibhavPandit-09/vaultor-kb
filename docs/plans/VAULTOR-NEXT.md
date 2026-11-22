@@ -610,7 +610,7 @@ Rust passed 60 library and 2 desktop binary tests, including protected drafts, o
 
 ### M25 — Comprehensive Performance Optimization
 
-Qualify and optimize local desktop, browser, headless host and Android operation. Measure comparable startup, editing, discovery, synchronization and transfer workloads, sustained CPU/private memory, large content, offline/reconnect and cross-device latency. Keep the canonical benchmark history and record platform/device evidence.
+M25 measured the repeated Electron/Java and Next Windows managed-note workloads against exact optimized binaries. Desktop autosave now commits the exact protected SQLite journal record by identity, avoiding a second document-sized request while preserving revision checks and atomic draft cleanup. The [M25 performance qualification](VAULTOR-NEXT-M25.md) owns the results, executable receipts, comparison boundaries and unresolved M26 acceptance. The [canonical benchmark instructions](../../benchmarks/tauri-rust/README.md#m25-comparable-windows-workloads) reproduce the scoped workloads.
 
 ### M26 — Production Qualification & Windows Release
 

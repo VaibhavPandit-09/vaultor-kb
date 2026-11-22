@@ -1,0 +1,6030 @@
+{
+  "experiment": "m25-desktop-v1",
+  "instruments": [
+    "m25-cdp-v1",
+    "m25-offline-v1",
+    "m25-container-v1",
+    "m25-android-v1"
+  ],
+  "quantiles": "p50 averages central values; p95 uses nearest rank. Sample counts reflect valid observations.",
+  "historicalCount": 11936,
+  "canonicalCount": 14703,
+  "system": {
+    "device": "LAPTOP-251O7CQC",
+    "os": "10.0.26340",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalCpus": 20,
+    "ramBytes": 16573128704,
+    "power": "Power Scheme GUID: dbb8b06a-27a7-49f4-bbd2-e1bb78f4b9bb  (Acer)",
+    "display": [
+      {
+        "Name": "Intel(R) Graphics",
+        "CurrentHorizontalResolution": 2560,
+        "CurrentVerticalResolution": 1600,
+        "CurrentRefreshRate": 240
+      },
+      {
+        "Name": "NVIDIA GeForce RTX 5050 Laptop GPU",
+        "CurrentHorizontalResolution": null,
+        "CurrentVerticalResolution": null,
+        "CurrentRefreshRate": null
+      }
+    ]
+  },
+  "windows": [
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-02-09.594Z.json",
+      "observedAt": "2026-11-22T18:02:09.656Z",
+      "sourceCommit": "ef81de68565e7c75d0e867b712581d8612fe20df",
+      "executableSha256": "52b42f2fee32db1c3f67441f3fd29184b324c3f31f9dddf73256e4cf8ca0eddc",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": false,
+      "checks": [],
+      "metrics": [
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "qualification",
+          "metric": "run_invalidated",
+          "unit": "",
+          "invalidSamples": 1
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-09-27.311Z.json",
+      "observedAt": "2026-11-22T18:09:27.383Z",
+      "sourceCommit": "ef81de68565e7c75d0e867b712581d8612fe20df",
+      "executableSha256": "52b42f2fee32db1c3f67441f3fd29184b324c3f31f9dddf73256e4cf8ca0eddc",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "953ccc0d60cfe15e5ee5fa722fe25e802c14a1ef15f66c8a1cd29dcaaca3af1b",
+      "fixtureSha256": "449ad2ab247b6d24a48ea077c8b0410bf759bd15b54d4867dcc0f4fb35ab53c2",
+      "wire": "echo",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": true,
+      "checks": [
+        "Validated each revision, complete committed document and cleared draft after 24 protected publications"
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 1,
+          "p50": 469.06600000000026,
+          "p95": 469.06600000000026,
+          "min": 469.06600000000026,
+          "max": 469.06600000000026,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 689.6821,
+          "p95": 689.6821,
+          "min": 689.6821,
+          "max": 689.6821,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-draft-ipc",
+          "metric": "protect",
+          "unit": "ms",
+          "n": 20,
+          "p50": 33.249999999883585,
+          "p95": 35.39999999990687,
+          "min": 32.10000000009313,
+          "max": 36.200000000186265,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-draft-ipc",
+          "metric": "commit",
+          "unit": "ms",
+          "n": 20,
+          "p50": 57.70000000006985,
+          "p95": 62.300000000046566,
+          "min": 51.60000000009313,
+          "max": 67.80000000004657,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-draft-ipc",
+          "metric": "commit_request_json",
+          "unit": "bytes",
+          "n": 20,
+          "p50": 1044123,
+          "p95": 1044123,
+          "min": 1044120,
+          "max": 1044123,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 587.4296875,
+          "p95": 587.4296875,
+          "min": 587.4296875,
+          "max": 587.4296875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 587.4296875,
+          "p95": 587.4296875,
+          "min": 587.4296875,
+          "max": 587.4296875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 366.8828125,
+          "p95": 366.8828125,
+          "min": 366.8828125,
+          "max": 366.8828125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 1,
+          "p50": 110.86010709504686,
+          "p95": 110.86010709504686,
+          "min": 110.86010709504686,
+          "max": 110.86010709504686,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/electron-java-2026-11-22T18-09-35.604Z.json",
+      "observedAt": "2026-11-22T18:09:35.664Z",
+      "sourceCommit": "7b7cf824e5f637b0918c49e8518b11054b1211f1",
+      "executableSha256": "f4be60af2a8d24959ec6d16b1ff3ac2ad96a590d4839db6a0694b0191eb9a463",
+      "architecture": "electron-java",
+      "version": "0.27.0",
+      "instrumentSha256": "953ccc0d60cfe15e5ee5fa722fe25e802c14a1ef15f66c8a1cd29dcaaca3af1b",
+      "fixtureSha256": "d91fe61d612a394795c4a426c0b31d73b6785d311d405ce145bb2413b454a8b3",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/152.0.7977.130",
+        "revision": "@f29d393666d3495dcfbae75ecf3f3d45184bf8d",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Vaultor/0.27.0 Chrome/152.0.7977.130 Electron/44.5.1 Safari/537.36",
+        "jsVersion": "15.2.124.28"
+      },
+      "javaRuntime": "jdk-25.0.4.1+1",
+      "bundleManifestSha256": "4c0ba354fd627fae3682fcea1fb18654c276f4750541628509fddd243675d66d",
+      "success": false,
+      "runError": "Error: Timed out: full Library before next open; Activity",
+      "checks": [],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "qualification",
+          "metric": "run_failure",
+          "unit": "",
+          "invalidSamples": 1
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-22-22.045Z.json",
+      "observedAt": "2026-11-22T18:22:22.129Z",
+      "sourceCommit": "ef81de68565e7c75d0e867b712581d8612fe20df",
+      "executableSha256": "52b42f2fee32db1c3f67441f3fd29184b324c3f31f9dddf73256e4cf8ca0eddc",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "f7aa5d00caa254654b2b0e45114ff28dae2dbe843e8d7fad44adce000267ef05",
+      "fixtureSha256": "449ad2ab247b6d24a48ea077c8b0410bf759bd15b54d4867dcc0f4fb35ab53c2",
+      "wire": "echo",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": true,
+      "checks": [
+        "Validated each revision, complete committed document and cleared draft after 24 protected publications"
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 1,
+          "p50": 414.0785999999998,
+          "p95": 414.0785999999998,
+          "min": 414.0785999999998,
+          "max": 414.0785999999998,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 632.4823999999999,
+          "p95": 632.4823999999999,
+          "min": 632.4823999999999,
+          "max": 632.4823999999999,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-draft-ipc",
+          "metric": "protect",
+          "unit": "ms",
+          "n": 20,
+          "p50": 32.799999999813735,
+          "p95": 47.299999999813735,
+          "min": 30.200000000186265,
+          "max": 52.3000000002794,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-draft-ipc",
+          "metric": "commit",
+          "unit": "ms",
+          "n": 20,
+          "p50": 60.3499999998603,
+          "p95": 88.10000000009313,
+          "min": 52.10000000009313,
+          "max": 97.6999999997206,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-draft-ipc",
+          "metric": "commit_request_json",
+          "unit": "bytes",
+          "n": 20,
+          "p50": 1044123,
+          "p95": 1044123,
+          "min": 1044120,
+          "max": 1044123,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 551.58984375,
+          "p95": 551.58984375,
+          "min": 551.58984375,
+          "max": 551.58984375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 531.22265625,
+          "p95": 531.22265625,
+          "min": 531.22265625,
+          "max": 531.22265625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 300.3046875,
+          "p95": 300.3046875,
+          "min": 300.3046875,
+          "max": 300.3046875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 1,
+          "p50": 112.48269497000463,
+          "p95": 112.48269497000463,
+          "min": 112.48269497000463,
+          "max": 112.48269497000463,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-22-30.687Z.json",
+      "observedAt": "2026-11-22T18:22:30.763Z",
+      "sourceCommit": "6ce65c5fe1081339c6c83c14e4269dd293d547de",
+      "executableSha256": "f2a0522ae58a691d8004ce5bdd996f3c1f7f7bb30bc82c6b9046b1170663fcec",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "f7aa5d00caa254654b2b0e45114ff28dae2dbe843e8d7fad44adce000267ef05",
+      "fixtureSha256": "449ad2ab247b6d24a48ea077c8b0410bf759bd15b54d4867dcc0f4fb35ab53c2",
+      "wire": "receipt",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": true,
+      "checks": [
+        "Validated each revision, complete committed document and cleared draft after 24 protected publications"
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1222.0513999999994,
+          "p95": 1222.0513999999994,
+          "min": 1222.0513999999994,
+          "max": 1222.0513999999994,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1481.8891999999996,
+          "p95": 1481.8891999999996,
+          "min": 1481.8891999999996,
+          "max": 1481.8891999999996,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-draft-ipc",
+          "metric": "protect",
+          "unit": "ms",
+          "n": 20,
+          "p50": 34.050000000046566,
+          "p95": 56.5,
+          "min": 31.399999999906868,
+          "max": 58.10000000009313,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-draft-ipc",
+          "metric": "commit",
+          "unit": "ms",
+          "n": 20,
+          "p50": 30.9000000001397,
+          "p95": 39.8000000002794,
+          "min": 24.700000000186265,
+          "max": 40.89999999990687,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-draft-ipc",
+          "metric": "commit_request_json",
+          "unit": "bytes",
+          "n": 20,
+          "p50": 151,
+          "p95": 151,
+          "min": 149,
+          "max": 151,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 561.13671875,
+          "p95": 561.13671875,
+          "min": 561.13671875,
+          "max": 561.13671875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 561.13671875,
+          "p95": 561.13671875,
+          "min": 561.13671875,
+          "max": 561.13671875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 312.8359375,
+          "p95": 312.8359375,
+          "min": 312.8359375,
+          "max": 312.8359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 1,
+          "p50": 133.3570412517781,
+          "p95": 133.3570412517781,
+          "min": 133.3570412517781,
+          "max": 133.3570412517781,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-22-38.665Z.json",
+      "observedAt": "2026-11-22T18:22:38.738Z",
+      "sourceCommit": "6ce65c5fe1081339c6c83c14e4269dd293d547de",
+      "executableSha256": "f2a0522ae58a691d8004ce5bdd996f3c1f7f7bb30bc82c6b9046b1170663fcec",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "f7aa5d00caa254654b2b0e45114ff28dae2dbe843e8d7fad44adce000267ef05",
+      "fixtureSha256": "449ad2ab247b6d24a48ea077c8b0410bf759bd15b54d4867dcc0f4fb35ab53c2",
+      "wire": "echo",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": true,
+      "checks": [
+        "Validated each revision, complete committed document and cleared draft after 24 protected publications"
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 1,
+          "p50": 391.4641999999999,
+          "p95": 391.4641999999999,
+          "min": 391.4641999999999,
+          "max": 391.4641999999999,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 630.7784000000001,
+          "p95": 630.7784000000001,
+          "min": 630.7784000000001,
+          "max": 630.7784000000001,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-draft-ipc",
+          "metric": "protect",
+          "unit": "ms",
+          "n": 20,
+          "p50": 38.0500000002794,
+          "p95": 74.60000000009313,
+          "min": 31,
+          "max": 85.70000000018626,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-draft-ipc",
+          "metric": "commit",
+          "unit": "ms",
+          "n": 20,
+          "p50": 65.05000000004657,
+          "p95": 133.6999999997206,
+          "min": 54.39999999990687,
+          "max": 133.90000000037253,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-draft-ipc",
+          "metric": "commit_request_json",
+          "unit": "bytes",
+          "n": 20,
+          "p50": 1044123,
+          "p95": 1044123,
+          "min": 1044120,
+          "max": 1044123,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 580.359375,
+          "p95": 580.359375,
+          "min": 580.359375,
+          "max": 580.359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 580.359375,
+          "p95": 580.359375,
+          "min": 580.359375,
+          "max": 580.359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 349.09375,
+          "p95": 349.09375,
+          "min": 349.09375,
+          "max": 349.09375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 1,
+          "p50": 109.83711958851264,
+          "p95": 109.83711958851264,
+          "min": 109.83711958851264,
+          "max": 109.83711958851264,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/electron-java-2026-11-22T18-22-46.965Z.json",
+      "observedAt": "2026-11-22T18:22:47.084Z",
+      "sourceCommit": "7b7cf824e5f637b0918c49e8518b11054b1211f1",
+      "executableSha256": "f4be60af2a8d24959ec6d16b1ff3ac2ad96a590d4839db6a0694b0191eb9a463",
+      "architecture": "electron-java",
+      "version": "0.27.0",
+      "instrumentSha256": "f7aa5d00caa254654b2b0e45114ff28dae2dbe843e8d7fad44adce000267ef05",
+      "fixtureSha256": "d91fe61d612a394795c4a426c0b31d73b6785d311d405ce145bb2413b454a8b3",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/152.0.7977.130",
+        "revision": "@f29d393666d3495dcfbae75ecf3f3d45184bf8d",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Vaultor/0.27.0 Chrome/152.0.7977.130 Electron/44.5.1 Safari/537.36",
+        "jsVersion": "15.2.124.28"
+      },
+      "javaRuntime": "jdk-25.0.4.1+1",
+      "bundleManifestSha256": "4c0ba354fd627fae3682fcea1fb18654c276f4750541628509fddd243675d66d",
+      "success": true,
+      "checks": [
+        "102 native text inputs saved and read back after process restart",
+        "100-note collection fixture created"
+      ],
+      "idle": {
+        "sampleCount": 409,
+        "seconds": 299.396,
+        "names": [
+          "Vaultor.exe",
+          "Vaultor.exe",
+          "Vaultor.exe",
+          "Vaultor.exe",
+          "java.exe",
+          "conhost.exe"
+        ],
+        "firstWorkingSetMiB": 991.37109375,
+        "firstPrivateMiB": 852.953125
+      },
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 11,
+          "p50": 315.30639999999994,
+          "p95": 1907.349499999953,
+          "min": 246.68440000002738,
+          "max": 1907.349499999953,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 7954.511,
+          "p95": 7954.511,
+          "min": 7954.511,
+          "max": 7954.511,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "note_open",
+          "unit": "ms",
+          "n": 20,
+          "p50": 75.74999999976717,
+          "p95": 102.1999999997206,
+          "min": 62.700000000186265,
+          "max": 102.79999999981374,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "input_to_raf",
+          "unit": "ms",
+          "n": 100,
+          "p50": 9.700000000186265,
+          "p95": 13.5,
+          "min": 6.699999999720603,
+          "max": 27,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "undo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 9.599999999627471,
+          "p95": 9.599999999627471,
+          "min": 9.599999999627471,
+          "max": 9.599999999627471,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "redo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 9.600000000093132,
+          "p95": 9.600000000093132,
+          "min": 9.600000000093132,
+          "max": 9.600000000093132,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "redo_to_saved_indicator",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1071.6000000000931,
+          "p95": 1071.6000000000931,
+          "min": 1071.6000000000931,
+          "max": 1071.6000000000931,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "scroll_frame_interval",
+          "unit": "ms",
+          "n": 60,
+          "p50": 4.200000000000728,
+          "p95": 8.400000000001455,
+          "min": 3.899999999999636,
+          "max": 25,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 725.7578125,
+          "p95": 725.7578125,
+          "min": 725.7578125,
+          "max": 725.7578125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 793.46875,
+          "p95": 793.46875,
+          "min": 793.46875,
+          "max": 793.46875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 1,
+          "p50": 6,
+          "p95": 6,
+          "min": 6,
+          "max": 6,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 1,
+          "p50": 2817,
+          "p95": 2817,
+          "min": 2817,
+          "max": 2817,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 1202.869140625,
+          "p95": 1281.32421875,
+          "min": 1124.4140625,
+          "max": 1281.32421875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 913.736328125,
+          "p95": 1102.1875,
+          "min": 725.28515625,
+          "max": 1102.1875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 814.318359375,
+          "p95": 835.5703125,
+          "min": 793.06640625,
+          "max": 835.5703125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 286.8125,
+          "p95": 322.171875,
+          "min": 251.453125,
+          "max": 322.171875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 2,
+          "p50": 2.354085213866429,
+          "p95": 2.5852084712111187,
+          "min": 2.1229619565217392,
+          "max": 2.5852084712111187,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "restart",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 10,
+          "p50": 8363.456750000012,
+          "p95": 10778.668500000029,
+          "min": 7448.247800000012,
+          "max": 10778.668500000029,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "title-search",
+          "metric": "visible_result",
+          "unit": "ms",
+          "n": 10,
+          "p50": 226.1500000001397,
+          "p95": 235.8000000002794,
+          "min": 216.89999999990687,
+          "max": 235.8000000002794,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "cpu_stable_intervals",
+          "unit": "%",
+          "n": 1,
+          "p50": 2.1504627376208867,
+          "p95": 2.1504627376208867,
+          "min": 2.1504627376208867,
+          "max": 2.1504627376208867,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "cpu_observed_floor",
+          "unit": "%",
+          "n": 1,
+          "p50": 2.139724645619848,
+          "p95": 2.139724645619848,
+          "min": 2.139724645619848,
+          "max": 2.139724645619848,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "cpu_stable_coverage",
+          "unit": "%",
+          "n": 1,
+          "p50": 99.50066133148076,
+          "p95": 99.50066133148076,
+          "min": 99.50066133148076,
+          "max": 99.50066133148076,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-31-01.297Z.json",
+      "observedAt": "2026-11-22T18:31:01.355Z",
+      "sourceCommit": "ef81de68565e7c75d0e867b712581d8612fe20df",
+      "executableSha256": "52b42f2fee32db1c3f67441f3fd29184b324c3f31f9dddf73256e4cf8ca0eddc",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "f7aa5d00caa254654b2b0e45114ff28dae2dbe843e8d7fad44adce000267ef05",
+      "fixtureSha256": "d91fe61d612a394795c4a426c0b31d73b6785d311d405ce145bb2413b454a8b3",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": true,
+      "checks": [
+        "102 native text inputs saved and read back after process restart",
+        "100-note collection fixture created"
+      ],
+      "idle": {
+        "sampleCount": 402,
+        "seconds": 299.346,
+        "names": [
+          "vaultor-next-m24d.exe",
+          "msedgewebview2.exe",
+          "msedgewebview2.exe",
+          "msedgewebview2.exe",
+          "msedgewebview2.exe",
+          "msedgewebview2.exe",
+          "msedgewebview2.exe"
+        ],
+        "firstWorkingSetMiB": 711.76171875,
+        "firstPrivateMiB": 479.24609375
+      },
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 11,
+          "p50": 348.7715999999782,
+          "p95": 1418.5226000000002,
+          "min": 341.43560000002617,
+          "max": 1418.5226000000002,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1703.7548000000002,
+          "p95": 1703.7548000000002,
+          "min": 1703.7548000000002,
+          "max": 1703.7548000000002,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "note_open",
+          "unit": "ms",
+          "n": 20,
+          "p50": 97.05000000004657,
+          "p95": 118.79999999981374,
+          "min": 70,
+          "max": 121.09999999962747,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "input_to_raf",
+          "unit": "ms",
+          "n": 100,
+          "p50": 3.050000000046566,
+          "p95": 7.899999999906868,
+          "min": 1.8999999999068677,
+          "max": 17.59999999962747,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "undo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 5.300000000279397,
+          "p95": 5.300000000279397,
+          "min": 5.300000000279397,
+          "max": 5.300000000279397,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "redo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 5.5,
+          "p95": 5.5,
+          "min": 5.5,
+          "max": 5.5,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "redo_to_saved_indicator",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1039.1999999997206,
+          "p95": 1039.1999999997206,
+          "min": 1039.1999999997206,
+          "max": 1039.1999999997206,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "scroll_frame_interval",
+          "unit": "ms",
+          "n": 60,
+          "p50": 8.299999999999272,
+          "p95": 12.600000000000364,
+          "min": 3.9000000000005457,
+          "max": 25,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 426.96484375,
+          "p95": 426.96484375,
+          "min": 426.96484375,
+          "max": 426.96484375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 390.3984375,
+          "p95": 390.3984375,
+          "min": 390.3984375,
+          "max": 390.3984375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 1,
+          "p50": 7,
+          "p95": 7,
+          "min": 7,
+          "max": 7,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 1,
+          "p50": 3406,
+          "p95": 3406,
+          "min": 3406,
+          "max": 3406,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 746.638671875,
+          "p95": 868.2265625,
+          "min": 625.05078125,
+          "max": 868.2265625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 525.671875,
+          "p95": 624.421875,
+          "min": 426.921875,
+          "max": 624.421875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 398.578125,
+          "p95": 406.7890625,
+          "min": 390.3671875,
+          "max": 406.7890625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 2,
+          "p50": 6.3048245614035086,
+          "p95": 12.609649122807017,
+          "min": 0,
+          "max": 12.609649122807017,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "restart",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 10,
+          "p50": 739.0246000000043,
+          "p95": 1015.2041999999783,
+          "min": 706.1128999999491,
+          "max": 1015.2041999999783,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "title-search",
+          "metric": "visible_result",
+          "unit": "ms",
+          "n": 10,
+          "p50": 247.30000000004657,
+          "p95": 251.79999999981374,
+          "min": 238.89999999990687,
+          "max": 251.79999999981374,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "cpu_stable_intervals",
+          "unit": "%",
+          "n": 1,
+          "p50": 0.524504867405169,
+          "p95": 0.524504867405169,
+          "min": 0.524504867405169,
+          "max": 0.524504867405169,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "cpu_observed_floor",
+          "unit": "%",
+          "n": 1,
+          "p50": 0.5167515183099156,
+          "p95": 0.5167515183099156,
+          "min": 0.5167515183099156,
+          "max": 0.5167515183099156,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "cpu_stable_coverage",
+          "unit": "%",
+          "n": 1,
+          "p50": 98.52177747489536,
+          "p95": 98.52177747489536,
+          "min": 98.52177747489536,
+          "max": 98.52177747489536,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-37-07.800Z.json",
+      "observedAt": "2026-11-22T18:37:07.870Z",
+      "sourceCommit": "6ce65c5fe1081339c6c83c14e4269dd293d547de",
+      "executableSha256": "f2a0522ae58a691d8004ce5bdd996f3c1f7f7bb30bc82c6b9046b1170663fcec",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "f7aa5d00caa254654b2b0e45114ff28dae2dbe843e8d7fad44adce000267ef05",
+      "fixtureSha256": "d91fe61d612a394795c4a426c0b31d73b6785d311d405ce145bb2413b454a8b3",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": true,
+      "checks": [
+        "102 native text inputs saved and read back after process restart",
+        "100-note collection fixture created"
+      ],
+      "idle": {
+        "sampleCount": 407,
+        "seconds": 299.174,
+        "names": [
+          "vaultor-next-m25.exe",
+          "msedgewebview2.exe",
+          "msedgewebview2.exe",
+          "msedgewebview2.exe",
+          "msedgewebview2.exe",
+          "msedgewebview2.exe",
+          "msedgewebview2.exe"
+        ],
+        "firstWorkingSetMiB": 703.58203125,
+        "firstPrivateMiB": 461.73828125
+      },
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 11,
+          "p50": 350.1169000000227,
+          "p95": 1119.3479000000002,
+          "min": 320.2113000000245,
+          "max": 1119.3479000000002,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1354.2069000000001,
+          "p95": 1354.2069000000001,
+          "min": 1354.2069000000001,
+          "max": 1354.2069000000001,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "note_open",
+          "unit": "ms",
+          "n": 20,
+          "p50": 62.300000000046566,
+          "p95": 89.10000000009313,
+          "min": 48.299999999813735,
+          "max": 123.10000000009313,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "input_to_raf",
+          "unit": "ms",
+          "n": 100,
+          "p50": 2.6000000000931323,
+          "p95": 3.8999999999068677,
+          "min": 1.6000000000931323,
+          "max": 13.800000000279397,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "undo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 3.6999999997206032,
+          "p95": 3.6999999997206032,
+          "min": 3.6999999997206032,
+          "max": 3.6999999997206032,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "redo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 3.5,
+          "p95": 3.5,
+          "min": 3.5,
+          "max": 3.5,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "redo_to_saved_indicator",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1025.8000000002794,
+          "p95": 1025.8000000002794,
+          "min": 1025.8000000002794,
+          "max": 1025.8000000002794,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-64k",
+          "metric": "scroll_frame_interval",
+          "unit": "ms",
+          "n": 60,
+          "p50": 4.199999999999818,
+          "p95": 12.5,
+          "min": 4,
+          "max": 16.699999999999818,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 699.05078125,
+          "p95": 699.05078125,
+          "min": 699.05078125,
+          "max": 699.05078125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 453.5390625,
+          "p95": 453.5390625,
+          "min": 453.5390625,
+          "max": 453.5390625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 1,
+          "p50": 7,
+          "p95": 7,
+          "min": 7,
+          "max": 7,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 1,
+          "p50": 3270,
+          "p95": 3270,
+          "min": 3270,
+          "max": 3270,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 772.734375,
+          "p95": 890.30859375,
+          "min": 655.16015625,
+          "max": 890.30859375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 677.11328125,
+          "p95": 699.06640625,
+          "min": 655.16015625,
+          "max": 699.06640625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 439.884765625,
+          "p95": 453.6640625,
+          "min": 426.10546875,
+          "max": 453.6640625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 2,
+          "p50": 4.108752817430504,
+          "p95": 8.217505634861007,
+          "min": 0,
+          "max": 8.217505634861007,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "restart",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 10,
+          "p50": 736.3142500000249,
+          "p95": 1035.1717999999528,
+          "min": 681.3227000000188,
+          "max": 1035.1717999999528,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "title-search",
+          "metric": "visible_result",
+          "unit": "ms",
+          "n": 10,
+          "p50": 244.29999999981374,
+          "p95": 248.5,
+          "min": 238,
+          "max": 248.5,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "cpu_stable_intervals",
+          "unit": "%",
+          "n": 1,
+          "p50": 0.8109036328482748,
+          "p95": 0.8109036328482748,
+          "min": 0.8109036328482748,
+          "max": 0.8109036328482748,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "cpu_observed_floor",
+          "unit": "%",
+          "n": 1,
+          "p50": 0.7990751201641855,
+          "p95": 0.7990751201641855,
+          "min": 0.7990751201641855,
+          "max": 0.7990751201641855,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "settled-idle-5min",
+          "metric": "cpu_stable_coverage",
+          "unit": "%",
+          "n": 1,
+          "p50": 98.54131709306294,
+          "p95": 98.54131709306294,
+          "min": 98.54131709306294,
+          "max": 98.54131709306294,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/electron-java-2026-11-22T18-43-11.481Z.json",
+      "observedAt": "2026-11-22T18:43:11.548Z",
+      "sourceCommit": "7b7cf824e5f637b0918c49e8518b11054b1211f1",
+      "executableSha256": "f4be60af2a8d24959ec6d16b1ff3ac2ad96a590d4839db6a0694b0191eb9a463",
+      "architecture": "electron-java",
+      "version": "0.27.0",
+      "instrumentSha256": "f7aa5d00caa254654b2b0e45114ff28dae2dbe843e8d7fad44adce000267ef05",
+      "fixtureSha256": "31a7c5a3fdf964b66984e58e24fbff139ac58cb7aed4c153ebbba89bc3cfadd8",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/152.0.7977.130",
+        "revision": "@f29d393666d3495dcfbae75ecf3f3d45184bf8d",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Vaultor/0.27.0 Chrome/152.0.7977.130 Electron/44.5.1 Safari/537.36",
+        "jsVersion": "15.2.124.28"
+      },
+      "javaRuntime": "jdk-25.0.4.1+1",
+      "bundleManifestSha256": "4c0ba354fd627fae3682fcea1fb18654c276f4750541628509fddd243675d66d",
+      "success": true,
+      "checks": [
+        "102 native text inputs saved and read back after process restart",
+        "100-note collection fixture created"
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 2,
+          "p50": 421.37635000000137,
+          "p95": 513.2134999999998,
+          "min": 329.5392000000029,
+          "max": 513.2134999999998,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 8281.980099999999,
+          "p95": 8281.980099999999,
+          "min": 8281.980099999999,
+          "max": 8281.980099999999,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "note_open",
+          "unit": "ms",
+          "n": 20,
+          "p50": 145.14999999990687,
+          "p95": 198.09999999962747,
+          "min": 111.3000000002794,
+          "max": 201.39999999990687,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "input_to_raf",
+          "unit": "ms",
+          "n": 100,
+          "p50": 13.5,
+          "p95": 17.5,
+          "min": 10.799999999813735,
+          "max": 30.199999999720603,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "undo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 17,
+          "p95": 17,
+          "min": 17,
+          "max": 17,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "redo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 14.299999999813735,
+          "p95": 14.299999999813735,
+          "min": 14.299999999813735,
+          "max": 14.299999999813735,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "redo_to_saved_indicator",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1115.7999999998137,
+          "p95": 1115.7999999998137,
+          "min": 1115.7999999998137,
+          "max": 1115.7999999998137,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "scroll_frame_interval",
+          "unit": "ms",
+          "n": 60,
+          "p50": 4.25,
+          "p95": 12.600000000000364,
+          "min": 4,
+          "max": 24.899999999999636,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 1232.37890625,
+          "p95": 1383.03515625,
+          "min": 1081.72265625,
+          "max": 1383.03515625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 1177.119140625,
+          "p95": 1304.9609375,
+          "min": 1049.27734375,
+          "max": 1304.9609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 979.779296875,
+          "p95": 1177.13671875,
+          "min": 782.421875,
+          "max": 1177.13671875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 337.42578125,
+          "p95": 355.796875,
+          "min": 319.0546875,
+          "max": 355.796875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 2,
+          "p50": 2.2515677134158154,
+          "p95": 3.8336838415702768,
+          "min": 0.6694515852613538,
+          "max": 3.8336838415702768,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "restart",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 7565.187199999997,
+          "p95": 7565.187199999997,
+          "min": 7565.187199999997,
+          "max": 7565.187199999997,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-44-00.277Z.json",
+      "observedAt": "2026-11-22T18:44:00.341Z",
+      "sourceCommit": "ef81de68565e7c75d0e867b712581d8612fe20df",
+      "executableSha256": "52b42f2fee32db1c3f67441f3fd29184b324c3f31f9dddf73256e4cf8ca0eddc",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "f7aa5d00caa254654b2b0e45114ff28dae2dbe843e8d7fad44adce000267ef05",
+      "fixtureSha256": "31a7c5a3fdf964b66984e58e24fbff139ac58cb7aed4c153ebbba89bc3cfadd8",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": true,
+      "checks": [
+        "102 native text inputs saved and read back after process restart",
+        "100-note collection fixture created"
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 2,
+          "p50": 359.4738000000001,
+          "p95": 412.1767,
+          "min": 306.7709000000002,
+          "max": 412.1767,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 522.3329999999999,
+          "p95": 522.3329999999999,
+          "min": 522.3329999999999,
+          "max": 522.3329999999999,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "note_open",
+          "unit": "ms",
+          "n": 20,
+          "p50": 101.10000000009313,
+          "p95": 127.79999999981374,
+          "min": 80.59999999962747,
+          "max": 148.8000000002794,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "input_to_raf",
+          "unit": "ms",
+          "n": 100,
+          "p50": 3.3999999999068677,
+          "p95": 4.7000000001862645,
+          "min": 1.7999999998137355,
+          "max": 5.600000000093132,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "undo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 3.2999999998137355,
+          "p95": 3.2999999998137355,
+          "min": 3.2999999998137355,
+          "max": 3.2999999998137355,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "redo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 5.5,
+          "p95": 5.5,
+          "min": 5.5,
+          "max": 5.5,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "redo_to_saved_indicator",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1092.6000000000931,
+          "p95": 1092.6000000000931,
+          "min": 1092.6000000000931,
+          "max": 1092.6000000000931,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "scroll_frame_interval",
+          "unit": "ms",
+          "n": 60,
+          "p50": 8.300000000000182,
+          "p95": 12.5,
+          "min": 4,
+          "max": 20.800000000000182,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 836.48046875,
+          "p95": 966.71484375,
+          "min": 706.24609375,
+          "max": 966.71484375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 808.412109375,
+          "p95": 911.02734375,
+          "min": 705.796875,
+          "max": 911.02734375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 581.5859375,
+          "p95": 682.84375,
+          "min": 480.328125,
+          "max": 682.84375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 2,
+          "p50": 14.652047209981088,
+          "p95": 17.055457746478876,
+          "min": 12.248636673483299,
+          "max": 17.055457746478876,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "restart",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 806.1442999999999,
+          "p95": 806.1442999999999,
+          "min": 806.1442999999999,
+          "max": 806.1442999999999,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-44-22.413Z.json",
+      "observedAt": "2026-11-22T18:44:22.477Z",
+      "sourceCommit": "6ce65c5fe1081339c6c83c14e4269dd293d547de",
+      "executableSha256": "f2a0522ae58a691d8004ce5bdd996f3c1f7f7bb30bc82c6b9046b1170663fcec",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "f7aa5d00caa254654b2b0e45114ff28dae2dbe843e8d7fad44adce000267ef05",
+      "fixtureSha256": "31a7c5a3fdf964b66984e58e24fbff139ac58cb7aed4c153ebbba89bc3cfadd8",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": true,
+      "checks": [
+        "102 native text inputs saved and read back after process restart",
+        "100-note collection fixture created"
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 2,
+          "p50": 353.0876999999998,
+          "p95": 419.3770999999997,
+          "min": 286.7982999999999,
+          "max": 419.3770999999997,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 508.36259999999993,
+          "p95": 508.36259999999993,
+          "min": 508.36259999999993,
+          "max": 508.36259999999993,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "note_open",
+          "unit": "ms",
+          "n": 20,
+          "p50": 108.89999999990687,
+          "p95": 136.90000000037253,
+          "min": 85.20000000018626,
+          "max": 140.6999999997206,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "input_to_raf",
+          "unit": "ms",
+          "n": 100,
+          "p50": 3.599999999627471,
+          "p95": 4.899999999906868,
+          "min": 2.7999999998137355,
+          "max": 6.699999999720603,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "undo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 4.100000000093132,
+          "p95": 4.100000000093132,
+          "min": 4.100000000093132,
+          "max": 4.100000000093132,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "redo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 6,
+          "p95": 6,
+          "min": 6,
+          "max": 6,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "redo_to_saved_indicator",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1050.5999999996275,
+          "p95": 1050.5999999996275,
+          "min": 1050.5999999996275,
+          "max": 1050.5999999996275,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-512k",
+          "metric": "scroll_frame_interval",
+          "unit": "ms",
+          "n": 60,
+          "p50": 8.25,
+          "p95": 12.5,
+          "min": 4,
+          "max": 17.30000000000109,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 826.359375,
+          "p95": 975.30859375,
+          "min": 677.41015625,
+          "max": 975.30859375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 804.119140625,
+          "p95": 930.828125,
+          "min": 677.41015625,
+          "max": 930.828125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 582.443359375,
+          "p95": 701.64453125,
+          "min": 463.2421875,
+          "max": 701.64453125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 2,
+          "p50": 10.74445084127781,
+          "p95": 12.423202023852548,
+          "min": 9.065699658703071,
+          "max": 12.423202023852548,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "restart",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 800.6250999999993,
+          "p95": 800.6250999999993,
+          "min": 800.6250999999993,
+          "max": 800.6250999999993,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/electron-java-2026-11-22T18-44-44.560Z.json",
+      "observedAt": "2026-11-22T18:44:44.623Z",
+      "sourceCommit": "7b7cf824e5f637b0918c49e8518b11054b1211f1",
+      "executableSha256": "f4be60af2a8d24959ec6d16b1ff3ac2ad96a590d4839db6a0694b0191eb9a463",
+      "architecture": "electron-java",
+      "version": "0.27.0",
+      "instrumentSha256": "f7aa5d00caa254654b2b0e45114ff28dae2dbe843e8d7fad44adce000267ef05",
+      "fixtureSha256": "449ad2ab247b6d24a48ea077c8b0410bf759bd15b54d4867dcc0f4fb35ab53c2",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/152.0.7977.130",
+        "revision": "@f29d393666d3495dcfbae75ecf3f3d45184bf8d",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Vaultor/0.27.0 Chrome/152.0.7977.130 Electron/44.5.1 Safari/537.36",
+        "jsVersion": "15.2.124.28"
+      },
+      "javaRuntime": "jdk-25.0.4.1+1",
+      "bundleManifestSha256": "4c0ba354fd627fae3682fcea1fb18654c276f4750541628509fddd243675d66d",
+      "success": true,
+      "checks": [
+        "102 native text inputs saved and read back after process restart",
+        "100-note collection fixture created"
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 2,
+          "p50": 306.84589999999844,
+          "p95": 355.440499999997,
+          "min": 258.2512999999999,
+          "max": 355.440499999997,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 7629.326499999999,
+          "p95": 7629.326499999999,
+          "min": 7629.326499999999,
+          "max": 7629.326499999999,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "note_open",
+          "unit": "ms",
+          "n": 20,
+          "p50": 297.80000000004657,
+          "p95": 337,
+          "min": 219.10000000009313,
+          "max": 356.3000000002794,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "input_to_raf",
+          "unit": "ms",
+          "n": 100,
+          "p50": 18.5,
+          "p95": 22.399999999906868,
+          "min": 14.300000000279397,
+          "max": 31,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "undo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 18.100000000093132,
+          "p95": 18.100000000093132,
+          "min": 18.100000000093132,
+          "max": 18.100000000093132,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "redo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 14.199999999720603,
+          "p95": 14.199999999720603,
+          "min": 14.199999999720603,
+          "max": 14.199999999720603,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "redo_to_saved_indicator",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1184.2999999998137,
+          "p95": 1184.2999999998137,
+          "min": 1184.2999999998137,
+          "max": 1184.2999999998137,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "scroll_frame_interval",
+          "unit": "ms",
+          "n": 60,
+          "p50": 8.299999999999272,
+          "p95": 16.700000000000728,
+          "min": 0,
+          "max": 29.100000000000364,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 1336.08984375,
+          "p95": 1495.671875,
+          "min": 1176.5078125,
+          "max": 1495.671875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 1296.0546875,
+          "p95": 1435.33984375,
+          "min": 1156.76953125,
+          "max": 1435.33984375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 1097.197265625,
+          "p95": 1301.14453125,
+          "min": 893.25,
+          "max": 1301.14453125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 345.166015625,
+          "p95": 359.7265625,
+          "min": 330.60546875,
+          "max": 359.7265625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 2,
+          "p50": 3.855877099006777,
+          "p95": 4.32825484764543,
+          "min": 3.3834993503681243,
+          "max": 4.32825484764543,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "restart",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 8366.247599999995,
+          "p95": 8366.247599999995,
+          "min": 8366.247599999995,
+          "max": 8366.247599999995,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-45-39.114Z.json",
+      "observedAt": "2026-11-22T18:45:39.177Z",
+      "sourceCommit": "ef81de68565e7c75d0e867b712581d8612fe20df",
+      "executableSha256": "52b42f2fee32db1c3f67441f3fd29184b324c3f31f9dddf73256e4cf8ca0eddc",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "f7aa5d00caa254654b2b0e45114ff28dae2dbe843e8d7fad44adce000267ef05",
+      "fixtureSha256": "449ad2ab247b6d24a48ea077c8b0410bf759bd15b54d4867dcc0f4fb35ab53c2",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": true,
+      "checks": [
+        "102 native text inputs saved and read back after process restart",
+        "100-note collection fixture created"
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 2,
+          "p50": 344.08550000000014,
+          "p95": 393.3793000000005,
+          "min": 294.79169999999976,
+          "max": 393.3793000000005,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 507.03150000000005,
+          "p95": 507.03150000000005,
+          "min": 507.03150000000005,
+          "max": 507.03150000000005,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "note_open",
+          "unit": "ms",
+          "n": 20,
+          "p50": 164.69999999995343,
+          "p95": 218.60000000009313,
+          "min": 120.40000000037253,
+          "max": 228,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "input_to_raf",
+          "unit": "ms",
+          "n": 100,
+          "p50": 6.2000000001862645,
+          "p95": 8,
+          "min": 4.2999999998137355,
+          "max": 15,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "undo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 14.899999999906868,
+          "p95": 14.899999999906868,
+          "min": 14.899999999906868,
+          "max": 14.899999999906868,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "redo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 10.699999999720603,
+          "p95": 10.699999999720603,
+          "min": 10.699999999720603,
+          "max": 10.699999999720603,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "redo_to_saved_indicator",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1147.7999999998137,
+          "p95": 1147.7999999998137,
+          "min": 1147.7999999998137,
+          "max": 1147.7999999998137,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "scroll_frame_interval",
+          "unit": "ms",
+          "n": 60,
+          "p50": 8.300000000001091,
+          "p95": 16.599999999998545,
+          "min": 4.099999999998545,
+          "max": 16.700000000000728,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 921.580078125,
+          "p95": 1135.28125,
+          "min": 707.87890625,
+          "max": 1135.28125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 878.400390625,
+          "p95": 1049.4765625,
+          "min": 707.32421875,
+          "max": 1049.4765625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 659.29296875,
+          "p95": 830.28515625,
+          "min": 488.30078125,
+          "max": 830.28515625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 2,
+          "p50": 13.112055169490725,
+          "p95": 17.001020061203672,
+          "min": 9.223090277777779,
+          "max": 17.001020061203672,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "restart",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 874.5692999999992,
+          "p95": 874.5692999999992,
+          "min": 874.5692999999992,
+          "max": 874.5692999999992,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-46-07.538Z.json",
+      "observedAt": "2026-11-22T18:46:07.606Z",
+      "sourceCommit": "6ce65c5fe1081339c6c83c14e4269dd293d547de",
+      "executableSha256": "f2a0522ae58a691d8004ce5bdd996f3c1f7f7bb30bc82c6b9046b1170663fcec",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "f7aa5d00caa254654b2b0e45114ff28dae2dbe843e8d7fad44adce000267ef05",
+      "fixtureSha256": "449ad2ab247b6d24a48ea077c8b0410bf759bd15b54d4867dcc0f4fb35ab53c2",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": true,
+      "checks": [
+        "102 native text inputs saved and read back after process restart",
+        "100-note collection fixture created"
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 2,
+          "p50": 356.360399999999,
+          "p95": 398.3191999999981,
+          "min": 314.4015999999999,
+          "max": 398.3191999999981,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 532.3296000000003,
+          "p95": 532.3296000000003,
+          "min": 532.3296000000003,
+          "max": 532.3296000000003,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "note_open",
+          "unit": "ms",
+          "n": 20,
+          "p50": 164.55000000004657,
+          "p95": 209.70000000018626,
+          "min": 130.89999999990687,
+          "max": 228.3000000002794,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "input_to_raf",
+          "unit": "ms",
+          "n": 100,
+          "p50": 6.149999999906868,
+          "p95": 8,
+          "min": 3.900000000372529,
+          "max": 14.5,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "undo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 5.2000000001862645,
+          "p95": 5.2000000001862645,
+          "min": 5.2000000001862645,
+          "max": 5.2000000001862645,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "redo",
+          "unit": "ms",
+          "n": 1,
+          "p50": 5.7999999998137355,
+          "p95": 5.7999999998137355,
+          "min": 5.7999999998137355,
+          "max": 5.7999999998137355,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "redo_to_saved_indicator",
+          "unit": "ms",
+          "n": 1,
+          "p50": 1089.8999999999069,
+          "p95": 1089.8999999999069,
+          "min": 1089.8999999999069,
+          "max": 1089.8999999999069,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "managed-note-1020k",
+          "metric": "scroll_frame_interval",
+          "unit": "ms",
+          "n": 60,
+          "p50": 8.300000000001091,
+          "p95": 12.600000000000364,
+          "min": 4.100000000000364,
+          "max": 20.899999999999636,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 897.482421875,
+          "p95": 1106.8359375,
+          "min": 688.12890625,
+          "max": 1106.8359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 870.76953125,
+          "p95": 1054.23828125,
+          "min": 687.30078125,
+          "max": 1054.23828125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 653.40234375,
+          "p95": 834.87109375,
+          "min": 471.93359375,
+          "max": 834.87109375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 2,
+          "p50": 9.820482654971913,
+          "p95": 11.772260273972604,
+          "min": 7.868705035971224,
+          "max": 11.772260273972604,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "restart",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 922.185300000001,
+          "p95": 922.185300000001,
+          "min": 922.185300000001,
+          "max": 922.185300000001,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-46-35.379Z.json",
+      "observedAt": "2026-11-22T18:46:35.439Z",
+      "sourceCommit": "6ce65c5fe1081339c6c83c14e4269dd293d547de",
+      "executableSha256": "f2a0522ae58a691d8004ce5bdd996f3c1f7f7bb30bc82c6b9046b1170663fcec",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "bd57459d1f89e4fc0a83a51c4ea2fb3fdead3a088132d5b6ed48ca613751c086",
+      "fixtureSha256": "db5e623bf01511a0bd62b51847a5d44b9080774f74586663e04a0cbf04e79fc5",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": true,
+      "checks": [
+        "A generated 128 × 96 VP8/WebM fixture reached its first frame, played, and released its preview.",
+        "Three-page PDF first/next page text, side to floating expansion, repeated raster/PDF cleanup, >2 MiB WAV metadata and range seek, three shared and distinct note panes, and returned one-dense-pane snapshots.",
+        "After switching the Rust owner to a second disposable workspace, stale PDF and media requests for the original workspace were refused.",
+        "Markdown clipboard review cancelled without a mutation, then converted a heading and undid the insertion."
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 1,
+          "p50": 298.81820000000016,
+          "p95": 298.81820000000016,
+          "min": 298.81820000000016,
+          "max": 298.81820000000016,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 499.2665999999999,
+          "p95": 499.2665999999999,
+          "min": 499.2665999999999,
+          "max": 499.2665999999999,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "tauri_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 32.6171875,
+          "p95": 32.6171875,
+          "min": 32.6171875,
+          "max": 32.6171875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "tauri_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 7.6328125,
+          "p95": 7.6328125,
+          "min": 7.6328125,
+          "max": 7.6328125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "webview-browser_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 116,
+          "p95": 116,
+          "min": 116,
+          "max": 116,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "webview-browser_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 37.5859375,
+          "p95": 37.5859375,
+          "min": 37.5859375,
+          "max": 37.5859375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "crashpad-handler_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 9.99609375,
+          "p95": 9.99609375,
+          "min": 9.99609375,
+          "max": 9.99609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "crashpad-handler_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 2.62890625,
+          "p95": 2.62890625,
+          "min": 2.62890625,
+          "max": 2.62890625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "gpu-process_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 147.171875,
+          "p95": 147.171875,
+          "min": 147.171875,
+          "max": 147.171875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "gpu-process_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 126.84375,
+          "p95": 126.84375,
+          "min": 126.84375,
+          "max": 126.84375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "utility_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 59.2265625,
+          "p95": 59.2265625,
+          "min": 59.2265625,
+          "max": 59.2265625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "utility_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 20.36328125,
+          "p95": 20.36328125,
+          "min": 20.36328125,
+          "max": 20.36328125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "renderer_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 90.0703125,
+          "p95": 90.0703125,
+          "min": 90.0703125,
+          "max": 90.0703125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "renderer_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 48.73828125,
+          "p95": 48.73828125,
+          "min": 48.73828125,
+          "max": 48.73828125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 455.08203125,
+          "p95": 455.08203125,
+          "min": 455.08203125,
+          "max": 455.08203125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "js_heap_used",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 6.702442169189453,
+          "p95": 6.702442169189453,
+          "min": 6.702442169189453,
+          "max": 6.702442169189453,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 1,
+          "p50": 7,
+          "p95": 7,
+          "min": 7,
+          "max": 7,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 1,
+          "p50": 3120,
+          "p95": 3120,
+          "min": 3120,
+          "max": 3120,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-fresh",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 243.79296875,
+          "p95": 243.79296875,
+          "min": 243.79296875,
+          "max": 243.79296875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "tauri_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 36.1484375,
+          "p95": 36.1484375,
+          "min": 36.1484375,
+          "max": 36.1484375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "tauri_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 10.02734375,
+          "p95": 10.02734375,
+          "min": 10.02734375,
+          "max": 10.02734375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "webview-browser_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 119.6953125,
+          "p95": 119.6953125,
+          "min": 119.6953125,
+          "max": 119.6953125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "webview-browser_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 38.9609375,
+          "p95": 38.9609375,
+          "min": 38.9609375,
+          "max": 38.9609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "crashpad-handler_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 9.99609375,
+          "p95": 9.99609375,
+          "min": 9.99609375,
+          "max": 9.99609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "crashpad-handler_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 2.62890625,
+          "p95": 2.62890625,
+          "min": 2.62890625,
+          "max": 2.62890625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "gpu-process_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 349.93359375,
+          "p95": 349.93359375,
+          "min": 349.93359375,
+          "max": 349.93359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "gpu-process_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 320.62109375,
+          "p95": 320.62109375,
+          "min": 320.62109375,
+          "max": 320.62109375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "utility_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 59.52734375,
+          "p95": 59.52734375,
+          "min": 59.52734375,
+          "max": 59.52734375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "utility_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 20.44921875,
+          "p95": 20.44921875,
+          "min": 20.44921875,
+          "max": 20.44921875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "renderer_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 146.2578125,
+          "p95": 146.2578125,
+          "min": 146.2578125,
+          "max": 146.2578125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "renderer_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 98.9765625,
+          "p95": 98.9765625,
+          "min": 98.9765625,
+          "max": 98.9765625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 721.55859375,
+          "p95": 721.55859375,
+          "min": 721.55859375,
+          "max": 721.55859375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "js_heap_used",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 17.69792938232422,
+          "p95": 17.69792938232422,
+          "min": 17.69792938232422,
+          "max": 17.69792938232422,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 1,
+          "p50": 7,
+          "p95": 7,
+          "min": 7,
+          "max": 7,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 1,
+          "p50": 3180,
+          "p95": 3180,
+          "min": 3180,
+          "max": 3180,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-prose",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 491.6640625,
+          "p95": 491.6640625,
+          "min": 491.6640625,
+          "max": 491.6640625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "tauri_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 36.046875,
+          "p95": 36.046875,
+          "min": 36.046875,
+          "max": 36.046875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "tauri_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 10.09375,
+          "p95": 10.09375,
+          "min": 10.09375,
+          "max": 10.09375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "webview-browser_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 133.66015625,
+          "p95": 133.66015625,
+          "min": 133.66015625,
+          "max": 133.66015625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "webview-browser_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 45.296875,
+          "p95": 45.296875,
+          "min": 45.296875,
+          "max": 45.296875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "crashpad-handler_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 9.99609375,
+          "p95": 9.99609375,
+          "min": 9.99609375,
+          "max": 9.99609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "crashpad-handler_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 2.62890625,
+          "p95": 2.62890625,
+          "min": 2.62890625,
+          "max": 2.62890625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "gpu-process_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 389.94140625,
+          "p95": 389.94140625,
+          "min": 389.94140625,
+          "max": 389.94140625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "gpu-process_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 360.10546875,
+          "p95": 360.10546875,
+          "min": 360.10546875,
+          "max": 360.10546875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "utility_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 59.5546875,
+          "p95": 59.5546875,
+          "min": 59.5546875,
+          "max": 59.5546875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "utility_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 20.48046875,
+          "p95": 20.48046875,
+          "min": 20.48046875,
+          "max": 20.48046875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "renderer_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 201.02734375,
+          "p95": 201.02734375,
+          "min": 201.02734375,
+          "max": 201.02734375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "renderer_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 150.8671875,
+          "p95": 150.8671875,
+          "min": 150.8671875,
+          "max": 150.8671875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 830.2265625,
+          "p95": 830.2265625,
+          "min": 830.2265625,
+          "max": 830.2265625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "js_heap_used",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 15.587738037109375,
+          "p95": 15.587738037109375,
+          "min": 15.587738037109375,
+          "max": 15.587738037109375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 1,
+          "p50": 7,
+          "p95": 7,
+          "min": 7,
+          "max": 7,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 1,
+          "p50": 3434,
+          "p95": 3434,
+          "min": 3434,
+          "max": 3434,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-one-dense",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 589.47265625,
+          "p95": 589.47265625,
+          "min": 589.47265625,
+          "max": 589.47265625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "tauri_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 36.04296875,
+          "p95": 36.04296875,
+          "min": 36.04296875,
+          "max": 36.04296875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "tauri_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 11.83203125,
+          "p95": 11.83203125,
+          "min": 11.83203125,
+          "max": 11.83203125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "webview-browser_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 132.96875,
+          "p95": 132.96875,
+          "min": 132.96875,
+          "max": 132.96875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "webview-browser_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 44.39453125,
+          "p95": 44.39453125,
+          "min": 44.39453125,
+          "max": 44.39453125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "crashpad-handler_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 10.01953125,
+          "p95": 10.01953125,
+          "min": 10.01953125,
+          "max": 10.01953125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "crashpad-handler_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 2.62890625,
+          "p95": 2.62890625,
+          "min": 2.62890625,
+          "max": 2.62890625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "gpu-process_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 436.53515625,
+          "p95": 436.53515625,
+          "min": 436.53515625,
+          "max": 436.53515625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "gpu-process_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 406.296875,
+          "p95": 406.296875,
+          "min": 406.296875,
+          "max": 406.296875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "utility_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 59.609375,
+          "p95": 59.609375,
+          "min": 59.609375,
+          "max": 59.609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "utility_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 20.53515625,
+          "p95": 20.53515625,
+          "min": 20.53515625,
+          "max": 20.53515625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "renderer_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 258.77734375,
+          "p95": 258.77734375,
+          "min": 258.77734375,
+          "max": 258.77734375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "renderer_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 206.64453125,
+          "p95": 206.64453125,
+          "min": 206.64453125,
+          "max": 206.64453125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 933.953125,
+          "p95": 933.953125,
+          "min": 933.953125,
+          "max": 933.953125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "js_heap_used",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 25.347946166992188,
+          "p95": 25.347946166992188,
+          "min": 25.347946166992188,
+          "max": 25.347946166992188,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 1,
+          "p50": 7,
+          "p95": 7,
+          "min": 7,
+          "max": 7,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 1,
+          "p50": 3446,
+          "p95": 3446,
+          "min": 3446,
+          "max": 3446,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-shared-dense",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 692.33203125,
+          "p95": 692.33203125,
+          "min": 692.33203125,
+          "max": 692.33203125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-first-page",
+          "metric": "content_ready_ms",
+          "unit": "ms",
+          "n": 2,
+          "p50": 433.83124999999745,
+          "p95": 587.8417000000009,
+          "min": 279.82079999999405,
+          "max": 587.8417000000009,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-navigation",
+          "metric": "content_ready_ms",
+          "unit": "ms",
+          "n": 2,
+          "p50": 78.30080000000089,
+          "p95": 82.83780000000115,
+          "min": 73.76380000000063,
+          "max": 82.83780000000115,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "tauri_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 36.43359375,
+          "p95": 36.45703125,
+          "min": 36.41015625,
+          "max": 36.45703125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "tauri_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 9.984375,
+          "p95": 10.0078125,
+          "min": 9.9609375,
+          "max": 10.0078125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "webview-browser_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 132.603515625,
+          "p95": 132.76953125,
+          "min": 132.4375,
+          "max": 132.76953125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "webview-browser_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 43.611328125,
+          "p95": 43.65625,
+          "min": 43.56640625,
+          "max": 43.65625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "crashpad-handler_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 18.68359375,
+          "p95": 18.68359375,
+          "min": 18.68359375,
+          "max": 18.68359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "crashpad-handler_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 3.57421875,
+          "p95": 3.57421875,
+          "min": 3.57421875,
+          "max": 3.57421875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "gpu-process_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 790.142578125,
+          "p95": 827.24609375,
+          "min": 753.0390625,
+          "max": 827.24609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "gpu-process_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 760.767578125,
+          "p95": 798.03125,
+          "min": 723.50390625,
+          "max": 798.03125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "utility_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 59.5546875,
+          "p95": 59.5546875,
+          "min": 59.5546875,
+          "max": 59.5546875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "utility_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 20.4609375,
+          "p95": 20.4609375,
+          "min": 20.4609375,
+          "max": 20.4609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "renderer_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 271.5859375,
+          "p95": 292.75390625,
+          "min": 250.41796875,
+          "max": 292.75390625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "renderer_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 218.984375,
+          "p95": 239.4453125,
+          "min": 198.5234375,
+          "max": 239.4453125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 1309.00390625,
+          "p95": 1325.12890625,
+          "min": 1292.87890625,
+          "max": 1325.12890625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "js_heap_used",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 23.475217819213867,
+          "p95": 29.79338836669922,
+          "min": 17.157047271728516,
+          "max": 29.79338836669922,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 2,
+          "p50": 7,
+          "p95": 7,
+          "min": 7,
+          "max": 7,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 2,
+          "p50": 3546,
+          "p95": 3549,
+          "min": 3543,
+          "max": 3549,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-pdf-open",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 1057.3828125,
+          "p95": 1074.25390625,
+          "min": 1040.51171875,
+          "max": 1074.25390625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-preview-close",
+          "metric": "content_released_ms",
+          "unit": "ms",
+          "n": 23,
+          "p50": 36.83209999999963,
+          "p95": 50.216499999994994,
+          "min": 18.36909999999625,
+          "max": 52.731199999994715,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-raster-ready",
+          "metric": "content_ready_ms",
+          "unit": "ms",
+          "n": 2,
+          "p50": 184.32455000000118,
+          "p95": 201.96270000000368,
+          "min": 166.68639999999868,
+          "max": 201.96270000000368,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "tauri_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 36.4375,
+          "p95": 36.55859375,
+          "min": 36.31640625,
+          "max": 36.55859375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "tauri_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 9.986328125,
+          "p95": 10.20703125,
+          "min": 9.765625,
+          "max": 10.20703125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "webview-browser_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 132.669921875,
+          "p95": 132.6953125,
+          "min": 132.64453125,
+          "max": 132.6953125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "webview-browser_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 43.525390625,
+          "p95": 43.6328125,
+          "min": 43.41796875,
+          "max": 43.6328125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "crashpad-handler_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 18.68359375,
+          "p95": 18.68359375,
+          "min": 18.68359375,
+          "max": 18.68359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "crashpad-handler_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 3.57421875,
+          "p95": 3.57421875,
+          "min": 3.57421875,
+          "max": 3.57421875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "gpu-process_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 731.478515625,
+          "p95": 756.7890625,
+          "min": 706.16796875,
+          "max": 756.7890625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "gpu-process_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 701.994140625,
+          "p95": 727.42578125,
+          "min": 676.5625,
+          "max": 727.42578125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "utility_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 59.5546875,
+          "p95": 59.5546875,
+          "min": 59.5546875,
+          "max": 59.5546875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "utility_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 20.4609375,
+          "p95": 20.4609375,
+          "min": 20.4609375,
+          "max": 20.4609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "renderer_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 263.681640625,
+          "p95": 278.96875,
+          "min": 248.39453125,
+          "max": 278.96875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "renderer_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 209.537109375,
+          "p95": 224.67578125,
+          "min": 194.3984375,
+          "max": 224.67578125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 1242.505859375,
+          "p95": 1252.3828125,
+          "min": 1232.62890625,
+          "max": 1252.3828125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "js_heap_used",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 19.06990623474121,
+          "p95": 19.35540008544922,
+          "min": 18.784412384033203,
+          "max": 19.35540008544922,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 2,
+          "p50": 7,
+          "p95": 7,
+          "min": 7,
+          "max": 7,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 2,
+          "p50": 3518.5,
+          "p95": 3528,
+          "min": 3509,
+          "max": 3528,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-previews-closed",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 989.078125,
+          "p95": 999.04296875,
+          "min": 979.11328125,
+          "max": 999.04296875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-metadata",
+          "metric": "content_ready_ms",
+          "unit": "ms",
+          "n": 1,
+          "p50": 233.70590000000084,
+          "p95": 233.70590000000084,
+          "min": 233.70590000000084,
+          "max": 233.70590000000084,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "tauri_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 36.63671875,
+          "p95": 36.63671875,
+          "min": 36.63671875,
+          "max": 36.63671875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "tauri_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 10.12890625,
+          "p95": 10.12890625,
+          "min": 10.12890625,
+          "max": 10.12890625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "webview-browser_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 133.609375,
+          "p95": 133.609375,
+          "min": 133.609375,
+          "max": 133.609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "webview-browser_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 43.57421875,
+          "p95": 43.57421875,
+          "min": 43.57421875,
+          "max": 43.57421875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "crashpad-handler_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 18.68359375,
+          "p95": 18.68359375,
+          "min": 18.68359375,
+          "max": 18.68359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "crashpad-handler_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 3.57421875,
+          "p95": 3.57421875,
+          "min": 3.57421875,
+          "max": 3.57421875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "gpu-process_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 606.83984375,
+          "p95": 606.83984375,
+          "min": 606.83984375,
+          "max": 606.83984375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "gpu-process_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 565.7421875,
+          "p95": 565.7421875,
+          "min": 565.7421875,
+          "max": 565.7421875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "utility_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 84.5234375,
+          "p95": 84.5234375,
+          "min": 84.5234375,
+          "max": 84.5234375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "utility_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 28.98828125,
+          "p95": 28.98828125,
+          "min": 28.98828125,
+          "max": 28.98828125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "renderer_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 253.3203125,
+          "p95": 253.3203125,
+          "min": 253.3203125,
+          "max": 253.3203125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "renderer_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 196.046875,
+          "p95": 196.046875,
+          "min": 196.046875,
+          "max": 196.046875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 1133.61328125,
+          "p95": 1133.61328125,
+          "min": 1133.61328125,
+          "max": 1133.61328125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "js_heap_used",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 19.032299041748047,
+          "p95": 19.032299041748047,
+          "min": 19.032299041748047,
+          "max": 19.032299041748047,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 1,
+          "p50": 8,
+          "p95": 8,
+          "min": 8,
+          "max": 8,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 1,
+          "p50": 4063,
+          "p95": 4063,
+          "min": 4063,
+          "max": 4063,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-media-open",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 848.0546875,
+          "p95": 848.0546875,
+          "min": 848.0546875,
+          "max": 848.0546875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "tauri_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 36.72265625,
+          "p95": 36.72265625,
+          "min": 36.72265625,
+          "max": 36.72265625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "tauri_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 12.19921875,
+          "p95": 12.19921875,
+          "min": 12.19921875,
+          "max": 12.19921875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "webview-browser_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 138.33984375,
+          "p95": 138.33984375,
+          "min": 138.33984375,
+          "max": 138.33984375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "webview-browser_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 43.7421875,
+          "p95": 43.7421875,
+          "min": 43.7421875,
+          "max": 43.7421875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "crashpad-handler_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 12.9140625,
+          "p95": 12.9140625,
+          "min": 12.9140625,
+          "max": 12.9140625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "crashpad-handler_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 3.24609375,
+          "p95": 3.24609375,
+          "min": 3.24609375,
+          "max": 3.24609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "gpu-process_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 677.5625,
+          "p95": 677.5625,
+          "min": 677.5625,
+          "max": 677.5625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "gpu-process_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 637.1640625,
+          "p95": 637.1640625,
+          "min": 637.1640625,
+          "max": 637.1640625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "utility_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 85.109375,
+          "p95": 85.109375,
+          "min": 85.109375,
+          "max": 85.109375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "utility_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 28.265625,
+          "p95": 28.265625,
+          "min": 28.265625,
+          "max": 28.265625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "renderer_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 418.21875,
+          "p95": 418.21875,
+          "min": 418.21875,
+          "max": 418.21875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "renderer_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 361.59375,
+          "p95": 361.59375,
+          "min": 361.59375,
+          "max": 361.59375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 1368.8671875,
+          "p95": 1368.8671875,
+          "min": 1368.8671875,
+          "max": 1368.8671875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "js_heap_used",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 34.310543060302734,
+          "p95": 34.310543060302734,
+          "min": 34.310543060302734,
+          "max": 34.310543060302734,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 1,
+          "p50": 8,
+          "p95": 8,
+          "min": 8,
+          "max": 8,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 1,
+          "p50": 4009,
+          "p95": 4009,
+          "min": 4009,
+          "max": 4009,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-three-distinct-dense",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 1086.2109375,
+          "p95": 1086.2109375,
+          "min": 1086.2109375,
+          "max": 1086.2109375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-pdf",
+          "metric": "content_ready_ms",
+          "unit": "ms",
+          "n": 6,
+          "p50": 379.0373499999987,
+          "p95": 448.61840000000666,
+          "min": 310.732600000003,
+          "max": 448.61840000000666,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-raster",
+          "metric": "content_ready_ms",
+          "unit": "ms",
+          "n": 6,
+          "p50": 98.91194999999425,
+          "p95": 164.44559999999183,
+          "min": 80.26589999999851,
+          "max": 164.44559999999183,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-audio",
+          "metric": "content_ready_ms",
+          "unit": "ms",
+          "n": 6,
+          "p50": 212.59569999999803,
+          "p95": 236.64770000000135,
+          "min": 199.45610000001034,
+          "max": 236.64770000000135,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "tauri_workingSet",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 37.1328125,
+          "p95": 38.50390625,
+          "min": 36.69921875,
+          "max": 38.50390625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "tauri_privateBytes",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 10.712890625,
+          "p95": 12.70703125,
+          "min": 10.15234375,
+          "max": 12.70703125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "webview-browser_workingSet",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 138.87890625,
+          "p95": 141.18359375,
+          "min": 138.6953125,
+          "max": 141.18359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "webview-browser_privateBytes",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 43.880859375,
+          "p95": 46.140625,
+          "min": 43.66015625,
+          "max": 46.140625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "crashpad-handler_workingSet",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 12.91796875,
+          "p95": 12.91796875,
+          "min": 12.91796875,
+          "max": 12.91796875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "crashpad-handler_privateBytes",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 3.24609375,
+          "p95": 3.24609375,
+          "min": 3.24609375,
+          "max": 3.24609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "gpu-process_workingSet",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 602.26171875,
+          "p95": 666.2890625,
+          "min": 592.14453125,
+          "max": 666.2890625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "gpu-process_privateBytes",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 561.12109375,
+          "p95": 625.45703125,
+          "min": 551.375,
+          "max": 625.45703125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "utility_workingSet",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 85.2734375,
+          "p95": 85.3515625,
+          "min": 85.13671875,
+          "max": 85.3515625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "utility_privateBytes",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 28.408203125,
+          "p95": 28.55859375,
+          "min": 28.25390625,
+          "max": 28.55859375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "renderer_workingSet",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 504.6015625,
+          "p95": 511.66796875,
+          "min": 468.84375,
+          "max": 511.66796875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "renderer_privateBytes",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 449.384765625,
+          "p95": 456.22265625,
+          "min": 413.33984375,
+          "max": 456.22265625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 1377.484375,
+          "p95": 1449.265625,
+          "min": 1351.7734375,
+          "max": 1449.265625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "js_heap_used",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 36.80316734313965,
+          "p95": 37.350616455078125,
+          "min": 14.857799530029297,
+          "max": 37.350616455078125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 6,
+          "p50": 8,
+          "p95": 8,
+          "min": 8,
+          "max": 8,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 6,
+          "p50": 4010,
+          "p95": 4017,
+          "min": 4008,
+          "max": 4017,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-returned-library",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 6,
+          "p50": 1094.24609375,
+          "p95": 1165.34765625,
+          "min": 1067.203125,
+          "max": 1165.34765625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-extended-churn",
+          "metric": "duration",
+          "unit": "ms",
+          "n": 1,
+          "p50": 48687.61910000001,
+          "p95": 48687.61910000001,
+          "min": 48687.61910000001,
+          "max": 48687.61910000001,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "tauri_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 38.31640625,
+          "p95": 38.31640625,
+          "min": 38.31640625,
+          "max": 38.31640625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "tauri_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 12.42578125,
+          "p95": 12.42578125,
+          "min": 12.42578125,
+          "max": 12.42578125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "webview-browser_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 141.42578125,
+          "p95": 141.42578125,
+          "min": 141.42578125,
+          "max": 141.42578125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "webview-browser_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 44.8125,
+          "p95": 44.8125,
+          "min": 44.8125,
+          "max": 44.8125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "crashpad-handler_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 12.8515625,
+          "p95": 12.8515625,
+          "min": 12.8515625,
+          "max": 12.8515625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "crashpad-handler_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 3.1328125,
+          "p95": 3.1328125,
+          "min": 3.1328125,
+          "max": 3.1328125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "gpu-process_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 242.50390625,
+          "p95": 242.50390625,
+          "min": 242.50390625,
+          "max": 242.50390625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "gpu-process_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 200.4609375,
+          "p95": 200.4609375,
+          "min": 200.4609375,
+          "max": 200.4609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "utility_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 85.27734375,
+          "p95": 85.27734375,
+          "min": 85.27734375,
+          "max": 85.27734375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "utility_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 28.09765625,
+          "p95": 28.09765625,
+          "min": 28.09765625,
+          "max": 28.09765625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "renderer_workingSet",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 220.55859375,
+          "p95": 220.55859375,
+          "min": 220.55859375,
+          "max": 220.55859375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "renderer_privateBytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 162.828125,
+          "p95": 162.828125,
+          "min": 162.828125,
+          "max": 162.828125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 740.93359375,
+          "p95": 740.93359375,
+          "min": 740.93359375,
+          "max": 740.93359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "js_heap_used",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 14.941120147705078,
+          "p95": 14.941120147705078,
+          "min": 14.941120147705078,
+          "max": 14.941120147705078,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 1,
+          "p50": 8,
+          "p95": 8,
+          "min": 8,
+          "max": 8,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 1,
+          "p50": 3971,
+          "p95": 3971,
+          "min": 3971,
+          "max": 3971,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-cycle-settled-library",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 451.7578125,
+          "p95": 451.7578125,
+          "min": 451.7578125,
+          "max": 451.7578125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "tauri_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 37.669921875,
+          "p95": 37.94921875,
+          "min": 37.390625,
+          "max": 37.94921875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "tauri_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 11.630859375,
+          "p95": 11.76953125,
+          "min": 11.4921875,
+          "max": 11.76953125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "webview-browser_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 140.521484375,
+          "p95": 140.8828125,
+          "min": 140.16015625,
+          "max": 140.8828125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "webview-browser_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 43.98046875,
+          "p95": 44.3359375,
+          "min": 43.625,
+          "max": 44.3359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "crashpad-handler_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 12.8359375,
+          "p95": 12.8359375,
+          "min": 12.8359375,
+          "max": 12.8359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "crashpad-handler_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 3.08203125,
+          "p95": 3.08203125,
+          "min": 3.08203125,
+          "max": 3.08203125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "gpu-process_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 410.90625,
+          "p95": 433.6171875,
+          "min": 388.1953125,
+          "max": 433.6171875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "gpu-process_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 369.587890625,
+          "p95": 392.140625,
+          "min": 347.03515625,
+          "max": 392.140625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "utility_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 85.380859375,
+          "p95": 85.4140625,
+          "min": 85.34765625,
+          "max": 85.4140625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "utility_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 28.21875,
+          "p95": 28.26171875,
+          "min": 28.17578125,
+          "max": 28.26171875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "renderer_workingSet",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 248.466796875,
+          "p95": 265.28125,
+          "min": 231.65234375,
+          "max": 265.28125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "renderer_privateBytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 191.755859375,
+          "p95": 208.9921875,
+          "min": 174.51953125,
+          "max": 208.9921875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 935.78125,
+          "p95": 974.69921875,
+          "min": 896.86328125,
+          "max": 974.69921875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "js_heap_used",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 20.05478286743164,
+          "p95": 22.680355072021484,
+          "min": 17.429210662841797,
+          "max": 22.680355072021484,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "process_tree_count",
+          "unit": "count",
+          "n": 2,
+          "p50": 8,
+          "p95": 8,
+          "min": 8,
+          "max": 8,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "process_tree_handles",
+          "unit": "count",
+          "n": 2,
+          "p50": 3965,
+          "p95": 3965,
+          "min": 3965,
+          "max": 3965,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m19-returned-one-dense",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 2,
+          "p50": 648.255859375,
+          "p95": 687.87109375,
+          "min": 608.640625,
+          "max": 687.87109375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 1466.68359375,
+          "p95": 1466.68359375,
+          "min": 1466.68359375,
+          "max": 1466.68359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 978.34375,
+          "p95": 978.34375,
+          "min": 978.34375,
+          "max": 978.34375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 683.96875,
+          "p95": 683.96875,
+          "min": 683.96875,
+          "max": 683.96875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 1,
+          "p50": 48.27497425334707,
+          "p95": 48.27497425334707,
+          "min": 48.27497425334707,
+          "max": 48.27497425334707,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-49-28.494Z.json",
+      "observedAt": "2026-11-22T18:49:28.612Z",
+      "sourceCommit": "6ce65c5fe1081339c6c83c14e4269dd293d547de",
+      "executableSha256": "f2a0522ae58a691d8004ce5bdd996f3c1f7f7bb30bc82c6b9046b1170663fcec",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "c8e2f0470b3ccba39c2adf0383c6e41c3e948ec721ffa8627da87b45f3373b29",
+      "fixtureSha256": "52019d3698c53811ee29b248d2d271968502849813fcacc6d36f2e3a82e36a87",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": false,
+      "runError": "Error: Timed out: Next workspace usable; Search workspace",
+      "checks": [
+        "Automatic create, edit, file rename, folder rename and burst convergence; managed UTF-8 and linked search, combined tags, rebuild and unified backlinks."
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "invalidSamples": 2
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-initial-index",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-create",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-edit",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-rename",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-folder-rename",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-folder-scan-complete",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-replacement",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-burst",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-delete",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-refresh-relative",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-global-search",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 5
+        },
+        {
+          "scenario": "m21-combined-search",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 5
+        },
+        {
+          "scenario": "m21-backlinks",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-palette",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m21-relationship-dialog",
+          "metric": "elapsed",
+          "unit": "ms",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "qualification",
+          "metric": "run_failure",
+          "unit": "",
+          "invalidSamples": 1
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-51-02.614Z.json",
+      "observedAt": "2026-11-22T18:51:02.692Z",
+      "sourceCommit": "6ce65c5fe1081339c6c83c14e4269dd293d547de",
+      "executableSha256": "f2a0522ae58a691d8004ce5bdd996f3c1f7f7bb30bc82c6b9046b1170663fcec",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "180c68c00631f860ac83dc4d19252a512dc84d0a553f70b1bdeac7980cf6a2f3",
+      "fixtureSha256": "29726d75d218101269cce7849e40bf1d18785a410f8941088e5b0d2363dda11b",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "headlessSha256": "1778bba2ac98661019fdb1e86653be471cd4b91410cb06f3d5f6f158f1a2b37a",
+      "success": true,
+      "checks": [
+        "Optimized Windows Settings hosting category",
+        "Loopback TLS and paired read/search",
+        "Grant withdrawal and revocation",
+        "Hosting stopped with local IPC still usable",
+        "Headless process rejected an already-owned workspace and served verified TLS from an independent workspace",
+        "Hosting blocked a workspace switch, and explicit native Quit closed the listener"
+      ],
+      "hostIdleWindows": [
+        {
+          "phase": "m24-desktop-disabled",
+          "seconds": 180.015
+        },
+        {
+          "phase": "m24-desktop-enabled",
+          "seconds": 180.016
+        }
+      ],
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 1,
+          "p50": 294.3652000000002,
+          "p95": 294.3652000000002,
+          "min": 294.3652000000002,
+          "max": 294.3652000000002,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-disabled",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 522.1557000000003,
+          "p95": 522.1557000000003,
+          "min": 522.1557000000003,
+          "max": 522.1557000000003,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-disabled",
+          "metric": "saved_note_ipc_round_trip",
+          "unit": "ms",
+          "n": 8,
+          "p50": 3.698149999996531,
+          "p95": 8.180900000006659,
+          "min": 2.8471999999892432,
+          "max": 8.180900000006659,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-enabled",
+          "metric": "host_startup",
+          "unit": "ms",
+          "n": 1,
+          "p50": 24.46129999999539,
+          "p95": 24.46129999999539,
+          "min": 24.46129999999539,
+          "max": 24.46129999999539,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-enabled",
+          "metric": "saved_note_ipc_round_trip",
+          "unit": "ms",
+          "n": 8,
+          "p50": 3.3541499999992084,
+          "p95": 9.001600000017788,
+          "min": 2.8091000000131316,
+          "max": 9.001600000017788,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-loopback-client",
+          "metric": "pairing_round_trip",
+          "unit": "ms",
+          "n": 1,
+          "p50": 20.941900000034366,
+          "p95": 20.941900000034366,
+          "min": 20.941900000034366,
+          "max": 20.941900000034366,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-loopback-client",
+          "metric": "workspace_list",
+          "unit": "ms",
+          "n": 12,
+          "p50": 4.484450000018114,
+          "p95": 5.163000000000466,
+          "min": 3.954100000031758,
+          "max": 5.163000000000466,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-loopback-client",
+          "metric": "saved_note",
+          "unit": "ms",
+          "n": 12,
+          "p50": 4.80125000004773,
+          "p95": 5.228400000021793,
+          "min": 3.9281000000191852,
+          "max": 5.228400000021793,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-loopback-client",
+          "metric": "managed_search",
+          "unit": "ms",
+          "n": 12,
+          "p50": 5.790200000017649,
+          "p95": 6.423200000019278,
+          "min": 5.229700000025332,
+          "max": 6.423200000019278,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-host-concurrent",
+          "metric": "four_remote_reads",
+          "unit": "ms",
+          "n": 12,
+          "p50": 12.708600000012666,
+          "p95": 14.73699999996461,
+          "min": 10.692199999990407,
+          "max": 14.73699999996461,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-host-concurrent",
+          "metric": "local_ipc_during_reads",
+          "unit": "ms",
+          "n": 12,
+          "p50": 10.614200000010896,
+          "p95": 11.858599999977741,
+          "min": 8.646000000007916,
+          "max": 11.858599999977741,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-loopback-client",
+          "metric": "host_stop",
+          "unit": "ms",
+          "n": 1,
+          "p50": 11.304300000017975,
+          "p95": 11.304300000017975,
+          "min": 11.304300000017975,
+          "max": 11.304300000017975,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-headless-loopback",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 76.08770000003278,
+          "p95": 76.08770000003278,
+          "min": 76.08770000003278,
+          "max": 76.08770000003278,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-headless-loopback",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 19.84765625,
+          "p95": 19.84765625,
+          "min": 19.84765625,
+          "max": 19.84765625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-headless-loopback",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 3.91796875,
+          "p95": 3.91796875,
+          "min": 3.91796875,
+          "max": 3.91796875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-headless-loopback",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 1,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 632.68359375,
+          "p95": 632.68359375,
+          "min": 632.68359375,
+          "max": 632.68359375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 363.26171875,
+          "p95": 363.26171875,
+          "min": 363.26171875,
+          "max": 363.26171875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 232.79296875,
+          "p95": 232.79296875,
+          "min": 232.79296875,
+          "max": 232.79296875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 1,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-disabled",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "invalidSamples": 1
+        },
+        {
+          "scenario": "m24-desktop-disabled",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 591.5625,
+          "p95": 591.5625,
+          "min": 591.5625,
+          "max": 591.5625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-disabled",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 345.7890625,
+          "p95": 345.7890625,
+          "min": 345.7890625,
+          "max": 345.7890625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-enabled",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 1,
+          "p50": 0.4808095784261616,
+          "p95": 0.4808095784261616,
+          "min": 0.4808095784261616,
+          "max": 0.4808095784261616,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-enabled",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 483.58203125,
+          "p95": 483.58203125,
+          "min": 483.58203125,
+          "max": 483.58203125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-enabled",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 233.203125,
+          "p95": 233.203125,
+          "min": 233.203125,
+          "max": 233.203125,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-disabled",
+          "metric": "cpu_stable_intervals",
+          "unit": "%",
+          "n": 1,
+          "p50": 0.5532621036184394,
+          "p95": 0.5532621036184394,
+          "min": 0.5532621036184394,
+          "max": 0.5532621036184394,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-disabled",
+          "metric": "cpu_observed_floor",
+          "unit": "%",
+          "n": 1,
+          "p50": 0.5487835472253504,
+          "p95": 0.5487835472253504,
+          "min": 0.5487835472253504,
+          "max": 0.5487835472253504,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-disabled",
+          "metric": "cpu_stable_coverage",
+          "unit": "%",
+          "n": 1,
+          "p50": 99.19051813529276,
+          "p95": 99.19051813529276,
+          "min": 99.19051813529276,
+          "max": 99.19051813529276,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-enabled",
+          "metric": "cpu_stable_intervals",
+          "unit": "%",
+          "n": 1,
+          "p50": 0.48080957842616173,
+          "p95": 0.48080957842616173,
+          "min": 0.48080957842616173,
+          "max": 0.48080957842616173,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-enabled",
+          "metric": "cpu_observed_floor",
+          "unit": "%",
+          "n": 1,
+          "p50": 0.4808095784261616,
+          "p95": 0.4808095784261616,
+          "min": 0.4808095784261616,
+          "max": 0.4808095784261616,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m24-desktop-enabled",
+          "metric": "cpu_stable_coverage",
+          "unit": "%",
+          "n": 1,
+          "p50": 99.99999999999997,
+          "p95": 99.99999999999997,
+          "min": 99.99999999999997,
+          "max": 99.99999999999997,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/tauri-rust-2026-11-22T18-58-29.435Z.json",
+      "observedAt": "2026-11-22T18:58:29.499Z",
+      "sourceCommit": "6ce65c5fe1081339c6c83c14e4269dd293d547de",
+      "executableSha256": "f2a0522ae58a691d8004ce5bdd996f3c1f7f7bb30bc82c6b9046b1170663fcec",
+      "architecture": "tauri-rust",
+      "version": "0.1.0",
+      "instrumentSha256": "9245f509d3939890246a19b431abf6e9485c0957f8c1d3b8cd228658d9901645",
+      "fixtureSha256": "52019d3698c53811ee29b248d2d271968502849813fcacc6d36f2e3a82e36a87",
+      "runtime": {
+        "protocolVersion": "1.3",
+        "product": "Edg/157.0.4341.60",
+        "revision": "@fbcb2989a6c61b72a4919fe1028e58e70131cd46",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "jsVersion": "15.7.11.7"
+      },
+      "success": true,
+      "checks": [
+        "Automatic create, edit, file rename, folder rename and burst convergence; managed UTF-8 and linked search, combined tags, rebuild and unified backlinks.",
+        "Live notifications drove clean reload and dirty conflict review while preserving both the external bytes and the protected draft.",
+        "Filesystem root loss withdrew search and restoring the same authorized folder restored the original identity.",
+        "WebView2 palette and original references dialog exploration/dismissal, native restart with nested expansion, near-1 MiB editor open/typing/Undo/Redo and byte-exact explicit Save; source revocation withdraws search."
+      ],
+      "indexProcessSamples": 23,
+      "metrics": [
+        {
+          "scenario": "startup-stages",
+          "metric": "cdp_target_ready",
+          "unit": "ms",
+          "n": 2,
+          "p50": 353.6265000000003,
+          "p95": 398.34330000000045,
+          "min": 308.90970000000016,
+          "max": 398.34330000000045,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "first-profile",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 520.2026999999998,
+          "p95": 520.2026999999998,
+          "min": 520.2026999999998,
+          "max": 520.2026999999998,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-initial-index",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 17512.416999999998,
+          "p95": 17512.416999999998,
+          "min": 17512.416999999998,
+          "max": 17512.416999999998,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-create",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 298.82730000000083,
+          "p95": 298.82730000000083,
+          "min": 298.82730000000083,
+          "max": 298.82730000000083,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-edit",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 319.17559999999867,
+          "p95": 319.17559999999867,
+          "min": 319.17559999999867,
+          "max": 319.17559999999867,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-rename",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 292.1195999999982,
+          "p95": 292.1195999999982,
+          "min": 292.1195999999982,
+          "max": 292.1195999999982,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-folder-rename",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 349.21340000000055,
+          "p95": 349.21340000000055,
+          "min": 349.21340000000055,
+          "max": 349.21340000000055,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-folder-scan-complete",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 7369.9568,
+          "p95": 7369.9568,
+          "min": 7369.9568,
+          "max": 7369.9568,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-replacement",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 338.3165000000008,
+          "p95": 338.3165000000008,
+          "min": 338.3165000000008,
+          "max": 338.3165000000008,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-burst",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 454.3751000000011,
+          "p95": 454.3751000000011,
+          "min": 454.3751000000011,
+          "max": 454.3751000000011,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-delete",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 305.38310000000274,
+          "p95": 305.38310000000274,
+          "min": 305.38310000000274,
+          "max": 305.38310000000274,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-refresh-relative",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 334.8719000000019,
+          "p95": 334.8719000000019,
+          "min": 334.8719000000019,
+          "max": 334.8719000000019,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-global-search",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 5,
+          "p50": 4.467000000000553,
+          "p95": 4.798600000001898,
+          "min": 3.8197999999974854,
+          "max": 4.798600000001898,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-combined-search",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 5,
+          "p50": 4.230799999997544,
+          "p95": 4.751899999999296,
+          "min": 3.7224000000023807,
+          "max": 4.751899999999296,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-backlinks",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 39.62350000000151,
+          "p95": 39.62350000000151,
+          "min": 39.62350000000151,
+          "max": 39.62350000000151,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-palette",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 188.04149999999936,
+          "p95": 188.04149999999936,
+          "min": 188.04149999999936,
+          "max": 188.04149999999936,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-relationship-dialog",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 171.26629999999932,
+          "p95": 171.26629999999932,
+          "min": 171.26629999999932,
+          "max": 171.26629999999932,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "workload",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 788.07421875,
+          "p95": 788.07421875,
+          "min": 788.07421875,
+          "max": 788.07421875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 788.07421875,
+          "p95": 788.07421875,
+          "min": 788.07421875,
+          "max": 788.07421875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 543.46875,
+          "p95": 543.46875,
+          "min": 543.46875,
+          "max": 543.46875,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "java_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "idle",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 1,
+          "p50": 130.4966782663714,
+          "p95": 130.4966782663714,
+          "min": 130.4966782663714,
+          "max": 130.4966782663714,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "restart",
+          "metric": "startup_usable",
+          "unit": "ms",
+          "n": 1,
+          "p50": 651.6955000000016,
+          "p95": 651.6955000000016,
+          "min": 651.6955000000016,
+          "max": 651.6955000000016,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-open-large",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 236.99809999999707,
+          "p95": 236.99809999999707,
+          "min": 236.99809999999707,
+          "max": 236.99809999999707,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-large-typing",
+          "metric": "input_to_raf",
+          "unit": "ms",
+          "n": 5,
+          "p50": 4.5,
+          "p95": 70,
+          "min": 3.7999999998137355,
+          "max": 70,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-large-undo",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 18.883199999996577,
+          "p95": 18.883199999996577,
+          "min": 18.883199999996577,
+          "max": 18.883199999996577,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-large-redo",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 17.01369999999588,
+          "p95": 17.01369999999588,
+          "min": 17.01369999999588,
+          "max": 17.01369999999588,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-large-save",
+          "metric": "elapsed",
+          "unit": "ms",
+          "n": 1,
+          "p50": 239.80720000000292,
+          "p95": 239.80720000000292,
+          "min": 239.80720000000292,
+          "max": 239.80720000000292,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-registered-settled",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 1,
+          "p50": 1.1449682462139716,
+          "p95": 1.1449682462139716,
+          "min": 1.1449682462139716,
+          "max": 1.1449682462139716,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-registered-settled",
+          "metric": "process_tree_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 633.24609375,
+          "p95": 633.24609375,
+          "min": 633.24609375,
+          "max": 633.24609375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-registered-settled",
+          "metric": "process_tree_private_bytes",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 421.6015625,
+          "p95": 421.6015625,
+          "min": 421.6015625,
+          "max": 421.6015625,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-initial-index",
+          "metric": "cpu_one_core_percent",
+          "unit": "%",
+          "n": 1,
+          "p50": 58.15432024892293,
+          "p95": 58.15432024892293,
+          "min": 58.15432024892293,
+          "max": 58.15432024892293,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m21-initial-index",
+          "metric": "sampled_peak_working_set",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 450.01953125,
+          "p95": 450.01953125,
+          "min": 450.01953125,
+          "max": 450.01953125,
+          "invalidSamples": 0
+        }
+      ]
+    }
+  ],
+  "supplemental": [
+    {
+      "path": "benchmarks/tauri-rust/raw/m25-docker.json",
+      "sourceCommit": "6ce65c5fe1081339c6c83c14e4269dd293d547de",
+      "success": true,
+      "image": "sha256:428ca53bb3f54304b3146be75632d9bc4670a77813f9f354c83739a26559c0fa",
+      "fixtureSha256": "ff598e99e888af1bc568417a526c077d3632918602f274a4e81fd76d5cf74a1d",
+      "checks": [
+        "Verified TLS and non-root Linux/amd64 runtime.",
+        "Exclusive workspace owner, matching-code pairing and workspace grant.",
+        "Exact import, verified concurrent downloads, export and saved note reads.",
+        "Trusted Chromium pairing, saved edit, reload, grant withdrawal and sign-out.",
+        "Restart preserved host identity, access was withdrawn and revoked, and SIGTERM exited cleanly."
+      ],
+      "metrics": [
+        {
+          "scenario": "m25-linux-container",
+          "metric": "container_to_verified_tls",
+          "unit": "ms",
+          "n": 1,
+          "p50": 667.3960999999999,
+          "p95": 667.3960999999999,
+          "min": 667.3960999999999,
+          "max": 667.3960999999999,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-linux-container",
+          "metric": "container_idle_one_core",
+          "unit": "%",
+          "n": 1,
+          "p50": 0.050665803172894285,
+          "p95": 0.050665803172894285,
+          "min": 0.050665803172894285,
+          "max": 0.050665803172894285,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-linux-container",
+          "metric": "container_memory_current",
+          "unit": "MiB",
+          "n": 1,
+          "p50": 9.3984375,
+          "p95": 9.3984375,
+          "min": 9.3984375,
+          "max": 9.3984375,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-linux-container",
+          "metric": "docker_companion_text_import_receipt",
+          "unit": "ms",
+          "n": 1,
+          "p50": 14.984899999995832,
+          "p95": 14.984899999995832,
+          "min": 14.984899999995832,
+          "max": 14.984899999995832,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-linux-container",
+          "metric": "container_authenticated_note",
+          "unit": "ms",
+          "n": 20,
+          "p50": 5.911249999997381,
+          "p95": 6.753199999991921,
+          "min": 5.391599999988102,
+          "max": 6.9989000000059605,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-linux-container",
+          "metric": "container_two_downloads_wall",
+          "unit": "ms",
+          "n": 6,
+          "p50": 129.69440000000031,
+          "p95": 139.18979999999283,
+          "min": 119.88239999998768,
+          "max": 139.18979999999283,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-linux-container",
+          "metric": "container_two_downloads_rate",
+          "unit": "MiB/s",
+          "n": 6,
+          "p50": 123.37694007334764,
+          "p95": 133.46412817896243,
+          "min": 114.95095186573171,
+          "max": 133.46412817896243,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-linux-container",
+          "metric": "docker_companion_note_export_download",
+          "unit": "ms",
+          "n": 1,
+          "p50": 315.0969000000041,
+          "p95": 315.0969000000041,
+          "min": 315.0969000000041,
+          "max": 315.0969000000041,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-linux-container",
+          "metric": "docker_browser_approval_to_workspace",
+          "unit": "ms",
+          "n": 1,
+          "p50": 2097.8261000000057,
+          "p95": 2097.8261000000057,
+          "min": 2097.8261000000057,
+          "max": 2097.8261000000057,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-linux-container",
+          "metric": "docker_browser_note_ready",
+          "unit": "ms",
+          "n": 1,
+          "p50": 139.54910000000382,
+          "p95": 139.54910000000382,
+          "min": 139.54910000000382,
+          "max": 139.54910000000382,
+          "invalidSamples": 0
+        }
+      ]
+    },
+    {
+      "path": "benchmarks/tauri-rust/raw/m25-android.json",
+      "sourceCommit": "78b4bda4adab5b46dccdd2f5e883203efb1a1c6a",
+      "success": true,
+      "apkSha256": "b9c3a882f332e0e2e77d6917322f2d92a0fe6aee1db7e0b01a983ea65e1a0e37",
+      "appVersion": "0.1.0-m24d.1",
+      "hostSourceCommit": "6ce65c5fe1081339c6c83c14e4269dd293d547de",
+      "fixtureSha256": "2db2512519ff3f74856fccf22956c949f48765498e99c6e9ef9ecf72812be811",
+      "checks": [
+        "The installed APK matched the existing candidate digest.",
+        "Manual host address and CA fingerprint produced the exact matching code and an approved workspace grant.",
+        "Signed Android reader restored its approval after restart and displayed the granted rich note.",
+        "Android displayed the new saved revision after the M25 protected desktop commit.",
+        "The disposable paired device was revoked and the emulator stopped."
+      ],
+      "metrics": [
+        {
+          "scenario": "m25-android-emulator",
+          "metric": "cold_process_activity_start",
+          "unit": "ms",
+          "n": 5,
+          "p50": 1178,
+          "p95": 1752,
+          "min": 731,
+          "max": 1752,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-android-emulator",
+          "metric": "pair_to_comparison_code",
+          "unit": "ms",
+          "n": 1,
+          "p50": 5795.3312,
+          "p95": 5795.3312,
+          "min": 5795.3312,
+          "max": 5795.3312,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-android-emulator",
+          "metric": "restart_to_workspace_visible",
+          "unit": "ms",
+          "n": 1,
+          "p50": 3727.1466,
+          "p95": 3727.1466,
+          "min": 3727.1466,
+          "max": 3727.1466,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-android-emulator",
+          "metric": "library_to_fixture_visible",
+          "unit": "ms",
+          "n": 1,
+          "p50": 4709.8315,
+          "p95": 4709.8315,
+          "min": 4709.8315,
+          "max": 4709.8315,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-android-emulator",
+          "metric": "rich_note_visible",
+          "unit": "ms",
+          "n": 1,
+          "p50": 4793.4201,
+          "p95": 4793.4201,
+          "min": 4793.4201,
+          "max": 4793.4201,
+          "invalidSamples": 0
+        },
+        {
+          "scenario": "m25-android-emulator",
+          "metric": "protected_commit_to_reader_change",
+          "unit": "ms",
+          "n": 1,
+          "p50": 3977.1587,
+          "p95": 3977.1587,
+          "min": 3977.1587,
+          "max": 3977.1587,
+          "invalidSamples": 0
+        }
+      ]
+    }
+  ]
+}

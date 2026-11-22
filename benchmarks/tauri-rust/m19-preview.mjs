@@ -33,7 +33,7 @@ function wavFixture(){
   return wav;
 }
 
-export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,processSnapshot}){
+export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,processSnapshot,extended=false}){
   const api=request=>evaluate('benchRequest('+JSON.stringify(request)+')');
   const transfer=request=>evaluate("window.__TAURI_INTERNALS__.invoke('transfer',{request:"+JSON.stringify(request)+"})");
   const snapshot=await api({kind:'snapshot'});
@@ -50,6 +50,11 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
     }
     record(scenario,cycle,'process_tree_working_set',state.processes.reduce((total,p)=>total+p.workingSet,0)/1048576,'MiB','Working sets include shared pages.');
     record(scenario,cycle,'js_heap_used',heap.usedSize/1048576,'MiB','CDP used heap without explicit GC.');
+    if(extended){
+      record(scenario,cycle,'process_tree_count',state.processes.length,'count');
+      record(scenario,cycle,'process_tree_handles',state.processes.reduce((total,p)=>total+p.handles,0),'count');
+      record(scenario,cycle,'process_tree_private_bytes',state.processes.reduce((total,p)=>total+p.privateBytes,0)/1048576,'MiB');
+    }
   };
   const click=async selector=>{
     await wait('!!document.querySelector('+JSON.stringify(selector)+')?.getClientRects().length','visible '+selector);
@@ -142,8 +147,32 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
   }
   assert.equal(await evaluate('document.querySelectorAll(".tiptap").length'),3);
   await measure('three-distinct-dense');
+  if(extended){
+    const start=performance.now();
+    for(let cycle=1;cycle<=6;cycle++){
+      await readiness('cycle-pdf',shortcut(files[0].title),'document.querySelector(".next-pdf-text")?.textContent.includes("M19 fixture page 1")',cycle);
+      await close(cycle);
+      await readiness('cycle-raster',shortcut(files[2].title),'document.querySelector(".next-resource-preview img")?.naturalWidth===1',cycle);
+      await close(cycle);
+      await readiness('cycle-audio',shortcut(files[1].title),'document.querySelector(".next-playback audio")?.duration>30',cycle);
+      await close(cycle);
+      await back();
+      await measure('cycle-returned-library',cycle);
+      if(cycle<6){
+        for(const note of notes.slice(1)){
+          await click(shortcut(note.title));
+          await wait(`!!document.querySelector('[data-note-id="${note.id}"] .tiptap')?.editor?.isEditable`,'distinct dense note reopened');
+        }
+        assert.equal(await evaluate('document.querySelectorAll(".tiptap").length'),3);
+      }
+    }
+    record('m19-extended-churn',1,'duration',performance.now()-start,'ms','Six three-dense-pane cycles with PDF, raster, audio and return to Library.');
+    await sleep(30_000);
+    await measure('cycle-settled-library');
+  }
   for(let cycle=1;cycle<=2;cycle++){
-    await back();await openRow(notes[1].id);await one();await measure('returned-one-dense',cycle);
+    if(!extended||cycle>1)await back();
+    await openRow(notes[1].id);await one();await measure('returned-one-dense',cycle);
   }
   // The first transaction may initialize table/column identities on the seeded fixture.
   const noteContent=`JSON.stringify(document.querySelector('.tiptap').editor.getJSON(),(key,value)=>

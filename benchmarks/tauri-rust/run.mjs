@@ -1,8 +1,10 @@
 import {roleSamples} from './process-role-samples.mjs';
+import { managedFixture, measureDraftCommit, measureTitleSearch, openManagedNote, qualifyManagedHistory } from './m25.mjs';
 // Production UI/native runtimes; disposable storage only. No owner credentials leave the renderer.
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, writeFile, appendFile } from 'node:fs/promises';
-import { resolve, join, basename } from 'node:path';
+import { resolve, join, basename, dirname } from 'node:path';
+import { createServer } from 'node:net';
 import { tmpdir, cpus, totalmem, hostname, release, arch } from 'node:os';
 import { createHash, randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
@@ -10,7 +12,16 @@ const root = resolve(import.meta.dirname, '../..'), output = resolve(import.meta
 await mkdir(output, { recursive: true });
 const architecture = process.argv[2];
 if (!['electron-java', 'tauri-rust'].includes(architecture)) throw Error('Usage: node benchmarks/tauri-rust/run.mjs electron-java|tauri-rust [--inspect]');
-const inspect = process.argv.includes('--inspect');
+const m25 = process.argv.includes('--m25');
+const inspect = process.argv.includes('--inspect') || m25;
+const packagedElectron = m25 && architecture === 'electron-java';
+const m25Wire = process.argv.find(arg => arg.startsWith('--m25-proof='))?.split('=')[1];
+const m25Size = Number(process.argv.find(arg => arg.startsWith('--m25-size='))?.split('=')[1] ?? (m25Wire ? 1020 : 64));
+const m25Restarts = Number(process.argv.find(arg => arg.startsWith('--m25-restarts='))?.split('=')[1] ?? 1);
+if (m25 && (![64, 512, 1020].includes(m25Size) || !Number.isInteger(m25Restarts) || m25Restarts < 1 || m25Restarts > 20 ||
+  (m25Wire && (architecture !== 'tauri-rust' || !['echo', 'receipt'].includes(m25Wire))))) {
+  throw Error('Use 64, 512 or 1020 KiB, 1–20 restarts, and an optional Next proof mode of echo or receipt');
+}
 const m18=process.argv.includes('--m18-editor');
 const m19=process.argv.includes('--m19-preview');
 const m20=process.argv.includes('--m20-linked');
@@ -21,9 +32,9 @@ const m24Automatic=process.argv.includes('--m24-automatic-tls');
 const m24=process.argv.includes('--m24-host')||m24Automatic;
 const recordM23=m23&&!process.argv.includes('--m23-probe');
 const recordM22=m22&&!process.argv.includes('--m22-probe');
-const recordM21=m21&&!process.argv.includes('--m21-probe');
+const recordM21=m21&&!m25&&!process.argv.includes('--m21-probe');
 const recordM20=m20&&!process.argv.includes('--m20-probe')&&!process.argv.includes('--m20-drag-probe');
-const recordM19=m19&&!process.argv.includes('--m19-probe');
+const recordM19=m19&&!m25&&!process.argv.includes('--m19-probe');
 const recordM18=m18&&!process.argv.includes('--m18-probe');
 const m2 = process.argv.includes('--m2');
 const m3 = process.argv.includes('--m3');
@@ -42,10 +53,10 @@ const m10 = process.argv.includes('--m10')||m11;
 const m9 = process.argv.includes('--m9');
 const m8 = process.argv.includes('--m8');
 const m7 = process.argv.includes('--m7');
-const m6 = process.argv.includes('--m6')||m7||m8||m9||m10;
+const m6 = process.argv.includes('--m6')||m7||m8||m9||m10||m25;
 const folder = await mkdtemp(join(tmpdir(), 'vaultor-next-bench-'));
 const profile = join(folder, 'profile'); await mkdir(profile);
-const port = Number(process.env.VAULTOR_BENCH_PORT || (architecture === 'electron-java' ? 9431 : 9432));
+let port = Number(process.env.VAULTOR_BENCH_PORT || (architecture === 'electron-java' ? 9431 : 9432));
 if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Invalid loopback benchmark port');
 const stamp = new Date().toISOString().replaceAll(':', '-');
 const evidence = `benchmarks/tauri-rust/raw/${architecture}-${stamp}.json`;
@@ -56,9 +67,27 @@ report.coexistingPersonalReference=process.platform==='win32'&&execFileSync('tas
 report.nativeInspectionHelperActiveBefore=process.platform==='win32'&&execFileSync('tasklist',['/FI','IMAGENAME eq codex-computer-use.exe','/FO','CSV','/NH'],{encoding:'utf8',windowsHide:true}).toLowerCase().includes('codex-computer-use.exe');
 report.dirty = Boolean(execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8', windowsHide: true }).trim());
 const executablePath = process.env.VAULTOR_BENCH_EXECUTABLE || (architecture === 'electron-java' ? join(root,'desktop/node_modules/electron/dist/electron.exe') : join(root,'next/src-tauri/target/release/vaultor-next.exe'));
+if (m25 && (!process.env.VAULTOR_BENCH_EXECUTABLE || !/^[a-f0-9]{40}$/.test(process.env.VAULTOR_BENCH_SOURCE_COMMIT ?? ''))) {
+  throw Error('M25 requires an explicit optimized executable and full source commit');
+}
 if(architecture==='electron-java'&&/vaultor[-_]next/i.test(basename(executablePath)))throw Error('Refusing a Vaultor Next executable as an Electron reference;clear VAULTOR_BENCH_EXECUTABLE.');
 report.executableSourceCommit=process.env.VAULTOR_BENCH_SOURCE_COMMIT||commit;
 report.executableSha256 = createHash('sha256').update(await readFile(executablePath)).digest('hex');
+if (m25) {
+  const hash = createHash('sha256');
+  const instrumentFiles = ['run.mjs', 'm25.mjs', 'process-sample.ps1'];
+  if (m19 || m21) instrumentFiles.push(m19 ? 'm19-preview.mjs' : 'm21-discovery.mjs', 'process-breakdown.ps1');
+  if (m24) instrumentFiles.push('m24-host.mjs');
+  for (const filename of instrumentFiles) hash.update(await readFile(join(import.meta.dirname, filename)));
+  report.instrumentSha256 = hash.digest('hex');
+  report.system.power = execFileSync('powercfg', ['/getactivescheme'], {encoding:'utf8', windowsHide:true}).trim();
+  report.system.display = JSON.parse(execFileSync('powershell.exe', ['-NoProfile', '-Command', 'Get-CimInstance Win32_VideoController | Select-Object Name,CurrentHorizontalResolution,CurrentVerticalResolution,CurrentRefreshRate | ConvertTo-Json -Compress'], {encoding:'utf8', windowsHide:true}));
+  if (packagedElectron) {
+    const bundle = await readFile(join(dirname(executablePath), 'resources/bundle/manifest.json'));
+    report.javaRuntime = JSON.parse(bundle).runtime;
+    report.bundleManifestSha256 = createHash('sha256').update(bundle).digest('hex');
+  }
+}
 const delay = ms => new Promise(r => setTimeout(r, ms));
 const csvEscape = v => '"' + String(v ?? '').replaceAll('"', '""') + '"';
 function record(scenario, iteration, metric, value, unit, notes = '', valid = true) {
@@ -99,44 +128,62 @@ async function wait(expression, label) {
   throw Error(`Timed out: ${label}; ${await evaluate('document.body.innerText.slice(0,1800)')}`);
 }
 async function launch(iteration) {
+  if (m25) {
+    port = await new Promise((resolve, reject) => {
+      const probe = createServer();
+      probe.once('error', reject);
+      probe.listen(process.env.VAULTOR_BENCH_PORT ? port : 0, '127.0.0.1', () => {
+        const address = probe.address();
+        probe.close(error => error ? reject(error) : resolve(address.port));
+      });
+    });
+  }
   const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(VAULTOR_|HOST_|ELECTRON_RUN_AS_NODE|WEBVIEW2_)/.test(k)));
   const executable = executablePath;
-  const args = architecture === 'electron-java' ? [join(root, 'desktop'), `--remote-debugging-address=127.0.0.1`, `--remote-debugging-port=${port}`] : [];
+  const args = architecture === 'electron-java' ? [...(packagedElectron ? [] : [join(root, 'desktop')]), `--remote-debugging-address=127.0.0.1`, `--remote-debugging-port=${port}`] : [];
   Object.assign(env, architecture === 'electron-java' ? { VAULTOR_DESKTOP_TEST_DIRECTORY: profile, HOST_NETWORK_PORT: '0', NODE_ENV: 'production' } : { VAULTOR_NEXT_WORKSPACE: join(folder, 'workspace'), ...(m6||m18||m19||m20||m21||m22||m23||m24?{WEBVIEW2_USER_DATA_FOLDER:profile}:{}), WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1` });
   const start = performance.now();
   child = spawn(executable, args, { cwd: root, env, windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
   child.stderr.on('data', data => { report.runtimeLog = ((report.runtimeLog ?? '') + data).slice(-4000); });
   await connect();
+  if (m25) record('startup-stages', iteration, 'cdp_target_ready', performance.now() - start, 'ms', 'Spawn through reachable page target; 50 ms polls, WebView and bridge startup included.');
   await cdp('Emulation.setDeviceMetricsOverride',{width:1200,height:820,deviceScaleFactor:1,mobile:false});
   await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'light'}]});
   if (architecture === 'electron-java') {
-    await wait("Boolean(document.querySelector('.library-view'))", 'Electron library');
+    if (!m25) await wait("Boolean(document.querySelector('.library-view'))", 'Electron library');
     await evaluate(`window.benchRequest=async(path,method='GET',body)=>{
       const state=(await window.vaultorDesktop.bootstrap()).value;
       const result=await window.vaultorDesktop.request({id:crypto.randomUUID(),token:state.token,path,method,timeout:30000,headers:{'X-Vaultor-Protocol':'3',...(body?{'Content-Type':'application/json'}:{})},...(body?{body:{kind:'text',value:JSON.stringify(body)}}:{})});
       if(!result.ok)throw Error(result.error.detail);const value=result.value;if(value.status>=400)throw Error(path+' '+value.status+' '+new TextDecoder().decode(new Uint8Array(value.data)));return value.status===204||!value.data.length?null:JSON.parse(new TextDecoder().decode(new Uint8Array(value.data)));
     }`);
-    await wait("!document.body.innerText.includes('Loading resources')", 'Electron resources usable');
+    await wait(m25 ? "[...document.querySelectorAll('.library-view[data-motion-ready=true],.tiptap[contenteditable=true]')].some(node=>node.getClientRects().length&&!node.closest('[hidden],[inert]'))" : "!document.body.innerText.includes('Loading resources')", 'Electron workspace usable');
   } else {
-    await wait(m10?"document.querySelector('[data-ready=true][data-session-ready=true]') !== null":"document.querySelector('[data-ready=true]') !== null", 'Tauri workspace');
+    await wait(m10||m25?"document.querySelector('[data-ready=true][data-session-ready=true]') !== null":"document.querySelector('[data-ready=true]') !== null", 'Tauri workspace');
     // A busy debugging port must never redirect mutating fixtures into another app.
     const openedPath=await evaluate("window.__TAURI_INTERNALS__.invoke('workspace',{request:{kind:'snapshot'}}).then(s=>s.path)");
     const normalizePath=p=>(p.charCodeAt(2)===63?p.slice(4):p).split(String.fromCharCode(92)).join('/').toLowerCase();
     assert.equal(normalizePath(openedPath),normalizePath(join(folder,'workspace')),'Refusing a debugging target outside this disposable benchmark workspace');
     await evaluate("window.benchRequest=request=>window.__TAURI_INTERNALS__.invoke('workspace',{request})");
+    // Discovery qualification can restore a linked-source browser or an
+    // external-file recovery scope. Its own driver verifies that workload.
+    if (m25 && !m21) await wait("[...document.querySelectorAll('.next-library[aria-busy=false],.tiptap[contenteditable=true]')].some(node=>node.getClientRects().length&&!node.closest('[hidden],[inert]'))", 'Next workspace usable');
   }
-  record(m24?'m24-desktop-disabled':m15?uiMilestone+'-startup-'+(iteration===1?'first-profile':'restart'):iteration >= 3 ? 'qualification' : iteration === 1 ? 'first-profile' : 'restart', iteration, 'startup_usable', performance.now() - start, 'ms', 'Process spawn to Library mounted, command bridge ready; 50ms polling; warm OS cache possible.');
+  record(m24?'m24-desktop-disabled':m15?uiMilestone+'-startup-'+(iteration===1?'first-profile':'restart'):iteration >= 3 && !m25 ? 'qualification' : iteration === 1 ? 'first-profile' : 'restart', iteration, 'startup_usable', performance.now() - start, 'ms', 'Process spawn to Library mounted, command bridge ready; 50ms polling; warm OS cache possible.');
+  if (packagedElectron) {
+    const script = `$owner=(Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort ${port} -State Listen).OwningProcess; if($owner -ne ${child.pid}) {exit 1}`;
+    execFileSync('powershell.exe', ['-NoProfile', '-Command', script], { windowsHide: true });
+  }
   report.runtime = await cdp('Browser.getVersion').catch(()=>({unavailable:true}));
   report.viewport = await evaluate('({width:innerWidth,height:innerHeight,dpr:devicePixelRatio,theme:document.documentElement.dataset.theme})');
   report.node = process.version;
-  report.appVersion = JSON.parse(await readFile(join(root,architecture==='electron-java'?'desktop/package.json':'next/package.json'),'utf8')).version;
-  report.instrument = 'm1-cdp-v2';
+  report.appVersion = JSON.parse(await readFile(packagedElectron ? join(dirname(executablePath), 'resources/app/package.json') : join(root,architecture==='electron-java'?'desktop/package.json':'next/package.json'),'utf8')).version;
+  report.instrument = m25 ? 'm25-cdp-v1' : 'm1-cdp-v2';
   if(iteration>=3||m24Automatic)return null; // Short lifecycle probes do not need a process sampler.
   return startSampler(iteration);
 }
 function startSampler(iteration) {
   const stop = join(folder, `stop-${iteration}`), sampleFile = join(folder, `process-${iteration}.json`);
-  sampler = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(import.meta.dirname, 'process-sample.ps1'), '-RootPid', String(child.pid), '-Output', sampleFile, '-StopFile', stop], { windowsHide: true, stdio: ['ignore','ignore','pipe'] });
+  sampler = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(import.meta.dirname, 'process-sample.ps1'), '-RootPid', String(child.pid), '-Output', sampleFile, '-StopFile', stop, ...(m25 ? ['-Detailed'] : [])], { windowsHide: true, stdio: ['ignore','ignore','pipe'] });
   sampler.stderr.on('data', data => { report.samplerLog = ((report.samplerLog ?? '') + data).slice(-1500); });
   return { stop, sampleFile };
 }
@@ -149,10 +196,16 @@ async function stopSampler(run, iteration) {
   report[`process${iteration}`] = samples;
   if(iteration===1&&report.idleWindow){
     const idle=samples.filter(s=>Date.parse(s.timestamp)>=report.idleWindow.start&&Date.parse(s.timestamp)<=report.idleWindow.end);
+    if (m25) assert(idle.length >= 200, 'Insufficient five-minute process sample coverage');
     const first=idle[0],last=idle.at(-1),seconds=(Date.parse(last.timestamp)-Date.parse(first.timestamp))/1000;
-    record('settled-idle-5min',1,'cpu_one_core_percent',100*(last.cpuSeconds-first.cpuSeconds)/seconds,'%',`${seconds.toFixed(1)}s sampled span within 300s untouched window after 30s settling; 100% = one core.`);
+    const stable = !m25 || idle.every(sample => sample.processes.map(p => p.id).join() === first.processes.map(p => p.id).join());
+    record('settled-idle-5min',1,'cpu_one_core_percent',stable ? 100*(last.cpuSeconds-first.cpuSeconds)/seconds : null,'%',`${seconds.toFixed(1)}s sampled span within 300s untouched window after 30s settling; 100% = one core.${stable ? '' : ' Process membership changed, so end-to-end counter subtraction is invalid.'}`,stable);
     record('settled-idle-5min',1,'process_tree_working_set',last.workingSet/1048576,'MiB');
     record('settled-idle-5min',1,'process_tree_private_bytes',last.privateBytes/1048576,'MiB');
+    if (m25) {
+      record('settled-idle-5min',1,'process_tree_count',last.processes.length,'count');
+      record('settled-idle-5min',1,'process_tree_handles',last.processes.reduce((sum, p) => sum + p.handles, 0),'count');
+    }
   }
   if(iteration>=3)return;
   record('workload', iteration, 'sampled_peak_working_set', Math.max(...samples.map(s => s.workingSet)) / 1048576, 'MiB');
@@ -184,7 +237,13 @@ try {
     m23Fixture=JSON.parse(execFileSync(fixturePath,[join(folder,'workspace')],{encoding:'utf8',windowsHide:true}));
   }
   let run = await launch(1);
-  if (inspect) {
+  if (m25 && m25Wire) {
+    const content = managedFixture(m25Size * 1024);
+    report.dataset = createHash('sha256').update(JSON.stringify(content)).digest('hex');
+    report.wire = m25Wire;
+    await measureDraftCommit({ evaluate, record, report, content, wire: m25Wire });
+    await stopSampler(run, 1);
+  } else if (inspect && (!m25 || m19 || m21 || m24)) {
     if (m24) {
       const hostChecks = await import('./m24-host.mjs');
       if (m24Automatic) {
@@ -195,7 +254,7 @@ try {
           await launch(3);
         }});
       } else {
-        await hostChecks.qualifyHost({evaluate,wait,record,report,folder});
+        await hostChecks.qualifyHost({evaluate,wait,record,report,folder,sustained:m25});
       }
       await stopSampler(run,1);
       run = null;
@@ -204,10 +263,11 @@ try {
           const at = Date.parse(sample.timestamp);
           return at >= start && at <= end;
         });
-        assert(points.length >= 2, 'Host idle sampler coverage');
+        assert(points.length >= (m25 ? 120 : 2), 'Host idle sampler coverage');
         const first = points[0], last = points.at(-1);
         const seconds = (Date.parse(last.timestamp) - Date.parse(first.timestamp)) / 1000;
-        record(phase, 1, 'cpu_one_core_percent', 100 * (last.cpuSeconds - first.cpuSeconds) / seconds, '%', `${seconds.toFixed(2)}s sampled idle; 100% = one logical CPU.`);
+        const stable = !m25 || points.every(sample => sample.processes.map(p => p.id).join() === first.processes.map(p => p.id).join());
+        record(phase, 1, 'cpu_one_core_percent', stable ? 100 * (last.cpuSeconds - first.cpuSeconds) / seconds : null, '%', `${seconds.toFixed(2)}s sampled idle; 100% = one logical CPU.${stable ? '' : ' Process membership changed.'}`, stable);
         record(phase, 1, 'process_tree_working_set', last.workingSet / 1048576, 'MiB', 'Last owned process-tree sample. Shared pages may be counted more than once.');
         record(phase, 1, 'process_tree_private_bytes', last.privateBytes / 1048576, 'MiB');
       }
@@ -301,7 +361,7 @@ try {
       }
       report.indexProcessSamples=points.length;
     }
-    else if(m19){assert.equal(architecture,'tauri-rust');await (await import('./m19-preview.mjs')).qualifyPreviews({evaluate,cdp,wait,report,folder,record,processSnapshot:async()=>{const path=join(folder,'m19-roles.json');execFileSync('powershell.exe',['-NoProfile','-File',join(import.meta.dirname,'process-breakdown.ps1'),'-RootPid',String(child.pid),'-Output',path],{windowsHide:true});return JSON.parse((await readFile(path,'utf8')).replace(/^\uFEFF/,''));}});}
+    else if(m19){assert.equal(architecture,'tauri-rust');await (await import('./m19-preview.mjs')).qualifyPreviews({evaluate,cdp,wait,report,folder,record,extended:m25,processSnapshot:async()=>{const path=join(folder,'m19-roles.json');execFileSync('powershell.exe',['-NoProfile','-File',join(import.meta.dirname,'process-breakdown.ps1'),'-RootPid',String(child.pid),'-Output',path],{windowsHide:true});return JSON.parse((await readFile(path,'utf8')).replace(/^\uFEFF/,''));}});}
     else if(m18){assert.equal(architecture,'tauri-rust');await (await import('./m18-editor.mjs')).qualifyEditor({evaluate,cdp,wait,report,folder,record,restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});}
     else if(process.argv.includes('--m17-corrections'))await (await import('./m17-corrections.mjs')).qualifyCorrections({evaluate,cdp,wait,report,folder,restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
     else if(process.argv.includes('--m17-safety'))await (await import('./m17-safety.mjs')).safetyM17({evaluate,cdp,wait,report,folder,restart:async()=>{await quit();if(run)await stopSampler(run,1);run=await launch(3);}});
@@ -334,8 +394,15 @@ try {
     if(m14&&report.idleWindow){const points=report.process1.filter(p=>{const t=Date.parse(p.timestamp);return t>=report.idleWindow.start&&t<=report.idleWindow.end;}),first=points[0],last=points.at(-1);assert(points.length>=200,'Idle sampler coverage');record(uiMilestone+'-settled-idle-5min',1,'cpu_one_core_percent',100*(last.cpuSeconds-first.cpuSeconds)/((Date.parse(last.timestamp)-Date.parse(first.timestamp))/1000),'%','Untouched five-minute idle after milestone-specific UI fixture;one pane;no renderer polling;uncontrolled coexisting desktop.');record(uiMilestone+'-settled-idle-5min',1,'process_tree_working_set',last.workingSet,'bytes','Final owned process-tree sample;shared pages may double-count.');record(uiMilestone+'-settled-idle-5min',1,'process_tree_private_bytes',last.privateBytes,'bytes','Final owned process-tree sample;not comparable to different fixture endpoints.');}
     await quit();
   } else {
-    const doc = { type: 'doc', content: Array.from({ length: 120 }, (_, i) => ({ type: 'paragraph', content: [{ type: 'text', text: `Paragraph ${i}. Vaultor comparable managed-note benchmark. ` + 'Writing, reading and organizing knowledge. '.repeat(12) }] })) };
+    const doc = m25 ? managedFixture(m25Size * 1024) : { type: 'doc', content: Array.from({ length: 120 }, (_, i) => ({ type: 'paragraph', content: [{ type: 'text', text: `Paragraph ${i}. Vaultor comparable managed-note benchmark. ` + 'Writing, reading and organizing knowledge. '.repeat(12) }] })) };
+    const noteScenario = `managed-note-${m25 ? m25Size : 64}k`;
     const dataset = createHash('sha256').update(JSON.stringify(doc)).digest('hex'); report.dataset = dataset;
+    if (m25) {
+      const settings = architecture === 'tauri-rust'
+        ? `(async()=>{const {path}=await benchRequest({kind:'snapshot'});return benchRequest({kind:'behavior',path,value:{maxVisiblePanes:1,noteOpening:'reuse',autosaveDelay:1000}})})()`
+        : `benchRequest('/settings','PATCH',{workspace:{maxOpenNotes:1,noteOpening:'reuse',autosaveDelay:1000}})`;
+      await evaluate(settings);
+    }
     // Setup writes are not timed as product interactions.
     const seed = architecture === 'tauri-rust'
       ? `(async()=>{const c=await benchRequest({kind:'createCollection',name:'Benchmark'});let ids=[];for(let i=0;i<100;i++){const n=await benchRequest({kind:'createNote',title:'Bench note '+String(i).padStart(3,'0'),collection:c.id});if(i>=98)await benchRequest({kind:'save',id:n.id,title:n.title,revision:n.revision,content:${JSON.stringify(doc)}});ids.push(n.id);}return {ids,collection:c.id}})()`
@@ -349,29 +416,41 @@ try {
       ? `document.querySelectorAll('${m3||m4||m5||m6?'[data-row-open]':'.next-resource>button:first-child'}')`
       : `document.querySelectorAll('[data-resource-id],.resource-card,.resource-row,button')`;
     if(process.argv.includes('--profile-open'))await evaluate(`window.openProfile={mutations:0};window.openObserver=new MutationObserver(records=>openProfile.mutations+=records.length);openObserver.observe(document.querySelector('.next-library'),{subtree:true,attributes:true,childList:true});true`);
-    for (let i = 0; i < 3; i++) {
-      if(m6)await evaluate("document.querySelector('[aria-label=\"Return to Library\"]')?.click();true");
-      if(m6)await wait("document.querySelector('.next-library-region:not([hidden]) [data-row-open]')&&document.querySelector('[aria-label=Notes]')?.getAttribute('aria-busy')==='false'",'full Library before next open');
+    const openingCount = m25 ? 22 : 3;
+    for (let i = 0; i < openingCount; i++) {
+      if(m6&&architecture==='tauri-rust')await evaluate("document.querySelector('[aria-label=\"Return to Library\"]')?.click();true");
+      if(m6&&architecture==='tauri-rust')await wait("document.querySelector('.next-library-region:not([hidden]) [data-row-open]')&&document.querySelector('[aria-label=Notes]')?.getAttribute('aria-busy')==='false'",'full Library before next open');
       if (architecture === 'electron-java') {
         await evaluate("[...document.querySelectorAll('.sidebar-nav button,button')].find(b=>b.textContent.trim()==='Library'&&!b.closest('[hidden]')).click()");
         await wait("document.querySelector('.workspace-view:not([hidden])') && !document.body.innerText.includes('Loading resources')", 'return to Library');
       }
-      const opened = await evaluate(`(async()=>{const start=performance.now();const title='Bench note 0${99-i%2}';const candidates=[...${clickTitle()}];const row=candidates.find(e=>e.textContent.trim()===title&&!e.closest('[hidden],[inert]'))||[...document.querySelectorAll('*')].find(e=>e.childElementCount===0&&e.textContent.trim()===title&&!e.closest('[hidden],[inert]'));if(!row)throw Error('Missing '+title);row.click();for(let n=0;n<1200;n++){const dom=document.querySelector('.tiptap');const selected=${architecture === 'tauri-rust' ? "document.querySelector('.next-note-bar input')?.value===title" : "document.querySelector('.note-title[data-active=true]')?.textContent.trim()===title"};if(selected&&dom?.contentEditable==='true'&&dom.textContent.includes('Paragraph 119'))return performance.now()-start;await new Promise(r=>setTimeout(r,10));}throw Error('Editor mount timeout')})()`);
-      record('managed-note-64k', 1, 'note_open', opened, 'ms', 'DOM click to end marker mounted; 10ms polling, includes UI work.');
+      const opened = m25
+        ? await openManagedNote(evaluate, architecture, fixture.ids[99 - i % 2], `Bench note 0${99 - i % 2}`, `Paragraph ${doc.content.length - 1}.`)
+        : await evaluate(`(async()=>{const start=performance.now();const title='Bench note 0${99-i%2}';const candidates=[...${clickTitle()}];const row=candidates.find(e=>e.textContent.trim()===title&&!e.closest('[hidden],[inert]'))||[...document.querySelectorAll('*')].find(e=>e.childElementCount===0&&e.textContent.trim()===title&&!e.closest('[hidden],[inert]'));if(!row)throw Error('Missing '+title);row.click();for(let n=0;n<1200;n++){const dom=document.querySelector('.tiptap');const selected=${architecture === 'tauri-rust' ? "document.querySelector('.next-note-bar input')?.value===title" : "document.querySelector('.note-title[data-active=true]')?.textContent.trim()===title"};if(selected&&dom?.contentEditable==='true'&&dom.textContent.includes('Paragraph 119'))return performance.now()-start;await new Promise(r=>setTimeout(r,10));}throw Error('Editor mount timeout')})()`);
+      if (!m25 || i >= 2) record(noteScenario, m25 ? i - 1 : 1, 'note_open', opened, 'ms', m25 ? 'Visible Library click through editable end marker and next rAF; 10 ms polls.' : 'DOM click to end marker mounted; 10ms polling, includes UI work.');
     }
     if(process.argv.includes('--profile-open')){report.openProfile=await evaluate('openObserver.disconnect();window.openProfile');report.openProfile.readRoundtrips=[];for(let i=0;i<3;i++)report.openProfile.readRoundtrips.push(await evaluate(`(async()=>{const t=performance.now();await window.__TAURI_INTERNALS__.invoke('workspace',{request:{kind:'read',id:'${fixture.ids[99]}'}});return performance.now()-t})()`));record('opening-profile',1,'library_dom_mutations',report.openProfile.mutations,'count','External MutationObserver over three opens; diagnostic overhead present.');report.openProfile.readRoundtrips.forEach((ms,i)=>record('opening-profile',i+1,'read_roundtrip',ms,'ms','Independent 64KiB read through IPC/SQLite/serialization, not isolated SQL.'));console.log(JSON.stringify(report.openProfile));}
     // Real native webview input via CDP, not direct editor insertContent.
     const typing = [];
-    await wait("document.querySelector('.tiptap')?.contentEditable==='true'", 'editable unlocked note');
-    for (let i = 0; i < 12; i++) {
-      await evaluate(`(()=>{const dom=document.querySelector('.tiptap');dom.focus();window.benchInput=new Promise(r=>{dom.addEventListener('beforeinput',()=>requestAnimationFrame(()=>r(performance.now()-window.benchStart)),{once:true});setTimeout(()=>r(null),3000)});window.benchStart=performance.now();})()`);
+    const savedId = fixture.ids[99 - (openingCount - 1) % 2];
+    const paneSelector = `[${architecture === 'tauri-rust' ? 'data-note-id' : 'data-note-pane'}="${savedId}"]`;
+    const editorSelector = m25 ? `${paneSelector} .tiptap` : '.tiptap';
+    await wait(`document.querySelector(${JSON.stringify(editorSelector)})?.contentEditable==='true'`, 'editable unlocked note');
+    const inputCount = m25 ? 102 : 12;
+    for (let i = 0; i < inputCount; i++) {
+      await evaluate(`(()=>{const dom=document.querySelector(${JSON.stringify(editorSelector)});dom.focus();window.benchInput=new Promise(r=>{dom.addEventListener('beforeinput',()=>{const input=performance.now();requestAnimationFrame(()=>r(performance.now()-${m25 ? 'input' : 'window.benchStart'}));},{once:true});setTimeout(()=>r(null),3000)});window.benchStart=performance.now();})()`);
       await cdp('Input.insertText', { text: 'x' }); typing.push(await evaluate('window.benchInput'));
     }
-    for (const value of typing) if(value!==null) record('managed-note-64k', 1, 'input_to_raf', value, 'ms', 'CDP insertText → DOM beforeinput → next rAF; includes CDP delivery overhead.');
-    await delay(1000);
-    await wait(architecture === 'tauri-rust' ? "[...document.querySelectorAll('[role=status]')].some(e=>e.textContent==='saved')" : "!document.body.innerText.includes('Saving…')", 'autosave');
-    const frames = await evaluate(`new Promise(resolve=>{let last,values=[],count=0;const dom=document.querySelector('.tiptap');let scroll=dom.parentElement;while(scroll&&scroll.scrollHeight<=scroll.clientHeight+10)scroll=scroll.parentElement;const frame=t=>{if(last)values.push(t-last);last=t;if(scroll)scroll.scrollTop+=12;if(++count<61)requestAnimationFrame(frame);else resolve(values)};requestAnimationFrame(frame)})`);
-    for(const value of frames) record('managed-note-64k',1,'scroll_frame_interval',value,'ms','rAF intervals during scripted scroll; not compositor presentation.');
+    if (m25) assert(typing.every(value => Number.isFinite(value)), 'Every input must reach a frame callback');
+    for (const [i, value] of typing.entries()) if(value!==null&&(!m25||i>=2)) record(noteScenario, m25 ? i - 1 : 1, 'input_to_raf', value, 'ms', m25 ? 'DOM beforeinput to next rAF triggered by CDP text. No physical/compositor timing.' : 'CDP insertText → DOM beforeinput → next rAF; includes CDP delivery overhead.');
+    if (m25) {
+      await qualifyManagedHistory(evaluate, paneSelector, (metric, value, notes) => record(noteScenario, 1, metric, value, 'ms', notes));
+    } else {
+      await delay(1000);
+      await wait(architecture === 'tauri-rust' ? "[...document.querySelectorAll('[role=status]')].some(e=>e.textContent==='saved')" : "!document.body.innerText.includes('Saving…')", 'autosave');
+    }
+    const frames = await evaluate(`new Promise(resolve=>{let last,values=[],count=0;const dom=document.querySelector(${JSON.stringify(editorSelector)});let scroll=dom.parentElement;while(scroll&&scroll.scrollHeight<=scroll.clientHeight+10)scroll=scroll.parentElement;const frame=t=>{if(last)values.push(t-last);last=t;if(scroll)scroll.scrollTop+=12;if(++count<61)requestAnimationFrame(frame);else resolve(values)};requestAnimationFrame(frame)})`);
+    for(const value of frames) record(noteScenario,1,'scroll_frame_interval',value,'ms','rAF intervals during scripted scroll; not compositor presentation.');
     const screenshot = await cdp('Page.captureScreenshot'); await writeFile(join(output, architecture + '-editor.png'), Buffer.from(screenshot.data, 'base64'));
     if(process.argv.includes('--idle-five')) {
       if(m8||m9||m10)record('settled-idle-5min',1,'activity_history_tasks',(await evaluate("window.__TAURI_INTERNALS__.invoke('transfer',{request:{op:'tasks'}}).then(t=>t.length)")),'count','History count before untouched window; no polling during it.');
@@ -384,10 +463,24 @@ try {
     }
     await delay(3500); await stopSampler(run, 1); await quit();
     run = await launch(2);
-    const saved = await evaluate(architecture === 'tauri-rust' ? `benchRequest({kind:'read',id:'${fixture.ids[99]}'})` : `benchRequest('/resources/${fixture.ids[99]}')`);
-    assert(JSON.stringify(saved.content).includes('xxxxxxxxxxxx'), 'Typed content must persist after process restart');
-    report.checks.push('12 native text inputs saved and read back after process restart', '100-note collection fixture created');
+    const saved = await evaluate(architecture === 'tauri-rust' ? `benchRequest({kind:'read',id:'${savedId}'})` : `benchRequest('/resources/${savedId}')`);
+    if (m25) {
+      const readback = typeof saved.content === 'string' ? JSON.parse(saved.content) : saved.content;
+      const prose = readback.content.map(paragraph => paragraph.content?.map(node => node.text ?? '').join('') ?? '');
+      const combined = prose.join('\n');
+      const inserted = 'x'.repeat(inputCount);
+      assert(combined.includes(inserted), 'All native text inputs must persist');
+      assert.equal(combined.replace(inserted, ''), doc.content.map(paragraph => paragraph.content[0].text).join('\n'), 'Other prose must survive a full process restart');
+    } else assert(JSON.stringify(saved.content).includes('x'.repeat(inputCount)), 'Typed content must persist after process restart');
+    report.checks.push(`${inputCount} native text inputs saved and read back after process restart`, '100-note collection fixture created');
     await delay(4000); await stopSampler(run, 2);
+    if (m25) for (let iteration = 3; iteration <= m25Restarts + 1; iteration++) {
+      await quit();
+      await launch(iteration);
+    }
+    if (m25 && process.argv.includes('--m25-title-search')) {
+      await measureTitleSearch({ evaluate, cdp, wait, record, architecture });
+    }
     if((m2||m3||m4||m5||m6)&&process.argv.includes('--qualify')) {
       const qualify=m12?(await import('./m12-qualify.mjs')).qualifyM12:m11?(await import('./m11-qualify.mjs')).qualifyM11:m10?(await import('./m10-qualify.mjs')).qualifyM10:m9?(await import('./m9-qualify.mjs')).qualifyM9:m8?(await import('./m8-qualify.mjs')).qualifyM8:m7?(await import('./m7-qualify.mjs')).qualifyM7:m6?(await import('./m6-qualify.mjs')).qualifyM6:m5?(await import('./m5-qualify.mjs')).qualifyM5:m4?(await import('./m4-qualify.mjs')).qualifyM4:m3?(await import('./m3-qualify.mjs')).qualifyM3:(await import('./m2-qualify.mjs')).qualifyM2;let iteration=2,activeRun;
       const restart=async(normal=false)=>{
@@ -420,7 +513,14 @@ try {
 finally {
   await quit();
   await writeFile(resolve(root, evidence), JSON.stringify(report, null, 2));
-  if (m24 && !m24Automatic && !process.argv.includes('--m24-probe')) {
+  if (m25 && !process.argv.includes('--m25-probe')) {
+    const samples = report.success ? report.samples : [...report.samples, {scenario:'qualification', iteration:1, metric:'run_failure', notes:report.error}];
+    const rows = samples.map(sample => [randomUUID(), report.timestamp, 'm25-desktop-v1', architecture, report.executableSourceCommit,
+      hostname(), release(), 'uncontrolled', sample.scenario, report.dataset ?? '', sample.iteration, sample.metric,
+      sample.value, sample.unit, report.success && sample.valid, 'm25-cdp-v1', evidence, sample.notes].map(csvEscape).join(','));
+    await appendFile(join(import.meta.dirname, 'benchmark_runs.csv'), rows.join('\n') + '\n');
+  }
+  if (m24 && !m25 && !m24Automatic && !process.argv.includes('--m24-probe')) {
     const samples = report.samples.filter(sample => sample.scenario.startsWith('m24-'));
     if (!report.success) samples.push({scenario:'m24-qualification', iteration:1, metric:'run_failure', notes:'See raw evidence'});
     for (const sample of samples) {

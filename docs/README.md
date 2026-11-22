@@ -5,6 +5,7 @@ Start with [CODEBASE.md](CODEBASE.md) for the current product, source map, archi
 Reviewed 2026-11-08: Windows x64 and macOS Apple Silicon 0.27.0 Help are published; GitHub Latest remains 0.21.0; Android alpha.28/code32 is unchanged. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
 
 - [Vaultor Next M13 acceptance](plans/VAULTOR-NEXT-M13.md): original/current Windows screen matrix, checks, representative local evidence and remaining desktop parity.
+- [Vaultor Next M25 performance qualification](plans/VAULTOR-NEXT-M25.md) covers matched Windows measurements, managed autosave publication, and M26 gates.
 - [Vaultor Next M17 acceptance closure](plans/VAULTOR-NEXT-M17.md): targeted UI fixes, critical desktop UX correction follow-up, shared Redo diagnostics, native workspace protection and controlled memory qualification.
 - [Vaultor Next M16 workspace qualification](plans/VAULTOR-NEXT-M16.md): three-pane implementation and scoped visual/motion, responsive, safety and performance evidence.
 - [Vaultor Next M15 acceptance candidate](plans/VAULTOR-NEXT-M15.md): supported Settings, mixed pins, session focus/arrangement, contextual controls and scoped Windows evidence.

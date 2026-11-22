@@ -6,6 +6,8 @@
 
 ## Executive finding
 
+M25 kept navigation, editor presentation, themes, opacity and motion unchanged. Its Windows comparison exercises visible Library rows and usable editor states through CDP. The [M25 qualification](VAULTOR-NEXT-M25.md) records the interaction test results and leaves physical input, assistive technology and full motion/visual comparison open for M26.
+
 The main problem is **presentation architecture divergence**, not missing Tailwind tokens or a Tauri limitation. The original Electron app composes a rich set of specialized navigation, resource-list, orientation, editor, contextual-toolbar and motion primitives. Next implements a separate simplified composition (`NextApp`, `NextEditor`, `WorkspaceBrowser`, `CompanionNavigator`, `BrowseHeader`) and selectively imports parts of the old design system. M6–M10 restored features and themes but did not restore the entire structure that made those features feel coherent. Across Next, generic rules and accumulating CSS overrides further blur visual hierarchy. Fixing isolated margins/screenshots will not solve that architectural source of inconsistency.
 
 ## Recommended implementation strategy

@@ -82,6 +82,8 @@ Review submission maps the Android operation UUID, workspace generation, capture
 
 ## Docker candidate
 
+The [M25 performance qualification](../plans/VAULTOR-NEXT-M25.md) records exact-source Windows desktop, standalone and Linux/amd64 Docker timings. Desktop managed drafts publish through Tauri IPC. The browser saved-note route retains its existing document body, scope and revision checks. The local M25 build and repeatable Docker fixture are documented in the [benchmark instructions](../../benchmarks/tauri-rust/README.md#m25-comparable-windows-workloads).
+
 Set `VAULTOR_NEXT_TLS_DIR` to the private TLS directory. Grant container UID 10001 read access to the required files. For the supplied Compose network, include both `127.0.0.1` and `172.30.244.2` in the leaf SAN. Resolve subnet overlap by choosing a different private subnet and updating the static service address, health check and certificate together.
 
 ```powershell

@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-11-22. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-11-23. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 Vaultor Next M23 uses one Rust SQLite owner for Review, resource identity, archives and persistent pin order. [Next qualification](plans/VAULTOR-NEXT.md#m23-review-inbox-and-windows-integration) tracks Windows integration and outstanding parity. The [Review boundary](workspace/REVIEWS.md#vaultor-next) also serves the optional host.
 
@@ -1082,3 +1082,7 @@ Qualified and published the absent Mac arm64 platform pair for Vaultor 0.26.0 fr
 ### 2026-11-22 — Next M25 protected managed-note commit
 
 Reused already validated journal content for desktop autosave publication, eliminating the second document-sized IPC request. No schema, scheduling, network route or user Help/Feature Catalogue change. Rust all-targets passed 61 library and 2 Windows binary tests, including a failed draft cleanup that rolled back the saved revision, stale-proof refusal, conflict and rebase, index readback and restart. Next Vitest passed 112 tests across 22 files. TypeScript and scoped ESLint passed. The [M25 qualification](plans/VAULTOR-NEXT.md#m25--comprehensive-performance-optimization) records optimized runtime measurements and remaining parity.
+
+### 2026-11-23 — Next M25 Windows, emulator and Linux performance qualification
+
+Extended the existing Tauri/Rust runner for packaged Electron versus optimized Next managed prose, stable-interval CPU accounting, linked indexing, preview churn and standalone/connected-host scopes. Built both exact-source optimized Windows executables and the local Linux/amd64 image. Native Windows WebView2 regressions and verified Docker/Chromium and API 36 emulator fixtures passed their scoped checks. Added 2,767 canonical records, preserving all 11,936 historical observations and 475 workbook formulas. This qualification and benchmark tooling update has no further runtime architectural effect. See the [M25 report](plans/VAULTOR-NEXT-M25.md) for comparison limits and M26 gates.
