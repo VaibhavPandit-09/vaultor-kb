@@ -2189,7 +2189,7 @@
           "status": "deferred"
         },
         "browser": {
-          "status": "unsupported"
+          "status": "development"
         },
         "android": {
           "status": "development"
@@ -2199,6 +2199,7 @@
         "Experimental Windows workspaces. M1 workspaces and Electron database or ZIP imports require a different application.",
         "Draft protection follows a debounced SQLite receipt; unsent edits are not crash durable.",
         "Android requires the separate Next APK and matching HTTPS host. QR, nearby discovery and manual CA-pinned pairing use the same owner approval. Real Wi-Fi and physical-device acceptance are pending.",
+        "Next browser access requires trusted HTTPS and an owner grant. It supports saving existing notes and leaves workspace administration local.",
         "In-place replacement and full Word/PDF fidelity remain unavailable.",
         "Transfers are bounded; imports commit per item and can complete partially. External linked contents and drafts are excluded from portable archives."
       ],
@@ -2207,6 +2208,8 @@
         "frontend/src/next/NextApp.tsx",
         "next/src-tauri/src/domain.rs",
         "next/src-tauri/src/host/mobile.rs",
+        "next/src-tauri/src/host/browser.rs",
+        "next/src-tauri/src/host/companion.rs",
         "next/src-tauri/src/editing.rs",
         "next/src-tauri/src/library.rs",
         "frontend/src/next/selection.ts",

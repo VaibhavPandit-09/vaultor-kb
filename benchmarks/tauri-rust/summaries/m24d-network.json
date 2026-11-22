@@ -1,0 +1,107 @@
+{
+  "sourceCommit": "ef81de68565e7c75d0e867b712581d8612fe20df",
+  "fixture": "Disposable Next workspaces. Windows managed CA and loopback listener. Linux/amd64 Docker TLS fixture with a short Android-protocol text import, note export, and isolated Chromium.",
+  "fixtureSha": "d694645b58ad5531e1a21c2341f0e0694c44382874d2d86ed87dc6ea4b9f49e4",
+  "dockerImage": "sha256:bf333cb8a5affa77a777dcd3f0919b51b9511f81974a14a6aae4cb367402b476",
+  "windows": {
+    "file": "next/src-tauri/target/release/vaultor-next-m24d.exe",
+    "sha256": "52b42f2fee32db1c3f67441f3fd29184b324c3f31f9dddf73256e4cf8ca0eddc"
+  },
+  "android": {
+    "file": "mobile/releases/0.1.0-m24d.1/Vaultor-Next-Android-0.1.0-m24d.1.apk",
+    "sha256": "b9c3a882f332e0e2e77d6917322f2d92a0fe6aee1db7e0b01a983ea65e1a0e37",
+    "sourceCommit": "78b4bda4adab5b46dccdd2f5e883203efb1a1c6a",
+    "applicationId": "com.vaultor.app.next",
+    "versionCode": 34,
+    "minApi": 36,
+    "targetApi": 37
+  },
+  "headless": {
+    "file": "next/src-tauri/target/release/vaultor-next-host.exe",
+    "sha256": "4a93957c30e7eb8af50b4fcaa41a6fa026496f0abe54ab5a37835d9ecc9675f1"
+  },
+  "observations": [
+    {
+      "metric": "windows_loopback_listener_start",
+      "value": 96.617,
+      "unit": "ms",
+      "notes": "Optimized Windows desktop Tauri IPC through listener ready. Includes first disposable CA generation and CDP overhead.",
+      "observedAt": "2026-11-21T05:53:43.891Z",
+      "environment": "windows-x64-loopback",
+      "workload": "m24d-opt-desktop-https"
+    },
+    {
+      "metric": "windows_host_enabled_private_bytes_delta",
+      "value": 0.184,
+      "unit": "MiB",
+      "notes": "Enabled minus disabled private bytes in the Rust desktop process, excluding WebView2. One disposable loopback observation.",
+      "observedAt": "2026-11-21T05:53:43.891Z",
+      "environment": "windows-x64-loopback",
+      "workload": "m24d-opt-desktop-https"
+    },
+    {
+      "metric": "windows_host_enabled_idle_cpu",
+      "value": 0,
+      "unit": "%",
+      "notes": "One three-second hosting-enabled idle window through the Rust desktop process only. Windows timer resolution and concurrent host load limit interpretation.",
+      "observedAt": "2026-11-21T05:53:43.891Z",
+      "environment": "windows-x64-loopback",
+      "workload": "m24d-opt-desktop-https"
+    },
+    {
+      "metric": "windows_listener_stop_to_refusal",
+      "value": 35.767,
+      "unit": "ms",
+      "notes": "Stop request through listener shutdown and verified loopback TCP refusal. Includes IPC observation.",
+      "observedAt": "2026-11-21T05:53:43.891Z",
+      "environment": "windows-x64-loopback",
+      "workload": "m24d-opt-desktop-https"
+    },
+    {
+      "metric": "windows_discovery_advertisement_ready",
+      "value": 279.539,
+      "unit": "ms",
+      "notes": "Same-machine multicast reception on selected private IPv4 interface; includes Hosting IPC and local observation. No Android or physical LAN timing.",
+      "observedAt": "2026-11-21T05:53:43.891Z",
+      "environment": "windows-x64-loopback",
+      "workload": "m24d-opt-desktop-https"
+    },
+    {
+      "metric": "docker_companion_text_import_receipt",
+      "value": 26.764,
+      "unit": "ms",
+      "notes": "Linux/amd64 Docker loopback, authenticated short text conversion through durable receipt. Node client only.",
+      "observedAt": "2026-11-21T05:51:51.066Z",
+      "environment": "linux-amd64-docker",
+      "workload": "m24d-opt-docker-https"
+    },
+    {
+      "metric": "docker_companion_note_export_download",
+      "value": 322.635,
+      "unit": "ms",
+      "notes": "Linux/amd64 Docker loopback Markdown export through verified download with 125 ms polling cadence. Node client only.",
+      "observedAt": "2026-11-21T05:51:51.066Z",
+      "environment": "linux-amd64-docker",
+      "workload": "m24d-opt-docker-https"
+    },
+    {
+      "metric": "docker_browser_approval_to_workspace",
+      "value": 2008.964,
+      "unit": "ms",
+      "notes": "Docker Linux/amd64 Chromium with a fixture-specific NSS CA database. Includes owner CLI and browser pairing poll.",
+      "observedAt": "2026-11-21T05:51:51.066Z",
+      "environment": "linux-amd64-docker",
+      "workload": "m24d-opt-docker-https"
+    },
+    {
+      "metric": "docker_browser_note_ready",
+      "value": 153.384,
+      "unit": "ms",
+      "notes": "Rendered imported note after Library click in Chromium. Includes 125 ms readiness observation.",
+      "observedAt": "2026-11-21T05:51:51.066Z",
+      "environment": "linux-amd64-docker",
+      "workload": "m24d-opt-docker-https"
+    }
+  ],
+  "limitations": "One bounded run per environment with uncontrolled machine load. Loopback and Docker readings exclude Samsung hardware and real Wi-Fi."
+}

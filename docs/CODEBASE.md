@@ -517,7 +517,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-21 — Next M24-D network integration
 
-Added Windows discovery, QR and bounded address recovery, a browser-specific HTTPS surface, and Android transfer routes using the existing Rust authority. Updated experimental Hosting, Android transfer and browser Help and Feature Catalogue entries. See the [M24-D ledger](plans/VAULTOR-NEXT.md#m24-d--discovery-qr-browser-and-transfers) for exact checks and remaining gaps.
+Added Windows discovery, QR and bounded address recovery, a browser-specific HTTPS surface, and Android transfer routes using the existing Rust authority. Updated experimental Hosting, Android transfer and browser Help and Feature Catalogue entries. Rust, scoped Android and Help checks passed. Optimized Windows and Linux/amd64 checks covered local discovery, trusted HTTPS, Chromium and companion transfers. See the [M24-D ledger](plans/VAULTOR-NEXT.md#m24-d--discovery-qr-browser-and-transfers) for exact checks and remaining gaps.
 
 ### 2026-11-20 — Next M24-C Android integration
 

@@ -590,10 +590,33 @@ The implementation adds discovery on the selected Windows private interface, exp
 
 Unresolved original parity includes legacy workspace ZIP review/compatibility, Android link-depth export and review coverage, browser creation and organization and local owner handoff, authorized cross-interface recovery, workspace replacement, legacy archive compatibility, export fidelity, PDF functionality and linked-occurrence navigation. Physical Windows interaction, Samsung camera/permission/real-Wi-Fi and DHCP or sleep tests, accessibility and broad security qualification remain separate. macOS qualification and extra deployment platforms remain deferred. Cloud sync and collaborative editing remain future enhancements.
 
+**Candidate delivery.** Windows and the standalone Windows host use source `ef81de68565e7c75d0e867b712581d8612fe20df`. The original-signer APK uses `78b4bda4adab5b46dccdd2f5e883203efb1a1c6a`, package `com.vaultor.app.next`, versionCode 34, minimum API 36 and target API 37. The [artifact and benchmark record](../../benchmarks/tauri-rust/summaries/m24d-network.json) contains the local artifact paths, SHA-256 hashes and local Linux/amd64 image ID.
+
+**Observed qualification.** The optimized Windows app generated a TLS authority and pairing QR, published a same-machine DNS-SD advertisement on a selected interface, rebound manually to a different loopback address under the original CA and UUID, then stopped sharing and saved locally. The optimized standalone Windows host accepted its verified custom chain and refused anonymous mobile access. Linux/amd64 Docker verified exclusive workspace ownership, non-root execution, secure administrative bootstrap, device approval and grants, restart persistence, revocation and graceful SIGTERM shutdown. The Chromium run trusted a disposable CA in an isolated NSS profile and exercised pairing, the bundled Library, rendering a note, saving a revision, reload, grant withdrawal and sign-out. Android-protocol tests on that image confirmed text intake, exact receipts, anonymous refusal and a checksum-verified Markdown export.
+
+Rust passed 60 library and 2 desktop binary tests, including protected drafts, old saved Review evidence, grant withdrawal during streaming, cookie scope, replay, CSRF and companion receipt ownership. A focused rerun passed the same-origin bundle check. Android TypeScript, 112 Jest tests and 28 scoped native QR, transfer, offline and Review cases on API 36 passed. The exact APK passed both QR cases on API 37. Three additional updater cases used incompatible or missing APK vectors. The two Next interaction failures that remained after a reduced-worker rerun reproduced on the unchanged M24-C baseline. Scoped lint and Help governance passed. The same-machine DNS-SD result leaves Android discovery across a real network and live camera decoding open.
+
+**Measurements.** Nine observations were appended to the canonical CSV and workbook. On Windows, loopback startup measured 96.6 ms, local DNS-SD reception 279.5 ms, and stop-to-refusal 35.8 ms. The idle Rust process added 0.184 MiB private bytes with no CPU use resolved during one three-second sample. The Linux/amd64 fixture measured 2,009 ms from browser approval to Library and 153 ms from opening a note to the rendered body. Text intake and Markdown export measured 26.8 ms and 322.6 ms with the protocol harness. These are single observations with uncontrolled load. The workbook retains 11,927 historical rows and 475 formulas, for 11,936 observations total.
+
+**Physical acceptance checklist**
+
+1. Start the Windows candidate on the intended private Wi-Fi address. Enable Nearby discovery and confirm more than one host can be identified. Stop advertising and check the entry is withdrawn on the next scan.
+2. Scan a fresh QR with the Samsung camera, including the first permission prompt. Refuse a stale QR, compare the six-digit codes, approve and grant. Confirm manual entry remains usable after camera denial.
+3. Read a saved rich note and its attachments, download a reading copy, go offline, restart, and submit a Review. Confirm reconnect delivers the exact Review to Windows and that withdrawing the workspace removes visible metadata.
+4. On a controlled network renew the DHCP lease, reconnect Wi-Fi, sleep and resume Windows, and restart the host. Confirm a same-subnet address change preserves the host CA and approval. Check that an unavailable or ambiguous interface pauses sharing and exposes the stop/manual-start actions.
+5. Validate browser access on an explicitly trusted profile, try a supported managed preview and an existing-note save, then withdraw the grant. Verify the local desktop still edits after sharing stops, including keyboard navigation and the supported themes.
+
 ### M25 — Comprehensive Performance Optimization
 
 Qualify and optimize local desktop, browser, headless host and Android operation. Measure comparable startup, editing, discovery, synchronization and transfer workloads, sustained CPU/private memory, large content, offline/reconnect and cross-device latency. Keep the canonical benchmark history and record platform/device evidence.
 
 ### M26 — Production Qualification & Windows Release
 
-Complete content-loss/recovery, release migration, security, accessibility, physical device, installer/signing, local and hosted platform gates. Reconcile published Help and developer documentation before a separately authorized Windows release.
+- **Original functional parity:** Preserve workspace replacement gates, legacy archive compatibility and owner-reviewed mobile ZIP intake, browser creation and organization, original export coverage and restart fidelity, PDF functionality and linked-occurrence navigation.
+- **Physical desktop acceptance:** Check the native Windows mouse, touch, keyboard, motion, file-picker and installer workflows separately from automated tests.
+- **Physical Android and network acceptance:** Check Samsung scanning and permission handling, Android discovery and reconnect, DHCP, sleep and interface changes on an intended network.
+- **Security and accessibility:** Recheck draft protection, import and browser authorization, hostile networking, keyboard and assistive workflows, TLS and release migration on the supported matrix.
+- **Deferred platforms:** Keep macOS acceptance, Linux desktop and ARM64 deployment in separate platform work.
+- **Future enhancements:** Keep cloud synchronization, collaborative editing and other new capabilities outside original parity.
+
+Reconcile published Help, developer documentation, installer signing and the local/hosted gates before a separately authorized release.

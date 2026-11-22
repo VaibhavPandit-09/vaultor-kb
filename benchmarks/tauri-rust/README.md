@@ -437,3 +437,7 @@ Set `VAULTOR_BENCH_EXECUTABLE`, `VAULTOR_BENCH_SOURCE_COMMIT`, `VAULTOR_BENCH_HE
 The harness launches an isolated Windows WebView2 profile and creates one disposable managed note and a short-lived test CA. It compares short disabled and enabled/no-client idle windows in the same desktop process, checks hosted saved-note and search requests through new verified loopback TLS connections, and checks revocation and shutdown. Credential values are excluded from observations. IPC read timing includes CDP dispatch and serialization. This workload provides no Android, real-LAN, physical-input, sustained-idle or matched Electron evidence.
 
 Run `update-workbook.ps1 -AppendM24` with the bundled runtime path to append M24 observations. It preserves the prior workbook rows, formulas and other package parts.
+
+## M24-D network observations
+
+The [M24-D network summary](summaries/m24d-network.json) records nine measured observations from Windows loopback, same-machine DNS-SD and Linux/amd64 Docker with isolated Chromium. Use `update-workbook.ps1 -AppendM24D` with the bundled runtime to append the canonical M24-D tail to a workbook that still ends at M24-C. The append preserves the historical rows, all 475 formulas and unrelated workbook parts.

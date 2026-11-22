@@ -10,7 +10,7 @@ The managed listener issues a leaf for the selected IP at startup. The leaf last
 
 **Start hosting on launch** is an explicit preference for the active workspace and effective address. **Recover address changes** follows an eligible new IPv4 address only on the selected interface and subnet. The new leaf uses the same CA and host UUID. A missing or ambiguous address suspends hosting until recovery or manual address selection. Custom addresses remain explicit. Close to tray leaves hosting active, Quit preserves the opt-in preference, and **Stop hosting** clears it. If Windows Firewall prompts, limit the exception to the private interface and intended peers. Vaultor does not change firewall policy itself.
 
-**Discoverable on this network** advertises the host name, public UUID, port and protocol with `_vaultor._tcp.local.` on the listening interface. Android treats advertisements as address hints. The pairing QR contains the endpoint, UUID, public CA SHA-256 fingerprint and five-minute validity. Pairing still requires the matching code and owner grant. Recovery verifies CA, TLS hostname and UUID before Android sends the remembered credential.
+**Nearby discovery** advertises the host name, public UUID, port and protocol with `_vaultor._tcp.local.` on the listening interface. Android treats advertisements as address hints. The pairing QR contains the endpoint, UUID, public CA SHA-256 fingerprint and five-minute validity. Pairing still requires the matching code and owner grant. Recovery verifies CA, TLS hostname and UUID before Android sends the remembered credential.
 
 ## Standalone and custom certificate configuration
 
