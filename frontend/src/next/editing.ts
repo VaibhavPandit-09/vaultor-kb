@@ -1,6 +1,6 @@
 import type { JSONContent } from '@tiptap/core';
 import { command, type Draft, type Note } from './client';
-type Entry = { note: Note; token: string; sequence: number; committed: number; protected: number; snapshot?: Draft; capture?: () => JSONContent; protection?: Promise<void>; saving?: Promise<void>; timer?: ReturnType<typeof setTimeout>; deadline?: ReturnType<typeof setTimeout>; saveTimer?: ReturnType<typeof setTimeout>; error?: string; conflict: boolean };
+type Entry = { note: Note; token: string; sequence: number; committed: number; protected: number; capture?: () => JSONContent; protection?: Promise<void>; saving?: Promise<void>; timer?: ReturnType<typeof setTimeout>; deadline?: ReturnType<typeof setTimeout>; saveTimer?: ReturnType<typeof setTimeout>; error?: string; conflict: boolean };
 /** One journal and writer per document, independent of view lifetime. No idle work. */
 export class EditingSession {
   private entries = new Map<string, Entry>();
@@ -18,7 +18,7 @@ export class EditingSession {
   failed() { return [...this.entries.values()].some(e => e.error); }
   dirty(id: string) { const e = this.entries.get(id); return !!e && e.committed !== e.sequence; }
   adopt(note: Note, draft?: Draft) {
-    const entry: Entry = { note, token: draft?.token ?? crypto.randomUUID(), sequence: draft?.sequence ?? 0, committed: 0, protected: draft?.sequence ?? 0, snapshot: draft, conflict: false };
+    const entry: Entry = { note, token: draft?.token ?? crypto.randomUUID(), sequence: draft?.sequence ?? 0, committed: 0, protected: draft?.sequence ?? 0, conflict: false };
     this.entries.set(note.id, entry);
     if (draft) entry.saveTimer = setTimeout(() => void this.flush(note.id).catch(() => {}), 1000);
   }
@@ -42,7 +42,7 @@ export class EditingSession {
       while (e.protected !== e.sequence) {
         const snapshot: Draft = { id, title: e.note.title, baseRevision: e.note.revision, token: e.token, sequence: e.sequence, content: e.capture?.() ?? e.note.content };
         await this.invoke({ kind: 'draft', ...snapshot });
-        e.note.content = snapshot.content; e.snapshot = snapshot; e.protected = snapshot.sequence;
+        e.note.content = snapshot.content; e.protected = snapshot.sequence;
         this.changed();
       }
     })();
@@ -58,9 +58,9 @@ export class EditingSession {
     e.saving = (async () => {
       while (e.committed !== e.sequence) {
         await this.protect(id, true);
-        const snapshot = e.snapshot!;
-        const receipt = await this.invoke<{ revision: number }>({ kind: 'save', id, title: snapshot.title, content: snapshot.content, revision: e.note.revision, proof: { token: e.token, sequence: snapshot.sequence } });
-        e.note.revision = receipt.revision; e.committed = snapshot.sequence; e.error = undefined;
+        const sequence = e.protected;
+        const receipt = await this.invoke<{ revision: number }>({ kind: 'commitDraft', id, revision: e.note.revision, proof: { token: e.token, sequence } });
+        e.note.revision = receipt.revision; e.committed = sequence; e.error = undefined;
         this.changed(id);
       }
     })();

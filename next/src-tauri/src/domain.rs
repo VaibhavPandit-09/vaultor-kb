@@ -85,6 +85,11 @@ pub enum Request {
         content: Value,
         proof: Option<crate::editing::Proof>,
     },
+    CommitDraft {
+        id: String,
+        revision: i64,
+        proof: crate::editing::Proof,
+    },
     Draft {
         id: String,
         #[serde(rename = "baseRevision")]
@@ -242,6 +247,7 @@ impl Workspace {
                 Ok(json!({"id":r.get::<_,String>(0)?,"title":r.get::<_,String>(1)?,"content":r.get::<_,String>(2)?,"revision":r.get::<_,i64>(3)?}))
             }).map_err(error).and_then(|mut value| { value["content"] = serde_json::from_str(value["content"].as_str().unwrap()).map_err(error)?; let mut q=self.db.prepare("SELECT collection_id FROM memberships WHERE resource_id=?1 ORDER BY collection_id").map_err(error)?; value["collections"]=json!(q.query_map([&id],|r|r.get::<_,String>(0)).map_err(error)?.collect::<Result<Vec<_>,_>>().map_err(error)?); value["kind"]=self.db.query_row("SELECT kind FROM managed_originals WHERE resource_id=?1",[&id],|r|r.get::<_,String>(0)).map(Value::String).unwrap_or(json!("note")); Ok(value) }),
             Request::Save { id, revision, title, content, proof } => self.save(id, revision, title, content, proof),
+            Request::CommitDraft { id, revision, proof } => self.commit_draft(id, revision, proof),
             Request::Draft { id, base_revision, token, sequence, title, content } => self.draft(id,base_revision,token,sequence,title,content),
             Request::Drafts => self.drafts(),
             Request::ReadDraft { id } => self.read_draft(id),

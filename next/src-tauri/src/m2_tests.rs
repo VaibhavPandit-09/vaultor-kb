@@ -122,6 +122,45 @@ fn protected_conflict_restart_rebase_and_exact_cleanup() {
         doc("recover λ")
     );
 }
+
+#[test]
+fn proof_only_publication_preserves_exact_draft_on_failure_and_commit() {
+    let temp = tempfile::tempdir().unwrap();
+    let mut w = Workspace::open(temp.path()).unwrap();
+    let id = create(&mut w);
+    let content = doc("protected λ searchable");
+    w.draft(id.clone(), 1, "editor".into(), 5, " Revised ".into(), content.clone()).unwrap();
+    let request = |revision, token: &str, sequence| Request::CommitDraft {
+        id: id.clone(),
+        revision,
+        proof: Proof { token: token.into(), sequence },
+    };
+    for bad in [request(2, "editor", 5), request(1, "other", 5), request(1, "editor", 4)] {
+        assert!(w.execute(bad).unwrap_err().contains("Protected draft does not match"));
+    }
+    w.db.execute_batch("CREATE TEMP TRIGGER fail_publication BEFORE DELETE ON drafts BEGIN SELECT RAISE(ABORT,'simulated cleanup fault'); END;").unwrap();
+    assert!(w.execute(request(1, "editor", 5)).unwrap_err().contains("simulated cleanup fault"));
+    assert_eq!(w.execute(Request::Read { id: id.clone() }).unwrap()["revision"], 1);
+    assert_eq!(w.read_draft(id.clone()).unwrap()["content"], content);
+    w.db.execute_batch("DROP TRIGGER fail_publication;").unwrap();
+
+    w.save(id.clone(), 1, "Competing version".into(), doc("other"), None).unwrap();
+    assert!(w.execute(request(1, "editor", 5)).unwrap_err().contains("revision conflict"));
+    assert_eq!(w.read_draft(id.clone()).unwrap()["content"], content);
+    w.rebase_draft(id.clone(), "editor".into(), 5, 2).unwrap();
+    assert_eq!(w.execute(request(2, "editor", 5)).unwrap()["revision"], 3);
+    assert!(w.execute(request(2, "editor", 5)).is_err());
+    drop(w);
+
+    let mut w = Workspace::open(temp.path()).unwrap();
+    let saved = w.execute(Request::Read { id: id.clone() }).unwrap();
+    assert_eq!(saved["content"], content);
+    assert_eq!(saved["title"], "Revised");
+    assert_eq!(saved["revision"], 3);
+    assert_eq!(w.drafts().unwrap(), json!([]));
+    let text: String = w.db.query_row("SELECT body FROM note_search WHERE rowid=(SELECT seq FROM resources WHERE id=?1)", [&id], |row| row.get(0)).unwrap();
+    assert_eq!(text, "protected λ searchable");
+}
 #[test]
 fn cursor_walk_5000_is_stable_across_edits_and_new_notes() {
     let temp = tempfile::tempdir().unwrap();

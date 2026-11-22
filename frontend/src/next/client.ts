@@ -33,6 +33,7 @@ type Request =
   | { kind: 'createNote'; title: string; collection: string | null }
   | { kind: 'read'; id: string }
   | { kind: 'save'; id: string; title: string; content: JSONContent; revision: number; proof?: { token: string; sequence: number } }
+  | { kind: 'commitDraft'; id: string; revision: number; proof: { token: string; sequence: number } }
   | ({ kind: 'draft' } & Draft)
   | { kind: 'drafts' }
   | { kind: 'readDraft'; id: string }

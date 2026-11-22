@@ -7,6 +7,17 @@ pub struct Proof {
     pub token: String,
     pub sequence: i64,
 }
+
+enum Publication {
+    Document {
+        name: String,
+        content: Value,
+        proof: Option<Proof>,
+    },
+    Protected(Proof),
+}
+
+const DRAFT_MISMATCH: &str = "Protected draft does not match this save; evidence retained";
 pub(crate) fn document(content: &Value) -> Result<String, String> {
     if content.get("type").and_then(Value::as_str) != Some("doc")
         || !content.get("content").is_some_and(Value::is_array)
@@ -112,21 +123,53 @@ impl Workspace {
         content: Value,
         proof: Option<Proof>,
     ) -> Result<Value, String> {
-        let raw_name = name;
+        self.publish(id, revision, Publication::Document { name, content, proof })
+    }
+
+    pub(crate) fn commit_draft(&mut self, id: String, revision: i64, proof: Proof) -> Result<Value, String> {
+        self.publish(id, revision, Publication::Protected(proof))
+    }
+
+    fn publish(&mut self, id: String, revision: i64, publication: Publication) -> Result<Value, String> {
         let file:bool=self.db.query_row("SELECT EXISTS(SELECT 1 FROM managed_originals WHERE resource_id=?1 AND kind='file')",[&id],|r|r.get(0)).map_err(error)?;
         if file {
             return Err("Managed file bytes are immutable; use Export original".into());
         }
-        let name = title(&raw_name)?;
-        let content = document(&content)?;
         let tx = self.db.transaction().map_err(error)?;
-        if let Some(proof) = &proof {
-            let matches:bool=tx.query_row("SELECT EXISTS(SELECT 1 FROM drafts WHERE resource_id=?1 AND token=?2 AND sequence=?3 AND base_revision=?4 AND title=?5 AND content=?6)",params![id,proof.token,proof.sequence,revision,raw_name,content],|r|r.get(0)).map_err(error)?;
-            if !matches {
-                return Err("Protected draft does not match this save; evidence retained".into());
+        let (name, content, proof) = match publication {
+            Publication::Document { name, content, proof } => {
+                let normalized_name = title(&name)?.to_owned();
+                let content = document(&content)?;
+                if let Some(proof) = &proof {
+                    let matches: bool = tx.query_row(
+                        "SELECT EXISTS(SELECT 1 FROM drafts WHERE resource_id=?1 AND token=?2 AND sequence=?3 AND base_revision=?4 AND title=?5 AND content=?6)",
+                        params![id, proof.token, proof.sequence, revision, name, content],
+                        |r| r.get(0),
+                    ).map_err(error)?;
+                    if !matches {
+                        return Err(DRAFT_MISMATCH.into());
+                    }
+                }
+                (normalized_name, Some(content), proof)
             }
+            Publication::Protected(proof) => {
+                let name: String = tx.query_row(
+                    "SELECT title FROM drafts WHERE resource_id=?1 AND token=?2 AND sequence=?3 AND base_revision=?4",
+                    params![id, proof.token, proof.sequence, revision],
+                    |r| r.get(0),
+                ).optional().map_err(error)?.ok_or(DRAFT_MISMATCH)?;
+                // The journal already holds the validated document. Keep it in SQLite
+                // until publication and draft cleanup have committed together.
+                (title(&name)?.to_owned(), None, Some(proof))
+            }
+        };
+        if tx.execute(
+            "UPDATE resources SET title=?1,content=COALESCE(?2,(SELECT content FROM drafts WHERE resource_id=?3)),
+             revision=revision+1,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?3 AND revision=?4",
+            params![name, content, id, revision],
+        ).map_err(error)? != 1 {
+            return Err("Note revision conflict. The saved version changed; your protected draft is retained.".into());
         }
-        if tx.execute("UPDATE resources SET title=?1,content=?2,revision=revision+1,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?3 AND revision=?4",params![name,content,id,revision]).map_err(error)?!=1{return Err("Note revision conflict. The saved version changed; your protected draft is retained.".into());}
         if let Some(proof) = proof {
             tx.execute(
                 "DELETE FROM drafts WHERE resource_id=?1 AND token=?2 AND sequence=?3",
