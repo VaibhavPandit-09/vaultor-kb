@@ -1749,9 +1749,10 @@ fn export(
         if rich {
             let mut query = w.db.prepare("SELECT l.target_id FROM resource_links l
                 JOIN visible_resources r ON r.id=l.target_id WHERE l.source_id=?1
+                AND (?2 OR r.id NOT LIKE 'linked:%')
                 AND NOT EXISTS(SELECT 1 FROM resource_state s WHERE s.resource_id=r.id AND s.trashed=1)").map_err(error)?;
             for resource in &manifest.resources {
-                for row in query.query_map([&resource.id], |row| row.get::<_, String>(0)).map_err(error)? {
+                for row in query.query_map(params![&resource.id, !remote], |row| row.get::<_, String>(0)).map_err(error)? {
                     references.insert(row.map_err(error)?);
                 }
             }
@@ -1886,6 +1887,9 @@ mod tests {
         }
         fn task(&self, r: Request) -> crate::activity::Task {
             let id = self.call(r)["id"].as_str().unwrap().to_owned();
+            self.wait_task(&id)
+        }
+        fn wait_task(&self, id: &str) -> crate::activity::Task {
             for _ in 0..3000 {
                 if let Some(t) = self
                     .service
@@ -2153,6 +2157,51 @@ mod tests {
             s.dict.get(b"Subtype").and_then(|value| value.as_name()).is_ok_and(|value| value==b"Image"))));
         assert!(doc.objects.values().any(|object| object.as_dict().is_ok_and(|d|
             d.get(b"Subtype").and_then(|value| value.as_name()).is_ok_and(|value| value==b"Link"))));
+    }
+
+    #[cfg(all(windows, feature = "host"))]
+    #[test]
+    fn companion_rich_export_does_not_disclose_linked_source_availability() {
+        let harness = Harness::new();
+        let source = harness.temp.path().join("linked-pdf-reference");
+        fs::create_dir(&source).unwrap();
+        fs::write(source.join("Private.md"), b"# Owner-local reference\n").unwrap();
+        let note = harness.worker.storage().call(&harness.root, move |w| {
+            use crate::linked::Request as Linked;
+            let source = w.linked(Linked::Register { path: source.to_string_lossy().into_owned() })?;
+            let file = w.linked(Linked::Identify {
+                source: source["id"].as_str().unwrap().into(), path: "Private.md".into(),
+            })?;
+            let title = "Attached reference".to_owned();
+            let note = w.execute(DomainRequest::CreateNote { title: title.clone(), collection: None })?;
+            let id = note["id"].as_str().unwrap().to_owned();
+            w.execute(DomainRequest::Save {
+                id: id.clone(), title, revision: note["revision"].as_i64().unwrap(), proof: None,
+                content: json!({"type":"doc","content":[{"type":"paragraph","content":[
+                    {"type":"resourceLink","attrs":{"resourceId":file["id"],"label":"Local source"}}
+                ]}]}),
+            })?;
+            Ok(json!(id))
+        }).unwrap();
+        let id = note.as_str().unwrap().to_owned();
+        let export = |folder: &str, remote: bool| {
+            let path = harness.temp.path().join(folder);
+            let destination = path.to_string_lossy().into_owned();
+            let ids = vec![id.clone()];
+            let format = "pdf".to_owned();
+            let task = if remote {
+                let accepted = harness.service.activity.submit(harness.root.clone(), Job::CompanionNote { ids, destination, format }).unwrap();
+                harness.wait_task(accepted["id"].as_str().unwrap())
+            } else {
+                harness.task(Request::Export { ids, destination, format })
+            };
+            assert_eq!(task.state, "completed", "{:?}", task.error);
+            let pdf = lopdf::Document::load(path.join(format!("{id}-Attached reference.pdf"))).unwrap();
+            pdf.extract_text(&[1]).unwrap()
+        };
+        let local = export("local", false);
+        assert!(local.contains("Local source") && !local.contains("(unavailable)"));
+        assert!(export("connected", true).contains("Local source (unavailable)"));
     }
 
     #[test]

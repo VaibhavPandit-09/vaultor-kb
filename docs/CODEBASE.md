@@ -529,7 +529,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 The saved-note PDF exporter uses the Rust Typst engine over quoted document content and a virtual resolver containing only verified managed assets. It shares the Word image inventory and table span validation, keeps task markers inline, and marks unavailable resource references from the saved relationship inventory. Restore and Merge journal their staging identities in the Activity profile. Merge publishes managed originals under durable reservations and commits its receipt with the imported rows. Archived linked references can be selected and rebound atomically to one locally chosen source root. The 77-test Rust host regression, focused rendered-PDF structure regression and native combined archive fixture passed. See [M26-B qualification](plans/VAULTOR-NEXT-M26-B.md) for exact builds and remaining coverage.
 
-The Word package now includes the saved title, an OOXML heading style part, inline highlights and sized, bordered table columns. It uses the same saved relationship snapshot as PDF for unavailable resource labels. The [note export contract](workspace/NOTE-EXPORTS.md#format-fidelity) records the format behavior.
+The Word package now includes the saved title, an OOXML heading style part, inline highlights and sized, bordered table columns. It uses the same saved relationship snapshot as PDF for unavailable resource labels. Connected exports exclude owner-local linked availability from that snapshot. The [note export contract](workspace/NOTE-EXPORTS.md#format-fidelity) records the format behavior.
 
 ### 2026-11-23 — Next M26-B PDF search, preview and recovery
 
