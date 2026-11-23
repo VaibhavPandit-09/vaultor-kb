@@ -252,8 +252,7 @@ pub(super) fn merge(
     expected: &str,
     ctx: &mut Context,
 ) -> Result<Value, String> {
-    let mut input = plain_file_archive(Path::new(source))?;
-    let (mut manifest, hash) = read_manifest(&mut input)?;
+    let (mut input, mut manifest, hash, _) = archive_input::open(Path::new(source))?;
     if hash != expected {
         return Err("Archive changed since preview".into());
     }
@@ -338,10 +337,10 @@ pub(super) fn merge(
             .write(true)
             .open(&staged.0)
             .map_err(error)?;
-        let (size, actual) = copy_hash(
-            (&mut input).take(original.bytes),
+        input.copy(
+            index,
+            original,
             &mut output,
-            MAX_FILE,
             |progress| {
                 ctx.check()?;
                 ctx.progress(
@@ -354,17 +353,12 @@ pub(super) fn merge(
                 Ok(())
             },
         )?;
-        if size != original.bytes || actual != original.hash {
-            return Err("Archive payload integrity mismatch".into());
-        }
         output.sync_all().map_err(error)?;
         drop(output);
         publish_file(&staged.0, &target)?;
-        bytes += size;
+        bytes += original.bytes;
     }
-    if input.read(&mut [0]).map_err(error)? != 0 {
-        return Err("Unexpected trailing archive data".into());
-    }
+    input.finish()?;
     ctx.check()?;
     ctx.committing();
     storage.call(root,move |w|{

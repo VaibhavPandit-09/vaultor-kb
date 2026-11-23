@@ -508,6 +508,8 @@ Hosting uses the existing floating Settings category, grouped rows, keyboard foc
 
 ## M26-A functional checkpoint
 
+M26-A2 uses the existing Restore and Merge review for Electron ZIPs, with the verified format version above the counts. Opening an existing workspace reports missing data instead of initializing it. No replacement command is exposed. See the [M26-A2 tracker](VAULTOR-NEXT.md#m26-a2-compatibility-and-export-checkpoint).
+
 The browser Library opens a compact, keyboard-operable note creation form in place and returns focus when it closes. Collection placement is captured when the form opens. The existing reader stays mounted during creation and retains its unsaved edits. Desktop PDF password prompts belong to the current preview and disappear when it closes or changes workspace. Windows visual comparison, screen-reader verification, and physical input remain M26-B gates.
 
 The Windows continuation adds a private IPv4 address selector, a separate start-on-launch switch and certificate status in the same group. Custom bind input and certificate location are under an advanced disclosure. Starting sharing uses the existing explicit action and newly surfaced startup errors leave local editing available.

@@ -432,7 +432,7 @@ Set the executable and its source commit with the usual benchmark variables. The
 
 Use --m22-sustained to run the dedicated eight-file, 1 GiB CPU and process-memory sample. Use --m22-probe for diagnostics without adding canonical observations. Refresh the workbook with update-workbook.ps1 -AppendM22 and the bundled workspace runtime. The append path keeps the original comparison sheets and formulas.
 
-For the M26-A comparison, run the original backend `NoteRendererTests` first. Add `--m26-export-fidelity` to the transfer probe to export the original test's rich document and PNG through Next. The probe expects Next's text-layout PDF to refuse the fixture's Greek characters.
+For the M26-A comparison, run the original backend `NoteRendererTests` first. Add `--m26-export-fidelity` to the transfer probe to export the original test's rich document and PNG through Next. Inspect the PDF text extraction and render, DOCX drawing relationships and table merge markup, and the Markdown markup and asset bytes.
 
 ## M24 Windows loopback host
 

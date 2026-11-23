@@ -220,9 +220,24 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
     for (const format of ['markdown','markdownZip','docx','pdf']) {
       const destination=join(folder,'Original renderer '+format);
       await submit('original-fixture-'+format,{op:'export',ids:[fixture.id],destination,format},
-        'Structured fixture from the original Java renderer test.',format==='pdf'?'failed':'completed');
+        'Structured fixture from the original Java renderer test.');
     }
-    report.checks.push('Original rich renderer fixture imported with its PNG and exported to Markdown, Markdown ZIP and DOCX. Next text-layout PDF refused characters outside its encoding.');
+    report.checks.push('Original rich renderer fixture imported with its PNG and exported to Markdown, Markdown ZIP, DOCX and Unicode text-layout PDF.');
+  }
+  if (process.argv.includes('--m26a2-legacy')) {
+    const archive = join(folder,'Electron original v5.zip');
+    await writeFile(archive,await readFile(new URL('../../next/src-tauri/fixtures/electron-workspace-v5.zip',import.meta.url)));
+    const receipt = await transfer({op:'inspectArchive',source:archive});
+    assert.equal(receipt.legacyVersion,5);
+    const manifestHash = receipt.manifestHash;
+    const restored = join(folder,'Restored original v5');
+    await submit('electron-v5-restore',{op:'restore',source:archive,destination:restored,manifestHash});
+    const [id] = await readdir(join(restored,'managed'));
+    assert.equal(await readFile(join(restored,'managed',id),'utf8'),'unchanged-original');
+    const request = {op:'merge',source:archive,manifestHash};
+    assert.equal((await submit('electron-v5-merge',request)).reused,false);
+    assert.equal((await submit('electron-v5-replay',request)).reused,true);
+    report.checks.push('Original Java workspace ZIP v5 passed native Next inspection, restore, exact-byte readback, merge and repeat.');
   }
   await sleep(2000);
   report.checks.push('Mixed selection, nested imports, source reuse, relative reference and image conversion, raw file preservation, managed export containers, graph and archive verification, linked descriptors and original bytes, restore as new, transactional remapping, idempotent merge, recovery-copy preservation and interrupted task reconciliation.');

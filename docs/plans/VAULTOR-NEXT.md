@@ -655,6 +655,23 @@ The candidate remains in M26-A. Physical desktop and Samsung acceptance, compara
 
 The local Windows raw reports under `benchmarks/tauri-rust/raw/` are timestamped `2026-11-23T03-54-17.908Z` for transfers, `03-54-35.051Z` for the protected commit probe, `03-54-42.547Z` for hosting, and `03-56-06.735Z` for previews.
 
+### M26-A2 compatibility and export checkpoint
+
+The implementation order follows the original source contracts. Protect recognized workspaces from empty initialization and require a durable authority decision before exposing replacement. Translate Java `TransferService` ZIPs into the verified Rust archive pipeline. Connected workflows must reuse server-owned grant and owner approval boundaries. Document renderers use the original rich fixture. Linked and Review portability require explicit identity and authorization evidence.
+
+| Legacy version | Implemented behavior and fixture coverage |
+| --- | --- |
+| 1–4 | Managed-resource translation follows the original version guards for optional organization and Review sections. Historical writer fixtures were unavailable. |
+| 5 | Original `WorkspaceImportTest` ZIP passed byte-exact restore and idempotent merge with remapped resource IDs. |
+| 6 | Original `CompanionExportTest` partial pack passed restore with byte-exact converted originals. Its omitted link target remained outside the restored resource set. |
+| 7 | Original `CollectionHierarchyTest` export passed restore with its nested collection. |
+| 8 | Original `CompanionExportTest` partial pack passed restore with the included membership and its empty ancestor collection. |
+| 9–10 | Refused. Java linked references omit the content digest used by Next's safe rebind. |
+
+Nonempty legacy Review evidence is refused. Java portable records omit the saved revision needed by Next. Existing Next Review and linked-descriptor archive round trips continue to use their current identities and access rules.
+
+Recognized or remembered incomplete storage now refuses an ordinary open before SQLite can initialize a replacement. The remaining in-place replacement blocker is a pre-open durable authority decision that survives a locked swap, interruption and reopen with the previous generation preserved. No in-place action is exposed. Android owner-reviewed ZIP intake, broader browser organization and local one-use handoff, PDF body indexing, deeper linked-resource and Review portability, and full formatted PDF export remain open.
+
 ### M26-B/C — Physical acceptance and separately authorized production qualification
 
 - **Original functional parity:** Preserve workspace replacement gates, legacy archive compatibility and owner-reviewed mobile ZIP intake, browser creation and organization, original export coverage and restart fidelity, PDF functionality and linked-occurrence navigation.

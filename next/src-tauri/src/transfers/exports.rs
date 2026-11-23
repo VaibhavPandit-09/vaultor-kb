@@ -1,5 +1,103 @@
 use super::*;
+use std::collections::BTreeMap;
 use zip::{write::SimpleFileOptions, ZipWriter};
+
+struct TableCell<'a> {
+    source: Option<&'a Value>,
+    width: usize,
+    height: usize,
+}
+
+fn table_layout(rows: &[Value]) -> Result<Vec<Vec<TableCell<'_>>>, String> {
+    let mut active = BTreeMap::<usize, (usize, usize)>::new();
+    let mut result = Vec::with_capacity(rows.len());
+    for (index, row) in rows.iter().enumerate() {
+        let nodes = row["content"].as_array().ok_or("Table row has no cells")?;
+        if row["type"] != "tableRow" {
+            return Err("Invalid table row".into());
+        }
+        let mut cells = Vec::new();
+        let mut column = 0;
+        for node in nodes {
+            while let Some(&(width, _)) = active.get(&column) {
+                cells.push(TableCell { source: None, width, height: 1 });
+                column += width;
+            }
+            if !matches!(node["type"].as_str(), Some("tableCell" | "tableHeader")) {
+                return Err("Invalid table cell".into());
+            }
+            let span = |key: &str| {
+                let value = &node["attrs"][key];
+                if value.is_null() { return Ok(1); }
+                value.as_u64().filter(|value| (1..=500).contains(value)).map(|value| value as usize)
+                    .ok_or("Invalid table span")
+            };
+            let width = span("colspan")?;
+            let height = span("rowspan")?;
+            if column + width > 500 || index + height > rows.len()
+                || active.range(column..column+width).next().is_some()
+            {
+                return Err("Table spans overlap or exceed the table".into());
+            }
+            if height > 1 {
+                active.insert(column, (width, index + height));
+            }
+            cells.push(TableCell { source: Some(node), width, height });
+            column += width;
+        }
+        while let Some(&(width, _)) = active.get(&column) {
+            cells.push(TableCell { source: None, width, height: 1 });
+            column += width;
+        }
+        if active.range(column..).next().is_some() {
+            return Err("Table has a gap before a vertical merge".into());
+        }
+        active.retain(|_, (_, end)| *end > index + 1);
+        result.push(cells);
+    }
+    Ok(result)
+}
+
+fn markdown_table(
+    rows: &[Vec<TableCell<'_>>],
+    links: &HashMap<&str, String>,
+    issues: &mut Vec<String>,
+) -> Result<String, String> {
+    use pulldown_cmark::{html, Event, Options, Parser};
+    let mut table = String::from("<table>\n");
+    for row in rows {
+        table.push_str("<tr>\n");
+        for cell in row {
+            let Some(node) = cell.source else { continue };
+            let tag = if node["type"] == "tableHeader" { "th" } else { "td" };
+            let align = match node["attrs"]["textAlign"].as_str() {
+                Some("left") => " align=\"left\"",
+                Some("right") => " align=\"right\"",
+                Some("center") => " align=\"center\"",
+                _ => "",
+            };
+            let mut markdown = String::new();
+            for child in node["content"].as_array().into_iter().flatten() {
+                markdown.push_str(&render_document(child, true, links, issues)?);
+            }
+            let events = Parser::new_ext(&markdown, Options::ENABLE_STRIKETHROUGH | Options::ENABLE_TASKLISTS)
+                .map(|event| match event {
+                    Event::InlineHtml(ref raw) if matches!(raw.as_ref(), "<u>" | "</u>") => event,
+                    Event::Html(raw) | Event::InlineHtml(raw) => Event::Text(raw),
+                    _ => event,
+                });
+            let mut body = String::new();
+            html::push_html(&mut body, events);
+            table.push_str(&format!(
+                "<{tag} colspan=\"{}\" rowspan=\"{}\"{align}>{}</{tag}>\n",
+                cell.width, cell.height, body.trim().replace('\n', "&#10;")
+            ));
+        }
+        table.push_str("</tr>\n");
+    }
+    table.push_str("</table>\n\n");
+    Ok(table)
+}
 
 pub(super) fn markdown_zip(
     root: &str,
@@ -240,6 +338,14 @@ pub(super) fn render_document(
             format!("{raw}\n\n")
         });
     }
+    if kind == "table" && markdown {
+        let layout = table_layout(children)?;
+        if layout.iter().flatten().any(|cell| cell.width > 1 || cell.height > 1) {
+            let mut body = markdown_table(&layout, links, issues)?;
+            table_source(&mut body, attrs, links, issues);
+            return Ok(body);
+        }
+    }
     let mut rendered = children
         .iter()
         .map(|child| render_document(child, markdown, links, issues))
@@ -314,13 +420,7 @@ pub(super) fn render_document(
             }
             let mut body = rendered.concat() + "\n";
             if markdown {
-                if let Some(source) = attrs["sourceResourceId"].as_str() {
-                    if let Some(path) = links.get(source) {
-                        body.push_str(&format!("[Table source](<{}>)\n\n", escaped_url(path)));
-                    } else if issues.len() < 100 {
-                        issues.push("A table source is outside this export".into());
-                    }
-                }
+                table_source(&mut body, attrs, links, issues);
             }
             body
         }
@@ -328,10 +428,22 @@ pub(super) fn render_document(
     })
 }
 
+fn table_source(body: &mut String, attrs: &Value, links: &HashMap<&str, String>, issues: &mut Vec<String>) {
+    if let Some(source) = attrs["sourceResourceId"].as_str() {
+        if let Some(path) = links.get(source) {
+            body.push_str(&format!("[Table source](<{}>)\n\n", escaped_url(path)));
+        } else if issues.len() < 100 {
+            issues.push("A table source is outside this export".into());
+        }
+    }
+}
+
 const DOCX_TYPES: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
 <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
 <Default Extension="xml" ContentType="application/xml"/>
+<Default Extension="png" ContentType="image/png"/>
+<Default Extension="jpg" ContentType="image/jpeg"/>
 <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
 </Types>"#;
 const DOCX_RELS: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -363,10 +475,145 @@ fn word_run(text: &str, style: &str) -> String {
     format!("<w:r><w:rPr>{style}</w:rPr>{lines}</w:r>")
 }
 
-fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>) -> Result<String, String> {
+fn image_dependencies<'a>(node: &'a Value, ids: &mut HashSet<&'a str>) {
+    if node["type"] == "image" {
+        if let Some(id) = node["attrs"]["resourceId"].as_str() {
+            ids.insert(id);
+        }
+    }
+    for child in node["content"].as_array().into_iter().flatten() {
+        image_dependencies(child, ids);
+    }
+}
+
+pub(super) fn word_inventory(workspace: &Workspace, manifest: &mut Manifest) -> Result<(), String> {
+    let mut ids = HashSet::new();
+    for note in &manifest.resources {
+        image_dependencies(&note.content, &mut ids);
+    }
+    let mut query = workspace.db.prepare(
+        "SELECT o.name,o.hash,o.bytes,o.provenance FROM managed_originals o
+         WHERE o.resource_id=?1 AND o.kind='file' AND NOT EXISTS(
+             SELECT 1 FROM resource_state s WHERE s.resource_id=o.resource_id AND s.trashed=1)",
+    ).map_err(error)?;
+    let present: HashSet<_> = manifest.originals.iter().map(|original| original.id.clone()).collect();
+    for id in ids {
+        if present.contains(id) {
+            continue;
+        }
+        if let Some(original) = query.query_row([id], |row| Ok(Original {
+            id: id.into(), name: row.get(0)?, hash: row.get(1)?, bytes: row.get(2)?,
+            kind: "file".into(), provenance: row.get(3)?,
+        })).optional().map_err(error)? {
+            manifest.originals.push(original);
+        }
+    }
+    Ok(())
+}
+
+struct WordImage {
+    bytes: Vec<u8>,
+    extension: &'static str,
+    width: u32,
+    height: u32,
+}
+
+#[derive(Default)]
+struct WordPictures {
+    assets: BTreeMap<String, WordImage>,
+    placements: usize,
+}
+
+impl WordPictures {
+    fn load(root: &str, content: &Value, originals: &[Original], ctx: &Context) -> Result<Self, String> {
+        let mut ids = HashSet::new();
+        image_dependencies(content, &mut ids);
+        let mut pictures = Self::default();
+        let mut total = 0;
+        for original in originals.iter().filter(|file| file.kind == "file" && ids.contains(file.id.as_str())) {
+            ctx.check()?;
+            if original.bytes > 20 * 1024 * 1024 || total + original.bytes > 60 * 1024 * 1024 {
+                continue;
+            }
+            let path = original_path(Path::new(root), &original.id)?;
+            let mut bytes = Vec::new();
+            let (size, hash) = copy_hash(plain_file(&path)?, &mut bytes, original.bytes, |_| ctx.check())?;
+            if size != original.bytes || hash != original.hash {
+                return Err("Word image bytes failed integrity verification".into());
+            }
+            let Some((mime, width, height)) = crate::media::image_type(&bytes) else { continue };
+            let extension = match mime {
+                "image/png" => "png",
+                "image/jpeg" => "jpg",
+                _ => continue,
+            };
+            if width == 0 || height == 0 || u64::from(width) * u64::from(height) > 40_000_000 {
+                continue;
+            }
+            total += original.bytes;
+            pictures.assets.insert(original.id.clone(), WordImage { bytes, extension, width, height });
+        }
+        Ok(pictures)
+    }
+
+    fn placement(&mut self, attrs: &Value, label: &str) -> Option<String> {
+        let id = attrs["resourceId"].as_str()?;
+        let image = self.assets.get(id)?;
+        self.placements += 1;
+        let placement = self.placements;
+        let width_percent = attrs["width"].as_u64().unwrap_or(100).clamp(1, 100) as f64;
+        let scale = (560.0 * width_percent / 100.0 / f64::from(image.width))
+            .min(720.0 / f64::from(image.height)).min(1.0);
+        let cx = (f64::from(image.width) * scale * 9525.0).round() as u64;
+        let cy = (f64::from(image.height) * scale * 9525.0).round() as u64;
+        let alignment = match attrs["alignment"].as_str() {
+            Some("right") => "right",
+            Some("center") => "center",
+            _ => "left",
+        };
+        let alt = xml(label).replace('"', "&quot;");
+        let mut drawing = format!(r#"<w:p><w:pPr><w:jc w:val="{alignment}"/></w:pPr><w:r><w:drawing><wp:inline>
+<wp:extent cx="{cx}" cy="{cy}"/><wp:docPr id="{placement}" name="Image {placement}" descr="{alt}"/>
+<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic>
+<pic:nvPicPr><pic:cNvPr id="{placement}" name="Image {placement}"/><pic:cNvPicPr/></pic:nvPicPr>
+<pic:blipFill><a:blip r:embed="image-{id}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>
+<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>
+</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>"#);
+        if let Some(caption) = attrs["caption"].as_str().filter(|value| !value.is_empty()) {
+            drawing.push_str(&format!("<w:p><w:pPr><w:jc w:val=\"{alignment}\"/></w:pPr>{}</w:p>", word_run(caption, "")));
+        }
+        Some(drawing)
+    }
+}
+
+fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pictures: &mut WordPictures) -> Result<String, String> {
     let kind = node["type"].as_str().ok_or("Invalid editor node")?;
     let attrs = &node["attrs"];
     let children = node["content"].as_array().map(Vec::as_slice).unwrap_or(&[]);
+    if kind == "table" {
+        let layout = table_layout(children)?;
+        let columns = layout.iter().map(|row| row.iter().map(|cell| cell.width).sum()).max().unwrap_or(0);
+        let mut table = format!("<w:tbl><w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/></w:tblPr><w:tblGrid>{}</w:tblGrid>", "<w:gridCol/>".repeat(columns));
+        for row in layout {
+            table.push_str("<w:tr>");
+            if !row.is_empty() && row.iter().all(|cell| cell.source.is_some_and(|node| node["type"] == "tableHeader") && cell.height == 1) {
+                table.push_str("<w:trPr><w:tblHeader/></w:trPr>");
+            }
+            for cell in row {
+                let (merge, body) = if let Some(node) = cell.source {
+                    let rendered = word_node_children(node, issues, links, pictures)?;
+                    (if cell.height > 1 { "<w:vMerge w:val=\"restart\"/>" } else { "" }, rendered)
+                } else {
+                    ("<w:vMerge/>", String::new())
+                };
+                let body = if body.is_empty() { "<w:p/>" } else { &body };
+                table.push_str(&format!("<w:tc><w:tcPr><w:gridSpan w:val=\"{}\"/>{merge}</w:tcPr>{body}</w:tc>", cell.width));
+            }
+            table.push_str("</w:tr>");
+        }
+        table.push_str("</w:tbl>");
+        return Ok(table);
+    }
     if kind == "text" {
         let mut style = String::new();
         if let Some(marks) = node["marks"].as_array() {
@@ -403,6 +650,11 @@ fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>) ->
             .as_str()
             .filter(|label| !label.is_empty())
             .unwrap_or(if image { "Image" } else { "Resource" });
+        if image {
+            if let Some(drawing) = pictures.placement(attrs, label) {
+                return Ok(drawing);
+            }
+        }
         if issues.len() < 100 {
             issues.push(format!("{label}: retained as text in Word export"));
         }
@@ -413,11 +665,11 @@ fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>) ->
             run
         });
     }
-    let inner = if matches!(kind,"blockquote"|"codeBlock"|"orderedList"|"bulletList"|"taskList") {String::new()} else {children
-        .iter()
-        .map(|child| word_node(child, issues, links))
-        .collect::<Result<Vec<_>, _>>()?
-        .concat()};
+    let inner = if matches!(kind,"blockquote"|"codeBlock"|"orderedList"|"bulletList"|"taskList") {
+        String::new()
+    } else {
+        word_node_children(node, issues, links, pictures)?
+    };
     Ok(match kind {
         "doc" | "listItem" | "taskItem" => inner,
         "paragraph" => format!("<w:p>{inner}</w:p>"),
@@ -463,7 +715,7 @@ fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>) ->
                     }
                     _ => "• ".into(),
                 };
-                let item = word_node(child, issues, links)?;
+                let item = word_node(child, issues, links, pictures)?;
                 if let Some(body) = item.strip_prefix("<w:p>") {
                     list.push_str("<w:p>");
                     list.push_str(&word_run(&prefix, ""));
@@ -474,34 +726,49 @@ fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>) ->
             }
             list
         }
-        "table" => {
-            format!("<w:tbl><w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/></w:tblPr>{inner}</w:tbl>")
-        }
-        "tableRow" => {
-            let header=if !children.is_empty()&&children.iter().all(|cell|cell["type"]=="tableHeader") {
-                "<w:trPr><w:tblHeader/></w:trPr>"
-            } else {""};
-            format!("<w:tr>{header}{inner}</w:tr>")
-        },
-        "tableCell" | "tableHeader" => format!(
-            "<w:tc><w:tcPr><w:gridSpan w:val=\"{}\"/></w:tcPr>{}</w:tc>",
-            attrs["colspan"].as_u64().unwrap_or(1).clamp(1,1000),
-            if inner.is_empty() {
-                "<w:p/>".into()
-            } else {
-                inner
-            }
-        ),
         _ => return Err(format!("Unsupported Word node: {kind}")),
     })
 }
 
-pub(super) fn docx(file: File, content: &Value, issues: &mut Vec<String>) -> Result<(), String> {
+fn word_node_children(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pictures: &mut WordPictures) -> Result<String, String> {
+    node["content"].as_array().into_iter().flatten()
+        .map(|child| word_node(child, issues, links, pictures))
+        .collect::<Result<Vec<_>, _>>().map(|children| children.concat())
+}
+
+#[cfg(test)]
+#[test]
+fn mixed_table_merges_keep_continuations_and_escape_rich_cells() {
+    let cell = |text: &str, width, height| json!({
+        "type":"tableCell",
+        "attrs":{"colspan":width,"rowspan":height},
+        "content":[{"type":"paragraph","content":[{"type":"text","text":text,"marks":[{"type":"bold"}]}]}]
+    });
+    let first = cell("First <safe>", 2, 2);
+    let table = json!({"type":"table","content":[
+        {"type":"tableRow","content":[first,cell("Across",1,1)]},
+        {"type":"tableRow","content":[cell("Below",1,1)]}
+    ]});
+    let markdown = render_document(&table, true, &HashMap::new(), &mut vec![]).unwrap();
+    assert!(markdown.contains("colspan=\"2\" rowspan=\"2\""));
+    assert!(markdown.contains("<strong>First &lt;safe&gt;</strong>"));
+    assert_eq!(markdown.matches("<td ").count(), 3);
+    let word = word_node(&table, &mut vec![], &mut vec![], &mut WordPictures::default()).unwrap();
+    assert!(word.contains("<w:gridSpan w:val=\"2\"/><w:vMerge w:val=\"restart\"/>"));
+    assert!(word.contains("<w:gridSpan w:val=\"2\"/><w:vMerge/>"));
+    assert!(word.find("<w:vMerge/>").unwrap() < word.find("Below").unwrap());
+    let mut invalid = table;
+    invalid["content"][0]["content"][0]["attrs"]["rowspan"] = json!(3);
+    assert!(render_document(&invalid, true, &HashMap::new(), &mut vec![]).is_err());
+}
+
+pub(super) fn docx(file: File, content: &Value, issues: &mut Vec<String>, root: &str, originals: &[Original], ctx: &Context) -> Result<(), String> {
     let mut links=Vec::new();
-    let body = word_node(content, issues,&mut links)?;
+    let mut pictures = WordPictures::load(root, content, originals, ctx)?;
+    let body = word_node(content, issues,&mut links,&mut pictures)?;
     let document = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>{body}
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>{body}
 <w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body></w:document>"#
     );
     let mut output = ZipWriter::new(file);
@@ -515,14 +782,21 @@ pub(super) fn docx(file: File, content: &Value, issues: &mut Vec<String>) -> Res
             .map_err(error)?;
         output.write_all(value.as_bytes()).map_err(error)?;
     }
-    if !links.is_empty() {
-        output.start_file("word/_rels/document.xml.rels",SimpleFileOptions::default()).map_err(error)?;
+    if !links.is_empty() || !pictures.assets.is_empty() {
         let mut relations=String::from(r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#);
         for (index,href) in links.iter().enumerate() {
             let target=xml(href).replace('"',"&quot;");
             relations.push_str(&format!(r#"<Relationship Id="link{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="{target}" TargetMode="External"/>"#,index+1));
         }
+        for (id, image) in pictures.assets {
+            ctx.check()?;
+            let path = format!("media/{id}.{}", image.extension);
+            relations.push_str(&format!(r#"<Relationship Id="image-{id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="{path}"/>"#));
+            output.start_file(format!("word/{path}"), SimpleFileOptions::default()).map_err(error)?;
+            output.write_all(&image.bytes).map_err(error)?;
+        }
         relations.push_str("</Relationships>");
+        output.start_file("word/_rels/document.xml.rels",SimpleFileOptions::default()).map_err(error)?;
         output.write_all(relations.as_bytes()).map_err(error)?;
     }
     output.finish().map_err(error)?.sync_all().map_err(error)
@@ -538,48 +812,23 @@ pub(super) fn pdf(
     use pdf_writer::{Content, Finish, Name, Pdf, Rect, Ref, Str};
     let text = render_document(content, false, &HashMap::new(), issues)?;
     let display = format!("{title}\n\n{}", text.trim_end()).replace('\t', "    ");
-    let (encoded, _, unsupported) = encoding_rs::WINDOWS_1252.encode(&display);
-    if unsupported
-        || encoded
-            .iter()
-            .any(|&byte| byte < 32 && byte != b'\n' && byte != b'\r')
-    {
-        return Err("PDF text requires Western European characters. Choose Word or Markdown to keep the full text.".into());
-    }
     if issues.len() < 100 {
         issues.push("PDF uses a text layout. Word and Markdown preserve more formatting.".into());
-    }
-    let mut lines = Vec::new();
-    for line in encoded.split(|&byte| byte == b'\n') {
-        let line = line.strip_suffix(b"\r").unwrap_or(line);
-        if line.is_empty() {
-            lines.push(line);
-        }
-        let mut remaining=line;
-        while remaining.len()>80 {
-            let end = remaining[..80].iter().rposition(|&byte|byte==b' ').filter(|&index|index>=40).map_or(80,|index|index+1);
-            let (wrapped,rest)=remaining.split_at(end);
-            lines.push(wrapped);
-            remaining=rest;
-        }
-        if !remaining.is_empty() {lines.push(remaining);}
     }
     let mut pdf = Pdf::new();
     let pages = Ref::new(2);
     let font = Ref::new(3);
     let face = Name(b"F1");
     pdf.catalog(Ref::new(1)).pages(pages);
-    pdf.type1_font(font)
-        .base_font(Name(b"Courier"))
-        .encoding_predefined(Name(b"WinAnsiEncoding"));
+    let lines = pdf_font::encode(&mut pdf, font, &display, ctx)?;
     let count = lines.len().div_ceil(54) as i32;
     pdf.pages(pages)
-        .kids((0..count).map(|i| Ref::new(4 + 2 * i)))
+        .kids((0..count).map(|i| Ref::new(9 + 2 * i)))
         .count(count);
     for (index, lines) in lines.chunks(54).enumerate() {
         ctx.check()?;
-        let page = Ref::new(4 + 2 * index as i32);
-        let stream = Ref::new(5 + 2 * index as i32);
+        let page = Ref::new(9 + 2 * index as i32);
+        let stream = Ref::new(10 + 2 * index as i32);
         let mut entry = pdf.page(page);
         entry
             .parent(pages)
@@ -592,7 +841,7 @@ pub(super) fn pdf(
             .set_font(face, 10.0)
             .set_leading(14.0)
             .next_line(52.0, 790.0);
-        for &line in lines {
+        for line in lines {
             text.show(Str(line)).next_line_using_leading();
         }
         text.end_text();

@@ -91,7 +91,11 @@ impl Worker {
             .spawn(move || {
                 let preferences_path=Some(pointer.as_ref().and_then(|p|p.parent()).map(|p|p.join("preferences.json")).unwrap_or_else(||root.join(".profile-preferences.json")));
                 // Failed initialization stays recoverable through an explicit Open request.
-                let mut workspace = Workspace::open(&root);
+                let mut workspace = match pointer.as_ref().map(|path| path.try_exists()).transpose() {
+                    Ok(Some(true)) => Workspace::open_existing(&root),
+                    Ok(_) => Workspace::open(&root),
+                    Err(error) => Err(error.to_string()),
+                };
                 // An explicit test override must establish ownership before it can store metadata.
                 let preferences_owned=pointer.is_some()||workspace.is_ok();
                 for message in receiver {
@@ -113,18 +117,11 @@ impl Worker {
                     };
                     let request = match request {
                         Request::Preferences {value} => {let result=if preferences_owned{crate::desktop::preferences(preferences_path.as_deref(),value)}else{Err("Preferences refused: isolated workspace initialization failed".into())};let _=reply.send(result);continue;},
-                        Request::New { path } => {
-                            if std::path::Path::new(&path).exists() {
-                                let _ =
-                                    reply.send(Err("New workspace folder already exists".into()));
-                                continue;
-                            }
-                            Request::Open { path }
-                        }
                         r => r,
                     };
+                    let create = matches!(request, Request::New { .. });
                     let result = match request {
-                        Request::Open { path } => {
+                        Request::Open { path } | Request::New { path } => {
                             if gate.load(Ordering::SeqCst) > 0 {
                                 let _ = reply.send(Err(
                                     "Finish or cancel Activity tasks before switching workspace"
@@ -132,13 +129,17 @@ impl Worker {
                                 ));
                                 continue;
                             }
-                            if workspace
+                            if create && std::path::Path::new(&path).exists() {
+                                Err("New workspace folder already exists".into())
+                            } else if workspace
                                 .as_ref()
                                 .is_ok_and(|w| w.is_path(std::path::Path::new(&path)))
                             {
                                 workspace.as_mut().unwrap().execute(Request::Snapshot)
                             } else {
-                                match Workspace::open(std::path::Path::new(&path)) {
+                                let path = std::path::Path::new(&path);
+                                let opened = if create { Workspace::open(path) } else { Workspace::open_existing(path) };
+                                match opened {
                                     Ok(mut next) => {
                                         let snapshot = next.execute(Request::Snapshot);
                                         let remembered = match (&pointer, &snapshot) {

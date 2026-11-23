@@ -412,15 +412,15 @@ fn main() {
             app.manage(windows_drag::NativeDrag::new(override_root.as_ref()
                 .and_then(|path| std::path::Path::new(path).parent()).unwrap_or(&data)
                 .join("native-export-copies")));
-            let root = override_root
-                .clone()
-                .map(std::path::PathBuf::from)
-                .or_else(|| {
-                    std::fs::read(&pointer)
-                        .ok()
-                        .and_then(|bytes| serde_json::from_slice::<std::path::PathBuf>(&bytes).ok())
-                })
-                .unwrap_or(data.join("Workspace-M2"));
+            let root = match override_root.clone() {
+                Some(path) => std::path::PathBuf::from(path),
+                None => match std::fs::read(&pointer) {
+                    Ok(bytes) => serde_json::from_slice::<std::path::PathBuf>(&bytes)
+                        .map_err(|_| "The last workspace record is invalid")?,
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => data.join("Workspace-M2"),
+                    Err(error) => return Err(error.into()),
+                },
+            };
             let worker = Worker::start(
                 root.clone(),
                 if override_root.is_some() {

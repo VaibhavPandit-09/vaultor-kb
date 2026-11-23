@@ -1,6 +1,6 @@
 //! Portable local domain. No Tauri types, HTTP, process launch or renderer-owned SQL.
 use fs2::FileExt;
-use rusqlite::{params, Connection, Transaction};
+use rusqlite::{params, Connection, OpenFlags, Transaction};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
@@ -151,16 +151,32 @@ impl Workspace {
         path.canonicalize().is_ok_and(|p| p == self.root)
     }
     pub fn open(root: &Path) -> Result<Self, String> {
-        fs::create_dir_all(root).map_err(error)?;
+        Self::open_workspace(root, true)
+    }
+
+    pub(crate) fn open_existing(root: &Path) -> Result<Self, String> {
+        Self::open_workspace(root, false)
+    }
+
+    fn open_workspace(root: &Path, initialize: bool) -> Result<Self, String> {
+        if initialize {
+            fs::create_dir_all(root).map_err(error)?;
+        }
         let root = root.canonicalize().map_err(error)?;
         let marker = root.join("vaultor-next.json");
-        if marker.exists() {
+        let existing = marker.try_exists().map_err(error)?;
+        let database = root.join("workspace.sqlite3");
+        if existing {
+            crate::transfers::plain_file(&marker)?;
             let metadata: Value =
                 serde_json::from_slice(&fs::read(&marker).map_err(error)?).map_err(error)?;
             if metadata != json!({"format": "vaultor-next", "version": 2}) {
                 return Err("M2 requires a new empty workspace or an M2 workspace. M1 data is not migrated.".into());
             }
         } else {
+            if !initialize {
+                return Err("Workspace marker is missing. Select an existing Vaultor Next workspace.".into());
+            }
             if fs::read_dir(&root).map_err(error)?.next().is_some() {
                 return Err("Choose an empty directory or an existing Vaultor Next workspace. Legacy workspaces are not supported.".into());
             }
@@ -184,12 +200,18 @@ impl Workspace {
             .map_err(error)?;
         lock.try_lock_exclusive()
             .map_err(|_| "Workspace is already open in another process".to_string())?;
-        let mut db = Connection::open(root.join("workspace.sqlite3")).map_err(error)?;
+        let mut db = if existing {
+            crate::transfers::plain_file_with_limit(&database, u64::MAX)
+                .map_err(|_| "Vaultor workspace database is missing or unsafe. Restore the workspace from a verified copy.".to_string())?;
+            Connection::open_with_flags(&database, OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX)
+        } else {
+            Connection::open(&database)
+        }.map_err(error)?;
         db.busy_timeout(Duration::from_secs(3)).map_err(error)?;
         let version: i64 = db
             .pragma_query_value(None, "user_version", |r| r.get(0))
             .map_err(error)?;
-        if version != 0 && version != 2 {
+        if version != 2 && (existing || version != 0) {
             return Err("Unsupported SQLite workspace version".into());
         }
         db.execute_batch("PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
@@ -384,5 +406,18 @@ mod tests {
             "untouched"
         );
         assert!(!temp.path().join("workspace.sqlite3").exists());
+    }
+
+    #[test]
+    fn marked_workspace_never_initializes_a_missing_or_empty_database() {
+        let temp = tempfile::tempdir().unwrap();
+        drop(Workspace::open(temp.path()).unwrap());
+        let db = temp.path().join("workspace.sqlite3");
+        fs::rename(&db, temp.path().join("preserved.sqlite3")).unwrap();
+        assert!(Workspace::open(temp.path()).is_err());
+        assert!(!db.exists());
+        fs::write(&db, []).unwrap();
+        assert!(Workspace::open(temp.path()).is_err());
+        assert_eq!(fs::metadata(db).unwrap().len(), 0);
     }
 }

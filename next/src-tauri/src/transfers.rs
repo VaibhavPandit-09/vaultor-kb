@@ -1,6 +1,8 @@
 //! Immutable managed originals, short actor transactions and streaming versioned archives.
 mod conversion;
 mod exports;
+mod archive_input;
+mod pdf_font;
 mod portable;
 mod duplication;
 use crate::{
@@ -414,9 +416,9 @@ impl Transfers {
                 self.activity.submit(root, Job::Archive { destination })
             }
             Request::InspectArchive { source } => {
-                let (m, hash) = inspect_archive(Path::new(&source), None)?;
+                let (m, hash, legacy_version) = inspect_archive_details(Path::new(&source), None)?;
                 Ok(
-                    json!({"manifestHash":hash,"resources":m.resources.len(),"collections":m.collections.len(),"files":m.originals.len(),"bytes":m.originals.iter().map(|f|f.bytes).sum::<u64>(),"version":m.version,"partial":m.partial,"linkedDescriptors":m.linked.len(),"reviews":m.reviews.len()}),
+                    json!({"manifestHash":hash,"resources":m.resources.len(),"collections":m.collections.len(),"files":m.originals.len(),"bytes":m.originals.iter().map(|f|f.bytes).sum::<u64>(),"version":m.version,"legacyVersion":legacy_version,"partial":m.partial,"linkedDescriptors":m.linked.len(),"reviews":m.reviews.len()}),
                 )
             }
             Request::Restore {
@@ -456,6 +458,10 @@ pub fn plain_directory(path: &Path) -> Result<(), String> {
     Ok(())
 }
 pub fn plain_file(path: &Path) -> Result<File, String> {
+    plain_file_with_limit(path, MAX_FILE)
+}
+
+pub(crate) fn plain_file_with_limit(path: &Path, limit: u64) -> Result<File, String> {
     for part in path.ancestors() {
         let m = fs::symlink_metadata(part).map_err(error)?;
         if reparse(&m) {
@@ -474,8 +480,8 @@ pub fn plain_file(path: &Path) -> Result<File, String> {
     }
     let f = options.open(path).map_err(error)?;
     let m = f.metadata().map_err(error)?;
-    if !m.is_file() || reparse(&m) || m.len() > MAX_FILE {
-        return Err("Not an ordinary file, or exceeds 1 GiB".into());
+    if !m.is_file() || reparse(&m) || m.len() > limit {
+        return Err("Not an ordinary file, or exceeds its size limit".into());
     }
     Ok(f)
 }
@@ -1443,31 +1449,25 @@ fn validate(m: &Manifest) -> Result<(), String> {
 }
 fn inspect_archive(
     path: &Path,
-    mut ctx: Option<&mut Context>,
+    ctx: Option<&mut Context>,
 ) -> Result<(Manifest, String), String> {
-    let mut input = plain_file_archive(path)?;
-    let (m, hash) = read_manifest(&mut input)?;
-    for o in &m.originals {
-        let (n, actual) = copy_hash(
-            (&mut input).take(o.bytes),
-            std::io::sink(),
-            MAX_FILE,
-            |_| {
-                if let Some(c) = ctx.as_mut() {
-                    c.check()?;
-                }
-                Ok(())
-            },
-        )?;
-        if n != o.bytes || actual != o.hash {
-            return Err(format!("Archive integrity check failed for {}", o.name));
-        }
+    inspect_archive_details(path, ctx).map(|(manifest, hash, _)| (manifest, hash))
+}
+fn inspect_archive_details(
+    path: &Path,
+    mut ctx: Option<&mut Context>,
+) -> Result<(Manifest, String, Option<u32>), String> {
+    let (mut input, manifest, hash, legacy_version) = archive_input::open(path)?;
+    for (index, original) in manifest.originals.iter().enumerate() {
+        input.copy(index, original, std::io::sink(), |_| {
+            if let Some(ctx) = ctx.as_mut() {
+                ctx.check()?;
+            }
+            Ok(())
+        })?;
     }
-    let mut tail = [0];
-    if input.read(&mut tail).map_err(error)? != 0 {
-        return Err("Unexpected trailing archive data".into());
-    }
-    Ok((m, hash))
+    input.finish()?;
+    Ok((manifest, hash, legacy_version))
 }
 fn plain_file_archive(path: &Path) -> Result<File, String> {
     let m = fs::symlink_metadata(path).map_err(error)?;
@@ -1482,8 +1482,7 @@ fn restore(
     expected: &str,
     ctx: &mut Context,
 ) -> Result<Value, String> {
-    let mut input = plain_file_archive(Path::new(source))?;
-    let (m, hash) = read_manifest(&mut input)?;
+    let (mut input, m, hash, _) = archive_input::open(Path::new(source))?;
     if hash != expected {
         return Err("Archive changed since preview".into());
     }
@@ -1507,7 +1506,7 @@ fn restore(
             .create_new(true)
             .open(target)
             .map_err(error)?;
-        let (n, hash) = copy_hash((&mut input).take(o.bytes), &mut output, MAX_FILE, |n| {
+        input.copy(i, o, &mut output, |n| {
             ctx.check()?;
             ctx.progress(
                 "Restoring managed originals",
@@ -1519,15 +1518,9 @@ fn restore(
             Ok(())
         })?;
         output.sync_all().map_err(error)?;
-        if n != o.bytes || hash != o.hash {
-            return Err("Archive payload integrity mismatch".into());
-        }
-        bytes += n;
+        bytes += o.bytes;
     }
-    let mut tail = [0];
-    if input.read(&mut tail).map_err(error)? != 0 {
-        return Err("Unexpected trailing archive data".into());
-    }
+    input.finish()?;
     ctx.check()?;
     let tx = w.db.transaction().map_err(error)?;
     tx.execute_batch("PRAGMA defer_foreign_keys=ON")
@@ -1695,6 +1688,7 @@ fn export(
         return Err("Linked exports require Windows local NTFS".into());
     }
     let zip = format == "markdownZip";
+    let word = format == "docx";
     let manifest = storage.call(root, move |w| {
         if remote {
             let note = ids.first().ok_or("Select a note")?;
@@ -1707,6 +1701,9 @@ fn export(
         } else {
             snapshot(w, Some(&ids))?
         };
+        if word {
+            exports::word_inventory(w, &mut manifest)?;
+        }
         if remote {
             validate_companion_snapshot(w, &manifest)?;
         } else if zip {
@@ -1755,7 +1752,7 @@ fn export(
             .map_err(error)?;
         if !is_original {
             match format {
-                "docx" => exports::docx(out, &r.content, &mut issues)?,
+                "docx" => exports::docx(out, &r.content, &mut issues, root, &m.originals, ctx)?,
                 "pdf" => exports::pdf(out, &r.title, &r.content, &mut issues, ctx)?,
                 _ => {
                     let data = exports::render_document(
@@ -1872,6 +1869,79 @@ mod tests {
         fn drop(&mut self) {
             self.service.activity.shutdown();
             self.worker.stop();
+        }
+    }
+
+    #[test]
+    fn java_v5_zip_restores_and_merges_exact_bytes() {
+        let harness = Harness::new();
+        let source = harness.temp.path().join("workspace.zip");
+        let fixture = include_bytes!("../fixtures/electron-workspace-v5.zip");
+        fs::write(&source, fixture).unwrap();
+        let (manifest, hash, version) = inspect_archive_details(&source, None).unwrap();
+        assert_eq!(version, Some(5));
+        let original = &manifest.originals[0];
+        assert_eq!(original.name, "Original bytes.txt");
+        let original_id = original.id.clone();
+        let destination = harness.temp.path().join("restored-java");
+        let source = source.to_string_lossy().into_owned();
+        assert_eq!(harness.task(Request::Restore {
+            source: source.clone(),
+            destination: destination.to_string_lossy().into_owned(),
+            manifest_hash: hash.clone(),
+        }).state, "completed");
+        assert_eq!(fs::read(original_path(&destination, &original_id).unwrap()).unwrap(), b"unchanged-original");
+        let restored = Workspace::open(&destination).unwrap();
+        let integrity: String = restored.db.query_row("PRAGMA integrity_check", [], |row| row.get(0)).unwrap();
+        assert_eq!(integrity, "ok");
+        let merge = || harness.task(Request::Merge { source: source.clone(), manifest_hash: hash.clone() });
+        let first = merge();
+        assert_eq!(first.state, "completed");
+        assert_eq!(first.result.unwrap()["reused"], false);
+        assert_eq!(merge().result.unwrap()["reused"], true);
+        harness.worker.storage().call(&harness.root, move |workspace| {
+            let id: String = workspace.db.query_row("SELECT resource_id FROM managed_originals", [], |row| row.get(0)).map_err(error)?;
+            assert_ne!(id, original_id);
+            assert_eq!(fs::read(original_path(&workspace.root, &id)?).map_err(error)?, b"unchanged-original");
+            Ok(Value::Null)
+        }).unwrap();
+    }
+
+    #[test]
+    fn java_partial_and_hierarchy_zips_preserve_supported_organization() {
+        let harness = Harness::new();
+        for (version, bytes) in [
+            (6, include_bytes!("../fixtures/electron-workspace-v6.zip").as_slice()),
+            (7, include_bytes!("../fixtures/electron-workspace-v7.zip").as_slice()),
+            (8, include_bytes!("../fixtures/electron-workspace-v8.zip").as_slice()),
+        ] {
+            let archive = harness.temp.path().join(format!("workspace-{version}.zip"));
+            fs::write(&archive, bytes).unwrap();
+            let (manifest, hash, legacy) = inspect_archive_details(&archive, None).unwrap();
+            assert_eq!(legacy, Some(version));
+            assert_eq!(manifest.partial, version != 7);
+            let destination = harness.temp.path().join(format!("restored-{version}"));
+            let task = harness.task(Request::Restore {
+                source: archive.to_string_lossy().into_owned(),
+                destination: destination.to_string_lossy().into_owned(),
+                manifest_hash: hash,
+            });
+            assert_eq!(task.state, "completed", "{:?}", task.error);
+            let workspace = Workspace::open(&destination).unwrap();
+            if version == 6 {
+                assert_eq!(manifest.resources.len(), 2);
+                assert_eq!(manifest.originals.len(), 1);
+                let id = &manifest.originals[0].id;
+                assert_eq!(fs::read(original_path(&destination, id).unwrap()).unwrap(), b"# Original\r\nExact raw bytes");
+            } else {
+                let child: String = workspace.db.query_row(
+                    "SELECT c.name FROM collections c JOIN collections p ON c.parent_id=p.id",
+                    [], |row| row.get(0),
+                ).unwrap();
+                assert_eq!(child, if version == 7 { "Archive child" } else { "Partial hierarchy child" });
+                let assignments: i64 = workspace.db.query_row("SELECT COUNT(*) FROM memberships", [], |row| row.get(0)).unwrap();
+                assert_eq!(assignments, i64::from(version == 8));
+            }
         }
     }
 

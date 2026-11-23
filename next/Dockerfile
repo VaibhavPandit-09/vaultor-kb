@@ -11,6 +11,7 @@ WORKDIR /source/next/src-tauri
 COPY next/src-tauri/Cargo.toml next/src-tauri/Cargo.lock next/src-tauri/build.rs ./
 COPY next/src-tauri/src/ ./src/
 COPY backend/src/main/resources/static/access.* /source/backend/src/main/resources/static/
+COPY backend/src/main/resources/fonts/NotoSans-Regular.ttf backend/src/main/resources/fonts/OFL.txt /source/backend/src/main/resources/fonts/
 COPY --from=browser /source/frontend/dist-next-browser /source/frontend/dist-next-browser
 RUN cargo build --locked --release --no-default-features --features host --bin vaultor-next-host
 
