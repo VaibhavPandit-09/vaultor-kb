@@ -7,6 +7,7 @@ use axum::{
     response::Redirect,
 };
 use sha2::{Digest, Sha256};
+use rusqlite::{params, Connection, OptionalExtension};
 use subtle::ConstantTimeEq;
 
 pub(super) const MAX_AGE: i64 = 24 * 60 * 60;
@@ -19,9 +20,20 @@ const ACCESS_HTML: &str = include_str!("../../../../backend/src/main/resources/s
 const ACCESS_JS: &str = include_str!("../../../../backend/src/main/resources/static/access.js");
 const ACCESS_CSS: &str = include_str!("../../../../backend/src/main/resources/static/access.css");
 
+pub(crate) fn initialize(db: &Connection) -> Result<(), String> {
+    db.execute_batch(
+        "CREATE TABLE IF NOT EXISTS browser_note_creations (
+            workspace TEXT NOT NULL, device TEXT NOT NULL, request TEXT NOT NULL,
+            intent BLOB NOT NULL, resource_id TEXT NOT NULL,
+            PRIMARY KEY(workspace, device, request)
+        );",
+    ).map_err(crate::domain::error)
+}
+
 pub(super) fn router() -> Router<Host> {
     let workspace = mobile::browser_reads()
         .route("/resources/{id}/preview", get(preview))
+        .route("/note-creates/{id}", put(create_note).layer(DefaultBodyLimit::max(4096)))
         .route(
             "/notes/{id}",
             put(save_note).layer(DefaultBodyLimit::max(1024 * 1024)),
@@ -264,6 +276,80 @@ struct SaveNote {
     revision: i64,
     title: String,
     content: Value,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CreateNote {
+    title: String,
+    collection: Option<Uuid>,
+}
+
+async fn create_note(
+    State(host): State<Host>,
+    RoutePath(request): RoutePath<Uuid>,
+    headers: HeaderMap,
+    Json(input): Json<CreateNote>,
+) -> ApiResult<Json<Value>> {
+    let workspace = headers
+        .get("x-vaultor-workspace")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.parse::<Uuid>().ok())
+        .ok_or(StatusCode::BAD_REQUEST)?;
+    let _permit = host.requests.try_acquire().map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+    let grant = host.authorize(&headers, workspace).await?;
+    let name = crate::domain::title(&input.title).map_err(|_| StatusCode::BAD_REQUEST)?.to_owned();
+    let intent = Sha256::digest(json!([name, input.collection]).to_string());
+    let collection = input.collection.map(|id| id.to_string());
+    let access = host.access.clone();
+    let stop = host.stop.clone();
+    let gate = host.enrollment.clone();
+    let result = host.storage.call_host(&host.root, move |ws| {
+        use crate::domain::{error, insert_note};
+        let _guard = gate.lock().map_err(error)?;
+        let generation = workspace.to_string();
+        if stop.is_cancelled() || !grant.current_sync(&access, workspace) || ws.review_generation()? != generation {
+            return Ok(Value::Null);
+        }
+        let device = grant.device.to_string();
+        let request = request.to_string();
+        let tx = ws.db.transaction().map_err(error)?;
+        let prior: Option<(Vec<u8>, String)> = tx.query_row(
+            "SELECT intent,resource_id FROM browser_note_creations WHERE workspace=?1 AND device=?2 AND request=?3",
+            params![generation, device, request],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        ).optional().map_err(error)?;
+        if let Some((prior_intent, id)) = prior {
+            if prior_intent.as_slice() != &intent[..] {
+                return Ok(json!({"conflict": true}));
+            }
+            return Ok(json!({"id": id}));
+        }
+        if let Some(collection) = &collection {
+            let exists: bool = tx.query_row(
+                "SELECT EXISTS(SELECT 1 FROM collections WHERE id=?1)",
+                [collection],
+                |row| row.get(0),
+            ).map_err(error)?;
+            if !exists {
+                return Ok(json!({"conflict": true}));
+            }
+        }
+        let id = insert_note(&tx, &name, collection.as_deref())?;
+        tx.execute(
+            "INSERT INTO browser_note_creations VALUES(?1,?2,?3,?4,?5)",
+            params![generation, device, request, &intent[..], id],
+        ).map_err(error)?;
+        tx.commit().map_err(error)?;
+        Ok(json!({"id": id}))
+    }).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    if result.is_null() {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    if result["conflict"] == true {
+        return Err(StatusCode::CONFLICT);
+    }
+    Ok(Json(result))
 }
 
 async fn save_note(

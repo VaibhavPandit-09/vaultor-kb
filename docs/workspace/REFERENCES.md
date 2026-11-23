@@ -39,3 +39,5 @@ Reference pages compute totals and grouped rows, then retrieve occurrences for a
 ## Local linked Markdown relationships (Windows0.25.0)
 
 On an authorized This computer desktop connection, linked resources add the private indexed disk graph to the same incoming/outgoing view. This graph is separate from backend saved structured-note edges; managed mentions of linked resources remain visible. Coverage, syntax, refresh and bounds are owned by [LINKED-SOURCES](LINKED-SOURCES.md). Occurrences open the linked source document; exact occurrence highlighting is currently managed-note-only. No local body/edge is copied to exports or remote clients.
+
+Vaultor Next also selects exact occurrences only for saved managed notes. During editor mounting it rechecks the source revision and dirty state before using the saved child path and target ID. If the occurrence cannot be verified, it reports that selection was unavailable.

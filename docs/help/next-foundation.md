@@ -66,7 +66,7 @@ Use [[ or Insert resource link to find an existing managed or linked resource. U
 
 Opening a managed file from the Library, a shortcut, or a note link opens a file preview alongside the current workspace. Settings → Layout & previews selects Side panel or Floating. Expand switches the current preview to Floating and Move to side reverses it. Escape closes the preview and restores the invoking control when it is still available.
 
-PNG, JPEG, GIF and WebP display with Fit, Actual size and zoom. PDF previews render one page at a time with page navigation, fit width/page, zoom and selectable page text when available. PDF input is limited to 20 MiB. Password-protected or unsupported PDFs can be opened externally. Preview never runs PDF scripts or loads remote links. UTF-8 text and common text/code formats preview up to 1 MiB.
+PNG, JPEG, GIF and WebP display with Fit, Actual size and zoom. PDF previews render one page at a time with page navigation, fit width/page, zoom and selectable page text when available. PDF input is limited to 20 MiB. For a protected PDF, enter its password and choose **Unlock PDF**. If you reopen the preview, enter the password again. Use **Open external copy** if you need another PDF viewer. Preview never runs PDF scripts or loads remote links. UTF-8 text and common text/code formats preview up to 1 MiB.
 
 WAV, MP3, Ogg/Opus, FLAC, M4A, MP4 and WebM use supported WebView2 codecs, up to 512 MiB. Play, pause and seek with the player controls. Closing the preview stops playback. Unsupported codecs offer an independent external copy. Office formats have no integrated original desktop renderer. Reveal or export a copy for those formats. External open and Reveal use integrity-verified prepared copies. No preview changes the stored original.
 
@@ -205,6 +205,8 @@ Downloads can remain readable while disconnected. Once the app verifies that a d
 ### Use a browser or transfer saved content
 
 Ask the host owner for the public CA and verify its fingerprint in Hosting. Have your browser or device administrator configure trust for the intended client profile. Open the HTTPS address after the browser accepts the certificate. Use the matching-code page to request approval and a workspace grant. Once granted, you can browse collections, search and open saved notes, preview or download supported managed files, and use **Edit** then **Save** on a saved note. A conflicting revision or a protected desktop draft blocks the save. **Sign out** ends that browser approval.
+
+Choose **New note** in the browser Library and enter a title. The note goes into the collection selected when you opened the form. **All collections** creates it without collection membership. If the host response is interrupted, use **Retry creation** in the same form to recover the result without creating a duplicate.
 
 On Android, **Collected imports** can send a confirmed original or a reviewed text or Markdown conversion to the granted Next workspace. Keep the queued original until you have a receipt. Next connected exports include saved-note Markdown, Markdown with assets, Word and text-layout PDF, and eligible whole-workspace or selected `.vaultor` archives. The legacy workspace ZIP import still needs the original host review workflow. Next archive export excludes Reviews and owner settings and refuses owner-local linked descriptors, Trash or protected selections.
 

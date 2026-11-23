@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState, type FormEvent} from 'react';
 import {EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type JSONContent, type NodeViewProps} from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import {Table} from '@tiptap/extension-table';
@@ -43,6 +43,53 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 const original = (id: string, kind: 'raw' | 'preview') => base + '/resources/' + id + '/' + kind;
+
+function NewNote({collection, collectionName, create}: {
+  collection: string;
+  collectionName?: string;
+  create: (id: string, title: string, collection: string) => Promise<void>;
+}) {
+  const [form, setForm] = useState<{id: string; title: string; collection: string; collectionName?: string}>();
+  const [submitting, setSubmitting] = useState(false);
+  const [problem, setProblem] = useState<{text: string; retry: boolean}>();
+  const trigger = useRef<HTMLButtonElement>(null);
+  const restoreFocus = useRef(false);
+  useEffect(() => {
+    if (!form && restoreFocus.current) {
+      restoreFocus.current = false;
+      trigger.current?.focus();
+    }
+  }, [form]);
+  const close = () => {
+    restoreFocus.current = true;
+    setForm(undefined);
+    setProblem(undefined);
+  };
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!form || !form.title.trim() || submitting || problem?.retry === false) return;
+    setSubmitting(true);
+    setProblem(undefined);
+    void create(form.id, form.title.trim(), form.collection).then(close).catch(error => {
+      const retry = !(error instanceof Refusal && error.status === 409);
+      setProblem({retry, text: retry
+        ? 'The host did not confirm creation. Retry to recover the same request.'
+        : 'The destination collection is unavailable or the request conflicts. Cancel and select the destination again.'});
+    }).finally(() => setSubmitting(false));
+  }
+  return form ? <form className="browser-filters" onSubmit={submit}>
+    <label>Note title <input name="title" autoFocus required maxLength={240} value={form.title} disabled={submitting || !!problem}
+      onChange={event => setForm({...form, title: event.target.value})}/></label>
+    {form.collectionName && <span>In {form.collectionName}</span>}
+    <button className="library-button" disabled={submitting || !form.title.trim() || problem?.retry === false}>
+      {submitting ? 'Creating…' : problem?.retry ? 'Retry creation' : 'Create note'}
+    </button>
+    <button className="library-button" type="button" onClick={close} disabled={submitting}>Cancel</button>
+    {problem && <p role="alert">{problem.text}</p>}
+  </form> : <button ref={trigger} className="library-button" onClick={() => {
+    setForm({id: crypto.randomUUID(), title: 'Untitled Note', collection, collectionName});
+  }}>New note</button>;
+}
 
 function BrowserImage({node}: NodeViewProps) {
   const id = String(node.attrs.resourceId ?? '');
@@ -268,6 +315,21 @@ export default function BrowserWorkspace() {
       throw error;
     }
   }
+  async function create(id: string, title: string, destination: string) {
+    const previous = current.current;
+    try {
+      const receipt = await request<{id: string}>(base + '/note-creates/' + id, {
+        method: 'PUT',
+        headers: {...headers, 'X-Vaultor-CSRF': access, 'Content-Type': 'application/json'},
+        body: JSON.stringify({title, collection: destination || null}),
+      });
+      if (!dirty.current && current.current === previous) open(receipt.id);
+      else invalidate(value => value + 1);
+    } catch (error) {
+      if (error instanceof Refusal && [401,403].includes(error.status)) showError(error);
+      throw error;
+    }
+  }
   return <main className="vaultor-browser">
     <BrowseHeading title={workspace?.name ?? 'Vaultor Next'} kicker="Shared workspace"
       actions={<div className="browser-actions">
@@ -286,6 +348,7 @@ export default function BrowserWorkspace() {
     {!workspace && <a href="/access">Request browser approval</a>}
     {workspace && <div className="browser-columns">
       <section className="browser-library" aria-label="Library">
+        <NewNote key={workspace.id} collection={collection} collectionName={collections.find(group => group.id === collection)?.name} create={create}/>
         <div className="browser-filters">
           <input type="search" aria-label="Search library" placeholder="Search library" value={query} maxLength={256}
             onChange={event => {setPage(0); setQuery(event.target.value);}} />

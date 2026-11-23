@@ -13,14 +13,14 @@ const raster=/\.(png|jpe?g|gif|webp)$/i;
 const textFile=/\.(txt|md|markdown|csv|tsv|json|xml|yaml|log|js|ts|rs|py|java)$/i;
 const video=/\.(mp4|webm)$/i;
 const audio=/\.(wav|mp3|ogg|opus|flac|m4a)$/i;
-export function FileView({id,workspace}:{id:string;workspace?:string}){return <FileContent key={id} id={id} workspace={workspace}/>;}
+export function FileView({id,workspace}:{id:string;workspace?:string}){return <FileContent key={JSON.stringify([workspace,id])} id={id} workspace={workspace}/>;}
 function FileContent({id,workspace}:{id:string;workspace?:string}){
   const [info,setInfo]=useState<{name:string;bytes:number}>(),[url,setUrl]=useState(''),[text,setText]=useState<string>(),[error,setError]=useState('');
   const [loading,setLoading]=useState(true);
   useEffect(()=>{
     const signal=new AbortController();
     let loaded:{release:()=>void}|undefined;
-    void media<{name:string;bytes:number}>({op:'info',id}).then(async metadata=>{
+    void media<{name:string;bytes:number}>({op:'info',id},workspace).then(async metadata=>{
       if(signal.signal.aborted)return;
       setInfo(metadata);
       if(raster.test(metadata.name)){

@@ -2,6 +2,7 @@
 //! managed resources only. Neither workspace paths nor desktop commands enter the router.
 mod access;
 mod browser;
+pub(crate) use browser::initialize as initialize_browser;
 mod companion;
 mod companion_exports;
 mod pairing;

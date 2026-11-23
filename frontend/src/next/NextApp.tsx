@@ -461,9 +461,12 @@ export default function NextApp() {
   const openReference:OpenReference=async(resource,locator)=>{
     await openNote(resource.id);
     if(!locator||resource.id.startsWith('linked:'))return;
-    const note=session.get(resource.id);
-    if(!note||String(note.revision)!==locator.revision||session.dirty(resource.id)){setNotice('The saved occurrence changed. Opened the source without selecting it.');return;}
     for(let attempt=0;attempt<8;attempt++){
+      const note=session.get(resource.id);
+      if(!note||String(note.revision)!==locator.revision||session.dirty(resource.id)){
+        setNotice('The saved occurrence changed. Opened the source without selecting it.');
+        return;
+      }
       const pane=[...document.querySelectorAll<HTMLElement>('[data-note-id]')].find(node=>node.dataset.noteId===resource.id);
       const editor=(pane?.querySelector('.tiptap') as (HTMLElement&{editor?:import('@tiptap/core').Editor})|null)?.editor;
       if(editor&&!editor.isDestroyed){
@@ -472,6 +475,7 @@ export default function NextApp() {
       }
       await new Promise(resolve=>setTimeout(resolve,30));
     }
+    setNotice('The saved occurrence could not be selected.');
   };
   const resourceMenu=useStableEvent((id:string,event:MouseEvent<HTMLElement>|KeyboardEvent<HTMLElement>,forced?:{ids:string[];file?:boolean;pinned?:boolean})=>{
     if(busy||queryBusy)return;

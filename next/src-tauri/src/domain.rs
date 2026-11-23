@@ -1,6 +1,6 @@
 //! Portable local domain. No Tauri types, HTTP, process launch or renderer-owned SQL.
 use fs2::FileExt;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, Transaction};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
@@ -134,6 +134,18 @@ pub(crate) fn title(value: &str) -> Result<&str, String> {
     }
     Ok(value)
 }
+pub(crate) fn insert_note(tx: &Transaction<'_>, name: &str, collection: Option<&str>) -> Result<String, String> {
+    let name = title(name)?;
+    let id = Uuid::new_v4().to_string();
+    tx.execute(
+        "INSERT INTO resources(id,title,content) VALUES(?1,?2,?3)",
+        params![id, name, r#"{"type":"doc","content":[{"type":"paragraph"}]}"#],
+    ).map_err(error)?;
+    if let Some(collection) = collection {
+        tx.execute("INSERT INTO memberships VALUES(?1,?2)", params![id, collection]).map_err(error)?;
+    }
+    Ok(id)
+}
 impl Workspace {
     pub fn is_path(&self, path: &Path) -> bool {
         path.canonicalize().is_ok_and(|p| p == self.root)
@@ -198,6 +210,8 @@ impl Workspace {
         crate::media::initialize(&db)?;
         crate::references::initialize(&db)?;
         crate::reviews::initialize(&db)?;
+        #[cfg(feature = "host")]
+        crate::host::initialize_browser(&db)?;
         Ok(Self {
             db,
             root,
@@ -235,11 +249,8 @@ impl Workspace {
             Request::BulkMembership { ids, add, remove } => self.bulk_membership(ids, add, remove),
             Request::Memberships { id } => self.memberships(id),
             Request::CreateNote { title: name, collection } => {
-                let name = title(&name)?;
-                let id = Uuid::new_v4().to_string();
                 let tx = self.db.transaction().map_err(error)?;
-                tx.execute("INSERT INTO resources(id,title,content) VALUES(?1,?2,?3)",params![id,name,r#"{"type":"doc","content":[{"type":"paragraph"}]}"#]).map_err(error)?;
-                if let Some(collection) = collection { tx.execute("INSERT INTO memberships VALUES(?1,?2)",params![id,collection]).map_err(error)?; }
+                let id = insert_note(&tx, &name, collection.as_deref())?;
                 tx.commit().map_err(error)?;
                 self.execute(Request::Read { id })
             },

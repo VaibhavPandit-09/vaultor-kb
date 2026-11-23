@@ -68,6 +68,23 @@ async fn browser_session_checks_origin_csrf_scope_revision_and_logout() {
     let session:Value = serde_json::from_str(&session.2).unwrap();
     let csrf = session["csrf"].as_str().unwrap();
     let signed = format!("{scope}{origin}X-Vaultor-CSRF: {csrf}\r\n");
+    let collection = worker.call(Request::CreateCollection { name: "Browser collection".into(), parent_id: None }).await.unwrap();
+    let create = format!("{browser}/note-creates/{}", Uuid::new_v4());
+    let input = json!({"title":"New browser note","collection":collection["id"]}).to_string();
+    assert_eq!(request(&client,address,"PUT",&create,&format!("{scope}{origin}"),&input).await.0,403);
+    let missing = json!({"title":"New browser note","collection":Uuid::new_v4()}).to_string();
+    assert_eq!(request(&client,address,"PUT",&create,&signed,&missing).await.0,409);
+    let (initial, retry) = tokio::join!(
+        request(&client,address,"PUT",&create,&signed,&input),
+        request(&client,address,"PUT",&create,&signed,&input),
+    );
+    assert_eq!(initial.0,200);
+    assert_eq!((retry.0,&retry.2),(200,&initial.2));
+    let receipt: Value = serde_json::from_str(&initial.2).unwrap();
+    let created = worker.call(Request::Read { id: receipt["id"].as_str().unwrap().into() }).await.unwrap();
+    assert_eq!(created["title"], "New browser note");
+    assert_eq!(created["collections"], json!([collection["id"]]));
+    assert_eq!(request(&client,address,"PUT",&create,&signed,&input.replace("New browser note","Different note")).await.0,409);
     assert_eq!(request(&client,address,"PUT",&edit,&signed,&body).await.0,200);
     assert_eq!(request(&client,address,"PUT",&edit,&signed,&body).await.0,409);
     worker.call(Request::Draft { id:id.into(), base_revision:2, token:Uuid::new_v4().to_string(), sequence:1,
@@ -75,6 +92,7 @@ async fn browser_session_checks_origin_csrf_scope_revision_and_logout() {
     assert_eq!(request(&client,address,"PUT",&edit,&signed,&body.replace("\"revision\":1","\"revision\":2")).await.0,409);
     assert!(!request(&client,address,"GET",&note,&credentials,"").await.2.contains("Protected desktop draft"));
     host.owner_command(&format!("withdraw {device}")).unwrap();
+    assert_eq!(request(&client,address,"PUT",&create,&signed,&input).await.0,403);
     assert_eq!(request(&client,address,"GET",&note,&credentials,"").await.0,403);
     assert_eq!(request(&client,address,"POST","/api/access/logout",&signed,"{}").await.0,204);
     assert_eq!(request(&client,address,"GET","/api/access/session",&credentials,"").await.0,401);

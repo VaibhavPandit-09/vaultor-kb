@@ -742,6 +742,14 @@ pub fn save_csv_copy(destination: &Path, text: &str) -> Result<(), String> {
     drop(file);
     publish_file(&staged.0, destination)
 }
+fn canonical_archive_id(id: &str) -> Result<(), String> {
+    if Uuid::parse_str(id).is_ok_and(|uuid| uuid.hyphenated().to_string() == id) {
+        Ok(())
+    } else {
+        Err("Archive requires canonical UUID identities".into())
+    }
+}
+
 pub(crate) fn original_path(root: &Path, id: &str) -> Result<PathBuf, String> {
     Uuid::parse_str(id).map_err(error)?;
     let folder = root.join("managed");
@@ -1343,7 +1351,7 @@ fn validate(m: &Manifest) -> Result<(), String> {
     portable::validate_descriptors(&m.linked)?;
     let mut ids = HashSet::new();
     for r in &m.resources {
-        Uuid::parse_str(&r.id).map_err(error)?;
+        canonical_archive_id(&r.id)?;
         crate::domain::title(&r.title)?;
         crate::editing::document(&r.content)?;
         if r.revision < 1 || !ids.insert(r.id.clone()) {
@@ -1353,7 +1361,7 @@ fn validate(m: &Manifest) -> Result<(), String> {
     let mut collections = HashMap::new();
     let mut names = HashSet::new();
     for c in &m.collections {
-        Uuid::parse_str(&c.id).map_err(error)?;
+        canonical_archive_id(&c.id)?;
         crate::domain::title(&c.name)?;
         if collections.insert(c.id.clone(), c).is_some()
             || !names.insert((c.parent.clone(), c.name.trim().to_lowercase()))
@@ -1562,8 +1570,14 @@ fn restore(
     if integrity != "ok" {
         return Err("Restored database verification failed".into());
     }
-    w.db.execute_batch("PRAGMA wal_checkpoint(TRUNCATE)")
-        .map_err(error)?;
+    let (busy, log_frames, checkpointed): (i64, i64, i64) = w.db.query_row(
+        "PRAGMA wal_checkpoint(TRUNCATE)",
+        [],
+        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+    ).map_err(error)?;
+    if busy != 0 || log_frames != checkpointed {
+        return Err("Restored database could not be checkpointed".into());
+    }
     drop(w);
     ctx.check()?;
     ctx.progress(
@@ -2286,7 +2300,7 @@ mod tests {
             organization: Default::default(),
             reviews: vec![],
         };
-        let id = Uuid::new_v4().to_string();
+        let id = "abcbb432-80e4-43c1-ab75-42902a8bd4b3".to_string();
         m.resources.push(Resource {
             id: id.clone(),
             title: "Unsafe".into(),
@@ -2302,6 +2316,13 @@ mod tests {
             kind: "file".into(),
             provenance: "test".into(),
         });
+        assert!(validate(&m).is_err());
+        m.originals[0].name = "managed.txt".into();
+        assert!(validate(&m).is_ok());
+        let mut alias = m.resources[0].clone();
+        alias.id = alias.id.to_ascii_uppercase();
+        // Even distinct SQLite keys must not alias the same managed path on Windows.
+        m.resources.push(alias);
         assert!(validate(&m).is_err());
         let forged = h.temp.path().join("unsafe.vaultor");
         let raw = serde_json::to_vec(&m).unwrap();

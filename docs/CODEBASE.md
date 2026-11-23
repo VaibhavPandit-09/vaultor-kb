@@ -12,6 +12,8 @@ Windows desktop generates a stable CA on first enable and uses user-scoped DPAPI
 
 **Next M24-D networking:** Windows optionally advertises its selected private listener over DNS-SD. Recovery is scoped to the selected interface and subnet and keeps the same DPAPI-protected CA. Android scans the local pairing QR and uses an unauthenticated TLS identity probe before updating pinned routes. The browser-only HTTPS adapter uses SameSite cookies, origin and CSRF checks, and revision-bound saved-note writes that preserve local draft ownership. Connected transfers use the Rust managed-original journal and Activity exporters. [Next host guide](development/NEXT-HOST.md) owns the security, transfer and deployment contracts.
 
+**Next M26-A functional checkpoint:** The browser Library creates managed notes through the existing Rust ownership worker. Creation and optional membership commit with a workspace-generation and browser-device-bound retry receipt. Native archive verification requires canonical UUIDs, and staged restore requires a completed WAL checkpoint before publication. The desktop PDF viewer accepts passwords within the current preview, and exact managed-occurrence selection rechecks the revision and dirty state through editor mounting. See the [M26-A record](plans/VAULTOR-NEXT.md#m26-a-closure-record) for qualification and open scope.
+
 ## Product and architecture
 
 **Next M25 managed autosave:** The desktop persists the validated Tiptap document to its usual recovery journal, then sends the resource ID, expected revision, token and protected sequence over Tauri IPC. The SQLite owner validates that exact draft and publishes its stored document, updates the search and relationship projections, and removes the draft in the same transaction. A conflict or failed cleanup rolls back publication and retains the draft. Direct saved-note writes, including the browser adapter, retain their document-bearing request. Linked Markdown retains its own source publication path.
@@ -516,6 +518,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-23 — Next M26-A functional checkpoint
+
+Added scoped browser note creation with a private transactional receipt, PDF preview password handling, stale managed occurrence refusal and stricter archive publication checks. The Rust owner, protected draft commit and portable format are unchanged. Updated the Next Help and catalogue. Validation and remaining native and compatibility gaps are tracked in the [M26-A closure record](plans/VAULTOR-NEXT.md#m26-a-closure-record).
 
 ### 2026-11-21 — Next M24-D network integration
 

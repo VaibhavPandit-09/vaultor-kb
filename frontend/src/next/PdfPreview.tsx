@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {AnnotationMode,getDocument,GlobalWorkerOptions,TextLayer,type PDFDocumentProxy,type PDFPageProxy,type RenderTask} from 'pdfjs-dist';
+import {AnnotationMode,getDocument,GlobalWorkerOptions,PasswordResponses,TextLayer,type PDFDocumentProxy,type PDFPageProxy,type RenderTask} from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import {original} from './media';
 
@@ -9,6 +9,7 @@ type Scale='width'|'page'|number;
 export default function PdfPreview({id,workspace}:{id:string;workspace?:string}){
   const [pdf,setPdf]=useState<PDFDocumentProxy>(),[page,setPage]=useState(1),[scale,setScale]=useState<Scale>('width');
   const [status,setStatus]=useState('Loading PDF…'),[documentError,setDocumentError]=useState('');
+  const [passwordRequest,setPasswordRequest]=useState<{submit:(password:string)=>void;incorrect:boolean}>();
   const [size,setSize]=useState({width:480,height:460});
   const viewport=useRef<HTMLDivElement>(null),stage=useRef<HTMLDivElement>(null);
   useEffect(()=>{
@@ -20,10 +21,13 @@ export default function PdfPreview({id,workspace}:{id:string;workspace?:string})
         data:new Uint8Array(buffer),enableXfa:false,useWasm:false,useWorkerFetch:false,
         disableFontFace:true,maxImageSize:32_000_000,canvasMaxAreaInBytes:32*1024*1024,stopAtErrors:true,
       });
+      task.onPassword=(submit:(password:string)=>void,reason:number)=>{
+        if(live)setPasswordRequest({submit,incorrect:reason===PasswordResponses.INCORRECT_PASSWORD});
+      };
       const document=await task.promise;
-      if(live)setPdf(document);
+      if(live){setPasswordRequest(undefined);setPdf(document);}
     }).catch(error=>{
-      if(live)setDocumentError(error?.name==='PasswordException'?'This PDF requires a password. Open it in your external PDF application.':String(error));
+      if(live){setPasswordRequest(undefined);setDocumentError(error?.name==='PasswordException'?'Unable to unlock this PDF.':String(error));}
     });
     return()=>{live=false;void task?.destroy().catch(()=>{});};
   },[id,workspace]);
@@ -92,7 +96,20 @@ export default function PdfPreview({id,workspace}:{id:string;workspace?:string})
       <button aria-label="Zoom out" onClick={()=>adjust(-.25)}>−</button>
       <button aria-label="Zoom in" onClick={()=>adjust(.25)}>+</button>
     </div>
-    {(status||documentError)&&<p role={documentError?'alert':'status'}>{documentError||status}</p>}
+    {passwordRequest&&<form className="image-preview-tools" onSubmit={event=>{
+      event.preventDefault();
+      const input=event.currentTarget.elements.namedItem('password');
+      if(!(input instanceof HTMLInputElement)||!input.value)return;
+      const password=input.value;
+      input.value='';
+      setPasswordRequest(undefined);
+      passwordRequest.submit(password);
+    }}>
+      <label>PDF password <input name="password" type="password" autoComplete="off" required autoFocus/></label>
+      <button type="submit">Unlock PDF</button>
+      {passwordRequest.incorrect&&<span role="alert">Incorrect PDF password.</span>}
+    </form>}
+    {!passwordRequest&&(status||documentError)&&<p role={documentError?'alert':'status'}>{documentError||status}</p>}
     <div className="next-pdf-viewport" ref={viewport} tabIndex={0} aria-label="Rendered PDF page">
       <div className="next-pdf-page" ref={stage}/>
     </div>

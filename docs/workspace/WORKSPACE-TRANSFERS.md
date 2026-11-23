@@ -52,6 +52,10 @@ Review/provenance/partial extensions are explicitly versioned as described above
 
 ## Verification boundary
 
+In Vaultor Next, native `.vaultor` archives support restore as new and merge. Noncanonical resource and collection UUIDs are refused during verification so differently spelled IDs cannot alias Windows managed filenames. A staged restore requires an integrity check and a completed WAL checkpoint before directory publication. In-place replacement stays unavailable. The active workspace lock lives inside the directory, startup can initialize an empty directory, and host grants are generation-bound. Replacing that directory requires a durable recovery decision before initialization and qualification under Windows lock failure and process termination. See the [Next tracker](../plans/VAULTOR-NEXT.md#m26-a--functional-parity-implementation-order).
+
+Original ZIPs are a separate format. The original checks inventory entries individually before import. Next's ZIP dependency indexes entries by name, so its ordinary archive view cannot establish uniqueness for hostile duplicates. Legacy intake requires an independent duplicate-preserving inventory check, a loss-aware DTO mapping and original-writer fixtures before enabling either restore or merge.
+
 Focused tests cover private previews, UUID/name/hash retries, original bytes/IDs, cancel/reservation cleanup, resumed READY publication, renamed completed receipts, owner multipart and paired denial, checkpoint/generation, stale source generation, cached offline upload retry and protected source switching. Disposable native/browser UI and two independent loopback-owned host copy tests exercise real services/streams. Versioned release notes own exact final package checks. These are not proof of Mac/Wi-Fi/Samsung hardware; no phone or personal workspace is accessed.
 
 ## Nested organization — 0.18
