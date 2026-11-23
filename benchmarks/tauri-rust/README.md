@@ -479,6 +479,10 @@ For M26-A3, add `--check-organization --m26a3` to the browser note creation comm
 
 Use `--m26-deep` with the Windows `--m23-native --m23-probe` recipe for the combined deep linked, managed, Review and protected destination draft archive scenario. The case checks exact source bytes, relative encoded links, repeated backlinks, atomic mismatch refusal, identity mapping and Merge replay.
 
+Use `--m13 --m26-ui --inspect` for the matched Library and Settings layout and the WebView2 accessibility and forced-colors probes. Use `--m25 --inspect --m19-preview --m19-probe --m26b-pdf-index` with the disposable password-protected fixture to record managed, linked and protected preview opening and closure, role and process-tree memory, handles and settled CPU. The unrestricted `--m25` workload can use an ephemeral debugging port on each process start.
+
+Run the original backend `NoteRendererTests` before using `--m26-export-fidelity`. It generates the baseline PDF, Word, original image and structured 75-row follow-up fixture in `backend/target/note-export-review`. The corresponding Windows run exports the same saved content and checks refused publication over an existing valid PDF.
+
 Use `--m26a4` with the browser flags for nested collection and tag management through Chromium. Its optional `--android-zip` probe accepts an explicitly disposable emulator serial in `VAULTOR_BENCH_ANDROID_SERIAL`, the ADB path in `VAULTOR_BENCH_ADB`, and the exact signed test candidate and instrumentation paths in `VAULTOR_BENCH_ANDROID_APK` and `VAULTOR_BENCH_ANDROID_TEST_APK`. It uses ADB reverse to the disposable Rust Docker TLS listener and records results in `raw/m26a4-docker.json`.
 
 ```powershell

@@ -531,6 +531,8 @@ The saved-note PDF exporter uses the Rust Typst engine over quoted document cont
 
 The Word package now includes the saved title, an OOXML heading style part, inline highlights and sized, bordered table columns. It uses the same saved relationship snapshot as PDF for unavailable resource labels. Connected exports exclude owner-local linked availability from that snapshot. The [note export contract](workspace/NOTE-EXPORTS.md#format-fidelity) records the format behavior.
 
+The final qualification adds the NTFS access-denied cleanup test and matched multipage renderer fixture. The two renderer tests, 76-library/one-worker Rust regression, focused connected-reference and access-denied tests, 113 Next frontend tests, 17 Help checks, final Windows archive, linked-source and host probes, and Docker/Chromium regression passed. This evidence update adds no further runtime architecture. The [M26-B record](plans/VAULTOR-NEXT-M26-B.md) keeps performance variability, physical acceptance and outstanding workflow results explicit.
+
 ### 2026-11-23 — Next M26-B PDF search, preview and recovery
 
 Added bounded managed/linked PDF extraction and FTS5 publication, read-only linked PDF preview, and Find within PDF previews. The original parser-process and encrypted-file boundaries carry over. Browser organization now signals scoped desktop refresh after committed changes without publishing drafts. Ordinary open refuses internal restore staging directories. The Android offline-export assertion now follows the current control label and still checks the native request. [M26-B qualification](plans/VAULTOR-NEXT-M26-B.md) records validation and unclosed gates.

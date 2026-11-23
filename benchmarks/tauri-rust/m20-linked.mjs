@@ -103,17 +103,26 @@ export async function qualifyLinked({evaluate, cdp, wait, report, folder, record
   await assert.rejects(linked({op:'asset',id:assetDoc.id.slice(7),href:'../dot.png'}));
   report.checks.push('Native directory paging, source/collection/tag search, multiple reference occurrences, encoded relative navigation, exact raster bytes and root-escape refusal.');
 
-  await cdp('Page.reload');
-  await wait('document.querySelector("[data-ready=true][data-session-ready=true]")','reloaded fixture');
-  await evaluate("window.benchRequest=request=>window.__TAURI_INTERNALS__.invoke('workspace',{request})");
-  await label('Linked sources');
+  await wait(`(()=>{if(document.querySelector('[data-browser=sources]'))return true;
+    [...document.querySelectorAll('.sidebar-primary button')].find(button=>button.textContent.trim()==='Linked sources'&&!button.disabled)?.click();
+    return false;})()`,'Linked sources browser ready');
   await time('browse-ui','renderer_ready_ms',async()=>{
     await click('[data-browser=sources] [data-linked-source="'+source+'"]');
     await wait('document.querySelector('+JSON.stringify('[data-browser=sources] [data-linked-path="Large.md"]')+')','source rows');
   },'Source root expansion to visible file rows, includes polling.');
+  if(process.argv.includes('--m26-linked-diagnose')){
+    const document=await linked({op:'open',source,path:'Large.md'});
+    report.linkedOpenAdmission={id:document.id,editable:document.editable,mode:document.mode,reason:document.reason,nodes:document.content?.content?.length};
+    await click('[data-browser=sources] [data-linked-path="Large.md"]');
+    await pause(1000);
+    report.linkedOpenSurface=await evaluate('({editors:document.querySelectorAll(".tiptap").length,readers:document.querySelectorAll("[aria-label=\\"Read-only Markdown preview\\"]").length,alerts:[...document.querySelectorAll("[role=alert]")].map(el=>el.textContent)})');
+    assert(await evaluate('document.querySelector(".next-linked-pane .tiptap")?.isContentEditable'),'Large linked Markdown is editable from a fresh source browser');
+    report.checks.push('Large linked Markdown opens before the native source drag gesture');
+    return;
+  }
   // Use the native WebView2 pointer path over an indexed source title.
   await org({op:'pin',ids:[id],value:false});
-  const center=selector=>evaluate('(()=>{const node=document.querySelector('+JSON.stringify(selector)+');const r=node.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};})()');
+  const center=selector=>evaluate('(()=>{const node=document.querySelector('+JSON.stringify(selector)+');node.scrollIntoView({block:"nearest",inline:"nearest"});const r=node.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};})()');
   await pause(350);
   const origin=await center('[data-browser=sources] [data-linked-path="Entry.md"]');
   const pin=await center('.sidebar-primary [data-pin-drop]');
@@ -141,9 +150,11 @@ export async function qualifyLinked({evaluate, cdp, wait, report, folder, record
     return;
   }
   if(!dragApplied)await org({op:'pin',ids:[id],value:true});
+  await wait('document.querySelector(".next-sidebar-create")?.disabled===false','drag and organization operation settled');
   const editor='.next-linked-pane .tiptap';
   await time('open-large','renderer_ready_ms',async()=>{
     const point=await center('[data-browser=sources] [data-linked-path="Large.md"]');
+    await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',...point});
     await cdp('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',buttons:1,clickCount:1,...point});
     await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',buttons:0,clickCount:1,...point});
     await wait('document.querySelector('+JSON.stringify(editor)+')?.contentEditable==="true"','large editable Markdown');
@@ -197,7 +208,18 @@ export async function qualifyLinked({evaluate, cdp, wait, report, folder, record
   assert.equal((await search('vermilion',collection,tag)).items[0].id,id);
   assert((await org({op:'pins',kind:'all',query:'Moved',offset:0,limit:100})).items.some(row=>row.id===id));
   const unavailable=sourcePath+'-moved';
-  await rename(sourcePath,unavailable);
+  try{await rename(sourcePath,unavailable);}
+  catch(error){
+    if(error.code!=='EBUSY')throw error;
+    await restart(async()=>{
+      for(let attempt=1;attempt<=10;attempt++){
+        try{await rename(sourcePath,unavailable);return;}
+        catch(error){if(error.code!=='EBUSY'||attempt===10)throw error;}
+        await pause(200);
+      }
+    });
+    report.limitations.push('NTFS refused a live root move while a source handle was active. The fixture moved the root with Vaultor closed, then tested reauthorization.');
+  }
   assert.equal((await linked({op:'sources'})).find(row=>row.id===source).available,false);
   await assert.rejects(linked({op:'openId',id:docId}));
   const authorized=await linked({op:'register',path:unavailable});

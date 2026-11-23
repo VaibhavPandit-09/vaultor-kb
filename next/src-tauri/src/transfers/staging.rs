@@ -258,4 +258,37 @@ mod tests {
         assert!(recover(&journal).is_empty());
         assert_eq!(fs::read_dir(root.path()).unwrap().count(), 1);
     }
+
+    #[cfg(windows)]
+    #[test]
+    fn access_denied_stage_remains_recoverable_until_permissions_are_restored() {
+        let root = tempfile::tempdir().unwrap();
+        let journal = root.path().join("journal");
+        let stage = Stage::create(root.path(), &journal, &Uuid::new_v4().to_string()).unwrap();
+        let original = stage.path.clone();
+        let quarantine = stage_path(&stage.receipt.parent, stage.receipt.cleanup);
+        let file = original.join("disposable.bin");
+        fs::write(&file, b"staged data").unwrap();
+        let acl = |path: &Path, args: [&str; 2]| {
+            std::process::Command::new("icacls.exe").arg(path).args(args).output().unwrap().status.success()
+        };
+        let file_denied = acl(&file, ["/deny", "*S-1-1-0:(DE)"]);
+        let folder_denied = acl(&original, ["/deny", "*S-1-1-0:(DC)"]);
+        drop(stage);
+        let issues = recover(&journal);
+        let retained = if original.exists() { original } else { quarantine };
+        let retained_file = retained.join("disposable.bin");
+        let permissions_restored = if retained_file.exists() {
+            let file_restored = acl(&retained_file, ["/remove:d", "*S-1-1-0"]);
+            let directory_restored = acl(&retained, ["/remove:d", "*S-1-1-0"]);
+            file_restored && directory_restored
+        } else { false };
+        assert!(file_denied && folder_denied && permissions_restored);
+        assert_eq!(issues.len(), 1);
+        assert!(issues[0].1.contains("os error 5"), "{:?}", issues);
+        assert_eq!(fs::read(retained_file).unwrap(), b"staged data");
+        assert!(recover(&journal).is_empty());
+        assert!(recover(&journal).is_empty());
+        assert!(!retained.exists());
+    }
 }

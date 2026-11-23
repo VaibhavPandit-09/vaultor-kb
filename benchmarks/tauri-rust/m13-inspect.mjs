@@ -7,6 +7,11 @@ export async function inspectM13({evaluate,cdp,wait,report,folder,output,referen
  const shot=async name=>{await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x:600,y:4});await pause(450);const r=await cdp('Page.captureScreenshot');await writeFile(join(output,`m13-${reference?'original':'next'}-${name}.png`),Buffer.from(r.data,'base64'));};
  const click=selector=>evaluate(`document.querySelector(${JSON.stringify(selector)}).click();true`);
  const key=async(key,modifiers=0)=>{await cdp('Input.dispatchKeyEvent',{type:'keyDown',key,modifiers,windowsVirtualKeyCode:key==='Escape'?27:undefined});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key});};
+ const inspectAccessibility=!reference&&process.argv.includes('--m26-ui');
+ const accessible=async(role,name)=>{
+  const {nodes}=await cdp('Accessibility.getFullAXTree');
+  return nodes.some(node=>!node.ignored&&node.role?.value===role&&node.name?.value===name);
+ };
  const doc={type:'doc',content:[{type:'heading',attrs:{level:1},content:[{type:'text',text:'Workspace reference'}]},{type:'paragraph',content:[{type:'text',text:'Writing, reading and organizing local knowledge. '.repeat(20)}]}]};
  if(reference){
   await evaluate(`(async()=>{const c=await benchRequest('/collections/creations/'+crypto.randomUUID(),'PUT',{name:'Benchmark',resourceIds:[]});for(let i=0;i<100;i++)await benchRequest('/resources','POST',{title:'Bench note '+String(i).padStart(3,'0'),collectionId:c.id,content:${JSON.stringify(doc)}});return true})()`);
@@ -16,6 +21,16 @@ export async function inspectM13({evaluate,cdp,wait,report,folder,output,referen
  await cdp('Page.reload');
  await wait(reference?"document.querySelector('.library-view')&&document.body.innerText.includes('Bench note 099')":"document.querySelector('[data-session-ready=true] [data-row-open]')",'fixture UI');
  const library=reference?'.library-view[aria-label="Library"]':'.next-library';
+ if(inspectAccessibility){
+  assert(await accessible('button','Bench note 099'));
+  await cdp('Emulation.setEmulatedMedia',{features:[{name:'forced-colors',value:'active'},{name:'prefers-reduced-motion',value:'reduce'}]});
+  assert(await evaluate("matchMedia('(forced-colors: active)').matches && matchMedia('(prefers-reduced-motion: reduce)').matches"));
+  await evaluate("document.querySelector('[data-row-open]').focus()");
+  await shot('library-forced-colors');
+  assert(await evaluate("document.activeElement.matches('[data-row-open]')"));
+  await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'light'}]});
+  report.checks.push('Named Library resource button in the AX tree. A focused resource remains available in WebView2 forced-colors and reduced-motion emulation.');
+ }
  await shot('library-expanded');
  await evaluate(`document.activeElement?.blur();document.querySelector('${library}').scrollTop=550;true`);await pause(600);await shot('library-compact');
  report.libraryGeometry=await evaluate(`(()=>{const v=document.querySelector('${library}'),h=v.querySelector('.library-orientation'),r=h.getBoundingClientRect();return {width:innerWidth,height:innerHeight,sidebar:document.querySelector('.sidebar-surface').getBoundingClientRect().width,headers:v.querySelectorAll('.library-orientation').length,compact:h.dataset.compact,overflow:v.scrollWidth>v.clientWidth,header:{x:r.x,y:r.y,width:r.width,height:r.height}}})()`);
@@ -29,10 +44,10 @@ export async function inspectM13({evaluate,cdp,wait,report,folder,output,referen
  if(!reference){
   // Native DOM identity and shared document checks, independent of screenshot judgement.
   await evaluate("window.m13Editor=document.querySelector('.tiptap');document.querySelector('.tiptap').focus();true");await cdp('Input.insertText',{text:'M13 retained editor. '});
-  await wait("[...document.querySelectorAll('[role=status]')].some(e=>e.textContent==='saved')",'autosave');
+  await wait("document.querySelector('[data-save-status=saved]')",'autosave');
   await click('[aria-label="Split active note"]');await wait("document.querySelectorAll('.tiptap').length===2",'two panes');await shot('two-panes');
   await evaluate("document.querySelectorAll('.tiptap')[1].focus();true");await cdp('Input.insertText',{text:'M13 shared panes. '});await wait("[...document.querySelectorAll('.tiptap')].every(e=>e.textContent.includes('M13 shared panes.'))",'shared text');
-  await evaluate("window.m13Editors=[...document.querySelectorAll('.tiptap')];window.m13History=document.querySelector('[aria-label=Back]').disabled;[...document.querySelectorAll('.next-sidebar-bottom button')].find(b=>b.textContent==='Settings').focus();true");
+  await evaluate("window.m13Editors=[...document.querySelectorAll('.tiptap')];[...document.querySelectorAll('.next-sidebar-bottom button')].find(b=>b.textContent==='Settings').focus();true");
   await key(',',2);
  }else{
   // Readiness and invocation are one retryable operation after React/theme commits.
@@ -40,6 +55,11 @@ export async function inspectM13({evaluate,cdp,wait,report,folder,output,referen
  }
  await wait("document.querySelector('.settings-window')",'floating Settings');
  await evaluate("[...document.querySelectorAll('.settings-rail button')].find(b=>b.textContent==='Appearance').click();true");await shot('settings-light');
+ if(inspectAccessibility){
+  assert(await accessible('slider','Opacity'));
+  assert(await accessible('radiogroup','Theme'));
+  report.checks.push('WebView2 Settings Appearance exposes an Opacity slider and Theme radio group.');
+ }
  if(!reference)assert(await evaluate("m13Editors.every((e,i)=>document.querySelectorAll('.tiptap')[i]===e)"),'Settings must not remount editors');
  const range=reference?'Opacity':'Opacity';
  await evaluate(`(()=>{const e=document.querySelector('input[type=range][aria-label="${range}"]');e.focus();return true})()`);await key('Home');await key('ArrowRight');await pause(250);
@@ -52,7 +72,7 @@ export async function inspectM13({evaluate,cdp,wait,report,folder,output,referen
  await key('Escape');await wait("!document.querySelector('.settings-window')",'Settings Escape');
  if(!reference){assert(await evaluate("m13Editors.every((e,i)=>document.querySelectorAll('.tiptap')[i]===e)"));report.focusAfterSettings=await evaluate("document.activeElement.textContent");assert.equal(report.focusAfterSettings,'Settings');
   await key(',',2);await wait("document.querySelector('.settings-window')",'Settings reopen');await evaluate("[...document.querySelectorAll('.settings-rail button')].find(b=>b.textContent==='Appearance').click();true");assert.equal(await evaluate("document.querySelector('[aria-label=Opacity]').value"),'65');await key('Escape');
-  await click('[aria-label="Close note"]');await wait("document.querySelectorAll('.tiptap').length===1",'pane close');
+  await click('[aria-label="Close pane"]');await wait("document.querySelectorAll('.tiptap').length===1",'pane close');
   await click('[aria-label="Return to Library"]');await wait("document.querySelector('.next-library-region:not([hidden])')",'Library return');
   await wait("document.querySelector('.next-companion [role=tabpanel]:not([hidden]) .sidebar-shortcut')",'original recent shortcut row');
   await click('[data-row-open][aria-label="Bench note 099"]');await wait("document.querySelector('.tiptap')?.editor?.isEditable",'shortcut fixture note');await click('[aria-label="Return to Library"]');await wait("document.querySelector('.next-library-region:not([hidden]) [aria-label=\"Pin Bench note 099\"]')",'pin fixture row');await click('[aria-label="Pin Bench note 099"]');await wait("document.querySelectorAll('.next-companion [role=tabpanel]:not([hidden]) .sidebar-shortcut').length>=2",'pinned and recent shortcuts');await click('.next-companion [role=tabpanel]:not([hidden]) .sidebar-shortcut [aria-label="Actions for Bench note 099"]');await wait("document.querySelector('[role=menu]')?.textContent.includes('Unpin resource')",'original shortcut menu');await shot('quick-access-menu');await evaluate("[...document.querySelectorAll('[role=menu] button')].find(b=>b.textContent==='Unpin resource').click();true");await wait("document.querySelectorAll('.next-companion [role=tabpanel]:not([hidden]) .sidebar-shortcut').length===1",'shortcut unpin refresh');report.checks.push('Original SidebarShortcut rows render in Next without old API providers;Quick Access pin menu uses Rust unpin and refreshes Library state');

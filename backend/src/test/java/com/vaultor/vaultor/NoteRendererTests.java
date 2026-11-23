@@ -2,6 +2,8 @@ package com.vaultor.vaultor;
 
 import com.vaultor.vaultor.service.*;
 import tools.jackson.databind.*;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.pdfbox.Loader;
@@ -49,6 +51,26 @@ class NoteRendererTests {
         try(var doc=new XWPFDocument(Files.newInputStream(root.resolve("review.docx")))) { assertEquals(1,doc.getTables().size());assertEquals(1,doc.getAllPictures().size());assertTrue(doc.getTables().getFirst().getRow(0).isRepeatHeader());assertEquals(2,doc.getTables().getFirst().getRow(0).getCell(0).getCTTc().getTcPr().getGridSpan().getVal().intValue()); }
         try(var pdf=Loader.loadPDF(root.resolve("review.pdf").toFile())) {var text=new PDFTextStripper().getText(pdf);assertTrue(text.contains("Allocation"));assertTrue(text.contains("Café"));var render=new PDFRenderer(pdf);for(int i=0;i<pdf.getNumberOfPages();i++)ImageIO.write(render.renderImageWithDPI(i,110),"png",root.resolve("pdf-page-"+(i+1)+".png").toFile());}
         assertTrue(Files.readString(root.resolve("warnings.json")).contains("missing"));
+
+        JsonNode multipage = content.deepCopy();
+        ArrayNode rows = (ArrayNode) multipage.path("content").get(5).path("content");
+        for (int index = 0; index < 75; index++) {
+            JsonNode row = rows.get(1).deepCopy();
+            ObjectNode firstCell = (ObjectNode) row.path("content").get(0);
+            firstCell.remove("attrs");
+            ((ObjectNode) firstCell.path("content").get(0).path("content").get(0))
+                .put("text", String.format(Locale.ROOT, "Extended row %02d", index));
+            rows.add(row);
+        }
+        var extended = new TransferService.ResourceData("note", "note", "Multipage export review", multipage,
+            null, null, null, null, null, List.of(), null);
+        Files.writeString(root.resolve("multipage.json"), multipage.toString());
+        Path multipagePdf = root.resolve("multipage.pdf");
+        renderer.write(new TransferService.Workspace(List.of(extended, asset), List.of(), null), binaries, multipagePdf, "pdf");
+        try (var pdf = Loader.loadPDF(multipagePdf.toFile())) {
+            assertTrue(pdf.getNumberOfPages() >= 2);
+            assertTrue(new PDFTextStripper().getText(pdf).contains("Extended row 74"));
+        }
     }
 
     @Test void graphDocumentsHaveWorkingDestinationsAndReadableStandaloneLinks() throws Exception {

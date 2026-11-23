@@ -175,6 +175,27 @@ try{
   assert.equal(exported.status,200);
   assert.equal(check(exported.body),receipt.sha256);
   samples.push({metric:'docker_companion_note_export_download',value:performance.now()-began,unit:'ms',notes:'Linux/amd64 Docker loopback Markdown export through verified download with 125 ms polling cadence. Node client only.'});
+  if(process.argv.includes('--m26-closure-final')){
+    const path=projected+'/companions/exports/'+randomUUID();
+    const query='?generation='+scope;
+    const start=performance.now();
+    const accepted=await json('PUT',path,headers,{...exportIntent,format:'pdf'});
+    assert.equal(accepted.status,200,JSON.stringify(accepted.body));
+    let ready;
+    for(let attempt=0;attempt<50;attempt++){
+      const result=await json('GET',path+query,headers);
+      assert.equal(result.status,200);
+      assert.notEqual(result.body.operation.status,'FAILED',JSON.stringify(result.body));
+      if(result.body.operation.status==='SUCCEEDED'){ready=result.body;break;}
+      await delay(125);
+    }
+    assert(ready);
+    const document=await json('GET',path+'/download'+query,headers,undefined,true);
+    assert.equal(document.status,200);
+    assert.equal(document.body.subarray(0,5).toString(),'%PDF-');
+    assert.equal(check(document.body),ready.sha256);
+    samples.push({metric:'docker_companion_pdf_export_download',value:performance.now()-start,unit:'ms',notes:'Selected saved-note PDF render and verified download, including 125 ms polling cadence.'});
+  }
   if (process.argv.includes('--m26a3')) {
     const reviewId=randomUUID(), comment='Disposable captured Review evidence';
     const review=await json('PUT',projected+'/reviews/'+reviewId+'/'+id,headers,
@@ -287,7 +308,10 @@ try{
   assert.equal((await json('GET',projected+'/capabilities',headers)).status,401);
   docker('stop','-t','5',token);
   assert.equal(docker('inspect','--format','{{.State.ExitCode}}',token),'0');
-  const output=process.argv.includes('--m26b')?'m26b-docker.json':
+  const output=process.argv.includes('--m26-qualified')?'m26b-qualified-docker.json':
+    process.argv.includes('--m26-closure-final')?'m26b-closure-final-docker.json':
+    process.argv.includes('--m26-closure')?'m26b-closure-docker.json':
+    process.argv.includes('--m26b')?'m26b-docker.json':
     process.argv.includes('--m26a4')?'m26a4-docker.json':
     process.argv.includes('--m26a3')?'m26a3-docker.json':
     process.argv.includes('--m26a2')?'m26a2-docker.json':

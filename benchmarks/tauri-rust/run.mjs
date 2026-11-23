@@ -273,7 +273,7 @@ try {
       }
     }
     else if(m23){
-      await (await import('./m23-native.mjs')).qualifyM23({evaluate,wait,record,report,folder,fixture:m23Fixture});
+      await (await import('./m23-native.mjs')).qualifyM23({evaluate,cdp,wait,record,report,folder,output,fixture:m23Fixture});
       const idleStart=Date.now();
       await delay(16_000);
       await stopSampler(run,1);
@@ -343,10 +343,11 @@ try {
     }
     else if(m20){
       assert.equal(architecture,'tauri-rust');
-      await (await import('./m20-linked.mjs')).qualifyLinked({evaluate,cdp,wait,report,folder,record,restart:async()=>{
+      await (await import('./m20-linked.mjs')).qualifyLinked({evaluate,cdp,wait,report,folder,record,restart:async beforeLaunch=>{
         await stopSampler(run,1);
         run=null;
         await quit();
+        await beforeLaunch?.();
         await launch(3);
       }});
       const points=(report.process1??[]).filter(point=>{
@@ -381,7 +382,7 @@ try {
     if(process.argv.includes('--native-m9'))await (await import('./m9-qualify.mjs')).inspectM9({evaluate,wait,report,folder,output});
     if(process.argv.includes('--reference-m6'))await (await import('./m6-reference.mjs')).referenceM6({evaluate,cdp,wait,output,report});
     if(process.argv.includes('--reference-m12')){
-      await evaluate("localStorage.setItem('vaultor-device-presentation-v1',JSON.stringify({...JSON.parse(localStorage.getItem('vaultor-device-presentation-v1')||'{}'),theme:'oled'}));true");await cdp('Page.reload');await wait("document.documentElement.dataset.theme==='oled'&&document.querySelector('[title=Settings]')",'original OLED and application ready');
+      await evaluate("localStorage.setItem('vaultor-device-presentation-v1',JSON.stringify({...JSON.parse(localStorage.getItem('vaultor-device-presentation-v1')||'{}'),theme:'oled'}));true");await cdp('Page.reload');await wait("document.documentElement?.dataset.theme==='oled'&&document.querySelector('[title=Settings]')",'original OLED and application ready');
       await wait("document.querySelector('[title=Settings]')",'original Settings trigger ready');await evaluate("document.querySelector('[title=Settings]').click();true");await wait("document.querySelector('.settings-window')",'original Settings');await delay(600);let image=await cdp('Page.captureScreenshot');await writeFile(join(output,'m12-reference-settings-oled.png'),Buffer.from(image.data,'base64'));
       await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',windowsVirtualKeyCode:27});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',windowsVirtualKeyCode:27});await wait("!document.querySelector('.settings-window')",'original Settings dismissal');await evaluate("document.querySelector('[aria-label=\"Help for this screen\"]').click();true");await wait("document.querySelector('.help-center')",'original Help');await delay(500);image=await cdp('Page.captureScreenshot');await writeFile(join(output,'m12-reference-help-oled.png'),Buffer.from(image.data,'base64'));report.checks.push('Original Electron Settings and Help opened in OLED;capture comparison with shared Rust-backed presentation');
     }

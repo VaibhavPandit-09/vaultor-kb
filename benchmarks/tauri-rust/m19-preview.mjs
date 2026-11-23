@@ -55,6 +55,7 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
       record(scenario,cycle,'process_tree_handles',state.processes.reduce((total,p)=>total+p.handles,0),'count');
       record(scenario,cycle,'process_tree_private_bytes',state.processes.reduce((total,p)=>total+p.privateBytes,0)/1048576,'MiB');
     }
+    return state;
   };
   const click=async selector=>{
     await wait('!!document.querySelector('+JSON.stringify(selector)+')?.getClientRects().length','visible '+selector);
@@ -121,6 +122,18 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
     await wait('document.querySelector(".next-pdf-text")?.textContent.includes("Quartz astrolabe")','read-only linked PDF opened in the desktop preview');
     await click('[data-preview-close]');
     await wait('!document.querySelector("[data-preview-resource]")','linked PDF preview dismissed');
+    if(extended){
+      await measure('linked-cycle-baseline');
+      for(let cycle=1;cycle<=12;cycle++){
+        await openRow(first.id);
+        await wait('document.querySelector(".next-pdf-text")?.textContent.includes("Quartz astrolabe")','linked PDF reopened');
+        await click('[data-preview-close]');
+        await wait('!document.querySelector("[data-preview-resource]")','linked PDF preview dismissed');
+        await measure('linked-cycle-closed',cycle);
+      }
+      await sleep(30_000);
+      await measure('linked-cycle-settled');
+    }
     const revision=pdfFixture('Topaz sextant');
     await writeFile(linkedFile,revision);
     await wait(`${searchInWebView('Topaz sextant')}.then(result=>result.total===1)`,'linked PDF refreshed after disk edit');
@@ -220,6 +233,17 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
     await open();
     await wait('document.querySelector('+JSON.stringify(password)+')?.value===""','password is requested again');
     await close(4);
+    if(extended){
+      await measure('protected-cycle-baseline');
+      for(let cycle=1;cycle<=6;cycle++){
+        await open();
+        await wait('document.querySelector('+JSON.stringify(password)+')?.value===""','password field starts empty');
+        await submit('m26-fixture');
+        await wait('document.querySelector(".next-pdf-text")?.textContent.includes("M26 protected fixture")','unlocked PDF text after reopen');
+        await close(cycle);
+        await measure('protected-cycle-closed',cycle);
+      }
+    }
     report.checks.push('Protected PDF wrong and correct passwords, text readback, close and reopen without password retention');
   }
   for(const note of notes.slice(1)){
@@ -230,6 +254,7 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
   await measure('three-distinct-dense');
   if(extended){
     const start=performance.now();
+    let finalCycle;
     for(let cycle=1;cycle<=6;cycle++){
       await readiness('cycle-pdf',shortcut(files[0].title),'document.querySelector(".next-pdf-text")?.textContent.includes("M19 fixture page 1")',cycle);
       await close(cycle);
@@ -238,7 +263,7 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
       await readiness('cycle-audio',shortcut(files[1].title),'document.querySelector(".next-playback audio")?.duration>30',cycle);
       await close(cycle);
       await back();
-      await measure('cycle-returned-library',cycle);
+      finalCycle=await measure('cycle-returned-library',cycle);
       if(cycle<6){
         for(const note of notes.slice(1)){
           await click(shortcut(note.title));
@@ -249,7 +274,13 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
     }
     record('m19-extended-churn',1,'duration',performance.now()-start,'ms','Six three-dense-pane cycles with PDF, raster, audio and return to Library.');
     await sleep(30_000);
-    await measure('cycle-settled-library');
+    const settled=await measure('cycle-settled-library');
+    const seconds=(Date.parse(settled.timestamp)-Date.parse(finalCycle.timestamp))/1000;
+    const cpuSeconds=settled.processes.reduce((total,current)=>{
+      const initial=finalCycle.processes.find(previous=>previous.pid===current.pid);
+      return total+(initial?current.cpuSeconds-initial.cpuSeconds:0);
+    },0);
+    record('m19-cycle-settled-library',1,'cpu_one_core_percent',100*cpuSeconds/seconds,'%','Matched process IDs over the settled interval; no CDP activity between snapshots.');
   }
   for(let cycle=1;cycle<=2;cycle++){
     if(!extended||cycle>1)await back();

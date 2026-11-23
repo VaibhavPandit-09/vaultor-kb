@@ -39,7 +39,7 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
   const asset=Buffer.from([0,7,42,255,3]);
   await writeFile(join(nested,'Summary.md'), '# Imported summary\n\n'+note);
   await writeFile(join(nested,'asset.bin'),asset);
-  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==','base64');
+  const png=Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010804000000b51c0c020000000b4944415478da63fcff1f0003030200efa2a75b0000000049454e44ae426082','hex');
   await writeFile(join(nested,'pixel.png'),png);
   const single=join(folder,'Separate.txt');
   await writeFile(single,'An independently selected source file.');
@@ -224,7 +224,14 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
       await submit('original-fixture-'+format,{op:'export',ids:[fixture.id],destination,format},
         'Structured fixture from the original Java renderer test.');
     }
-    report.checks.push('Original rich renderer fixture imported with its PNG and exported to Markdown, Markdown ZIP, DOCX and Unicode text-layout PDF.');
+    report.checks.push('Original rich renderer fixture imported with its PNG and exported to Markdown, Markdown ZIP, DOCX and paged PDF.');
+    const multipage=JSON.parse(await readFile(new URL('../../backend/target/note-export-review/multipage.json',import.meta.url),'utf8'));
+    multipage.content.find(node=>node.type==='image').attrs.resourceId=image.id;
+    multipage.content.find(node=>node.content?.[0]?.type==='resourceLink').content[0].attrs.resourceId='8f385db0-7aec-4e3a-b30f-5e28dd0d144a';
+    const extended=await workspace({kind:'createNote',title:'Multipage export review',collection:null});
+    await workspace({kind:'save',id:extended.id,revision:extended.revision,title:extended.title,content:multipage});
+    await submit('original-fixture-multipage-pdf',{op:'export',ids:[extended.id],destination:join(folder,'Original renderer multipage PDF'),format:'pdf'},
+      'The same original 75-row table and graphics rendered through Next.');
     const unsupported = await workspace({kind:'createNote',title:'Missing glyph fixture',collection:null});
     await workspace({kind:'save',id:unsupported.id,revision:unsupported.revision,title:unsupported.title,
       content:{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Unmapped glyph 🛸'}]}]}});
@@ -232,6 +239,14 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
     await submit('pdf-glyph-refusal',{op:'export',ids:[unsupported.id],destination:failed,format:'pdf'},
       'An unsupported glyph must refuse publication.', 'failed');
     await assert.rejects(stat(failed),{code:'ENOENT'});
+    const existing=join(folder,'Original renderer pdf');
+    const [published]=await readdir(existing);
+    const bytes=await readFile(join(existing,published));
+    await submit('pdf-retain-existing',{op:'export',ids:[unsupported.id],destination:existing,format:'pdf'},
+      'An unsupported glyph must leave the earlier valid export byte-exact.', 'failed');
+    assert.deepEqual(await readdir(existing),[published]);
+    assert.deepEqual(await readFile(join(existing,published)),bytes);
+    report.checks.push('Unsupported PDF glyph safely refused both an absent output and publication over an existing valid PDF.');
   }
   if (process.argv.includes('--m26a2-legacy')) {
     const archive = join(folder,'Electron original v5.zip');

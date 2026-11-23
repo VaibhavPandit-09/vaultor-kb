@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import {mkdir,readFile,rename,stat,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 
-export async function qualifyM23({evaluate,wait,record,report,folder,fixture}) {
+export async function qualifyM23({evaluate,cdp,wait,record,report,folder,output,fixture}) {
   const invoke=(command,payload={})=>evaluate(`window.__TAURI_INTERNALS__.invoke(${JSON.stringify(command)},${JSON.stringify(payload)})`);
   const ws=request=>invoke('workspace',{request});
   const transfer=request=>invoke('transfer',{request});
@@ -150,11 +150,11 @@ export async function qualifyM23({evaluate,wait,record,report,folder,fixture}) {
     'Independent managed duplication and 32 MiB checked native copy/cancellation',
     'NTFS descriptor mismatch refusal, exact binding, membership and external bytes',
     'Pinned order projection after an anchored move');
-  if(process.argv.includes('--m26-deep'))await qualifyDeep({ws,linked,job,wait,folder,restoredScope,fixture,owner,file,report,transfer});
+  if(process.argv.includes('--m26-deep'))await qualifyDeep({ws,linked,job,wait,folder,restoredScope,fixture,owner,file,report,transfer,evaluate,cdp,output});
 }
 
 
-async function qualifyDeep({ws,linked,job,wait,folder,restoredScope,fixture,owner,file,report,transfer}) {
+async function qualifyDeep({ws,linked,job,wait,folder,restoredScope,fixture,owner,file,report,transfer,evaluate,cdp,output}) {
   const external=join(folder,'deep-linked'), bad=join(folder,'deep-mismatch');
   const base='level-1/level-2';
   const hubPath=base+'/notes/Hub.md', oldPath=base+'/assets/Draft Target.md', targetPath=base+'/assets/Final Target.md';
@@ -182,6 +182,20 @@ async function qualifyDeep({ws,linked,job,wait,folder,restoredScope,fixture,owne
   const tag=await ws({kind:'organization',request:{op:'tag',id:null,name:'Deep portability',color:'#336699'}});
   await ws({kind:'organization',request:{op:'tagging',ids:[target.id],tag:tag.id,add:true}});
   await ws({kind:'organization',request:{op:'pin',ids:[target.id],value:true}});
+  const org=request=>ws({kind:'organization',request});
+  const verifyOrganization=async id=>{
+    const state=await ws({kind:'snapshot'});
+    const membership=(await ws({kind:'memberships',id})).members;
+    const parent=state.collections.find(row=>row.name==='Deep parent');
+    const child=state.collections.find(row=>row.name==='Deep child');
+    assert.equal(child.parentId,parent.id);
+    assert.deepEqual(membership.sort(),[child.id,parent.id].sort());
+    const {items}=await org({op:'tags',query:'Deep portability',after:null});
+    assert.equal(items.length,1);
+    assert.equal(items[0].color,'#336699');
+    assert.deepEqual(await org({op:'assigned',ids:[id]}),[{id,tags:[items[0].id]}]);
+    assert((await org({op:'pins',kind:'all',query:'',limit:20,offset:0})).items.some(row=>row.id===id));
+  };
   const note=await ws({kind:'createNote',title:'Deep managed reference',collection:nested.id});
   const reference={type:'doc',content:[{type:'paragraph',content:[{type:'resourceLink',attrs:{resourceId:target.id,label:'Deep target',type:'note'}}]}]};
   await ws({kind:'save',id:note.id,revision:note.revision,title:'Deep managed reference',content:reference});
@@ -189,7 +203,8 @@ async function qualifyDeep({ws,linked,job,wait,folder,restoredScope,fixture,owne
   const review=(await reviewList(restoredScope,fixture.resource)).items.find(row=>row.id===owner.id);
   assert(review?.imported);
   const assertEvidence=actual=>{
-    for(const key of ['author','comment','quote','context','locator','createdAt','updatedAt','baseRevision','status'])assert.deepEqual(actual[key],review[key],key);
+    assert.equal(actual.imported,true);
+    for(const key of ['author','targetTitle','targetType','comment','quote','context','locator','createdAt','updatedAt','baseRevision','status'])assert.deepEqual(actual[key],review[key],key);
   };
   const verifyLinks=async(h,t)=>{
     const rel=id=>linked({op:'relationships',id:id.slice(7)});
@@ -207,10 +222,13 @@ async function qualifyDeep({ws,linked,job,wait,folder,restoredScope,fixture,owne
   assert.equal(preview.linkedDescriptors,3);
   const destination=join(folder,'deep-restored');
   await job('m26-deep-restore',{op:'restore',source:path,destination,manifestHash:preview.manifestHash});
-  const scope=(await ws({kind:'open',path:destination})).path;
+  await evaluate(`window.dispatchEvent(new CustomEvent('vaultor-next-transfer',{detail:{op:'open',path:${JSON.stringify(destination)}}}))`);
+  await wait(`document.querySelector('[aria-label="Open workspace"]')?.title.endsWith('deep-restored') && document.querySelector('.next-shell')?.dataset.sessionReady==='true'`,'deep restored workspace opened normally');
+  const scope=(await ws({kind:'snapshot'})).path;
   const descriptors=await linked({op:'archived',workspace:scope,after:null});
   assert(descriptors.items.some(row=>row.id===target.id&&row.path===targetPath));
   assert.equal((await linked({op:'sources'})).length,0);
+  await qualifyArchivedDialog({evaluate,cdp,wait,output,report});
   const rebind=(root,active,ids)=>linked({op:'rebindDescriptors',workspace:active,ids,path:root});
   await assert.rejects(rebind(bad,scope,[hub.id,target.id]),/different path or revision/i);
   assert.equal((await linked({op:'sources'})).length,0);
@@ -218,7 +236,7 @@ async function qualifyDeep({ws,linked,job,wait,folder,restoredScope,fixture,owne
   const rebound=await rebind(external,scope,[hub.id,target.id]);
   await job('m26-deep-restored-index',{op:'indexLinked',source:rebound.id});
   await verifyLinks(hub.id,target.id);
-  assert.deepEqual((await ws({kind:'memberships',id:target.id})).members.sort(),[parent.id,nested.id].sort());
+  await verifyOrganization(target.id);
   assert.deepEqual((await ws({kind:'read',id:note.id})).content,reference);
   assertEvidence((await reviewList(scope,fixture.resource)).items.find(row=>row.id===owner.id));
   const original=await readFile(join(destination,'managed',file.id+'.bin'));
@@ -231,12 +249,14 @@ async function qualifyDeep({ws,linked,job,wait,folder,restoredScope,fixture,owne
   await ws({kind:'draft',id:parked.id,baseRevision:parked.revision,token:'deep-draft',sequence:1,title:'Parked destination',content:{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Keep this draft'}]}]}});
   const merge={op:'merge',source:path,manifestHash:preview.manifestHash};
   assert.equal((await job('m26-deep-merge',merge)).reused,false);
+  const firstMerge=await ws({kind:'list',collection:null,limit:100});
   assert.equal((await job('m26-deep-merge-retry',merge)).reused,true);
   const mapped=(await linked({op:'archived',workspace:mergeScope,after:null})).items;
   const mappedHub=mapped.find(row=>row.path===hubPath), mappedTarget=mapped.find(row=>row.path===targetPath);
   assert.notEqual(mappedTarget.id,target.id);
   assert.equal((await linked({op:'sources'})).length,0);
   const merged=(await ws({kind:'list',collection:null,limit:100})).items;
+  assert.deepEqual(merged.map(row=>row.id).sort(),firstMerge.items.map(row=>row.id).sort());
   const mappedNote=merged.find(row=>row.title==='Deep managed reference');
   assert.notEqual(mappedNote.id,note.id);
   assert.equal((await ws({kind:'read',id:mappedNote.id})).content.content[0].content[0].attrs.resourceId,mappedTarget.id);
@@ -252,11 +272,49 @@ async function qualifyDeep({ws,linked,job,wait,folder,restoredScope,fixture,owne
   const mergedGrant=await rebind(external,mergeScope,[mappedHub.id,mappedTarget.id]);
   await job('m26-deep-merged-index',{op:'indexLinked',source:mergedGrant.id});
   await verifyLinks(mappedHub.id,mappedTarget.id);
-  const state=await ws({kind:'snapshot'});
-  const membership=(await ws({kind:'memberships',id:mappedTarget.id})).members;
-  assert.deepEqual(state.collections.filter(row=>membership.includes(row.id)).map(row=>row.name).sort(),['Deep child','Deep parent']);
+  await verifyOrganization(mappedTarget.id);
+  await org({op:'trash',ids:[mappedReview.resourceId],restore:false});
+  const unavailable=(await reviewList(mergeScope,mappedReview.resourceId)).items.find(row=>row.id===mappedReview.id);
+  assert.equal(unavailable.availability,'trashed');
+  assertEvidence(unavailable);
+  await linked({op:'remove',source:mergedGrant.id});
+  await assert.rejects(linked({op:'openId',id:mappedTarget.id.slice(7)}));
   assert.deepEqual(await readFile(join(external,hubPath)),Buffer.from(hubText));
   assert.deepEqual(await readFile(join(external,targetPath)),Buffer.from(targetText));
   assert.deepEqual(await readFile(join(external,base,'assets','chart.png')),png);
-  report.checks.push('Deep archive preserved exact originals, rename identity, reference-style/encoded links and repeated backlinks, raster bytes, nested memberships, Review evidence and a parked destination draft. Atomic group rebinding refused a mismatch and succeeded after Restore and Merge. Merge replay reused its receipt.');
+  report.deepPortability={manifestHash:preview.manifestHash,descriptors:preview.linkedDescriptors,reviewRows:preview.reviews,managedOriginalSha256:createHash('sha256').update(original).digest('hex')};
+  report.checks.push('Deep archive preserved exact originals, rename identity, reference-style/encoded links and repeated backlinks, raster bytes, nested memberships, tags, pins, Review evidence for a trashed target and a parked destination draft. Atomic group rebinding refused a mismatch and succeeded after Restore and Merge. Revocation withdrew linked access. Merge replay reused its receipt and resource identities.');
+}
+
+async function qualifyArchivedDialog({evaluate,cdp,wait,output,report}) {
+  const trigger='button[aria-label="Workspace transfers"]';
+  const dialog='[role="dialog"][aria-modal="true"]';
+  await wait(`document.querySelector('[data-session-ready="true"] ${trigger}')`,'workspace transfer controls ready');
+  const key=async (name,code,virtual)=>{
+    const event={key:name,code,windowsVirtualKeyCode:virtual,nativeVirtualKeyCode:virtual};
+    await cdp('Input.dispatchKeyEvent',{type:'keyDown',...event});
+    await cdp('Input.dispatchKeyEvent',{type:'keyUp',...event});
+  };
+  await wait(`(()=>{if([...document.querySelectorAll('button')].some(b=>b.textContent==='Locate archived linked references…'))return true;const trigger=document.querySelector(${JSON.stringify(trigger)});if(trigger&&!trigger.disabled&&trigger.getAttribute('aria-expanded')!=='true'){trigger.focus();trigger.click();}return false})()`,'archived references in transfer menu');
+  await evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Locate archived linked references…').click()`);
+  await wait(`document.querySelectorAll('${dialog} input[type=checkbox]').length===3`,'three archived references visible');
+  const {nodes}=await cdp('Accessibility.getFullAXTree');
+  const dialogNode=nodes.find(node=>node.role?.value==='dialog'&&node.name?.value==='Archived linked references');
+  assert(dialogNode);
+  const indexed=new Map(nodes.map(node=>[node.nodeId,node]));
+  const descendants=node=>(node.childIds??[]).flatMap(id=>{
+    const child=indexed.get(id);
+    return child?[child,...descendants(child)]:[];
+  });
+  assert.equal(descendants(dialogNode).filter(node=>node.role?.value==='checkbox'&&node.name?.value?.trim()).length,3);
+  assert.equal(await evaluate(`Array.from(document.querySelectorAll('${dialog} button')).find(b=>b.textContent.startsWith('Locate source for selected')).disabled`),true);
+  await evaluate(`document.querySelector('${dialog} input[type=checkbox]').focus()`);
+  await key(' ','Space',32);
+  assert.equal(await evaluate(`document.querySelector('${dialog} input[type=checkbox]').checked`),true);
+  assert.equal(await evaluate(`Array.from(document.querySelectorAll('${dialog} button')).find(b=>b.textContent.startsWith('Locate source for selected')).disabled`),false);
+  const image=await cdp('Page.captureScreenshot');
+  await writeFile(join(output,'m26b-closure-archived-references.png'),Buffer.from(image.data,'base64'));
+  await key('Escape','Escape',27);
+  await wait(`!document.querySelector('${dialog}') && document.activeElement?.matches(${JSON.stringify(trigger)})`,'Escape restores focus to workspace transfers');
+  report.checks.push('Archived linked references dialog has a named AX dialog and three named checkboxes; Space enables the batch action; Escape restores focus to workspace transfers');
 }

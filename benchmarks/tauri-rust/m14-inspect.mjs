@@ -17,6 +17,10 @@ export async function inspectM14({evaluate,cdp,wait,report,folder,output,record,
  const openA=()=>reference?button('M14 A'):click('[data-row-open][aria-label="M14 A"]');
  const openB=()=>reference?button('M14 B'):click('[data-row-open][aria-label="M14 B"]');
  if(reference){report.referenceRows=await evaluate('[...document.querySelectorAll("button")].filter(b=>b.textContent.includes("M14")).slice(0,15).map(b=>({text:b.textContent,title:b.title,hidden:!!b.closest("[hidden]")}))');await shot('library');}
+ if(reference&&milestone==='m15'&&process.argv.includes('--m26-settings-motion')){
+  await (await import('./m15-inspect.mjs')).inspectM15({evaluate,cdp,wait,report,folder,output,record,reference,fixture,shot,key,button,click,restart});
+  return;
+ }
  await openA();await wait('document.querySelector(".tiptap")?.textContent.includes("Reading and returning")','A reading document');
  await evaluate('document.querySelector(".tiptap").editor.commands.setTextSelection(40);document.querySelector(".journey-viewport").scrollTop=680;true');await pause(800);
  await evaluate('document.querySelector(".tiptap .resource-link-chip").dispatchEvent(new MouseEvent("click",{bubbles:true}));true');
