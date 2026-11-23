@@ -1723,7 +1723,6 @@ fn export(
     }
     let zip = format == "markdownZip";
     let rich = matches!(format, "docx" | "pdf");
-    let pdf = format == "pdf";
     let data = storage.call(root, move |w| {
         if remote {
             let note = ids.first().ok_or("Select a note")?;
@@ -1747,7 +1746,7 @@ fn export(
             manifest.reviews=crate::reviews::snapshot(&w.db,Some(&selected))?;
         }
         let mut references = HashSet::new();
-        if pdf {
+        if rich {
             let mut query = w.db.prepare("SELECT l.target_id FROM resource_links l
                 JOIN visible_resources r ON r.id=l.target_id WHERE l.source_id=?1
                 AND NOT EXISTS(SELECT 1 FROM resource_state s WHERE s.resource_id=r.id AND s.trashed=1)").map_err(error)?;
@@ -1799,7 +1798,7 @@ fn export(
             .map_err(error)?;
         if !is_original {
             match format {
-                "docx" => exports::docx(out, &r.content, &mut issues, root, &m.originals, ctx)?,
+                "docx" => exports::docx(out, &r.title, &r.content, &mut issues, root, &m.originals, &references, ctx)?,
                 "pdf" => exports::pdf(out, &r.title, &r.content, &mut issues, root, &m.originals, &references, ctx)?,
                 _ => {
                     let data = exports::render_document(

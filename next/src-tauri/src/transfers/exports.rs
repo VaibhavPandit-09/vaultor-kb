@@ -445,6 +445,7 @@ const DOCX_TYPES: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <Default Extension="png" ContentType="image/png"/>
 <Default Extension="jpg" ContentType="image/jpeg"/>
 <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
 </Types>"#;
 const DOCX_RELS: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -600,14 +601,21 @@ impl ExportPictures {
     }
 }
 
-fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pictures: &mut ExportPictures) -> Result<String, String> {
+fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pictures: &mut ExportPictures, references: &HashSet<String>) -> Result<String, String> {
     let kind = node["type"].as_str().ok_or("Invalid editor node")?;
     let attrs = &node["attrs"];
     let children = node["content"].as_array().map(Vec::as_slice).unwrap_or(&[]);
     if kind == "table" {
         let layout = table_layout(children)?;
         let columns = layout.iter().map(|row| row.iter().map(|cell| cell.width).sum()).max().unwrap_or(0);
-        let mut table = format!("<w:tbl><w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/></w:tblPr><w:tblGrid>{}</w:tblGrid>", "<w:gridCol/>".repeat(columns));
+        if columns == 0 {
+            return Err("Word table has no cells".into());
+        }
+        let column_width = 9026 / columns;
+        let borders = ["top", "left", "bottom", "right", "insideH", "insideV"]
+            .map(|side| format!(r#"<w:{side} w:val="single" w:sz="4" w:color="B8C1CD"/>"#)).concat();
+        let grid = format!(r#"<w:gridCol w:w="{column_width}"/>"#).repeat(columns);
+        let mut table = format!(r#"<w:tbl><w:tblPr><w:tblW w:w="9026" w:type="dxa"/><w:tblBorders>{borders}</w:tblBorders><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>{grid}</w:tblGrid>"#);
         for row in layout {
             table.push_str("<w:tr>");
             if !row.is_empty() && row.iter().all(|cell| cell.source.is_some_and(|node| node["type"] == "tableHeader") && cell.height == 1) {
@@ -615,13 +623,16 @@ fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pi
             }
             for cell in row {
                 let (merge, body) = if let Some(node) = cell.source {
-                    let rendered = word_node_children(node, issues, links, pictures)?;
+                    let rendered = word_node_children(node, issues, links, pictures, references)?;
                     (if cell.height > 1 { "<w:vMerge w:val=\"restart\"/>" } else { "" }, rendered)
                 } else {
                     ("<w:vMerge/>", String::new())
                 };
                 let body = if body.is_empty() { "<w:p/>" } else { &body };
-                table.push_str(&format!("<w:tc><w:tcPr><w:gridSpan w:val=\"{}\"/>{merge}</w:tcPr>{body}</w:tc>", cell.width));
+                let fill = if cell.source.is_some_and(|node| node["type"] == "tableHeader") {
+                    r#"<w:shd w:val="clear" w:fill="EDF1F6"/>"#
+                } else { "" };
+                table.push_str(&format!(r#"<w:tc><w:tcPr><w:tcW w:w="{}" w:type="dxa"/><w:gridSpan w:val="{}"/>{merge}{fill}</w:tcPr>{body}</w:tc>"#, column_width * cell.width, cell.width));
             }
             table.push_str("</w:tr>");
         }
@@ -637,6 +648,7 @@ fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pi
                     Some("italic") => "<w:i/>",
                     Some("strike") => "<w:strike/>",
                     Some("underline") => "<w:u w:val=\"single\"/>",
+                    Some("highlight") => "<w:highlight w:val=\"yellow\"/>",
                     Some("code") => "<w:rFonts w:ascii=\"Consolas\" w:hAnsi=\"Consolas\"/>",
                     Some("link") => "<w:u w:val=\"single\"/>",
                     _ => "",
@@ -669,10 +681,11 @@ fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pi
                 return Ok(drawing);
             }
         }
-        if issues.len() < 100 {
+        let missing = !image && !attrs["resourceId"].as_str().is_some_and(|id| references.contains(id));
+        if (image || missing) && issues.len() < 100 {
             issues.push(format!("{label}: retained as text in Word export"));
         }
-        let run = word_run(label, "<w:i/>");
+        let run = if missing { word_run(&format!("{label} (unavailable)"), "") } else { word_run(label, "") };
         return Ok(if image {
             format!("<w:p>{run}</w:p>")
         } else {
@@ -682,15 +695,14 @@ fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pi
     let inner = if matches!(kind,"blockquote"|"codeBlock"|"orderedList"|"bulletList"|"taskList") {
         String::new()
     } else {
-        word_node_children(node, issues, links, pictures)?
+        word_node_children(node, issues, links, pictures, references)?
     };
     Ok(match kind {
         "doc" | "listItem" | "taskItem" => inner,
         "paragraph" => format!("<w:p>{inner}</w:p>"),
         "heading" => {
             let level = attrs["level"].as_u64().unwrap_or(1).clamp(1, 6);
-            let size = 38 - 4 * level;
-            format!("<w:p><w:pPr><w:keepNext/><w:outlineLvl w:val=\"{}\"/><w:rPr><w:b/><w:sz w:val=\"{size}\"/></w:rPr></w:pPr>{inner}</w:p>",level-1)
+            format!(r#"<w:p><w:pPr><w:pStyle w:val="Heading{level}"/></w:pPr>{inner}</w:p>"#)
         }
         "hardBreak" => "<w:r><w:br/></w:r>".into(),
         "horizontalRule" => {
@@ -729,7 +741,7 @@ fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pi
                     }
                     _ => "• ".into(),
                 };
-                let item = word_node(child, issues, links, pictures)?;
+                let item = word_node(child, issues, links, pictures, references)?;
                 if let Some(body) = item.strip_prefix("<w:p>") {
                     list.push_str("<w:p>");
                     list.push_str(&word_run(&prefix, ""));
@@ -744,9 +756,9 @@ fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pi
     })
 }
 
-fn word_node_children(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pictures: &mut ExportPictures) -> Result<String, String> {
+fn word_node_children(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pictures: &mut ExportPictures, references: &HashSet<String>) -> Result<String, String> {
     node["content"].as_array().into_iter().flatten()
-        .map(|child| word_node(child, issues, links, pictures))
+        .map(|child| word_node(child, issues, links, pictures, references))
         .collect::<Result<Vec<_>, _>>().map(|children| children.concat())
 }
 
@@ -767,22 +779,30 @@ fn mixed_table_merges_keep_continuations_and_escape_rich_cells() {
     assert!(markdown.contains("colspan=\"2\" rowspan=\"2\""));
     assert!(markdown.contains("<strong>First &lt;safe&gt;</strong>"));
     assert_eq!(markdown.matches("<td ").count(), 3);
-    let word = word_node(&table, &mut vec![], &mut vec![], &mut ExportPictures::default()).unwrap();
+    let word = word_node(&table, &mut vec![], &mut vec![], &mut ExportPictures::default(), &HashSet::new()).unwrap();
     assert!(word.contains("<w:gridSpan w:val=\"2\"/><w:vMerge w:val=\"restart\"/>"));
     assert!(word.contains("<w:gridSpan w:val=\"2\"/><w:vMerge/>"));
+    assert!(word.contains("<w:gridCol w:w=\"3008\"/>"));
     assert!(word.find("<w:vMerge/>").unwrap() < word.find("Below").unwrap());
     let mut invalid = table;
     invalid["content"][0]["content"][0]["attrs"]["rowspan"] = json!(3);
     assert!(render_document(&invalid, true, &HashMap::new(), &mut vec![]).is_err());
 }
 
-pub(super) fn docx(file: File, content: &Value, issues: &mut Vec<String>, root: &str, originals: &[Original], ctx: &Context) -> Result<(), String> {
+pub(super) fn docx(file: File, title: &str, content: &Value, issues: &mut Vec<String>, root: &str, originals: &[Original], references: &HashSet<String>, ctx: &Context) -> Result<(), String> {
     let mut links=Vec::new();
     let mut pictures = ExportPictures::load(root, content, originals, ctx, false)?;
-    let body = word_node(content, issues,&mut links,&mut pictures)?;
+    let body = word_node(content, issues,&mut links,&mut pictures, references)?;
+    let title = word_run(title, "<w:b/><w:sz w:val=\"44\"/>");
+    let mut styles = String::from(r#"<?xml version="1.0" encoding="UTF-8"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">"#);
+    for (index, size) in [36, 32, 28, 24, 22, 20].into_iter().enumerate() {
+        let level = index + 1;
+        styles.push_str(&format!(r#"<w:style w:type="paragraph" w:styleId="Heading{level}"><w:name w:val="heading {level}"/><w:pPr><w:keepNext/><w:spacing w:before="180" w:after="80"/><w:outlineLvl w:val="{index}"/></w:pPr><w:rPr><w:b/><w:sz w:val="{size}"/></w:rPr></w:style>"#));
+    }
+    styles.push_str("</w:styles>");
     let document = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>{body}
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body><w:p><w:pPr><w:keepNext/></w:pPr>{title}</w:p>{body}
 <w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body></w:document>"#
     );
     let mut output = ZipWriter::new(file);
@@ -790,14 +810,15 @@ pub(super) fn docx(file: File, content: &Value, issues: &mut Vec<String>, root: 
         ("[Content_Types].xml", DOCX_TYPES),
         ("_rels/.rels", DOCX_RELS),
         ("word/document.xml", &document),
+        ("word/styles.xml", &styles),
     ] {
         output
             .start_file(path, SimpleFileOptions::default())
             .map_err(error)?;
         output.write_all(value.as_bytes()).map_err(error)?;
     }
-    if !links.is_empty() || !pictures.assets.is_empty() {
-        let mut relations=String::from(r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#);
+    {
+        let mut relations=String::from(r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="styles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>"#);
         for (index,href) in links.iter().enumerate() {
             let target=xml(href).replace('"',"&quot;");
             relations.push_str(&format!(r#"<Relationship Id="link{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="{target}" TargetMode="External"/>"#,index+1));

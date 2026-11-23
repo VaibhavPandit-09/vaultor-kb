@@ -25,7 +25,7 @@ Completed artifacts and snapshots live beside existing workspace operations and 
 
 ## Format fidelity
 
-Next Markdown emits HTML for merged tables. Next Word writes the full cell grid, including the continuation cells of vertical merges, and embeds verified managed PNG/JPEG originals with size, alignment and caption. PDF reuses the validated table spans and managed-asset checks. The per-image bound is 20 MiB and 40 million pixels, with at most 60 MiB per document. Missing or unsupported placements produce Activity issues and a text label. Image corruption aborts staged publication. The [Next PDF contract](#vaultor-next-pdf) describes rendering and font coverage.
+Next Markdown emits HTML for merged tables. Next Word includes the note title, styled outline headings, inline highlights and a full bordered cell grid with the continuation cells of vertical merges. It embeds verified managed PNG/JPEG originals with size, alignment and caption. PDF reuses the validated table spans and managed-asset checks. Both preserve unavailable resource-link labels. The per-image bound is 20 MiB and 40 million pixels, with at most 60 MiB per document. Missing or unsupported placements produce Activity issues and a text label. Image corruption aborts staged publication. The [Next PDF contract](#vaultor-next-pdf) describes rendering and font coverage.
 
 | Feature | Behavior |
 | --- | --- |

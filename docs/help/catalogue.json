@@ -2117,7 +2117,7 @@
         "Export resources and restore a portable workspace as new",
         "Restore or merge a compatible original Electron workspace ZIP",
         "Recover after the remembered workspace database is missing",
-        "Export merged tables, managed images in Word and Greek text in PDF",
+        "Export the note title, headings, highlights and merged tables in Word; verify managed images and Greek text in PDF",
         "Inspect real background progress and cancel safe operations",
         "Search existing tags before creating and assign tags to a selected page",
         "Pin resources and return through persistent Recents",
