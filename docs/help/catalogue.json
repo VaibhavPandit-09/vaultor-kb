@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "reviewed": "2026-11-16",
+  "reviewed": "2026-11-24",
   "baseline": {
     "windows": "0.27.0",
-    "macos": "0.26.0",
-    "android": "0.1.0-alpha.28"
+    "macos": "0.27.0",
+    "android": "0.1.0-alpha.29"
   },
   "areas": [
     "Getting started",
@@ -2003,7 +2003,9 @@
         "Android"
       ],
       "tasks": [
-        "Save share partial export import APK signed update"
+        "Save share partial export import APK signed update",
+        "Install the signed Android alpha.29 update over alpha.28 and keep app data",
+        "Submit a workspace ZIP to an approved Vaultor Next host"
       ],
       "keywords": [
         "Save",
@@ -2027,10 +2029,12 @@
         },
         "android": {
           "status": "available",
-          "verifiedVersion": "0.1.0-alpha.28"
+          "verifiedVersion": "0.1.0-alpha.29"
         }
       },
-      "limitations": [],
+      "limitations": [
+        "Workspace ZIP submission requires a compatible Next engineering host and the owner's review. Install APK updates over the existing Android app."
+      ],
       "related": [],
       "evidence": [
         "docs/android/EXPORTS-AND-CONNECTIONS.md"
@@ -2067,7 +2071,9 @@
           "verifiedVersion": "0.27.0"
         },
         "macos": {
-          "status": "development"
+          "status": "available",
+          "introducedVersion": "0.27.0",
+          "verifiedVersion": "0.27.0"
         },
         "browser": {
           "status": "available",
@@ -2078,7 +2084,7 @@
         }
       },
       "limitations": [
-        "Windows 0.27.0 includes Help. Mac 0.26.0 and Android alpha.28 do not; a Mac Help release requires native qualification and documentation reconciliation."
+        "Windows x64 and macOS Apple Silicon 0.27.0 include Help. Android alpha.29 has no bundled Help."
       ],
       "related": [],
       "evidence": [
@@ -2210,7 +2216,7 @@
       "limitations": [
         "Experimental Windows workspaces. Compatible Electron ZIP versions 1–8 have documented scope and evidence limits. Original Electron databases and linked ZIP versions 9–10 require the original application.",
         "Draft protection follows a debounced SQLite receipt; unsent edits are not crash durable.",
-        "Android requires the separate Next APK and matching HTTPS host. QR, nearby discovery and manual CA-pinned pairing use the same owner approval. Real Wi-Fi and physical-device acceptance are pending.",
+        "Android alpha.29 can pair with a compatible Next engineering host. QR, nearby discovery and manual CA-pinned pairing require owner approval and a workspace grant. Real Wi-Fi and physical-device acceptance are pending.",
         "Next browser access requires trusted HTTPS and an owner grant. Workspace administration remains local.",
         "Vaultor Next intentionally omits destructive in-place workspace replacement. Restore as New Workspace and reviewed Merge are available. Full formatted PDF fidelity remains limited.",
         "Transfers are bounded; imports commit per item and can complete partially. External linked contents and drafts are excluded from portable archives."

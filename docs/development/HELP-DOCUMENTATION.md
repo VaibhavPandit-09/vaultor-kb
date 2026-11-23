@@ -23,7 +23,7 @@ Before publishing **any** desktop or Android release, the publisher must:
 
 **Do not publish user-facing behavior changes with materially outdated, missing or misleading Help.** Complete the missing documentation first. For releases with no user-facing changes, an explicit applicability review may record Help unchanged; meaningless edits are not required. Android-only releases still reconcile relevant Android Help/catalogue and developer contracts, without rebuilding desktop or claiming an Android Help renderer.
 
-Help is introduced in Windows 0.27.0; Mac 0.26.0 and Android alpha.28 do not include it. Before a Mac Help publication, reconcile its status and instructions against native qualification and the exact release source. Any source change after tagging requires a new immutable release version; do not label unqualified source as shipped.
+Windows x64 and macOS Apple Silicon [0.27.0](../desktop/releases/v0.27.0.md) introduced bundled Help with native qualification on both. Android has no Help renderer. A source change to a tagged release requires a new immutable version.
 
 ## Validation and bundling
 

@@ -1,6 +1,6 @@
 # Vaultor: living codebase and agent guide
 
-Last reviewed: 2026-11-23. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
+Last reviewed: 2026-11-24. This is the current implementation reference. Update it in every change as required by [AGENTS.md](../AGENTS.md). Historical specifications are context only. See [API.md](development/API.md), [OPERATIONS.md](development/OPERATIONS.md), and the [documentation index](README.md).
 
 Vaultor Next M23 uses one Rust SQLite owner for Review, resource identity, archives and persistent pin order. [Next qualification](plans/VAULTOR-NEXT.md#m23-review-inbox-and-windows-integration) tracks Windows integration and outstanding parity. The [Review boundary](workspace/REVIEWS.md#vaultor-next) also serves the optional host.
 
@@ -524,6 +524,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-24 — Next M26-C direct-upgrade qualification
+
+The [M26-C ledger](plans/VAULTOR-NEXT-M26-C.md) records predecessor installer, storage and updater boundaries. Windows Next has a separate executable, application identity and storage engine. An Electron-compatible installed migration remains a release gate. Android 0.1.0-alpha.29/code 36 keeps the original package and signer. Actual install-over and cold readback passed on API 36 and 37 with the original Java host approval. The production APK also passed CA-pinned Rust ZIP owner approval/rejection and restored managed-byte checks. Android compilation and 112 unit tests passed, as did 15 original Windows updater checks. Help topics Platforms, What's New and Next and catalogue Android transfers/updates were reconciled. Android has no Help bundle to rebuild.
 
 ### 2026-11-23 — Next M26-B rich export and transfer recovery
 

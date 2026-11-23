@@ -37,7 +37,7 @@ class NextZipHostTest {
         val context = instrumentation.targetContext
         val args = InstrumentationRegistry.getArguments()
         val address = args.getString("fixtureAddress")!!
-        require(context.packageName == "com.vaultor.app.next" && address.startsWith("https://127.0.0.1:"))
+        require(context.packageName in setOf("com.vaultor.app", "com.vaultor.app.next") && address.startsWith("https://127.0.0.1:"))
         val module = VaultorModule(BridgeReactContext(context))
         val begin = JSONObject(bridge { module.beginVerifiedPairing(address,args.getString("fixtureFingerprint")!!,it) })
         Log.i("NextZipFixture","PAIR "+begin.getString("code"))
@@ -83,6 +83,17 @@ class NextZipHostTest {
                 assertEquals(if(decision=="approve") "SUCCEEDED" else "REJECTED",receipt.getString("state"))
                 if (decision=="approve") assertEquals(id,receipt.getString("destinationWorkspaceId"))
                 assertEquals(receipt.getJSONObject("input").getString("sha256"),store.item(id).getString("sha256"))
+            }
+            if (context.packageName == "com.vaultor.app") {
+                Log.i("NextZipFixture", "REVOKE $host")
+                var status = 200
+                for (attempt in 0..25) {
+                    status = JSONObject(bridge { module.apiFor(host, epoch, "/workspace/identity", "GET", null, null, it) })
+                        .getInt("status")
+                    if (status != 200) break
+                    Thread.sleep(750)
+                }
+                assertEquals("Revoked Android approval must lose access", 401, status)
             }
         } finally {
             saved.delete()

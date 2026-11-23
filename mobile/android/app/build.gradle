@@ -93,8 +93,12 @@ android {
         applicationId nextCandidate ? "com.vaultor.app.next" : "com.vaultor.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode nextCandidate ? 35 : 32
-        versionName nextCandidate ? "0.1.0-m26a4.1" : "0.1.0-alpha.28"
+        versionCode 36
+        versionName "0.1.0-alpha.29"
+        if (nextCandidate) {
+            versionCode 35
+            versionName "0.1.0-m26a4.1"
+        }
         manifestPlaceholders.vaultorAppLabel = nextCandidate ? "Vaultor Next" : "@string/app_name"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Explicit acceptance builds only. Ordinary release/debug default false.

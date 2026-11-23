@@ -241,12 +241,14 @@ try{
     android('reverse','tcp:'+port,'tcp:'+port);
     const test=spawn(adb,['-s',serial,'shell','am','instrument','-w','-e','class','com.vaultorandroid.NextZipHostTest',
       '-e','fixtureAddress','https://127.0.0.1:'+port,'-e','fixtureFingerprint',desc.fingerprint,
-      'com.vaultor.app.next.test/androidx.test.runner.AndroidJUnitRunner'],{windowsHide:true,stdio:['ignore','pipe','pipe']});
+      (process.argv.includes('--android-production')?'com.vaultor.app.test':'com.vaultor.app.next.test')+'/androidx.test.runner.AndroidJUnitRunner'],{windowsHide:true,stdio:['ignore','pipe','pipe']});
     let transcript='';
     test.stdout.on('data',data=>{transcript+=data.toString();});
     test.stderr.on('data',data=>{transcript+=data.toString();});
     const finished=new Promise(resolve=>test.on('exit',resolve));
     let handledPair=false;
+    let androidDevice;
+    let androidRevoked=false;
     const handledZips=new Set();
     try {
       for(let i=0;i<160&&test.exitCode===null;i++){
@@ -260,6 +262,7 @@ try{
               const target=owner('devices').find(value=>value.name===pending.name && !value.workspace);
               assert(target);
               owner('grant',target.id);
+              androidDevice=target.id;
               handledPair=true;
             }
           }
@@ -278,17 +281,25 @@ try{
           }else assert.equal(owner('zip','reject',id).state,'REJECTED');
           handledZips.add(id);
         }
+        if(androidDevice && !androidRevoked && log.includes(`REVOKE ${desc.hostId}`)) {
+          assert.equal(handledZips.size,2);
+          owner('revoke',androidDevice);
+          androidRevoked=true;
+        }
         await delay(750);
       }
       if(test.exitCode===null)throw Error('Android ZIP instrumentation did not finish');
       assert.equal(await finished,0,transcript);
       assert.match(transcript,/OK \(1 test\)/);
       assert.equal(handledZips.size,2);
+      if(process.argv.includes('--android-production')) assert(androidRevoked);
       const row=owner('zip','list').find(value=>handledZips.has(value.id)&&value.state==='SUCCEEDED');
       assert(row);
       assert.equal(row.destinationWorkspaceId,row.id);
       assert.equal(docker('exec',token,'sh','-ec','find "$1/managed" -type f -name "*.bin" -exec cat {} \\;','vaultor-verify',row.destination),'unchanged-original');
-      console.log('API 36 Android verified signed-app ZIP delivery, approval, rejection and restored managed bytes.');
+      const sdk=android('shell','getprop','ro.build.version.sdk');
+      samples.push({check:'android-zip',serial,sdk,production:process.argv.includes('--android-production'),androidRevoked});
+      console.log(`API ${sdk} Android verified signed-app ZIP delivery, approval, rejection and restored managed bytes.`);
     } finally {
       if(test.exitCode===null)test.kill();
       android('reverse','--remove','tcp:'+port);
@@ -308,7 +319,9 @@ try{
   assert.equal((await json('GET',projected+'/capabilities',headers)).status,401);
   docker('stop','-t','5',token);
   assert.equal(docker('inspect','--format','{{.State.ExitCode}}',token),'0');
-  const output=process.argv.includes('--m26-qualified')?'m26b-qualified-docker.json':
+  const output=process.argv.includes('--m26c-android')?
+    `m26c-android-${samples.find(sample=>sample.check==='android-zip').sdk}-docker.json`:
+    process.argv.includes('--m26-qualified')?'m26b-qualified-docker.json':
     process.argv.includes('--m26-closure-final')?'m26b-closure-final-docker.json':
     process.argv.includes('--m26-closure')?'m26b-closure-docker.json':
     process.argv.includes('--m26b')?'m26b-docker.json':

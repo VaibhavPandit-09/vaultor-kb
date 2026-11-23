@@ -16,6 +16,8 @@ The user has authorized agents to own necessary version bumps, checks, packaging
 
 Follow [Help documentation reconciliation](../development/HELP-DOCUMENTATION.md#exact-source-release-reconciliation-mandatory) for every publication. Review the actual delta since each platform's preceding release; reconcile catalogue, Help, availability/version metadata, What's New, CODEBASE and engineering guides. Validate links/metadata and source-to-bundle hashes, confirm release notes and record results in qualification. Documentation commits alone are not evidence of reconciliation. Do not publish user-facing changes with materially missing/outdated/misleading Help. A no-user-change release may record unchanged Help after explicit review.
 
+An Electron-to-Next upgrade requires its own installed compatibility gate. The canonical stable Windows asset pair is visible to existing Electron updaters. A new binary, matching signature and higher version do not establish that the old handoff or the workspace migration works. The [transition record](../plans/VAULTOR-NEXT-M26-C.md#windows-release-gate) owns evidence for the route selected for publication.
+
 ## Before building
 
 1. Read relevant CODEBASE sections, inspect `git status`, current version, original public key, latest GitHub release/tag and local artifacts. Review the actual requested change and docs. Never overwrite unrelated work or recreate the original private key.

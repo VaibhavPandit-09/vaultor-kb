@@ -1,10 +1,14 @@
 # What's New
 
-## Windows 0.27.0 — Offline Help Center
+## Android 0.1.0-alpha.29 — Direct update and Next host connection
+
+Update over alpha.28 to keep your paired source, offline reading copies, Review drafts and pending work. Keep using Windows 0.27.0 as your host, or pair separately with a Vaultor Next engineering host using a verified QR code or CA fingerprint. Where the Next host grants access, **Collected imports** can submit a workspace ZIP for the owner's approval. [Android update instructions](platforms.md#upgrade-android-from-alpha28) · [Next host pairing](next-foundation.md#connect-android-on-the-same-wi-fi).
+
+## Desktop 0.27.0 — Offline Help Center
 
 Find features and practical instructions inside Vaultor, without GitHub or an internet connection. Browse by area or task, search Help, follow related topics, copy instructions and inspect your current keyboard bindings. Open Help from the application menu, Settings, Activity or command palette; the sidebar action opens Help for the current screen. Your open notes and drafts stay in place.
 
-This release bundles 15 user articles and a 42-feature catalogue. [Get started](getting-started.md), [search Help](search.md#search-help), or check [platform differences](platforms.md). Mac remains at 0.26.0 and Android at alpha.28; their installers do not acquire this Help automatically. Repository rules now require both Help and technical documentation reconciliation for every release.
+Windows x64 and macOS Apple Silicon 0.27.0 bundle 15 user articles and a 42-feature catalogue. [Get started](getting-started.md), [search Help](search.md#search-help), or check [platform differences](platforms.md).
 
 ## Desktop 0.26.0 — Windows x64 and Mac Apple Silicon
 

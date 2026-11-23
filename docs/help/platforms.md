@@ -2,17 +2,17 @@
 
 ## Verified release baseline
 
-Audited 2026-11-08 against release evidence and actual source. Windows x64 **0.27.0** adds Help to the previously published Desktop Experience. macOS Apple Silicon remains at the verified **0.26.0** release. Android remains **0.1.0-alpha.28 / versionCode 32**. GitHub Latest remains a separate distribution designation, not proof of the newest platform asset.
+Windows x64 and macOS Apple Silicon **0.27.0** add Help to the previously published Desktop Experience. The Android update covered here is **0.1.0-alpha.29 / versionCode 36**. Android releases have their own GitHub prerelease channel.
 
-Help is bundled with Windows 0.27.0 and its browser UI. The Mac 0.26.0 installer does not contain Help. Mac Help source is implemented but a native-qualified release is not available in this Windows delivery. Android has no in-app Help.
+Help is bundled with both 0.27.0 desktop installers and the browser UI they serve. Android has no in-app Help.
 
-| Capability | Windows 0.27.0 / Mac arm64 0.26.0 | Browser | Android alpha.28 |
+| Capability | Windows x64 / Mac arm64 0.27.0 | Browser | Android alpha.29 |
 | --- | --- | --- | --- |
 | Managed notes and organization editing | Yes | Compatible approved host | Read originals; no original editing |
 | Desktop selection / internal drag | Yes | Shared UI where supported | No desktop workflow |
 | Native resource clipboard / prepared file copies | Yes | No | No desktop workflow |
 | Linked external Markdown editing | Local owner NTFS / APFS only | No local authority | No |
-| Offline bundled Help | Windows 0.27.0; not in Mac 0.26.0 | UI served by the 0.27.0 host | Not implemented |
+| Offline bundled Help | Yes | UI served by the 0.27.0 host | Not implemented |
 | Retained offline original reading | Local desktop workspace, not Android download model | Browser storage limits | Verified companion downloads |
 
 Linux and Intel Mac installers are not supported. Native runtime qualification is platform-specific. Detailed Windows subjective D3/D4 acceptance and physical Samsung/OEM/haptics/TalkBack/real-LAN acceptance remain user-owned; automated evidence does not certify these experiences.
@@ -27,4 +27,12 @@ Android supports reviewed import delivery, full/partial exports and native Save/
 
 No Android in-app Help was implemented by this initiative. The articles here explain Android differences for desktop users; they are not Android UI instructions for new Help controls.
 
-The separate Vaultor Next test APK can pair through a verified QR code or manual HTTPS address and CA fingerprint. It has its own app identity, retained reading copies and Review queue. See [Connect Android on the same Wi-Fi](next-foundation.md#connect-android-on-the-same-wi-fi).
+## Keep an existing Vaultor installation
+
+Keep using the installed Windows 0.27.0 for your existing workspace. A production Windows upgrade to Next is still pending. Keep the original installation and its workspace when evaluating a separate experimental build. See [Vaultor Next experimental foundation](next-foundation.md).
+
+## Upgrade Android from alpha.28
+
+Open **Settings → App updates** and check for the official Android prerelease. Download, verify and install the update, then confirm Android's install prompt. You can also [download the signed alpha.29 APK](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.29) and choose **Verify a downloaded APK**. Install over the existing app. Keep app data and the old app installed during the update.
+
+After reopening Vaultor, choose the remembered source. Your saved offline notes, Review drafts, pending Reviews, collected originals and reader preferences stay in the app. Keep using your original Windows 0.27.0 host. A Next engineering host uses a separate approval and workspace grant. Pending work stays with its original source. See [Connect Android on the same Wi-Fi](next-foundation.md#connect-android-on-the-same-wi-fi).

@@ -196,8 +196,8 @@ Stop hosting before switching workspaces. Closing to the tray keeps sharing runn
 
 ### Connect Android on the same Wi-Fi
 
-1. Launch the M24-D Windows candidate with a Vaultor Next workspace. In **Settings → Hosting**, select the private Wi-Fi address and select **Start hosting**. Turn on discovery if you want the host to appear in **Nearby hosts**. Open the pairing QR on Windows.
-2. Install the M24-D Android candidate and open **Vaultor Next**. It uses separate approvals, downloads and Review storage from the published Vaultor app. Android can prompt for local network and camera access.
+1. Launch a compatible Vaultor Next Windows engineering build with a Vaultor Next workspace. In **Settings → Hosting**, select the private Wi-Fi address and select **Start hosting**. Turn on discovery if you want the host to appear in **Nearby hosts**. Open the pairing QR on Windows.
+2. Open **Vaultor** on Android alpha.29. Android can prompt for local network and camera access. The older alpha.28 app connects to the original Java host. The separate Next test APK stores its approvals and offline work separately.
 3. In **Source management**, select **Scan pairing QR** and scan the code on the host you intend to trust. You can also use a verified HTTPS address and the CA fingerprint in Windows settings if the scanner is unavailable. A nearby advertisement supplies an address only.
 4. Compare the six-digit codes on both screens. If they match, select **Codes match**, **Approve** and **Grant access** on Windows. On Android select **I approved the matching code** and open the workspace in Library.
 5. Open notes or managed originals from Library or search. Use **Offline downloads** to prepare a reading copy. Use **Review** to queue feedback for the current saved revision. The desktop **Review inbox** displays delivered feedback.

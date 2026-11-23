@@ -1,6 +1,6 @@
 # Vaultor for Android
 
-Reviewed 2026-10-23. Current published APK: **0.1.0-alpha.28 / versionCode32**, package com.vaultor.app, original signer, minAPI36/target37, protocol3, production diagnostics disabled. Use [Windows0.16.1](../desktop/releases/v0.16.1.md) for the current compatible host; imports/partial6 need the0.16 host contracts, Reviews need reviews:1 and downloads companionSnapshots:1. Install the host first, then the [Android prerelease](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.28) over the existing app. Never uninstall/clear data as an upgrade or repair procedure. [Alpha.28 ledger](releases/0.1.0-alpha.28.md) owns exact artifact evidence; [R10 qualification](../development/qualification/R10.md) records completed integration/scale checks and unqualified physical/platform cases. W1–W3/R1–R10 engineering is complete; no next sprint is implicitly authorized.
+Reviewed 2026-11-24. The [Android alpha.29 prerelease](releases/0.1.0-alpha.29.md) uses `com.vaultor.app`, versionCode 36, the original signer, minimum API 36, target 37, protocol 3 and production diagnostics disabled. Install over alpha.28/code 32. Windows 0.27.0 retains the original Java host route and its existing approvals. The same APK can separately pair with a compatible [Next engineering host](../development/NEXT-HOST.md#android-m24-c-projection). Keep pending work tied to its original host and generation. Never uninstall or clear data as an upgrade or repair procedure.
 
 ## Mandatory documentation reconciliation
 
@@ -60,7 +60,7 @@ npm --prefix mobile run test:editor
 & mobile/scripts/build-release.ps1
 # Start exactly one AVD; all subsequent ADB commands need its explicit serial.
 Start-Process "$env:ANDROID_HOME/emulator/emulator.exe" -WindowStyle Hidden -ArgumentList '-avd','Vaultor_API36','-port','5554','-no-window','-no-audio','-no-snapshot','-gpu','swiftshader','-memory','2048'
-& "$env:ANDROID_HOME/platform-tools/adb.exe" -s emulator-5554 install -r mobile/releases/0.1.0-alpha.28/Vaultor-Android-0.1.0-alpha.28.apk
+& "$env:ANDROID_HOME/platform-tools/adb.exe" -s emulator-5554 install -r mobile/releases/0.1.0-alpha.29/Vaultor-Android-0.1.0-alpha.29.apk
 ```
 
 The dot-sourced environment includes signing credentials: never print environment variables. The build helper removes its password variable afterward. Configure ignored local.properties for a different machine's SDK; the checked-in wrapper pins Gradle distribution/checksum. Android 17 uses AVD Vaultor_API37 and explicit port 5556/serial emulator-5556, after stopping the other emulator. Its image has 16 KiB pages. API36/37 emulator WebViews were 133.0.6943.137/145.0.7632.218.
@@ -83,5 +83,7 @@ The implemented updater uses credential-free official GitHub metadata, bounded p
 ## Focused verification
 
 Use current reader/Review/import/export/source-boundary/update tests against disposable hosts and explicit emulator serials. Retired editing Prototype/Organization/Media instrumentation is historical and must not be used as current reader acceptance or weakened to permit old writes. Install-over checks seed nonempty protected state before upgrade and verify exact identities/bytes afterward. Test ordinary pinned approval, grant loss/replacement, uncertain delivery/process death and recovery independently of UI animation.
+
+For the M26-C alpha.28 → alpha.29 transition, use `mobile/scripts/test-production-upgrade.mjs` with the exact published predecessor APK, the production APK, its instrumentation APK and a new emulator serial. Set `ANDROID_HOME` and `VAULTOR_BUILD_BUNDLE` to the SDK and verified original 0.27.0 Java host bundle. The script creates a disposable host and workspace, verifies the candidate through the predecessor app, and checks protected state after install-over and restart. Run on both API 36 and API 37. [M26-C qualification](../plans/VAULTOR-NEXT-M26-C.md).
 
 test-reading.ps1 supports explicit emulator-5554/5556 and the disposable HTTPS reader fixture; -Install installs staged release/test APKs without clearing data, and -Stage all runs services, reading/media/journeys/cold restore/OS/reduced motion/legacy recovery. Build-release.ps1 checks TypeScript before original-key compilation and staged APK verification. [R6](../development/qualification/R6.md), [R7–R9](../development/qualification/R7-R9.md) and [R10](../development/qualification/R10.md) retain actual installed results and corrected failures. Versioned ledgers under releases/ describe that release or candidate only; old stop gates and editing UI are not current instructions.

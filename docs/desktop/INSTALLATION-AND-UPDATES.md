@@ -50,6 +50,8 @@ Follow these steps only when the release lists a produced and verified Mac arm64
 
 ## Update an installed desktop app — preferred route
 
+This procedure applies to the published Electron/Java desktop releases. Windows 0.27.0 remains the supported installed release while the [Next install-over and workspace migration gates](../plans/VAULTOR-NEXT-M26-C.md#windows-release-gate) are open. Keep the existing installation and its local data while those gates are pending.
+
 With 0.4.1 or newer installed on Windows, open window menu → **Updates**. The app checks GitHub automatically. When a complete Windows release is available, click **Update and restart**. Vaultor downloads/verifies it, saves your work, backs up the managed workspace, updates in its current location and reopens. No browser download, JSON selection or installer wizard is needed. Download progress supports Cancel; failures offer retry and retain verified packages. Local hosting briefly disconnects paired devices. Remote hosts update separately.
 
 Confirm the new version in Updates, the selected workspace, open notes and pairing. Select This computer when appropriate to confirm its local update journal. Data/profiles/drafts remain separate from installed app files. OS prompts can still appear on a personal unsigned build; never disable security globally.

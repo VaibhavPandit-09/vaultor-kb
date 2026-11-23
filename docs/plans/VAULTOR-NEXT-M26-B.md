@@ -131,6 +131,6 @@ Use a disposable workspace and a copy of any backup. Record candidate identity, 
 
 The four original P0 cases passed the documented fixtures. The wider M26-B engineering gate remains open. Remaining cases include native pointer reorder, additional matched original-versus-Next workflow frames and motion, visual contrast across interactive states, and screen-reader behavior beyond the checked AX controls. Staging qualification exercises real termination, a live lock, NTFS access denial and an identity replacement. A standalone cleanup-versus-concurrent-import scenario was not run. The [physical checklist](#physical-acceptance) covers Explorer drag and drop, Snap, IME, live scaling, Narrator, Samsung camera and TalkBack, real Wi-Fi and sleep/resume.
 
-M26-C production qualification remains gated on the open engineering and physical acceptance. The current build is available for engineering review and the user-owned physical checks.
+This M26-B build remains available for engineering review and the user-owned physical checks. The separate [M26-C qualification](VAULTOR-NEXT-M26-C.md) records the production install-over and publication gates by platform.
 
 Destructive in-place replacement is intentionally omitted. Electron ZIP v9–10 remain refused where linked identity evidence cannot be verified. Review triage leaves document content untouched. These decisions are distinct from open functional and qualification work.

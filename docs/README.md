@@ -2,7 +2,7 @@
 
 Start with [CODEBASE.md](CODEBASE.md) for the current product, source map, architecture, contracts and limitations. Agents read [AGENTS.md](../AGENTS.md) and the [development workflow](development/AI_DEVELOPMENT_WORKFLOW.md) before changes. UI work additionally reads the design contracts below. [Root README](../README.md) and [mobile README](../mobile/README.md) are short discovery entry points; [.github release checklist](../.github/RELEASE_CHECKLIST.md) delegates to the release process.
 
-Reviewed 2026-11-08: Windows x64 and macOS Apple Silicon 0.27.0 Help are published; GitHub Latest remains 0.21.0; Android alpha.28/code32 is unchanged. W1–W3/R1–R10 engineering is complete. Current topic guides own behavior; qualification and versioned release records own historical evidence only. They do not authorize old branch work, restore editing-led Android UI or reopen completed milestone gates. Deferred scope has one owner below; no archive of obsolete plans is maintained.
+Reviewed 2026-11-24. Windows x64 and macOS Apple Silicon 0.27.0 include Help. The [Android alpha.29 release record](android/releases/0.1.0-alpha.29.md) covers the direct upgrade from alpha.28. The [M26-C qualification](plans/VAULTOR-NEXT-M26-C.md) records the remaining Windows Next migration gate. Current topic guides own behavior. Qualification and versioned release records preserve historical evidence.
 
 - [Vaultor Next M13 acceptance](plans/VAULTOR-NEXT-M13.md): original/current Windows screen matrix, checks, representative local evidence and remaining desktop parity.
 - [Vaultor Next M26-B qualification](plans/VAULTOR-NEXT-M26-B.md) records the engineering candidate, acceptance evidence and remaining gates.
@@ -156,4 +156,4 @@ Android: [0.1.0-alpha.1](android/releases/0.1.0-alpha.1.md) · [0.1.0-alpha.2](a
 
 - [Mac 0.21.0 release](desktop/releases/v0.21.0.md): native APFS linked folders, actual Mac publication evidence and exact-tag Windows/complete-platform handoff.
 
-Experimental frontend acceptance: [Vaultor Next migration tracker](plans/VAULTOR-NEXT.md), [functional parity register](plans/VAULTOR-NEXT-PARITY.csv) and [UI reconciliation audit](plans/VAULTOR-NEXT-UI-AUDIT.md). Published Electron release documentation remains separate.
+Vaultor Next acceptance includes the [migration tracker](plans/VAULTOR-NEXT.md), [functional parity register](plans/VAULTOR-NEXT-PARITY.csv), [UI reconciliation audit](plans/VAULTOR-NEXT-UI-AUDIT.md), and [direct-upgrade qualification](plans/VAULTOR-NEXT-M26-C.md). Published Electron release documentation remains separate.
