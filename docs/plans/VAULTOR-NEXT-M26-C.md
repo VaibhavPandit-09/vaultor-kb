@@ -34,3 +34,13 @@ This change reuses M26-B evidence for protected drafts, archive migration, Resto
 | Vaultor Next Rust host | Unsupported | Separate verified pairing and owner grant in the M26-B engineering runtime |
 
 There is no production Windows Next host release. The Rust qualification used isolated Linux/amd64 Docker and emulator loopback, so physical Android, camera, Wi-Fi and Samsung acceptance remain open.
+
+## Android publication
+
+The clean release source is `f164eba31da75ea0d3f71bfa83f508d2bd49f8ce`. `packageRelease` regenerated the signed APK, and its digest matched the bytes installed during both direct-upgrade tests. The immutable tag is `android/v0.1.0-alpha.29`. The publication script downloaded and byte-compared all three staged assets, then published the [Android-only prerelease](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/android/v0.1.0-alpha.29).
+
+Anonymous downloads of the public APK, `SHA256SUMS.txt` and `android-release.json` matched the release staging files. `apksigner` verified the original certificate and v2 signature. APK inspection confirmed `com.vaultor.app`, versionCode 36, min API 36, target 37 and arm64-v8a/x86_64. The original alpha.28 updater independently discovered the public release, downloaded the APK and verified the production digest on API 36.
+
+On the disposable API 36 predecessor, selecting a byte-identical APK through the system picker and denying install permission preserved the verified candidate. Granting permission and confirming Android's actual Update prompt then replaced alpha.28. Package Manager confirmed the same UID, code 36 and the public APK digest. The upgraded MainActivity cold-launched successfully.
+
+The API 37 grant revocation check used the already-installed production APK after a redundant reinstall stalled in the emulator's package manager. Both installed APKs were digest-checked against the production and instrumentation build files before the test. After owner revocation the Android client's authenticated workspace request returned HTTP 401. No app data was cleared during recovery.
