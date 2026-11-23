@@ -10,6 +10,8 @@ The transition installer and update manifest have Next-specific names. The old E
 
 The published Electron installers were previously verified against the original release trust root. The 15 focused Electron updater checks passed. Synthetic native Windows tests exercised exact-file cleanup, preserving locked and unexpected files, refusing a junction, and preserving its external target bytes. This workstation contains the live installation and was not used for install-over. The separate hosted Windows job is intended to qualify fresh install, the three predecessors, a second Tauri install, protected drafts, managed bytes, and ordinary uninstall in disposable profiles. Publication remains gated on completed native qualification, a genuine signed update round trip and the exact release installer.
 
+The [staged 0.28.0 candidate](../desktop/releases/v0.28.0.md#staged-candidate) records the clean build hash, independent Tauri signature check, tamper refusal and NSIS payload inspection. Next's production frontend and browser bundle compiled, and scoped lint and 17 Help checks passed. The broader Next frontend suite passed 112 of 113 cases on the first run. The Settings focus case passed its isolated rerun.
+
 ## Android release gate
 
 The published predecessor APK is `0.1.0-alpha.28` / code 32, `com.vaultor.app`, minimum API 36, target API 37 and arm64-v8a/x86_64. The downloaded APK matched SHA-256 `4b87dd8212f03c8db45395ea113e12761c2b1bb45185e1c7e5de6962aaba730b`, and `apksigner` verified the original certificate `af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567`.
