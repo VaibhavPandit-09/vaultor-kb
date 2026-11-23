@@ -73,8 +73,8 @@ export async function browserChecks(docker, network, name, bind, owner, ip, file
     assert.equal(controlled,200);
     if(process.argv.includes('--check-note-creation')) {
       await run("[...document.querySelectorAll('button')].find(x=>x.textContent==='New note').click();true");
-      await poll(()=>run("document.activeElement?.getAttribute('name')==='title' || document.activeElement?.value==='Untitled Note'"),'new note title focus');
-      await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65,modifiers:2});
+      await poll(()=>run("document.activeElement?.getAttribute('name')==='title'"),'new note title focus');
+      await run("document.activeElement.select();true");
       await cdp('Input.insertText',{text:'M26-A Chromium note'});
       await run("[...document.querySelectorAll('button')].find(x=>x.textContent==='Create note').click();true");
       await poll(()=>run("document.querySelector('.browser-reader h2')?.textContent==='M26-A Chromium note'"),'created note opens');

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {writeFile} from 'node:fs/promises';
+import {readFile,writeFile} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {roleSamples} from './process-role-samples.mjs';
 
@@ -72,6 +72,8 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
     'M19 waveform.wav':wavFixture(),
     'M19 raster.png':Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+pP1sAAAAASUVORK5CYII=','base64'),
   };
+  const protectedPdf = process.env.VAULTOR_BENCH_PROTECTED_PDF;
+  if (protectedPdf) fixtures['M26 protected.pdf'] = await readFile(protectedPdf);
   const paths=Object.keys(fixtures).map(name=>join(folder,name));
   await Promise.all(paths.map((path,i)=>writeFile(path,Object.values(fixtures)[i])));
   const plan=await transfer({op:'preview',paths,folder:false,collection:null});
@@ -86,7 +88,7 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
   const list=await api({kind:'list',collection:null,limit:30});
   const files=Object.keys(fixtures).map(name=>list.items.find(item=>item.title===name));
   assert(files.every(Boolean));
-  await org({op:'pin',ids:[...notes.slice(1),...files].map(item=>item.id),value:true});
+  await org({op:'pin',ids:[...notes.slice(1),...files.slice(0,3)].map(item=>item.id),value:true});
   await api({kind:'behavior',path:snapshot.path,value:{maxVisiblePanes:3,noteOpening:'fill'}});
   await api({kind:'preferences',value:{previewMode:'side',autoCompanion:false}});
   report.dataset=createHash('sha256').update(JSON.stringify([prose,dense])).update(Buffer.concat(Object.values(fixtures))).digest('hex');
@@ -141,6 +143,26 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
   await measure('media-open');await close();
   assert.equal(await evaluate('document.querySelector(".next-playback audio")===null'),true);
   await back();
+  if(protectedPdf){
+    const password='[name="password"]';
+    const open=()=>openRow(files[3].id);
+    const submit=async value=>{
+      await wait('document.querySelector('+JSON.stringify(password)+')?.type==="password"','PDF password field');
+      await evaluate('document.querySelector('+JSON.stringify(password)+').focus()');
+      await cdp('Input.insertText',{text:value});
+      await click('.next-pdf button[type="submit"]');
+    };
+    await open();
+    await submit('incorrect');
+    await wait('document.querySelector(".next-pdf [role=alert]")?.textContent.includes("Incorrect PDF password")','wrong password');
+    await submit('m26-fixture');
+    await wait('document.querySelector(".next-pdf-text")?.textContent.includes("M26 protected fixture")','unlocked PDF text');
+    await close(3);
+    await open();
+    await wait('document.querySelector('+JSON.stringify(password)+')?.value===""','password is requested again');
+    await close(4);
+    report.checks.push('Protected PDF wrong and correct passwords, text readback, close and reopen without password retention');
+  }
   for(const note of notes.slice(1)){
     await click(shortcut(note.title));
     await wait(`!!document.querySelector('[data-note-id="${note.id}"] .tiptap')?.editor?.isEditable`,'distinct dense note ready');

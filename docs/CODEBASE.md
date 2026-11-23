@@ -521,7 +521,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-23 — Next M26-A functional checkpoint
 
-Added scoped browser note creation with a private transactional receipt, PDF preview password handling, stale managed occurrence refusal and stricter archive publication checks. The Rust owner, protected draft commit and portable format are unchanged. Updated the Next Help and catalogue. Validation and remaining native and compatibility gaps are tracked in the [M26-A closure record](plans/VAULTOR-NEXT.md#m26-a-closure-record).
+Added scoped browser note creation with a private transactional receipt, PDF preview password handling, stale managed occurrence refusal and stricter archive publication checks. The Rust owner, protected draft commit and portable format are unchanged. Updated the Next Help and catalogue. Windows Rust, frontend, original Java fixture, optimized Windows transfer/preview/TLS, and Linux Docker Chromium checks passed with the limits in the [M26-A closure record](plans/VAULTOR-NEXT.md#m26-a-closure-record).
 
 ### 2026-11-21 — Next M24-D network integration
 

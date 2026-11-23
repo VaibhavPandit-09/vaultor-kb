@@ -406,6 +406,8 @@ Run `node benchmarks/tauri-rust/run.mjs tauri-rust --inspect --m18-editor` again
 
 Run `node benchmarks/tauri-rust/run.mjs tauri-rust --inspect --m19-preview` with `VAULTOR_BENCH_EXECUTABLE` and `VAULTOR_BENCH_SOURCE_COMMIT` set to the optimized build and its commit. The runner creates disposable fixtures and uses an emulated 1800 × 1000 viewport at DPR 1. It checks content readiness for a three-page PDF, small raster and WAV, plus close, seek and stale workspace access. `--m19-video` adds a disposable VP8/WebM playback check. Markdown clipboard review uses injected events. `--m19-probe` retains raw evidence only. This driver provides no physical pointer, clipboard or picker acceptance.
 
+Set `VAULTOR_BENCH_PROTECTED_PDF` to a disposable encrypted PDF with the password `m26-fixture` and visible text `M26 protected fixture` to check wrong-password retry, correct-password rendering, close, and reopening without password retention.
+
 Memory snapshots follow 2.4 seconds of settling. Working set and private bytes are grouped by host, renderer, GPU and other processes. The JavaScript heap comes from CDP. Process-tree working set sums resident bytes and can count shared pages more than once. The fixture measures startup, prose, a 181 × 12 table, three shared and distinct views, two preview cycles, and two returns to one dense pane. Readiness uses first painted PDF text and raster pixels, decoded image dimensions or loaded audio metadata. It excludes completed animations. Run `update-workbook.ps1 -AppendM19` with the bundled runtime path to append the canonical tail. [Measurements and limitations](summaries/m19-preview-windows.json).
 
 ## M20 linked Markdown measurements
@@ -429,6 +431,8 @@ Run the optimized experimental executable with the existing Windows harness.
 Set the executable and its source commit with the usual benchmark variables. The recipe uses a disposable workspace, a separate linked Markdown source, 104 small inputs and eight 32 MiB managed originals. Discovery timing includes reading and hashing selected sources. Activity timing reports both invocation-to-receipt and the Rust task interval. The responsiveness proxy starts at the editor's beforeinput event and ends at the next animation frame. Process sampling includes the application and its WebView2 processes. The data records the observed overlap with the transfer. It does not establish a physical latency or idle-memory result.
 
 Use --m22-sustained to run the dedicated eight-file, 1 GiB CPU and process-memory sample. Use --m22-probe for diagnostics without adding canonical observations. Refresh the workbook with update-workbook.ps1 -AppendM22 and the bundled workspace runtime. The append path keeps the original comparison sheets and formulas.
+
+For the M26-A comparison, run the original backend `NoteRendererTests` first. Add `--m26-export-fidelity` to the transfer probe to export the original test's rich document and PNG through Next. The probe expects Next's text-layout PDF to refuse the fixture's Greek characters.
 
 ## M24 Windows loopback host
 
@@ -462,6 +466,8 @@ The runner excludes the first two opens and first two inputs, then records 20 cl
 For the protected publication probe, use `tauri-rust --m25 --m25-proof=echo` on M24-D and `--m25-proof=receipt` on M25. Repeat the legacy echo mode on the M25 binary as a same-build control. The probe reports 20 publication acknowledgements after four warmups using near-1 MiB managed prose, with full readback, monotonic revision and cleared-draft checks outside each timer. Draft protection and commit have separate boundaries. For the additional Next-only scopes, use `tauri-rust --m25 --m19-preview --m19-video`, `tauri-rust --m25 --m21-discovery`, and `tauri-rust --m25 --m24-host` with the standalone and OpenSSL variables described above. Only the host scope enables networking. Network ingress uses newly established TLS connections and a disposable CA. The standalone and desktop CPU windows have separate process scopes.
 
 For the separate Linux/amd64 Docker experiment, build or select an exact-source local image. Set `VAULTOR_M25_TEST_IMAGE` to that tag and keep `VAULTOR_BENCH_OPENSSL` set. The driver needs Docker with Linux cgroup v2 and an available private `172.30.245.0/28` subnet. It creates its own volumes and network, provisions test TLS, checks the owner lock and authorization, samples a minute of cgroup idle counters, repeats verified saved-note reads and verifies every byte of concurrent 8 MiB original downloads. It also covers restart identity, grant withdrawal, revocation and graceful SIGTERM. The optional browser driver uses an isolated image named `vaultor-m24d-chromium:local` with Chromium and `certutil`, separate from the host image.
+
+Run `node benchmarks/tauri-rust/m25-docker.mjs --browser --check-note-creation` on the M26-A candidate to add browser note creation and reload. The probe writes `raw/m26a-docker.json` and preserves the historical M25 file.
 
 ```powershell
 docker build --platform linux/amd64 --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" -t vaultor-next-m25:local -f next/Dockerfile .

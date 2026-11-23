@@ -202,6 +202,28 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
   assert.equal(retry.result.imported+retry.result.reused,8);
   assert.equal(task.state,'interrupted','Termination must overlap import to qualify recovery');
   record('m22-interrupted-recovery',1,'restart_to_retry_complete',performance.now()-restartedAt,'ms','Termination, restart, source review and completion.');
+  if (process.argv.includes('--m26-export-fidelity')) {
+    const originalSource = await readFile(new URL('../../backend/src/test/java/com/vaultor/vaultor/NoteRendererTests.java',import.meta.url),'utf8');
+    const json = originalSource.split('mapper.readTree("""')[1].split('""");')[0].replaceAll('\\\\n','\\n');
+    const content = JSON.parse(json);
+    const imagePath = join(folder,'Original renderer image.png');
+    const originalImage = await readFile(new URL('../../backend/target/note-export-review/assets/image.png',import.meta.url));
+    await writeFile(imagePath,originalImage);
+    await importSource('original-fixture-image',[imagePath],'Exact original renderer fixture image.');
+    const foundImage = await workspace({kind:'search',options:{query:'Original renderer image.png',content:false,collection:null,order:'title'},limit:30});
+    const image = foundImage.items.find(item=>item.title==='Original renderer image.png');
+    assert(image);
+    content.content.find(node=>node.type==='image').attrs.resourceId=image.id;
+    content.content.find(node=>node.content?.[0]?.type==='resourceLink').content[0].attrs.resourceId='8f385db0-7aec-4e3a-b30f-5e28dd0d144a';
+    const fixture = await workspace({kind:'createNote',title:'Original renderer comparison',collection:null});
+    await workspace({kind:'save',id:fixture.id,revision:fixture.revision,title:fixture.title,content});
+    for (const format of ['markdown','markdownZip','docx','pdf']) {
+      const destination=join(folder,'Original renderer '+format);
+      await submit('original-fixture-'+format,{op:'export',ids:[fixture.id],destination,format},
+        'Structured fixture from the original Java renderer test.',format==='pdf'?'failed':'completed');
+    }
+    report.checks.push('Original rich renderer fixture imported with its PNG and exported to Markdown, Markdown ZIP and DOCX. Next text-layout PDF refused characters outside its encoding.');
+  }
   await sleep(2000);
   report.checks.push('Mixed selection, nested imports, source reuse, relative reference and image conversion, raw file preservation, managed export containers, graph and archive verification, linked descriptors and original bytes, restore as new, transactional remapping, idempotent merge, recovery-copy preservation and interrupted task reconciliation.');
 }

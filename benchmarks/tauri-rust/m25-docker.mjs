@@ -184,7 +184,8 @@ try{
   assert.equal((await json('GET',projected+'/capabilities',headers)).status,401);
   docker('stop','-t','5',token);
   assert.equal(docker('inspect','--format','{{.State.ExitCode}}',token),'0');
-  await writeFile('benchmarks/tauri-rust/raw/m25-docker.json',JSON.stringify({observedAt:new Date().toISOString(),image:docker('image','inspect','--format','{{.Id}}',image),source:docker('image','inspect','--format','{{index .Config.Labels "org.opencontainers.image.revision"}}',image),samples,success:true},null,2));
+  const output=process.argv.includes('--check-note-creation')?'m26a-docker.json':'m25-docker.json';
+  await writeFile('benchmarks/tauri-rust/raw/'+output,JSON.stringify({observedAt:new Date().toISOString(),image:docker('image','inspect','--format','{{.Id}}',image),source:docker('image','inspect','--format','{{index .Config.Labels "org.opencontainers.image.revision"}}',image),samples,success:true},null,2));
   console.log('Linux/amd64: verified TLS, matching-code approval, grants, isolated ownership, saved notes, exact downloads, restart, revocation and graceful stop passed.');
 }finally{
   for(const [args] of [[['rm','-f',token]],[['network','rm',network]],[['volume','rm',access,workspace,alternate]]]){

@@ -25,6 +25,8 @@ Completed artifacts and snapshots live beside existing workspace operations and 
 
 ## Format fidelity
 
+The original renderer contract below applies to the Electron/Java application. The Next candidate uses separate Rust renderers. Its PDF export uses a Western European text layout, and its Word exporter writes managed image references as labels. See the [Next M26-A record](../plans/VAULTOR-NEXT.md#m26-a-closure-record) for the rich-fixture comparisons and remaining fidelity gaps.
+
 | Feature | Behavior |
 | --- | --- |
 | Headings, paragraphs, quotes, code | Preserved; PDF/DOCX long code lines wrap for page readability |
