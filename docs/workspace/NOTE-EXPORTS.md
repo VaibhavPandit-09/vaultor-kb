@@ -25,7 +25,7 @@ Completed artifacts and snapshots live beside existing workspace operations and 
 
 ## Format fidelity
 
-The original renderer contract below applies to Electron/Java. Next Markdown emits HTML for merged tables. Next Word writes the full cell grid, including the continuation cells of vertical merges, and embeds verified managed PNG/JPEG originals with size, alignment and caption. The per-image bound is 20 MiB and 40 million pixels, with at most 60 MiB per document. Missing or unsupported placements produce Activity issues and a text label. Image corruption aborts staged publication. Next PDF uses a selectable text layout with an embedded Noto Sans face and Unicode character map. Latin with accents, Greek and the tested Western mathematical punctuation are in scope. Missing glyphs cause an explicit refusal. Rich formatting, image layout, complex-script shaping and general glyph coverage remain outside the PDF evidence. See the [M26-A2 record](../plans/VAULTOR-NEXT.md#m26-a2-compatibility-and-export-checkpoint).
+Next Markdown emits HTML for merged tables. Next Word writes the full cell grid, including the continuation cells of vertical merges, and embeds verified managed PNG/JPEG originals with size, alignment and caption. PDF reuses the validated table spans and managed-asset checks. The per-image bound is 20 MiB and 40 million pixels, with at most 60 MiB per document. Missing or unsupported placements produce Activity issues and a text label. Image corruption aborts staged publication. The [Next PDF contract](#vaultor-next-pdf) describes rendering and font coverage.
 
 | Feature | Behavior |
 | --- | --- |

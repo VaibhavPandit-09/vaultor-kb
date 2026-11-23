@@ -1,4 +1,5 @@
 use super::{table_layout, Context, ExportPictures, Original, Value};
+use std::collections::HashSet;
 use std::{fmt::Write as _, fs::File, io::Write as _};
 use typst_as_lib::TypstEngine;
 
@@ -14,7 +15,7 @@ const BOLD_ITALIC: &[u8] =
 const MONO: &[u8] = include_bytes!("fonts/NotoSansMono-Regular.ttf");
 
 const PREAMBLE: &str = r##"
-#set page(paper: "a4", margin: 18mm, numbering: "1", number-align: right)
+#set page(paper: "a4", margin: 20mm, numbering: "1", number-align: right)
 #set text(font: "Noto Sans", fallback: false, size: 10pt, fill: rgb("#172033"))
 #set par(leading: 4.5pt, spacing: 8pt)
 #show link: set text(fill: rgb("#1d4ed8"))
@@ -30,6 +31,7 @@ const PREAMBLE: &str = r##"
 struct Layout<'a, 'activity> {
     faces: [ttf_parser::Face<'static>; 4],
     pictures: &'a ExportPictures,
+    references: &'a HashSet<String>,
     file_names: &'a std::collections::HashMap<&'a str, String>,
     issues: &'a mut Vec<String>,
     ctx: &'a Context<'activity>,
@@ -89,7 +91,12 @@ impl Layout<'_, '_> {
             "text" => self.text(node["text"].as_str().ok_or("Invalid text")?)?,
             "resourceLink" => {
                 let label = attr["label"].as_str().unwrap_or("Resource");
-                self.text(label)?
+                if attr["resourceId"].as_str().is_some_and(|id| self.references.contains(id)) {
+                    self.text(label)?
+                } else {
+                    self.warn("PDF linked resource unavailable; retained its label");
+                    self.text(&format!("{label} (unavailable)"))?
+                }
             }
             "hardBreak" => "#linebreak()".into(),
             "horizontalRule" => "#line(length: 100%, stroke: 0.6pt + luma(75%))\n\n".into(),
@@ -190,23 +197,25 @@ impl Layout<'_, '_> {
     fn list(&mut self, kind: &str, attr: &Value, nodes: &[Value]) -> Result<String, String> {
         let mut out = if kind == "orderedList" {
             format!(
-                "#enum(start: {},\n",
+                "#enum(start: {}, spacing: 7pt,\n",
                 attr["start"].as_u64().unwrap_or(1).clamp(1, 1_000_000)
             )
         } else {
-            "#list(\n".into()
+            "#list(spacing: 7pt,\n".into()
         };
         for item in nodes {
-            let task = if kind == "taskList" {
-                if item["attrs"]["checked"] == true {
-                    self.text("[x] ")?
-                } else {
-                    self.text("[ ] ")?
+            let body = if kind == "taskList" {
+                let check = self.text(if item["attrs"]["checked"] == true { "[x] " } else { "[ ] " })?;
+                match children(item).split_first() {
+                    Some((first, rest)) if first["type"] == "paragraph" => {
+                        format!("#par[{check}{}]\n\n{}", self.children(children(first))?, self.children(rest)?)
+                    }
+                    _ => format!("#par[{check}]\n\n{}", self.children(children(item))?),
                 }
             } else {
-                String::new()
+                self.children(children(item))?
             };
-            writeln!(out, "[{task}{}],", self.children(children(item))?).unwrap();
+            writeln!(out, "[{body}],").unwrap();
         }
         out.push_str(")\n\n");
         Ok(out)
@@ -242,7 +251,7 @@ impl Layout<'_, '_> {
             String::new()
         } else {
             format!(
-                "#table(columns: ({0}1fr,), stroke: 0.6pt + rgb(\"#b8c1cd\"), inset: 5pt,\n",
+                "#table(columns: ({0}1fr,), stroke: 0.6pt + rgb(\"#b8c1cd\"), inset: (x: 5pt, y: 8pt),\n",
                 "1fr, ".repeat(columns - 1)
             )
         };
@@ -255,7 +264,10 @@ impl Layout<'_, '_> {
             let mut x = 0;
             for cell in row {
                 if let Some(node) = cell.source {
-                    let body = self.children(children(node))?;
+                    let mut body = self.children(children(node))?;
+                    if node["type"] == "tableHeader" {
+                        body = format!("#strong[{body}]");
+                    }
                     if wide {
                         writeln!(out, "#par[#strong[Column {}]]\n{body}", x + 1).unwrap();
                     } else {
@@ -300,6 +312,7 @@ pub(in crate::transfers) fn render(
     issues: &mut Vec<String>,
     root: &str,
     originals: &[Original],
+    references: &HashSet<String>,
     ctx: &Context<'_>,
 ) -> Result<(), String> {
     let pictures = ExportPictures::load(root, content, originals, ctx, true)?;
@@ -315,6 +328,7 @@ pub(in crate::transfers) fn render(
         file_names: &file_names,
         faces,
         pictures: &pictures,
+        references,
         issues,
         ctx,
     };

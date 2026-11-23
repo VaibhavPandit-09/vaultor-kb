@@ -1723,7 +1723,8 @@ fn export(
     }
     let zip = format == "markdownZip";
     let rich = matches!(format, "docx" | "pdf");
-    let manifest = storage.call(root, move |w| {
+    let pdf = format == "pdf";
+    let data = storage.call(root, move |w| {
         if remote {
             let note = ids.first().ok_or("Select a note")?;
             if w.db.query_row("SELECT EXISTS(SELECT 1 FROM managed_originals WHERE resource_id=?1 AND kind='file')", [note], |r| r.get::<_, bool>(0)).map_err(error)? {
@@ -1745,9 +1746,20 @@ fn export(
             let selected = manifest.resources.iter().map(|r|r.id.as_str()).collect();
             manifest.reviews=crate::reviews::snapshot(&w.db,Some(&selected))?;
         }
-        serde_json::to_value(manifest).map_err(error)
+        let mut references = HashSet::new();
+        if pdf {
+            let mut query = w.db.prepare("SELECT l.target_id FROM resource_links l
+                JOIN visible_resources r ON r.id=l.target_id WHERE l.source_id=?1
+                AND NOT EXISTS(SELECT 1 FROM resource_state s WHERE s.resource_id=r.id AND s.trashed=1)").map_err(error)?;
+            for resource in &manifest.resources {
+                for row in query.query_map([&resource.id], |row| row.get::<_, String>(0)).map_err(error)? {
+                    references.insert(row.map_err(error)?);
+                }
+            }
+        }
+        serde_json::to_value((manifest, references)).map_err(error)
     })?;
-    let m: Manifest = serde_json::from_value(manifest).map_err(error)?;
+    let (m, references): (Manifest, HashSet<String>) = serde_json::from_value(data).map_err(error)?;
     if zip {
         let mut receipt = exports::markdown_zip(root, &staged.0, &m, ctx)?;
         ctx.check()?;
@@ -1788,7 +1800,7 @@ fn export(
         if !is_original {
             match format {
                 "docx" => exports::docx(out, &r.content, &mut issues, root, &m.originals, ctx)?,
-                "pdf" => exports::pdf(out, &r.title, &r.content, &mut issues, root, &m.originals, ctx)?,
+                "pdf" => exports::pdf(out, &r.title, &r.content, &mut issues, root, &m.originals, &references, ctx)?,
                 _ => {
                     let data = exports::render_document(
                         &r.content,
@@ -2116,6 +2128,9 @@ mod tests {
                 {"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Résumé and Greek α β"}]},
                 {"type":"paragraph","content":[{"type":"text","text":"Bold italic","marks":[{"type":"bold"},{"type":"italic"}]},
                   {"type":"text","text":" Read the guide","marks":[{"type":"link","attrs":{"href":"https://example.com/guide"}}]}]},
+                {"type":"taskList","content":[{"type":"taskItem","attrs":{"checked":true},"content":[text("Checked task")]}]},
+                {"type":"paragraph","content":[{"type":"resourceLink","attrs":{"resourceId":Uuid::new_v4().to_string(),"label":"Lost note"}},
+                  {"type":"text","text":" and "},{"type":"resourceLink","attrs":{"resourceId":image,"label":"Known chart"}}]},
                 {"type":"image","attrs":{"resourceId":image,"alt":"Chart","caption":"Managed chart caption","width":30}},
                 {"type":"table","content":rows}
             ]});
@@ -2131,7 +2146,7 @@ mod tests {
         let pages: Vec<_> = doc.get_pages().keys().copied().collect();
         assert!(pages.len() > 2);
         let extracted = doc.extract_text(&pages).unwrap().split_whitespace().collect::<Vec<_>>().join(" ");
-        for phrase in ["Résumé and Greek α β","Bold italic","Managed chart caption","Merged from above","Named row 74"] {
+        for phrase in ["Résumé and Greek α β","Bold italic","[x] Checked task","Lost note (unavailable)","Known chart","Managed chart caption","Merged from above","Named row 74"] {
             assert!(extracted.contains(phrase), "{phrase}: {extracted}");
         }
         assert!(extracted.matches("Allocation").count() >= pages.len() - 1);
