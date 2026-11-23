@@ -2143,6 +2143,7 @@
         "Open floating Settings without leaving a note and adjust pane and menu opacity",
         "Triage feedback in the Review inbox and inspect captured evidence",
         "Start or stop experimental HTTPS hosting and manage workspace grants",
+        "Learn which Electron data the one-time Windows reset removes and which external files it retains",
         "Find nearby Next hosts and pair Android with a QR or verified CA fingerprint and matching code",
         "Download a saved reading copy and send Android Review feedback to Vaultor Next",
         "Browse, create and save granted notes through the experimental Next HTTPS browser",

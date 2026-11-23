@@ -1,0 +1,49 @@
+{
+  "productName": "Vaultor Next",
+  "identifier": "com.vaultor.next",
+  "mainBinaryName": "vaultor-next",
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Vaultor Next",
+        "width": 1200,
+        "height": 820,
+        "minWidth": 760,
+        "minHeight": 540,
+        "url": "next.html",
+        "decorations": false,
+        "visible": false,
+        "shadow": true
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "publisher": "Vaultor contributors",
+    "shortDescription": "Vaultor Next. First replacement of Electron resets its local notes, attachments and settings.",
+    "icon": [
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "allowDowngrades": false,
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "installerHooks": "windows/legacy-replacement.nsh"
+      }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "windows": {
+        "installMode": "passive"
+      },
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg3MEUwMTdEMTI2RTQxQzEKUldUQlFXNFNmUUVPaHpSa3dkVGF3R1YrbTFNSGFENGlIaFlFZWxyLzNKRTlRUUwycEprMENUdGgK"
+    }
+  }
+}

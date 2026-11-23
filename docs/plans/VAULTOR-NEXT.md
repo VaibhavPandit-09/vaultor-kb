@@ -83,7 +83,7 @@ One authoritative inventory; implementation boundaries and native evidence belon
 
 ## Build and run
 
-Install stable Rust MSVC, Windows C++ Build Tools/SDK and WebView2. Add the user's `.cargo/bin` to PATH. Run `npm ci --prefix frontend`, `npm ci --prefix next`, then `npm --prefix next run dev` or `npm --prefix next run build`. The optimized build produces `next/src-tauri/target/release/vaultor-next.exe`, without an installer. Do not point it at published data. `VAULTOR_NEXT_WORKSPACE` is a disposable-test override.
+Install stable Rust MSVC, Windows C++ Build Tools/SDK and WebView2. Add the user's `.cargo/bin` to PATH. Run `npm ci --prefix frontend`, `npm ci --prefix next`, then `npm --prefix next run dev` or `npm --prefix next run build`. The development build produces `next/src-tauri/target/release/vaultor-next.exe` without an installer. The Windows release configuration uses a separate stable profile and a one-time Electron reset. See [M26-C replacement qualification](VAULTOR-NEXT-M26-C.md#windows-release-gate). Do not point it at published data. `VAULTOR_NEXT_WORKSPACE` is a disposable-test override.
 
 ## Measurements and verification
 

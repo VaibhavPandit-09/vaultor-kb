@@ -1,0 +1,52 @@
+name: Vaultor Next Windows installer qualification
+on:
+  push:
+    branches: [codex/vaultor-next-m1]
+    paths: ['next/**', 'frontend/src/next/**', '.github/workflows/vaultor-next-windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: vaultor-next-windows-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  install:
+    runs-on: windows-2025
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        predecessor: ['fresh', '0.25.2', '0.26.0', '0.27.0']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - shell: pwsh
+        run: |
+          npm ci --prefix frontend
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm ci --prefix next
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $config = Get-Content next/src-tauri/tauri.windows-release.conf.json -Raw | ConvertFrom-Json -AsHashtable
+          $signer = Join-Path $env:RUNNER_TEMP 'disposable-next-updater.key'
+          $signerOutput = npm.cmd --prefix next exec tauri signer generate -- --ci --write-keys $signer 2>&1
+          if ($LASTEXITCODE -ne 0) { throw 'Disposable updater key generation failed' }
+          Remove-Variable signerOutput
+          $env:TAURI_SIGNING_PRIVATE_KEY = $signer
+          $config.plugins.updater.pubkey = (Get-Content -LiteralPath "$signer.pub" -Raw).Trim()
+          $config.plugins.updater.dangerousInsecureTransportProtocol = $true
+          $config.version = '0.28.0'
+          $config | ConvertTo-Json -Depth 15 | Set-Content -LiteralPath next/src-tauri/windows-qualification.json
+          ./next/scripts/build-windows.ps1 -Config src-tauri/windows-qualification.json -Qualification
+          ./next/scripts/test-replacement-files.ps1
+          $fixtures = "$env:RUNNER_TEMP/vaultor-qualification"
+          New-Item -ItemType Directory -Path $fixtures | Out-Null
+          Copy-Item next/src-tauri/target/release/bundle/nsis/*_0.28.0_x64-setup.exe "$fixtures/first.exe"
+          $config.version = '0.28.1'
+          $config | ConvertTo-Json -Depth 15 | Set-Content -LiteralPath next/src-tauri/windows-qualification.json
+          ./next/scripts/build-windows.ps1 -Config src-tauri/windows-qualification.json -Qualification
+          Copy-Item next/src-tauri/target/release/bundle/nsis/*_0.28.1_x64-setup.exe "$fixtures/second.exe"
+          Copy-Item next/src-tauri/target/release/bundle/nsis/*_0.28.1_x64-setup.exe.sig "$fixtures/second.exe.sig"
+          node next/scripts/qualify-windows.mjs "${{ matrix.predecessor }}" $fixtures
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

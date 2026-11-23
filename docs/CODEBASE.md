@@ -525,6 +525,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-24 — Windows Next one-time replacement
+
+The separate Windows NSIS production profile uses `com.vaultor.next` and keeps its Rust workspace outside Electron's profile. The replacement helper verifies original installer registrations and known payload hashes, then scopes cleanup to verified install files and recognized legacy data. It checks the successor before claiming the one-time receipt. Subsequent Next releases use a separate Tauri signature and preserve Next data. The focused Windows helper check preserved external bytes across an NTFS junction, a locked file and unexpected data. Installed release qualification remains in the [M26-C record](plans/VAULTOR-NEXT-M26-C.md#windows-release-gate).
+
 ### 2026-11-24 — Next M26-C direct-upgrade qualification
 
 The [M26-C ledger](plans/VAULTOR-NEXT-M26-C.md) records predecessor installer, storage and updater boundaries. Windows Next has a separate executable, application identity and storage engine. An Electron-compatible installed migration remains a release gate. Android 0.1.0-alpha.29/code 36 keeps the original package and signer. Actual install-over and cold readback passed on API 36 and 37 with the original Java host approval. The production APK also passed CA-pinned Rust ZIP owner approval/rejection and restored managed-byte checks. Android compilation and 112 unit tests passed, as did 15 original Windows updater checks. Help topics Platforms, What's New and Next and catalogue Android transfers/updates were reconciled. Android has no Help bundle to rebuild.

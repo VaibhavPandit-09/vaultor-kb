@@ -6,6 +6,8 @@ mod desktop_host;
 mod windows_drag;
 #[cfg(windows)]
 mod windows_shell;
+#[cfg(windows)]
+mod windows_update;
 use std::sync::Arc;
 use tauri::{Emitter, Manager};
 use tauri_plugin_dialog::DialogExt;
@@ -402,7 +404,11 @@ fn startup_failure(error: &impl std::fmt::Display) {
 
 fn main() {
     vaultor_next::pdf_text::run_worker_if_requested();
-    let application = tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(windows)]
+    let builder = builder.plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(windows_update::StagedUpdate::default());
+    let application = builder
         .manage(preview::Previews::default())
         .register_asynchronous_uri_scheme_protocol("vaultor-preview", preview::respond)
         .plugin(tauri_plugin_dialog::init())
@@ -414,7 +420,8 @@ fn main() {
             let data = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data)?;
             let pointer = data.join("last-workspace.json");
-            let override_root = std::env::var_os("VAULTOR_NEXT_WORKSPACE");
+            let production = app.config().identifier == "com.vaultor.next";
+            let override_root = if production { None } else { std::env::var_os("VAULTOR_NEXT_WORKSPACE") };
             #[cfg(feature = "host")]
             app.manage(desktop_host::DesktopHost::new(override_root.as_ref()
                 .and_then(|path| std::path::Path::new(path).parent()).unwrap_or(&data)
@@ -428,7 +435,9 @@ fn main() {
                 None => match std::fs::read(&pointer) {
                     Ok(bytes) => serde_json::from_slice::<std::path::PathBuf>(&bytes)
                         .map_err(|_| "The last workspace record is invalid")?,
-                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => data.join("Workspace-M2"),
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => data.join(
+                        if production { "Workspace" } else { "Workspace-M2" },
+                    ),
                     Err(error) => return Err(error.into()),
                 },
             };
@@ -530,6 +539,12 @@ fn main() {
             windows_drag::start_drag,
             #[cfg(windows)]
             windows_drag::release_drag,
+            #[cfg(windows)]
+            windows_update::next_update_info,
+            #[cfg(windows)]
+            windows_update::stage_next_update,
+            #[cfg(windows)]
+            windows_update::install_next_update,
             selected_image,
             pick_editor_text,
             save_table_csv,

@@ -1,6 +1,6 @@
 [package]
 name = "vaultor-next"
-version = "0.1.0"
+version = "0.28.0"
 edition = "2021"
 default-run = "vaultor-next"
 
@@ -9,8 +9,9 @@ name = "vaultor_next"
 
 [features]
 default = ["desktop", "host"]
-desktop = ["dep:tauri", "dep:tauri-plugin-dialog", "dep:tauri-build", "dep:if-addrs", "dep:rcgen", "dep:x509-parser", "dep:zeroize", "dep:mdns-sd", "dep:qrcode"]
+desktop = ["dep:tauri", "dep:tauri-plugin-dialog", "dep:tauri-plugin-updater", "dep:reqwest", "dep:tauri-build", "dep:if-addrs", "dep:rcgen", "dep:x509-parser", "dep:zeroize", "dep:mdns-sd", "dep:qrcode"]
 host = ["dep:axum", "dep:axum-server", "dep:futures-util", "dep:getrandom", "dep:hex", "dep:hyper-util", "dep:rustls", "dep:subtle", "dep:time", "tokio/fs", "tokio/io-util", "tokio/macros", "tokio/signal", "dep:tokio-util"]
+qualification-feed = ["desktop"]
 
 [[bin]]
 name = "vaultor-next"
@@ -69,6 +70,8 @@ lto = "thin"
 strip = true
 
 [target."cfg(windows)".dependencies]
+tauri-plugin-updater = { version = "2.14.1", default-features = false, features = ["native-tls", "system-proxy", "zip"], optional = true }
+reqwest = { version = "0.13", default-features = false, features = ["native-tls", "system-proxy"], optional = true }
 rcgen = { version = "0.14", features = ["x509-parser", "zeroize"], optional = true }
 x509-parser = { version = "0.18", optional = true }
 zeroize = { version = "1", optional = true }

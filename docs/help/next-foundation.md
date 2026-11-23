@@ -1,6 +1,8 @@
 # Vaultor Next experimental foundation
 
-Vaultor Next is a separate Windows development application. It does not replace the published Electron application and cannot open its databases. No migration is provided.
+Vaultor Next development builds use their own Windows profile. The planned production installer replaces the old Electron application and starts a fresh workspace. It removes the verified old managed workspace and settings once. External linked files and independent backups outside that storage are retained. Next can still open explicitly supported portable imports through Workspace transfers.
+
+The installed Next application's **Settings → Application and Storage** offers **Check for updates**. Once a signed installer is verified, **Update and restart** protects pending edits and preserves the new workspace. Finish active transfers before installing.
 
 ## Workspaces
 

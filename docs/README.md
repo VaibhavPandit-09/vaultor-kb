@@ -16,6 +16,8 @@ Reviewed 2026-11-24. Windows x64 and macOS Apple Silicon 0.27.0 include Help. Th
 
 Published Windows x64 and macOS Apple Silicon 0.27.0 Help, exact-source qualification and verified public delivery are tracked in [the release ledger](desktop/releases/v0.27.0.md).
 
+The [Windows Next 0.28.0 candidate](desktop/releases/v0.28.0.md) records the planned one-time Electron replacement and the publication gate.
+
 - [Help catalogue and articles](help/getting-started.md): offline user tasks; [catalogue](help/catalogue.json) indexes capabilities and platform baselines.
 - [Help documentation governance](development/HELP-DOCUMENTATION.md): mandatory development and exact-source release reconciliation, validation and handoff.
 - [Help Center tracker](plans/HELP-CENTER-TRACKER.md): development scope, coverage, checks and user acceptance.
