@@ -535,6 +535,8 @@ All 79 Rust library and 113 Next frontend tests passed. Hosted Windows qualifica
 
 The hosted installer driver selects the original `vaultor://app/` renderer after its file-URL condition timed out on an installed 0.25.2 fixture. The workflow shares the temporary signed pair within Actions for retries. No production binary, workspace, or trust changes accompany the driver correction.
 
+A Windows production-layout executable reached Library and saved and reopened a note using a disposable override. Hosted fresh NSIS setup completed, while installed WebView attachment remained unqualified. These are separate runtime and installer observations with no additional architecture change.
+
 ### 2026-11-24 — Next M26-C direct-upgrade qualification
 
 The [M26-C ledger](plans/VAULTOR-NEXT-M26-C.md) records predecessor installer, storage and updater boundaries. Windows Next has a separate executable, application identity and storage engine. An Electron-compatible installed migration remains a release gate. Android 0.1.0-alpha.29/code 36 keeps the original package and signer. Actual install-over and cold readback passed on API 36 and 37 with the original Java host approval. The production APK also passed CA-pinned Rust ZIP owner approval/rejection and restored managed-byte checks. Android compilation and 112 unit tests passed, as did 15 original Windows updater checks. Help topics Platforms, What's New and Next and catalogue Android transfers/updates were reconciled. Android has no Help bundle to rebuild.

@@ -16,6 +16,8 @@ The hosted first pass produced a signed fixture, but the Windows file check load
 
 In the second run, the 0.25.2 job built both signed fixtures and installed the real predecessor. Its driver looked for a file URL even though all three Electron builds use `vaultor://app/`. The driver now selects the verified Electron origin and logs discovered targets on timeout. The workflow builds the disposable pair once and shares it via the Actions cache. Test-only driver corrections can reuse the pair without publishing a temporary installer.
 
+The second run's fresh NSIS case completed setup, verified the installed executable's presence and read the completed replacement receipt. Its installed WebView attachment timed out before the runtime or signed-update assertions. A separate production-layout probe using a disposable directory override locally reached Library, confirmed the expected SQLite workspace path and app version, saved a note, quit and reopened the exact note and content. That probe ran without installation. It does not qualify the hosted installed runtime or the Electron replacement.
+
 ## Android release gate
 
 The published predecessor APK is `0.1.0-alpha.28` / code 32, `com.vaultor.app`, minimum API 36, target API 37 and arm64-v8a/x86_64. The downloaded APK matched SHA-256 `4b87dd8212f03c8db45395ea113e12761c2b1bb45185e1c7e5de6962aaba730b`, and `apksigner` verified the original certificate `af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567`.
