@@ -8,21 +8,26 @@ permissions:
   contents: read
 concurrency:
   group: vaultor-next-windows-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
-  install:
+  build-fixtures:
     runs-on: windows-2025
-    timeout-minutes: 65
-    strategy:
-      fail-fast: false
-      matrix:
-        predecessor: ['fresh', '0.25.2', '0.26.0', '0.27.0']
+    timeout-minutes: 55
+    outputs:
+      fixture-key: ${{ steps.fixtures.outputs.cache-primary-key }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        id: fixtures
+        with:
+          path: ${{ runner.temp }}/vaultor-qualification
+          key: next-windows-disposable-v2-${{ hashFiles('next/package*.json', 'next/src-tauri/*.toml', 'next/src-tauri/Cargo.lock', 'next/src-tauri/*.json', 'next/src-tauri/build.rs', 'next/src-tauri/src/**', 'next/src-tauri/windows/**', 'next/src-tauri/icons/**', 'next/src-tauri/assets/**', 'next/scripts/build-windows.ps1', 'frontend/**', 'docs/help/**') }}
       - uses: actions/setup-node@v4
+        if: steps.fixtures.outputs.cache-hit != 'true'
         with:
           node-version: 24
-      - shell: pwsh
+      - if: steps.fixtures.outputs.cache-hit != 'true'
+        shell: pwsh
         env:
           CARGO_PROFILE_RELEASE_LTO: "false"
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
@@ -52,5 +57,28 @@ jobs:
           ./next/scripts/build-windows.ps1 -Config src-tauri/windows-qualification.json -Qualification
           Copy-Item next/src-tauri/target/release/bundle/nsis/*_0.28.1_x64-setup.exe "$fixtures/second.exe"
           Copy-Item next/src-tauri/target/release/bundle/nsis/*_0.28.1_x64-setup.exe.sig "$fixtures/second.exe.sig"
-          node next/scripts/qualify-windows.mjs "${{ matrix.predecessor }}" $fixtures
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/cache/save@v4
+        if: steps.fixtures.outputs.cache-hit != 'true'
+        with:
+          path: ${{ runner.temp }}/vaultor-qualification
+          key: ${{ steps.fixtures.outputs.cache-primary-key }}
+  install:
+    needs: build-fixtures
+    runs-on: windows-2025
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        predecessor: ['fresh', '0.25.2', '0.26.0', '0.27.0']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/vaultor-qualification
+          key: ${{ needs.build-fixtures.outputs.fixture-key }}
+          fail-on-cache-miss: true
+      - shell: pwsh
+        run: node next/scripts/qualify-windows.mjs "${{ matrix.predecessor }}" "$env:RUNNER_TEMP/vaultor-qualification"

@@ -62,10 +62,14 @@ async function port() {
 }
 
 async function connect(number, electron) {
+  let seen = [];
   const endpoint = await eventually(async () => {
     const entries = await (await fetch('http://127.0.0.1:'+number+'/json/list', {signal:AbortSignal.timeout(1000)})).json();
-    return entries.find(value => value.type === 'page' && (electron ? value.url.includes('/ui/') : value.url.includes('next.html')))?.webSocketDebuggerUrl;
-  }, 'isolated installed application WebView');
+    seen = entries.map(({type,url})=>({type,url}));
+    return entries.find(value => value.type === 'page' && (electron ? value.url.startsWith('vaultor://app/') : value.url.includes('next.html')))?.webSocketDebuggerUrl;
+  }, electron?'installed Electron renderer':'installed Next WebView').catch(error=>{
+    throw Error(error.message+'; reported targets '+JSON.stringify(seen));
+  });
   const socket = new WebSocket(endpoint);
   await new Promise((done, fail) => {socket.addEventListener('open', done, {once:true}); socket.addEventListener('error', fail, {once:true})});
   let sequence = 0;
@@ -143,6 +147,7 @@ if (predecessor !== 'fresh') {
     await symlink(external,join(cache,'External junction'),'junction');
   }
   assert(await exists(join(legacyProfile,'local-workspace','app.db')));
+  console.log('Seeded the original installed '+predecessor+' workspace and exported its independent ZIP.');
   // Leave the real older application running to exercise verified shutdown.
 }
 
@@ -188,6 +193,7 @@ const normalize = path => path.replace(/^\\\\\?\\/,'').toLowerCase();
 assert.equal(normalize(snapshot.path), normalize(workspacePath));
 assert.equal((await request({kind:'list',collection:null})).items.length,0);
 assert.deepEqual(await app.invoke('next_update_info'),['0.28.0',true]);
+console.log('Started the installed Next fixture with a fresh production-layout workspace.');
 
 const collection = await request({kind:'createCollection',name:'Retain this collection',parentId:null});
 const note = await request({kind:'createNote',title:'Retain this note',collection:collection.id});
@@ -207,6 +213,7 @@ assert(beforeBytes);
 await assert.rejects(()=>app.invoke('stage_next_update'), /signature|verification/i);
 tampered = false;
 assert.equal(await app.invoke('stage_next_update'),'0.28.1');
+console.log('The installed updater refused changed bytes and accepted the signed fixture.');
 const debugPort = app.number;
 await app.evaluate("setTimeout(()=>window.__TAURI_INTERNALS__.invoke('install_next_update',{version:'0.28.1'}),10);true");
 await eventually(() => app.child.exitCode !== null, 'updater handed off to installer');

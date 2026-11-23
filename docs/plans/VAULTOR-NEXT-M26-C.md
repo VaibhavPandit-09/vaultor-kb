@@ -14,6 +14,8 @@ The [staged 0.28.0 candidate](../desktop/releases/v0.28.0.md#staged-candidate) r
 
 The hosted first pass produced a signed fixture, but the Windows file check loaded the helper assembly into the same PowerShell process that subsequently tried to replace it. The second helper compilation failed with a sharing violation. The retry executes the file check in its own PowerShell process. Hosted fixtures use a separate ephemeral signing key with a loopback feed and reduced compile-time optimization. The local production artifact uses the normal optimized profile and fixed production key.
 
+In the second run, the 0.25.2 job built both signed fixtures and installed the real predecessor. Its driver looked for a file URL even though all three Electron builds use `vaultor://app/`. The driver now selects the verified Electron origin and logs discovered targets on timeout. The workflow builds the disposable pair once and shares it via the Actions cache. Test-only driver corrections can reuse the pair without publishing a temporary installer.
+
 ## Android release gate
 
 The published predecessor APK is `0.1.0-alpha.28` / code 32, `com.vaultor.app`, minimum API 36, target API 37 and arm64-v8a/x86_64. The downloaded APK matched SHA-256 `4b87dd8212f03c8db45395ea113e12761c2b1bb45185e1c7e5de6962aaba730b`, and `apksigner` verified the original certificate `af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567`.
