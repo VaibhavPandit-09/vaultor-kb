@@ -95,6 +95,10 @@ export async function qualifyM17({evaluate,cdp,wait,report,output,folder,record,
  await button('Tags');await button('New tag');await shot('tag-create');await key('Escape','Escape',0,27);await button('Manage tag Ideas');await shot('tag-manage');await key('Escape','Escape',0,27);
  report.checks.push('Populated Collections All/Hierarchy/detail,Tags/catalogue/resource/create/manage,Sources,Recent,mixed Pins and Trash captured at1200x800/DPR1;horizontal main/body bounds checked. These captures require visual comparison before acceptance.');
  await button('Library');await open(0);await pause(450);await evaluate('document.querySelector(".tiptap").editor.commands.setTextSelection(1);document.querySelector(".journey-viewport").scrollTop=0;true');await pause(500);if(await evaluate('document.querySelector(".note-organization-toggle").getAttribute("aria-expanded")!=="true"'))await click('document.querySelector(".note-organization-toggle")');await shot('note-header');
+ if(process.argv.includes('--m26b-open-notes')){
+  assert.equal(await evaluate('Boolean(document.querySelector("[data-session-end]"))'),false);
+  report.checks.push('Idle Open Notes contains no session end drop target');
+ }
  await button('Remove tag Ideas from note');await wait(`document.activeElement?.getAttribute('aria-label')==='Assign note tags'&&!document.querySelector('[aria-label="Remove tag Ideas from note"]')`,'tag removal focus');
  await button('Assign note tags');await wait('document.querySelector("[data-tag-option]")','tag choices');await click('[...document.querySelectorAll("[data-tag-option]")].find(b=>b.textContent.includes("Ideas"))');await button('Done');await wait(`Boolean(document.querySelector('[aria-label="Remove tag Ideas from note"]'))`,'tag restored');
  report.checks.push('Inline collection pin/unpin persists stable collection identity;note tag assignment removal returns focus to Add Tag,and the existing picker reassigns it.');

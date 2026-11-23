@@ -117,6 +117,10 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
     assert.equal(first.sourcePath,'report.pdf');
     const bytes=await evaluate(`window.__TAURI_INTERNALS__.invoke('resource_bytes',${JSON.stringify({id:first.id,workspace:snapshot.path})}).then(buffer=>Array.from(new Uint8Array(buffer)))`);
     assert.deepEqual(Buffer.from(bytes),original);
+    await openRow(first.id);
+    await wait('document.querySelector(".next-pdf-text")?.textContent.includes("Quartz astrolabe")','read-only linked PDF opened in the desktop preview');
+    await click('[data-preview-close]');
+    await wait('!document.querySelector("[data-preview-resource]")','linked PDF preview dismissed');
     const revision=pdfFixture('Topaz sextant');
     await writeFile(linkedFile,revision);
     await wait(`${searchInWebView('Topaz sextant')}.then(result=>result.total===1)`,'linked PDF refreshed after disk edit');

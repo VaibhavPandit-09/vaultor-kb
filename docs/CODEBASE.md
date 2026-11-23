@@ -529,7 +529,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 Added bounded managed/linked PDF extraction and FTS5 publication, read-only linked PDF preview, and Find within PDF previews. The original parser-process and encrypted-file boundaries carry over. Browser organization now signals scoped desktop refresh after committed changes without publishing drafts. Ordinary open refuses internal restore staging directories. The Android offline-export assertion now follows the current control label and still checks the native request. [M26-B qualification](plans/VAULTOR-NEXT-M26-B.md) records validation and unclosed gates.
 
-The Open Notes end target now appears after the session drag threshold and disappears on drop or cancellation. Keyboard reorder stays in session actions. This is a presentation correction with no architecture or Help procedure change. The existing session arrangement regression covers idle, threshold, cancel and drop.
+The Open Notes end target now appears after the session drag threshold and disappears on drop or cancellation. Keyboard reorder stays in session actions. This presentation correction uses the existing gesture owner. The six focused session tests and final optimized WebView2 visual and PDF runs passed. The original rich PDF layout remains open. See the [M26-B record](plans/VAULTOR-NEXT-M26-B.md) for PDF, portability, process interruption, host, Chromium, Android and Help evidence.
 
 ### 2026-11-23 — Next M26-A4 connected workspace workflows
 
