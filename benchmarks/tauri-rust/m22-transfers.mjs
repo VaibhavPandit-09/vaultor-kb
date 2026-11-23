@@ -187,7 +187,9 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
 
   const newFiles=join(folder,'Interrupted');
   await mkdir(newFiles);
-  for(let i=0;i<8;i++)await writeFile(join(newFiles,'Interrupt '+i+'.bin'),block);
+  // Leave enough work for taskkill to reach the running Rust task on fast disks.
+  const interruptionBlock=process.argv.includes('--m26b')?Buffer.alloc(256*1048576,173):block;
+  for(let i=0;i<8;i++)await writeFile(join(newFiles,'Interrupt '+i+'.bin'),interruptionBlock);
   const cancellation=await preview([newFiles]);
   const {id:cancelled}=await transfer({op:'import',token:cancellation.token,separate:false});
   await transfer({op:'cancel',id:cancelled});
@@ -198,7 +200,7 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
   await restart();
   const task=(await transfer({op:'tasks'})).find(task=>task.id===interrupted);
   assert(task?.state==='interrupted'||task?.state==='completed',JSON.stringify(task));
-  const retry=await importSource('interrupted-reselection',[newFiles],'Reselect 256 MiB after terminating the owned process and restarting.');
+  const retry=await importSource('interrupted-reselection',[newFiles],`Reselect ${8*interruptionBlock.length/1048576} MiB after terminating the owned process and restarting.`);
   assert.equal(retry.result.imported+retry.result.reused,8);
   assert.equal(task.state,'interrupted','Termination must overlap import to qualify recovery');
   record('m22-interrupted-recovery',1,'restart_to_retry_complete',performance.now()-restartedAt,'ms','Termination, restart, source review and completion.');

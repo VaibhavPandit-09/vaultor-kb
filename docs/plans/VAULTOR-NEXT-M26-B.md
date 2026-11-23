@@ -11,6 +11,25 @@ M26-B combines the remaining original-product work and engineering acceptance. T
 - Normal workspace open refuses internal restore stage directories after an interruption. A subprocess test terminated a restore just before publication and after completion. The prepublication target stayed absent, the abandoned stage refused open, both existing databases passed integrity checks, and the completed original matched its expected bytes.
 - The Android offline-export test follows the current Workspace archive label and verifies the selected resource's partial export request. All 112 Android Jest checks passed. The Android product source and APK are unchanged.
 
+## Engineering artifacts
+
+Windows and Docker source is `3c4d3790d54cb9caf67b15bee416672e4460007e`. Windows uses the optimized Rust profile and embeds the production Vite bundles. Docker targets Linux/amd64. The signed Android candidate remains at its M26-A4 application source, `beb1abf4437e2da24845171ad0d820b7711cb445`.
+
+| Artifact | Local path or tag | SHA-256 or image ID |
+| --- | --- | --- |
+| Windows desktop | `next/src-tauri/target/release/vaultor-next-m26b.exe` | `2a016de2c4c36a179928fcd1e0b8c127ee5a358f1eb281064e2e51e1b75090eb` |
+| Windows standalone host | `next/src-tauri/target/release/vaultor-next-host-m26b.exe` | `4938347be7e229d7ea83e0e9e307c64fb0cdb8ac7e49821792e5e817bf8d0584` |
+| Signed Android engineering APK | `mobile/releases/0.1.0-m26a4.1/Vaultor-Next-Android-0.1.0-m26a4.1.apk` | `a60dca6fd1066ab776c22ca2e0810c8283a0f5fe5b7e66ba5989c4e570b30cc2` |
+| Linux/amd64 host | `vaultor-next-m26b:local` | `sha256:4cc5d20718333e80504c5d6e1e9e887e848a0215b5151bb7dd0bae755d0fd745` |
+
+## Automated regression and connected acceptance
+
+- Windows Rust tests passed 72 library entries, two desktop binary tests and one worker integration test. The library run includes the process-kill test and its child fixture entry. The worker integration checks multipage text, empty content, malformed input, the page limit and password-protected and empty-password encryption. The Linux/amd64 image worker independently returned the expected third-page text and the encrypted outcome.
+- The 113 Next Vitest tests, TypeScript production build, scoped ESLint and 112 Android Jest tests passed. Help governance validated 43 catalogue entries, 16 articles and 17 tests. The production desktop bundle contains the revised Next Help. The parity CSV retains 156 rows and 16 columns.
+- Chromium exercised certificate trust for an isolated private CA, pairing and granted sessions, saved edit and reload, organization including nested collections and tags, grant withdrawal and sign-out. Docker exercised ownership, TLS identity and restart, exact managed streaming, scoped Review export, revocation and graceful shutdown. Evidence is in local `benchmarks/tauri-rust/raw/m26b-docker.json`.
+- The signed engineering APK passed API 36 instrumentation for a native queued Android ZIP over ADB-reversed Rust HTTPS. The owner previewed, approved and rejected requests, and the test compared the restored managed bytes. This exercised an emulator and a disposable host.
+- Docker sampled one minute of idle cgroup use at approximately 0.095% of one core and 9.37 MiB memory. Browser collection and tag creation took about 151 ms and 144 ms in single loopback samples with polling. These timings describe that fixture.
+
 ## Physical acceptance
 
 Use a disposable workspace and a copy of any backup. Record candidate identity, platform version, pass or failure and the action that reproduced a failure.

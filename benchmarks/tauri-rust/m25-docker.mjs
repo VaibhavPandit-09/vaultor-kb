@@ -287,7 +287,8 @@ try{
   assert.equal((await json('GET',projected+'/capabilities',headers)).status,401);
   docker('stop','-t','5',token);
   assert.equal(docker('inspect','--format','{{.State.ExitCode}}',token),'0');
-  const output=process.argv.includes('--m26a4')?'m26a4-docker.json':
+  const output=process.argv.includes('--m26b')?'m26b-docker.json':
+    process.argv.includes('--m26a4')?'m26a4-docker.json':
     process.argv.includes('--m26a3')?'m26a3-docker.json':
     process.argv.includes('--m26a2')?'m26a2-docker.json':
     process.argv.includes('--check-note-creation')?'m26a-docker.json':'m25-docker.json';

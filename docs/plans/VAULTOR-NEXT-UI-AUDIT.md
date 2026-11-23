@@ -515,3 +515,9 @@ M26-A4 adds collection and tag dialogs to the existing browser Library, the inco
 The browser Library opens a compact, keyboard-operable note creation form in place and returns focus when it closes. Collection placement is captured when the form opens. The existing reader stays mounted during creation and retains its unsaved edits. Desktop PDF password prompts belong to the current preview and disappear when it closes or changes workspace. Windows visual comparison, screen-reader verification, and physical input remain M26-B gates.
 
 The Windows continuation adds a private IPv4 address selector, a separate start-on-launch switch and certificate status in the same group. Custom bind input and certificate location are under an advanced disclosure. Starting sharing uses the existing explicit action and newly surfaced startup errors leave local editing available.
+
+## M26-B rendered comparison
+
+The installed Electron 0.27.0 reference and Windows Next engineering candidate ran disposable populated fixtures. Both captured the Library, collection hierarchy and detail, Tags, pin and recent surfaces, Trash and a managed note at 1200 × 800 and DPR 1. The core Library header, note typography, pane framing and resource row geometry are comparable. Console and sidebar controls, search-filter labels, Review entry placement and footer details still differ. Linked, recent and Trash fixture states were not identical.
+
+Next additionally exercised 900px and 1800px layouts, emulated DPR 1.25 and 1.5, Light, Dark and OLED, tag removal focus and reduced-motion Settings dismissal. The screenshot inspection found that the session reorder end target remained visible in an idle sidebar. It now appears only during an active arrange gesture. The session regression checks idle, threshold, Escape and drop. See the [qualification record](VAULTOR-NEXT-M26-B.md) for artifact provenance, capture paths and outstanding screens.

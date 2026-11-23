@@ -172,12 +172,15 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
     if(cycle===1&&process.argv.includes('--m26b-pdf-index')){
       await evaluate("[...document.querySelectorAll('.next-pdf button')].find(button=>button.textContent==='Find in PDF').click()");
       await wait('document.activeElement?.getAttribute("aria-label")==="Find PDF text"','PDF Find focus');
+      const {nodes}=await cdp('Accessibility.getFullAXTree');
+      assert(nodes.some(node=>!node.ignored&&node.role?.value==='searchbox'&&node.name?.value==='Find PDF text'));
+      assert(nodes.some(node=>!node.ignored&&node.role?.value==='button'&&node.name?.value==='Close Find'));
       await cdp('Input.insertText',{text:'fixture page 3'});
       await click('.next-pdf form button[type=submit]');
       await wait('document.querySelector(".next-pdf-text")?.textContent.includes("M19 fixture page 3")','PDF Find selected matching page');
       await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
       await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
-      await wait('document.activeElement?.textContent==="Find in PDF" && !document.querySelector("[aria-label=\"Find PDF text\"]")','PDF Find Escape preserves preview and restores focus');
+      await wait('document.activeElement?.textContent==="Find in PDF" && !document.querySelector(".next-pdf input[type=search]")','PDF Find Escape preserves preview and restores focus');
       report.checks.push('PDF Find searched across pages, opened the matching page and restored toolbar focus on Escape');
     }
     await click('[aria-label="Expand file preview"]');

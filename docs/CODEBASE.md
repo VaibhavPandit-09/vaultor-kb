@@ -529,6 +529,8 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 Added bounded managed/linked PDF extraction and FTS5 publication, read-only linked PDF preview, and Find within PDF previews. The original parser-process and encrypted-file boundaries carry over. Browser organization now signals scoped desktop refresh after committed changes without publishing drafts. Ordinary open refuses internal restore staging directories. The Android offline-export assertion now follows the current control label and still checks the native request. [M26-B qualification](plans/VAULTOR-NEXT-M26-B.md) records validation and unclosed gates.
 
+The Open Notes end target now appears after the session drag threshold and disappears on drop or cancellation. Keyboard reorder stays in session actions. This is a presentation correction with no architecture or Help procedure change. The existing session arrangement regression covers idle, threshold, cancel and drop.
+
 ### 2026-11-23 — Next M26-A4 connected workspace workflows
 
 Reused the encrypted Android queue, Rust archive restore and desktop Activity for owner-reviewed Android ZIP proposals. Routed browser collection and tag changes through shared organization state and added an isolated Windows owner handoff. Updated Next Help, the Feature Catalogue, host and transfer guides, UI audit, and parity ledger. Rust all-targets, Windows native probes, Docker/Chromium and signed Android API 36 transfer checks passed. The [M26-A4 record](plans/VAULTOR-NEXT.md#m26-a4-connected-workspace-workflows) details the unchanged offline-export test failure and remaining qualification.
