@@ -267,6 +267,13 @@ impl DesktopHost {
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Command {
+    WorkspaceZip {
+        action: String,
+        id: Option<uuid::Uuid>,
+        destination: Option<PathBuf>,
+    },
+    OpenOwnerBrowser,
+    CancelOwnerBrowser { end_session: bool },
     Status,
     Start {
         address: String,
@@ -305,6 +312,29 @@ pub async fn hosting(
     let mut slot = desktop.running.lock().await;
     match command {
         Command::Status => {}
+        Command::OpenOwnerBrowser => {
+            let host = slot.as_ref().filter(|(_, listener)| listener.running())
+                .map(|(host, _)| host.clone()).ok_or("Start hosting to open the local owner browser")?;
+            drop(slot);
+            #[cfg(windows)]
+            host.open_owner_browser().await?;
+            #[cfg(not(windows))]
+            return Err("Opening the local owner browser is supported in this Windows candidate".into());
+            #[cfg(windows)]
+            return Ok(Value::Null);
+        }
+        Command::CancelOwnerBrowser { end_session } => {
+            let (host, _) = slot.as_ref().ok_or("Start hosting first")?;
+            host.cancel_owner_browser(end_session)?;
+            return Ok(Value::Null);
+        }
+        Command::WorkspaceZip { action, id, destination } => {
+            let host = slot.as_ref().filter(|(_, listener)| listener.running())
+                .map(|(host, _)| host.clone()).ok_or("Start hosting to review incoming backups")?;
+            drop(slot);
+            return tauri::async_runtime::spawn_blocking(move || host.workspace_zip_owner(&action, id, destination))
+                .await.map_err(|error| error.to_string())?;
+        }
         Command::Watch { host, revision } => {
             let Some((current, _)) = slot.as_ref().filter(|(h, _)| h.host_id() == host) else {
                 return Ok(json!(false));

@@ -146,6 +146,8 @@ pub enum Job {
         destination: String,
         manifest_hash: String,
     },
+    #[cfg(feature = "host")]
+    CollectedRestore(crate::host::CollectedRestore),
 }
 #[cfg(feature = "host")]
 pub(crate) mod companion;
@@ -167,6 +169,8 @@ impl Job {
             Self::Merge { .. } => "workspace-merge",
             Self::ExportRecovery { .. } => "recovery-export",
             Self::Restore { .. } => "workspace-import",
+            #[cfg(feature = "host")]
+            Self::CollectedRestore(_) => "workspace-import",
         }
     }
     pub fn description(&self) -> String {
@@ -187,6 +191,8 @@ impl Job {
             Self::Merge { .. } => "Merge reviewed archive".into(),
             Self::ExportRecovery { .. } => "Export protected draft copy".into(),
             Self::Restore { .. } => "Restore workspace as new".into(),
+            #[cfg(feature = "host")]
+            Self::CollectedRestore(_) => "Restore reviewed Android workspace".into(),
         }
     }
 }
@@ -416,10 +422,7 @@ impl Transfers {
                 self.activity.submit(root, Job::Archive { destination })
             }
             Request::InspectArchive { source } => {
-                let (m, hash, legacy_version) = inspect_archive_details(Path::new(&source), None)?;
-                Ok(
-                    json!({"manifestHash":hash,"resources":m.resources.len(),"collections":m.collections.len(),"files":m.originals.len(),"bytes":m.originals.iter().map(|f|f.bytes).sum::<u64>(),"version":m.version,"legacyVersion":legacy_version,"partial":m.partial,"linkedDescriptors":m.linked.len(),"reviews":m.reviews.len()}),
-                )
+                archive_preview(Path::new(&source))
             }
             Request::Restore {
                 source,
@@ -485,7 +488,7 @@ pub(crate) fn plain_file_with_limit(path: &Path, limit: u64) -> Result<File, Str
     }
     Ok(f)
 }
-fn reparse(m: &fs::Metadata) -> bool {
+pub(crate) fn reparse(m: &fs::Metadata) -> bool {
     #[cfg(windows)]
     {
         use std::os::windows::fs::MetadataExt;
@@ -805,7 +808,9 @@ pub fn execute(
             source,
             destination,
             manifest_hash,
-        } => restore(&source, &destination, &manifest_hash, ctx),
+        } => restore(&source, &destination, &manifest_hash, None, ctx, publish_directory),
+        #[cfg(feature = "host")]
+        Job::CollectedRestore(request) => request.run(ctx),
     }
 }
 fn import(
@@ -1477,11 +1482,21 @@ fn plain_file_archive(path: &Path) -> Result<File, String> {
     }
     File::open(path).map_err(error)
 }
-fn restore(
+pub(crate) fn archive_preview(source: &Path) -> Result<Value, String> {
+    let (m, hash, legacy_version) = inspect_archive_details(source, None)?;
+    Ok(json!({"manifestHash":hash,"resources":m.resources.len(),"collections":m.collections.len(),
+        "files":m.originals.len(),"bytes":m.originals.iter().map(|f|f.bytes).sum::<u64>(),
+        "version":m.version,"legacyVersion":legacy_version,"partial":m.partial,
+        "linkedDescriptors":m.linked.len(),"reviews":m.reviews.len()}))
+}
+
+pub(crate) fn restore(
     source: &str,
     destination: &str,
     expected: &str,
+    generation: Option<Uuid>,
     ctx: &mut Context,
+    publish: impl FnOnce(&Path, &Path) -> Result<(), String>,
 ) -> Result<Value, String> {
     let (mut input, m, hash, _) = archive_input::open(Path::new(source))?;
     if hash != expected {
@@ -1524,6 +1539,9 @@ fn restore(
     input.finish()?;
     ctx.check()?;
     let tx = w.db.transaction().map_err(error)?;
+    if let Some(generation) = generation {
+        tx.execute("UPDATE review_workspace SET generation=?1", [generation.to_string()]).map_err(error)?;
+    }
     tx.execute_batch("PRAGMA defer_foreign_keys=ON")
         .map_err(error)?;
     for c in &m.collections {
@@ -1582,12 +1600,12 @@ fn restore(
         Some(total),
     );
     ctx.committing();
-    publish_directory(&staged.0, &destination)?;
+    publish(&staged.0, &destination)?;
     Ok(
         json!({"path":destination,"resources":m.resources.len(),"files":m.originals.len(),"reviews":m.reviews.len(),"bytes":bytes}),
     )
 }
-fn publish_directory(source: &Path, destination: &Path) -> Result<(), String> {
+pub(crate) fn publish_directory(source: &Path, destination: &Path) -> Result<(), String> {
     if destination.exists() {
         return Err("Destination already exists".into());
     }

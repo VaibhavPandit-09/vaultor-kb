@@ -3,6 +3,7 @@ export type ImportItem = {
   filename: string;
   mime: string;
   bytes: number;
+  uploadBytes?: number;
   sha256?: string;
   mode?: 'original' | 'text' | 'markdown' | 'workspaceZip';
   state: string;

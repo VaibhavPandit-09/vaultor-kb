@@ -1,5 +1,5 @@
 import type { Collection } from './client';
-export function collectionPaths(collections: Collection[]) {
+export function collectionPaths(collections: (Pick<Collection, 'id' | 'name'> & {parentId?: string | null})[]) {
   const byId = new Map(collections.map(c => [c.id,c]));
   const paths = new Map<string,string>();
   for (const c of collections) {

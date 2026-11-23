@@ -50,6 +50,8 @@ LAN profiles receive `__Host-VaultorClient`: Secure, HttpOnly, SameSite=Strict, 
 
 Desktop **Open in browser** privately mints `POST /api/owner/browser-ticket`, then opens `/access#ticket=<one-use ticket>`. Tickets last 60 seconds. The access page removes the fragment from browser history before requests, exchanges it through `POST /api/access/bootstrap`, and sets owner session. Its minimal owner page can approve pending peers without Electron and has Open workspace. The page provides bounded LAN request/code/polling, explicit matching-code approval and retry of existing enrollment after transient errors. Browser/API responses do not claim OS trust or pairing occurred when it did not.
 
+Vaultor Next mints its local ticket directly through desktop IPC. An independent IPv4 loopback-only listener validates the socket peer, bound authority and exact Origin. The Next local owner session expires after eight hours and ends on sign-out, explicit desktop revocation, hosting shutdown or restart. The [Next host guide](../development/NEXT-HOST.md#browser-trust-and-sessions) owns the connector and cookie details.
+
 Standalone (while server is running):
 
 ```powershell

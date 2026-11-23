@@ -91,6 +91,43 @@ async fn browser_session_checks_origin_csrf_scope_revision_and_logout() {
     let foreign = signed.replace(&host.workspace.to_string(), &Uuid::new_v4().to_string());
     assert_eq!(request(&client,address,"PUT",&organization,&foreign,&pin).await.0,403);
     assert_eq!(request(&client,address,"PUT",&organization,&signed,&pin.replace("\"revision\":1","\"revision\":2")).await.0,409);
+    let call_org = |route: String, input: Value, signed: String| {
+        let client = &client;
+        async move { request(client,address,"PUT",&route,&signed,&input.to_string()).await }
+    };
+    let make = format!("{browser}/organization/collections/{}",Uuid::new_v4());
+    let input_collection = json!({"operation":"create","name":"Nested","parentId":collection["id"]});
+    assert_eq!(call_org(make.clone(),input_collection.clone(),foreign.clone()).await.0,403);
+    let nested = call_org(make.clone(),input_collection.clone(),signed.clone()).await;
+    assert_eq!(nested.0,200,"{}",nested.2);
+    assert_eq!(call_org(make.clone(),input_collection,signed.clone()).await.2,nested.2);
+    assert_eq!(call_org(make,json!({"operation":"create","name":"Conflicting collection"}),signed.clone()).await.0,409);
+    let nested: Value = serde_json::from_str(&nested.2).unwrap();
+    let nest = format!("{browser}/organization/collections/{}",nested["id"].as_str().unwrap());
+    let update = json!({"operation":"update","name":"Renamed child","parentId":destination["id"],"expectedName":"Nested","expectedParentId":collection["id"]});
+    assert_eq!(call_org(nest.clone(),update.clone(),signed.clone()).await.0,200);
+    let mut stale = update;
+    stale["name"] = json!("Stale child name");
+    assert_eq!(call_org(nest.clone(),stale,signed.clone()).await.0,409);
+    let tag_endpoint = format!("{browser}/organization/tags");
+    let color = "#5887ee";
+    let one = call_org(tag_endpoint.clone(),json!({"operation":"create","name":"Research","color":color}),signed.clone()).await;
+    assert_eq!(one.0,200);
+    let same = call_org(tag_endpoint.clone(),json!({"operation":"create","name":"research","color":color}),signed.clone()).await;
+    assert_eq!(same.2,one.2);
+    let tag_id: Value = serde_json::from_str::<Value>(&one.2).unwrap()["id"].clone();
+    let assign = json!({"operation":"tag","revision":1,"tag":tag_id,"value":true});
+    assert_eq!(call_org(organization.clone(),assign,signed.clone()).await.0,200);
+    let filtered = request(&client,address,"GET",&format!("{browser}/resources?tag={}",tag_id.as_str().unwrap()),&scope,"").await;
+    assert!(filtered.2.contains(receipt["id"].as_str().unwrap()),"{}",filtered.2);
+    assert_eq!(call_org(tag_endpoint.clone(),json!({"operation":"update","id":tag_id,"name":"Archive","color":color,"expectedName":"Research","expectedColor":color}),signed.clone()).await.0,200);
+    assert_eq!(call_org(tag_endpoint,json!({"operation":"delete","id":tag_id,"expectedName":"Archive","expectedColor":color}),signed.clone()).await.0,200);
+    let reviewed = call_org(nest.clone(),json!({"operation":"reviewDeletion"}),signed.clone()).await;
+    let reviewed: Value = serde_json::from_str(&reviewed.2).unwrap();
+    let delete = json!({"operation":"delete","review":reviewed["review"],"trash":false});
+    assert_eq!(call_org(nest.clone(),delete.clone(),foreign.clone()).await.0,403);
+    assert_eq!(call_org(nest.clone(),delete.clone(),signed.clone()).await.0,200);
+    assert_eq!(call_org(nest,delete,signed.clone()).await.0,200);
     for _ in 0..2 {
         let response = request(&client,address,"PUT",&organization,&signed,&pin).await;
         assert_eq!(response.0,200,"{}",response.2);
@@ -480,12 +517,20 @@ async fn request_bytes(
     headers: &str,
     body: &str,
 ) -> (u16, String, Vec<u8>) {
+    request_body(client,address,method,path,headers,"application/json",body.as_bytes()).await
+}
+
+async fn request_body(
+    client: &TlsConnector, address: SocketAddr, method: &str, path: &str, headers: &str,
+    content_type: &str, body: &[u8],
+) -> (u16, String, Vec<u8>) {
     tokio::time::timeout(Duration::from_secs(8), async {
         let socket = TcpStream::connect(address).await.unwrap();
         let mut client = client.connect(address.ip().into(), socket).await.unwrap();
         client.write_all(format!(
-            "{method} {path} HTTP/1.1\r\nHost: {address}\r\nConnection: close\r\nContent-Type: application/json\r\nContent-Length: {}\r\n{headers}\r\n{body}", body.len(),
+            "{method} {path} HTTP/1.1\r\nHost: {address}\r\nConnection: close\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\n{headers}\r\n", body.len(),
         ).as_bytes()).await.unwrap();
+        client.write_all(body).await.unwrap();
         let mut bytes = Vec::new();
         client.read_to_end(&mut bytes).await.unwrap();
         let separator = bytes.windows(4).position(|slice| slice == b"\r\n\r\n").unwrap();
@@ -493,6 +538,175 @@ async fn request_bytes(
         let status = head.split_whitespace().nth(1).unwrap().parse().unwrap();
         (status, head.to_owned(), bytes.split_off(separator + 4))
     }).await.unwrap()
+}
+
+#[tokio::test]
+async fn collected_zip_survives_restart_and_publishes_only_after_exact_owner_review() {
+    use sha2::{Digest, Sha256};
+    let fixture = Fixture::new();
+    let worker = Worker::start(fixture.root.clone(), None).unwrap();
+    worker.call(Request::Snapshot).await.unwrap();
+    let start = || async {
+        let identity = Identity::open(&fixture.access, &fixture.ca).unwrap();
+        let host = Host::new(worker.storage(), fixture.root.clone(), identity).await.unwrap();
+        let listener = host.clone().listen("127.0.0.1:0".parse().unwrap(), fixture.chain.clone(), fixture.key.clone()).await.unwrap();
+        (host,listener)
+    };
+    let (host, listener) = start().await;
+    let client = connector(Some(fixture.authority.clone()));
+    let device = Uuid::new_v4();
+    let token = access::new_credential().unwrap();
+    access::add(&fixture.access,&token,&access::Record {
+        workspaces:[host.workspace].into(),device,label:"ZIP fixture".into(),browser_expires:None,
+    }).unwrap();
+    let headers = format!("Authorization: Bearer {token}\r\nX-Vaultor-Workspace: {}\r\n",host.workspace);
+    let zip = include_bytes!("../../fixtures/electron-workspace-v5.zip");
+    let id = Uuid::new_v4();
+    let path = |id| format!("/api/next/mobile/v1/collected-zips/{id}");
+    let intent = json!({"hostId":host.host_id(),"workspaceId":host.workspace,"generation":host.workspace,
+        "filename":"fixture.zip","sha256":hex::encode(Sha256::digest(zip)),"bytes":zip.len(),"name":"Independent fixture"});
+    let multipart = |intent: &Value, bytes: &[u8]| {
+        let mut body = format!("--vaultor-zip\r\nContent-Disposition: form-data; name=\"intent\"\r\n\r\n{intent}\r\n--vaultor-zip\r\nContent-Disposition: form-data; name=\"file\"; filename=\"fixture.zip\"\r\n\r\n").into_bytes();
+        body.extend_from_slice(bytes);
+        body.extend_from_slice(b"\r\n--vaultor-zip--\r\n");
+        body
+    };
+    let upload = |address, id, auth: String, body: Vec<u8>| {
+        let client = &client;
+        async move {
+            request_body(client,address,"PUT",&path(id),&auth,"multipart/form-data; boundary=vaultor-zip",&body).await
+        }
+    };
+    let result = |response: (u16,String,Vec<u8>)| -> Value {
+        assert_eq!(response.0,200,"{}",String::from_utf8_lossy(&response.2));
+        serde_json::from_slice(&response.2).unwrap()
+    };
+    let address = listener.address();
+    assert_eq!(upload(address,id,String::new(),multipart(&intent,zip)).await.0,401);
+    assert_eq!(upload(address,id,headers.clone(),multipart(&intent,&zip[..24])).await.0,400);
+    assert!(request(&client,address,"GET",&path(id),&headers,"").await.2.contains("RECEIVING"));
+    listener.stop().await.unwrap();
+    drop(host);
+    let (host, listener) = start().await;
+    let address = listener.address();
+    let accepted = result(upload(address,id,headers.clone(),multipart(&intent,zip)).await);
+    assert_eq!(accepted["state"],"AWAITING_OWNER");
+    assert!(accepted.get("destination").is_none());
+    let mut changed = intent.clone();
+    changed["name"] = json!("Different request");
+    assert_eq!(upload(address,id,headers.clone(),multipart(&changed,zip)).await.0,409);
+    assert_eq!(result(upload(address,id,headers.clone(),multipart(&intent,zip)).await),accepted);
+    let destination = fixture.root.parent().unwrap().join("restored");
+    assert!(host.workspace_zip_owner("approve",Some(id),Some(destination.clone())).is_err());
+    assert!(!destination.exists());
+    let cancel_id = Uuid::new_v4();
+    result(upload(address,cancel_id,headers.clone(),multipart(&intent,zip)).await);
+    assert!(request(&client,address,"DELETE",&path(cancel_id),&headers,"").await.2.contains("CANCELLED"));
+    assert!(host.workspace_zip_owner("approve",Some(cancel_id),Some(destination.clone())).is_err());
+    let reject_id = Uuid::new_v4();
+    result(upload(address,reject_id,headers.clone(),multipart(&intent,zip)).await);
+    host.workspace_zip_owner("reject",Some(reject_id),None).unwrap();
+    assert_eq!(result(upload(address,reject_id,headers.clone(),multipart(&intent,zip)).await)["state"],"REJECTED");
+    assert_eq!(host.workspace_zip_owner("preview",Some(id),None).unwrap()["state"],"PREVIEWED");
+    host.owner_command(&format!("withdraw {device}")).unwrap();
+    assert!(host.workspace_zip_owner("approve",Some(id),Some(destination.clone())).is_err());
+    assert_eq!(upload(address,id,headers.clone(),multipart(&intent,zip)).await.0,403);
+    host.owner_command(&format!("grant {device}")).unwrap();
+    listener.stop().await.unwrap();
+    drop(host);
+    let (host, listener) = start().await;
+    let address = listener.address();
+    assert_eq!(host.workspace_zip_owner("approve",Some(id),Some(destination.clone())).unwrap()["state"],"APPROVED");
+    let mut complete = Value::Null;
+    for _ in 0..80 {
+        let response = request(&client,address,"GET",&path(id),&headers,"").await;
+        complete = serde_json::from_str(&response.2).unwrap();
+        if complete["state"] == "SUCCEEDED" {break;}
+        assert_ne!(complete["state"],"FAILED","{complete}");
+        tokio::time::sleep(Duration::from_millis(25)).await;
+    }
+    assert_eq!(complete["destinationWorkspaceId"],id.to_string());
+    assert_eq!(host.workspace_zip_owner("approve",Some(id),None).unwrap()["state"],"SUCCEEDED");
+    let restored = crate::domain::Workspace::open_existing(&destination).unwrap();
+    assert_eq!(restored.review_generation().unwrap(),id.to_string());
+    let file: String = restored.db.query_row("SELECT resource_id FROM managed_originals",[],|r|r.get(0)).unwrap();
+    let original = crate::transfers::original_path(&destination,&file).unwrap();
+    let bytes = std::fs::read(original).unwrap();
+    assert_eq!(bytes,b"unchanged-original");
+    drop(restored);
+    assert_eq!(result(upload(address,id,headers,multipart(&intent,zip)).await), complete);
+    listener.stop().await.unwrap();
+    worker.stop();
+}
+
+#[tokio::test]
+async fn loopback_owner_handoff_is_single_use_expiring_and_connector_bound() {
+    let fixture = Fixture::new();
+    let identity = Identity::open(&fixture.access, &fixture.ca).unwrap();
+    let worker = Worker::start(fixture.root.clone(), None).unwrap();
+    worker.call(Request::Snapshot).await.unwrap();
+    let host = Host::new(worker.storage(),fixture.root.clone(),identity).await.unwrap();
+    let listener = host.clone().listen("127.0.0.1:0".parse().unwrap(),fixture.chain.clone(),fixture.key.clone()).await.unwrap();
+    let open = || async {
+        let url = host.owner_browser_url().await.unwrap();
+        let (address, token) = url.strip_prefix("http://").unwrap().split_once("/access#ticket=").unwrap();
+        (address.parse::<SocketAddr>().unwrap(),json!({"ticket":token}).to_string())
+    };
+    async fn local(address: SocketAddr, method: &str, path: &str, headers: &str, body: &str) -> (u16,String,String) {
+        let mut stream = TcpStream::connect(address).await.unwrap();
+        stream.write_all(format!("{method} {path} HTTP/1.1\r\nHost: {address}\r\nConnection: close\r\nContent-Type: application/json\r\nContent-Length: {}\r\n{headers}\r\n{body}",body.len()).as_bytes()).await.unwrap();
+        let mut text = String::new();
+        stream.read_to_string(&mut text).await.unwrap();
+        let (head,body)=text.split_once("\r\n\r\n").unwrap();
+        (head.split_whitespace().nth(1).unwrap().parse().unwrap(),head.into(),body.into())
+    }
+    let (address, cancelled) = open().await;
+    assert!(address.ip().is_loopback());
+    let bootstrap="/api/access/bootstrap";
+    let origin=format!("Origin: http://{address}\r\n");
+    host.cancel_owner_browser(false).unwrap();
+    assert_eq!(local(address,"POST",bootstrap,&origin,&cancelled).await.0,401);
+    let (_,expired)=open().await;
+    host.owner_browser.expire_pending();
+    assert_eq!(local(address,"POST",bootstrap,&origin,&expired).await.0,401);
+    let (_,ticket)=open().await;
+    assert_eq!(local(address,"POST",bootstrap,"Origin: https://example.invalid\r\n",&ticket).await.0,403);
+    let client=connector(Some(fixture.authority.clone()));
+    assert_ne!(request(&client,listener.address(),"POST",bootstrap,"",&ticket).await.0,200);
+    let (one,two)=tokio::join!(local(address,"POST",bootstrap,&origin,&ticket),local(address,"POST",bootstrap,&origin,&ticket));
+    assert!(matches!((one.0,two.0),(200,401)|(401,200)));
+    let accepted=if one.0==200 {one} else {two};
+    let cookie=accepted.1.lines().find_map(|line|line.strip_prefix("set-cookie: ")).unwrap();
+    assert!(cookie.contains("HttpOnly")&&cookie.contains("SameSite=Strict"));
+    let name_value=cookie.split(';').next().unwrap();
+    let credentials=format!("Cookie: {name_value}\r\n");
+    let auth=local(address,"GET","/api/access/session",&credentials,"").await;
+    assert_eq!(auth.0,200);
+    let state:Value=serde_json::from_str(&auth.2).unwrap();
+    assert_eq!(state["role"],"OWNER");
+    assert_eq!(local(address,"GET","/api/owner/pairings",&credentials,"").await.0,200);
+    assert_eq!(local(address,"GET","/api/next/browser/v1/workspaces",&credentials,"").await.0,200);
+    let internal=format!("Authorization: {}{}\r\n",owner_browser::INTERNAL_AUTH,name_value.split_once('=').unwrap().1);
+    assert_eq!(request(&client,listener.address(),"GET","/api/next/mobile/v1/workspaces",&internal,"").await.0,403);
+    assert_eq!(local(address,"POST","/api/access/logout",&format!("{credentials}{origin}"),"").await.0,403);
+    let signed=format!("{credentials}{origin}X-Vaultor-CSRF: {}\r\n",state["csrf"].as_str().unwrap());
+    assert_eq!(local(address,"POST","/api/access/logout",&signed,"").await.0,204);
+    assert_eq!(local(address,"GET","/api/access/session",&credentials,"").await.0,401);
+    if let Some(executable) = std::env::var_os("VAULTOR_BENCH_CHROMIUM") {
+        let url = host.owner_browser_url().await.unwrap();
+        let profile = tempfile::tempdir().unwrap();
+        let output = tokio::task::spawn_blocking(move || {
+            std::process::Command::new(executable)
+                .args(["--headless", "--disable-gpu", "--no-first-run", "--disable-extensions",
+                    "--disable-background-networking", "--virtual-time-budget=6000", "--dump-dom"])
+                .arg(format!("--user-data-dir={}",profile.path().display()))
+                .arg(url).output()
+        }).await.unwrap().unwrap();
+        assert!(output.status.success());
+        assert!(String::from_utf8_lossy(&output.stdout).contains("Owner browser connected."));
+    }
+    listener.stop().await.unwrap();
+    worker.stop();
 }
 
 #[tokio::test]

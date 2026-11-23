@@ -18,6 +18,8 @@ Windows desktop generates a stable CA on first enable and uses user-scoped DPAPI
 
 **Next M26-A3:** Restore as New Workspace is the primary recovery operation. Reviewed Merge remains independent. Destructive in-place workspace replacement is intentionally omitted. Browser organization uses Rust-managed revision and grant checks. Connected archive and Markdown-with-assets exports carry saved Review evidence scoped to included managed targets. See the [M26-A3 record](plans/VAULTOR-NEXT.md#m26-a3-restoration-policy-and-work-queue).
 
+**Next M26-A4:** Android can submit a bounded workspace ZIP through the existing encrypted import queue. Rust owns the durable proposal and verifies owner approval and publication separately. Browser collections and tags reuse the organization services. The desktop launches a separate loopback-only browser connector for one-use owner handoffs. The [Next host guide](development/NEXT-HOST.md) owns the current boundaries.
+
 ## Product and architecture
 
 **Next M25 managed autosave:** The desktop persists the validated Tiptap document to its usual recovery journal, then sends the resource ID, expected revision, token and protected sequence over Tauri IPC. The SQLite owner validates that exact draft and publishes its stored document, updates the search and relationship projections, and removes the draft in the same transaction. A conflict or failed cleanup rolls back publication and retains the draft. Direct saved-note writes, including the browser adapter, retain their document-bearing request. Linked Markdown retains its own source publication path.
@@ -522,6 +524,10 @@ Import recognition now separates retained journals from current inventory using 
 Menus use action-specific labels and move technical identifiers/details behind disclosure. Skip hides creation settings it ignores. Activity retains completed warnings, presents friendly workspace names and explicit source reselection. Trash/collection confirmations retain revision and external-file safeguards; discarding an owned local draft requires a separate confirmation. Protocol3, archive schemas, original signer and authorization remain unchanged. [0.24.1 ledger](desktop/releases/v0.24.1.md) owns actual validation and platform status.
 
 ## Maintenance history
+
+### 2026-11-23 — Next M26-A4 connected workspace workflows
+
+Reused the encrypted Android queue, Rust archive restore and desktop Activity for owner-reviewed Android ZIP proposals. Routed browser collection and tag changes through shared organization state and added an isolated Windows owner handoff. Updated Next Help, the Feature Catalogue, host and transfer guides, UI audit, and parity ledger. The [M26-A4 record](plans/VAULTOR-NEXT.md#m26-a4-connected-workspace-workflows) owns actual qualification.
 
 ### 2026-11-23 — Next M26-A3 restoration and parity
 

@@ -214,6 +214,18 @@ Choose **New note** in the browser Library and enter a title. The note goes into
 
 Use **Organize** on a resource to rename it, pin it, change its collection memberships or move it to Trash. To move between collections, open the source collection first, then choose the destination. Other memberships are preserved. Switch **Library view** to **Pinned** or **Trash** to see those resources. Use **Restore from Trash** to recover a resource. Save or discard browser edits before renaming or moving the active resource to Trash. Protected desktop drafts can block either action.
 
+Choose **New collection** to create a collection at the top level or under an existing collection. Select a collection and use **Manage collection** to rename it, move it under a different parent, or review its removal. The review offers keeping every resource or moving eligible resources used only in that branch to Trash. Shared resources and linked external originals stay in place.
+
+Use **Manage tags** to find, create, edit, remove or browse a tag. Use **Organize → Assign tags** on a resource to add or remove assignments. Deleting a tag removes its assignments throughout the workspace and keeps the resources. Creating a tag with an existing name reuses that tag.
+
+On the host computer, use **Settings → Hosting → Open in browser** while sharing is active. The local browser uses a handoff once within 60 seconds. It can review pairing codes and open the current workspace. **Cancel handoff** cancels the pending link. **End owner session**, **Sign out**, stopping hosting, and quitting Vaultor end the local session.
+
+### Review an Android workspace backup
+
+On Android, use **Pending imports** to collect a compatible Vaultor workspace ZIP up to 64 MiB. Choose the approved source, **Workspace ZIP**, and a proposed name. Confirm the request to upload. An interruption retries the same request and retains the phone's bytes. You can cancel a pending request before the owner authorizes it.
+
+On desktop, open **Workspace transfers → Incoming workspace backups** while hosting the source workspace. Select **Review backup** to verify the exact package and see its counts. Reject it or choose **Create new workspace** and select a destination parent. A successful restore becomes available to open after sharing stops. If the host closed during an authorized restore, reopen the incoming request and resume it. Local linked paths still require authorization and rebinding.
+
 Connected Android archive exports include saved Review evidence for the managed resources in the package. Markdown with assets includes that evidence in `reviews.json` when available. Plain Markdown, Word and PDF keep the exported document focused on its saved content.
 
 On Android, **Collected imports** can send a confirmed original or a reviewed text or Markdown conversion to the granted Next workspace. Keep the queued original until you have a receipt. Next connected exports include saved-note Markdown, Markdown with assets, Word and text-layout PDF, and eligible whole-workspace or selected `.vaultor` archives. The legacy workspace ZIP import still needs the original host review workflow. Next archive export excludes Reviews and owner settings and refuses owner-local linked descriptors, Trash or protected selections.

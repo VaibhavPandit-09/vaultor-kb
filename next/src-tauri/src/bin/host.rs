@@ -54,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if !std::io::stdin().is_terminal() || !std::io::stderr().is_terminal() {
             return;
         }
-        eprintln!("Local owner commands: pending, approve ID CODE, reject ID CODE, devices, grant ID, withdraw ID, revoke ID, quit");
+        eprintln!("Local owner commands: pending, approve ID CODE, reject ID CODE, devices, grant ID, withdraw ID, revoke ID, zip list, zip preview ID, zip approve ID NEW_PATH, zip reject ID, quit");
         for line in std::io::stdin().lock().lines().map_while(Result::ok) {
             if line.trim() == "quit" {
                 let _ = done.send(());

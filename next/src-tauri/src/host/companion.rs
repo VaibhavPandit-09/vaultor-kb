@@ -26,7 +26,7 @@ async fn import_capabilities(
     host.authorize(&headers, mobile::selected(&host, &headers)?)
         .await?;
     Ok(Json(
-        json!({"version":1,"maxBytes":MAX_UPLOAD,"modes":["original","text","markdown"],"workspaceZip":false}),
+        json!({"version":1,"maxBytes":MAX_UPLOAD,"modes":["original","text","markdown"],"workspaceZip":true}),
     ))
 }
 

@@ -13,6 +13,9 @@ import SearchExcerpt from '../components/SearchExcerpt';
 import {ManagedImage} from '../components/editor/ManagedImage';
 import {ResourceLinkExtension} from '../components/editor/ResourceLinkDefinition';
 import LibraryPopover from '../components/LibraryPopover';
+import {CollectionEditor, TagsEditor, type Collection, type Tag, type BrowserOrganizationRequest} from './BrowserOrganization';
+import {createPortal} from 'react-dom';
+import {collectionPaths} from './collections';
 import '../index.css';
 import './next.css';
 import './browser.css';
@@ -21,7 +24,7 @@ const base = '/api/next/browser/v1';
 const uuid = /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 type Workspace = {id: string; name: string};
 type Resource = {id: string; title: string; type: string; revision: string; favorite: boolean;
-  collections: Group[]; mimeType?: string; originalName?: string};
+  collections: Group[]; tags?: Tag[]; mimeType?: string; originalName?: string};
 type Note = Resource & {revision: string; content: JSONContent};
 type Group = {id: string; name: string};
 type Hit = Resource | {resource: Resource; snippet?: {text: string; highlights: {start: number; end: number}[]}};
@@ -210,9 +213,10 @@ function FilePreview({file}: {file: Resource}) {
   </section>;
 }
 
-function ResourceActions({resource, collections, selected, trashed, change}: {
+function ResourceActions({resource, collections, selected, trashed, change, tags}: {
   resource: Resource; collections: Group[]; selected: string; trashed: boolean;
   change: (resource: Resource, change: Change) => Promise<void>;
+  tags: () => void;
 }) {
   const [pending, setPending] = useState(false);
   const [destination, setDestination] = useState('');
@@ -242,6 +246,7 @@ function ResourceActions({resource, collections, selected, trashed, change}: {
           onClick={() => run({operation: 'pin', value: !resource.favorite})}>
           {resource.favorite ? 'Unpin' : 'Pin'}
         </button>
+        <button type="button" className="library-button" onClick={() => {close(); tags();}}>Assign tags…</button>
         {collections.length > 0 && <>
           <label>Destination collection <select value={destination} onChange={event => setDestination(event.target.value)}>
             <option value="">Choose collection</option>
@@ -270,7 +275,10 @@ export default function BrowserWorkspace() {
   const [includeContent, setIncludeContent] = useState(false);
   const [view, setView] = useState<'library' | 'pinned' | 'trash'>('library');
   const [collection, setCollection] = useState('');
-  const [collections, setCollections] = useState<Group[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [collectionEditor, setCollectionEditor] = useState<{target?: Collection}>();
+  const [tagEditor, setTagEditor] = useState<{target?: Resource}>();
+  const [filteredTag, setFilteredTag] = useState<Tag>();
   const [page, setPage] = useState(0);
   const [version, invalidate] = useState(0);
   const [listing, setListing] = useState<Page<Hit>>();
@@ -285,6 +293,7 @@ export default function BrowserWorkspace() {
       current.current = '';
       dirty.current = false;
       setListing(undefined); setCollections([]); setResource(undefined); setWorkspace(undefined); setActive('');
+      setCollectionEditor(undefined); setTagEditor(undefined); setFilteredTag(undefined);
     }
     setProblem(error instanceof Error ? error.message : 'Connection unavailable.');
   }, []);
@@ -310,6 +319,21 @@ export default function BrowserWorkspace() {
   }, []);
   const workspaceId = workspace?.id;
   const headers = useMemo(() => ({'X-Vaultor-Workspace': workspaceId ?? ''}), [workspaceId]);
+  const organization = useCallback<BrowserOrganizationRequest>(async (path, input) => {
+    try {
+      return await request(base + path, input ? {
+        method: 'PUT', headers: {...headers, 'X-Vaultor-CSRF': access, 'Content-Type': 'application/json'},
+        body: JSON.stringify(input),
+      } : {headers});
+    } catch (error) {
+      if (error instanceof Refusal && [401,403].includes(error.status)) showError(error);
+      if (error instanceof Refusal && error.status === 409) {
+        invalidate(value => value + 1);
+        throw new Error('The workspace organization changed or a protected draft blocks the action. Review current information and try again.');
+      }
+      throw error;
+    }
+  }, [access, headers, showError]);
   useEffect(() => {
     if (!workspaceId) return;
     const events = new EventSource(base + '/changes');
@@ -325,7 +349,7 @@ export default function BrowserWorkspace() {
   useEffect(() => {
     if (!workspaceId) return;
     const control = new AbortController();
-    void request<Page<Group>>(base + '/collections?size=100', {headers, signal: control.signal})
+    void request<Page<Collection>>(base + '/collections?size=100', {headers, signal: control.signal})
       .then(result => setCollections(result.items))
       .catch(error => { if (!control.signal.aborted) showError(error); });
     return () => control.abort();
@@ -337,6 +361,7 @@ export default function BrowserWorkspace() {
       setLoading(true);
       const filters = new URLSearchParams({q: query.trim(), page: String(page), size: '30'});
       if (collection) filters.set('collection', collection);
+      if (filteredTag) filters.set('tag', filteredTag.id);
       if (view === 'pinned') filters.set('favorites', 'true');
       const route = view === 'trash' ? '/trash' : includeContent && query.trim() ? '/query' : '';
       void request<Page<Hit>>(base + '/resources' + route + '?' + filters,
@@ -345,7 +370,7 @@ export default function BrowserWorkspace() {
       }).finally(() => { if (!control.signal.aborted) setLoading(false); });
     }, 180);
     return () => {control.abort(); clearTimeout(timeout);};
-  }, [workspaceId, headers, query, page, collection, version, includeContent, view, showError]);
+  }, [workspaceId, headers, query, page, collection, version, includeContent, view, filteredTag, showError]);
   useEffect(() => {
     if (!workspaceId || !active || dirty.current) return;
     const control = new AbortController();
@@ -418,6 +443,7 @@ export default function BrowserWorkspace() {
       } else showError(error);
     }
   }
+  const paths = collectionPaths(collections);
   return <main className="vaultor-browser">
     <BrowseHeading title={workspace?.name ?? 'Vaultor Next'} kicker="Shared workspace"
       actions={<div className="browser-actions">
@@ -439,7 +465,7 @@ export default function BrowserWorkspace() {
         {view !== 'trash' && <NewNote key={workspace.id} collection={collection} collectionName={collections.find(group => group.id === collection)?.name} create={create}/>}
         <div className="browser-filters">
           <select aria-label="Library view" value={view} onChange={event => {
-            setListing(undefined); setPage(0); setCollection(''); setView(event.target.value as typeof view);
+            setListing(undefined); setPage(0); setCollection(''); setFilteredTag(undefined); setView(event.target.value as typeof view);
           }}>
             <option value="library">Library</option>
             <option value="pinned">Pinned</option>
@@ -450,13 +476,20 @@ export default function BrowserWorkspace() {
           {view !== 'trash' && <label><input type="checkbox" checked={includeContent} onChange={event => {setPage(0); setIncludeContent(event.target.checked);}} /> Saved content</label>}
           {view !== 'trash' && <select aria-label="Collection" value={collection} onChange={event => {setPage(0); setCollection(event.target.value);}}>
             <option value="">All collections</option>
-            {collections.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}
+            {collections.map(group => <option key={group.id} value={group.id}>{paths.get(group.id)}</option>)}
           </select>}
+          {view === 'library' && <>
+            <button className="library-button" onClick={() => setCollectionEditor({})}>New collection</button>
+            {collections.some(group => group.id === collection) && <button className="library-button"
+              onClick={() => setCollectionEditor({target: collections.find(group => group.id === collection)})}>Manage collection</button>}
+            <button className="library-button" onClick={() => setTagEditor({})}>Manage tags</button>
+            {filteredTag && <button className="library-button" onClick={() => {setFilteredTag(undefined); setPage(0);}}>Clear tag {filteredTag.name}</button>}
+          </>}
         </div>
         {listing?.items.map(hit => {
           const resource = 'resource' in hit ? hit.resource : hit;
           return <BrowseRowSurface key={resource.id} className="next-resource" data-open={active === resource.id}
-            actions={<ResourceActions resource={resource} collections={collections} selected={collection} trashed={view === 'trash'} change={organize}/>}
+            actions={<ResourceActions resource={resource} collections={collections} selected={collection} trashed={view === 'trash'} change={organize} tags={() => setTagEditor({target: resource})}/>}
             resource={view === 'trash' ? <span>{resource.title}</span> : <button className="next-resource-open" onClick={() => open(resource.id)}>
               <span><strong>{resource.title}</strong>{'snippet' in hit && hit.snippet && <small><SearchExcerpt snippet={hit.snippet}/></small>}</span>
             </button>} />;
@@ -469,5 +502,18 @@ export default function BrowserWorkspace() {
         <BrowserNote key={resource.id + ':' + resource.revision} note={resource} open={open} save={save} dirty={value => { dirty.current = value; }} /> :
         <FilePreview file={resource} />)}
     </div>}
+    {workspace && collectionEditor && createPortal(<CollectionEditor target={collectionEditor.target} parent={collection}
+      groups={collections} send={organization} dirty={() => dirty.current} close={() => setCollectionEditor(undefined)}
+      changed={id => {setCollectionEditor(undefined); setCollection(id); setPage(0); invalidate(value => value + 1);}}/>, document.body)}
+    {workspace && tagEditor && createPortal(<TagsEditor send={organization} close={() => setTagEditor(undefined)}
+      changed={() => invalidate(value => value + 1)}
+      browse={tag => {setTagEditor(undefined); setFilteredTag(tag); setCollection(''); setView('library'); setPage(0);}}
+      assigned={tagEditor.target?.tags?.map(tag => tag.id)}
+      assign={tagEditor.target ? async (tag, value) => {
+        const target = tagEditor.target!;
+        const updated = await organization<Resource>('/resources/' + target.id + '/organization',
+          {operation:'tag', tag:tag.id, value, revision:Number(target.revision)});
+        setTagEditor({target: updated});
+      } : undefined}/>, document.body)}
   </main>;
 }

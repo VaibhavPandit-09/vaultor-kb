@@ -14,7 +14,7 @@ Converted inputs create one visible note. Nullable Resource provenance fields re
 
 ## ZIP owner authorization
 
-This owner-reviewed ZIP workflow applies to the original host. The experimental Next host currently accepts eligible individual managed imports. Its owner inbox, approval and restart-safe ZIP receipts remain open. Next restores reviewed desktop archives into new independent workspaces.
+The experimental Next host accepts eligible ZIP proposals through the same Android queue and a separately negotiated mobile endpoint. It verifies and restores compatible packages through the Rust owner. The desktop owner opens Workspace transfers → Incoming workspace backups, reviews the exact archive, and chooses a new folder or rejects the proposal. See the [Next host contract](../development/NEXT-HOST.md#android-m24-c-projection).
 
 `PUT /api/collected-zips/{uuid}` lets an approved paired device submit exact bounded bytes plus original source, hash, filename and proposed new-workspace name. It cannot create a workspace. The private host request retains device/provenance/operation through retries; same UUID/different intent refuses. Source grant/generation is checked on submission and reconciliation. The host caps pending ZIPs at32/256MiB, with a separate10000 receipt bound. Existing local-owner checks are unchanged.
 

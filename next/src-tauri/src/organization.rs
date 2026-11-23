@@ -78,6 +78,11 @@ pub(crate) fn initialize(db: &Connection) -> Result<(), String> {
  CREATE TRIGGER IF NOT EXISTS lifecycle_draft BEFORE INSERT ON drafts WHEN EXISTS(SELECT 1 FROM resource_state WHERE resource_id=new.resource_id AND trashed=1) BEGIN SELECT RAISE(ABORT,'Resource is in Trash'); END;
  CREATE TRIGGER IF NOT EXISTS lifecycle_save BEFORE UPDATE OF title,content ON resources WHEN EXISTS(SELECT 1 FROM resource_state WHERE resource_id=new.id AND trashed=1) BEGIN SELECT RAISE(ABORT,'Resource is in Trash'); END;
  CREATE TRIGGER IF NOT EXISTS collection_changed AFTER UPDATE ON collections BEGIN UPDATE search_generation SET value=value+1; END;
+ CREATE TRIGGER IF NOT EXISTS collection_added AFTER INSERT ON collections BEGIN UPDATE search_generation SET value=value+1; END;
+ CREATE TRIGGER IF NOT EXISTS collection_removed AFTER DELETE ON collections BEGIN UPDATE search_generation SET value=value+1; END;
+ CREATE TRIGGER IF NOT EXISTS tag_added AFTER INSERT ON tags BEGIN UPDATE search_generation SET value=value+1; END;
+ CREATE TRIGGER IF NOT EXISTS tag_changed AFTER UPDATE ON tags BEGIN UPDATE search_generation SET value=value+1; END;
+ CREATE TRIGGER IF NOT EXISTS tag_removed AFTER DELETE ON tags BEGIN UPDATE search_generation SET value=value+1; END;
  CREATE TRIGGER IF NOT EXISTS org_state_insert AFTER INSERT ON resource_state BEGIN UPDATE search_generation SET value=value+1; END;
  CREATE TRIGGER IF NOT EXISTS org_state_update AFTER UPDATE ON resource_state BEGIN UPDATE search_generation SET value=value+1; END;
  CREATE TRIGGER IF NOT EXISTS org_tag_insert AFTER INSERT ON resource_tags BEGIN UPDATE search_generation SET value=value+1; END;

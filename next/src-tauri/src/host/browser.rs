@@ -26,12 +26,17 @@ pub(crate) fn initialize(db: &Connection) -> Result<(), String> {
             workspace TEXT NOT NULL, device TEXT NOT NULL, request TEXT NOT NULL,
             intent BLOB NOT NULL, resource_id TEXT NOT NULL,
             PRIMARY KEY(workspace, device, request)
+        );
+        CREATE TABLE IF NOT EXISTS browser_collection_creations (
+            request TEXT NOT NULL, device TEXT NOT NULL, intent TEXT NOT NULL, collection_id TEXT NOT NULL,
+            PRIMARY KEY(request, device)
         );",
     ).map_err(crate::domain::error)
 }
 
-pub(super) fn router() -> Router<Host> {
-    let workspace = mobile::browser_reads()
+pub(super) fn workspace_routes() -> Router<Host> {
+    mobile::browser_reads()
+        .merge(super::browser_organization::router())
         .route("/resources/{id}/preview", get(preview))
         .route("/resources/{id}/organization", put(organize).layer(DefaultBodyLimit::max(4096)))
         .route("/note-creates/{id}", put(create_note).layer(DefaultBodyLimit::max(4096)))
@@ -39,7 +44,10 @@ pub(super) fn router() -> Router<Host> {
             "/notes/{id}",
             put(save_note).layer(DefaultBodyLimit::max(1024 * 1024)),
         )
-        .layer(from_fn(browser_only));
+}
+
+pub(super) fn router() -> Router<Host> {
+    let workspace = workspace_routes().layer(from_fn(browser_only));
     Router::new()
         .route("/", get(home))
         .route(
@@ -130,14 +138,14 @@ fn credential(headers: &HeaderMap) -> ApiResult<&str> {
     Ok(value)
 }
 
-fn csrf(credential: &str) -> String {
+pub(super) fn csrf(credential: &str) -> String {
     let mut digest = Sha256::new();
     digest.update(b"vaultor-next/browser-csrf\0");
     digest.update(credential.as_bytes());
     hex::encode(digest.finalize())
 }
 
-fn verify_mutation(headers: &HeaderMap, credential: &str) -> ApiResult<()> {
+pub(super) fn verify_mutation(headers: &HeaderMap, credential: &str) -> ApiResult<()> {
     if !headers.contains_key(header::ORIGIN)
         || !headers
             .get("x-vaultor-csrf")
@@ -189,7 +197,7 @@ async fn logout(State(host): State<Host>, headers: HeaderMap) -> ApiResult<Respo
         .into_response())
 }
 
-fn asset(kind: &'static str, content: impl Into<Body>) -> Response {
+pub(super) fn asset(kind: &'static str, content: impl Into<Body>) -> Response {
     (
         [
             (header::CONTENT_TYPE, kind),
@@ -205,6 +213,10 @@ async fn home(State(host): State<Host>, headers: HeaderMap) -> Response {
     if authenticate(&host, &headers).await.is_err() {
         return Redirect::to("/access").into_response();
     }
+    workspace_home()
+}
+
+pub(super) fn workspace_home() -> Response {
     match embedded("browser.html") {
         Some(content) => asset("text/html; charset=utf-8", content),
         None => (
@@ -221,8 +233,11 @@ async fn browser_asset(
     headers: HeaderMap,
 ) -> ApiResult<Response> {
     authenticate(&host, &headers).await?;
-    let path = uri
-        .path()
+    workspace_asset(uri.path())
+}
+
+pub(super) fn workspace_asset(path: &str) -> ApiResult<Response> {
+    let path = path
         .strip_prefix("/browser/")
         .ok_or(StatusCode::NOT_FOUND)?;
     let content = embedded(path).ok_or(StatusCode::NOT_FOUND)?;
@@ -293,6 +308,7 @@ enum OrganizationChange {
     Membership { revision: i64, collection: Uuid, value: bool },
     Move { revision: i64, from: Uuid, to: Uuid },
     Rename { revision: i64, title: String },
+    Tag { revision: i64, tag: Uuid, value: bool },
     Trash { revision: i64, value: bool },
 }
 
@@ -328,6 +344,7 @@ async fn organize(
             | OrganizationChange::Membership { revision, .. }
             | OrganizationChange::Move { revision, .. }
             | OrganizationChange::Rename { revision, .. }
+            | OrganizationChange::Tag { revision, .. }
             | OrganizationChange::Trash { revision, .. } => *revision,
         };
         if actual != Some(revision) {
@@ -360,6 +377,9 @@ async fn organize(
             }
             OrganizationChange::Rename { title, .. } => {
                 ws.media(json!({"op":"rename", "id":id, "title":title, "revision":revision}))?;
+            }
+            OrganizationChange::Tag { tag, value, .. } => {
+                ws.organization(Org::Tagging {ids: vec![id.clone()], tag:tag.to_string(), add:value})?;
             }
             OrganizationChange::Trash { value, .. } if value != trashed => {
                 ws.organization(Org::Trash { ids: vec![id.clone()], restore: !value })?;

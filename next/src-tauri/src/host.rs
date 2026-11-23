@@ -2,11 +2,15 @@
 //! managed resources only. Neither workspace paths nor desktop commands enter the router.
 mod access;
 mod browser;
+mod browser_organization;
 pub(crate) use browser::initialize as initialize_browser;
 mod companion;
 mod companion_exports;
+mod collected;
+pub use collected::CollectedRestore;
 mod pairing;
 mod mobile;
+mod owner_browser;
 #[cfg(test)]
 mod tests;
 mod transport;
@@ -60,6 +64,7 @@ pub struct Host {
     streams: Arc<Semaphore>,
     access_changed: tokio::sync::watch::Sender<()>,
     management_changed: tokio::sync::watch::Sender<u64>,
+    owner_browser: Arc<owner_browser::OwnerBrowser>,
     stop: CancellationToken,
 }
 
@@ -186,12 +191,20 @@ impl Host {
             streams: Arc::new(Semaphore::new(16)),
             access_changed: tokio::sync::watch::Sender::new(()),
             management_changed: tokio::sync::watch::Sender::new(0),
+            owner_browser: Arc::default(),
             stop: CancellationToken::new(),
         })
     }
 
     /// Owner-only operations. Call only from the local process, never from the network router.
     pub fn owner_command(&self, command: &str) -> Result<Value, String> {
+        if let Some(command) = command.trim().strip_prefix("zip ") {
+            let mut parts = command.splitn(3, ' ');
+            let action = parts.next().unwrap_or_default();
+            let id = parts.next().map(str::parse::<Uuid>).transpose().map_err(crate::domain::error)?;
+            let destination = parts.next().map(PathBuf::from);
+            return self.workspace_zip_owner(action, id, destination);
+        }
         let mut pending = self.enrollment.lock().map_err(crate::domain::error)?;
         match command.split_whitespace().collect::<Vec<_>>().as_slice() {
             ["pending"] => Ok(pending.pending()),
@@ -451,6 +464,10 @@ impl Host {
         if let Some(credential) = authorization.strip_prefix(browser::INTERNAL_AUTH) {
             return access::authenticate(&self.access, credential, true).await;
         }
+        if let Some(credential) = authorization.strip_prefix(owner_browser::INTERNAL_AUTH) {
+            let session = self.owner_browser.session(credential)?;
+            return Ok(Grant::local_owner(self.host_id(), self.workspace, session));
+        }
         let credential = authorization.strip_prefix("Bearer ").ok_or(StatusCode::UNAUTHORIZED)?;
         access::authenticate(&self.access, credential, false).await
     }
@@ -558,7 +575,9 @@ async fn enforce_transport(
     next: axum::middleware::Next,
 ) -> Response {
     if !private(peer.ip()) || request.method() == axum::http::Method::OPTIONS ||
-        request.headers().get(header::AUTHORIZATION).is_some_and(|v| v.as_bytes().starts_with(browser::INTERNAL_AUTH.as_bytes())) ||
+        request.headers().get(header::AUTHORIZATION).is_some_and(|v|
+            v.as_bytes().starts_with(browser::INTERNAL_AUTH.as_bytes()) ||
+            v.as_bytes().starts_with(owner_browser::INTERNAL_AUTH.as_bytes())) ||
         (request.headers().contains_key(header::ORIGIN) && !browser::same_origin(&request)) {
         return StatusCode::FORBIDDEN.into_response();
     }

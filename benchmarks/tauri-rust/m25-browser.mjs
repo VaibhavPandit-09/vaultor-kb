@@ -122,6 +122,91 @@ export async function browserChecks(docker, network, name, bind, owner, ip, file
       await action('Save name');
       await poll(()=>run("!!document.querySelector('button[aria-label=\"Organize M26-A3 renamed note\"]')"),'renamed resource listed');
     }
+    if(process.argv.includes('--m26a4')) {
+      const click = (text, parent='body') => run(`
+        [...document.querySelectorAll(${JSON.stringify(parent+' button')})]
+          .find(button=>button.textContent.trim()===${JSON.stringify(text)}).click(); true`);
+      const button = (text, parent='body') => poll(()=>run(`
+        [...document.querySelectorAll(${JSON.stringify(parent+' button')})]
+          .some(button=>button.textContent.trim()===${JSON.stringify(text)}&&!button.disabled)`),text);
+      const edit = async (field, value) => {
+        await run(`document.querySelector(${JSON.stringify(field)}).focus(); document.activeElement.select(); true`);
+        await cdp('Input.insertText',{text:value});
+      };
+      const collectionOption = (label) => poll(()=>run(`[...document.querySelectorAll('[aria-label="Collection"] option')]
+        .some(option=>option.textContent===${JSON.stringify(label)})`),label);
+      const selectCollection = (label) => run(`{
+        const control=document.querySelector('[aria-label="Collection"]');
+        control.value=[...control.options].find(option=>option.textContent===${JSON.stringify(label)}).value;
+        control.dispatchEvent(new Event('change',{bubbles:true})); true
+      }`);
+      await click('New collection');
+      await edit('[role=dialog] form input','Division');
+      const collectionStarted=performance.now();
+      await click('Create collection','[role=dialog]');
+      await collectionOption('Division');
+      samples.push({metric:'docker_browser_collection_create',value:performance.now()-collectionStarted,unit:'ms',notes:'Chromium form submission to new collection in refreshed navigation. One loopback sample with polling.'});
+      await click('New collection');
+      await edit('[role=dialog] form input','Branch');
+      await click('Create collection','[role=dialog]');
+      await collectionOption('Division / Branch');
+      await click('Manage collection');
+      await edit('[role=dialog] form input','Renamed branch');
+      await click('Save collection','[role=dialog]');
+      await collectionOption('Division / Renamed branch');
+
+      await click('Manage tags');
+      await edit('[role=dialog] form input[maxlength]', 'Research');
+      const tagStarted=performance.now();
+      await click('Create tag','[role=dialog]');
+      await button('Research','[role=dialog]');
+      samples.push({metric:'docker_browser_tag_create',value:performance.now()-tagStarted,unit:'ms',notes:'Chromium form submission to saved tag in refreshed search list. One loopback sample with polling.'});
+      await click('Research','[role=dialog]');
+      await edit('[role=dialog] form input[maxlength]', 'Evidence');
+      await click('Save tag','[role=dialog]');
+      await button('Evidence','[role=dialog]');
+      await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+      await poll(()=>run("!document.querySelector('[role=dialog]')"),'tag editor dismissed');
+
+      await selectCollection('All collections');
+      const organized=`button[aria-label=${JSON.stringify('Organize '+fileName)}]`;
+      await poll(()=>run(`!!document.querySelector(${JSON.stringify(organized)})`),'fixture resource in Library');
+      await run(`document.querySelector(${JSON.stringify(organized)}).click(); true`);
+      await button('Assign tags…','[role=dialog]');
+      await click('Assign tags…','[role=dialog]');
+      await button('EvidenceAdd','[role=dialog]');
+      await click('EvidenceAdd','[role=dialog]');
+      await button('EvidenceAssigned','[role=dialog]');
+      await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+      await poll(()=>run("!document.querySelector('[role=dialog]')"),'tag assignment dismissed');
+      await run(`document.querySelector(${JSON.stringify(organized)}).click(); true`);
+      await poll(()=>run("!!document.querySelector('.browser-organization select')"),'membership destination');
+      await run(`{
+        const control=document.querySelector('.browser-organization select');
+        control.value=[...control.options].find(option=>option.textContent==='Renamed branch').value;
+        control.dispatchEvent(new Event('change',{bubbles:true})); true
+      }`);
+      await click('Add to collection','[role=dialog]');
+      await selectCollection('Division / Renamed branch');
+      await poll(()=>run(`!!document.querySelector(${JSON.stringify(organized)})`),'new membership from saved listing');
+      await cdp('Page.reload',{});
+      await collectionOption('Division / Renamed branch');
+      await selectCollection('Division / Renamed branch');
+      await poll(()=>run(`!!document.querySelector(${JSON.stringify(organized)})`),'membership survives reload');
+      await click('Manage collection');
+      await click('Review collection removal','[role=dialog]');
+      await button('Remove collections, keep resources','[role=dialog]');
+      await click('Remove collections, keep resources','[role=dialog]');
+      await poll(()=>run("![...document.querySelectorAll('[aria-label=Collection] option')].some(option=>option.textContent.includes('Renamed branch'))"),'collection removed');
+      await poll(()=>run(`!!document.querySelector(${JSON.stringify(organized)})`),'collection removal retained resource');
+      await click('Manage tags');
+      await button('Evidence','[role=dialog]');
+      await click('Evidence','[role=dialog]');
+      await click('Review tag removal','[role=dialog]');
+      await click('Remove tag','[role=dialog]');
+      await poll(()=>run("![...document.querySelectorAll('[role=dialog] button')].some(button=>button.textContent==='Evidence')"),'tag removed');
+      await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+    }
     await poll(()=>run("document.body.innerText.includes("+JSON.stringify(fileName)+")"),'import appears in Library');
     started=performance.now();
     await run("[...document.querySelectorAll('button')].find(x=>x.innerText.includes("+JSON.stringify(fileName)+")).click();true");

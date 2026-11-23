@@ -475,6 +475,8 @@ For the M26-A2 image, add `--m26a2` to keep evidence in `raw/m26a2-docker.json`.
 
 For M26-A3, add `--check-organization --m26a3` to the browser note creation command. It exercises the anchored organization menu, Escape focus, Pinned, Trash, Restore and rename in Chromium. The pin timing includes Library debounce and polling. Results go to `raw/m26a3-docker.json`. Native M26-A3 probes use the optimized executable with `--m22-probe`, `--m25-probe` and `--m24-probe`; those options leave the canonical CSV and workbook intact.
 
+Use `--m26a4` with the browser flags for nested collection and tag management through Chromium. Its optional `--android-zip` probe accepts an explicitly disposable emulator serial in `VAULTOR_BENCH_ANDROID_SERIAL`, the ADB path in `VAULTOR_BENCH_ADB`, and the exact signed test candidate and instrumentation paths in `VAULTOR_BENCH_ANDROID_APK` and `VAULTOR_BENCH_ANDROID_TEST_APK`. It uses ADB reverse to the disposable Rust Docker TLS listener and records results in `raw/m26a4-docker.json`.
+
 ```powershell
 docker build --platform linux/amd64 --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" -t vaultor-next-m25:local -f next/Dockerfile .
 node benchmarks/tauri-rust/m25-docker.mjs --browser

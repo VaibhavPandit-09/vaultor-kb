@@ -7,6 +7,7 @@ import AppModal from '../components/modals/AppModal';
 import {transfer,showTransfer,type TransferAction,formatBytes,useTasks} from './transfers';
 import type {Collection} from './client';
 import {collectionPaths} from './collections';
+import WorkspaceZipRequests from './WorkspaceZipRequests';
 type Preview={token:string;files:number;directories:number;bytes:number;duplicates:number;issues:string[];items:{index:number;name:string;bytes:number;duplicate:boolean;canConvert:boolean}[]};
 type Archive={manifestHash:string;resources:number;collections:number;files:number;bytes:number;partial:boolean;legacyVersion?:number;linkedDescriptors:number;reviews?:number};
 type Review={action:TransferAction;preview?:Preview;archive?:Archive;source?:string};
@@ -35,4 +36,7 @@ export default function TransferControls({collection,collections,barrier,switchW
  </AppModal>,document.body)}</>;
 }
 
-export function WorkspaceActions({onArchived}:{onArchived?:()=>void}){return <LibraryPopover label="Workspace transfers" trigger={<MoreHorizontal size={16}/>} menu>{close=><>{([['new','Create local workspace…'],['archive','Export current workspace…'],['restore','Restore archive as new…'],['merge','Merge archive into current workspace…']]as const).map(([op,label])=><button key={op} onClick={()=>{close();showTransfer({op});}}>{label}</button>)}{onArchived&&<button onClick={()=>{close();onArchived();}}>Locate archived linked references…</button>}</>}</LibraryPopover>;}
+export function WorkspaceActions({onArchived}:{onArchived?:()=>void}){
+ const [incoming,setIncoming]=useState(false);
+ return <><LibraryPopover label="Workspace transfers" trigger={<MoreHorizontal size={16}/>} menu>{close=><>{([['new','Create local workspace…'],['archive','Export current workspace…'],['restore','Restore archive as new…'],['merge','Merge archive into current workspace…']]as const).map(([op,label])=><button key={op} onClick={()=>{close();showTransfer({op});}}>{label}</button>)}<button onClick={()=>{close();setIncoming(true);}}>Incoming workspace backups…</button>{onArchived&&<button onClick={()=>{close();onArchived();}}>Locate archived linked references…</button>}</>}</LibraryPopover>{incoming&&createPortal(<WorkspaceZipRequests close={()=>setIncoming(false)}/>,document.body)}</>;
+}

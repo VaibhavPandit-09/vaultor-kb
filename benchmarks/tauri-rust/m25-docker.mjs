@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {execFileSync} from 'node:child_process';
+import {execFileSync, spawn} from 'node:child_process';
 import {readFile, writeFile, mkdir, mkdtemp, unlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -207,6 +207,73 @@ try{
   }
   if(process.argv.includes('--browser')) samples.push(...await browserChecks(docker,network,token,bind,owner,ip,fileName));
 
+  if (process.argv.includes('--android-zip')) {
+    const serial=process.env.VAULTOR_BENCH_ANDROID_SERIAL;
+    const adb=process.env.VAULTOR_BENCH_ADB;
+    assert(adb && /^emulator-\d+$/.test(serial??''));
+    const android=(...args)=>execFileSync(adb,['-s',serial,...args],{encoding:'utf8',timeout:30000,windowsHide:true}).trim();
+    const apk=process.env.VAULTOR_BENCH_ANDROID_APK;
+    const instrument=process.env.VAULTOR_BENCH_ANDROID_TEST_APK;
+    assert(apk&&instrument);
+    android('install','-r',apk);
+    android('install','-r',instrument);
+    android('reverse','tcp:'+port,'tcp:'+port);
+    const test=spawn(adb,['-s',serial,'shell','am','instrument','-w','-e','class','com.vaultorandroid.NextZipHostTest',
+      '-e','fixtureAddress','https://127.0.0.1:'+port,'-e','fixtureFingerprint',desc.fingerprint,
+      'com.vaultor.app.next.test/androidx.test.runner.AndroidJUnitRunner'],{windowsHide:true,stdio:['ignore','pipe','pipe']});
+    let transcript='';
+    test.stdout.on('data',data=>{transcript+=data.toString();});
+    test.stderr.on('data',data=>{transcript+=data.toString();});
+    const finished=new Promise(resolve=>test.on('exit',resolve));
+    let handledPair=false;
+    const handledZips=new Set();
+    try {
+      for(let i=0;i<160&&test.exitCode===null;i++){
+        const log=android('logcat','-d','-s','NextZipFixture:I');
+        if (!handledPair) {
+          const request=[...log.matchAll(/PAIR (\d{6})/g)].at(-1);
+          if (request) {
+            const pending=owner('pending').find(value=>value.code===request[1]);
+            if (pending) {
+              owner('approve',pending.id,pending.code);
+              const target=owner('devices').find(value=>value.name===pending.name && !value.workspace);
+              assert(target);
+              owner('grant',target.id);
+              handledPair=true;
+            }
+          }
+        }
+        for(const match of log.matchAll(/ZIP (approve|reject) ([a-f0-9-]{36})/g)){
+          const [,decision,id]=match;
+          if(handledZips.has(id))continue;
+          const row=owner('zip','list').find(value=>value.id===id);
+          if(!row)continue;
+          assert.equal(row.state,'AWAITING_OWNER');
+          if(decision==='approve'){
+            const preview=owner('zip','preview',id);
+            assert.equal(preview.state,'PREVIEWED');
+            assert.equal(preview.preview.files,1);
+            assert.equal(owner('zip','approve',id,'/tmp/vaultor-restored-'+id).state,'APPROVED');
+          }else assert.equal(owner('zip','reject',id).state,'REJECTED');
+          handledZips.add(id);
+        }
+        await delay(750);
+      }
+      if(test.exitCode===null)throw Error('Android ZIP instrumentation did not finish');
+      assert.equal(await finished,0,transcript);
+      assert.match(transcript,/OK \(1 test\)/);
+      assert.equal(handledZips.size,2);
+      const row=owner('zip','list').find(value=>handledZips.has(value.id)&&value.state==='SUCCEEDED');
+      assert(row);
+      assert.equal(row.destinationWorkspaceId,row.id);
+      assert.equal(docker('exec',token,'sh','-ec','find "$1/managed" -type f -name "*.bin" -exec cat {} \\;','vaultor-verify',row.destination),'unchanged-original');
+      console.log('API 36 Android verified signed-app ZIP delivery, approval, rejection and restored managed bytes.');
+    } finally {
+      if(test.exitCode===null)test.kill();
+      android('reverse','--remove','tcp:'+port);
+    }
+  }
+
   docker('restart',token);
   port=Number(docker('port',token,'8443/tcp').split(':').at(-1));
   const restored=await waitFor();
@@ -220,7 +287,8 @@ try{
   assert.equal((await json('GET',projected+'/capabilities',headers)).status,401);
   docker('stop','-t','5',token);
   assert.equal(docker('inspect','--format','{{.State.ExitCode}}',token),'0');
-  const output=process.argv.includes('--m26a3')?'m26a3-docker.json':
+  const output=process.argv.includes('--m26a4')?'m26a4-docker.json':
+    process.argv.includes('--m26a3')?'m26a3-docker.json':
     process.argv.includes('--m26a2')?'m26a2-docker.json':
     process.argv.includes('--check-note-creation')?'m26a-docker.json':'m25-docker.json';
   await writeFile('benchmarks/tauri-rust/raw/'+output,JSON.stringify({observedAt:new Date().toISOString(),image:docker('image','inspect','--format','{{.Id}}',image),source:docker('image','inspect','--format','{{index .Config.Labels "org.opencontainers.image.revision"}}',image),samples,success:true},null,2));

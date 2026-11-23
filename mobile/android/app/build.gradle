@@ -93,8 +93,8 @@ android {
         applicationId nextCandidate ? "com.vaultor.app.next" : "com.vaultor.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode nextCandidate ? 34 : 32
-        versionName nextCandidate ? "0.1.0-m24d.1" : "0.1.0-alpha.28"
+        versionCode nextCandidate ? 35 : 32
+        versionName nextCandidate ? "0.1.0-m26a4.1" : "0.1.0-alpha.28"
         manifestPlaceholders.vaultorAppLabel = nextCandidate ? "Vaultor Next" : "@string/app_name"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Explicit acceptance builds only. Ordinary release/debug default false.
@@ -102,6 +102,7 @@ android {
         buildConfigField "boolean", "VAULTOR_DIAGNOSTICS", diagnostics.toString()
         manifestPlaceholders.vaultorDiagnostics = diagnostics.toString()
     }
+    sourceSets.androidTest.assets.srcDir(rootProject.file('../../next/src-tauri/fixtures'))
     signingConfigs {
         release {
             storeFile file(System.getenv("VAULTOR_ANDROID_KEYSTORE") ?: "missing-release-key.p12")

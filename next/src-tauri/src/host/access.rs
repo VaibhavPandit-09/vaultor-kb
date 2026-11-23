@@ -135,10 +135,19 @@ pub(super) struct Grant {
     pub(super) workspaces: BTreeSet<Uuid>,
     verifier: [u8; 32],
     browser: bool,
+    local_owner: Option<super::owner_browser::Session>,
 }
 
 impl Grant {
+    pub(super) fn local_owner(device: Uuid, workspace: Uuid, session: super::owner_browser::Session) -> Self {
+        Self {device, label:"Local owner".into(), workspaces:[workspace].into(),
+            verifier:[0;32], browser:true, local_owner:Some(session)}
+    }
+
     pub(super) fn current_sync(&self, access: &Path, workspace: Uuid) -> bool {
+        if let Some(session) = &self.local_owner {
+            return self.workspaces.contains(&workspace) && session.active();
+        }
         let path = access
             .join("grants")
             .join(format!("{}.json", hex::encode(self.verifier)));
@@ -147,6 +156,9 @@ impl Grant {
     }
 
     pub(super) async fn current(&self, access: &Path, workspace: Uuid) -> bool {
+        if let Some(session) = &self.local_owner {
+            return self.workspaces.contains(&workspace) && session.active();
+        }
         read_grant(access, self.verifier)
             .await
             .is_ok_and(|grant| grant.device == self.device && grant.workspaces.contains(&workspace))
@@ -194,6 +206,7 @@ async fn read_grant(access: &Path, verifier: [u8; 32]) -> io::Result<Grant> {
         workspaces: record.workspaces,
         verifier,
         browser: record.browser_expires.is_some(),
+        local_owner: None,
     })
 }
 
@@ -236,6 +249,13 @@ pub(super) fn devices(access: &Path, workspace: Uuid) -> io::Result<Vec<serde_js
     Ok(records(access)?.into_iter().map(|(_, record)| serde_json::json!({
         "id": record.device, "name": record.label, "workspace": record.workspaces.contains(&workspace).then_some(workspace),
     })).collect())
+}
+
+pub(super) fn device_allowed(access: &Path, device: Uuid, workspace: Uuid) -> bool {
+    records(access).is_ok_and(|rows| rows.iter().any(|(_, record)| {
+        record.device == device && record.live() && record.browser_expires.is_none()
+            && record.workspaces.contains(&workspace)
+    }))
 }
 
 pub(super) fn revoke(access: &Path, id: Uuid) -> io::Result<()> {

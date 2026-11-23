@@ -719,6 +719,16 @@ Local raw reports under `benchmarks/tauri-rust/raw/` are `m26a3-docker.json` and
 
 M26-B remains gated on the open functional work. Physical Windows and Samsung/Wi-Fi acceptance, visual comparisons, keyboard and assistive technology checks, and broader security qualification remain separate.
 
+### M26-A4 connected workspace workflows
+
+Android retains the existing encrypted queue and source identity. It streams an eligible ZIP to the Rust host and reconciles the same operation before retrying. Desktop Workspace transfers owns review, rejection and Restore as New. Standalone owners use private console or Unix owner-socket commands. The source workspace stays in place. Host restart retains the upload and decision. The owner can resume an interrupted authorized restore at its original destination. Legacy archive compatibility is unchanged.
+
+The browser adds nested collections, rename/reparent, reviewed deletion, and tag creation, editing, filtering and assignment. Collection creation receipts and current organization checks use the single Rust owner. Protected desktop drafts block moves to Trash, including the optional Trash action in a collection deletion.
+
+Windows Settings starts a separate IPv4 loopback owner connector on demand. It provides the original one-use local bootstrap purpose and gives the local browser access to pending pairings and the current workspace. It uses an eight-hour process-bound owner session and a 60-second ticket. Desktop reissue, sign-out, explicit session end, stop, and restart invalidate the applicable authority.
+
+M26-A5 owns PDF indexing, deep linked portability, broader Review provenance/history, legacy identity and rich export fidelity. Destructive workspace replacement remains intentionally omitted.
+
 ### M26-B/C — Physical acceptance and separately authorized production qualification
 
 - **Original functional parity:** Preserve Restore as New and Merge integrity, legacy archive compatibility and owner-reviewed mobile ZIP intake, browser creation and organization, original export coverage and restart fidelity, PDF functionality and linked-occurrence navigation.

@@ -79,8 +79,40 @@ impl Workspace {
         name: String,
         parent: Option<String>,
     ) -> Result<Value, String> {
+        self.save_collection(id, name, parent, None)
+    }
+
+    pub(crate) fn create_collection_once(
+        &mut self,
+        request: String,
+        device: String,
+        name: String,
+        parent: Option<String>,
+    ) -> Result<Value, String> {
+        self.save_collection(None, name, parent, Some((request, device)))
+    }
+
+    fn save_collection(
+        &mut self,
+        id: Option<String>,
+        name: String,
+        parent: Option<String>,
+        receipt: Option<(String, String)>,
+    ) -> Result<Value, String> {
+        use rusqlite::OptionalExtension;
         let name = title(&name)?;
         let tx = self.db.transaction().map_err(error)?;
+        let intent = json!([name, parent]).to_string();
+        if let Some((request, device)) = &receipt {
+            let prior: Option<(String, String)> = tx.query_row(
+                "SELECT intent,collection_id FROM browser_collection_creations WHERE request=?1 AND device=?2",
+                params![request,device], |r| Ok((r.get(0)?,r.get(1)?)),
+            ).optional().map_err(error)?;
+            if let Some((prior, id)) = prior {
+                if prior != intent { return Err("Collection creation identity already used".into()); }
+                return Ok(json!({"id":id,"name":name,"parentId":parent}));
+            }
+        }
         if let Some(parent) = &parent {
             let exists: bool = tx
                 .query_row(
@@ -120,6 +152,12 @@ impl Workspace {
             .map_err(error)?;
             id
         };
+        if let Some((request, device)) = receipt {
+            tx.execute(
+                "INSERT INTO browser_collection_creations VALUES(?1,?2,?3,?4)",
+                params![request,device,intent,id],
+            ).map_err(error)?;
+        }
         tx.commit().map_err(error)?;
         Ok(json!({"id":id,"name":name,"parentId":parent}))
     }

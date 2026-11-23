@@ -220,7 +220,7 @@ export default function PendingImports({
               <View style={s.actions}>
                 {(
                   ['original', 'text', 'markdown', 'workspaceZip'] as const
-                ).map(value => (
+                ).filter(value => value !== 'workspaceZip' || /\.zip$/i.test(row.filename)).map(value => (
                   <Action
                     key={value}
                     active={mode === value}
@@ -304,6 +304,11 @@ export default function PendingImports({
               />
             </>
           ) : null}
+          {row.mode === 'workspaceZip' && row.state === 'sending' && row.bytes > 0 ? (
+            <Text style={s.meta}>
+              Uploading backup · {Math.round(100 * (row.uploadBytes ?? 0) / row.bytes)}%
+            </Text>
+          ) : null}
           {row.receipt?.warnings?.map((warning, i) => (
             <Text key={i} style={s.secondary}>
               {warning}
@@ -345,6 +350,13 @@ export default function PendingImports({
             <Action
               label="Stop further attempts"
               onPress={() => void run(() => importCall('stop', { id: row.id }))}
+            />
+          ) : null}
+          {row.mode === 'workspaceZip' && row.attempted && !row.receipt ? (
+            <Action
+              label="Cancel workspace backup request"
+              disabled={working || row.state === 'sending'}
+              onPress={() => void run(() => importCall('cancelWorkspaceZip', { id: row.id }))}
             />
           ) : null}
           {row.rejectionCode ? (

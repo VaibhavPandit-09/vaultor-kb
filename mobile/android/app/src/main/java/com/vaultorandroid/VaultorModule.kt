@@ -137,6 +137,18 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       promise.resolve("{}")
     }catch(e:Exception){importPicker=false;importOutput=null;promise.reject("IMPORT_PICKER",e.message ?: "No compatible picker available")}};return}
     if(action=="sync") {importWorker.execute {try{promise.resolve(importDelivery.sync(JSONObject(input).optBoolean("force")).toString())}catch(_:Exception){promise.reject("IMPORT_SYNC","Import delivery unavailable; originals retained")}};return}
+    if(action=="cancelWorkspaceZip") {importWorker.execute {try {
+      val row=imports.item(JSONObject(input).getString("id"))
+      require(row.optString("mode")=="workspaceZip"&&row.optBoolean("attempted")){"Choose a submitted workspace backup"}
+      require(importProfile(row.getJSONObject("source")).optBoolean("nextMobile")){"This host does not offer remote cancellation"}
+      val response=importRequest(row,"/collected-zips/"+row.getString("id"),cancel=true)
+      if(response.getInt("status")==404) imports.stop(row.getString("id"))
+      else {
+        require(response.getInt("status") in 200..299){"Host could not cancel this request. Reconcile its current approval before trying again."}
+        importDelivery.applyZipReceipt(row,JSONObject(response.getString("body")))
+      }
+      promise.resolve("{}")
+    }catch(e:Exception){promise.reject("IMPORT_CANCEL",e.message ?: "Host cancellation could not be confirmed")}};return}
     run(promise){require(input.length<=12000);val a=JSONObject(input);when(action){
       "list"->JSONArray(imports.rows()).toString()
       "policy"->imports.policy().toString()
@@ -150,20 +162,32 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
     }}
   }
   private fun importProfile(source:JSONObject):JSONObject=synchronized(stateLock){val p=read().optJSONObject("profiles")?.optJSONObject(source.getString("hostId")) ?: throw VaultorImportDelivery.Refusal("APPROVAL_REQUIRED");JSONObject(p.toString()).put("selectedWorkspaceId",source.getString("workspaceId"))}
-  internal fun importRequest(row:JSONObject,path:String,upload:Boolean=false):JSONObject {
+  internal fun importRequest(row:JSONObject,path:String,upload:Boolean=false,cancel:Boolean=false):JSONObject {
     require(path in listOf("/access/host","/workspace/identity","/capabilities","/companions/import-capabilities")||path.matches(Regex("/(?:resources/collected-imports|collected-zips)/[a-f0-9-]{36}")))
     val source=row.getJSONObject("source");val profile=importProfile(source)
     fun approval(){val current=importProfile(source);require(listOf("credential","fingerprint","address").all {current.optString(it)==profile.optString(it)}){"Original source approval changed"}}
     approval()
     if(android.os.Build.VERSION.SDK_INT>=37&&ctx.checkSelfPermission(android.Manifest.permission.ACCESS_LOCAL_NETWORK)!=android.content.pm.PackageManager.PERMISSION_GRANTED)throw VaultorImportDelivery.Refusal("APPROVAL_REQUIRED")
     val cert=ca(profile);require(fingerprint(cert)==profile.getString("fingerprint"));val con=endpoint(profile,path).toURL().openConnection() as HttpsURLConnection
-    con.sslSocketFactory=context(cert).socketFactory;con.connectTimeout=10000;con.readTimeout=30000;con.instanceFollowRedirects=false;con.requestMethod=if(upload)"PUT" else "GET"
+    con.sslSocketFactory=context(cert).socketFactory;con.connectTimeout=10000;con.readTimeout=30000;con.instanceFollowRedirects=false;con.requestMethod=if(cancel)"DELETE" else if(upload)"PUT" else "GET"
     if(path!="/access/host")con.setRequestProperty("Authorization","Bearer "+profile.getString("credential"));con.setRequestProperty("X-Vaultor-Protocol","3");con.setRequestProperty("X-Vaultor-Workspace",source.getString("workspaceId"))
     try {
       if(upload){val intent=row.getJSONObject("intent").toString();val boundary="vaultor-import-"+UUID.randomUUID();val filename=row.getString("filename");val mime=row.getString("mime")
         val prefix=("--$boundary\r\nContent-Disposition: form-data; name=\"intent\"\r\n\r\n$intent\r\n--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"$filename\"\r\nContent-Type: $mime\r\n\r\n").toByteArray();val suffix="\r\n--$boundary--\r\n".toByteArray()
         con.doOutput=true;con.setRequestProperty("Content-Type","multipart/form-data; boundary=$boundary");con.setFixedLengthStreamingMode(prefix.size+row.getLong("bytes")+suffix.size)
-        con.outputStream.use {out->out.write(prefix);imports.original(row){bytes->approval();if(imports.item(row.getString("id")).optString("state")=="stoppedUncertain")error("Attempts stopped; reconcile before removal");out.write(bytes)};out.write(suffix)}
+        val id=row.getString("id");val zip=row.getString("mode")=="workspaceZip"
+        var uploaded=0L;var lastReport=0L
+        con.outputStream.use {out->
+          out.write(prefix)
+          imports.original(row){bytes->
+            approval()
+            if(imports.item(id).optString("state")=="stoppedUncertain")error("Attempts stopped; reconcile before removal")
+            out.write(bytes);uploaded+=bytes.size
+            val now=android.os.SystemClock.elapsedRealtime()
+            if(zip&&(now-lastReport>=1000||uploaded==row.getLong("bytes"))){imports.uploadProgress(id,uploaded);lastReport=now}
+          }
+          out.write(suffix)
+        }
       }
       val status=con.responseCode;require(status !in 300..399){"Host redirects refused"};val bytes=(if(status in 200..299)con.inputStream else con.errorStream)?.use {it.readNBytes(1500001)} ?: byteArrayOf();require(bytes.size<=1500000);approval()
       companions.observeResponse(source,path,status,runCatching{JSONObject(String(bytes,Charsets.UTF_8))}.getOrDefault(JSONObject()))
@@ -177,7 +201,7 @@ class VaultorModule(private val ctx: ReactApplicationContext) : ReactContextBase
       val source=row.getJSONObject("source");val profile=importProfile(source);val host=get("/access/host");require(host.getString("hostId")==source.getString("hostId")&&host.getString("fingerprint")==profile.getString("fingerprint")){"Host identity changed"}
       val identity=get("/workspace/identity");if(identity.getString("id")!=source.getString("workspaceId")||identity.getString("generation")!=source.getString("generation")){try{if(identity.getString("id")==source.getString("workspaceId"))companions.observe(source.getString("hostId"),source.getString("workspaceId"),identity.getString("generation"))}catch(_:Exception){};throw VaultorImportDelivery.Refusal("IMPORT_GENERATION_CHANGED")}
       val capabilities=get("/companions/import-capabilities");if(capabilities.optInt("version")!=1)throw VaultorImportDelivery.Refusal("IMPORT_FORMAT_UNSUPPORTED")
-      if(profile.optBoolean("nextMobile") && row.optString("mode")=="workspaceZip")
+      if(profile.optBoolean("nextMobile") && row.optString("mode")=="workspaceZip" && !capabilities.optBoolean("workspaceZip"))
         throw VaultorImportDelivery.Refusal("IMPORT_FORMAT_UNSUPPORTED")
       if(row.getLong("bytes")>capabilities.getLong("maxBytes"))throw VaultorImportDelivery.Refusal("IMPORT_LIMIT")
   }

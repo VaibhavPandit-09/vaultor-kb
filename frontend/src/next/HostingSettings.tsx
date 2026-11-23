@@ -20,7 +20,8 @@ type Status = {
 type Pairing = {id: string; name: string; code: string; expiresAt: string};
 type Device = {id: string; name: string; workspace: string | null};
 type Command =
-  | {op: 'status' | 'stop' | 'pending' | 'devices' | 'pairingQr'}
+  | {op: 'status' | 'stop' | 'pending' | 'devices' | 'pairingQr' | 'openOwnerBrowser'}
+  | {op: 'cancelOwnerBrowser'; end_session: boolean}
   | {op: 'start'; address: string; recover?: boolean}
   | {op: 'startup' | 'discoverable'; enabled: boolean}
   | {op: 'watch'; host: string; revision: number}
@@ -153,6 +154,16 @@ export default function HostingSettings() {
       <SettingsRow label="Certificate directory" description={status.accessPath}>{null}</SettingsRow>
     </details>}
     {status?.running && <>
+      <SettingsRow label="Local owner browser" description="Open this computer’s owner session with a 60-second, one-use handoff.">
+        <div className="next-recovery-actions">
+          <button className="settings-text-action" type="button"
+            onClick={() => void call({op: 'openOwnerBrowser'}).catch(error => setError(String(error)))}>Open in browser</button>
+          <button className="settings-text-action" type="button"
+            onClick={() => void call({op: 'cancelOwnerBrowser', end_session: false}).catch(error => setError(String(error)))}>Cancel handoff</button>
+          <button className="settings-text-action" type="button"
+            onClick={() => void call({op: 'cancelOwnerBrowser', end_session: true}).catch(error => setError(String(error)))}>End owner session</button>
+        </div>
+      </SettingsRow>
       <SettingsRow label="Nearby discovery" description="Advertise this address on the selected private network.">
         <button type="button" role="switch" aria-label="Nearby discovery" className="settings-switch"
           aria-checked={status.discoverable ?? false} disabled={busy || status.address?.startsWith('127.')}

@@ -75,6 +75,7 @@ pub(super) fn router() -> Router<Host> {
         .merge(checkpoints::router())
         .merge(super::companion::router())
         .merge(super::companion_exports::router())
+        .merge(super::collected::router())
 }
 
 pub(super) fn browser_reads() -> Router<Host> {
@@ -286,6 +287,7 @@ struct Browse {
     resource_type: Option<String>,
     category: Option<String>,
     collection: Option<Uuid>,
+    tag: Option<Uuid>,
     sort: Option<String>,
     #[serde(default)]
     favorites: bool,
@@ -427,7 +429,7 @@ fn browse_saved(
             "library"
         }
         .into(),
-        tag: None,
+        tag: query.tag.map(|id| id.to_string()),
         kind: Some(kind.unwrap_or_else(|| "managed".into())),
         tags: Vec::new(),
         any_tag: false,

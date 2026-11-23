@@ -51,7 +51,11 @@ class ImportStoreTest {
     store.rejection(id,"IMPORT_COLLECTION_UNAVAILABLE");store.outcome(id,"needsAttention","Collection removed");val next=store.newAfterRejection(id);assertNotEquals(id,next.getString("id"));assertEquals("collected",next.getString("state"));assertFalse(next.has("source"));assertFalse(next.has("intent"));assertEquals(row.getString("sha256"),next.getString("sha256"));val oldBytes=java.io.ByteArrayOutputStream();store.original(row){oldBytes.write(it)};val newBytes=java.io.ByteArrayOutputStream();store.original(next){newBytes.write(it)};assertArrayEquals(oldBytes.toByteArray(),newBytes.toByteArray());assertEquals(id,next.getString("previousRejectedOperation"));store.remove(id);store.original(next){}
   }
   @Test fun zipWaitsForExactOwnerSuccessWithoutClaimingResourceEarly()=fixture {store,_->
-    val collected=collect(store,"Private archive bytes");val row=store.confirm(collected.getString("id"),source,"workspaceZip",null,"Owner chosen new workspace",false);var state="AWAITING_OWNER";var uploads=0
+    val file=File(ctx.cacheDir,"media-share/fixture-"+UUID.randomUUID()+".zip");file.parentFile!!.mkdirs()
+    java.util.zip.ZipOutputStream(file.outputStream()).use {zip->zip.putNextEntry(java.util.zip.ZipEntry("fixture"));zip.write(byteArrayOf(1));zip.closeEntry()}
+    val uri=FileProvider.getUriForFile(ctx,ctx.packageName+".media",file)
+    store.acquire(UUID.randomUUID().toString(),listOf(uri to null),null);file.delete()
+    val collected=store.rows().single();val row=store.confirm(collected.getString("id"),source,"workspaceZip",null,"Owner chosen new workspace",false);var state="AWAITING_OWNER";var uploads=0
     val delivery=VaultorImportDelivery(store,object:VaultorImportDelivery.Port{override fun admit(row:JSONObject){};override fun request(row:JSONObject,path:String,upload:Boolean):JSONObject{if(upload)uploads++;val receipt=JSONObject().put("version",1).put("id",row.getString("id")).put("input",row.getJSONObject("intent")).put("state",state);if(state=="SUCCEEDED")receipt.put("destinationWorkspaceId",row.getString("id"));return JSONObject().put("status",200).put("body",receipt.toString())}})
     delivery.sync(true);assertEquals("waitingOwner",store.item(row.getString("id")).getString("state"));assertFalse(store.item(row.getString("id")).has("receipt"));state="PREVIEWED";delivery.sync(true);assertFalse(store.item(row.getString("id")).has("receipt"));state="SUCCEEDED";delivery.sync(true);assertEquals("acknowledged",store.item(row.getString("id")).getString("state"));assertEquals(1,uploads)
   }
