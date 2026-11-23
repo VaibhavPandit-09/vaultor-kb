@@ -531,6 +531,8 @@ The separate Windows NSIS production profile uses `com.vaultor.next` and keeps i
 
 The clean Windows candidate built and staged from `f753896ce89e62ab9b9193ab06e5bc6e177a431a`. Independent signature, tamper refusal, and NSIS payload checks passed. This candidate records the installer and update evidence without changing the workspace engine. [Windows release record](desktop/releases/v0.28.0.md).
 
+All 79 Rust library and 113 Next frontend tests passed. Hosted Windows qualification now runs its reflection-based helper check in a separate process to release the test assembly before building the second fixture. This is a qualification workflow correction with no production runtime or storage effect.
+
 ### 2026-11-24 — Next M26-C direct-upgrade qualification
 
 The [M26-C ledger](plans/VAULTOR-NEXT-M26-C.md) records predecessor installer, storage and updater boundaries. Windows Next has a separate executable, application identity and storage engine. An Electron-compatible installed migration remains a release gate. Android 0.1.0-alpha.29/code 36 keeps the original package and signer. Actual install-over and cold readback passed on API 36 and 37 with the original Java host approval. The production APK also passed CA-pinned Rust ZIP owner approval/rejection and restored managed-byte checks. Android compilation and 112 unit tests passed, as did 15 original Windows updater checks. Help topics Platforms, What's New and Next and catalogue Android transfers/updates were reconciled. Android has no Help bundle to rebuild.

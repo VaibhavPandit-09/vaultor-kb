@@ -23,6 +23,9 @@ jobs:
         with:
           node-version: 24
       - shell: pwsh
+        env:
+          CARGO_PROFILE_RELEASE_LTO: "false"
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
         run: |
           npm ci --prefix frontend
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -39,7 +42,8 @@ jobs:
           $config.version = '0.28.0'
           $config | ConvertTo-Json -Depth 15 | Set-Content -LiteralPath next/src-tauri/windows-qualification.json
           ./next/scripts/build-windows.ps1 -Config src-tauri/windows-qualification.json -Qualification
-          ./next/scripts/test-replacement-files.ps1
+          pwsh -NoProfile -File ./next/scripts/test-replacement-files.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $fixtures = "$env:RUNNER_TEMP/vaultor-qualification"
           New-Item -ItemType Directory -Path $fixtures | Out-Null
           Copy-Item next/src-tauri/target/release/bundle/nsis/*_0.28.0_x64-setup.exe "$fixtures/first.exe"
