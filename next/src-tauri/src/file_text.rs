@@ -30,13 +30,16 @@ pub fn initialize(db: &Connection) -> Result<(), String> {
     Ok(())
 }
 
-pub fn extract(path: &Path, name: &str, hash: &str, size: u64) -> (&'static str, Option<String>) {
+pub fn extract(
+    path: &Path, name: &str, hash: &str, size: u64, cancelled: impl Fn() -> bool,
+) -> (&'static str, Option<String>) {
     let ext = Path::new(name)
         .extension()
         .and_then(|ext| ext.to_str())
         .unwrap_or("")
         .to_ascii_lowercase();
-    if ![
+    let pdf = ext == "pdf";
+    if !pdf && ![
         "txt", "md", "markdown", "csv", "tsv", "json", "xml", "html", "htm", "css", "js", "ts",
         "log", "yaml", "yml", "rs", "py", "java", "toml",
     ]
@@ -44,12 +47,13 @@ pub fn extract(path: &Path, name: &str, hash: &str, size: u64) -> (&'static str,
     {
         return ("unsupported", None);
     }
-    if size > MAX_BYTES {
+    let limit = if pdf { crate::pdf_text::MAX_BYTES } else { MAX_BYTES };
+    if size > limit {
         return ("limit", None);
     }
     let mut bytes = Vec::new();
     let result = transfers::plain_file(path).and_then(|file| {
-        file.take(MAX_BYTES + 1)
+        file.take(limit + 1)
             .read_to_end(&mut bytes)
             .map_err(error)
     });
@@ -58,6 +62,9 @@ pub fn extract(path: &Path, name: &str, hash: &str, size: u64) -> (&'static str,
         || format!("{:x}", Sha256::digest(&bytes)) != hash
     {
         return ("unavailable", None);
+    }
+    if pdf {
+        return crate::pdf_text::extract(&bytes, cancelled);
     }
     let Ok(text) = String::from_utf8(bytes) else {
         return ("invalid", None);
@@ -123,7 +130,8 @@ pub fn rebuild(storage: &Storage, workspace: &str, ctx: &mut Context<'_>) -> Res
         for (seq, id, name, hash, bytes) in rows {
             ctx.check()?;
             let path = transfers::original_path(Path::new(workspace), &id)?;
-            let (state, body) = extract(&path, &name, &hash, bytes);
+            let (state, body) = extract(&path, &name, &hash, bytes, || ctx.check().is_err());
+            ctx.check()?;
             storage.call(workspace,move |w|{
                 let tx=w.db.transaction().map_err(error)?;
                 let unchanged:bool=tx.query_row("SELECT EXISTS(SELECT 1 FROM managed_originals WHERE resource_id=?1 AND hash=?2 AND kind='file')",params![id,hash],|r|r.get(0)).map_err(error)?;

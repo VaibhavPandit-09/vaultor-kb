@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {readFile,writeFile} from 'node:fs/promises';
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {roleSamples} from './process-role-samples.mjs';
 
@@ -11,10 +11,10 @@ const dense={type:'table',content:Array.from({length:181},(_,r)=>({type:'tableRo
   type:r?'tableCell':'tableHeader',content:[paragraph(r?`Entry ${r}-${c} quoted 雪`:`Column ${c+1}`)],
 }))}))};
 
-function pdfFixture(){
+function pdfFixture(label='M19 fixture'){
   const objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Count 3 /Kids [4 0 R 6 0 R 8 0 R] >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'];
   for(let i=1;i<=3;i++){
-    const stream=`BT /F1 24 Tf 48 700 Td (M19 fixture page ${i}) Tj ET\n`;
+    const stream=`BT /F1 24 Tf 48 700 Td (${label} page ${i}) Tj ET\n`;
     objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${3+i*2} 0 R >>`);
     objects.push(`<< /Length ${stream.length} >>\nstream\n${stream}endstream`);
   }
@@ -77,6 +77,7 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
   const paths=Object.keys(fixtures).map(name=>join(folder,name));
   await Promise.all(paths.map((path,i)=>writeFile(path,Object.values(fixtures)[i])));
   const plan=await transfer({op:'preview',paths,folder:false,collection:null});
+  const importStarted=performance.now();
   const task=await transfer({op:'import',token:plan.token,separate:false});
   await wait(`window.__TAURI_INTERNALS__.invoke('transfer',{request:{op:'tasks'}}).then(tasks=>tasks.some(task=>task.id===${JSON.stringify(task.id)}&&task.state==='completed'))`,'managed fixtures imported');
   const notes=[];
@@ -88,6 +89,46 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
   const list=await api({kind:'list',collection:null,limit:30});
   const files=Object.keys(fixtures).map(name=>list.items.find(item=>item.title===name));
   assert(files.every(Boolean));
+  if(process.argv.includes('--m26b-pdf-index')){
+    const linked=request=>api({kind:'linked',request});
+    const search=(query,kind='pdf')=>api({kind:'search',options:{query,kind,content:true,collection:null,order:'match'}});
+    const initial=await search('fixture page 3');
+    assert.deepEqual(initial.items.map(item=>item.id),[files[0].id]);
+    assert.match(initial.items[0].searchSnippet.text,/M19 fixture page 3/);
+    record('m26b-managed-pdf',1,'import_and_readback_ms',performance.now()-importStarted,'ms','Fixture import, Activity completion and FTS readback, including polling and intervening setup.');
+    const rebuild=await transfer({op:'rebuildFileText'});
+    await wait(`window.__TAURI_INTERNALS__.invoke('transfer',{request:{op:'tasks'}}).then(tasks=>tasks.some(task=>task.id===${JSON.stringify(rebuild.id)}&&task.state==='completed'))`,'managed index rebuild');
+    assert.equal((await search('fixture page 2')).items[0].id,files[0].id);
+    await org({op:'trash',ids:[files[0].id],restore:false});
+    assert.equal((await search('fixture page 3')).total,0);
+    await org({op:'trash',ids:[files[0].id],restore:true});
+    assert.equal((await search('fixture page 3')).total,1);
+    const source=join(folder,'linked-pdf');
+    const linkedFile=join(source,'report.pdf');
+    await mkdir(source);
+    const original=pdfFixture('Quartz astrolabe');
+    await writeFile(linkedFile,original);
+    const linkedStarted=performance.now();
+    const registration=await linked({op:'register',path:source});
+    const searchInWebView=query=>`benchRequest(${JSON.stringify({kind:'search',options:{query,kind:'pdf',content:true,collection:null,order:'match'}})})`;
+    await wait(`${searchInWebView('Quartz astrolabe')}.then(result=>result.total===1)`,'linked PDF first index');
+    record('m26b-linked-pdf',1,'registration_and_match_ms',performance.now()-linkedStarted,'ms','Source registration through FTS readiness, including polling.');
+    const first=(await search('Quartz astrolabe')).items[0];
+    assert.equal(first.sourcePath,'report.pdf');
+    const bytes=await evaluate(`window.__TAURI_INTERNALS__.invoke('resource_bytes',${JSON.stringify({id:first.id,workspace:snapshot.path})}).then(buffer=>Array.from(new Uint8Array(buffer)))`);
+    assert.deepEqual(Buffer.from(bytes),original);
+    const revision=pdfFixture('Topaz sextant');
+    await writeFile(linkedFile,revision);
+    await wait(`${searchInWebView('Topaz sextant')}.then(result=>result.total===1)`,'linked PDF refreshed after disk edit');
+    assert.equal((await search('Topaz sextant')).items[0].id,first.id);
+    assert.equal((await search('Quartz astrolabe')).total,0);
+    await linked({op:'remove',source:registration.id});
+    assert.equal((await search('Topaz sextant')).total,0);
+    const refused=await evaluate(`window.__TAURI_INTERNALS__.invoke('resource_bytes',${JSON.stringify({id:first.id,workspace:snapshot.path})}).then(()=>false,()=>true)`);
+    assert.equal(refused,true);
+    assert.deepEqual(await readFile(linkedFile),revision);
+    report.checks.push('PDF saved-body import and rebuild, multiple pages, Trash and restore, linked update, source revocation, preview byte refusal and exact untouched linked original');
+  }
   await org({op:'pin',ids:[...notes.slice(1),...files.slice(0,3)].map(item=>item.id),value:true});
   await api({kind:'behavior',path:snapshot.path,value:{maxVisiblePanes:3,noteOpening:'fill'}});
   await api({kind:'preferences',value:{previewMode:'side',autoCompanion:false}});
@@ -128,6 +169,17 @@ export async function qualifyPreviews({evaluate,cdp,wait,report,folder,record,pr
     await evaluate(`[...document.querySelectorAll('.next-pdf button')].find(e=>e.textContent==='Next page').click();true`);
     await wait('document.querySelector(".next-pdf-text")?.textContent.includes("M19 fixture page 2")','PDF next page');
     record('m19-pdf-navigation',cycle,'content_ready_ms',performance.now()-started,'ms','Page change through text-layer readiness.');
+    if(cycle===1&&process.argv.includes('--m26b-pdf-index')){
+      await evaluate("[...document.querySelectorAll('.next-pdf button')].find(button=>button.textContent==='Find in PDF').click()");
+      await wait('document.activeElement?.getAttribute("aria-label")==="Find PDF text"','PDF Find focus');
+      await cdp('Input.insertText',{text:'fixture page 3'});
+      await click('.next-pdf form button[type=submit]');
+      await wait('document.querySelector(".next-pdf-text")?.textContent.includes("M19 fixture page 3")','PDF Find selected matching page');
+      await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+      await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+      await wait('document.activeElement?.textContent==="Find in PDF" && !document.querySelector("[aria-label=\"Find PDF text\"]")','PDF Find Escape preserves preview and restores focus');
+      report.checks.push('PDF Find searched across pages, opened the matching page and restored toolbar focus on Escape');
+    }
     await click('[aria-label="Expand file preview"]');
     assert.equal(await evaluate('document.querySelector(".preview-geometry")?.dataset.mode'),'modal');
     await measure('pdf-open',cycle);

@@ -6,6 +6,7 @@ import {ManagedImage} from '../components/editor/ManagedImageDefinition';
 import {createImagePlacement} from '../components/editor/ManagedImage';
 import {copyImage} from '../lib/noteImages';
 import {original,native,media} from './media';
+import {linkedCommand} from './linked';
 import {showTransfer} from './transfers';
 import PlaybackPreview from './PlaybackPreview';
 const PdfPreview=lazy(()=>import('./PdfPreview'));
@@ -13,7 +14,22 @@ const raster=/\.(png|jpe?g|gif|webp)$/i;
 const textFile=/\.(txt|md|markdown|csv|tsv|json|xml|yaml|log|js|ts|rs|py|java)$/i;
 const video=/\.(mp4|webm)$/i;
 const audio=/\.(wav|mp3|ogg|opus|flac|m4a)$/i;
-export function FileView({id,workspace}:{id:string;workspace?:string}){return <FileContent key={JSON.stringify([workspace,id])} id={id} workspace={workspace}/>;}
+export function FileView({id,workspace}:{id:string;workspace?:string}){
+  if(id.startsWith('linked:'))return <LinkedPdfContent key={JSON.stringify([workspace,id])} id={id} workspace={workspace}/>;
+  return <FileContent key={JSON.stringify([workspace,id])} id={id} workspace={workspace}/>;
+}
+function LinkedPdfContent({id,workspace}:{id:string;workspace?:string}){
+  const [error,setError]=useState('');
+  const open=(reveal:boolean)=>void linkedCommand({op:'external',id:id.slice(7),reveal}).catch(error=>setError(String(error)));
+  return <section className="next-file-view">
+    <div className="next-file-actions">
+      <button className="library-button" onClick={()=>open(false)}>Open original externally</button>
+      <button className="library-button" onClick={()=>open(true)}>Reveal linked original</button>
+    </div>
+    {error&&<p role="alert">{error}</p>}
+    <Suspense fallback={<p role="status">Loading PDF viewer…</p>}><PdfPreview id={id} workspace={workspace}/></Suspense>
+  </section>;
+}
 function FileContent({id,workspace}:{id:string;workspace?:string}){
   const [info,setInfo]=useState<{name:string;bytes:number}>(),[url,setUrl]=useState(''),[text,setText]=useState<string>(),[error,setError]=useState('');
   const [loading,setLoading]=useState(true);

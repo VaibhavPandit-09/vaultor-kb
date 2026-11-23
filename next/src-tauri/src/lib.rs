@@ -1,5 +1,7 @@
 pub mod activity;
 mod file_text;
+#[doc(hidden)]
+pub mod pdf_text;
 mod references;
 pub mod domain;
 pub mod desktop;

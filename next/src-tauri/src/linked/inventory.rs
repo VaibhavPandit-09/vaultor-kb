@@ -25,6 +25,14 @@ pub(super) fn is_markdown(path: &Path) -> bool {
         .is_some_and(|ext| ext.eq_ignore_ascii_case("md") || ext.eq_ignore_ascii_case("markdown"))
 }
 
+pub(super) fn is_pdf(path: &Path) -> bool {
+    path.extension().and_then(|ext| ext.to_str()).is_some_and(|ext| ext.eq_ignore_ascii_case("pdf"))
+}
+
+pub(super) fn is_indexable(path: &Path) -> bool {
+    is_markdown(path) || is_pdf(path)
+}
+
 fn relative_path(root: &Path, file: &native::ReadFile) -> Result<String, String> {
     let canonical = native::physical(&file.file)?;
     Ok(canonical
@@ -39,14 +47,53 @@ pub(super) fn path_key(root: &Path, file: &native::ReadFile) -> Result<String, S
     Ok(relative_path(root, file)?.to_lowercase())
 }
 
+// Withdraw a superseded PDF body before the slower parser starts. Cancellation
+// can leave a title-only result, but can never restore the superseded body.
+fn withdraw_changed_pdf(
+    storage: &Storage, workspace: &str, source: &str, grant: &Value, path: &str,
+    file: &native::ReadFile,
+) -> Result<(), String> {
+    let (source, grant, path, identity, revision, birth) = (
+        source.to_owned(), grant.clone(), path.to_owned(), file.id.clone(),
+        file.revision.clone(), native::birth(&file.file)?,
+    );
+    storage.call(workspace, move |w| {
+        if w.linked_grant(&source)? != grant {
+            return Err("Linked source authorization changed".into());
+        }
+        let tx = w.db.transaction().map_err(error)?;
+        let prior = "SELECT d.id FROM linked_documents d JOIN linked_inventory i ON i.document_id=d.id
+            WHERE d.source_id=?1 AND i.indexed_revision<>'' AND
+            (d.path_key=lower(?2) OR (d.identity=?3 AND i.birth=?5)) AND
+            (d.path<>?2 OR d.identity<>?3 OR i.indexed_revision<>?4 OR i.birth<>?5)";
+        tx.execute(
+            &format!("UPDATE note_search SET body='' WHERE rowid IN
+                (SELECT seq FROM resources WHERE substr(id,8) IN ({prior}) AND id LIKE 'linked:%')"),
+            params![source,path,identity,revision,birth],
+        ).map_err(error)?;
+        let changed = tx.execute(
+            &format!("UPDATE linked_inventory SET indexed_revision='',indexed_bytes=0 WHERE document_id IN ({prior})"),
+            params![source,path,identity,revision,birth],
+        ).map_err(error)?;
+        if changed>0 { tx.execute("UPDATE search_generation SET value=value+1", []).map_err(error)?; }
+        tx.commit().map_err(error)?;
+        Ok(Value::Null)
+    })?;
+    Ok(())
+}
+
 #[derive(Default)]
 pub(super) struct Extract {
     body: String,
     links: Vec<String>,
 }
 
-fn extract(file: &native::ReadFile) -> Extract {
+fn extract(file: &native::ReadFile, cancelled: impl Fn() -> bool) -> Extract {
     let mut result = Extract::default();
+    if is_pdf(&file.path) {
+        result.body = crate::pdf_text::extract(&file.bytes, cancelled).1.unwrap_or_default();
+        return result;
+    }
     if file.bytes.len() > MAX_INDEX_BYTES {
         return result;
     }
@@ -119,7 +166,7 @@ impl Workspace {
     pub(super) fn linked_relationships(&self, id: &str) -> Result<Value, String> {
         let resource = format!("linked:{id}");
         let (source, path, _, _) = self.linked_location(id)?;
-        let file = self.linked_read(id, false)?;
+        let file = self.linked_read_indexable(id)?;
         self.confirm_linked_identity(id, &file)?;
         let mut outgoing = self.db.prepare(
             "SELECT ref.path_key,r.id,r.title,ref.occurrences FROM linked_references ref
@@ -325,6 +372,9 @@ impl Workspace {
             tx.execute("UPDATE search_generation SET value=value+1", [])
                 .map_err(error)?;
         }
+        if is_pdf(Path::new(&path)) {
+            tx.execute("UPDATE linked_documents SET revision=?2 WHERE id=?1 AND revision<>?2", params![id,file.revision]).map_err(error)?;
+        }
         tx.commit().map_err(error)?;
         Ok(id)
     }
@@ -401,8 +451,12 @@ pub fn index(
             let child = relative.join(name);
             if meta.is_dir() {
                 directories.push(child);
-            } else if is_markdown(&child) {
-                let Ok(file) = native::read(&root, &identity, &child.to_string_lossy(), false)
+            } else if is_indexable(&child) {
+                if is_pdf(&child) && grant[2].is_null() {
+                    skipped += 1;
+                    continue;
+                }
+                let Ok(file) = native::read_indexable(&root, &identity, &child.to_string_lossy())
                 else {
                     skipped += 1;
                     continue;
@@ -416,8 +470,15 @@ pub fn index(
                     native::birth(&file.file)?,
                     path
                 );
-                let extracted =
-                    (cached[&key].as_str() != Some(&fingerprint)).then(|| extract(&file));
+                let extracted = if cached[&key].as_str() != Some(&fingerprint) {
+                    if is_pdf(&child) {
+                        withdraw_changed_pdf(storage, workspace, &source, &grant, &path, &file)?;
+                    }
+                    Some(extract(&file, || ctx.check().is_err()))
+                } else {
+                    None
+                };
+                ctx.check()?;
                 let (source, root, scan, grant) =
                     (source.clone(), root.clone(), scan.clone(), grant.clone());
                 let observed = storage.call(workspace, move |w| {
@@ -438,7 +499,7 @@ pub fn index(
                     Err(err) => return Err(err),
                 }
                 if (indexed + skipped) % 32 == 0 {
-                    ctx.progress("Indexing linked Markdown", indexed, None, 0, None);
+                    ctx.progress("Indexing linked files", indexed, None, 0, None);
                 }
             }
         }
@@ -478,9 +539,12 @@ pub(super) fn reconcile_path(
     let (root, identity, _): (PathBuf, String, Option<String>) =
         serde_json::from_value(grant.clone()).map_err(error)?;
     let relative = native::relative(path)?;
+    if is_pdf(&relative) && grant[2].is_null() {
+        return Ok(false);
+    }
     let key = path.to_lowercase();
     let (source, grant) = (source.to_string(), grant.clone());
-    match native::read(&root, &identity, path, false) {
+    match native::read_indexable(&root, &identity, path) {
         Ok(file) => {
             let id = source.clone();
             let observed_path = relative_path(&root, &file)?;
@@ -497,7 +561,10 @@ pub(super) fn reconcile_path(
             if current {
                 return Ok(false);
             }
-            let extracted = extract(&file);
+            if is_pdf(&relative) {
+                withdraw_changed_pdf(storage, workspace, &source, &grant, path, &file)?;
+            }
+            let extracted = extract(&file, || false);
             storage.call(workspace, move |w| {
                 if w.linked_grant(&source)? != grant {
                     return Err("Source authorization changed".into());
@@ -593,7 +660,7 @@ mod tests {
         let (root, root_id) = w.linked_root(source).unwrap();
         let observe = |w: &mut Workspace, path: &str| {
             let file = native::read(&root, &root_id, path, false).unwrap();
-            let body = extract(&file);
+            let body = extract(&file, || false);
             w.observe_linked(source, &root, &file, Some(("test", Some(body))))
                 .unwrap()
         };

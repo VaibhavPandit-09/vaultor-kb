@@ -195,12 +195,21 @@ export async function qualifyHost({evaluate, wait, record, report, folder, susta
     await admin({op:'grant',id:completed.value.deviceId,allow:true});
     const Cookie=completed.headers['set-cookie'][0].split(';')[0];
     const session=await api('GET','/api/access/session',{headers:{Cookie}});
+    if(process.argv.includes('--m26b-browser-freshness')){
+      await evaluate("[...document.querySelectorAll('.sidebar-primary>button')].find(button=>button.textContent.trim()==='Collections').click()");
+      await wait("document.querySelector('[data-browser=collections]')",'Desktop Collections ready before browser write');
+    }
     const organization=await api('PUT','/api/next/browser/v1/organization/collections/'+crypto.randomUUID(),
       {headers:{Origin,Cookie,'X-Vaultor-CSRF':session.value.csrf,'X-Vaultor-Workspace':workspace},
         body:{operation:'create',name:'Browser collection reflected in Windows',parentId:null}});
     assert.equal(organization.status,200,JSON.stringify(organization.value));
     const desktop=await ws({kind:'snapshot'});
     assert(desktop.collections.some(row=>row.id===organization.value.id&&row.name===organization.value.name));
+    if(process.argv.includes('--m26b-browser-freshness')){
+      const selector=`[data-browser=collections] [data-collection-open="${organization.value.id}"]`;
+      await wait(`document.querySelector(${JSON.stringify(selector)})?.textContent.includes(${JSON.stringify(organization.value.name)})`,'Desktop browser updates without manual refresh');
+      report.checks.push('Mounted desktop Collections reconciled the committed browser organization change without a manual refresh');
+    }
     await admin({op:'revoke',id:completed.value.deviceId});
     report.checks.push('Native WebView2 workspace IPC observed the identical saved collection created through the browser HTTPS adapter');
   }

@@ -127,6 +127,17 @@ pub struct Workspace {
 pub(crate) fn error(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
+pub(crate) const STAGE_PREFIX: &str = ".vaultor-stage-";
+
+pub(crate) fn is_stage_path(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| {
+            name.to_ascii_lowercase()
+                .strip_prefix(STAGE_PREFIX)
+                .is_some_and(|id| Uuid::parse_str(id).is_ok())
+        })
+}
 pub(crate) fn title(value: &str) -> Result<&str, String> {
     let value = value.trim();
     if value.is_empty() || value.chars().count() > 240 {
@@ -151,18 +162,28 @@ impl Workspace {
         path.canonicalize().is_ok_and(|p| p == self.root)
     }
     pub fn open(root: &Path) -> Result<Self, String> {
-        Self::open_workspace(root, true)
+        Self::open_workspace(root, true, false)
     }
 
     pub(crate) fn open_existing(root: &Path) -> Result<Self, String> {
-        Self::open_workspace(root, false)
+        Self::open_workspace(root, false, false)
     }
 
-    fn open_workspace(root: &Path, initialize: bool) -> Result<Self, String> {
+    pub(crate) fn open_restore_stage(root: &Path) -> Result<Self, String> {
+        Self::open_workspace(root, true, true)
+    }
+
+    fn open_workspace(root: &Path, initialize: bool, restoring: bool) -> Result<Self, String> {
+        if !restoring && is_stage_path(root) {
+            return Err("Restore staging folders cannot be opened directly".into());
+        }
         if initialize {
             fs::create_dir_all(root).map_err(error)?;
         }
         let root = root.canonicalize().map_err(error)?;
+        if !restoring && is_stage_path(&root) {
+            return Err("Restore staging folders cannot be opened directly".into());
+        }
         let marker = root.join("vaultor-next.json");
         let existing = marker.try_exists().map_err(error)?;
         let database = root.join("workspace.sqlite3");

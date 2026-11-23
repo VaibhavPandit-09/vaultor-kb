@@ -389,6 +389,7 @@ async fn organize(
         mobile::summary(ws, &id, true)
     }).await.map_err(|_| StatusCode::CONFLICT)?;
     if result.is_null() { return Err(StatusCode::FORBIDDEN); }
+    host.workspace_changed();
     Ok(Json(result))
 }
 
@@ -456,6 +457,7 @@ async fn create_note(
     if result["conflict"] == true {
         return Err(StatusCode::CONFLICT);
     }
+    host.workspace_changed();
     Ok(Json(result))
 }
 
@@ -514,5 +516,6 @@ async fn save_note(
     if result.is_null() {
         return Err(StatusCode::FORBIDDEN);
     }
+    host.workspace_changed();
     Ok(Json(result))
 }

@@ -273,10 +273,29 @@ pub fn read(
     relative_path: &str,
     write_lease: bool,
 ) -> Result<ReadFile, String> {
+    read_document(root, root_id, relative_path, write_lease, false)
+}
+
+pub fn read_indexable(root: &Path, root_id: &str, path: &str) -> Result<ReadFile, String> {
+    if !super::inventory::is_indexable(Path::new(path)) {
+        return Err("Choose a linked Markdown document or PDF".into());
+    }
+    read_document(root, root_id, path, false, super::inventory::is_pdf(Path::new(path)))
+}
+
+fn read_document(
+    root: &Path,
+    root_id: &str,
+    relative_path: &str,
+    write_lease: bool,
+    pdf: bool,
+) -> Result<ReadFile, String> {
     let (mut file, pins, path) = open_source(root, root_id, relative_path, write_lease)?;
-    let bytes = bounded_bytes(&mut file, MAX_BYTES)?;
-    std::str::from_utf8(&bytes)
-        .map_err(|_| "Only UTF-8 Markdown is supported; source untouched")?;
+    let bytes = bounded_bytes(&mut file, if pdf { crate::pdf_text::MAX_BYTES } else { MAX_BYTES })?;
+    if !pdf {
+        std::str::from_utf8(&bytes)
+            .map_err(|_| "Only UTF-8 Markdown is supported; source untouched")?;
+    }
     let id = identity(&file)?;
     let revision = hash(&bytes);
     let reason = write_policy(&file, &path).err();

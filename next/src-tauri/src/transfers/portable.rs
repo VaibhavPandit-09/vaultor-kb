@@ -41,7 +41,7 @@ pub(super) fn validate_descriptors(descriptors: &[Descriptor]) -> Result<(), Str
 
 pub(super) fn capture_descriptors(db: &rusqlite::Connection) -> Result<Vec<Descriptor>, String> {
     let mut statement = db.prepare("SELECT id,title,label,path,revision FROM portable_linked_descriptors
-        UNION ALL SELECT r.id,r.title,'Linked Markdown',replace(d.path,char(92),'/'),d.revision
+        UNION ALL SELECT r.id,r.title,CASE WHEN lower(d.path) GLOB '*.pdf' THEN 'Linked PDF' ELSE 'Linked Markdown' END,replace(d.path,char(92),'/'),d.revision
         FROM linked_documents d JOIN linked_inventory i ON i.document_id=d.id AND i.available=1 JOIN resources r ON r.id=i.resource_id
         JOIN linked_sources s ON s.id=d.source_id AND s.active=1
         JOIN linked_grants g ON g.source_id=s.id

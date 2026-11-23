@@ -108,4 +108,6 @@ Host pairing remains separate from workspace permission. [WORKSPACES.md](../arch
 
 ## Linked sources are owner-local
 
+Vaultor Next keeps linked Markdown and PDF body matches on the local desktop. Hosted search excludes linked IDs before counting or paging. A PDF preview rechecks the active source and NTFS file identity through the Rust owner. Portable descriptors grant no path access.
+
 Linked consent is available only to the verified bundled Windows x64 owner connection. Electron main issues opaque workspace/generation-bound capabilities after its native picker; private Java pipes independently verify consent and source proofs. No HTTP endpoint, client boolean or portable descriptor authorizes filesystem publication. Remote/browser/Android clients receive no native grants. Keys, absolute roots and recovery journals never enter portable archives. See [Linked-source contract](../workspace/LINKED-SOURCES.md); host TLS/approval/revision requirements remain unchanged.

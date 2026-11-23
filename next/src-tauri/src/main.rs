@@ -100,6 +100,16 @@ async fn resource_bytes(
     }
     let storage = worker.storage();
     tauri::async_runtime::spawn_blocking(move || {
+        #[cfg(windows)]
+        if let Some(linked) = id.strip_prefix("linked:").map(str::to_owned) {
+            let (send, receive) = std::sync::mpsc::channel();
+            storage.call(&root, move |w| {
+                let bytes = w.linked_pdf_bytes(&linked)?;
+                send.send(bytes).map_err(|_| "Preview closed")?;
+                Ok(serde_json::Value::Null)
+            })?;
+            return receive.recv().map(tauri::ipc::Response::new).map_err(|error| error.to_string());
+        }
         let info = storage.call(&root, move |w| {
             let info = w.media(serde_json::json!({"op":"info","id":id}))?;
             Ok(serde_json::json!({"path":w.managed_path(&id)?,"hash":info["hash"]}))
@@ -391,6 +401,7 @@ fn startup_failure(error: &impl std::fmt::Display) {
 }
 
 fn main() {
+    vaultor_next::pdf_text::run_worker_if_requested();
     let application = tauri::Builder::default()
         .manage(preview::Previews::default())
         .register_asynchronous_uri_scheme_protocol("vaultor-preview", preview::respond)
@@ -407,7 +418,7 @@ fn main() {
             #[cfg(feature = "host")]
             app.manage(desktop_host::DesktopHost::new(override_root.as_ref()
                 .and_then(|path| std::path::Path::new(path).parent()).unwrap_or(&data)
-                .join("host-access")));
+                .join("host-access"), app.handle().clone()));
             #[cfg(windows)]
             app.manage(windows_drag::NativeDrag::new(override_root.as_ref()
                 .and_then(|path| std::path::Path::new(path).parent()).unwrap_or(&data)

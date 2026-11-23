@@ -8,7 +8,7 @@ export type LinkedDraftSummary={id:string;path:string;sequence:number;status:str
 export type LinkedRequest=
  |{op:'archived';workspace:string;after?:string|null}|{op:'rebindDescriptor';workspace:string;id:string;path:string}
  |{op:'web';url:string}|{op:'sources'}|{op:'register';path:string}|{op:'remove';source:string}|{op:'directory';source:string;path:string;after?:string|null}|{op:'open';source:string;path:string}|{op:'follow';id:string;href:string}
- |{op:'identify';source:string;path:string}|{op:'openId'|'location'|'relationships'|'check';id:string}|{op:'external';id:string;reveal:boolean}|{op:'asset';id:string;href:string}
+ |{op:'identify';source:string;path:string}|{op:'openId'|'location'|'relationships'|'check'|'pdfInfo';id:string}|{op:'external';id:string;reveal:boolean}|{op:'asset';id:string;href:string}
  |{op:'protect';id:string;revision:string;base:string;content:JSONContent;token:string;sequence:number}|{op:'save';id:string;token:string;sequence:number}
  |{op:'drafts'}|{op:'recover'|'inspect'|'resolve';id:string}|{op:'discard';id:string;token:string;sequence:number};
 

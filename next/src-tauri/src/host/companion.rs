@@ -187,6 +187,7 @@ async fn upload(
         .await
         .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
     drop(out);
+    let extraction_stop = host.stop.clone();
     let (intent, staged, prepared, extracted) = tokio::task::spawn_blocking(move || {
         let prepared = intent.prepare(&staged);
         let extracted = prepared
@@ -199,6 +200,7 @@ async fn upload(
                     &intent.filename,
                     &intent.sha256,
                     intent.bytes,
+                    || extraction_stop.is_cancelled(),
                 );
                 (state.to_owned(), body)
             });

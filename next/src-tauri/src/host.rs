@@ -64,6 +64,7 @@ pub struct Host {
     streams: Arc<Semaphore>,
     access_changed: tokio::sync::watch::Sender<()>,
     management_changed: tokio::sync::watch::Sender<u64>,
+    workspace_changed: Option<Arc<dyn Fn() + Send + Sync>>,
     owner_browser: Arc<owner_browser::OwnerBrowser>,
     stop: CancellationToken,
 }
@@ -145,6 +146,18 @@ impl Drop for Listener {
 }
 
 impl Host {
+    #[cfg(feature = "desktop")]
+    pub fn with_workspace_change_handler(mut self, handler: impl Fn() + Send + Sync + 'static) -> Self {
+        self.workspace_changed = Some(Arc::new(handler));
+        self
+    }
+
+    fn workspace_changed(&self) {
+        if let Some(handler) = &self.workspace_changed {
+            handler();
+        }
+    }
+
     pub fn host_id(&self) -> Uuid {
         self.identity.id
     }
@@ -191,6 +204,7 @@ impl Host {
             streams: Arc::new(Semaphore::new(16)),
             access_changed: tokio::sync::watch::Sender::new(()),
             management_changed: tokio::sync::watch::Sender::new(0),
+            workspace_changed: None,
             owner_browser: Arc::default(),
             stop: CancellationToken::new(),
         })

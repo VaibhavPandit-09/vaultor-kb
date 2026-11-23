@@ -96,7 +96,7 @@ const getReferences:ReferencesProvider=async(id,direction,page,signal)=>{
 };
 
 export default function NextApp() {
-  const [screen,setScreen]=useState<Screen>('resources'),[preferences,setPreferences]=useState<Preferences>(defaults),[preferencesReady,setPreferencesReady]=useState(false),[preferencesError,setPreferencesError]=useState(''),[settingsOpen,setSettingsOpen]=useState(false),[filePreview,setFilePreview]=useState<{id:string;title:string}>(),[palette,setPalette]=useState(false),[sessionReady,setSessionReady]=useState(false);
+  const [screen,setScreen]=useState<Screen>('resources'),[preferences,setPreferences]=useState<Preferences>(defaults),[preferencesReady,setPreferencesReady]=useState(false),[preferencesError,setPreferencesError]=useState(''),[settingsOpen,setSettingsOpen]=useState(false),[filePreview,setFilePreview]=useState<{id:string;title:string;source?:string}>(),[palette,setPalette]=useState(false),[sessionReady,setSessionReady]=useState(false);
   const behaviorWorkspace=useRef('');
   const [paneSizes,setPaneSizes]=useState<Record<string,number>>({});
   const browserMemories=useRef<Partial<Record<Screen,BrowserMemory>>>({});
@@ -195,14 +195,18 @@ export default function NextApp() {
   const focusLinked=useCallback((source:string,path:string)=>{const buttons=[...document.querySelectorAll<HTMLButtonElement>('[data-linked-navigation]')];(buttons.find(button=>button.dataset.linkedSource===source&&button.dataset.linkedPath===path)??buttons.find(button=>button.dataset.linkedSource===source)??document.querySelector<HTMLButtonElement>('[aria-label="Link external folder"]'))?.focus({preventScroll:true});},[]);
   const paths=useMemo(()=>collectionPaths(snapshot?.collections??[]),[snapshot?.collections]);
   useLayoutEffect(()=>{if(listElement.current)listElement.current.scrollTop=scrolls.current.get(scopeKey)??0;},[page,scopeKey,panes.length]);
-  const refresh=useCallback(async(reset=true)=>{
+  const refresh=useCallback(async(reset=true, preserveMenu=false)=>{
     const epoch=++loadEpoch.current;setQueryBusy(false);
     const [state,list,recovery,linkedSources,linkedRecovery]=await Promise.all([command<Snapshot>({kind:'snapshot'}),requestPage(currentCollection.current,reset?null:cursorRef.current),command<DraftSummary[]>({kind:'drafts'}),linkedCommand<LinkedSource[]>({op:'sources'}),linkedCommand<LinkedDraftSummary[]>({op:'drafts'})]);
     if(behaviorWorkspace.current!==state.path){behaviorWorkspace.current=state.path;setPreferences(old=>({...old,...Object.fromEntries(behaviorKeys.map(key=>[key,state.settings.behavior?.[key]??defaults[key]]))}));}
     setSnapshot(state);setOrgVersion(v=>v+1);setRecents(await org({op:'recents'}));setDrafts(recovery);setSources(linkedSources);setExternalDrafts(linkedRecovery);
     if(epoch!==loadEpoch.current)return;
-    setMenu(null);setPage(list);if(reset)setTrail([null]);
+    if(!preserveMenu)setMenu(null);
+    setPage(list);if(reset)setTrail([null]);
   },[requestPage]);
+  const refreshHostedOrganization=useStableEvent((path: string)=>{
+    if(snapshot?.path===path)void refresh(true,true).catch(error=>setError(String(error)));
+  });
   const run=useCallback(async(action:()=>Promise<void>,flush=true)=>{
     if(operating.current)return;operating.current=true;setBusy(true);setError('');
     try{if(flush){await flushAttachments();await session.flushAll();await external.protectAll();session.releaseViews();external.releaseViews();setNoteMetadata(old=>{const changed=[...session.ids()].map(id=>session.get(id)!).filter(note=>old.get(note.id)?.title!==note.title);if(!changed.length)return old;const next=new Map(old);for(const note of changed)next.set(note.id,{...next.get(note.id),title:note.title});while(next.size>64)next.delete(next.keys().next().value!);return next;});}await action();}catch(e){setError(String(e));}finally{operating.current=false;setBusy(false);}
@@ -232,9 +236,10 @@ export default function NextApp() {
     register(getCurrentWindow().onCloseRequested(event=>{event.preventDefault();closeNext(false);}));
     register(listen('next-quit-requested',()=>closeNext(true)));
     register(listen('next-activity-open',()=>document.querySelector<HTMLButtonElement>('.next-activity button[aria-expanded="false"]')?.click()));
+    register(listen<string>('next-host-workspace-changed',event=>refreshHostedOrganization(event.payload)));
     const keyboard=(event:globalThis.KeyboardEvent)=>{if(event.defaultPrevented||event.isComposing||event.keyCode===229||event.getModifierState?.('AltGraph'))return;if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();const pane=event.target instanceof Element?event.target.closest<HTMLElement>('[data-note-id]')?.dataset.noteId:undefined;void run(async()=>{if(pane?.startsWith('linked:'))await external.save(pane);});}};
     window.addEventListener('keydown',keyboard);return()=>{disposed=true;listeners.forEach(remove=>remove());window.removeEventListener('keydown',keyboard);};
-  },[run,external,closeNext]);
+  },[run,external,closeNext,refreshHostedOrganization]);
   const [explorerDrag,setExplorerDrag]=useState(false);
   useEffect(()=>{let disposed=false,remove:(()=>void)|undefined;void getCurrentWindow().onDragDropEvent(event=>{setExplorerDrag(event.payload.type==='enter'||event.payload.type==='over');if(event.payload.type==='drop'&&event.payload.paths.length)showTransfer({op:'folder',paths:event.payload.paths});}).then(fn=>{if(disposed)fn();else remove=fn;});return()=>{disposed=true;remove?.();};},[]);
   const selectCollection=useCallback((id:string|null)=>void run(async()=>{
@@ -247,18 +252,30 @@ export default function NextApp() {
   const [dragLabel,setDragLabel]=useState('');
   const previewTrigger=useRef<HTMLElement|null>(null);
   const openRequest=useRef(0);
-  const closePreview=()=>{
+  const closePreview=useStableEvent(()=>{
     setFilePreview(undefined);
     const trigger=previewTrigger.current;
     previewTrigger.current=null;
     requestAnimationFrame(()=>{if(trigger?.isConnected)trigger.focus({preventScroll:true});});
-  };
+  });
+  useEffect(()=>{
+    if(filePreview?.source&&!sources.some(source=>source.id===filePreview.source&&source.available!==false))closePreview();
+  },[filePreview,sources,closePreview]);
   const openNote=(id:string,beside=preferencesRef.current.openBeside,keyboard=false,targetPane?:number,kindHint?:string)=>(async()=>{
     if(operating.current)return;
     const request=++openRequest.current;
     const trigger=document.activeElement instanceof HTMLElement?document.activeElement:null;
     const kind=kindHint??page.items.find(item=>item.id===id)?.kind??session.get(id)?.kind;
     try{
+      if(id.startsWith('linked:')&&!external.get(id)){
+        const pdf=await linkedCommand<{name:string;source:string}|null>({op:'pdfInfo',id:id.slice(7)});
+        if(request!==openRequest.current||operating.current)return;
+        if(pdf){
+          if(!filePreview)previewTrigger.current=trigger;
+          setError('');setHelp(false);setFilePreview({id,title:pdf.name,source:pdf.source});
+          return;
+        }
+      }
       // A file preview neither displaces a pane nor publishes a linked draft.
       // Resolve its active identity without freezing every mounted editor.
       if(!id.startsWith('linked:')&&kind!=='note'&&!external.get(id)&&!noteMetadataRef.current.get(id)?.source){
@@ -361,8 +378,8 @@ export default function NextApp() {
   const attachedSourceActions=useStableEvent((source:string,path:string,label:string,element:HTMLElement)=>{
     const identify=()=>linkedCommand<{id:string}>({op:'identify',source,path});
     sourceMenu(label,element,[
-      {label:'Open Markdown',run:()=>openExternalPath(source,path)},
-      {label:'Open beside',run:()=>openExternalPath(source,path,true)},
+      {label:/\.pdf$/i.test(path)?'Preview PDF':'Open Markdown',run:()=>openExternalPath(source,path)},
+      ...(/\.pdf$/i.test(path)?[]:[{label:'Open beside',run:()=>openExternalPath(source,path,true)}]),
       {label:'Add to collection…',run:()=>void identify().then(({id})=>organize([id],'add')).catch(e=>setError(String(e)))},
       {label:'Assign tags…',run:()=>void identify().then(({id})=>setTagging([id])).catch(e=>setError(String(e)))},
       {label:'Pin resource',run:()=>void identify().then(({id})=>metadata({op:'pin',ids:[id],value:true})).catch(e=>setError(String(e)))},
@@ -380,7 +397,10 @@ export default function NextApp() {
   useEffect(()=>{session.setAutosaveDelay(preferences.autosaveDelay);},[session,preferences.autosaveDelay]);
   const setAppearance=(value:'light'|'dark'|'oled',element:HTMLElement)=>{savePreferences({...preferences,theme:value},element);};
   useEffect(()=>{if(!preferencesReady)return;const system=window.matchMedia?.('(prefers-color-scheme: dark)');const apply=()=>theme.apply(preferences.theme==='system'?(system?.matches?'dark':'light'):preferences.theme);apply();system?.addEventListener('change',apply);document.documentElement.dataset.animation=preferences.motion;document.documentElement.dataset.density=preferences.density;document.documentElement.style.setProperty('--accent',accents[preferences.accent]??accents.blue);document.documentElement.style.setProperty('--primary',accents[preferences.accent]??accents.blue);document.documentElement.style.setProperty('--ui-opacity',String(preferences.opacity));return()=>system?.removeEventListener('change',apply);},[preferencesReady,preferences.theme,preferences.motion,preferences.accent,preferences.opacity,preferences.density,theme]);
-  const openExternalPath=useStableEvent((source:string,path:string,beside:boolean=preferencesRef.current.openBeside)=>openLinked({op:'open',source,path},beside));
+  const openExternalPath=useStableEvent((source:string,path:string,beside:boolean=preferencesRef.current.openBeside)=>{
+    if(!/\.pdf$/i.test(path))return openLinked({op:'open',source,path},beside);
+    void linkedCommand<{id:string}>({op:'identify',source,path}).then(item=>openNote(item.id)).catch(error=>setError(String(error)));
+  });
   const sourceMenu=useStableEvent((label:string,element:HTMLElement,actions:ContextAction[])=>{const rect=element.getBoundingClientRect();setMenu({label,source:element,scope:selectionScope,x:rect.left,y:rect.bottom,actions});});
   const organize=useCallback((ids:string[],mode:OrganizationRequest['mode']='add')=>void run(async()=>{
     setOrganizing({ids:[...ids],source:currentCollection.current,mode});
@@ -646,5 +666,5 @@ export default function NextApp() {
       </div>
     </main></div>{settingsOpen&&<DesktopSettingsDialog onHelp={()=>{setHelpTopic('settings-and-keyboard-commands');setHelp(true);}} saving={savingPreferences} value={preferences} save={savePreferences} path={snapshot?.path??''} error={preferencesError} close={()=>setSettingsOpen(false)}/>} {help&&<NextHelp topic={helpTopic} preferences={preferences} close={settingsOpen?()=>setHelp(false):toggleHelp}/>} {form&&createPortal(<AppModal open title={form.id?'Manage collection':'Create collection'} onClose={()=>{if(!busy)setForm(null);}}><form className="next-collection-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
         if(form.id)await command({kind:'updateCollection',id:form.id,name:form.name,parentId:form.parentId});else await command({kind:'createCollection',name:form.name,parentId:form.parentId});const id=form.id;setForm(null);await refresh(!id);requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>(`[data-collection-open="${id}"]`)?.focus());
-      });}}><input aria-label="Collection name" autoFocus value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/><select aria-label="Parent collection" value={form.parentId??''} onChange={e=>setForm({...form,parentId:e.target.value||null})}><option value="">Top level</option>{snapshot?.collections.filter(c=>c.id!==form.id).map(c=><option key={c.id} value={c.id}>{paths.get(c.id)}</option>)}</select><div><button disabled={busy}>{form.id?'Save collection':'Create'}</button><button type="button" onClick={()=>setForm(null)}>Cancel</button></div></form></AppModal>,document.body)}{referenceResource&&<ResourceReferences revision={linkedChange} resource={referenceResource} provider={getReferences} onOpenResource={openReference} onClose={()=>setReferenceResource(undefined)}/>} {palette&&<CommandPalette commands={desktopCommands} preferences={preferences} close={()=>setPalette(false)} openScope={item=>item.kind==='collection'?selectCollection(item.id):browseOrganization('library',{id:item.id,name:item.title})} openResource={id=>openNote(id,preferencesRef.current.openBeside,true)}/>} {renaming&&<RenameResource note={renaming} close={()=>{setRenaming(null);requestAnimationFrame(()=>focusRow(renaming.id));}} committed={()=>{session.forget(renaming.id);void refresh();}}/>}{tagging&&<TagPicker ids={tagging} close={()=>setTagging(undefined)} changed={()=>{setOrgVersion(v=>v+1);void refresh();}}/>}{lifecycle&&<LifecycleReview {...lifecycle} close={()=>setLifecycle(undefined)}/>} {linkedReview&&<LinkedReview {...linkedReview} busy={busy} error={error} close={()=>{setLinkedReview(undefined);}} restore={()=>{acceptLinked(linkedReview.doc,linkedReview.beside);setLinkedReview(undefined);}} discard={discardLinked} resolve={resolveLinked}/>} {organizing&&<OrganizeDialog request={organizing} collections={snapshot?.collections??[]} busy={busy} error={error} close={()=>{setOrganizing(null);requestAnimationFrame(()=>focusRow(selection.state.focus??organizing.ids[0]));}} apply={membership}/>} {filePreview&&<FilePreview key={filePreview.id} {...filePreview} workspace={snapshot?.path} opacity={preferences.opacity} placement={preferences.previewMode} close={closePreview} reviewAction={snapshot&&<ReviewButton resource={filePreview} workspace={snapshot.path} source={nextReviewSource} onOpen={()=>setInbox(filePreview)}/>}/>}{archivedSourceWorkspace&&archivedSourceWorkspace===snapshot?.path&&createPortal(<ArchivedSources workspace={archivedSourceWorkspace} close={()=>setArchivedSourceWorkspace(undefined)} changed={refreshSources}/>,document.body)}{dragExport&&dragExport.workspace===snapshot?.path&&createPortal(<ExplorerDrag {...dragExport} close={()=>setDragExport(undefined)}/>,document.body)}{inbox!==undefined&&snapshot&&createPortal(<ReviewInbox key={snapshot.path+":"+(inbox?.id??"all")} resource={inbox} workspace={snapshot.path} source={nextReviewSource} onClose={()=>setInbox(undefined)} onOpen={openReviewTarget}/>,document.body)}{review&&<RecoveryReview {...review} busy={busy} close={()=>setReview(undefined)} resolve={resolve}/>} {menu&&menu.scope===selectionScope&&<ContextMenu request={menu} dismiss={()=>setMenu(null)}/>}</div>;
+      });}}><input aria-label="Collection name" autoFocus value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/><select aria-label="Parent collection" value={form.parentId??''} onChange={e=>setForm({...form,parentId:e.target.value||null})}><option value="">Top level</option>{snapshot?.collections.filter(c=>c.id!==form.id).map(c=><option key={c.id} value={c.id}>{paths.get(c.id)}</option>)}</select><div><button disabled={busy}>{form.id?'Save collection':'Create'}</button><button type="button" onClick={()=>setForm(null)}>Cancel</button></div></form></AppModal>,document.body)}{referenceResource&&<ResourceReferences revision={linkedChange} resource={referenceResource} provider={getReferences} onOpenResource={openReference} onClose={()=>setReferenceResource(undefined)}/>} {palette&&<CommandPalette commands={desktopCommands} preferences={preferences} close={()=>setPalette(false)} openScope={item=>item.kind==='collection'?selectCollection(item.id):browseOrganization('library',{id:item.id,name:item.title})} openResource={id=>openNote(id,preferencesRef.current.openBeside,true)}/>} {renaming&&<RenameResource note={renaming} close={()=>{setRenaming(null);requestAnimationFrame(()=>focusRow(renaming.id));}} committed={()=>{session.forget(renaming.id);void refresh();}}/>}{tagging&&<TagPicker ids={tagging} close={()=>setTagging(undefined)} changed={()=>{setOrgVersion(v=>v+1);void refresh();}}/>}{lifecycle&&<LifecycleReview {...lifecycle} close={()=>setLifecycle(undefined)}/>} {linkedReview&&<LinkedReview {...linkedReview} busy={busy} error={error} close={()=>{setLinkedReview(undefined);}} restore={()=>{acceptLinked(linkedReview.doc,linkedReview.beside);setLinkedReview(undefined);}} discard={discardLinked} resolve={resolveLinked}/>} {organizing&&<OrganizeDialog request={organizing} collections={snapshot?.collections??[]} busy={busy} error={error} close={()=>{setOrganizing(null);requestAnimationFrame(()=>focusRow(selection.state.focus??organizing.ids[0]));}} apply={membership}/>} {filePreview&&<FilePreview key={filePreview.id} {...filePreview} workspace={snapshot?.path} opacity={preferences.opacity} placement={preferences.previewMode} close={closePreview} reviewAction={snapshot&&!filePreview.source&&<ReviewButton resource={filePreview} workspace={snapshot.path} source={nextReviewSource} onOpen={()=>setInbox(filePreview)}/>}/>}{archivedSourceWorkspace&&archivedSourceWorkspace===snapshot?.path&&createPortal(<ArchivedSources workspace={archivedSourceWorkspace} close={()=>setArchivedSourceWorkspace(undefined)} changed={refreshSources}/>,document.body)}{dragExport&&dragExport.workspace===snapshot?.path&&createPortal(<ExplorerDrag {...dragExport} close={()=>setDragExport(undefined)}/>,document.body)}{inbox!==undefined&&snapshot&&createPortal(<ReviewInbox key={snapshot.path+":"+(inbox?.id??"all")} resource={inbox} workspace={snapshot.path} source={nextReviewSource} onClose={()=>setInbox(undefined)} onOpen={openReviewTarget}/>,document.body)}{review&&<RecoveryReview {...review} busy={busy} close={()=>setReview(undefined)} resolve={resolve}/>} {menu&&menu.scope===selectionScope&&<ContextMenu request={menu} dismiss={()=>setMenu(null)}/>}</div>;
 }

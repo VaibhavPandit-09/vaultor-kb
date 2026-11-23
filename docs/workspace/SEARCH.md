@@ -14,6 +14,10 @@ Opening an existing note uses the existing pane and save coordinator, retaining 
 
 Search is debounced 150 ms. The palette displays at most 50 resource and 20 collection matches, with a refinement/Library hint for more. Empty state fetches up to 30 mixed pins and shows up to 20 recent resources after deduplication. Library provides full pagination. Collection names use the collection service; supported saved PDF/text bodies are searched only in content mode. Collection-scoped mode returns member resources even when the input is empty, excluding global Open/Pinned items and collection-name result groups. Scope changes preserve query text and abort/disregard old requests; failures never broaden the scope.
 
+## Vaultor Next PDF search
+
+The Rust workspace owner indexes supported saved managed and owner-authorized linked PDFs in FTS5. It admits up to 20 MiB, 100 pages and 500,000 UTF-16 units per PDF. A single isolated worker uses lopdf, a ten-second deadline and OS process limits. Encrypted and image-only PDFs contribute no body text. Results are document-level. The Windows source watcher withdraws an older body when a different saved revision is observed. Removing the registration withdraws linked results. Connected search can return managed PDF bodies within the current grant. Preview Find searches selectable text in the currently open PDF, independently of the saved index.
+
 ## Search contract and ranking
 
 GET /api/resources/query accepts q (required, up to 500 characters/30 terms), page (zero-based), size (1–100, default 50), type, repeated tag names (all required), collection ID and favorites. Unicode letters/numbers/underscore become literal prefix terms joined with AND. Punctuation does not expose FTS operators; an input without terms returns no matches. Matching is accent/case insensitive using SQLite unicode61. This is token-prefix search, not arbitrary substring matching.

@@ -19,6 +19,7 @@ pub type Running = Option<(Host, Listener)>;
 pub struct DesktopHost {
     pub running: Mutex<Running>,
     access: PathBuf,
+    app: tauri::AppHandle,
     startup_error: Mutex<Option<String>>,
     recovery: Mutex<Option<Recovery>>,
     recovery_wakeup: tokio::sync::Notify,
@@ -73,10 +74,11 @@ struct Startup {
 }
 
 impl DesktopHost {
-    pub fn new(access: PathBuf) -> Self {
+    pub fn new(access: PathBuf, app: tauri::AppHandle) -> Self {
         Self {
             running: Mutex::new(None),
             access,
+            app,
             startup_error: Mutex::new(None),
             recovery: Mutex::new(None),
             recovery_wakeup: tokio::sync::Notify::new(),
@@ -235,7 +237,13 @@ impl DesktopHost {
         #[cfg(not(windows))]
         let identity = vaultor_next::host::Identity::open(&access, &access.join("ca.pem"))
             .map_err(|error| error.to_string())?;
-        let host = Host::new(worker.storage(), root, identity).await?;
+        let app = self.app.clone();
+        let workspace_path = root.clone();
+        let host = Host::new(worker.storage(), root, identity)
+            .await?
+            .with_workspace_change_handler(move || {
+                let _ = app.emit("next-host-workspace-changed", &workspace_path);
+            });
         if expected.is_some_and(|expected| expected != host.workspace_id()) {
             return Err(
                 "The workspace changed. Start hosting explicitly to share the current workspace."

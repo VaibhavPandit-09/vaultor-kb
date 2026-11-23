@@ -436,6 +436,8 @@ For the M26-A comparison, run the original backend `NoteRendererTests` first. Ad
 
 Add `--m26a2-legacy` to the transfer probe for original v5 restore, exact bytes, merge replay and missing-database open refusal. Include `--m22-probe` to keep these samples local.
 
+Add `--m26b-pdf-index --m19-probe` to the Windows preview run for initial managed PDF indexing, rebuild, Trash visibility, automatic linked update and revocation, exact linked bytes and keyboard Find. The samples include polling and fixture setup where specified. Add `--m26a4-zips --m26b-browser-freshness --m24-probe` to the Windows host probe to check a mounted Collections view after a committed browser-side change.
+
 ## M24 Windows loopback host
 
 Set `VAULTOR_BENCH_EXECUTABLE`, `VAULTOR_BENCH_SOURCE_COMMIT`, `VAULTOR_BENCH_HEADLESS` and `VAULTOR_BENCH_OPENSSL` to the optimized desktop candidate, its source commit, the headless executable and an OpenSSL executable. Run `node benchmarks/tauri-rust/run.mjs tauri-rust --inspect --m24-host`. Use `--m24-probe` for a run that leaves the CSV unchanged.

@@ -330,7 +330,7 @@ fn record_event(
             {
                 continue;
             }
-            if inventory::is_markdown(Path::new(&relative)) && paths.len() < MAX_PATHS {
+            if inventory::is_indexable(Path::new(&relative)) && paths.len() < MAX_PATHS {
                 paths.insert((id.clone(), relative), 0);
             } else if relative.is_empty()
                 || paths.len() >= MAX_PATHS

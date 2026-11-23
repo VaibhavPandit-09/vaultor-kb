@@ -39,6 +39,9 @@ pub enum Request {
     OpenId {
         id: String,
     },
+    PdfInfo {
+        id: String,
+    },
     Location {
         id: String,
     },
@@ -178,7 +181,7 @@ impl Workspace {
         }
         let id = chosen.map(|(id, _)| id).unwrap_or_else(|| Uuid::new_v4().to_string());
         let observed = if let Some((_, relative, expected)) = &descriptor {
-            let file = native::read(&physical, &identity, relative, false)?;
+            let file = native::read_indexable(&physical, &identity, relative)?;
             if file.revision != *expected || inventory::path_key(&physical, &file)? != relative.to_lowercase() {
                 return Err("The selected source has a different path or revision; archived evidence was retained".into());
             }
@@ -239,8 +242,29 @@ impl Workspace {
     }
     fn linked_read(&self, id: &str, lease: bool) -> Result<native::ReadFile, String> {
         let (source, path, _, _) = self.linked_location(id)?;
+        if !inventory::is_markdown(Path::new(&path)) {
+            return Err("Only Markdown files use the linked editor".into());
+        }
         let (root, identity) = self.linked_root(&source)?;
         native::read(&root, &identity, &path, lease)
+    }
+    fn linked_read_indexable(&self, id: &str) -> Result<native::ReadFile, String> {
+        let (source, path, _, _) = self.linked_location(id)?;
+        let (root, identity) = self.linked_root(&source)?;
+        if inventory::is_pdf(Path::new(&path)) && self.linked_grant(&source)?[2].is_null() {
+            return Err("Reauthorize the linked source before opening its PDF".into());
+        }
+        native::read_indexable(&root, &identity, &path)
+    }
+
+    pub fn linked_pdf_bytes(&self, id: &str) -> Result<Vec<u8>, String> {
+        let (_, path, _, _) = self.linked_location(id)?;
+        if !inventory::is_pdf(Path::new(&path)) {
+            return Err("Choose a linked PDF".into());
+        }
+        let file = self.linked_read_indexable(id)?;
+        self.confirm_linked_identity(id, &file)?;
+        Ok(file.bytes)
     }
     pub(crate) fn linked_export_snapshot(&self, id:&str)->Result<Value,String>{
         let (source,path,identity,_)=self.linked_location(id)?;
@@ -382,7 +406,7 @@ impl Workspace {
                     "SELECT path,revision FROM portable_linked_descriptors WHERE id=?1",[&id],
                     |row|Ok((row.get(0)?,row.get(1)?)),
                 ).optional().map_err(error)?.ok_or("Archived linked reference is unavailable")?;
-                if !inventory::is_markdown(Path::new(&relative)) { return Err("Archived reference is not a Markdown file".into()); }
+                if !inventory::is_indexable(Path::new(&relative)) { return Err("Archived reference is not a supported linked file".into()); }
                 self.authorize_linked_root(path,Some((id,relative,revision)))
             }
             Request::Remove { source } => {
@@ -437,13 +461,7 @@ impl Workspace {
                     use std::os::windows::fs::MetadataExt;
                     let blocked = meta.file_attributes() & 0x400 != 0;
                     let directory = meta.file_attributes() & 0x10 != 0; // FILE_ATTRIBUTE_DIRECTORY includes junction directory entries.
-                    let markdown = Path::new(&name)
-                        .extension()
-                        .and_then(|s| s.to_str())
-                        .is_some_and(|s| {
-                            s.eq_ignore_ascii_case("md") || s.eq_ignore_ascii_case("markdown")
-                        });
-                    if !directory && !markdown {
+                    if !directory && !inventory::is_indexable(Path::new(&name)) {
                         hidden += 1;
                         continue;
                     }
@@ -488,10 +506,13 @@ impl Workspace {
             }
             Request::Identify { source, path } => {
                 let (root, root_id) = self.linked_root(&source)?;
-                if !inventory::is_markdown(Path::new(&path)) {
-                    return Err("Choose a linked Markdown document".into());
+                if !inventory::is_indexable(Path::new(&path)) {
+                    return Err("Choose a linked Markdown document or PDF".into());
                 }
-                let file = native::read(&root, &root_id, &path, false)?;
+                if inventory::is_pdf(Path::new(&path)) && self.linked_grant(&source)?[2].is_null() {
+                    return Err("Reauthorize the linked source before opening its PDF".into());
+                }
+                let file = native::read_indexable(&root, &root_id, &path)?;
                 let id = self.observe_linked(&source, &root, &file, None)?;
                 Ok(
                     json!({"id":format!("linked:{id}"),"title":file.path.file_name().unwrap_or_default().to_string_lossy()}),
@@ -506,6 +527,16 @@ impl Workspace {
                     return Err("Linked file was replaced; refresh the source browser".into());
                 }
                 Ok(doc)
+            }
+            Request::PdfInfo { id } => {
+                let (source, path, _, _) = self.linked_location(&id)?;
+                if !inventory::is_pdf(Path::new(&path)) {
+                    return Ok(Value::Null);
+                }
+                if self.linked_grant(&source)?[2].is_null() {
+                    return Err("Reauthorize the linked source before opening its PDF".into());
+                }
+                Ok(json!({"name":Path::new(&path).file_name().unwrap_or_default().to_string_lossy(),"source":source}))
             }
             Request::Asset { id, href } => {
                 let origin = self.linked_read(&id, false)?;
@@ -537,7 +568,7 @@ impl Workspace {
             }
             Request::Relationships { id } => self.linked_relationships(&id),
             Request::External { id, reveal } => {
-                let file = self.linked_read(&id, false)?;
+                let file = self.linked_read_indexable(&id)?;
                 self.confirm_linked_identity(&id, &file)?;
                 let path = file.display_path()?;
                 if reveal {
@@ -551,7 +582,7 @@ impl Workspace {
                 Ok(Value::Null)
             }
             Request::Location { id } => {
-                let file = self.linked_read(&id, false)?;
+                let file = self.linked_read_indexable(&id)?;
                 self.confirm_linked_identity(&id, &file)?;
                 Ok(json!({"path": file.display_path()?}))
             }

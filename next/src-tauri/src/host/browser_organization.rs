@@ -100,7 +100,8 @@ async fn collection(
     Json(change): Json<CollectionChange>,
 ) -> ApiResult<Json<Value>> {
     let id = id.to_string();
-    scoped(host, headers, move |ws, device| match change {
+    let mutates = !matches!(change, CollectionChange::ReviewDeletion);
+    let result = scoped(host.clone(), headers, move |ws, device| match change {
         CollectionChange::Create { name, parent_id } => {
             ws.create_collection_once(id, device.to_string(), name, parent_id.map(|p| p.to_string()))
         }
@@ -131,7 +132,11 @@ async fn collection(
             }
             ws.organization(Org::DeleteCollection { id, trash, plan: plan.to_string() })
         }
-    }).await
+    }).await?;
+    if mutates {
+        host.workspace_changed();
+    }
+    Ok(result)
 }
 
 #[derive(Deserialize)]
@@ -204,7 +209,7 @@ async fn tag(
     headers: HeaderMap,
     Json(change): Json<TagChange>,
 ) -> ApiResult<Json<Value>> {
-    scoped(host, headers, move |ws, _| {
+    let result = scoped(host.clone(), headers, move |ws, _| {
         let applied = match change {
             TagChange::Create { name, color } => {
                 let normalized = title(&name)?.to_lowercase();
@@ -264,5 +269,7 @@ async fn tag(
         };
         Ok(applied)
     })
-    .await
+    .await?;
+    host.workspace_changed();
+    Ok(result)
 }

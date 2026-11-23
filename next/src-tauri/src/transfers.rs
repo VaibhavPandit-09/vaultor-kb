@@ -715,7 +715,7 @@ impl Drop for Cleanup {
 }
 fn stage(parent: &Path, directory: bool) -> Result<Cleanup, String> {
     fs::create_dir_all(parent).map_err(error)?;
-    let path = parent.join(format!(".vaultor-stage-{}", Uuid::new_v4()));
+    let path = parent.join(format!("{}{}", crate::domain::STAGE_PREFIX, Uuid::new_v4()));
     if directory {
         fs::create_dir(&path).map_err(error)?;
     } else {
@@ -1017,7 +1017,7 @@ fn import(
                 }
             }
             let extracted = (kind == "file")
-                .then(|| crate::file_text::extract(&staged.0, &input.name, &hash, base));
+                .then(|| crate::file_text::extract(&staged.0, &input.name, &hash, base, || ctx.check().is_err()));
             ctx.check()?;
             portable::reserve_originals(storage, root, vec![(id.clone(), input.hash.clone())])?;
             if !portable::verified_orphan(&target, &input.hash)? {
@@ -1503,6 +1503,9 @@ pub(crate) fn restore(
         return Err("Archive changed since preview".into());
     }
     let destination = PathBuf::from(destination);
+    if crate::domain::is_stage_path(&destination) {
+        return Err("Choose a workspace name outside the reserved restore staging names".into());
+    }
     if destination.exists() {
         return Err("Restore requires a new, nonexistent workspace folder".into());
     }
@@ -1510,7 +1513,7 @@ pub(crate) fn restore(
         destination.parent().ok_or("Choose a destination parent")?,
         true,
     )?;
-    let mut w = Workspace::open(&staged.0)?;
+    let mut w = Workspace::open_restore_stage(&staged.0)?;
     let mut bytes = 0;
     let total = m.originals.iter().map(|o| o.bytes).sum();
     for (i, o) in m.originals.iter().enumerate() {
@@ -1889,6 +1892,77 @@ mod tests {
         fn drop(&mut self) {
             self.service.activity.shutdown();
             self.worker.stop();
+        }
+    }
+
+    #[test]
+    fn restore_publication_child() {
+        let Some(folder) = std::env::var_os("VAULTOR_RESTORE_FIXTURE") else { return };
+        let folder = PathBuf::from(folder);
+        let after_publication = std::env::var_os("VAULTOR_RESTORE_AFTER_PUBLICATION").is_some();
+        let root = folder.join("workspace");
+        let worker = Worker::start(root.clone(), None).unwrap();
+        let ready = folder.join("publication-boundary");
+        let storage = worker.storage();
+        let activity = Activity::new(folder.join("activity.json"), storage.clone(), move |tasks| {
+            if tasks.iter().any(|task| {
+                if after_publication { task.state == "completed" }
+                else { task.phase == "Verifying and publishing — cancellation deferred" }
+            }) {
+                fs::write(&ready, b"ready").unwrap();
+                loop { std::thread::park(); }
+            }
+        }).unwrap();
+        let service = Transfers::new(storage, activity);
+        let archive = folder.join("workspace.zip");
+        let (_, hash, _) = inspect_archive_details(&archive, None).unwrap();
+        service.execute(root.to_string_lossy().into_owned(), Request::Restore {
+            source: archive.to_string_lossy().into_owned(),
+            destination: folder.join("restored").to_string_lossy().into_owned(),
+            manifest_hash: hash,
+        }).unwrap();
+        loop { std::thread::park(); }
+    }
+
+    #[test]
+    fn process_kill_on_both_sides_of_restore_publication() {
+        for after_publication in [false, true] {
+            let folder = tempfile::tempdir().unwrap();
+            let path = folder.path();
+            let archive = path.join("workspace.zip");
+            fs::write(&archive, include_bytes!("../fixtures/electron-workspace-v5.zip")).unwrap();
+            let (manifest, _, _) = inspect_archive_details(&archive, None).unwrap();
+            let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+            command.args(["--exact", "transfers::tests::restore_publication_child"])
+                .env("VAULTOR_RESTORE_FIXTURE", path)
+                .env_remove("VAULTOR_RESTORE_AFTER_PUBLICATION");
+            if after_publication { command.env("VAULTOR_RESTORE_AFTER_PUBLICATION", "1"); }
+            let mut child = command.spawn().unwrap();
+            let deadline = std::time::Instant::now() + Duration::from_secs(20);
+            let ready = path.join("publication-boundary");
+            while !ready.is_file() && std::time::Instant::now() < deadline {
+                if child.try_wait().unwrap().is_some() { break; }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            let _ = child.kill();
+            child.wait().unwrap();
+            assert!(ready.is_file(), "child did not reach the expected restore boundary");
+            let source = Workspace::open_existing(&path.join("workspace")).unwrap();
+            let integrity = |workspace: &Workspace| workspace.db.query_row(
+                "PRAGMA integrity_check", [], |row| row.get::<_,String>(0),
+            ).unwrap();
+            assert_eq!(integrity(&source), "ok");
+            let destination = path.join("restored");
+            if after_publication {
+                let restored = Workspace::open_existing(&destination).unwrap();
+                assert_eq!(integrity(&restored), "ok");
+                assert_eq!(fs::read(original_path(&destination, &manifest.originals[0].id).unwrap()).unwrap(), b"unchanged-original");
+            } else {
+                assert!(!destination.exists());
+                let stage = fs::read_dir(path).unwrap().map(|entry| entry.unwrap().path())
+                    .find(|candidate| candidate.is_dir() && crate::domain::is_stage_path(candidate)).unwrap();
+                assert!(Workspace::open_existing(&stage).err().unwrap().contains("staging"));
+            }
         }
     }
 

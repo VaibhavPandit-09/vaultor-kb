@@ -13,6 +13,7 @@ mod unix_owner;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    vaultor_next::pdf_text::run_worker_if_requested();
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     #[cfg(unix)]
     if let [command, access, operation @ ..] = args.as_slice() {

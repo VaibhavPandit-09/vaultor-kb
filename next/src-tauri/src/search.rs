@@ -178,7 +178,13 @@ impl Workspace {
             return Err("Unknown resource scope".into());
         }
         let kind=options.kind.as_deref().unwrap_or("all");
-        let kind_predicate=match kind {"all"=>"1".to_owned(),"linked"=>"r.id LIKE 'linked:%'".into(),"managed"=>"r.id NOT LIKE 'linked:%'".into(),"note"=>"r.id NOT LIKE 'linked:%' AND NOT EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file')".into(),"file"=>"EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file')".into(),k if crate::file_category::CATEGORIES.contains(&k)=>format!("{}='{k}'",crate::file_category::for_resource("r.id")),_=>return Err("Unsupported resource type".into())};
+        let category = if include_filenames {
+            crate::file_category::for_resource("r.id")
+        } else {
+            let managed = crate::file_category::for_resource("r.id");
+            format!("CASE WHEN EXISTS(SELECT 1 FROM linked_documents d WHERE r.id LIKE 'linked:%' AND d.id=substr(r.id,8) AND lower(d.path) GLOB '*.pdf') THEN 'pdf' ELSE {managed} END")
+        };
+        let kind_predicate=match kind {"all"=>"1".to_owned(),"linked"=>"r.id LIKE 'linked:%'".into(),"managed"=>"r.id NOT LIKE 'linked:%'".into(),"note"=>"r.id NOT LIKE 'linked:%' AND NOT EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file')".into(),"file"=>"EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id AND o.kind='file')".into(),k if crate::file_category::CATEGORIES.contains(&k)=>format!("{category}='{k}'"),_=>return Err("Unsupported resource type".into())};
         let match_filter = match (filtered, include_filenames) {
             (true, true) => "(r.seq IN (SELECT rowid FROM note_search WHERE note_search MATCH ?2)
                 OR EXISTS(SELECT 1 FROM managed_originals o
@@ -186,7 +192,8 @@ impl Workspace {
             (true, false) => "r.seq IN (SELECT rowid FROM note_search WHERE note_search MATCH ?2)",
             (false, _) => "?2 IS NULL",
         };
-        let predicate=format!("(?1 IS NULL OR r.id IN (SELECT resource_id FROM memberships WHERE collection_id=?1)) AND COALESCE((SELECT trashed FROM resource_state s WHERE s.resource_id=r.id),0)=?7 AND (?8 IS NULL OR r.id IN (SELECT resource_id FROM resource_tags WHERE tag_id=?8)) AND (?9!='pinned' OR r.id IN (SELECT resource_id FROM resource_state WHERE pinned=1)) AND (?9!='recent' OR r.id IN (SELECT resource_id FROM resource_state WHERE opened>0)) AND (substr(?9,1,7)!='source:' OR r.id IN (SELECT i.resource_id FROM linked_inventory i JOIN linked_documents d ON d.id=i.document_id WHERE d.source_id=substr(?9,8))) AND (json_array_length(?10)=0 OR (?11 AND EXISTS(SELECT 1 FROM resource_tags t JOIN json_each(?10) j ON j.value=t.tag_id WHERE t.resource_id=r.id)) OR (NOT ?11 AND NOT EXISTS(SELECT 1 FROM json_each(?10) j WHERE NOT EXISTS(SELECT 1 FROM resource_tags t WHERE t.resource_id=r.id AND t.tag_id=j.value)))) AND ?12 IS NOT NULL AND {kind_predicate} AND {match_filter}");
+        let owner_only = if include_filenames { "r.id NOT LIKE 'linked:%'" } else { "1" };
+        let predicate=format!("(?1 IS NULL OR r.id IN (SELECT resource_id FROM memberships WHERE collection_id=?1)) AND COALESCE((SELECT trashed FROM resource_state s WHERE s.resource_id=r.id),0)=?7 AND (?8 IS NULL OR r.id IN (SELECT resource_id FROM resource_tags WHERE tag_id=?8)) AND (?9!='pinned' OR r.id IN (SELECT resource_id FROM resource_state WHERE pinned=1)) AND (?9!='recent' OR r.id IN (SELECT resource_id FROM resource_state WHERE opened>0)) AND (substr(?9,1,7)!='source:' OR r.id IN (SELECT i.resource_id FROM linked_inventory i JOIN linked_documents d ON d.id=i.document_id WHERE d.source_id=substr(?9,8))) AND (json_array_length(?10)=0 OR (?11 AND EXISTS(SELECT 1 FROM resource_tags t JOIN json_each(?10) j ON j.value=t.tag_id WHERE t.resource_id=r.id)) OR (NOT ?11 AND NOT EXISTS(SELECT 1 FROM json_each(?10) j WHERE NOT EXISTS(SELECT 1 FROM resource_tags t WHERE t.resource_id=r.id AND t.tag_id=j.value)))) AND ?12 IS NOT NULL AND {owner_only} AND {kind_predicate} AND {match_filter}");
         let expr = if filtered { Some(expression) } else { None };
         let total: i64 = self
             .db
@@ -210,7 +217,6 @@ impl Workspace {
             )
             .map_err(error)?;
         let limit = limit.unwrap_or(100).clamp(1, 100) as usize;
-        let category=crate::file_category::for_resource("r.id");
         let excerpt = if options.content && filtered {
             "(SELECT snippet(note_search,1,char(1),char(2),' ... ',24) FROM note_search WHERE rowid=r.seq AND note_search MATCH ?2)"
         } else { "NULL" };

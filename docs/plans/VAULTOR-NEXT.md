@@ -727,7 +727,7 @@ The browser adds nested collections, rename/reparent, reviewed deletion, and tag
 
 Windows Settings starts a separate IPv4 loopback owner connector on demand. It provides the original one-use local bootstrap purpose and gives the local browser access to pending pairings and the current workspace. It uses an eight-hour process-bound owner session and a 60-second ticket. Desktop reissue, sign-out, explicit session end, stop, and restart invalidate the applicable authority.
 
-M26-A5 owns PDF indexing, deep linked portability, broader Review provenance/history, legacy identity and rich export fidelity. Destructive workspace replacement remains intentionally omitted.
+The remaining document, portability, reliability, visual and accessibility work is part of [M26-B](VAULTOR-NEXT-M26-B.md). Destructive workspace replacement remains intentionally omitted.
 
 **Qualification, 2026-11-23**
 
@@ -749,7 +749,9 @@ Artifact source `beb1abf4437e2da24845171ad0d820b7711cb445`. The APK retains the 
 
 Local raw reports under `benchmarks/tauri-rust/raw/` are `m26a4-docker.json` and the Windows reports timestamped `2026-11-23T09-11-02.170Z` and `09-11-33.166Z`. Historical observations and workbook formulas were preserved. Force-kill during independent restore publication and orphan workspace staging cleanup remain separate qualification cases. Physical interaction, visual and accessibility review, and production packaging and security qualification remain separate gates.
 
-### M26-B/C — Physical acceptance and separately authorized production qualification
+### M26-B — Engineering and acceptance
+
+See the [engineering candidate and qualification record](VAULTOR-NEXT-M26-B.md). M26-C is limited to separately authorized production preparation and publication after functional and user acceptance.
 
 - **Original functional parity:** Preserve Restore as New and Merge integrity, legacy archive compatibility and owner-reviewed mobile ZIP intake, browser creation and organization, original export coverage and restart fidelity, PDF functionality and linked-occurrence navigation.
 - **Physical desktop acceptance:** Check the native Windows mouse, touch, keyboard, motion, file-picker and installer workflows separately from automated tests.

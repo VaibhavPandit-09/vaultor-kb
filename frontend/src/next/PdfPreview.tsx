@@ -2,6 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import {AnnotationMode,getDocument,GlobalWorkerOptions,PasswordResponses,TextLayer,type PDFDocumentProxy,type PDFPageProxy,type RenderTask} from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import {original} from './media';
+import {ESCAPE_PRIORITIES,useEscapeLayer} from '../lib/escape/escape';
 
 GlobalWorkerOptions.workerSrc=workerUrl;
 type Scale='width'|'page'|number;
@@ -11,7 +12,18 @@ export default function PdfPreview({id,workspace}:{id:string;workspace?:string})
   const [status,setStatus]=useState('Loading PDF…'),[documentError,setDocumentError]=useState('');
   const [passwordRequest,setPasswordRequest]=useState<{submit:(password:string)=>void;incorrect:boolean}>();
   const [size,setSize]=useState({width:480,height:460});
+  const [finding,setFinding]=useState(false),[query,setQuery]=useState('');
+  const [matches,setMatches]=useState<number[]>([]),[findStatus,setFindStatus]=useState('');
+  const findButton=useRef<HTMLButtonElement>(null),findInput=useRef<HTMLInputElement>(null);
+  const activePage=useRef(page);
+  activePage.current=page;
   const viewport=useRef<HTMLDivElement>(null),stage=useRef<HTMLDivElement>(null);
+  const closeFind=()=>{
+    setFinding(false);setQuery('');setMatches([]);setFindStatus('');
+    findButton.current?.focus({preventScroll:true});
+  };
+  useEscapeLayer({active:finding,priority:ESCAPE_PRIORITIES.preview+1,close:closeFind,restoreFocusOnEscape:false});
+  useEffect(()=>{if(finding)findInput.current?.focus();},[finding]);
   useEffect(()=>{
     let live=true,task:ReturnType<typeof getDocument>|undefined;
     void original(id,workspace).then(async({buffer})=>{
@@ -31,6 +43,53 @@ export default function PdfPreview({id,workspace}:{id:string;workspace?:string})
     });
     return()=>{live=false;void task?.destroy().catch(()=>{});};
   },[id,workspace]);
+  useEffect(()=>{
+    if(!pdf||!query)return;
+    let live=true,reader:ReadableStreamDefaultReader<Awaited<ReturnType<PDFPageProxy['getTextContent']>>>|undefined;
+    setMatches([]);setFindStatus('Searching PDF text…');
+    const find=async()=>{
+      const normalize=(value:string)=>value.toLowerCase().replace(/\s+/g,' ');
+      const needle=normalize(query);
+      const pages:number[]=[];
+      const last=Math.min(pdf.numPages,100);
+      let total=0,complete=last===pdf.numPages;
+      for(let n=1;n<=last&&live;n++){
+        const candidate=await pdf.getPage(n);
+        if(!live)return;
+        const stream=candidate.streamTextContent().getReader();
+        reader=stream;
+        let text='',pageUnits=0;
+        try{
+          for(;;){
+            const {value,done}=await stream.read();
+            if(!live)return;
+            if(done)break;
+            let limit=false;
+            for(const item of value.items){
+              if(!('str' in item))continue;
+              pageUnits+=item.str.length;
+              total+=item.str.length;
+              if(pageUnits>250_000||total>2_000_000){limit=true;complete=false;break;}
+              text+=item.str+(item.hasEOL?' ':'');
+            }
+            if(limit){await stream.cancel();break;}
+          }
+          if(normalize(text).includes(needle))pages.push(n);
+        }finally{
+          stream.releaseLock();
+          reader=undefined;
+          if(n!==activePage.current)candidate.cleanup();
+        }
+        if(total>2_000_000)break;
+      }
+      if(!live)return;
+      setMatches(pages);
+      if(pages.length)setPage(pages.find(n=>n>=activePage.current)??pages[0]);
+      setFindStatus((pages.length?`Found on ${pages.length} ${pages.length===1?'page':'pages'}.`:'No matching text.')+(complete?'':' Search limit reached.'));
+    };
+    void find().catch(()=>{if(live)setFindStatus('Could not search this PDF.');});
+    return()=>{live=false;void reader?.cancel().catch(()=>{});};
+  },[pdf,query]);
   useEffect(()=>{
     const element=viewport.current;
     if(!element)return;
@@ -84,6 +143,10 @@ export default function PdfPreview({id,workspace}:{id:string;workspace?:string})
   },[pdf,page,scale,size]);
 
   const navigate=(next:number)=>{if(pdf&&next>=1&&next<=pdf.numPages)setPage(next);};
+  const nextMatch=(direction:-1|1)=>{
+    const next=direction===1?matches.find(n=>n>page)??matches[0]:matches.findLast(n=>n<page)??matches.at(-1);
+    if(next!==undefined)navigate(next);
+  };
   const adjust=(delta:number)=>setScale(value=>Math.min(4,Math.max(.25,(typeof value==='number'?value:1)+delta)));
   return <section className="next-pdf" aria-label="PDF preview">
     <div className="image-preview-tools" role="toolbar" aria-label="PDF controls">
@@ -95,7 +158,22 @@ export default function PdfPreview({id,workspace}:{id:string;workspace?:string})
       <button aria-pressed={scale===1} onClick={()=>setScale(1)}>Actual size</button>
       <button aria-label="Zoom out" onClick={()=>adjust(-.25)}>−</button>
       <button aria-label="Zoom in" onClick={()=>adjust(.25)}>+</button>
+      <button ref={findButton} aria-expanded={finding} disabled={!pdf} onClick={()=>finding?closeFind():setFinding(true)}>Find in PDF</button>
     </div>
+    {finding&&<form className="image-preview-tools" onSubmit={event=>{
+      event.preventDefault();
+      const value=findInput.current?.value.trim()??'';
+      if(value&&value===query)nextMatch(1);
+      else if(value)setQuery(value);
+      else{setQuery('');setMatches([]);setFindStatus('');}
+    }}>
+      <input ref={findInput} type="search" aria-label="Find PDF text" maxLength={160}/>
+      <button type="submit">Find</button>
+      <button type="button" disabled={!matches.length} onClick={()=>nextMatch(-1)}>Previous match</button>
+      <button type="button" disabled={!matches.length} onClick={()=>nextMatch(1)}>Next match</button>
+      <button type="button" onClick={closeFind}>Close Find</button>
+      {findStatus&&<span role="status">{findStatus}</span>}
+    </form>}
     {passwordRequest&&<form className="image-preview-tools" onSubmit={event=>{
       event.preventDefault();
       const input=event.currentTarget.elements.namedItem('password');
