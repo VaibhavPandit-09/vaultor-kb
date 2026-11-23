@@ -511,7 +511,7 @@ pub(super) fn word_inventory(workspace: &Workspace, manifest: &mut Manifest) -> 
     Ok(())
 }
 
-struct WordImage {
+struct ExportImage {
     bytes: Vec<u8>,
     extension: &'static str,
     width: u32,
@@ -519,17 +519,18 @@ struct WordImage {
 }
 
 #[derive(Default)]
-struct WordPictures {
-    assets: BTreeMap<String, WordImage>,
+struct ExportPictures {
+    assets: BTreeMap<String, ExportImage>,
     placements: usize,
 }
 
-impl WordPictures {
-    fn load(root: &str, content: &Value, originals: &[Original], ctx: &Context) -> Result<Self, String> {
+impl ExportPictures {
+    fn load(root: &str, content: &Value, originals: &[Original], ctx: &Context, pdf: bool) -> Result<Self, String> {
         let mut ids = HashSet::new();
         image_dependencies(content, &mut ids);
         let mut pictures = Self::default();
         let mut total = 0;
+        let mut decoded_pixels = 0;
         for original in originals.iter().filter(|file| file.kind == "file" && ids.contains(file.id.as_str())) {
             ctx.check()?;
             if original.bytes > 20 * 1024 * 1024 || total + original.bytes > 60 * 1024 * 1024 {
@@ -539,19 +540,32 @@ impl WordPictures {
             let mut bytes = Vec::new();
             let (size, hash) = copy_hash(plain_file(&path)?, &mut bytes, original.bytes, |_| ctx.check())?;
             if size != original.bytes || hash != original.hash {
-                return Err("Word image bytes failed integrity verification".into());
+                return Err("Export image bytes failed integrity verification".into());
             }
             let Some((mime, width, height)) = crate::media::image_type(&bytes) else { continue };
+            let pixels = u64::from(width) * u64::from(height);
+            if pixels == 0 || pixels > 40_000_000 {
+                continue;
+            }
             let extension = match mime {
                 "image/png" => "png",
                 "image/jpeg" => "jpg",
+                "image/gif" | "image/webp" if pdf => {
+                    let format = if mime == "image/gif" { image::ImageFormat::Gif } else { image::ImageFormat::WebP };
+                    let decoded = image::load_from_memory_with_format(&bytes, format).map_err(error)?;
+                    let mut output = std::io::Cursor::new(Vec::new());
+                    decoded.write_to(&mut output, image::ImageFormat::Png).map_err(error)?;
+                    bytes = output.into_inner();
+                    "png"
+                }
                 _ => continue,
             };
-            if width == 0 || height == 0 || u64::from(width) * u64::from(height) > 40_000_000 {
-                continue;
+            if pdf && (decoded_pixels + pixels > 80_000_000 || total + bytes.len() as u64 > 60 * 1024 * 1024) {
+                return Err("PDF images exceed the export layout budget".into());
             }
-            total += original.bytes;
-            pictures.assets.insert(original.id.clone(), WordImage { bytes, extension, width, height });
+            decoded_pixels += pixels;
+            total += bytes.len() as u64;
+            pictures.assets.insert(original.id.clone(), ExportImage { bytes, extension, width, height });
         }
         Ok(pictures)
     }
@@ -586,7 +600,7 @@ impl WordPictures {
     }
 }
 
-fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pictures: &mut WordPictures) -> Result<String, String> {
+fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pictures: &mut ExportPictures) -> Result<String, String> {
     let kind = node["type"].as_str().ok_or("Invalid editor node")?;
     let attrs = &node["attrs"];
     let children = node["content"].as_array().map(Vec::as_slice).unwrap_or(&[]);
@@ -730,7 +744,7 @@ fn word_node(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pi
     })
 }
 
-fn word_node_children(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pictures: &mut WordPictures) -> Result<String, String> {
+fn word_node_children(node: &Value, issues: &mut Vec<String>, links: &mut Vec<String>, pictures: &mut ExportPictures) -> Result<String, String> {
     node["content"].as_array().into_iter().flatten()
         .map(|child| word_node(child, issues, links, pictures))
         .collect::<Result<Vec<_>, _>>().map(|children| children.concat())
@@ -753,7 +767,7 @@ fn mixed_table_merges_keep_continuations_and_escape_rich_cells() {
     assert!(markdown.contains("colspan=\"2\" rowspan=\"2\""));
     assert!(markdown.contains("<strong>First &lt;safe&gt;</strong>"));
     assert_eq!(markdown.matches("<td ").count(), 3);
-    let word = word_node(&table, &mut vec![], &mut vec![], &mut WordPictures::default()).unwrap();
+    let word = word_node(&table, &mut vec![], &mut vec![], &mut ExportPictures::default()).unwrap();
     assert!(word.contains("<w:gridSpan w:val=\"2\"/><w:vMerge w:val=\"restart\"/>"));
     assert!(word.contains("<w:gridSpan w:val=\"2\"/><w:vMerge/>"));
     assert!(word.find("<w:vMerge/>").unwrap() < word.find("Below").unwrap());
@@ -764,7 +778,7 @@ fn mixed_table_merges_keep_continuations_and_escape_rich_cells() {
 
 pub(super) fn docx(file: File, content: &Value, issues: &mut Vec<String>, root: &str, originals: &[Original], ctx: &Context) -> Result<(), String> {
     let mut links=Vec::new();
-    let mut pictures = WordPictures::load(root, content, originals, ctx)?;
+    let mut pictures = ExportPictures::load(root, content, originals, ctx, false)?;
     let body = word_node(content, issues,&mut links,&mut pictures)?;
     let document = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -802,51 +816,5 @@ pub(super) fn docx(file: File, content: &Value, issues: &mut Vec<String>, root: 
     output.finish().map_err(error)?.sync_all().map_err(error)
 }
 
-pub(super) fn pdf(
-    mut file: File,
-    title: &str,
-    content: &Value,
-    issues: &mut Vec<String>,
-    ctx: &mut Context,
-) -> Result<(), String> {
-    use pdf_writer::{Content, Finish, Name, Pdf, Rect, Ref, Str};
-    let text = render_document(content, false, &HashMap::new(), issues)?;
-    let display = format!("{title}\n\n{}", text.trim_end()).replace('\t', "    ");
-    if issues.len() < 100 {
-        issues.push("PDF uses a text layout. Word and Markdown preserve more formatting.".into());
-    }
-    let mut pdf = Pdf::new();
-    let pages = Ref::new(2);
-    let font = Ref::new(3);
-    let face = Name(b"F1");
-    pdf.catalog(Ref::new(1)).pages(pages);
-    let lines = pdf_font::encode(&mut pdf, font, &display, ctx)?;
-    let count = lines.len().div_ceil(54) as i32;
-    pdf.pages(pages)
-        .kids((0..count).map(|i| Ref::new(9 + 2 * i)))
-        .count(count);
-    for (index, lines) in lines.chunks(54).enumerate() {
-        ctx.check()?;
-        let page = Ref::new(9 + 2 * index as i32);
-        let stream = Ref::new(10 + 2 * index as i32);
-        let mut entry = pdf.page(page);
-        entry
-            .parent(pages)
-            .media_box(Rect::new(0.0, 0.0, 595.0, 842.0))
-            .contents(stream);
-        entry.resources().fonts().pair(face, font);
-        entry.finish();
-        let mut text = Content::new();
-        text.begin_text()
-            .set_font(face, 10.0)
-            .set_leading(14.0)
-            .next_line(52.0, 790.0);
-        for line in lines {
-            text.show(Str(line)).next_line_using_leading();
-        }
-        text.end_text();
-        pdf.stream(stream, &text.finish());
-    }
-    file.write_all(&pdf.finish()).map_err(error)?;
-    file.sync_all().map_err(error)
-}
+mod pdf;
+pub(super) use pdf::render as pdf;

@@ -18,6 +18,7 @@ pub enum Request {
     Sources,
     Archived { workspace: String, after: Option<String> },
     RebindDescriptor { workspace: String, id: String, path: String },
+    RebindDescriptors { workspace: String, ids: Vec<String>, path: String },
     Web {
         url: String,
     },
@@ -126,7 +127,7 @@ pub fn initialize(db: &rusqlite::Connection) -> Result<(), String> {
 }
 #[cfg(windows)]
 impl Workspace {
-    fn authorize_linked_root(&mut self, path:String, descriptor:Option<(String,String,String)>) -> Result<Value,String> {
+    fn authorize_linked_root(&mut self, path:String, descriptors: Vec<(String, String, String)>) -> Result<Value,String> {
         let pins = native::pin(Path::new(&path))?;
         let physical = native::physical(pins.last().unwrap())?;
         let identity = native::identity(pins.last().unwrap())?;
@@ -180,9 +181,11 @@ impl Workspace {
             return Err("Up to eight linked folders are supported".into());
         }
         let id = chosen.map(|(id, _)| id).unwrap_or_else(|| Uuid::new_v4().to_string());
-        let observed = if let Some((_, relative, expected)) = &descriptor {
-            let file = native::read_indexable(&physical, &identity, relative)?;
-            if file.revision != *expected || inventory::path_key(&physical, &file)? != relative.to_lowercase() {
+        let mut observed = Vec::with_capacity(descriptors.len());
+        let mut identities = std::collections::HashSet::new();
+        for (resource, relative, expected) in descriptors {
+            let mut file = native::read_indexable(&physical, &identity, &relative)?;
+            if file.revision != expected || inventory::path_key(&physical, &file)? != relative.to_lowercase() {
                 return Err("The selected source has a different path or revision; archived evidence was retained".into());
             }
             if native::info(&file.file)?.nNumberOfLinks != 1 || file.reason.is_some() {
@@ -195,17 +198,19 @@ impl Workspace {
             if exists {
                 return Err("The chosen file already has a local linked identity; archived identity remains inactive".into());
             }
-            Some(file)
-        } else {
-            None
-        };
+            if !identities.insert(file.id.clone()) {
+                return Err("Selected archived references identify the same local file".into());
+            }
+            file.bytes = Vec::new();
+            observed.push((resource, relative, file));
+        }
         let tx = self.db.transaction().map_err(error)?;
         tx.execute("INSERT INTO linked_sources VALUES(?1,?2,?3,?4,1) ON CONFLICT(id) DO UPDATE SET path=excluded.path,display_path=excluded.display_path,active=1",params![id,physical.to_string_lossy(),path,identity]).map_err(error)?;
         tx.execute("INSERT INTO linked_grants VALUES(?1,?2) ON CONFLICT(source_id) DO UPDATE SET epoch=excluded.epoch",
             params![id,Uuid::new_v4().to_string()]).map_err(error)?;
         tx.execute("UPDATE search_generation SET value=value+1", [])
             .map_err(error)?;
-        if let (Some((resource,relative,_)),Some(file)) = (descriptor,observed.as_ref()) {
+        for (resource, relative, file) in observed {
             let document = resource.strip_prefix("linked:").ok_or("Invalid archived linked identity")?;
             let title = file.path.file_name().and_then(|s|s.to_str()).ok_or("Invalid linked filename")?;
             tx.execute("INSERT INTO resources(id,title,content) VALUES(?1,?2,'{}')
@@ -219,6 +224,30 @@ impl Workspace {
         }
         tx.commit().map_err(error)?;
         Ok(json!({"id":id,"path":path}))
+    }
+    fn rebind_descriptors(&mut self, workspace: &str, ids: Vec<String>, path: String) -> Result<Value, String> {
+        if !self.is_path(Path::new(workspace)) {
+            return Err("Workspace changed; rebinding refused".into());
+        }
+        if ids.is_empty() || ids.len() > 50 {
+            return Err("Select one to 50 archived references".into());
+        }
+        let mut unique = std::collections::HashSet::new();
+        let mut descriptors = Vec::with_capacity(ids.len());
+        for id in ids {
+            if !unique.insert(id.clone()) {
+                return Err("Select each archived reference once".into());
+            }
+            let (relative, revision): (String, String) = self.db.query_row(
+                "SELECT path,revision FROM portable_linked_descriptors WHERE id=?1", [&id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            ).optional().map_err(error)?.ok_or("Archived linked reference is unavailable")?;
+            if !inventory::is_indexable(Path::new(&relative)) {
+                return Err("Archived reference is not a supported linked file".into());
+            }
+            descriptors.push((id, relative, revision));
+        }
+        self.authorize_linked_root(path, descriptors)
     }
     fn linked_root(&self, id: &str) -> Result<(PathBuf, String), String> {
         self.db
@@ -389,7 +418,7 @@ impl Workspace {
                     .map_err(error)?;
                 Ok(json!(rows))
             }
-            Request::Register { path } => self.authorize_linked_root(path,None),
+            Request::Register { path } => self.authorize_linked_root(path, Vec::new()),
             Request::Archived { workspace, after } => {
                 if !self.is_path(Path::new(&workspace)) { return Err("Workspace changed; request refused".into()); }
                 let mut query=self.db.prepare("SELECT id,title,label,path FROM portable_linked_descriptors
@@ -400,15 +429,10 @@ impl Workspace {
                 let next=if items.len()>50 {items.pop();items.last().map(|item|item["id"].clone())} else {None};
                 Ok(json!({"items":items,"next":next}))
             }
-            Request::RebindDescriptor { workspace,id,path } => {
-                if !self.is_path(Path::new(&workspace)) { return Err("Workspace changed; rebinding refused".into()); }
-                let (relative,revision):(String,String)=self.db.query_row(
-                    "SELECT path,revision FROM portable_linked_descriptors WHERE id=?1",[&id],
-                    |row|Ok((row.get(0)?,row.get(1)?)),
-                ).optional().map_err(error)?.ok_or("Archived linked reference is unavailable")?;
-                if !inventory::is_indexable(Path::new(&relative)) { return Err("Archived reference is not a supported linked file".into()); }
-                self.authorize_linked_root(path,Some((id,relative,revision)))
-            }
+            Request::RebindDescriptor { workspace,id,path } =>
+                self.rebind_descriptors(&workspace, vec![id], path),
+            Request::RebindDescriptors { workspace,ids,path } =>
+                self.rebind_descriptors(&workspace, ids, path),
             Request::Remove { source } => {
                 let tx = self.db.transaction().map_err(error)?;
                 tx.execute("UPDATE linked_sources SET active=0 WHERE id=?1", [&source])

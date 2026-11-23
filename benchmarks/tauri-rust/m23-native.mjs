@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {mkdir,readFile,stat,writeFile} from 'node:fs/promises';
+import {mkdir,readFile,rename,stat,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 
 export async function qualifyM23({evaluate,wait,record,report,folder,fixture}) {
@@ -150,4 +150,113 @@ export async function qualifyM23({evaluate,wait,record,report,folder,fixture}) {
     'Independent managed duplication and 32 MiB checked native copy/cancellation',
     'NTFS descriptor mismatch refusal, exact binding, membership and external bytes',
     'Pinned order projection after an anchored move');
+  if(process.argv.includes('--m26-deep'))await qualifyDeep({ws,linked,job,wait,folder,restoredScope,fixture,owner,file,report,transfer});
+}
+
+
+async function qualifyDeep({ws,linked,job,wait,folder,restoredScope,fixture,owner,file,report,transfer}) {
+  const external=join(folder,'deep-linked'), bad=join(folder,'deep-mismatch');
+  const base='level-1/level-2';
+  const hubPath=base+'/notes/Hub.md', oldPath=base+'/assets/Draft Target.md', targetPath=base+'/assets/Final Target.md';
+  const hubText='# Hub\r\n\r\n[open target][target] and [again][target].\r\n\r\n![Chart](../assets/chart.png)\r\n\r\n[target]: ../assets/Final%20Target.md#point\r\n';
+  const targetText='# Point\r\n\r\nArchive target with original line endings.\r\n';
+  const png=Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010804000000b51c0c020000000b4944415478da63fcff1f0003030200efa2a75b0000000049454e44ae426082','hex');
+  for(const root of [external,bad]){
+    await mkdir(join(root,base,'notes'),{recursive:true});
+    await mkdir(join(root,base,'assets'),{recursive:true});
+    await writeFile(join(root,hubPath),hubText);
+  }
+  await writeFile(join(bad,targetPath),'# A different file');
+  await writeFile(join(external,oldPath),targetText);
+  await writeFile(join(external,base,'assets','chart.png'),png);
+  const source=await linked({op:'register',path:external});
+  const old=await linked({op:'identify',source:source.id,path:oldPath});
+  await rename(join(external,oldPath),join(external,targetPath));
+  await job('m26-deep-index',{op:'indexLinked',source:source.id});
+  const hub=await linked({op:'identify',source:source.id,path:hubPath});
+  const target=await linked({op:'identify',source:source.id,path:targetPath});
+  assert.equal(target.id,old.id);
+  const parent=await ws({kind:'createCollection',name:'Deep parent',parentId:null});
+  const nested=await ws({kind:'createCollection',name:'Deep child',parentId:parent.id});
+  for(const add of [parent.id,nested.id])await ws({kind:'membership',id:target.id,add,remove:null});
+  const tag=await ws({kind:'organization',request:{op:'tag',id:null,name:'Deep portability',color:'#336699'}});
+  await ws({kind:'organization',request:{op:'tagging',ids:[target.id],tag:tag.id,add:true}});
+  await ws({kind:'organization',request:{op:'pin',ids:[target.id],value:true}});
+  const note=await ws({kind:'createNote',title:'Deep managed reference',collection:nested.id});
+  const reference={type:'doc',content:[{type:'paragraph',content:[{type:'resourceLink',attrs:{resourceId:target.id,label:'Deep target',type:'note'}}]}]};
+  await ws({kind:'save',id:note.id,revision:note.revision,title:'Deep managed reference',content:reference});
+  const reviewList=(path,resourceId)=>ws({kind:'reviews',path,request:{op:'list',status:'dismissed',resourceId,page:0,size:50}});
+  const review=(await reviewList(restoredScope,fixture.resource)).items.find(row=>row.id===owner.id);
+  assert(review?.imported);
+  const assertEvidence=actual=>{
+    for(const key of ['author','comment','quote','context','locator','createdAt','updatedAt','baseRevision','status'])assert.deepEqual(actual[key],review[key],key);
+  };
+  const verifyLinks=async(h,t)=>{
+    const rel=id=>linked({op:'relationships',id:id.slice(7)});
+    assert((await rel(h)).outgoing.some(row=>row.id===t&&row.occurrences===2));
+    assert((await rel(t)).incoming.some(row=>row.id===h&&row.occurrences===2));
+    assert.equal((await linked({op:'follow',id:h.slice(7),href:'../assets/Final%20Target.md#point'})).id,t);
+    const asset=await linked({op:'asset',id:h.slice(7),href:'../assets/chart.png'});
+    assert.deepEqual(Buffer.from(asset.bytes),png);
+  };
+  await verifyLinks(hub.id,target.id);
+
+  const path=join(folder,'deep.vaultor');
+  await job('m26-deep-archive',{op:'archive',destination:path});
+  const preview=await transfer({op:'inspectArchive',source:path});
+  assert.equal(preview.linkedDescriptors,3);
+  const destination=join(folder,'deep-restored');
+  await job('m26-deep-restore',{op:'restore',source:path,destination,manifestHash:preview.manifestHash});
+  const scope=(await ws({kind:'open',path:destination})).path;
+  const descriptors=await linked({op:'archived',workspace:scope,after:null});
+  assert(descriptors.items.some(row=>row.id===target.id&&row.path===targetPath));
+  assert.equal((await linked({op:'sources'})).length,0);
+  const rebind=(root,active,ids)=>linked({op:'rebindDescriptors',workspace:active,ids,path:root});
+  await assert.rejects(rebind(bad,scope,[hub.id,target.id]),/different path or revision/i);
+  assert.equal((await linked({op:'sources'})).length,0);
+  assert.equal((await linked({op:'archived',workspace:scope,after:null})).items.length,3);
+  const rebound=await rebind(external,scope,[hub.id,target.id]);
+  await job('m26-deep-restored-index',{op:'indexLinked',source:rebound.id});
+  await verifyLinks(hub.id,target.id);
+  assert.deepEqual((await ws({kind:'memberships',id:target.id})).members.sort(),[parent.id,nested.id].sort());
+  assert.deepEqual((await ws({kind:'read',id:note.id})).content,reference);
+  assertEvidence((await reviewList(scope,fixture.resource)).items.find(row=>row.id===owner.id));
+  const original=await readFile(join(destination,'managed',file.id+'.bin'));
+  assert.equal(original.length,32*1024*1024);
+  assert(original.every(byte=>byte===65));
+
+  const mergeDest=join(folder,'deep-merge');
+  const mergeScope=(await ws({kind:'new',path:mergeDest})).path;
+  const parked=await ws({kind:'createNote',title:'Destination draft',collection:null});
+  await ws({kind:'draft',id:parked.id,baseRevision:parked.revision,token:'deep-draft',sequence:1,title:'Parked destination',content:{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Keep this draft'}]}]}});
+  const merge={op:'merge',source:path,manifestHash:preview.manifestHash};
+  assert.equal((await job('m26-deep-merge',merge)).reused,false);
+  assert.equal((await job('m26-deep-merge-retry',merge)).reused,true);
+  const mapped=(await linked({op:'archived',workspace:mergeScope,after:null})).items;
+  const mappedHub=mapped.find(row=>row.path===hubPath), mappedTarget=mapped.find(row=>row.path===targetPath);
+  assert.notEqual(mappedTarget.id,target.id);
+  assert.equal((await linked({op:'sources'})).length,0);
+  const merged=(await ws({kind:'list',collection:null,limit:100})).items;
+  const mappedNote=merged.find(row=>row.title==='Deep managed reference');
+  assert.notEqual(mappedNote.id,note.id);
+  assert.equal((await ws({kind:'read',id:mappedNote.id})).content.content[0].content[0].attrs.resourceId,mappedTarget.id);
+  const mappedReview=(await reviewList(mergeScope,null)).items.find(row=>row.comment===review.comment);
+  assertEvidence(mappedReview);
+  assert.notEqual(mappedReview.id,owner.id);
+  assert.notEqual(mappedReview.resourceId,fixture.resource);
+  assert.equal((await ws({kind:'read',id:mappedReview.resourceId})).title,'M23 renamed fixture');
+  assert.equal((await ws({kind:'readDraft',id:parked.id})).title,'Parked destination');
+  const mappedFile=merged.find(row=>row.kind==='file'&&row.title==='managed.bin');
+  assert.notEqual(mappedFile.id,file.id);
+  assert.deepEqual(await readFile(join(mergeDest,'managed',mappedFile.id+'.bin')),original);
+  const mergedGrant=await rebind(external,mergeScope,[mappedHub.id,mappedTarget.id]);
+  await job('m26-deep-merged-index',{op:'indexLinked',source:mergedGrant.id});
+  await verifyLinks(mappedHub.id,mappedTarget.id);
+  const state=await ws({kind:'snapshot'});
+  const membership=(await ws({kind:'memberships',id:mappedTarget.id})).members;
+  assert.deepEqual(state.collections.filter(row=>membership.includes(row.id)).map(row=>row.name).sort(),['Deep child','Deep parent']);
+  assert.deepEqual(await readFile(join(external,hubPath)),Buffer.from(hubText));
+  assert.deepEqual(await readFile(join(external,targetPath)),Buffer.from(targetText));
+  assert.deepEqual(await readFile(join(external,base,'assets','chart.png')),png);
+  report.checks.push('Deep archive preserved exact originals, rename identity, reference-style/encoded links and repeated backlinks, raster bytes, nested memberships, Review evidence and a parked destination draft. Atomic group rebinding refused a mismatch and succeeded after Restore and Merge. Merge replay reused its receipt.');
 }

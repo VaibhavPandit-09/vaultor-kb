@@ -525,6 +525,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-23 — Next M26-B rich export and transfer recovery
+
+The saved-note PDF exporter uses the Rust Typst engine over quoted document content and a virtual resolver containing only verified managed assets. It shares the Word image inventory and table span validation. Restore and Merge journal their staging identities in the Activity profile. Merge publishes managed originals under durable reservations and commits its receipt with the imported rows. Archived linked references can be selected and rebound atomically to one locally chosen source root. Qualification is tracked in [M26-B](plans/VAULTOR-NEXT-M26-B.md).
+
 ### 2026-11-23 — Next M26-B PDF search, preview and recovery
 
 Added bounded managed/linked PDF extraction and FTS5 publication, read-only linked PDF preview, and Find within PDF previews. The original parser-process and encrypted-file boundaries carry over. Browser organization now signals scoped desktop refresh after committed changes without publishing drafts. Ordinary open refuses internal restore staging directories. The Android offline-export assertion now follows the current control label and still checks the native request. [M26-B qualification](plans/VAULTOR-NEXT-M26-B.md) records validation and unclosed gates.

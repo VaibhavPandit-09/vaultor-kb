@@ -6,7 +6,7 @@ export type LinkedInspection={current:{identity?:string;revision?:string;text?:s
 export type LinkedDocument={id:string;documentId:string;sourceId:string;path:string;identity:string;revision:string;title:string;base:string;content:JSONContent;editable:boolean;reason:string|null;frontmatter:string;draft:{token:string;sequence:number;state?:string;error?:string|null}|null;current:LinkedInspection|null};
 export type LinkedDraftSummary={id:string;path:string;sequence:number;status:string|null};
 export type LinkedRequest=
- |{op:'archived';workspace:string;after?:string|null}|{op:'rebindDescriptor';workspace:string;id:string;path:string}
+ |{op:'archived';workspace:string;after?:string|null}|{op:'rebindDescriptor';workspace:string;id:string;path:string}|{op:'rebindDescriptors';workspace:string;ids:string[];path:string}
  |{op:'web';url:string}|{op:'sources'}|{op:'register';path:string}|{op:'remove';source:string}|{op:'directory';source:string;path:string;after?:string|null}|{op:'open';source:string;path:string}|{op:'follow';id:string;href:string}
  |{op:'identify';source:string;path:string}|{op:'openId'|'location'|'relationships'|'check'|'pdfInfo';id:string}|{op:'external';id:string;reveal:boolean}|{op:'asset';id:string;href:string}
  |{op:'protect';id:string;revision:string;base:string;content:JSONContent;token:string;sequence:number}|{op:'save';id:string;token:string;sequence:number}

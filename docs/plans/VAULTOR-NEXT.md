@@ -751,6 +751,8 @@ Local raw reports under `benchmarks/tauri-rust/raw/` are `m26a4-docker.json` and
 
 ### M26-B — Engineering and acceptance
 
+The closure change adds the paged Rust PDF renderer, receipt-backed transfer stage recovery, Merge interruption coverage and atomic same-root binding of selected archived references. The [qualification record](VAULTOR-NEXT-M26-B.md) owns exact candidate and acceptance evidence.
+
 See the [engineering candidate and qualification record](VAULTOR-NEXT-M26-B.md). M26-C is limited to separately authorized production preparation and publication after functional and user acceptance.
 
 - **Original functional parity:** Preserve Restore as New and Merge integrity, legacy archive compatibility and owner-reviewed mobile ZIP intake, browser creation and organization, original export coverage and restart fidelity, PDF functionality and linked-occurrence navigation.

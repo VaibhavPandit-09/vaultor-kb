@@ -217,7 +217,7 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
     assert(image);
     content.content.find(node=>node.type==='image').attrs.resourceId=image.id;
     content.content.find(node=>node.content?.[0]?.type==='resourceLink').content[0].attrs.resourceId='8f385db0-7aec-4e3a-b30f-5e28dd0d144a';
-    const fixture = await workspace({kind:'createNote',title:'Original renderer comparison',collection:null});
+    const fixture = await workspace({kind:'createNote',title:'Export review',collection:null});
     await workspace({kind:'save',id:fixture.id,revision:fixture.revision,title:fixture.title,content});
     for (const format of ['markdown','markdownZip','docx','pdf']) {
       const destination=join(folder,'Original renderer '+format);

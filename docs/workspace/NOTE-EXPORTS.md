@@ -46,6 +46,10 @@ The editor inserts resource-backed image blocks through paste/drop or `/image`; 
 
 Asset snapshots default to 100 MiB total, bounded additionally by MAX_ARCHIVE_BYTES; configure MAX_NOTE_EXPORT_ASSET_BYTES to change the note limit. Tables are bounded at 500 columns, 10,000 rows and 50,000 logical cells. Invalid/out-of-bounds/overlapping spans fail the operation. Warning lists cap at 100 unique messages. Large/complex documents may take longer; progress is phase-based, not a measured rendering percentage.
 
+## Vaultor Next PDF
+
+The Rust Activity exporter uses Typst for selectable, paginated output. It uses Noto Sans with bundled regular, bold and italic faces, and Noto Sans Mono for inline code. The additional fonts are unmodified SIL OFL 1.1 files from Noto Fonts revision `ffebf8c1ee449e544955a7e813c54f9b73848eac`. Export resolves only the verified managed image snapshot. Images maintain their aspect ratio within the available page or table-cell width. GIF and WebP use a static first frame. Merged tables retain spans and can repeat suitable headers across pages. Tables over eight columns use the original row-record layout. Unsupported glyphs fail the staged export. Missing assets retain their labels and captions, and corrupt image data fails the export before publication. Activity publishes the destination only after the complete PDF is flushed.
+
 ## Dependencies and validation
 
 DOCX uses [Apache POI 5.5.1](https://poi.apache.org/download.cgi). PDF uses the maintained [OpenHTMLtoPDF community fork](https://github.com/openhtmltopdf/openhtmltopdf), pinned to 1.1.86 with PDFBox 3. Bundled Noto Sans Regular/Bold come from [Noto Fonts](https://github.com/googlefonts/noto-fonts/tree/main/hinted/ttf/NotoSans); the OFL license is included alongside the fonts in backend resources. Both Dockerfiles install fontconfig for Java font loading in Alpine. Library license notices remain in their dependency distributions.

@@ -109,6 +109,10 @@ impl Context<'_> {
     }
 }
 impl Activity {
+    pub(crate) fn staging_journal(&self) -> PathBuf {
+        self.path.with_extension("transfer-stages")
+    }
+
     pub fn new(
         path: PathBuf,
         storage: Storage,
@@ -137,6 +141,11 @@ impl Activity {
                 t.finished = Some(now());
                 t.cancellable = false;
                 t.error=Some("Interrupted by application exit. Outputs may include committed import items; review before retrying. No task is automatically replayed.".into());
+            }
+        }
+        for (id, issue) in transfers::staging::recover(&path.with_extension("transfer-stages")) {
+            if let Some(task) = tasks.iter_mut().find(|task| task.id == id) {
+                task.error = Some(format!("Staging cleanup retained data: {issue}. Review permissions and restart to retry."));
             }
         }
         Ok(Arc::new(Self {

@@ -245,6 +245,44 @@ fn unique_name(
     Err("Could not allocate a distinct name".into())
 }
 
+
+fn recover_merge_originals(storage: &Storage, root: &str, ctx: &Context<'_>) -> Result<(), String> {
+    let pending = storage.call(root, |w| {
+        let mut query = w.db.prepare(
+            "SELECT r.id,r.hash FROM transfer_reserved r JOIN transfer_merge_pending m USING(id)
+             WHERE NOT EXISTS(SELECT 1 FROM managed_originals o WHERE o.resource_id=r.id)
+             ORDER BY r.id"
+        ).map_err(error)?;
+        let rows = query.query_map([], |row| Ok((row.get::<_,String>(0)?, row.get::<_,String>(1)?)))
+            .map_err(error)?.collect::<Result<Vec<_>, _>>().map_err(error)?;
+        Ok(json!(rows))
+    })?;
+    let rows: Vec<(String, String)> = serde_json::from_value(pending).map_err(error)?;
+    for (id, hash) in rows {
+        ctx.check()?;
+        let path = original_path(Path::new(root), &id)?;
+        if verified_orphan(&path, &hash)? {
+            fs::remove_file(&path).map_err(|e|
+                format!("Cannot clean interrupted Merge original {id}: {e}. Close any program using it and retry."))?;
+        }
+        storage.call(root, move |w| {
+            let tx = w.db.transaction().map_err(error)?;
+            release_original(&tx, &id)?;
+            tx.commit().map_err(error)?;
+            Ok(Value::Null)
+        })?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+fn merge_test_boundary(point: &str) {
+    if std::env::var("VAULTOR_MERGE_KILL_BOUNDARY").as_deref() == Ok(point) {
+        let ready = std::env::var_os("VAULTOR_MERGE_FIXTURE").unwrap();
+        fs::write(PathBuf::from(ready).join("merge-boundary"), point).unwrap();
+        loop { std::thread::park(); }
+    }
+}
 pub(super) fn merge(
     storage: &Storage,
     root: &str,
@@ -252,10 +290,17 @@ pub(super) fn merge(
     expected: &str,
     ctx: &mut Context,
 ) -> Result<Value, String> {
+    let lock = super::staging::merge_lock(Path::new(root))?;
+    fs2::FileExt::try_lock_exclusive(&lock).map_err(|_| "Another Merge owns this workspace")?;
+    #[cfg(test)]
+    merge_test_boundary("before-open");
     let (mut input, mut manifest, hash, _) = archive_input::open(Path::new(source))?;
     if hash != expected {
         return Err("Archive changed since preview".into());
     }
+    #[cfg(test)]
+    merge_test_boundary("archive-opened");
+    recover_merge_originals(storage, root, ctx)?;
     let receipt = storage.call(root, {
         let hash = hash.clone();
         move |w| {
@@ -318,24 +363,30 @@ pub(super) fn merge(
             return Err("Managed destination already exists".into());
         }
     }
-    reserve_originals(
-        storage,
-        root,
-        manifest
-            .originals
-            .iter()
-            .map(|o| (o.id.clone(), o.hash.clone()))
-            .collect(),
-    )?;
+    let originals: Vec<_> = manifest.originals.iter().map(|file| (file.id.clone(), file.hash.clone())).collect();
+    storage.call(root, move |workspace| {
+        let tx = workspace.db.transaction().map_err(error)?;
+        for (id, expected) in originals {
+            reserve_original(&tx, &id, &expected)?;
+            tx.execute("INSERT INTO transfer_merge_pending VALUES(?1)", [&id]).map_err(error)?;
+        }
+        tx.commit().map_err(error)?;
+        Ok(Value::Null)
+    })?;
+    let stage = manifest.originals.first().map(|file| {
+        let path = original_path(Path::new(root), &file.id)?;
+        super::staging::Stage::create(path.parent().ok_or("Managed directory missing")?, &ctx.engine.staging_journal(), &ctx.id)
+    }).transpose()?;
     let mut bytes = 0;
     let total = manifest.originals.iter().map(|o| o.bytes).sum();
     for (index, original) in manifest.originals.iter().enumerate() {
         ctx.check()?;
         let target = original_path(Path::new(root), &original.id)?;
-        let staged = stage(target.parent().ok_or("Managed directory missing")?, false)?;
+        let staged = stage.as_ref().ok_or("Missing Merge stage")?.path.join(&original.id);
         let mut output = OpenOptions::new()
             .write(true)
-            .open(&staged.0)
+            .create_new(true)
+            .open(&staged)
             .map_err(error)?;
         input.copy(
             index,
@@ -355,13 +406,18 @@ pub(super) fn merge(
         )?;
         output.sync_all().map_err(error)?;
         drop(output);
-        publish_file(&staged.0, &target)?;
+        #[cfg(test)]
+        merge_test_boundary("original-staged");
+        publish_file(&staged, &target)?;
+        fs::remove_file(&staged).map_err(error)?;
         bytes += original.bytes;
     }
     input.finish()?;
+    #[cfg(test)]
+    merge_test_boundary("verified-before-transaction");
     ctx.check()?;
     ctx.committing();
-    storage.call(root,move |w|{
+    let receipt = storage.call(root,move |w|{
         let tx=w.db.transaction().map_err(error)?;
         tx.execute_batch("PRAGMA defer_foreign_keys=ON").map_err(error)?;
         for collection in &manifest.collections {
@@ -401,9 +457,17 @@ pub(super) fn merge(
         crate::reviews::restore(&tx, &manifest.reviews, Some(&mut ids))?;
         let receipt=json!({"resources":manifest.resources.len(),"collections":manifest.collections.len(),"files":manifest.originals.len(),"linkedDescriptors":manifest.linked.len(),"reviews":manifest.reviews.len(),"bytes":bytes,"reused":false});
         tx.execute("INSERT INTO transfer_merges VALUES(?1,?2)",params![hash,receipt.to_string()]).map_err(error)?;
+        #[cfg(test)]
+        merge_test_boundary("before-commit");
         tx.commit().map_err(error)?;
+        #[cfg(test)]
+        merge_test_boundary("after-commit");
         Ok(receipt)
-    })
+    })?;
+    #[cfg(test)]
+    merge_test_boundary("before-stage-cleanup");
+    drop(stage);
+    Ok(receipt)
 }
 
 pub(super) fn selection(

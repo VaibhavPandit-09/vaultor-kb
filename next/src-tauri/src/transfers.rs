@@ -2,8 +2,8 @@
 mod conversion;
 mod exports;
 mod archive_input;
-mod pdf_font;
 mod portable;
+pub(crate) mod staging;
 mod duplication;
 use crate::{
     activity::{Activity, Context},
@@ -445,7 +445,8 @@ pub fn initialize(db: &rusqlite::Connection) -> Result<(), String> {
           resource_id TEXT NOT NULL,PRIMARY KEY(source_key,hash,mode));
         CREATE TRIGGER IF NOT EXISTS remove_import_provenance AFTER DELETE ON resources
         BEGIN DELETE FROM import_sources WHERE resource_id=old.id; END;
-        CREATE TABLE IF NOT EXISTS transfer_reserved(id TEXT PRIMARY KEY,hash TEXT NOT NULL);\n        CREATE TABLE IF NOT EXISTS transfer_merges(hash TEXT PRIMARY KEY,receipt TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS transfer_reserved(id TEXT PRIMARY KEY,hash TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS transfer_merge_pending(id TEXT PRIMARY KEY REFERENCES transfer_reserved(id) ON DELETE CASCADE);\n        CREATE TABLE IF NOT EXISTS transfer_merges(hash TEXT PRIMARY KEY,receipt TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS portable_linked_descriptors(id TEXT PRIMARY KEY,title TEXT NOT NULL,label TEXT NOT NULL,path TEXT NOT NULL,revision TEXT NOT NULL);").map_err(error)?;
     #[cfg(feature = "host")]
     companion::initialize(db)?;
@@ -1509,16 +1510,17 @@ pub(crate) fn restore(
     if destination.exists() {
         return Err("Restore requires a new, nonexistent workspace folder".into());
     }
-    let staged = stage(
+    let staged = staging::Stage::create(
         destination.parent().ok_or("Choose a destination parent")?,
-        true,
+        &ctx.engine.staging_journal(),
+        &ctx.id,
     )?;
-    let mut w = Workspace::open_restore_stage(&staged.0)?;
+    let mut w = Workspace::open_restore_stage(&staged.path)?;
     let mut bytes = 0;
     let total = m.originals.iter().map(|o| o.bytes).sum();
     for (i, o) in m.originals.iter().enumerate() {
         ctx.check()?;
-        let target = original_path(&staged.0, &o.id)?;
+        let target = original_path(&staged.path, &o.id)?;
         fs::create_dir_all(target.parent().unwrap()).map_err(error)?;
         let mut output = OpenOptions::new()
             .write(true)
@@ -1603,7 +1605,7 @@ pub(crate) fn restore(
         Some(total),
     );
     ctx.committing();
-    publish(&staged.0, &destination)?;
+    publish(&staged.path, &destination)?;
     Ok(
         json!({"path":destination,"resources":m.resources.len(),"files":m.originals.len(),"reviews":m.reviews.len(),"bytes":bytes}),
     )
@@ -1628,7 +1630,17 @@ pub(crate) fn publish_directory(source: &Path, destination: &Path) -> Result<(),
         }
         Ok(())
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::unix::ffi::OsStrExt;
+        let from = std::ffi::CString::new(source.as_os_str().as_bytes()).map_err(error)?;
+        let to = std::ffi::CString::new(destination.as_os_str().as_bytes()).map_err(error)?;
+        if unsafe { libc::renameat2(libc::AT_FDCWD, from.as_ptr(), libc::AT_FDCWD, to.as_ptr(), libc::RENAME_NOREPLACE) } != 0 {
+            return Err(error(std::io::Error::last_os_error()));
+        }
+        Ok(())
+    }
+    #[cfg(not(any(windows, target_os = "linux")))]
     {
         fs::rename(source, destination).map_err(error)
     }
@@ -1710,7 +1722,7 @@ fn export(
         return Err("Linked exports require Windows local NTFS".into());
     }
     let zip = format == "markdownZip";
-    let word = format == "docx";
+    let rich = matches!(format, "docx" | "pdf");
     let manifest = storage.call(root, move |w| {
         if remote {
             let note = ids.first().ok_or("Select a note")?;
@@ -1723,7 +1735,7 @@ fn export(
         } else {
             snapshot(w, Some(&ids))?
         };
-        if word {
+        if rich {
             exports::word_inventory(w, &mut manifest)?;
         }
         if remote {
@@ -1776,7 +1788,7 @@ fn export(
         if !is_original {
             match format {
                 "docx" => exports::docx(out, &r.content, &mut issues, root, &m.originals, ctx)?,
-                "pdf" => exports::pdf(out, &r.title, &r.content, &mut issues, ctx)?,
+                "pdf" => exports::pdf(out, &r.title, &r.content, &mut issues, root, &m.originals, ctx)?,
                 _ => {
                     let data = exports::render_document(
                         &r.content,
@@ -1962,8 +1974,171 @@ mod tests {
                 let stage = fs::read_dir(path).unwrap().map(|entry| entry.unwrap().path())
                     .find(|candidate| candidate.is_dir() && crate::domain::is_stage_path(candidate)).unwrap();
                 assert!(Workspace::open_existing(&stage).err().unwrap().contains("staging"));
+                drop(source);
+                let stranger = path.join(format!(".vaultor-stage-{}",Uuid::new_v4()));
+                fs::create_dir(&stranger).unwrap();
+                fs::write(stranger.join("other.txt"),b"ordinary sibling").unwrap();
+                let worker=Worker::start(path.join("workspace"),None).unwrap();
+                let activity=Activity::new(path.join("activity.json"),worker.storage(), |_| {}).unwrap();
+                assert!(!stage.exists());
+                assert_eq!(fs::read(stranger.join("other.txt")).unwrap(),b"ordinary sibling");
+                activity.shutdown();
+                worker.stop();
             }
         }
+    }
+
+
+
+    #[test]
+    fn merge_publication_child() {
+        let Some(folder) = std::env::var_os("VAULTOR_MERGE_FIXTURE") else { return };
+        let path = PathBuf::from(folder);
+        let root = path.join("workspace");
+        let worker = Worker::start(root.clone(), None).unwrap();
+        let storage = worker.storage();
+        let activity = Activity::new(path.join("activity.json"), storage.clone(), |_| {}).unwrap();
+        let service = Transfers::new(storage, activity);
+        let archive = path.join("workspace.zip");
+        let (_, hash, _) = inspect_archive_details(&archive, None).unwrap();
+        service.execute(root.to_string_lossy().into_owned(), Request::Merge {
+            source: archive.to_string_lossy().into_owned(), manifest_hash: hash,
+        }).unwrap();
+        loop { std::thread::park(); }
+    }
+
+    #[test]
+    fn process_kill_merge_preserves_drafts_bytes_and_retry_identity() {
+        for (boundary, committed) in [
+            ("before-open", false), ("archive-opened", false), ("original-staged", false),
+            ("verified-before-transaction", false), ("before-commit", false),
+            ("after-commit", true), ("before-stage-cleanup", true),
+        ] {
+            let folder = tempfile::tempdir().unwrap();
+            let path = folder.path();
+            let archive = path.join("workspace.zip");
+            fs::write(&archive, include_bytes!("../fixtures/electron-workspace-v5.zip")).unwrap();
+            let (manifest, hash, _) = inspect_archive_details(&archive, None).unwrap();
+            let root = path.join("workspace");
+            let external = path.join("linked-original.md");
+            fs::write(&external, b"External bytes stay unchanged\r\n").unwrap();
+            let mut w = Workspace::open(&root).unwrap();
+            let note = w.execute(DomainRequest::CreateNote { title:"Protected source".into(), collection:None }).unwrap();
+            let id = note["id"].as_str().unwrap();
+            w.db.execute(
+                "INSERT INTO drafts(resource_id,base_revision,token,sequence,title,content) VALUES(?1,1,?2,1,'Parked draft',?3)",
+                params![id,Uuid::new_v4().to_string(), r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Private draft"}]}]}"#],
+            ).unwrap();
+            drop(w);
+            let mut child = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "transfers::tests::merge_publication_child"])
+                .env("VAULTOR_MERGE_FIXTURE", path)
+                .env("VAULTOR_MERGE_KILL_BOUNDARY",boundary)
+                .spawn().unwrap();
+            let ready=path.join("merge-boundary");
+            let deadline=Instant::now()+Duration::from_secs(20);
+            while !ready.is_file() && Instant::now()<deadline {
+                if child.try_wait().unwrap().is_some() { break; }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            let _ = child.kill();
+            child.wait().unwrap();
+            assert_eq!(fs::read_to_string(ready).unwrap_or_default(), boundary);
+            let worker=Worker::start(root.clone(), None).unwrap();
+            let storage=worker.storage();
+            let activity=Activity::new(path.join("activity.json"),storage.clone(), |_| {}).unwrap();
+            assert!(activity.list().iter().all(|t| t.state=="interrupted"));
+            let service=Transfers::new(storage.clone(),activity);
+            let root_str=root.to_string_lossy().into_owned();
+            let originals = storage.call(&root_str, |w| {
+                let integrity: String=w.db.query_row("PRAGMA integrity_check", [], |r|r.get(0)).map_err(error)?;
+                assert_eq!(integrity, "ok");
+                assert_eq!(w.db.query_row("SELECT count(*) FROM drafts WHERE title='Parked draft' AND content LIKE '%Private draft%'", [], |r|r.get::<_,i64>(0)).map_err(error)?, 1);
+                Ok(json!(w.db.query_row("SELECT count(*) FROM managed_originals", [], |r|r.get::<_,u64>(0)).map_err(error)?))
+            }).unwrap();
+            assert_eq!(originals.as_u64().unwrap(), if committed {manifest.originals.len() as u64} else {0});
+            let request=|| Request::Merge{source:archive.to_string_lossy().into_owned(),manifest_hash:hash.clone()};
+            let retry=|| {
+                let id=service.execute(root_str.clone(),request()).unwrap()["id"].as_str().unwrap().to_owned();
+                for _ in 0..3000 {
+                    if let Some(t)=service.activity.list().into_iter().find(|t|t.id==id&&t.finished.is_some()) {
+                        assert_eq!(t.state,"completed","{boundary}: {:?}",t.error);
+                        return t.result.unwrap();
+                    }
+                    std::thread::sleep(Duration::from_millis(5));
+                }
+                panic!("Merge retry timed out at {boundary}");
+            };
+            assert_eq!(retry()["reused"], committed);
+            assert_eq!(retry()["reused"], true);
+            storage.call(&root_str,move |w| {
+                let id: String=w.db.query_row("SELECT resource_id FROM managed_originals", [], |r|r.get(0)).map_err(error)?;
+                assert_eq!(fs::read(original_path(&w.root,&id)?).map_err(error)?,b"unchanged-original");
+                assert_eq!(w.db.query_row("SELECT count(*) FROM transfer_merge_pending",[],|r|r.get::<_,i64>(0)).map_err(error)?,0);
+                assert_eq!(w.db.query_row("SELECT count(*) FROM transfer_merges",[],|r|r.get::<_,i64>(0)).map_err(error)?,1);
+                assert_eq!(w.db.query_row("SELECT count(*) FROM drafts",[],|r|r.get::<_,i64>(0)).map_err(error)?,1);
+                Ok(Value::Null)
+            }).unwrap();
+            assert_eq!(fs::read(external).unwrap(),b"External bytes stay unchanged\r\n");
+            assert_eq!(fs::read_dir(root.join("managed")).unwrap().count(),1);
+            service.activity.shutdown();
+            worker.stop();
+        }
+    }
+
+    #[test]
+    fn rich_pdf_embeds_picture_links_and_multipage_table() {
+        let h = Harness::new();
+        let picture = h.temp.path().join("chart.png");
+        let png = [
+            137u8,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,4,0,0,0,
+            181,28,12,2,0,0,0,11,73,68,65,84,120,218,99,252,255,31,0,3,3,2,0,239,162,167,91,
+            0,0,0,0,73,69,78,68,174,66,96,130
+        ];
+        fs::write(&picture, png).unwrap();
+        let imported = h.task(Request::Import {token:h.review(&picture,false),separate:false});
+        assert_eq!(imported.state, "completed", "{:?}", imported.error);
+        let id = h.worker.storage().call(&h.root, |w| {
+            let image: String = w.db.query_row("SELECT resource_id FROM managed_originals", [], |r|r.get(0)).map_err(error)?;
+            let text = |value: &str| json!({"type":"paragraph","content":[{"type":"text","text":value}]});
+            let cell = |kind: &str, value: &str, colspan, rowspan| json!({"type":kind,"attrs":{"colspan":colspan,"rowspan":rowspan},"content":[text(value)]});
+            let mut rows = vec![
+                json!({"type":"tableRow","content":[cell("tableHeader","Allocation",2,1),cell("tableHeader","Backlog",1,1)]}),
+                json!({"type":"tableRow","content":[cell("tableCell","Merged from above",1,2),cell("tableCell","Current",1,1),cell("tableCell","Remaining",1,1)]}),
+                json!({"type":"tableRow","content":[cell("tableCell","Following",1,1),cell("tableCell","Completed",1,1)]})
+            ];
+            for n in 0..75 {
+                rows.push(json!({"type":"tableRow","content":[cell("tableCell",&format!("Named row {n:02}"),1,1),
+                    cell("tableCell","A long line of words that should wrap naturally in its column",1,1),
+                    cell("tableCell","Short cell",1,1)]}));
+            }
+            let content = json!({"type":"doc","content":[
+                {"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Résumé and Greek α β"}]},
+                {"type":"paragraph","content":[{"type":"text","text":"Bold italic","marks":[{"type":"bold"},{"type":"italic"}]},
+                  {"type":"text","text":" Read the guide","marks":[{"type":"link","attrs":{"href":"https://example.com/guide"}}]}]},
+                {"type":"image","attrs":{"resourceId":image,"alt":"Chart","caption":"Managed chart caption","width":30}},
+                {"type":"table","content":rows}
+            ]});
+            let note = w.execute(DomainRequest::CreateNote {title:"Export review".into(),collection:None})?;
+            let id = note["id"].as_str().unwrap().to_owned();
+            w.execute(DomainRequest::Save {id:id.clone(),revision:note["revision"].as_i64().unwrap(),title:"Export review".into(),content,proof:None})?;
+            Ok(json!(id))
+        }).unwrap().as_str().unwrap().to_owned();
+        let path = h.temp.path().join("pdf");
+        let result = h.task(Request::Export {ids:vec![id.clone()],destination:path.to_string_lossy().into_owned(),format:"pdf".into()});
+        assert_eq!(result.state, "completed", "{:?}", result.error);
+        let doc = lopdf::Document::load(path.join(format!("{id}-Export review.pdf"))).unwrap();
+        let pages: Vec<_> = doc.get_pages().keys().copied().collect();
+        assert!(pages.len() > 2);
+        let extracted = doc.extract_text(&pages).unwrap().split_whitespace().collect::<Vec<_>>().join(" ");
+        for phrase in ["Résumé and Greek α β","Bold italic","Managed chart caption","Merged from above","Named row 74"] {
+            assert!(extracted.contains(phrase), "{phrase}: {extracted}");
+        }
+        assert!(extracted.matches("Allocation").count() >= pages.len() - 1);
+        assert!(doc.objects.values().any(|object| object.as_stream().is_ok_and(|s|
+            s.dict.get(b"Subtype").and_then(|value| value.as_name()).is_ok_and(|value| value==b"Image"))));
+        assert!(doc.objects.values().any(|object| object.as_dict().is_ok_and(|d|
+            d.get(b"Subtype").and_then(|value| value.as_name()).is_ok_and(|value| value==b"Link"))));
     }
 
     #[test]

@@ -50,7 +50,7 @@ async fn workspace(
     };
     #[cfg(windows)]
     let reconfigure = matches!(&request, Request::Linked { request:
-        vaultor_next::LinkedRequest::Register { .. } | vaultor_next::LinkedRequest::RebindDescriptor { .. } | vaultor_next::LinkedRequest::Remove { .. }
+        vaultor_next::LinkedRequest::Register { .. } | vaultor_next::LinkedRequest::RebindDescriptor { .. } | vaultor_next::LinkedRequest::RebindDescriptors { .. } | vaultor_next::LinkedRequest::Remove { .. }
     });
     let result = state.call(request).await;
     #[cfg(windows)]
