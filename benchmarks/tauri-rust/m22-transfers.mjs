@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {mkdir,writeFile,readFile,readdir,stat} from 'node:fs/promises';
+import {mkdir,writeFile,readFile,readdir,rename,stat} from 'node:fs/promises';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
 
@@ -223,6 +223,13 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
         'Structured fixture from the original Java renderer test.');
     }
     report.checks.push('Original rich renderer fixture imported with its PNG and exported to Markdown, Markdown ZIP, DOCX and Unicode text-layout PDF.');
+    const unsupported = await workspace({kind:'createNote',title:'Missing glyph fixture',collection:null});
+    await workspace({kind:'save',id:unsupported.id,revision:unsupported.revision,title:unsupported.title,
+      content:{type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Unmapped glyph 🛸'}]}]}});
+    const failed = join(folder,'Missing glyph PDF');
+    await submit('pdf-glyph-refusal',{op:'export',ids:[unsupported.id],destination:failed,format:'pdf'},
+      'An unsupported glyph must refuse publication.', 'failed');
+    await assert.rejects(stat(failed),{code:'ENOENT'});
   }
   if (process.argv.includes('--m26a2-legacy')) {
     const archive = join(folder,'Electron original v5.zip');
@@ -237,7 +244,17 @@ export async function qualifyTransfers({evaluate,cdp,wait,report,folder,record,r
     const request = {op:'merge',source:archive,manifestHash};
     assert.equal((await submit('electron-v5-merge',request)).reused,false);
     assert.equal((await submit('electron-v5-replay',request)).reused,true);
+    const database=join(restored,'workspace.sqlite3');
+    const preserved=join(restored,'preserved.sqlite3');
+    await rename(database,preserved);
+    try {
+      await assert.rejects(workspace({kind:'open',path:restored}),/workspace database is missing or unsafe/i);
+      await assert.rejects(stat(database),{code:'ENOENT'});
+    } finally {
+      await rename(preserved,database);
+    }
     report.checks.push('Original Java workspace ZIP v5 passed native Next inspection, restore, exact-byte readback, merge and repeat.');
+    report.checks.push('Native workspace open refused a marked legacy-restored workspace with its SQLite database temporarily absent.');
   }
   await sleep(2000);
   report.checks.push('Mixed selection, nested imports, source reuse, relative reference and image conversion, raw file preservation, managed export containers, graph and archive verification, linked descriptors and original bytes, restore as new, transactional remapping, idempotent merge, recovery-copy preservation and interrupted task reconciliation.');

@@ -434,6 +434,8 @@ Use --m22-sustained to run the dedicated eight-file, 1 GiB CPU and process-memor
 
 For the M26-A comparison, run the original backend `NoteRendererTests` first. Add `--m26-export-fidelity` to the transfer probe to export the original test's rich document and PNG through Next. Inspect the PDF text extraction and render, DOCX drawing relationships and table merge markup, and the Markdown markup and asset bytes.
 
+Add `--m26a2-legacy` to the transfer probe for original v5 restore, exact bytes, merge replay and missing-database open refusal. Include `--m22-probe` to keep these samples local.
+
 ## M24 Windows loopback host
 
 Set `VAULTOR_BENCH_EXECUTABLE`, `VAULTOR_BENCH_SOURCE_COMMIT`, `VAULTOR_BENCH_HEADLESS` and `VAULTOR_BENCH_OPENSSL` to the optimized desktop candidate, its source commit, the headless executable and an OpenSSL executable. Run `node benchmarks/tauri-rust/run.mjs tauri-rust --inspect --m24-host`. Use `--m24-probe` for a run that leaves the CSV unchanged.
@@ -468,6 +470,8 @@ For the protected publication probe, use `tauri-rust --m25 --m25-proof=echo` on 
 For the separate Linux/amd64 Docker experiment, build or select an exact-source local image. Set `VAULTOR_M25_TEST_IMAGE` to that tag and keep `VAULTOR_BENCH_OPENSSL` set. The driver needs Docker with Linux cgroup v2 and an available private `172.30.245.0/28` subnet. It creates its own volumes and network, provisions test TLS, checks the owner lock and authorization, samples a minute of cgroup idle counters, repeats verified saved-note reads and verifies every byte of concurrent 8 MiB original downloads. It also covers restart identity, grant withdrawal, revocation and graceful SIGTERM. The optional browser driver uses an isolated image named `vaultor-m24d-chromium:local` with Chromium and `certutil`, separate from the host image.
 
 Run `node benchmarks/tauri-rust/m25-docker.mjs --browser --check-note-creation` on the M26-A candidate to add browser note creation and reload. The probe writes `raw/m26a-docker.json` and preserves the historical M25 file.
+
+For the M26-A2 image, add `--m26a2` to keep evidence in `raw/m26a2-docker.json`.
 
 ```powershell
 docker build --platform linux/amd64 --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" -t vaultor-next-m25:local -f next/Dockerfile .

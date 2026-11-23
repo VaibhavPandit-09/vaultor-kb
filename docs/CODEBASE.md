@@ -523,7 +523,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-23 — Next M26-A2 compatibility and exports
 
-Added fail-closed workspace startup, legacy reader and format-specific export fidelity. Updated the workspace transfers and export guides, Next Help and catalogue. The [M26-A2 record](plans/VAULTOR-NEXT.md#m26-a2-compatibility-and-export-checkpoint) identifies validation and open replacement, authorization and portability gates.
+Added fail-closed workspace startup, legacy reader and format-specific export fidelity. Updated the workspace transfers and export guides, Next Help and catalogue. Rust, frontend, original fixture, optimized Windows, Word render, Docker and Chromium checks passed as scoped in the [M26-A2 record](plans/VAULTOR-NEXT.md#m26-a2-compatibility-and-export-checkpoint). Replacement, connected workflows and legacy portability retain explicit open criteria.
 
 ### 2026-11-23 — Next M26-A functional checkpoint
 

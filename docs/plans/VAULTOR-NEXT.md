@@ -672,6 +672,24 @@ Nonempty legacy Review evidence is refused. Java portable records omit the saved
 
 Recognized or remembered incomplete storage now refuses an ordinary open before SQLite can initialize a replacement. The remaining in-place replacement blocker is a pre-open durable authority decision that survives a locked swap, interruption and reopen with the previous generation preserved. No in-place action is exposed. Android owner-reviewed ZIP intake, broader browser organization and local one-use handoff, PDF body indexing, deeper linked-resource and Review portability, and full formatted PDF export remain open.
 
+#### M26-A2 qualification
+
+The Windows executables and Linux/amd64 Docker image use application source `6066d56c61284a00f1c404556da0601e909f537e`.
+
+| Local artifact | SHA-256 |
+| --- | --- |
+| `next/src-tauri/target/release/vaultor-next-m26a2.exe` | `aafe80bd1105655290f0179ebed80522680239bb3dcc9b18b74675db93ea36fa` |
+| `next/src-tauri/target/release/vaultor-next-host-m26a2.exe` | `1ad6f5648b3d563d9972c4a8fbe20817675a5bdc5ec9a58454f89ea75af3bef4` |
+| `vaultor-next-m26a2:local` | `4b10e38123b9e6f4696345912eff099f48e7c597b920073a2438c72e0096e596` |
+
+- Rust passed 65 library and two Windows binary checks, plus the focused original v6–8 restore test added after the suite. Archive tests cover changed payload checksums, duplicate inventory records and checksum keys, path traversal, Windows UUID aliases, encrypted entries, native restore bytes and merge replay. Three original Java hierarchy and partial export tests supplied the new fixtures in `next/src-tauri/fixtures/`. The Next frontend suite passed 113 checks. TypeScript, scoped ESLint, 17 Help checks and production Help asset inspection passed.
+- Optimized Windows probes passed verified v5 restore and merge replay, database-gap refusal, native archive and external byte checks, interrupted ordinary import recovery, protected-draft copies, TLS and single-owner refusal, and encrypted PDF preview reopen. There is no in-place publication or crash/rollback qualification.
+- The original rich note produced HTML table spans in Markdown and the same PNG bytes in DOCX. Microsoft Word opened and rendered the image, merged table and link. The table cells use compact spacing in Word. PDFBox read back `Café α × β — Unicode` from selectable text and Poppler rendered it. Unsupported glyphs failed before output publication. This remains a text-layout PDF with broad rich layout and complex-script shaping outside the evidence.
+- Docker and isolated Chromium passed TLS, matching-code approval, existing note creation and editing, saved reads, restart, revocation and graceful stop. The separate raw report is `m26a2-docker.json`. Canonical historical records and formulas were preserved.
+- The 20 measured near-1 MiB protected commits took a median 29.55 ms with a 151-byte median request, compared with M25's 30.9 ms at 151 bytes. All 24 commits including warmups passed exact document and revision readback. A 970-byte v5 ZIP took about 49 ms to restore, 19 ms to merge and 16 ms to replay through Activity, each single sample including readiness polling. These probes do not establish a general performance gain or large archive throughput.
+
+Windows raw reports under `benchmarks/tauri-rust/raw/` are timestamped `2026-11-23T04-35-18.392Z` for transfers, `04-35-36.772Z` for previews, `04-36-55.357Z` for protected commit, and `04-37-01.736Z` for hosting. The remaining functional gaps keep the candidate in M26-A. Physical, visual, accessibility, security and installer gates remain open.
+
 ### M26-B/C — Physical acceptance and separately authorized production qualification
 
 - **Original functional parity:** Preserve workspace replacement gates, legacy archive compatibility and owner-reviewed mobile ZIP intake, browser creation and organization, original export coverage and restart fidelity, PDF functionality and linked-occurrence navigation.
