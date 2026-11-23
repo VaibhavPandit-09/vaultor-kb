@@ -12,6 +12,7 @@ import {BrowseHeading, BrowsePagination, BrowseRowSurface} from '../components/B
 import SearchExcerpt from '../components/SearchExcerpt';
 import {ManagedImage} from '../components/editor/ManagedImage';
 import {ResourceLinkExtension} from '../components/editor/ResourceLinkDefinition';
+import LibraryPopover from '../components/LibraryPopover';
 import '../index.css';
 import './next.css';
 import './browser.css';
@@ -19,11 +20,17 @@ import './browser.css';
 const base = '/api/next/browser/v1';
 const uuid = /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 type Workspace = {id: string; name: string};
-type Resource = {id: string; title: string; type: string; mimeType?: string; originalName?: string};
+type Resource = {id: string; title: string; type: string; revision: string; favorite: boolean;
+  collections: Group[]; mimeType?: string; originalName?: string};
 type Note = Resource & {revision: string; content: JSONContent};
 type Group = {id: string; name: string};
 type Hit = Resource | {resource: Resource; snippet?: {text: string; highlights: {start: number; end: number}[]}};
 type Page<T> = {items: T[]; totalPages: number; totalItems: number};
+type Change =
+  | {operation: 'pin' | 'trash'; value: boolean}
+  | {operation: 'membership'; collection: string; value: boolean}
+  | {operation: 'rename'; title: string}
+  | {operation: 'move'; from: string; to: string};
 
 class Refusal extends Error {
   readonly status: number;
@@ -203,12 +210,65 @@ function FilePreview({file}: {file: Resource}) {
   </section>;
 }
 
+function ResourceActions({resource, collections, selected, trashed, change}: {
+  resource: Resource; collections: Group[]; selected: string; trashed: boolean;
+  change: (resource: Resource, change: Change) => Promise<void>;
+}) {
+  const [pending, setPending] = useState(false);
+  const [destination, setDestination] = useState('');
+  const [title, setTitle] = useState<string>();
+  const owned = new Set((resource.collections ?? []).map(group => group.id));
+  async function submit(action: Change) {
+    if (pending) return;
+    setPending(true);
+    try { await change(resource, action); }
+    finally { setPending(false); }
+  }
+  return <LibraryPopover label={'Organize ' + resource.title} trigger="Organize">
+    {close => {
+      const run = (action: Change) => { close(); setTitle(undefined); void submit(action); };
+      if (trashed) return <button type="button" disabled={pending}
+        className="library-button" onClick={() => run({operation: 'trash', value: false})}>Restore from Trash</button>;
+      return <div className="browser-organization">
+        {title === undefined ? <button type="button" className="library-button" disabled={pending}
+          onClick={() => setTitle(resource.title)}>Rename resource</button> :
+          <form onSubmit={event => { event.preventDefault(); if (title.trim()) run({operation: 'rename', title}); }}>
+            <label>Resource title <input autoFocus required maxLength={240} value={title}
+              onChange={event => setTitle(event.target.value)}/></label>
+            <button className="library-button" disabled={pending || !title.trim() || title.trim() === resource.title}>Save name</button>
+            <button className="library-button" type="button" onClick={() => setTitle(undefined)}>Cancel rename</button>
+          </form>}
+        <button type="button" className="library-button" disabled={pending}
+          onClick={() => run({operation: 'pin', value: !resource.favorite})}>
+          {resource.favorite ? 'Unpin' : 'Pin'}
+        </button>
+        {collections.length > 0 && <>
+          <label>Destination collection <select value={destination} onChange={event => setDestination(event.target.value)}>
+            <option value="">Choose collection</option>
+            {collections.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}
+          </select></label>
+          <button type="button" className="library-button" disabled={pending || !destination}
+            onClick={() => run({operation: 'membership', collection: destination, value: !owned.has(destination)})}>
+            {owned.has(destination) ? 'Remove from collection' : 'Add to collection'}
+          </button>
+          {selected && owned.has(selected) && <button type="button" className="library-button" disabled={pending || !destination || destination === selected}
+            onClick={() => run({operation: 'move', from: selected, to: destination})}>Move from current collection</button>}
+        </>}
+        <button type="button" className="library-button" disabled={pending} onClick={() => {
+          if (confirm('Move this resource to Trash?')) run({operation: 'trash', value: true});
+        }}>Move to Trash</button>
+      </div>;
+    }}
+  </LibraryPopover>;
+}
+
 export default function BrowserWorkspace() {
   const [workspace, setWorkspace] = useState<Workspace>();
   const [access, setAccess] = useState('');
   const [problem, setProblem] = useState('');
   const [query, setQuery] = useState('');
   const [includeContent, setIncludeContent] = useState(false);
+  const [view, setView] = useState<'library' | 'pinned' | 'trash'>('library');
   const [collection, setCollection] = useState('');
   const [collections, setCollections] = useState<Group[]>([]);
   const [page, setPage] = useState(0);
@@ -277,13 +337,15 @@ export default function BrowserWorkspace() {
       setLoading(true);
       const filters = new URLSearchParams({q: query.trim(), page: String(page), size: '30'});
       if (collection) filters.set('collection', collection);
-      void request<Page<Hit>>(base + '/resources' + (includeContent && query.trim() ? '/query' : '') + '?' + filters,
+      if (view === 'pinned') filters.set('favorites', 'true');
+      const route = view === 'trash' ? '/trash' : includeContent && query.trim() ? '/query' : '';
+      void request<Page<Hit>>(base + '/resources' + route + '?' + filters,
         {headers, signal: control.signal}).then(setListing).catch(error => {
         if (!control.signal.aborted) showError(error);
       }).finally(() => { if (!control.signal.aborted) setLoading(false); });
     }, 180);
     return () => {control.abort(); clearTimeout(timeout);};
-  }, [workspaceId, headers, query, page, collection, version, includeContent, showError]);
+  }, [workspaceId, headers, query, page, collection, version, includeContent, view, showError]);
   useEffect(() => {
     if (!workspaceId || !active || dirty.current) return;
     const control = new AbortController();
@@ -330,6 +392,32 @@ export default function BrowserWorkspace() {
       throw error;
     }
   }
+  async function organize(resource: Resource, change: Change) {
+    if ((change.operation === 'rename' || (change.operation === 'trash' && change.value)) &&
+        current.current === resource.id && dirty.current) {
+      setProblem('Save or discard the browser edits before renaming or moving this resource to Trash.');
+      return;
+    }
+    try {
+      await request(base + '/resources/' + resource.id + '/organization', {
+        method: 'PUT',
+        headers: {...headers, 'X-Vaultor-CSRF': access, 'Content-Type': 'application/json'},
+        body: JSON.stringify({...change, revision: Number(resource.revision)}),
+      });
+      if (change.operation === 'trash' && change.value && current.current === resource.id && !dirty.current) {
+        current.current = '';
+        setActive('');
+        setResource(undefined);
+      }
+      setProblem('');
+      invalidate(value => value + 1);
+    } catch (error) {
+      if (error instanceof Refusal && error.status === 409) {
+        setProblem('The resource changed or has a protected draft. Review its current state and try again.');
+        invalidate(value => value + 1);
+      } else showError(error);
+    }
+  }
   return <main className="vaultor-browser">
     <BrowseHeading title={workspace?.name ?? 'Vaultor Next'} kicker="Shared workspace"
       actions={<div className="browser-actions">
@@ -348,20 +436,28 @@ export default function BrowserWorkspace() {
     {!workspace && <a href="/access">Request browser approval</a>}
     {workspace && <div className="browser-columns">
       <section className="browser-library" aria-label="Library">
-        <NewNote key={workspace.id} collection={collection} collectionName={collections.find(group => group.id === collection)?.name} create={create}/>
+        {view !== 'trash' && <NewNote key={workspace.id} collection={collection} collectionName={collections.find(group => group.id === collection)?.name} create={create}/>}
         <div className="browser-filters">
+          <select aria-label="Library view" value={view} onChange={event => {
+            setListing(undefined); setPage(0); setCollection(''); setView(event.target.value as typeof view);
+          }}>
+            <option value="library">Library</option>
+            <option value="pinned">Pinned</option>
+            <option value="trash">Trash</option>
+          </select>
           <input type="search" aria-label="Search library" placeholder="Search library" value={query} maxLength={256}
             onChange={event => {setPage(0); setQuery(event.target.value);}} />
-          <label><input type="checkbox" checked={includeContent} onChange={event => {setPage(0); setIncludeContent(event.target.checked);}} /> Saved content</label>
-          <select aria-label="Collection" value={collection} onChange={event => {setPage(0); setCollection(event.target.value);}}>
+          {view !== 'trash' && <label><input type="checkbox" checked={includeContent} onChange={event => {setPage(0); setIncludeContent(event.target.checked);}} /> Saved content</label>}
+          {view !== 'trash' && <select aria-label="Collection" value={collection} onChange={event => {setPage(0); setCollection(event.target.value);}}>
             <option value="">All collections</option>
             {collections.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}
-          </select>
+          </select>}
         </div>
         {listing?.items.map(hit => {
           const resource = 'resource' in hit ? hit.resource : hit;
           return <BrowseRowSurface key={resource.id} className="next-resource" data-open={active === resource.id}
-            resource={<button className="next-resource-open" onClick={() => open(resource.id)}>
+            actions={<ResourceActions resource={resource} collections={collections} selected={collection} trashed={view === 'trash'} change={organize}/>}
+            resource={view === 'trash' ? <span>{resource.title}</span> : <button className="next-resource-open" onClick={() => open(resource.id)}>
               <span><strong>{resource.title}</strong>{'snippet' in hit && hit.snippet && <small><SearchExcerpt snippet={hit.snippet}/></small>}</span>
             </button>} />;
         })}

@@ -32,6 +32,8 @@ Import previews expose a backward-compatible reviews count (older hosts omit it)
 
 Scoped note export packages (Markdown+assets and linked-resource ZIPs) include reviews.json for only rendered notes and captured files in the requested resource graph; excluded linked-note bodies cannot leak their quotes through evidence. They preserve target references/provenance; standalone MD/PDF/Word remains the original note presentation, with no implicit review text injected. These packages are evidence exports, not full workspace archives/import inputs. Android full/partial exports are implemented; [EXPORTS-AND-CONNECTIONS.md](../android/EXPORTS-AND-CONNECTIONS.md) owns their scope and omissions.
 
+Next connected archives and Markdown-with-assets exports use persisted Review evidence for the eligible managed resources included in the package. They preserve captured revision and triage status. Device credentials and submission receipts remain private. Imported Next evidence starts unverified. A compatible Electron archive containing legacy Review records is refused because those records omit the captured saved revision.
+
 ## Validation
 
 Actual focused/native/package results and remaining platform limits are recorded in [v0.12](../desktop/releases/v0.12.0.md), [v0.14](../desktop/releases/v0.14.0.md) and [R10 qualification](../development/qualification/R10.md). Use disposable workspaces only; no phone access or personal workspace mutation.

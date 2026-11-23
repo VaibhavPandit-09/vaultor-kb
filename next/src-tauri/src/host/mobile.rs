@@ -83,6 +83,7 @@ pub(super) fn browser_reads() -> Router<Host> {
         .route("/workspace/identity", get(identity))
         .route("/resources", get(browse))
         .route("/resources/query", get(browse))
+        .route("/resources/trash", get(browse))
         .route("/collections", get(browse))
         .route("/tags/browse", get(browse))
         .route("/resources/{id}", get(resource))

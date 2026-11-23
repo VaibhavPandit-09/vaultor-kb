@@ -18,13 +18,14 @@
   gap: .5rem;
   margin-block: .5rem;
 }
-.browser-filters input:not([type="checkbox"]), .browser-reader input, .vaultor-browser select {
+.browser-filters input:not([type="checkbox"]), .browser-reader input, .vaultor-browser select, .browser-organization :is(select, input) {
   color: inherit;
   border: 1px solid var(--border-primary);
   border-radius: .375rem;
   padding: .375rem .5rem;
   background: var(--bg-secondary);
 }
+.browser-organization, .browser-organization label { display: grid; gap: .375rem; }
 .browser-reader { min-width: 0; padding-inline-start: 1rem; border-inline-start: 1px solid var(--border-primary); }
 .browser-reader h2 { font-size: 1.25rem; font-weight: 650; }
 .browser-reader :is(img, video, audio) { max-width: 100%; }

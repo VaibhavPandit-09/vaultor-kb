@@ -316,8 +316,11 @@ fn legacy(mut file: File) -> Result<(Input, Manifest, String, Option<u32>), Stri
     let raw = json_entry(&mut zip, "manifest.json")?;
     let manifest: LegacyManifest = serde_json::from_slice(&raw).map_err(error)?;
     let version = manifest.version;
+    if matches!(version, 9 | 10) {
+        return Err("Legacy ZIP versions 9 and 10 omit the content fingerprint needed to verify linked identity. Open this package in the original Vaultor application.".into());
+    }
     if !(1..=8).contains(&version) {
-        return Err("Unsupported legacy archive version. Linked-reference formats 9 and 10 require the original application.".into());
+        return Err(format!("Unsupported legacy ZIP version {version}."));
     }
     if manifest.checksums.len() + 1 != sizes.len()
         || manifest.checksums.iter().any(|(name, hash)| {
@@ -556,6 +559,65 @@ fn file_name(title: &str, mime: Option<&str>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn historical_source_contract_qualifies_versions_one_through_four() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("historical.zip");
+        let id = "fe621758-438f-4f2f-af47-f1d6679a4853";
+        let collection = "a9460162-a316-4431-9204-fdc1de3ca03d";
+        for version in 1..=4 {
+            // Reconstructed from the original TransferService version guards.
+            let mut workspace = json!({
+                "resources":[{"id":id,"type":"note","title":"Historical note","tags":[],
+                    "content":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Historical body"}]}]}}],
+                "tags":[],"settings":{}
+            });
+            if version >= 2 {
+                workspace["organization"] = json!({
+                    "collections":[{"id":collection,"name":"Historical collection","resources":[id]}],
+                    "favorites":[id]
+                });
+            }
+            if version >= 4 {
+                workspace["reviews"] = json!([]);
+            }
+            let workspace = serde_json::to_vec(&workspace).unwrap();
+            let inventory = json!({"version":version,"createdAt":"2020-01-01T00:00:00Z","resources":1,"tags":0,
+                "checksums":{"workspace.json":format!("{:x}", Sha256::digest(&workspace))}});
+            let mut zip = zip::ZipWriter::new(File::create(&path).unwrap());
+            let options = zip::write::SimpleFileOptions::default();
+            zip.start_file("workspace.json", options).unwrap();
+            zip.write_all(&workspace).unwrap();
+            zip.start_file("manifest.json", options).unwrap();
+            zip.write_all(inventory.to_string().as_bytes()).unwrap();
+            zip.finish().unwrap();
+            let (_, manifest, _, format) = open(&path).unwrap();
+            assert_eq!(format, Some(version));
+            assert_eq!(manifest.resources[0].id, id);
+            assert_eq!(manifest.resources[0].content["content"][0]["content"][0]["text"], "Historical body");
+            assert_eq!(manifest.memberships.len(), usize::from(version >= 2));
+            if version >= 2 {
+                assert_eq!(manifest.memberships[0], (id.to_owned(), collection.to_owned()));
+                assert!(manifest.organization.states[0].2);
+            }
+        }
+    }
+
+    #[test]
+    fn original_linked_archives_fail_closed_without_content_fingerprints() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("linked.zip");
+        for bytes in [
+            include_bytes!("../../fixtures/electron-workspace-v9.zip").as_slice(),
+            include_bytes!("../../fixtures/electron-workspace-v10.zip").as_slice(),
+        ] {
+            fs::write(&path, bytes).unwrap();
+            let result = inspect_archive(&path, None);
+            assert!(result.err().unwrap().contains("content fingerprint"));
+        }
+        assert_eq!(fs::read_dir(temp.path()).unwrap().count(), 1);
+    }
 
     #[test]
     fn legacy_zip_rejects_ambiguous_and_untrusted_inventory() {

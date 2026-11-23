@@ -84,6 +84,40 @@ async fn browser_session_checks_origin_csrf_scope_revision_and_logout() {
     let created = worker.call(Request::Read { id: receipt["id"].as_str().unwrap().into() }).await.unwrap();
     assert_eq!(created["title"], "New browser note");
     assert_eq!(created["collections"], json!([collection["id"]]));
+    let destination = worker.call(Request::CreateCollection { name: "Destination".into(), parent_id: None }).await.unwrap();
+    let organization = format!("{browser}/resources/{}/organization", receipt["id"].as_str().unwrap());
+    let pin = json!({"operation":"pin","revision":1,"value":true}).to_string();
+    assert_eq!(request(&client,address,"PUT",&organization,&format!("{scope}{origin}"),&pin).await.0,403);
+    let foreign = signed.replace(&host.workspace.to_string(), &Uuid::new_v4().to_string());
+    assert_eq!(request(&client,address,"PUT",&organization,&foreign,&pin).await.0,403);
+    assert_eq!(request(&client,address,"PUT",&organization,&signed,&pin.replace("\"revision\":1","\"revision\":2")).await.0,409);
+    for _ in 0..2 {
+        let response = request(&client,address,"PUT",&organization,&signed,&pin).await;
+        assert_eq!(response.0,200,"{}",response.2);
+        assert_eq!(serde_json::from_str::<Value>(&response.2).unwrap()["favorite"],true);
+    }
+    let add = json!({"operation":"membership","revision":1,"collection":destination["id"],"value":true}).to_string();
+    assert_eq!(request(&client,address,"PUT",&organization,&signed,&add).await.0,200);
+    let move_note = json!({"operation":"move","revision":1,"from":collection["id"],"to":destination["id"]}).to_string();
+    for _ in 0..2 {
+        let response = request(&client,address,"PUT",&organization,&signed,&move_note).await;
+        assert_eq!(response.0,200,"{}",response.2);
+        assert_eq!(serde_json::from_str::<Value>(&response.2).unwrap()["collections"][0]["id"],destination["id"]);
+    }
+    let remove = add.replace("\"value\":true","\"value\":false");
+    assert_eq!(request(&client,address,"PUT",&organization,&signed,&remove).await.0,200);
+    let trash = json!({"operation":"trash","revision":1,"value":true}).to_string();
+    assert_eq!(request(&client,address,"PUT",&organization,&signed,&trash).await.0,200);
+    let trash_list = request(&client,address,"GET",&format!("{browser}/resources/trash"),&scope,"").await;
+    assert_eq!(trash_list.0,200);
+    assert!(trash_list.2.contains(receipt["id"].as_str().unwrap()));
+    let restore = trash.replace("\"value\":true","\"value\":false");
+    assert_eq!(request(&client,address,"PUT",&organization,&signed,&restore).await.0,200);
+    let rename = json!({"operation":"rename","revision":1,"title":"Renamed in browser"}).to_string();
+    let renamed = request(&client,address,"PUT",&organization,&signed,&rename).await;
+    assert_eq!(renamed.0,200);
+    assert_eq!(serde_json::from_str::<Value>(&renamed.2).unwrap()["revision"],"2");
+    assert_eq!(request(&client,address,"PUT",&organization,&signed,&rename).await.0,409);
     assert_eq!(request(&client,address,"PUT",&create,&signed,&input.replace("New browser note","Different note")).await.0,409);
     assert_eq!(request(&client,address,"PUT",&edit,&signed,&body).await.0,200);
     assert_eq!(request(&client,address,"PUT",&edit,&signed,&body).await.0,409);
@@ -91,8 +125,13 @@ async fn browser_session_checks_origin_csrf_scope_revision_and_logout() {
         title:"Protected desktop draft".into(), content:json!({"type":"doc","content":[]}) }).await.unwrap();
     assert_eq!(request(&client,address,"PUT",&edit,&signed,&body.replace("\"revision\":1","\"revision\":2")).await.0,409);
     assert!(!request(&client,address,"GET",&note,&credentials,"").await.2.contains("Protected desktop draft"));
+    let blocked = trash.replace("\"revision\":1","\"revision\":2");
+    assert_eq!(request(&client,address,"PUT",&format!("{note}/organization"),&signed,&blocked).await.0,409);
+    let blocked = rename.replace("\"revision\":1","\"revision\":2");
+    assert_eq!(request(&client,address,"PUT",&format!("{note}/organization"),&signed,&blocked).await.0,409);
     host.owner_command(&format!("withdraw {device}")).unwrap();
     assert_eq!(request(&client,address,"PUT",&create,&signed,&input).await.0,403);
+    assert_eq!(request(&client,address,"PUT",&organization,&signed,&pin).await.0,403);
     assert_eq!(request(&client,address,"GET",&note,&credentials,"").await.0,403);
     assert_eq!(request(&client,address,"POST","/api/access/logout",&signed,"{}").await.0,204);
     assert_eq!(request(&client,address,"GET","/api/access/session",&credentials,"").await.0,401);
@@ -218,6 +257,43 @@ async fn mobile_projection_keeps_saved_revisions_and_checkpoint_authority() {
     let file = call("GET",derivative.clone(),auth.clone(),String::new()).await;
     assert_eq!(file.0,200);
     assert!(file.2.contains("New saved revision"));
+    assert!(!file.2.contains("Captured earlier"));
+
+    for (targets, review_expected) in [(vec![note_id], true), (vec![file_id.as_str()], false)] {
+        let export = route(&format!("/companions/exports/{}", Uuid::new_v4()));
+        let intent = json!({"generation":workspace,"scope":"resources","format":"partial","depth":0,"ids":targets}).to_string();
+        assert_eq!(call("PUT",export.clone(),auth.clone(),intent.clone()).await.0,200);
+        let status = format!("{export}?generation={workspace}");
+        let mut result = Value::Null;
+        for _ in 0..32 {
+            let response = call("GET",status.clone(),auth.clone(),String::new()).await;
+            assert_eq!(response.0,200);
+            result = serde_json::from_str(&response.2).unwrap();
+            if result["operation"]["status"] == "SUCCEEDED" { break; }
+            assert_ne!(result["operation"]["status"],"FAILED","{result}");
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+        assert_eq!(result["operation"]["status"],"SUCCEEDED","{result}");
+        assert_eq!(call("PUT",export.clone(),auth.clone(),intent).await.0,200);
+        let download = format!("{export}/download?generation={workspace}");
+        assert_eq!(call("GET",download.clone(),other_auth.clone(),String::new()).await.0,404);
+        use sha2::{Digest, Sha256};
+        let payload = request_bytes(&client,address,"GET",&download,&auth,"").await;
+        assert_eq!(payload.0,200);
+        assert_eq!(format!("{:x}",Sha256::digest(&payload.2)),result["sha256"].as_str().unwrap());
+        assert_eq!(&payload.2[..8],b"VAULTOR1");
+        let manifest_end = 48 + u64::from_le_bytes(payload.2[8..16].try_into().unwrap()) as usize;
+        let manifest: Value = serde_json::from_slice(&payload.2[48..manifest_end]).unwrap();
+        assert_eq!(manifest["reviews"].as_array().map_or(0, Vec::len),usize::from(review_expected));
+        if review_expected {
+            let review = &manifest["reviews"][0];
+            assert_eq!(review["evidence"]["id"],operation.to_string());
+            assert_eq!(review["evidence"]["resourceId"],note_id);
+            assert_eq!(review["evidence"]["comment"],"Captured earlier");
+            assert_eq!(review["evidence"]["baseRevision"],1);
+            assert!(!manifest.to_string().contains(auth.trim().trim_start_matches("Authorization: Bearer ")));
+        }
+    }
     host.owner_command(&format!("withdraw {device}")).unwrap();
     assert_eq!(call("GET",derivative,auth.clone(),String::new()).await.0,403);
     assert_eq!(call("GET",bin,pinned,"".into()).await.0,403);
@@ -392,6 +468,18 @@ async fn request(
     headers: &str,
     body: &str,
 ) -> (u16, String, String) {
+    let (status, head, body) = request_bytes(client,address,method,path,headers,body).await;
+    (status, head, String::from_utf8(body).unwrap())
+}
+
+async fn request_bytes(
+    client: &TlsConnector,
+    address: SocketAddr,
+    method: &str,
+    path: &str,
+    headers: &str,
+    body: &str,
+) -> (u16, String, Vec<u8>) {
     tokio::time::timeout(Duration::from_secs(8), async {
         let socket = TcpStream::connect(address).await.unwrap();
         let mut client = client.connect(address.ip().into(), socket).await.unwrap();
@@ -400,10 +488,10 @@ async fn request(
         ).as_bytes()).await.unwrap();
         let mut bytes = Vec::new();
         client.read_to_end(&mut bytes).await.unwrap();
-        let reply = String::from_utf8(bytes).unwrap();
-        let (head, body) = reply.split_once("\r\n\r\n").unwrap();
+        let separator = bytes.windows(4).position(|slice| slice == b"\r\n\r\n").unwrap();
+        let head = std::str::from_utf8(&bytes[..separator]).unwrap();
         let status = head.split_whitespace().nth(1).unwrap().parse().unwrap();
-        (status, head.to_owned(), body.to_owned())
+        (status, head.to_owned(), bytes.split_off(separator + 4))
     }).await.unwrap()
 }
 

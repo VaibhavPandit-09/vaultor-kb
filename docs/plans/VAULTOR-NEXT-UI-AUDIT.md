@@ -508,7 +508,7 @@ Hosting uses the existing floating Settings category, grouped rows, keyboard foc
 
 ## M26-A functional checkpoint
 
-M26-A2 uses the existing Restore and Merge review for Electron ZIPs, with the verified format version above the counts. Opening an existing workspace reports missing data instead of initializing it. No replacement command is exposed. See the [M26-A2 tracker](VAULTOR-NEXT.md#m26-a2-compatibility-and-export-checkpoint).
+M26-A2 uses the existing Restore and Merge review for Electron ZIPs, with the verified format version above the counts. Opening an existing workspace reports missing data instead of initializing it. M26-A3 makes Restore as New the primary recovery path and intentionally omits the original destructive replacement. The Next browser reuses the existing anchored popover and Escape focus handling for managed rename, pin, membership, move and recoverable Trash. Physical and visual review of the browser workflow remains pending. See the [M26-A3 tracker](VAULTOR-NEXT.md#m26-a3-restoration-policy-and-work-queue).
 
 The browser Library opens a compact, keyboard-operable note creation form in place and returns focus when it closes. Collection placement is captured when the form opens. The existing reader stays mounted during creation and retains its unsaved edits. Desktop PDF password prompts belong to the current preview and disappear when it closes or changes workspace. Windows visual comparison, screen-reader verification, and physical input remain M26-B gates.
 

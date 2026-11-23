@@ -1242,10 +1242,11 @@ fn archive(
         if remote {
             validate_companion_snapshot(w, &manifest)?;
             manifest.settings = json!({});
-        } else {
-            let selected = manifest.partial.then(|| manifest.resources.iter().map(|r| r.id.as_str()).collect());
-            manifest.reviews = crate::reviews::snapshot(&w.db, selected.as_ref())?;
         }
+        // Connected exports never expose evidence for omitted or owner-local targets.
+        let selected = (remote || manifest.partial)
+            .then(|| manifest.resources.iter().map(|r| r.id.as_str()).collect());
+        manifest.reviews = crate::reviews::snapshot(&w.db, selected.as_ref())?;
         if !manifest.reviews.is_empty() || !manifest.linked.is_empty() {
             manifest.version = 4;
         }
@@ -1706,7 +1707,8 @@ fn export(
         }
         if remote {
             validate_companion_snapshot(w, &manifest)?;
-        } else if zip {
+        }
+        if zip {
             let selected = manifest.resources.iter().map(|r|r.id.as_str()).collect();
             manifest.reviews=crate::reviews::snapshot(&w.db,Some(&selected))?;
         }

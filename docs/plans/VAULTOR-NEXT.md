@@ -474,7 +474,7 @@ M22 adds source-path/byte and conversion-mode keys, durable retry identity and p
 
 The current reader continues to accept portable Next versions 1 and 2. The new writer includes partial scope and inactive linked descriptors with relative paths and fingerprints. Import-as-new validates a staged database. Merge verifies review digest and payload, journals app-owned originals before publication, then commits remapped resource/collection/tag identities, assets, relationships, state and an idempotency receipt in a single owner transaction. Destination settings and existing drafts stay in place. Merge collision behavior is deterministic. Destination data remains unchanged on a failed metadata transaction. Restart retries hash-proven cleanup of unpublished managed originals. Unjournaled staging paths remain outside the automatic cleanup scope.
 
-Open work includes verified in-place replacement and rollback, binding existing descriptors to a newly authorized source, portable Review status, rich-layout/Unicode PDF and embedded Word assets, package collection layout, larger Markdown conversion, full review pagination, legacy ZIP compatibility, PDF body indexing and exact linked-occurrence navigation. Current bounds and user workflow are in [Next Help](../help/next-foundation.md).
+At M22, binding existing descriptors to a newly authorized source, portable Review status, rich-layout/Unicode PDF and embedded Word assets, package collection layout, larger Markdown conversion, full review pagination, legacy ZIP compatibility, PDF body indexing and exact linked-occurrence navigation were open. Current bounds and user workflow are in [Next Help](../help/next-foundation.md).
 
 ### M22 Windows qualification
 
@@ -486,7 +486,7 @@ On Windows x64, Intel Core Ultra 7 255HX, 20 logical CPUs and about 15.4 GiB RAM
 
 The [benchmark evidence](../../benchmarks/tauri-rust/summaries/m22-transfers-windows.json) records executable identity, the measurement recipes and checks. The [canonical workbook](../../benchmarks/tauri-rust/vaultor_tauri_rust_benchmark_tracker.xlsx) now includes 61 observations while preserving all 11,536 prior rows, 19 sheets and 475 formulas.
 
-In-place replacement remains open because the running Windows workspace owner has no verified swap-and-rollback protocol for its locked database and original-file directory. Restore as new and review the separate workspace before switching. Descriptor binding also remains open pending explicit root selection with verified file identity and revision matching. M23 should restore the native Review Inbox, define its portable status/evidence contract, and qualify desktop pickers, pointer interactions and recovery focus on Windows.
+Restore as New publishes a verified independent workspace for inspection before switching. See the M26-A3 restoration decision below.
 
 ## M23 Review Inbox and Windows integration
 
@@ -510,7 +510,7 @@ The workbook preserves 11,597 historical observations and 475 formulas. It adds 
 
 - **M24:** optional Rust HTTPS host, trusted pairing and revocation, workspace grants, Android scoped browsing and offline checkpoint delivery, Review submission and receipts, saved-change events, browser access and headless hosting. Carry the original host-linked start-at-login behavior into that integration.
 - **M25:** matched full-product performance qualification, including sustained memory, idle CPU, large editing and server/companion scenarios.
-- **M26 functional:** in-place workspace replacement and restart rollback still need a publication journal and Windows locked-handle and crash-stage qualification. Restore as new and merge remain available. Electron ZIP formats 1–10 use separate manifests and checksum inventories, with partial coverage in formats 6, 8 and 10. A compatible reader must preserve and validate `workspace.json`, `partial.json`, `files/<id>`, `originals/<id>`, organization, linked references and Reviews before remapping. Keep authentication material excluded. Installed diagnostics, native Edit/View/Window menu parity, file associations/deep links, native window bounds restoration, export fidelity and exact linked-occurrence selection also remain in the parity register.
+- **M26 functional:** Restore as New and separately reviewed Merge are the supported Next recovery workflows. Electron ZIP formats 1–10 use separate manifests and checksum inventories, with partial coverage in formats 6, 8 and 10. A compatible reader must preserve and validate `workspace.json`, `partial.json`, `files/<id>`, `originals/<id>`, organization, linked references and Reviews before remapping. Keep authentication material excluded. Installed diagnostics, native Edit/View/Window menu parity, file associations/deep links, native window bounds restoration, export fidelity and exact linked-occurrence selection also remain in the parity register.
 - **M26 acceptance:** physical Explorer drag-out and internal pointer targets, native menus and tray gestures, focus/IME and keyboard accessibility, Snap/display scaling, original-versus-Next visual and motion review and installer/updater upgrade recovery.
 - **Deferred platform work:** macOS runtime qualification. **New product work:** interactive relationship graph rendering and Office previews remain separate from restoration of original supported capabilities.
 
@@ -558,7 +558,7 @@ Docker Desktop Engine 29.8.1 built and ran the Linux/amd64 image `vaultor-next-h
 
 Windows x64 build 26340, Core Ultra 7 255HX, 20 logical CPUs, 15.4 GiB RAM, Edge WebView2 157.0.4341.60, Node 24.18.1. The desktop fixture used one default managed note and one isolated WebView2 profile. Each desktop idle window followed two seconds of settling and sampled a single 6.5-second window. Background load and power state were uncontrolled. Shared pages can be counted more than once. These paired snapshots do not estimate sustained overhead. Android, physical LAN, browser, throughput, sustained idle and load contention remain unmeasured. The [canonical benchmark workbook](../../benchmarks/tauri-rust/vaultor_tauri_rust_benchmark_tracker.xlsx) appends 65 observations to 11,850 preserved rows. [Workbook validation](../../benchmarks/tauri-rust/summaries/m24-workbook-validation.json) verified all 1,170 new fields and 475 unchanged formulas.
 
-For M25, measure matched desktop workloads, sustained process-role memory and idle CPU, then compare hosted TLS, streaming, reconnect and contention workloads once the corresponding clients are available. M26 keeps the original functional gates for in-place replacement and verified rollback, Electron archive interoperation, Word/PDF fidelity, PDF discovery/preview, exact linked-occurrence selection and near-1 MiB editing. Maintain separate Windows physical input, visual, motion and accessibility gates, Android/emulator/physical and real-LAN gates, and security and production release gates. Preserve platform-deferred rows and keep cloud synchronization, collaboration and other post-migration capabilities in the new-feature backlog.
+For M25, measure matched desktop workloads, sustained process-role memory and idle CPU, then compare hosted TLS, streaming, reconnect and contention workloads once the corresponding clients are available. M26 keeps the original functional gates for staged restore and merge integrity, Electron archive interoperation, Word/PDF fidelity, PDF discovery/preview, exact linked-occurrence selection and near-1 MiB editing. Maintain separate Windows physical input, visual, motion and accessibility gates, Android/emulator/physical and real-LAN gates, and security and production release gates. Preserve platform-deferred rows and keep cloud synchronization, collaboration and other post-migration capabilities in the new-feature backlog.
 
 ### M24-C Android integration
 
@@ -588,7 +588,7 @@ The optimized Windows executable uses source `ba156c9b818c8fdce1e53935bd2102cc5a
 
 The implementation adds discovery on the selected Windows private interface, expiring QR information and Android pinned address recovery. The embedded React browser supports saved Library browsing, search, note rendering, managed preview and download, and explicit saved-note edits under an approved session. Android connected transfer adapters reuse the Rust managed-original and export authorities. [Host and security contract](../development/NEXT-HOST.md) · [Help](../help/next-foundation.md#connect-android-on-the-same-wi-fi).
 
-Unresolved original parity includes legacy workspace ZIP review/compatibility, Android link-depth export and review coverage, browser creation and organization and local owner handoff, authorized cross-interface recovery, workspace replacement, legacy archive compatibility, export fidelity, PDF functionality and linked-occurrence navigation. Physical Windows interaction, Samsung camera/permission/real-Wi-Fi and DHCP or sleep tests, accessibility and broad security qualification remain separate. macOS qualification and extra deployment platforms remain deferred. Cloud sync and collaborative editing remain future enhancements.
+Unresolved original parity includes legacy workspace ZIP review/compatibility, Android link-depth export and review coverage, browser creation and organization and local owner handoff, authorized cross-interface recovery, legacy archive compatibility, export fidelity, PDF functionality and linked-occurrence navigation. Physical Windows interaction, Samsung camera/permission/real-Wi-Fi and DHCP or sleep tests, accessibility and broad security qualification remain separate. macOS qualification and extra deployment platforms remain deferred. Cloud sync and collaborative editing remain future enhancements.
 
 **Candidate delivery.** Windows and the standalone Windows host use source `ef81de68565e7c75d0e867b712581d8612fe20df`. The original-signer APK uses `78b4bda4adab5b46dccdd2f5e883203efb1a1c6a`, package `com.vaultor.app.next`, versionCode 34, minimum API 36 and target API 37. The [artifact and benchmark record](../../benchmarks/tauri-rust/summaries/m24d-network.json) contains the local artifact paths, SHA-256 hashes and local Linux/amd64 image ID.
 
@@ -614,7 +614,7 @@ M25 measured the repeated Electron/Java and Next Windows managed-note workloads 
 
 ### M26-A — Functional parity implementation order
 
-1. **Archives and recovery.** Original `TransferService` checkpoints replacement and changes workspace generation. Next restore-as-new publishes a separately staged directory and merge journals managed bytes. First protect archive identity on Windows. Replacement needs a durable recovery decision before opening the workspace, coordination with the owner lock, protected draft and Activity barriers, and generation invalidation for host grants and sessions. Require restart and locked-handle proof before exposing replacement.
+1. **Archives and recovery.** Original `TransferService` checkpointed destructive replacement and changed workspace generation. The M26-A3 product decision omits that operation. Next restores into a separately staged directory and journals managed bytes for reviewed merge. Protect archive identity, publication and existing drafts.
 2. **Legacy transfers.** The original Java ZIP reader supports logical formats 1–10 with a checksummed inventory. Next accepts its own framed archive. Establish original-writer fixtures and verify mapping before admitting any legacy format. Original Android collected ZIPs go through host-owner review for import-as-new. Preserve that approval boundary and qualify receipt replay.
 3. **Browser.** Original Dashboard and collection menus create managed notes through the workspace API. Next already reads and saves through its cookie-authenticated projection. Add creation through the same Rust owner, then verify organization and saved-state reconciliation. The original local owner handoff is a one-use loopback bootstrap ticket, separate from LAN browser approval. Require connector isolation and revocation evidence before adding it.
 4. **PDF, linked navigation and exports.** Original `FileTextProcess` performs bounded PDF body extraction, and its inline preview delegates to Chromium. Next has PDF.js preview and UTF-8 indexing. Verify extracted passages, protected previews and cleanup. Reconcile linked occurrence scope against the original References UI, then verify exact or unresolved navigation. Compare rendered original and Next exports and verify linked/Review identity remaps in portable fixtures. Keep these criteria in the existing parity register.
@@ -624,7 +624,7 @@ M25 measured the repeated Electron/Java and Next Windows managed-note workloads 
 | Capability | Functional status and remaining acceptance |
 | --- | --- |
 | Next restore as new and merge | Available. Restore requires verified canonical identities, database integrity and a completed WAL checkpoint. Merge retains its identity remap and exact-repeat receipt. |
-| In-place replacement and restart rollback | Still functionally incomplete. The workspace lock lives inside the directory, ordinary startup can initialize a missing directory, and the host binds grants to a generation. A pre-open durable journal, an ownership and editor barrier, and Windows crash and locked-handle qualification are needed before exposing it. See [Workspace transfers](../workspace/WORKSPACE-TRANSFERS.md#verification-boundary). |
+| Destructive in-place workspace replacement | Intentionally omitted by the M26-A3 product decision. Restore as New and reviewed Merge are the supported operations. |
 | Original Electron workspace ZIP | Still functionally incomplete for formats 1–10. The original Java writer and reader round trip a version 5 fixture with managed bytes. This qualifies the original fixture only. Next lacks duplicate-preserving ZIP validation and the compatibility mapping for original resources, organization, metadata, links and Reviews. |
 | Browser creation and organization | Managed note creation supports title and optional collection placement. Rust checks the browser grant and generation in the owner, and concurrent exact retries share the durable receipt. Other original resource creation and organization workflows remain functionally incomplete. |
 | Browser owner handoff | Still functionally incomplete. The original uses a short-lived one-use ticket for the loopback owner connector. Next's paired HTTPS browser credentials remain grant-only. |
@@ -657,7 +657,7 @@ The local Windows raw reports under `benchmarks/tauri-rust/raw/` are timestamped
 
 ### M26-A2 compatibility and export checkpoint
 
-The implementation order follows the original source contracts. Protect recognized workspaces from empty initialization and require a durable authority decision before exposing replacement. Translate Java `TransferService` ZIPs into the verified Rust archive pipeline. Connected workflows must reuse server-owned grant and owner approval boundaries. Document renderers use the original rich fixture. Linked and Review portability require explicit identity and authorization evidence.
+The implementation order follows the original source contracts. Protect recognized workspaces from empty initialization. Translate Java `TransferService` ZIPs into the verified Rust archive pipeline. Connected workflows must reuse server-owned grant and owner approval boundaries. Document renderers use the original rich fixture. Linked and Review portability require explicit identity and authorization evidence.
 
 | Legacy version | Implemented behavior and fixture coverage |
 | --- | --- |
@@ -670,7 +670,7 @@ The implementation order follows the original source contracts. Protect recogniz
 
 Nonempty legacy Review evidence is refused. Java portable records omit the saved revision needed by Next. Existing Next Review and linked-descriptor archive round trips continue to use their current identities and access rules.
 
-Recognized or remembered incomplete storage now refuses an ordinary open before SQLite can initialize a replacement. The remaining in-place replacement blocker is a pre-open durable authority decision that survives a locked swap, interruption and reopen with the previous generation preserved. No in-place action is exposed. Android owner-reviewed ZIP intake, broader browser organization and local one-use handoff, PDF body indexing, deeper linked-resource and Review portability, and full formatted PDF export remain open.
+Recognized or remembered incomplete storage refuses an ordinary open before SQLite can initialize an empty workspace. Android owner-reviewed ZIP intake, broader browser organization and local owner handoff, PDF body indexing, deeper linked-resource and Review portability, and full formatted PDF export were open at M26-A2.
 
 #### M26-A2 qualification
 
@@ -690,9 +690,27 @@ The Windows executables and Linux/amd64 Docker image use application source `606
 
 Windows raw reports under `benchmarks/tauri-rust/raw/` are timestamped `2026-11-23T04-35-18.392Z` for transfers, `04-35-36.772Z` for previews, `04-36-55.357Z` for protected commit, and `04-37-01.736Z` for hosting. The remaining functional gaps keep the candidate in M26-A. Physical, visual, accessibility, security and installer gates remain open.
 
+### M26-A3 restoration policy and work queue
+
+**Restore as New Workspace** is the primary backup recovery workflow. It publishes an independently verified workspace for inspection and later switching. **Merge into Existing Workspace** remains separately reviewed and preserves destination content, revisions, identities and protected drafts. Workspace deletion is separate from recovery and requires explicit confirmation, ownership checks and external-source preservation wherever available. The original Electron application supported destructive in-place restoration. Vaultor Next intentionally omits it as a final product decision.
+
+Browser Library supports rename, pins, collection membership and moves, Trash and Restore with the existing grant and resource-revision checks. Connected workspace and selected archives and Markdown-with-assets packages retain persisted Review evidence for included managed targets. Standalone Markdown, Word and PDF keep their document output. Existing Next portable restore and merge retain their evidence and identity rules.
+
+Source-derived version 1–4 fixtures cover managed note translation and the organization and Review section version guards. No archived version 1–4 writer was run. The original Java ZIP writer produced full version 9 and partial version 10 fixtures. Both omit the content fingerprint required for exact linked rebinding and are refused before workspace creation or merge. Older legacy Review records also omit the captured revision and remain refused when present.
+
+| Remaining functional requirement | Current boundary |
+| --- | --- |
+| Android owner-reviewed ZIP intake | Original `CollectedZips` checks the device and grant, stages a bounded upload and requires an owner preview before creation. Next lacks the durable owner inbox, approval and device receipt path. |
+| Browser organization | Collection creation, rename, deletion, and tag management remain open. Managed links already open from saved browser notes. Link insertion and broader keyboard selection remain unqualified. |
+| Local owner handoff | The original used a loopback-only owner HTTP connector and a 60-second one-use ticket. Next lacks the isolated connector and owner session that can approve peers. |
+| PDF body indexing | Next indexes supported saved UTF-8 originals. PDF preview is separate. The original PDF worker had process, page and text bounds. Next has no bounded PDF extraction worker or managed/linked PDF FTS publishing or invalidation evidence. |
+| Linked and Review portability | Existing Next linked rebinding requires explicit consent and a matching archived fingerprint. Deep path, asset and reference portability remain unqualified. Scoped Review export is implemented, with legacy missing-revision and broader provenance or triage history still unresolved. |
+
+M26-B remains gated on the open functional work. Physical Windows and Samsung/Wi-Fi acceptance, visual comparisons, keyboard and assistive technology checks, and broader security qualification remain separate.
+
 ### M26-B/C — Physical acceptance and separately authorized production qualification
 
-- **Original functional parity:** Preserve workspace replacement gates, legacy archive compatibility and owner-reviewed mobile ZIP intake, browser creation and organization, original export coverage and restart fidelity, PDF functionality and linked-occurrence navigation.
+- **Original functional parity:** Preserve Restore as New and Merge integrity, legacy archive compatibility and owner-reviewed mobile ZIP intake, browser creation and organization, original export coverage and restart fidelity, PDF functionality and linked-occurrence navigation.
 - **Physical desktop acceptance:** Check the native Windows mouse, touch, keyboard, motion, file-picker and installer workflows separately from automated tests.
 - **Physical Android and network acceptance:** Check Samsung scanning and permission handling, Android discovery and reconnect, DHCP, sleep and interface changes on an intended network.
 - **Security and accessibility:** Recheck draft protection, import and browser authorization, hostile networking, keyboard and assistive workflows, TLS and release migration on the supported matrix.

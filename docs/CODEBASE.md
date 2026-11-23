@@ -16,6 +16,8 @@ Windows desktop generates a stable CA on first enable and uses user-scoped DPAPI
 
 **Next M26-A2:** Opening a remembered or selected workspace requires existing valid storage. Compatible Electron ZIPs enter the same manifest validation, Activity, staged restore and transactional merge pipeline as Next archives. The shared Rust exporters retain mixed table spans in Word and Markdown, embed verified managed PNG/JPEG bytes in Word, and map selectable PDF text through the embedded Noto Sans face. The authoritative owner and portable Next schema are unchanged. See the [compatibility matrix](plans/VAULTOR-NEXT.md#m26-a2-compatibility-and-export-checkpoint).
 
+**Next M26-A3:** Restore as New Workspace is the primary recovery operation. Reviewed Merge remains independent. Destructive in-place workspace replacement is intentionally omitted. Browser organization uses Rust-managed revision and grant checks. Connected archive and Markdown-with-assets exports carry saved Review evidence scoped to included managed targets. See the [M26-A3 record](plans/VAULTOR-NEXT.md#m26-a3-restoration-policy-and-work-queue).
+
 ## Product and architecture
 
 **Next M25 managed autosave:** The desktop persists the validated Tiptap document to its usual recovery journal, then sends the resource ID, expected revision, token and protected sequence over Tauri IPC. The SQLite owner validates that exact draft and publishes its stored document, updates the search and relationship projections, and removes the draft in the same transaction. A conflict or failed cleanup rolls back publication and retains the draft. Direct saved-note writes, including the browser adapter, retain their document-bearing request. Linked Markdown retains its own source publication path.
@@ -521,9 +523,13 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-23 — Next M26-A3 restoration and parity
+
+Recorded the Restore as New product decision, connected Browser organization to existing Rust services, and included scoped Review evidence in connected packages. Updated Next Help, the Feature Catalogue, host, Review and transfer guides, the UI audit and the parity ledger. Rust all-targets passed 68 library and two Windows binary tests. Next Vitest passed 113 tests, original Java passed five linked archive tests, and all 17 Help governance tests passed. The [M26-A3 record](plans/VAULTOR-NEXT.md#m26-a3-restoration-policy-and-work-queue) tracks artifact qualification and functional gaps.
+
 ### 2026-11-23 — Next M26-A2 compatibility and exports
 
-Added fail-closed workspace startup, legacy reader and format-specific export fidelity. Updated the workspace transfers and export guides, Next Help and catalogue. Rust, frontend, original fixture, optimized Windows, Word render, Docker and Chromium checks passed as scoped in the [M26-A2 record](plans/VAULTOR-NEXT.md#m26-a2-compatibility-and-export-checkpoint). Replacement, connected workflows and legacy portability retain explicit open criteria.
+Added fail-closed workspace startup, legacy reader and format-specific export fidelity. Updated the workspace transfers and export guides, Next Help and catalogue. Rust, frontend, original fixture, optimized Windows, Word render, Docker and Chromium checks passed as scoped in the [M26-A2 record](plans/VAULTOR-NEXT.md#m26-a2-compatibility-and-export-checkpoint). Connected workflows and legacy portability retain explicit open criteria.
 
 ### 2026-11-23 — Next M26-A functional checkpoint
 

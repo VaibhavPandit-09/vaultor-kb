@@ -33,6 +33,7 @@ pub(crate) fn initialize(db: &Connection) -> Result<(), String> {
 pub(super) fn router() -> Router<Host> {
     let workspace = mobile::browser_reads()
         .route("/resources/{id}/preview", get(preview))
+        .route("/resources/{id}/organization", put(organize).layer(DefaultBodyLimit::max(4096)))
         .route("/note-creates/{id}", put(create_note).layer(DefaultBodyLimit::max(4096)))
         .route(
             "/notes/{id}",
@@ -283,6 +284,92 @@ struct SaveNote {
 struct CreateNote {
     title: String,
     collection: Option<Uuid>,
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "operation", rename_all = "camelCase", deny_unknown_fields)]
+enum OrganizationChange {
+    Pin { revision: i64, value: bool },
+    Membership { revision: i64, collection: Uuid, value: bool },
+    Move { revision: i64, from: Uuid, to: Uuid },
+    Rename { revision: i64, title: String },
+    Trash { revision: i64, value: bool },
+}
+
+async fn organize(
+    State(host): State<Host>,
+    RoutePath(id): RoutePath<Uuid>,
+    headers: HeaderMap,
+    Json(change): Json<OrganizationChange>,
+) -> ApiResult<Json<Value>> {
+    let workspace = headers
+        .get("x-vaultor-workspace")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.parse::<Uuid>().ok())
+        .ok_or(StatusCode::BAD_REQUEST)?;
+    let _permit = host.requests.try_acquire().map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+    let grant = host.authorize(&headers, workspace).await?;
+    let access = host.access.clone();
+    let stop = host.stop.clone();
+    let gate = host.enrollment.clone();
+    let result = host.storage.call_host(&host.root, move |ws| {
+        let _guard = gate.lock().map_err(crate::domain::error)?;
+        if stop.is_cancelled()
+            || !grant.current_sync(&access, workspace)
+            || ws.review_generation()? != workspace.to_string()
+        {
+            return Ok(Value::Null);
+        }
+        let id = id.to_string();
+        let current = mobile::summary(ws, &id, true)?;
+        let actual = current["revision"].as_str().and_then(|text| text.parse::<i64>().ok());
+        let revision = match &change {
+            OrganizationChange::Pin { revision, .. }
+            | OrganizationChange::Membership { revision, .. }
+            | OrganizationChange::Move { revision, .. }
+            | OrganizationChange::Rename { revision, .. }
+            | OrganizationChange::Trash { revision, .. } => *revision,
+        };
+        if actual != Some(revision) {
+            return Err("Resource revision changed".into());
+        }
+        let trashed = !current["trashedAt"].is_null();
+        if trashed && !matches!(change, OrganizationChange::Trash { .. }) {
+            return Err("Resource is in Trash".into());
+        }
+        use crate::organization::Request as Org;
+        match change {
+            OrganizationChange::Pin { value, .. } if current["favorite"] != value => {
+                ws.organization(Org::Pin { ids: vec![id.clone()], value })?;
+            }
+            OrganizationChange::Membership { collection, value, .. } => {
+                let collection = collection.to_string();
+                let (add, remove) = if value { (Some(collection), None) } else { (None, Some(collection)) };
+                ws.membership(id.clone(), add, remove)?;
+            }
+            OrganizationChange::Move { from, to, .. } if from != to => {
+                let from = from.to_string();
+                let to = to.to_string();
+                let snapshot = ws.memberships(id.clone())?;
+                let ids = snapshot["members"].as_array().ok_or("Missing memberships")?;
+                if ids.iter().any(|entry| entry.as_str() == Some(&from)) {
+                    ws.membership(id.clone(), Some(to), Some(from))?;
+                } else if !ids.iter().any(|entry| entry.as_str() == Some(&to)) {
+                    return Err("Source collection membership changed".into());
+                }
+            }
+            OrganizationChange::Rename { title, .. } => {
+                ws.media(json!({"op":"rename", "id":id, "title":title, "revision":revision}))?;
+            }
+            OrganizationChange::Trash { value, .. } if value != trashed => {
+                ws.organization(Org::Trash { ids: vec![id.clone()], restore: !value })?;
+            }
+            _ => {}
+        }
+        mobile::summary(ws, &id, true)
+    }).await.map_err(|_| StatusCode::CONFLICT)?;
+    if result.is_null() { return Err(StatusCode::FORBIDDEN); }
+    Ok(Json(result))
 }
 
 async fn create_note(

@@ -2141,6 +2141,9 @@
         "Download a saved reading copy and send Android Review feedback to Vaultor Next",
         "Browse, create and save granted notes through the experimental Next HTTPS browser",
         "Create a browser note in a selected collection and retry without duplicates",
+        "Rename, pin, move, trash and restore managed resources in the granted Next browser",
+        "Export scoped saved Review evidence in connected Android archive and Markdown with assets packages",
+        "Verify a backup in a new independent workspace or review a merge into an existing workspace",
         "Unlock a password-protected PDF in the Next desktop preview",
         "Send a confirmed Android import and receive a checksum-verified connected export",
         "Duplicate managed resources and drag prepared copies into Explorer",
@@ -2201,11 +2204,11 @@
         }
       },
       "limitations": [
-        "Experimental Windows workspaces. M1 workspaces and Electron database or ZIP imports require a different application.",
+        "Experimental Windows workspaces. Compatible Electron ZIP versions 1–8 have documented scope and evidence limits. Original Electron databases and linked ZIP versions 9–10 require the original application.",
         "Draft protection follows a debounced SQLite receipt; unsent edits are not crash durable.",
         "Android requires the separate Next APK and matching HTTPS host. QR, nearby discovery and manual CA-pinned pairing use the same owner approval. Real Wi-Fi and physical-device acceptance are pending.",
-        "Next browser access requires trusted HTTPS and an owner grant. It supports saving existing notes and leaves workspace administration local.",
-        "In-place replacement and full Word/PDF fidelity remain unavailable.",
+        "Next browser access requires trusted HTTPS and an owner grant. Workspace administration remains local.",
+        "Vaultor Next intentionally omits destructive in-place workspace replacement. Restore as New Workspace and reviewed Merge are available. Full formatted PDF fidelity remains limited.",
         "Transfers are bounded; imports commit per item and can complete partially. External linked contents and drafts are excluded from portable archives."
       ],
       "related": [],

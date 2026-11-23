@@ -81,6 +81,40 @@ export async function browserChecks(docker, network, name, bind, owner, ip, file
       await cdp('Page.reload',{});
       await poll(()=>run("[...document.querySelectorAll('.next-resource-open')].some(x=>x.textContent==='M26-A Chromium note')"),'created note survives reload');
     }
+    if(process.argv.includes('--check-organization')) {
+      const action = label => run(`[...document.querySelectorAll('[role=dialog] button')].find(button=>button.textContent===${JSON.stringify(label)}).click(); true`);
+      const menu = async label => {
+        await run("document.querySelector('button[aria-label=\"Organize M26-A Chromium note\"]').click(); true");
+        await poll(()=>run(`[...document.querySelectorAll('[role=dialog] button')].some(button=>button.textContent===${JSON.stringify(label)})`),label);
+      };
+      const view = value => run(`{const view=document.querySelector('[aria-label="Library view"]'); view.value=${JSON.stringify(value)}; view.dispatchEvent(new Event('change',{bubbles:true})); true}`);
+      const present = "!!document.querySelector('button[aria-label=\"Organize M26-A Chromium note\"]')";
+      await menu('Pin');
+      await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+      await poll(()=>run("!document.querySelector('[role=dialog]') && document.activeElement?.getAttribute('aria-label')==='Organize M26-A Chromium note'"),'Escape restores organization trigger focus');
+      await menu('Pin');
+      const organizationStarted = performance.now();
+      await action('Pin');
+      await view('pinned');
+      await poll(()=>run(present),'pinned resource listed');
+      samples.push({metric:'docker_browser_pin_to_listed',value:performance.now()-organizationStarted,unit:'ms',notes:'Chromium pin action through Pinned listing observation, including listing debounce and poll. Disposable loopback.'});
+      await menu('Unpin');
+      await action('Unpin');
+      await poll(()=>run('!'+present),'unpinned resource absent');
+      await view('library');
+      await poll(()=>run(present),'unpinned resource still in Library');
+      await menu('Move to Trash');
+      await run("window.confirm=()=>true; true");
+      await action('Move to Trash');
+      await poll(()=>run('!'+present),'trashed resource absent from Library');
+      await view('trash');
+      await poll(()=>run(present),'trashed resource in Trash');
+      await menu('Restore from Trash');
+      await action('Restore from Trash');
+      await poll(()=>run('!'+present),'restored resource absent from Trash');
+      await view('library');
+      await poll(()=>run(present),'restored resource in Library');
+    }
     await poll(()=>run("document.body.innerText.includes("+JSON.stringify(fileName)+")"),'import appears in Library');
     started=performance.now();
     await run("[...document.querySelectorAll('button')].find(x=>x.innerText.includes("+JSON.stringify(fileName)+")).click();true");
