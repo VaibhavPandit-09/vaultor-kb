@@ -729,6 +729,26 @@ Windows Settings starts a separate IPv4 loopback owner connector on demand. It p
 
 M26-A5 owns PDF indexing, deep linked portability, broader Review provenance/history, legacy identity and rich export fidelity. Destructive workspace replacement remains intentionally omitted.
 
+**Qualification, 2026-11-23**
+
+| Local artifact | SHA-256 or image identity |
+| --- | --- |
+| Optimized Windows desktop `vaultor-next-m26a4.exe` | `efeb5fbbe4147db66a3b174beb218a6afd363efa4c1b476204d0534aff8f4090` |
+| Standalone Windows `vaultor-next-host-m26a4.exe` | `c7bd53a732a96e8477d4f852e48195074cbdd4d1c36b2aa276918087d7c3c24f` |
+| Signed `mobile/releases/0.1.0-m26a4.1/Vaultor-Next-Android-0.1.0-m26a4.1.apk` | `a60dca6fd1066ab776c22ca2e0810c8283a0f5fe5b7e66ba5989c4e570b30cc2` |
+| Linux/amd64 `vaultor-next-m26a4:local` | `sha256:ace393bdea2704385efc0746b4890e573593fed203b6714d2270f447661024b2` |
+
+Artifact source `beb1abf4437e2da24845171ad0d820b7711cb445`. The APK retains the original signer and `com.vaultor.app.next` identity, versionCode 35, minimum API 36 and target API 37. The installed APK hash matched on the fresh API 36 emulator.
+
+- **Rust.** 70 library and two Windows binary checks passed. TLS fixtures exercised incomplete ZIP replay, host restart, owner preview and approval, cancellation and rejection, withdrawn grants, exact restored originals and duplicate completion replay. Browser checks covered cross-workspace refusal, stale revisions, same-name tag reuse and reviewed deletion. The local owner test used Windows TCP and headless Chromium (Edge) for bootstrap, and also checked cancellation, expiration, concurrent redemption, logout, origin, HTTPS isolation and stale owner credentials after restart.
+- **Windows native.** The optimized WebView2 app displayed the incoming ZIP and verified its contents. The harness approved the request via owner IPC with a disposable destination and verified exact restored bytes. Desktop IPC saw the same collection created through the granted HTTPS browser adapter. An already-open desktop view can still require an explicit refresh. The native file picker itself was outside this scripted path.
+- **Chromium and Docker.** Linux/amd64 verified TLS, grants, restart, revocation and graceful stop. Chromium created a nested collection, renamed it, assigned tags and membership, reread state after reload, removed a collection while retaining its resource, removed a tag, and signed out after grant withdrawal. The browser driver retry waited for a new document after reload before touching the collection control.
+- **Android emulator.** Ten native import-store checks passed. A separate actual signed-app instrumentation run submitted a Java v5 ZIP over ADB-reversed Rust HTTPS, reconciled the owner's approval and rejection, and verified the restored managed bytes. It used a content provider with the real native queue and transport. Touch selection, Samsung hardware and genuine Wi-Fi remain unqualified. Android TypeScript and scoped lint passed with warnings. Jest passed 111 of 112 checks. The offline export test failure reproduced against the untouched M26-A3 source.
+- **Frontend and Help.** TypeScript and scoped lint passed. Next Vitest passed 112 checks in the full run and its remaining timed-out interaction passed on isolated rerun. Help validated 43 features, 16 articles and 17 governance tests, and the updated article is embedded in the desktop build. Strict CSV validation verified 156 unique requirements, 16 columns, and 312 evidence cells pointing to 33 pinned files.
+- **Focused measurements.** On Windows loopback the 970-byte ZIP took 16.4 ms to obtain a durable receipt and 63.4 ms to show verified counts. Approval to displayed availability took 2.44 seconds, including the inbox refresh interval. Docker Chromium collection and tag creation took about 160 ms and 142 ms to appear. These are single observations and include polling where applicable. The comparable M25 draft probe measured 30.45 ms and 151 bytes median over 20 publications. All 24 including warmups preserved the exact saved content and revision. No Wi-Fi throughput or sustained overhead estimate was made.
+
+Local raw reports under `benchmarks/tauri-rust/raw/` are `m26a4-docker.json` and the Windows reports timestamped `2026-11-23T09-11-02.170Z` and `09-11-33.166Z`. Historical observations and workbook formulas were preserved. Force-kill during independent restore publication and orphan workspace staging cleanup remain separate qualification cases. Physical interaction, visual and accessibility review, and production packaging and security qualification remain separate gates.
+
 ### M26-B/C — Physical acceptance and separately authorized production qualification
 
 - **Original functional parity:** Preserve Restore as New and Merge integrity, legacy archive compatibility and owner-reviewed mobile ZIP intake, browser creation and organization, original export coverage and restart fidelity, PDF functionality and linked-occurrence navigation.

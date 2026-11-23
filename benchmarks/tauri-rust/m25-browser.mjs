@@ -189,7 +189,9 @@ export async function browserChecks(docker, network, name, bind, owner, ip, file
       await click('Add to collection','[role=dialog]');
       await selectCollection('Division / Renamed branch');
       await poll(()=>run(`!!document.querySelector(${JSON.stringify(organized)})`),'new membership from saved listing');
+      const beforeReload=await run('performance.timeOrigin');
       await cdp('Page.reload',{});
+      await poll(()=>run(`performance.timeOrigin!==${beforeReload} && !!document.querySelector('[aria-label="Collection"]')`),'new browser document after reload');
       await collectionOption('Division / Renamed branch');
       await selectCollection('Division / Renamed branch');
       await poll(()=>run(`!!document.querySelector(${JSON.stringify(organized)})`),'membership survives reload');

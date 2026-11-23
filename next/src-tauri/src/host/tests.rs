@@ -705,6 +705,18 @@ async fn loopback_owner_handoff_is_single_use_expiring_and_connector_bound() {
         assert!(output.status.success());
         assert!(String::from_utf8_lossy(&output.stdout).contains("Owner browser connected."));
     }
+    let (_, stale_ticket) = open().await;
+    listener.stop().await.unwrap();
+    drop(host);
+    // The loopback Router holds a Host clone until its shutdown task runs.
+    tokio::task::yield_now().await;
+    let identity = Identity::open(&fixture.access, &fixture.ca).unwrap();
+    let restarted = Host::new(worker.storage(), fixture.root.clone(), identity).await.unwrap();
+    let listener = restarted.clone().listen("127.0.0.1:0".parse().unwrap(), fixture.chain.clone(), fixture.key.clone()).await.unwrap();
+    let current = restarted.owner_browser_url().await.unwrap();
+    let new_address: SocketAddr = current.strip_prefix("http://").unwrap().split_once("/access#ticket=").unwrap().0.parse().unwrap();
+    assert_eq!(local(new_address,"POST",bootstrap,&format!("Origin: http://{new_address}\r\n"),&stale_ticket).await.0,401);
+    assert_eq!(local(new_address,"GET","/api/access/session",&credentials,"").await.0,401);
     listener.stop().await.unwrap();
     worker.stop();
 }

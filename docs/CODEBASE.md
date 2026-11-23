@@ -527,7 +527,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-23 — Next M26-A4 connected workspace workflows
 
-Reused the encrypted Android queue, Rust archive restore and desktop Activity for owner-reviewed Android ZIP proposals. Routed browser collection and tag changes through shared organization state and added an isolated Windows owner handoff. Updated Next Help, the Feature Catalogue, host and transfer guides, UI audit, and parity ledger. The [M26-A4 record](plans/VAULTOR-NEXT.md#m26-a4-connected-workspace-workflows) owns actual qualification.
+Reused the encrypted Android queue, Rust archive restore and desktop Activity for owner-reviewed Android ZIP proposals. Routed browser collection and tag changes through shared organization state and added an isolated Windows owner handoff. Updated Next Help, the Feature Catalogue, host and transfer guides, UI audit, and parity ledger. Rust all-targets, Windows native probes, Docker/Chromium and signed Android API 36 transfer checks passed. The [M26-A4 record](plans/VAULTOR-NEXT.md#m26-a4-connected-workspace-workflows) details the unchanged offline-export test failure and remaining qualification.
 
 ### 2026-11-23 — Next M26-A3 restoration and parity
 

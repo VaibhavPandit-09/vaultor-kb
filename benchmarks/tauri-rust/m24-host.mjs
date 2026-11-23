@@ -109,15 +109,15 @@ export async function qualifyHost({evaluate, wait, record, report, folder, susta
   const port = Number(status.address.split(':').at(-1));
   function api(method, path, options = {}) {
     return new Promise((resolve, reject) => {
-      const body = options.body === undefined ? undefined : JSON.stringify(options.body);
+      const body = Buffer.isBuffer(options.body) ? options.body : options.body === undefined ? undefined : JSON.stringify(options.body);
       const headers = {...options.headers};
-      if (body) Object.assign(headers, {'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body)});
+      if (body) Object.assign(headers, {'Content-Type': headers['Content-Type']??'application/json', 'Content-Length': Buffer.byteLength(body)});
       const req = request({host: '127.0.0.1', port: options.port ?? port, method, path, ca, agent: false, headers}, res => {
         const data = [];
         res.on('data', chunk => data.push(chunk));
         res.on('end', () => {
           const text = Buffer.concat(data).toString();
-          resolve({status: res.statusCode, value: text && res.headers['content-type']?.includes('json') ? JSON.parse(text) : text});
+          resolve({status: res.statusCode, headers:res.headers, value: text && res.headers['content-type']?.includes('json') ? JSON.parse(text) : text});
         });
         res.on('error', reject);
       });
@@ -144,6 +144,66 @@ export async function qualifyHost({evaluate, wait, record, report, folder, susta
   await admin({op:'grant', id:device, allow:true});
   const workspaces = await api('GET', '/api/next/v1/workspaces', auth);
   const base = `/api/next/v1/workspaces/${workspaces.value[0].id}`;
+  if (process.argv.includes('--m26a4-zips')) {
+    const bytes=await readFile(new URL('../../next/src-tauri/fixtures/electron-workspace-v5.zip',import.meta.url));
+    const id=crypto.randomUUID(), workspace=workspaces.value[0].id;
+    const intent={hostId:status.hostId,workspaceId:workspace,generation:workspace,filename:'fixture.zip',
+      sha256:createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length,name:'Windows ZIP fixture'};
+    const upload=Buffer.concat([Buffer.from('--vaultor-zip\r\nContent-Disposition: form-data; name="intent"\r\n\r\n'+
+      JSON.stringify(intent)+'\r\n--vaultor-zip\r\nContent-Disposition: form-data; name="file"; filename="fixture.zip"\r\n\r\n'),
+      bytes,Buffer.from('\r\n--vaultor-zip--\r\n')]);
+    const path='/api/next/mobile/v1/collected-zips/'+id;
+    const uploadStarted=performance.now();
+    const received=await api('PUT',path,{headers:{...auth.headers,'Content-Type':'multipart/form-data; boundary=vaultor-zip'},body:upload});
+    assert.equal(received.status,200,JSON.stringify(received.value));
+    assert.equal(received.value.state,'AWAITING_OWNER');
+    record('m26a4-windows-zip',1,'upload_to_durable_receipt',performance.now()-uploadStarted,'ms',
+      bytes.length+' bytes over new loopback TLS through durable receipt. One sample.');
+    await evaluate("document.querySelector('[aria-label=\"Workspace transfers\"]').click()");
+    await wait("[...document.querySelectorAll('button')].some(button=>button.textContent==='Incoming workspace backups…')",'workspace transfer menu');
+    await evaluate("[...document.querySelectorAll('button')].find(button=>button.textContent==='Incoming workspace backups…').click()");
+    await wait("document.body.innerText.includes('Windows ZIP fixture')",'incoming ZIP request');
+    const reviewStarted=performance.now();
+    await evaluate("[...document.querySelectorAll('button')].find(button=>button.textContent==='Review backup').click()");
+    await wait("document.body.innerText.includes('Verified and awaiting your decision')",'verified archive counts');
+    record('m26a4-windows-zip',1,'review_to_verified_counts',performance.now()-reviewStarted,'ms','WebView2 click through displayed archive counts. One sample with polling.');
+    const destination=join(folder,'Restored Android workspace');
+    const approveStarted=performance.now();
+    const launched=await admin({op:'workspaceZip',action:'approve',id,destination});
+    assert.equal(launched.state,'APPROVED');
+    await wait("document.body.innerText.includes('New workspace available')",'restored independent workspace');
+    record('m26a4-windows-zip',1,'approval_to_workspace_available',performance.now()-approveStarted,'ms','Owner IPC through displayed terminal state, including the UI refresh interval. One sample.');
+    const confirmation=await api('GET',path,auth);
+    assert.equal(confirmation.value.destinationWorkspaceId,id);
+    const {readdir}=await import('node:fs/promises');
+    const managed=await readdir(join(destination,'managed'));
+    assert.equal(managed.length,1);
+    assert.equal(await readFile(join(destination,'managed',managed[0]),'utf8'),'unchanged-original');
+    await evaluate("document.querySelector('[aria-label=\"Close dialog\"]')?.click()");
+    report.checks.push('Windows transfer review displayed an incoming ZIP, verified it and observed exact restored original after owner IPC approval');
+
+    const Origin='https://'+status.address;
+    const browser=await api('POST','/api/pairings',{headers:{Origin},body:{
+      name:'M26-A4 Windows browser fixture',kind:'browser',nonce:randomBytes(32).toString('hex'),fingerprint:status.fingerprint,
+    }});
+    assert.equal(browser.status,200);
+    await admin({op:'decide',id:browser.value.id,code:browser.value.code,approve:true});
+    const completed=await api('POST','/api/pairings/'+browser.value.id+'/complete',{
+      headers:{Origin,'X-Vaultor-Pairing':browser.value.secret},body:{},
+    });
+    assert.equal(completed.status,200);
+    await admin({op:'grant',id:completed.value.deviceId,allow:true});
+    const Cookie=completed.headers['set-cookie'][0].split(';')[0];
+    const session=await api('GET','/api/access/session',{headers:{Cookie}});
+    const organization=await api('PUT','/api/next/browser/v1/organization/collections/'+crypto.randomUUID(),
+      {headers:{Origin,Cookie,'X-Vaultor-CSRF':session.value.csrf,'X-Vaultor-Workspace':workspace},
+        body:{operation:'create',name:'Browser collection reflected in Windows',parentId:null}});
+    assert.equal(organization.status,200,JSON.stringify(organization.value));
+    const desktop=await ws({kind:'snapshot'});
+    assert(desktop.collections.some(row=>row.id===organization.value.id&&row.name===organization.value.name));
+    await admin({op:'revoke',id:completed.value.deviceId});
+    report.checks.push('Native WebView2 workspace IPC observed the identical saved collection created through the browser HTTPS adapter');
+  }
   for (const [metric, path] of [
     ['workspace_list', '/api/next/v1/workspaces'], ['saved_note', `${base}/notes/${note.id}`],
     ['managed_search', `${base}/resources?query=M24`],
