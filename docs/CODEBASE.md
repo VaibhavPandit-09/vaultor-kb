@@ -525,7 +525,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-23 — Next M26-A3 restoration and parity
 
-Recorded the Restore as New product decision, connected Browser organization to existing Rust services, and included scoped Review evidence in connected packages. Updated Next Help, the Feature Catalogue, host, Review and transfer guides, the UI audit and the parity ledger. Rust all-targets passed 68 library and two Windows binary tests. Next Vitest passed 113 tests, original Java passed five linked archive tests, and all 17 Help governance tests passed. The [M26-A3 record](plans/VAULTOR-NEXT.md#m26-a3-restoration-policy-and-work-queue) tracks artifact qualification and functional gaps.
+Recorded the Restore as New product decision, connected Browser organization to existing Rust services, and included scoped Review evidence in connected packages. Updated Next Help, the Feature Catalogue, host, Review and transfer guides, the UI audit and the parity ledger. Rust all-targets passed 68 library and two Windows binary tests. Next Vitest passed 113 tests, original Java passed five linked archive tests, and all 17 Help governance tests passed. Optimized Windows archive, draft and host probes, Docker and isolated Chromium passed within the [M26-A3 qualification scope](plans/VAULTOR-NEXT.md#m26-a3-restoration-policy-and-work-queue).
 
 ### 2026-11-23 — Next M26-A2 compatibility and exports
 

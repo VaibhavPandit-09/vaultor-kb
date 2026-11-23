@@ -114,6 +114,13 @@ export async function browserChecks(docker, network, name, bind, owner, ip, file
       await poll(()=>run('!'+present),'restored resource absent from Trash');
       await view('library');
       await poll(()=>run(present),'restored resource in Library');
+      await menu('Rename resource');
+      await action('Rename resource');
+      await poll(()=>run("document.activeElement?.getAttribute('maxlength')==='240'"),'rename field focused');
+      await run("document.activeElement.select(); true");
+      await cdp('Input.insertText',{text:'M26-A3 renamed note'});
+      await action('Save name');
+      await poll(()=>run("!!document.querySelector('button[aria-label=\"Organize M26-A3 renamed note\"]')"),'renamed resource listed');
     }
     await poll(()=>run("document.body.innerText.includes("+JSON.stringify(fileName)+")"),'import appears in Library');
     started=performance.now();

@@ -34,10 +34,16 @@ const bind=['--mount','type=bind,source='+tls+',target=/tls,readonly'];
 const accessMounted=['--mount','type=volume,source='+access+',target=/data/access'];
 function owner(...args){return JSON.parse(docker('exec',token,'vaultor-next-host','owner','/data/access',...args));}
 let port;
-const json=(method,path,headers={},body)=>new Promise((resolve,reject)=>{
+const json=(method,path,headers={},body,raw=false)=>new Promise((resolve,reject)=>{
   const data=body===undefined?undefined:Buffer.isBuffer(body)?body:JSON.stringify(body);
   const req=request({hostname:'127.0.0.1',port,path,method,ca,agent:false,headers:{...headers,...(data?{'Content-Type':headers['Content-Type']||'application/json','Content-Length':Buffer.byteLength(data)}:{})}},res=>{
-    let text='';res.on('data',str=>text+=str);res.on('end',()=>resolve({status:res.statusCode,body:text&&res.headers['content-type']?.includes('json')?JSON.parse(text):text}));
+    const chunks=[];
+    res.on('data',chunk=>chunks.push(chunk));
+    res.on('end',()=>{
+      const bytes=Buffer.concat(chunks);
+      const text=raw?'':bytes.toString('utf8');
+      resolve({status:res.statusCode,body:raw?bytes:text&&res.headers['content-type']?.includes('json')?JSON.parse(text):text});
+    });
   });
   req.setTimeout(2500,()=>req.destroy(Error('Timed out')));
   req.on('error',reject);req.end(data);
@@ -169,6 +175,36 @@ try{
   assert.equal(exported.status,200);
   assert.equal(check(exported.body),receipt.sha256);
   samples.push({metric:'docker_companion_note_export_download',value:performance.now()-began,unit:'ms',notes:'Linux/amd64 Docker loopback Markdown export through verified download with 125 ms polling cadence. Node client only.'});
+  if (process.argv.includes('--m26a3')) {
+    const reviewId=randomUUID(), comment='Disposable captured Review evidence';
+    const review=await json('PUT',projected+'/reviews/'+reviewId+'/'+id,headers,
+      {generation:scope,resourceId:id,baseRevision:'1',comment,context:'',quote:'',locator:{kind:'resource'}});
+    assert.equal(review.status,200,JSON.stringify(review.body));
+    const path=projected+'/companions/exports/'+randomUUID();
+    const query='?generation='+scope;
+    const accepted=await json('PUT',path,headers,{generation:scope,scope:'resources',format:'partial',depth:0,ids:[id]});
+    assert.equal(accepted.status,200,JSON.stringify(accepted.body));
+    let ready;
+    for(let i=0;i<50;i++){
+      const result=await json('GET',path+query,headers);
+      assert.equal(result.status,200);
+      assert.notEqual(result.body.operation.status,'FAILED');
+      if(result.body.operation.status==='SUCCEEDED'){ready=result.body;break;}
+      await delay(125);
+    }
+    assert(ready);
+    const result=await json('GET',path+'/download'+query,headers,undefined,true);
+    assert.equal(result.status,200);
+    assert.equal(check(result.body),ready.sha256);
+    assert.equal(result.body.subarray(0,8).toString(),'VAULTOR1');
+    const end=48+Number(result.body.readBigUInt64LE(8));
+    const manifest=JSON.parse(result.body.subarray(48,end));
+    assert.equal(manifest.reviews.length,1);
+    assert.equal(manifest.reviews[0].evidence.id,reviewId);
+    assert.equal(manifest.reviews[0].evidence.baseRevision,1);
+    assert.equal(manifest.reviews[0].evidence.comment,comment);
+    assert(!JSON.stringify(manifest).includes(paired.body.credential));
+  }
   if(process.argv.includes('--browser')) samples.push(...await browserChecks(docker,network,token,bind,owner,ip,fileName));
 
   docker('restart',token);

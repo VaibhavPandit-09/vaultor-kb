@@ -14,6 +14,8 @@ Converted inputs create one visible note. Nullable Resource provenance fields re
 
 ## ZIP owner authorization
 
+This owner-reviewed ZIP workflow applies to the original host. The experimental Next host currently accepts eligible individual managed imports. Its owner inbox, approval and restart-safe ZIP receipts remain open. Next restores reviewed desktop archives into new independent workspaces.
+
 `PUT /api/collected-zips/{uuid}` lets an approved paired device submit exact bounded bytes plus original source, hash, filename and proposed new-workspace name. It cannot create a workspace. The private host request retains device/provenance/operation through retries; same UUID/different intent refuses. Source grant/generation is checked on submission and reconciliation. The host caps pending ZIPs at32/256MiB, with a separate10000 receipt bound. Existing local-owner checks are unchanged.
 
 The owner inspects requests in existing Workspace transfers. Owner-only `/api/owner/collected-zips` lists requests; `/{uuid}/preview` runs W3 dangerous-archive/path/checksum validation without publication. Only a later explicit `/{uuid}/approve` durably records owner authorization before W3 import-as-new. `/{uuid}/reject` releases uncommitted staging/reservation. Android polls its own receipt and retains its local original until exact successful new-workspace acknowledgment. New workspace access still requires an explicit owner grant. No Android replacement, merge-into-current-workspace, owner credential forwarding or general administration.

@@ -473,6 +473,8 @@ Run `node benchmarks/tauri-rust/m25-docker.mjs --browser --check-note-creation` 
 
 For the M26-A2 image, add `--m26a2` to keep evidence in `raw/m26a2-docker.json`.
 
+For M26-A3, add `--check-organization --m26a3` to the browser note creation command. It exercises the anchored organization menu, Escape focus, Pinned, Trash, Restore and rename in Chromium. The pin timing includes Library debounce and polling. Results go to `raw/m26a3-docker.json`. Native M26-A3 probes use the optimized executable with `--m22-probe`, `--m25-probe` and `--m24-probe`; those options leave the canonical CSV and workbook intact.
+
 ```powershell
 docker build --platform linux/amd64 --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" -t vaultor-next-m25:local -f next/Dockerfile .
 node benchmarks/tauri-rust/m25-docker.mjs --browser
