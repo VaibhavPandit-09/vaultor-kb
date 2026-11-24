@@ -48,6 +48,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           } else {
             Invoke-WebRequest -Uri $installer[0].browser_download_url -OutFile $path
+            Add-Content -LiteralPath $env:GITHUB_ENV -Value 'VAULTOR_VERIFY_PUBLIC_FEED=true'
           }
           if ((Get-FileHash -LiteralPath (Join-Path $dir 'first.exe')).Hash -ne $env:CANDIDATE_SHA256) { throw 'Downloaded candidate bytes differ' }
       - name: Install and exercise the exact candidate

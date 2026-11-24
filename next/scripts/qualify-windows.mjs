@@ -361,6 +361,14 @@ async function uninstallNext() {
 }
 if (expectedInstallerHash) {
   await eventually(() => app.evaluate("Boolean(document.querySelector('[data-ready=true][data-session-ready=true]'))"), 'installed Library');
+  if (predecessor === 'fresh' && process.env.VAULTOR_VERIFY_PUBLIC_FEED === 'true') {
+    assert.equal(await app.invoke('stage_next_update'),null);
+    console.log('The exact installed app checked the public Next update channel and was current.');
+  }
+  await app.evaluate("document.querySelector('button[aria-label=Maximize]').click()");
+  await eventually(() => app.evaluate("Boolean(document.querySelector('button[aria-label=\"Restore window\"]'))"), 'native maximize');
+  await app.evaluate("document.querySelector('button[aria-label=\"Restore window\"]').click()");
+  await eventually(() => app.evaluate("Boolean(document.querySelector('button[aria-label=Maximize]'))"), 'native window restore');
   const matches = await request({kind:'search',options:{query:'Saved in Next',content:true,collection:null,order:'title'}});
   assert(matches.items.some(row => row.id === note.id));
   await app.evaluate("document.querySelector('button[title=Settings]').click()");
