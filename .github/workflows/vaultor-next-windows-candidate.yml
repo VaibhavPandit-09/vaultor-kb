@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   install:
-    runs-on: windows-2025
+    runs-on: windows-2022
     timeout-minutes: 15
     permissions:
       # A draft asset is visible only with repository push access.
