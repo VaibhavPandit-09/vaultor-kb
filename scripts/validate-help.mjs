@@ -89,6 +89,19 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
         if (hash !== actual || metadata.hashes[path] !== hash) errors.push('Stale/missing bundled Help: ' + path);
       }
     }
+    if (process.argv.includes('--next-dist')) {
+      const assets = resolve(root, process.argv[process.argv.indexOf('--next-dist') + 1], 'assets');
+      const {default: ts} = await import('../frontend/node_modules/typescript/lib/typescript.js');
+      const article = files['next-foundation.md'];
+      const matches = (node) =>
+        ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && node.text === article)
+        || ts.forEachChild(node, matches);
+      const included = readdirSync(assets).filter(path => path.endsWith('.js')).some(path => {
+        const contents = readFileSync(resolve(assets, path), 'utf8');
+        return matches(ts.createSourceFile(path, contents, ts.ScriptTarget.ESNext));
+      });
+      if (!included) errors.push('Stale or missing bundled Vaultor Next Help article');
+    }
     if (errors.length) throw Error(errors.join('\n'));
     console.log(`Help validated: ${catalogue.features.length} features, ${catalogue.articles.length} articles; links, headings, source evidence and metadata valid.`);
   } catch (error) { console.error(error.message); process.exitCode = 1; }

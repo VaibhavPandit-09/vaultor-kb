@@ -21,6 +21,8 @@ Push-Location $nextRoot
 try {
     & npm.cmd exec tauri build -- --config $Config --bundles nsis @options
     if ($LASTEXITCODE -ne 0) { throw 'Vaultor Next packaging failed' }
+    & node ../scripts/validate-help.mjs --next-dist frontend/dist-next
+    if ($LASTEXITCODE -ne 0) { throw 'Bundled Vaultor Next Help verification failed' }
 } finally {
     Pop-Location
 }

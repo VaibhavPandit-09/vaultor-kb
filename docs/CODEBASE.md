@@ -529,6 +529,8 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 The cleanup helper now deletes verified files through the original no-reparse handle and confirms shortcuts have not changed before removal. An unverified legacy profile or an allowlisted entry with the wrong file type remains in place and is reported. The Chromium DIPS database sidecars seen in disposable predecessor runs are recognized. Windows updater transfer errors omit download URLs. The startup dialog names the current application, and disposable builds send its diagnostics to the test harness. Reconciled Platforms, What's New and Vaultor Next Help and the Next catalogue entry with the Windows release. See the [Windows qualification ledger](plans/VAULTOR-NEXT-M26-C.md#windows-release-gate) for validation.
 
+Next Help displays the catalogue content version. The Windows packaging command verifies the exact Next article embedded in the Vite bundle through the repository Help validator.
+
 ### 2026-11-24 — Windows Next one-time replacement
 
 The separate Windows NSIS production profile uses `com.vaultor.next` and keeps its Rust workspace outside Electron's profile. The replacement helper verifies original installer registrations and known payload hashes, then scopes cleanup to verified install files and recognized legacy data. It checks the successor before claiming the one-time receipt. Subsequent Next releases use a separate Tauri signature and preserve Next data. The focused Windows helper check preserved external bytes across an NTFS junction, a locked file and unexpected data. Installed release qualification remains in the [M26-C record](plans/VAULTOR-NEXT-M26-C.md#windows-release-gate).
