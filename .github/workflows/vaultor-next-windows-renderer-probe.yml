@@ -1,0 +1,27 @@
+name: Vaultor Next Windows renderer probe
+on:
+  push:
+    branches: [codex/vaultor-next-m1]
+    paths: ['.github/workflows/vaultor-next-windows-renderer-probe.yml', 'next/scripts/qualify-windows.mjs']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-2025, windows-2022]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/vaultor-qualification
+          key: next-windows-disposable-v2-617882295fcf3daef57f311e7d1f16720c8860934ef1793e7dbc3c2b72234a4a
+          fail-on-cache-miss: true
+      - shell: pwsh
+        run: node next/scripts/qualify-windows.mjs fresh "$env:RUNNER_TEMP/vaultor-qualification"

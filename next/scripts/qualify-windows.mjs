@@ -10,7 +10,7 @@ import {setTimeout as delay} from 'node:timers/promises';
 assert.equal(process.env.GITHUB_ACTIONS, 'true', 'Use a disposable hosted runner only');
 assert.equal(process.env.RUNNER_ENVIRONMENT, 'github-hosted');
 assert.equal(process.platform, 'win32');
-const [predecessor, input] = process.argv.slice(2);
+const [predecessor, input, expectedInstallerHash] = process.argv.slice(2);
 const predecessors = {
   '0.25.2': 'ff2036ef27d4160d626ee43e44f1a7bc387841b4c6dacd707128feb3b9864f4e',
   '0.26.0': '3a7b1d741d6d8d3d187b86b37d3f7536e40cf82c4a52810800a382679ebe3003',
@@ -25,6 +25,10 @@ const profile = join(process.env.APPDATA, 'com.vaultor.next');
 const workspacePath = join(profile, 'Workspace');
 const exists = path => access(path).then(() => true, () => false);
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
+if (expectedInstallerHash) {
+  assert.match(expectedInstallerHash, /^[a-f0-9]{64}$/);
+  assert.equal(sha(await readFile(join(dir, 'first.exe'))), expectedInstallerHash);
+}
 function registrationAndShortcuts() {
   const raw = execFileSync('pwsh', ['-NoProfile', '-Command', `
     $roots = [Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('DesktopDirectory')
@@ -105,24 +109,33 @@ async function connect(number, electron) {
 }
 
 async function attach(executable, electron = false) {
-  const number = await port();
-  const flags = '--remote-debugging-port=' + number + ' --remote-debugging-address=127.0.0.1';
+  const requestedPort = electron ? await port() : 0;
+  const flags = '--remote-debugging-port=' + requestedPort + ' --remote-debugging-address=127.0.0.1';
+  const debugDirectory = electron ? null : join(dir,'webview-debug-'+crypto.randomUUID());
+  if (debugDirectory) await mkdir(debugDirectory);
   const child = spawn(executable, electron ? flags.split(' ') : [], {
     windowsHide:true, stdio:['ignore','ignore','pipe'], env:{...process.env, ...(electron ? {} : {
       WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:flags,
+      WEBVIEW2_USER_DATA_FOLDER:debugDirectory,
     })},
   });
   child.on('error', e => console.error(e.message));
   let stderr='';
   child.stderr.on('data',chunk=>{stderr=(stderr+chunk).slice(-2000)});
-  try {return {...await connect(number, electron), child}}
+  try {
+    const number = electron ? requestedPort : await eventually(async () => {
+      const marker = await readFile(join(debugDirectory,'EBWebView','DevToolsActivePort'),'utf8');
+      return Number(marker.split(/\r?\n/)[0]);
+    }, 'WebView2 debugger port file');
+    return {...await connect(number, electron), child};
+  }
   catch(error) {
     if (!electron && child.pid) {
       const diagnostic = execFileSync('pwsh', ['-NoProfile', '-Command', `
         $app = Get-Process -Id ${child.pid} -ErrorAction SilentlyContinue
         $app | Select-Object Id,SessionId,Responding,MainWindowTitle | Format-List
         Get-CimInstance Win32_Process -Filter 'ParentProcessId=${child.pid}' |
-          Select-Object Name,ProcessId,SessionId | Format-Table
+          Select-Object Name,ProcessId,SessionId,@{Name='DebugFlag';Expression={ [regex]::Match($_.CommandLine,'--remote-debugging-port=\\d+').Value }} | Format-Table
         whoami /groups /fo csv | Select-String 'S-1-16-'
         Get-ChildItem 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients' -ErrorAction SilentlyContinue |
           Get-ItemProperty | Where-Object name -Match 'WebView2' | Select-Object name,pv | Format-List
@@ -224,25 +237,27 @@ function installedPids() {
   ],{encoding:'utf8',windowsHide:true}).trim();
   return values ? values.split(/\s+/).map(Number) : [];
 }
-const nextPayload = await readFile(join(dir,'second.exe'));
-const nextSig = (await readFile(join(dir,'second.exe.sig'),'utf8')).trim();
 let tampered = true;
-const feed = createHttpServer((req,res)=>{
-  if(req.url === '/vaultor-next-windows-update.json') {
-    res.setHeader('Content-Type','application/json');
-    res.end(JSON.stringify({
-      version:'0.28.1',
-      platforms:{'windows-x86_64':{signature:nextSig,url:'http://127.0.0.1:'+feed.address().port+'/second.exe'}},
-    }));
-  } else if(req.url === '/second.exe') {
-    const bytes = Buffer.from(nextPayload);
-    if(tampered) bytes[bytes.length - 1] ^= 1;
-    res.end(bytes);
-  } else {res.writeHead(404).end()}
-});
-await new Promise(done=>feed.listen(0,'127.0.0.1',done));
-feed.unref();
-process.env.VAULTOR_QUALIFICATION_UPDATE_PORT = String(feed.address().port);
+if (!expectedInstallerHash) {
+  const nextPayload = await readFile(join(dir,'second.exe'));
+  const nextSig = (await readFile(join(dir,'second.exe.sig'),'utf8')).trim();
+  const feed = createHttpServer((req,res)=>{
+    if(req.url === '/vaultor-next-windows-update.json') {
+      res.setHeader('Content-Type','application/json');
+      res.end(JSON.stringify({
+        version:'0.28.1',
+        platforms:{'windows-x86_64':{signature:nextSig,url:'http://127.0.0.1:'+feed.address().port+'/second.exe'}},
+      }));
+    } else if(req.url === '/second.exe') {
+      const bytes = Buffer.from(nextPayload);
+      if(tampered) bytes[bytes.length - 1] ^= 1;
+      res.end(bytes);
+    } else {res.writeHead(404).end()}
+  });
+  await new Promise(done=>feed.listen(0,'127.0.0.1',done));
+  feed.unref();
+  process.env.VAULTOR_QUALIFICATION_UPDATE_PORT = String(feed.address().port);
+}
 let app = await attach(exe);
 const request = payload => app.invoke('workspace', {request:payload});
 const transfer = payload => app.invoke('transfer',{request:payload});
@@ -268,6 +283,60 @@ const imported = await eventually(async () => (await transfer({op:'tasks'})).fin
 assert.equal(imported.state,'completed');
 const beforeBytes = (await request({kind:'list',collection:null})).items.find(item=>item.title==='known-bytes.bin');
 assert(beforeBytes);
+async function verifyManagedExport() {
+  const exportFolder = join(external,'managed-original');
+  const {id:exportId} = await transfer({op:'export',ids:[beforeBytes.id],destination:exportFolder,format:'original'});
+  const exported = await eventually(async ()=>(await transfer({op:'tasks'})).find(task=>task.id===exportId&&task.finished),'exact managed export');
+  assert.equal(exported.state,'completed');
+  assert.equal(sha(await readFile(join(exportFolder,(await readdir(exportFolder))[0]))),sha(payload));
+}
+async function quitNext() {
+  await app.evaluate("setTimeout(()=>window.__TAURI_INTERNALS__.invoke('close_next',{quit:true}),10);true");
+  await eventually(()=>installedPids().length===0, 'Vaultor Next quit');
+  app.socket.close();
+}
+async function uninstallNext() {
+  await run(join(install,'uninstall.exe'),['/S']);
+  await eventually(async ()=>{
+    if (await exists(exe)) return false;
+    const shell = registrationAndShortcuts();
+    return !shell.version && !shell.links.some(link => link.target.toLowerCase() === exe.toLowerCase());
+  },'uninstaller removed the application, shortcut and registration');
+  assert(await exists(join(workspacePath,'vaultor-next.json')));
+}
+if (expectedInstallerHash) {
+  await eventually(() => app.evaluate("Boolean(document.querySelector('[data-ready=true][data-session-ready=true]'))"), 'installed Library');
+  const matches = await request({kind:'search',options:{query:'Saved in Next',content:true,collection:null,order:'title'}});
+  assert(matches.items.some(row => row.id === note.id));
+  await app.evaluate("document.querySelector('button[title=Settings]').click()");
+  await app.evaluate("[...document.querySelectorAll('button')].find(button=>button.textContent.trim()==='Application and Storage').click()");
+  await eventually(() => app.evaluate("document.body.innerText.includes('Vaultor Next 0.28.0') && [...document.querySelectorAll('button')].some(button=>button.textContent.trim()==='Check for updates')"), 'installed version and update controls');
+  await app.evaluate("document.querySelector('button[aria-label=\"Help with settings\"]').click()");
+  await eventually(() => app.evaluate("document.body.innerText.includes('Settings and keyboard commands') && document.body.innerText.includes('Help 0.28.0')"), 'installed Help');
+  const pdfFolder = join(external, 'installed-pdf');
+  const {id:pdfId} = await transfer({op:'export',ids:[note.id],destination:pdfFolder,format:'pdf'});
+  const pdf = await eventually(async () => (await transfer({op:'tasks'})).find(task => task.id === pdfId && task.finished), 'installed PDF export');
+  assert.equal(pdf.state,'completed');
+  const pdfBytes = await readFile(join(pdfFolder,(await readdir(pdfFolder)).find(name => name.endsWith('.pdf'))));
+  assert.equal(pdfBytes.subarray(0,5).toString(),'%PDF-');
+  await quitNext();
+  // An ordinary repeat install exercises the one-time receipt using the
+  // exact candidate installer a second time.
+  await run(join(dir,'first.exe'), ['/S']);
+  app = await attach(exe);
+  assert.deepEqual(await app.invoke('next_update_info'),['0.28.0',true]);
+  assert.equal((await request({kind:'read',id:note.id})).content.content[0].content[0].text,'Saved in Next before updating');
+  assert.equal((await request({kind:'readDraft',id:note.id})).content.content[0].content[0].text,'Protected before updating');
+  assert.equal((await request({kind:'snapshot'})).settings.theme,'dark');
+  await verifyManagedExport();
+  assert.equal(await readFile(join(profile,'electron-replacement.txt'),'utf8'),receipt);
+  await quitNext();
+  await uninstallNext();
+  assert.equal(await readFile(linked,'utf8'),externalBytes);
+  assert.equal(sha(await readFile(backup)),sha(independentBytes));
+  console.log(JSON.stringify({predecessor, installerSHA256:expectedInstallerHash, exactColdReadback:true, repeatedInstallPreservedData:true, ordinaryUninstallPreservedWorkspace:true}));
+  process.exit(0);
+}
 await assert.rejects(()=>app.invoke('stage_next_update'), /signature|verification/i);
 tampered = false;
 assert.equal(await app.invoke('stage_next_update'),'0.28.1');
@@ -296,22 +365,10 @@ assert.equal((await request({kind:'read',id:note.id})).content.content[0].conten
 assert.equal((await request({kind:'readDraft',id:note.id})).content.content[0].content[0].text,'Protected before updating');
 assert.equal((await request({kind:'snapshot'})).settings.theme,'dark');
 assert((await request({kind:'snapshot'})).collections.some(value=>value.id===collection.id));
-const exportFolder = join(external,'postupdate-export');
-const {id:exportId} = await transfer({op:'export',ids:[beforeBytes.id],destination:exportFolder,format:'original'});
-const exported = await eventually(async ()=>(await transfer({op:'tasks'})).find(task=>task.id===exportId&&task.finished),'post-update exact export');
-assert.equal(exported.state,'completed');
-assert.equal(sha(await readFile(join(exportFolder,(await readdir(exportFolder))[0]))),sha(payload));
+await verifyManagedExport();
 assert.equal(await readFile(linked,'utf8'),externalBytes);
 assert.equal(sha(await readFile(backup)),sha(independentBytes));
 assert.equal(await readFile(join(profile,'electron-replacement.txt'),'utf8'),receipt);
-await app.evaluate("setTimeout(()=>window.__TAURI_INTERNALS__.invoke('close_next',{quit:true}),10);true");
-await eventually(()=>installedPids().length===0, 'restarted Vaultor Next quit');
-app.socket.close();
-await run(join(install,'uninstall.exe'),['/S']);
-await eventually(async ()=>{
-  if (await exists(exe)) return false;
-  const shell = registrationAndShortcuts();
-  return !shell.version && !shell.links.some(link => link.target.toLowerCase() === exe.toLowerCase());
-},'uninstaller removed the application, shortcut and registration');
-assert(await exists(join(workspacePath,'vaultor-next.json')));
+await quitNext();
+await uninstallNext();
 console.log(JSON.stringify({predecessor,originalInstallerSHA256:predecessors[predecessor],replacement:true,signedUpdate:true,tamperedUpdateRefused:true,protectedDraft:true,exactManagedBytes:true,externalFiles:true,ordinaryUninstallPreservedWorkspace:true}));
