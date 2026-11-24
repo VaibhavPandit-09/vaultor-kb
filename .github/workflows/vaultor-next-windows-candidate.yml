@@ -16,6 +16,10 @@ jobs:
       fail-fast: false
       matrix:
         predecessor: ['fresh', '0.25.2', '0.26.0', '0.27.0']
+        refusals: [false]
+        include:
+          - predecessor: '0.27.0'
+            refusals: true
     env:
       CANDIDATE_SHA256: 3420456f90bb7476a8b1a73f546f49bc336bc7f54bd90d25433db34f003acd4c
       CANDIDATE_SOURCE: e37509b0827e3e187a9167999420be1894f35827
@@ -43,4 +47,6 @@ jobs:
           if ((Get-FileHash -LiteralPath (Join-Path $dir 'first.exe')).Hash -ne $env:CANDIDATE_SHA256) { throw 'Downloaded candidate bytes differ' }
       - name: Install and exercise the exact candidate
         shell: pwsh
+        env:
+          VAULTOR_QUALIFY_LEGACY_FAILURES: ${{ matrix.refusals }}
         run: node next/scripts/qualify-windows.mjs "${{ matrix.predecessor }}" "$env:RUNNER_TEMP/vaultor-exact-candidate" "$env:CANDIDATE_SHA256"

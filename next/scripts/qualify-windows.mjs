@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import {createHash} from 'node:crypto';
+import {createHash, X509Certificate} from 'node:crypto';
 import {spawn, execFileSync} from 'node:child_process';
 import {createServer} from 'node:net';
 import {createServer as createHttpServer} from 'node:http';
+import {get as getHttps} from 'node:https';
 import {mkdir, writeFile, readFile, access, readdir, symlink, unlink} from 'node:fs/promises';
 import {join, resolve} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
@@ -11,6 +12,8 @@ assert.equal(process.env.GITHUB_ACTIONS, 'true', 'Use a disposable hosted runner
 assert.equal(process.env.RUNNER_ENVIRONMENT, 'github-hosted');
 assert.equal(process.platform, 'win32');
 const [predecessor, input, expectedInstallerHash] = process.argv.slice(2);
+const verifyRefusals = process.env.VAULTOR_QUALIFY_LEGACY_FAILURES === 'true';
+assert(!verifyRefusals || (predecessor === '0.27.0' && expectedInstallerHash));
 const predecessors = {
   '0.25.2': 'ff2036ef27d4160d626ee43e44f1a7bc387841b4c6dacd707128feb3b9864f4e',
   '0.26.0': '3a7b1d741d6d8d3d187b86b37d3f7536e40cf82c4a52810800a382679ebe3003',
@@ -48,7 +51,7 @@ const registryExists = () => {
 };
 assert(!registryExists(), 'Unexpected old installation registration on runner');
 
-async function run(executable, args) {
+async function run(executable, args, expectedCode = 0) {
   const child = spawn(executable, args, {windowsHide:true, stdio:'ignore'});
   const timer = setTimeout(() => child.kill(), 180_000);
   try {
@@ -56,7 +59,7 @@ async function run(executable, args) {
       child.once('error', fail);
       child.once('exit', done);
     });
-    assert.equal(code, 0, 'Installer failed: ' + executable);
+    assert.equal(code, expectedCode, 'Unexpected installer exit: ' + executable);
   } finally {clearTimeout(timer)}
 }
 
@@ -152,11 +155,13 @@ await mkdir(external);
 const linked = join(external, 'Original.md');
 const backup = join(external, 'Independent-backup.zip');
 const unexpected = join(legacyProfile, 'User-owned sentinel.txt');
+const lockedPath = join(legacyProfile, 'Cache', 'locked-evidence.bin');
 const externalBytes = '# Keep this linked original\r\n';
 let independentBytes = Buffer.from('Independent disposable backup sentinel');
 await writeFile(linked, externalBytes);
 await writeFile(backup, independentBytes);
 let old;
+let locker;
 if (predecessor !== 'fresh') {
   const url = 'https://github.com/VaibhavPandit-09/vaultor-kb/releases/download/v'+predecessor+'/Vaultor-'+predecessor+'-windows-x64.exe';
   const asset = await fetch(url, {signal:AbortSignal.timeout(120_000)});
@@ -195,6 +200,16 @@ if (predecessor !== 'fresh') {
     await mkdir(cache,{recursive:true});
     await symlink(external,join(cache,'External junction'),'junction');
     await writeFile(unexpected, 'This file has no application ownership');
+    if (expectedInstallerHash) {
+      await writeFile(lockedPath,'Lock probe');
+      locker = spawn('pwsh',['-NoProfile','-Command',`
+        $handle = [IO.File]::Open($env:VAULTOR_QUALIFICATION_LOCK, 'Open', 'Read', 'Read')
+        try { [Console]::WriteLine('locked'); $null = [Console]::ReadLine() } finally { $handle.Dispose() }
+      `],{windowsHide:true,stdio:['pipe','pipe','inherit'],env:{...process.env,VAULTOR_QUALIFICATION_LOCK:lockedPath}});
+      let lockOutput = '';
+      locker.stdout.on('data',chunk=>{lockOutput+=chunk});
+      await eventually(()=>lockOutput.includes('locked'),'legacy test file opened without delete sharing');
+    }
   }
   // Electron writes this test-only debugger marker. The production installer
   // need not know about files created by the qualification harness.
@@ -205,7 +220,32 @@ if (predecessor !== 'fresh') {
   // Leave the real older application running to exercise verified shutdown.
 }
 
-await run(join(dir,'first.exe'), ['/S']);
+if (verifyRefusals) {
+  const cancel = spawn(join(dir,'first.exe'),[],{windowsHide:false,stdio:'ignore'});
+  const cancelled = new Promise((done,fail)=>{cancel.once('exit',done);cancel.once('error',fail)});
+  execFileSync('powershell.exe', ['-NoProfile','-File',resolve('next/scripts/cancel-windows-installer.ps1'),String(cancel.pid)], {windowsHide:true,timeout:30_000,stdio:'inherit'});
+  assert.equal(await cancelled,1,'Cancelling setup should return the cancellation code');
+  assert(await exists(join(legacyProfile,'local-workspace','app.db')));
+  assert(registryExists());
+  await run(join(dir,'first.exe'),['/S','/D='+join(process.env.LOCALAPPDATA,'VaultorNextUnsupportedProbe')],2);
+  assert(await exists(join(legacy,'Vaultor.exe')));
+  assert(await exists(join(legacyProfile,'local-workspace','app.db')));
+  assert.equal(old.child.exitCode,null);
+  assert(registryExists());
+  assert(!await exists(join(profile,'electron-replacement.txt')));
+  console.log('Cancellation and the rejected target path retained the running Electron installation and its data.');
+  execFileSync('reg.exe', ['delete', oldRegistry, '/f'], {windowsHide:true,stdio:'ignore'});
+  assert(!registryExists());
+}
+
+try {await run(join(dir,'first.exe'), ['/S'])}
+finally {
+  if (locker) {
+    const released = new Promise(done=>locker.once('exit',done));
+    locker.stdin.end('\n');
+    await released;
+  }
+}
 old?.socket.close();
 if (old) {
   await eventually(() => old.child.exitCode !== null, 'original Electron shut down');
@@ -219,6 +259,10 @@ if (predecessor === '0.26.0') {
   assert(await exists(join(legacyProfile,'Cache','External junction')));
   assert(receipt.includes(unexpected));
   assert.equal(await readFile(unexpected,'utf8'),'This file has no application ownership');
+  if (locker) {
+    assert(receipt.includes(lockedPath));
+    assert.equal(await readFile(lockedPath,'utf8'),'Lock probe');
+  }
 } else assert.match(receipt,/Complete/);
 const exe = join(install,'vaultor-next.exe');
 assert(await exists(exe));
@@ -313,12 +357,44 @@ if (expectedInstallerHash) {
   await eventually(() => app.evaluate("document.body.innerText.includes('Vaultor Next 0.28.0') && [...document.querySelectorAll('button')].some(button=>button.textContent.trim()==='Check for updates')"), 'installed version and update controls');
   await app.evaluate("document.querySelector('button[aria-label=\"Help with settings\"]').click()");
   await eventually(() => app.evaluate("document.body.innerText.includes('Settings and keyboard commands') && document.body.innerText.includes('Help 0.28.0')"), 'installed Help');
+  const exportNote = await request({kind:'createNote',title:'Installed rich PDF fixture',collection:collection.id});
+  const richContent = {type:'doc',content:[
+    {type:'heading',attrs:{level:2},content:[{type:'text',text:'Installed heading'}]},
+    {type:'paragraph',content:[{type:'text',text:'Greek Εξαγωγή',marks:[{type:'bold'}]}]},
+  ]};
+  await request({kind:'save',id:exportNote.id,title:exportNote.title,revision:exportNote.revision,content:richContent});
   const pdfFolder = join(external, 'installed-pdf');
-  const {id:pdfId} = await transfer({op:'export',ids:[note.id],destination:pdfFolder,format:'pdf'});
+  const {id:pdfId} = await transfer({op:'export',ids:[exportNote.id],destination:pdfFolder,format:'pdf'});
   const pdf = await eventually(async () => (await transfer({op:'tasks'})).find(task => task.id === pdfId && task.finished), 'installed PDF export');
   assert.equal(pdf.state,'completed',JSON.stringify(pdf));
   const pdfBytes = await readFile(join(pdfFolder,(await readdir(pdfFolder)).find(name => name.endsWith('.pdf'))));
   assert.equal(pdfBytes.subarray(0,5).toString(),'%PDF-');
+  if (predecessor === 'fresh') {
+    const hosting = command => app.invoke('hosting',{command});
+    assert.equal((await hosting({op:'status'})).running,false);
+    const host = await hosting({op:'start',address:'127.0.0.1:'+await port()});
+    try {
+      assert(host.running && !host.discoverable);
+      const ca = await readFile(join(host.accessPath,'ca.pem'));
+      assert.equal(sha(new X509Certificate(ca).raw),host.fingerprint);
+      const readHttps = path => new Promise((done,fail) => {
+        const call = getHttps('https://'+host.address+path,{ca,timeout:5000}, async response => {
+          try {
+            const chunks = [];
+            for await (const chunk of response) chunks.push(chunk);
+            done({status:response.statusCode,body:Buffer.concat(chunks).toString('utf8')});
+          } catch(error) { fail(error) }
+        });
+        call.on('error',fail);
+        call.on('timeout',()=>call.destroy(Error('Local pinned HTTPS request timed out')));
+      });
+      const descriptor=await readHttps('/api/access/host');
+      assert.equal(descriptor.status,200);
+      assert.equal(JSON.parse(descriptor.body).hostId,host.hostId);
+      assert.equal((await readHttps('/api/next/v1/workspaces')).status,401);
+    } finally {assert.equal((await hosting({op:'stop'})).running,false)}
+    console.log('Installed loopback hosting passed pinned TLS and refused unauthenticated workspace access.');
+  }
   await quitNext();
   // An ordinary repeat install exercises the one-time receipt using the
   // exact candidate installer a second time.
