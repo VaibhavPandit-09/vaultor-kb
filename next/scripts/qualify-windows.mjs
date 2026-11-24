@@ -280,7 +280,7 @@ await writeFile(sample,payload);
 const preview = await transfer({op:'preview',paths:[sample],folder:false,collection:null});
 const {id:taskId} = await transfer({op:'import',token:preview.token,separate:false});
 const imported = await eventually(async () => (await transfer({op:'tasks'})).find(task=>task.id===taskId&&task.finished), 'managed file commitment');
-assert.equal(imported.state,'completed');
+  assert.equal(imported.state,'completed',JSON.stringify(imported));
 const beforeBytes = (await request({kind:'list',collection:null})).items.find(item=>item.title==='known-bytes.bin');
 assert(beforeBytes);
 async function verifyManagedExport() {
@@ -316,7 +316,7 @@ if (expectedInstallerHash) {
   const pdfFolder = join(external, 'installed-pdf');
   const {id:pdfId} = await transfer({op:'export',ids:[note.id],destination:pdfFolder,format:'pdf'});
   const pdf = await eventually(async () => (await transfer({op:'tasks'})).find(task => task.id === pdfId && task.finished), 'installed PDF export');
-  assert.equal(pdf.state,'completed');
+  assert.equal(pdf.state,'completed',JSON.stringify(pdf));
   const pdfBytes = await readFile(join(pdfFolder,(await readdir(pdfFolder)).find(name => name.endsWith('.pdf'))));
   assert.equal(pdfBytes.subarray(0,5).toString(),'%PDF-');
   await quitNext();
