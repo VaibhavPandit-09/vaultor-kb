@@ -81,7 +81,10 @@ async function connect(number, electron) {
       if (payload.id !== id) return;
       socket.removeEventListener('message', response);
       clearTimeout(timeout);
-      if (payload.error || payload.result.exceptionDetails) fail(Error(payload.result?.exceptionDetails?.exception?.description ?? JSON.stringify(payload.error)));
+      if (payload.error || payload.result.exceptionDetails) {
+        const exception=payload.result?.exceptionDetails?.exception;
+        fail(Error(exception?.description ?? exception?.value ?? JSON.stringify(payload.error)));
+      }
       else done(payload.result.result.value);
     }
     socket.addEventListener('message', response);
@@ -94,10 +97,16 @@ async function attach(executable, electron = false) {
   const number = await port();
   const flags = '--remote-debugging-port=' + number + ' --remote-debugging-address=127.0.0.1';
   const child = spawn(executable, electron ? flags.split(' ') : [], {
-    windowsHide:true, stdio:'ignore', env:{...process.env, ...(electron ? {} : {WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:flags})},
+    windowsHide:true, stdio:['ignore','ignore','pipe'], env:{...process.env, ...(electron ? {} : {
+      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:flags,
+      WEBVIEW2_USER_DATA_FOLDER:join(dir,'disposable-webview'),
+    })},
   });
   child.on('error', e => console.error(e.message));
-  return {...await connect(number, electron), child};
+  let stderr='';
+  child.stderr.on('data',chunk=>{stderr=(stderr+chunk).slice(-2000)});
+  try {return {...await connect(number, electron), child}}
+  catch(error) {throw Error(error.message+'; exit='+child.exitCode+'; stderr='+stderr)}
 }
 
 const doc = text => ({type:'doc',content:[{type:'paragraph',content:[{type:'text',text}]}]});
@@ -122,10 +131,12 @@ if (predecessor !== 'fresh') {
   assert(registryExists());
   old = await attach(join(legacy, 'Vaultor.exe'), true);
   await eventually(() => old.evaluate("Boolean(document.querySelector('.library-view')) && !document.body.innerText.includes('Loading resources')"), 'original Electron Library');
+  await eventually(() => old.evaluate("window.vaultorDesktop.bootstrap().then(result=>Boolean(result.value?.token))"), 'original workspace connection');
   await old.evaluate(`window.fixtureWire=async(path,method,body)=>{
     const state=(await window.vaultorDesktop.bootstrap()).value;
     const result=await window.vaultorDesktop.request({id:crypto.randomUUID(),token:state.token,path,method,timeout:30000,headers:{'X-Vaultor-Protocol':'3','Content-Type':'application/json'},...(body?{body}:{})});
-    if(!result.ok||result.value.status>=400)throw Error('Original fixture write refused');
+    if(!result.ok)throw Error(method+' '+path+' refused: '+(result.error?.detail??'bridge error'));
+    if(result.value.status>=400)throw Error(method+' '+path+' HTTP '+result.value.status);
     return new Uint8Array(result.value.data);
   };window.fixtureCall=async(path,method,body)=>JSON.parse(new TextDecoder().decode(await fixtureWire(path,method,body&&{kind:'text',value:JSON.stringify(body)})))`);
   const collection = await old.evaluate("fixtureCall('/collections/creations/'+crypto.randomUUID(),'PUT',{name:'Legacy fixture collection',resourceIds:[]})");
@@ -133,7 +144,7 @@ if (predecessor !== 'fresh') {
   assert(created.id);
   const attachment = await old.evaluate(`fixtureWire('/resources/imports/'+crypto.randomUUID(),'PUT',{kind:'multipart',parts:[
     {name:'title',value:'legacy-original.bin'},
-    {name:'file',filename:'legacy-original.bin',type:'application/octet-stream',value:new Uint8Array([3,7,11,255]).buffer}
+    {name:'file',filename:'legacy-original.bin',type:'application/octet-stream',value:new Uint8Array([3,7,11,255])}
   ]}).then(bytes=>JSON.parse(new TextDecoder().decode(bytes)))`);
   assert(attachment.id);
   const archived = await old.evaluate("fixtureCall('/exports','POST',{scope:'workspace',format:'zip'})");
@@ -166,6 +177,13 @@ if (predecessor === '0.26.0') {
 } else assert.match(receipt,/Complete/);
 const exe = join(install,'vaultor-next.exe');
 assert(await exists(exe));
+process.env.VAULTOR_QUALIFICATION_IMAGE=exe;
+function installedPids() {
+  const values=execFileSync('pwsh',['-NoProfile','-Command',
+    "Get-CimInstance Win32_Process -Filter \"Name='vaultor-next.exe'\" | Where-Object ExecutablePath -EQ $env:VAULTOR_QUALIFICATION_IMAGE | Select-Object -ExpandProperty ProcessId",
+  ],{encoding:'utf8',windowsHide:true}).trim();
+  return values ? values.split(/\s+/).map(Number) : [];
+}
 const nextPayload = await readFile(join(dir,'second.exe'));
 const nextSig = (await readFile(join(dir,'second.exe.sig'),'utf8')).trim();
 let tampered = true;
@@ -215,10 +233,23 @@ tampered = false;
 assert.equal(await app.invoke('stage_next_update'),'0.28.1');
 console.log('The installed updater refused changed bytes and accepted the signed fixture.');
 const debugPort = app.number;
+const previousPid = app.child.pid;
 await app.evaluate("setTimeout(()=>window.__TAURI_INTERNALS__.invoke('install_next_update',{version:'0.28.1'}),10);true");
 await eventually(() => app.child.exitCode !== null, 'updater handed off to installer');
 app.socket.close();
-app = await connect(debugPort,false);
+const relaunched = await eventually(()=>installedPids().find(pid=>pid!==previousPid),'installed updater relaunched the app');
+try {
+  const entries=await (await fetch('http://127.0.0.1:'+debugPort+'/json/list',{signal:AbortSignal.timeout(1000)})).json();
+  if(!entries.some(target=>target.url.includes('next.html'))) throw Error('No inherited debugger target');
+  app=await connect(debugPort,false);
+} catch {
+  // The installer can restart in the interactive shell environment without
+  // inheriting the harness's debug flags. The observed PID proves relaunch.
+  assert(installedPids().includes(relaunched));
+  process.kill(relaunched);
+  await eventually(()=>!installedPids().includes(relaunched),'disposable relaunch closed for readback');
+  app=await attach(exe);
+}
 await eventually(() => request({kind:'snapshot'}), 'updated installed workspace');
 assert.deepEqual(await app.invoke('next_update_info'),['0.28.1',true]);
 assert.equal((await request({kind:'read',id:note.id})).content.content[0].content[0].text,'Saved in Next before updating');
@@ -240,6 +271,6 @@ await eventually(async ()=> {
 }, 'restarted Vaultor Next quit');
 app.socket.close();
 await run(join(install,'uninstall.exe'),['/S']);
-assert(!await exists(exe));
+await eventually(async ()=>!await exists(exe),'uninstaller finished removing the application');
 assert(await exists(join(workspacePath,'vaultor-next.json')));
 console.log(JSON.stringify({predecessor,originalInstallerSHA256:predecessors[predecessor],replacement:true,signedUpdate:true,tamperedUpdateRefused:true,protectedDraft:true,exactManagedBytes:true,externalFiles:true,ordinaryUninstallPreservedWorkspace:true}));

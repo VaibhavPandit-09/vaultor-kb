@@ -18,6 +18,10 @@ In the second run, the 0.25.2 job built both signed fixtures and installed the r
 
 The second run's fresh NSIS case completed setup, verified the installed executable's presence and read the completed replacement receipt. Its installed WebView attachment timed out before the runtime or signed-update assertions. A separate production-layout probe using a disposable directory override locally reached Library, confirmed the expected SQLite workspace path and app version, saved a note, quit and reopened the exact note and content. That probe ran without installation. It does not qualify the hosted installed runtime or the Electron replacement.
 
+The next hosted run reused a single pair of signed binaries but still timed out on the fresh WebView and stopped during older Electron fixture writes. The driver now waits for the real owner connection, sends native attachments as `Uint8Array`, captures request status and process diagnostics, and uses a scoped WebView test profile. It waits for the uninstaller's detached cleanup. These are qualification-only changes.
+
+A separate local signed 0.28.0 → 0.28.1 installation used a unique product name, scoped profile, temporary update key and loopback feed. It omitted the Electron cleanup hook. The actual installed updater rejected changed bytes, then verified the valid installer, replaced the app and relaunched it. The updated app retained both the saved note and protected draft. Ordinary fixture uninstall removed its executable and registry entry while preserving the test workspace. The package had no authority over the user's installation or legacy storage.
+
 ## Android release gate
 
 The published predecessor APK is `0.1.0-alpha.28` / code 32, `com.vaultor.app`, minimum API 36, target API 37 and arm64-v8a/x86_64. The downloaded APK matched SHA-256 `4b87dd8212f03c8db45395ea113e12761c2b1bb45185e1c7e5de6962aaba730b`, and `apksigner` verified the original certificate `af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567`.

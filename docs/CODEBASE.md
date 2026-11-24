@@ -537,6 +537,8 @@ The hosted installer driver selects the original `vaultor://app/` renderer after
 
 A Windows production-layout executable reached Library and saved and reopened a note using a disposable override. Hosted fresh NSIS setup completed, while installed WebView attachment remained unqualified. These are separate runtime and installer observations with no additional architecture change.
 
+The separately named local updater fixture verified tamper refusal, signed replacement and relaunch, preserved saved content and a protected draft, and kept the workspace after ordinary uninstall. Hosted Electron driver improvements preserve the exact production candidate bytes. Full predecessor and exact-installer qualification remain open.
+
 ### 2026-11-24 — Next M26-C direct-upgrade qualification
 
 The [M26-C ledger](plans/VAULTOR-NEXT-M26-C.md) records predecessor installer, storage and updater boundaries. Windows Next has a separate executable, application identity and storage engine. An Electron-compatible installed migration remains a release gate. Android 0.1.0-alpha.29/code 36 keeps the original package and signer. Actual install-over and cold readback passed on API 36 and 37 with the original Java host approval. The production APK also passed CA-pinned Rust ZIP owner approval/rejection and restored managed-byte checks. Android compilation and 112 unit tests passed, as did 15 original Windows updater checks. Help topics Platforms, What's New and Next and catalogue Android transfers/updates were reconciled. Android has no Help bundle to rebuild.
