@@ -18,6 +18,8 @@ Follow [Help documentation reconciliation](../development/HELP-DOCUMENTATION.md#
 
 The Electron-to-Next release uses manual Windows x64 install-over with a one-time Electron data reset. Keep the Next installer outside the canonical Electron asset pair. A later Next installer must preserve the independent Next profile. The [transition record](../plans/VAULTOR-NEXT-M26-C.md#windows-release-gate) records the disposable native tests required before publication.
 
+For Windows Next, build from the exact clean source with `next/scripts/build-windows.ps1` and the matching private Tauri updater key supplied privately through `TAURI_SIGNING_PRIVATE_KEY`. Run `node next/scripts/stage-windows-release.mjs` to stage its setup executable, detached signature, `vaultor-next-windows-update.json`, source provenance and checksums. Verify the signed update round trip in isolated fixtures and the exact production binary in disposable installs. Stage an unpublished draft while qualifying the production bytes. Publish this Windows-only release with `--latest=false` after qualification and verify the public download and installed app. [0.28.0 release record](releases/v0.28.0.md).
+
 ## Before building
 
 1. Read relevant CODEBASE sections, inspect `git status`, current version, original public key, latest GitHub release/tag and local artifacts. Review the actual requested change and docs. Never overwrite unrelated work or recreate the original private key.

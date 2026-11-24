@@ -2203,7 +2203,9 @@
       ],
       "availability": {
         "windows": {
-          "status": "development"
+          "status": "available",
+          "introducedVersion": "0.28.0",
+          "verifiedVersion": "0.28.0"
         },
         "macos": {
           "status": "deferred"
@@ -2216,7 +2218,7 @@
         }
       },
       "limitations": [
-        "Experimental Windows workspaces. Compatible Electron ZIP versions 1–8 have documented scope and evidence limits. Original Electron databases and linked ZIP versions 9–10 require the original application.",
+        "Windows Next workspaces are separate from Electron. Compatible Electron ZIP versions 1–8 have documented scope and evidence limits. Original Electron databases and linked ZIP versions 9–10 require the original application.",
         "Draft protection follows a debounced SQLite receipt; unsent edits are not crash durable.",
         "Android alpha.29 can pair with a compatible Next engineering host. QR, nearby discovery and manual CA-pinned pairing require owner approval and a workspace grant. Real Wi-Fi and physical-device acceptance are pending.",
         "Next browser access requires trusted HTTPS and an owner grant. Workspace administration remains local.",

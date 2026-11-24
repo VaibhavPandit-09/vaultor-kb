@@ -54,9 +54,11 @@ This procedure applies to the published Electron/Java desktop releases. Windows 
 
 ### Windows Electron to Vaultor Next
 
-The planned Windows x64 installer replaces Electron and performs a one-time reset of its local workspace and application settings. Electron-managed notes and attachments are removed. External linked files and independently exported backups outside Vaultor's managed storage are retained. Future Next updates and ordinary uninstall preserve Next workspaces.
+The Windows x64 installer replaces Electron and performs a one-time reset of its local workspace and application settings. Electron-managed notes and attachments are removed. External linked files and independently exported backups outside Vaultor's managed storage are retained. Future Next updates and ordinary uninstall preserve Next workspaces.
 
-After publication, quit Electron Vaultor through its tray menu, download the separate Windows Next installer and run it normally. Open Vaultor Next to start with a fresh workspace. Android alpha.29 can connect after a new verified pairing and workspace grant. The existing Electron Updates screen continues to use the Electron release channel.
+Quit Electron Vaultor through its tray menu and run the separate Windows Next installer. Open Vaultor Next to start with a fresh workspace. Android alpha.29 can connect after a new verified pairing and workspace grant. The existing Electron Updates screen continues to use the Electron release channel. [Vaultor Next 0.28.0 for Windows x64](https://github.com/VaibhavPandit-09/vaultor-kb/releases/tag/v0.28.0).
+
+### Electron-to-Electron Windows updates
 
 With 0.4.1 or newer installed on Windows, open window menu → **Updates**. The app checks GitHub automatically. When a complete Windows release is available, click **Update and restart**. Vaultor downloads/verifies it, saves your work, backs up the managed workspace, updates in its current location and reopens. No browser download, JSON selection or installer wizard is needed. Download progress supports Cancel; failures offer retry and retain verified packages. Local hosting briefly disconnects paired devices. Remote hosts update separately.
 

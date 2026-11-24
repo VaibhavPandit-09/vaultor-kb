@@ -753,7 +753,7 @@ Local raw reports under `benchmarks/tauri-rust/raw/` are `m26a4-docker.json` and
 
 The closure change adds the paged Rust PDF renderer, Word title and table-layout fixes, receipt-backed transfer stage recovery, Merge interruption coverage and atomic same-root binding of selected archived references. The [qualification record](VAULTOR-NEXT-M26-B.md) owns exact candidate and acceptance evidence. The [M26-C release ledger](VAULTOR-NEXT-M26-C.md) records direct-upgrade and publication results by platform.
 
-See the [engineering candidate and qualification record](VAULTOR-NEXT-M26-B.md). M26-C is limited to separately authorized production preparation and publication after functional and user acceptance.
+See the [engineering qualification record](VAULTOR-NEXT-M26-B.md). M26-C released Windows x64 Next 0.28.0 with one-time Electron replacement and a separate signed update channel. [Windows installation and release evidence](VAULTOR-NEXT-M26-C.md#windows-release-gate).
 
 - **Original functional parity:** Preserve Restore as New and Merge integrity, legacy archive compatibility and owner-reviewed mobile ZIP intake, browser creation and organization, original export coverage and restart fidelity, PDF functionality and linked-occurrence navigation.
 - **Physical desktop acceptance:** Check the native Windows mouse, touch, keyboard, motion, file-picker and installer workflows separately from automated tests.

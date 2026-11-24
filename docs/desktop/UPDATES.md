@@ -1,8 +1,14 @@
 # Personal installers and updates
 
-Reviewed 2026-11-08. Windows x64 uses per-user NSIS and original-key verified in-app updates; Mac arm64 uses verified DMG packages with manual replacement. Windows 0.27.0 and Mac 0.27.0 are published with verified original-key installer/sidecar pairs. [The 0.27.0 Help ledger](releases/v0.27.0.md) owns Windows and macOS packaged Help/Save/PDF/restart, exact payload/source matching and public updater verification; [the 0.26.0 release ledger](releases/v0.26.0.md) owns source/payload/signature, actual packaged native/recovery, isolated 0.25.2 upgrade, Mac arm64 qualification, and public updater evidence. Android alpha.28/code32 downloads stay unchanged. GitHub Latest remains 0.21.0; platform updaters discover their newest stable complete pair independently. Historical release ledgers preserve actual install-over/recovery/native evidence and do not certify new installer acceptance. Preserve the original private release key; never regenerate or publish it. No paid publisher certificate/notarization/subscription is configured. [Installation](INSTALLATION-AND-UPDATES.md) owns user steps and [RELEASE-PROCESS](RELEASE-PROCESS.md) owns agent delivery; this guide owns updater integrity, private backup and recovery.
+Reviewed 2026-11-24. The Electron release family uses original-key-verified NSIS installers for Windows x64 and manual DMG replacement for macOS arm64. [The 0.27.0 ledger](releases/v0.27.0.md) records its packaged Help, Save, PDF, restart and public updater checks. The Windows-only [Vaultor Next 0.28.0 release](releases/v0.28.0.md) has a separate Tauri update channel. GitHub Latest remains 0.21.0. Each platform updater discovers its supported stable assets independently. [Installation](INSTALLATION-AND-UPDATES.md) owns user steps and [RELEASE-PROCESS](RELEASE-PROCESS.md) owns delivery.
 
-## Build and launch
+## Vaultor Next for Windows
+
+The first Next install over a verified Electron release performs a one-time reset of recognized Electron data. Next uses the stable `com.vaultor.next` identity and stores its Rust workspace under `%APPDATA%/com.vaultor.next/Workspace`. Its update and ordinary uninstall paths preserve the Next workspace. The installer records any legacy paths it safely retained in `electron-replacement.txt` in the Next profile.
+
+In Next, **Settings → Application and Storage** discovers the Windows x64 installer through `vaultor-next-windows-update.json` on stable GitHub releases. Native code bounds downloads and verifies the pinned Tauri Minisign signature before offering **Update and restart**. The update action protects pending edits and drafts, waits for active transfers to finish and stops optional hosting before the installer handoff. Keep the private Next updater key and the original Electron signing key separate. [Native update and replacement evidence](../plans/VAULTOR-NEXT-M26-C.md#windows-release-gate).
+
+## Build and launch Electron
 
 Use Node 20.19+ (Node 24 works), Java 25 for building the server, and the checked-in Maven wrapper. Installed packages bundle their Java runtime and do not require Docker or installed Java. Windows builds on Windows x64; Mac builds on Apple Silicon macOS with Apple's free command-line developer tools. Do not cross-build and claim native verification.
 
