@@ -217,6 +217,16 @@ if (predecessor !== 'fresh') {
   if (await exists(marker)) await unlink(marker);
   assert(await exists(join(legacyProfile,'local-workspace','app.db')));
   console.log('Seeded the original installed '+predecessor+' workspace and exported its independent ZIP.');
+  if (expectedInstallerHash) {
+    // Exercise cold readback of committed fixture data before the transition.
+    old.socket.close();
+    await run('taskkill.exe',['/pid',String(old.child.pid),'/t','/f']);
+    await eventually(() => old.child.exitCode !== null, 'original Electron stopped for cold restart');
+    old = await attach(join(legacy,'Vaultor.exe'), true);
+    await eventually(() => old.evaluate("document.body.innerText.includes('Legacy fixture note')"), 'original saved note after cold restart');
+    if (await exists(marker)) await unlink(marker);
+    console.log('The original installed '+predecessor+' reopened its committed fixture note.');
+  }
   // Leave the real older application running to exercise verified shutdown.
 }
 
@@ -224,7 +234,8 @@ if (verifyRefusals) {
   const cancel = spawn(join(dir,'first.exe'),[],{windowsHide:false,stdio:'ignore'});
   const cancelled = new Promise((done,fail)=>{cancel.once('exit',done);cancel.once('error',fail)});
   execFileSync('powershell.exe', ['-NoProfile','-File',resolve('next/scripts/cancel-windows-installer.ps1'),String(cancel.pid)], {windowsHide:true,timeout:30_000,stdio:'inherit'});
-  assert.equal(await cancelled,1,'Cancelling setup should return the cancellation code');
+  const cancelCode = await Promise.race([cancelled,delay(15_000).then(()=>{throw Error('Installer cancellation did not finish')})]);
+  assert.equal(cancelCode,1,'Cancelling setup should return the cancellation code');
   assert(await exists(join(legacyProfile,'local-workspace','app.db')));
   assert(registryExists());
   await run(join(dir,'first.exe'),['/S','/D='+join(process.env.LOCALAPPDATA,'VaultorNextUnsupportedProbe')],2);
@@ -400,6 +411,7 @@ if (expectedInstallerHash) {
   // exact candidate installer a second time.
   await run(join(dir,'first.exe'), ['/S']);
   app = await attach(exe);
+  await eventually(() => request({kind:'snapshot'}), 'reinstalled Next workspace');
   assert.deepEqual(await app.invoke('next_update_info'),['0.28.0',true]);
   assert.equal((await request({kind:'read',id:note.id})).content.content[0].content[0].text,'Saved in Next before updating');
   assert.equal((await request({kind:'readDraft',id:note.id})).content.content[0].content[0].text,'Protected before updating');

@@ -30,20 +30,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Download the pinned draft asset
+      - name: Download the pinned release asset
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $release = gh api "repos/$env:GITHUB_REPOSITORY/releases/456309091" | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if (!$release.draft -or $release.target_commitish -ne $env:CANDIDATE_SOURCE) { throw 'Unexpected candidate release or source' }
+          if ($release.tag_name -ne 'v0.28.0' -or $release.target_commitish -ne $env:CANDIDATE_SOURCE) { throw 'Unexpected candidate release or source' }
           $installer = @($release.assets | Where-Object name -EQ 'Vaultor-Next-0.28.0-windows-x64-setup.exe')
           if ($installer.Count -ne 1 -or $installer[0].digest -ne "sha256:$env:CANDIDATE_SHA256") { throw 'Unexpected candidate asset digest' }
           $dir = Join-Path $env:RUNNER_TEMP 'vaultor-exact-candidate'
           New-Item -ItemType Directory -Path $dir | Out-Null
-          gh release download v0.28.0 --repo $env:GITHUB_REPOSITORY --pattern $installer[0].name --output (Join-Path $dir 'first.exe')
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $path = Join-Path $dir 'first.exe'
+          if ($release.draft) {
+            gh release download v0.28.0 --repo $env:GITHUB_REPOSITORY --pattern $installer[0].name --output $path
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } else {
+            Invoke-WebRequest -Uri $installer[0].browser_download_url -OutFile $path
+          }
           if ((Get-FileHash -LiteralPath (Join-Path $dir 'first.exe')).Hash -ne $env:CANDIDATE_SHA256) { throw 'Downloaded candidate bytes differ' }
       - name: Install and exercise the exact candidate
         shell: pwsh
