@@ -1,5 +1,9 @@
 # What's New
 
+## Vaultor Next 0.28.0 — Windows x64
+
+Vaultor Next uses a Rust workspace and keeps managed notes, drafts and imports together. The first Windows install over Electron replaces the old application and starts a fresh workspace. Keep any exports you want to retain outside the old managed storage. External linked originals and independently exported backups in other folders are retained. Later Next updates preserve the new workspace. [Installation and updates](platforms.md#keep-an-existing-vaultor-installation).
+
 ## Android 0.1.0-alpha.29 — Direct update and Next host connection
 
 Update over alpha.28 to keep your paired source, offline reading copies, Review drafts and pending work. Keep using Windows 0.27.0 as your host, or pair separately with a Vaultor Next engineering host using a verified QR code or CA fingerprint. Where the Next host grants access, **Collected imports** can submit a workspace ZIP for the owner's approval. [Android update instructions](platforms.md#upgrade-android-from-alpha28) · [Next host pairing](next-foundation.md#connect-android-on-the-same-wi-fi).

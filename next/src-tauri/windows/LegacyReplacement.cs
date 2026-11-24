@@ -22,12 +22,15 @@ internal static class LegacyReplacement
     private const uint Reparse = 0x400;
     private const uint DirectoryFlag = 0x10;
     private static readonly string[] Versions = { "0.27.0", "0.26.0", "0.25.2" };
-    private static readonly string[] ProfileEntries = {
-        "appearance.json", "connections.json", "device-credentials.json", "hosting.json",
+    private static readonly string[] ProfileDirectories = {
         "local-workspace", "linked-sources", "file-cache", "workspace-copies", "updates", "prepared-exports",
         "Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache", "GPUPersistentCache",
         "GrShaderCache", "ShaderCache", "IndexedDB", "Local Storage", "Session Storage", "blob_storage",
-        "Network", "Shared Dictionary", "WebStorage", "Local State", "Preferences", "DIPS", "DIPS-wal", "DIPS-shm",
+        "Network", "Shared Dictionary", "WebStorage"
+    };
+    private static readonly string[] ProfileFiles = {
+        "appearance.json", "connections.json", "device-credentials.json", "hosting.json",
+        "Local State", "Preferences", "DIPS", "DIPS-wal", "DIPS-shm",
         "declarative_performance_observer.db", "declarative_performance_observer.db-journal"
     };
 
@@ -206,12 +209,18 @@ internal static class LegacyReplacement
         }
     }
 
-    private static void CleanTree(string path, string relative, Dictionary<string, string> owned, List<string> residual)
+    private static void CleanTree(string path, string relative, Dictionary<string, string> owned,
+        List<string> residual, bool? expectedDirectory = null)
     {
         try {
             using (var folder = Open(path, 0x80010000, 3)) {
                 if (folder == null) return;
-                if ((Attributes(folder, path) & DirectoryFlag) == 0) {
+                var isDirectory = (Attributes(folder, path) & DirectoryFlag) != 0;
+                if (expectedDirectory.HasValue && isDirectory != expectedDirectory.Value) {
+                    residual.Add("Unexpected legacy profile entry type retained: " + path);
+                    return;
+                }
+                if (!isDirectory) {
                     string digest = null;
                     if (owned != null && !owned.TryGetValue(relative, out digest)) {
                         residual.Add("Unrecognized file retained: " + path);
@@ -271,10 +280,13 @@ internal static class LegacyReplacement
             StopLegacy(legacy, owned);
             try {
                 WithAncestors(Path.Combine(profile, "placeholder"), () => {
-                    foreach (var item in ProfileEntries)
-                        CleanTree(Path.Combine(profile, item), item, null, residual);
+                    var entries = ProfileDirectories.Concat(ProfileFiles).ToArray();
+                    foreach (var item in ProfileDirectories)
+                        CleanTree(Path.Combine(profile, item), item, null, residual, true);
+                    foreach (var item in ProfileFiles)
+                        CleanTree(Path.Combine(profile, item), item, null, residual, false);
                     foreach (var path in Directory.EnumerateFileSystemEntries(profile)) {
-                        if (!ProfileEntries.Contains(Path.GetFileName(path), StringComparer.OrdinalIgnoreCase))
+                        if (!entries.Contains(Path.GetFileName(path), StringComparer.OrdinalIgnoreCase))
                             residual.Add("Legacy profile entry retained: " + path);
                     }
                 });

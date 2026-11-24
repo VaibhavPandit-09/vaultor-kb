@@ -29,7 +29,7 @@ No Android in-app Help was implemented by this initiative. The articles here exp
 
 ## Keep an existing Vaultor installation
 
-Keep using Windows 0.27.0 until a Windows Next installer is published. The planned installer performs a one-time reset of the old Electron workspace and settings. Electron-managed notes and attachments do not migrate. Keep any exports you want to retain outside the old application's managed storage. External linked originals and independently exported backups in other folders are retained. Future Next updates preserve the new workspace. See [Vaultor Next experimental foundation](next-foundation.md).
+Windows Next uses a separate x64 installer. Install it over the Electron version for a one-time reset of the old managed workspace and settings. Electron-managed notes and attachments do not migrate. Keep any exports you want to retain outside the old application's managed storage. External linked originals and independently exported backups in other folders are retained. Future Next updates preserve the new workspace. See [Vaultor Next](next-foundation.md) and [Windows release availability](https://github.com/VaibhavPandit-09/vaultor-kb/releases).
 
 ## Upgrade Android from alpha.28
 

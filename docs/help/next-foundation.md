@@ -1,4 +1,4 @@
-# Vaultor Next experimental foundation
+# Vaultor Next
 
 Vaultor Next development builds use their own Windows profile. The production Windows installer replaces a verified Electron installation and starts a fresh workspace. It removes the verified old managed workspace and settings once. External linked files and independent backups outside that storage are retained. Next can still open explicitly supported portable imports through Workspace transfers.
 
@@ -6,7 +6,7 @@ The installed Next application's **Settings → Application and Storage** offers
 
 ## Workspaces
 
-Only one Vaultor Next version can use the same local profile at a time. Before opening a new Next candidate, save any linked-file edits and close earlier Next versions such as M14 normally. If startup fails, a Windows dialog displays the error. Close the running version and try again; do not delete workspace or profile lock files.
+Only one Vaultor Next version can use the same local profile at a time. Before opening another version, save any linked-file edits and close Next normally. If startup fails, a Windows dialog displays the error. Close the running version and try again. Keep workspace and profile lock files in place.
 
 The first launch creates a separate local Vaultor Next workspace. Open workspace accepts an empty folder or a supported experimental workspace. M1 and published Electron databases are not migrated; choose a new empty folder if an older workspace is refused. Unrelated nonempty folders and workspaces already open in another process are refused. Import and transfers also offers Create local workspace: choose a parent and a new folder name. Finish or cancel Activity tasks before switching. Linked folders are separate from this workspace.
 

@@ -380,10 +380,12 @@ async fn selected_image(path: String) -> Result<tauri::ipc::Response, String> {
 fn startup_failure(error: &impl std::fmt::Display) {
     let message = format!(
         "Vaultor Next could not start.\n\n{error}\n\n\
-        If another Vaultor Next version is running (including M14), save any linked-file edits, \
-        close it normally, then open M15 again. Only one version can own this profile at a time. \
+        If another Vaultor Next version is running, save any linked-file edits, \
+        close it normally, then reopen Vaultor Next. Only one version can own this profile at a time. \
         Do not delete workspace or profile lock files."
     );
+    #[cfg(all(windows, feature = "qualification-feed"))]
+    eprintln!("{message}");
     // Setup can fail before the hidden webview is ready. Use a native dialog that
     // does not depend on renderer bootstrap or successfully managed Tauri state.
     #[cfg(windows)]

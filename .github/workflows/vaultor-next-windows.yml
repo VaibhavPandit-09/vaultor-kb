@@ -64,12 +64,16 @@ jobs:
           key: ${{ steps.fixtures.outputs.cache-primary-key }}
   install:
     needs: build-fixtures
-    runs-on: windows-2025
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         predecessor: ['fresh', '0.25.2', '0.26.0', '0.27.0']
+        runner: [windows-2025]
+        include:
+          - predecessor: fresh
+            runner: windows-2022
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

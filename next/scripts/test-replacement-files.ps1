@@ -17,7 +17,7 @@ $residual = [Collections.Generic.List[string]]::new()
 $expectedExternal = (Get-FileHash -LiteralPath (Join-Path $external 'original.md')).Hash
 $lock = [IO.File]::Open((Join-Path $legacy 'locked.bin'), 'Open', 'Read', 'Read')
 try {
-    $clean.Invoke($null, [object[]]@($legacy.PSObject.BaseObject, [string]::Empty, $owned.PSObject.BaseObject, $residual.PSObject.BaseObject))
+    $clean.Invoke($null, [object[]]@($legacy.PSObject.BaseObject, [string]::Empty, $owned.PSObject.BaseObject, $residual.PSObject.BaseObject, $null))
 } finally { $lock.Dispose() }
 if (Test-Path -LiteralPath (Join-Path $legacy 'owned.bin')) { throw 'Owned payload was not removed' }
 foreach ($name in 'locked.bin','unexpected.txt','junction') {
@@ -26,6 +26,16 @@ foreach ($name in 'locked.bin','unexpected.txt','junction') {
 if ((Get-FileHash -LiteralPath (Join-Path $external 'original.md')).Hash -ne $expectedExternal) { throw 'External source changed' }
 if ($residual.Count -ne 3) { throw "Unexpected residual count $($residual.Count): $residual" }
 'Owned payload deleted. Locked, unexpected and junction entries retained. External bytes unchanged.'
+
+$unexpectedFolder = Join-Path $legacy 'appearance.json'
+New-Item -ItemType Directory -Path $unexpectedFolder | Out-Null
+Set-Content -LiteralPath (Join-Path $unexpectedFolder 'user-owned.md') -Value 'Keep this file'
+$residual.Clear()
+$clean.Invoke($null, [object[]]@($unexpectedFolder.PSObject.BaseObject, 'appearance.json', $null, $residual.PSObject.BaseObject, $false))
+if (!(Test-Path -LiteralPath (Join-Path $unexpectedFolder 'user-owned.md')) -or $residual.Count -ne 1) {
+    throw 'A directory with an allowlisted file name must be retained and reported'
+}
+'Directory with an allowlisted file name retained and reported.'
 
 $roaming = Join-Path $fixture 'roaming'
 $orphan = Join-Path $roaming 'Vaultor'

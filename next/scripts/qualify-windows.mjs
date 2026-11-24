@@ -25,6 +25,17 @@ const profile = join(process.env.APPDATA, 'com.vaultor.next');
 const workspacePath = join(profile, 'Workspace');
 const exists = path => access(path).then(() => true, () => false);
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
+function registrationAndShortcuts() {
+  const raw = execFileSync('pwsh', ['-NoProfile', '-Command', `
+    $roots = [Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('DesktopDirectory')
+    $shell = New-Object -ComObject WScript.Shell
+    $links = @(Get-ChildItem -LiteralPath $roots -Filter 'Vaultor*.lnk' -Recurse -ErrorAction Stop |
+      ForEach-Object { @{name=$_.BaseName; target=$shell.CreateShortcut($_.FullName).TargetPath} })
+    $registration = Get-ItemProperty -LiteralPath 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Vaultor Next' -ErrorAction SilentlyContinue
+    @{links=$links; version=$registration.DisplayVersion; uninstall=$registration.UninstallString} | ConvertTo-Json -Compress
+  `], {encoding:'utf8',windowsHide:true});
+  return JSON.parse(raw);
+}
 for (const path of [legacy, install, legacyProfile, profile]) assert(!await exists(path), 'Runner profile is already populated');
 const oldRegistry = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\f6d10ccf-3944-54a9-b8ec-1f95df56a56c';
 const registryExists = () => {
@@ -127,6 +138,7 @@ const external = join(dir, 'external');
 await mkdir(external);
 const linked = join(external, 'Original.md');
 const backup = join(external, 'Independent-backup.zip');
+const unexpected = join(legacyProfile, 'User-owned sentinel.txt');
 const externalBytes = '# Keep this linked original\r\n';
 let independentBytes = Buffer.from('Independent disposable backup sentinel');
 await writeFile(linked, externalBytes);
@@ -169,6 +181,7 @@ if (predecessor !== 'fresh') {
     const cache = join(legacyProfile,'Cache');
     await mkdir(cache,{recursive:true});
     await symlink(external,join(cache,'External junction'),'junction');
+    await writeFile(unexpected, 'This file has no application ownership');
   }
   // Electron writes this test-only debugger marker. The production installer
   // need not know about files created by the qualification harness.
@@ -191,9 +204,19 @@ const receipt = await readFile(join(profile,'electron-replacement.txt'),'utf8');
 if (predecessor === '0.26.0') {
   assert.match(receipt,/Reparse object retained:/);
   assert(await exists(join(legacyProfile,'Cache','External junction')));
+  assert(receipt.includes(unexpected));
+  assert.equal(await readFile(unexpected,'utf8'),'This file has no application ownership');
 } else assert.match(receipt,/Complete/);
 const exe = join(install,'vaultor-next.exe');
 assert(await exists(exe));
+assert.equal(await readFile(linked,'utf8'),externalBytes);
+assert.equal(sha(await readFile(backup)),sha(independentBytes));
+const initialShell = registrationAndShortcuts();
+assert.equal(initialShell.version, '0.28.0');
+assert.equal(initialShell.uninstall, '"'+join(install,'uninstall.exe')+'"');
+assert(initialShell.links.some(link => link.name === 'Vaultor Next' && link.target.toLowerCase() === exe.toLowerCase()));
+assert(!initialShell.links.some(link => link.target.toLowerCase() === join(legacy,'Vaultor.exe').toLowerCase()));
+console.log('Verified replacement registration, Start Menu shortcut and external file bytes.');
 process.env.VAULTOR_QUALIFICATION_IMAGE=exe;
 function installedPids() {
   const values=execFileSync('pwsh',['-NoProfile','-Command',
@@ -285,6 +308,10 @@ await app.evaluate("setTimeout(()=>window.__TAURI_INTERNALS__.invoke('close_next
 await eventually(()=>installedPids().length===0, 'restarted Vaultor Next quit');
 app.socket.close();
 await run(join(install,'uninstall.exe'),['/S']);
-await eventually(async ()=>!await exists(exe),'uninstaller finished removing the application');
+await eventually(async ()=>{
+  if (await exists(exe)) return false;
+  const shell = registrationAndShortcuts();
+  return !shell.version && !shell.links.some(link => link.target.toLowerCase() === exe.toLowerCase());
+},'uninstaller removed the application, shortcut and registration');
 assert(await exists(join(workspacePath,'vaultor-next.json')));
 console.log(JSON.stringify({predecessor,originalInstallerSHA256:predecessors[predecessor],replacement:true,signedUpdate:true,tamperedUpdateRefused:true,protectedDraft:true,exactManagedBytes:true,externalFiles:true,ordinaryUninstallPreservedWorkspace:true}));

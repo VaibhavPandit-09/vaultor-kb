@@ -527,7 +527,7 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ### 2026-11-24 — Tighten Windows replacement ownership checks
 
-The cleanup helper now deletes verified files through the original no-reparse handle and confirms shortcuts have not changed before removal. An unverified legacy profile remains in place and is reported. The Chromium DIPS database sidecars seen in disposable predecessor runs are recognized. Windows updater transfer errors omit download URLs. The focused Windows filesystem checks passed, including recognition of an orphan profile as a residual. See the [Windows qualification ledger](plans/VAULTOR-NEXT-M26-C.md#windows-release-gate) for native installed results.
+The cleanup helper now deletes verified files through the original no-reparse handle and confirms shortcuts have not changed before removal. An unverified legacy profile or an allowlisted entry with the wrong file type remains in place and is reported. The Chromium DIPS database sidecars seen in disposable predecessor runs are recognized. Windows updater transfer errors omit download URLs. The startup dialog names the current application, and disposable builds send its diagnostics to the test harness. Reconciled Platforms, What's New and Vaultor Next Help and the Next catalogue entry with the Windows release. See the [Windows qualification ledger](plans/VAULTOR-NEXT-M26-C.md#windows-release-gate) for validation.
 
 ### 2026-11-24 — Windows Next one-time replacement
 
