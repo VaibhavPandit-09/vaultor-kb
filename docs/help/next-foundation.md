@@ -1,6 +1,6 @@
 # Vaultor Next experimental foundation
 
-Vaultor Next development builds use their own Windows profile. The planned production installer replaces the old Electron application and starts a fresh workspace. It removes the verified old managed workspace and settings once. External linked files and independent backups outside that storage are retained. Next can still open explicitly supported portable imports through Workspace transfers.
+Vaultor Next development builds use their own Windows profile. The production Windows installer replaces a verified Electron installation and starts a fresh workspace. It removes the verified old managed workspace and settings once. External linked files and independent backups outside that storage are retained. Next can still open explicitly supported portable imports through Workspace transfers.
 
 The installed Next application's **Settings → Application and Storage** offers **Check for updates**. Once a signed installer is verified, **Update and restart** protects pending edits and preserves the new workspace. Finish active transfers before installing.
 

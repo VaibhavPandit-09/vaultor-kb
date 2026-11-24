@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import {spawn, execFileSync} from 'node:child_process';
 import {createServer} from 'node:net';
 import {createServer as createHttpServer} from 'node:http';
-import {mkdir, writeFile, readFile, access, readdir, symlink} from 'node:fs/promises';
+import {mkdir, writeFile, readFile, access, readdir, symlink, unlink} from 'node:fs/promises';
 import {join, resolve} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
 
@@ -99,14 +99,27 @@ async function attach(executable, electron = false) {
   const child = spawn(executable, electron ? flags.split(' ') : [], {
     windowsHide:true, stdio:['ignore','ignore','pipe'], env:{...process.env, ...(electron ? {} : {
       WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:flags,
-      WEBVIEW2_USER_DATA_FOLDER:join(dir,'disposable-webview'),
     })},
   });
   child.on('error', e => console.error(e.message));
   let stderr='';
   child.stderr.on('data',chunk=>{stderr=(stderr+chunk).slice(-2000)});
   try {return {...await connect(number, electron), child}}
-  catch(error) {throw Error(error.message+'; exit='+child.exitCode+'; stderr='+stderr)}
+  catch(error) {
+    if (!electron && child.pid) {
+      const diagnostic = execFileSync('pwsh', ['-NoProfile', '-Command', `
+        $app = Get-Process -Id ${child.pid} -ErrorAction SilentlyContinue
+        $app | Select-Object Id,SessionId,Responding,MainWindowTitle | Format-List
+        Get-CimInstance Win32_Process -Filter 'ParentProcessId=${child.pid}' |
+          Select-Object Name,ProcessId,SessionId | Format-Table
+        whoami /groups /fo csv | Select-String 'S-1-16-'
+        Get-ChildItem 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients' -ErrorAction SilentlyContinue |
+          Get-ItemProperty | Where-Object name -Match 'WebView2' | Select-Object name,pv | Format-List
+      `], {encoding:'utf8',windowsHide:true});
+      console.error(diagnostic, 'Workspace initialized:', await exists(join(workspacePath,'vaultor-next.json')));
+    }
+    throw Error(error.message+'; exit='+child.exitCode+'; stderr='+stderr);
+  }
 }
 
 const doc = text => ({type:'doc',content:[{type:'paragraph',content:[{type:'text',text}]}]});
@@ -157,6 +170,10 @@ if (predecessor !== 'fresh') {
     await mkdir(cache,{recursive:true});
     await symlink(external,join(cache,'External junction'),'junction');
   }
+  // Electron writes this test-only debugger marker. The production installer
+  // need not know about files created by the qualification harness.
+  const marker = join(legacyProfile, 'DevToolsActivePort');
+  if (await exists(marker)) await unlink(marker);
   assert(await exists(join(legacyProfile,'local-workspace','app.db')));
   console.log('Seeded the original installed '+predecessor+' workspace and exported its independent ZIP.');
   // Leave the real older application running to exercise verified shutdown.
@@ -265,10 +282,7 @@ assert.equal(await readFile(linked,'utf8'),externalBytes);
 assert.equal(sha(await readFile(backup)),sha(independentBytes));
 assert.equal(await readFile(join(profile,'electron-replacement.txt'),'utf8'),receipt);
 await app.evaluate("setTimeout(()=>window.__TAURI_INTERNALS__.invoke('close_next',{quit:true}),10);true");
-await eventually(async ()=> {
-  try { await fetch('http://127.0.0.1:'+debugPort+'/json/list',{signal:AbortSignal.timeout(800)}); return false; }
-  catch { return true; }
-}, 'restarted Vaultor Next quit');
+await eventually(()=>installedPids().length===0, 'restarted Vaultor Next quit');
 app.socket.close();
 await run(join(install,'uninstall.exe'),['/S']);
 await eventually(async ()=>!await exists(exe),'uninstaller finished removing the application');

@@ -37,13 +37,13 @@ fn github_asset(url: &Url) -> bool {
 }
 
 async fn read_bounded(client: &reqwest::Client, url: Url, limit: usize) -> Result<Vec<u8>, String> {
-    let mut response = client.get(url).send().await.map_err(problem)?
-        .error_for_status().map_err(problem)?;
+    let mut response = client.get(url).send().await.map_err(|error| problem(error.without_url()))?
+        .error_for_status().map_err(|error| problem(error.without_url()))?;
     if response.content_length().is_some_and(|size| size > limit as u64) {
         return Err("Update response exceeds the size limit".into());
     }
     let mut bytes = Vec::new();
-    while let Some(chunk) = response.chunk().await.map_err(problem)? {
+    while let Some(chunk) = response.chunk().await.map_err(|error| problem(error.without_url()))? {
         if chunk.len() > limit - bytes.len() {
             return Err("Update response exceeds the size limit".into());
         }
@@ -114,7 +114,7 @@ pub async fn stage_next_update(app: AppHandle) -> Result<Option<String>, String>
     };
     let updater = app.updater_builder().endpoints(vec![endpoint]).map_err(problem)?
         .timeout(Duration::from_secs(30)).build().map_err(problem)?;
-    let Some(update) = updater.check().await.map_err(problem)? else { return Ok(None) };
+    let Some(update) = updater.check().await.map_err(|_| "The Windows update manifest could not be read or validated")? else { return Ok(None) };
     let source_valid = fixture.as_ref().map_or_else(
         || github_asset(&update.download_url),
         |endpoint| endpoint.origin() == update.download_url.origin() && update.download_url.path() == "/second.exe",

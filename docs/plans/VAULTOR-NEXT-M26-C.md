@@ -22,6 +22,8 @@ The next hosted run reused a single pair of signed binaries but still timed out 
 
 A separate local signed 0.28.0 → 0.28.1 installation used a unique product name, scoped profile, temporary update key and loopback feed. It omitted the Electron cleanup hook. The actual installed updater rejected changed bytes, then verified the valid installer, replaced the app and relaunched it. The updated app retained both the saved note and protected draft. Ordinary fixture uninstall removed its executable and registry entry while preserving the test workspace. The package had no authority over the user's installation or legacy storage.
 
+In hosted run `45323834813`, all three real predecessors opened, wrote disposable notes and attachments, and exported separate backups. The new installer shut down each running Electron app, removed its executable and managed workspace, and removed its uninstall registration. The 0.26.0 receipt preserved the injected external junction. The other two receipts reported an Electron debugger marker and Chromium's `DIPS-wal` sidecar. The qualification driver now removes its own debugger marker, and the cleanup list recognizes the DIPS database sidecars. The fresh and 0.26.0 cases reached the installed Next launch but did not expose the expected WebView target. Those cases remain open.
+
 ## Android release gate
 
 The published predecessor APK is `0.1.0-alpha.28` / code 32, `com.vaultor.app`, minimum API 36, target API 37 and arm64-v8a/x86_64. The downloaded APK matched SHA-256 `4b87dd8212f03c8db45395ea113e12761c2b1bb45185e1c7e5de6962aaba730b`, and `apksigner` verified the original certificate `af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567`.

@@ -27,7 +27,7 @@ internal static class LegacyReplacement
         "local-workspace", "linked-sources", "file-cache", "workspace-copies", "updates", "prepared-exports",
         "Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache", "GPUPersistentCache",
         "GrShaderCache", "ShaderCache", "IndexedDB", "Local Storage", "Session Storage", "blob_storage",
-        "Network", "Shared Dictionary", "WebStorage", "Local State", "Preferences", "DIPS",
+        "Network", "Shared Dictionary", "WebStorage", "Local State", "Preferences", "DIPS", "DIPS-wal", "DIPS-shm",
         "declarative_performance_observer.db", "declarative_performance_observer.db-journal"
     };
 
@@ -191,20 +191,25 @@ internal static class LegacyReplacement
             if (handle == null) return;
             if ((Attributes(handle, path) & DirectoryFlag) != 0)
                 throw new IOException("Unexpected directory retained: " + path);
-            using (var file = new FileStream(handle, FileAccess.Read)) {
-                if (digest != null && !Same(Hash(file), digest))
-                    throw new IOException("Modified file retained: " + path);
-                byte deleting = 1;
-                if (!SetFileInformationByHandle(handle, 4, ref deleting, 1))
-                    throw new IOException(path, new Win32Exception(Marshal.GetLastWin32Error()));
-            }
+            DeleteOpenFile(handle, path, digest);
+        }
+    }
+
+    private static void DeleteOpenFile(SafeFileHandle handle, string path, string digest)
+    {
+        using (var file = new FileStream(handle, FileAccess.Read)) {
+            if (digest != null && !Same(Hash(file), digest))
+                throw new IOException("Modified file retained: " + path);
+            byte deleting = 1;
+            if (!SetFileInformationByHandle(handle, 4, ref deleting, 1))
+                throw new IOException(path, new Win32Exception(Marshal.GetLastWin32Error()));
         }
     }
 
     private static void CleanTree(string path, string relative, Dictionary<string, string> owned, List<string> residual)
     {
         try {
-            using (var folder = Open(path, 0x10080, 3)) {
+            using (var folder = Open(path, 0x80010000, 3)) {
                 if (folder == null) return;
                 if ((Attributes(folder, path) & DirectoryFlag) == 0) {
                     string digest = null;
@@ -212,8 +217,7 @@ internal static class LegacyReplacement
                         residual.Add("Unrecognized file retained: " + path);
                         return;
                     }
-                    folder.Dispose();
-                    DeleteFile(path, digest);
+                    DeleteOpenFile(folder, path, digest);
                     return;
                 }
                 if (owned != null && relative.Length != 0 && !owned.Keys.Any(p => p.StartsWith(relative + "\\", StringComparison.OrdinalIgnoreCase))) {
@@ -237,7 +241,8 @@ internal static class LegacyReplacement
     {
         try {
             WithAncestors(path, () => {
-                using (var shortcutFile = Open(path, 0x80, 3)) {
+                string digest;
+                using (var shortcutFile = Open(path, 0x80000000, 1)) {
                     if (shortcutFile == null) return;
                     Attributes(shortcutFile, path);
                     var shellType = Type.GetTypeFromProgID("WScript.Shell", true);
@@ -247,10 +252,12 @@ internal static class LegacyReplacement
                         try {
                             var value = link.GetType().InvokeMember("TargetPath", BindingFlags.GetProperty, null, link, null) as string;
                             if (!Same(value, target)) return;
+                            using (var file = new FileStream(shortcutFile, FileAccess.Read))
+                                digest = Hash(file);
                         } finally { Marshal.FinalReleaseComObject(link); }
                     } finally { Marshal.FinalReleaseComObject(shell); }
                 }
-                File.Delete(path);
+                DeleteFile(path, digest);
             });
         } catch (Exception e) { residual.Add("Shortcut retained: " + path + " (" + e.Message + ")"); }
     }
@@ -258,10 +265,10 @@ internal static class LegacyReplacement
     private static void FinalizeReplacement(string legacy, string roaming, string version, string receipt, StreamWriter log)
     {
         var residual = new List<string>();
+        var profile = Path.Combine(roaming, "Vaultor");
         if (version != null) {
             var owned = Manifest(version);
             StopLegacy(legacy, owned);
-            var profile = Path.Combine(roaming, "Vaultor");
             try {
                 WithAncestors(Path.Combine(profile, "placeholder"), () => {
                     foreach (var item in ProfileEntries)
@@ -284,13 +291,24 @@ internal static class LegacyReplacement
                 RemoveShortcut(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "Vaultor.lnk"), executable, residual);
                 try {
                     using (var key = Registry.CurrentUser.OpenSubKey(RunKey, true)) {
-                        if (key != null && Same(key.GetValue("Vaultor") as string, "\"" + executable + "\" --background"))
+                        var command = key == null ? null : key.GetValue("Vaultor") as string;
+                        if (key != null && (Same(command, "\"" + executable + "\" --background") ||
+                            (!executable.Contains(" ") && Same(command, executable + " --background"))))
                             key.DeleteValue("Vaultor", false);
                     }
                     Registry.CurrentUser.DeleteSubKey(UninstallKey, false);
                     Registry.CurrentUser.DeleteSubKey(InstallKey, false);
                 } catch (Exception e) { residual.Add("Legacy registration retained: " + e.Message); }
             }
+        } else {
+            try {
+                WithAncestors(profile, () => {
+                    using (var leftover = Open(profile, 0x80, 3)) {
+                        if (leftover != null) residual.Add("Legacy profile without a verified installation retained: " + profile);
+                    }
+                });
+            } catch (IOException e) { residual.Add(e.Message); }
+            catch (UnauthorizedAccessException e) { residual.Add(e.Message); }
         }
         foreach (var message in residual.Count == 0 ? new[] { "Complete" } : residual.ToArray())
             log.WriteLine(message);

@@ -525,6 +525,10 @@ Menus use action-specific labels and move technical identifiers/details behind d
 
 ## Maintenance history
 
+### 2026-11-24 — Tighten Windows replacement ownership checks
+
+The cleanup helper now deletes verified files through the original no-reparse handle and confirms shortcuts have not changed before removal. An unverified legacy profile remains in place and is reported. The Chromium DIPS database sidecars seen in disposable predecessor runs are recognized. Windows updater transfer errors omit download URLs. The focused Windows filesystem checks passed, including recognition of an orphan profile as a residual. See the [Windows qualification ledger](plans/VAULTOR-NEXT-M26-C.md#windows-release-gate) for native installed results.
+
 ### 2026-11-24 — Windows Next one-time replacement
 
 The separate Windows NSIS production profile uses `com.vaultor.next` and keeps its Rust workspace outside Electron's profile. The replacement helper verifies original installer registrations and known payload hashes, then scopes cleanup to verified install files and recognized legacy data. It checks the successor before claiming the one-time receipt. Subsequent Next releases use a separate Tauri signature and preserve Next data. The focused Windows helper check preserved external bytes across an NTFS junction, a locked file and unexpected data. Installed release qualification remains in the [M26-C record](plans/VAULTOR-NEXT-M26-C.md#windows-release-gate).
