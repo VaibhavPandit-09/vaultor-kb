@@ -30,6 +30,8 @@ Hosted run `45324559424` passed the revised cleanup receipts for all three prede
 
 The refreshed exact-source candidate compiled both frontends and passed the exact Next Help article check during NSIS packaging. Help source validation covered 43 features and 16 articles, all 17 Help-governance checks and both focused Next Help tests passed. The updated topics are Platforms, What's New and Vaultor Next, with the Next catalogue entry and its version reconciled. The release checksums, public updater signature and tamper refusal are recorded in the [0.28.0 candidate ledger](../desktop/releases/v0.28.0.md#staged-candidate).
 
+The five candidate assets are staged in a GitHub draft targeting the exact build commit. The proposed release tag is still absent remotely. The separate exact-installer workflow checks the draft source and asset digest, recomputes the installer hash and uses those production bytes in four disposable profiles. The fixture updater proof remains separate from the exact installer tests.
+
 ## Android release gate
 
 The published predecessor APK is `0.1.0-alpha.28` / code 32, `com.vaultor.app`, minimum API 36, target API 37 and arm64-v8a/x86_64. The downloaded APK matched SHA-256 `4b87dd8212f03c8db45395ea113e12761c2b1bb45185e1c7e5de6962aaba730b`, and `apksigner` verified the original certificate `af1123bd0be38ee48ce61b4f40f3667c4fe740910b64005d3d21dacd83de2567`.
